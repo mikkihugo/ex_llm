@@ -870,10 +870,15 @@ async function handleCodex(req: ChatRequest) {
 
 async function handleCursorAgent(req: ChatRequest) {
   const prompt = messagesToPrompt(req.messages);
-  const model = req.model || 'gpt-5';
 
-  // Use -p for direct prompt execution with --print for non-interactive mode
-  const args = ['-p', '--print', '--output-format', 'text', '--model', model, prompt];
+  // Use non-interactive mode, but let the CLI select a model unless caller specifies one
+  const args = ['-p', '--print', '--output-format', 'text'];
+
+  if (req.model) {
+    args.push('--model', req.model);
+  }
+
+  args.push(prompt);
 
   const output = await execCLI('cursor-agent', args);
 
