@@ -25,7 +25,9 @@
             export -f litellm-proxy
 
             if [ -z "${LITELLM_AUTOSTARTED:-}" ]; then
-              LOG_FILE="${TMPDIR:-/tmp}/litellm-${USER}-$(date +%s).log"
+              mkdir -p .litellm
+              find .litellm -name 'litellm-*.log' -mtime +7 -delete || true
+              LOG_FILE=".litellm/litellm-$(date +%Y%m%d-%H%M%S).log"
               echo "Starting LiteLLM proxy on port ${LITELLM_PORT} (logs: ${LOG_FILE})..."
               litellm-proxy --host 0.0.0.0 --port "${LITELLM_PORT}" >"${LOG_FILE}" 2>&1 &
               export LITELLM_AUTOSTARTED=$!

@@ -34,3 +34,6 @@ application_default_credentials.json
 /litellm/litellm.config.yaml
 /litellm/litellm.log
 
+
+/.litellm/
+/litellm/.litellm/
