@@ -29,3 +29,8 @@ application_default_credentials.json
 
 # Encrypted credentials - SAFE TO COMMIT
 # .credentials.encrypted/*.age files ARE safe
+
+# LiteLLM local artifacts
+/litellm/litellm.config.yaml
+/litellm/litellm.log
+
