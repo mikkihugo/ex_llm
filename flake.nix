@@ -239,26 +239,7 @@ EOF
               echo "Run 'just help' for task shortcuts."
             fi
           '';
-        }
-
-        devShells.litellm = pkgs.mkShell {
-          name = "litellm-shell";
-          buildInputs = commonTools ++ [ pkgs.python3 pkgs.uv pkgs.openssl pkgs.cacert ];
-
-          shellHook = ''
-            export LITELLM_CONFIG=${LITELLM_CONFIG:-$PWD/litellm.config.example.yaml}
-            export LITELLM_PORT=${LITELLM_PORT:-4000}
-
-            litellm-proxy() {
-              uv tool run --from-pypi litellm --config "${LITELLM_CONFIG}" "$@"
-            }
-
-            export -f litellm-proxy
-
-            echo "litellm ready. Start proxy with: litellm-proxy --port ${LITELLM_PORT}"
-          '';
         };
-;
 
         devShells.fly = pkgs.mkShell {
           name = "seed-agent-fly";
