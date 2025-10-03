@@ -6,9 +6,12 @@ Standalone Nix flake providing a dev shell for running LiteLLM locally.
 
 ```bash
 cd litellm
-nix develop
-# inside the shell
-litellm-proxy --port 4000
+nix develop              # drops you into the shell and auto-starts the proxy
+
+# proxy logs are written to /tmp/litellm-<user>-<timestamp>.log
+# to stop/restart manually:
+kill $LITELLM_AUTOSTARTED
+litellm-proxy --port 4000 &
 ```
 
 Environment variables:

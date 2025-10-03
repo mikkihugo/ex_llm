@@ -24,7 +24,14 @@
 
             export -f litellm-proxy
 
-            echo "LiteLLM shell ready. Start proxy with: litellm-proxy --port ${LITELLM_PORT}"
+            if [ -z "${LITELLM_AUTOSTARTED:-}" ]; then
+              LOG_FILE="${TMPDIR:-/tmp}/litellm-${USER}-$(date +%s).log"
+              echo "Starting LiteLLM proxy on port ${LITELLM_PORT} (logs: ${LOG_FILE})..."
+              litellm-proxy --host 0.0.0.0 --port "${LITELLM_PORT}" >"${LOG_FILE}" 2>&1 &
+              export LITELLM_AUTOSTARTED=$!
+              trap 'if [ -n "${LITELLM_AUTOSTARTED}" ]; then kill ${LITELLM_AUTOSTARTED} 2>/dev/null; fi' EXIT
+              echo "LiteLLM proxy PID ${LITELLM_AUTOSTARTED}"
+            fi
           '';
         };
       });
