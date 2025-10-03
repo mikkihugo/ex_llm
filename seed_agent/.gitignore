@@ -1,0 +1,22 @@
+/_build/
+/cover/
+/deps/
+/tmp/
+/.elixir_ls/
+/.mix/
+/.hex/
+/build/
+*.ez
+*.beam
+*.tar
+# Node assets (if added later)
+/assets/node_modules/
+/assets/.parcel-cache/
+
+# Fly release artifacts
+/releases/
+
+# Secrets
+.env*
+.fly/
+priv/plts/

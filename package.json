@@ -1,0 +1,10 @@
+{
+  "name": "oneshot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "ai:server": "cd ai-server && bun run start",
+    "ai:dev": "cd ai-server && bun run dev"
+  }
+}

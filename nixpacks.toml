@@ -1,0 +1,20 @@
+# Nixpacks configuration for fly.io
+# Tells fly.io how to build with Nix
+
+[phases.setup]
+nixPkgs = ["nixFlakes"]
+nixOverlays = []
+nixLibs = []
+
+[phases.install]
+cmds = [
+  "nix --experimental-features 'nix-command flakes' build .#oneshot-integrated"
+]
+
+[phases.build]
+cmds = [
+  "cp -rL result/* /app/"
+]
+
+[start]
+cmd = "/app/bin/start-oneshot"

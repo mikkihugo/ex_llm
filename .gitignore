@@ -1,0 +1,17 @@
+/.mix/
+/.hex/
+
+# AI Provider Credentials - NEVER COMMIT
+.env.ai-providers
+.env.local
+.env.fly
+*.credentials.json
+auth.json
+application_default_credentials.json
+
+# Encryption keys - NEVER COMMIT
+.age-key.txt
+**/. age-key.txt
+
+# Encrypted credentials - SAFE TO COMMIT
+# .credentials.encrypted/*.age files ARE safe

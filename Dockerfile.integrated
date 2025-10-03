@@ -1,0 +1,50 @@
+# Integrated Dockerfile for Elixir + AI Server deployment
+# Builds both apps using Nix
+
+FROM nixos/nix:latest AS builder
+
+# Enable flakes
+RUN echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+
+# Copy source
+WORKDIR /build
+COPY . .
+
+# Build integrated package (includes both Elixir and AI Server)
+RUN nix build .#oneshot-integrated
+
+# Runtime image
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    libssl3 \
+    libncurses6 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy built package from Nix
+COPY --from=builder /build/result /app
+
+# Create directories for credentials
+RUN mkdir -p /root/.config/gcloud \
+             /root/.config/cursor \
+             /root/.claude
+
+# Set environment
+ENV PATH="/app/bin:${PATH}"
+ENV PORT=8080
+ENV AI_SERVER_PORT=3000
+ENV MIX_ENV=prod
+
+# Expose ports
+EXPOSE 8080 3000
+
+# Health check for web process
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+# Default: run both processes
+# Can be overridden by fly.io processes configuration
+CMD ["/app/bin/start-oneshot"]

@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  ai-server:
+    build: .
+    image: ai-server:latest
+    container_name: ai-providers-server
+    ports:
+      - "3000:3000"
+    # Option 1: Use environment file (recommended for production)
+    env_file:
+      - .env.ai-providers
+    # Option 2: Individual environment variables
+    environment:
+      - PORT=3000
+      - GEMINI_CODE_PROJECT=gemini-code-473918
+    # Option 3: Mount credential files directly
+    volumes:
+      # Uncomment to mount credentials instead of using env vars
+      # - ~/.config/gcloud:/root/.config/gcloud:ro
+      # - ~/.claude:/root/.claude:ro
+      # - ~/.config/cursor:/root/.config/cursor:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ai-network
+
+networks:
+  ai-network:
+    driver: bridge

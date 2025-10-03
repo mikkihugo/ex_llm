@@ -1,0 +1,17 @@
+{
+  "name": "ai-providers-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/server.ts",
+    "dev": "bun run --watch src/server.ts"
+  },
+  "dependencies": {
+    "ai": "^5.0.0",
+    "ai-sdk-provider-gemini-cli": "latest",
+    "ai-sdk-provider-claude-code": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}
