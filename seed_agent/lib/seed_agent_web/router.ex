@@ -143,9 +143,11 @@ defmodule SeedAgentWeb.Router do
         }
       ],
       usage: %{
-        prompt_tokens: String.length(text),
-        completion_tokens: String.length(text),
-        total_tokens: String.length(text) * 2
+        # Use byte_size divided by 4 as rough token estimate (1 token ~= 4 bytes for English)
+        # For accurate counting, use a proper tokenizer
+        prompt_tokens: div(byte_size(text), 4),
+        completion_tokens: div(byte_size(text), 4),
+        total_tokens: div(byte_size(text), 2)
       }
     }
   end

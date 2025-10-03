@@ -60,20 +60,18 @@ defmodule Singularity.AIProvider do
   def chat(provider, messages, opts \\ []) do
     body = build_request_body(provider, messages, opts)
 
-    case HTTPoison.post(
-      "#{@base_url}/chat",
-      Jason.encode!(body),
-      [{"Content-Type", "application/json"}],
-      timeout: @timeout,
-      recv_timeout: @recv_timeout
+    case Req.post("#{@base_url}/chat",
+      json: body,
+      receive_timeout: @recv_timeout,
+      retry: false
     ) do
-      {:ok, %{status_code: 200, body: response_body}} ->
-        {:ok, Jason.decode!(response_body)}
+      {:ok, %{status: 200, body: response_body}} ->
+        {:ok, response_body}
 
-      {:ok, %{status_code: status, body: response_body}} ->
-        {:error, "HTTP #{status}: #{response_body}"}
+      {:ok, %{status: status, body: response_body}} ->
+        {:error, "HTTP #{status}: #{inspect(response_body)}"}
 
-      {:error, %HTTPoison.Error{reason: reason}} ->
+      {:error, reason} ->
         {:error, reason}
     end
   end
@@ -117,12 +115,12 @@ defmodule Singularity.AIProvider do
   """
   @spec health_check() :: {:ok, map()} | {:error, term()}
   def health_check do
-    case HTTPoison.get("#{@base_url}/health", [], timeout: 5_000) do
-      {:ok, %{status_code: 200, body: body}} ->
-        {:ok, Jason.decode!(body)}
-      {:ok, %{status_code: status}} ->
+    case Req.get("#{@base_url}/health", receive_timeout: 5_000, retry: false) do
+      {:ok, %{status: 200, body: body}} ->
+        {:ok, body}
+      {:ok, %{status: status}} ->
         {:error, "Health check failed: HTTP #{status}"}
-      {:error, %HTTPoison.Error{reason: reason}} ->
+      {:error, reason} ->
         {:error, reason}
     end
   end

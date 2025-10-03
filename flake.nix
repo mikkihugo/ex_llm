@@ -1,5 +1,5 @@
 {
-  description = "Seed Agent development environment";
+  description = "Singularity - Elixir + Gleam development environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

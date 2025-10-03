@@ -26,6 +26,7 @@ import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
 import { claudeCode } from 'ai-sdk-provider-claude-code';
 import { createServer } from 'http';
 import { randomBytes, createHash } from 'crypto';
+import escapeHtml from 'escape-html';
 import { loadCredentialsFromEnv, checkCredentialAvailability, printCredentialStatus } from './load-credentials';
 
 // Load credentials from environment variables if available
@@ -35,6 +36,9 @@ const allStats = checkCredentialAvailability();
 printCredentialStatus(allStats);
 
 const PORT = parseInt(process.env.PORT || '3000');
+const OAUTH_CALLBACK_PORT = parseInt(process.env.OAUTH_CALLBACK_PORT || '1455');
+const OAUTH_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+const TOKEN_EXPIRY_BUFFER_MS = 55 * 60 * 1000; // 55 minutes
 
 // ============================================
 // Codex OAuth Configuration
@@ -43,7 +47,7 @@ const PORT = parseInt(process.env.PORT || '3000');
 const CODEX_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann';
 const CODEX_AUTHORIZE_URL = 'https://auth.openai.com/oauth/authorize';
 const CODEX_TOKEN_URL = 'https://auth.openai.com/oauth/token';
-const CODEX_REDIRECT_URI = 'http://localhost:1455/auth/callback';
+const CODEX_REDIRECT_URI = `http://localhost:${OAUTH_CALLBACK_PORT}/auth/callback`;
 const CODEX_SCOPE = 'openid profile email offline_access';
 
 interface CodexTokenStore {
@@ -133,58 +137,73 @@ async function ensureValidCodexToken(): Promise<boolean> {
   return true;
 }
 
+function renderOAuthResponse(res: any, status: number, message: string): void {
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.end(`<html><body><h2>${status === 200 ? '✓' : '❌'} OAuth ${status === 200 ? 'Success' : 'Error'}</h2><p>${escapeHtml(message)}</p></body></html>`);
+}
+
+function validateOAuthParams(code: string | null, state: string | null): { valid: boolean; error?: string } {
+  if (!code || typeof code !== 'string' || code.length === 0 || code.length > 2048) {
+    return { valid: false, error: 'Invalid authorization code' };
+  }
+  if (!state || typeof state !== 'string' || state.length === 0 || state.length > 256) {
+    return { valid: false, error: 'Invalid state parameter' };
+  }
+  if (/[<>'"\\]/.test(code) || /[<>'"\\]/.test(state)) {
+    return { valid: false, error: 'Invalid characters in parameters' };
+  }
+  return { valid: true };
+}
+
 function startCodexCallbackServer(expectedState: string): Promise<string | null> {
   return new Promise((resolve) => {
     const server = createServer((req, res) => {
       try {
         const url = new URL(req.url!, 'http://localhost');
         if (url.pathname !== '/auth/callback') {
-          res.statusCode = 404;
-          res.end('Not found');
+          renderOAuthResponse(res, 404, 'Not found');
           return;
         }
 
         const state = url.searchParams.get('state');
-        if (state !== expectedState) {
-          res.statusCode = 400;
-          res.end('State mismatch');
-          return;
-        }
-
         const code = url.searchParams.get('code');
-        if (!code) {
-          res.statusCode = 400;
-          res.end('Missing authorization code');
+
+        const validation = validateOAuthParams(code, state);
+        if (!validation.valid) {
+          renderOAuthResponse(res, 400, validation.error || 'Invalid parameters');
           return;
         }
 
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.end('<html><body><h2>✓ Codex OAuth complete</h2><p>You can close this window.</p></body></html>');
+        if (state !== expectedState) {
+          renderOAuthResponse(res, 400, 'State mismatch - possible CSRF attack');
+          return;
+        }
+
+        renderOAuthResponse(res, 200, 'Codex OAuth complete. You can close this window.');
 
         setTimeout(() => {
           server.close();
-          resolve(code);
+          resolve(code!);
         }, 100);
       } catch {
-        res.statusCode = 500;
-        res.end('Internal error');
+        renderOAuthResponse(res, 500, 'Internal server error');
       }
     });
 
-    server.listen(1455, '127.0.0.1', () => {
-      console.log('✓ OAuth callback server started on port 1455');
+    server.listen(OAUTH_CALLBACK_PORT, '127.0.0.1', () => {
+      console.log(`✓ OAuth callback server started on port ${OAUTH_CALLBACK_PORT}`);
     });
 
     server.on('error', (err: any) => {
-      console.error('Failed to bind port 1455:', err?.code);
+      console.error(`Failed to bind port ${OAUTH_CALLBACK_PORT}:`, err?.code);
       resolve(null);
     });
 
     setTimeout(() => {
       server.close();
       resolve(null);
-    }, 10 * 60 * 1000);
+    }, OAUTH_TIMEOUT_MS);
   });
 }
 
@@ -257,7 +276,7 @@ async function getGeminiCodeToken(): Promise<string> {
 
     // Cache token (Google tokens typically valid for 1 hour)
     geminiCodeAccessToken = token;
-    geminiCodeTokenExpiry = Date.now() + 55 * 60 * 1000; // 55 minutes
+    geminiCodeTokenExpiry = Date.now() + TOKEN_EXPIRY_BUFFER_MS;
 
     return token;
   } catch (error) {

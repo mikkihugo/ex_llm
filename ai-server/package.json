@@ -9,9 +9,11 @@
   "dependencies": {
     "ai": "^5.0.0",
     "ai-sdk-provider-gemini-cli": "latest",
-    "ai-sdk-provider-claude-code": "latest"
+    "ai-sdk-provider-claude-code": "latest",
+    "escape-html": "^1.0.3"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "bun-types": "latest"
   }
 }
