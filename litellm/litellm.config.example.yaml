@@ -1,0 +1,21 @@
+# Sample LiteLLM configuration for GitHub Models and GitHub Copilot
+# Copy to litellm.config.yaml and set your tokens before running `litellm-proxy`
+
+model_list:
+  - model_name: github/gpt-4o-mini
+    litellm_params:
+      model: github/gpt-4o-mini
+      api_base: https://models.inference.ai.azure.com
+      api_key: ${GITHUB_TOKEN}
+
+  - model_name: copilot/gpt-5
+    litellm_params:
+      model: copilot/gpt-5
+      api_base: https://api.githubcopilot.com
+      api_key: ${COPILOT_TOKEN}
+
+router:
+  num_retries: 2
+  timeout: 60
+
+log_level: INFO
