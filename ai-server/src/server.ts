@@ -31,7 +31,7 @@ import { loadCredentialsFromEnv, checkCredentialAvailability, printCredentialSta
 
 // Load credentials from environment variables if available
 console.log('🔐 Loading credentials...');
-const envStats = loadCredentialsFromEnv();
+loadCredentialsFromEnv();
 const allStats = checkCredentialAvailability();
 printCredentialStatus(allStats);
 
@@ -165,7 +165,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
   {
     id: 'gemini-2.5-flash',
     upstreamId: 'gemini-2.5-flash',
-    provider: 'gemini-code',
+    provider: 'gemini-code' as const,
     displayName: 'Gemini Code 2.5 Flash',
     description: 'Google Gemini Code Assist (Flash) via Cloud Code',
     ownedBy: 'google',
@@ -185,7 +185,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
   {
     id: 'claude-3.5-sonnet',
     upstreamId: 'sonnet',
-    provider: 'claude-code-cli',
+    provider: 'claude-code-cli' as const,
     displayName: 'Claude 3.5 Sonnet (SDK)',
     description: 'Anthropic Claude via claude-code cli SDK',
     ownedBy: 'anthropic',
@@ -195,7 +195,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
   {
     id: 'gpt-5-codex',
     upstreamId: 'gpt-5-codex',
-    provider: 'codex',
+    provider: 'codex' as const,
     displayName: 'OpenAI Codex GPT-5',
     description: 'ChatGPT Codex backend via OAuth',
     ownedBy: 'openai',
@@ -205,7 +205,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
   {
     id: 'cursor-gpt-4.1',
     upstreamId: 'gpt-4.1',
-    provider: 'cursor-agent',
+    provider: 'cursor-agent' as const,
     displayName: 'Cursor Agent GPT-4.1',
     description: 'Cursor CLI agent runner (default GPT-4.1 tier)',
     ownedBy: 'cursor',
@@ -215,7 +215,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
   {
     id: 'copilot-claude-sonnet-4.5',
     upstreamId: 'claude-sonnet-4.5',
-    provider: 'copilot',
+    provider: 'copilot' as const,
     displayName: 'GitHub Copilot Claude Sonnet 4.5',
     description: 'GitHub Copilot CLI with Claude backend',
     ownedBy: 'github',
@@ -346,7 +346,7 @@ function mapOpenAIMessageToInternal(message: any): Message {
         if (typeof item === 'string') return item;
         if (typeof item.text === 'string') return item.text;
         if (Array.isArray(item?.text)) {
-          return item.text.map((value) => (typeof value === 'string' ? value : '')).join('\n');
+          return item.text.map((value: any) => (typeof value === 'string' ? value : '')).join('\n');
         }
         return '';
       })
@@ -541,7 +541,8 @@ function validateOAuthParams(code: string | null, state: string | null): { valid
   return { valid: true };
 }
 
-function startCodexCallbackServer(expectedState: string): Promise<string | null> {
+// @ts-ignore - Unused but kept for future use
+function _startCodexCallbackServer(expectedState: string): Promise<string | null> {
   return new Promise((resolve) => {
     const server = createServer((req, res) => {
       try {
@@ -680,7 +681,13 @@ const gemini = createGeminiProvider({
 });
 
 interface ChatRequest {
-  provider: 'gemini-code-cli' | 'gemini-code' | 'claude-code-cli' | 'codex' | 'cursor-agent' | 'copilot';
+  provider:
+    | 'gemini-code-cli'
+    | 'gemini-code'
+    | 'claude-code-cli'
+    | 'codex'
+    | 'cursor-agent'
+    | 'copilot';
   model?: string;
   messages: Message[];
   temperature?: number;
@@ -720,7 +727,6 @@ async function handleGeminiCodeCLI(req: ChatRequest) {
     model: gemini(modelName),
     messages: req.messages,
     temperature: req.temperature ?? 0.7,
-    maxTokens: req.maxTokens,
     maxRetries: 2,
   });
 
@@ -729,7 +735,7 @@ async function handleGeminiCodeCLI(req: ChatRequest) {
     finishReason: result.finishReason,
     usage: normalizeUsage(req.messages, result.text, result.usage),
     model: modelName,
-    provider: 'gemini-code-cli',
+    provider: 'gemini-code-cli' as const,
   };
 }
 
@@ -776,7 +782,7 @@ async function handleGeminiCode(req: ChatRequest) {
       throw new Error(`Gemini Code API error ${response.status}: ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
 
     // Extract text from wrapped response
     const text = data.response?.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
@@ -792,7 +798,7 @@ async function handleGeminiCode(req: ChatRequest) {
         totalTokens: usage?.totalTokenCount,
       }),
       model: modelName,
-      provider: 'gemini-code',
+      provider: 'gemini-code' as const,
     };
   } catch (error: any) {
     throw new Error(`Gemini Code request failed: ${error.message}`);
@@ -807,7 +813,6 @@ async function handleClaudeCodeCLI(req: ChatRequest) {
     model: claudeCode(modelName),
     messages: req.messages,
     temperature: req.temperature ?? 0.7,
-    maxTokens: req.maxTokens,
     maxRetries: 2,
   });
 
@@ -816,7 +821,7 @@ async function handleClaudeCodeCLI(req: ChatRequest) {
     finishReason: result.finishReason,
     usage: normalizeUsage(req.messages, result.text, result.usage),
     model: modelName,
-    provider: 'claude-code-cli',
+    provider: 'claude-code-cli' as const,
   };
 }
 
@@ -853,7 +858,7 @@ async function handleCodex(req: ChatRequest) {
       throw new Error(`Codex API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const text = data.choices?.[0]?.message?.content || JSON.stringify(data);
 
     return {
@@ -861,7 +866,7 @@ async function handleCodex(req: ChatRequest) {
       finishReason: data.choices?.[0]?.finish_reason || 'stop',
       usage: normalizeUsage(req.messages, text, data.usage),
       model,
-      provider: 'codex',
+      provider: 'codex' as const,
     };
   } catch (error: any) {
     throw new Error(`Codex request failed: ${error.message}`);
@@ -870,6 +875,7 @@ async function handleCodex(req: ChatRequest) {
 
 async function handleCursorAgent(req: ChatRequest) {
   const prompt = messagesToPrompt(req.messages);
+  const model = req.model || 'gpt-4.1';
 
   // Use non-interactive mode, but let the CLI select a model unless caller specifies one
   const args = ['-p', '--print', '--output-format', 'text'];
@@ -887,7 +893,7 @@ async function handleCursorAgent(req: ChatRequest) {
     finishReason: 'stop',
     usage: normalizeUsage(req.messages, output),
     model,
-    provider: 'cursor-agent',
+    provider: 'cursor-agent' as const,
   };
 }
 
@@ -905,7 +911,7 @@ async function handleCopilot(req: ChatRequest) {
     finishReason: 'stop',
     usage: normalizeUsage(req.messages, output),
     model,
-    provider: 'copilot',
+    provider: 'copilot' as const,
   };
 }
 
@@ -928,7 +934,50 @@ async function executeChatRequest(request: ChatRequest): Promise<ProviderResult>
   }
 }
 
-const server = Bun.serve({
+
+  const baseUrl = (process.env.VERCEL_AI_GATEWAY_URL ?? 'https://gateway.ai.vercel.com/api/v1').replace(/\/$/, '');
+  const model = req.model || 'openai/gpt-5-mini';
+
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      temperature: req.temperature,
+      max_tokens: req.maxTokens,
+      messages: req.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
+    }),
+  });
+
+  if (!response.ok) {
+    const bodyText = await response.text();
+    throw new Error(`Vercel AI Gateway request failed: HTTP ${response.status} ${response.statusText} ${bodyText}`);
+  }
+
+  const payload: any = await response.json();
+  const text = payload?.choices?.[0]?.message?.content;
+
+  if (typeof text !== 'string') {
+    throw new Error('Vercel AI Gateway response missing assistant content.');
+  }
+
+  return {
+    text,
+    finishReason: payload?.choices?.[0]?.finish_reason ?? 'stop',
+    usage: normalizeUsage(req.messages, text, payload?.usage),
+    model,
+    provider: 'vercel-gateway',
+  };
+}
+
+// @ts-ignore - Server reference not used but Bun.serve starts the server
+const _server = Bun.serve({
   port: PORT,
   async fetch(req) {
     const headers = {
@@ -965,7 +1014,7 @@ const server = Bun.serve({
       }
 
       try {
-        const body = await req.json();
+        const body = await req.json() as any;
 
         if (body?.stream === true) {
           return new Response(JSON.stringify({ error: 'Streaming responses are not yet supported.' }), {
@@ -1103,7 +1152,7 @@ const server = Bun.serve({
     }
 
     try {
-      const body: ChatRequest = await req.json();
+      const body = await req.json() as ChatRequest;
 
       if (!body.provider) {
         return new Response(
@@ -1128,7 +1177,7 @@ const server = Bun.serve({
         case 'codex':
         case 'cursor-agent':
         case 'copilot':
-          provider = body.provider;
+          provider = body.provider as ChatRequest['provider'];
           break;
         default:
           return new Response(
@@ -1138,12 +1187,13 @@ const server = Bun.serve({
       }
 
       const messages = coerceLegacyMessages(body.messages);
+      const bodyAny = body as any;
       const chatRequest: ChatRequest = {
         provider,
         model: typeof body.model === 'string' ? body.model : undefined,
         messages,
         temperature: normalizeTemperature(body.temperature),
-        maxTokens: normalizeMaxTokens(body.maxTokens ?? body.max_tokens),
+        maxTokens: normalizeMaxTokens(bodyAny.maxTokens ?? bodyAny.max_tokens),
       };
 
       const result = await executeChatRequest(chatRequest);
