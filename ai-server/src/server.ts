@@ -199,6 +199,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     displayName: 'OpenAI Codex GPT-5',
     description: 'ChatGPT Codex backend via OAuth',
     ownedBy: 'openai',
+    contextWindow: 128000,
     capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
   },
   {
@@ -208,6 +209,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     displayName: 'Cursor Agent GPT-5',
     description: 'Cursor CLI agent runner',
     ownedBy: 'cursor',
+    contextWindow: 128000,
     capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
   },
   {
@@ -217,6 +219,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     displayName: 'GitHub Copilot Claude Sonnet 4.5',
     description: 'GitHub Copilot CLI with Claude backend',
     ownedBy: 'github',
+    contextWindow: 128000,
     capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
   },
 ];
