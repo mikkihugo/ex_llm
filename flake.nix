@@ -215,14 +215,32 @@ EOF
             mkdir -p "$MIX_HOME" "$HEX_HOME" "$PWD/bin"
             export PATH=$PWD/bin:$PATH
 
-            # Install AI CLIs if not present
-            if [ ! -f "$PWD/bin/gemini" ]; then
-              echo "Installing AI CLIs..."
-              npm install -g @google/gemini-cli 2>/dev/null || true
-              npm install -g @anthropic-ai/claude-code 2>/dev/null || true
-              npm install -g @openai/codex 2>/dev/null || true
-              npm install -g @github/copilot 2>/dev/null || true
-              # Cursor Agent: curl https://cursor.com/install -fsSL | bash
+            if ! command -v claude >/dev/null 2>&1; then
+              claude() {
+                bunx --bun @anthropic-ai/claude-code "$@"
+              }
+              export -f claude
+            fi
+
+            if ! command -v gemini >/dev/null 2>&1; then
+              gemini() {
+                bunx --bun @google/gemini-cli "$@"
+              }
+              export -f gemini
+            fi
+
+            if ! command- v copilot >/dev/null 2>&1; then
+              copilot() {
+                bunx --bun @github/copilot "$@"
+              }
+              export -f copilot
+            fi
+
+            if ! command -v codex >/dev/null 2>&1; then
+              codex() {
+                bunx --bun @openai/codex "$@"
+              }
+              export -f codex
             fi
 
             # Load .env if it exists
