@@ -24,7 +24,7 @@ cd ai-server
 flyctl deploy --config fly-integrated.toml
 
 # 3. Set secrets
-flyctl secrets set --app oneshot \
+flyctl secrets set --app singularity \
   GOOGLE_APPLICATION_CREDENTIALS_JSON="$(cat .env.fly | grep GOOGLE | cut -d= -f2)" \
   CLAUDE_ACCESS_TOKEN="$(cat .env.fly | grep CLAUDE | cut -d= -f2)" \
   CURSOR_AUTH_JSON="$(cat .env.fly | grep CURSOR | cut -d= -f2)" \
@@ -35,7 +35,7 @@ flyctl secrets set --app oneshot \
 
 ```
 ┌─────────────────────────────────────┐
-│  Fly.io App: oneshot                │
+│  Fly.io App: singularity                │
 │                                     │
 │  ┌──────────────┐  ┌──────────────┐│
 │  │   Process    │  │   Process    ││
@@ -58,7 +58,7 @@ HTTPoison.post("http://localhost:3000/chat", ...)
 **Files Used:**
 - `fly-integrated.toml` - Fly configuration
 - `Dockerfile.integrated` - Multi-process Dockerfile
-- `flake.nix` - Package: `oneshot-integrated`
+- `flake.nix` - Package: `singularity-integrated`
 
 ---
 
@@ -79,18 +79,18 @@ cd ai-server
 ./scripts/bundle-credentials.sh
 
 # 2. Deploy AI Server
-./scripts/deploy-fly.sh oneshot-ai-providers
+./scripts/deploy-fly.sh singularity-ai-providers
 
 # 3. Deploy Elixir app separately
 cd ..
-flyctl deploy --app oneshot
+flyctl deploy --app singularity
 ```
 
 ### Architecture
 
 ```
 ┌──────────────────┐      ┌──────────────────┐
-│  App: oneshot    │      │  App: oneshot-   │
+│  App: singularity    │      │  App: singularity-   │
 │                  │      │  ai-providers    │
 │  ┌────────────┐  │      │  ┌────────────┐  │
 │  │  Elixir    │  │ HTTP │  │  Bun       │  │
@@ -104,7 +104,7 @@ flyctl deploy --app oneshot
 **Access from Elixir:**
 ```elixir
 # The AI server is a separate app with its own URL
-HTTPoison.post("https://oneshot-ai-providers.fly.dev/chat", ...)
+HTTPoison.post("https://singularity-ai-providers.fly.dev/chat", ...)
 ```
 
 **Files Used:**
@@ -132,16 +132,16 @@ HTTPoison.post("https://oneshot-ai-providers.fly.dev/chat", ...)
 
 ### Integrated Deployment
 ```
-oneshot/
+singularity/
 ├── fly-integrated.toml    # Multi-process configuration
 ├── Dockerfile.integrated  # Builds both Elixir + AI Server
 ├── Procfile              # Process definitions
-└── flake.nix             # Package: oneshot-integrated
+└── flake.nix             # Package: singularity-integrated
 ```
 
 ### Separate Deployment
 ```
-oneshot/
+singularity/
 ├── fly.toml              # AI Server configuration
 ├── Dockerfile.nix        # AI Server only
 └── ai-server/
@@ -175,26 +175,26 @@ Use **Option 2 (Separate)** only if:
 cd ai-server && ./scripts/bundle-credentials.sh ../.env.fly && cd ..
 
 # 2. Create app (first time only)
-flyctl apps create oneshot
+flyctl apps create singularity
 
 # 3. Create volume (first time only)
-flyctl volumes create oneshot_data --size 1 --region iad --app oneshot
+flyctl volumes create singularity_data --size 1 --region iad --app singularity
 
 # 4. Set secrets
-flyctl secrets set --app oneshot \
+flyctl secrets set --app singularity \
   GOOGLE_APPLICATION_CREDENTIALS_JSON="$(grep GOOGLE .env.fly | cut -d= -f2)" \
   CLAUDE_ACCESS_TOKEN="$(grep CLAUDE .env.fly | cut -d= -f2)" \
   CURSOR_AUTH_JSON="$(grep CURSOR .env.fly | cut -d= -f2)" \
   GH_TOKEN="$(grep GH_TOKEN .env.fly | cut -d= -f2)"
 
 # 5. Deploy
-flyctl deploy --config fly-integrated.toml --app oneshot
+flyctl deploy --config fly-integrated.toml --app singularity
 
 # 6. Check status
-flyctl status --app oneshot
+flyctl status --app singularity
 
 # 7. View logs
-flyctl logs --app oneshot
+flyctl logs --app singularity
 ```
 
 ---
@@ -205,10 +205,10 @@ flyctl logs --app oneshot
 
 ```bash
 # Build with Nix
-nix build .#oneshot-integrated
+nix build .#singularity-integrated
 
 # Run both processes
-./result/bin/start-oneshot
+./result/bin/start-singularity
 
 # Or run individually
 ./result/bin/web         # Elixir on :8080
@@ -233,11 +233,11 @@ cd ai-server && bun run dev
 
 ```elixir
 # config/runtime.exs
-config :oneshot, :ai_server_url, "http://localhost:3000"
+config :singularity, :ai_server_url, "http://localhost:3000"
 
-# lib/oneshot/ai_client.ex
-defmodule Oneshot.AIClient do
-  @base_url Application.compile_env(:oneshot, :ai_server_url)
+# lib/singularity/ai_client.ex
+defmodule Singularity.AIClient do
+  @base_url Application.compile_env(:singularity, :ai_server_url)
 
   def chat(provider, messages, opts \\ []) do
     HTTPoison.post(
@@ -259,8 +259,8 @@ end
 
 ```elixir
 # config/runtime.exs
-config :oneshot, :ai_server_url,
-  System.get_env("AI_SERVER_URL", "https://oneshot-ai-providers.fly.dev")
+config :singularity, :ai_server_url,
+  System.get_env("AI_SERVER_URL", "https://singularity-ai-providers.fly.dev")
 ```
 
 ---

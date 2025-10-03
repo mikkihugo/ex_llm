@@ -17,7 +17,7 @@ Deploy to fly.io using pure Nix - no Docker or Podman required.
 Local Machine                    Fly.io
 ─────────────                    ──────
 
-1. nix build .#oneshot-integrated
+1. nix build .#singularity-integrated
    ↓
 2. Creates /nix/store closure
    ↓
@@ -25,7 +25,7 @@ Local Machine                    Fly.io
    ↓
 4. fly.io builds with Nix  ───────→  Nix environment
    ↓                                  ↓
-5. Runs /app/bin/start-oneshot   ←── Executes binaries
+5. Runs /app/bin/start-singularity   ←── Executes binaries
 ```
 
 ## Prerequisites
@@ -54,22 +54,22 @@ flyctl auth login
 
 ```bash
 # Integrated deployment (Elixir + AI Server)
-./scripts/deploy-fly-nix.sh oneshot integrated
+./scripts/deploy-fly-nix.sh singularity integrated
 
 # Or AI Server only
-./scripts/deploy-fly-nix.sh oneshot-ai-providers ai-server-only
+./scripts/deploy-fly-nix.sh singularity-ai-providers ai-server-only
 ```
 
 ### Option 2: Manual Deployment
 
 ```bash
 # 1. Build locally with Nix
-nix build .#oneshot-integrated
+nix build .#singularity-integrated
 
 # 2. Verify build
 ./result/bin/web          # Test Elixir
 ./result/bin/ai-server    # Test AI Server
-./result/bin/start-oneshot # Test both
+./result/bin/start-singularity # Test both
 
 # 3. Bundle credentials
 cd ai-server
@@ -77,20 +77,20 @@ cd ai-server
 cd ..
 
 # 4. Create app (first time only)
-flyctl apps create oneshot
+flyctl apps create singularity
 
 # 5. Create volume (first time only)
-flyctl volumes create oneshot_data --size 1 --region iad --app oneshot
+flyctl volumes create singularity_data --size 1 --region iad --app singularity
 
 # 6. Set secrets
-flyctl secrets set --app oneshot \
+flyctl secrets set --app singularity \
   GOOGLE_APPLICATION_CREDENTIALS_JSON="$(grep GOOGLE .env.fly | cut -d= -f2)" \
   CLAUDE_ACCESS_TOKEN="$(grep CLAUDE .env.fly | cut -d= -f2)" \
   CURSOR_AUTH_JSON="$(grep CURSOR .env.fly | cut -d= -f2)" \
   GH_TOKEN="$(grep GH_TOKEN .env.fly | cut -d= -f2)"
 
 # 7. Deploy with nixpacks
-flyctl deploy --app oneshot --config fly-integrated.toml --nixpacks
+flyctl deploy --app singularity --config fly-integrated.toml --nixpacks
 ```
 
 ## Files Involved
@@ -98,7 +98,7 @@ flyctl deploy --app oneshot --config fly-integrated.toml --nixpacks
 ### `flake.nix`
 Defines Nix packages:
 - `ai-server` - Standalone AI server
-- `oneshot-integrated` - Both Elixir + AI server
+- `singularity-integrated` - Both Elixir + AI server
 
 ### `nixpacks.toml`
 Configuration for fly.io's nixpacks builder:
@@ -118,12 +118,12 @@ Fly.io configuration:
 
 ```bash
 # Build integrated package
-nix build .#oneshot-integrated
+nix build .#singularity-integrated
 
 # Result structure:
 ./result/
 ├── bin/
-│   ├── start-oneshot   # Runs both processes
+│   ├── start-singularity   # Runs both processes
 │   ├── web             # Elixir only
 │   └── ai-server       # Bun only
 ├── elixir/             # Elixir app files
@@ -136,7 +136,7 @@ When you run `flyctl deploy --nixpacks`:
 
 1. Fly.io detects `flake.nix` and `nixpacks.toml`
 2. Installs Nix in build environment
-3. Runs `nix build .#oneshot-integrated`
+3. Runs `nix build .#singularity-integrated`
 4. Copies result to `/app/`
 5. Sets up processes from `fly-integrated.toml`
 
@@ -184,10 +184,10 @@ HTTPoison.post("http://localhost:3000/chat", ...)
 ```bash
 # Clean and rebuild
 nix flake update
-nix build .#oneshot-integrated --rebuild --show-trace
+nix build .#singularity-integrated --rebuild --show-trace
 
 # Check build logs
-flyctl logs --app oneshot
+flyctl logs --app singularity
 ```
 
 ### Missing Dependencies
@@ -199,7 +199,7 @@ buildInputs = [
 ];
 
 # Then rebuild
-nix build .#oneshot-integrated
+nix build .#singularity-integrated
 ```
 
 ### Bun Install Issues
@@ -223,15 +223,15 @@ buildPhase = ''
 # 1. Make changes to code
 
 # 2. Test locally with Nix
-nix build .#oneshot-integrated
-./result/bin/start-oneshot
+nix build .#singularity-integrated
+./result/bin/start-singularity
 
 # 3. Test locally with dev mode
 mix phx.server                    # Terminal 1
 cd ai-server && bun run dev       # Terminal 2
 
 # 4. Deploy to fly.io
-./scripts/deploy-fly-nix.sh oneshot integrated
+./scripts/deploy-fly-nix.sh singularity integrated
 ```
 
 ## Binary Cache
@@ -272,10 +272,10 @@ jobs:
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Build with Nix
-        run: nix build .#oneshot-integrated
+        run: nix build .#singularity-integrated
 
       - name: Deploy to Fly.io
-        run: flyctl deploy --app oneshot --config fly-integrated.toml --nixpacks
+        run: flyctl deploy --app singularity --config fly-integrated.toml --nixpacks
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 ```

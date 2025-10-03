@@ -21,7 +21,7 @@ fi
 # Check for secret key in environment
 if [ -z "$AGE_SECRET_KEY" ]; then
     echo "❌ AGE_SECRET_KEY not found in environment"
-    echo "   Set it with: flyctl secrets set AGE_SECRET_KEY=<key> --app oneshot"
+    echo "   Set it with: flyctl secrets set AGE_SECRET_KEY=<key> --app singularity"
     exit 1
 fi
 

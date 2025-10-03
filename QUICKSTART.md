@@ -42,7 +42,7 @@ gh auth login
 cd ai-server
 
 # Generate key and store in fly.io
-./scripts/setup-encryption.sh oneshot
+./scripts/setup-encryption.sh singularity
 
 # Encrypt credentials
 ./scripts/encrypt-credentials.sh
@@ -68,10 +68,10 @@ git push
 cd ..  # Back to project root
 
 # Build with Nix
-nix build .#oneshot-integrated
+nix build .#singularity-integrated
 
 # Deploy
-flyctl deploy --app oneshot --config fly-integrated.toml --nixpacks
+flyctl deploy --app singularity --config fly-integrated.toml --nixpacks
 ```
 
 ## That's It!
@@ -86,10 +86,10 @@ Your server is now running with:
 
 ```bash
 # Check status
-flyctl status --app oneshot
+flyctl status --app singularity
 
 # View logs
-flyctl logs --app oneshot
+flyctl logs --app singularity
 
 # Test from Elixir app (internally accessible)
 # The AI server is at http://localhost:3000
@@ -124,8 +124,8 @@ cd ai-server
 bun run dev
 
 # Or run both with Nix
-nix build .#oneshot-integrated
-./result/bin/start-oneshot
+nix build .#singularity-integrated
+./result/bin/start-singularity
 ```
 
 ## What Just Happened?
@@ -178,22 +178,22 @@ Fly.io:
 
 ```bash
 # Deploy
-flyctl deploy --app oneshot --config fly-integrated.toml --nixpacks
+flyctl deploy --app singularity --config fly-integrated.toml --nixpacks
 
 # View logs
-flyctl logs --app oneshot
+flyctl logs --app singularity
 
 # SSH into instance
-flyctl ssh console --app oneshot
+flyctl ssh console --app singularity
 
 # Update secrets
-flyctl secrets set AGE_SECRET_KEY="$(cat .age-key.txt)" --app oneshot
+flyctl secrets set AGE_SECRET_KEY="$(cat .age-key.txt)" --app singularity
 
 # Scale
-flyctl scale count 2 --app oneshot
+flyctl scale count 2 --app singularity
 
 # Check secrets
-flyctl secrets list --app oneshot
+flyctl secrets list --app singularity
 ```
 
 ## Troubleshooting
@@ -202,10 +202,10 @@ flyctl secrets list --app oneshot
 
 ```bash
 # Check build locally
-nix build .#oneshot-integrated --show-trace
+nix build .#singularity-integrated --show-trace
 
 # Check fly.io logs
-flyctl logs --app oneshot
+flyctl logs --app singularity
 ```
 
 ### Credentials not working
@@ -216,10 +216,10 @@ cd ai-server
 ./scripts/encrypt-credentials.sh
 
 # Verify AGE_SECRET_KEY is set
-flyctl secrets list --app oneshot
+flyctl secrets list --app singularity
 
 # Redeploy
-flyctl deploy --app oneshot --config fly-integrated.toml --nixpacks
+flyctl deploy --app singularity --config fly-integrated.toml --nixpacks
 ```
 
 ### Need to rotate key
@@ -231,7 +231,7 @@ cd ai-server
 rm .age-key.txt
 
 # Generate new key
-./scripts/setup-encryption.sh oneshot
+./scripts/setup-encryption.sh singularity
 
 # Update GitHub secret with new key
 
@@ -255,5 +255,5 @@ git push
 
 Issues? Check:
 1. [Troubleshooting](#troubleshooting) above
-2. `flyctl logs --app oneshot`
+2. `flyctl logs --app singularity`
 3. [Full docs](CREDENTIALS_ENCRYPTION.md)

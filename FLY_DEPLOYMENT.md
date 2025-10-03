@@ -9,10 +9,10 @@ Deploy the AI Providers HTTP Server to fly.io using Nix.
 ./scripts/bundle-credentials.sh
 
 # 2. Deploy to fly.io
-./scripts/deploy-fly.sh oneshot-ai-providers
+./scripts/deploy-fly.sh singularity-ai-providers
 
 # 3. Verify
-curl https://oneshot-ai-providers.fly.dev/health
+curl https://singularity-ai-providers.fly.dev/health
 ```
 
 ## Prerequisites
@@ -65,10 +65,10 @@ This creates `.env.fly` with all credentials as base64-encoded or token strings.
 
 ```bash
 # Deploy with automatic app creation
-./scripts/deploy-fly.sh oneshot-ai-providers
+./scripts/deploy-fly.sh singularity-ai-providers
 
 # Or manually:
-flyctl apps create oneshot-ai-providers
+flyctl apps create singularity-ai-providers
 flyctl volumes create ai_providers_data --size 1 --region iad
 flyctl deploy --dockerfile Dockerfile.nix
 ```
@@ -81,45 +81,45 @@ Secrets are automatically set by the deploy script. To set manually:
 # Set from bundled credentials
 flyctl secrets set \
   GOOGLE_APPLICATION_CREDENTIALS_JSON="$(grep GOOGLE_APPLICATION_CREDENTIALS_JSON .env.fly | cut -d= -f2)" \
-  -a oneshot-ai-providers
+  -a singularity-ai-providers
 
 flyctl secrets set \
   CLAUDE_ACCESS_TOKEN="$(grep CLAUDE_ACCESS_TOKEN .env.fly | cut -d= -f2)" \
-  -a oneshot-ai-providers
+  -a singularity-ai-providers
 
 flyctl secrets set \
   CURSOR_AUTH_JSON="$(grep CURSOR_AUTH_JSON .env.fly | cut -d= -f2)" \
-  -a oneshot-ai-providers
+  -a singularity-ai-providers
 
 flyctl secrets set \
   GH_TOKEN="$(grep GH_TOKEN .env.fly | cut -d= -f2)" \
-  -a oneshot-ai-providers
+  -a singularity-ai-providers
 ```
 
 Or set interactively:
 
 ```bash
 # View current secrets
-flyctl secrets list -a oneshot-ai-providers
+flyctl secrets list -a singularity-ai-providers
 
 # Set individual secrets
-flyctl secrets set CLAUDE_ACCESS_TOKEN=sk-ant-oat01-xxxxx -a oneshot-ai-providers
+flyctl secrets set CLAUDE_ACCESS_TOKEN=sk-ant-oat01-xxxxx -a singularity-ai-providers
 ```
 
 ### Step 4: Verify Deployment
 
 ```bash
 # Check status
-flyctl status -a oneshot-ai-providers
+flyctl status -a singularity-ai-providers
 
 # View logs
-flyctl logs -a oneshot-ai-providers
+flyctl logs -a singularity-ai-providers
 
 # Test health endpoint
-curl https://oneshot-ai-providers.fly.dev/health
+curl https://singularity-ai-providers.fly.dev/health
 
 # Test chat endpoint
-curl -X POST https://oneshot-ai-providers.fly.dev/chat \
+curl -X POST https://singularity-ai-providers.fly.dev/chat \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "gemini-code-cli",
@@ -134,7 +134,7 @@ curl -X POST https://oneshot-ai-providers.fly.dev/chat \
 The `fly.toml` file configures the deployment:
 
 ```toml
-app = "oneshot-ai-providers"
+app = "singularity-ai-providers"
 primary_region = "iad"
 
 [build]
@@ -183,13 +183,13 @@ By default, fly.io will:
 
 ```bash
 # Scale to multiple instances
-flyctl scale count 2 -a oneshot-ai-providers
+flyctl scale count 2 -a singularity-ai-providers
 
 # Scale VM resources
-flyctl scale vm shared-cpu-2x --memory 2048 -a oneshot-ai-providers
+flyctl scale vm shared-cpu-2x --memory 2048 -a singularity-ai-providers
 
 # Set min/max instances
-flyctl scale count 1:3 -a oneshot-ai-providers
+flyctl scale count 1:3 -a singularity-ai-providers
 ```
 
 ## Regions
@@ -198,14 +198,14 @@ flyctl scale count 1:3 -a oneshot-ai-providers
 
 ```bash
 # Add another region
-flyctl regions add lhr -a oneshot-ai-providers  # London
-flyctl regions add syd -a oneshot-ai-providers  # Sydney
+flyctl regions add lhr -a singularity-ai-providers  # London
+flyctl regions add syd -a singularity-ai-providers  # Sydney
 
 # List regions
-flyctl regions list -a oneshot-ai-providers
+flyctl regions list -a singularity-ai-providers
 
 # Backup to specific region
-flyctl scale count 2 --region iad -a oneshot-ai-providers
+flyctl scale count 2 --region iad -a singularity-ai-providers
 ```
 
 ## Monitoring
@@ -214,23 +214,23 @@ flyctl scale count 2 --region iad -a oneshot-ai-providers
 
 ```bash
 # Tail logs
-flyctl logs -a oneshot-ai-providers
+flyctl logs -a singularity-ai-providers
 
 # Filter by instance
-flyctl logs -a oneshot-ai-providers --instance <instance-id>
+flyctl logs -a singularity-ai-providers --instance <instance-id>
 ```
 
 ### Metrics
 
 ```bash
 # View metrics dashboard
-flyctl dashboard -a oneshot-ai-providers
+flyctl dashboard -a singularity-ai-providers
 
 # SSH into instance
-flyctl ssh console -a oneshot-ai-providers
+flyctl ssh console -a singularity-ai-providers
 
 # Run commands
-flyctl ssh console -a oneshot-ai-providers -C "curl localhost:8080/health"
+flyctl ssh console -a singularity-ai-providers -C "curl localhost:8080/health"
 ```
 
 ### Health Checks
@@ -252,10 +252,10 @@ Health checks are configured in `fly.toml`:
 
 ```bash
 # List secrets (values hidden)
-flyctl secrets list -a oneshot-ai-providers
+flyctl secrets list -a singularity-ai-providers
 
 # Unset a secret
-flyctl secrets unset CLAUDE_ACCESS_TOKEN -a oneshot-ai-providers
+flyctl secrets unset CLAUDE_ACCESS_TOKEN -a singularity-ai-providers
 ```
 
 ### View Credential Status
@@ -263,7 +263,7 @@ flyctl secrets unset CLAUDE_ACCESS_TOKEN -a oneshot-ai-providers
 SSH into the instance and check:
 
 ```bash
-flyctl ssh console -a oneshot-ai-providers
+flyctl ssh console -a singularity-ai-providers
 
 # Inside the instance
 curl localhost:8080/health
@@ -278,10 +278,10 @@ ls -la ~/.config/cursor/
 
 ```bash
 # Force rebuild
-flyctl deploy --dockerfile Dockerfile.nix --no-cache -a oneshot-ai-providers
+flyctl deploy --dockerfile Dockerfile.nix --no-cache -a singularity-ai-providers
 
 # Restart all instances
-flyctl apps restart -a oneshot-ai-providers
+flyctl apps restart -a singularity-ai-providers
 ```
 
 ### Debug Build Issues
@@ -312,7 +312,7 @@ For this app:
 
 ```bash
 # Use smallest VM
-flyctl scale vm shared-cpu-1x --memory 256 -a oneshot-ai-providers
+flyctl scale vm shared-cpu-1x --memory 256 -a singularity-ai-providers
 
 # Enable auto-stop (in fly.toml)
 auto_stop_machines = true
@@ -359,7 +359,7 @@ Set secrets in GitHub:
 ```elixir
 # config/runtime.exs
 config :my_app, :ai_server,
-  base_url: System.get_env("AI_SERVER_URL", "https://oneshot-ai-providers.fly.dev")
+  base_url: System.get_env("AI_SERVER_URL", "https://singularity-ai-providers.fly.dev")
 
 # lib/my_app/ai_provider.ex
 defmodule MyApp.AIProvider do
@@ -385,16 +385,16 @@ end
 
 ```bash
 # View app info
-flyctl info -a oneshot-ai-providers
+flyctl info -a singularity-ai-providers
 
 # View IP addresses
-flyctl ips list -a oneshot-ai-providers
+flyctl ips list -a singularity-ai-providers
 
 # View certificates
-flyctl certs list -a oneshot-ai-providers
+flyctl certs list -a singularity-ai-providers
 
 # Destroy app (careful!)
-flyctl apps destroy oneshot-ai-providers
+flyctl apps destroy singularity-ai-providers
 
 # List all apps
 flyctl apps list
@@ -431,7 +431,7 @@ Use fly.io Organizations for team access:
 flyctl orgs create my-org
 
 # Transfer app
-flyctl apps move oneshot-ai-providers --org my-org
+flyctl apps move singularity-ai-providers --org my-org
 
 # Invite member
 flyctl orgs invite my-org user@example.com

@@ -224,6 +224,14 @@ EOF
               # Cursor Agent: curl https://cursor.com/install -fsSL | bash
             fi
 
+            # Load .env if it exists
+            if [ -f .env ]; then
+              echo "📝 Loading .env..."
+              set -a
+              source .env
+              set +a
+            fi
+
             if [ -n "${PS1:-}" ]; then
               echo "Loaded seed-agent development shell"
               echo "AI CLIs: gemini, claude, codex, copilot, cursor-agent"

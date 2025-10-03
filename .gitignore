@@ -1,13 +1,26 @@
 /.mix/
 /.hex/
 
+# Dependencies
+node_modules/
+
+# Local tooling & build outputs
+.direnv/
+/result
+/singularity_data/
+/ai_providers_data/
+
 # AI Provider Credentials - NEVER COMMIT
+.env
 .env.ai-providers
 .env.local
 .env.fly
 *.credentials.json
 auth.json
 application_default_credentials.json
+.envrc.local
+.envrc.local.example
+.envrc.secrets
 
 # Encryption keys - NEVER COMMIT
 .age-key.txt

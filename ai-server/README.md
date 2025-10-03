@@ -51,7 +51,7 @@ bun run dev
 ./ai-server/scripts/bundle-credentials.sh
 
 # Deploy
-./ai-server/scripts/deploy-fly.sh oneshot-ai-providers
+./ai-server/scripts/deploy-fly.sh singularity-ai-providers
 ```
 
 ## Authentication Setup

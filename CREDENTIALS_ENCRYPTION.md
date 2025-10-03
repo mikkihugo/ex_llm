@@ -71,7 +71,7 @@ Safe way to store and distribute AI provider credentials using encryption.
 
 ```bash
 cd ai-server
-./scripts/setup-encryption.sh oneshot
+./scripts/setup-encryption.sh singularity
 ```
 
 This will:
@@ -142,7 +142,7 @@ git push
 # Generate new key
 cd ai-server
 rm .age-key.txt
-./scripts/setup-encryption.sh oneshot
+./scripts/setup-encryption.sh singularity
 
 # Update GitHub secret with new key
 # (copy from setup script output)
@@ -259,12 +259,12 @@ apt install age
 
 ```bash
 # Check if secret is set
-flyctl secrets list --app oneshot
+flyctl secrets list --app singularity
 
 # Should show: AGE_SECRET_KEY
 
 # If missing, set it:
-flyctl secrets set AGE_SECRET_KEY="$(cat .age-key.txt)" --app oneshot
+flyctl secrets set AGE_SECRET_KEY="$(cat .age-key.txt)" --app singularity
 ```
 
 ### Lost .age-key.txt
@@ -273,7 +273,7 @@ If you lose the key but have it in fly.io:
 
 ```bash
 # Get from fly.io (requires deploy to see it)
-flyctl ssh console --app oneshot
+flyctl ssh console --app singularity
 echo $AGE_SECRET_KEY > /tmp/key.txt
 age-keygen -y /tmp/key.txt  # Get public key
 

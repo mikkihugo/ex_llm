@@ -23,11 +23,11 @@ jobs:
 
       - name: Build with Nix
         run: |
-          nix build .#oneshot-integrated --show-trace
+          nix build .#singularity-integrated --show-trace
 
       - name: Deploy to Fly.io
         run: |
-          flyctl deploy --app oneshot --config fly-integrated.toml --nixpacks
+          flyctl deploy --app singularity --config fly-integrated.toml --nixpacks
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           # AGE_SECRET_KEY is already in fly.io secrets, no need to pass here

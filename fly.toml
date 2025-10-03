@@ -1,6 +1,6 @@
 # fly.toml - AI Providers HTTP Server deployment configuration
 
-app = "oneshot-ai-providers"
+app = "singularity-ai-providers"
 primary_region = "arn"
 
 [build]

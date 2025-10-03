@@ -12,7 +12,11 @@ setup:
 	cd seed_agent && MIX_ENV=dev mix deps.get
 	cd seed_agent && MIX_ENV=dev mix deps.compile
 	cd seed_agent && mix gleam.deps.get
-	bun install --frozen-lockfile
+	if [ -f bun.lock ] || [ -f bun.lockb ]; then \
+		bun install --frozen-lockfile; \
+	else \
+		bun install; \
+	fi
 
 fmt:
 	mix format

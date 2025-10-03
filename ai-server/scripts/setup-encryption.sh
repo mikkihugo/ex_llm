@@ -2,7 +2,7 @@
 # One-time setup: Generate encryption key and store in fly.io
 set -e
 
-APP_NAME="${1:-oneshot}"
+APP_NAME="${1:-singularity}"
 
 echo "🔐 Setting up credential encryption for fly.io..."
 echo ""

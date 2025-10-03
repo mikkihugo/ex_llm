@@ -2,7 +2,7 @@
 # Deploy AI Server to fly.io with Nix
 set -e
 
-APP_NAME="${1:-oneshot-ai-providers}"
+APP_NAME="${1:-singularity-ai-providers}"
 
 echo "🚀 Deploying AI Server to fly.io..."
 echo "App: $APP_NAME"
