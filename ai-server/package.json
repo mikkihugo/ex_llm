@@ -13,6 +13,7 @@
     "escape-html": "^1.0.3"
   },
   "devDependencies": {
+    "@types/escape-html": "^1.0.4",
     "@types/node": "^22.0.0",
     "bun-types": "latest"
   }

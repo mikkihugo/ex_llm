@@ -9,6 +9,7 @@ node_modules/
 /result
 /singularity_data/
 /ai_providers_data/
+.singularity/
 
 # AI Provider Credentials - NEVER COMMIT
 .env

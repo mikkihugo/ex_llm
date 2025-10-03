@@ -35,8 +35,8 @@ const envStats = loadCredentialsFromEnv();
 const allStats = checkCredentialAvailability();
 printCredentialStatus(allStats);
 
-const PORT = parseInt(process.env.PORT || '3000');
-const OAUTH_CALLBACK_PORT = parseInt(process.env.OAUTH_CALLBACK_PORT || '1455');
+const PORT = parsePort(process.env.PORT, 3000, 'PORT');
+const OAUTH_CALLBACK_PORT = parsePort(process.env.OAUTH_CALLBACK_PORT, 1455, 'OAUTH_CALLBACK_PORT');
 const OAUTH_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const TOKEN_EXPIRY_BUFFER_MS = 55 * 60 * 1000; // 55 minutes
 
@@ -49,6 +49,21 @@ const CODEX_AUTHORIZE_URL = 'https://auth.openai.com/oauth/authorize';
 const CODEX_TOKEN_URL = 'https://auth.openai.com/oauth/token';
 const CODEX_REDIRECT_URI = `http://localhost:${OAUTH_CALLBACK_PORT}/auth/callback`;
 const CODEX_SCOPE = 'openid profile email offline_access';
+
+function parsePort(value: string | undefined, fallback: number, label: string): number {
+  if (!value || value.trim().length === 0) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
+    console.warn(`Invalid ${label}="${value}"; falling back to ${fallback}`);
+    return fallback;
+  }
+
+  return parsed;
+}
 
 interface CodexTokenStore {
   accessToken?: string;

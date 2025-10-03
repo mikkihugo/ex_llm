@@ -130,6 +130,7 @@ defmodule SeedAgentWeb.Router do
   defp content_to_string(_), do: ""
 
   defp format_openai_response(model, text) do
+    token_count = rough_token_estimate(text)
     %{
       id: "chatcmpl-" <> Integer.to_string(:erlang.unique_integer([:positive])),
       object: "chat.completion",
@@ -143,12 +144,23 @@ defmodule SeedAgentWeb.Router do
         }
       ],
       usage: %{
-        # Use byte_size divided by 4 as rough token estimate (1 token ~= 4 bytes for English)
-        # For accurate counting, use a proper tokenizer
-        prompt_tokens: div(byte_size(text), 4),
-        completion_tokens: div(byte_size(text), 4),
-        total_tokens: div(byte_size(text), 2)
+        # Use a rough token estimate (~4 bytes per token). For accurate
+        # accounting, replace with a real tokenizer for the deployed model.
+        prompt_tokens: token_count,
+        completion_tokens: token_count,
+        total_tokens: token_count * 2
       }
     }
   end
+
+  defp rough_token_estimate(text) when is_binary(text) do
+    bytes = byte_size(text)
+
+    cond do
+      bytes == 0 -> 0
+      true -> div(bytes + 3, 4)
+    end
+  end
+
+  defp rough_token_estimate(_), do: 0
 end
