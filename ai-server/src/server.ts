@@ -72,6 +72,17 @@ interface CodexTokenStore {
   accountId?: string;
 }
 
+interface UsageSummary {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+interface Message {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
 interface PKCEPair {
   verifier: string;
   challenge: string;
@@ -84,6 +95,362 @@ interface OAuthState {
 
 const codexTokenStore: CodexTokenStore = {};
 let currentCodexOAuthState: OAuthState | null = null;
+
+function toNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function estimateTokensFromText(text?: string | null): number {
+  if (!text) return 0;
+  const bytes = Buffer.byteLength(text, 'utf8');
+  if (bytes === 0) return 0;
+  return Math.max(1, Math.ceil(bytes / 4));
+}
+
+function estimateTokensFromMessages(messages: Message[]): number {
+  return messages.reduce((sum, message) => sum + estimateTokensFromText(message.content), 0);
+}
+
+function normalizeUsage(
+  messages: Message[],
+  generatedText?: string,
+  usage?: any,
+): UsageSummary {
+  const promptFromUsage = toNumber(usage?.promptTokens ?? usage?.prompt_tokens ?? usage?.input_tokens);
+  const completionFromUsage = toNumber(usage?.completionTokens ?? usage?.completion_tokens ?? usage?.output_tokens);
+  let totalFromUsage = toNumber(usage?.totalTokens ?? usage?.total_tokens ?? usage?.total);
+
+  if (typeof promptFromUsage === 'number' && typeof completionFromUsage === 'number') {
+    if (typeof totalFromUsage !== 'number') {
+      totalFromUsage = promptFromUsage + completionFromUsage;
+    }
+
+    if (typeof totalFromUsage === 'number') {
+      return {
+        promptTokens: promptFromUsage,
+        completionTokens: completionFromUsage,
+        totalTokens: totalFromUsage,
+      };
+    }
+  }
+
+  const estimatedPrompt = estimateTokensFromMessages(messages);
+  const estimatedCompletion = estimateTokensFromText(generatedText);
+  const estimatedTotal = estimatedPrompt + estimatedCompletion;
+
+  return {
+    promptTokens: estimatedPrompt,
+    completionTokens: estimatedCompletion,
+    totalTokens: estimatedTotal,
+  };
+}
+
+interface ModelCatalogEntry {
+  id: string;
+  provider: ChatRequest['provider'];
+  displayName?: string;
+  description?: string;
+  upstreamId?: string;
+  ownedBy?: string;
+  contextWindow?: number;
+  capabilities?: {
+    completion?: boolean;
+    streaming?: boolean;
+    reasoning?: boolean;
+    vision?: boolean;
+  };
+}
+
+const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
+  {
+    id: 'gemini-2.5-flash',
+    upstreamId: 'gemini-2.5-flash',
+    provider: 'gemini-code',
+    displayName: 'Gemini Code 2.5 Flash',
+    description: 'Google Gemini Code Assist (Flash) via Cloud Code',
+    ownedBy: 'google',
+    contextWindow: 8388608,
+    capabilities: { completion: true, streaming: false, reasoning: false, vision: false },
+  },
+  {
+    id: 'gemini-2.5-pro',
+    upstreamId: 'gemini-2.5-pro',
+    provider: 'gemini-code-cli',
+    displayName: 'Gemini Code 2.5 Pro (SDK)',
+    description: 'Gemini Code Assist via gemini-cli provider',
+    ownedBy: 'google',
+    contextWindow: 2097152,
+    capabilities: { completion: true, streaming: false, reasoning: false, vision: false },
+  },
+  {
+    id: 'claude-3.5-sonnet',
+    upstreamId: 'sonnet',
+    provider: 'claude-code-cli',
+    displayName: 'Claude 3.5 Sonnet (SDK)',
+    description: 'Anthropic Claude via claude-code cli SDK',
+    ownedBy: 'anthropic',
+    contextWindow: 200000,
+    capabilities: { completion: true, streaming: true, reasoning: true, vision: true },
+  },
+  {
+    id: 'gpt-5-codex',
+    upstreamId: 'gpt-5-codex',
+    provider: 'codex',
+    displayName: 'OpenAI Codex GPT-5',
+    description: 'ChatGPT Codex backend via OAuth',
+    ownedBy: 'openai',
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+  },
+  {
+    id: 'cursor-gpt-5',
+    upstreamId: 'gpt-5',
+    provider: 'cursor-agent',
+    displayName: 'Cursor Agent GPT-5',
+    description: 'Cursor CLI agent runner',
+    ownedBy: 'cursor',
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+  },
+  {
+    id: 'copilot-claude-sonnet-4.5',
+    upstreamId: 'claude-sonnet-4.5',
+    provider: 'copilot',
+    displayName: 'GitHub Copilot Claude Sonnet 4.5',
+    description: 'GitHub Copilot CLI with Claude backend',
+    ownedBy: 'github',
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+  },
+];
+
+let modelCatalogCache: ModelCatalogEntry[] | null = null;
+let modelIndexCache: Map<string, ModelCatalogEntry> | null = null;
+let catalogLoadingPromise: Promise<void> | null = null;
+
+async function readJsonFile(path: string): Promise<any> {
+  try {
+    const file = Bun.file(path);
+    if (!(await file.exists())) {
+      return undefined;
+    }
+    const text = await file.text();
+    return JSON.parse(text);
+  } catch (error) {
+    console.warn(`Failed to read model registry file at ${path}:`, error);
+    return undefined;
+  }
+}
+
+function mergeCatalog(base: ModelCatalogEntry[], additions: any): ModelCatalogEntry[] {
+  if (!additions) return base;
+  const list = Array.isArray(additions) ? additions : additions?.data;
+  if (!Array.isArray(list)) return base;
+
+  const merged = [...base];
+  for (const entry of list) {
+    if (!entry || typeof entry !== 'object') continue;
+    const id = typeof entry.id === 'string' ? entry.id : undefined;
+    const provider = typeof entry.provider === 'string' ? entry.provider : undefined;
+    if (!id || !provider) continue;
+
+    const normalized: ModelCatalogEntry = {
+      ...entry,
+      id,
+      provider: provider as ChatRequest['provider'],
+    };
+
+    const existingIndex = merged.findIndex((item) => item.id === id);
+    if (existingIndex >= 0) {
+      merged[existingIndex] = { ...merged[existingIndex], ...normalized };
+    } else {
+      merged.push(normalized);
+    }
+  }
+
+  return merged;
+}
+
+async function ensureModelCatalogLoaded(): Promise<void> {
+  if (modelCatalogCache && modelIndexCache) return;
+  if (catalogLoadingPromise) {
+    await catalogLoadingPromise;
+    return;
+  }
+
+  catalogLoadingPromise = (async () => {
+    let catalog: ModelCatalogEntry[] = [...DEFAULT_MODEL_CATALOG];
+
+    const envCatalog = process.env.SINGULARITY_MODEL_REGISTRY;
+    if (envCatalog) {
+      try {
+        catalog = mergeCatalog(catalog, JSON.parse(envCatalog));
+      } catch (error) {
+        console.warn('Failed to parse SINGULARITY_MODEL_REGISTRY:', error);
+      }
+    }
+
+    const registryPath = process.env.SINGULARITY_MODEL_REGISTRY_PATH;
+    if (registryPath) {
+      const fileCatalog = await readJsonFile(registryPath);
+      catalog = mergeCatalog(catalog, fileCatalog);
+    } else {
+      // default optional file in repo
+      const defaultPath = 'models.catalog.json';
+      const fileCatalog = await readJsonFile(defaultPath);
+      catalog = mergeCatalog(catalog, fileCatalog);
+    }
+
+    modelCatalogCache = catalog;
+    modelIndexCache = new Map(catalog.map((entry) => [entry.id, entry]));
+    catalogLoadingPromise = null;
+  })();
+
+  await catalogLoadingPromise;
+}
+
+async function listModelCatalog(): Promise<ModelCatalogEntry[]> {
+  await ensureModelCatalogLoaded();
+  return modelCatalogCache ?? [];
+}
+
+async function resolveModel(modelId: string): Promise<ModelCatalogEntry> {
+  await ensureModelCatalogLoaded();
+  const entry = modelIndexCache?.get(modelId);
+  if (!entry) {
+    throw new Error(`Unknown model: ${modelId}`);
+  }
+  return entry;
+}
+
+interface ProviderResult {
+  text: string;
+  finishReason: string;
+  usage: UsageSummary;
+  model: string;
+  provider: ChatRequest['provider'];
+}
+
+function mapOpenAIMessageToInternal(message: any): Message {
+  const role = typeof message?.role === 'string' ? message.role : 'user';
+  const content = message?.content;
+
+  if (typeof content === 'string') {
+    return { role, content };
+  }
+
+  if (Array.isArray(content)) {
+    const combined = content
+      .map((item) => {
+        if (!item) return '';
+        if (typeof item === 'string') return item;
+        if (typeof item.text === 'string') return item.text;
+        if (Array.isArray(item?.text)) {
+          return item.text.map((value) => (typeof value === 'string' ? value : '')).join('\n');
+        }
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n');
+    return { role, content: combined };
+  }
+
+  if (typeof content?.text === 'string') {
+    return { role, content: content.text };
+  }
+
+  return { role, content: '' };
+}
+
+function coerceLegacyMessages(rawMessages: any[]): Message[] {
+  if (!Array.isArray(rawMessages)) return [];
+  return rawMessages.map((message) => mapOpenAIMessageToInternal(message));
+}
+
+function normalizeTemperature(value: any): number | undefined {
+  if (typeof value !== 'number') return undefined;
+  if (!Number.isFinite(value)) return undefined;
+  return Math.max(0, Math.min(2, value));
+}
+
+function normalizeMaxTokens(value: any): number | undefined {
+  if (typeof value !== 'number') return undefined;
+  if (!Number.isInteger(value)) return undefined;
+  return Math.max(1, value);
+}
+
+async function convertOpenAIChatCompletionRequest(body: any): Promise<{ request: ChatRequest; model: ModelCatalogEntry }> {
+  if (!body || typeof body !== 'object') {
+    throw new Error('Invalid request payload');
+  }
+
+  if (!Array.isArray(body.messages) || body.messages.length === 0) {
+    throw new Error('messages array is required');
+  }
+
+  if (typeof body.model !== 'string' || body.model.length === 0) {
+    throw new Error('model is required');
+  }
+
+  const modelEntry = await resolveModel(body.model);
+  const messages = body.messages.map(mapOpenAIMessageToInternal);
+
+  const request: ChatRequest = {
+    provider: modelEntry.provider,
+    model: modelEntry.upstreamId || modelEntry.id,
+    messages,
+    temperature: normalizeTemperature(body.temperature),
+    maxTokens: normalizeMaxTokens(body.max_tokens ?? body.max_completion_tokens ?? body.max_completion_tokens),
+  };
+
+  return { request, model: modelEntry };
+}
+
+function toOpenAIModel(entry: ModelCatalogEntry) {
+  return {
+    object: 'model',
+    id: entry.id,
+    created: Math.floor(Date.now() / 1000),
+    owned_by: entry.ownedBy ?? entry.provider,
+    context_window: entry.contextWindow,
+    // Preserve additional metadata for clients that can use it
+    capabilities: entry.capabilities,
+    provider: entry.provider,
+    upstream_id: entry.upstreamId,
+    description: entry.description,
+    name: entry.displayName,
+  };
+}
+
+function buildOpenAIChatResponse(
+  result: ProviderResult,
+  modelEntry: ModelCatalogEntry,
+  requestBody: any,
+) {
+  const created = Math.floor(Date.now() / 1000);
+  const usage = result.usage;
+
+  return {
+    id: `chatcmpl-${crypto.randomUUID()}`,
+    object: 'chat.completion',
+    created,
+    model: modelEntry.id,
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: 'assistant',
+          content: result.text,
+        },
+        finish_reason: result.finishReason ?? 'stop',
+        logprobs: null,
+      },
+    ],
+    usage: {
+      prompt_tokens: usage.promptTokens,
+      completion_tokens: usage.completionTokens,
+      total_tokens: usage.totalTokens,
+    },
+    system_fingerprint: requestBody?.system_fingerprint ?? null,
+  };
+}
 
 function generatePKCE(): PKCEPair {
   const verifier = randomBytes(32).toString('base64url');
@@ -309,11 +676,6 @@ const gemini = createGeminiProvider({
   authType: 'google-auth-library' as any,
 });
 
-interface Message {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
 interface ChatRequest {
   provider: 'gemini-code-cli' | 'gemini-code' | 'claude-code-cli' | 'codex' | 'cursor-agent' | 'copilot';
   model?: string;
@@ -362,7 +724,7 @@ async function handleGeminiCodeCLI(req: ChatRequest) {
   return {
     text: result.text,
     finishReason: result.finishReason,
-    usage: result.usage,
+    usage: normalizeUsage(req.messages, result.text, result.usage),
     model: modelName,
     provider: 'gemini-code-cli',
   };
@@ -421,11 +783,11 @@ async function handleGeminiCode(req: ChatRequest) {
     return {
       text,
       finishReason: finishReason.toLowerCase(),
-      usage: usage ? {
-        promptTokens: usage.promptTokenCount,
-        completionTokens: usage.candidatesTokenCount,
-        totalTokens: usage.totalTokenCount,
-      } : undefined,
+      usage: normalizeUsage(req.messages, text, {
+        promptTokens: usage?.promptTokenCount,
+        completionTokens: usage?.candidatesTokenCount,
+        totalTokens: usage?.totalTokenCount,
+      }),
       model: modelName,
       provider: 'gemini-code',
     };
@@ -449,7 +811,7 @@ async function handleClaudeCodeCLI(req: ChatRequest) {
   return {
     text: result.text,
     finishReason: result.finishReason,
-    usage: result.usage,
+    usage: normalizeUsage(req.messages, result.text, result.usage),
     model: modelName,
     provider: 'claude-code-cli',
   };
@@ -494,6 +856,7 @@ async function handleCodex(req: ChatRequest) {
     return {
       text,
       finishReason: data.choices?.[0]?.finish_reason || 'stop',
+      usage: normalizeUsage(req.messages, text, data.usage),
       model,
       provider: 'codex',
     };
@@ -514,6 +877,7 @@ async function handleCursorAgent(req: ChatRequest) {
   return {
     text: output,
     finishReason: 'stop',
+    usage: normalizeUsage(req.messages, output),
     model,
     provider: 'cursor-agent',
   };
@@ -531,9 +895,29 @@ async function handleCopilot(req: ChatRequest) {
   return {
     text: output,
     finishReason: 'stop',
+    usage: normalizeUsage(req.messages, output),
     model,
     provider: 'copilot',
   };
+}
+
+async function executeChatRequest(request: ChatRequest): Promise<ProviderResult> {
+  switch (request.provider) {
+    case 'gemini-code-cli':
+      return handleGeminiCodeCLI(request);
+    case 'gemini-code':
+      return handleGeminiCode(request);
+    case 'claude-code-cli':
+      return handleClaudeCodeCLI(request);
+    case 'codex':
+      return handleCodex(request);
+    case 'cursor-agent':
+      return handleCursorAgent(request);
+    case 'copilot':
+      return handleCopilot(request);
+    default:
+      throw new Error(`Unknown provider: ${request.provider}`);
+  }
 }
 
 const server = Bun.serve({
@@ -551,6 +935,47 @@ const server = Bun.serve({
     }
 
     const url = new URL(req.url);
+
+    if (url.pathname === '/v1/models') {
+      if (req.method !== 'GET') {
+        return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
+      }
+
+      try {
+        const catalog = await listModelCatalog();
+        const data = catalog.map(toOpenAIModel);
+        return new Response(JSON.stringify({ object: 'list', data }), { headers });
+      } catch (error: any) {
+        console.error('Failed to list models:', error);
+        return new Response(JSON.stringify({ error: error.message || String(error) }), { status: 500, headers });
+      }
+    }
+
+    if (url.pathname === '/v1/chat/completions') {
+      if (req.method !== 'POST') {
+        return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
+      }
+
+      try {
+        const body = await req.json();
+
+        if (body?.stream === true) {
+          return new Response(JSON.stringify({ error: 'Streaming responses are not yet supported.' }), {
+            status: 400,
+            headers,
+          });
+        }
+
+        const { request: chatRequest, model: modelEntry } = await convertOpenAIChatCompletionRequest(body);
+        const result = await executeChatRequest(chatRequest);
+        const responsePayload = buildOpenAIChatResponse(result, modelEntry, body);
+        return new Response(JSON.stringify(responsePayload), { headers });
+      } catch (error: any) {
+        console.error('Error handling /v1/chat/completions:', error);
+        const status = error?.message?.startsWith('Unknown model') ? 400 : 500;
+        return new Response(JSON.stringify({ error: error.message || String(error) }), { status, headers });
+      }
+    }
 
     // ============================================
     // Codex OAuth Endpoints
@@ -686,26 +1111,16 @@ const server = Bun.serve({
         );
       }
 
-      let result;
+      let provider: ChatRequest['provider'];
 
       switch (body.provider) {
         case 'gemini-code-cli':
-          result = await handleGeminiCodeCLI(body);
-          break;
         case 'gemini-code':
-          result = await handleGeminiCode(body);
-          break;
         case 'claude-code-cli':
-          result = await handleClaudeCodeCLI(body);
-          break;
         case 'codex':
-          result = await handleCodex(body);
-          break;
         case 'cursor-agent':
-          result = await handleCursorAgent(body);
-          break;
         case 'copilot':
-          result = await handleCopilot(body);
+          provider = body.provider;
           break;
         default:
           return new Response(
@@ -713,6 +1128,17 @@ const server = Bun.serve({
             { status: 400, headers }
           );
       }
+
+      const messages = coerceLegacyMessages(body.messages);
+      const chatRequest: ChatRequest = {
+        provider,
+        model: typeof body.model === 'string' ? body.model : undefined,
+        messages,
+        temperature: normalizeTemperature(body.temperature),
+        maxTokens: normalizeMaxTokens(body.maxTokens ?? body.max_tokens),
+      };
+
+      const result = await executeChatRequest(chatRequest);
 
       return new Response(JSON.stringify(result), { headers });
     } catch (error: any) {
