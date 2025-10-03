@@ -2,7 +2,7 @@
 # Deploy to fly.io using pure Nix (no Docker)
 set -e
 
-APP_NAME="${1:-oneshot}"
+APP_NAME="${1:-singularity}"
 DEPLOYMENT_TYPE="${2:-integrated}"  # integrated or ai-server-only
 
 echo "🚀 Deploying to fly.io with Nix..."
@@ -45,8 +45,8 @@ fi
 # Build with Nix
 echo "🔨 Building with Nix..."
 if [ "$DEPLOYMENT_TYPE" = "integrated" ]; then
-    nix build .#oneshot-integrated --show-trace
-    PACKAGE="oneshot-integrated"
+    nix build .#singularity-integrated --show-trace
+    PACKAGE="singularity-integrated"
 else
     nix build .#ai-server --show-trace
     PACKAGE="ai-server"
@@ -67,7 +67,7 @@ if [ "$PROCESS_NAME" = "web" ]; then
 elif [ "$PROCESS_NAME" = "ai-server" ]; then
     exec /result/bin/ai-server
 else
-    exec /result/bin/start-oneshot
+    exec /result/bin/start-singularity
 fi
 EOF
 chmod +x "$CLOSURE_PATH/launcher.sh"
@@ -96,7 +96,7 @@ fi
 
 # Create volume if needed
 if [ "$DEPLOYMENT_TYPE" = "integrated" ]; then
-    VOL_NAME="oneshot_data"
+    VOL_NAME="singularity_data"
 else
     VOL_NAME="ai_providers_data"
 fi

@@ -1,12 +1,12 @@
-# fly.toml - Integrated Oneshot Deployment (Elixir + AI Server)
+# fly.toml - Integrated Singularity Deployment (Elixir + AI Server)
 # Deploy both Elixir app and AI providers server together
 
-app = "oneshot"
+app = "singularity"
 primary_region = "iad"
 
 [build]
   # Build locally with Nix, deploy to fly.io
-  # Run: nix build .#oneshot-integrated before deploying
+  # Run: nix build .#singularity-integrated before deploying
 
 [processes]
   web = "./result/bin/web"
@@ -14,7 +14,7 @@ primary_region = "iad"
 
 [env]
   # Elixir environment
-  PHX_HOST = "oneshot.fly.dev"
+  PHX_HOST = "singularity.fly.dev"
   PORT = "8080"
 
   # AI Server environment
@@ -82,5 +82,5 @@ primary_region = "iad"
 
 # Persistent storage
 [mounts]
-  source = "oneshot_data"
+  source = "singularity_data"
   destination = "/data"

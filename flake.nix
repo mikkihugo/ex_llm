@@ -110,8 +110,8 @@ EOF
           '';
         };
         # Integrated package with both Elixir and AI Server
-        oneshot-integrated = pkgs.stdenv.mkDerivation {
-          pname = "oneshot-integrated";
+        singularity-integrated = pkgs.stdenv.mkDerivation {
+          pname = "singularity-integrated";
           version = "1.0.0";
           src = ./.;
 
@@ -152,7 +152,7 @@ EOF
             cp -r ai-server/* $out/ai-server/
 
             # Create start script for both processes
-            cat > $out/bin/start-oneshot << 'EOF'
+            cat > $out/bin/start-singularity << 'EOF'
 #!/usr/bin/env bash
 # Start both Elixir and AI Server
 
@@ -169,7 +169,7 @@ ELIXIR_PID=$!
 # Wait for both processes
 wait $AI_PID $ELIXIR_PID
 EOF
-            chmod +x $out/bin/start-oneshot
+            chmod +x $out/bin/start-singularity
 
             # Individual process scripts
             cat > $out/bin/web << 'EOF'
@@ -198,7 +198,7 @@ EOF
         packages = {
           default = ai-server;
           ai-server = ai-server;
-          oneshot-integrated = oneshot-integrated;
+          singularity-integrated = singularity-integrated;
         };
 
         devShells.default = pkgs.mkShell {

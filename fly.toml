@@ -1,7 +1,7 @@
 # fly.toml - AI Providers HTTP Server deployment configuration
 
 app = "oneshot-ai-providers"
-primary_region = "iad"
+primary_region = "arn"
 
 [build]
   # Build using Nix

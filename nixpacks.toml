@@ -8,7 +8,7 @@ nixLibs = []
 
 [phases.install]
 cmds = [
-  "nix --experimental-features 'nix-command flakes' build .#oneshot-integrated"
+  "nix --experimental-features 'nix-command flakes' build .#singularity-integrated"
 ]
 
 [phases.build]
@@ -17,4 +17,4 @@ cmds = [
 ]
 
 [start]
-cmd = "/app/bin/start-oneshot"
+cmd = "/app/bin/start-singularity"

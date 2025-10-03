@@ -11,7 +11,7 @@ WORKDIR /build
 COPY . .
 
 # Build integrated package (includes both Elixir and AI Server)
-RUN nix build .#oneshot-integrated
+RUN nix build .#singularity-integrated
 
 # Runtime image
 FROM debian:bookworm-slim
@@ -47,4 +47,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=40s \
 
 # Default: run both processes
 # Can be overridden by fly.io processes configuration
-CMD ["/app/bin/start-oneshot"]
+CMD ["/app/bin/start-singularity"]
