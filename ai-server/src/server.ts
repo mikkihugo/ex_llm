@@ -28,6 +28,7 @@ import { createServer } from 'http';
 import { randomBytes, createHash } from 'crypto';
 import escapeHtml from 'escape-html';
 import { loadCredentialsFromEnv, checkCredentialAvailability, printCredentialStatus } from './load-credentials';
+import { copilotChatCompletion } from './providers/copilot-api';
 
 // Load credentials from environment variables if available
 console.log('🔐 Loading credentials...');
@@ -95,6 +96,25 @@ interface OAuthState {
 
 const codexTokenStore: CodexTokenStore = {};
 let currentCodexOAuthState: OAuthState | null = null;
+
+// ============================================
+// Claude Max OAuth Configuration
+// ============================================
+
+interface ClaudeMaxTokenStore {
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
+}
+
+const CLAUDE_MAX_CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
+const CLAUDE_MAX_AUTHORIZE_URL = 'https://console.anthropic.com/oauth/authorize';
+const CLAUDE_MAX_TOKEN_URL = 'https://console.anthropic.com/oauth/token';
+const CLAUDE_MAX_REDIRECT_URI = `http://localhost:${OAUTH_CALLBACK_PORT}/auth/claude/callback`;
+const CLAUDE_MAX_SCOPE = 'org:create_api_key user:profile user:inference';
+
+const claudeMaxTokenStore: ClaudeMaxTokenStore = {};
+let currentClaudeMaxOAuthState: OAuthState | null = null;
 
 function toNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
@@ -532,6 +552,48 @@ async function ensureValidCodexToken(): Promise<boolean> {
   return true;
 }
 
+async function refreshClaudeMaxToken(): Promise<boolean> {
+  if (!claudeMaxTokenStore.refreshToken) return false;
+
+  try {
+    const response = await fetch(CLAUDE_MAX_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: claudeMaxTokenStore.refreshToken,
+        client_id: CLAUDE_MAX_CLIENT_ID,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Claude Max token refresh failed:', response.status);
+      return false;
+    }
+
+    const json: any = await response.json();
+    if (!json?.access_token || !json?.refresh_token) return false;
+
+    claudeMaxTokenStore.accessToken = json.access_token;
+    claudeMaxTokenStore.refreshToken = json.refresh_token;
+    claudeMaxTokenStore.expiresAt = Date.now() + json.expires_in * 1000;
+
+    console.log('✓ Claude Max token refreshed');
+    return true;
+  } catch (error) {
+    console.error('Claude Max token refresh error:', error);
+    return false;
+  }
+}
+
+async function ensureValidClaudeMaxToken(): Promise<boolean> {
+  if (!claudeMaxTokenStore.accessToken) return false;
+  if (claudeMaxTokenStore.expiresAt && claudeMaxTokenStore.expiresAt - Date.now() < 5 * 60 * 1000) {
+    return await refreshClaudeMaxToken();
+  }
+  return true;
+}
+
 function renderOAuthResponse(res: any, status: number, message: string): void {
   res.statusCode = status;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -695,6 +757,7 @@ interface ChatRequest {
     | 'gemini-code-cli'
     | 'gemini-code'
     | 'claude-code-cli'
+    | 'claude-max'
     | 'codex'
     | 'cursor-agent'
     | 'copilot'
@@ -926,47 +989,23 @@ async function handleCopilot(req: ChatRequest) {
   };
 
 async function handleCopilotAPI(req: ChatRequest) {
-  const token = process.env.COPILOT_API_TOKEN || process.env.COPILOT_TOKEN;
-  if (!token) {
-    throw new Error('COPILOT_API_TOKEN is not set.');
-  }
-
-  const baseUrl = process.env.COPILOT_API_BASE_URL || 'https://api.githubcopilot.com';
   const model = req.model || 'copilot-gpt-5';
-
-  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      'User-Agent': 'singularity-ai-server/1.0',
-    },
-    body: JSON.stringify({
-      model,
-      temperature: req.temperature,
-      max_tokens: req.maxTokens,
-      messages: req.messages.map((message) => ({
-        role: message.role,
-        content: message.content,
-      })),
-    }),
+  const completion = await copilotChatCompletion({
+    model,
+    messages: req.messages,
+    temperature: req.temperature,
+    maxTokens: req.maxTokens,
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Copilot API request failed: HTTP ${response.status} ${response.statusText} ${text}`);
-  }
-
-  const payload: any = await response.json();
-  const content = payload?.choices?.[0]?.message?.content;
+  const content = completion?.choices?.[0]?.message?.content;
   if (typeof content !== 'string') {
     throw new Error('Copilot API response missing assistant content.');
   }
 
   return {
     text: content,
-    finishReason: payload?.choices?.[0]?.finish_reason ?? 'stop',
-    usage: normalizeUsage(req.messages, content, payload?.usage),
+    finishReason: completion?.choices?.[0]?.finish_reason ?? 'stop',
+    usage: normalizeUsage(req.messages, content, completion?.usage),
     model,
     provider: 'copilot-api',
   };
