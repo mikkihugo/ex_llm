@@ -199,6 +199,7 @@ EOF
           default = ai-server;
           ai-server = ai-server;
           singularity-integrated = singularity-integrated;
+          just = pkgs.just;
         };
 
         devShells.default = pkgs.mkShell {
