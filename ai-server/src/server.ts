@@ -222,6 +222,16 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     contextWindow: 128000,
     capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
   },
+  {
+    id: 'copilot-gpt-5',
+    upstreamId: 'copilot-gpt-5',
+    provider: 'copilot-api' as const,
+    displayName: 'GitHub Copilot GPT-5 (API)',
+    description: 'GitHub Copilot API chat model',
+    ownedBy: 'github',
+    contextWindow: 128000,
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+  },
 ];
 
 let modelCatalogCache: ModelCatalogEntry[] | null = null;
@@ -687,7 +697,8 @@ interface ChatRequest {
     | 'claude-code-cli'
     | 'codex'
     | 'cursor-agent'
-    | 'copilot';
+    | 'copilot'
+    | 'copilot-api';
   model?: string;
   messages: Message[];
   temperature?: number;
@@ -913,6 +924,54 @@ async function handleCopilot(req: ChatRequest) {
     model,
     provider: 'copilot' as const,
   };
+
+async function handleCopilotAPI(req: ChatRequest) {
+  const token = process.env.COPILOT_API_TOKEN || process.env.COPILOT_TOKEN;
+  if (!token) {
+    throw new Error('COPILOT_API_TOKEN is not set.');
+  }
+
+  const baseUrl = process.env.COPILOT_API_BASE_URL || 'https://api.githubcopilot.com';
+  const model = req.model || 'copilot-gpt-5';
+
+  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/v1/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'singularity-ai-server/1.0',
+    },
+    body: JSON.stringify({
+      model,
+      temperature: req.temperature,
+      max_tokens: req.maxTokens,
+      messages: req.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Copilot API request failed: HTTP ${response.status} ${response.statusText} ${text}`);
+  }
+
+  const payload: any = await response.json();
+  const content = payload?.choices?.[0]?.message?.content;
+  if (typeof content !== 'string') {
+    throw new Error('Copilot API response missing assistant content.');
+  }
+
+  return {
+    text: content,
+    finishReason: payload?.choices?.[0]?.finish_reason ?? 'stop',
+    usage: normalizeUsage(req.messages, content, payload?.usage),
+    model,
+    provider: 'copilot-api',
+  };
+}
+
 }
 
 async function executeChatRequest(request: ChatRequest): Promise<ProviderResult> {
@@ -929,51 +988,11 @@ async function executeChatRequest(request: ChatRequest): Promise<ProviderResult>
       return handleCursorAgent(request);
     case 'copilot':
       return handleCopilot(request);
+    case 'copilot-api':
+      return handleCopilotAPI(request);
     default:
       throw new Error(`Unknown provider: ${request.provider}`);
   }
-}
-
-
-  const baseUrl = (process.env.VERCEL_AI_GATEWAY_URL ?? 'https://gateway.ai.vercel.com/api/v1').replace(/\/$/, '');
-  const model = req.model || 'openai/gpt-5-mini';
-
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      temperature: req.temperature,
-      max_tokens: req.maxTokens,
-      messages: req.messages.map((message) => ({
-        role: message.role,
-        content: message.content,
-      })),
-    }),
-  });
-
-  if (!response.ok) {
-    const bodyText = await response.text();
-    throw new Error(`Vercel AI Gateway request failed: HTTP ${response.status} ${response.statusText} ${bodyText}`);
-  }
-
-  const payload: any = await response.json();
-  const text = payload?.choices?.[0]?.message?.content;
-
-  if (typeof text !== 'string') {
-    throw new Error('Vercel AI Gateway response missing assistant content.');
-  }
-
-  return {
-    text,
-    finishReason: payload?.choices?.[0]?.finish_reason ?? 'stop',
-    usage: normalizeUsage(req.messages, text, payload?.usage),
-    model,
-    provider: 'vercel-gateway',
-  };
 }
 
 // @ts-ignore - Server reference not used but Bun.serve starts the server
@@ -1177,6 +1196,7 @@ const _server = Bun.serve({
         case 'codex':
         case 'cursor-agent':
         case 'copilot':
+        case 'copilot-api':
           provider = body.provider as ChatRequest['provider'];
           break;
         default:
@@ -1220,6 +1240,7 @@ console.log(`  - claude-code-cli (SDK with OAuth)`);
 console.log(`  - codex (OAuth) ${codexTokenStore.accessToken ? '✓ authenticated' : '⚠ not authenticated'}`);
 console.log(`  - cursor-agent (OAuth)`);
 console.log(`  - copilot (GitHub OAuth)`);
+console.log(`  - copilot-api (GitHub Copilot API)`);
 console.log(`\nEndpoints:`);
 console.log(`  GET  /health                      - Health check`);
 console.log(`  POST /chat                        - Chat with AI providers`);
