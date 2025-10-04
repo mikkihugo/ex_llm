@@ -1,5 +1,5 @@
 {
-  description = "Singularity - Elixir + Gleam development environment";
+  description = "Singularity - AI-powered multi-agent coordination platform with comprehensive Rust tooling analysis";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -38,6 +38,33 @@
           just
           nil
           nixfmt-rfc-style
+
+          # Fast linker (mold) for Rust compilation
+          mold
+
+          # Rust compilation caching
+          sccache
+
+          # Comprehensive Rust development tools
+          rust-analyzer       # LSP server for Rust IDE support
+          cargo-audit         # Security vulnerability scanning
+          cargo-deny          # Dependency policy enforcement
+          cargo-edit          # cargo add/rm/upgrade commands
+          cargo-expand        # Macro expansion viewer
+          cargo-flamegraph    # Performance profiling
+          cargo-outdated      # Check for outdated dependencies
+          cargo-watch         # File watcher for cargo commands
+          cargo-nextest       # Next-generation test runner
+          cargo-llvm-cov      # Code coverage with LLVM
+          cargo-machete       # Find unused dependencies
+          cargo-readme        # Generate README from doc comments
+          cargo-bloat         # Find what takes up space in binary
+          cargo-license       # License checker
+          cargo-modules       # Visualize crate's module structure
+          cargo-criterion     # Benchmarking harness
+          cargo-cache         # Manage cargo cache
+          bacon               # Background rust code checker
+          mdbook              # Rust book generator
         ];
 
         beamTools = [
@@ -46,6 +73,7 @@
           beamPackages.hex
           beamPackages.rebar3
           pkgs.elixir_ls
+          pkgs.erlang-ls
           pkgs.gleam
         ];
 
@@ -74,6 +102,11 @@
           # No nodejs - bun is enough
           flyctl
           bun
+
+          # Container tools (rootless development)
+          podman
+          buildah
+          skopeo
         ];
 
         qaTools = with pkgs; [
@@ -407,21 +440,20 @@ EOF
             fi
 
             # Ensure vector extensions and ANN-ready schema
-            ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
-            ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS pgvecto_rs;" >/dev/null 2>&1 || true
 
-            ensure_db() {
-              local db_name="$1"
-              if ! ${postgresqlWithExtensions}/bin/psql -d postgres -qAt -c "SELECT 1 FROM pg_database WHERE datname = '${db_name}';" | grep -q 1; then
-                ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE DATABASE ${db_name};" >/dev/null
-              fi
-            }
+            bash -c '
+            '
+              ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null 2>&1 || true
+              ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS pgvecto_rs;" >/dev/null 2>&1 || true
+              for db_name in singularity_embeddings singularity_dev singularity_test; do
+                if ! ${postgresqlWithExtensions}/bin/psql -d postgres -qAt -c "SELECT 1 FROM pg_database WHERE datname = '$db_name';" | grep -q 1; then
+                  ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE DATABASE \"$db_name\";" >/dev/null 2>&1 || true
+                fi
+              done
+            '
+            '
 
-            ensure_db "singularity_embeddings"
-            ensure_db "singularity_dev"
-            ensure_db "singularity_test"
-
-            ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
+            ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null 2>&1 || true
             ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS pgvecto_rs;" >/dev/null 2>&1 || true
 
             ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q <<'EOSQL'
@@ -464,6 +496,69 @@ EOSQL
           shellHook = ''
             echo "Fly.io deployment shell loaded (Nix-only)"
             export PATH=$PWD/bin:$PATH
+          '';
+        };
+
+        # Development environment with full tooling
+        devShells.dev = pkgs.mkShell {
+          name = "singularity-dev";
+          buildInputs = beamTools ++ commonTools ++ dataServices ++ webAndCli ++ qaTools ++ aiCliPackages;
+
+          shellHook = ''
+            export ERL_AFLAGS="-proto_dist inet6_tcp"
+            export MIX_ENV="dev"
+            export GLEAM_ERLANG_INCLUDE_PATH="${beamPackages.erlang}/lib/erlang/usr/include"
+            export MIX_HOME="$PWD/.mix"
+            export HEX_HOME="$PWD/.hex"
+            mkdir -p "$MIX_HOME" "$HEX_HOME" "$PWD/bin"
+            export PATH=$PWD/bin:$PATH
+
+            echo "🚀 Singularity Development Environment"
+            echo "  MIX_ENV=dev"
+            echo "  Full development tooling enabled"
+            echo "  Run: mix phx.server"
+          '';
+        };
+
+        # Testing environment with test-specific tools
+        devShells.test = pkgs.mkShell {
+          name = "singularity-test";
+          buildInputs = beamTools ++ commonTools ++ dataServices ++ qaTools;
+
+          shellHook = ''
+            export ERL_AFLAGS="-proto_dist inet6_tcp"
+            export MIX_ENV="test"
+            export GLEAM_ERLANG_INCLUDE_PATH="${beamPackages.erlang}/lib/erlang/usr/include"
+            export MIX_HOME="$PWD/.test-mix"
+            export HEX_HOME="$PWD/.test-hex"
+            mkdir -p "$MIX_HOME" "$HEX_HOME" "$PWD/bin"
+            export PATH=$PWD/bin:$PATH
+
+            echo "🧪 Singularity Testing Environment"
+            echo "  MIX_ENV=test"
+            echo "  Testing and QA tools enabled"
+            echo "  Run: mix test"
+          '';
+        };
+
+        # Production-like environment for staging/validation
+        devShells.prod = pkgs.mkShell {
+          name = "singularity-prod";
+          buildInputs = beamTools ++ webAndCli;
+
+          shellHook = ''
+            export ERL_AFLAGS="-proto_dist inet6_tcp"
+            export MIX_ENV="prod"
+            export GLEAM_ERLANG_INCLUDE_PATH="${beamPackages.erlang}/lib/erlang/usr/include"
+            export MIX_HOME="$PWD/.prod-mix"
+            export HEX_HOME="$PWD/.prod-hex"
+            mkdir -p "$MIX_HOME" "$HEX_HOME" "$PWD/bin"
+            export PATH=$PWD/bin:$PATH
+
+            echo "🏭 Singularity Production Environment"
+            echo "  MIX_ENV=prod"
+            echo "  Minimal production dependencies"
+            echo "  Run: mix release"
           '';
         };
       });
