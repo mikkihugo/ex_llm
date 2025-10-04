@@ -34,7 +34,6 @@ defmodule SeedAgent.Integration.Claude do
 
   @default_cli "claude-recovery"
   @default_model "sonnet"
-  @default_timeout :timer.minutes(2)
   @max_prompt_length 100_000
   @max_messages 100
   # Kill if no output for 10 mins
@@ -132,15 +131,13 @@ defmodule SeedAgent.Integration.Claude do
   defp extract_text(content) when is_binary(content), do: content
 
   defp extract_text(content) when is_list(content) do
-    content
-    |> Enum.map(fn
+    Enum.map_join(content, "\n\n", fn
       %{text: text} -> text
       %{"text" => text} -> text
       %{type: "text", text: text} -> text
       %{"type" => "text", "text" => text} -> text
       other -> inspect(other)
     end)
-    |> Enum.join("\n\n")
   end
 
   defp extract_text(_), do: nil
@@ -417,30 +414,7 @@ defmodule SeedAgent.Integration.Claude do
         {complete_lines, remaining} = split_json_lines(new_buffer)
 
         # Parse and emit each complete JSON line with robust error handling
-        Enum.each(complete_lines, fn line ->
-          # Skip empty lines
-          if String.trim(line) != "" do
-            case Jason.decode(line) do
-              {:ok, %{"type" => "content_block_delta", "delta" => %{"text" => text}}} ->
-                callback.(text)
-
-              {:ok, %{"type" => "message_delta", "delta" => %{"text" => text}}} ->
-                callback.(text)
-
-              {:ok, %{"text" => text}} when is_binary(text) ->
-                callback.(text)
-
-              {:ok, _other} ->
-                # Ignore non-text events (metadata, etc.)
-                :ok
-
-              {:error, %Jason.DecodeError{}} ->
-                # Ignore malformed JSON (common with streaming LLM partial responses)
-                # The buffer accumulation will handle incomplete lines
-                :ok
-            end
-          end
-        end)
+        Enum.each(complete_lines, fn line -> process_json_line(line, callback) end)
 
         # Update last activity time since we received data
         %{acc | buffer: remaining, last_activity: now}
@@ -487,6 +461,31 @@ defmodule SeedAgent.Integration.Claude do
 
           {:error, _} ->
             %{acc | buffer: ""}
+        end
+      end
+
+      defp process_json_line(line, callback) do
+        # Skip empty lines
+        if String.trim(line) != "" do
+          case Jason.decode(line) do
+            {:ok, %{"type" => "content_block_delta", "delta" => %{"text" => text}}} ->
+              callback.(text)
+
+            {:ok, %{"type" => "message_delta", "delta" => %{"text" => text}}} ->
+              callback.(text)
+
+            {:ok, %{"text" => text}} when is_binary(text) ->
+              callback.(text)
+
+            {:ok, _other} ->
+              # Ignore non-text events (metadata, etc.)
+              :ok
+
+            {:error, %Jason.DecodeError{}} ->
+              # Ignore malformed JSON (common with streaming LLM partial responses)
+              # The buffer accumulation will handle incomplete lines
+              :ok
+          end
         end
       end
     end

@@ -58,13 +58,10 @@ defmodule SeedAgent.Control.QueueCrdt do
     if MapSet.member?(current, fingerprint) do
       {:reply, false, state}
     else
-      DeltaCrdt.mutate(crdt, :update, [
-        agent_id,
-        fn existing ->
-          existing = existing || MapSet.new()
-          MapSet.put(existing, fingerprint)
-        end
-      ])
+      DeltaCrdt.put(crdt, agent_id, fn existing ->
+        existing = existing || MapSet.new()
+        MapSet.put(existing, fingerprint)
+      end)
 
       {:reply, true, state}
     end
@@ -72,13 +69,10 @@ defmodule SeedAgent.Control.QueueCrdt do
 
   @impl true
   def handle_cast({:release, agent_id, fingerprint}, %{crdt: crdt} = state) do
-    DeltaCrdt.mutate(crdt, :update, [
-      agent_id,
-      fn existing ->
-        existing = existing || MapSet.new()
-        MapSet.delete(existing, fingerprint)
-      end
-    ])
+    DeltaCrdt.put(crdt, agent_id, fn existing ->
+      existing = existing || MapSet.new()
+      MapSet.delete(existing, fingerprint)
+    end)
 
     {:noreply, state}
   end
@@ -107,7 +101,7 @@ defmodule SeedAgent.Control.QueueCrdt do
   end
 
   defp read_set(crdt, agent_id) do
-    case DeltaCrdt.read(crdt) do
+    case DeltaCrdt.to_map(crdt) do
       map when is_map(map) -> Map.get(map, agent_id, MapSet.new())
       _ -> MapSet.new()
     end

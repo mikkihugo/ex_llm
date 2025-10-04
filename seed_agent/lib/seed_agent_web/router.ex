@@ -99,66 +99,75 @@ defmodule SeedAgentWeb.Router do
 
   defp select_provider(model, params) do
     case Map.get(params, "provider", default_provider()) do
-      "claude" ->
-        {:ok,
-         fn messages, payload ->
-           case SeedAgent.Integration.Claude.chat(messages, model: model, metadata: payload) do
-             {:ok, %{raw: raw, response: response}} ->
-               {:ok, format_openai_response(model, response || raw)}
-
-             {:ok, raw} when is_map(raw) ->
-               {:ok, format_openai_response(model, Jason.encode!(raw))}
-
-             {:error, reason} ->
-               {:error, {:provider_error, reason}}
-           end
-         end}
-
-      "codex" ->
-        {:ok,
-         fn messages, _payload ->
-           prompt = render_prompt(messages)
-
-           case SeedAgent.Integration.Codex.chat(prompt, model: model) do
-             {:ok, text} -> {:ok, format_openai_response(model, text)}
-             {:error, reason} -> {:error, {:provider_error, reason}}
-           end
-         end}
-
-      "gemini" ->
-        {:ok,
-         fn messages, payload ->
-           case SeedAgent.Integration.Gemini.chat(messages, payload) do
-             {:ok, text} -> {:ok, format_openai_response(model, text)}
-             {:error, reason} -> {:error, {:provider_error, reason}}
-           end
-         end}
-
-      "cursor-agent" ->
-        {:ok,
-         fn messages, _payload ->
-           prompt = render_prompt(messages)
-
-           case SeedAgent.Integration.CursorAgent.chat(prompt) do
-             {:ok, text} -> {:ok, format_openai_response(model, text)}
-             {:error, reason} -> {:error, {:provider_error, reason}}
-           end
-         end}
-
-      "copilot" ->
-        {:ok,
-         fn messages, _payload ->
-           prompt = render_prompt(messages)
-
-           case SeedAgent.Integration.Copilot.chat(prompt) do
-             {:ok, text} -> {:ok, format_openai_response(model, text)}
-             {:error, reason} -> {:error, {:provider_error, reason}}
-           end
-         end}
-
-      _ ->
-        {:error, :provider_missing}
+      "claude" -> create_claude_provider(model)
+      "codex" -> create_codex_provider(model)
+      "gemini" -> create_gemini_provider(model)
+      "cursor-agent" -> create_cursor_agent_provider(model)
+      "copilot" -> create_copilot_provider(model)
+      _ -> {:error, :provider_missing}
     end
+  end
+
+  defp create_claude_provider(model) do
+    {:ok,
+     fn messages, payload ->
+       case SeedAgent.Integration.Claude.chat(messages, model: model, metadata: payload) do
+         {:ok, %{raw: raw, response: response}} ->
+           {:ok, format_openai_response(model, response || raw)}
+
+         {:ok, raw} when is_map(raw) ->
+           {:ok, format_openai_response(model, Jason.encode!(raw))}
+
+         {:error, reason} ->
+           {:error, {:provider_error, reason}}
+       end
+     end}
+  end
+
+  defp create_codex_provider(model) do
+    {:ok,
+     fn messages, _payload ->
+       prompt = render_prompt(messages)
+
+       case SeedAgent.Integration.Codex.chat(prompt, model: model) do
+         {:ok, text} -> {:ok, format_openai_response(model, text)}
+         {:error, reason} -> {:error, {:provider_error, reason}}
+       end
+     end}
+  end
+
+  defp create_gemini_provider(model) do
+    {:ok,
+     fn messages, payload ->
+       case SeedAgent.Integration.Gemini.chat(messages, payload) do
+         {:ok, text} -> {:ok, format_openai_response(model, text)}
+         {:error, reason} -> {:error, {:provider_error, reason}}
+       end
+     end}
+  end
+
+  defp create_cursor_agent_provider(model) do
+    {:ok,
+     fn messages, _payload ->
+       prompt = render_prompt(messages)
+
+       case SeedAgent.Integration.CursorAgent.chat(prompt) do
+         {:ok, text} -> {:ok, format_openai_response(model, text)}
+         {:error, reason} -> {:error, {:provider_error, reason}}
+       end
+     end}
+  end
+
+  defp create_copilot_provider(model) do
+    {:ok,
+     fn messages, _payload ->
+       prompt = render_prompt(messages)
+
+       case SeedAgent.Integration.Copilot.chat(prompt) do
+         {:ok, text} -> {:ok, format_openai_response(model, text)}
+         {:error, reason} -> {:error, {:provider_error, reason}}
+       end
+     end}
   end
 
   defp default_provider do
@@ -166,21 +175,19 @@ defmodule SeedAgentWeb.Router do
   end
 
   defp render_prompt(messages) do
-    messages
-    |> Enum.map(fn
+    Enum.map_join(messages, "\n\n", fn
       %{"role" => role, "content" => content} ->
         "#{role}: #{content_to_string(content)}"
 
       %{} ->
         ""
     end)
-    |> Enum.join("\n\n")
   end
 
   defp content_to_string(content) when is_binary(content), do: content
 
   defp content_to_string(content) when is_list(content),
-    do: Enum.map(content, &content_to_string/1) |> Enum.join("\n")
+    do: Enum.map_join(content, "\n", &content_to_string/1)
 
   defp content_to_string(%{"text" => text}), do: text
   defp content_to_string(_), do: ""
@@ -213,9 +220,10 @@ defmodule SeedAgentWeb.Router do
   defp rough_token_estimate(text) when is_binary(text) do
     bytes = byte_size(text)
 
-    cond do
-      bytes == 0 -> 0
-      true -> div(bytes + 3, 4)
+    if bytes == 0 do
+      0
+    else
+      div(bytes + 3, 4)
     end
   end
 

@@ -234,9 +234,10 @@ defmodule SeedAgent.Integration.ClaudeTest do
   end
 
   # E2E Tests - Full flow with actual binary (skipped unless available)
-  @tag :e2e
-  @tag timeout: 30_000
   describe "end-to-end with real CLI" do
+    @describetag :e2e
+    @describetag timeout: 30_000
+
     setup do
       cli_path =
         System.get_env("CLAUDE_CLI_PATH") ||
@@ -267,8 +268,6 @@ defmodule SeedAgent.Integration.ClaudeTest do
     @tag :skip
     test "streams real response", %{ready: ready} = _context do
       if ready do
-        chunks = []
-
         callback = fn chunk ->
           send(self(), {:chunk, chunk})
         end

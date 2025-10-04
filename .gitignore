@@ -36,3 +36,6 @@ application_default_credentials.json
 
 /.litellm/
 /litellm/.litellm/
+# moon
+.moon/cache
+.moon/docker

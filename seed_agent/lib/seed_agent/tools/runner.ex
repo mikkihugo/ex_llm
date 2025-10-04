@@ -21,9 +21,8 @@ defmodule SeedAgent.Tools.Runner do
 
     Default.ensure_registered()
 
-    with {:ok, tool} <- Registry.fetch_tool(provider, call.name) do
-      do_execute(tool, call, context)
-    else
+    case Registry.fetch_tool(provider, call.name) do
+      {:ok, tool} -> do_execute(tool, call, context)
       :error -> {:error, "Tool #{call.name} is not registered for #{provider}"}
     end
   end

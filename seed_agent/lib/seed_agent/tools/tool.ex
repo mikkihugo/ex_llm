@@ -90,12 +90,10 @@ defmodule SeedAgent.Tools.Tool do
     params = get_field(changeset, :parameters)
     schema = get_field(changeset, :parameters_schema)
 
-    cond do
-      is_map(schema) and is_list(params) and params != [] ->
-        add_error(changeset, :parameters, "cannot supply both :parameters and :parameters_schema")
-
-      true ->
-        changeset
+    if is_map(schema) and is_list(params) and params != [] do
+      add_error(changeset, :parameters, "cannot supply both :parameters and :parameters_schema")
+    else
+      changeset
     end
   end
 

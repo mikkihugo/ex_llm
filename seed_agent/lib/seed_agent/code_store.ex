@@ -133,20 +133,18 @@ defmodule SeedAgent.CodeStore do
   def handle_cast({:save_queue, agent_id, entries}, state) when is_list(entries) do
     queue_path = queue_path(state.queues, agent_id)
 
-    cond do
-      entries == [] ->
-        File.rm(queue_path)
-        {:noreply, state}
+    if entries == [] do
+      File.rm(queue_path)
+      {:noreply, state}
+    else
+      payload =
+        entries
+        |> Enum.map(&queue_entry_to_map/1)
+        |> Enum.reject(&is_nil/1)
+        |> Jason.encode!()
 
-      true ->
-        payload =
-          entries
-          |> Enum.map(&queue_entry_to_map/1)
-          |> Enum.reject(&is_nil/1)
-          |> Jason.encode!()
-
-        :ok = File.write(queue_path, payload)
-        {:noreply, state}
+      :ok = File.write(queue_path, payload)
+      {:noreply, state}
     end
   end
 
@@ -220,22 +218,24 @@ defmodule SeedAgent.CodeStore do
       {:ok, files} ->
         files
         |> Enum.filter(&String.ends_with?(&1, ".exs"))
-        |> Enum.each(fn file ->
-          path = Path.join(versions_dir, file)
+        |> Enum.each(&cleanup_file(&1, versions_dir, cutoff_time))
 
-          case File.stat(path) do
-            {:ok, %{mtime: mtime}} ->
-              file_time = :calendar.datetime_to_gregorian_seconds(mtime)
+      _ ->
+        :ok
+    end
+  end
 
-              if file_time < cutoff_time do
-                File.rm(path)
-                File.rm(Path.rootname(path) <> ".json")
-              end
+  defp cleanup_file(file, versions_dir, cutoff_time) do
+    path = Path.join(versions_dir, file)
 
-            _ ->
-              :ok
-          end
-        end)
+    case File.stat(path) do
+      {:ok, %{mtime: mtime}} ->
+        file_time = :calendar.datetime_to_gregorian_seconds(mtime)
+
+        if file_time < cutoff_time do
+          File.rm(path)
+          File.rm(Path.rootname(path) <> ".json")
+        end
 
       _ ->
         :ok

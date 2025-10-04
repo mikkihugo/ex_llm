@@ -7,6 +7,14 @@ config :seed_agent, SeedAgent.Telemetry, metrics: []
 
 config :logger, level: :info
 
+config :logger,
+  compile_time_purge_matching: [
+    [level: :debug],
+    [level: :info],
+    [level: :warning],
+    [level: :error]
+  ]
+
 config :libcluster,
   topologies: []
 

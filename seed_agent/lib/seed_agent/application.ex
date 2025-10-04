@@ -51,7 +51,7 @@ defmodule SeedAgent.Application do
     Logger.info("SeedAgent application starting",
       http: http_opts,
       cluster: topologies,
-      http_enabled?: http_enabled?
+      http_enabled: http_enabled?
     )
 
     Supervisor.start_link(children, opts)

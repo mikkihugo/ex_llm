@@ -112,23 +112,31 @@ defmodule SeedAgent.Tools.ToolParam do
     props = get_field(changeset, :object_properties)
 
     cond do
-      type == :object and Enum.empty?(props) ->
+      requires_object_properties?(type, props) ->
         add_error(changeset, :object_properties, "required for object type")
 
-      type == :array and item_type == "object" and Enum.empty?(props) ->
+      requires_object_properties_for_array_items?(type, item_type, props) ->
         add_error(changeset, :object_properties, "required when array items are objects")
 
-      type in [:object] and not Enum.empty?(props) ->
-        changeset
-
-      type == :array and item_type == "object" ->
-        changeset
-
-      Enum.empty?(props) ->
+      allows_object_properties?(type, item_type, props) ->
         changeset
 
       true ->
         add_error(changeset, :object_properties, "not allowed for type #{inspect(type)}")
     end
+  end
+
+  defp requires_object_properties?(type, props) do
+    type == :object and Enum.empty?(props)
+  end
+
+  defp requires_object_properties_for_array_items?(type, item_type, props) do
+    type == :array and item_type == "object" and Enum.empty?(props)
+  end
+
+  defp allows_object_properties?(type, item_type, props) do
+    (type in [:object] and not Enum.empty?(props)) or
+      (type == :array and item_type == "object") or
+      Enum.empty?(props)
   end
 end

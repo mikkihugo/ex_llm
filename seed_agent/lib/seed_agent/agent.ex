@@ -367,69 +367,75 @@ defmodule SeedAgent.Agent do
   defp maybe_start_improvement(state, payload, context) do
     fingerprint = payload_fingerprint(payload)
 
-    if duplicate_payload?(state, fingerprint) do
-      Logger.debug("Skipping duplicate improvement payload", agent_id: state.id)
+    cond do
+      duplicate_payload?(state, fingerprint) ->
+        Logger.debug("Skipping duplicate improvement payload", agent_id: state.id)
+        emit_improvement_event(state.id, :duplicate, %{count: 1}, base_metadata(context))
+        state
+
+      state.status == :updating ->
+        enqueue_improvement(state, payload, context)
+
+      not Limiter.allow?(state.id) ->
+        Logger.debug("Improvement rate limited, queued", agent_id: state.id)
+        emit_improvement_event(state.id, :rate_limited, %{count: 1}, base_metadata(context))
+        enqueue_improvement(state, payload, context)
+
+      true ->
+        start_improvement_if_valid(state, payload, context, fingerprint)
+    end
+  end
+
+  defp start_improvement_if_valid(state, payload, context, fingerprint) do
+    case ensure_valid_payload(payload) do
+      {:error, {_tag, msg}} ->
+        Logger.warning("Preflight validation failed",
+          agent_id: state.id,
+          reason: inspect(msg)
+        )
+        emit_improvement_event(state.id, :invalid, %{count: 1}, base_metadata(context))
+        state
+
+      :ok ->
+        start_improvement_if_available(state, payload, context, fingerprint)
+    end
+  end
+
+  defp start_improvement_if_available(state, payload, context, fingerprint) do
+    if QueueCrdt.reserve(state.id, fingerprint) do
+      Logger.info("Publishing self-improvement",
+        agent_id: state.id,
+        reason: context_fetch(context, :reason),
+        score: context_fetch(context, :score),
+        samples: context_fetch(context, :samples)
+      )
+
+      emit_improvement_event(
+        state.id,
+        :attempt,
+        %{count: 1},
+        Map.put(base_metadata(context), :source, :direct)
+      )
+
+      baseline = SeedAgent.Telemetry.snapshot()
+      previous_code = read_active_code(state.id)
+
+      Control.publish_improvement(state.id, payload)
+
+      pending_context = Map.new(context, fn {k, v} -> {k, v} end)
+
+      state
+      |> Map.put(:pending_plan, payload)
+      |> Map.put(:pending_context, pending_context)
+      |> Map.put(:last_trigger, context)
+      |> Map.put(:last_proposal_cycle, state.cycles)
+      |> Map.put(:status, :updating)
+      |> Map.put(:pending_fingerprint, fingerprint)
+      |> Map.put(:pending_previous_code, previous_code)
+      |> Map.put(:pending_baseline, baseline)
+    else
       emit_improvement_event(state.id, :duplicate, %{count: 1}, base_metadata(context))
       state
-    else
-      cond do
-        state.status == :updating ->
-          enqueue_improvement(state, payload, context)
-
-        not Limiter.allow?(state.id) ->
-          Logger.debug("Improvement rate limited, queued", agent_id: state.id)
-          emit_improvement_event(state.id, :rate_limited, %{count: 1}, base_metadata(context))
-          enqueue_improvement(state, payload, context)
-
-        true ->
-          case ensure_valid_payload(payload) do
-            {:error, {_tag, msg}} ->
-              Logger.warning("Preflight validation failed",
-                agent_id: state.id,
-                reason: inspect(msg)
-              )
-
-              emit_improvement_event(state.id, :invalid, %{count: 1}, base_metadata(context))
-              state
-
-            :ok ->
-              if QueueCrdt.reserve(state.id, fingerprint) do
-                Logger.info("Publishing self-improvement",
-                  agent_id: state.id,
-                  reason: context_fetch(context, :reason),
-                  score: context_fetch(context, :score),
-                  samples: context_fetch(context, :samples)
-                )
-
-                emit_improvement_event(
-                  state.id,
-                  :attempt,
-                  %{count: 1},
-                  Map.put(base_metadata(context), :source, :direct)
-                )
-
-                baseline = SeedAgent.Telemetry.snapshot()
-                previous_code = read_active_code(state.id)
-
-                Control.publish_improvement(state.id, payload)
-
-                pending_context = Map.new(context, fn {k, v} -> {k, v} end)
-
-                state
-                |> Map.put(:pending_plan, payload)
-                |> Map.put(:pending_context, pending_context)
-                |> Map.put(:last_trigger, context)
-                |> Map.put(:last_proposal_cycle, state.cycles)
-                |> Map.put(:status, :updating)
-                |> Map.put(:pending_fingerprint, fingerprint)
-                |> Map.put(:pending_previous_code, previous_code)
-                |> Map.put(:pending_baseline, baseline)
-              else
-                emit_improvement_event(state.id, :duplicate, %{count: 1}, base_metadata(context))
-                state
-              end
-          end
-      end
     end
   end
 
@@ -477,83 +483,95 @@ defmodule SeedAgent.Agent do
   defp process_queue(%{improvement_queue: queue} = state) do
     case :queue.out(queue) do
       {{:value, entry}, rest} ->
-        if Limiter.allow?(state.id) do
-          Logger.info("Processing queued improvement",
-            agent_id: state.id,
-            queue_depth: :queue.len(rest)
-          )
-
-          emit_improvement_event(
-            state.id,
-            :attempt,
-            %{count: 1},
-            Map.put(base_metadata(entry.context), :source, :queue)
-          )
-
-          fingerprint =
-            entry[:fingerprint] || entry["fingerprint"] || payload_fingerprint(entry.payload)
-
-          case ensure_valid_payload(entry.payload) do
-            {:error, {_tag, msg}} ->
-              Logger.warning("Preflight validation failed (queued)",
-                agent_id: state.id,
-                reason: inspect(msg)
-              )
-
-              emit_improvement_event(
-                state.id,
-                :invalid,
-                %{count: 1},
-                base_metadata(entry.context)
-              )
-
-              persist_queue(state.id, rest)
-              process_queue(%{state | improvement_queue: rest})
-
-            :ok ->
-              if QueueCrdt.reserve(state.id, fingerprint) do
-                baseline = SeedAgent.Telemetry.snapshot()
-                previous_code = read_active_code(state.id)
-
-                Control.publish_improvement(state.id, entry.payload)
-
-                pending_context = Map.new(entry.context, fn {k, v} -> {k, v} end)
-
-                new_state =
-                  state
-                  |> Map.put(:pending_plan, entry.payload)
-                  |> Map.put(:pending_context, pending_context)
-                  |> Map.put(:improvement_queue, rest)
-                  |> Map.put(:status, :updating)
-                  |> Map.put(:pending_fingerprint, fingerprint)
-                  |> Map.put(:pending_previous_code, previous_code)
-                  |> Map.put(:pending_baseline, baseline)
-
-                persist_queue(state.id, rest)
-                new_state
-              else
-                emit_improvement_event(
-                  state.id,
-                  :duplicate,
-                  %{count: 1},
-                  base_metadata(entry.context)
-                )
-
-                persist_queue(state.id, rest)
-                process_queue(%{state | improvement_queue: rest})
-              end
-          end
-        else
-          # Put it back and retry later
-          Process.send_after(self(), :process_improvement_queue, 5_000)
-          new_queue = :queue.in_r(entry, rest)
-          persist_queue(state.id, new_queue)
-          Map.put(state, :improvement_queue, new_queue)
-        end
+        process_queue_entry(state, entry, rest)
 
       {:empty, _} ->
         persist_queue(state.id, queue)
         state
+    end
+  end
+
+  defp process_queue_entry(state, entry, rest) do
+    if Limiter.allow?(state.id) do
+      Logger.info("Processing queued improvement",
+        agent_id: state.id,
+        queue_depth: :queue.len(rest)
+      )
+
+      emit_improvement_event(
+        state.id,
+        :attempt,
+        %{count: 1},
+        Map.put(base_metadata(entry.context), :source, :queue)
+      )
+
+      fingerprint =
+        entry[:fingerprint] || entry["fingerprint"] || payload_fingerprint(entry.payload)
+
+      process_validated_entry(state, entry, rest, fingerprint)
+    else
+      # Put it back and retry later
+      Process.send_after(self(), :process_improvement_queue, 5_000)
+      new_queue = :queue.in_r(entry, rest)
+      persist_queue(state.id, new_queue)
+      Map.put(state, :improvement_queue, new_queue)
+    end
+  end
+
+  defp process_validated_entry(state, entry, rest, fingerprint) do
+    case ensure_valid_payload(entry.payload) do
+      {:error, {_tag, msg}} ->
+        Logger.warning("Preflight validation failed (queued)",
+          agent_id: state.id,
+          reason: inspect(msg)
+        )
+
+        emit_improvement_event(
+          state.id,
+          :invalid,
+          %{count: 1},
+          base_metadata(entry.context)
+        )
+
+        persist_queue(state.id, rest)
+        process_queue(%{state | improvement_queue: rest})
+
+      :ok ->
+        process_available_entry(state, entry, rest, fingerprint)
+    end
+  end
+
+  defp process_available_entry(state, entry, rest, fingerprint) do
+    if QueueCrdt.reserve(state.id, fingerprint) do
+      baseline = SeedAgent.Telemetry.snapshot()
+      previous_code = read_active_code(state.id)
+
+      Control.publish_improvement(state.id, entry.payload)
+
+      pending_context = Map.new(entry.context, fn {k, v} -> {k, v} end)
+
+      new_state =
+        state
+        |> Map.put(:pending_plan, entry.payload)
+        |> Map.put(:pending_context, pending_context)
+        |> Map.put(:improvement_queue, rest)
+        |> Map.put(:status, :updating)
+        |> Map.put(:pending_fingerprint, fingerprint)
+        |> Map.put(:pending_previous_code, previous_code)
+        |> Map.put(:pending_baseline, baseline)
+
+      persist_queue(state.id, rest)
+      new_state
+    else
+      emit_improvement_event(
+        state.id,
+        :duplicate,
+        %{count: 1},
+        base_metadata(entry.context)
+      )
+
+      persist_queue(state.id, rest)
+      process_queue(%{state | improvement_queue: rest})
     end
   end
 
@@ -640,15 +658,27 @@ defmodule SeedAgent.Agent do
   defp regression?(nil, _current), do: false
 
   defp regression?(baseline, current) do
-    memory_growth = current[:memory] || current["memory"] || 0
-    baseline_memory = baseline[:memory] || baseline["memory"] || 0
-    run_queue = current[:run_queue] || current["run_queue"] || 0
-    baseline_run_queue = baseline[:run_queue] || baseline["run_queue"] || 0
+    memory_growth = get_memory(current)
+    baseline_memory = get_memory(baseline)
+    run_queue = get_run_queue(current)
+    baseline_run_queue = get_run_queue(baseline)
 
     memory_limit = baseline_memory * memory_multiplier()
     run_queue_limit = baseline_run_queue + run_queue_threshold()
 
-    (baseline_memory > 0 and memory_growth > memory_limit) or run_queue > run_queue_limit
+    exceeds_memory_limit?(baseline_memory, memory_growth, memory_limit) or
+      exceeds_run_queue_limit?(run_queue, run_queue_limit)
+  end
+
+  defp get_memory(data), do: data[:memory] || data["memory"] || 0
+  defp get_run_queue(data), do: data[:run_queue] || data["run_queue"] || 0
+
+  defp exceeds_memory_limit?(baseline_memory, memory_growth, memory_limit) do
+    baseline_memory > 0 and memory_growth > memory_limit
+  end
+
+  defp exceeds_run_queue_limit?(run_queue, run_queue_limit) do
+    run_queue > run_queue_limit
   end
 
   defp memory_multiplier do

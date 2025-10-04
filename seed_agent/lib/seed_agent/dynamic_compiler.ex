@@ -56,17 +56,18 @@ defmodule SeedAgent.DynamicCompiler do
   end
 
   defp compile(path, source) do
-    with {:ok, ast} <- Code.string_to_quoted(source) do
-      modules = collect_modules(ast)
-      Enum.each(modules, &purge_module/1)
+    case Code.string_to_quoted(source) do
+      {:ok, ast} ->
+        modules = collect_modules(ast)
+        Enum.each(modules, &purge_module/1)
 
-      try do
-        result = Code.compile_string(source, path)
-        {:ok, Enum.map(result, fn {mod, _bin} -> mod end)}
-      rescue
-        error -> {:error, {:compile_failed, error}}
-      end
-    else
+        try do
+          result = Code.compile_string(source, path)
+          {:ok, Enum.map(result, fn {mod, _bin} -> mod end)}
+        rescue
+          error -> {:error, {:compile_failed, error}}
+        end
+
       {:error, reason} -> {:error, reason}
     end
   end
