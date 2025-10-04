@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Copilot Authentication</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0d1117;
+      color: #c9d1d9;
+    }
+    .container {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 24px;
+    }
+    h1 {
+      margin-top: 0;
+      color: #58a6ff;
+    }
+    .status {
+      padding: 12px;
+      border-radius: 6px;
+      margin: 16px 0;
+      font-family: monospace;
+    }
+    .status.pending {
+      background: #1f2937;
+      border: 1px solid #374151;
+    }
+    .status.success {
+      background: #064e3b;
+      border: 1px solid #10b981;
+      color: #10b981;
+    }
+    .status.error {
+      background: #7f1d1d;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+    }
+    .code-display {
+      font-size: 32px;
+      font-weight: bold;
+      text-align: center;
+      padding: 20px;
+      background: #0d1117;
+      border: 2px solid #58a6ff;
+      border-radius: 6px;
+      margin: 20px 0;
+      letter-spacing: 4px;
+      color: #58a6ff;
+    }
+    button {
+      background: #238636;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 12px;
+    }
+    button:hover {
+      background: #2ea043;
+    }
+    button:disabled {
+      background: #30363d;
+      cursor: not-allowed;
+    }
+    a {
+      color: #58a6ff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #30363d;
+      border-top-color: #58a6ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>GitHub Copilot Authentication</h1>
+
+    <div id="status" class="status pending">
+      <div class="spinner"></div> Starting OAuth flow...
+    </div>
+
+    <div id="code-container" style="display: none;">
+      <p>Visit GitHub and enter this code:</p>
+      <div class="code-display" id="user-code"></div>
+      <p style="text-align: center;">
+        <a id="verify-link" href="#" target="_blank">
+          <button type="button">Open GitHub →</button>
+        </a>
+      </p>
+      <p style="text-align: center; color: #8b949e; font-size: 14px;">
+        Waiting for authorization...
+      </p>
+    </div>
+
+    <div id="success-container" style="display: none;">
+      <p>✅ Successfully authenticated with GitHub Copilot!</p>
+      <p>You can close this window and use the Copilot API.</p>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000';
+    let pollInterval = null;
+
+    async function startAuth() {
+      try {
+        const response = await fetch(`${API_BASE}/copilot/auth/start`);
+        const data = await response.json();
+
+        if (data.error) {
+          updateStatus('error', `Error: ${data.error}`);
+          return;
+        }
+
+        // Display the code
+        document.getElementById('user-code').textContent = data.userCode;
+        document.getElementById('verify-link').href = data.verificationUri;
+        document.getElementById('code-container').style.display = 'block';
+        updateStatus('pending', 'Please authorize on GitHub...');
+
+        // Start polling (use at least 5 seconds to avoid rate limits)
+        const pollIntervalMs = Math.max(data.interval * 1000, 5000);
+        pollInterval = setInterval(pollAuth, pollIntervalMs);
+      } catch (error) {
+        updateStatus('error', `Failed to start OAuth: ${error.message}`);
+      }
+    }
+
+    async function pollAuth() {
+      try {
+        const response = await fetch(`${API_BASE}/copilot/auth/poll`);
+        const data = await response.json();
+
+        if (data.authenticated) {
+          clearInterval(pollInterval);
+          document.getElementById('code-container').style.display = 'none';
+          document.getElementById('success-container').style.display = 'block';
+          updateStatus('success', '✅ Authenticated successfully!');
+        } else if (data.error) {
+          clearInterval(pollInterval);
+          updateStatus('error', `Error: ${data.error}`);
+        }
+      } catch (error) {
+        clearInterval(pollInterval);
+        updateStatus('error', `Polling failed: ${error.message}`);
+      }
+    }
+
+    function updateStatus(type, message) {
+      const status = document.getElementById('status');
+      status.className = `status ${type}`;
+      status.innerHTML = message;
+    }
+
+    // Start the flow on page load
+    startAuth();
+  </script>
+</body>
+</html>

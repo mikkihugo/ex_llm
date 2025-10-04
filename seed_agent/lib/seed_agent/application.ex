@@ -14,7 +14,9 @@ defmodule SeedAgent.Application do
     http_enabled? = System.get_env("HTTP_SERVER_ENABLED", "false") == "true"
     port = Keyword.get(http_opts, :port, 8080)
     transport_opts = Keyword.get(http_opts, :transport_options, [])
-    thousand_island_opts = if transport_opts == [], do: [], else: [transport_options: transport_opts]
+
+    thousand_island_opts =
+      if transport_opts == [], do: [], else: [transport_options: transport_opts]
 
     bandit_child =
       if http_enabled? do
@@ -26,12 +28,16 @@ defmodule SeedAgent.Application do
         )
       end
 
+    :ok = SeedAgent.Autonomy.Limiter.ensure_table()
+
     children =
       [
+        SeedAgent.Control.QueueCrdt,
         {Cluster.Supervisor, [topologies, [name: SeedAgent.ClusterSupervisor]]},
         SeedAgent.Telemetry,
         SeedAgent.CodeStore,
         SeedAgent.ProcessRegistry,
+        SeedAgent.Control.Listener,
         {Finch, name: SeedAgent.HttpClient},
         {Task.Supervisor, name: SeedAgent.TaskSupervisor},
         SeedAgent.AgentSupervisor,
@@ -41,7 +47,13 @@ defmodule SeedAgent.Application do
       |> Enum.reject(&is_nil/1)
 
     opts = [strategy: :one_for_one, name: SeedAgent.Supervisor]
-    Logger.info("SeedAgent application starting", http: http_opts, cluster: topologies, http_enabled?: http_enabled?)
+
+    Logger.info("SeedAgent application starting",
+      http: http_opts,
+      cluster: topologies,
+      http_enabled?: http_enabled?
+    )
+
     Supervisor.start_link(children, opts)
   end
 end

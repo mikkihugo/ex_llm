@@ -6,7 +6,7 @@
  * Bridges multiple AI providers through a single HTTP interface:
  * - Gemini (via ai-sdk-provider-gemini-cli - stable wrapper)
  * - Claude (via ai-sdk-provider-claude-code - stable wrapper)
- * - Codex (via OAuth to ChatGPT backend)
+ * - Codex (via CLI exec using `codex exec`)
  * - Cursor Agent (via CLI exec - no wrapper available)
  * - GitHub Copilot (via CLI exec - no wrapper available)
  *
@@ -26,7 +26,11 @@ import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
 import { claudeCode } from 'ai-sdk-provider-claude-code';
 import { createServer } from 'http';
 import { randomBytes, createHash } from 'crypto';
+import { spawn } from 'child_process';
 import escapeHtml from 'escape-html';
+import { GoogleAuth } from 'google-auth-library';
+import { CodexSDK } from 'codex-js-sdk';
+import type { CodexResponse, CodexMessageType } from 'codex-js-sdk';
 import { loadCredentialsFromEnv, checkCredentialAvailability, printCredentialStatus } from './load-credentials';
 import { copilotChatCompletion } from './providers/copilot-api';
 
@@ -217,10 +221,10 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     upstreamId: 'gpt-5-codex',
     provider: 'codex' as const,
     displayName: 'OpenAI Codex GPT-5',
-    description: 'ChatGPT Codex backend via OAuth',
+    description: 'ChatGPT Codex via SDK (supports MCP tools)',
     ownedBy: 'openai',
     contextWindow: 128000,
-    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
   },
   {
     id: 'cursor-gpt-4.1',
@@ -748,8 +752,13 @@ async function getGeminiCodeToken(): Promise<string> {
 
 // Initialize providers with SDK wrappers
 // Default to ADC (google-auth-library) for consistency with gemini-code
+const googleAuth = new GoogleAuth({
+  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+});
+
 const gemini = createGeminiProvider({
   authType: 'google-auth-library' as any,
+  googleAuth,
 });
 
 interface ChatRequest {
@@ -900,48 +909,66 @@ async function handleClaudeCodeCLI(req: ChatRequest) {
 }
 
 async function handleCodex(req: ChatRequest) {
-  // Use OAuth-based API instead of CLI
-  const valid = await ensureValidCodexToken();
-
-  if (!valid || !codexTokenStore.accessToken || !codexTokenStore.accountId) {
-    throw new Error('Codex not authenticated. Use /codex/auth/start to authenticate.');
-  }
-
   const model = req.model || 'gpt-5-codex';
+  const prompt = messagesToPrompt(req.messages);
 
   try {
-    const response = await fetch('https://chatgpt.com/backend-api/codex/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${codexTokenStore.accessToken}`,
-        'chatgpt-account-id': codexTokenStore.accountId,
-        'OpenAI-Beta': 'responses=experimental',
-        'originator': 'codex_cli_rs',
-        'session_id': crypto.randomUUID(),
+    // Use codex-js-sdk for better integration
+    const sdk = new CodexSDK({
+      logLevel: 'error' as any,
+      config: {
+        approval_policy: 'never' as any, // Auto-approve all commands for API use
+        model: 'gpt-5-codex',
       },
-      body: JSON.stringify({
-        model,
-        messages: req.messages,
-        temperature: req.temperature ?? 0.7,
-        max_tokens: req.maxTokens,
-      }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Codex API error: ${response.status}`);
-    }
+    return await new Promise((resolve, reject) => {
+      let responseText = '';
+      let isComplete = false;
+      const timeout = setTimeout(() => {
+        if (!isComplete) {
+          sdk.stop();
+          reject(new Error('Codex request timeout after 60s'));
+        }
+      }, 60000);
 
-    const data = await response.json() as any;
-    const text = data.choices?.[0]?.message?.content || JSON.stringify(data);
+      // Listen for responses
+      sdk.onResponse((response: CodexResponse<CodexMessageType>) => {
+        const msg = response.msg;
 
-    return {
-      text,
-      finishReason: data.choices?.[0]?.finish_reason || 'stop',
-      usage: normalizeUsage(req.messages, text, data.usage),
-      model,
-      provider: 'codex' as const,
-    };
+        if (msg.type === 'agent_message') {
+          responseText += msg.message;
+        } else if (msg.type === 'task_complete') {
+          isComplete = true;
+          clearTimeout(timeout);
+          sdk.stop();
+
+          resolve({
+            text: responseText.trim() || msg.last_agent_message || '',
+            finishReason: 'stop',
+            usage: normalizeUsage(req.messages, responseText, {}),
+            model,
+            provider: 'codex' as const,
+          });
+        } else if (msg.type === 'error') {
+          isComplete = true;
+          clearTimeout(timeout);
+          sdk.stop();
+          reject(new Error(`Codex error: ${msg.message}`));
+        }
+      });
+
+      sdk.onError((response: CodexResponse<CodexMessageType>) => {
+        isComplete = true;
+        clearTimeout(timeout);
+        sdk.stop();
+        reject(new Error(`Codex SDK error: ${JSON.stringify(response)}`));
+      });
+
+      // Start SDK and send message
+      sdk.start();
+      sdk.sendUserMessage([{ type: 'text', text: prompt }]);
+    });
   } catch (error: any) {
     throw new Error(`Codex request failed: ${error.message}`);
   }
@@ -1276,7 +1303,7 @@ console.log(`\nProviders:`);
 console.log(`  - gemini-code-cli (SDK with ADC)`);
 console.log(`  - gemini-code (Direct Code Assist API with ADC)`);
 console.log(`  - claude-code-cli (SDK with OAuth)`);
-console.log(`  - codex (OAuth) ${codexTokenStore.accessToken ? '✓ authenticated' : '⚠ not authenticated'}`);
+console.log(`  - codex (CLI) ${checkCredentialAvailability().codex ? '✓' : '⚠ run `codex login`'}`);
 console.log(`  - cursor-agent (OAuth)`);
 console.log(`  - copilot (GitHub OAuth)`);
 console.log(`  - copilot-api (GitHub Copilot API)`);
@@ -1290,13 +1317,11 @@ console.log(`\nAuthentication notes:`);
 console.log(`  - gemini-code-cli: ADC (gcloud auth application-default login)`);
 console.log(`  - gemini-code: ADC (gcloud auth application-default login)`);
 console.log(`  - claude-code-cli: Run 'claude setup-token' (requires Claude subscription)`);
-console.log(`  - codex: OAuth via /codex/auth/start`);
+console.log(`  - codex: Run 'codex login' to authenticate`);
 console.log(`  - cursor-agent: Run 'cursor-agent login' (stores OAuth in ~/.config/cursor/auth.json)`);
 console.log(`  - copilot: Set GH_TOKEN/GITHUB_TOKEN or run '/login' in copilot`);
 console.log(`\nTo use Codex:`);
-console.log(`  1. GET http://localhost:${PORT}/codex/auth/start`);
-console.log(`  2. Open the returned authUrl in your browser`);
-console.log(`  3. After OAuth callback, GET /codex/auth/complete?code=<code>`);
+console.log(`  Run: codex login`);
 console.log(`\nTo use Gemini Code Assist (gemini-code):`);
 console.log(`  1. Enable API: gcloud services enable cloudcode-pa.googleapis.com`);
 console.log(`  2. Setup ADC: gcloud auth application-default login`);

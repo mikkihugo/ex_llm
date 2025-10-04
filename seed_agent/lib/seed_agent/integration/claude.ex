@@ -37,6 +37,10 @@ defmodule SeedAgent.Integration.Claude do
   @default_timeout :timer.minutes(2)
   @max_prompt_length 100_000
   @max_messages 100
+  # Kill if no output for 10 mins
+  @inactivity_timeout :timer.minutes(10)
+  # Kill if total runtime > 60 mins
+  @hard_timeout :timer.minutes(60)
 
   @doc """
   Send a chat request and get the full response.
@@ -148,7 +152,8 @@ defmodule SeedAgent.Integration.Claude do
     base = [
       "chat",
       "--print",
-      "--output-format", output_format
+      "--output-format",
+      output_format
     ]
 
     base
@@ -166,6 +171,7 @@ defmodule SeedAgent.Integration.Claude do
 
   defp maybe_append_tools(list, _flag, nil), do: list
   defp maybe_append_tools(list, _flag, []), do: list
+
   defp maybe_append_tools(list, flag, tools) when is_list(tools) do
     list ++ [flag, Enum.join(tools, ",")]
   end
@@ -175,26 +181,48 @@ defmodule SeedAgent.Integration.Claude do
   end
 
   defp run_cli(cli, args, env, opts) do
-    timeout = opts[:timeout] || @default_timeout
     stream_callback = if is_function(opts[:stream], 1), do: opts[:stream], else: nil
+    hard_timeout = opts[:hard_timeout] || @hard_timeout
 
-    cli_opts = [
-      env: env,
-      stderr_to_stdout: true,
-      timeout: timeout
-    ]
+    # Wrap in Task to enforce hard timeout (60 min max runtime)
+    task =
+      Task.async(fn ->
+        cli_opts = [
+          env: env,
+          stderr_to_stdout: true
+        ]
 
-    if stream_callback do
-      # Stream mode: collect output while calling callback for each chunk
-      collector = __MODULE__.StreamCollector.new(stream_callback)
+        if stream_callback do
+          # Stream mode: collect output with inactivity monitoring
+          collector = __MODULE__.StreamCollector.new(stream_callback, @inactivity_timeout)
 
-      cli_opts = cli_opts ++ [into: collector]
-      {final_output, status} = System.cmd(cli, args, cli_opts)
+          cli_opts = cli_opts ++ [into: collector]
 
-      {final_output, status}
-    else
-      # Non-stream mode: simple command execution
-      System.cmd(cli, args, cli_opts)
+          try do
+            System.cmd(cli, args, cli_opts)
+          catch
+            :timeout ->
+              Logger.warning("Claude CLI inactivity timeout (#{@inactivity_timeout}ms)")
+              {"", 124}
+          end
+        else
+          # Non-stream mode: simple execution
+          System.cmd(cli, args, cli_opts)
+        end
+      end)
+
+    # Wait with hard timeout
+    case Task.yield(task, hard_timeout) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} ->
+        result
+
+      nil ->
+        Logger.warning("Claude CLI exceeded hard timeout (#{hard_timeout}ms), killed")
+        {"", 124}
+
+      {:exit, reason} ->
+        Logger.error("Claude CLI crashed: #{inspect(reason)}")
+        {"", 1}
     end
   end
 
@@ -219,7 +247,29 @@ defmodule SeedAgent.Integration.Claude do
     String.length(content) > @max_prompt_length
   end
 
+  defp exceeds_max_length?(%{content: content}) when is_list(content) do
+    Enum.any?(content, &text_segment_exceeds?/1)
+  end
+
+  defp exceeds_max_length?(%{"content" => content}) when is_list(content) do
+    Enum.any?(content, &text_segment_exceeds?/1)
+  end
+
   defp exceeds_max_length?(_), do: false
+
+  defp text_segment_exceeds?(%{text: text}) when is_binary(text),
+    do: String.length(text) > @max_prompt_length
+
+  defp text_segment_exceeds?(%{"text" => text}) when is_binary(text),
+    do: String.length(text) > @max_prompt_length
+
+  defp text_segment_exceeds?(%{type: "text", text: text}) when is_binary(text),
+    do: String.length(text) > @max_prompt_length
+
+  defp text_segment_exceeds?(%{"type" => "text", "text" => text}) when is_binary(text),
+    do: String.length(text) > @max_prompt_length
+
+  defp text_segment_exceeds?(_), do: false
 
   defp handle_cli_result(output, 0, opts) do
     if opts[:stream] do
@@ -308,14 +358,19 @@ defmodule SeedAgent.Integration.Claude do
     Application.get_env(:seed_agent, :claude)[:default_model] || @default_model
   end
 
-  # StreamCollector: Implements IO.write protocol for streaming CLI output
+  # StreamCollector: Implements IO.write protocol for streaming CLI output with inactivity timeout
   defmodule StreamCollector do
     @moduledoc false
 
-    defstruct [:callback, :buffer]
+    defstruct [:callback, :buffer, :inactivity_timeout, :last_activity]
 
-    def new(callback) when is_function(callback, 1) do
-      %__MODULE__{callback: callback, buffer: ""}
+    def new(callback, inactivity_timeout \\ nil) when is_function(callback, 1) do
+      %__MODULE__{
+        callback: callback,
+        buffer: "",
+        inactivity_timeout: inactivity_timeout,
+        last_activity: System.monotonic_time(:millisecond)
+      }
     end
 
     defimpl Collectable do
@@ -327,14 +382,36 @@ defmodule SeedAgent.Integration.Claude do
              process_chunk(acc, data)
 
            acc, :done ->
-             acc
+             flush_buffer(acc)
 
            _acc, :halt ->
              :ok
          end}
       end
 
-      defp process_chunk(%{callback: callback, buffer: buffer} = acc, data) when is_binary(data) do
+      defp process_chunk(
+             %{
+               callback: callback,
+               buffer: buffer,
+               inactivity_timeout: timeout,
+               last_activity: last_time
+             } = acc,
+             data
+           )
+           when is_binary(data) do
+        # Check for inactivity timeout
+        now = System.monotonic_time(:millisecond)
+
+        if timeout && now - last_time > timeout do
+          require Logger
+
+          Logger.warning(
+            "Claude CLI inactivity: no output for #{div(timeout, 60_000)} minutes, throwing timeout"
+          )
+
+          throw(:timeout)
+        end
+
         # Accumulate data and process complete JSON lines
         new_buffer = buffer <> data
         {complete_lines, remaining} = split_json_lines(new_buffer)
@@ -365,7 +442,8 @@ defmodule SeedAgent.Integration.Claude do
           end
         end)
 
-        %{acc | buffer: remaining}
+        # Update last activity time since we received data
+        %{acc | buffer: remaining, last_activity: now}
       end
 
       defp split_json_lines(data) do
@@ -385,6 +463,30 @@ defmodule SeedAgent.Integration.Claude do
           {_last, rest} ->
             # All lines are complete (empty last element)
             {rest, ""}
+        end
+      end
+
+      defp flush_buffer(%{buffer: ""} = acc), do: acc
+
+      defp flush_buffer(%{buffer: buffer} = acc) do
+        case Jason.decode(buffer) do
+          {:ok, %{"type" => "content_block_delta", "delta" => %{"text" => text}}} ->
+            acc.callback.(text)
+            %{acc | buffer: ""}
+
+          {:ok, %{"type" => "message_delta", "delta" => %{"text" => text}}} ->
+            acc.callback.(text)
+            %{acc | buffer: ""}
+
+          {:ok, %{"text" => text}} when is_binary(text) ->
+            acc.callback.(text)
+            %{acc | buffer: ""}
+
+          {:ok, _other} ->
+            %{acc | buffer: ""}
+
+          {:error, _} ->
+            %{acc | buffer: ""}
         end
       end
     end

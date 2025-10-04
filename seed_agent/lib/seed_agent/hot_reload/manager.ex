@@ -6,7 +6,7 @@ defmodule SeedAgent.HotReload.Manager do
 
   require Logger
 
-  alias SeedAgent.{CodeStore, GleamBridge}
+  alias SeedAgent.{CodeStore, DynamicCompiler}
 
   @type queue_entry :: %{
           id: reference(),
@@ -66,7 +66,12 @@ defmodule SeedAgent.HotReload.Manager do
   def handle_info(:process, %{inflight: nil, queue: queue} = state) do
     case :queue.out(queue) do
       {{:value, entry}, rest} ->
-        :telemetry.execute([:seed_agent, :hot_reload, :start], %{queue_depth: :queue.len(rest)}, entry)
+        :telemetry.execute(
+          [:seed_agent, :hot_reload, :start],
+          %{queue_depth: :queue.len(rest)},
+          entry
+        )
+
         Task.Supervisor.start_child(SeedAgent.TaskSupervisor, fn -> run_pipeline(entry) end)
         {:noreply, %{state | queue: rest, inflight: entry}}
 
@@ -83,11 +88,26 @@ defmodule SeedAgent.HotReload.Manager do
       case result do
         {:ok, version} ->
           send_agent(state.inflight.agent_id, {:reload_complete, version})
-          :telemetry.execute([:seed_agent, :hot_reload, :success], %{version: version}, state.inflight)
+
+          :telemetry.execute(
+            [:seed_agent, :hot_reload, :success],
+            %{version: version},
+            state.inflight
+          )
 
         {:error, reason} ->
-          Logger.error("Hot reload failed", agent_id: state.inflight.agent_id, reason: inspect(reason))
-          :telemetry.execute([:seed_agent, :hot_reload, :error], %{reason: inspect(reason)}, state.inflight)
+          Logger.error("Hot reload failed",
+            agent_id: state.inflight.agent_id,
+            reason: inspect(reason)
+          )
+
+          send_agent(state.inflight.agent_id, {:reload_failed, reason})
+
+          :telemetry.execute(
+            [:seed_agent, :hot_reload, :error],
+            %{reason: inspect(reason)},
+            state.inflight
+          )
       end
 
       Process.send(self(), :process, [])
@@ -105,10 +125,11 @@ defmodule SeedAgent.HotReload.Manager do
     {duration, result} =
       :timer.tc(fn ->
         with :ok <- require_code(code),
-             :ok <- GleamBridge.validate(code),
-             {:ok, staged_path} <- CodeStore.stage(entry.agent_id, next_version(entry.agent_id), code, payload),
+             :ok <- DynamicCompiler.validate(code),
+             {:ok, staged_path} <-
+               CodeStore.stage(entry.agent_id, next_version(entry.agent_id), code, payload),
              {:ok, active_path} <- CodeStore.promote(entry.agent_id, staged_path),
-             {:ok, version} <- GleamBridge.hot_reload(active_path) do
+             {:ok, version} <- DynamicCompiler.compile_file(active_path) do
           {:ok, version}
         else
           {:error, _reason} = error -> error

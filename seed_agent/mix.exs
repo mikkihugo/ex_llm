@@ -13,7 +13,6 @@ defmodule SeedAgent.MixProject do
       erlc_include_path: erlc_include_path(Mix.env()),
       compilers: [:gleam | Mix.compilers()],
       start_permanent: Mix.env() == :prod,
-      archives: [mix_gleam: "~> 0.6"],
       prune_code_paths: false,
       aliases: aliases(),
       deps: deps(),
@@ -69,6 +68,7 @@ defmodule SeedAgent.MixProject do
   defp deps do
     [
       {:bandit, "~> 1.5"},
+      {:ecto, "~> 3.11"},
       {:plug, "~> 1.15"},
       {:jason, "~> 1.4"},
       {:libcluster, "~> 3.3"},

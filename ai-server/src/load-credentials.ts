@@ -5,9 +5,10 @@
  * variables for deployment scenarios where credential files aren't available.
  */
 
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
+import { loadCopilotOAuthTokens } from './github-copilot-oauth';
 
 interface CredentialStats {
   geminiADC: boolean;
@@ -26,6 +27,7 @@ export function loadCredentialsFromEnv(): CredentialStats {
     cursor: false,
     github: false,
   };
+
 
   // Load Gemini ADC credentials
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
@@ -51,29 +53,73 @@ export function loadCredentialsFromEnv(): CredentialStats {
     }
   }
 
-  // Load Claude credentials
-  if (process.env.CLAUDE_ACCESS_TOKEN) {
+  const claudeHome = process.env.CLAUDE_HOME || join(homedir(), '.claude');
+  const claudeCredentialsFile = join(claudeHome, '.credentials.json');
+
+  let claudeSource: 'CLAUDE_CODE_OAUTH_TOKEN' | 'CLAUDE_ACCESS_TOKEN' | undefined;
+
+  if (process.env.CLAUDE_CODE_OAUTH_TOKEN) {
+    claudeSource = 'CLAUDE_CODE_OAUTH_TOKEN';
+  } else if (process.env.CLAUDE_ACCESS_TOKEN) {
+    process.env.CLAUDE_CODE_OAUTH_TOKEN = process.env.CLAUDE_ACCESS_TOKEN;
+    claudeSource = 'CLAUDE_ACCESS_TOKEN';
+  }
+
+  const claudeToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+
+  if (claudeToken && claudeSource) {
     try {
-      const claudePath = join(homedir(), '.claude');
-      const claudeFile = join(claudePath, '.credentials.json');
+      mkdirSync(claudeHome, { recursive: true });
 
-      const credentials = {
-        claudeAiOauth: {
-          accessToken: process.env.CLAUDE_ACCESS_TOKEN,
-          refreshToken: process.env.CLAUDE_REFRESH_TOKEN || '',
-          expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
-          scopes: ['user:inference'],
-          subscriptionType: null,
+      let existingToken: string | undefined;
+      if (existsSync(claudeCredentialsFile)) {
+        try {
+          const parsed = JSON.parse(readFileSync(claudeCredentialsFile, 'utf-8'));
+          existingToken = parsed?.claudeAiOauth?.accessToken;
+        } catch (error) {
+          // Ignore parse errors and rewrite credentials file below
         }
-      };
+      }
 
-      mkdirSync(claudePath, { recursive: true });
-      writeFileSync(claudeFile, JSON.stringify(credentials, null, 2));
+      if (existingToken !== claudeToken) {
+        const refreshToken =
+          process.env.CLAUDE_CODE_REFRESH_TOKEN || process.env.CLAUDE_REFRESH_TOKEN;
+        const expiresAtEnv =
+          process.env.CLAUDE_CODE_OAUTH_EXPIRES_AT ||
+          process.env.CLAUDE_ACCESS_TOKEN_EXPIRES_AT;
+
+        let expiresAt = Date.now() + 365 * 24 * 60 * 60 * 1000;
+        if (expiresAtEnv) {
+          const parsedExpiresAt = Number(expiresAtEnv);
+          if (!Number.isNaN(parsedExpiresAt) && parsedExpiresAt > 0) {
+            expiresAt = parsedExpiresAt;
+          }
+        }
+
+        const credentials: Record<string, unknown> = {
+          claudeAiOauth: {
+            accessToken: claudeToken,
+            expiresAt,
+            scopes: ['user:inference'],
+            subscriptionType: null,
+          },
+        };
+
+        if (refreshToken) {
+          (credentials.claudeAiOauth as Record<string, unknown>).refreshToken = refreshToken;
+        }
+
+        writeFileSync(claudeCredentialsFile, JSON.stringify(credentials, null, 2));
+        console.log(
+          `✓ Claude credentials materialized from ${claudeSource} to ${claudeCredentialsFile}`
+        );
+      } else {
+        console.log(`✓ Claude credentials already materialized at ${claudeCredentialsFile}`);
+      }
 
       stats.claude = true;
-      console.log('✓ Loaded Claude credentials from environment');
     } catch (error) {
-      console.error('✗ Failed to load Claude credentials:', error);
+      console.error('✗ Failed to materialize Claude credentials:', error);
     }
   }
 
@@ -104,6 +150,46 @@ export function loadCredentialsFromEnv(): CredentialStats {
     console.log('✓ GitHub token available in environment');
   }
 
+  // Load GitHub Copilot tokens
+  // Priority: GITHUB_COPILOT_TOKEN env var > copilot-api token file
+  let copilotToken = process.env.GITHUB_COPILOT_TOKEN;
+
+  // Try loading from copilot-api token file
+  if (!copilotToken) {
+    try {
+      const copilotApiTokenFile = join(homedir(), '.local', 'share', 'copilot-api', 'github_token');
+      if (existsSync(copilotApiTokenFile)) {
+        copilotToken = readFileSync(copilotApiTokenFile, 'utf-8').trim();
+        console.log('✓ GitHub OAuth token loaded from copilot-api');
+      }
+    } catch (error) {
+      // Silently ignore
+    }
+  }
+
+  if (copilotToken) {
+    loadCopilotOAuthTokens(copilotToken);
+    if (process.env.GITHUB_COPILOT_TOKEN) {
+      console.log('✓ GitHub Copilot token loaded from GITHUB_COPILOT_TOKEN');
+    }
+  }
+
+  // Load Codex credentials from ~/.codex/auth.json (created by `codex login`)
+  try {
+    const codexAuthFile = join(homedir(), '.codex', 'auth.json');
+    if (existsSync(codexAuthFile)) {
+      const codexAuth = JSON.parse(readFileSync(codexAuthFile, 'utf-8'));
+      if (codexAuth.tokens?.access_token && codexAuth.tokens?.account_id) {
+        // Store in environment for server to use
+        process.env.CODEX_ACCESS_TOKEN = codexAuth.tokens.access_token;
+        process.env.CODEX_ACCOUNT_ID = codexAuth.tokens.account_id;
+        console.log('✓ Codex credentials loaded from ~/.codex/auth.json');
+      }
+    }
+  } catch (error) {
+    // Silently ignore if file doesn't exist
+  }
+
   return stats;
 }
 
@@ -124,7 +210,8 @@ export function checkCredentialAvailability(): CredentialStats {
 
   // Check Claude
   const claudeFile = join(homedir(), '.claude', '.credentials.json');
-  stats.claude = existsSync(claudeFile) || !!process.env.CLAUDE_ACCESS_TOKEN;
+  stats.claude =
+    existsSync(claudeFile) || !!process.env.CLAUDE_CODE_OAUTH_TOKEN || !!process.env.CLAUDE_ACCESS_TOKEN;
 
   // Check Cursor
   const cursorFile = join(homedir(), '.config', 'cursor', 'auth.json');

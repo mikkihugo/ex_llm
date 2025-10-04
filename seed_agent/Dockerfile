@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.6
 
-ARG ELIXIR_VERSION=1.20.0
-ARG OTP_VERSION=27.1
-ARG ALPINE_VERSION=3.19
+ARG ELIXIR_VERSION=1.17.3
+ARG OTP_VERSION=27.1.3
+ARG BASE_VARIANT=ubuntu-noble-20250925
 ARG GLEAM_VERSION=1.5.1
 
-FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION} AS build
+FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-${BASE_VARIANT} AS build
 
 ENV MIX_ENV=prod \
     LANG=C.UTF-8 \
@@ -13,11 +13,20 @@ ENV MIX_ENV=prod \
 
 WORKDIR /app
 
-RUN apk add --no-cache build-base curl git openssl ncurses-libs bash
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    openssl \
+    libncurses5-dev \
+    libssl-dev \
+    bash \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN mix local.hex --force \
-  && mix local.rebar --force \
-  && mix archive.install hex mix_gleam 0.6.2 --force
+  && mix local.rebar --force
 
 RUN curl -L "https://github.com/gleam-lang/gleam/releases/download/v${GLEAM_VERSION}/gleam-v${GLEAM_VERSION}-linux-x86_64.tar.gz" \
   | tar -xz -C /usr/local/bin

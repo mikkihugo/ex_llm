@@ -21,7 +21,18 @@ defmodule SeedAgent.Telemetry do
     [
       last_value("vm.memory.total", unit: :byte),
       last_value("vm.total_run_queue_lengths.total"),
-      summary("seed_agent.hot_reload.duration", unit: {:native, :millisecond})
+      summary("seed_agent.hot_reload.duration", unit: {:native, :millisecond}),
+      counter("seed_agent.improvement.attempt.count", tags: [:agent_id, :source]),
+      counter("seed_agent.improvement.queued.count", tags: [:agent_id]),
+      counter("seed_agent.improvement.rate_limited.count", tags: [:agent_id]),
+      counter("seed_agent.improvement.success.count", tags: [:agent_id]),
+      counter("seed_agent.improvement.failure.count", tags: [:agent_id]),
+      counter("seed_agent.improvement.duplicate.count", tags: [:agent_id]),
+      counter("seed_agent.improvement.invalid.count", tags: [:agent_id]),
+      counter("seed_agent.improvement.validation.success.count", tags: [:agent_id]),
+      counter("seed_agent.improvement.validation.failure.count", tags: [:agent_id]),
+      counter("seed_agent.improvement.rollback.count", tags: [:agent_id]),
+      last_value("seed_agent.improvement.queue_depth", tags: [:agent_id])
     ]
   end
 
@@ -43,5 +54,20 @@ defmodule SeedAgent.Telemetry do
     def report_vm_stats do
       :telemetry.execute([:vm, :memory, :total], %{total: :erlang.memory(:total)}, %{})
     end
+  end
+
+  @doc "Capture a lightweight snapshot of runtime stats for validation"
+  @spec snapshot() :: %{memory: non_neg_integer(), run_queue: non_neg_integer()}
+  def snapshot do
+    memory = :erlang.memory(:total)
+
+    run_queue =
+      case :erlang.statistics(:total_run_queue_lengths) do
+        {total, _cpu, _io} -> total
+        total when is_integer(total) -> total
+        _ -> 0
+      end
+
+    %{memory: memory, run_queue: run_queue}
   end
 end

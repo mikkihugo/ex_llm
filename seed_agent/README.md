@@ -5,7 +5,9 @@ Seed Agent is an Elixir 1.20 + Gleam starter for building self-improving agents 
 ## Stack Overview
 
 - **Elixir 1.20-dev / Erlang OTP 28** – Custom toolchain with Gleam-friendly build and OTP supervision.
-- **Gleam 1.5** – Pure functional modules compiled to BEAM for validation and upgrade orchestration.
+- **Gleam 1.5** – Still available for future hybrid strategies, though the default
+  self-improvement loop now generates Elixir modules directly and hot-loads them
+  in-process.
 - **Bandit + Plug** – Lightweight HTTP API for health, metrics, and control.
 - **libcluster** – DNS-based clustering for Fly.io and Kubernetes.
 - **Persistent code store** – Writes artifacts to `/data/code` (volume in Fly, PVC in Kubernetes).
@@ -33,9 +35,8 @@ nix develop .#fly      # minimal Fly.io deployment shell
 ### Manual tooling
 
 1. Install Elixir ≥ 1.20 and Erlang OTP ≥ 28.
-2. Install [Gleam](https://gleam.run/) and the `mix_gleam` compiler integration:
+2. Install [Gleam](https://gleam.run/) and verify it is available on your `$PATH`:
    ```bash
-   mix archive.install hex mix_gleam 0.6.2 --force
    gleam --version
    ```
 3. Authenticate with Fly.io (`fly auth login`) and create required volumes/buckets.
@@ -46,9 +47,9 @@ nix develop .#fly      # minimal Fly.io deployment shell
 lib/                    # Elixir application, supervision tree, HTTP layer
 lib/seed_agent/hot_reload/  # Queue + pipeline stub for improvements
 lib/seed_agent_web/     # Plug router exposing health + metrics
-lib/seed_agent/gleam_bridge.ex  # Calls into Gleam for validation/hot reload
+lib/seed_agent/dynamic_compiler.ex  # Validates & loads auto-generated Elixir modules
 code/                   # Created at runtime for staged/active code
-gleam/                  # Gleam modules compiled via mix_gleam
+gleam/                  # Gleam modules compiled via the bundled Mix task
 rel/                    # Release environment hooks
 Dockerfile, fly.toml    # Fly.io deployment assets
 deployment/k8s/         # StatefulSet + services for Kubernetes
@@ -79,7 +80,25 @@ Health and metrics endpoints:
 - `GET http://localhost:4000/health/deep`
 - `GET http://localhost:4000/metrics`
 
-The Gleam hot-reload module (`seed/improver.gleam`) currently returns a timestamp placeholder. Replace `hot_reload/1` with calls to compile and load modules (e.g. via `:code.load_binary/3`) once you introduce real self-modifying logic.
+Autonomous coordination:
+- Every agent owns a background loop that calls
+  `SeedAgent.Autonomy.Decider.decide/1` each tick (default 5 s). When the
+  observed score drops or stagnation exceeds the configured threshold, the
+  agent asks the planner to synthesise a new Elixir module and hands it to the
+  hot-reload manager.
+- `SeedAgent.record_outcome/2` and `SeedAgent.update_agent_metrics/2` let other
+  processes feed observations (success/failure counts, latency, rewards) back
+  into the loop.
+- `SeedAgent.force_improvement/2` flips a flag that forces the next evaluation
+  cycle to enqueue a new strategy—handy for manual experiments while keeping the
+  same pipeline.
+- `SeedAgent.Control.publish_improvement/2` still broadcasts a payload across
+  the cluster when you need to coordinate multiple nodes manually. It falls back
+  to a direct cast if no listeners have joined yet.
+
+`SeedAgent.DynamicCompiler` already compiles and loads the generated Elixir
+modules with `Code.compile_string/2`, so successful promotions replace runtime
+behaviour immediately while keeping the artifact on disk for auditing.
 
 ## Fly.io Deployment
 
@@ -87,12 +106,32 @@ The Gleam hot-reload module (`seed/improver.gleam`) currently returns a timestam
 fly launch --copy-config --no-deploy
 fly volumes create agent_code --region sea --size 5 --count 2
 fly secrets set RELEASE_COOKIE=$(openssl rand -base64 32)
-fly deploy --strategy bluegreen
+nix build ..#seed-agent-oci
+podman load < ../result
+podman tag seed-agent:latest registry.fly.io/seed-agent:$(git rev-parse --short HEAD)
+podman push registry.fly.io/seed-agent:$(git rev-parse --short HEAD)
+fly deploy --strategy bluegreen --image registry.fly.io/seed-agent:$(git rev-parse --short HEAD)
 ```
 
 - `fly.toml` sets IPv6 clustering (`DNS_CLUSTER_QUERY`) and keeps two machines alive for hot upgrades.
 - `/data/code` must be backed by a volume; blue/green deploys require temporarily scaling up if you mutate volumes in-place.
 - Use `fly ssh console` to connect and inspect BEAM nodes with `:observer_cli`.
+- While connected over `fly ssh console`, you can interact with the autonomous
+  loop directly:
+  ```elixir
+  # Record observed outcomes
+  SeedAgent.record_outcome("agent-123", :success)
+  SeedAgent.record_outcome("agent-123", :failure)
+
+  # Merge richer metrics (latency, reward)
+  SeedAgent.update_agent_metrics("agent-123", %{latency_ms: 180, reward: 0.42})
+
+  # Force a new strategy on the next evaluation cycle
+  SeedAgent.force_improvement("agent-123", "manual test")
+  ```
+  Agents that drop below the configured score threshold or stagnate for 30+ tick
+  cycles will self-synthesise a new Elixir module and push it through the same
+  hot-reload queue—no HTTP ingress or external orchestration required.
 
 ## Kubernetes Migration Notes
 
@@ -182,14 +221,16 @@ Set `CODEX_SANDBOX` if you want to override the default Codex CLI sandbox (defau
 
 ## Extending Hot Reload
 
-1. Replace the Gleam placeholder in `seed/improver.gleam` with compilation + `:code.load_binary/3`.
-2. Expand `SeedAgent.CodeStore` to manage bytecode, run shadow tests, and maintain version history.
+1. Expand `SeedAgent.DynamicCompiler` to support richer guardrails (sandboxed
+   evaluation, resource quotas) before modules are made live.
+2. Persist comparison metrics across improvements and feed them into a
+   longer-term optimiser (e.g. bandit-based strategy selection).
 3. Add CRDT or PostgreSQL-backed metadata to coordinate agent state across clusters.
 4. Introduce request authentication and agent control endpoints before exposing externally.
 
 ## Pending Improvements
 
 - Implement real compilation/loading of generated modules.
-- Persist Gleam compilation artifacts per version for auditing.
+- Persist compiled bytecode artifacts per version for auditing.
 - Add self-healing tasks for Fly volume constraints (e.g. optional remote object storage sync).
 - Harden `/metrics` with authentication/ingress policies.

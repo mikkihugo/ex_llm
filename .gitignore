@@ -13,7 +13,6 @@ node_modules/
 
 # AI Provider Credentials - NEVER COMMIT
 .env
-.env.ai-providers
 .env.local
 .env.fly
 *.credentials.json

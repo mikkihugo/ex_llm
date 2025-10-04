@@ -66,13 +66,17 @@ defmodule SeedAgent.Integration.Gemini do
       message when is_map(message) ->
         %{
           role: Map.get(message, "role") || Map.get(message, :role) || "user",
-          content: stringify_content(Map.get(message, "content") || Map.get(message, :content) || "")
+          content:
+            stringify_content(Map.get(message, "content") || Map.get(message, :content) || "")
         }
     end)
   end
 
   defp stringify_content(content) when is_binary(content), do: content
-  defp stringify_content(content) when is_list(content), do: Enum.map_join(content, "\n", &stringify_content/1)
+
+  defp stringify_content(content) when is_list(content),
+    do: Enum.map_join(content, "\n", &stringify_content/1)
+
   defp stringify_content(%{"text" => text}), do: text
   defp stringify_content(%{text: text}), do: text
   defp stringify_content(other), do: inspect(other)

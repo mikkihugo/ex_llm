@@ -1,0 +1,55 @@
+name: Deploy Seed Agent OCI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      FLY_APP: seed-agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - uses: cachix/cachix-action@v15
+        if: secrets.CACHIX_AUTH_TOKEN != ''
+        with:
+          name: singularity
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Build OCI image
+        run: nix build .#seed-agent-oci
+
+      - name: Install podman and flyctl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+          curl -L https://fly.io/install.sh | sh
+          echo "$HOME/.fly/bin" >> $GITHUB_PATH
+
+      - name: Log in to Fly registry
+        run: |
+          fly auth token ${FLY_API_TOKEN}
+          fly registry login
+
+      - name: Push image to Fly registry
+        run: |
+          podman load < result
+          podman tag seed-agent:latest registry.fly.io/${FLY_APP}:${GITHUB_SHA}
+          podman push registry.fly.io/${FLY_APP}:${GITHUB_SHA}
+
+      - name: Deploy
+        run: |
+          fly deploy --app ${FLY_APP} --image registry.fly.io/${FLY_APP}:${GITHUB_SHA} --detach

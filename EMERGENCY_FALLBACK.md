@@ -76,6 +76,12 @@ Priority order:
 
 ### Emergency Fallback (Direct CLI)
 
+The emergency CLI has built-in timeout protection:
+- **Inactivity Timeout**: 10 minutes - kills CLI if no JSON output for 10 minutes
+- **Hard Timeout**: 60 minutes - kills CLI if total runtime exceeds 60 minutes
+
+This prevents hung processes from blocking recovery operations.
+
 ```elixir
 # Use direct CLI when HTTP server is down
 {:ok, response} = SeedAgent.Integration.Claude.chat("Hello")

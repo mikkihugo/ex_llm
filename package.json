@@ -6,5 +6,8 @@
   "scripts": {
     "ai:server": "cd ai-server && bun run start",
     "ai:dev": "cd ai-server && bun run dev"
+  },
+  "dependencies": {
+    "codex-js-sdk": "^1.0.2"
   }
 }
