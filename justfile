@@ -5,13 +5,13 @@ default:
 	just verify
 
 verify:
-	MIX_ENV=dev mix quality
-	MIX_ENV=test mix test.ci
+	cd singularity_app && MIX_ENV=dev mix quality
+	cd singularity_app && MIX_ENV=test mix test.ci
 
 setup:
-	cd seed_agent && MIX_ENV=dev mix deps.get
-	cd seed_agent && MIX_ENV=dev mix deps.compile
-	cd seed_agent && mix gleam.deps.get
+	cd singularity_app && MIX_ENV=dev mix deps.get
+	cd singularity_app && MIX_ENV=dev mix deps.compile
+	cd singularity_app && mix gleam.deps.get
 	if [ -f bun.lock ] || [ -f bun.lockb ]; then \
 		bun install --frozen-lockfile; \
 	else \
@@ -19,21 +19,21 @@ setup:
 	fi
 
 fmt:
-	mix format
-	gleam format
+	cd singularity_app && mix format
+	cd singularity_app && gleam format
 
 lint:
-	MIX_ENV=dev mix credo --strict
+	cd singularity_app && MIX_ENV=dev mix credo --strict
 	semgrep scan --config auto || true
 
 coverage:
-	MIX_ENV=test mix coveralls.html
+	cd singularity_app && MIX_ENV=test mix coveralls.html
 
 unit:
-	MIX_ENV=test mix test
+	cd singularity_app && MIX_ENV=test mix test
 
 watch-tests:
-	watchexec -w lib -w test -w gleam "MIX_ENV=test mix test"
+	cd singularity_app && watchexec -w lib -w test -w gleam "MIX_ENV=test mix test"
 
 fly-deploy:
 	flyctl deploy --strategy bluegreen

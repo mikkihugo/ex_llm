@@ -49,10 +49,25 @@
           pkgs.gleam
         ];
 
-        dataServices = with pkgs; [
-          postgresql_17
-          sqlite
-          redis
+        postgresqlWithExtensions = pkgs.postgresql_17.withPackages (ps:
+          builtins.concatMap (
+            v:
+              let attempt = builtins.tryEval v;
+                  isDrv = attempt.success && pkgs.lib.isDerivation attempt.value;
+                  drv = if isDrv then attempt.value else null;
+                  broken = if isDrv && drv ? meta && drv.meta ? broken then drv.meta.broken else false;
+                  licenseFree =
+                    if !isDrv || !(drv ? meta && drv.meta ? license) then true
+                    else let lic = drv.meta.license;
+                      in if pkgs.lib.isList lic
+                         then pkgs.lib.all (l: l ? free && l.free) lic
+                         else (lic ? free && lic.free);
+              in if isDrv && !broken && licenseFree then [ drv ] else []
+          ) (builtins.attrValues ps)
+        );
+
+        dataServices = [
+          postgresqlWithExtensions
         ];
 
         webAndCli = with pkgs; [
@@ -158,7 +173,7 @@ EOF
             mkdir -p $out/bin $out/elixir $out/ai-server
 
             # Install Elixir app
-            cp -r . $out/elixir/
+            cp -r singularity_app/* $out/elixir/
 
             # Install AI Server
             cp -r ai-server/* $out/ai-server/
@@ -169,7 +184,7 @@ EOF
 
             cat > $out/bin/start-singularity <<'EOF'
 #!${pkgs.bash}/bin/bash
-# Seed-Agent unified start
+# Singularity unified start
 set -euo pipefail
 
 export MIX_ENV="__MIX_ENV_DEFAULT__"
@@ -272,8 +287,8 @@ EOF
         packages = let
           aiServerPackage = ai-server;
           integratedPackage = singularity-integrated;
-          seedAgentRoot = pkgs.buildEnv {
-            name = "seed-agent-root";
+          singularityRoot = pkgs.buildEnv {
+            name = "singularity-root";
             paths = [
               integratedPackage
               pkgs.cacert
@@ -283,13 +298,13 @@ EOF
           default = aiServerPackage;
           ai-server = aiServerPackage;
           singularity-integrated = integratedPackage;
-          seed-agent-oci = pkgs.dockerTools.buildLayeredImage {
-            name = "seed-agent";
+          singularity-oci = pkgs.dockerTools.buildLayeredImage {
+            name = "singularity";
             tag = "latest";
-            contents = [ seedAgentRoot ];
+            contents = [ singularityRoot ];
             config = {
               WorkingDir = "/";
-              Cmd = ["${seedAgentRoot}/bin/start-singularity"];
+              Cmd = ["${singularityRoot}/bin/start-singularity"];
               Env = [
                 "PORT=8080"
               ];
@@ -299,7 +314,7 @@ EOF
         };
 
         devShells.default = pkgs.mkShell {
-          name = "seed-agent-shell";
+          name = "singularity-shell";
           buildInputs = beamTools ++ commonTools ++ dataServices ++ webAndCli ++ qaTools ++ aiCliPackages;
 
           shellHook = ''
@@ -347,8 +362,86 @@ EOF
               set +a
             fi
 
+            export DEV_PGROOT="$PWD/.dev-db"
+            export PGDATA="$DEV_PGROOT/pg"
+            export PGHOST="localhost"
+            if ! printenv PGPORT >/dev/null 2>&1 || [ -z "$PGPORT" ]; then
+              if printenv DEV_PGPORT >/dev/null 2>&1 && [ -n "$DEV_PGPORT" ]; then
+                export PGPORT="$DEV_PGPORT"
+              else
+                export PGPORT="5432"
+              fi
+            fi
+            if ! printenv _DEV_SHELL_PG_STARTED >/dev/null 2>&1 || [ -z "$_DEV_SHELL_PG_STARTED" ]; then
+              export _DEV_SHELL_PG_STARTED=0
+            fi
+
+            if [ ! -d "$PGDATA" ]; then
+              mkdir -p "$DEV_PGROOT"
+              ${postgresqlWithExtensions}/bin/initdb --no-locale --encoding=UTF8 -D "$PGDATA" >/dev/null
+              cat > "$PGDATA/pg_hba.conf" <<'EOF'
+local   all             all                                     trust
+host    all             all             127.0.0.1/32            trust
+host    all             all             ::1/128                 trust
+EOF
+              cat >> "$PGDATA/postgresql.conf" <<EOF
+listen_addresses = 'localhost'
+port = $PGPORT
+unix_socket_directories = '$PGDATA'
+EOF
+            fi
+
+            if ! ${postgresqlWithExtensions}/bin/pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then
+              ${postgresqlWithExtensions}/bin/pg_ctl -D "$PGDATA" -l "$PGDATA/postgres.log" -o "-p $PGPORT" start >/dev/null
+              export _DEV_SHELL_PG_STARTED=1
+              echo "🚀 Started Postgres on port $PGPORT (data: $PGDATA)"
+            fi
+
+            if ! printenv _DEV_SHELL_PG_TRAP >/dev/null 2>&1 || [ -z "$_DEV_SHELL_PG_TRAP" ]; then
+              trap 'if [ "$_DEV_SHELL_PG_STARTED" = "1" ]; then ${postgresqlWithExtensions}/bin/pg_ctl -D "$PGDATA" -m fast stop >/dev/null 2>&1 || true; fi' EXIT
+              export _DEV_SHELL_PG_TRAP=1
+            fi
+
+            if ! printenv DATABASE_URL >/dev/null 2>&1 || [ -z "$DATABASE_URL" ]; then
+              export DATABASE_URL="postgres://localhost:$PGPORT/postgres"
+            fi
+
+            # Ensure vector extensions and ANN-ready schema
+            ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
+            ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS pgvecto_rs;" >/dev/null 2>&1 || true
+
+            ensure_db() {
+              local db_name="$1"
+              if ! ${postgresqlWithExtensions}/bin/psql -d postgres -qAt -c "SELECT 1 FROM pg_database WHERE datname = '${db_name}';" | grep -q 1; then
+                ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE DATABASE ${db_name};" >/dev/null
+              fi
+            }
+
+            ensure_db "singularity_embeddings"
+            ensure_db "singularity_dev"
+            ensure_db "singularity_test"
+
+            ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
+            ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS pgvecto_rs;" >/dev/null 2>&1 || true
+
+            ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q <<'EOSQL'
+CREATE TABLE IF NOT EXISTS embeddings (
+  id          bigserial PRIMARY KEY,
+  path        text NOT NULL,
+  label       text,
+  metadata    jsonb DEFAULT '{}'::jsonb,
+  embedding   vector(768) NOT NULL,
+  created_at  timestamptz DEFAULT now(),
+  updated_at  timestamptz DEFAULT now()
+);
+EOSQL
+
+            ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q -c \
+"CREATE INDEX IF NOT EXISTS embeddings_embedding_hnsw ON embeddings USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);" \
+              >/dev/null
+
             if [ -n "${PS1:-}" ]; then
-              echo "Loaded seed-agent development shell"
+              echo "Loaded singularity development shell"
               echo "AI CLIs: gemini, claude, codex, copilot, cursor-agent"
               echo "Run 'just help' for task shortcuts."
             fi
@@ -356,7 +449,7 @@ EOF
         };
 
         devShells.fly = pkgs.mkShell {
-          name = "seed-agent-fly";
+          name = "singularity-fly";
           buildInputs = [
             pkgs.flyctl
             pkgs.just

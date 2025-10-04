@@ -58,7 +58,7 @@ export async function startCopilotOAuth(): Promise<{
     throw new Error(`Failed to start OAuth flow: ${response.statusText}`);
   }
 
-  const data: DeviceCodeResponse = await response.json();
+  const data = await response.json() as DeviceCodeResponse;
   return {
     device_code: data.device_code,
     user_code: data.user_code,
@@ -87,7 +87,7 @@ export async function completeCopilotOAuth(deviceCode: string): Promise<boolean>
     return false;
   }
 
-  const data: AccessTokenResponse = await response.json();
+  const data = await response.json() as AccessTokenResponse;
 
   if (data.access_token) {
     tokenStore = {
@@ -133,7 +133,7 @@ export async function getCopilotAccessToken(): Promise<string | null> {
     throw new Error(`Failed to get Copilot token: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
-  const tokenData: CopilotTokenResponse = await response.json();
+  const tokenData = await response.json() as CopilotTokenResponse;
 
   // Update token store with new Copilot API token
   tokenStore.copilotToken = tokenData.token;

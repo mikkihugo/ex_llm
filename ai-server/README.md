@@ -82,7 +82,7 @@ GET /health
 Response:
 {
   "status": "ok",
-  "providers": ["gemini-code-cli", "gemini-code", "claude-code-cli", "codex", "cursor-agent", "copilot"],
+  "providers": ["gemini-code-cli", "gemini-code", "claude-code-cli", "codex-cli", "cursor-agent-cli", "copilot-cli"],
   "codex": {
     "authenticated": false,
     "accountId": null
@@ -93,28 +93,73 @@ Response:
 ### Chat Completion
 
 ```bash
-POST /chat
+POST /v1/chat/completions
 Content-Type: application/json
 
 {
-  "provider": "gemini-code-cli",
   "model": "gemini-2.5-flash",
   "messages": [
     {"role": "user", "content": "Explain this code"}
   ],
   "temperature": 0.7,
-  "maxTokens": 2048
+  "max_tokens": 2048,
+  "response_format": {"type": "json_object"}
 }
 
 Response:
 {
-  "text": "...",
-  "finishReason": "stop",
-  "usage": {...},
+  "id": "chatcmpl-...",
+  "object": "chat.completion",
+  "created": 1714764800,
   "model": "gemini-2.5-flash",
-  "provider": "gemini-code-cli"
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"answer\":\"...\"}"
+      },
+      "finish_reason": "stop",
+      "logprobs": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 42,
+    "completion_tokens": 128,
+    "total_tokens": 170
+  }
 }
 ```
+
+The server enforces `response_format: {"type": "json_object"}` by repairing obvious JSON glitches and validating the final output; unsupported formats or streaming flags still fail fast.
+
+Set `"stream": true` to receive OpenAI-compatible SSE output. Streaming currently surfaces incremental tool-call deltas for providers that support them (e.g. Gemini CLI, Claude Code CLI) and falls back to a single-chunk stream for other integrations.
+
+## Embeddings & Vector Store
+
+- **Vector store**: use the pgvector-enabled Postgres instance that the Nix dev shell now boots automatically (`$PGDATA` defaults to `.dev-db/pg`). It already includes every Postgres extension exposed by Nixpkgs.
+- **CPU-only embeddings**: we recommend `nomic-ai/nomic-embed-text-v1` (768-dim). It runs comfortably on laptops without a GPU and performs well on code + prose search.
+
+To run the model locally:
+
+```bash
+pip install text-embedding-inference
+tei --model nomic-ai/nomic-embed-text-v1 --port 8080
+# or: docker run --rm -p 8080:8080 ghcr.io/huggingface/text-embeddings-inference:cpu \
+#         nomic-ai/nomic-embed-text-v1
+```
+
+Configure the server/tooling with:
+
+```
+EMBEDDING_MODEL=nomic-ai/nomic-embed-text-v1
+EMBEDDING_ENDPOINT=http://localhost:8080
+EMBEDDING_DIM=768
+```
+
+The dev shell also creates a `singularity_embeddings` database with an `embeddings` table (`vector(768)`) and an HNSW ANN index (`CREATE INDEX ... USING hnsw`). You can start inserting rows immediately and query with `ORDER BY embedding <-> $1 LIMIT k` for fast approximate search.
+
+Cloud embeddings (Gemini, OpenAI, etc.) still work, but start with the free CPU stack above for zero-cost recall.
 
 ### Codex OAuth
 
@@ -186,11 +231,11 @@ bun run ai:dev
 # Test health
 curl http://localhost:3000/health
 
-# Test chat
-curl -X POST http://localhost:3000/chat \
+# Test chat completions
+curl -X POST http://localhost:3000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "provider": "gemini-code-cli",
+    "model": "gemini-2.5-flash",
     "messages": [{"role": "user", "content": "Hello"}]
   }'
 ```
@@ -201,14 +246,14 @@ curl -X POST http://localhost:3000/chat \
 defmodule MyApp.AIProvider do
   @base_url "http://localhost:3000"
 
-  def chat(provider, messages, opts \\ []) do
-    HTTPoison.post(
-      "#{@base_url}/chat",
+def chat(model, messages, opts \\ []) do
+  HTTPoison.post(
+      "#{@base_url}/v1/chat/completions",
       Jason.encode!(%{
-        provider: provider,
+        model: model,
         messages: messages,
-        model: opts[:model],
-        temperature: opts[:temperature]
+        temperature: opts[:temperature],
+        max_tokens: opts[:max_tokens]
       }),
       [{"Content-Type", "application/json"}],
       timeout: 60_000,
@@ -219,9 +264,9 @@ end
 
 # Usage
 {:ok, response} = MyApp.AIProvider.chat(
-  "gemini-code",
+  "gemini-2.5-flash",
   [%{role: "user", content: "Analyze this code"}],
-  model: "gemini-2.5-flash"
+  temperature: 0.2
 )
 ```
 

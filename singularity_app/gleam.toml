@@ -1,0 +1,12 @@
+name = "singularity"
+version = "0.1.0"
+
+description = "Gleam support modules for Singularity hot reload pipeline"
+
+target = "erlang"
+
+[dependencies]
+gleam_stdlib = "~> 0.34"
+
+[dev-dependencies]
+gleeunit = "~> 1.0"

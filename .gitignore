@@ -10,6 +10,8 @@ node_modules/
 /singularity_data/
 /ai_providers_data/
 .singularity/
+.dev-db/
+.nix-cache/
 
 # AI Provider Credentials - NEVER COMMIT
 .env
@@ -32,6 +34,7 @@ application_default_credentials.json
 # LiteLLM local artifacts
 /litellm/litellm.config.yaml
 /litellm/litellm.log
+litellm/
 
 
 /.litellm/
@@ -39,3 +42,17 @@ application_default_credentials.json
 # moon
 .moon/cache
 .moon/docker
+moon.yml
+
+# Singularity runtime builds
+/singularity_app/_build/
+/singularity_app/deps/
+/singularity_app/priv/plts/
+
+# Rust build artifacts
+target/
+Cargo.lock
+.cargo-build/
+**/*.rs.bk
+debug/
+

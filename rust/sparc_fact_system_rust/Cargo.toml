@@ -1,0 +1,128 @@
+[package]
+name = "sparc-fact-system"
+version = "1.1.0"
+authors = ["mikkihugo"]
+edition = "2021"
+description = "FACT (Fast Augmented Context Tools) - High-performance context processing engine for AI applications"
+homepage = "https://github.com/mikkihugo/claude-code-zen"
+repository = "https://github.com/mikkihugo/claude-code-zen"
+license = "MIT"
+readme = "README.md"
+keywords = ["fact", "cognitive", "ai", "cache", "performance"]
+categories = ["algorithms", "caching", "command-line-utilities", "web-programming"]
+
+[lib]
+name = "fact_tools"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "sparc-fact-system"
+path = "src/bin/main.rs"
+
+[dependencies]
+# Core dependencies
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+ahash = { workspace = true }
+smallvec = { workspace = true }
+parking_lot = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+getrandom = { version = "0.3" }
+num_cpus = { workspace = true }
+
+# CLI dependencies
+clap = { version = "4.4", features = ["derive", "cargo", "env", "unicode"] }
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging and diagnostics
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+
+# Performance monitoring
+dashmap = { workspace = true }
+crossbeam = { workspace = true }
+rayon = { workspace = true }
+
+# Simple storage dependencies - using foundation pattern
+regex = { workspace = true }
+async-trait = { workspace = true }
+log = { workspace = true }
+walkdir = { workspace = true }
+toml = { workspace = true }
+
+# Use local storage, not external databases
+bincode = { workspace = true }
+dirs = { workspace = true }
+redb = { workspace = true }
+quick-xml = "0.31"
+
+# Vector embeddings and graph analysis
+ndarray = { workspace = true }
+petgraph = { workspace = true }
+
+# Pattern matching for file detection
+glob = { workspace = true }
+
+# Transformer embeddings (optional)
+candle-core = { version = "0.7", optional = true }
+candle-nn = { version = "0.7", optional = true }
+candle-transformers = { version = "0.7", optional = true }
+tokenizers = { version = "0.20", optional = true }
+hf-hub = { version = "0.3", optional = true }
+
+# Optional dependencies for github and auto features
+notify = { version = "6.0", optional = true }
+octocrab = { version = "0.38", optional = true }
+reqwest = { workspace = true, features = ["json"], optional = true }
+
+# Package collector dependencies
+flate2 = { version = "1.0", optional = true }
+tar = { version = "0.4", optional = true }
+
+# Prompt engine integration - for framework detection knowledge
+# prompt-engine = { path = "../prompt-engine" }  # Commented out - circular dependency
+
+# Code analysis integration - for tree-sitter snippet extraction
+# universal-parser = { path = "../universal-parser", optional = true }  # Commented out - circular dependency
+
+[dev-dependencies]
+criterion = { workspace = true, features = ["html_reports"] }
+proptest = { workspace = true }
+tempfile = { workspace = true }
+mockall = { workspace = true }
+
+[features]
+default = ["standard"]
+# Standard library features with intelligent automation
+standard = ["auto", "github"]
+github = ["dep:octocrab", "dep:reqwest"]
+github-graphql = ["github"]
+auto = ["dep:notify"]
+orchestration = []
+storage = []
+# Framework detection with prompt integration
+# detection = ["dep:prompt-engine"]  # prompt-engine is now required
+# Package collectors
+cargo-collector = ["dep:reqwest", "dep:flate2", "dep:tar"]
+npm-collector = ["dep:reqwest", "dep:flate2", "dep:tar"]
+collectors = ["cargo-collector", "npm-collector"]
+# Tree-sitter extraction using universal-parser framework
+# tree-sitter-extraction = ["dep:universal-parser"]  # Commented out - dependency not available
+
+
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
+
+[[example]]
+name = "npm_collector"
+path = "examples/npm_collector.rs"
+required-features = ["npm-collector"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

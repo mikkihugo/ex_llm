@@ -51,10 +51,10 @@ export SINGULARITY_EMERGENCY_BIN=/opt/singularity/emergency/bin
 
 ## Configuration
 
-The emergency CLI is automatically configured in `seed_agent/config/config.exs`:
+The emergency CLI is automatically configured in `singularity_app/config/config.exs`:
 
 ```elixir
-config :seed_agent, :claude,
+config :singularity, :claude,
   cli_path: System.get_env("CLAUDE_CLI_PATH") || "~/.singularity/emergency/bin/claude-recovery"
 ```
 
@@ -84,10 +84,10 @@ This prevents hung processes from blocking recovery operations.
 
 ```elixir
 # Use direct CLI when HTTP server is down
-{:ok, response} = SeedAgent.Integration.Claude.chat("Hello")
+{:ok, response} = Singularity.Integration.Claude.chat("Hello")
 
 # Or with messages
-{:ok, response} = SeedAgent.Integration.Claude.chat([
+{:ok, response} = Singularity.Integration.Claude.chat([
   %{role: "user", content: "Hello"}
 ], model: "sonnet")
 ```
@@ -140,7 +140,7 @@ case System.find_executable("~/.singularity/emergency/bin/claude") do
 end
 
 # Test emergency integration
-case SeedAgent.Integration.Claude.chat("ping") do
+case Singularity.Integration.Claude.chat("ping") do
   {:ok, _} -> Logger.info("Emergency fallback working")
   {:error, reason} -> Logger.error("Emergency fallback failed: #{inspect(reason)}")
 end

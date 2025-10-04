@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Install Claude CLI to special recovery location for emergency fallback usage
 # Installed as "claude-recovery" to avoid collision with system/NPM Claude
-# This is used by SeedAgent.Integration.Claude as an emergency fallback
+# This is used by Workbench.Integration.Claude as an emergency fallback
 set -euo pipefail
 
 CHANNEL=${1:-stable}
@@ -73,7 +73,7 @@ echo "🔍 Available flags:"
 "$EMERGENCY_CLAUDE" --help | head -30
 echo ""
 echo "💡 Configure Elixir to use this:"
-echo "   config :seed_agent, :claude,"
+echo "   config :singularity, :claude,"
 echo "     cli_path: \"$EMERGENCY_CLAUDE\""
 echo ""
 echo "   Or set environment variable:"

@@ -21,21 +21,29 @@
  *   GH_TOKEN / GITHUB_TOKEN - GitHub token for Copilot
  */
 
-import { generateText } from 'ai';
+import { generateText, streamText } from 'ai';
 import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
 import { claudeCode } from 'ai-sdk-provider-claude-code';
 import { createServer } from 'http';
 import { randomBytes, createHash } from 'crypto';
-import { spawn } from 'child_process';
 import escapeHtml from 'escape-html';
 import { GoogleAuth } from 'google-auth-library';
 import { CodexSDK } from 'codex-js-sdk';
 import type { CodexResponse, CodexMessageType } from 'codex-js-sdk';
 import { loadCredentialsFromEnv, checkCredentialAvailability, printCredentialStatus } from './load-credentials';
 import { copilotChatCompletion } from './providers/copilot-api';
+import { z } from 'zod';
+import { jsonrepair } from 'jsonrepair';
+
+// Import CredentialStats type for type safety
 
 // Load credentials from environment variables if available
-console.log('🔐 Loading credentials...');
+const green = '\x1b[32m';
+const blue = '\x1b[34m';
+const reset = '\x1b[0m';
+const bold = '\x1b[1m';
+
+console.log(`${blue}🔐${reset} Loading AI provider credentials...`);
 loadCredentialsFromEnv();
 const allStats = checkCredentialAvailability();
 printCredentialStatus(allStats);
@@ -100,25 +108,6 @@ interface OAuthState {
 
 const codexTokenStore: CodexTokenStore = {};
 let currentCodexOAuthState: OAuthState | null = null;
-
-// ============================================
-// Claude Max OAuth Configuration
-// ============================================
-
-interface ClaudeMaxTokenStore {
-  accessToken?: string;
-  refreshToken?: string;
-  expiresAt?: number;
-}
-
-const CLAUDE_MAX_CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
-const CLAUDE_MAX_AUTHORIZE_URL = 'https://console.anthropic.com/oauth/authorize';
-const CLAUDE_MAX_TOKEN_URL = 'https://console.anthropic.com/oauth/token';
-const CLAUDE_MAX_REDIRECT_URI = `http://localhost:${OAUTH_CALLBACK_PORT}/auth/claude/callback`;
-const CLAUDE_MAX_SCOPE = 'org:create_api_key user:profile user:inference';
-
-const claudeMaxTokenStore: ClaudeMaxTokenStore = {};
-let currentClaudeMaxOAuthState: OAuthState | null = null;
 
 function toNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
@@ -219,17 +208,17 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
   {
     id: 'gpt-5-codex',
     upstreamId: 'gpt-5-codex',
-    provider: 'codex' as const,
+    provider: 'codex-cli' as const,
     displayName: 'OpenAI Codex GPT-5',
     description: 'ChatGPT Codex via SDK (supports MCP tools)',
     ownedBy: 'openai',
     contextWindow: 128000,
-    capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
   },
   {
     id: 'cursor-gpt-4.1',
     upstreamId: 'gpt-4.1',
-    provider: 'cursor-agent' as const,
+    provider: 'cursor-agent-cli' as const,
     displayName: 'Cursor Agent GPT-4.1',
     description: 'Cursor CLI agent runner (default GPT-4.1 tier)',
     ownedBy: 'cursor',
@@ -239,7 +228,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
   {
     id: 'copilot-claude-sonnet-4.5',
     upstreamId: 'claude-sonnet-4.5',
-    provider: 'copilot' as const,
+    provider: 'copilot-cli' as const,
     displayName: 'GitHub Copilot Claude Sonnet 4.5',
     description: 'GitHub Copilot CLI with Claude backend',
     ownedBy: 'github',
@@ -396,11 +385,6 @@ function mapOpenAIMessageToInternal(message: any): Message {
   return { role, content: '' };
 }
 
-function coerceLegacyMessages(rawMessages: any[]): Message[] {
-  if (!Array.isArray(rawMessages)) return [];
-  return rawMessages.map((message) => mapOpenAIMessageToInternal(message));
-}
-
 function normalizeTemperature(value: any): number | undefined {
   if (typeof value !== 'number') return undefined;
   if (!Number.isFinite(value)) return undefined;
@@ -427,7 +411,25 @@ async function convertOpenAIChatCompletionRequest(body: any): Promise<{ request:
   }
 
   const modelEntry = await resolveModel(body.model);
-  const messages = body.messages.map(mapOpenAIMessageToInternal);
+  let messages = body.messages.map(mapOpenAIMessageToInternal);
+
+  const responseFormat = body.response_format;
+  const formatType = typeof responseFormat === 'string' ? responseFormat : responseFormat?.type;
+  let expectJsonObject = false;
+
+  if (formatType) {
+    if (formatType === 'json_object') {
+      expectJsonObject = true;
+    } else if (formatType === 'text') {
+      // no-op: treated as default text output
+    } else {
+      throw new Error(`Unsupported response_format type: ${formatType}`);
+    }
+  }
+
+  if (expectJsonObject) {
+    messages = [{ role: 'system', content: JSON_OBJECT_SYSTEM_PROMPT }, ...messages];
+  }
 
   const request: ChatRequest = {
     provider: modelEntry.provider,
@@ -435,6 +437,9 @@ async function convertOpenAIChatCompletionRequest(body: any): Promise<{ request:
     messages,
     temperature: normalizeTemperature(body.temperature),
     maxTokens: normalizeMaxTokens(body.max_tokens ?? body.max_completion_tokens ?? body.max_completion_tokens),
+    tools: body.tools, // Pass through OpenAI tools format
+    expectJsonObject,
+    stream: body.stream === true,
   };
 
   return { request, model: modelEntry };
@@ -475,6 +480,8 @@ function buildOpenAIChatResponse(
         message: {
           role: 'assistant',
           content: result.text,
+          // TODO: Add tool_calls support when providers return tool calls
+          // tool_calls: result.toolCalls,
         },
         finish_reason: result.finishReason ?? 'stop',
         logprobs: null,
@@ -487,6 +494,399 @@ function buildOpenAIChatResponse(
     },
     system_fingerprint: requestBody?.system_fingerprint ?? null,
   };
+}
+
+function enforceResponseFormat(result: ProviderResult, request: ChatRequest): ProviderResult {
+  if (!request.expectJsonObject) {
+    return result;
+  }
+
+  const trimmed = result.text?.trim?.();
+  try {
+    let parsedValue;
+    try {
+      parsedValue = JSON.parse(trimmed ?? '');
+    } catch {
+      parsedValue = JSON.parse(jsonrepair(trimmed ?? ''));
+    }
+
+    const parsed = JsonObjectSchema.parse(parsedValue);
+    const normalized = JSON.stringify(parsed);
+    return {
+      ...result,
+      text: normalized,
+    };
+  } catch (error: any) {
+    throw new Error(`Provider returned non-JSON output while json_object response_format was requested: ${error?.message || error}`);
+  }
+}
+
+const OPENAI_STREAM_HEADERS = {
+  'Content-Type': 'text/event-stream; charset=utf-8',
+  'Cache-Control': 'no-cache, no-transform',
+  Connection: 'keep-alive',
+};
+
+const textEncoder = new TextEncoder();
+
+type StreamTextResultAny = ReturnType<typeof streamText>;
+
+function mapFinishReason(reason: string | undefined | null): string | null {
+  if (!reason) return null;
+  switch (reason) {
+    case 'content-filter':
+      return 'content_filter';
+    case 'tool-calls':
+      return 'tool_calls';
+    default:
+      return reason;
+  }
+}
+
+function toOpenAIUsage(usage?: UsageSummary | { inputTokens?: number; outputTokens?: number; totalTokens?: number } | null) {
+  if (!usage) return undefined;
+  if ('promptTokens' in usage) {
+    return {
+      prompt_tokens: usage.promptTokens,
+      completion_tokens: usage.completionTokens,
+      total_tokens: usage.totalTokens,
+    };
+  }
+  return {
+    prompt_tokens: usage.inputTokens ?? 0,
+    completion_tokens: usage.outputTokens ?? 0,
+    total_tokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
+  };
+}
+
+function createOpenAIStreamFromResult(
+  result: ProviderResult,
+  modelEntry: ModelCatalogEntry,
+  requestBody: any,
+): Response {
+  const created = Math.floor(Date.now() / 1000);
+  const id = `chatcmpl-${crypto.randomUUID()}`;
+  const usage = toOpenAIUsage(result.usage);
+
+  const readable = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const send = (payload: unknown) => {
+        controller.enqueue(textEncoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      };
+      const sendDone = () => {
+        controller.enqueue(textEncoder.encode('data: [DONE]\n\n'));
+      };
+
+      const base = {
+        id,
+        object: 'chat.completion.chunk',
+        created,
+        model: modelEntry.id,
+      };
+
+      send({
+        ...base,
+        choices: [
+          {
+            index: 0,
+            delta: { role: 'assistant' },
+            finish_reason: null,
+            logprobs: null,
+          },
+        ],
+      });
+
+      if (result.text) {
+        send({
+          ...base,
+          choices: [
+            {
+              index: 0,
+              delta: { content: result.text },
+              finish_reason: null,
+              logprobs: null,
+            },
+          ],
+        });
+      }
+
+      send({
+        ...base,
+        choices: [
+          {
+            index: 0,
+            delta: {},
+            finish_reason: mapFinishReason(result.finishReason),
+            logprobs: null,
+          },
+        ],
+        usage,
+      });
+
+      sendDone();
+      controller.close();
+    },
+  });
+
+  return new Response(readable, { headers: OPENAI_STREAM_HEADERS });
+}
+
+type ToolCallState = {
+  id: string;
+  name: string;
+  index: number;
+  arguments: string;
+};
+
+async function createOpenAIStreamFromStreamResult(
+  streamResult: StreamTextResultAny,
+  request: ChatRequest,
+  modelEntry: ModelCatalogEntry,
+  requestBody: any,
+): Promise<Response> {
+  const created = Math.floor(Date.now() / 1000);
+  const id = `chatcmpl-${crypto.randomUUID()}`;
+
+  const fullStream = streamResult.fullStream;
+
+  const readable = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (payload: unknown) => {
+        controller.enqueue(textEncoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      };
+      const sendDone = () => {
+        controller.enqueue(textEncoder.encode('data: [DONE]\n\n'));
+      };
+
+      const base = {
+        id,
+        object: 'chat.completion.chunk',
+        created,
+        model: modelEntry.id,
+      };
+
+      const sendRoleIfNeeded = (() => {
+        let roleSent = false;
+        return () => {
+          if (roleSent) return;
+          roleSent = true;
+          send({
+            ...base,
+            choices: [
+              {
+                index: 0,
+                delta: { role: 'assistant' },
+                finish_reason: null,
+                logprobs: null,
+              },
+            ],
+          });
+        };
+      })();
+
+      const toolCallStates = new Map<string, ToolCallState>();
+      let nextToolCallIndex = 0;
+      let finished = false;
+
+      try {
+        for await (const part of fullStream) {
+          switch (part.type) {
+            case 'text-start':
+              sendRoleIfNeeded();
+              break;
+            case 'text-delta':
+              sendRoleIfNeeded();
+              if (part.text) {
+                send({
+                  ...base,
+                  choices: [
+                    {
+                      index: 0,
+                      delta: { content: part.text },
+                      finish_reason: null,
+                      logprobs: null,
+                    },
+                  ],
+                });
+              }
+              break;
+            case 'tool-input-start': {
+              sendRoleIfNeeded();
+              const existing = toolCallStates.get(part.toolCallId);
+              if (!existing) {
+                const state: ToolCallState = {
+                  id: part.toolCallId || `call_${crypto.randomUUID()}`,
+                  name: part.toolName || 'tool',
+                  index: nextToolCallIndex++,
+                  arguments: '',
+                };
+                toolCallStates.set(part.toolCallId, state);
+                send({
+                  ...base,
+                  choices: [
+                    {
+                      index: 0,
+                      delta: {
+                        tool_calls: [
+                          {
+                            index: state.index,
+                            id: state.id,
+                            type: 'function',
+                            function: {
+                              name: state.name,
+                              arguments: '',
+                            },
+                          },
+                        ],
+                      },
+                      finish_reason: null,
+                      logprobs: null,
+                    },
+                  ],
+                });
+              }
+              break;
+            }
+            case 'tool-input-delta': {
+              sendRoleIfNeeded();
+              const state = toolCallStates.get(part.toolCallId);
+              if (state) {
+                state.arguments += part.inputTextDelta ?? '';
+                const deltaArgs = part.inputTextDelta ?? '';
+                if (deltaArgs.length > 0) {
+                  send({
+                    ...base,
+                    choices: [
+                      {
+                        index: 0,
+                        delta: {
+                          tool_calls: [
+                            {
+                              index: state.index,
+                              id: state.id,
+                              type: 'function',
+                              function: {
+                                arguments: deltaArgs,
+                              },
+                            },
+                          ],
+                        },
+                        finish_reason: null,
+                        logprobs: null,
+                      },
+                    ],
+                  });
+                }
+              }
+              break;
+            }
+            case 'tool-input-available': {
+              const state = toolCallStates.get(part.toolCallId);
+              if (state && typeof part.input === 'string') {
+                state.arguments = part.input;
+                send({
+                  ...base,
+                  choices: [
+                    {
+                      index: 0,
+                      delta: {
+                        tool_calls: [
+                          {
+                            index: state.index,
+                            id: state.id,
+                            type: 'function',
+                            function: {
+                              arguments: part.input,
+                            },
+                          },
+                        ],
+                      },
+                      finish_reason: null,
+                      logprobs: null,
+                    },
+                  ],
+                });
+              }
+              break;
+            }
+            case 'finish':
+              finished = true;
+              send({
+                ...base,
+                choices: [
+                  {
+                    index: 0,
+                    delta: {},
+                    finish_reason: mapFinishReason(part.finishReason),
+                    logprobs: null,
+                  },
+                ],
+                usage: toOpenAIUsage(part.totalUsage),
+              });
+              break;
+            case 'error':
+              send({
+                ...base,
+                choices: [
+                  {
+                    index: 0,
+                    delta: {},
+                    finish_reason: 'error',
+                    logprobs: null,
+                  },
+                ],
+              });
+              finished = true;
+              break;
+            default:
+              break;
+          }
+        }
+
+        if (!finished) {
+          send({
+            ...base,
+            choices: [
+              {
+                index: 0,
+                delta: {},
+                finish_reason: 'stop',
+                logprobs: null,
+              },
+            ],
+            usage: toOpenAIUsage(await streamResult.totalUsage.catch(() => undefined)),
+          });
+        }
+
+        sendDone();
+        controller.close();
+      } catch (error: any) {
+        controller.enqueue(
+          textEncoder.encode(
+            `data: ${JSON.stringify({
+              id,
+              object: 'chat.completion.chunk',
+              created,
+              model: modelEntry.id,
+              choices: [
+                {
+                  index: 0,
+                  delta: {},
+                  finish_reason: 'error',
+                  logprobs: null,
+                },
+              ],
+              error: { message: error?.message || String(error) },
+            })}\n\n`,
+          ),
+        );
+        sendDone();
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(readable, { headers: OPENAI_STREAM_HEADERS });
 }
 
 function generatePKCE(): PKCEPair {
@@ -511,92 +911,9 @@ function decodeJWT(token: string): any {
   }
 }
 
-async function refreshCodexToken(): Promise<boolean> {
-  if (!codexTokenStore.refreshToken) return false;
 
-  try {
-    const response = await fetch(CODEX_TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: codexTokenStore.refreshToken,
-        client_id: CODEX_CLIENT_ID,
-      }),
-    });
 
-    if (!response.ok) {
-      console.error('Codex token refresh failed:', response.status);
-      return false;
-    }
 
-    const json: any = await response.json();
-    if (!json?.access_token || !json?.refresh_token) return false;
-
-    codexTokenStore.accessToken = json.access_token;
-    codexTokenStore.refreshToken = json.refresh_token;
-    codexTokenStore.expiresAt = Date.now() + json.expires_in * 1000;
-
-    const decoded = decodeJWT(json.access_token);
-    codexTokenStore.accountId = decoded?.['https://api.openai.com/auth']?.chatgpt_account_id;
-
-    console.log('✓ Codex token refreshed');
-    return true;
-  } catch (error) {
-    console.error('Codex token refresh error:', error);
-    return false;
-  }
-}
-
-async function ensureValidCodexToken(): Promise<boolean> {
-  if (!codexTokenStore.accessToken) return false;
-  if (codexTokenStore.expiresAt && codexTokenStore.expiresAt - Date.now() < 5 * 60 * 1000) {
-    return await refreshCodexToken();
-  }
-  return true;
-}
-
-async function refreshClaudeMaxToken(): Promise<boolean> {
-  if (!claudeMaxTokenStore.refreshToken) return false;
-
-  try {
-    const response = await fetch(CLAUDE_MAX_TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: claudeMaxTokenStore.refreshToken,
-        client_id: CLAUDE_MAX_CLIENT_ID,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Claude Max token refresh failed:', response.status);
-      return false;
-    }
-
-    const json: any = await response.json();
-    if (!json?.access_token || !json?.refresh_token) return false;
-
-    claudeMaxTokenStore.accessToken = json.access_token;
-    claudeMaxTokenStore.refreshToken = json.refresh_token;
-    claudeMaxTokenStore.expiresAt = Date.now() + json.expires_in * 1000;
-
-    console.log('✓ Claude Max token refreshed');
-    return true;
-  } catch (error) {
-    console.error('Claude Max token refresh error:', error);
-    return false;
-  }
-}
-
-async function ensureValidClaudeMaxToken(): Promise<boolean> {
-  if (!claudeMaxTokenStore.accessToken) return false;
-  if (claudeMaxTokenStore.expiresAt && claudeMaxTokenStore.expiresAt - Date.now() < 5 * 60 * 1000) {
-    return await refreshClaudeMaxToken();
-  }
-  return true;
-}
 
 function renderOAuthResponse(res: any, status: number, message: string): void {
   res.statusCode = status;
@@ -758,23 +1075,42 @@ const googleAuth = new GoogleAuth({
 
 const gemini = createGeminiProvider({
   authType: 'google-auth-library' as any,
-  googleAuth,
+  googleAuth: googleAuth as any,
 });
+
+const JSON_OBJECT_SYSTEM_PROMPT = 'You are a structured output agent. Reply with a single valid JSON object only, without additional commentary or code fences.';
+const JsonObjectSchema = z.object({}).passthrough();
+
+// Tool interface following OpenAI format
+interface Tool {
+  type: 'function';
+  function: {
+    name: string;
+    description?: string;
+    parameters?: {
+      type: 'object';
+      properties?: Record<string, any>;
+      required?: string[];
+    };
+  };
+}
 
 interface ChatRequest {
   provider:
     | 'gemini-code-cli'
     | 'gemini-code'
     | 'claude-code-cli'
-    | 'claude-max'
-    | 'codex'
-    | 'cursor-agent'
-    | 'copilot'
+    | 'codex-cli'
+    | 'cursor-agent-cli'
+    | 'copilot-cli'
     | 'copilot-api';
   model?: string;
   messages: Message[];
   temperature?: number;
   maxTokens?: number;
+  tools?: Tool[];
+  expectJsonObject?: boolean;
+  stream?: boolean;
 }
 
 // Helper to convert messages to prompt for CLI-based providers
@@ -811,6 +1147,8 @@ async function handleGeminiCodeCLI(req: ChatRequest) {
     messages: req.messages,
     temperature: req.temperature ?? 0.7,
     maxRetries: 2,
+    // TODO: Convert OpenAI tools to AI SDK ToolSet format
+    // tools: req.tools ? convertOpenAIToolsToAISDK(req.tools) : undefined,
   });
 
   return {
@@ -897,6 +1235,8 @@ async function handleClaudeCodeCLI(req: ChatRequest) {
     messages: req.messages,
     temperature: req.temperature ?? 0.7,
     maxRetries: 2,
+    // TODO: Convert OpenAI tools to AI SDK ToolSet format
+    // tools: req.tools ? convertOpenAIToolsToAISDK(req.tools) : undefined,
   });
 
   return {
@@ -908,7 +1248,7 @@ async function handleClaudeCodeCLI(req: ChatRequest) {
   };
 }
 
-async function handleCodex(req: ChatRequest) {
+async function handleCodex(req: ChatRequest): Promise<ProviderResult> {
   const model = req.model || 'gpt-5-codex';
   const prompt = messagesToPrompt(req.messages);
 
@@ -919,11 +1259,14 @@ async function handleCodex(req: ChatRequest) {
       config: {
         approval_policy: 'never' as any, // Auto-approve all commands for API use
         model: 'gpt-5-codex',
+        // TODO: Add MCP server configuration from request
+        // mcp_servers: req.mcpServers,
       },
     });
 
     return await new Promise((resolve, reject) => {
       let responseText = '';
+      let toolCalls: any[] = [];
       let isComplete = false;
       const timeout = setTimeout(() => {
         if (!isComplete) {
@@ -938,6 +1281,20 @@ async function handleCodex(req: ChatRequest) {
 
         if (msg.type === 'agent_message') {
           responseText += msg.message;
+        } else if (msg.type === 'mcp_tool_call_begin') {
+          // Record tool call start
+          toolCalls.push({
+            id: msg.call_id,
+            type: 'function',
+            function: {
+              name: msg.tool,
+              arguments: JSON.stringify(msg.arguments || {}),
+            },
+          });
+        } else if (msg.type === 'mcp_tool_call_end') {
+          // Tool call completed - could update toolCalls with results
+          // For now, just log that it completed
+          console.log(`MCP tool call ${msg.call_id} completed`);
         } else if (msg.type === 'task_complete') {
           isComplete = true;
           clearTimeout(timeout);
@@ -948,7 +1305,9 @@ async function handleCodex(req: ChatRequest) {
             finishReason: 'stop',
             usage: normalizeUsage(req.messages, responseText, {}),
             model,
-            provider: 'codex' as const,
+            provider: 'codex-cli' as const,
+            // TODO: Return tool calls in response
+            // toolCalls: toolCalls,
           });
         } else if (msg.type === 'error') {
           isComplete = true;
@@ -978,8 +1337,8 @@ async function handleCursorAgent(req: ChatRequest) {
   const prompt = messagesToPrompt(req.messages);
   const model = req.model || 'gpt-4.1';
 
-  // Use non-interactive mode, but let the CLI select a model unless caller specifies one
-  const args = ['-p', '--print', '--output-format', 'text'];
+  // Use stream-json output to capture tool calls
+  const args = ['-p', '--print', '--output-format', 'stream-json'];
 
   if (req.model) {
     args.push('--model', req.model);
@@ -989,12 +1348,58 @@ async function handleCursorAgent(req: ChatRequest) {
 
   const output = await execCLI('cursor-agent', args);
 
+  // Parse the stream-json output to extract text and tool calls
+  let responseText = '';
+  let toolCalls: any[] = [];
+  const lines = output.trim().split('\n');
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+
+    try {
+      const event = JSON.parse(line);
+
+      if (event.type === 'assistant' && event.message) {
+        // Extract text from assistant messages
+        for (const content of event.message.content || []) {
+          if (content.type === 'text') {
+            responseText += content.text;
+          }
+        }
+      } else if (event.type === 'tool_call' && event.subtype === 'started') {
+        // Record tool call start
+        const toolCall = event.tool_call;
+        if (toolCall?.shellToolCall) {
+          toolCalls.push({
+            id: event.call_id,
+            type: 'function',
+            function: {
+              name: 'shell',
+              arguments: JSON.stringify({
+                command: toolCall.shellToolCall.args?.command,
+                workingDirectory: toolCall.shellToolCall.args?.workingDirectory,
+              }),
+            },
+          });
+        }
+      } else if (event.type === 'result') {
+        // Final result contains the complete response
+        responseText = event.result || responseText;
+      }
+    } catch (e) {
+      // Skip invalid JSON lines
+      console.warn('Failed to parse cursor-agent JSON line:', line);
+    }
+  }
+
   return {
-    text: output,
+    text: responseText.trim(),
     finishReason: 'stop',
-    usage: normalizeUsage(req.messages, output),
+    usage: normalizeUsage(req.messages, responseText),
     model,
-    provider: 'cursor-agent' as const,
+    provider: 'cursor-agent-cli' as const,
+    // TODO: Return tool calls in response
+    // toolCalls: toolCalls,
   };
 }
 
@@ -1012,32 +1417,29 @@ async function handleCopilot(req: ChatRequest) {
     finishReason: 'stop',
     usage: normalizeUsage(req.messages, output),
     model,
-    provider: 'copilot' as const,
+    provider: 'copilot-cli' as const,
   };
+}
 
 async function handleCopilotAPI(req: ChatRequest) {
   const model = req.model || 'copilot-gpt-5';
   const completion = await copilotChatCompletion({
     model,
     messages: req.messages,
-    temperature: req.temperature,
-    maxTokens: req.maxTokens,
   });
 
-  const content = completion?.choices?.[0]?.message?.content;
+  const content = completion.text;
   if (typeof content !== 'string') {
     throw new Error('Copilot API response missing assistant content.');
   }
 
   return {
     text: content,
-    finishReason: completion?.choices?.[0]?.finish_reason ?? 'stop',
-    usage: normalizeUsage(req.messages, content, completion?.usage),
+    finishReason: 'stop',
+    usage: normalizeUsage(req.messages, content, completion.usage),
     model,
-    provider: 'copilot-api',
+    provider: 'copilot-api' as const,
   };
-}
-
 }
 
 async function executeChatRequest(request: ChatRequest): Promise<ProviderResult> {
@@ -1048,16 +1450,45 @@ async function executeChatRequest(request: ChatRequest): Promise<ProviderResult>
       return handleGeminiCode(request);
     case 'claude-code-cli':
       return handleClaudeCodeCLI(request);
-    case 'codex':
+    case 'codex-cli':
       return handleCodex(request);
-    case 'cursor-agent':
+    case 'cursor-agent-cli':
       return handleCursorAgent(request);
-    case 'copilot':
+    case 'copilot-cli':
       return handleCopilot(request);
     case 'copilot-api':
       return handleCopilotAPI(request);
     default:
       throw new Error(`Unknown provider: ${request.provider}`);
+  }
+}
+
+function executeChatRequestStream(request: ChatRequest): StreamTextResultAny | null {
+  if (request.expectJsonObject) {
+    return null;
+  }
+
+  switch (request.provider) {
+    case 'gemini-code-cli': {
+      const modelName = request.model === 'gemini-2.5-flash' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+      return streamText({
+        model: gemini(modelName),
+        messages: request.messages,
+        temperature: request.temperature ?? 0.7,
+        maxRetries: 2,
+      });
+    }
+    case 'claude-code-cli': {
+      const modelName = request.model || 'sonnet';
+      return streamText({
+        model: claudeCode(modelName),
+        messages: request.messages,
+        temperature: request.temperature ?? 0.7,
+        maxRetries: 2,
+      });
+    }
+    default:
+      return null;
   }
 }
 
@@ -1101,20 +1532,28 @@ const _server = Bun.serve({
       try {
         const body = await req.json() as any;
 
-        if (body?.stream === true) {
-          return new Response(JSON.stringify({ error: 'Streaming responses are not yet supported.' }), {
-            status: 400,
-            headers,
-          });
+        const { request: chatRequest, model: modelEntry } = await convertOpenAIChatCompletionRequest(body);
+        if (chatRequest.stream) {
+          const streamResult = executeChatRequestStream(chatRequest);
+          if (streamResult) {
+            return await createOpenAIStreamFromStreamResult(streamResult, chatRequest, modelEntry, body);
+          }
+
+          const rawResult = await executeChatRequest({ ...chatRequest, stream: false });
+          const formattedResult = enforceResponseFormat(rawResult, chatRequest);
+          return createOpenAIStreamFromResult(formattedResult, modelEntry, body);
         }
 
-        const { request: chatRequest, model: modelEntry } = await convertOpenAIChatCompletionRequest(body);
-        const result = await executeChatRequest(chatRequest);
-        const responsePayload = buildOpenAIChatResponse(result, modelEntry, body);
+        const rawResult = await executeChatRequest({ ...chatRequest, stream: false });
+        const formattedResult = enforceResponseFormat(rawResult, chatRequest);
+        const responsePayload = buildOpenAIChatResponse(formattedResult, modelEntry, body);
         return new Response(JSON.stringify(responsePayload), { headers });
       } catch (error: any) {
         console.error('Error handling /v1/chat/completions:', error);
-        const status = error?.message?.startsWith('Unknown model') ? 400 : 500;
+        const clientError =
+          error?.message?.startsWith('Unknown model') ||
+          error?.message?.startsWith('Unsupported response_format type');
+        const status = clientError ? 400 : 500;
         return new Response(JSON.stringify({ error: error.message || String(error) }), { status, headers });
       }
     }
@@ -1203,7 +1642,7 @@ const _server = Bun.serve({
       return new Response(
         JSON.stringify({
           status: 'ok',
-          providers: ['gemini-code-cli', 'gemini-code', 'claude-code-cli', 'codex', 'cursor-agent', 'copilot'],
+          providers: ['gemini-code-cli', 'gemini-code', 'claude-code-cli', 'codex-cli', 'cursor-agent-cli', 'copilot-cli'],
           codex: {
             authenticated: !!codexTokenStore.accessToken,
             accountId: codexTokenStore.accountId,
@@ -1213,117 +1652,25 @@ const _server = Bun.serve({
       );
     }
 
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-        status: 405,
-        headers,
-      });
-    }
-
-    if (url.pathname !== '/chat') {
-      return new Response(JSON.stringify({
-        error: 'Not found',
-        endpoints: [
-          'GET  /health',
-          'GET  /codex/auth/start',
-          'GET  /codex/auth/complete?code=...',
-          'GET  /codex/auth/status',
-          'POST /chat',
-        ]
-      }), {
-        status: 404,
-        headers,
-      });
-    }
-
-    try {
-      const body = await req.json() as ChatRequest;
-
-      if (!body.provider) {
-        return new Response(
-          JSON.stringify({ error: 'Missing provider field' }),
-          { status: 400, headers }
-        );
-      }
-
-      if (!body.messages || body.messages.length === 0) {
-        return new Response(
-          JSON.stringify({ error: 'Missing or empty messages array' }),
-          { status: 400, headers }
-        );
-      }
-
-      let provider: ChatRequest['provider'];
-
-      switch (body.provider) {
-        case 'gemini-code-cli':
-        case 'gemini-code':
-        case 'claude-code-cli':
-        case 'codex':
-        case 'cursor-agent':
-        case 'copilot':
-        case 'copilot-api':
-          provider = body.provider as ChatRequest['provider'];
-          break;
-        default:
-          return new Response(
-            JSON.stringify({ error: `Unknown provider: ${body.provider}` }),
-            { status: 400, headers }
-          );
-      }
-
-      const messages = coerceLegacyMessages(body.messages);
-      const bodyAny = body as any;
-      const chatRequest: ChatRequest = {
-        provider,
-        model: typeof body.model === 'string' ? body.model : undefined,
-        messages,
-        temperature: normalizeTemperature(body.temperature),
-        maxTokens: normalizeMaxTokens(bodyAny.maxTokens ?? bodyAny.max_tokens),
-      };
-
-      const result = await executeChatRequest(chatRequest);
-
-      return new Response(JSON.stringify(result), { headers });
-    } catch (error: any) {
-      console.error('Error processing request:', error);
-      return new Response(
-        JSON.stringify({
-          error: error.message || String(error),
-          stack: error.stack,
-        }),
-        { status: 500, headers }
-      );
-    }
+    return new Response(JSON.stringify({
+      error: 'Not found',
+      endpoints: [
+        'GET  /health',
+        'GET  /v1/models',
+        'POST /v1/chat/completions',
+        'GET  /codex/auth/start',
+        'GET  /codex/auth/complete?code=...',
+        'GET  /codex/auth/status',
+      ],
+    }), {
+      status: 404,
+      headers,
+    });
   },
 });
 
-console.log(`\n🚀 AI Providers HTTP server listening on http://localhost:${PORT}`);
-console.log(`\nProviders:`);
-console.log(`  - gemini-code-cli (SDK with ADC)`);
-console.log(`  - gemini-code (Direct Code Assist API with ADC)`);
-console.log(`  - claude-code-cli (SDK with OAuth)`);
-console.log(`  - codex (CLI) ${checkCredentialAvailability().codex ? '✓' : '⚠ run `codex login`'}`);
-console.log(`  - cursor-agent (OAuth)`);
-console.log(`  - copilot (GitHub OAuth)`);
-console.log(`  - copilot-api (GitHub Copilot API)`);
-console.log(`\nEndpoints:`);
-console.log(`  GET  /health                      - Health check`);
-console.log(`  POST /chat                        - Chat with AI providers`);
-console.log(`  GET  /codex/auth/start            - Start Codex OAuth flow`);
-console.log(`  GET  /codex/auth/complete?code=   - Complete Codex OAuth`);
-console.log(`  GET  /codex/auth/status           - Check Codex auth status`);
-console.log(`\nAuthentication notes:`);
-console.log(`  - gemini-code-cli: ADC (gcloud auth application-default login)`);
-console.log(`  - gemini-code: ADC (gcloud auth application-default login)`);
-console.log(`  - claude-code-cli: Run 'claude setup-token' (requires Claude subscription)`);
-console.log(`  - codex: Run 'codex login' to authenticate`);
-console.log(`  - cursor-agent: Run 'cursor-agent login' (stores OAuth in ~/.config/cursor/auth.json)`);
-console.log(`  - copilot: Set GH_TOKEN/GITHUB_TOKEN or run '/login' in copilot`);
-console.log(`\nTo use Codex:`);
-console.log(`  Run: codex login`);
-console.log(`\nTo use Gemini Code Assist (gemini-code):`);
-console.log(`  1. Enable API: gcloud services enable cloudcode-pa.googleapis.com`);
-console.log(`  2. Setup ADC: gcloud auth application-default login`);
-console.log(`  3. Set project: gcloud config set project ${GEMINI_CODE_PROJECT}`);
-console.log();
+
+// Streamlined post-table startup summary
+console.log(`${green}🚀${reset} Server ready at ${bold}http://localhost:${PORT}${reset}`);
+console.log(`${bold}🔗 Endpoints:${reset} /health  /v1/models  /v1/chat/completions  /codex/auth/start  /codex/auth/complete?code=  /codex/auth/status`);
+console.log(`${bold}💡 Tips:${reset} gemini: gcloud auth application-default login  |  claude: claude setup-token  |  codex: codex login  |  cursor: cursor-agent login  |  copilot: set GH_TOKEN`);

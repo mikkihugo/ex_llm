@@ -57,28 +57,28 @@ describe('Server E2E Tests', () => {
     });
   });
 
-  describe('Chat endpoint validation', () => {
-    test('POST /chat requires provider', async () => {
-      const response = await fetch(`${BASE_URL}/chat`, {
+  describe('OpenAI chat completions endpoint', () => {
+    const endpoint = () => `${BASE_URL}/v1/chat/completions`;
+
+    test('requires model field', async () => {
+      const response = await fetch(endpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: 'test' }]
-        })
+          messages: [{ role: 'user', content: 'hello' }],
+        }),
       });
 
       expect(response.status).toBe(400);
       const data = await response.json() as any;
-      expect(data.error).toContain('provider');
+      expect(data.error).toContain('model');
     });
 
-    test('POST /chat requires messages', async () => {
-      const response = await fetch(`${BASE_URL}/chat`, {
+    test('requires messages array', async () => {
+      const response = await fetch(endpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider: 'gemini-code'
-        })
+        body: JSON.stringify({ model: 'gemini-2.5-flash' }),
       });
 
       expect(response.status).toBe(400);
@@ -86,35 +86,74 @@ describe('Server E2E Tests', () => {
       expect(data.error).toContain('messages');
     });
 
-    test('POST /chat rejects unknown provider', async () => {
-      const response = await fetch(`${BASE_URL}/chat`, {
+    test('rejects unknown models', async () => {
+      const response = await fetch(endpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'unknown-provider',
-          messages: [{ role: 'user', content: 'test' }]
-        })
+          model: 'unknown-model',
+          messages: [{ role: 'user', content: 'hi' }],
+        }),
       });
 
       expect(response.status).toBe(400);
       const data = await response.json() as any;
-      expect(data.error).toContain('Unknown provider');
+      expect(data.error).toContain('Unknown model');
     });
 
-    test('POST /chat accepts valid request', async () => {
-      const response = await fetch(`${BASE_URL}/chat`, {
+    test('returns OpenAI-compatible payload for valid request', async () => {
+      const response = await fetch(endpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'gemini-code-cli',
-          messages: [{ role: 'user', content: 'test' }]
-        })
+          model: 'gemini-2.5-flash',
+          messages: [{ role: 'user', content: 'hello there' }],
+        }),
       });
 
       expect(response.status).toBe(200);
       const data = await response.json() as any;
-      expect(data.text).toBeDefined();
-      expect(data.provider).toBe('gemini-code-cli');
+      expect(data.object).toBe('chat.completion');
+      expect(data.choices).toBeArray();
+      expect(data.choices[0].message.role).toBe('assistant');
+      expect(data.choices[0].message.content).toBeString();
+      expect(data.usage.total_tokens).toBeNumber();
+    });
+
+    test('supports json_object response_format', async () => {
+      const response = await fetch(endpoint(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemini-2.5-flash',
+          messages: [{ role: 'user', content: 'return json' }],
+          response_format: { type: 'json_object' },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json() as any;
+      const content = data.choices[0].message.content;
+      expect(() => JSON.parse(content)).not.toThrow();
+      expect(JSON.parse(content)).toBeObject();
+    });
+
+    test('streams SSE when stream flag is set', async () => {
+      const response = await fetch(endpoint(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemini-2.5-flash',
+          messages: [{ role: 'user', content: 'stream?' }],
+          stream: true,
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-type')).toContain('text/event-stream');
+      const bodyText = await response.text();
+      expect(bodyText).toContain('Mock response from test server');
+      expect(bodyText).toContain('[DONE]');
     });
   });
 
@@ -150,7 +189,7 @@ describe('Server E2E Tests', () => {
 
   describe('Error handling', () => {
     test('Invalid JSON returns 400', async () => {
-      const response = await fetch(`${BASE_URL}/chat`, {
+      const response = await fetch(`${BASE_URL}/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{invalid json}'
@@ -165,7 +204,7 @@ describe('Server E2E Tests', () => {
     });
 
     test('Error responses include error field', async () => {
-      const response = await fetch(`${BASE_URL}/chat`, {
+      const response = await fetch(`${BASE_URL}/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -184,77 +223,75 @@ describe('Server E2E Tests', () => {
 
   describe('Response formats', () => {
     test.skip('Chat response includes text', async () => {
-      const response = await fetch(`${BASE_URL}/chat`, {
+      const response = await fetch(`${BASE_URL}/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'gemini-code',
+          model: 'gemini-2.5-flash',
           messages: [{ role: 'user', content: 'Say "test"' }]
         })
       });
 
       const data = await response.json() as any;
-      expect(data.text).toBeDefined();
-      expect(data.provider).toBe('gemini-code');
+      expect(data.object).toBe('chat.completion');
+      expect(data.choices[0].message.role).toBe('assistant');
     });
 
     test.skip('Chat response includes usage', async () => {
-      const response = await fetch(`${BASE_URL}/chat`, {
+      const response = await fetch(`${BASE_URL}/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'claude-code-cli',
+          model: 'claude-3.5-sonnet',
           messages: [{ role: 'user', content: 'test' }]
         })
       });
 
       const data = await response.json() as any;
       expect(data.usage).toBeDefined();
-      expect(data.usage.promptTokens).toBeNumber();
-      expect(data.usage.completionTokens).toBeNumber();
-      expect(data.usage.totalTokens).toBeNumber();
+      expect(data.usage.prompt_tokens).toBeNumber();
+      expect(data.usage.completion_tokens).toBeNumber();
+      expect(data.usage.total_tokens).toBeNumber();
     });
   });
 
   describe('Provider-specific behavior', () => {
     test.skip('Gemini Code CLI works', async () => {
-      const response = await fetch(`${BASE_URL}/chat`, {
+      const response = await fetch(`${BASE_URL}/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'gemini-code-cli',
-          messages: [{ role: 'user', content: 'Say "test"' }],
-          model: 'gemini-2.5-pro'
+          model: 'gemini-2.5-pro',
+          messages: [{ role: 'user', content: 'Say "test"' }]
         })
       });
 
       expect(response.status).toBe(200);
       const data = await response.json() as any;
-      expect(data.provider).toBe('gemini-code-cli');
+      expect(data.object).toBe('chat.completion');
     });
 
     test.skip('Claude Code CLI works', async () => {
-      const response = await fetch(`${BASE_URL}/chat`, {
+      const response = await fetch(`${BASE_URL}/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'claude-code-cli',
-          messages: [{ role: 'user', content: 'Say "test"' }],
-          model: 'sonnet'
+          model: 'claude-3.5-sonnet',
+          messages: [{ role: 'user', content: 'Say "test"' }]
         })
       });
 
       expect(response.status).toBe(200);
       const data = await response.json() as any;
-      expect(data.provider).toBe('claude-code-cli');
+      expect(data.model).toBe('claude-3.5-sonnet');
     });
 
     test.skip('Codex requires authentication', async () => {
-      const response = await fetch(`${BASE_URL}/chat`, {
+      const response = await fetch(`${BASE_URL}/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'codex',
+          model: 'gpt-5-codex',
           messages: [{ role: 'user', content: 'test' }]
         })
       });
@@ -288,11 +325,11 @@ describe('Server E2E Tests', () => {
 
     test.skip('Rejects oversized payloads', async () => {
       const hugeMessage = 'a'.repeat(10_000_000); // 10MB
-      const response = await fetch(`${BASE_URL}/chat`, {
+      const response = await fetch(`${BASE_URL}/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'gemini-code',
+          model: 'gemini-2.5-flash',
           messages: [{ role: 'user', content: hugeMessage }]
         })
       });

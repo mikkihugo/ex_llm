@@ -1,9 +1,21 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { createHash, randomBytes } from 'crypto';
+import { z } from 'zod';
 
 // Unit tests for utility functions
 describe('Server Utilities (Unit)', () => {
   describe('parsePort', () => {
+    let originalWarn: typeof console.warn;
+
+    beforeEach(() => {
+      originalWarn = console.warn;
+      console.warn = () => {}; // Suppress warnings during tests
+    });
+
+    afterEach(() => {
+      console.warn = originalWarn; // Restore original warn
+    });
+
     // Re-implement the function for testing
     function parsePort(value: string | undefined, fallback: number, label: string): number {
       if (!value || value.trim().length === 0) {
@@ -335,6 +347,47 @@ describe('Server Utilities (Unit)', () => {
       // Should fall back to estimation
       expect(result.promptTokens).toBeGreaterThan(0);
       expect(result.completionTokens).toBeGreaterThan(0);
+    });
+  });
+
+  describe('json_object response enforcement', () => {
+    interface ProviderResult {
+      text: string;
+      finishReason: string;
+    }
+
+    const JsonObjectSchema = z.object({}).passthrough();
+
+    function enforceJsonObject(result: ProviderResult): ProviderResult {
+      const trimmed = result.text.trim();
+      try {
+        const parsed = JsonObjectSchema.parse(JSON.parse(trimmed));
+        return {
+          ...result,
+          text: JSON.stringify(parsed),
+        };
+      } catch (error: any) {
+        throw new Error(`Provider returned non-JSON output while json_object response_format was requested: ${error?.message || error}`);
+      }
+    }
+
+    test('returns normalized JSON string when output is valid object', () => {
+      const result = enforceJsonObject({ text: '{"a":1}', finishReason: 'stop' });
+      expect(result.text).toBe('{"a":1}');
+    });
+
+    test('pretty printed JSON is re-serialized compactly', () => {
+      const pretty = '{\n  "foo": true\n}';
+      const result = enforceJsonObject({ text: pretty, finishReason: 'stop' });
+      expect(result.text).toBe('{"foo":true}');
+    });
+
+    test('throws when response is not valid JSON', () => {
+      expect(() => enforceJsonObject({ text: 'not json', finishReason: 'stop' })).toThrow('Provider returned non-JSON output');
+    });
+
+    test('throws when JSON is array', () => {
+      expect(() => enforceJsonObject({ text: '[]', finishReason: 'stop' })).toThrow('Provider returned non-JSON output');
     });
   });
 

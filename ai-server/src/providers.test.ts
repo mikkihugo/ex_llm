@@ -132,9 +132,9 @@ describe('Provider Integration Tests', () => {
         'gemini-code-cli': 'gemini-2.5-pro',
         'gemini-code': 'gemini-2.5-flash',
         'claude-code-cli': 'sonnet',
-        'codex': 'gpt-5-codex',
-        'cursor-agent': 'gpt-5',
-        'copilot': 'claude-sonnet-4.5'
+        'codex-cli': 'gpt-5-codex',
+        'cursor-agent-cli': 'gpt-4.1',
+        'copilot-cli': 'claude-sonnet-4.5'
       };
       return defaults[provider] || 'default';
     }
@@ -152,7 +152,7 @@ describe('Provider Integration Tests', () => {
     });
 
     test('codex defaults to gpt-5-codex', () => {
-      expect(getDefaultModel('codex')).toBe('gpt-5-codex');
+      expect(getDefaultModel('codex-cli')).toBe('gpt-5-codex');
     });
 
     test('unknown provider uses fallback', () => {
@@ -241,7 +241,7 @@ describe('Provider Integration Tests', () => {
     });
 
     test('provides default usage when not specified', () => {
-      const response = formatProviderResponse('codex', 'Response');
+      const response = formatProviderResponse('codex-cli', 'Response');
       expect(response.usage.promptTokens).toBe(0);
       expect(response.usage.completionTokens).toBe(0);
       expect(response.usage.totalTokens).toBe(0);
@@ -329,9 +329,9 @@ describe('Provider Integration Tests', () => {
     });
 
     test('handles non-Error objects', () => {
-      const result = handleProviderError('codex', 'Something went wrong');
+      const result = handleProviderError('codex-cli', 'Something went wrong');
       expect(result.error).toContain('Something went wrong');
-      expect(result.provider).toBe('codex');
+      expect(result.provider).toBe('codex-cli');
     });
 
     test('includes provider in all error messages', () => {

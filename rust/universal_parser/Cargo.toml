@@ -1,0 +1,53 @@
+[package]
+name = "universal-parser"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["claude-code-zen Team"]
+description = "Universal parser dependencies and interfaces for all language parsers"
+repository = "https://github.com/claude-code-zen/zenflow"
+readme = "README.md"
+keywords = ["parser", "universal", "ast", "code-analysis", "sparc", "tree-sitter"]
+categories = ["development-tools", "parsing"]
+
+[dependencies]
+# Universal dependency analysis - pre-release includes security fixes
+tokei = "13.0.0-alpha.9"
+# Our Mozilla code analysis port (replaces rust-code-analysis)
+# mozilla-code-analysis = { path = "../mozilla-code-analysis" }  # Commented out - crate doesn't exist
+
+# Tree-sitter core only (languages handled by individual parser crates)
+tree-sitter = { workspace = true }
+tree-sitter-javascript = { workspace = true }
+tree-sitter-typescript = { workspace = true }
+
+# Core utilities - LATEST VERSIONS
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+chrono = { workspace = true, features = ["serde"] }
+tempfile = { workspace = true }
+
+# Performance optimizations - LATEST STABLE VERSIONS
+lru = "0.12"
+dashmap = { workspace = true }
+
+# PageRank for ML central heuristics (merged from parser-coordinator)
+petgraph = { workspace = true }
+
+# Regular expressions for refactoring
+regex = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "parser_performance"
+harness = false

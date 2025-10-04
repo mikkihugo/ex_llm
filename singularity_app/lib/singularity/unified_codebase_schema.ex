@@ -1,0 +1,1005 @@
+defmodule Singularity.UnifiedCodebaseSchema do
+  @moduledoc """
+  Unified Codebase Schema - PostgreSQL integration with analysis-suite
+  
+  This module creates a PostgreSQL schema that matches the analysis-suite's
+  comprehensive CodebaseMetadata structure while adding graph capabilities.
+  
+  ## Features
+  
+  ### Comprehensive Codebase Metadata
+  - **Single Source of Truth**: All analysis data in one table
+  - **50+ Metrics**: Complexity, quality, security, performance, semantic
+  - **Graph Integration**: Nodes, edges, relationships
+  - **Vector Search**: pgvector integration for semantic search
+  
+  ### Graph Capabilities
+  - **Apache AGE**: Graph database extension for PostgreSQL
+  - **Cypher Queries**: Graph query language support
+  - **Graph Algorithms**: PageRank, centrality, shortest path
+  - **ACID Transactions**: Full PostgreSQL compliance
+  
+  ### Analysis-Suite Compatibility
+  - **Direct Mapping**: Rust CodebaseMetadata -> PostgreSQL
+  - **Performance**: Indexed queries, vector search
+  - **Scalability**: Handles large codebases efficiently
+  """
+
+  require Logger
+
+  @doc """
+  Create unified codebase schema in PostgreSQL
+  """
+  def create_unified_schema(db_conn) do
+    # Create the main codebase metadata table (matches analysis-suite CodebaseMetadata)
+    create_codebase_metadata_table(db_conn)
+    
+    # Create graph tables for relationships
+    create_graph_tables(db_conn)
+    
+    # Create vector search tables
+    create_vector_search_tables(db_conn)
+    
+    # Create indexes for performance
+    create_performance_indexes(db_conn)
+    
+    # Create Apache AGE extension if available
+    create_apache_age_extension(db_conn)
+    
+    Logger.info("Unified codebase schema created successfully")
+    :ok
+  end
+
+  defp create_codebase_metadata_table(db_conn) do
+    # Main table matching analysis-suite CodebaseMetadata structure
+    Postgrex.query!(db_conn, """
+    CREATE TABLE IF NOT EXISTS codebase_metadata (
+      -- Primary key
+      id SERIAL PRIMARY KEY,
+      
+      -- === CODEBASE IDENTIFICATION ===
+      codebase_id VARCHAR(255) NOT NULL,
+      codebase_path VARCHAR(500) NOT NULL,
+      
+      -- === BASIC FILE INFO ===
+      path VARCHAR(500) NOT NULL,
+      size BIGINT NOT NULL DEFAULT 0,
+      lines INTEGER NOT NULL DEFAULT 0,
+      language VARCHAR(50) NOT NULL DEFAULT 'unknown',
+      last_modified BIGINT NOT NULL DEFAULT 0,
+      file_type VARCHAR(50) NOT NULL DEFAULT 'source',
+      
+      -- === COMPLEXITY METRICS ===
+      cyclomatic_complexity FLOAT NOT NULL DEFAULT 0.0,
+      cognitive_complexity FLOAT NOT NULL DEFAULT 0.0,
+      maintainability_index FLOAT NOT NULL DEFAULT 0.0,
+      nesting_depth INTEGER NOT NULL DEFAULT 0,
+      
+      -- === CODE METRICS ===
+      function_count INTEGER NOT NULL DEFAULT 0,
+      class_count INTEGER NOT NULL DEFAULT 0,
+      struct_count INTEGER NOT NULL DEFAULT 0,
+      enum_count INTEGER NOT NULL DEFAULT 0,
+      trait_count INTEGER NOT NULL DEFAULT 0,
+      interface_count INTEGER NOT NULL DEFAULT 0,
+      
+      -- === LINE METRICS ===
+      total_lines INTEGER NOT NULL DEFAULT 0,
+      code_lines INTEGER NOT NULL DEFAULT 0,
+      comment_lines INTEGER NOT NULL DEFAULT 0,
+      blank_lines INTEGER NOT NULL DEFAULT 0,
+      
+      -- === HALSTEAD METRICS ===
+      halstead_vocabulary INTEGER NOT NULL DEFAULT 0,
+      halstead_length INTEGER NOT NULL DEFAULT 0,
+      halstead_volume FLOAT NOT NULL DEFAULT 0.0,
+      halstead_difficulty FLOAT NOT NULL DEFAULT 0.0,
+      halstead_effort FLOAT NOT NULL DEFAULT 0.0,
+      
+      -- === PAGERANK & GRAPH METRICS ===
+      pagerank_score FLOAT NOT NULL DEFAULT 0.0,
+      centrality_score FLOAT NOT NULL DEFAULT 0.0,
+      dependency_count INTEGER NOT NULL DEFAULT 0,
+      dependent_count INTEGER NOT NULL DEFAULT 0,
+      
+      -- === PERFORMANCE METRICS ===
+      technical_debt_ratio FLOAT NOT NULL DEFAULT 0.0,
+      code_smells_count INTEGER NOT NULL DEFAULT 0,
+      duplication_percentage FLOAT NOT NULL DEFAULT 0.0,
+      
+      -- === SECURITY METRICS ===
+      security_score FLOAT NOT NULL DEFAULT 0.0,
+      vulnerability_count INTEGER NOT NULL DEFAULT 0,
+      
+      -- === QUALITY METRICS ===
+      quality_score FLOAT NOT NULL DEFAULT 0.0,
+      test_coverage FLOAT NOT NULL DEFAULT 0.0,
+      documentation_coverage FLOAT NOT NULL DEFAULT 0.0,
+      
+      -- === SEMANTIC FEATURES (JSONB for flexibility) ===
+      domains JSONB DEFAULT '[]'::jsonb,
+      patterns JSONB DEFAULT '[]'::jsonb,
+      features JSONB DEFAULT '[]'::jsonb,
+      business_context JSONB DEFAULT '[]'::jsonb,
+      performance_characteristics JSONB DEFAULT '[]'::jsonb,
+      security_characteristics JSONB DEFAULT '[]'::jsonb,
+      
+      -- === DEPENDENCIES & RELATIONSHIPS (JSONB for flexibility) ===
+      dependencies JSONB DEFAULT '[]'::jsonb,
+      related_files JSONB DEFAULT '[]'::jsonb,
+      imports JSONB DEFAULT '[]'::jsonb,
+      exports JSONB DEFAULT '[]'::jsonb,
+      
+      -- === SYMBOLS (JSONB for flexibility) ===
+      functions JSONB DEFAULT '[]'::jsonb,
+      classes JSONB DEFAULT '[]'::jsonb,
+      structs JSONB DEFAULT '[]'::jsonb,
+      enums JSONB DEFAULT '[]'::jsonb,
+      traits JSONB DEFAULT '[]'::jsonb,
+      
+      -- === VECTOR EMBEDDING ===
+      vector_embedding VECTOR(1536) DEFAULT NULL,
+      
+      -- === TIMESTAMPS ===
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW(),
+      
+      -- === UNIQUE CONSTRAINT ===
+      UNIQUE(codebase_id, path)
+    )
+    """, [])
+    
+    # Create codebase registry table to track codebase paths
+    Postgrex.query!(db_conn, """
+    CREATE TABLE IF NOT EXISTS codebase_registry (
+      id SERIAL PRIMARY KEY,
+      codebase_id VARCHAR(255) NOT NULL UNIQUE,
+      codebase_path VARCHAR(500) NOT NULL,
+      codebase_name VARCHAR(255) NOT NULL,
+      description TEXT,
+      language VARCHAR(50),
+      framework VARCHAR(100),
+      last_analyzed TIMESTAMP DEFAULT NULL,
+      analysis_status VARCHAR(50) DEFAULT 'pending',
+      metadata JSONB DEFAULT '{}'::jsonb,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    )
+    """, [])
+  end
+
+  defp create_graph_tables(db_conn) do
+    # Graph nodes table (for Apache AGE compatibility)
+    Postgrex.query!(db_conn, """
+    CREATE TABLE IF NOT EXISTS graph_nodes (
+      id SERIAL PRIMARY KEY,
+      codebase_id VARCHAR(255) NOT NULL,
+      node_id VARCHAR(255) NOT NULL,
+      node_type VARCHAR(100) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      file_path VARCHAR(500) NOT NULL,
+      line_number INTEGER DEFAULT NULL,
+      vector_embedding VECTOR(1536) DEFAULT NULL,
+      vector_magnitude FLOAT DEFAULT NULL,
+      metadata JSONB DEFAULT '{}'::jsonb,
+      created_at TIMESTAMP DEFAULT NOW(),
+      
+      UNIQUE(codebase_id, node_id)
+    )
+    """, [])
+    
+    # Graph edges table (for Apache AGE compatibility)
+    Postgrex.query!(db_conn, """
+    CREATE TABLE IF NOT EXISTS graph_edges (
+      id SERIAL PRIMARY KEY,
+      codebase_id VARCHAR(255) NOT NULL,
+      edge_id VARCHAR(255) NOT NULL,
+      from_node_id VARCHAR(255) NOT NULL,
+      to_node_id VARCHAR(255) NOT NULL,
+      edge_type VARCHAR(100) NOT NULL,
+      weight FLOAT NOT NULL DEFAULT 1.0,
+      metadata JSONB DEFAULT '{}'::jsonb,
+      created_at TIMESTAMP DEFAULT NOW(),
+      
+      UNIQUE(codebase_id, edge_id),
+      FOREIGN KEY (codebase_id, from_node_id) REFERENCES graph_nodes(codebase_id, node_id),
+      FOREIGN KEY (codebase_id, to_node_id) REFERENCES graph_nodes(codebase_id, node_id)
+    )
+    """, [])
+    
+    # Graph types table (CallGraph, ImportGraph, SemanticGraph, DataFlowGraph)
+    Postgrex.query!(db_conn, """
+    CREATE TABLE IF NOT EXISTS graph_types (
+      id SERIAL PRIMARY KEY,
+      graph_type VARCHAR(100) NOT NULL UNIQUE,
+      description TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+    """, [])
+    
+    # Insert default graph types
+    Postgrex.query!(db_conn, """
+    INSERT INTO graph_types (graph_type, description) VALUES
+    ('CallGraph', 'Function call dependencies (DAG)'),
+    ('ImportGraph', 'Module import dependencies (DAG)'),
+    ('SemanticGraph', 'Conceptual relationships (General Graph)'),
+    ('DataFlowGraph', 'Variable and data dependencies (DAG)')
+    ON CONFLICT (graph_type) DO NOTHING
+    """, [])
+  end
+
+  defp create_vector_search_tables(db_conn) do
+    # Vector search table for semantic search
+    Postgrex.query!(db_conn, """
+    CREATE TABLE IF NOT EXISTS vector_search (
+      id SERIAL PRIMARY KEY,
+      codebase_id VARCHAR(255) NOT NULL,
+      file_path VARCHAR(500) NOT NULL,
+      content_type VARCHAR(100) NOT NULL,
+      content TEXT NOT NULL,
+      vector_embedding VECTOR(1536) NOT NULL,
+      metadata JSONB DEFAULT '{}'::jsonb,
+      created_at TIMESTAMP DEFAULT NOW(),
+      
+      UNIQUE(codebase_id, file_path, content_type)
+    )
+    """, [])
+    
+    # Vector similarity cache for performance
+    Postgrex.query!(db_conn, """
+    CREATE TABLE IF NOT EXISTS vector_similarity_cache (
+      id SERIAL PRIMARY KEY,
+      codebase_id VARCHAR(255) NOT NULL,
+      query_vector_hash VARCHAR(64) NOT NULL,
+      target_file_path VARCHAR(500) NOT NULL,
+      similarity_score FLOAT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW(),
+      
+      UNIQUE(codebase_id, query_vector_hash, target_file_path)
+    )
+    """, [])
+  end
+
+  defp create_performance_indexes(db_conn) do
+    # Indexes for codebase_metadata table
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_metadata_codebase_id 
+    ON codebase_metadata(codebase_id)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_metadata_codebase_path 
+    ON codebase_metadata(codebase_path)
+    """, [])
+    
+    # Indexes for codebase_registry table
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_registry_codebase_id 
+    ON codebase_registry(codebase_id)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_registry_codebase_path 
+    ON codebase_registry(codebase_path)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_registry_analysis_status 
+    ON codebase_registry(analysis_status)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_metadata_path 
+    ON codebase_metadata(codebase_id, path)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_metadata_language 
+    ON codebase_metadata(codebase_id, language)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_metadata_file_type 
+    ON codebase_metadata(codebase_id, file_type)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_metadata_quality_score 
+    ON codebase_metadata(codebase_id, quality_score)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_metadata_complexity 
+    ON codebase_metadata(codebase_id, cyclomatic_complexity, cognitive_complexity)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_metadata_pagerank 
+    ON codebase_metadata(codebase_id, pagerank_score)
+    """, [])
+    
+    # Vector index for similarity search
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_codebase_metadata_vector 
+    ON codebase_metadata USING ivfflat (vector_embedding vector_cosine_ops)
+    """, [])
+    
+    # Indexes for graph tables
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_graph_nodes_codebase_id 
+    ON graph_nodes(codebase_id)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_graph_nodes_node_id 
+    ON graph_nodes(codebase_id, node_id)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_graph_nodes_node_type 
+    ON graph_nodes(codebase_id, node_type)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_graph_nodes_file_path 
+    ON graph_nodes(codebase_id, file_path)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_graph_edges_codebase_id 
+    ON graph_edges(codebase_id)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_graph_edges_from_node 
+    ON graph_edges(codebase_id, from_node_id)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_graph_edges_to_node 
+    ON graph_edges(codebase_id, to_node_id)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_graph_edges_edge_type 
+    ON graph_edges(codebase_id, edge_type)
+    """, [])
+    
+    # Vector index for graph nodes
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_graph_nodes_vector 
+    ON graph_nodes USING ivfflat (vector_embedding vector_cosine_ops)
+    """, [])
+    
+    # Indexes for vector search
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_vector_search_codebase_id 
+    ON vector_search(codebase_id)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_vector_search_file_path 
+    ON vector_search(codebase_id, file_path)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_vector_search_content_type 
+    ON vector_search(codebase_id, content_type)
+    """, [])
+    
+    Postgrex.query!(db_conn, """
+    CREATE INDEX IF NOT EXISTS idx_vector_search_vector 
+    ON vector_search USING ivfflat (vector_embedding vector_cosine_ops)
+    """, [])
+  end
+
+  defp create_apache_age_extension(db_conn) do
+    # Try to create Apache AGE extension if available
+    try do
+      Postgrex.query!(db_conn, """
+      CREATE EXTENSION IF NOT EXISTS age;
+      """, [])
+      
+      Logger.info("Apache AGE extension created successfully")
+    rescue
+      _error ->
+        Logger.warning("Apache AGE extension not available - using native PostgreSQL graph features")
+    end
+  end
+
+  @doc """
+  Register a new codebase
+  """
+  def register_codebase(db_conn, codebase_id, codebase_path, codebase_name, opts \\ []) do
+    description = Keyword.get(opts, :description, "")
+    language = Keyword.get(opts, :language, "unknown")
+    framework = Keyword.get(opts, :framework, "unknown")
+    metadata = Keyword.get(opts, :metadata, %{})
+    
+    Postgrex.query!(db_conn, """
+    INSERT INTO codebase_registry (
+      codebase_id, codebase_path, codebase_name, description, 
+      language, framework, metadata
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    ON CONFLICT (codebase_id) DO UPDATE SET
+      codebase_path = EXCLUDED.codebase_path,
+      codebase_name = EXCLUDED.codebase_name,
+      description = EXCLUDED.description,
+      language = EXCLUDED.language,
+      framework = EXCLUDED.framework,
+      metadata = EXCLUDED.metadata,
+      updated_at = NOW()
+    """, [
+      codebase_id,
+      codebase_path,
+      codebase_name,
+      description,
+      language,
+      framework,
+      Jason.encode!(metadata)
+    ])
+  end
+
+  @doc """
+  Get codebase registry entry
+  """
+  def get_codebase_registry(db_conn, codebase_id) do
+    Postgrex.query!(db_conn, """
+    SELECT 
+      codebase_id, codebase_path, codebase_name, description,
+      language, framework, last_analyzed, analysis_status, metadata,
+      created_at, updated_at
+    FROM codebase_registry 
+    WHERE codebase_id = $1
+    """, [codebase_id])
+    |> Map.get(:rows)
+    |> case do
+      [] -> nil
+      [[codebase_id, codebase_path, codebase_name, description, language, framework, last_analyzed, analysis_status, metadata, created_at, updated_at]] ->
+        %{
+          codebase_id: codebase_id,
+          codebase_path: codebase_path,
+          codebase_name: codebase_name,
+          description: description,
+          language: language,
+          framework: framework,
+          last_analyzed: last_analyzed,
+          analysis_status: analysis_status,
+          metadata: Jason.decode!(metadata),
+          created_at: created_at,
+          updated_at: updated_at
+        }
+    end
+  end
+
+  @doc """
+  List all registered codebases
+  """
+  def list_codebases(db_conn) do
+    Postgrex.query!(db_conn, """
+    SELECT 
+      codebase_id, codebase_path, codebase_name, description,
+      language, framework, last_analyzed, analysis_status,
+      created_at, updated_at
+    FROM codebase_registry 
+    ORDER BY created_at DESC
+    """, [])
+    |> Map.get(:rows)
+    |> Enum.map(fn [codebase_id, codebase_path, codebase_name, description, language, framework, last_analyzed, analysis_status, created_at, updated_at] ->
+      %{
+        codebase_id: codebase_id,
+        codebase_path: codebase_path,
+        codebase_name: codebase_name,
+        description: description,
+        language: language,
+        framework: framework,
+        last_analyzed: last_analyzed,
+        analysis_status: analysis_status,
+        created_at: created_at,
+        updated_at: updated_at
+      }
+    end)
+  end
+
+  @doc """
+  Update codebase analysis status
+  """
+  def update_codebase_status(db_conn, codebase_id, status, opts \\ []) do
+    last_analyzed = Keyword.get(opts, :last_analyzed, DateTime.utc_now())
+    
+    Postgrex.query!(db_conn, """
+    UPDATE codebase_registry 
+    SET 
+      analysis_status = $2,
+      last_analyzed = $3,
+      updated_at = NOW()
+    WHERE codebase_id = $1
+    """, [codebase_id, status, last_analyzed])
+  end
+
+  @doc """
+  Insert codebase metadata (matches analysis-suite CodebaseMetadata)
+  """
+  def insert_codebase_metadata(db_conn, codebase_id, codebase_path, metadata) do
+    Postgrex.query!(db_conn, """
+    INSERT INTO codebase_metadata (
+      codebase_id, codebase_path, path, size, lines, language, last_modified, file_type,
+      cyclomatic_complexity, cognitive_complexity, maintainability_index, nesting_depth,
+      function_count, class_count, struct_count, enum_count, trait_count, interface_count,
+      total_lines, code_lines, comment_lines, blank_lines,
+      halstead_vocabulary, halstead_length, halstead_volume, halstead_difficulty, halstead_effort,
+      pagerank_score, centrality_score, dependency_count, dependent_count,
+      technical_debt_ratio, code_smells_count, duplication_percentage,
+      security_score, vulnerability_count,
+      quality_score, test_coverage, documentation_coverage,
+      domains, patterns, features, business_context, performance_characteristics, security_characteristics,
+      dependencies, related_files, imports, exports,
+      functions, classes, structs, enums, traits,
+      vector_embedding
+    ) VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8,
+      $8, $9, $10, $11,
+      $12, $13, $14, $15, $16, $17,
+      $18, $19, $20, $21,
+      $22, $23, $24, $25, $26,
+      $27, $28, $29, $30,
+      $31, $32, $33,
+      $34, $35,
+      $36, $37, $38,
+      $39, $40, $41, $42, $43, $44,
+      $45, $46, $47, $48,
+      $49, $50, $51, $52, $53,
+      $54
+    )
+    ON CONFLICT (codebase_id, path) DO UPDATE SET
+      size = EXCLUDED.size,
+      lines = EXCLUDED.lines,
+      language = EXCLUDED.language,
+      last_modified = EXCLUDED.last_modified,
+      file_type = EXCLUDED.file_type,
+      cyclomatic_complexity = EXCLUDED.cyclomatic_complexity,
+      cognitive_complexity = EXCLUDED.cognitive_complexity,
+      maintainability_index = EXCLUDED.maintainability_index,
+      nesting_depth = EXCLUDED.nesting_depth,
+      function_count = EXCLUDED.function_count,
+      class_count = EXCLUDED.class_count,
+      struct_count = EXCLUDED.struct_count,
+      enum_count = EXCLUDED.enum_count,
+      trait_count = EXCLUDED.trait_count,
+      interface_count = EXCLUDED.interface_count,
+      total_lines = EXCLUDED.total_lines,
+      code_lines = EXCLUDED.code_lines,
+      comment_lines = EXCLUDED.comment_lines,
+      blank_lines = EXCLUDED.blank_lines,
+      halstead_vocabulary = EXCLUDED.halstead_vocabulary,
+      halstead_length = EXCLUDED.halstead_length,
+      halstead_volume = EXCLUDED.halstead_volume,
+      halstead_difficulty = EXCLUDED.halstead_difficulty,
+      halstead_effort = EXCLUDED.halstead_effort,
+      pagerank_score = EXCLUDED.pagerank_score,
+      centrality_score = EXCLUDED.centrality_score,
+      dependency_count = EXCLUDED.dependency_count,
+      dependent_count = EXCLUDED.dependent_count,
+      technical_debt_ratio = EXCLUDED.technical_debt_ratio,
+      code_smells_count = EXCLUDED.code_smells_count,
+      duplication_percentage = EXCLUDED.duplication_percentage,
+      security_score = EXCLUDED.security_score,
+      vulnerability_count = EXCLUDED.vulnerability_count,
+      quality_score = EXCLUDED.quality_score,
+      test_coverage = EXCLUDED.test_coverage,
+      documentation_coverage = EXCLUDED.documentation_coverage,
+      domains = EXCLUDED.domains,
+      patterns = EXCLUDED.patterns,
+      features = EXCLUDED.features,
+      business_context = EXCLUDED.business_context,
+      performance_characteristics = EXCLUDED.performance_characteristics,
+      security_characteristics = EXCLUDED.security_characteristics,
+      dependencies = EXCLUDED.dependencies,
+      related_files = EXCLUDED.related_files,
+      imports = EXCLUDED.imports,
+      exports = EXCLUDED.exports,
+      functions = EXCLUDED.functions,
+      classes = EXCLUDED.classes,
+      structs = EXCLUDED.structs,
+      enums = EXCLUDED.enums,
+      traits = EXCLUDED.traits,
+      vector_embedding = EXCLUDED.vector_embedding,
+      updated_at = NOW()
+    """, [
+      codebase_id,
+      metadata.path,
+      metadata.size,
+      metadata.lines,
+      metadata.language,
+      metadata.last_modified,
+      metadata.file_type,
+      metadata.cyclomatic_complexity,
+      metadata.cognitive_complexity,
+      metadata.maintainability_index,
+      metadata.nesting_depth,
+      metadata.function_count,
+      metadata.class_count,
+      metadata.struct_count,
+      metadata.enum_count,
+      metadata.trait_count,
+      metadata.interface_count,
+      metadata.total_lines,
+      metadata.code_lines,
+      metadata.comment_lines,
+      metadata.blank_lines,
+      metadata.halstead_vocabulary,
+      metadata.halstead_length,
+      metadata.halstead_volume,
+      metadata.halstead_difficulty,
+      metadata.halstead_effort,
+      metadata.pagerank_score,
+      metadata.centrality_score,
+      metadata.dependency_count,
+      metadata.dependent_count,
+      metadata.technical_debt_ratio,
+      metadata.code_smells_count,
+      metadata.duplication_percentage,
+      metadata.security_score,
+      metadata.vulnerability_count,
+      metadata.quality_score,
+      metadata.test_coverage,
+      metadata.documentation_coverage,
+      Jason.encode!(metadata.domains),
+      Jason.encode!(metadata.patterns),
+      Jason.encode!(metadata.features),
+      Jason.encode!(metadata.business_context),
+      Jason.encode!(metadata.performance_characteristics),
+      Jason.encode!(metadata.security_characteristics),
+      Jason.encode!(metadata.dependencies),
+      Jason.encode!(metadata.related_files),
+      Jason.encode!(metadata.imports),
+      Jason.encode!(metadata.exports),
+      Jason.encode!(metadata.functions),
+      Jason.encode!(metadata.classes),
+      Jason.encode!(metadata.structs),
+      Jason.encode!(metadata.enums),
+      Jason.encode!(metadata.traits),
+      metadata.vector_embedding
+    ])
+  end
+
+  @doc """
+  Insert graph node (for Apache AGE compatibility)
+  """
+  def insert_graph_node(db_conn, codebase_id, node) do
+    Postgrex.query!(db_conn, """
+    INSERT INTO graph_nodes (
+      codebase_id, node_id, node_type, name, file_path, line_number, 
+      vector_embedding, vector_magnitude, metadata
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    ON CONFLICT (codebase_id, node_id) DO UPDATE SET
+      node_type = EXCLUDED.node_type,
+      name = EXCLUDED.name,
+      file_path = EXCLUDED.file_path,
+      line_number = EXCLUDED.line_number,
+      vector_embedding = EXCLUDED.vector_embedding,
+      vector_magnitude = EXCLUDED.vector_magnitude,
+      metadata = EXCLUDED.metadata
+    """, [
+      codebase_id,
+      node.node_id,
+      node.node_type,
+      node.name,
+      node.file_path,
+      node.line_number,
+      node.vector_embedding,
+      node.vector_magnitude,
+      Jason.encode!(node.metadata)
+    ])
+  end
+
+  @doc """
+  Insert graph edge (for Apache AGE compatibility)
+  """
+  def insert_graph_edge(db_conn, codebase_id, edge) do
+    Postgrex.query!(db_conn, """
+    INSERT INTO graph_edges (
+      codebase_id, edge_id, from_node_id, to_node_id, edge_type, weight, metadata
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    ON CONFLICT (codebase_id, edge_id) DO UPDATE SET
+      from_node_id = EXCLUDED.from_node_id,
+      to_node_id = EXCLUDED.to_node_id,
+      edge_type = EXCLUDED.edge_type,
+      weight = EXCLUDED.weight,
+      metadata = EXCLUDED.metadata
+    """, [
+      codebase_id,
+      edge.edge_id,
+      edge.from_node_id,
+      edge.to_node_id,
+      edge.edge_type,
+      edge.weight,
+      Jason.encode!(edge.metadata)
+    ])
+  end
+
+  @doc """
+  Perform semantic search using vector similarity
+  """
+  def semantic_search(db_conn, codebase_id, query_vector, limit \\ 10) do
+    Postgrex.query!(db_conn, """
+    SELECT 
+      path,
+      language,
+      file_type,
+      quality_score,
+      maintainability_index,
+      vector_embedding <-> $2 as distance,
+      1 - (vector_embedding <-> $2) as similarity_score
+    FROM codebase_metadata 
+    WHERE codebase_id = $1 AND vector_embedding IS NOT NULL
+    ORDER BY vector_embedding <-> $2
+    LIMIT $3
+    """, [codebase_id, query_vector, limit])
+    |> Map.get(:rows)
+    |> Enum.map(fn [path, language, file_type, quality_score, maintainability_index, distance, similarity_score] ->
+      %{
+        path: path,
+        language: language,
+        file_type: file_type,
+        quality_score: quality_score,
+        maintainability_index: maintainability_index,
+        similarity_score: similarity_score
+      }
+    end)
+  end
+
+  @doc """
+  Find similar nodes using graph and vector similarity
+  """
+  def find_similar_nodes(db_conn, codebase_id, query_node_id, top_k \\ 10) do
+    Postgrex.query!(db_conn, """
+    WITH query_node AS (
+      SELECT vector_embedding, vector_magnitude
+      FROM graph_nodes 
+      WHERE codebase_id = $1 AND node_id = $2
+    ),
+    similarities AS (
+      SELECT 
+        gn.node_id,
+        gn.name,
+        gn.file_path,
+        gn.node_type,
+        1 - (gn.vector_embedding <-> qn.vector_embedding) as cosine_similarity,
+        gn.vector_magnitude,
+        qn.vector_magnitude as query_magnitude
+      FROM graph_nodes gn
+      CROSS JOIN query_node qn
+      WHERE gn.codebase_id = $1 
+        AND gn.node_id != $2 
+        AND gn.vector_embedding IS NOT NULL
+        AND qn.vector_embedding IS NOT NULL
+    )
+    SELECT 
+      node_id,
+      name,
+      file_path,
+      node_type,
+      cosine_similarity,
+      cosine_similarity as combined_similarity
+    FROM similarities
+    ORDER BY cosine_similarity DESC
+    LIMIT $3
+    """, [codebase_id, query_node_id, top_k])
+    |> Map.get(:rows)
+    |> Enum.map(fn [node_id, name, file_path, node_type, cosine_similarity, combined_similarity] ->
+      %{
+        node_id: node_id,
+        name: name,
+        file_path: file_path,
+        node_type: node_type,
+        cosine_similarity: cosine_similarity,
+        combined_similarity: combined_similarity
+      }
+    end)
+  end
+
+  @doc """
+  Search across multiple codebases using vector similarity
+  """
+  def multi_codebase_search(db_conn, codebase_ids, query_vector, limit \\ 10) do
+    # Convert codebase_ids list to SQL IN clause
+    placeholders = Enum.map(1..length(codebase_ids), fn i -> "$#{i}" end) |> Enum.join(",")
+    
+    Postgrex.query!(db_conn, """
+    SELECT 
+      codebase_id,
+      path,
+      language,
+      file_type,
+      quality_score,
+      maintainability_index,
+      vector_embedding <-> $#{length(codebase_ids) + 1} as distance,
+      1 - (vector_embedding <-> $#{length(codebase_ids) + 1}) as similarity_score
+    FROM codebase_metadata 
+    WHERE codebase_id IN (#{placeholders}) AND vector_embedding IS NOT NULL
+    ORDER BY vector_embedding <-> $#{length(codebase_ids) + 1}
+    LIMIT $#{length(codebase_ids) + 2}
+    """, codebase_ids ++ [query_vector, limit])
+    |> Map.get(:rows)
+    |> Enum.map(fn [codebase_id, path, language, file_type, quality_score, maintainability_index, distance, similarity_score] ->
+      %{
+        codebase_id: codebase_id,
+        path: path,
+        language: language,
+        file_type: file_type,
+        quality_score: quality_score,
+        maintainability_index: maintainability_index,
+        similarity_score: similarity_score
+      }
+    end)
+  end
+
+  @doc """
+  Get graph dependencies (outgoing edges)
+  """
+  def get_dependencies(db_conn, node_id) do
+    Postgrex.query!(db_conn, """
+    SELECT 
+      gn.node_id,
+      gn.name,
+      gn.file_path,
+      gn.node_type,
+      ge.edge_type,
+      ge.weight
+    FROM graph_edges ge
+    JOIN graph_nodes gn ON ge.to_node_id = gn.node_id
+    WHERE ge.from_node_id = $1
+    ORDER BY ge.weight DESC
+    """, [node_id])
+    |> Map.get(:rows)
+    |> Enum.map(fn [node_id, name, file_path, node_type, edge_type, weight] ->
+      %{
+        node_id: node_id,
+        name: name,
+        file_path: file_path,
+        node_type: node_type,
+        edge_type: edge_type,
+        weight: weight
+      }
+    end)
+  end
+
+  @doc """
+  Get graph dependents (incoming edges)
+  """
+  def get_dependents(db_conn, node_id) do
+    Postgrex.query!(db_conn, """
+    SELECT 
+      gn.node_id,
+      gn.name,
+      gn.file_path,
+      gn.node_type,
+      ge.edge_type,
+      ge.weight
+    FROM graph_edges ge
+    JOIN graph_nodes gn ON ge.from_node_id = gn.node_id
+    WHERE ge.to_node_id = $1
+    ORDER BY ge.weight DESC
+    """, [node_id])
+    |> Map.get(:rows)
+    |> Enum.map(fn [node_id, name, file_path, node_type, edge_type, weight] ->
+      %{
+        node_id: node_id,
+        name: name,
+        file_path: file_path,
+        node_type: node_type,
+        edge_type: edge_type,
+        weight: weight
+      }
+    end)
+  end
+
+  @doc """
+  Detect circular dependencies using recursive CTE
+  """
+  def detect_circular_dependencies(db_conn) do
+    Postgrex.query!(db_conn, """
+    WITH RECURSIVE dependency_path AS (
+      -- Base case: all edges
+      SELECT 
+        from_node_id as start_node,
+        to_node_id as end_node,
+        from_node_id,
+        to_node_id,
+        edge_type,
+        weight,
+        1 as depth,
+        ARRAY[from_node_id, to_node_id] as path
+      FROM graph_edges
+      
+      UNION ALL
+      
+      -- Recursive case: extend paths
+      SELECT 
+        dp.start_node,
+        ge.to_node_id as end_node,
+        dp.from_node_id,
+        ge.to_node_id,
+        ge.edge_type,
+        ge.weight,
+        dp.depth + 1,
+        dp.path || ge.to_node_id
+      FROM dependency_path dp
+      JOIN graph_edges ge ON dp.to_node_id = ge.from_node_id
+      WHERE dp.depth < 10  -- Prevent infinite recursion
+        AND NOT ge.to_node_id = ANY(dp.path)  -- Prevent cycles in path
+    )
+    SELECT DISTINCT
+      start_node,
+      end_node,
+      path,
+      depth
+    FROM dependency_path
+    WHERE start_node = end_node  -- Circular dependency detected
+    ORDER BY depth
+    """, [])
+    |> Map.get(:rows)
+    |> Enum.map(fn [start_node, end_node, path, depth] ->
+      %{
+        start_node: start_node,
+        end_node: end_node,
+        path: path,
+        depth: depth
+      }
+    end)
+  end
+
+  @doc """
+  Calculate PageRank scores for all nodes
+  """
+  def calculate_pagerank(db_conn, iterations \\ 20, damping_factor \\ 0.85) do
+    # This is a simplified PageRank implementation
+    # In production, you'd want to use Apache AGE's built-in PageRank algorithm
+    
+    Postgrex.query!(db_conn, """
+    WITH RECURSIVE pagerank_iteration AS (
+      -- Initialize PageRank scores
+      SELECT 
+        node_id,
+        1.0 / (SELECT COUNT(*) FROM graph_nodes) as pagerank_score,
+        0 as iteration
+      FROM graph_nodes
+      
+      UNION ALL
+      
+      -- Iterate PageRank calculation
+      SELECT 
+        gn.node_id,
+        (1 - $2) / (SELECT COUNT(*) FROM graph_nodes) + 
+        $2 * COALESCE(SUM(pr.pagerank_score / out_degree.out_count), 0) as pagerank_score,
+        pr.iteration + 1
+      FROM graph_nodes gn
+      JOIN pagerank_iteration pr ON pr.iteration < $1
+      LEFT JOIN graph_edges ge ON ge.to_node_id = gn.node_id
+      LEFT JOIN (
+        SELECT from_node_id, COUNT(*) as out_count
+        FROM graph_edges
+        GROUP BY from_node_id
+      ) out_degree ON out_degree.from_node_id = ge.from_node_id
+      WHERE pr.iteration = (
+        SELECT MAX(iteration) FROM pagerank_iteration
+      )
+      GROUP BY gn.node_id, pr.iteration
+    )
+    SELECT 
+      node_id,
+      pagerank_score
+    FROM pagerank_iteration
+    WHERE iteration = $1
+    ORDER BY pagerank_score DESC
+    """, [iterations, damping_factor])
+    |> Map.get(:rows)
+    |> Enum.map(fn [node_id, pagerank_score] ->
+      %{
+        node_id: node_id,
+        pagerank_score: pagerank_score
+      }
+    end)
+  end
+end
