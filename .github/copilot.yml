@@ -1,0 +1,144 @@
+# GitHub Copilot Workspace Configuration
+# This file configures Copilot for the Singularity codebase
+
+# Environment setup instructions (references copilot-instructions.md)
+setup:
+  instructions: .github/copilot-instructions.md
+
+# Required tools (managed by Nix)
+tools:
+  - rust
+  - cargo
+  - elixir
+  - gleam
+  - bun
+  - postgresql
+  - nats-server
+  - just
+
+# Build commands
+build:
+  # Rust projects
+  - name: "tool_doc_index"
+    path: "rust/tool_doc_index"
+    command: "cargo build --release"
+
+  - name: "db_service"
+    path: "rust/db_service"
+    command: "cargo build --release"
+
+  # Elixir app
+  - name: "singularity_app"
+    path: "singularity_app"
+    command: "mix deps.get && mix compile"
+
+  # Bun/TypeScript
+  - name: "ai-server"
+    path: "ai-server"
+    command: "bun install && bun run build"
+
+# Test commands
+test:
+  - name: "Rust unit tests"
+    command: "cd rust/tool_doc_index && cargo test"
+
+  - name: "Elixir tests"
+    command: "cd singularity_app && mix test"
+
+  - name: "Integration tests"
+    command: "cargo test --test integration_test"
+
+# Development servers
+dev:
+  # Start all services (requires NATS + PostgreSQL running)
+  - name: "All services"
+    command: "just dev"
+
+  # Individual services
+  - name: "Elixir Phoenix"
+    command: "cd singularity_app && mix phx.server"
+
+  - name: "AI Server"
+    command: "cd ai-server && bun run src/server.ts"
+
+  - name: "NATS Server"
+    command: "nats-server -js -sd .nats -p 4222"
+
+  - name: "DB Service"
+    command: "cd rust/db_service && cargo run"
+
+# Environment variables (defaults - override in .env)
+env:
+  DATABASE_URL: "postgres://localhost:5432/postgres"
+  NATS_URL: "nats://localhost:4222"
+  MIX_ENV: "dev"
+  RUST_LOG: "info"
+
+# Code style/patterns to follow
+patterns:
+  - "Use NATS for all inter-service communication"
+  - "No direct database access except via db_service"
+  - "Technology detection goes through LayeredDetector (Rust)"
+  - "Use Elixir for orchestration, Rust for performance-critical code"
+  - "All LLM calls route through ai-server via NATS"
+  - "Store detection results in codebase_snapshots (Timescale hypertable)"
+  - "Use JSON templates for technology detection rules"
+  - "Follow 5-level detection: File → Pattern → AST → Facts → LLM"
+  - "Early exit from detection when confidence >= 0.85"
+  - "LLM only triggers when confidence <= 0.7"
+
+# Architecture notes
+architecture:
+  style: "Microservices via NATS message bus"
+  database: "PostgreSQL 17 + TimescaleDB (owned by db_service only)"
+  languages:
+    - "Rust (performance-critical: detection, db_service)"
+    - "Elixir (orchestration, web API)"
+    - "Gleam (emerging BEAM language for type-safe code)"
+    - "TypeScript (ai-server, LLM integration)"
+
+  message_subjects:
+    - "db.query - SELECT queries (request/reply)"
+    - "db.execute - INSERT/UPDATE/DELETE (request/reply)"
+    - "db.insert.codebase_snapshots - Detection results (pub/sub)"
+    - "llm.analyze - LLM analysis requests (request/reply)"
+    - "detection.request.{id} - Request detection (request/reply)"
+
+# File structure context
+context:
+  detection:
+    - "rust/tool_doc_index/src/detection/layered_detector.rs"
+    - "rust/tool_doc_index/templates/*.json"
+
+  database:
+    - "rust/db_service/src/nats_db_service.rs"
+    - "singularity_app/priv/repo/migrations/"
+
+  orchestration:
+    - "singularity_app/lib/singularity/technology_detector.ex"
+    - "singularity_app/lib/singularity/platform_integration/nats_connector.ex"
+
+  llm:
+    - "ai-server/src/server.ts"
+    - "ai-server/src/nats.ts"
+
+  docs:
+    - "NATS_SUBJECTS.md"
+    - "E2E_TEST.md"
+    - "TEST_GUIDE.md"
+    - "CODEBASE_PLAN.md"
+
+# Common commands
+commands:
+  "Start dev environment": "nix develop"
+  "Run all tests": "just test"
+  "Start all services": "just dev"
+  "Reset database": "just db-reset"
+  "Run detection": "cd rust/tool_doc_index && cargo run -- detect ."
+  "Monitor NATS": "nats sub \">\""
+  "Check database": "psql $DATABASE_URL"
+
+# Dependencies (managed by Nix flake)
+dependencies:
+  nix: true
+  direnv: true
