@@ -13,7 +13,7 @@ defmodule Singularity.Git.Supervisor do
   use Supervisor
   require Logger
 
-  alias Singularity.Git.TreeCoordinator
+  alias Singularity.Git.GitTreeSyncCoordinator
 
   def start_link(opts \\ []) do
     Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
@@ -28,7 +28,7 @@ defmodule Singularity.Git.Supervisor do
       File.mkdir_p!(repo_path)
 
       child =
-        {TreeCoordinator,
+        {GitTreeSyncCoordinator,
          repo_path: repo_path,
          base_branch: Keyword.get(config, :base_branch, "main"),
          remote: Keyword.get(config, :remote)}

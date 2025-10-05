@@ -82,7 +82,7 @@ defmodule Singularity.Schemas.TechnologyPattern do
   """
   def code_patterns_query do
     from p in __MODULE__,
-      where: fragment("? ? 'detect'", p.extended_metadata),
+      where: fragment("? \\? ?", p.extended_metadata, "detect"),
       select: fragment("jsonb_path_query_array(?, '$.detect.patterns[*]')", p.extended_metadata)
   end
 end

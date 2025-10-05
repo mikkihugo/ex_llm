@@ -1,4 +1,4 @@
-defmodule Singularity.Analysis do
+defmodule Singularity.CodebaseAnalysis do
   @moduledoc """
   Entry point for working with the codebase analysis schema inside Singularity.
 

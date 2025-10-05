@@ -156,13 +156,38 @@ Agents and tools are accessed via **two interfaces**:
 
 ---
 
+## Code Organization
+
+**Singularity follows domain-driven folder structure** (not Phoenix contexts):
+
+```
+lib/singularity/
+├── agents/                    # Agent orchestration
+│   ├── self_improving_agent.ex
+│   ├── hybrid_agent.ex
+│   └── execution_coordinator.ex
+├── code/                      # Code operations (domain folder)
+│   ├── analyzers/            # Functional subfolder
+│   ├── generators/           # Functional subfolder
+│   └── storage/              # Functional subfolder
+├── interfaces/               # Interface abstraction
+│   ├── mcp.ex               # MCP interface
+│   └── nats.ex              # NATS interface
+└── tools/                   # Tool definitions
+```
+
+**Why not Phoenix contexts?** We're a library/platform (not web app):
+- ✅ Domain folders with functional subfolders
+- ✅ Tools vs Interfaces separation
+- ❌ No HTTP API (only MCP + NATS)
+
+See `priv/code_quality_templates/elixir_production.json` for patterns.
+
 For deeper code references, check:
-- `singularity_app/lib/singularity/agent*.ex`
-- `singularity_app/lib/singularity/autonomy/`
-- `singularity_app/lib/singularity/agents/hybrid_agent.ex`
-- `singularity_app/lib/singularity/execution_coordinator.ex`
-- `singularity_app/lib/singularity/interfaces/` - Interface implementations
-- `singularity_app/lib/singularity/tools/` - Core tool definitions
+- `lib/singularity/agents/` - All agent modules
+- `lib/singularity/autonomy/` - Autonomous behavior
+- `lib/singularity/interfaces/` - Interface implementations
+- `lib/singularity/tools/` - Core tool definitions
 
 Those modules are the source of truth and should be consulted for contract or
 API changes.

@@ -1,4 +1,4 @@
-defmodule Singularity.Git.TreeCoordinator do
+defmodule Singularity.Git.GitTreeSyncCoordinator do
   @moduledoc """
   Git tree-based coordination for multi-agent development.
 
@@ -19,7 +19,7 @@ defmodule Singularity.Git.TreeCoordinator do
 
   alias Singularity.{Autonomy, Git}
   alias Autonomy.Correlation
-  alias Singularity.Git.Store
+  alias Singularity.Git.GitStateStore
 
   defstruct [
     :repo_path,
@@ -76,8 +76,8 @@ defmodule Singularity.Git.TreeCoordinator do
       System.cmd("git", ["commit", "--allow-empty", "-m", "Initial commit"], cd: repo_path)
     end
 
-    sessions = Store.list_sessions()
-    pending_merges = Store.list_pending_merges()
+    sessions = GitStateStore.list_sessions()
+    pending_merges = GitStateStore.list_pending_merges()
 
     state = %__MODULE__{
       repo_path: repo_path,
@@ -193,7 +193,7 @@ defmodule Singularity.Git.TreeCoordinator do
       correlation_id: correlation_id
     }
 
-    Store.upsert_session(%{
+    GitStateStore.upsert_session(%{
       agent_id: agent_key,
       branch: branch,
       workspace_path: workspace,
@@ -232,7 +232,7 @@ defmodule Singularity.Git.TreeCoordinator do
       method: :rules
     }
 
-    Store.upsert_session(%{
+    GitStateStore.upsert_session(%{
       agent_id: agent_key,
       branch: nil,
       workspace_path: workspace,
@@ -271,7 +271,7 @@ defmodule Singularity.Git.TreeCoordinator do
       created_at: DateTime.utc_now()
     }
 
-    Store.upsert_pending_merge(pending_merge)
+    GitStateStore.upsert_pending_merge(pending_merge)
 
     new_state = %{state |
       pending_merges: [pending_merge | state.pending_merges]
@@ -411,9 +411,9 @@ defmodule Singularity.Git.TreeCoordinator do
             agent_workspaces: Map.delete(st.agent_workspaces, pr.agent_id)
           }
 
-          Store.delete_pending_merge(pr.branch)
-          Store.delete_session(pr.agent_id)
-          Store.log_merge(%{
+          GitStateStore.delete_pending_merge(pr.branch)
+          GitStateStore.delete_session(pr.agent_id)
+          GitStateStore.log_merge(%{
             branch: pr.branch,
             agent_id: pr.agent_id,
             task_id: pr.task_id,
@@ -426,7 +426,7 @@ defmodule Singularity.Git.TreeCoordinator do
 
         {:conflict, files} ->
           Logger.warning("Merge conflict", pr: pr_number, files: files)
-          Store.log_merge(%{
+          GitStateStore.log_merge(%{
             branch: pr.branch,
             agent_id: pr.agent_id,
             task_id: pr.task_id,
@@ -438,7 +438,7 @@ defmodule Singularity.Git.TreeCoordinator do
 
         {:error, reason} ->
           Logger.error("Merge failed", pr: pr_number, reason: reason)
-          Store.log_merge(%{
+          GitStateStore.log_merge(%{
             branch: pr.branch,
             agent_id: pr.agent_id,
             task_id: pr.task_id,

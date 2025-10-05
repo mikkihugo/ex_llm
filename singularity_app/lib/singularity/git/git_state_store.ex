@@ -1,4 +1,4 @@
-defmodule Singularity.Git.Store do
+defmodule Singularity.Git.GitStateStore do
   @moduledoc """
   Persistence layer for git coordination state. Stores agent workspaces,
   pending merges, and merge history in PostgreSQL so coordination survives

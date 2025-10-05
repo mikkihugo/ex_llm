@@ -252,16 +252,7 @@ defmodule Singularity.DomainVocabularyTrainer do
       ]
     end
 
-    workflow_pairs = for {name, desc} <- workflows do
-      %{
-        anchor: "sparc-#{name}",
-        positive: desc,
-        label: 1.0,
-        metadata: %{workflow: name}
-      }
-    end
-
-    List.flatten(phase_pairs) ++ workflow_pairs
+    List.flatten(phase_pairs)
   end
 
   defp create_pattern_recognition_pairs(patterns) do

@@ -140,10 +140,10 @@ defmodule Singularity.SPARC.Coordinator do
           :ok ->
             # Update context with phase results
             updated_artifacts = Map.put(context.artifacts || %{}, phase, output)
-            updated_context = Map.merge(context, %{
-              artifacts: updated_artifacts,
-              "#{phase}_completed_at" => DateTime.utc_now()
-            })
+            completion_key = "#{phase}_completed_at"
+            updated_context = context
+              |> Map.put(:artifacts, updated_artifacts)
+              |> Map.put(completion_key, DateTime.utc_now())
             {:ok, updated_context}
 
           {:error, validation_errors} ->

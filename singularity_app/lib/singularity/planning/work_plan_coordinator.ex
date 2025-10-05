@@ -1,4 +1,4 @@
-defmodule Singularity.Planning.Coordinator do
+defmodule Singularity.Planning.WorkPlanCoordinator do
   @moduledoc """
   SAFe 6.0 Essential Planning Coordinator.
 

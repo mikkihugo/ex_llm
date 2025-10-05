@@ -24,7 +24,7 @@ defmodule Singularity.Control.Listener do
 
   @impl true
   def handle_info({:improve, agent_id, payload}, state) do
-    case Singularity.Agent.improve(agent_id, payload) do
+    case Singularity.SelfImprovingAgent.improve(agent_id, payload) do
       :ok -> :ok
       {:error, :not_found} -> :ok
     end

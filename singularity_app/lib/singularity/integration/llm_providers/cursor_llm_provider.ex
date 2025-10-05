@@ -1,4 +1,4 @@
-defmodule Singularity.Integration.CursorAgent do
+defmodule Singularity.Integration.LlmProviders.CursorLlmProvider do
   @moduledoc """
   Cursor Agent integration via unified HTTP server.
 

@@ -55,7 +55,7 @@ defmodule Singularity.PackageRegistryKnowledge do
 
     # Build base query
     base_query =
-      from(t in PackageRegistryKnowledge,
+      from t in PackageRegistryKnowledge,
         where: not is_nil(t.semantic_embedding),
         where: t.github_stars >= ^min_stars,
         where: t.download_count >= ^min_downloads
@@ -107,7 +107,7 @@ defmodule Singularity.PackageRegistryKnowledge do
     ecosystem = Keyword.get(opts, :ecosystem)
 
     query =
-      from(t in PackageRegistryKnowledge,
+      from t in PackageRegistryKnowledge,
         where: t.package_name == ^package_name,
         order_by: [desc: t.last_release_date],
         limit: 1
@@ -174,10 +174,10 @@ defmodule Singularity.PackageRegistryKnowledge do
   def get_examples(tool_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 10)
 
-    from(e in PackageCodeExample,
+    from e in PackageCodeExample,
       where: e.tool_id == ^tool_id,
       order_by: [asc: e.example_order],
-      )
+      limit: ^limit
     |> Repo.all()
   end
 
@@ -194,7 +194,7 @@ defmodule Singularity.PackageRegistryKnowledge do
 
     # Build base query
     base_query =
-      from(e in PackageCodeExample,
+      from e in PackageCodeExample,
         join: t in PackageRegistryKnowledge, on: e.tool_id == t.id,
         where: not is_nil(e.code_embedding)
 
@@ -215,7 +215,7 @@ defmodule Singularity.PackageRegistryKnowledge do
       end
 
     # Add vector similarity ordering
-    from([e, t] in query,
+    from [e, t] in query,
       select: %{
         example_id: e.id,
         package_name: t.package_name,
@@ -228,7 +228,7 @@ defmodule Singularity.PackageRegistryKnowledge do
         similarity_score: fragment("1 - (? <-> ?)", e.code_embedding, ^query_embedding)
       },
       order_by: fragment("? <-> ?", e.code_embedding, ^query_embedding),
-      )
+      limit: ^limit
     |> Repo.all()
   end
 
@@ -239,7 +239,7 @@ defmodule Singularity.PackageRegistryKnowledge do
     pattern_type = Keyword.get(opts, :pattern_type)
 
     query =
-      from(p in PackageUsagePattern,
+      from p in PackageUsagePattern,
         where: p.tool_id == ^tool_id
 
     query =
@@ -266,7 +266,7 @@ defmodule Singularity.PackageRegistryKnowledge do
 
     # Build base query
     base_query =
-      from(p in PackageUsagePattern,
+      from p in PackageUsagePattern,
         join: t in PackageRegistryKnowledge, on: p.tool_id == t.id,
         where: not is_nil(p.pattern_embedding)
 
@@ -287,7 +287,7 @@ defmodule Singularity.PackageRegistryKnowledge do
       end
 
     # Add vector similarity ordering
-    from([p, t] in query,
+    from [p, t] in query,
       select: %{
         pattern_id: p.id,
         package_name: t.package_name,
@@ -300,7 +300,7 @@ defmodule Singularity.PackageRegistryKnowledge do
         similarity_score: fragment("1 - (? <-> ?)", p.pattern_embedding, ^query_embedding)
       },
       order_by: fragment("? <-> ?", p.pattern_embedding, ^query_embedding),
-      )
+      limit: ^limit
     |> Repo.all()
   end
 
@@ -311,7 +311,7 @@ defmodule Singularity.PackageRegistryKnowledge do
     dependency_type = Keyword.get(opts, :dependency_type)
 
     query =
-      from(d in PackageDependency,
+      from d in PackageDependency,
         where: d.tool_id == ^tool_id
 
     query =
@@ -332,10 +332,10 @@ defmodule Singularity.PackageRegistryKnowledge do
     limit = Keyword.get(opts, :limit, 20)
     sort_by = Keyword.get(opts, :sort_by, :github_stars) # or :download_count
 
-    from(t in PackageRegistryKnowledge,
+    from t in PackageRegistryKnowledge,
       where: t.ecosystem == ^ecosystem,
       order_by: [desc: field(t, ^sort_by)],
-      )
+      limit: ^limit
     |> Repo.all()
   end
 
@@ -348,11 +348,11 @@ defmodule Singularity.PackageRegistryKnowledge do
 
     cutoff_date = DateTime.utc_now() |> DateTime.add(-days * 24 * 60 * 60, :second)
 
-    from(t in PackageRegistryKnowledge,
+    from t in PackageRegistryKnowledge,
       where: t.ecosystem == ^ecosystem,
       where: t.last_release_date >= ^cutoff_date,
       order_by: [desc: t.last_release_date],
-      )
+      limit: ^limit
     |> Repo.all()
   end
 

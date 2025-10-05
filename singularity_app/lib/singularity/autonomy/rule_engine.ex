@@ -12,7 +12,7 @@ defmodule Singularity.Autonomy.RuleEngine do
   Integrates with:
   - Cachex for rule result caching
   - Phoenix.PubSub for event broadcasting
-  - Planning.Coordinator for epic/feature decisions
+  - Planning.WorkPlanCoordinator for epic/feature decisions
   """
 
   require Logger

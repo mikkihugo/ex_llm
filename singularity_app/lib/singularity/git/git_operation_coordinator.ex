@@ -1,4 +1,4 @@
-defmodule Singularity.Git.Coordinator do
+defmodule Singularity.Git.GitOperationCoordinator do
   @moduledoc """
   Public façade for the Git tree coordinator.
 
@@ -6,7 +6,7 @@ defmodule Singularity.Git.Coordinator do
   so callers can gracefully fall back to rule-based execution.
   """
 
-  alias Singularity.Git.{Supervisor, TreeCoordinator}
+  alias Singularity.Git.{Supervisor, GitTreeSyncCoordinator}
 
   @type agent_id :: term()
   @type task :: map()
@@ -19,7 +19,7 @@ defmodule Singularity.Git.Coordinator do
   def assign_task(agent_id, task, opts \\ []) do
     with true <- enabled?() do
       opts = Keyword.put_new(opts, :use_llm, true)
-      TreeCoordinator.assign_task(agent_id, task, opts)
+      GitTreeSyncCoordinator.assign_task(agent_id, task, opts)
     else
       _ -> {:error, :disabled}
     end
@@ -28,7 +28,7 @@ defmodule Singularity.Git.Coordinator do
   @spec submit_work(agent_id, result) :: any()
   def submit_work(agent_id, result) do
     with true <- enabled?() do
-      TreeCoordinator.submit_work(agent_id, result)
+      GitTreeSyncCoordinator.submit_work(agent_id, result)
     else
       _ -> {:error, :disabled}
     end
@@ -37,7 +37,7 @@ defmodule Singularity.Git.Coordinator do
   @spec merge_status(term()) :: any()
   def merge_status(correlation_id) do
     with true <- enabled?() do
-      TreeCoordinator.merge_status(correlation_id)
+      GitTreeSyncCoordinator.merge_status(correlation_id)
     else
       _ -> {:error, :disabled}
     end
@@ -46,7 +46,7 @@ defmodule Singularity.Git.Coordinator do
   @spec merge_all_for_epic(term()) :: any()
   def merge_all_for_epic(correlation_id) do
     with true <- enabled?() do
-      TreeCoordinator.merge_all_for_epic(correlation_id)
+      GitTreeSyncCoordinator.merge_all_for_epic(correlation_id)
     else
       _ -> {:error, :disabled}
     end

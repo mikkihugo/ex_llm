@@ -151,7 +151,7 @@ defmodule SingularityWeb.Router do
      fn messages, _payload ->
        prompt = render_prompt(messages)
 
-       case Singularity.Integration.CursorAgent.chat(prompt) do
+       case Singularity.Integration.LlmProviders.CursorLlmProvider.chat(prompt) do
          {:ok, text} -> {:ok, format_openai_response(model, text)}
          {:error, reason} -> {:error, {:provider_error, reason}}
        end

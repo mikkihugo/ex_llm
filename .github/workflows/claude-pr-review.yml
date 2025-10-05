@@ -36,12 +36,6 @@ jobs:
             experimental-features = nix-command flakes
             accept-flake-config = true
 
-      - name: Setup Nix cache
-        uses: cachix/cachix-action@v15
-        with:
-          name: singularity
-          skipPush: true
-
       - name: Install Bun
         run: |
           nix develop .#dev --command bash -c "bun --version"

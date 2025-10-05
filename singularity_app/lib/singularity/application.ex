@@ -70,8 +70,8 @@ defmodule Singularity.Application do
         {Task.Supervisor, name: Singularity.TaskSupervisor},
 
         # SAFe 6.0 Planning
-        Singularity.Conversation.Agent,
-        Singularity.Planning.Coordinator,
+        Singularity.Conversation.ChatConversationAgent,
+        Singularity.Planning.WorkPlanCoordinator,
         Singularity.Planning.SingularityVision,
 
         # Agents

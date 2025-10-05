@@ -17,7 +17,7 @@ defmodule Singularity.Planning.AgiPortfolio do
   require Logger
 
   alias Singularity.{CodeStore, Conversation}
-  alias Singularity.Planning.Coordinator
+  alias Singularity.Planning.WorkPlanCoordinator
 
   defstruct [
     # Enterprise-level vision

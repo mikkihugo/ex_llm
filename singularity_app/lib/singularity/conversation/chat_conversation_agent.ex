@@ -1,4 +1,4 @@
-defmodule Singularity.Conversation.Agent do
+defmodule Singularity.Conversation.ChatConversationAgent do
   @moduledoc """
   Manages bidirectional communication between autonomous agents and humans.
   Agents ask questions, get feedback, explain decisions, and request approvals.
