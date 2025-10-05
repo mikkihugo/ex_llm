@@ -70,9 +70,10 @@ erl_crash.dump
 /scripts/query-analysis-db.sh
 
 # Rust build artifacts
+/cargo-build/
+.cargo-build/
 target/
 Cargo.lock
-.cargo-build/
 **/*.rs.bk
 debug/
 

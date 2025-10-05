@@ -146,24 +146,14 @@ defmodule Singularity.RAGCodeGenerator do
   end
 
   defp semantic_search(embedding, language, repos, limit) do
-    # Query PostgreSQL with vector similarity
+    # Use optimized function with parallel partition scanning
     query = """
-    SELECT
-      cf.id,
-      cf.file_path,
-      cf.content,
-      cf.language,
-      cf.metadata,
-      cf.repo_name,
-      cf.updated_at,
-      1 - (e.embedding <=> $1::vector) AS similarity
-    FROM code_files cf
-    LEFT JOIN embeddings e ON e.path = cf.file_path
-    WHERE e.embedding IS NOT NULL
-    #{if language, do: "AND cf.language = $2", else: ""}
-    #{if repos, do: "AND cf.repo_name = ANY($#{if language, do: "3", else: "2"})", else: ""}
-    ORDER BY e.embedding <=> $1::vector
-    LIMIT $#{build_limit_param_index(language, repos)}
+    SELECT * FROM search_similar_code(
+      $1::vector,
+      $2,
+      $3,
+      $4
+    )
     """
 
     params = [

@@ -1,8 +1,8 @@
 import gleam/dict.{type Dict}
+import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
-import gleam/int
+import gleam/order
 import gleam/string
 
 /// Hierarchical Task Directed Acyclic Graph (HTDAG)
@@ -164,7 +164,10 @@ pub fn select_next_task(dag: HTDAG) -> Option(Task) {
           }
         })
 
-      list.first(sorted) |> result.to_option()
+      case list.first(sorted) {
+        Ok(task) -> Some(task)
+        Error(_) -> None
+      }
     }
   }
 }

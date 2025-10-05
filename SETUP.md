@@ -85,7 +85,7 @@ HTTP_SERVER_ENABLED=true PORT=4000 mix run --no-halt
 | `Singularity.Planning.SafeVision` | **SAFe 6.0 Essential** hierarchy + WSJF | Elixir |
 | `Singularity.Planning.HTDAG` | Hierarchical task DAG | **Gleam** |
 | `Singularity.Planning.HTDAG` (wrapper) | Elixir wrapper for Gleam HTDAG | Elixir |
-| `Singularity.Planning.SparcDecomposer` | SPARC implementation | Elixir |
+| `Singularity.Planning.StoryDecomposer` | SPARC implementation | Elixir |
 | `Singularity.Refactoring.Analyzer` | Tech debt detection → creates refactoring epics | Elixir |
 | `Singularity.Learning.PatternMiner` | Pattern extraction from trials | Elixir |
 | `Singularity.Autonomy.Planner` | **UPDATED** - uses SafeVision WSJF prioritization | Elixir |

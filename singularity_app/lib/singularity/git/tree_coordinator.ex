@@ -19,13 +19,15 @@ defmodule Singularity.Git.TreeCoordinator do
 
   alias Singularity.{Autonomy, Git}
   alias Autonomy.Correlation
+  alias Singularity.Git.Store
 
   defstruct [
     :repo_path,
     :agent_workspaces,  # %{agent_id => workspace_path}
     :active_branches,   # %{branch_name => agent_id}
     :pending_merges,    # [%{branch, pr_number, agent_id}]
-    :base_branch
+    :base_branch,
+    :remote
   ]
 
   ## Client API
@@ -74,12 +76,16 @@ defmodule Singularity.Git.TreeCoordinator do
       System.cmd("git", ["commit", "--allow-empty", "-m", "Initial commit"], cd: repo_path)
     end
 
+    sessions = Store.list_sessions()
+    pending_merges = Store.list_pending_merges()
+
     state = %__MODULE__{
       repo_path: repo_path,
-      agent_workspaces: %{},
-      active_branches: %{},
-      pending_merges: [],
-      base_branch: opts[:base_branch] || "main"
+      agent_workspaces: build_workspace_map(sessions),
+      active_branches: build_branch_map(sessions),
+      pending_merges: Enum.map(pending_merges, &merge_from_record/1),
+      base_branch: opts[:base_branch] || "main",
+      remote: Keyword.get(opts, :remote)
     }
 
     {:ok, state}
@@ -100,14 +106,25 @@ defmodule Singularity.Git.TreeCoordinator do
 
   @impl true
   def handle_call({:submit_work, agent_id, result}, _from, state) do
+    agent_key = normalize_agent_id(agent_id)
+
     case Map.get(state.active_branches, result.branch) do
       nil ->
         # No branch - was rule-based work, already on main
         {:reply, {:ok, :committed_to_main}, state}
 
-      ^agent_id ->
+      ^agent_key ->
         # Agent's branch - create PR
         create_pull_request(agent_id, result, state)
+
+      other ->
+        Logger.warning("Agent attempted to submit work for branch owned by another agent",
+          branch: result.branch,
+          requested_by: agent_id,
+          owner: other
+        )
+
+        {:reply, {:error, :not_owner}, state}
     end
   end
 
@@ -137,7 +154,7 @@ defmodule Singularity.Git.TreeCoordinator do
     )
 
     # Build dependency graph
-    graph = build_dependency_graph(pending)
+    graph = build_dependency_graph(pending, state)
 
     # Topological sort
     merge_order = topological_sort(graph)
@@ -166,6 +183,8 @@ defmodule Singularity.Git.TreeCoordinator do
     # Checkout new branch in agent workspace
     System.cmd("git", ["checkout", "-b", branch, state.base_branch], cd: workspace)
 
+    agent_key = normalize_agent_id(agent_id)
+
     assignment = %{
       agent_id: agent_id,
       task: task,
@@ -174,9 +193,18 @@ defmodule Singularity.Git.TreeCoordinator do
       correlation_id: correlation_id
     }
 
+    Store.upsert_session(%{
+      agent_id: agent_key,
+      branch: branch,
+      workspace_path: workspace,
+      correlation_id: correlation_id,
+      status: "active",
+      meta: %{task_id: task.id}
+    })
+
     new_state = %{state |
-      agent_workspaces: Map.put(state.agent_workspaces, agent_id, workspace),
-      active_branches: Map.put(state.active_branches, branch, agent_id)
+      agent_workspaces: Map.put(state.agent_workspaces, agent_key, workspace),
+      active_branches: Map.put(state.active_branches, branch, agent_key)
     }
 
     Logger.info("Assigned LLM task with branch",
@@ -194,6 +222,8 @@ defmodule Singularity.Git.TreeCoordinator do
     workspace = Path.join([state.repo_path, "rule-work", to_string(agent_id)])
     File.mkdir_p!(workspace)
 
+    agent_key = normalize_agent_id(agent_id)
+
     assignment = %{
       agent_id: agent_id,
       task: task,
@@ -201,6 +231,14 @@ defmodule Singularity.Git.TreeCoordinator do
       workspace: workspace,
       method: :rules
     }
+
+    Store.upsert_session(%{
+      agent_id: agent_key,
+      branch: nil,
+      workspace_path: workspace,
+      status: "rules",
+      meta: %{task_id: task.id}
+    })
 
     {:reply, {:ok, assignment}, state}
   end
@@ -214,20 +252,26 @@ defmodule Singularity.Git.TreeCoordinator do
     System.cmd("git", ["commit", "-m", result.commit_message || "Agent work"], cd: workspace)
 
     # Push branch
-    System.cmd("git", ["push", "origin", branch], cd: workspace)
+    if state.remote do
+      System.cmd("git", ["push", state.remote, branch], cd: workspace)
+    end
 
     # Create PR (using gh CLI or API)
-    pr_number = create_pr_via_gh(branch, state.base_branch, result)
+    pr_number = create_pr_via_gh(branch, state.base_branch, result, workspace)
 
     # Add to pending merges
+    agent_key = normalize_agent_id(agent_id)
+
     pending_merge = %{
       branch: branch,
       pr_number: pr_number,
-      agent_id: agent_id,
+      agent_id: agent_key,
       task_id: result.task_id,
       correlation_id: result.correlation_id,
       created_at: DateTime.utc_now()
     }
+
+    Store.upsert_pending_merge(pending_merge)
 
     new_state = %{state |
       pending_merges: [pending_merge | state.pending_merges]
@@ -242,7 +286,7 @@ defmodule Singularity.Git.TreeCoordinator do
     {:reply, {:ok, pr_number}, new_state}
   end
 
-  defp create_pr_via_gh(branch, base, result) do
+  defp create_pr_via_gh(branch, base, result, workspace) do
     title = result.pr_title || "Agent-generated code"
     body = result.pr_body || "Automated pull request from agent"
 
@@ -253,7 +297,7 @@ defmodule Singularity.Git.TreeCoordinator do
       "--head", branch,
       "--title", title,
       "--body", body
-    ]) do
+    ], cd: workspace) do
       {output, 0} ->
         # Extract PR number from output
         case Regex.run(~r/#(\d+)/, output) do
@@ -267,18 +311,18 @@ defmodule Singularity.Git.TreeCoordinator do
     end
   end
 
-  defp build_dependency_graph(prs) do
+  defp build_dependency_graph(prs, state) do
     # Analyze file changes to determine dependencies
     # PR that modifies file A must merge before PR that modifies file A + B
 
     Enum.reduce(prs, %{}, fn pr, graph ->
-      files_changed = get_changed_files(pr.branch)
+      files_changed = get_changed_files(pr.branch, state)
 
       # Find other PRs that modify overlapping files
       dependencies =
         Enum.filter(prs, fn other_pr ->
           other_pr.pr_number != pr.pr_number and
-          files_overlap?(files_changed, get_changed_files(other_pr.branch))
+          files_overlap?(files_changed, get_changed_files(other_pr.branch, state))
         end)
         |> Enum.map(& &1.pr_number)
 
@@ -286,8 +330,8 @@ defmodule Singularity.Git.TreeCoordinator do
     end)
   end
 
-  defp get_changed_files(branch) do
-    case System.cmd("git", ["diff", "--name-only", "main..#{branch}"]) do
+  defp get_changed_files(branch, state) do
+    case System.cmd("git", ["diff", "--name-only", "#{state.base_branch}..#{branch}"], cd: state.repo_path) do
       {output, 0} ->
         output
         |> String.split("\n", trim: true)
@@ -356,43 +400,88 @@ defmodule Singularity.Git.TreeCoordinator do
     Enum.reduce(merge_order, {[], state}, fn pr_number, {results, st} ->
       pr = Enum.find(prs, &(&1.pr_number == pr_number))
 
-      case try_merge(pr) do
+      case try_merge(pr, st) do
         {:ok, merge_commit} ->
           Logger.info("Merged PR", pr: pr_number, branch: pr.branch)
 
           # Remove from pending
           new_state = %{st |
             pending_merges: Enum.reject(st.pending_merges, &(&1.pr_number == pr_number)),
-            active_branches: Map.delete(st.active_branches, pr.branch)
+            active_branches: Map.delete(st.active_branches, pr.branch),
+            agent_workspaces: Map.delete(st.agent_workspaces, pr.agent_id)
           }
+
+          Store.delete_pending_merge(pr.branch)
+          Store.delete_session(pr.agent_id)
+          Store.log_merge(%{
+            branch: pr.branch,
+            agent_id: pr.agent_id,
+            task_id: pr.task_id,
+            correlation_id: pr.correlation_id,
+            merge_commit: merge_commit,
+            status: "merged"
+          })
 
           {[{:ok, pr_number, merge_commit} | results], new_state}
 
         {:conflict, files} ->
           Logger.warning("Merge conflict", pr: pr_number, files: files)
+          Store.log_merge(%{
+            branch: pr.branch,
+            agent_id: pr.agent_id,
+            task_id: pr.task_id,
+            correlation_id: pr.correlation_id,
+            status: "conflict",
+            details: %{files: files}
+          })
           {[{:conflict, pr_number, files} | results], st}
 
         {:error, reason} ->
           Logger.error("Merge failed", pr: pr_number, reason: reason)
+          Store.log_merge(%{
+            branch: pr.branch,
+            agent_id: pr.agent_id,
+            task_id: pr.task_id,
+            correlation_id: pr.correlation_id,
+            status: "error",
+            details: %{reason: reason}
+          })
           {[{:error, pr_number, reason} | results], st}
       end
     end)
   end
 
-  defp try_merge(pr) do
-    # Try to merge branch
-    case System.cmd("git", ["merge", "--no-ff", pr.branch]) do
+  defp try_merge(pr, state) do
+    repo = state.repo_path
+
+    # Ensure base branch checked out and up to date
+    System.cmd("git", ["checkout", state.base_branch], cd: repo)
+
+    if state.remote do
+      System.cmd("git", ["fetch", state.remote, state.base_branch], cd: repo)
+      System.cmd("git", ["reset", "--hard", "#{state.remote}/#{state.base_branch}"], cd: repo)
+    end
+
+    case System.cmd("git", ["merge", "--no-ff", pr.branch], cd: repo) do
       {_output, 0} ->
         # Get merge commit
-        case System.cmd("git", ["rev-parse", "HEAD"]) do
-          {commit, 0} -> {:ok, String.trim(commit)}
-          _ -> {:ok, nil}
+        merge_commit =
+          case System.cmd("git", ["rev-parse", "HEAD"], cd: repo) do
+            {commit, 0} -> String.trim(commit)
+            _ -> nil
+          end
+
+        # Push merge result back to remote
+        if state.remote do
+          System.cmd("git", ["push", state.remote, state.base_branch], cd: repo)
         end
 
+        {:ok, merge_commit}
+
       {output, _} ->
-        # Check if conflict
         if String.contains?(output, "CONFLICT") do
-          conflicts = extract_conflict_files(output)
+          System.cmd("git", ["merge", "--abort"], cd: repo)
+          conflicts = extract_conflict_files(repo)
           {:conflict, conflicts}
         else
           {:error, output}
@@ -400,12 +489,43 @@ defmodule Singularity.Git.TreeCoordinator do
     end
   end
 
-  defp extract_conflict_files(git_output) do
-    Regex.scan(~r/CONFLICT.*in (.+)/, git_output)
-    |> Enum.map(fn [_, file] -> String.trim(file) end)
+  defp extract_conflict_files(repo) do
+    case System.cmd("git", ["diff", "--name-only", "--diff-filter=U"], cd: repo) do
+      {output, 0} -> String.split(output, "\n", trim: true)
+      _ -> []
+    end
   end
 
   defp short_uuid do
     UUID.uuid4() |> String.slice(0..7)
   end
+
+  defp build_workspace_map(sessions) do
+    Enum.reduce(sessions, %{}, fn session, acc ->
+      Map.put(acc, session.agent_id, session.workspace_path)
+    end)
+  end
+
+  defp build_branch_map(sessions) do
+    sessions
+    |> Enum.filter(& &1.branch)
+    |> Enum.reduce(%{}, fn session, acc ->
+      Map.put(acc, session.branch, session.agent_id)
+    end)
+  end
+
+  defp merge_from_record(record) do
+    %{
+      branch: record.branch,
+      pr_number: record.pr_number,
+      agent_id: record.agent_id,
+      task_id: record.task_id,
+      correlation_id: record.correlation_id,
+      created_at: record.inserted_at
+    }
+  end
+
+  defp normalize_agent_id(agent_id) when is_binary(agent_id), do: agent_id
+  defp normalize_agent_id(agent_id) when is_atom(agent_id), do: Atom.to_string(agent_id)
+  defp normalize_agent_id(agent_id), do: to_string(agent_id)
 end

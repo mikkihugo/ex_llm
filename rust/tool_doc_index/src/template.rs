@@ -8,6 +8,16 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+pub mod storage_template;
+pub mod selector;
+pub mod loader;
+pub mod context_builder;
+
+// Re-exports
+pub use selector::TemplateSelector;
+pub use loader::TemplateLoader;
+pub use context_builder::{ContextBuilder, PromptContext, CodeSnippet, BestPractice};
+
 // Include the generated AI templates
 include!(concat!(env!("OUT_DIR"), "/ai_templates.rs"));
 
@@ -57,12 +67,24 @@ pub struct Template {
 
   /// Template metadata
   pub metadata: TemplateMetadata,
-  
+
   /// AI signature for code generation (optional)
   pub ai_signature: Option<AiSignature>,
-  
+
   /// Template content (for code generation templates)
   pub template_content: Option<String>,
+
+  /// Inherit from base template (path to parent template)
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub extends: Option<String>,
+
+  /// Compose with reusable bits (paths to markdown fragments)
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub compose: Option<Vec<String>>,
+
+  /// Multi-phase workflows to execute
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub workflows: Option<Vec<String>>,
 }
 
 /// Template metadata
@@ -189,6 +211,9 @@ impl RegistryTemplate {
       },
       ai_signature: None,
       template_content: None,
+      extends: None,
+      compose: None,
+      workflows: None,
     });
 
     // CodePattern detection template
@@ -228,6 +253,9 @@ impl RegistryTemplate {
       },
       ai_signature: None,
       template_content: None,
+      extends: None,
+      compose: None,
+      workflows: None,
     });
 
     // Data aggregation template
@@ -275,6 +303,9 @@ impl RegistryTemplate {
       },
       ai_signature: None,
       template_content: None,
+      extends: None,
+      compose: None,
+      workflows: None,
     });
 
     // Quick transform template
@@ -310,6 +341,9 @@ impl RegistryTemplate {
       },
       ai_signature: None,
       template_content: None,
+      extends: None,
+      compose: None,
+      workflows: None,
     });
 
     // Tool knowledge storage template
@@ -339,6 +373,9 @@ impl RegistryTemplate {
       },
       ai_signature: None,
       template_content: None,
+      extends: None,
+      compose: None,
+      workflows: None,
     });
   }
 
@@ -397,6 +434,9 @@ pub struct TemplateBuilder {
   tags: Vec<String>,
   ai_signature: Option<AiSignature>,
   template_content: Option<String>,
+  extends: Option<String>,
+  compose: Option<Vec<String>>,
+  workflows: Option<Vec<String>>,
 }
 
 impl TemplateBuilder {
@@ -410,6 +450,9 @@ impl TemplateBuilder {
       tags: Vec::new(),
       ai_signature: None,
       template_content: None,
+      extends: None,
+      compose: None,
+      workflows: None,
     }
   }
 
@@ -455,6 +498,27 @@ impl TemplateBuilder {
     self
   }
 
+  /// Set parent template to extend from
+  #[must_use]
+  pub fn extends(mut self, extends: impl Into<String>) -> Self {
+    self.extends = Some(extends.into());
+    self
+  }
+
+  /// Add a composable bit
+  #[must_use]
+  pub fn add_compose(mut self, bit_path: impl Into<String>) -> Self {
+    self.compose.get_or_insert_with(Vec::new).push(bit_path.into());
+    self
+  }
+
+  /// Add a workflow
+  #[must_use]
+  pub fn add_workflow(mut self, workflow_path: impl Into<String>) -> Self {
+    self.workflows.get_or_insert_with(Vec::new).push(workflow_path.into());
+    self
+  }
+
   /// Build the template
   #[must_use]
   pub fn build(self) -> Template {
@@ -477,6 +541,9 @@ impl TemplateBuilder {
       },
       ai_signature: self.ai_signature,
       template_content: self.template_content,
+      extends: self.extends,
+      compose: self.compose,
+      workflows: self.workflows,
     }
   }
 }

@@ -33,6 +33,8 @@ pub mod microservice_templates;
 pub mod rust_dspy_templates;
 pub mod sparc_templates;
 pub mod templates;
+pub mod template_loader;
+pub mod template_performance_tracker;
 
 // Context-aware prompt generation
 pub mod prompt_bits;

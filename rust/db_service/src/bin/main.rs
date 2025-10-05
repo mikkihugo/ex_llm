@@ -37,10 +37,12 @@ async fn main() -> Result<()> {
     // Start request handlers
     service.handle_db_requests().await?;
     service.handle_db_mutations().await?;
+    service.handle_codebase_snapshots().await?;
 
     info!("✅ Database service ready");
-    info!("   db.query    - SELECT queries");
-    info!("   db.execute  - INSERT/UPDATE/DELETE");
+    info!("   db.query                        - SELECT queries");
+    info!("   db.execute                      - INSERT/UPDATE/DELETE");
+    info!("   db.insert.codebase_snapshots    - Technology detection results");
 
     // Keep running
     tokio::signal::ctrl_c().await?;

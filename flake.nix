@@ -46,9 +46,9 @@
           sccache
 
           # GPU/CUDA Support for ML (RTX 4080 16GB)
+          # Note: NVIDIA drivers must be installed on Windows host for WSL2
           cudaPackages.cudatoolkit
           cudaPackages.cudnn
-          linuxPackages.nvidia_x11  # NVIDIA drivers
 
           # Comprehensive Rust development tools
           rust-analyzer       # LSP server for Rust IDE support
@@ -82,22 +82,13 @@
           pkgs.gleam
         ];
 
-        postgresqlWithExtensions = pkgs.postgresql_17.withPackages (ps:
-          builtins.concatMap (
-            v:
-              let attempt = builtins.tryEval v;
-                  isDrv = attempt.success && pkgs.lib.isDerivation attempt.value;
-                  drv = if isDrv then attempt.value else null;
-                  broken = if isDrv && drv ? meta && drv.meta ? broken then drv.meta.broken else false;
-                  licenseFree =
-                    if !isDrv || !(drv ? meta && drv.meta ? license) then true
-                    else let lic = drv.meta.license;
-                      in if pkgs.lib.isList lic
-                         then pkgs.lib.all (l: l ? free && l.free) lic
-                         else (lic ? free && lic.free);
-              in if isDrv && !broken && licenseFree then [ drv ] else []
-          ) (builtins.attrValues ps)
-        );
+        postgresqlWithExtensions = pkgs.postgresql_17.withPackages (_: [
+          pkgs.postgresql_17.pkgs.timescaledb
+          pkgs.postgresql_17.pkgs.postgis
+          pkgs.postgresql_17.pkgs.pgrouting
+          pkgs.postgresql_17.pkgs.pgtap
+          pkgs.postgresql_17.pkgs.pg_cron
+        ]);
 
         dataServices = [
           postgresqlWithExtensions
@@ -368,13 +359,16 @@ EOF
             # CUDA/GPU environment for EXLA (RTX 4080)
             export CUDA_HOME="${pkgs.cudaPackages.cudatoolkit}"
             export CUDNN_HOME="${pkgs.cudaPackages.cudnn}"
-            export LD_LIBRARY_PATH="${pkgs.cudaPackages.cudatoolkit}/lib:${pkgs.cudaPackages.cudnn}/lib:${pkgs.linuxPackages.nvidia_x11}/lib:''${LD_LIBRARY_PATH:-}"
+            export LD_LIBRARY_PATH="${pkgs.cudaPackages.cudatoolkit}/lib:${pkgs.cudaPackages.cudnn}/lib:''${LD_LIBRARY_PATH:-}"
             export XLA_FLAGS="--xla_gpu_cuda_data_dir=$CUDA_HOME"
             export EXLA_TARGET="cuda"
 
-            # Verify CUDA is available
-            if command -v nvidia-smi >/dev/null 2>&1; then
-              echo "🎮 GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo 'NVIDIA GPU')"
+            # Verify CUDA is available (WSL2 gets GPU access from Windows host)
+            if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
+              echo "🎮 GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader,nounits 2>/dev/null || echo 'NVIDIA GPU available')"
+              echo "   CUDA: $(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9.]+' || echo 'available')"
+            else
+              echo "⚠️  GPU: NVIDIA driver not available (install Windows NVIDIA drivers for WSL2)"
               echo "   CUDA: $(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9.]+' || echo 'available')"
             fi
 

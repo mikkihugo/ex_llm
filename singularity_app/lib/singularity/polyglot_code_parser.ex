@@ -768,4 +768,6 @@ defmodule Singularity.PolyglotCodeParser do
     # Clear analysis cache
     Cachex.clear(cache)
   end
+
+  defp clear_rust_parser_cache(_parser), do: :ok
 end

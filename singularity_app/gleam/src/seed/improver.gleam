@@ -1,6 +1,5 @@
 import gleam/string
 import gleam/result
-import gleam/erlang/erlang
 
 pub type ValidationError {
   ValidationError(message: String)
@@ -29,5 +28,8 @@ pub fn validate(code: String) -> Result(String, ValidationError) {
 pub fn hot_reload(_path: String) -> Result(Int, String) {
   // Return timestamp as version ID
   // In production, this would load compiled BEAM modules
-  Ok(erlang.system_time(erlang.Millisecond))
+  Ok(system_time(1))
 }
+
+@external(erlang, "erlang", "system_time")
+fn system_time(unit: Int) -> Int

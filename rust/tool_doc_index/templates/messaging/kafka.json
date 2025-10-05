@@ -1,0 +1,22 @@
+{
+  "name": "Apache Kafka",
+  "category": "messaging",
+  "detector_signatures": {
+    "patterns": [
+      "KafkaProducer",
+      "KafkaConsumer",
+      "brod:",
+      "kafkajs"
+    ],
+    "dependencies": [
+      "brod",
+      "kafka-python",
+      "kafkajs",
+      "sarama"
+    ],
+    "file_patterns": [
+      "config/kafka*.{ex,exs,ts,js,py}",
+      "lib/**/kafka/*.ex"
+    ]
+  }
+}

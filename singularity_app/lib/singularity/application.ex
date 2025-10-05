@@ -47,10 +47,24 @@ defmodule Singularity.Application do
         # Caching (Rule Engine)
         {Cachex, name: :rule_engine_cache},
 
+        # Memory Cache (Ultra-fast)
+        Singularity.MemoryCache,
+
+        # RAG & Template Optimization
+        Singularity.TemplateOptimizer,
+        Singularity.ExecutionCoordinator,
+
+        # NATS Orchestrator (connects AI Server to ExecutionCoordinator)
+        Singularity.NatsOrchestrator,
+
+        # Auto-warmup (must be last to ensure all services are ready)
+        Singularity.StartupWarmup,
+
         # Core Services
         Singularity.CodeStore,
         Singularity.ProcessRegistry,
         Singularity.Control.Listener,
+        Singularity.Git.Supervisor,
         {Finch, name: Singularity.HttpClient},
         {Task.Supervisor, name: Singularity.TaskSupervisor},
 

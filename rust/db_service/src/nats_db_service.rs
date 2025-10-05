@@ -76,6 +76,73 @@ impl NatsDbService {
         Ok(())
     }
 
+    /// Handle codebase snapshot inserts from detection system
+    pub async fn handle_codebase_snapshots(&self) -> Result<()> {
+        let subscriber = self.nats.subscribe("db.insert.codebase_snapshots").await?;
+
+        info!("👂 Listening for codebase snapshots on db.insert.codebase_snapshots");
+
+        let pool = self.pool.clone();
+
+        tokio::spawn(async move {
+            while let Some(msg) = subscriber.next().await {
+                let snapshot: serde_json::Value = match serde_json::from_slice(&msg.payload) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        error!("Failed to parse snapshot: {}", e);
+                        continue;
+                    }
+                };
+
+                // Insert snapshot into Postgres
+                if let Err(e) = Self::insert_snapshot(&pool, snapshot).await {
+                    error!("Failed to insert snapshot: {}", e);
+                }
+            }
+        });
+
+        Ok(())
+    }
+
+    /// Insert codebase snapshot into Postgres
+    async fn insert_snapshot(pool: &PgPool, snapshot: serde_json::Value) -> Result<()> {
+        let codebase_id = snapshot["codebase_id"].as_str().unwrap_or("unknown");
+        let snapshot_id = snapshot["snapshot_id"].as_i64().unwrap_or(0);
+        let metadata = snapshot["metadata"].clone();
+        let summary = snapshot["summary"].clone();
+        let detected = &snapshot["detected_technologies"];
+        let features = snapshot["features"].clone();
+
+        sqlx::query!(
+            r#"
+            INSERT INTO codebase_snapshots (
+                codebase_id, snapshot_id, metadata, summary,
+                detected_technologies, features, inserted_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, NOW())
+            ON CONFLICT (codebase_id, snapshot_id)
+            DO UPDATE SET
+                metadata = EXCLUDED.metadata,
+                summary = EXCLUDED.summary,
+                detected_technologies = EXCLUDED.detected_technologies,
+                features = EXCLUDED.features
+            "#,
+            codebase_id,
+            snapshot_id,
+            metadata,
+            summary,
+            detected.as_array().unwrap_or(&vec![]).iter()
+                .filter_map(|v| v.as_str())
+                .collect::<Vec<_>>(),
+            features
+        )
+        .execute(pool)
+        .await?;
+
+        info!("✅ Inserted snapshot: {}:{}", codebase_id, snapshot_id);
+        Ok(())
+    }
+
     /// Handle database insert/update/delete requests
     pub async fn handle_db_mutations(&self) -> Result<()> {
         let subscriber = self.nats.subscribe("db.execute").await?;

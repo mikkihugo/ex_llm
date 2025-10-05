@@ -312,6 +312,7 @@ export function printCredentialStatus(stats: CredentialStats): void {
       implementations: [
         { id: 'copilot-api', label: 'Copilot API' },
         { id: 'copilot-cli', label: 'Copilot CLI' },
+        { id: 'github-models', label: 'GitHub Models' },
       ],
     },
     {

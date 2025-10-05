@@ -30,6 +30,10 @@ defmodule Singularity.ServiceManagement.DocGenerator do
     end
   end
 
+  defp generate_architecture_documentation, do: {:ok, []}
+
+  defp generate_api_documentation(_services), do: {:ok, []}
+
   @doc "Generate service-specific documentation"
   def generate_service_docs(service_name) do
     Logger.info("Generating documentation for service: #{service_name}")

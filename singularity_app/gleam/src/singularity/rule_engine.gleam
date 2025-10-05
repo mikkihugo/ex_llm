@@ -109,7 +109,7 @@ fn calculate_confidence(patterns: List(Pattern), context: Context) -> Float {
         pattern_score(pattern, context)
       })
       let total = list.fold(scores, 0.0, float.add)
-      let count = list.length(scores) |> int.to_float()
+      let count = list.length(scores) |> float.from_int()
       float.divide(total, count) |> result.unwrap(0.5)
     }
   }
@@ -210,13 +210,4 @@ fn system_time_native(unit: Int) -> Int
 fn current_timestamp_ms() -> Int {
   // 1 = milliseconds
   system_time_native(1)
-}
-
-// Stub for int.to_float (will be in gleam_stdlib)
-fn int.to_float(i: Int) -> Float {
-  // Convert via Erlang
-  i
-  |> int.to_string()
-  |> float.parse()
-  |> result.unwrap(0.0)
 }

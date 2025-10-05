@@ -1,0 +1,19 @@
+{
+  "name": "Express.js",
+  "category": "framework",
+  "detector_signatures": {
+    "patterns": [
+      "require\\(['\"]express",
+      "from 'express'",
+      "express\\(\\)"
+    ],
+    "dependencies": [
+      "express"
+    ],
+    "file_patterns": [
+      "app.js",
+      "server.js",
+      "src/**/express.ts"
+    ]
+  }
+}

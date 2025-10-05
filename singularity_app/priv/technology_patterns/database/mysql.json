@@ -1,0 +1,8 @@
+{
+  "patterns": [
+    {"regex": "(?i)mysql"},
+    {"regex": "mysql\\.connector"},
+    {"regex": "mysqlclient"},
+    {"regex": "mysql://"}
+  ]
+}

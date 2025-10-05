@@ -12,7 +12,7 @@ defmodule Singularity.Autonomy.Planner do
 
   require Logger
 
-  alias Singularity.Planning.{Coordinator, HTDAG, SparcDecomposer}
+  alias Singularity.Planning.{Coordinator, HTDAG, StoryDecomposer}
   alias Singularity.Refactoring.Analyzer
   alias Singularity.Learning.PatternMiner
 
@@ -60,7 +60,7 @@ defmodule Singularity.Autonomy.Planner do
     patterns = PatternMiner.retrieve_patterns_for_task(task)
 
     # Use SPARC to decompose the task
-    case SparcDecomposer.decompose_story(task) do
+    case StoryDecomposer.decompose_story(task) do
       {:ok, sparc_result} ->
         # Generate implementation code
         code = generate_implementation_code(task, sparc_result, patterns)

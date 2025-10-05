@@ -160,40 +160,39 @@ defmodule Singularity.LLM.SemanticCache do
               System.get_env("GOOGLE_AI_API_KEY") ||
               Application.get_env(:singularity, :google_ai_api_key)
 
-    unless api_key do
+    if is_nil(api_key) do
       Logger.error("GOOGLE_AI_STUDIO_API_KEY not set, falling back to zero vector")
-      return Pgvector.new(List.duplicate(0.0, 768))
-    end
+      Pgvector.new(List.duplicate(0.0, 768))
+    else
+      model = Application.get_env(:singularity, :google_embedding_model, "text-embedding-004")
+      url = "https://generativelanguage.googleapis.com/v1beta/models/#{model}:embedContent"
 
-    # Try text-embedding-004 first, fallback to gemini-embedding-001
-    model = Application.get_env(:singularity, :google_embedding_model, "text-embedding-004")
-    url = "https://generativelanguage.googleapis.com/v1beta/models/#{model}:embedContent"
-
-    body = %{
-      "model" => "models/#{model}",
-      "content" => %{
-        "parts" => [%{"text" => text}]
+      body = %{
+        "model" => "models/#{model}",
+        "content" => %{
+          "parts" => [%{"text" => text}]
+        }
       }
-    }
 
-    case Req.post(url,
-      json: body,
-      headers: [{"x-goog-api-key", api_key}],
-      receive_timeout: 30_000
-    ) do
-      {:ok, %{status: 200, body: %{"embedding" => %{"values" => embedding}}}} when is_list(embedding) ->
-        Pgvector.new(embedding)
+      case Req.post(url,
+        json: body,
+        headers: [{"x-goog-api-key", api_key}],
+        receive_timeout: 30_000
+      ) do
+        {:ok, %{status: 200, body: %{"embedding" => %{"values" => embedding}}}} when is_list(embedding) ->
+          Pgvector.new(embedding)
 
-      {:ok, %{status: status, body: error_body}} ->
-        Logger.error("Google embedding API error",
-          status: status,
-          error: error_body
-        )
-        Pgvector.new(List.duplicate(0.0, 768))
+        {:ok, %{status: status, body: error_body}} ->
+          Logger.error("Google embedding API error",
+            status: status,
+            error: error_body
+          )
+          Pgvector.new(List.duplicate(0.0, 768))
 
-      {:error, reason} ->
-        Logger.error("Failed to call Google embedding API", reason: reason)
-        Pgvector.new(List.duplicate(0.0, 768))
+        {:error, reason} ->
+          Logger.error("Failed to call Google embedding API", reason: reason)
+          Pgvector.new(List.duplicate(0.0, 768))
+      end
     end
   end
 

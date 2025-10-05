@@ -72,6 +72,9 @@ just setup       # Install Elixir + Gleam deps
 just verify      # Format, Credo, Dialyzer, Sobelow, dependency audit, Elixir+Gleam tests
 just coverage    # Generate HTML coverage via ExCoveralls
 just fly-deploy  # Deploy to Fly.io (blue/green)
+
+# Stage code snippets directly from the CLI (optional promotion with --promote)
+mix code.load --agent cli-agent --code lib/new_feature.ex --version v1 --promote
 ```
 
 Coverage reports are written to `_build/test/cover`, and Dialyzer PLTs live in `priv/plts/` (already gitignored).
@@ -120,6 +123,32 @@ Autonomous coordination:
 `Singularity.DynamicCompiler` already compiles and loads the generated Elixir
 modules with `Code.compile_string/2`, so successful promotions replace runtime
 behaviour immediately while keeping the artifact on disk for auditing.
+
+### Git coordinator runtime
+
+The git coordinator is optional and disabled by default. Enable it with
+environment variables:
+
+```
+export GIT_COORDINATOR_ENABLED=true
+export GIT_COORDINATOR_REPO_PATH=/absolute/path/to/shared/repo
+export GIT_COORDINATOR_BASE_BRANCH=main
+export GIT_COORDINATOR_REMOTE=origin   # optional; omit to skip pushes/PRs
+```
+
+- The coordinator runs under `Singularity.Git.Supervisor` and exposes a
+  high-level façade via `Singularity.Git.Coordinator`.
+- When enabled, each LLM-backed task receives an isolated working tree under
+  `GIT_COORDINATOR_REPO_PATH`, branches are pushed to the configured remote,
+  and merges are attempted automatically in dependency order.
+- Assignment metadata, pending merges, and merge history are persisted in
+  PostgreSQL via `git_agent_sessions`, `git_pending_merges`, and
+  `git_merge_history`, so coordination survives restarts and can be queried by
+  other services.
+- For PR automation, ensure the [GitHub CLI](https://cli.github.com/) is
+  installed and authenticated (`gh auth login`). If you skip
+  `GIT_COORDINATOR_REMOTE`, pushes and PR creation are also skipped so you can
+  run entirely local experiments.
 
 ## Fly.io Deployment
 

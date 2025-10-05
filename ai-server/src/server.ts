@@ -32,8 +32,12 @@ import { CodexSDK } from 'codex-js-sdk';
 import type { CodexResponse, CodexMessageType } from 'codex-js-sdk';
 import { loadCredentialsFromEnv, checkCredentialAvailability, printCredentialStatus } from './load-credentials';
 import { copilotChatCompletion } from './providers/copilot-api';
+import { githubModels } from './providers/github-models';
 import { z } from 'zod';
 import { jsonrepair } from 'jsonrepair';
+import { ElixirBridge } from './elixir-bridge';
+import { analyzeTaskComplexity, selectCodexModelForCoding } from './task-complexity';
+import { jules, createJulesModel } from './providers/google-ai-jules';
 
 // Import CredentialStats type for type safety
 
@@ -52,6 +56,12 @@ const PORT = parsePort(process.env.PORT, 3000, 'PORT');
 const OAUTH_CALLBACK_PORT = parsePort(process.env.OAUTH_CALLBACK_PORT, 1455, 'OAUTH_CALLBACK_PORT');
 const OAUTH_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const TOKEN_EXPIRY_BUFFER_MS = 55 * 60 * 1000; // 55 minutes
+
+// Initialize Elixir bridge for ExecutionCoordinator integration
+const elixirBridge = new ElixirBridge();
+elixirBridge.connect().catch(err => {
+  console.warn('⚠️  Elixir bridge connection failed, using direct mode:', err.message);
+});
 
 // ============================================
 // Codex OAuth Configuration
@@ -171,10 +181,21 @@ interface ModelCatalogEntry {
     streaming?: boolean;
     reasoning?: boolean;
     vision?: boolean;
+    tools?: boolean;  // Function calling / tool use capability
   };
 }
 
 const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
+  {
+    id: 'google-jules',
+    upstreamId: 'jules-v1',
+    provider: 'google-jules' as const,
+    displayName: 'Google Jules (Coding Agent)',
+    description: 'Google Jules - Autonomous AI coding agent for complex tasks',
+    ownedBy: 'google',
+    contextWindow: 256000, // 256K context
+    capabilities: { completion: true, streaming: true, reasoning: true, vision: false, tools: true },
+  },
   {
     id: 'gemini-2.5-flash',
     upstreamId: 'gemini-2.5-flash',
@@ -183,7 +204,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'Gemini Flash via HTTP API (primary, faster)',
     ownedBy: 'google',
     contextWindow: 2097152,  // 2M tokens
-    capabilities: { completion: true, streaming: false, reasoning: false, vision: false },
+    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: true },
   },
   {
     id: 'gemini-2.5-flash-cli',
@@ -193,7 +214,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'Gemini Flash via CLI (fallback)',
     ownedBy: 'google',
     contextWindow: 2097152,
-    capabilities: { completion: true, streaming: false, reasoning: false, vision: false },
+    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: false },  // CLI doesn't support tools
   },
   {
     id: 'gemini-2.5-pro',
@@ -203,7 +224,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'Gemini Pro via HTTP API (primary, faster)',
     ownedBy: 'google',
     contextWindow: 2097152,
-    capabilities: { completion: true, streaming: false, reasoning: false, vision: false },
+    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: true },
   },
   {
     id: 'gemini-2.5-pro-cli',
@@ -213,7 +234,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'Gemini Pro via CLI (fallback)',
     ownedBy: 'google',
     contextWindow: 2097152,
-    capabilities: { completion: true, streaming: false, reasoning: false, vision: false },
+    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: false },  // CLI doesn't support tools
   },
   {
     id: 'claude-sonnet-4.5',
@@ -223,7 +244,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'Claude Sonnet 4.5 - Best for coding, 64K output (supports extended thinking)',
     ownedBy: 'anthropic',
     contextWindow: 200000,  // 200K standard, 1M enterprise
-    capabilities: { completion: true, streaming: true, reasoning: true, vision: true },
+    capabilities: { completion: true, streaming: true, reasoning: true, vision: true, tools: true },
   },
   {
     id: 'claude-opus-4.1',
@@ -233,7 +254,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'Claude Opus 4.1 - Largest model (supports extended thinking)',
     ownedBy: 'anthropic',
     contextWindow: 200000,  // 200K standard
-    capabilities: { completion: true, streaming: true, reasoning: true, vision: true },
+    capabilities: { completion: true, streaming: true, reasoning: true, vision: true, tools: true },
   },
   {
     id: 'gpt-5-codex',
@@ -242,8 +263,8 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     displayName: 'OpenAI GPT-5 Codex',
     description: 'GPT-5 via Codex CLI (supports MCP tools)',
     ownedBy: 'openai',
-    contextWindow: 128000,
-    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+    contextWindow: 256000,  // 256K context window
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
   },
   {
     id: 'o3',
@@ -253,7 +274,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'OpenAI o3 - Deepest reasoning model with extended thinking',
     ownedBy: 'openai',
     contextWindow: 128000,
-    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
   },
   {
     id: 'o1',
@@ -263,7 +284,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'OpenAI o1 - Fast reasoning model',
     ownedBy: 'openai',
     contextWindow: 128000,
-    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
   },
   {
     id: 'cursor-auto',
@@ -273,7 +294,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'Cursor Agent auto model selection (FREE on subscription)',
     ownedBy: 'cursor',
     contextWindow: 128000,
-    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
   },
   {
     id: 'cursor-gpt-4.1',
@@ -283,7 +304,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'Cursor CLI agent runner (explicit GPT-4.1)',
     ownedBy: 'cursor',
     contextWindow: 128000,
-    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
   },
   {
     id: 'copilot-gpt-4.1',
@@ -293,7 +314,7 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'GitHub Copilot API - GPT-4.1 (lighter quota)',
     ownedBy: 'github',
     contextWindow: 128000,
-    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
   },
   {
     id: 'grok-coder-1',
@@ -303,7 +324,47 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     description: 'xAI Grok Coder 1 via GitHub Copilot',
     ownedBy: 'xai',
     contextWindow: 128000,
-    capabilities: { completion: true, streaming: false, reasoning: true, vision: false },
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
+  },
+  {
+    id: 'gpt-4o-mini',
+    upstreamId: 'gpt-4o-mini',
+    provider: 'github-models' as const,
+    displayName: 'GPT-4o Mini (GitHub Models)',
+    description: 'OpenAI GPT-4o Mini via GitHub Models API',
+    ownedBy: 'openai',
+    contextWindow: 128000,
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: true, tools: true },
+  },
+  {
+    id: 'gpt-4o',
+    upstreamId: 'gpt-4o',
+    provider: 'github-models' as const,
+    displayName: 'GPT-4o (GitHub Models)',
+    description: 'OpenAI GPT-4o via GitHub Models API',
+    ownedBy: 'openai',
+    contextWindow: 128000,
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: true, tools: true },
+  },
+  {
+    id: 'o1-mini',
+    upstreamId: 'o1-mini',
+    provider: 'github-models' as const,
+    displayName: 'o1 Mini (GitHub Models)',
+    description: 'OpenAI o1 Mini via GitHub Models API',
+    ownedBy: 'openai',
+    contextWindow: 128000,
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
+  },
+  {
+    id: 'o1-preview',
+    upstreamId: 'o1-preview',
+    provider: 'github-models' as const,
+    displayName: 'o1 Preview (GitHub Models)',
+    description: 'OpenAI o1 Preview via GitHub Models API',
+    ownedBy: 'openai',
+    contextWindow: 128000,
+    capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
   },
 ];
 
@@ -1159,11 +1220,13 @@ interface ChatRequest {
   provider:
     | 'gemini-code-cli'
     | 'gemini-code'
+    | 'google-jules'
     | 'claude-code-cli'
     | 'codex-cli'
     | 'cursor-agent-cli'
     | 'copilot-cli'
-    | 'copilot-api';
+    | 'copilot-api'
+    | 'github-models';
   model?: string;
   messages: Message[];
   temperature?: number;
@@ -1502,8 +1565,31 @@ async function handleCopilotAPI(req: ChatRequest) {
   };
 }
 
+async function handleJules(req: ChatRequest) {
+  const lastMessage = req.messages[req.messages.length - 1];
+  const taskType = lastMessage.content.toLowerCase().includes('bug') ? 'bug_fix' :
+                    lastMessage.content.toLowerCase().includes('test') ? 'test' : 'feature';
+
+  const model = createJulesModel(taskType);
+  const result = await model.doGenerate({
+    messages: req.messages,
+    temperature: req.temperature,
+  });
+
+  return {
+    text: result.text,
+    finishReason: result.finishReason,
+    usage: normalizeUsage(req.messages, result.text, result.usage),
+    model: 'google-jules',
+    provider: 'google-jules' as const,
+    metadata: result.metadata,
+  };
+}
+
 async function executeChatRequest(request: ChatRequest): Promise<ProviderResult> {
   switch (request.provider) {
+    case 'google-jules':
+      return handleJules(request);
     case 'gemini-code-cli':
       return handleGeminiCodeCLI(request);
     case 'gemini-code':
@@ -1581,6 +1667,77 @@ const _server = Bun.serve({
       } catch (error: any) {
         console.error('Failed to list models:', error);
         return new Response(JSON.stringify({ error: error.message || String(error) }), { status: 500, headers });
+      }
+    }
+
+    // NEW: Orchestrated endpoint that uses ExecutionCoordinator
+    if (url.pathname === '/v1/orchestrated/chat') {
+      if (req.method !== 'POST') {
+        return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
+      }
+
+      try {
+        const body = await req.json() as any;
+        const messages = body.messages || [];
+        const lastMessage = messages[messages.length - 1];
+
+        if (!lastMessage || lastMessage.role !== 'user') {
+          return new Response(JSON.stringify({ error: 'Last message must be from user' }), { status: 400, headers });
+        }
+
+        // Analyze task complexity
+        const analysis = analyzeTaskComplexity(lastMessage.content);
+
+        // Select best model (prefer Codex for coding tasks)
+        const selectedModel = selectCodexModelForCoding(lastMessage.content);
+
+        // Execute through Elixir ExecutionCoordinator
+        const result = await elixirBridge.executeTask({
+          task: lastMessage.content,
+          language: body.language || 'auto',
+          complexity: analysis.complexity,
+          context: {
+            messages: messages.slice(0, -1), // Previous context
+            model_hint: selectedModel.model, // Use Codex model for coding
+            preferred_provider: selectedModel.provider,
+            temperature: body.temperature || selectedModel.temperature,
+          }
+        });
+
+        // Format as OpenAI-compatible response
+        const response = {
+          id: `chatcmpl-${randomBytes(16).toString('hex')}`,
+          object: 'chat.completion',
+          created: Math.floor(Date.now() / 1000),
+          model: result.model_used || body.model || 'auto',
+          choices: [{
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: result.result,
+            },
+            finish_reason: 'stop',
+          }],
+          usage: {
+            prompt_tokens: result.metrics.tokens_used || 0,
+            completion_tokens: 0,
+            total_tokens: result.metrics.tokens_used || 0,
+          },
+          system_fingerprint: `orchestrated-${result.template_used}`,
+          x_metrics: result.metrics, // Custom metrics
+        };
+
+        return new Response(JSON.stringify(response), { headers });
+      } catch (error: any) {
+        console.error('Error handling /v1/orchestrated/chat:', error);
+        // Fallback to regular chat if orchestration fails
+        console.log('Falling back to regular chat completion...');
+        const body = await req.json() as any;
+        const { request: chatRequest, model: modelEntry } = await convertOpenAIChatCompletionRequest(body);
+        const rawResult = await executeChatRequest({ ...chatRequest, stream: false });
+        const formattedResult = enforceResponseFormat(rawResult, chatRequest);
+        const responsePayload = buildOpenAIChatResponse(formattedResult, modelEntry, body);
+        return new Response(JSON.stringify(responsePayload), { headers });
       }
     }
 
@@ -1733,4 +1890,4 @@ const _server = Bun.serve({
 // Streamlined post-table startup summary
 console.log(`${green}🚀${reset} Server ready at ${bold}http://localhost:${PORT}${reset}`);
 console.log(`${bold}🔗 Endpoints:${reset} /health  /v1/models  /v1/chat/completions  /codex/auth/start  /codex/auth/complete?code=  /codex/auth/status`);
-console.log(`${bold}💡 Tips:${reset} gemini: gcloud auth application-default login  |  claude: claude setup-token  |  codex: codex login  |  cursor: cursor-agent login  |  copilot: set GH_TOKEN`);
+console.log(`${bold}💡 Tips:${reset} gemini: gcloud auth application-default login  |  claude: claude setup-token  |  codex: codex login  |  cursor: cursor-agent login  |  copilot: set GH_TOKEN  |  github-models: set GITHUB_TOKEN`);

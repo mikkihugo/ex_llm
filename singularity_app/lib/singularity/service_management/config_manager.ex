@@ -270,17 +270,12 @@ defmodule Singularity.ServiceManagement.ConfigManager do
   end
 
   defp determine_config_type(config_files) do
-    # Determine the primary configuration type
-    if Enum.any?(config_files, &String.contains?(&1, "package.json")) do
-      :nodejs
-    else if Enum.any?(config_files, &String.contains?(&1, "Cargo.toml")) do
-      :rust
-    else if Enum.any?(config_files, &String.contains?(&1, "requirements.txt")) do
-      :python
-    else if Enum.any?(config_files, &String.contains?(&1, "go.mod")) do
-      :go
-    else
-      :unknown
+    cond do
+      Enum.any?(config_files, &String.contains?(&1, "package.json")) -> :nodejs
+      Enum.any?(config_files, &String.contains?(&1, "Cargo.toml")) -> :rust
+      Enum.any?(config_files, &String.contains?(&1, "requirements.txt")) -> :python
+      Enum.any?(config_files, &String.contains?(&1, "go.mod")) -> :go
+      true -> :unknown
     end
   end
 

@@ -24,7 +24,7 @@
 | **Conversation.GoogleChat** | Human interface | Google Chat integration (mobile + desktop) |
 | **Planning.HTDAG** (Gleam) | Team level | Feature → Stories → Tasks decomposition |
 | **Planning.HTDAG** (Elixir wrapper) | Team level | LLM-driven decomposition with Gleam interop |
-| **Planning.SparcDecomposer** | Feature decomposition | S→P→A→R→C methodology for implementation |
+| **Planning.StoryDecomposer** | Feature decomposition | S→P→A→R→C methodology for implementation |
 | **Refactoring.Analyzer** | Epic creation | Auto-detects tech debt → creates refactoring epics |
 | **Learning.PatternMiner** | Pattern library | Learns from trial codebases → improves code generation |
 
@@ -87,7 +87,7 @@ Strategic Theme (SafeVision)
   │   │       │
   │   │       ├─ HTDAG decomposition (Planning.HTDAG)
   │   │       │   │
-  │   │       │   └─ SPARC phases (SparcDecomposer)
+  │   │       │   └─ SPARC phases (StoryDecomposer)
   │   │       │       │
   │   │       │       └─ Tasks
   │   │       │           │

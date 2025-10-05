@@ -68,7 +68,9 @@ defmodule Singularity.CodeSynthesisPipeline do
   @embedding_cache :fast_embedding_cache
   @bloom_filter :fast_bloom_filter
 
-  @doc """Convenience helper so callers can send messages through the pipeline namespace."""
+  @doc """
+  Convenience helper so callers can send messages through the pipeline namespace.
+  """
   def send(pid, message), do: Kernel.send(pid, message)
 
   @doc """

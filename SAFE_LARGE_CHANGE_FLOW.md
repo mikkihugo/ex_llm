@@ -201,7 +201,7 @@ SafeVision.get_next_work()
 # Inside Planner
 defp generate_from_vision_task(state, context, feature) do
   # Use SPARC to decompose feature
-  {:ok, sparc_result} = SparcDecomposer.decompose_story(feature)
+  {:ok, sparc_result} = StoryDecomposer.decompose_story(feature)
 
   # Create HTDAG from SPARC output
   {:ok, dag} = HTDAG.decompose(%{

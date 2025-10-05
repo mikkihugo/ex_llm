@@ -273,4 +273,7 @@ defmodule Singularity.MCP.ElixirToolsServer do
   defp get_session_id(_state) do
     Process.get(:mcp_session_id, "unknown")
   end
+
+  # TODO: Wire to Hermes.Frame.register_tool once the dynamic registration API is finalized.
+  defp register_tool(_name, _opts), do: :ok
 end

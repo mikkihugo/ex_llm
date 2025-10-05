@@ -41,6 +41,9 @@ async-trait = { workspace = true }
 # Main sparc-engine dependency for core types - DISABLED to break circular dependency
 # sparc-engine = { path = "../.." }
 
+# Technology detection from tool_doc_index
+tool-doc-index = { path = "../tool_doc_index" }
+
 # Error handling
 anyhow = { workspace = true }
 

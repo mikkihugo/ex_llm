@@ -88,7 +88,7 @@ defmodule Singularity.QualityCodeGenerator do
 
     Logger.info("Generating #{quality} quality code: #{task}")
 
-    with {:ok, code} <- generate_implementation(task, language, quality, use_rag),
+    with {:ok, code} <- generate_implementation(task, language, quality, use_rag, template),
          {:ok, docs} <- generate_documentation(code, task, language, quality),
          {:ok, specs} <- generate_type_specs(code, language, quality),
          {:ok, tests} <- generate_tests(code, task, language, quality),

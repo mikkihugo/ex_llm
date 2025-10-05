@@ -1,0 +1,8 @@
+{
+  "patterns": [
+    {"regex": "redis"},
+    {"regex": "Sidekiq"},
+    {"regex": "celery\\.beat"},
+    {"regex": "redis://"}
+  ]
+}

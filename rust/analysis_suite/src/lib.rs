@@ -77,6 +77,7 @@ pub mod repository; // Repository analysis
 pub mod types;    // Legacy types (being migrated)
 pub mod codebase; // NEW: Single source of truth for all code metadata
 pub mod search;   // Semantic search with custom vectors
+pub mod technology_detection; // Technology detection via tool_doc_index
 
 // Unified storage system
 pub mod storage;

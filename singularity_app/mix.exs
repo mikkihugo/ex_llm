@@ -1,6 +1,10 @@
 defmodule Singularity.MixProject do
   use Mix.Project
 
+  Code.require_file("lib/mix/tasks/gleam_helpers.ex", __DIR__)
+  Code.require_file("lib/mix/tasks/compile/gleam.ex", __DIR__)
+  Code.require_file("lib/mix/tasks/gleam/deps/get.ex", __DIR__)
+
   @app :singularity
 
   def project do
@@ -56,8 +60,7 @@ defmodule Singularity.MixProject do
 
     [
       Path.join(build_path, "_gleam_artefacts"),
-      Path.join(build_path, "build"),
-      "gleam/build/dev/erlang"
+      Path.join(build_path, "build")
     ]
   end
 
@@ -160,7 +163,9 @@ defmodule Singularity.MixProject do
         "dialyzer",
         "sobelow --exit-on-warning",
         "deps.audit"
-      ]
+      ],
+      "registry.sync": ["registry.sync"],
+      "registry.report": ["registry.report"]
     ]
   end
 end

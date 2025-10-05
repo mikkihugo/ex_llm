@@ -84,6 +84,14 @@ defmodule Singularity.PlatformIntegration.NatsConnector do
     end
   end
 
+  @doc "Fetch a technology template via NATS request (placeholder implementation)"
+  def fetch_template(subject, payload) do
+    Logger.debug("Requesting template via NATS", subject: subject, payload: payload)
+
+    # TODO: Replace with actual NATS RPC call once available
+    {:error, :not_implemented}
+  end
+
   @doc "Create JetStream streams for service coordination"
   def create_service_streams do
     Logger.info("Creating JetStream streams for service coordination")

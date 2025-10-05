@@ -1,5 +1,7 @@
 import Config
 
+config :singularity, :git_coordinator, enabled: false
+
 config :singularity, SingularityWeb.Endpoint,
   http: [port: 5001],
   server: false

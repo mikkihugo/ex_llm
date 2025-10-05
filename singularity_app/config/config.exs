@@ -18,6 +18,14 @@ config :logger,
 config :libcluster,
   topologies: []
 
+config :singularity, :git_coordinator,
+  enabled: System.get_env("GIT_COORDINATOR_ENABLED", "false")
+           |> String.downcase()
+           |> (&(&1 in ["1", "true", "yes"])).(),
+  repo_path: System.get_env("GIT_COORDINATOR_REPO_PATH"),
+  base_branch: System.get_env("GIT_COORDINATOR_BASE_BRANCH", "main"),
+  remote: System.get_env("GIT_COORDINATOR_REMOTE")
+
 # Claude CLI Recovery Configuration
 # Uses dedicated recovery binary: ~/.singularity/emergency/bin/claude-recovery
 # Named "claude-recovery" to avoid collision with NPM Claude SDK

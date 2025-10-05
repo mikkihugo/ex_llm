@@ -1,21 +1,46 @@
 defmodule Singularity.TechnologyDetector do
   @moduledoc """
-  Advanced technology detection for codebase analysis.
-  Detects technologies by analyzing code patterns, not just file names.
+  Technology detection orchestrator.
+  Delegates to Rust LayeredDetector via Port for performance.
+  Falls back to Elixir implementation if Rust unavailable.
   """
 
   require Logger
+  alias Singularity.{PolyglotCodeParser, TechnologyTemplateLoader}
 
-  @doc "Detect all technologies in a codebase"
-  def detect_technologies(codebase_path) do
+  @rust_detector_path "rust/target/release/tool-doc-index"
+
+  @doc "Detect all technologies (Rust LayeredDetector with Elixir fallback)"
+  def detect_technologies(codebase_path, opts \\ []) do
     Logger.info("Detecting technologies in: #{codebase_path}")
-    
-    with {:ok, technologies} <- perform_technology_detection(codebase_path) do
-      %{
-        codebase_path: codebase_path,
-        technologies: technologies,
-        detection_timestamp: DateTime.utc_now()
-      }
+
+    case call_rust_detector(codebase_path) do
+      {:ok, results} ->
+        {:ok, %{
+          codebase_path: codebase_path,
+          technologies: transform_rust_results(results),
+          detection_timestamp: DateTime.utc_now(),
+          detection_method: :rust_layered
+        }}
+
+      {:error, reason} when reason in [:rust_unavailable, :not_found] ->
+        Logger.warn("Rust detector unavailable, using Elixir fallback")
+        detect_technologies_elixir(codebase_path, opts)
+
+      {:error, reason} ->
+        Logger.error("Rust detection failed: #{inspect(reason)}, using fallback")
+        detect_technologies_elixir(codebase_path, opts)
+    end
+  end
+
+  @doc "Elixir fallback implementation"
+  def detect_technologies_elixir(codebase_path, opts \\ []) do
+    with {:ok, analysis} <- resolve_analysis(codebase_path, opts),
+         {:ok, patterns} <- extract_technology_patterns(codebase_path, analysis) do
+      snapshot = build_snapshot(codebase_path, patterns, opts)
+      maybe_persist_snapshot(snapshot, opts)
+
+      {:ok, snapshot}
     else
       {:error, reason} ->
         Logger.error("Technology detection failed: #{inspect(reason)}")
@@ -24,33 +49,31 @@ defmodule Singularity.TechnologyDetector do
   end
 
   @doc "Detect specific technology category"
-  def detect_technology_category(codebase_path, category) do
+  def detect_technology_category(codebase_path, category, opts \\ []) do
     Logger.info("Detecting #{category} technologies in: #{codebase_path}")
-    
-    case category do
-      :messaging -> detect_messaging_technologies(codebase_path)
-      :databases -> detect_database_technologies(codebase_path)
-      :build_systems -> detect_build_systems(codebase_path)
-      :frameworks -> detect_frameworks(codebase_path)
-      :languages -> detect_languages(codebase_path)
-      :monitoring -> detect_monitoring_technologies(codebase_path)
-      :security -> detect_security_technologies(codebase_path)
-      :ai_frameworks -> detect_ai_frameworks(codebase_path)
-      :deployment -> detect_deployment_technologies(codebase_path)
-      _ -> {:error, :unsupported_category}
+
+    with {:ok, analysis} <- resolve_analysis(codebase_path, opts) do
+      patterns = extract_category_patterns(analysis, category)
+      {:ok, patterns}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
   @doc "Analyze technology patterns in code"
-  def analyze_code_patterns(codebase_path) do
+  def analyze_code_patterns(codebase_path, opts \\ []) do
     Logger.info("Analyzing code patterns in: #{codebase_path}")
-    
-    with {:ok, patterns} <- scan_code_patterns(codebase_path) do
-      %{
+
+    with {:ok, analysis} <- resolve_analysis(codebase_path, opts) do
+      snapshot = %{
         codebase_path: codebase_path,
-        patterns: patterns,
+        patterns: Map.get(analysis, :patterns, []),
         analysis_timestamp: DateTime.utc_now()
       }
+
+      maybe_persist_snapshot(snapshot, opts)
+
+      snapshot
     else
       {:error, reason} ->
         Logger.error("Code pattern analysis failed: #{inspect(reason)}")
@@ -60,2179 +83,518 @@ defmodule Singularity.TechnologyDetector do
 
   ## Private Functions
 
-  defp perform_technology_detection(codebase_path) do
-    # Advanced technology detection with confidence scoring
+  defp resolve_analysis(codebase_path, opts) do
+    case Keyword.get(opts, :analysis) do
+      %{} = analysis -> {:ok, analysis}
+      nil -> PolyglotCodeParser.analyze_codebase(codebase_path)
+    end
+  end
+
+  defp extract_technology_patterns(codebase_path, analysis) do
+    # Extract patterns from polyglot analysis
     technologies = %{
-      languages: detect_languages_with_confidence(codebase_path),
-      frameworks: detect_frameworks_with_confidence(codebase_path),
-      databases: detect_database_technologies_with_confidence(codebase_path),
-      messaging: detect_messaging_technologies_with_confidence(codebase_path),
-      build_systems: detect_build_systems_with_confidence(codebase_path),
-      monitoring: detect_monitoring_technologies_with_confidence(codebase_path),
-      security: detect_security_technologies_with_confidence(codebase_path),
-      ai_frameworks: detect_ai_frameworks_with_confidence(codebase_path),
-      deployment: detect_deployment_technologies_with_confidence(codebase_path),
-      cloud_platforms: detect_cloud_platforms_with_confidence(codebase_path),
-      architecture_patterns: detect_architecture_patterns_with_confidence(codebase_path),
-      # Dynamic discovery capabilities
-      discovered_technologies: Singularity.AdvancedAnalyzer.discover_unknown_technologies(codebase_path),
-      import_patterns: Singularity.AdvancedAnalyzer.analyze_import_patterns(codebase_path),
-      api_patterns: Singularity.AdvancedAnalyzer.discover_api_patterns(codebase_path),
-      data_patterns: Singularity.AdvancedAnalyzer.discover_data_patterns(codebase_path),
-      workflow_patterns: Singularity.AdvancedAnalyzer.discover_workflow_patterns(codebase_path)
+      languages: extract_languages(analysis),
+      frameworks: extract_frameworks(codebase_path, analysis),
+      databases: extract_databases(codebase_path, analysis),
+      messaging: extract_messaging(codebase_path, analysis),
+      build_systems: extract_build_systems(analysis),
+      monitoring: extract_monitoring(codebase_path, analysis),
+      security: extract_security(codebase_path, analysis),
+      ai_frameworks: extract_ai_frameworks(codebase_path, analysis),
+      deployment: extract_deployment(analysis),
+      cloud_platforms: extract_cloud_platforms(codebase_path, analysis),
+      architecture_patterns: extract_architecture_patterns(codebase_path, analysis)
     }
-    
+
     {:ok, technologies}
   end
 
-  defp detect_languages(codebase_path) do
-    languages = []
-    
-    # Detect by file extensions and patterns
-    languages = detect_by_file_extensions(codebase_path, languages)
-    
-    # Detect by configuration files
-    languages = detect_by_config_files(codebase_path, languages)
-    
-    # Detect by code patterns
-    languages = detect_by_code_patterns(codebase_path, languages)
-    
-    languages
-  end
+  defp build_snapshot(codebase_path, technologies, opts) do
+    detection_method = opts[:detection_method] || :elixir_fallback
+    timestamp = DateTime.utc_now()
+    codebase_id = opts[:codebase_id] || codebase_path
+    snapshot_id = opts[:snapshot_id] || System.unique_integer([:positive])
 
-  defp detect_by_file_extensions(codebase_path, languages) do
-    extensions = %{
-      ".ts" => :typescript,
-      ".tsx" => :typescript,
-      ".js" => :javascript,
-      ".jsx" => :javascript,
-      ".rs" => :rust,
-      ".py" => :python,
-      ".go" => :go,
-      ".ex" => :elixir,
-      ".exs" => :elixir,
-      ".erl" => :erlang,
-      ".hrl" => :erlang,
-      ".gleam" => :gleam,
-      ".java" => :java,
-      ".kt" => :kotlin,
-      ".scala" => :scala,
-      ".clj" => :clojure,
-      ".hs" => :haskell,
-      ".ml" => :ocaml,
-      ".fs" => :fsharp,
-      ".cs" => :csharp,
-      ".cpp" => :cpp,
-      ".c" => :c,
-      ".php" => :php,
-      ".rb" => :ruby,
-      ".swift" => :swift,
-      ".dart" => :dart
+    metadata =
+      %{codebase_path: codebase_path, detection_method: detection_method, detection_timestamp: timestamp}
+      |> Map.merge(Map.get(opts, :metadata, %{}))
+
+    summary = technologies
+    detected = flatten_technologies(technologies)
+    features = build_features(technologies)
+
+    %{
+      codebase_path: codebase_path,
+      codebase_id: codebase_id,
+      snapshot_id: snapshot_id,
+      detection_timestamp: timestamp,
+      detection_method: detection_method,
+      technologies: technologies,
+      detected_technologies: detected,
+      metadata: metadata,
+      summary: summary,
+      features: features
     }
-    
-    detected_languages = Enum.reduce(extensions, [], fn {ext, lang}, acc ->
-      if has_files_with_extension?(codebase_path, ext) do
-        [lang | acc]
-      else
-        acc
+  end
+
+  defp maybe_persist_snapshot(%{codebase_id: codebase_id} = snapshot, opts) do
+    if Keyword.get(opts, :persist_snapshot, true) do
+      # Publish to NATS instead of direct DB write
+      payload = snapshot
+        |> Map.take([:codebase_id, :snapshot_id, :metadata, :summary, :detected_technologies, :features])
+        |> Jason.encode!()
+
+      subject = "db.insert.codebase_snapshots"
+
+      case Singularity.PlatformIntegration.NatsConnector.publish(subject, payload) do
+        :ok ->
+          Logger.debug("Published technology snapshot to NATS",
+            subject: subject,
+            codebase_id: codebase_id
+          )
+          :ok
+        {:error, reason} ->
+          Logger.warn("Failed to publish snapshot to NATS",
+            codebase_id: codebase_id,
+            reason: inspect(reason)
+          )
       end
+    end
+
+    :ok
+  end
+
+  defp maybe_persist_snapshot(_snapshot, _opts), do: :ok
+
+  defp flatten_technologies(technologies) when is_map(technologies) do
+    technologies
+    |> Enum.flat_map(fn {category, values} ->
+      values
+      |> List.wrap()
+      |> Enum.map(&normalize_detected_value(category, &1))
     end)
-    
-    languages ++ detected_languages
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
   end
 
-  defp detect_by_config_files(codebase_path, languages) do
-    config_files = %{
-      "package.json" => :javascript,
-      "tsconfig.json" => :typescript,
-      "Cargo.toml" => :rust,
-      "requirements.txt" => :python,
-      "go.mod" => :go,
-      "mix.exs" => :elixir,
-      "rebar.config" => :erlang,
-      "gleam.toml" => :gleam,
-      "pom.xml" => :java,
-      "build.gradle" => :java,
-      "composer.json" => :php,
-      "Gemfile" => :ruby,
-      "Podfile" => :swift,
-      "pubspec.yaml" => :dart
-    }
-    
-    detected_languages = Enum.reduce(config_files, [], fn {file, lang}, acc ->
-      if File.exists?(Path.join(codebase_path, file)) do
-        [lang | acc]
-      else
-        acc
+  defp flatten_technologies(_), do: []
+
+  defp normalize_detected_value(category, value) when is_atom(value) do
+    format_detected(category, Atom.to_string(value))
+  end
+
+  defp normalize_detected_value(category, value) when is_binary(value) do
+    format_detected(category, value)
+  end
+
+  defp normalize_detected_value(category, %{} = map) do
+    cond do
+      Map.has_key?(map, :name) -> format_detected(category, map[:name])
+      Map.has_key?(map, "name") -> format_detected(category, map["name"])
+      Map.has_key?(map, :technology_name) -> format_detected(category, map[:technology_name])
+      Map.has_key?(map, "technology_name") -> format_detected(category, map["technology_name"])
+      true ->
+        map
+        |> Map.values()
+        |> Enum.find(&is_binary/1)
+        |> case do
+          nil -> nil
+          binary -> format_detected(category, binary)
+        end
+    end
+  end
+
+  defp normalize_detected_value(category, value), do: format_detected(category, to_string(value))
+
+  defp format_detected(category, value) when is_binary(value) do
+    category_label =
+      case category do
+        atom when is_atom(atom) -> Atom.to_string(atom)
+        other -> to_string(other)
       end
-    end)
-    
-    languages ++ detected_languages
+
+    String.downcase(category_label) <> ":" <> value
   end
 
-  defp detect_by_code_patterns(codebase_path, languages) do
-    # Scan source files for language-specific patterns
-    source_files = find_source_files(codebase_path)
-    
-    patterns = %{
-      :elixir => [
-        ~r/defmodule\s+\w+/,
-        ~r/def\s+\w+/,
-        ~r/use\s+\w+/,
-        ~r/GenServer/
-      ],
-      :erlang => [
-        ~r/-module\(\w+\)/,
-        ~r/-export\(\[/,
-        ~r/gen_server/,
-        ~r/supervisor/
-      ],
-      :rust => [
-        ~r/fn\s+\w+/,
-        ~r/struct\s+\w+/,
-        ~r/impl\s+\w+/,
-        ~r/use\s+\w+::/
-      ],
-      :python => [
-        ~r/def\s+\w+/,
-        ~r/class\s+\w+/,
-        ~r/import\s+\w+/,
-        ~r/from\s+\w+\s+import/
-      ],
-      :go => [
-        ~r/func\s+\w+/,
-        ~r/type\s+\w+/,
-        ~r/package\s+\w+/,
-        ~r/import\s+\(/
-      ],
-      :typescript => [
-        ~r/interface\s+\w+/,
-        ~r/type\s+\w+/,
-        ~r/class\s+\w+/,
-        ~r/export\s+/
-      ]
-    }
-    
-    detected_languages = Enum.reduce(patterns, [], fn {lang, lang_patterns}, acc ->
-      if matches_patterns?(source_files, lang_patterns) do
-        [lang | acc]
-      else
-        acc
-      end
-    end)
-    
-    languages ++ detected_languages
-  end
+  defp format_detected(_category, _value), do: nil
 
-  defp detect_messaging_technologies(codebase_path) do
-    messaging_techs = []
-    
-    # NATS detection
-    messaging_techs = if detect_nats_patterns(codebase_path) do
-      [:nats | messaging_techs]
-    else
-      messaging_techs
-    end
-    
-    # Kafka detection
-    messaging_techs = if detect_kafka_patterns(codebase_path) do
-      [:kafka | messaging_techs]
-    else
-      messaging_techs
-    end
-    
-    # Redis detection
-    messaging_techs = if detect_redis_patterns(codebase_path) do
-      [:redis | messaging_techs]
-    else
-      messaging_techs
-    end
-    
-    # RabbitMQ detection
-    messaging_techs = if detect_rabbitmq_patterns(codebase_path) do
-      [:rabbitmq | messaging_techs]
-    else
-      messaging_techs
-    end
-    
-    # OTP/BEAM messaging detection
-    messaging_techs = if detect_otp_messaging_patterns(codebase_path) do
-      [:otp_messaging | messaging_techs]
-    else
-      messaging_techs
-    end
-    
-    messaging_techs
-  end
-
-  defp detect_nats_patterns(codebase_path) do
-    # Look for NATS-specific patterns in code
-    nats_patterns = [
-      ~r/nats\.connect/,
-      ~r/nats\.subscribe/,
-      ~r/nats\.publish/,
-      ~r/jetstream/,
-      ~r/nats\.js/,
-      ~r/nats\.Connection/,
-      ~r/nats\.Subscription/
-    ]
-    
-    # Check package.json for NATS dependencies
-    package_json_path = Path.join(codebase_path, "package.json")
-    has_nats_dependency = if File.exists?(package_json_path) do
-      case File.read(package_json_path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, %{"dependencies" => deps}} ->
-              Map.has_key?(deps, "nats") or Map.has_key?(deps, "nats.js")
-            _ -> false
-          end
-        _ -> false
-      end
-    else
-      false
-    end
-    
-    # Check for NATS configuration files
-    nats_config_files = [
-      "nats.conf",
-      "jetstream.conf",
-      ".natsrc"
-    ]
-    
-    has_nats_config = Enum.any?(nats_config_files, fn file ->
-      File.exists?(Path.join(codebase_path, file))
-    end)
-    
-    # Check code patterns
-    has_nats_patterns = matches_patterns_in_codebase?(codebase_path, nats_patterns)
-    
-    has_nats_dependency or has_nats_config or has_nats_patterns
-  end
-
-  defp detect_kafka_patterns(codebase_path) do
-    kafka_patterns = [
-      ~r/kafka\.producer/,
-      ~r/kafka\.consumer/,
-      ~r/KafkaProducer/,
-      ~r/KafkaConsumer/,
-      ~r/kafka\.admin/,
-      ~r/KafkaAdmin/
-    ]
-    
-    # Check for Kafka dependencies
-    package_json_path = Path.join(codebase_path, "package.json")
-    has_kafka_dependency = if File.exists?(package_json_path) do
-      case File.read(package_json_path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, %{"dependencies" => deps}} ->
-              Enum.any?(Map.keys(deps), &String.contains?(&1, "kafka"))
-            _ -> false
-          end
-        _ -> false
-      end
-    else
-      false
-    end
-    
-    # Check for Kafka configuration
-    kafka_config_files = [
-      "kafka.properties",
-      "kafka.yml",
-      "kafka.yaml"
-    ]
-    
-    has_kafka_config = Enum.any?(kafka_config_files, fn file ->
-      File.exists?(Path.join(codebase_path, file))
-    end)
-    
-    has_kafka_dependency or has_kafka_config or matches_patterns_in_codebase?(codebase_path, kafka_patterns)
-  end
-
-  defp detect_redis_patterns(codebase_path) do
-    redis_patterns = [
-      ~r/redis\.createClient/,
-      ~r/Redis\.createClient/,
-      ~r/redis\.connect/,
-      ~r/redis\.get/,
-      ~r/redis\.set/,
-      ~r/redis\.hget/,
-      ~r/redis\.hset/
-    ]
-    
-    # Check for Redis dependencies
-    package_json_path = Path.join(codebase_path, "package.json")
-    has_redis_dependency = if File.exists?(package_json_path) do
-      case File.read(package_json_path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, %{"dependencies" => deps}} ->
-              Enum.any?(Map.keys(deps), &String.contains?(&1, "redis"))
-            _ -> false
-          end
-        _ -> false
-      end
-    else
-      false
-    end
-    
-    has_redis_dependency or matches_patterns_in_codebase?(codebase_path, redis_patterns)
-  end
-
-  defp detect_rabbitmq_patterns(codebase_path) do
-    rabbitmq_patterns = [
-      ~r/amqp\.connect/,
-      ~r/rabbitmq/,
-      ~r/amqplib/,
-      ~r/Channel\.create/
-    ]
-    
-    # Check for RabbitMQ dependencies
-    package_json_path = Path.join(codebase_path, "package.json")
-    has_rabbitmq_dependency = if File.exists?(package_json_path) do
-      case File.read(package_json_path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, %{"dependencies" => deps}} ->
-              Enum.any?(Map.keys(deps), &String.contains?(&1, "amqp"))
-            _ -> false
-          end
-        _ -> false
-      end
-    else
-      false
-    end
-    
-    has_rabbitmq_dependency or matches_patterns_in_codebase?(codebase_path, rabbitmq_patterns)
-  end
-
-  defp detect_otp_messaging_patterns(codebase_path) do
-    otp_patterns = [
-      ~r/GenServer/,
-      ~r/send\(/,
-      ~r/receive\s+do/,
-      ~r/cast\(/,
-      ~r/call\(/,
-      ~r/Phoenix\.PubSub/,
-      ~r/Registry/,
-      ~r/Agent/,
-      ~r/Task/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, otp_patterns)
-  end
-
-  defp detect_database_technologies(codebase_path) do
-    databases = []
-    
-    # PostgreSQL detection
-    databases = if detect_postgresql_patterns(codebase_path) do
-      [:postgresql | databases]
-    else
-      databases
-    end
-    
-    # MongoDB detection
-    databases = if detect_mongodb_patterns(codebase_path) do
-      [:mongodb | databases]
-    else
-      databases
-    end
-    
-    # SQLite detection
-    databases = if detect_sqlite_patterns(codebase_path) do
-      [:sqlite | databases]
-    else
-      databases
-    end
-    
-    # Redis as database
-    databases = if detect_redis_patterns(codebase_path) do
-      [:redis | databases]
-    else
-      databases
-    end
-    
-    databases
-  end
-
-  defp detect_postgresql_patterns(codebase_path) do
-    postgres_patterns = [
-      ~r/postgresql/,
-      ~r/pg\.connect/,
-      ~r/Pool\.connect/,
-      ~r/postgres:\/\/,
-      ~r/pgvector/,
-      ~r/PostgreSQL/
-    ]
-    
-    # Check for PostgreSQL dependencies
-    package_json_path = Path.join(codebase_path, "package.json")
-    has_postgres_dependency = if File.exists?(package_json_path) do
-      case File.read(package_json_path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, %{"dependencies" => deps}} ->
-              Enum.any?(Map.keys(deps), fn dep ->
-                String.contains?(dep, "pg") or String.contains?(dep, "postgres")
-              end)
-            _ -> false
-          end
-        _ -> false
-      end
-    else
-      false
-    end
-    
-    has_postgres_dependency or matches_patterns_in_codebase?(codebase_path, postgres_patterns)
-  end
-
-  defp detect_mongodb_patterns(codebase_path) do
-    mongo_patterns = [
-      ~r/mongodb/,
-      ~r/MongoClient/,
-      ~r/mongoose/,
-      ~r/mongodb:\/\/,
-      ~r/MongoDB/
-    ]
-    
-    # Check for MongoDB dependencies
-    package_json_path = Path.join(codebase_path, "package.json")
-    has_mongo_dependency = if File.exists?(package_json_path) do
-      case File.read(package_json_path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, %{"dependencies" => deps}} ->
-              Enum.any?(Map.keys(deps), fn dep ->
-                String.contains?(dep, "mongo") or String.contains?(dep, "mongoose")
-              end)
-            _ -> false
-          end
-        _ -> false
-      end
-    else
-      false
-    end
-    
-    has_mongo_dependency or matches_patterns_in_codebase?(codebase_path, mongo_patterns)
-  end
-
-  defp detect_sqlite_patterns(codebase_path) do
-    sqlite_patterns = [
-      ~r/sqlite3/,
-      ~r/SQLite/,
-      ~r/\.db$/,
-      ~r/\.sqlite/
-    ]
-    
-    # Check for SQLite dependencies
-    package_json_path = Path.join(codebase_path, "package.json")
-    has_sqlite_dependency = if File.exists?(package_json_path) do
-      case File.read(package_json_path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, %{"dependencies" => deps}} ->
-              Enum.any?(Map.keys(deps), &String.contains?(&1, "sqlite"))
-            _ -> false
-          end
-        _ -> false
-      end
-    else
-      false
-    end
-    
-    has_sqlite_dependency or matches_patterns_in_codebase?(codebase_path, sqlite_patterns)
-  end
-
-  defp detect_build_systems(codebase_path) do
-    build_systems = []
-    
-    # Bazel detection
-    build_systems = if detect_bazel_patterns(codebase_path) do
-      [:bazel | build_systems]
-    else
-      build_systems
-    end
-    
-    # Nx detection
-    build_systems = if detect_nx_patterns(codebase_path) do
-      [:nx | build_systems]
-    else
-      build_systems
-    end
-    
-    # Moon detection
-    build_systems = if detect_moon_patterns(codebase_path) do
-      [:moon | build_systems]
-    else
-      build_systems
-    end
-    
-    # Lerna detection
-    build_systems = if detect_lerna_patterns(codebase_path) do
-      [:lerna | build_systems]
-    else
-      build_systems
-    end
-    
-    build_systems
-  end
-
-  defp detect_bazel_patterns(codebase_path) do
-    bazel_files = [
-      "WORKSPACE",
-      "MODULE.bazel",
-      "BUILD",
-      "BUILD.bazel"
-    ]
-    
-    Enum.any?(bazel_files, fn file ->
-      File.exists?(Path.join(codebase_path, file))
+  defp build_features(technologies) do
+    Enum.reduce(technologies, %{}, fn {category, values}, acc ->
+      count = values |> List.wrap() |> length()
+      Map.put(acc, "#{category}_count", count)
     end)
   end
 
-  defp detect_nx_patterns(codebase_path) do
-    nx_files = [
-      "nx.json",
-      ".nxrc"
-    ]
-    
-    Enum.any?(nx_files, fn file ->
-      File.exists?(Path.join(codebase_path, file))
-    end)
-  end
-
-  defp detect_moon_patterns(codebase_path) do
-    moon_files = [
-      "moon.yml",
-      "moon.yaml"
-    ]
-    
-    Enum.any?(moon_files, fn file ->
-      File.exists?(Path.join(codebase_path, file))
-    end)
-  end
-
-  defp detect_lerna_patterns(codebase_path) do
-    lerna_files = [
-      "lerna.json",
-      ".lernarc"
-    ]
-    
-    Enum.any?(lerna_files, fn file ->
-      File.exists?(Path.join(codebase_path, file))
-    end)
-  end
-
-  defp detect_frameworks(codebase_path) do
-    frameworks = []
-    
-    # NestJS detection
-    frameworks = if detect_nestjs_patterns(codebase_path) do
-      [:nestjs | frameworks]
-    else
-      frameworks
+  defp extract_category_patterns(analysis, category) do
+    case category do
+      :languages -> extract_languages(analysis)
+      :frameworks -> extract_frameworks(nil, analysis)
+      :databases -> extract_databases(nil, analysis)
+      :messaging -> extract_messaging(nil, analysis)
+      :build_systems -> extract_build_systems(analysis)
+      :monitoring -> extract_monitoring(nil, analysis)
+      :security -> extract_security(nil, analysis)
+      :ai_frameworks -> extract_ai_frameworks(nil, analysis)
+      :deployment -> extract_deployment(analysis)
+      :cloud_platforms -> extract_cloud_platforms(nil, analysis)
+      :architecture_patterns -> extract_architecture_patterns(nil, analysis)
+      _ -> []
     end
-    
-    # Express detection
-    frameworks = if detect_express_patterns(codebase_path) do
-      [:express | frameworks]
-    else
-      frameworks
-    end
-    
-    # Phoenix detection
-    frameworks = if detect_phoenix_patterns(codebase_path) do
-      [:phoenix | frameworks]
-    else
-      frameworks
-    end
-    
-    # FastAPI detection
-    frameworks = if detect_fastapi_patterns(codebase_path) do
-      [:fastapi | frameworks]
-    else
-      frameworks
-    end
-    
-    frameworks
   end
 
-  defp detect_nestjs_patterns(codebase_path) do
-    nestjs_patterns = [
-      ~r/@Controller/,
-      ~r/@Injectable/,
-      ~r/@Module/,
-      ~r/@Get/,
-      ~r/@Post/,
-      ~r/@Put/,
-      ~r/@Delete/,
-      ~r/NestFactory/,
-      ~r/NestJS/
-    ]
-    
-    # Check for NestJS dependencies
-    package_json_path = Path.join(codebase_path, "package.json")
-    has_nestjs_dependency = if File.exists?(package_json_path) do
-      case File.read(package_json_path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, %{"dependencies" => deps}} ->
-              Map.has_key?(deps, "@nestjs/core")
-            _ -> false
-          end
-        _ -> false
-      end
-    else
-      false
-    end
-    
-    has_nestjs_dependency or matches_patterns_in_codebase?(codebase_path, nestjs_patterns)
-  end
-
-  defp detect_express_patterns(codebase_path) do
-    express_patterns = [
-      ~r/express\(\)/,
-      ~r/app\.get/,
-      ~r/app\.post/,
-      ~r/app\.put/,
-      ~r/app\.delete/,
-      ~r/express\.Router/,
-      ~r/middleware/
-    ]
-    
-    # Check for Express dependencies
-    package_json_path = Path.join(codebase_path, "package.json")
-    has_express_dependency = if File.exists?(package_json_path) do
-      case File.read(package_json_path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, %{"dependencies" => deps}} ->
-              Map.has_key?(deps, "express")
-            _ -> false
-          end
-        _ -> false
-      end
-    else
-      false
-    end
-    
-    has_express_dependency or matches_patterns_in_codebase?(codebase_path, express_patterns)
-  end
-
-  defp detect_phoenix_patterns(codebase_path) do
-    phoenix_patterns = [
-      ~r/use\s+Phoenix\.Controller/,
-      ~r/use\s+Phoenix\.Router/,
-      ~r/use\s+Phoenix\.Channel/,
-      ~r/Phoenix\.Controller/,
-      ~r/Phoenix\.Router/,
-      ~r/Phoenix\.Channel/,
-      ~r/Phoenix\.LiveView/
-    ]
-    
-    # Check for Phoenix dependencies in mix.exs
-    mix_exs_path = Path.join(codebase_path, "mix.exs")
-    has_phoenix_dependency = if File.exists?(mix_exs_path) do
-      case File.read(mix_exs_path) do
-        {:ok, content} ->
-          String.contains?(content, "phoenix")
-        _ -> false
-      end
-    else
-      false
-    end
-    
-    has_phoenix_dependency or matches_patterns_in_codebase?(codebase_path, phoenix_patterns)
-  end
-
-  defp detect_fastapi_patterns(codebase_path) do
-    fastapi_patterns = [
-      ~r/FastAPI/,
-      ~r/@app\.get/,
-      ~r/@app\.post/,
-      ~r/@app\.put/,
-      ~r/@app\.delete/,
-      ~r/APIRouter/,
-      ~r/Depends/
-    ]
-    
-    # Check for FastAPI dependencies
-    requirements_path = Path.join(codebase_path, "requirements.txt")
-    has_fastapi_dependency = if File.exists?(requirements_path) do
-      case File.read(requirements_path) do
-        {:ok, content} ->
-          String.contains?(content, "fastapi")
-        _ -> false
-      end
-    else
-      false
-    end
-    
-    has_fastapi_dependency or matches_patterns_in_codebase?(codebase_path, fastapi_patterns)
-  end
-
-  defp detect_monitoring_technologies(codebase_path) do
-    monitoring_techs = []
-    
-    # Prometheus detection
-    monitoring_techs = if detect_prometheus_patterns(codebase_path) do
-      [:prometheus | monitoring_techs]
-    else
-      monitoring_techs
-    end
-    
-    # Grafana detection
-    monitoring_techs = if detect_grafana_patterns(codebase_path) do
-      [:grafana | monitoring_techs]
-    else
-      monitoring_techs
-    end
-    
-    # Jaeger detection
-    monitoring_techs = if detect_jaeger_patterns(codebase_path) do
-      [:jaeger | monitoring_techs]
-    else
-      monitoring_techs
-    end
-    
-    # OpenTelemetry detection
-    monitoring_techs = if detect_otel_patterns(codebase_path) do
-      [:opentelemetry | monitoring_techs]
-    else
-      monitoring_techs
-    end
-    
-    monitoring_techs
-  end
-
-  defp detect_prometheus_patterns(codebase_path) do
-    prometheus_patterns = [
-      ~r/prometheus/,
-      ~r/metrics/,
-      ~r/counter/,
-      ~r/gauge/,
-      ~r/histogram/,
-      ~r/summary/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, prometheus_patterns)
-  end
-
-  defp detect_grafana_patterns(codebase_path) do
-    grafana_patterns = [
-      ~r/grafana/,
-      ~r/dashboard/,
-      ~r/grafana\.json/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, grafana_patterns)
-  end
-
-  defp detect_jaeger_patterns(codebase_path) do
-    jaeger_patterns = [
-      ~r/jaeger/,
-      ~r/tracing/,
-      ~r/span/,
-      ~r/tracer/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, jaeger_patterns)
-  end
-
-  defp detect_otel_patterns(codebase_path) do
-    otel_patterns = [
-      ~r/opentelemetry/,
-      ~r/@opentelemetry/,
-      ~r/otel/,
-      ~r/tracing/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, otel_patterns)
-  end
-
-  defp detect_security_technologies(codebase_path) do
-    security_techs = []
-    
-    # SPIFFE/SPIRE detection
-    security_techs = if detect_spiffe_patterns(codebase_path) do
-      [:spiffe_spire | security_techs]
-    else
-      security_techs
-    end
-    
-    # OPA detection
-    security_techs = if detect_opa_patterns(codebase_path) do
-      [:opa | security_techs]
-    else
-      security_techs
-    end
-    
-    # Falco detection
-    security_techs = if detect_falco_patterns(codebase_path) do
-      [:falco | security_techs]
-    else
-      security_techs
-    end
-    
-    security_techs
-  end
-
-  defp detect_spiffe_patterns(codebase_path) do
-    spiffe_patterns = [
-      ~r/spiffe/,
-      ~r/spire/,
-      ~r/spiffe:\/\/,
-      ~r/workloadapi/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, spiffe_patterns)
-  end
-
-  defp detect_opa_patterns(codebase_path) do
-    opa_patterns = [
-      ~r/openpolicyagent/,
-      ~r/opa/,
-      ~r/rego/,
-      ~r/policy/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, opa_patterns)
-  end
-
-  defp detect_falco_patterns(codebase_path) do
-    falco_patterns = [
-      ~r/falco/,
-      ~r/rules/,
-      ~r/falco\.rules/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, falco_patterns)
-  end
-
-  defp detect_ai_frameworks(codebase_path) do
-    ai_frameworks = []
-    
-    # LangChain detection
-    ai_frameworks = if detect_langchain_patterns(codebase_path) do
-      [:langchain | ai_frameworks]
-    else
-      ai_frameworks
-    end
-    
-    # CrewAI detection
-    ai_frameworks = if detect_crewai_patterns(codebase_path) do
-      [:crewai | ai_frameworks]
-    else
-      ai_frameworks
-    end
-    
-    # MCP detection
-    ai_frameworks = if detect_mcp_patterns(codebase_path) do
-      [:mcp | ai_frameworks]
-    else
-      ai_frameworks
-    end
-    
-    ai_frameworks
-  end
-
-  defp detect_langchain_patterns(codebase_path) do
-    langchain_patterns = [
-      ~r/langchain/,
-      ~r/@langchain/,
-      ~r/LLMChain/,
-      ~r/ChatOpenAI/,
-      ~r/PromptTemplate/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, langchain_patterns)
-  end
-
-  defp detect_crewai_patterns(codebase_path) do
-    crewai_patterns = [
-      ~r/crewai/,
-      ~r/Crew/,
-      ~r/Agent/,
-      ~r/Task/,
-      ~r/Tool/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, crewai_patterns)
-  end
-
-  defp detect_mcp_patterns(codebase_path) do
-    mcp_patterns = [
-      ~r/mcp/,
-      ~r/@modelcontextprotocol/,
-      ~r/ModelContextProtocol/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, mcp_patterns)
-  end
-
-  defp detect_deployment_technologies(codebase_path) do
-    deployment_techs = []
-    
-    # Kubernetes detection
-    deployment_techs = if detect_kubernetes_patterns(codebase_path) do
-      [:kubernetes | deployment_techs]
-    else
-      deployment_techs
-    end
-    
-    # Docker detection
-    deployment_techs = if detect_docker_patterns(codebase_path) do
-      [:docker | deployment_techs]
-    else
-      deployment_techs
-    end
-    
-    # Helm detection
-    deployment_techs = if detect_helm_patterns(codebase_path) do
-      [:helm | deployment_techs]
-    else
-      deployment_techs
-    end
-    
-    deployment_techs
-  end
-
-  defp detect_kubernetes_patterns(codebase_path) do
-    k8s_files = Path.wildcard(Path.join(codebase_path, "**/k8s/**/*.yaml"))
-    k8s_files_count = length(k8s_files)
-    
-    k8s_patterns = [
-      ~r/apiVersion:/,
-      ~r/kind:\s+(Deployment|Service|ConfigMap|Secret)/,
-      ~r/metadata:/,
-      ~r/spec:/
-    ]
-    
-    k8s_files_count > 0 or matches_patterns_in_codebase?(codebase_path, k8s_patterns)
-  end
-
-  defp detect_docker_patterns(codebase_path) do
-    docker_files = [
-      "Dockerfile",
-      "docker-compose.yml",
-      "docker-compose.yaml",
-      ".dockerignore"
-    ]
-    
-    Enum.any?(docker_files, fn file ->
-      File.exists?(Path.join(codebase_path, file))
-    end)
-  end
-
-  defp detect_helm_patterns(codebase_path) do
-    helm_files = [
-      "Chart.yaml",
-      "values.yaml",
-      "values.yml"
-    ]
-    
-    Enum.any?(helm_files, fn file ->
-      File.exists?(Path.join(codebase_path, file))
-    end)
-  end
-
-  defp detect_cloud_platforms(codebase_path) do
-    cloud_platforms = []
-    
-    # AWS detection
-    cloud_platforms = if detect_aws_patterns(codebase_path) do
-      [:aws | cloud_platforms]
-    else
-      cloud_platforms
-    end
-    
-    # Azure detection
-    cloud_platforms = if detect_azure_patterns(codebase_path) do
-      [:azure | cloud_platforms]
-    else
-      cloud_platforms
-    end
-    
-    # GCP detection
-    cloud_platforms = if detect_gcp_patterns(codebase_path) do
-      [:gcp | cloud_platforms]
-    else
-      cloud_platforms
-    end
-    
-    cloud_platforms
-  end
-
-  defp detect_aws_patterns(codebase_path) do
-    aws_patterns = [
-      ~r/aws-sdk/,
-      ~r/@aws-sdk/,
-      ~r/aws\./,
-      ~r/amazonaws/,
-      ~r/s3\./,
-      ~r/lambda/,
-      ~r/ec2/,
-      ~r/rds/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, aws_patterns)
-  end
-
-  defp detect_azure_patterns(codebase_path) do
-    azure_patterns = [
-      ~r/@azure/,
-      ~r/azure-/,
-      ~r/microsoft/,
-      ~r/azure\./,
-      ~r/azureml/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, azure_patterns)
-  end
-
-  defp detect_gcp_patterns(codebase_path) do
-    gcp_patterns = [
-      ~r/@google-cloud/,
-      ~r/google-cloud/,
-      ~r/gcp/,
-      ~r/firebase/,
-      ~r/gcloud/
-    ]
-    
-    matches_patterns_in_codebase?(codebase_path, gcp_patterns)
-  end
-
-  # Helper functions
-
-  defp has_files_with_extension?(codebase_path, extension) do
-    pattern = Path.join(codebase_path, "**/*#{extension}")
-    files = Path.wildcard(pattern)
-    length(files) > 0
-  end
-
-  defp find_source_files(codebase_path) do
-    source_patterns = [
-      "**/*.ts",
-      "**/*.tsx",
-      "**/*.js",
-      "**/*.jsx",
-      "**/*.rs",
-      "**/*.py",
-      "**/*.go",
-      "**/*.ex",
-      "**/*.exs",
-      "**/*.erl",
-      "**/*.hrl",
-      "**/*.gleam"
-    ]
-    
-    Enum.flat_map(source_patterns, fn pattern ->
-      Path.wildcard(Path.join(codebase_path, pattern))
-    end)
-    |> Enum.reject(&String.contains?(&1, "node_modules"))
-    |> Enum.reject(&String.contains?(&1, "target"))
-    |> Enum.reject(&String.contains?(&1, "__pycache__"))
-    |> Enum.reject(&String.contains?(&1, ".git"))
-  end
-
-  defp matches_patterns?(files, patterns) do
-    Enum.any?(files, fn file ->
-      case File.read(file) do
-        {:ok, content} ->
-          Enum.any?(patterns, fn pattern ->
-            Regex.match?(pattern, content)
-          end)
-        _ -> false
-      end
-    end)
-  end
-
-  defp matches_patterns_in_codebase?(codebase_path, patterns) do
-    source_files = find_source_files(codebase_path)
-    matches_patterns?(source_files, patterns)
-  end
-
-  defp scan_code_patterns(codebase_path) do
-    source_files = find_source_files(codebase_path)
-    
-    patterns = %{
-      async_patterns: detect_async_patterns(source_files),
-      error_handling_patterns: detect_error_handling_patterns(source_files),
-      testing_patterns: detect_testing_patterns(source_files),
-      logging_patterns: detect_logging_patterns(source_files),
-      caching_patterns: detect_caching_patterns(source_files),
-      api_patterns: detect_api_patterns(source_files)
-    }
-    
-    {:ok, patterns}
-  end
-
-  defp detect_async_patterns(files) do
-    async_patterns = [
-      ~r/async\s+function/,
-      ~r/await\s+/,
-      ~r/Promise/,
-      ~r/async\s+/,
-      ~r/spawn/,
-      ~r/Task\.async/,
-      ~r/GenServer\.call/,
-      ~r/GenServer\.cast/
-    ]
-    
-    Enum.count(files, fn file ->
-      case File.read(file) do
-        {:ok, content} ->
-          Enum.any?(async_patterns, &Regex.match?(&1, content))
-        _ -> false
-      end
-    end)
-  end
-
-  defp detect_error_handling_patterns(files) do
-    error_patterns = [
-      ~r/try\s*{/,
-      ~r/catch\s*\(/,
-      ~r/throw\s+/,
-      ~r/rescue/,
-      ~r/raise/,
-      ~r/Result\.ok/,
-      ~r/Result\.error/,
-      ~r/{:ok,/,
-      ~r/{:error,/
-    ]
-    
-    Enum.count(files, fn file ->
-      case File.read(file) do
-        {:ok, content} ->
-          Enum.any?(error_patterns, &Regex.match?(&1, content))
-        _ -> false
-      end
-    end)
-  end
-
-  defp detect_testing_patterns(files) do
-    test_patterns = [
-      ~r/describe\(/,
-      ~r/it\(/,
-      ~r/test\(/,
-      ~r/assert/,
-      ~r/expect\(/,
-      ~r/ExUnit\.Case/,
-      ~r/test\s+"/
-    ]
-    
-    Enum.count(files, fn file ->
-      case File.read(file) do
-        {:ok, content} ->
-          Enum.any?(test_patterns, &Regex.match?(&1, content))
-        _ -> false
-      end
-    end)
-  end
-
-  defp detect_logging_patterns(files) do
-    logging_patterns = [
-      ~r/console\.log/,
-      ~r/console\.error/,
-      ~r/console\.warn/,
-      ~r/Logger\.info/,
-      ~r/Logger\.error/,
-      ~r/Logger\.warn/,
-      ~r/logging/,
-      ~r/tracing/
-    ]
-    
-    Enum.count(files, fn file ->
-      case File.read(file) do
-        {:ok, content} ->
-          Enum.any?(logging_patterns, &Regex.match?(&1, content))
-        _ -> false
-      end
-    end)
-  end
-
-  defp detect_caching_patterns(files) do
-    cache_patterns = [
-      ~r/cache/,
-      ~r/memoize/,
-      ~r/Cachex/,
-      ~r/redis/,
-      ~r/memcached/,
-      ~r/lru/,
-      ~r/ttl/
-    ]
-    
-    Enum.count(files, fn file ->
-      case File.read(file) do
-        {:ok, content} ->
-          Enum.any?(cache_patterns, &Regex.match?(&1, content))
-        _ -> false
-      end
-    end)
-  end
-
-  defp detect_api_patterns(files) do
-    api_patterns = [
-      ~r/@Get/,
-      ~r/@Post/,
-      ~r/@Put/,
-      ~r/@Delete/,
-      ~r/app\.get/,
-      ~r/app\.post/,
-      ~r/app\.put/,
-      ~r/app\.delete/,
-      ~r/def\s+index/,
-      ~r/def\s+create/,
-      ~r/def\s+update/,
-      ~r/def\s+delete/
-    ]
-    
-    Enum.count(files, fn file ->
-      case File.read(file) do
-        {:ok, content} ->
-          Enum.any?(api_patterns, &Regex.match?(&1, content))
-        _ -> false
-      end
-    end)
-  end
-
-  # Advanced confidence-based detection functions (inspired by zenflow analysis-suite)
-
-  defp detect_languages_with_confidence(codebase_path) do
-    # Language detection with confidence scoring
-    language_patterns = %{
-      :typescript => %{
-        patterns: [
-          ~r/interface\s+\w+/,
-          ~r/type\s+\w+/,
-          ~r/:\s*\w+\[\]/,
-          ~r/:\s*Promise<\w+>/,
-          ~r/:\s*string\s*\|/,
-          ~r/:\s*number\s*\|/
-        ],
-        config_files: ["tsconfig.json", "package.json"],
-        extensions: [".ts", ".tsx"],
-        weight: 1.0
-      },
-      :rust => %{
-        patterns: [
-          ~r/fn\s+\w+/,
-          ~r/struct\s+\w+/,
-          ~r/impl\s+\w+/,
-          ~r/use\s+\w+::/,
-          ~r/let\s+\w+:/,
-          ~r/match\s+\w+/
-        ],
-        config_files: ["Cargo.toml"],
-        extensions: [".rs"],
-        weight: 1.0
-      },
-      :elixir => %{
-        patterns: [
-          ~r/defmodule\s+\w+/,
-          ~r/def\s+\w+/,
-          ~r/use\s+\w+/,
-          ~r/GenServer/,
-          ~r/defp\s+\w+/,
-          ~r/defmacro\s+\w+/
-        ],
-        config_files: ["mix.exs"],
-        extensions: [".ex", ".exs"],
-        weight: 1.0
-      },
-      :python => %{
-        patterns: [
-          ~r/def\s+\w+/,
-          ~r/class\s+\w+/,
-          ~r/import\s+\w+/,
-          ~r/from\s+\w+\s+import/,
-          ~r/if\s+__name__/,
-          ~r/async\s+def/
-        ],
-        config_files: ["requirements.txt", "setup.py", "pyproject.toml"],
-        extensions: [".py"],
-        weight: 1.0
-      },
-      :go => %{
-        patterns: [
-          ~r/func\s+\w+/,
-          ~r/type\s+\w+/,
-          ~r/package\s+\w+/,
-          ~r/import\s+\(/,
-          ~r/var\s+\w+/,
-          ~r/const\s+\w+/
-        ],
-        config_files: ["go.mod", "go.sum"],
-        extensions: [".go"],
-        weight: 1.0
-      }
-    }
-    
-    detect_technologies_with_confidence(codebase_path, language_patterns)
-  end
-
-  defp detect_frameworks_with_confidence(codebase_path) do
-    framework_patterns = %{
-      :nestjs => %{
-        patterns: [
-          ~r/@Controller/,
-          ~r/@Injectable/,
-          ~r/@Module/,
-          ~r/@Get/,
-          ~r/@Post/,
-          ~r/@Put/,
-          ~r/@Delete/,
-          ~r/NestFactory/,
-          ~r/NestJS/
-        ],
-        dependencies: ["@nestjs/core", "@nestjs/common"],
-        config_files: ["package.json"],
-        weight: 1.0
-      },
-      :phoenix => %{
-        patterns: [
-          ~r/use\s+Phoenix\.Controller/,
-          ~r/use\s+Phoenix\.Router/,
-          ~r/use\s+Phoenix\.Channel/,
-          ~r/Phoenix\.Controller/,
-          ~r/Phoenix\.Router/,
-          ~r/Phoenix\.LiveView/
-        ],
-        dependencies: ["phoenix"],
-        config_files: ["mix.exs"],
-        weight: 1.0
-      },
-      :fastapi => %{
-        patterns: [
-          ~r/FastAPI/,
-          ~r/@app\.get/,
-          ~r/@app\.post/,
-          ~r/@app\.put/,
-          ~r/@app\.delete/,
-          ~r/APIRouter/,
-          ~r/Depends/
-        ],
-        dependencies: ["fastapi"],
-        config_files: ["requirements.txt"],
-        weight: 1.0
-      },
-      :express => %{
-        patterns: [
-          ~r/express\(\)/,
-          ~r/app\.get/,
-          ~r/app\.post/,
-          ~r/app\.put/,
-          ~r/app\.delete/,
-          ~r/express\.Router/,
-          ~r/middleware/
-        ],
-        dependencies: ["express"],
-        config_files: ["package.json"],
-        weight: 1.0
-      }
-    }
-    
-    detect_technologies_with_confidence(codebase_path, framework_patterns)
-  end
-
-  defp detect_messaging_technologies_with_confidence(codebase_path) do
-    messaging_patterns = %{
-      :nats => %{
-        patterns: [
-          ~r/nats\.connect/,
-          ~r/nats\.subscribe/,
-          ~r/nats\.publish/,
-          ~r/jetstream/,
-          ~r/nats\.js/,
-          ~r/nats\.Connection/,
-          ~r/nats\.Subscription/,
-          ~r/nats.*jetstream/i,
-          ~r/jetstream.*nats/i,
-          ~r/nats.*streaming/i,
-          ~r/nats.*cluster/i
-        ],
-        dependencies: ["nats", "nats.js"],
-        config_files: ["nats.conf", "jetstream.conf"],
-        weight: 1.0
-      },
-      :kafka => %{
-        patterns: [
-          ~r/kafka\.producer/,
-          ~r/kafka\.consumer/,
-          ~r/KafkaProducer/,
-          ~r/KafkaConsumer/,
-          ~r/kafka\.admin/,
-          ~r/KafkaAdmin/
-        ],
-        dependencies: ["kafka", "kafkajs"],
-        config_files: ["kafka.properties"],
-        weight: 1.0
-      },
-      :otp_messaging => %{
-        patterns: [
-          ~r/GenServer/,
-          ~r/send\(/,
-          ~r/receive\s+do/,
-          ~r/cast\(/,
-          ~r/call\(/,
-          ~r/Phoenix\.PubSub/,
-          ~r/Registry/,
-          ~r/Agent/,
-          ~r/Task/
-        ],
-        dependencies: [],
-        config_files: ["mix.exs"],
-        weight: 1.0
-      },
-      :redis => %{
-        patterns: [
-          ~r/redis\.createClient/,
-          ~r/Redis\.createClient/,
-          ~r/redis\.connect/,
-          ~r/redis\.get/,
-          ~r/redis\.set/,
-          ~r/redis\.hget/,
-          ~r/redis\.hset/
-        ],
-        dependencies: ["redis", "ioredis"],
-        config_files: ["redis.conf"],
-        weight: 1.0
-      },
-      # Singularity-engine specific messaging
-      :event_bus => %{
-        patterns: [
-          ~r/event.*bus/i,
-          ~r/bus.*event/i,
-          ~r/event.*stream/i,
-          ~r/stream.*event/i,
-          ~r/event.*pipeline/i,
-          ~r/pipeline.*event/i,
-          ~r/event.*orchestration/i,
-          ~r/orchestration.*event/i
-        ],
-        dependencies: [],
-        config_files: [],
-        weight: 1.0
-      },
-      :service_mesh => %{
-        patterns: [
-          ~r/service.*mesh/i,
-          ~r/mesh.*service/i,
-          ~r/service.*discovery/i,
-          ~r/discovery.*service/i,
-          ~r/service.*registry/i,
-          ~r/registry.*service/i,
-          ~r/service.*communication/i,
-          ~r/communication.*service/i
-        ],
-        dependencies: [],
-        config_files: [],
-        weight: 1.0
-      }
-    }
-    
-    detect_technologies_with_confidence(codebase_path, messaging_patterns)
-  end
-
-  defp detect_database_technologies_with_confidence(codebase_path) do
-    database_patterns = %{
-      :postgresql => %{
-        patterns: [
-          ~r/postgresql/,
-          ~r/pg\.connect/,
-          ~r/Pool\.connect/,
-          ~r/postgres:\/\/,
-          ~r/pgvector/,
-          ~r/PostgreSQL/
-        ],
-        dependencies: ["pg", "postgresql"],
-        config_files: ["postgresql.conf"],
-        weight: 1.0
-      },
-      :mongodb => %{
-        patterns: [
-          ~r/mongodb/,
-          ~r/MongoClient/,
-          ~r/mongoose/,
-          ~r/mongodb:\/\/,
-          ~r/MongoDB/
-        ],
-        dependencies: ["mongodb", "mongoose"],
-        config_files: ["mongod.conf"],
-        weight: 1.0
-      },
-      :sqlite => %{
-        patterns: [
-          ~r/sqlite3/,
-          ~r/SQLite/,
-          ~r/\.db$/,
-          ~r/\.sqlite/
-        ],
-        dependencies: ["sqlite3"],
-        config_files: [],
-        weight: 1.0
-      }
-    }
-    
-    detect_technologies_with_confidence(codebase_path, database_patterns)
-  end
-
-  defp detect_build_systems_with_confidence(codebase_path) do
-    build_patterns = %{
-      :bazel => %{
-        patterns: [
-          ~r/load\("@bazel/,
-          ~r/cc_binary/,
-          ~r/cc_library/,
-          ~r/java_binary/,
-          ~r/java_library/,
-          ~r/ts_library/
-        ],
-        config_files: ["WORKSPACE", "MODULE.bazel", "BUILD", "BUILD.bazel"],
-        weight: 1.0
-      },
-      :nx => %{
-        patterns: [
-          ~r/@nx/,
-          ~r/nx\s+run/,
-          ~r/nx\s+build/,
-          ~r/nx\s+test/,
-          ~r/nx\s+lint/
-        ],
-        config_files: ["nx.json", ".nxrc"],
-        weight: 1.0
-      },
-      :moon => %{
-        patterns: [
-          ~r/moon\s+run/,
-          ~r/moon\s+build/,
-          ~r/moon\s+test/,
-          ~r/moon\s+lint/
-        ],
-        config_files: ["moon.yml", "moon.yaml"],
-        weight: 1.0
-      },
-      :lerna => %{
-        patterns: [
-          ~r/lerna\s+run/,
-          ~r/lerna\s+bootstrap/,
-          ~r/lerna\s+publish/
-        ],
-        config_files: ["lerna.json", ".lernarc"],
-        weight: 1.0
-      }
-    }
-    
-    detect_technologies_with_confidence(codebase_path, build_patterns)
-  end
-
-  defp detect_monitoring_technologies_with_confidence(codebase_path) do
-    monitoring_patterns = %{
-      :prometheus => %{
-        patterns: [
-          ~r/prometheus/,
-          ~r/metrics/,
-          ~r/counter/,
-          ~r/gauge/,
-          ~r/histogram/,
-          ~r/summary/
-        ],
-        dependencies: ["prom-client"],
-        config_files: ["prometheus.yml"],
-        weight: 1.0
-      },
-      :grafana => %{
-        patterns: [
-          ~r/grafana/,
-          ~r/dashboard/,
-          ~r/grafana\.json/
-        ],
-        dependencies: ["grafana"],
-        config_files: ["grafana.ini"],
-        weight: 1.0
-      },
-      :jaeger => %{
-        patterns: [
-          ~r/jaeger/,
-          ~r/tracing/,
-          ~r/span/,
-          ~r/tracer/
-        ],
-        dependencies: ["jaeger-client"],
-        config_files: ["jaeger.yml"],
-        weight: 1.0
-      },
-      :opentelemetry => %{
-        patterns: [
-          ~r/opentelemetry/,
-          ~r/@opentelemetry/,
-          ~r/otel/,
-          ~r/tracing/
-        ],
-        dependencies: ["@opentelemetry/api"],
-        config_files: [],
-        weight: 1.0
-      }
-    }
-    
-    detect_technologies_with_confidence(codebase_path, monitoring_patterns)
-  end
-
-  defp detect_security_technologies_with_confidence(codebase_path) do
-    security_patterns = %{
-      :spiffe_spire => %{
-        patterns: [
-          ~r/spiffe/,
-          ~r/spire/,
-          ~r/spiffe:\/\/,
-          ~r/workloadapi/
-        ],
-        dependencies: [],
-        config_files: ["spire.conf"],
-        weight: 1.0
-      },
-      :opa => %{
-        patterns: [
-          ~r/openpolicyagent/,
-          ~r/opa/,
-          ~r/rego/,
-          ~r/policy/
-        ],
-        dependencies: ["@openpolicyagent/opa"],
-        config_files: ["opa.conf"],
-        weight: 1.0
-      },
-      :falco => %{
-        patterns: [
-          ~r/falco/,
-          ~r/rules/,
-          ~r/falco\.rules/
-        ],
-        dependencies: [],
-        config_files: ["falco.yaml"],
-        weight: 1.0
-      }
-    }
-    
-    detect_technologies_with_confidence(codebase_path, security_patterns)
-  end
-
-  defp detect_ai_frameworks_with_confidence(codebase_path) do
-    ai_patterns = %{
-      :langchain => %{
-        patterns: [
-          ~r/langchain/,
-          ~r/@langchain/,
-          ~r/LLMChain/,
-          ~r/ChatOpenAI/,
-          ~r/PromptTemplate/
-        ],
-        dependencies: ["langchain", "@langchain/core"],
-        config_files: [],
-        weight: 1.0
-      },
-      :crewai => %{
-        patterns: [
-          ~r/crewai/,
-          ~r/Crew/,
-          ~r/Agent/,
-          ~r/Task/,
-          ~r/Tool/
-        ],
-        dependencies: ["crewai"],
-        config_files: [],
-        weight: 1.0
-      },
-      :mcp => %{
-        patterns: [
-          ~r/mcp/,
-          ~r/@modelcontextprotocol/,
-          ~r/ModelContextProtocol/
-        ],
-        dependencies: ["@modelcontextprotocol/sdk"],
-        config_files: [],
-        weight: 1.0
-      },
-      # Singularity-engine specific AI frameworks
-      :bpmn_ai => %{
-        patterns: [
-          ~r/bpmn.*ai/i,
-          ~r/ai.*bpmn/i,
-          ~r/process.*ai/i,
-          ~r/ai.*process/i,
-          ~r/workflow.*ai/i,
-          ~r/ai.*workflow/i
-        ],
-        dependencies: [],
-        config_files: [],
-        weight: 1.0
-      },
-      :sandbox_ai => %{
-        patterns: [
-          ~r/sandbox.*ai/i,
-          ~r/ai.*sandbox/i,
-          ~r/secure.*ai/i,
-          ~r/ai.*security/i,
-          ~r/isolated.*ai/i,
-          ~r/ai.*isolation/i
-        ],
-        dependencies: [],
-        config_files: [],
-        weight: 1.0
-      },
-      :vector_ai => %{
-        patterns: [
-          ~r/vector.*ai/i,
-          ~r/ai.*vector/i,
-          ~r/embedding.*ai/i,
-          ~r/ai.*embedding/i,
-          ~r/semantic.*ai/i,
-          ~r/ai.*semantic/i
-        ],
-        dependencies: [],
-        config_files: [],
-        weight: 1.0
-      }
-    }
-    
-    detect_technologies_with_confidence(codebase_path, ai_patterns)
-  end
-
-  defp detect_deployment_technologies_with_confidence(codebase_path) do
-    deployment_patterns = %{
-      :kubernetes => %{
-        patterns: [
-          ~r/apiVersion:/,
-          ~r/kind:\s+(Deployment|Service|ConfigMap|Secret)/,
-          ~r/metadata:/,
-          ~r/spec:/
-        ],
-        dependencies: [],
-        config_files: ["k8s/**/*.yaml"],
-        weight: 1.0
-      },
-      :docker => %{
-        patterns: [
-          ~r/FROM\s+\w+/,
-          ~r/RUN\s+/,
-          ~r/COPY\s+/,
-          ~r/EXPOSE\s+/
-        ],
-        dependencies: [],
-        config_files: ["Dockerfile", "docker-compose.yml"],
-        weight: 1.0
-      },
-      :helm => %{
-        patterns: [
-          ~r/Chart\.yaml/,
-          ~r/values\.yaml/,
-          ~r/templates/
-        ],
-        dependencies: [],
-        config_files: ["Chart.yaml", "values.yaml"],
-        weight: 1.0
-      }
-    }
-    
-    detect_technologies_with_confidence(codebase_path, deployment_patterns)
-  end
-
-  defp detect_cloud_platforms_with_confidence(codebase_path) do
-    cloud_patterns = %{
-      :aws => %{
-        patterns: [
-          ~r/aws-sdk/,
-          ~r/@aws-sdk/,
-          ~r/aws\./,
-          ~r/amazonaws/,
-          ~r/s3\./,
-          ~r/lambda/,
-          ~r/ec2/,
-          ~r/rds/
-        ],
-        dependencies: ["aws-sdk", "@aws-sdk/client-s3"],
-        config_files: [],
-        weight: 1.0
-      },
-      :azure => %{
-        patterns: [
-          ~r/@azure/,
-          ~r/azure-/,
-          ~r/microsoft/,
-          ~r/azure\./,
-          ~r/azureml/
-        ],
-        dependencies: ["@azure/core"],
-        config_files: [],
-        weight: 1.0
-      },
-      :gcp => %{
-        patterns: [
-          ~r/@google-cloud/,
-          ~r/google-cloud/,
-          ~r/gcp/,
-          ~r/firebase/,
-          ~r/gcloud/
-        ],
-        dependencies: ["@google-cloud/storage"],
-        config_files: [],
-        weight: 1.0
-      }
-    }
-    
-    detect_technologies_with_confidence(codebase_path, cloud_patterns)
-  end
-
-  defp detect_architecture_patterns_with_confidence(codebase_path) do
-    architecture_patterns = %{
-      :microservices => %{
-        patterns: [
-          ~r/services\//,
-          ~r/service\s+discovery/,
-          ~r/api\s+gateway/,
-          ~r/service\s+mesh/,
-          ~r/distributed/,
-          ~r/service\s+registry/
-        ],
-        config_files: ["services/**"],
-        weight: 1.0
-      },
-      :domain_driven_design => %{
-        patterns: [
-          ~r/domains\//,
-          ~r/domain\s+model/,
-          ~r/aggregate/,
-          ~r/value\s+object/,
-          ~r/entity/,
-          ~r/repository\s+pattern/
-        ],
-        config_files: ["domains/**"],
-        weight: 1.0
-      },
-      :event_driven => %{
-        patterns: [
-          ~r/event\s+bus/,
-          ~r/event\s+sourcing/,
-          ~r/publish\s+subscribe/,
-          ~r/event\s+store/,
-          ~r/event\s+stream/,
-          ~r/message\s+queue/
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :cqrs => %{
-        patterns: [
-          ~r/command\s+query/,
-          ~r/command\s+handler/,
-          ~r/query\s+handler/,
-          ~r/read\s+model/,
-          ~r/write\s+model/,
-          ~r/cqrs/
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :layered_architecture => %{
-        patterns: [
-          ~r/presentation\s+layer/,
-          ~r/business\s+layer/,
-          ~r/data\s+access\s+layer/,
-          ~r/service\s+layer/,
-          ~r/controller\s+layer/,
-          ~r/repository\s+layer/,
-          ~r/layered\s+architecture/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      # Extended patterns from analysis-suite
-      :hexagonal_architecture => %{
-        patterns: [
-          ~r/hexagonal\s+architecture/i,
-          ~r/ports\s+and\s+adapters/i,
-          ~r/clean\s+architecture/i,
-          ~r/domain\s+core/,
-          ~r/infrastructure\s+layer/,
-          ~r/application\s+layer/
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :modular_monolith => %{
-        patterns: [
-          ~r/modular\s+monolith/i,
-          ~r/module\s+boundaries/,
-          ~r/internal\s+apis/,
-          ~r/module\s+communication/
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :mvc => %{
-        patterns: [
-          ~r/model.*view.*controller/i,
-          ~r/mvc\s+pattern/i,
-          ~r/controller.*model.*view/i,
-          ~r/views\//,
-          ~r/models\//,
-          ~r/controllers\//
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :mvp => %{
-        patterns: [
-          ~r/model.*view.*presenter/i,
-          ~r/mvp\s+pattern/i,
-          ~r/presenter.*model.*view/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :mvvm => %{
-        patterns: [
-          ~r/model.*view.*viewmodel/i,
-          ~r/mvvm\s+pattern/i,
-          ~r/viewmodel.*model.*view/i,
-          ~r/data\s+binding/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :repository_pattern => %{
-        patterns: [
-          ~r/repository\s+pattern/i,
-          ~r/repository\s+interface/i,
-          ~r/data\s+repository/i,
-          ~r/repository\s+implementation/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :factory_pattern => %{
-        patterns: [
-          ~r/factory\s+pattern/i,
-          ~r/factory\s+method/i,
-          ~r/abstract\s+factory/i,
-          ~r/object\s+factory/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :observer_pattern => %{
-        patterns: [
-          ~r/observer\s+pattern/i,
-          ~r/publish.*subscribe/i,
-          ~r/event\s+listener/i,
-          ~r/subject.*observer/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :strategy_pattern => %{
-        patterns: [
-          ~r/strategy\s+pattern/i,
-          ~r/algorithm\s+strategy/i,
-          ~r/behavioral\s+strategy/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :command_pattern => %{
-        patterns: [
-          ~r/command\s+pattern/i,
-          ~r/command\s+handler/i,
-          ~r/undo.*redo/i,
-          ~r/action\s+command/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :saga_pattern => %{
-        patterns: [
-          ~r/saga\s+pattern/i,
-          ~r/distributed\s+saga/i,
-          ~r/transaction\s+saga/i,
-          ~r/orchestration\s+saga/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :api_gateway => %{
-        patterns: [
-          ~r/api\s+gateway/i,
-          ~r/gateway\s+pattern/i,
-          ~r/request\s+routing/i,
-          ~r/load\s+balancing/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :circuit_breaker => %{
-        patterns: [
-          ~r/circuit\s+breaker/i,
-          ~r/fault\s+tolerance/i,
-          ~r/resilience\s+pattern/i,
-          ~r/fallback\s+mechanism/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :database_per_service => %{
-        patterns: [
-          ~r/database\s+per\s+service/i,
-          ~r/service\s+database/i,
-          ~r/data\s+isolation/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :shared_database => %{
-        patterns: [
-          ~r/shared\s+database/i,
-          ~r/common\s+database/i,
-          ~r/centralized\s+data/i
-        ],
-        config_files: [],
-        weight: 1.0
-      },
-      :event_sourcing => %{
-        patterns: [
-          ~r/event\s+sourcing/i,
-          ~r/event\s+store/i,
-          ~r/event\s+history/i,
-          ~r/event\s+replay/i
-        ],
-        config_files: [],
-        weight: 1.0
-      }
-    }
-    
-    detect_technologies_with_confidence(codebase_path, architecture_patterns)
-  end
-
-  # Core confidence-based detection algorithm (inspired by zenflow analysis-suite)
-  defp detect_technologies_with_confidence(codebase_path, technology_patterns) do
-    Enum.map(technology_patterns, fn {tech_name, config} ->
-      confidence = calculate_technology_confidence(codebase_path, config)
-      
-      if confidence > 0.3 do
-        %{
-          name: tech_name,
-          confidence: confidence,
-          patterns_matched: count_matching_patterns(codebase_path, config.patterns),
-          total_patterns: length(config.patterns),
-          config_files_found: count_config_files(codebase_path, config.config_files),
-          dependencies_found: count_dependencies(codebase_path, config.dependencies)
-        }
-      else
-        nil
-      end
-    end)
+  # Language detection via polyglot parser
+  defp extract_languages(analysis) do
+    # Parser already identifies languages by AST
+    analysis.files
+    |> Enum.map(& &1.language)
+    |> Enum.uniq()
     |> Enum.reject(&is_nil/1)
   end
 
-  defp calculate_technology_confidence(codebase_path, config) do
-    # Pattern matching confidence (0.0 - 1.0)
-    pattern_confidence = calculate_pattern_confidence(codebase_path, config.patterns)
-    
-    # Config file confidence (0.0 - 1.0)
-    config_confidence = calculate_config_confidence(codebase_path, config.config_files)
-    
-    # Dependency confidence (0.0 - 1.0)
-    dependency_confidence = calculate_dependency_confidence(codebase_path, config.dependencies)
-    
-    # Weighted average with zenflow-style confidence scoring
-    total_weight = config.weight
-    weighted_confidence = (
-      pattern_confidence * 0.6 +  # Pattern matching is most important
-      config_confidence * 0.25 +   # Config files are strong indicators
-      dependency_confidence * 0.15 # Dependencies are supporting evidence
-    ) * total_weight
-    
-    Float.round(weighted_confidence, 3)
+  # Framework detection via templates
+  defp extract_frameworks(codebase_path, analysis) do
+    framework_keys = [
+      {:framework, :nestjs},
+      {:framework, :express},
+      {:framework, :phoenix},
+      {:framework, :fastapi}
+    ]
+
+    detect_from_templates(codebase_path, framework_keys, analysis)
   end
 
-  defp calculate_pattern_confidence(codebase_path, patterns) do
-    source_files = find_source_files(codebase_path)
-    total_patterns = length(patterns)
-    
-    if total_patterns == 0 do
-      0.0
+  # Database detection via templates
+  defp extract_databases(codebase_path, analysis) do
+    database_keys = [
+      {:database, :postgresql},
+      {:database, :timescale},
+      {:database, :mongodb},
+      {:database, :mysql},
+      {:database, :cassandra},
+      {:database, :cockroachdb},
+      {:database, :sqlite},
+      {:database, :redis}
+    ]
+
+    detect_from_templates(codebase_path, database_keys, analysis)
+  end
+
+  # Messaging detection via templates
+  defp extract_messaging(codebase_path, analysis) do
+    messaging_keys = [
+      {:messaging, :nats},
+      {:messaging, :kafka},
+      {:messaging, :rabbitmq},
+      {:messaging, :redis}
+    ]
+
+    detect_from_templates(codebase_path, messaging_keys, analysis)
+  end
+
+  # Build system detection via file presence
+  defp extract_build_systems(analysis) do
+    build_markers = %{
+      bazel: ["WORKSPACE", "MODULE.bazel", "BUILD.bazel"],
+      nx: ["nx.json"],
+      moon: ["moon.yml", "moon.yaml"],
+      lerna: ["lerna.json"]
+    }
+
+    Enum.filter(build_markers, fn {_system, files} ->
+      Enum.any?(files, fn file ->
+        Enum.any?(analysis.files, &String.ends_with?(&1.path, file))
+      end)
+    end)
+    |> Enum.map(fn {system, _} -> system end)
+  end
+
+  # Monitoring detection via templates
+  defp extract_monitoring(codebase_path, analysis) do
+    monitoring_keys = [
+      {:monitoring, :prometheus},
+      {:monitoring, :grafana},
+      {:monitoring, :jaeger},
+      {:monitoring, :opentelemetry}
+    ]
+
+    detect_from_templates(codebase_path, monitoring_keys, analysis)
+  end
+
+  # Security detection via templates
+  defp extract_security(codebase_path, analysis) do
+    security_keys = [
+      {:security, :spiffe},
+      {:security, :opa},
+      {:security, :falco}
+    ]
+
+    detect_from_templates(codebase_path, security_keys, analysis)
+  end
+
+  # AI framework detection via templates
+  defp extract_ai_frameworks(codebase_path, analysis) do
+    ai_keys = [
+      {:ai, :langchain},
+      {:ai, :crewai},
+      {:ai, :mcp}
+    ]
+
+    detect_from_templates(codebase_path, ai_keys, analysis)
+  end
+
+  # Deployment detection via file markers
+  defp extract_deployment(analysis) do
+    deployment_markers = %{
+      kubernetes: ["k8s", "apiVersion:"],
+      docker: ["Dockerfile", "docker-compose.yml"],
+      helm: ["Chart.yaml", "values.yaml"]
+    }
+
+    Enum.filter(deployment_markers, fn {_tech, markers} ->
+      Enum.any?(markers, fn marker ->
+        Enum.any?(analysis.files, fn file ->
+          String.contains?(file.path, marker) or
+          (file.content && String.contains?(file.content, marker))
+        end)
+      end)
+    end)
+    |> Enum.map(fn {tech, _} -> tech end)
+  end
+
+  # Cloud platform detection via templates
+  defp extract_cloud_platforms(codebase_path, analysis) do
+    cloud_keys = [
+      {:cloud, :aws},
+      {:cloud, :azure},
+      {:cloud, :gcp}
+    ]
+
+    detect_from_templates(codebase_path, cloud_keys, analysis)
+  end
+
+  # Architecture pattern detection via polyglot analysis
+  defp extract_architecture_patterns(_codebase_path, analysis) do
+    # Use polyglot parser's architecture detection
+    patterns = []
+
+    # Microservices: multiple services in analysis
+    patterns = if has_microservices?(analysis), do: [:microservices | patterns], else: patterns
+
+    # Event-driven: GenServer/async patterns
+    patterns = if has_event_driven?(analysis), do: [:event_driven | patterns], else: patterns
+
+    # Layered: controller/service/repository structure
+    patterns = if has_layered?(analysis), do: [:layered_architecture | patterns], else: patterns
+
+    patterns
+  end
+
+  # Core template-based detection
+  defp detect_from_templates(codebase_path, template_keys, analysis) do
+    template_keys
+    |> List.wrap()
+    |> Enum.filter(&match_template(codebase_path, &1, analysis))
+    |> Enum.map(fn {_category, tech} -> tech end)
+  end
+
+  defp match_template(codebase_path, template_key, analysis) do
+    template = TechnologyTemplateLoader.template(template_key) || %{}
+    signatures = Map.get(template, "detector_signatures", %{})
+
+    pattern_match =
+      matches_patterns?(template_key, analysis) or
+        matches_patterns?(template_key, analysis, field: :code_patterns) or
+        matches_patterns?(template_key, analysis, field: :content_patterns)
+
+    dependency_match = has_any_dependency?(analysis, codebase_path, signatures["dependencies"])
+    config_match = has_any_config_file?(signatures["config_files"], analysis)
+    file_match = matches_file_patterns?(analysis, codebase_path, signatures["file_patterns"])
+
+    pattern_match or dependency_match or config_match or file_match
+  end
+
+  defp matches_patterns?(template_key, analysis, opts \\ []) do
+    regexes = TechnologyTemplateLoader.patterns(template_key, opts)
+
+    if regexes == [] do
+      false
     else
-      matches = count_matching_patterns(codebase_path, patterns)
-      matches / total_patterns
+      analysis
+      |> Map.get(:files, [])
+      |> Enum.any?(fn file ->
+        content = Map.get(file, :content) || Map.get(file, "content") || ""
+
+        Enum.any?(regexes, fn
+          %Regex{} = regex -> Regex.match?(regex, content)
+          pattern when is_binary(pattern) ->
+            case Regex.compile(pattern, "i") do
+              {:ok, regex} -> Regex.match?(regex, content)
+              _ -> false
+            end
+          _ -> false
+        end)
+      end)
     end
   end
 
-  defp calculate_config_confidence(codebase_path, config_files) do
-    if length(config_files) == 0 do
-      0.5  # Neutral confidence if no config files expected
-    else
-      found_files = count_config_files(codebase_path, config_files)
-      found_files / length(config_files)
+  defp has_any_dependency?(_analysis, _codebase_path, nil), do: false
+
+  defp has_any_dependency?(analysis, codebase_path, dependencies) do
+    Enum.any?(List.wrap(dependencies), fn dependency ->
+      dependency_in_analysis?(analysis, dependency) or
+        dependency_in_filesystem?(codebase_path, dependency)
+    end)
+  end
+
+  defp dependency_in_analysis?(analysis, dependency) do
+    analysis
+    |> Map.get(:files, [])
+    |> Enum.any?(fn file ->
+      content = Map.get(file, :content) || Map.get(file, "content") || ""
+      String.contains?(content, dependency)
+    end)
+  end
+
+  defp dependency_in_filesystem?(nil, _dependency), do: false
+
+  defp dependency_in_filesystem?(codebase_path, dependency) do
+    candidates = [
+      Path.join(codebase_path, "mix.exs"),
+      Path.join(codebase_path, "package.json"),
+      Path.join(codebase_path, "pyproject.toml"),
+      Path.join(codebase_path, "requirements.txt"),
+      Path.join(codebase_path, "Cargo.toml"),
+      Path.join(codebase_path, "setup.cfg")
+    ]
+
+    Enum.any?(candidates, fn path -> File.exists?(path) && contains_dependency?(path, dependency) end)
+  end
+
+  defp contains_dependency?(path, dependency) do
+    case File.read(path) do
+      {:ok, content} -> String.contains?(content, dependency)
+      _ -> false
     end
   end
 
-  defp calculate_dependency_confidence(codebase_path, dependencies) do
-    if length(dependencies) == 0 do
-      0.5  # Neutral confidence if no dependencies expected
-    else
-      found_deps = count_dependencies(codebase_path, dependencies)
-      found_deps / length(dependencies)
-    end
-  end
+  defp has_any_config_file?(nil, _analysis), do: false
 
-  defp count_matching_patterns(codebase_path, patterns) do
-    source_files = find_source_files(codebase_path)
-    
-    Enum.count(patterns, fn pattern ->
-      Enum.any?(source_files, fn file ->
-        case File.read(file) do
-          {:ok, content} ->
-            Regex.match?(pattern, content)
-          _ ->
-            false
-        end
+  defp has_any_config_file?(config_files, analysis) do
+    Enum.any?(List.wrap(config_files), fn config_file ->
+      Enum.any?(Map.get(analysis, :files, []), fn file ->
+        path = Map.get(file, :path) || Map.get(file, "path") || ""
+        String.ends_with?(path, config_file)
       end)
     end)
   end
 
-  defp count_config_files(codebase_path, config_files) do
-    Enum.count(config_files, fn file_pattern ->
-      if String.contains?(file_pattern, "**") do
-        # Handle glob patterns
-        files = Path.wildcard(Path.join(codebase_path, file_pattern))
-        length(files) > 0
+  defp matches_file_patterns?(_analysis, _codebase_path, nil), do: false
+
+  defp matches_file_patterns?(analysis, codebase_path, patterns) do
+    regexes = compile_globs(List.wrap(patterns))
+
+    analysis_match =
+      Enum.any?(Map.get(analysis, :files, []), fn file ->
+        path = Map.get(file, :path) || Map.get(file, "path") || ""
+        Enum.any?(regexes, &Regex.match?(&1, path))
+      end)
+
+    filesystem_match =
+      if codebase_path do
+        Enum.any?(List.wrap(patterns), fn pattern ->
+          Path.wildcard(Path.join(codebase_path, pattern)) != []
+        end)
       else
-        # Handle single files
-        File.exists?(Path.join(codebase_path, file_pattern))
+        false
+      end
+
+    analysis_match or filesystem_match
+  end
+
+  defp compile_globs(patterns) do
+    Enum.reduce(patterns, [], fn pattern, acc ->
+      case glob_to_regex(pattern) do
+        {:ok, regex} -> [regex | acc]
+        _ -> acc
       end
     end)
   end
 
-  defp count_dependencies(codebase_path, dependencies) do
-    package_json_path = Path.join(codebase_path, "package.json")
-    
-    if File.exists?(package_json_path) do
-      case File.read(package_json_path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, %{"dependencies" => deps}} ->
-              Enum.count(dependencies, fn dep ->
-                Map.has_key?(deps, dep)
-              end)
-            _ ->
-              0
+  defp glob_to_regex(pattern) when is_binary(pattern) do
+    escaped =
+      pattern
+      |> Regex.escape()
+      |> String.replace("\\*\\*", ".*")
+      |> String.replace("\\*", "[^/]*")
+
+    Regex.compile("^" <> escaped <> "$", "i")
+  end
+
+  defp glob_to_regex(_pattern), do: {:error, :invalid_pattern}
+
+  # Architecture pattern helpers
+  defp has_microservices?(analysis) do
+    service_count = Enum.count(analysis.files, fn file ->
+      String.contains?(file.path, "services/") or
+      String.contains?(file.path, "microservices/")
+    end)
+    service_count > 3
+  end
+
+  defp has_event_driven?(analysis) do
+    Enum.any?(analysis.files, fn file ->
+      content = file.content || ""
+      String.contains?(content, "GenServer") or
+      String.contains?(content, "pub_sub") or
+      String.contains?(content, "event_bus")
+    end)
+  end
+
+  defp has_layered?(analysis) do
+    has_controllers = Enum.any?(analysis.files, &String.contains?(&1.path, "controllers/"))
+    has_services = Enum.any?(analysis.files, &String.contains?(&1.path, "services/"))
+    has_repos = Enum.any?(analysis.files, &String.contains?(&1.path, "repositories/"))
+
+    has_controllers and has_services and has_repos
+  end
+
+  ## Rust Detector Integration
+
+  defp call_rust_detector(codebase_path) do
+    if File.exists?(@rust_detector_path) do
+      case System.cmd(@rust_detector_path, ["detect", codebase_path], stderr_to_stdout: true) do
+        {output, 0} ->
+          case Jason.decode(output) do
+            {:ok, results} -> {:ok, results}
+            {:error, _} -> {:error, :json_decode_failed}
           end
-        _ ->
-          0
+
+        {_output, _code} ->
+          {:error, :rust_execution_failed}
       end
     else
-      0
+      {:error, :rust_unavailable}
     end
+  rescue
+    e -> {:error, {:exception, Exception.message(e)}}
+  end
+
+  defp transform_rust_results(results) when is_list(results) do
+    Enum.group_by(results, fn result ->
+      Map.get(result, "category", "other")
+    end)
+    |> Enum.into(%{}, fn {category, items} ->
+      {String.to_atom(category), Enum.map(items, &transform_result_item/1)}
+    end)
+  end
+
+  defp transform_rust_results(_), do: %{}
+
+  defp transform_result_item(item) do
+    %{
+      name: Map.get(item, "technology_name"),
+      confidence: Map.get(item, "confidence"),
+      evidence: Map.get(item, "evidence", [])
+    }
   end
 end

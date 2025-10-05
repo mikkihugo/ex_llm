@@ -10,6 +10,8 @@ defmodule Singularity.Autonomy.RuleEvolutionManager do
   use GenServer
   require Logger
 
+  import Ecto.Query
+
   alias Singularity.{Repo, Autonomy}
   alias Autonomy.{Rule, RuleEvolutionProposal, RuleLoader}
 
@@ -123,11 +125,10 @@ defmodule Singularity.Autonomy.RuleEvolutionManager do
   @impl true
   def handle_call(:get_pending, _from, state) do
     pending =
-      Repo.all(
-        from p in RuleEvolutionProposal,
-          where: p.status == "proposed",
-          preload: :rule
-      )
+      RuleEvolutionProposal
+      |> where([proposal], proposal.status == "proposed")
+      |> preload(:rule)
+      |> Repo.all()
 
     {:reply, pending, state}
   end

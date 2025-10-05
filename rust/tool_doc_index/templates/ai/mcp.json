@@ -1,0 +1,21 @@
+{
+  "name": "Model Context Protocol",
+  "category": "ai",
+  "detector_signatures": {
+    "patterns": [
+      "ModelContextProtocol",
+      "mcp::",
+      "@modelcontextprotocol",
+      "MCPClient"
+    ],
+    "dependencies": [
+      "model-context-protocol",
+      "@modelcontextprotocol/sdk",
+      "model_context_protocol"
+    ],
+    "file_patterns": [
+      "mcp/*.json",
+      "mcp/**/*.toml"
+    ]
+  }
+}
