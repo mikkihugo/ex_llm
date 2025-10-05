@@ -9,7 +9,7 @@ defmodule Singularity.MixProject do
       version: project_version(),
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: Mix.compilers(),
+      compilers: [:gleam | Mix.compilers()],
       start_permanent: Mix.env() == :prod,
       prune_code_paths: false,
       aliases: aliases(),
