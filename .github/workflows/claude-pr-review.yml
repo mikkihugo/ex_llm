@@ -35,10 +35,14 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
             accept-flake-config = true
+            # Allow unfree packages (CUDA) but we'll use a dev shell without CUDA
+            allow-unfree = true
+        env:
+          NIXPKGS_ALLOW_UNFREE: "1"
 
       - name: Install Bun
         run: |
-          nix develop .#dev --command bash -c "bun --version"
+          nix develop .#ci --command bash -c "bun --version"
 
       - name: Run Claude Code Review
         env:
@@ -47,7 +51,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          nix develop .#dev --command bash -c '
+          nix develop .#ci --command bash -c '
             # Install Claude Code CLI via bun
             export CLAUDE_API_KEY="$CLAUDE_CODE_OAUTH_TOKEN"
 
@@ -118,7 +122,7 @@ jobs:
           PR_NUMBER: ${{ github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          nix develop .#dev --command bash -c '
+          nix develop .#ci --command bash -c '
             export CLAUDE_API_KEY="$CLAUDE_CODE_OAUTH_TOKEN"
 
             # Extract fix instructions from comment

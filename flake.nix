@@ -573,5 +573,25 @@ EOF
             echo "  Run: mix release"
           '';
         };
+
+        # CI environment - like dev but without CUDA (unfree)
+        devShells.ci = pkgs.mkShell {
+          name = "singularity-ci";
+          buildInputs = beamTools ++ (builtins.filter (pkg: pkg.pname or "" != "cuda-merged") commonTools) ++ webAndCli ++ qaTools;
+
+          shellHook = ''
+            export ERL_AFLAGS="-proto_dist inet6_tcp"
+            export MIX_ENV="test"
+            export GLEAM_ERLANG_INCLUDE_PATH="${beamPackages.erlang}/lib/erlang/usr/include"
+            export MIX_HOME="$PWD/.ci-mix"
+            export HEX_HOME="$PWD/.ci-hex"
+            mkdir -p "$MIX_HOME" "$HEX_HOME" "$PWD/bin"
+            export PATH=$PWD/bin:$PATH
+
+            echo "🤖 Singularity CI Environment"
+            echo "  MIX_ENV=test"
+            echo "  No CUDA (CI-safe)"
+          '';
+        };
       });
 }
