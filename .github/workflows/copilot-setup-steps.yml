@@ -30,18 +30,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
+      - name: Nix + Cachix setup (reusable)
+        uses: mikkihugo/singularity-incubation/.github/workflows/nix-setup.yml@master
+        secrets: inherit
         with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-            accept-flake-config = true
-
-      - name: Use Cachix (pull; push if token)
-        uses: cachix/cachix-action@v14
-        with:
-          name: mikkihugo
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          cachix_push: false
+          cache_key_prefix: 'copilot-otp28-elixir1184'
 
       - name: Install dependencies via Nix
         run: |
@@ -68,18 +62,6 @@ jobs:
             mix gleam.deps.get
           "
 
-      - name: Cache Mix/Hex and Moon
-        uses: actions/cache@v4
-        with:
-          path: |
-            singularity_app/.mix
-            singularity_app/.hex
-            singularity_app/deps
-            singularity_app/_build
-            .moon/cache
-          key: copilot-${{ runner.os }}-otp28-elixir1184-${{ hashFiles('singularity_app/mix.lock') }}-${{ hashFiles('**/moon.yml') }}
-          restore-keys: |
-            copilot-${{ runner.os }}-otp28-elixir1184-
 
       - name: Install JavaScript dependencies
         run: |

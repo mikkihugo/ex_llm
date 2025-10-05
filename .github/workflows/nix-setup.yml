@@ -1,0 +1,67 @@
+name: Nix Setup (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      cachix_push:
+        description: 'Build and push Nix outputs to Cachix (requires token)'
+        required: false
+        default: false
+        type: boolean
+      cache_key_prefix:
+        description: 'Prefix for actions/cache key'
+        required: false
+        default: 'ci'
+        type: string
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+
+      - name: Use Cachix (pull; push if token)
+        uses: cachix/cachix-action@v14
+        with:
+          name: mikkihugo
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Show toolchain versions (OTP via flake)
+        run: |
+          nix develop -c bash -lc '
+            elixir -v | head -n2
+            echo OTP: $(erl -eval "erlang:display(erlang:system_info(otp_release)), halt()." -noshell)
+            gleam --version
+          '
+
+      - name: Cache Mix/Hex and Moon
+        uses: actions/cache@v4
+        with:
+          path: |
+            singularity_app/.mix
+            singularity_app/.hex
+            singularity_app/deps
+            singularity_app/_build
+            .moon/cache
+          key: ${{ inputs.cache_key_prefix }}-${{ runner.os }}-${{ hashFiles('singularity_app/mix.lock') }}-${{ hashFiles('**/moon.yml') }}
+          restore-keys: |
+            ${{ inputs.cache_key_prefix }}-${{ runner.os }}-
+
+      - name: Build and push dev shell (Cachix)
+        if: ${{ inputs.cachix_push && secrets.CACHIX_AUTH_TOKEN != '' }}
+        run: |
+          SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
+          cachix watch-exec mikkihugo -- nix build .#devShells.$SYSTEM.default -L
+
+      - name: Build and push Nix packages (Cachix)
+        if: ${{ inputs.cachix_push && secrets.CACHIX_AUTH_TOKEN != '' }}
+        run: |
+          SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
+          cachix watch-exec mikkihugo -- nix build .#packages.$SYSTEM.ai-server -L || true
+          cachix watch-exec mikkihugo -- nix build .#packages.$SYSTEM.singularity-integrated -L || true
+

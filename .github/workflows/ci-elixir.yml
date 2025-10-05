@@ -12,53 +12,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
+      - name: Nix + Cachix setup (reusable)
+        uses: mikkihugo/singularity-incubation/.github/workflows/nix-setup.yml@master
+        secrets: inherit
         with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-
-      - name: Use Cachix (pull; push if token)
-        uses: cachix/cachix-action@v14
-        with:
-          name: mikkihugo
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-
-      - name: Show toolchain versions (OTP 28 via flake)
-        run: |
-          nix develop -c bash -lc '
-            elixir -v | head -n2
-            echo OTP: $(erl -eval "erlang:display(erlang:system_info(otp_release)), halt()." -noshell)
-            gleam --version
-          '
-
-      - name: Prebuild and push Nix dev shell to Cachix
-        if: secrets.CACHIX_AUTH_TOKEN != ''
-        run: |
-          SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
-          echo "Building dev shell for $SYSTEM and pushing to Cachix..."
-          cachix watch-exec mikkihugo -- nix build .#devShells.$SYSTEM.default -L
-
-      - name: Build and push Nix packages to Cachix (ai-server, integrated)
-        if: secrets.CACHIX_AUTH_TOKEN != ''
-        run: |
-          SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
-          echo "Building packages for $SYSTEM and pushing to Cachix..."
-          cachix watch-exec mikkihugo -- nix build .#packages.$SYSTEM.ai-server -L || true
-          cachix watch-exec mikkihugo -- nix build .#packages.$SYSTEM.singularity-integrated -L || true
-
-      - name: Cache Mix/Hex and Moon
-        uses: actions/cache@v4
-        with:
-          path: |
-            singularity_app/.mix
-            singularity_app/.hex
-            singularity_app/deps
-            singularity_app/_build
-            .moon/cache
-          key: ci-${{ runner.os }}-otp28-elixir1184-${{ hashFiles('singularity_app/mix.lock') }}-${{ hashFiles('**/moon.yml') }}
-          restore-keys: |
-            ci-${{ runner.os }}-otp28-elixir1184-
+          cachix_push: true
+          cache_key_prefix: 'ci-otp28-elixir1184'
 
       - name: Fetch deps (Mix + Gleam)
         run: |
