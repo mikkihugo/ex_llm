@@ -340,7 +340,9 @@ defmodule Singularity.EmbeddingService do
     try do
       # Try local NX/Bumblebee embedding first
       case generate_local_embedding(text) do
-        {:ok, embedding} -> {:ok, embedding}
+        {:ok, embedding} ->
+          {:ok, embedding}
+
         {:error, _reason} ->
           Logger.warning("Local embedding failed, falling back to Google")
           generate_google_embedding(text)
@@ -351,7 +353,7 @@ defmodule Singularity.EmbeddingService do
         {:error, error}
     end
   end
-  
+
   defp generate_local_embedding(text) do
     # Use real Bumblebee with Jinja2-compatible embedding model
     try do
@@ -359,48 +361,52 @@ defmodule Singularity.EmbeddingService do
         {:ok, model_info} ->
           # Preprocess text for Jinja2 templating context
           processed_text = preprocess_for_jinja2(text)
-          
+
           # Generate real embedding using Bumblebee
           inputs = %{text: [processed_text]}
-          
+
           # Run inference using the model's apply function
-          %{embedding: %{hidden_state: hidden_state}} = 
+          %{embedding: %{hidden_state: hidden_state}} =
             model_info.apply(inputs)
-          
+
           # Convert to list format
-          embedding = 
+          embedding =
             hidden_state
             |> Nx.squeeze()
             |> Nx.to_list()
-          
+
           Logger.debug("Generated real Bumblebee embedding with Jinja2 preprocessing", %{
             model: "microsoft/codebert-base",
             embedding_dimension: length(embedding),
             jinja2_processed: processed_text != text
           })
-          
+
           {:ok, embedding}
-        
-        {:error, reason} -> 
+
+        {:error, reason} ->
           Logger.warning("Bumblebee model loading failed: #{inspect(reason)}")
           {:error, reason}
       end
     rescue
-      error -> 
+      error ->
         Logger.error("Bumblebee embedding generation failed: #{inspect(error)}")
         {:error, error}
     end
   end
-  
+
   defp preprocess_for_jinja2(text) do
     # Preprocess text to work better with Jinja2 templating
     text
-    |> String.replace(~r/\{\{.*?\}\}/, "[JINJA2_VAR]")  # Replace Jinja2 variables
-    |> String.replace(~r/\{%\s*.*?\s*%\}/, "[JINJA2_BLOCK]")  # Replace Jinja2 blocks
-    |> String.replace(~r/\{#.*?#\}/, "[JINJA2_COMMENT]")  # Replace Jinja2 comments
-    |> String.replace(~r/\|\s*\w+/, "[JINJA2_FILTER]")  # Replace Jinja2 filters
+    # Replace Jinja2 variables
+    |> String.replace(~r/\{\{.*?\}\}/, "[JINJA2_VAR]")
+    # Replace Jinja2 blocks
+    |> String.replace(~r/\{%\s*.*?\s*%\}/, "[JINJA2_BLOCK]")
+    # Replace Jinja2 comments
+    |> String.replace(~r/\{#.*?#\}/, "[JINJA2_COMMENT]")
+    # Replace Jinja2 filters
+    |> String.replace(~r/\|\s*\w+/, "[JINJA2_FILTER]")
   end
-  
+
   defp load_embedding_model do
     # Load a real Bumblebee embedding model for Jinja2 templating
     try do
@@ -408,24 +414,26 @@ defmodule Singularity.EmbeddingService do
       {:ok, model_info} = Bumblebee.load_model({:hf, "microsoft/codebert-base"})
       {:ok, model_info}
     rescue
-      error -> 
+      error ->
         Logger.warning("Failed to load Bumblebee model: #{inspect(error)}")
         {:error, error}
     end
   end
-  
+
   defp generate_google_embedding(text) do
     # Fallback to Google embeddings via HTTP
     try do
       Logger.info("Using Google embedding fallback")
-      
+
       # Call Google's text-embedding-004 API
       api_key = System.get_env("GOOGLE_AI_STUDIO_API_KEY")
-      
+
       if api_key do
         case call_google_embedding_api(text, api_key) do
-          {:ok, embedding} -> {:ok, embedding}
-          {:error, reason} -> 
+          {:ok, embedding} ->
+            {:ok, embedding}
+
+          {:error, reason} ->
             Logger.error("Google embedding API failed: #{inspect(reason)}")
             {:ok, generate_placeholder_embedding(text)}
         end
@@ -434,39 +442,40 @@ defmodule Singularity.EmbeddingService do
         {:ok, generate_placeholder_embedding(text)}
       end
     rescue
-      error -> 
+      error ->
         Logger.error("Google embedding failed: #{inspect(error)}")
         {:ok, generate_placeholder_embedding(text)}
     end
   end
-  
+
   defp call_google_embedding_api(text, api_key) do
-    url = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent"
-    
+    url =
+      "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent"
+
     headers = [
       {"Content-Type", "application/json"},
       {"x-goog-api-key", api_key}
     ]
-    
+
     body = %{
       model: "models/text-embedding-004",
       content: %{
         parts: [%{text: text}]
       }
     }
-    
+
     case Req.post(url, json: body, headers: headers) do
       {:ok, %{status: 200, body: %{"embedding" => %{"values" => values}}}} ->
         {:ok, values}
-      
+
       {:ok, %{status: status, body: body}} ->
         {:error, {:api_error, status, body}}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
   end
-  
+
   defp generate_placeholder_embedding(text) do
     # Generate a deterministic placeholder embedding based on text hash
     hash = :crypto.hash(:sha256, text)

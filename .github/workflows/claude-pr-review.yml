@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Nix + Cachix setup (reusable)
         uses: mikkihugo/singularity-incubation/.github/workflows/nix-setup.yml@master
@@ -27,11 +27,7 @@ jobs:
           cachix_push: false
           cache_key_prefix: 'pr-otp28-elixir1184'
 
-      - name: Setup Bun (TypeScript)
-        uses: oven-sh/setup-bun@v2
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      # Bun and Rust provided by nix develop, no extra actions needed
 
       - name: Verify environment
         run: |

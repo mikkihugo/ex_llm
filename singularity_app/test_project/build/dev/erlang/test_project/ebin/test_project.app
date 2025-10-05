@@ -3,8 +3,6 @@
     {applications, [gleam_stdlib,
                     gleeunit]},
     {description, ""},
-    {modules, [test_project,
-               test_project@@main,
-               test_project_test]},
+    {modules, []},
     {registered, []}
 ]}.

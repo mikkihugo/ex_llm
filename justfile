@@ -31,13 +31,13 @@ smart-full: smart-deps smart-fmt smart-lint
 
 # Individual component commands
 gleam-build:
-	nix develop .#dev --command bash -c "cd singularity_app && gleam build"
+	nix develop .#dev --command bash -c "cd singularity_app/test_project && gleam build"
 
 gleam-check:
 	nix develop .#dev --command bash -c "cd singularity_app && gleam check"
 
 gleam-test:
-	nix develop .#dev --command bash -c "cd singularity_app && gleam test"
+	nix develop .#dev --command bash -c "cd singularity_app/test_project && gleam test"
 
 deps-get:
 	nix develop .#dev --command bash -c "cd singularity_app && mix deps.get"

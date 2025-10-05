@@ -51,7 +51,7 @@ defmodule Singularity.QualityCodeGenerator do
 
   @doc """
   Get quality template for a specific language.
-  
+
   Returns the appropriate quality template based on language.
   """
   def get_template(language) when language in @supported_languages do
@@ -74,14 +74,15 @@ defmodule Singularity.QualityCodeGenerator do
   """
   def load_template(filename) do
     template_path = Path.join(@templates_dir, filename)
-    
+
     case File.read(template_path) do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, template} -> {:ok, template}
           {:error, reason} -> {:error, {:json_decode_error, reason}}
         end
-      {:error, reason} -> 
+
+      {:error, reason} ->
         Logger.warning("Template file not found: #{template_path}, using default")
         {:ok, default_template()}
     end
@@ -89,8 +90,10 @@ defmodule Singularity.QualityCodeGenerator do
 
   def load_template(filename, opts) do
     case load_template(filename) do
-      {:ok, template} -> {:ok, template}
-      {:error, _reason} -> 
+      {:ok, template} ->
+        {:ok, template}
+
+      {:error, _reason} ->
         # Fallback to default template with options
         {:ok, default_template(opts)}
     end

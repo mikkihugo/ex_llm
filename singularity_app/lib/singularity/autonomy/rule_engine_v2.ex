@@ -90,6 +90,7 @@ defmodule Singularity.Autonomy.RuleEngineV2 do
           rule_id: rule_id,
           correlation_id: correlation_id
         )
+
         classify_result(Map.put(cached_result, :cached, true))
 
       _ ->

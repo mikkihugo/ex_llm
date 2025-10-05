@@ -524,7 +524,7 @@ EOF
             pkgs.buildah
           ];
           shellHook = ''
-            export NIX_CONFIG="${NIX_CONFIG}\nextra-substituters = https://mikkihugo.cachix.org\nextra-trusted-public-keys = mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
+            export NIX_CONFIG="$NIX_CONFIG\nextra-substituters = https://mikkihugo.cachix.org\nextra-trusted-public-keys = mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
             export LC_ALL=C.UTF-8
             export LANG=C.UTF-8
             export ELIXIR_ERL_OPTIONS="+fnu"
@@ -539,7 +539,7 @@ EOF
           buildInputs = beamTools ++ commonTools ++ dataServices ++ webAndCli ++ qaTools ++ aiCliPackages;
 
           shellHook = ''
-            export NIX_CONFIG="${NIX_CONFIG}\nextra-substituters = https://mikkihugo.cachix.org\nextra-trusted-public-keys = mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
+            export NIX_CONFIG="$NIX_CONFIG\nextra-substituters = https://mikkihugo.cachix.org\nextra-trusted-public-keys = mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
             export LC_ALL=C.UTF-8
             export LANG=C.UTF-8
             export ELIXIR_ERL_OPTIONS="+fnu"
@@ -564,7 +564,7 @@ EOF
           buildInputs = beamTools ++ commonTools ++ dataServices ++ qaTools;
 
           shellHook = ''
-            export NIX_CONFIG="${NIX_CONFIG}\nextra-substituters = https://mikkihugo.cachix.org\nextra-trusted-public-keys = mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
+            export NIX_CONFIG="$NIX_CONFIG\nextra-substituters = https://mikkihugo.cachix.org\nextra-trusted-public-keys = mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
             export LC_ALL=C.UTF-8
             export LANG=C.UTF-8
             export ELIXIR_ERL_OPTIONS="+fnu"
@@ -589,7 +589,7 @@ EOF
           buildInputs = beamTools ++ webAndCli;
 
           shellHook = ''
-            export NIX_CONFIG="${NIX_CONFIG}\nextra-substituters = https://mikkihugo.cachix.org\nextra-trusted-public-keys = mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
+            export NIX_CONFIG="$NIX_CONFIG\nextra-substituters = https://mikkihugo.cachix.org\nextra-trusted-public-keys = mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
             export LC_ALL=C.UTF-8
             export LANG=C.UTF-8
             export ELIXIR_ERL_OPTIONS="+fnu"
@@ -614,7 +614,7 @@ EOF
           buildInputs = beamTools ++ baseTools ++ webAndCli ++ qaTools;
 
           shellHook = ''
-            export NIX_CONFIG="${NIX_CONFIG}\nextra-substituters = https://mikkihugo.cachix.org\nextra-trusted-public-keys = mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
+            export NIX_CONFIG="$NIX_CONFIG\nextra-substituters = https://mikkihugo.cachix.org\nextra-trusted-public-keys = mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
             export LC_ALL=C.UTF-8
             export LANG=C.UTF-8
             export ELIXIR_ERL_OPTIONS="+fnu"

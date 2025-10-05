@@ -11,12 +11,17 @@ defmodule Singularity.Planning.Vision do
   """
   def set_vision(vision_text, opts \\ []) do
     approved_by = Keyword.get(opts, :approved_by, "system")
-    
+
     case GenServer.call(__MODULE__, {:set_vision, vision_text, approved_by}) do
-      :ok -> 
-        Logger.info("Vision updated", %{approved_by: approved_by, vision_length: String.length(vision_text)})
+      :ok ->
+        Logger.info("Vision updated", %{
+          approved_by: approved_by,
+          vision_length: String.length(vision_text)
+        })
+
         :ok
-      {:error, reason} -> 
+
+      {:error, reason} ->
         Logger.error("Failed to set vision: #{inspect(reason)}")
         {:error, reason}
     end
@@ -44,11 +49,12 @@ defmodule Singularity.Planning.Vision do
   @impl true
   def handle_call({:set_vision, vision_text, approved_by}, _from, state) do
     new_state = %{
-      state | 
-      vision: vision_text,
-      approved_by: approved_by,
-      updated_at: DateTime.utc_now()
+      state
+      | vision: vision_text,
+        approved_by: approved_by,
+        updated_at: DateTime.utc_now()
     }
+
     {:reply, :ok, new_state}
   end
 

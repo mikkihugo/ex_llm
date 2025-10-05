@@ -11,8 +11,10 @@ defmodule Singularity.Manager do
   def queue_depth do
     # Get queue depth from the execution coordinator
     case Process.whereis(Singularity.TemplateSparcOrchestrator) do
-      nil -> 0
-      pid -> 
+      nil ->
+        0
+
+      pid ->
         case GenServer.call(pid, :queue_depth) do
           {:ok, depth} -> depth
           _ -> 0

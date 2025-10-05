@@ -40,12 +40,12 @@ defmodule Singularity.Application do
         {Cluster.Supervisor, [topologies, [name: Singularity.ClusterSupervisor]]},
         # NATS messaging
         Singularity.NatsClient,
-          # Control system
-          Singularity.Control,
-          # System management
-          Singularity.Manager,
-          # Vision management
-          Singularity.Planning.Vision,
+        # Control system
+        Singularity.Control,
+        # System management
+        Singularity.Manager,
+        # Vision management
+        Singularity.Planning.Vision,
 
         # Monitoring & Telemetry
         Singularity.Telemetry,
