@@ -1,5 +1,13 @@
 # GitHub Copilot Setup Instructions
 
+## Project Languages
+
+This is a **polyglot codebase** using:
+- **Elixir** (primary) - Main application in `singularity_app/`
+- **Gleam** - BEAM-native functional language, compiles with Elixir
+- **Rust** - High-performance tools in `rust/` (tool_doc_index, db_service)
+- **TypeScript** - AI server in `ai-server/`
+
 This repository uses **Nix** + **direnv** for reproducible development environments.
 
 ## Prerequisites
@@ -74,6 +82,117 @@ nats-server --version && pgrep -x nats-server
 - **Message Bus**: NATS with JetStream
 - **JavaScript**: Bun (fast TypeScript/JavaScript runtime)
 - **AI CLIs**: `claude`, `gemini`, `copilot`, `codex` (via bunx shims)
+
+## Language-Specific Guidelines
+
+### Elixir Code (`singularity_app/`)
+
+**File locations**:
+- Main app: `singularity_app/lib/singularity/`
+- Tests: `singularity_app/test/`
+- Migrations: `singularity_app/priv/repo/migrations/`
+
+**Conventions**:
+- Use `snake_case` for files and functions
+- Use `PascalCase` for modules
+- Prefer GenServer/Agent for state management
+- Use `with` for error handling chains
+- Document with `@moduledoc` and `@doc`
+
+**Example**:
+```elixir
+defmodule Singularity.MyModule do
+  @moduledoc """
+  Description of module purpose.
+  """
+
+  use GenServer
+
+  @doc """
+  Starts the server.
+  """
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+end
+```
+
+### Gleam Code
+
+**Integration**: Gleam code compiles to BEAM bytecode and runs alongside Elixir.
+
+**Conventions**:
+- Use `snake_case` for all identifiers
+- Prefer pattern matching over conditionals
+- Use `Result` and `Option` types
+- Document with `///` comments
+
+**Example**:
+```gleam
+import gleam/result
+
+pub fn process_data(input: String) -> Result(String, String) {
+  case input {
+    "" -> Error("Empty input")
+    value -> Ok(value)
+  }
+}
+```
+
+### Rust Code (`rust/`)
+
+**File locations**:
+- `rust/tool_doc_index/` - Technology detection
+- `rust/db_service/` - Database gateway (archived)
+- `rust/prompt_engine/` - ML-based prompt optimization
+
+**Conventions**:
+- Use `snake_case` for files and functions
+- Use `PascalCase` for types/structs
+- Prefer `Result` and `Option`
+- Document with `///` (doc comments)
+- Follow https://rust-lang.github.io/api-guidelines/
+
+**Example**:
+```rust
+/// Analyzes code for technology patterns.
+pub struct TechnologyDetector {
+    patterns: Vec<Pattern>,
+}
+
+impl TechnologyDetector {
+    /// Creates a new detector with default patterns.
+    pub fn new() -> Result<Self, Error> {
+        Ok(Self { patterns: vec![] })
+    }
+}
+```
+
+### TypeScript Code (`ai-server/`)
+
+**File locations**:
+- Source: `ai-server/src/`
+- Tests: `ai-server/src/*.test.ts`
+
+**Conventions**:
+- Use `camelCase` for variables and functions
+- Use `PascalCase` for types/interfaces
+- Prefer `async/await` over callbacks
+- Use Bun-specific APIs when available
+- Document with JSDoc `/** */`
+
+**Example**:
+```typescript
+/**
+ * Handles AI provider requests.
+ */
+export async function handleRequest(
+  provider: string,
+  request: ChatRequest
+): Promise<ChatResponse> {
+  // Implementation
+}
+```
 
 ### Key Environment Variables
 
