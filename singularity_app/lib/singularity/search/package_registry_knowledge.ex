@@ -59,7 +59,6 @@ defmodule Singularity.PackageRegistryKnowledge do
         where: not is_nil(t.semantic_embedding),
         where: t.github_stars >= ^min_stars,
         where: t.download_count >= ^min_downloads
-      )
 
     # Filter by ecosystem if specified
     query =
