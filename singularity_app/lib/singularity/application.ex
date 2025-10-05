@@ -71,6 +71,7 @@ defmodule Singularity.Application do
         # SAFe 6.0 Planning
         Singularity.Conversation.Agent,
         Singularity.Planning.Coordinator,
+        Singularity.Planning.SingularityVision,
 
         # Agents
         Singularity.AgentSupervisor,
