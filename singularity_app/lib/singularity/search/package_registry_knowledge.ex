@@ -51,7 +51,7 @@ defmodule Singularity.PackageRegistryKnowledge do
     recency_months = Keyword.get(opts, :recency_months)
 
     # Generate embedding for query
-    {:ok, query_embedding} = EmbeddingService.generate_embedding(query)
+    {:ok, query_embedding} = EmbeddingGenerator.embed(query)
 
     # Build base query
     base_query =
@@ -190,7 +190,7 @@ defmodule Singularity.PackageRegistryKnowledge do
     limit = Keyword.get(opts, :limit, 10)
 
     # Generate embedding for query
-    {:ok, query_embedding} = EmbeddingService.generate_embedding(query)
+    {:ok, query_embedding} = EmbeddingGenerator.embed(query)
 
     # Build base query
     base_query =
@@ -262,7 +262,7 @@ defmodule Singularity.PackageRegistryKnowledge do
     limit = Keyword.get(opts, :limit, 10)
 
     # Generate embedding for query
-    {:ok, query_embedding} = EmbeddingService.generate_embedding(query)
+    {:ok, query_embedding} = EmbeddingGenerator.embed(query)
 
     # Build base query
     base_query =

@@ -207,7 +207,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
     )
 
     # Generate embedding for query
-    {:ok, query_vector} = EmbeddingService.generate_embedding(query)
+    {:ok, query_vector} = EmbeddingGenerator.embed(query)
 
     # Search your codebase
     results = SemanticCodeSearch.semantic_search(conn, codebase_id, query_vector, limit)
