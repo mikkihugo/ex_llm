@@ -33,14 +33,14 @@ jobs:
           '
 
       - name: Prebuild and push Nix dev shell to Cachix
-        if: ${{ secrets.CACHIX_AUTH_TOKEN != '' }}
+        if: secrets.CACHIX_AUTH_TOKEN != ''
         run: |
           SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
           echo "Building dev shell for $SYSTEM and pushing to Cachix..."
           cachix watch-exec mikkihugo -- nix build .#devShells.$SYSTEM.default -L
 
       - name: Build and push Nix packages to Cachix (ai-server, integrated)
-        if: ${{ secrets.CACHIX_AUTH_TOKEN != '' }}
+        if: secrets.CACHIX_AUTH_TOKEN != ''
         run: |
           SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
           echo "Building packages for $SYSTEM and pushing to Cachix..."
