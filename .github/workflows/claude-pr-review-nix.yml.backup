@@ -1,0 +1,131 @@
+name: Claude Code PR Review
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude-review:
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@claude')
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+
+      - name: Test CI environment
+        run: |
+          nix develop .#ci --command bash -c "
+            echo '=== CI Environment Check ==='
+            echo 'Elixir:' && elixir --version | head -1
+            echo 'Gleam:' && gleam --version
+            echo 'Bun:' && bun --version
+            echo 'Rust:' && rustc --version
+            echo 'No CUDA (as expected for CI)'
+          "
+
+      - name: Run Claude Code Review
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          nix develop .#ci --command bash -c '
+            # Get PR details
+            PR_DIFF=$(gh pr diff $PR_NUMBER)
+            PR_TITLE=$(gh pr view $PR_NUMBER --json title -q .title)
+            PR_BODY=$(gh pr view $PR_NUMBER --json body -q .body)
+
+            # Extract task from comment (remove @claude trigger)
+            TASK=$(echo "$COMMENT_BODY" | sed "s/@claude //g" | sed "s/@claude$//g")
+            if [ -z "$TASK" ] || [ "$TASK" = "$COMMENT_BODY" ]; then
+              TASK="Review this PR for code quality, architectural issues, and suggest improvements."
+            fi
+
+            # Create review request
+            cat > /tmp/review_request.md <<'"'"'HEREDOC'"'"'
+# PR Review Request
+
+**PR #$PR_NUMBER: $PR_TITLE**
+
+## Description
+$PR_BODY
+
+## Task
+$TASK
+
+## Changes
+```diff
+$PR_DIFF
+```
+
+Please provide:
+1. Code quality assessment (Elixir, Gleam, Rust, TypeScript)
+2. Architectural concerns
+3. Specific code changes needed (if any)
+4. Approval status (APPROVE / REQUEST_CHANGES / COMMENT)
+HEREDOC
+
+            # Run Claude Code review
+            export CLAUDE_API_KEY="$CLAUDE_CODE_OAUTH_TOKEN"
+
+            REVIEW_OUTPUT=$(bun run tools/claude-ai.ts "$(cat <<EOJSON
+{
+  "model": "sonnet",
+  "messages": [
+    {
+      "role": "user",
+      "content": $(cat /tmp/review_request.md | jq -Rs .)
+    }
+  ],
+  "temperature": 0.3
+}
+EOJSON
+)" | jq -r .text)
+
+            # Post review as comment
+            gh pr comment $PR_NUMBER --body "$REVIEW_OUTPUT"
+
+            echo "✅ Review posted to PR #$PR_NUMBER"
+
+            # Auto-merge if Claude approves
+            if echo "$REVIEW_OUTPUT" | grep -qi "APPROVE"; then
+              echo "🎯 Claude approved! Checking if PR can be merged..."
+
+              # Check if PR is mergeable
+              PR_STATUS=$(gh pr view $PR_NUMBER --json mergeable,mergeStateStatus --jq "{mergeable, state: .mergeStateStatus}")
+              MERGEABLE=$(echo "$PR_STATUS" | jq -r ".mergeable")
+              STATE=$(echo "$PR_STATUS" | jq -r ".state")
+
+              if [ "$MERGEABLE" = "MERGEABLE" ] && [ "$STATE" = "CLEAN" ]; then
+                echo "✅ PR is ready - auto-merging..."
+                gh pr merge $PR_NUMBER --squash --auto --delete-branch
+                gh pr comment $PR_NUMBER --body "✅ **Auto-merged by Claude Code**
+
+This PR was automatically merged after Claude approval."
+              else
+                echo "⚠️ PR not ready to merge (mergeable: $MERGEABLE, state: $STATE)"
+                gh pr comment $PR_NUMBER --body "ℹ️ Claude approved this PR, but auto-merge is waiting for:
+- ✅ All checks to pass
+- ✅ No merge conflicts
+- ✅ Branch protection satisfied
+
+Will auto-merge when ready, or you can merge manually."
+              fi
+            fi
+          '

@@ -1,4 +1,4 @@
-name: Claude Code PR Review
+name: Claude Code PR Review (BEAM)
 
 on:
   issue_comment:
@@ -13,30 +13,38 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
 
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
+      - name: Setup BEAM (Elixir + Gleam + OTP)
+        uses: erlef/setup-beam@v1
         with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-            accept-flake-config = true
+          otp-version: '27.x'
+          elixir-version: '1.17.x'
+          gleam-version: '1.5.x'
 
-      - name: Test CI environment
+      - name: Setup Bun (TypeScript)
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify environment
         run: |
-          nix develop .#ci --command bash -c "
-            echo '=== CI Environment Check ==='
-            echo 'Elixir:' && elixir --version | head -1
-            echo 'Gleam:' && gleam --version
-            echo 'Bun:' && bun --version
-            echo 'Rust:' && rustc --version
-            echo 'No CUDA (as expected for CI)'
-          "
+          echo "=== Environment Check ==="
+          echo "Elixir: $(elixir --version | head -1)"
+          echo "Gleam: $(gleam --version)"
+          echo "OTP: $(erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().' -noshell)"
+          echo "Bun: $(bun --version)"
+          echo "Rust: $(rustc --version)"
+
+      - name: Install dependencies
+        run: |
+          bun install
 
       - name: Run Claude Code Review
         env:
@@ -45,33 +53,32 @@ jobs:
           PR_NUMBER: ${{ github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          nix develop .#ci --command bash -c '
-            # Get PR details
-            PR_DIFF=$(gh pr diff $PR_NUMBER)
-            PR_TITLE=$(gh pr view $PR_NUMBER --json title -q .title)
-            PR_BODY=$(gh pr view $PR_NUMBER --json body -q .body)
+          # Get PR details
+          PR_DIFF=$(gh pr diff $PR_NUMBER)
+          PR_TITLE=$(gh pr view $PR_NUMBER --json title -q .title)
+          PR_BODY=$(gh pr view $PR_NUMBER --json body -q .body)
 
-            # Extract task from comment (remove @claude trigger)
-            TASK=$(echo "$COMMENT_BODY" | sed "s/@claude //g" | sed "s/@claude$//g")
-            if [ -z "$TASK" ] || [ "$TASK" = "$COMMENT_BODY" ]; then
-              TASK="Review this PR for code quality, architectural issues, and suggest improvements."
-            fi
+          # Extract task from comment (remove @claude trigger)
+          TASK=$(echo "$COMMENT_BODY" | sed 's/@claude //g' | sed 's/@claude$//g')
+          if [ -z "$TASK" ] || [ "$TASK" = "$COMMENT_BODY" ]; then
+            TASK="Review this PR for code quality, architectural issues, and suggest improvements."
+          fi
 
-            # Create review request
-            cat > /tmp/review_request.md <<'"'"'HEREDOC'"'"'
+          # Create review request
+          cat > /tmp/review_request.md <<'HEREDOC'
 # PR Review Request
 
-**PR #$PR_NUMBER: $PR_TITLE**
+**PR #${PR_NUMBER}: ${PR_TITLE}**
 
 ## Description
-$PR_BODY
+${PR_BODY}
 
 ## Task
-$TASK
+${TASK}
 
 ## Changes
 ```diff
-$PR_DIFF
+${PR_DIFF}
 ```
 
 Please provide:
@@ -79,18 +86,26 @@ Please provide:
 2. Architectural concerns
 3. Specific code changes needed (if any)
 4. Approval status (APPROVE / REQUEST_CHANGES / COMMENT)
+
+If you REQUEST_CHANGES, tag @Copilot to fix the issues.
 HEREDOC
 
-            # Run Claude Code review
-            export CLAUDE_API_KEY="$CLAUDE_CODE_OAUTH_TOKEN"
+          # Expand variables
+          eval "cat <<EVALEOF
+$(cat /tmp/review_request.md)
+EVALEOF
+" > /tmp/review_final.md
 
-            REVIEW_OUTPUT=$(bun run tools/claude-ai.ts "$(cat <<EOJSON
+          # Run Claude Code review
+          export CLAUDE_API_KEY="$CLAUDE_CODE_OAUTH_TOKEN"
+
+          REVIEW_OUTPUT=$(bun run tools/claude-ai.ts "$(cat <<EOJSON
 {
   "model": "sonnet",
   "messages": [
     {
       "role": "user",
-      "content": $(cat /tmp/review_request.md | jq -Rs .)
+      "content": $(cat /tmp/review_final.md | jq -Rs .)
     }
   ],
   "temperature": 0.3
@@ -98,34 +113,38 @@ HEREDOC
 EOJSON
 )" | jq -r .text)
 
-            # Post review as comment
-            gh pr comment $PR_NUMBER --body "$REVIEW_OUTPUT"
+          # Post review as comment
+          gh pr comment $PR_NUMBER --body "$REVIEW_OUTPUT"
 
-            echo "✅ Review posted to PR #$PR_NUMBER"
+          echo "✅ Review posted to PR #$PR_NUMBER"
 
-            # Auto-merge if Claude approves
-            if echo "$REVIEW_OUTPUT" | grep -qi "APPROVE"; then
-              echo "🎯 Claude approved! Checking if PR can be merged..."
+          # Auto-merge if Claude approves
+          if echo "$REVIEW_OUTPUT" | grep -qi "APPROVE"; then
+            echo "🎯 Claude approved! Checking if PR can be merged..."
 
-              # Check if PR is mergeable
-              PR_STATUS=$(gh pr view $PR_NUMBER --json mergeable,mergeStateStatus --jq "{mergeable, state: .mergeStateStatus}")
-              MERGEABLE=$(echo "$PR_STATUS" | jq -r ".mergeable")
-              STATE=$(echo "$PR_STATUS" | jq -r ".state")
+            # Check if PR is mergeable
+            PR_STATUS=$(gh pr view $PR_NUMBER --json mergeable,mergeStateStatus --jq '{mergeable, state: .mergeStateStatus}')
+            MERGEABLE=$(echo "$PR_STATUS" | jq -r '.mergeable')
+            STATE=$(echo "$PR_STATUS" | jq -r '.state')
 
-              if [ "$MERGEABLE" = "MERGEABLE" ] && [ "$STATE" = "CLEAN" ]; then
-                echo "✅ PR is ready - auto-merging..."
-                gh pr merge $PR_NUMBER --squash --auto --delete-branch
-                gh pr comment $PR_NUMBER --body "✅ **Auto-merged by Claude Code**
+            if [ "$MERGEABLE" = "MERGEABLE" ] && [ "$STATE" = "CLEAN" ]; then
+              echo "✅ PR is ready - auto-merging..."
+              gh pr merge $PR_NUMBER --squash --auto --delete-branch
+              gh pr comment $PR_NUMBER --body "✅ **Auto-merged by Claude Code**
 
 This PR was automatically merged after Claude approval."
-              else
-                echo "⚠️ PR not ready to merge (mergeable: $MERGEABLE, state: $STATE)"
-                gh pr comment $PR_NUMBER --body "ℹ️ Claude approved this PR, but auto-merge is waiting for:
+            else
+              echo "⚠️ PR not ready to merge (mergeable: $MERGEABLE, state: $STATE)"
+              gh pr comment $PR_NUMBER --body "ℹ️ Claude approved this PR, but auto-merge is waiting for:
 - ✅ All checks to pass
 - ✅ No merge conflicts
 - ✅ Branch protection satisfied
 
 Will auto-merge when ready, or you can merge manually."
-              fi
             fi
-          '
+
+          # Tag Copilot if changes requested
+          elif echo "$REVIEW_OUTPUT" | grep -qi "REQUEST_CHANGES"; then
+            echo "🔧 Claude requested changes - tagging Copilot..."
+            gh pr comment $PR_NUMBER --body "@Copilot Claude requested changes to this PR. Please address the issues mentioned in the review above and request another review when ready."
+          fi
