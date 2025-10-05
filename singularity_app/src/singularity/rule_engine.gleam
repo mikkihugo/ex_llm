@@ -155,10 +155,10 @@ fn generate_reasoning(confidence: Float, rule: Rule) -> String {
   let conf_pct = {confidence *. 100.0} |> float.round() |> int.to_string()
 
   case confidence {
-    c if c >= autonomous_threshold ->
+    c if c >=. autonomous_threshold ->
       "High confidence (" <> conf_pct <> "%) - " <> rule.description <> " - Executing autonomously"
 
-    c if c >= collaborative_threshold && c < autonomous_threshold ->
+    c if c >=. collaborative_threshold && c <. autonomous_threshold ->
       "Moderate confidence (" <> conf_pct <> "%) - " <> rule.description <> " - Requesting collaboration"
 
     _ ->
@@ -168,7 +168,7 @@ fn generate_reasoning(confidence: Float, rule: Rule) -> String {
 
 /// Check if result should be cached
 pub fn should_cache(result: RuleResult) -> Bool {
-  result.confidence >= autonomous_threshold
+  result.confidence >=. autonomous_threshold
 }
 
 /// Create cache key from rule and context

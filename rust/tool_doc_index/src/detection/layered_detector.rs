@@ -264,7 +264,7 @@ impl LayeredDetector {
         // Sort by confidence (highest first)
         results.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
 
-        // Publish results to NATS
+        // Publish results as an event for downstream consumers
         if let Some(nats) = &self.nats_client {
             self.publish_results(project_path, &results, nats).await.ok();
         }
@@ -272,7 +272,7 @@ impl LayeredDetector {
         Ok(results)
     }
 
-    /// Publish detection results to NATS for db_service to consume
+    /// Publish detection results to NATS for downstream consumers
     async fn publish_results(
         &self,
         project_path: &Path,
@@ -313,7 +313,7 @@ impl LayeredDetector {
             }
         });
 
-        let subject = format!("db.insert.codebase_snapshots");
+        let subject = "events.technology_detected";
         nats.publish(subject.clone(), payload.to_string().into()).await?;
 
         tracing::info!(

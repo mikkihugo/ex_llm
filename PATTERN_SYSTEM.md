@@ -40,6 +40,7 @@ etc.) with an authoritative overview of what actually ships in the repo today.
 | `rust/tool_doc_index/templates/` | Primary technology & framework definitions | Shared across Rust + Elixir |
 | `singularity_app/priv/technology_patterns/` | Overrides/local templates | Optional per-deployment overrides |
 | `singularity_app/priv/code_quality_templates/` | Semantic patterns for RAG/pattern indexer | Indexed by `PatternIndexer` |
+| `singularity_app/priv/patterns/default_patterns.json` | Seed vocabulary for DomainVocabularyTrainer | Loaded at runtime; edit to adjust agent prompt vocabulary |
 
 Each template file follows the schema in `rust/tool_doc_index/templates/schema.json`
 (the same schema is mirrored in `TechnologyTemplateLoader` for validation).

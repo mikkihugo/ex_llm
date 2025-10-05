@@ -17,12 +17,18 @@ defmodule Singularity.TechnologyDetector do
 
     case call_rust_detector(codebase_path) do
       {:ok, results} ->
-        {:ok, %{
-          codebase_path: codebase_path,
-          technologies: transform_rust_results(results),
-          detection_timestamp: DateTime.utc_now(),
-          detection_method: :rust_layered
-        }}
+        technologies = transform_rust_results(results)
+
+        snapshot =
+          build_snapshot(
+            codebase_path,
+            technologies,
+            Keyword.put(opts, :detection_method, :rust_layered)
+          )
+
+        maybe_persist_snapshot(snapshot, Keyword.put(opts, :detection_method, :rust_layered))
+
+        {:ok, snapshot}
 
       {:error, reason} when reason in [:rust_unavailable, :not_found] ->
         Logger.warn("Rust detector unavailable, using Elixir fallback")

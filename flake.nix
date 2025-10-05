@@ -11,11 +11,6 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         beamPackages = pkgs.beam.packages.erlang_28;
-        elixirSrc = import ./nix/elixir-gleam-source.nix { inherit pkgs; };
-        elixirGleam = import ./nix/elixir-gleam-package.nix {
-          inherit pkgs beamPackages;
-          src = elixirSrc;
-        };
 
         # Base tools without CUDA
         baseTools = with pkgs; [
@@ -79,7 +74,7 @@
 
         beamTools = [
           beamPackages.erlang
-          elixirGleam
+          beamPackages.elixir
           beamPackages.hex
           beamPackages.rebar3
           pkgs.elixir_ls
@@ -194,14 +189,14 @@ EOF
 
           buildInputs = [
             beamPackages.erlang
-            elixirGleam
+            beamPackages.elixir
             pkgs.bun
             pkgs.bash
             pkgs.coreutils
           ];
 
           buildPhase = ''
-            patchShebangs ${elixirGleam}/bin
+            patchShebangs ${beamPackages.elixir}/bin
           '';
 
           installPhase = ''
@@ -213,8 +208,8 @@ EOF
             # Install AI Server
             cp -r ai-server/* $out/ai-server/
 
-            cp ${elixirGleam}/bin/.mix-wrapped $out/bin/mix-wrapped
-            substituteInPlace $out/bin/mix-wrapped --replace '#!/usr/bin/env elixir' '#!${elixirGleam}/bin/elixir'
+            cp ${beamPackages.elixir}/bin/.mix-wrapped $out/bin/mix-wrapped
+            substituteInPlace $out/bin/mix-wrapped --replace '#!/usr/bin/env elixir' '#!${beamPackages.elixir}/bin/elixir'
             chmod +x $out/bin/mix-wrapped
 
             cat > $out/bin/start-singularity <<'EOF'

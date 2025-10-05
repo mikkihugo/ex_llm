@@ -159,22 +159,41 @@ defmodule Singularity.DomainVocabularyTrainer do
   end
 
   defp extract_code_patterns do
-    # Extract common patterns from your actual code
+    case load_configured_patterns() do
+      {:ok, patterns} -> patterns
+      {:error, _} -> default_patterns()
+    end
+  end
+
+  defp load_configured_patterns do
+    with {:ok, priv_dir} <- priv_dir_path(),
+         path = Path.join([priv_dir, "patterns", "default_patterns.json"]),
+         true <- File.exists?(path),
+         {:ok, contents} <- File.read(path),
+         {:ok, %{"patterns" => patterns}} when is_list(patterns) <- Jason.decode(contents) do
+      {:ok, Enum.uniq(patterns)}
+    else
+      false -> {:error, :enoent}
+      {:error, reason} -> {:error, reason}
+      _ -> {:error, :invalid_format}
+    end
+  end
+
+  defp priv_dir_path do
+    case :code.priv_dir(:singularity) do
+      charlist when is_list(charlist) -> {:ok, List.to_string(charlist)}
+      {:error, _} = error -> error
+    end
+  end
+
+  defp default_patterns do
     [
-      # Elixir patterns
       "def handle_call", "def handle_cast", "def handle_info",
       "use Application", "use Supervisor", "@behaviour",
-
-      # Rust patterns
       "impl From", "impl Display", "#[derive(",
       "pub async fn", "tokio::spawn", ".await?",
-
-      # NATS patterns
       "Gnat.subscribe", "nats.publish", "JetStream",
-      "db.query", "db.insert.codebase_snapshots",
       "knowledge.facts.technology_patterns", "llm.analyze",
-
-      # Your custom patterns
       "RAGCodeGenerator", "CodeSynthesisPipeline",
       "HybridAgent", "PatternIndexer"
     ]
