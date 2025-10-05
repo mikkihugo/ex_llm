@@ -47,7 +47,7 @@ defmodule Singularity.Git.Supervisor do
   end
 
   @doc "Return whether the git coordinator runtime is enabled."
-  def enabled?(config \ load_config([])) do
+  def enabled?(config \\ load_config([])) do
     case Keyword.get(config, :enabled, false) do
       truthy when truthy in [true, "true", "1", 1] -> true
       _ -> false
@@ -55,7 +55,7 @@ defmodule Singularity.Git.Supervisor do
   end
 
   @doc "Resolve repo path with sensible default."
-  def repo_path(config \ load_config([])) do
+  def repo_path(config \\ load_config([])) do
     case Keyword.get(config, :repo_path) do
       nil -> default_repo_path()
       path -> Path.expand(path)

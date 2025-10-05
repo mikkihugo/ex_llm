@@ -104,40 +104,44 @@ defmodule Singularity.FastEmbeddingService do
   """
   def precompute_embeddings do
     Task.Supervisor.start_child(Singularity.TaskSupervisor, fn ->
-      # Get files without embeddings
-      files = Singularity.Repo.all(
-        from cf in "code_files",
-        left_join: e in "embeddings", on: e.path == cf.file_path,
-        where: is_nil(e.id),
-        select: %{path: cf.file_path, content: cf.content, repo: cf.repo_name},
-        limit: 1000
-      )
+      # TODO: Fix - code_files table doesn't exist in migrations
+      # For now, skip precomputation until table is properly created
+      Logger.info("⚠️  Skipping embedding precomputation - code_files table not found")
 
-      # Generate embeddings in batches
-      files
-      |> Enum.map(& &1.content)
-      |> embed_stream()
-      |> Stream.zip(files)
-      |> Stream.chunk_every(100)
-      |> Enum.each(fn batch ->
-        # Bulk insert embeddings
-        rows = Enum.map(batch, fn {embedding, file} ->
-          %{
-            path: file.path,
-            repo_name: file.repo,
-            embedding: embedding,
-            model: @model_id,
-            created_at: DateTime.utc_now()
-          }
-        end)
-
-        Singularity.Repo.insert_all("embeddings", rows,
-          on_conflict: :replace_all,
-          conflict_target: [:path, :repo_name]
-        )
-      end)
-
-      Logger.info("✅ Pre-computed #{length(files)} embeddings")
+      # Original code (commented out until table exists):
+      # files = Singularity.Repo.all(
+      #   from cf in "code_files",
+      #   left_join: e in "embeddings", on: e.path == cf.file_path,
+      #   where: is_nil(e.id),
+      #   select: %{path: cf.file_path, content: cf.content, repo: cf.repo_name},
+      #   limit: 1000
+      # )
+      #
+      # # Generate embeddings in batches
+      # files
+      # |> Enum.map(& &1.content)
+      # |> embed_stream()
+      # |> Stream.zip(files)
+      # |> Stream.chunk_every(100)
+      # |> Enum.each(fn batch ->
+      #   # Bulk insert embeddings
+      #   rows = Enum.map(batch, fn {embedding, file} ->
+      #     %{
+      #       path: file.path,
+      #       repo_name: file.repo,
+      #       embedding: embedding,
+      #       model: @model_id,
+      #       created_at: DateTime.utc_now()
+      #     }
+      #   end)
+      #
+      #   Singularity.Repo.insert_all("embeddings", rows,
+      #     on_conflict: :replace_all,
+      #     conflict_target: [:path, :repo_name]
+      #   )
+      # end)
+      #
+      # Logger.info("✅ Pre-computed #{length(files)} embeddings")
     end)
   end
 end

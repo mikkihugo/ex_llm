@@ -97,6 +97,8 @@ defmodule Singularity.MixProject do
       {:delta_crdt, "~> 0.6"},
       # Event bus for coordinators
       {:phoenix_pubsub, "~> 2.1"},
+      # NATS messaging
+      {:gnat, "~> 1.8"},
 
       # Monitoring & Telemetry
       {:telemetry, "~> 1.2"},

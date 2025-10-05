@@ -117,6 +117,55 @@ defmodule Singularity.SPARC.Coordinator do
 
   # Private Functions
 
+  defp execute_phase_internal(phase, context, _state) do
+    Logger.info("Executing SPARC phase: #{phase}")
+
+    # Load phase-specific templates
+    templates = TechnologyTemplateLoader.templates_for_phase(phase)
+
+    # Gather RAG context for this phase
+    rag_context = RAGCodeGenerator.gather_context(context.task, phase: phase)
+
+    # Generate phase output using templates + RAG
+    phase_context = Map.merge(context, %{
+      phase: phase,
+      templates: templates,
+      rag_context: rag_context
+    })
+
+    case generate_phase_output(phase, phase_context) do
+      {:ok, output} ->
+        # Validate quality
+        case validate_phase_output(phase, output) do
+          :ok ->
+            # Update context with phase results
+            updated_artifacts = Map.put(context.artifacts || %{}, phase, output)
+            updated_context = Map.merge(context, %{
+              artifacts: updated_artifacts,
+              "#{phase}_completed_at" => DateTime.utc_now()
+            })
+            {:ok, updated_context}
+
+          {:error, validation_errors} ->
+            {:error, "Phase #{phase} validation failed: #{inspect(validation_errors)}"}
+        end
+
+      {:error, reason} ->
+        {:error, "Phase #{phase} generation failed: #{reason}"}
+    end
+  end
+
+  defp generate_phase_output(phase, context) do
+    # This would integrate with LLM providers to generate phase-specific output
+    # For now, return a placeholder
+    {:ok, "Phase #{phase} output for task: #{context.task}"}
+  end
+
+  defp validate_phase_output(_phase, _output) do
+    # Quality validation logic would go here
+    :ok
+  end
+
   defp start_phase_coordinators do
     %{
       specification: start_coordinator(SpecificationCoordinator),

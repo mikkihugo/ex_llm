@@ -187,56 +187,6 @@ interface ModelCatalogEntry {
 
 const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
   {
-    id: 'google-jules',
-    upstreamId: 'jules-v1',
-    provider: 'google-jules' as const,
-    displayName: 'Google Jules (Coding Agent)',
-    description: 'Google Jules - Autonomous AI coding agent for complex tasks',
-    ownedBy: 'google',
-    contextWindow: 256000, // 256K context
-    capabilities: { completion: true, streaming: true, reasoning: true, vision: false, tools: true },
-  },
-  {
-    id: 'gemini-2.5-flash',
-    upstreamId: 'gemini-2.5-flash',
-    provider: 'gemini-code' as const,
-    displayName: 'Gemini Code 2.5 Flash (HTTP)',
-    description: 'Gemini Flash via HTTP API (primary, faster)',
-    ownedBy: 'google',
-    contextWindow: 2097152,  // 2M tokens
-    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: true },
-  },
-  {
-    id: 'gemini-2.5-flash-cli',
-    upstreamId: 'gemini-2.5-flash',
-    provider: 'gemini-code-cli' as const,
-    displayName: 'Gemini Code 2.5 Flash (CLI)',
-    description: 'Gemini Flash via CLI (fallback)',
-    ownedBy: 'google',
-    contextWindow: 2097152,
-    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: false },  // CLI doesn't support tools
-  },
-  {
-    id: 'gemini-2.5-pro',
-    upstreamId: 'gemini-2.5-pro',
-    provider: 'gemini-code' as const,
-    displayName: 'Gemini Code 2.5 Pro (HTTP)',
-    description: 'Gemini Pro via HTTP API (primary, faster)',
-    ownedBy: 'google',
-    contextWindow: 2097152,
-    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: true },
-  },
-  {
-    id: 'gemini-2.5-pro-cli',
-    upstreamId: 'gemini-2.5-pro',
-    provider: 'gemini-code-cli' as const,
-    displayName: 'Gemini Code 2.5 Pro (CLI)',
-    description: 'Gemini Pro via CLI (fallback)',
-    ownedBy: 'google',
-    contextWindow: 2097152,
-    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: false },  // CLI doesn't support tools
-  },
-  {
     id: 'claude-sonnet-4.5',
     upstreamId: 'sonnet',
     provider: 'claude-code-cli' as const,
@@ -365,6 +315,57 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     ownedBy: 'openai',
     contextWindow: 128000,
     capabilities: { completion: true, streaming: false, reasoning: true, vision: false, tools: true },
+  },
+  // Gemini models (lowest priority)
+  {
+    id: 'google-jules',
+    upstreamId: 'jules-v1',
+    provider: 'google-jules' as const,
+    displayName: 'Google Jules (Coding Agent)',
+    description: 'Google Jules - Autonomous AI coding agent for complex tasks',
+    ownedBy: 'google',
+    contextWindow: 256000, // 256K context
+    capabilities: { completion: true, streaming: true, reasoning: true, vision: false, tools: true },
+  },
+  {
+    id: 'gemini-2.5-flash',
+    upstreamId: 'gemini-2.5-flash',
+    provider: 'gemini-code' as const,
+    displayName: 'Gemini Code 2.5 Flash (HTTP)',
+    description: 'Gemini Flash via HTTP API (primary, faster)',
+    ownedBy: 'google',
+    contextWindow: 2097152,  // 2M tokens
+    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: true },
+  },
+  {
+    id: 'gemini-2.5-flash-cli',
+    upstreamId: 'gemini-2.5-flash',
+    provider: 'gemini-code-cli' as const,
+    displayName: 'Gemini Code 2.5 Flash (CLI)',
+    description: 'Gemini Flash via CLI (fallback)',
+    ownedBy: 'google',
+    contextWindow: 2097152,
+    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: false },  // CLI doesn't support tools
+  },
+  {
+    id: 'gemini-2.5-pro',
+    upstreamId: 'gemini-2.5-pro',
+    provider: 'gemini-code' as const,
+    displayName: 'Gemini Code 2.5 Pro (HTTP)',
+    description: 'Gemini Pro via HTTP API (primary, faster)',
+    ownedBy: 'google',
+    contextWindow: 2097152,
+    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: true },
+  },
+  {
+    id: 'gemini-2.5-pro-cli',
+    upstreamId: 'gemini-2.5-pro',
+    provider: 'gemini-code-cli' as const,
+    displayName: 'Gemini Code 2.5 Pro (CLI)',
+    description: 'Gemini Pro via CLI (fallback)',
+    ownedBy: 'google',
+    contextWindow: 2097152,
+    capabilities: { completion: true, streaming: false, reasoning: false, vision: false, tools: false },  // CLI doesn't support tools
   },
 ];
 

@@ -55,7 +55,8 @@ defmodule Singularity.Application do
         Singularity.ExecutionCoordinator,
 
         # NATS Orchestrator (connects AI Server to ExecutionCoordinator)
-        Singularity.NatsOrchestrator,
+        # TODO: Fix NatsOrchestrator to work with latest HybridAgent API
+        # Singularity.NatsOrchestrator,
 
         # Auto-warmup (must be last to ensure all services are ready)
         Singularity.StartupWarmup,

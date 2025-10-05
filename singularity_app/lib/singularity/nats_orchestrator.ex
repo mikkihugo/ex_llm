@@ -96,7 +96,12 @@ defmodule Singularity.NatsOrchestrator do
           # Execute through HybridAgent with template
           start_time = System.monotonic_time(:millisecond)
 
-          result = HybridAgent.execute(%{
+          # Start a HybridAgent if needed
+          agent_id = "orchestrator_agent_#{:erlang.unique_integer()}"
+          {:ok, _pid} = HybridAgent.start_link(id: agent_id, specialization: :general)
+
+          # Process the task
+          result = HybridAgent.process_task(agent_id, %{
             prompt: request["task"],
             context: request["context"] || %{},
             template: template,
@@ -112,15 +117,18 @@ defmodule Singularity.NatsOrchestrator do
             model: result.model_used
           })
 
+          # Extract response based on HybridAgent response format
+          {response_type, response_content, metadata} = result
+
           response = %{
-            result: result.response,
+            result: extract_response_text(response_content),
             template_used: template.id,
-            model_used: result.model_used,
+            model_used: metadata[:model] || "rules",
             metrics: %{
               time_ms: elapsed_ms,
-              tokens_used: result.tokens_used || 0,
-              cost_usd: calculate_cost(result.model_used, result.tokens_used),
-              cache_hit: false
+              tokens_used: metadata[:tokens] || 0,
+              cost_usd: metadata[:cost] || 0.0,
+              cache_hit: response_type == :cached
             }
           }
 
@@ -166,6 +174,12 @@ defmodule Singularity.NatsOrchestrator do
     |> Base.encode64(padding: false)
     |> String.slice(0..16)
   end
+
+  defp extract_response_text(response) when is_binary(response), do: response
+  defp extract_response_text(%{text: text}), do: text
+  defp extract_response_text(%{content: content}), do: content
+  defp extract_response_text(%{response: response}), do: response
+  defp extract_response_text(response), do: inspect(response)
 
   defp calculate_cost(model, tokens) do
     # Cost per 1M tokens (actual models from ai-server)
