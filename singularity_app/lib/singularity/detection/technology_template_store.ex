@@ -7,26 +7,13 @@ defmodule Singularity.TechnologyTemplateStore do
   JSONB constraints.
   """
 
-  use Ecto.Schema
   import Ecto.{Changeset, Query}
 
-  alias __MODULE__.Template
+  alias Singularity.Schemas.TechnologyTemplate, as: Template
   alias Singularity.{Repo, TechnologyTemplateLoader}
 
   @type identifier :: atom() | String.t() | [atom() | String.t()] | {atom(), atom()}
   @type template_map :: map()
-
-  schema "technology_templates" do
-    field :identifier, :string
-    field :category, :string
-    field :version, :string
-    field :source, :string, default: "manual"
-    field :template, :map
-    field :metadata, :map, default: %{}
-    field :checksum, :string
-
-    timestamps(type: :utc_datetime_usec)
-  end
 
   @doc """
   Fetch a technology template from the database for the given identifier.

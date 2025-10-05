@@ -45,7 +45,7 @@ defmodule Singularity.Interfaces.MCP do
 end
 
 defimpl Singularity.Interfaces.Protocol, for: Singularity.Interfaces.MCP do
-  alias Singularity.Tools.Runner
+  alias Singularity.Tools.{Runner, ToolCall}
 
   @doc """
   Execute a tool call via MCP interface.

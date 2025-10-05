@@ -46,7 +46,7 @@ defmodule Singularity.Interfaces.NATS do
 end
 
 defimpl Singularity.Interfaces.Protocol, for: Singularity.Interfaces.NATS do
-  alias Singularity.Tools.Runner
+  alias Singularity.Tools.{Runner, ToolCall}
 
   @doc """
   Execute a tool call via NATS interface.

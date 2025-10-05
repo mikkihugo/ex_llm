@@ -78,7 +78,7 @@ defmodule Singularity.PackageRegistryKnowledge do
       end
 
     # Add vector similarity ordering
-    from t in query,
+    from(t in query,
       select: %{
         id: t.id,
         package_name: t.package_name,
@@ -95,8 +95,8 @@ defmodule Singularity.PackageRegistryKnowledge do
         keywords: t.keywords,
         similarity_score: fragment("1 - (? <-> ?)", t.semantic_embedding, ^query_embedding)
       },
-      order_by: fragment("? <-> ?", t.semantic_embedding, ^query_embedding),
-      limit: ^limit
+      order_by: fragment("? <-> ?", t.semantic_embedding, ^query_embedding))
+    |> limit(^limit)
     |> Repo.all()
   end
 
@@ -107,10 +107,10 @@ defmodule Singularity.PackageRegistryKnowledge do
     ecosystem = Keyword.get(opts, :ecosystem)
 
     query =
-      from t in PackageRegistryKnowledge,
+      from(t in PackageRegistryKnowledge,
         where: t.package_name == ^package_name,
-        order_by: [desc: t.last_release_date],
-        limit: 1
+        order_by: [desc: t.last_release_date])
+      |> limit(1)
 
     query =
       if ecosystem do
@@ -149,7 +149,7 @@ defmodule Singularity.PackageRegistryKnowledge do
       []
     else
       # Find similar tools in target ecosystem
-      from t in PackageRegistryKnowledge,
+      from(t in PackageRegistryKnowledge,
         where: t.ecosystem == ^to_ecosystem,
         where: t.package_name != ^package_name,
         where: not is_nil(t.semantic_embedding),
@@ -162,8 +162,8 @@ defmodule Singularity.PackageRegistryKnowledge do
           github_stars: t.github_stars,
           similarity_score: fragment("1 - (? <-> ?)", t.semantic_embedding, ^source_tool.semantic_embedding)
         },
-        order_by: fragment("? <-> ?", t.semantic_embedding, ^source_tool.semantic_embedding),
-        limit: ^limit
+        order_by: fragment("? <-> ?", t.semantic_embedding, ^source_tool.semantic_embedding))
+      |> limit(^limit)
       |> Repo.all()
     end
   end
@@ -174,10 +174,10 @@ defmodule Singularity.PackageRegistryKnowledge do
   def get_examples(tool_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 10)
 
-    from e in PackageCodeExample,
+    from(e in PackageCodeExample,
       where: e.tool_id == ^tool_id,
-      order_by: [asc: e.example_order],
-      limit: ^limit
+      order_by: [asc: e.example_order])
+    |> limit(^limit)
     |> Repo.all()
   end
 
@@ -215,7 +215,7 @@ defmodule Singularity.PackageRegistryKnowledge do
       end
 
     # Add vector similarity ordering
-    from [e, t] in query,
+    from([e, t] in query,
       select: %{
         example_id: e.id,
         package_name: t.package_name,
@@ -227,8 +227,8 @@ defmodule Singularity.PackageRegistryKnowledge do
         explanation: e.explanation,
         similarity_score: fragment("1 - (? <-> ?)", e.code_embedding, ^query_embedding)
       },
-      order_by: fragment("? <-> ?", e.code_embedding, ^query_embedding),
-      limit: ^limit
+      order_by: fragment("? <-> ?", e.code_embedding, ^query_embedding))
+    |> limit(^limit)
     |> Repo.all()
   end
 
@@ -249,7 +249,7 @@ defmodule Singularity.PackageRegistryKnowledge do
         query
       end
 
-    from p in query, order_by: [asc: :id]
+    from(p in query, order_by: [asc: :id])
     |> Repo.all()
   end
 
@@ -287,7 +287,7 @@ defmodule Singularity.PackageRegistryKnowledge do
       end
 
     # Add vector similarity ordering
-    from [p, t] in query,
+    from([p, t] in query,
       select: %{
         pattern_id: p.id,
         package_name: t.package_name,
@@ -299,8 +299,8 @@ defmodule Singularity.PackageRegistryKnowledge do
         code_example: p.code_example,
         similarity_score: fragment("1 - (? <-> ?)", p.pattern_embedding, ^query_embedding)
       },
-      order_by: fragment("? <-> ?", p.pattern_embedding, ^query_embedding),
-      limit: ^limit
+      order_by: fragment("? <-> ?", p.pattern_embedding, ^query_embedding))
+    |> limit(^limit)
     |> Repo.all()
   end
 
@@ -321,7 +321,7 @@ defmodule Singularity.PackageRegistryKnowledge do
         query
       end
 
-    from d in query, order_by: [asc: :dependency_name]
+    from(d in query, order_by: [asc: :dependency_name])
     |> Repo.all()
   end
 
@@ -332,10 +332,10 @@ defmodule Singularity.PackageRegistryKnowledge do
     limit = Keyword.get(opts, :limit, 20)
     sort_by = Keyword.get(opts, :sort_by, :github_stars) # or :download_count
 
-    from t in PackageRegistryKnowledge,
+    from(t in PackageRegistryKnowledge,
       where: t.ecosystem == ^ecosystem,
-      order_by: [desc: field(t, ^sort_by)],
-      limit: ^limit
+      order_by: [desc: field(t, ^sort_by)])
+    |> limit(^limit)
     |> Repo.all()
   end
 
@@ -348,11 +348,11 @@ defmodule Singularity.PackageRegistryKnowledge do
 
     cutoff_date = DateTime.utc_now() |> DateTime.add(-days * 24 * 60 * 60, :second)
 
-    from t in PackageRegistryKnowledge,
+    from(t in PackageRegistryKnowledge,
       where: t.ecosystem == ^ecosystem,
       where: t.last_release_date >= ^cutoff_date,
-      order_by: [desc: t.last_release_date],
-      limit: ^limit
+      order_by: [desc: t.last_release_date])
+    |> limit(^limit)
     |> Repo.all()
   end
 
