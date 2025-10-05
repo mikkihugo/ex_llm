@@ -1,4 +1,4 @@
-name: Claude Code PR Review (Simplified)
+name: Claude Code PR Review
 
 on:
   issue_comment:
@@ -17,15 +17,26 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout PR
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
 
-      - name: Install dependencies
+      - name: Test CI environment
         run: |
-          bun install
+          nix develop .#ci --command bash -c "
+            echo '=== CI Environment Check ==='
+            echo 'Elixir:' && elixir --version | head -1
+            echo 'Gleam:' && gleam --version
+            echo 'Bun:' && bun --version
+            echo 'Rust:' && rustc --version
+            echo 'No CUDA (as expected for CI)'
+          "
 
       - name: Run Claude Code Review
         env:
@@ -34,57 +45,52 @@ jobs:
           PR_NUMBER: ${{ github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          # Get PR details
-          PR_DIFF=$(gh pr diff $PR_NUMBER)
-          PR_TITLE=$(gh pr view $PR_NUMBER --json title -q .title)
-          PR_BODY=$(gh pr view $PR_NUMBER --json body -q .body)
+          nix develop .#ci --command bash -c '
+            # Get PR details
+            PR_DIFF=$(gh pr diff $PR_NUMBER)
+            PR_TITLE=$(gh pr view $PR_NUMBER --json title -q .title)
+            PR_BODY=$(gh pr view $PR_NUMBER --json body -q .body)
 
-          # Extract task from comment (remove @claude trigger)
-          TASK=$(echo "$COMMENT_BODY" | sed 's/@claude //g' | sed 's/@claude$//g')
-          if [ -z "$TASK" ] || [ "$TASK" = "$COMMENT_BODY" ]; then
-            TASK="Review this PR for code quality, architectural issues, and suggest improvements."
-          fi
+            # Extract task from comment (remove @claude trigger)
+            TASK=$(echo "$COMMENT_BODY" | sed "s/@claude //g" | sed "s/@claude$//g")
+            if [ -z "$TASK" ] || [ "$TASK" = "$COMMENT_BODY" ]; then
+              TASK="Review this PR for code quality, architectural issues, and suggest improvements."
+            fi
 
-          # Create review request
-          cat > /tmp/review_request.md <<'EOF'
+            # Create review request
+            cat > /tmp/review_request.md <<EOF
 # PR Review Request
 
-**PR #${PR_NUMBER}: ${PR_TITLE}**
+**PR #$PR_NUMBER: $PR_TITLE**
 
 ## Description
-${PR_BODY}
+$PR_BODY
 
 ## Task
-${TASK}
+$TASK
 
 ## Changes
-```diff
-${PR_DIFF}
-```
+\`\`\`diff
+$PR_DIFF
+\`\`\`
 
 Please provide:
-1. Code quality assessment
+1. Code quality assessment (Elixir, Gleam, Rust, TypeScript)
 2. Architectural concerns
 3. Specific code changes needed (if any)
 4. Approval status (APPROVE / REQUEST_CHANGES / COMMENT)
 EOF
 
-          # Expand variables
-          eval "cat <<EVAL_EOF
-          $(cat /tmp/review_request.md)
-EVAL_EOF
-" > /tmp/review_final.md
+            # Run Claude Code review
+            export CLAUDE_API_KEY="$CLAUDE_CODE_OAUTH_TOKEN"
 
-          # Run Claude Code review
-          export CLAUDE_API_KEY="$CLAUDE_CODE_OAUTH_TOKEN"
-
-          REVIEW_OUTPUT=$(bun run tools/claude-ai.ts "$(cat <<EOJSON
+            REVIEW_OUTPUT=$(bun run tools/claude-ai.ts "$(cat <<EOJSON
 {
   "model": "sonnet",
   "messages": [
     {
       "role": "user",
-      "content": $(cat /tmp/review_final.md | jq -Rs .)
+      "content": $(cat /tmp/review_request.md | jq -Rs .)
     }
   ],
   "temperature": 0.3
@@ -92,7 +98,8 @@ EVAL_EOF
 EOJSON
 )" | jq -r .text)
 
-          # Post review as comment
-          gh pr comment $PR_NUMBER --body "$REVIEW_OUTPUT"
+            # Post review as comment
+            gh pr comment $PR_NUMBER --body "$REVIEW_OUTPUT"
 
-          echo "✅ Review posted to PR #$PR_NUMBER"
+            echo "✅ Review posted to PR #$PR_NUMBER"
+          '
