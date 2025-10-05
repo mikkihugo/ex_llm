@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tree_sitter::{Node, Parser as TsParser};
-use tree_sitter_typescript::{LANGUAGE_TSX, LANGUAGE_TYPESCRIPT};
+use tree_sitter_typescript::{language_tsx, language_typescript};
 
 use crate::{
   dependencies::UniversalDependencies,
@@ -194,7 +194,7 @@ impl TypeScriptParser {
 
 fn parse_tree(content: &str) -> Option<tree_sitter::Tree> {
   let mut parser = TsParser::new();
-  let language = LANGUAGE_TYPESCRIPT.into();
+  let language = language_typescript();
   if parser.set_language(&language).is_ok() {
     if let Some(tree) = parser.parse(content, None) {
       return Some(tree);
@@ -202,7 +202,7 @@ fn parse_tree(content: &str) -> Option<tree_sitter::Tree> {
   }
 
   let mut parser = TsParser::new();
-  let tsx_language = LANGUAGE_TSX.into();
+  let tsx_language = language_tsx();
   if parser.set_language(&tsx_language).is_ok() {
     return parser.parse(content, None);
   }

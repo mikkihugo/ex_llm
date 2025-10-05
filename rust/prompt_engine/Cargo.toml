@@ -32,6 +32,9 @@ dirs = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }
 once_cell = "1.19"
 
+# Use templates provided by tool-doc-index instead of embedding files
+tool_doc_index = { path = "../tool_doc_index", package = "tool-doc-index" }
+
 # Optional ML dependencies (behind feature flag)
 # Only Candle is used for neural networks - ndarray/smartcore removed to keep it lightweight
 candle-core = { version = "0.8", optional = true }

@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tree_sitter::{Node, Parser as TsParser};
-use tree_sitter_javascript::LANGUAGE as JAVASCRIPT_LANGUAGE;
+use tree_sitter_javascript::language as javascript_language;
 
 use crate::{
   dependencies::UniversalDependencies,
@@ -142,7 +142,7 @@ impl JavaScriptParser {
 
 fn parse_tree(content: &str) -> Option<tree_sitter::Tree> {
   let mut parser = TsParser::new();
-  let language = JAVASCRIPT_LANGUAGE.into();
+  let language = javascript_language();
   if parser.set_language(&language).is_err() {
     return None;
   }

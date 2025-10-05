@@ -18,6 +18,12 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
+      - name: Runner debug info
+        run: |
+          set -x
+          uname -a
+          cat /etc/os-release || true
+          env | sort | sed -e 's/\(GITHUB_TOKEN\|CACHIX_AUTH_TOKEN\)=.*/\1=***REDACTED***/'
       - name: Install Nix
         uses: cachix/install-nix-action@a809471b5c7c913aa67bec8f459a11a0decc3fce # v31 tag
         with:
@@ -30,6 +36,16 @@ jobs:
         with:
           name: mikkihugo
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Nix/Cachix diagnostics
+        run: |
+          set -x
+          which nix
+          nix --version
+          nix registry list || true
+          echo "NIX_CONFIG:$NIX_CONFIG" | sed 's/\(CACHIX_AUTH_TOKEN\)=.*/\1=***REDACTED***/'
+          test -f /etc/nix/nix.conf && sed 's/token = .*/token = ***REDACTED***/' /etc/nix/nix.conf || true
+          nix doctor || true
 
       - name: Show toolchain versions (OTP via flake)
         run: |

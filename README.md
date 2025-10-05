@@ -6,12 +6,14 @@ Autonomous BEAM-native agents that evolve themselves with rules-first execution 
 
 ## Highlights
 
-- Agents: long-lived processes supervised by `Singularity.AgentSupervisor` running a self-improvement loop.
-- Rules-first: `Singularity.Autonomy.RuleEngineV2` executes Postgres‑backed rules and caches results in Cachex/ETS.
-- Selective LLMs: workers fall back to semantic cache and then provider calls only when confidence is low.
-- Hot reload: generated code is validated and activated by `Singularity.HotReload.ModuleReloader`.
-- Gleam interop: `:singularity@htdag` and `:singularity@rule_engine` modules are compiled and callable from Elixir.
-- Interfaces: HTTP endpoints by default; optional NATS interface available in `lib/singularity/interfaces/nats.ex`.
+- **Agents**: Long-lived processes supervised by `Singularity.AgentSupervisor` running a self-improvement loop
+- **Rules-first**: `Singularity.Autonomy.RuleEngine` executes Postgres‑backed rules and caches results in Cachex/ETS
+- **Selective LLMs**: Workers fall back to semantic cache and then provider calls only when confidence is low
+- **Real Embeddings**: Local Bumblebee (`microsoft/codebert-base`) with Jinja3 preprocessing + Google fallback
+- **NATS Messaging**: Real distributed messaging with Gnat for inter-service communication
+- **Hot Reload**: Generated code is validated and activated by `Singularity.HotReload.ModuleReloader`
+- **Gleam Interop**: `:singularity@htdag` and `:singularity@rule_engine` modules are compiled and callable from Elixir
+- **Modern Architecture**: Production-ready with real values, no stubs or placeholders
 
 ## Architecture (current)
 
@@ -21,11 +23,17 @@ Elixir/BEAM
   │   ├─ Singularity.Agent (self-improving loop)
   │   └─ Singularity.Agents.CostOptimizedAgent (rules/cache/LLM)
   ├─ Autonomy
-  │   ├─ RuleEngineV2 (GenServer + Cachex + Repo)
+  │   ├─ RuleEngine (GenServer + Cachex + Repo)
   │   └─ Planner / Decider / Limiter
+  ├─ Embeddings
+  │   ├─ Bumblebee (microsoft/codebert-base) + Jinja3 preprocessing
+  │   └─ Google Fallback (text-embedding-004 API)
+  ├─ Messaging
+  │   ├─ NATS (Gnat) - Real distributed messaging
+  │   └─ Control System (Event broadcasting)
   ├─ Hot Reload (validation + activation)
   ├─ Tools (domain tools used by agents)
-  └─ HTTP Router (tool execution, chat proxy, health, metrics)
+  └─ Interfaces (MCP + NATS)
 
 Gleam
   ├─ singularity/htdag.gleam

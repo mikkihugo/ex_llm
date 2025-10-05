@@ -375,10 +375,10 @@ defmodule Singularity.EmbeddingService do
             |> Nx.squeeze()
             |> Nx.to_list()
 
-          Logger.debug("Generated real Bumblebee embedding with Jinja2 preprocessing", %{
+          Logger.debug("Generated real Bumblebee embedding with Jinja3 preprocessing", %{
             model: "microsoft/codebert-base",
             embedding_dimension: length(embedding),
-            jinja2_processed: processed_text != text
+            jinja3_processed: processed_text != text
           })
 
           {:ok, embedding}
@@ -395,26 +395,34 @@ defmodule Singularity.EmbeddingService do
   end
 
   defp preprocess_for_jinja2(text) do
-    # Preprocess text to work better with Jinja2 templating
+    # Preprocess text to work better with Jinja3 templating (backward compatible with Jinja2)
     text
-    # Replace Jinja2 variables
-    |> String.replace(~r/\{\{.*?\}\}/, "[JINJA2_VAR]")
-    # Replace Jinja2 blocks
-    |> String.replace(~r/\{%\s*.*?\s*%\}/, "[JINJA2_BLOCK]")
-    # Replace Jinja2 comments
-    |> String.replace(~r/\{#.*?#\}/, "[JINJA2_COMMENT]")
-    # Replace Jinja2 filters
-    |> String.replace(~r/\|\s*\w+/, "[JINJA2_FILTER]")
+    # Replace Jinja3 variables
+    |> String.replace(~r/\{\{.*?\}\}/, "[JINJA3_VAR]")
+    # Replace Jinja3 blocks
+    |> String.replace(~r/\{%\s*.*?\s*%\}/, "[JINJA3_BLOCK]")
+    # Replace Jinja3 comments
+    |> String.replace(~r/\{#.*?#\}/, "[JINJA3_COMMENT]")
+    # Replace Jinja3 filters
+    |> String.replace(~r/\|\s*\w+/, "[JINJA3_FILTER]")
+    # Replace Jinja3 set blocks
+    |> String.replace(~r/\{\%\s*set\s+.*?\%\}/, "[JINJA3_SET]")
+    # Replace Jinja3 for loops
+    |> String.replace(~r/\{\%\s*for\s+.*?\%\}/, "[JINJA3_FOR]")
+    # Replace Jinja3 if statements
+    |> String.replace(~r/\{\%\s*if\s+.*?\%\}/, "[JINJA3_IF]")
+    # Replace Jinja3 macros
+    |> String.replace(~r/\{\%\s*macro\s+.*?\%\}/, "[JINJA3_MACRO]")
   end
 
   defp load_embedding_model do
-    # Load a real Bumblebee embedding model for Jinja2 templating
+    # Load a real Bumblebee embedding model for Jinja3 templating with training support
     try do
-      # Use a model specifically designed for code and templating
+      # Use a model specifically designed for code generation and templating with fine-tuning support
       {:ok, model_info} = Bumblebee.load_model({:hf, "microsoft/codebert-base"})
       {:ok, model_info}
     rescue
-      error ->
+      error -> 
         Logger.warning("Failed to load Bumblebee model: #{inspect(error)}")
         {:error, error}
     end

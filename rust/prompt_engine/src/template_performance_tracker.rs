@@ -90,7 +90,8 @@ impl TemplatePerformanceTracker {
         let mut data = self.performance_data.write().unwrap();
         let key = (template_id.clone(), task_type, language);
 
-        let metrics = data.entry(key).or_insert_with(|| TemplateMetrics {
+        // Avoid moving `key` into the entry; clone for use inside the closure
+        let metrics = data.entry(key.clone()).or_insert_with(|| TemplateMetrics {
             template_id,
             task_type: key.1.clone(),
             language: key.2.clone(),
@@ -264,15 +265,12 @@ impl TemplatePerformanceTracker {
 }
 
 impl SparcTemplateGenerator {
-    /// Get template by ID (stub for integration)
+    /// Resolve SPARC template via tool_doc_index registry (generated + DB-backed)
     pub fn get_template(&self, template_id: &str) -> Option<String> {
-        match template_id {
-            "sparc_specification" => Some(include_str!("../templates/sparc/specification.prompt").to_string()),
-            "sparc_pseudocode" => Some(include_str!("../templates/sparc/pseudocode.prompt").to_string()),
-            "sparc_architecture" => Some(include_str!("../templates/sparc/architecture.prompt").to_string()),
-            "sparc_refinement" => Some(include_str!("../templates/sparc/refinement.prompt").to_string()),
-            "sparc_completion" => Some(include_str!("../templates/sparc/completion.prompt").to_string()),
-            _ => None,
-        }
+        // Use tool_doc_index's registry which loads generated AI templates
+        let registry = tool_doc_index::RegistryTemplate::new();
+        registry
+            .get(template_id)
+            .and_then(|t| t.template_content.clone())
     }
 }

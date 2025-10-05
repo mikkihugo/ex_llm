@@ -1,4 +1,4 @@
-defmodule Singularity.Autonomy.RuleEngineV2 do
+defmodule Singularity.Autonomy.RuleEngine do
   @moduledoc """
   OTP-native Rule Engine with Postgres-backed rules.
 
