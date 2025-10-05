@@ -6,7 +6,8 @@ defmodule Singularity.TechnologyDetector do
   """
 
   require Logger
-  alias Singularity.{PolyglotCodeParser, TechnologyTemplateLoader}
+  alias Singularity.{PolyglotCodeParser, TechnologyTemplateLoader, Repo}
+  alias Singularity.Schemas.CodebaseSnapshot
 
   @rust_detector_path "rust/target/release/tool-doc-index"
 
@@ -139,24 +140,19 @@ defmodule Singularity.TechnologyDetector do
 
   defp maybe_persist_snapshot(%{codebase_id: codebase_id} = snapshot, opts) do
     if Keyword.get(opts, :persist_snapshot, true) do
-      # Publish to NATS instead of direct DB write
-      payload = snapshot
-        |> Map.take([:codebase_id, :snapshot_id, :metadata, :summary, :detected_technologies, :features])
-        |> Jason.encode!()
+      # Insert directly using Ecto instead of NATS
+      attrs = Map.take(snapshot, [:codebase_id, :snapshot_id, :metadata, :summary, :detected_technologies, :features])
 
-      subject = "db.insert.codebase_snapshots"
-
-      case Singularity.PlatformIntegration.NatsConnector.publish(subject, payload) do
-        :ok ->
-          Logger.debug("Published technology snapshot to NATS",
-            subject: subject,
+      case CodebaseSnapshot.upsert(Repo, attrs) do
+        {:ok, _snapshot} ->
+          Logger.debug("Persisted technology snapshot to database",
             codebase_id: codebase_id
           )
           :ok
-        {:error, reason} ->
-          Logger.warn("Failed to publish snapshot to NATS",
+        {:error, changeset} ->
+          Logger.warn("Failed to persist snapshot to database",
             codebase_id: codebase_id,
-            reason: inspect(reason)
+            errors: inspect(changeset.errors)
           )
       end
     end

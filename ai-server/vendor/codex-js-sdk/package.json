@@ -1,0 +1,51 @@
+{
+    "version": "1.0.3-sg",
+    "name": "codex-js-sdk",
+    "repository": "https://github.com/kachurun/codex-js-sdk",
+    "author": "Maksim Kachurin",
+    "license": "MIT",
+    "description": "Codex JS SDK",
+    "type": "module",
+    "module": "dist/esm/index.js",
+    "types": "dist/esm/index.d.ts",
+    "main": "dist/esm/index.js",
+
+    "exports": {
+        ".": {
+            "types": "./dist/esm/index.d.ts",
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+        },
+        "./types": {
+            "types": "./dist/esm/types.d.ts",
+            "import": "./dist/esm/types.js",
+            "require": "./dist/cjs/types.js"
+        }
+    },
+    "devDependencies": {
+        "@flexbe/eslint-config": "^1.0.11",
+        "@types/node": "^22.15.31"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "scripts": {
+        "build": "tsc && tsc -p tsconfig.cjs.json",
+        "prepublishOnly": "npm run build",
+        "test": "tsx example/test.ts",
+        "build:cjs": "tsc -p tsconfig.cjs.json"
+    },
+    "dependencies": {
+        "@openai/codex": "^0.44.0",
+        "@types/uuid": "^10.0.0",
+        "dotenv": "^16.5.0",
+        "uuid": "^11.1.0",
+        "winston": "^3.17.0"
+    },
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "access": "public"
+    }
+}

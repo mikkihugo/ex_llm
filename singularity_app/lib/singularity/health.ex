@@ -3,7 +3,7 @@ defmodule Singularity.Health do
 
   defstruct [:http_status, :body]
 
-  alias Singularity.HotReload.Manager
+  alias Singularity.HotReload.ModuleReloader
 
   @max_queue_depth 100
   @queue_warning_threshold 75

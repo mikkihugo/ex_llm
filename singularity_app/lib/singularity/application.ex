@@ -76,7 +76,7 @@ defmodule Singularity.Application do
 
         # Agents
         Singularity.AgentSupervisor,
-        Singularity.HotReload.Manager,
+        Singularity.HotReload.ModuleReloader,
 
         # HTTP Server
         bandit_child

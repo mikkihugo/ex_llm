@@ -46,6 +46,8 @@ defmodule Singularity.DomainVocabularyTrainer do
 
   require Logger
   alias Singularity.Repo
+  alias Singularity.Schemas.TechnologyPattern
+  import Ecto.Query
 
   @doc """
   Extract ALL custom keywords from your templates & codebase
@@ -119,80 +121,40 @@ defmodule Singularity.DomainVocabularyTrainer do
 
   defp extract_template_variables do
     # Find all {{VARIABLE}} patterns in templates
-    query = """
-    SELECT DISTINCT
-      regexp_matches(content, '{{([A-Z_]+)}}', 'g') as matches
-    FROM (
-      SELECT content FROM code_files
-      WHERE file_path LIKE '%.json'
-        AND file_path LIKE '%template%'
-    ) t
-    WHERE content LIKE '%{{%'
-    """
-
-    case Repo.query(query) do
-      {:ok, %{rows: rows}} ->
-        rows
-        |> List.flatten()
-        |> Enum.uniq()
-        |> Enum.map(fn var -> "{{#{var}}}" end)
-
-      _ ->
-        # Fallback to common ones
-        ["{{MODULE_NAME}}", "{{SUBJECT}}", "{{MESSAGE_TYPE}}",
-         "{{TASK_NAME}}", "{{REPO_NAME}}", "{{LANGUAGE}}"]
-    end
+    # Note: This would query code_files table which may not exist yet
+    # For now, return common template variables used in the system
+    ["{{MODULE_NAME}}", "{{SUBJECT}}", "{{MESSAGE_TYPE}}",
+     "{{TASK_NAME}}", "{{REPO_NAME}}", "{{LANGUAGE}}",
+     "{{FRAMEWORK}}", "{{CODEBASE_PATH}}", "{{TECHNOLOGY}}"]
   end
 
   defp extract_framework_patterns do
-    # Get detector patterns from technology_patterns table
+    # Get detector patterns from technology_patterns table using Ecto
     # This includes frameworks, languages, cloud, monitoring, security, AI, messaging
-    query = """
-    SELECT DISTINCT
-      jsonb_array_elements_text(file_patterns) as pattern
-    FROM technology_patterns
-    WHERE file_patterns IS NOT NULL
-      AND jsonb_array_length(file_patterns) > 0
-    UNION
-    SELECT DISTINCT
-      jsonb_array_elements_text(config_files) as pattern
-    FROM technology_patterns
-    WHERE config_files IS NOT NULL
-      AND jsonb_array_length(config_files) > 0
-    LIMIT 200
-    """
 
-    case Repo.query(query) do
-      {:ok, %{rows: rows}} ->
-        patterns = rows |> List.flatten() |> Enum.uniq()
+    file_patterns = Repo.all(TechnologyPattern.file_patterns_query()) |> Enum.uniq()
+    config_patterns = Repo.all(TechnologyPattern.config_files_query()) |> Enum.uniq()
+    patterns = file_patterns ++ config_patterns
 
-        # Add common code patterns from extended_metadata if available
-        code_patterns_query = """
-        SELECT DISTINCT
-          jsonb_path_query_array(
-            extended_metadata,
-            '$.detect.patterns[*]'
-          ) as patterns
-        FROM technology_patterns
-        WHERE extended_metadata ? 'detect'
-        LIMIT 100
-        """
-
-        additional = case Repo.query(code_patterns_query) do
-          {:ok, %{rows: code_rows}} ->
-            code_rows
-            |> List.flatten()
-            |> Enum.flat_map(fn row -> Jason.decode!(row) end)
+    # Add common code patterns from extended_metadata if available
+    additional = Repo.all(TechnologyPattern.code_patterns_query())
+      |> Enum.flat_map(fn row ->
+        case Jason.decode(row) do
+          {:ok, decoded} when is_list(decoded) -> decoded
           _ -> []
         end
+      end)
+      |> Enum.uniq()
 
-        Enum.uniq(patterns ++ additional)
+    patterns = patterns ++ additional
 
-      _ ->
-        # Fallback to common framework patterns
-        ["use GenServer", "use Phoenix", "impl Trait",
-         "async fn", "defmodule", "@Component", "useState",
-         "Cargo.toml", "package.json", "next.config.js"]
+    if Enum.empty?(patterns) do
+      # Fallback to common framework patterns
+      ["use GenServer", "use Phoenix", "impl Trait",
+       "async fn", "defmodule", "@Component", "useState",
+       "Cargo.toml", "package.json", "next.config.js"]
+    else
+      Enum.uniq(patterns) |> Enum.take(200)
     end
   end
 
@@ -210,7 +172,7 @@ defmodule Singularity.DomainVocabularyTrainer do
       # NATS patterns
       "Gnat.subscribe", "nats.publish", "JetStream",
       "db.query", "db.insert.codebase_snapshots",
-      "facts.technology_patterns", "llm.analyze",
+      "knowledge.facts.technology_patterns", "llm.analyze",
 
       # Your custom patterns
       "RAGCodeGenerator", "CodeSynthesisPipeline",

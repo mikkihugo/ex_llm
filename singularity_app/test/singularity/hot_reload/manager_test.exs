@@ -1,7 +1,7 @@
-defmodule Singularity.HotReload.ManagerTest do
+defmodule Singularity.HotReload.ModuleReloaderTest do
   use ExUnit.Case, async: false
 
-  alias Singularity.HotReload.Manager
+  alias Singularity.HotReload.ModuleReloader
 
   setup do
     paths = Singularity.CodeStore.paths()

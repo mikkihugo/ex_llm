@@ -83,7 +83,7 @@ defmodule Singularity.StartupWarmup do
     # Pre-compute embeddings using EmbeddingService (Jina/Google)
     try do
       Enum.each(common_queries, fn query ->
-        case Singularity.EmbeddingService.embed(query) do
+        case Singularity.EmbeddingGenerator.embed(query) do
           {:ok, embedding} ->
             Singularity.MemoryCache.cache_embedding(query, embedding)
           _ ->

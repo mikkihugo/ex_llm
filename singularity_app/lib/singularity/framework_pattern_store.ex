@@ -133,7 +133,7 @@ defmodule Singularity.FrameworkPatternStore do
   """
   def search_similar_patterns(query_text, top_k \\ 5) do
     # Embed query
-    {:ok, embedding} = Singularity.EmbeddingService.embed(query_text)
+    {:ok, embedding} = Singularity.EmbeddingGenerator.embed(query_text)
 
     sql = """
     SELECT

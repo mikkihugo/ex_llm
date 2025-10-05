@@ -235,7 +235,7 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   defp query_tech_stack_from_facts(repo) do
     # Query SPARC facts via NATS
-    # NATS.request("facts.query", %{repo: repo, type: :tech_stack})
+    # NATS.request("knowledge.facts.query", %{repo: repo, type: :tech_stack})
     # For now, return empty (integrate when NATS is ready)
     {:error, :not_implemented}
   end

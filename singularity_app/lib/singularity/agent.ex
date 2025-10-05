@@ -151,7 +151,7 @@ defmodule Singularity.Agent do
       |> Map.put(:pending_plan, payload)
       |> Map.put(:pending_context, enriched_context)
 
-    case HotReload.Manager.enqueue(state.id, payload) do
+    case HotReload.ModuleReloader.enqueue(state.id, payload) do
       :ok ->
         {:noreply, %{state | status: :updating}}
 
@@ -726,7 +726,7 @@ defmodule Singularity.Agent do
         |> Map.put(:pending_previous_code, nil)
 
       true ->
-        _ = HotReload.Manager.enqueue(state.id, payload)
+        _ = HotReload.ModuleReloader.enqueue(state.id, payload)
         Limiter.reset(state.id)
 
         baseline = Singularity.Telemetry.snapshot()

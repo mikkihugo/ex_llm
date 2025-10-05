@@ -32,7 +32,7 @@ Singularity is a distributed, polyglot platform where **LLMs are the primary dev
 │  Elixir/BEAM    │ │   AI Server  │ │  Rust Services   │
 │  - Orchestrator │ │  (TypeScript)│ │  - Parsers       │
 │  - Agents       │ │  - Claude    │ │  - Analyzers     │
-│  - Semantic     │ │  - Gemini    │ │  - DB Service    │
+│  - Semantic     │ │  - Gemini    │ │  - Linting       │
 │    Search       │ │  - OpenAI    │ │  - Linting       │
 │  - Templates    │ │  - Copilot   │ │                  │
 │  - HybridAgent  │ │  - Cursor    │ │                  │
@@ -88,7 +88,7 @@ singularity/
 ├── rust/                    # High-performance Rust components
 │   ├── universal_parser/    # Tree-sitter based parser
 │   ├── analysis_suite/      # Code analysis tools
-│   ├── db_service/         # Database service
+│   ├── prompt_engine/      # Prompt optimization
 │   └── linting_engine/     # Custom linting rules
 │
 ├── ai-server/              # TypeScript AI provider server
@@ -164,7 +164,6 @@ The system will start:
 - NATS server on port 4222
 - Elixir application on port 4000
 - AI server on port 3000
-- Rust DB service
 
 ## 💻 Development
 
@@ -262,36 +261,9 @@ HybridAgent.process_task(agent, %{
 })
 ```
 
-## 📡 NATS Message Patterns
+## 📡 Messaging
 
-### AI Provider Requests
-```json
-// Subject: ai.provider.claude
-{
-  "model": "claude-3-opus",
-  "messages": [{"role": "user", "content": "Hello"}],
-  "temperature": 0.7
-}
-```
-
-### Code Analysis
-```json
-// Subject: code.analysis.parse
-{
-  "file_path": "/src/main.rs",
-  "language": "rust"
-}
-```
-
-### Agent Orchestration
-```json
-// Subject: agents.spawn
-{
-  "role": "code_reviewer",
-  "task": "Review PR #123",
-  "tools": ["rust_analyzer", "cargo_clippy"]
-}
-```
+Singularity uses NATS for cross-service coordination (LLM requests, package registry queries, execution events). The authoritative subject list and payload formats live in [`docs/messaging/NATS_SUBJECTS.md`](docs/messaging/NATS_SUBJECTS.md).
 
 ## 🛠️ Available Mix Tasks
 
@@ -383,11 +355,12 @@ flyctl scale count 3 --app singularity
 
 ## 📚 Documentation
 
-- [Quick Start Guide](QUICKSTART.md)
-- [Agent System](AGENTS.md)
-- [NATS Integration](NATS_SUBJECTS.md)
-- [Deployment Guide](DEPLOYMENT_GUIDE.md)
-- [Claude Code Guide](CLAUDE.md)
+- [Documentation Overview](docs/README.md)
+- [Quick Start Guide](docs/setup/QUICKSTART.md)
+- [Agent System](docs/ai/AGENTS.md)
+- [NATS Integration](docs/messaging/NATS_SUBJECTS.md)
+- [Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)
+- [Claude Code Guide](docs/ai/CLAUDE.md)
 
 ## 📄 License
 

@@ -330,7 +330,7 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
   @spec generate_real_embedding(String.t()) :: Pgvector.t()
   defp generate_real_embedding(text) do
     # Use shared EmbeddingService with automatic fallback
-    case Singularity.EmbeddingService.embed(text) do
+    case Singularity.EmbeddingGenerator.embed(text) do
       {:ok, embedding} -> embedding
       {:error, reason} ->
         Logger.warning("EmbeddingService failed: #{inspect(reason)}, using zero vector")

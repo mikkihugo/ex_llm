@@ -16,7 +16,7 @@ NC='\033[0m'
 echo -e "${GREEN}🚀 Starting Singularity System...${NC}"
 
 # 1. Check and start NATS
-echo -e "\n${YELLOW}[1/5] Checking NATS...${NC}"
+echo -e "\n${YELLOW}[1/4] Checking NATS...${NC}"
 if pgrep -x "nats-server" > /dev/null; then
     echo "✅ NATS already running"
 else
@@ -32,7 +32,7 @@ else
 fi
 
 # 2. Check PostgreSQL
-echo -e "\n${YELLOW}[2/5] Checking PostgreSQL...${NC}"
+echo -e "\n${YELLOW}[2/4] Checking PostgreSQL...${NC}"
 if pg_isready -q; then
     echo "✅ PostgreSQL is running"
 else
@@ -42,40 +42,8 @@ else
     exit 1
 fi
 
-# 3. Start Rust DB Service
-echo -e "\n${YELLOW}[3/5] Starting Rust DB Service...${NC}"
-if pgrep -f "target.*db_service" > /dev/null; then
-    echo "✅ DB Service already running"
-else
-    cd rust/db_service
-    if [ ! -f "target/release/db_service" ]; then
-        echo "Building DB Service..."
-        cargo build --release
-    fi
-
-    # Create migrations if needed
-    if [ ! -d "migrations" ]; then
-        mkdir -p migrations
-        cp ../tool_doc_index/migrations/*.sql migrations/ 2>/dev/null || true
-    fi
-
-    DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost/singularity_dev}"
-    NATS_URL="${NATS_URL:-nats://localhost:4222}"
-
-    DATABASE_URL="$DATABASE_URL" NATS_URL="$NATS_URL" ./target/release/db_service > ../../logs/db_service.log 2>&1 &
-    sleep 2
-
-    if pgrep -f "target.*db_service" > /dev/null; then
-        echo "✅ DB Service started"
-    else
-        echo -e "${RED}❌ Failed to start DB Service${NC}"
-        echo "Check logs/db_service.log for details"
-    fi
-    cd ../..
-fi
-
-# 4. Start Elixir Application
-echo -e "\n${YELLOW}[4/5] Starting Elixir Application...${NC}"
+# 3. Start Elixir Application
+echo -e "\n${YELLOW}[3/4] Starting Elixir Application...${NC}"
 if pgrep -f "beam.*singularity" > /dev/null; then
     echo "✅ Elixir app already running"
 else
@@ -107,8 +75,8 @@ else
     cd ..
 fi
 
-# 5. Start AI Server (TypeScript)
-echo -e "\n${YELLOW}[5/5] Starting AI Server...${NC}"
+# 4. Start AI Server (TypeScript)
+echo -e "\n${YELLOW}[4/4] Starting AI Server...${NC}"
 if lsof -i:3000 > /dev/null 2>&1; then
     echo "✅ AI Server already running on port 3000"
 else
@@ -146,7 +114,6 @@ echo -e "${GREEN}═════════════════════
 # Check each service
 services=(
     "nats-server:4222:NATS"
-    "db_service:N/A:DB Service"
     "beam:4000:Elixir App"
     "bun:3000:AI Server"
 )

@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "analysis_suite",
-    "db_service",
     "linting_engine",
     "prompt_engine",
     "tool_doc_index",

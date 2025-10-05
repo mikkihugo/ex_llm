@@ -1,70 +1,111 @@
-# Analysis Schema
+# Analysis Schema & Ingestion (October 2025)
 
-This repository now mirrors the data structures emitted by the Rust
-`analysis-suite`.  The goal is to ingest results from the existing Rust
-analyzer into Postgres so Elixir, Gleam, and Erlang services can perform
-higher-level orchestration without linking Rust code via NIFs.
+Singularity mirrors the JSON payloads produced by the Rust `analysis_suite`
+crates in a set of thin Elixir structs. This keeps ingestion cheap while making
+results accessible to the rest of the BEAM ecosystem.
 
-## Modules
+---
 
-The following Elixir modules live under `singularity_app/lib/singularity/analysis/`:
+## Core Elixir Structs
 
-- `Workbench.Analysis.Metadata` – 1:1 mapping of the Rust
-  `CodebaseMetadata` struct.  Includes complexity metrics, Halstead numbers,
-  quality scores, naming suggestions, and dependency lists.
-- `Workbench.Analysis.FileReport` – wraps a file path, its metadata, the
-  `analyzed_at` timestamp, and content hash.
-- `Workbench.Analysis.Summary` – summary of an entire repo analysis with
-  precomputed aggregates and a map of file analyses.
-- `Workbench.Analysis` – convenience helpers for turning JSON payloads from the
-  analyzer into the structs above.
+| Module | Mirrors | Notes |
+|--------|---------|-------|
+| `Singularity.Analysis.Metadata` | Rust `CodebaseMetadata` | Normalises atom/string keyed maps, exposes complexity metrics, Halstead data, dependency info, and semantic tags. |
+| `Singularity.Analysis.FileReport` | Rust `FileAnalysis` | Wraps a single file path + metadata + timestamps/content hash. |
+| `Singularity.Analysis.Summary` | Rust `CodebaseAnalysis` | Aggregates file reports, totals (files, lines, functions), language histogram. |
+| `Singularity.Analysis.CoordinationAnalyzer` | Post-processing helpers | Computes cross-file insights (duplication, hotspots) before handing data to planners or quality gates. |
 
-Each module accepts either atom- or string-keyed maps which makes it easy to
-feed them with the JSON blobs produced by the Rust pipeline.
+The structs live in `singularity_app/lib/singularity/analysis/` and are pure
+Elixir—there are no database calls or side effects. They accept either atom or
+string keys so you can feed them raw `Jason.decode/1` results.
 
-## Storage
-
-The Nix dev shell now provisions Postgres with pgvector and pgvecto.rs.  On
-startup it creates a `singularity_embeddings` database with an `embeddings`
-table:
-
-```sql
-CREATE TABLE IF NOT EXISTS embeddings (
-  id          bigserial PRIMARY KEY,
-  path        text NOT NULL,
-  label       text,
-  metadata    jsonb DEFAULT '{}'::jsonb,
-  embedding   vector(768) NOT NULL,
-  created_at  timestamptz DEFAULT now(),
-  updated_at  timestamptz DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS embeddings_embedding_hnsw
-  ON embeddings USING hnsw (embedding vector_cosine_ops)
-  WITH (m = 16, ef_construction = 64);
+```elixir
+{:ok, payload} = File.read!("analysis.json") |> Jason.decode()
+analysis = Singularity.Analysis.Summary.new(payload)
+analysis.total_lines        # ⇒ 128_531
+analysis.files["lib/app.ex"].metadata.maintainability_index
 ```
 
-Future ingestion jobs should:
+---
 
-1. Run the Rust analyzer against a repo.
-2. Decode the JSON payload with `Workbench.Analysis.decode/1`.
-3. Persist the resulting structs to Postgres (e.g. `codebase_files`,
-   `codebase_file_metadata`, `codebase_dependencies`, and the `embeddings`
-   table above).
-4. Use the ANN index for semantic search via `SELECT ... ORDER BY embedding <->
-   $1 LIMIT k`.
+## Storage Layout
 
-Quality tooling (Sobelow, mix_audit, etc.) writes into the same Postgres
-instance via the `Singularity.Quality` context:
+All persisted data lives in the consolidated migrations introduced on
+`20240101000004_create_code_analysis_tables.exs` and
+`20240101000005_create_git_and_cache_tables.exs`:
 
+| Table | Purpose |
+|-------|---------|
+| `code_files` | Canonical storage for source files / artefacts (optional; large binaries usually kept in object storage). |
+| `code_embeddings` | pgvector(768) embeddings for semantic search and duplication detection. |
+| `code_fingerprints` | Rolling hashes used by `Singularity.DuplicationDetector`. |
+| `detection_events` | Timeline of technology detections imported from `TechnologyDetector`. |
+| `semantic_cache` | Cached LLM responses keyed by embedding + model. |
+| `rag_documents`, `rag_queries`, `rag_feedback` | Retrieval-augmented generation audit trail. |
+| `git_commits`, `git_sessions`, `git_pending_merges` | Git coordinator state and audit history. |
+
+No part of the system relies on the removed `rust/db_service` layer—everything
+persists through `Singularity.Repo` and Ecto migrations.
+
+---
+
+## Ingestion Pipeline
+
+1. **Rust tooling runs** – use `rust/analysis_suite` binaries or the
+   `Singularity.CodeAnalysis.RustToolingAnalyzer` wrapper to produce JSON.
+2. **Decode in Elixir** – pass JSON into `Singularity.Analysis.Metadata.new/1`,
+   `FileReport.new/1`, or `Summary.new/1` as required.
+3. **Persist** – write outputs to the consolidated schema. The helper contexts
+   in `singularity_app/lib/singularity/code_analysis/` (e.g.
+   `RustToolingAnalyzer`, `DuplicationDetector`, `DependencyMapper`) handle this
+   for common workflows.
+4. **Query** – agents and planners use `Singularity.Analysis` structs plus the
+   `code_embeddings` table to locate relevant files, detect hotspots, and seed
+   pattern searches.
+
+Example ingestion helper:
+
+```elixir
+# Run the bundled cargo tools and store their results
+:ok = Singularity.CodeAnalysis.RustToolingAnalyzer.analyze_codebase()
 ```
-quality_runs(tool, status, warning_count, metadata, started_at, finished_at)
-quality_findings(run_id, category, message, file, line, severity, extra)
+
+Because the structs implement `Jason.Encoder`, you can also store the summary as
+JSONB for quick snapshotting or feed it through Phoenix APIs.
+
+---
+
+## Querying the Results
+
+```elixir
+# Parse a stored summary (for example, retrieved from JSONB)
+summary = Singularity.Analysis.Summary.new(jason_payload)
+
+summary.files
+|> Map.values()
+|> Enum.sort_by(& &1.metadata.cognitive_complexity, :desc)
+|> Enum.take(10)
+
+# Semantic search across persisted embeddings (code_embeddings table)
+{:ok, matches} = Singularity.SemanticCodeSearch.search("Phoenix auth plug", top_k: 5)
 ```
 
-Agents can query these tables via `Singularity.Quality.latest/1` or
-`Singularity.Quality.findings_for/2`, so quality regressions become additional
-signals in the autonomy loop. Everything lives in a single database, making it
-straightforward to correlate embeddings, code metrics, and static-analysis
-results as the dataset grows from the current ~500k LOC toward the planned 750
-million LOC footprint.
+Pair this with the navigation index from `Singularity.CodeLocationIndex` to move
+from abstract metrics to concrete files/lines quickly.
+
+---
+
+## Why the Struct Layer Matters
+
+- **Decoupling** – Rust tooling can evolve without breaking BEAM consumers; the
+  Elixir structs normalise field names and default values.
+- **Testing** – all modules have unit tests in `test/singularity/analysis/`
+  ensuring schema drift is caught immediately.
+- **Interoperability** – Gleam/Elixir callers operate on the same structs,
+  making it easy to feed analysis data into planners, agents, and the quality
+  pipeline.
+
+If new fields appear in the Rust JSON, add them to `Metadata` and regenerate
+structs before persisting. The migration layer already stores generic JSONB
+columns (`metadata`, `summary`) so additional attributes do not require schema
+changes.

@@ -372,7 +372,7 @@ defmodule Singularity.CodeSession do
   end
 
   defp query_facts_for_tech_stack(_repo) do
-    # TODO: NATS.request("facts.query", %{repo: repo, type: :tech_stack})
+    # TODO: NATS.request("knowledge.facts.query", %{repo: repo, type: :tech_stack})
     {:error, :not_implemented}
   end
 

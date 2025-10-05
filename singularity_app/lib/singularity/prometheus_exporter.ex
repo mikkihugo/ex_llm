@@ -1,7 +1,7 @@
 defmodule Singularity.PrometheusExporter do
   @moduledoc false
 
-  alias Singularity.HotReload.Manager
+  alias Singularity.HotReload.ModuleReloader
 
   @spec render() :: binary()
   def render do

@@ -1,472 +1,191 @@
-# Technology Pattern System
+# Technology & Pattern System (October 2025)
 
-> Unified detection patterns for frameworks, languages, cloud platforms, monitoring tools, and more
+Singularity maintains a single, production-ready pattern system that spans
+technology detection, architectural pattern indexing, and microservice
+classification. This document replaces the previous collection of draft notes
+(`MICROSERVICE_DETECTION.md`, `PATTERN_EXTRACTION_DEMO.md`, `PATTERN_SYSTEM_SUMMARY.md`,
+etc.) with an authoritative overview of what actually ships in the repo today.
 
-## Overview
+---
 
-The pattern system loads **all technology detection patterns from JSON files** into PostgreSQL for self-learning detection. No hardcoded patterns in migrations.
-
-## Architecture
+## High-Level Flow
 
 ```
-┌─────────────────────────────────────────────────┐
-│ JSON Templates (Source of Truth)               │
-│ rust/tool_doc_index/templates/                 │
-│                                                 │
-│ ├── framework/     (React, Next.js, Django)    │
-│ ├── language/      (Rust, Python, TypeScript)  │
-│ ├── cloud/         (AWS, GCP, Azure)           │
-│ ├── monitoring/    (Prometheus, Grafana)       │
-│ ├── security/      (Falco, OPA)                │
-│ ├── ai/            (LangChain, CrewAI, MCP)    │
-│ └── messaging/     (NATS, Kafka)               │
-│                                                 │
-│ ~61 JSON templates (git-tracked, reviewable)   │
-└────────────┬────────────────────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────────────────────┐
-│ Migration: Load Patterns from JSON             │
-│ 20251005000000_load_framework_patterns_...exs  │
-│                                                 │
-│ - Scans all template directories               │
-│ - Parses JSON (detect, commands, llm, etc.)    │
-│ - Inserts to PostgreSQL                        │
-│ - Skips schema files                           │
-└────────────┬────────────────────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────────────────────┐
-│ PostgreSQL: framework_patterns Table            │
-│                                                 │
-│ Columns:                                        │
-│ - framework_name (id from JSON)                │
-│ - framework_type (language, cloud, etc.)       │
-│ - file_patterns (["*.jsx", "*.rs"])            │
-│ - directory_patterns (["src/", "app/"])        │
-│ - config_files (["Cargo.toml", "next.config"]) │
-│ - build_command, dev_command, etc.             │
-│ - confidence_weight (from JSON)                │
-│ - extended_metadata (full JSON template)       │
-│ - pattern_embedding (vector for similarity)    │
-│                                                 │
-│ Self-Learning:                                  │
-│ - detection_count (increments on each detect)  │
-│ - success_rate (learns from feedback)          │
-│ - last_detected_at (tracks usage)              │
-└────────────┬────────────────────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────────────────────┐
-│ ETS Cache: :framework_patterns_cache           │
-│                                                 │
-│ - In-memory cache (BEAM)                       │
-│ - <5ms reads (hot path)                        │
-│ - Refreshes every 5 minutes from PG            │
-│ - Public read concurrency                      │
-└────────────┬────────────────────────────────────┘
-             │
-       ┌─────┴─────┐
-       ▼           ▼
-┌──────────────┐  ┌──────────────────────┐
-│ NATS Publish │  │ JSON Export          │
-│ facts.       │  │ framework_patterns.  │
-│ framework_   │  │ json                 │
-│ patterns     │  │ (Rust detector reads)│
-│              │  │                      │
-│ Distribution │  │ Backup/offline mode  │
-└──────────────┘  └──────────────────────┘
+   JSON Templates                      Rust Layered Detector               Elixir Runtime
+┌────────────────────┐        ┌────────────────────────────────────┐   ┌──────────────────────────────┐
+│ rust/tool_doc_index │        │ tool_doc_index/src/detection/      │   │ Singularity.Technology*      │
+│ priv/technology_*   │──load→ │ 1-4: static rules (AST, deps)      │──→│  • TechnologyDetector         │
+│ code_quality_templates│      │ 5: optional LLM via NATS (llm.analyze)│  • TechnologyTemplateLoader    │
+└────────────────────┘        │ emits LayeredDetectionResult        │   │  • FrameworkPatternStore      │
+                              └────────────────────────────────────┘   │  • CodeLocationIndex          │
+                                                                        │  • PatternIndexer             │
+                                                                        └──────────────────────────────┘
 ```
 
-## Template Categories
+1. **Templates**: All technology heuristics and semantic patterns live in JSON
+   (git-tracked). There are no hard-coded SQL inserts or hand-edited data files.
+2. **Rust Layered Detector**: `tool_doc_index` consumes the templates, runs
+   layered detection (fast heuristics → AST → LLM fallback) and writes results
+   to STDOUT.
+3. **Elixir Orchestration**: `Singularity.TechnologyDetector` launches the Rust
+   detector, persists normalized snapshots with Ecto, and keeps caches up to
+   date for code navigation and code generation.
 
-### 1. Frameworks (`framework/*.json`)
+---
 
-Web frameworks and application frameworks.
+## Template Sources
 
-**Examples:**
-- `nextjs.json` - Next.js (React framework)
-- `react.json` - React library
-- `django.json` - Django (Python)
-- `fastapi.json` - FastAPI (Python)
-- `phoenix.json` - Phoenix (Elixir)
-- `nestjs.json` - NestJS (TypeScript)
+| Location | Purpose | Notes |
+|----------|---------|-------|
+| `rust/tool_doc_index/templates/` | Primary technology & framework definitions | Shared across Rust + Elixir |
+| `singularity_app/priv/technology_patterns/` | Overrides/local templates | Optional per-deployment overrides |
+| `singularity_app/priv/code_quality_templates/` | Semantic patterns for RAG/pattern indexer | Indexed by `PatternIndexer` |
 
-**Schema:**
-```json
-{
-  "id": "nextjs",
-  "category": "fullstack_framework",
-  "detect": {
-    "configFiles": ["next.config.js"],
-    "fileExtensions": [".tsx", ".jsx"],
-    "directoryPatterns": ["pages/", "app/"],
-    "npmDependencies": ["next"]
-  },
-  "commands": {
-    "dev": "next dev",
-    "build": "next build",
-    "install": "npm install"
-  },
-  "confidence": {
-    "baseWeight": 0.95
-  },
-  "llm": {
-    "prompts": {...},
-    "snippets": {...}
-  }
-}
-```
+Each template file follows the schema in `rust/tool_doc_index/templates/schema.json`
+(the same schema is mirrored in `TechnologyTemplateLoader` for validation).
+Detector signatures are grouped by category (framework, messaging, security,
+etc.) and can include regex patterns, config filenames, dependency markers and
+optional LLM prompts.
 
-### 2. Languages (`language/*.json`)
+Adding a new technology:
+1. Drop a JSON file in `rust/tool_doc_index/templates/<category>/<name>.json`.
+2. Run `mix singularity.templates.sync` (coming soon) or restart the app to
+   refresh caches.
+3. If you need a one-off override, place a file in
+   `singularity_app/priv/technology_patterns/` with the same relative path; the
+   Elixir loader prefers local overrides over shared templates.
 
-Programming languages.
+---
 
-**Examples:**
-- `rust.json` - Rust
-- `python.json` - Python
-- `typescript.json` - TypeScript
-- `elixir.json` - Elixir
-- `go.json` - Go
-- `javascript.json` - JavaScript
+## Database Schema (Ecto Migrations)
 
-**Detection:**
-- File extensions (`.rs`, `.py`, `.ts`)
-- Package manifests (`Cargo.toml`, `requirements.txt`)
-- Language-specific patterns
+All pattern-related tables live in the consolidated migrations shipped on
+2025-01-01:
 
-### 3. Cloud Platforms (`cloud/*.json`)
+1. **`technology_patterns`** – normalized detection hints (file patterns,
+   directory patterns, commands, success metrics).
+2. **`framework_patterns`** – learned framework profiles with success rate and
+   optional embeddings.
+3. **`semantic_patterns`** – language-specific semantic snippets used by the
+   RAG/pattern indexer.
+4. **`code_location_index`** – per-file index combining extracted keywords,
+   frameworks, and microservice metadata.
+5. **`code_embeddings` / `code_fingerprints`** – vector + hash storage used by
+   duplication detection and semantic search.
 
-Cloud providers and platform services.
+See `MIGRATION_CONSOLIDATION.md` and `DATABASE_MIGRATIONS_GUIDE.md` for the full
+DDL. There are **no** remaining SQL migrations in `rust/db_service/`.
 
-**Examples:**
-- `aws.json` - Amazon Web Services
-- `gcp.json` - Google Cloud Platform
-- `azure.json` - Microsoft Azure
+---
 
-**Detection:**
-- Config files (`aws-cli.json`, `gcloud.json`)
-- SDK imports (`boto3`, `@google-cloud`)
-- Infrastructure as code (`terraform`, `cloudformation`)
+## Core Elixir Modules
 
-### 4. Monitoring (`monitoring/*.json`)
+| Module | Responsibility | Highlights |
+|--------|----------------|------------|
+| `Singularity.TechnologyDetector` | Orchestrates detection (Rust first, Elixir fallback) | Persists `codebase_snapshots`, flattens results, publishes events |
+| `Singularity.TechnologyTemplateLoader` | Loads JSON templates (NATS → DB → filesystem) | Supports overrides, detector signatures, dynamic regex compilation |
+| `Singularity.FrameworkPatternStore` | Self-learning framework knowledge | Upserts patterns, tracks success rate, exposes semantic search |
+| `Singularity.CodePatternExtractor` | Keyword extraction from code + prose | Shared utility used by detectors, duplication checks, and navigation |
+| `Singularity.CodeLocationIndex` | File-level navigation index | Stores patterns, frameworks, microservice classification, metadata |
+| `Singularity.PatternIndexer` | Indexes semantic patterns from quality templates | Generates embeddings with `EmbeddingService`, powers RAG codegen |
 
-Observability and monitoring tools.
+Additional helpers: `Singularity.TemplateMatcher`, `Singularity.DuplicationDetector`,
+`Singularity.EmbeddingService`, and `Singularity.PackageRegistryKnowledge` all
+consume the persisted data to drive higher-level automation.
 
-**Examples:**
-- `prometheus.json` - Prometheus metrics
-- `grafana.json` - Grafana dashboards
-- `jaeger.json` - Jaeger tracing
-- `opentelemetry.json` - OpenTelemetry
+---
 
-**Detection:**
-- Config files (`prometheus.yml`, `grafana.ini`)
-- SDK imports (`@opentelemetry/api`)
-- Annotations (`@Traced`, `metrics.counter`)
+## Microservice Detection (Current Logic)
 
-### 5. Security (`security/*.json`)
+Microservice classification happens inside `CodeLocationIndex.index_file/1`.
+The detector combines keyword extraction with simple heuristics:
 
-Security tools and policy engines.
+| Microservice Type | Signals (AND / OR) |
+|-------------------|--------------------|
+| NATS consumer | `genserver` + (`nats` OR `gnat`) + message handler (`handle_info`, `handle_cast`) |
+| HTTP API | `plug` OR `phoenix` + HTTP verbs (`get`, `post`) |
+| Broadway pipeline | keyword `broadway` or module usage |
+| Phoenix channel | `Phoenix.Channel` + `broadcast/3` or `push/3` |
 
-**Examples:**
-- `falco.json` - Falco runtime security
-- `opa.json` - Open Policy Agent
-
-**Detection:**
-- Policy files (`*.rego`, `falco_rules.yaml`)
-- Security configs
-- Admission controllers
-
-### 6. AI/ML (`ai/*.json`)
-
-AI frameworks and agent platforms.
-
-**Examples:**
-- `langchain.json` - LangChain
-- `crewai.json` - CrewAI
-- `mcp.json` - Model Context Protocol
-
-**Detection:**
-- SDK imports (`langchain`, `crewai`)
-- Config files (`mcp-server.json`)
-- Agent definitions
-
-### 7. Messaging (`messaging/*.json`)
-
-Message queues and event streaming.
-
-**Examples:**
-- NATS, Kafka, RabbitMQ, Redis Streams
-
-**Detection:**
-- Client libraries
-- Config files
-- Message schemas
-
-## Template Schema (UNIFIED_SCHEMA.json)
-
-All templates follow the unified schema:
-
-```json
-{
-  "id": "string (unique identifier)",
-  "name": "string (display name)",
-  "category": "framework|language|cloud|monitoring|security|ai|messaging",
-  "detect": {
-    "configFiles": ["..."],
-    "fileExtensions": ["..."],
-    "directoryPatterns": ["..."],
-    "patterns": ["regex patterns"],
-    "npmDependencies": ["..."],
-    "importPatterns": ["..."]
-  },
-  "commands": {
-    "install": "...",
-    "dev": "...",
-    "build": "...",
-    "test": "..."
-  },
-  "confidence": {
-    "baseWeight": 0.0-1.0,
-    "boosts": { ... }
-  },
-  "llm": {
-    "trigger": { ... },
-    "prompts": { ... },
-    "snippets": { ... },
-    "facts": { ... }
-  },
-  "metadata": { ... }
-}
-```
-
-## Adding New Patterns
-
-### Step 1: Create JSON Template
-
-```bash
-# Add new framework
-cat > rust/tool_doc_index/templates/framework/remix.json <<EOF
-{
-  "id": "remix",
-  "name": "Remix",
-  "category": "fullstack_framework",
-  "detect": {
-    "configFiles": ["remix.config.js"],
-    "npmDependencies": ["@remix-run/react"]
-  },
-  "commands": {
-    "dev": "remix dev",
-    "build": "remix build"
-  },
-  "confidence": {
-    "baseWeight": 0.9
-  }
-}
-EOF
-```
-
-### Step 2: Run Migration (or App Startup)
-
-```bash
-# Migration loads on first run
-mix ecto.migrate
-
-# Or force reload patterns
-iex> Singularity.FrameworkPatternSync.refresh_cache()
-```
-
-### Step 3: Verify
+Example (Elixir NATS consumer):
 
 ```elixir
-# Check if pattern loaded
-iex> Singularity.FrameworkPatternStore.get_pattern("remix")
-{:ok, %{framework_name: "remix", ...}}
+code = """
+defmodule MyApp.UserService do
+  use GenServer
+  def handle_info({:msg, %{topic: "user.create"}}, state), do: {:noreply, state}
+end
+"""
 
-# Test detection
-iex> Singularity.TechnologyDetector.detect_technologies("/path/to/remix/app")
+keywords = Singularity.CodePatternExtractor.extract_from_code(code, :elixir)
+# => ["genserver", "handle_info", "nats", "messaging", ...]
+
+Singularity.CodeLocationIndex.index_file("lib/user_service.ex")
+# => stores microservice: %{type: "nats_consumer", confidence: 0.92}
 ```
 
-## Self-Learning Flow
+The full file metadata (imports/exports, summary, lines of code) is persisted so
+agents can answer "where is our NATS consumer for X?" without re-scanning the
+filesystem.
 
-**Initial Detection:**
-```
-User runs detection → Rust LayeredDetector
-                    ↓
-              Loads from JSON
-                    ↓
-         Detects "Next.js" (confidence: 0.95)
-                    ↓
-    Publishes to NATS: db.insert.codebase_snapshots
-                    ↓
-         db_service inserts to PostgreSQL
-                    ↓
-     FrameworkPatternStore learns pattern
-                    ↓
-  Updates: detection_count++, last_detected_at
-```
+---
 
-**Pattern Evolution:**
-```
-Success/Failure Feedback
-         ↓
-FrameworkPatternStore.update_success_rate()
-         ↓
-Adjusts confidence_weight (Bayesian update)
-         ↓
-ETS cache refreshes (5 min)
-         ↓
-Future detections use updated weights
-```
-
-## Performance
-
-### Read Path (Hot)
-```
-ETS Cache Lookup: <5ms
-└─ Cache hit: Return immediately
-└─ Cache miss: PostgreSQL → ETS → Return (~50ms first time)
-```
-
-### Write Path (Learning)
-```
-Detection Result
-├─ PostgreSQL INSERT/UPDATE (~10ms)
-├─ ETS cache update (immediate)
-├─ NATS publish (~5ms)
-└─ JSON export (async, ~100ms)
-```
-
-### Refresh Cycle
-```
-Every 5 minutes:
-├─ Load all patterns from PostgreSQL
-├─ Rebuild ETS cache
-├─ Export to JSON (for Rust detector offline mode)
-└─ Publish to NATS (cluster sync)
-```
-
-## Database Schema
-
-```sql
-CREATE TABLE framework_patterns (
-  id BIGSERIAL PRIMARY KEY,
-  framework_name TEXT NOT NULL,
-  framework_type TEXT NOT NULL,  -- language, cloud, monitoring, etc.
-
-  -- Detection patterns
-  file_patterns JSONB DEFAULT '[]',
-  directory_patterns JSONB DEFAULT '[]',
-  config_files JSONB DEFAULT '[]',
-
-  -- Commands
-  build_command TEXT,
-  dev_command TEXT,
-  install_command TEXT,
-  test_command TEXT,
-
-  -- Confidence scoring
-  confidence_weight FLOAT DEFAULT 1.0,
-
-  -- Self-learning metrics
-  detection_count INTEGER DEFAULT 0,
-  success_rate FLOAT DEFAULT 1.0,
-  last_detected_at TIMESTAMPTZ,
-
-  -- Semantic search
-  pattern_embedding vector(768),
-
-  -- Extended metadata (full JSON template)
-  extended_metadata JSONB DEFAULT '{}'::jsonb,
-
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-
-  UNIQUE(framework_name, framework_type)
-);
-
--- Indexes
-CREATE INDEX ON framework_patterns (framework_name);
-CREATE INDEX ON framework_patterns (framework_type);
-CREATE INDEX ON framework_patterns USING hnsw (pattern_embedding vector_cosine_ops);
-```
-
-## ETS vs NATS JetStream
-
-### Use Both (Recommended) ✅
-
-**ETS**: Hot cache for ultra-fast reads
-- Single-node, in-memory
-- <5ms read latency
-- Lost on node restart
-- Perfect for detection hot path
-
-**NATS JetStream**: Distribution and durability
-- Cluster-wide coordination
-- Persistent, replicated
-- ~50ms latency
-- Perfect for learning events
-
-### When to Skip ETS
-
-Remove ETS if:
-- ❌ Low detection frequency (<10/sec)
-- ❌ Patterns change very frequently
-- ❌ Single-node deployment only
-- ❌ Prioritize consistency over speed
-
-Use JetStream KV instead:
-```elixir
-# Store in JetStream KV bucket
-NATS.JetStream.put(:patterns, "nextjs", pattern_json)
-
-# Read from JetStream KV
-{:ok, pattern} = NATS.JetStream.get(:patterns, "nextjs")
-```
-
-## Benefits
-
-✅ **Single Source of Truth** - JSON files are the spec
-✅ **Version Control** - Git history shows pattern evolution
-✅ **Code Review** - PR reviews for pattern changes
-✅ **Extensible** - Add new categories by adding JSON files
-✅ **Self-Learning** - Patterns improve over time
-✅ **Fast Reads** - ETS cache (<5ms)
-✅ **Distributed** - NATS for cluster coordination
-✅ **Semantic Search** - Vector embeddings for similarity
-✅ **LLM Integration** - Prompts and snippets in JSON
-✅ **Testing** - Validate JSON schema in CI
-
-## Testing
-
-```bash
-# Unit tests (pattern loading)
-mix test test/singularity/framework_pattern_store_test.exs
-
-# Integration tests (detection flow)
-cd rust/tool_doc_index
-cargo test
-
-# E2E tests (NATS + PostgreSQL)
-just test-e2e
-```
-
-## Monitoring
+## Query Examples
 
 ```elixir
-# Pattern stats
-iex> Singularity.Repo.query("SELECT framework_type, COUNT(*) FROM framework_patterns GROUP BY framework_type")
+alias Singularity.{CodeLocationIndex, CodePatternExtractor, FrameworkPatternStore,
+                   PatternIndexer, TechnologyDetector, TechnologyTemplateLoader}
 
-# Top detected patterns
-iex> Singularity.Repo.query("SELECT framework_name, detection_count FROM framework_patterns ORDER BY detection_count DESC LIMIT 10")
+# 1. Run detection (Rust → Ecto)
+{:ok, snapshot} = TechnologyDetector.detect_technologies("/srv/repos/my_app")
+IO.inspect(snapshot.detected_technologies)
 
-# Cache hit rate
-iex> :ets.info(:framework_patterns_cache, :size)
+# 2. Ask for all GenServer microservices
+CodeLocationIndex
+|> Ecto.Query.where([c], fragment("? @> ARRAY[?]::text[]", c.patterns, "genserver"))
+|> Singularity.Repo.all()
+
+# 3. Lookup framework guidance
+{:ok, phoenix_pattern} = FrameworkPatternStore.get_pattern("phoenix")
+
+# 4. Semantic pattern search for RAG prompts
+{:ok, results} = PatternIndexer.search("cache with ttl", language: "elixir")
+
+# 5. Load detector signatures (regexes) directly
+TechnologyTemplateLoader.patterns({:framework, :nextjs})
+# => [%Regex{...}, ...]
 ```
 
-## References
+---
 
-- [NATS Architecture](./NATS_SUBJECTS.md)
-- [Template Schema](./rust/tool_doc_index/templates/UNIFIED_SCHEMA.json)
-- [Detection System](./rust/tool_doc_index/README.md)
-- [Self-Learning](./singularity_app/lib/singularity/framework_pattern_store.ex)
+## Keeping Data Fresh
+
+| Task | Command |
+|------|---------|
+| Re-index code navigation after large changes | `mix singularity.index.codebase --path /srv/repos/my_app` (upcoming) |
+| Refresh semantic pattern embeddings | `iex> Singularity.PatternIndexer.index_all_templates()` |
+| Teach new framework patterns | Call `FrameworkPatternStore.learn_pattern/1` with detection results |
+| Verify templates compile | `mix test test/singularity/technology_template_loader_test.exs` |
+
+If you drop new template JSON, run detection or call `TechnologyTemplateLoader.patterns/1`
+to warm caches. All modules automatically persist to `technology_patterns` and
+related tables; no manual SQL is required.
+
+---
+
+## Frequently Asked
+
+- **Do we still use the old `db_service` NATS pipeline?** No. All writes go
+  through `Singularity.Repo` using the consolidated migrations.
+- **Where did the duplicated markdown go?** Everything relevant from the older
+  docs has been merged into this file. See git history if you need the legacy
+  notes.
+- **How do I add an LLM-backed detector?** Add `llm.trigger` + `llm.prompts`
+  inside the template JSON. The Rust layered detector automatically calls
+  `llm.analyze` via NATS when confidence falls below the configured threshold.
+
+---
+
+For deeper implementation details, browse the corresponding modules under
+`singuarity_app/lib/singularity/` and the migration sources in
+`singularity_app/priv/repo/migrations/20240101000003_create_knowledge_tables.exs`.
