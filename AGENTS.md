@@ -9,15 +9,17 @@ of tooling notes with the architecture that is actually wired into
 
 ## Runtime Components
 
-| Module | Role |
-|--------|------|
-| `Singularity.AgentSupervisor` | Dynamic supervisor for long-lived agents (one per domain/specialisation). |
-| `Singularity.Agent` | Core self-improving loop. Keeps metrics, triggers evolutions, hands code to the hot-reload pipeline. |
-| `Singularity.Agents.HybridAgent` | Task worker used by orchestrators to process individual requests. Executes rule engine first, falls back to cached LLM responses, then to live LLM calls. |
-| `Singularity.Autonomy.Decider` | Evaluates metrics (success rate, stagnation, WSJF priorities) to determine when agents should evolve. |
-| `Singularity.Autonomy.Planner` | Breaks work into SPARC phases and hands plans to the execution coordinator. |
-| `Singularity.ExecutionCoordinator` | Coordinates task queues, Git integration, and downstream quality checks. |
-| `Singularity.RuleEngineV2` | Cost-free strategy layer. Rules are persisted in Postgres and cached in ETS/Cachex. |
+| Module | Role | Language |
+|--------|------|----------|
+| `Singularity.AgentSupervisor` | Dynamic supervisor for long-lived agents (one per domain/specialisation). | Elixir |
+| `Singularity.Agent` | Core self-improving loop. Keeps metrics, triggers evolutions, hands code to the hot-reload pipeline. | Elixir |
+| `Singularity.Agents.HybridAgent` | Task worker used by orchestrators to process individual requests. Executes rule engine first, falls back to cached LLM responses, then to live LLM calls. | Elixir |
+| `Singularity.Autonomy.Decider` | Evaluates metrics (success rate, stagnation, WSJF priorities) to determine when agents should evolve. | Elixir |
+| `Singularity.Autonomy.Planner` | Breaks work into SPARC phases and hands plans to the execution coordinator. | Elixir |
+| `Singularity.ExecutionCoordinator` | Coordinates task queues, Git integration, and downstream quality checks. | Elixir |
+| `Singularity.RuleEngineV2` | Cost-free strategy layer. Rules are persisted in Postgres and cached in ETS/Cachex. | Elixir |
+| `:singularity@htdag` | Hierarchical Task DAG for autonomous task decomposition. Type-safe planning. | **Gleam** |
+| `:singularity@rule_engine` | Confidence-based rule evaluation with MoonShine-style thresholds. | **Gleam** |
 
 Every agent process tracks its own history (`improvement_history`), stored
 fingerprints (to avoid repeating the same patch) and pending improvements. The
@@ -123,6 +125,120 @@ Singularity.Autonomy.RuleLoader.get_rules_by_category(:code_quality)
   each agent an isolated working tree and push branches automatically.
 - **NATS**: HybridAgent emits events (`execution.task.started/completed`) via
   `Singularity.ExecutionCoordinator` so external observers can track progress.
+
+---
+
+## Gleam Integration (via mix_gleam)
+
+Singularity uses **mix_gleam** to seamlessly integrate type-safe Gleam modules into the Elixir codebase.
+
+### Why Gleam for Agents?
+
+- **HTDAG**: Type-safe hierarchical task decomposition prevents runtime errors in planning
+- **Rule Engine**: Confidence thresholds and pattern matching with exhaustive checking
+- **Compilation**: `mix compile` handles both Elixir and Gleam automatically
+
+### Using Gleam Modules from Elixir
+
+```elixir
+# HTDAG - Hierarchical Task Decomposition
+dag = :singularity@htdag.new("build-feature")
+task = :singularity@htdag.create_goal_task("Implement auth", 0, :none)
+dag = :singularity@htdag.add_task(dag, task)
+{:some, next} = :singularity@htdag.select_next_task(dag)
+
+# Rule Engine - Confidence-based decisions
+context = %{
+  agent_score: 0.85,
+  feature_id: {:some, "feat-123"},
+  metrics: %{"test_coverage" => 0.92}
+}
+
+rule = %{
+  id: "test-quality",
+  category: :code_quality,
+  patterns: [...]
+}
+
+result = :singularity@rule_engine.evaluate_rule(rule, context)
+# => %{decision: :autonomous, confidence: 0.91, ...}
+```
+
+### Development Commands
+
+```bash
+# Compile both Elixir and Gleam
+mix compile
+
+# Type-check Gleam only (fast)
+gleam check
+
+# Run Gleam tests
+gleam test
+
+# Get dependencies for both
+mix setup                # Gets Mix + Gleam deps
+gleam deps download      # Just Gleam deps
+```
+
+### File Organization
+
+```
+singularity_app/
+├── src/                      # Gleam source files
+│   ├── singularity/
+│   │   ├── htdag.gleam      # Task DAG
+│   │   └── rule_engine.gleam # Rule evaluation
+│   └── seed/
+│       └── improver.gleam    # Agent improvement
+├── lib/                      # Elixir source files
+├── gleam.toml               # Gleam config (gleam_stdlib ~> 0.65.0)
+└── mix.exs                  # Mix config (includes mix_gleam ~> 0.6.2)
+```
+
+### Configuration
+
+**gleam.toml:**
+```toml
+[dependencies]
+gleam_stdlib = "~> 0.65.0"  # Aligned with mix.exs
+```
+
+**mix.exs:**
+```elixir
+def project do
+  [
+    compilers: [:gleam | Mix.compilers()],
+    # ... other config
+  ]
+end
+
+defp deps do
+  [
+    {:mix_gleam, "~> 0.6.2", runtime: false},
+    {:gleam_stdlib, "~> 0.65", app: false, manager: :rebar3, override: true},
+    # ... other deps
+  ]
+end
+```
+
+### Interop Patterns
+
+**Calling Elixir from Gleam:**
+```gleam
+@external(erlang, "Elixir.Singularity.Agent", "record_outcome")
+fn record_outcome(agent_id: String, outcome: Atom) -> Atom
+```
+
+**Calling Gleam from Elixir:**
+```elixir
+# Module name format: :singularity@module_name
+dag = :singularity@htdag.new("id")
+
+# Atoms map to Gleam atoms
+result = :singularity@rule_engine.should_cache(rule_result)
+# => true or false
+```
 
 ---
 

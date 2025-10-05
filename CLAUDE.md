@@ -8,7 +8,7 @@ Singularity is an autonomous agent platform combining Elixir, Gleam, and Rust fo
 
 ## Technology Stack
 
-- **Elixir 1.20-dev** with native Gleam support (custom build from PR #14262)
+- **Elixir 1.18.4** with mix_gleam for Gleam integration
 - **Gleam 1.12.0** for type-safe BEAM modules
 - **Rust** for high-performance parsing and analysis tools
 - **NATS** for distributed messaging
@@ -158,13 +158,44 @@ Uses PostgreSQL with:
 
 ### Gleam Integration
 
-Gleam modules in `singularity_app/gleam/src/`:
-- `singularity/htdag.gleam`: Hierarchical temporal DAG
-- `singularity/rule_engine.gleam`: Rule evaluation
+**Setup:** Uses `mix_gleam` for seamless Elixir + Gleam compilation.
+
+Gleam modules in `singularity_app/src/`:
+- `singularity/htdag.gleam`: Hierarchical temporal DAG for task decomposition
+- `singularity/rule_engine.gleam`: Confidence-based rule evaluation
 - `seed/improver.gleam`: Agent improvement logic
 
-Call from Elixir: `:module_name.function()`
-Call Elixir from Gleam: `@external(erlang, "Elixir.Module", "function")`
+**Dependencies:**
+- `gleam.toml`: Gleam package configuration (gleam_stdlib ~> 0.65.0)
+- `mix.exs`: Includes `{:mix_gleam, "~> 0.6.2"}` and `:gleam` compiler
+
+**Common Commands:**
+```bash
+# Compile Gleam code via Mix
+mix compile            # Compiles both Elixir and Gleam
+mix compile.gleam      # Compile only Gleam modules
+gleam check            # Type-check Gleam without building
+
+# Gleam dependencies
+mix setup              # Gets Mix AND Gleam deps
+gleam deps download    # Just Gleam deps
+
+# Testing
+mix test               # Runs Elixir tests
+gleam test             # Runs Gleam tests
+mix gleam.test         # Runs both
+```
+
+**Calling Between Languages:**
+```elixir
+# From Elixir → Gleam
+dag = :singularity@htdag.new("goal-id")
+task = :singularity@htdag.create_goal_task("Build feature", 0, :none)
+
+# From Gleam → Elixir
+@external(erlang, "Elixir.MyModule", "my_function")
+fn my_function(arg: String) -> String
+```
 
 ## Key Files & Directories
 
@@ -182,6 +213,12 @@ Required in `.env` or shell:
 - `ANTHROPIC_API_KEY` - Claude API
 - `OPENAI_API_KEY` - OpenAI API
 - `DATABASE_URL` - PostgreSQL connection
+
+Optional (with defaults):
+- `NATS_HOST` - NATS server host (default: 127.0.0.1)
+- `NATS_PORT` - NATS server port (default: 4222)
+  - NatsOrchestrator gracefully degrades if NATS is unavailable
+  - Start NATS with: `nats-server -js`
 
 ## Troubleshooting
 
