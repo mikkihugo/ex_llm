@@ -90,7 +90,8 @@ defmodule Singularity.Autonomy.RuleEngineCore do
   def context_fingerprint(context) do
     feature = context[:feature_id] || "none"
     epic = context[:epic_id] || "none"
-    score = context[:agent_score] || 1.0 |> Float.to_string()
+    # Ensure a string regardless of whether agent_score is present
+    score = (context[:agent_score] || 1.0) |> to_string()
 
     Enum.join([feature, epic, score], "|")
   end

@@ -20,12 +20,12 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@v4
 
-      - name: Setup BEAM (Elixir + Gleam + OTP)
-        uses: erlef/setup-beam@v1
+      - name: Nix + Cachix setup (reusable)
+        uses: mikkihugo/singularity-incubation/.github/workflows/nix-setup.yml@master
+        secrets: inherit
         with:
-          otp-version: '28'
-          elixir-version: '1.18.4'
-          gleam-version: '1.12.0'
+          cachix_push: false
+          cache_key_prefix: 'pr-otp28-elixir1184'
 
       - name: Setup Bun (TypeScript)
         uses: oven-sh/setup-bun@v2
@@ -36,34 +36,18 @@ jobs:
       - name: Verify environment
         run: |
           echo "=== Environment Check ==="
-          echo "Elixir: $(elixir --version | head -1)"
-          echo "Gleam: $(gleam --version)"
-          echo "OTP: $(erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().' -noshell)"
-          echo "Bun: $(bun --version)"
-          echo "Rust: $(rustc --version)"
+          nix develop -c bash -lc '
+            echo Elixir: $(elixir --version | head -1)
+            echo Gleam: $(gleam --version)
+            echo OTP: $(erl -eval "erlang:display(erlang:system_info(otp_release)), halt()." -noshell)
+            echo Bun: $(bun --version)
+            echo Rust: $(rustc --version)
+          '
 
-      - name: Install dependencies
+      - name: Install dependencies (AI server tools)
         run: |
-          bun install
+          nix develop -c bash -lc 'bun install'
 
-      - name: Use Cachix (pull; push if token)
-        uses: cachix/cachix-action@v14
-        with:
-          name: mikkihugo
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-
-      - name: Cache Mix/Hex and Moon (PR review)
-        uses: actions/cache@v4
-        with:
-          path: |
-            singularity_app/.mix
-            singularity_app/.hex
-            singularity_app/deps
-            singularity_app/_build
-            .moon/cache
-          key: pr-${{ runner.os }}-otp28-elixir1184-${{ hashFiles('singularity_app/mix.lock') }}-${{ hashFiles('**/moon.yml') }}
-          restore-keys: |
-            pr-${{ runner.os }}-otp28-elixir1184-
 
       - name: Run Claude Code Review
         env:
@@ -118,7 +102,7 @@ EVALEOF
           # Run Claude Code review
           export CLAUDE_API_KEY="$CLAUDE_CODE_OAUTH_TOKEN"
 
-          REVIEW_OUTPUT=$(bun run tools/claude-ai.ts "$(cat <<EOJSON
+          REVIEW_OUTPUT=$(nix develop -c bash -lc "bun run tools/claude-ai.ts \"$(cat <<EOJSON
 {
   "model": "sonnet",
   "messages": [
@@ -130,7 +114,7 @@ EVALEOF
   "temperature": 0.3
 }
 EOJSON
-)" | jq -r .text)
+)\" | jq -r .text")
 
           # Post review as comment
           gh pr comment $PR_NUMBER --body "$REVIEW_OUTPUT"

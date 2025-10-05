@@ -90,8 +90,7 @@ defmodule Singularity.Autonomy.RuleEngineV2 do
           rule_id: rule_id,
           correlation_id: correlation_id
         )
-
-        {:ok, Map.put(cached_result, :cached, true)}
+        classify_result(Map.put(cached_result, :cached, true))
 
       _ ->
         # Load rule from ETS/DB
@@ -169,7 +168,6 @@ defmodule Singularity.Autonomy.RuleEngineV2 do
       {:autonomous, result} -> result.confidence
       {:collaborative, result} -> result.confidence
       {:escalated, result} -> Map.get(result, :confidence, 0.0)
-      {:ok, result} -> result.confidence
       {:error, _} -> 0.0
     end)
   end
