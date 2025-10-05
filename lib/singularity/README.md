@@ -130,7 +130,7 @@ end
 ## Example: Code Generation Service
 
 ```elixir
-defmodule Singularity.CodeGenerator do
+defmodule Singularity.CodeModel do
   alias Singularity.AIProvider
 
   @doc """
@@ -244,7 +244,7 @@ test "generates code successfully" do
     {:ok, "defmodule Example do\nend"}
   end)
 
-  assert {:ok, code} = CodeGenerator.generate("Create a module")
+  assert {:ok, code} = CodeModel.complete("Create a module")
   assert code =~ "defmodule Example"
 end
 ```

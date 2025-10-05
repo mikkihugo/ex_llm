@@ -78,3 +78,46 @@ if mix_env == "prod" do
   config :kernel, :repl_history_size, 0
   config :singularity, :release_cookie, secret
 end
+
+# GPU-accelerated ML/AI configuration
+if config_env() != :test do
+  # Use EXLA backend with CUDA (RTX 4080)
+  config :nx, :default_backend, EXLA.Backend
+
+  config :exla,
+    # Use GPU 0 (your RTX 4080 - 16GB VRAM)
+    default_client: :cuda,
+    clients: [
+      # RTX 4080 16GB - allocate 75% for models (12GB), leave 4GB for system
+      cuda: [platform: :cuda, memory_fraction: 0.75],
+      host: [platform: :host]  # CPU fallback if CUDA unavailable
+    ]
+
+  # Configure Bumblebee
+  config :bumblebee,
+    # Cache models in ~/.cache/huggingface
+    offline: false,
+    # RTX 4080 16GB - use GPU acceleration
+    default_backend: {EXLA.Backend, client: :cuda}
+end
+
+# Embedding service configuration
+config :singularity,
+  # Embedding provider priority: :google, :bumblebee, :python, :auto
+  embedding_provider: :auto,
+
+  # Bumblebee embedding model (runs on GPU with EXLA)
+  bumblebee_model: "jina-embeddings-v2-base-code",  # 161M params, 768 dims, code-optimized
+
+  # Google AI API key (from .env)
+  google_ai_api_key: System.get_env("GOOGLE_AI_STUDIO_API_KEY"),
+
+  # Code generation model configuration
+  code_generation: [
+    model: "bigcode/starcoder2-7b",  # 7B params, ~14GB, best quality
+    # Alternative models:
+    # "deepseek-ai/deepseek-coder-1.3b-base" - 1.3B params, faster
+    # "bigcode/starcoder2-3b" - 3B params, balanced
+    max_tokens: 256,
+    temperature: 0.2  # Lower = fewer errors, more deterministic
+  ]

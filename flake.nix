@@ -1,5 +1,5 @@
 {
-  description = "Singularity - AI-powered multi-agent coordination platform with comprehensive Rust tooling analysis";
+  description = "Singularity - Autonomous agent platform with GPU-accelerated semantic code search";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -44,6 +44,11 @@
 
           # Rust compilation caching
           sccache
+
+          # GPU/CUDA Support for ML (RTX 4080 16GB)
+          cudaPackages.cudatoolkit
+          cudaPackages.cudnn
+          linuxPackages.nvidia_x11  # NVIDIA drivers
 
           # Comprehensive Rust development tools
           rust-analyzer       # LSP server for Rust IDE support
@@ -102,6 +107,7 @@
           # No nodejs - bun is enough
           flyctl
           bun
+          nats-server  # NATS with JetStream for distributed facts
 
           # Container tools (rootless development)
           podman
@@ -358,6 +364,28 @@ EOF
             export HEX_HOME="$PWD/.hex"
             mkdir -p "$MIX_HOME" "$HEX_HOME" "$PWD/bin"
             export PATH=$PWD/bin:$PATH
+
+            # CUDA/GPU environment for EXLA (RTX 4080)
+            export CUDA_HOME="${pkgs.cudaPackages.cudatoolkit}"
+            export CUDNN_HOME="${pkgs.cudaPackages.cudnn}"
+            export LD_LIBRARY_PATH="${pkgs.cudaPackages.cudatoolkit}/lib:${pkgs.cudaPackages.cudnn}/lib:${pkgs.linuxPackages.nvidia_x11}/lib:''${LD_LIBRARY_PATH:-}"
+            export XLA_FLAGS="--xla_gpu_cuda_data_dir=$CUDA_HOME"
+            export EXLA_TARGET="cuda"
+
+            # Verify CUDA is available
+            if command -v nvidia-smi >/dev/null 2>&1; then
+              echo "🎮 GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo 'NVIDIA GPU')"
+              echo "   CUDA: $(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9.]+' || echo 'available')"
+            fi
+
+            # NATS JetStream setup
+            export NATS_URL="nats://localhost:4222"
+            if ! pgrep -x "nats-server" > /dev/null; then
+              echo "📡 Starting NATS with JetStream..."
+              nats-server -js -sd "$PWD/.nats" -p 4222 > /dev/null 2>&1 &
+              sleep 1
+              echo "   NATS running on nats://localhost:4222"
+            fi
 
             if ! command -v claude >/dev/null 2>&1; then
               claude() {

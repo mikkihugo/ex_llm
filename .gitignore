@@ -49,6 +49,26 @@ moon.yml
 /singularity_app/deps/
 /singularity_app/priv/plts/
 
+# Erlang/Elixir artifacts
+*.crash.dump
+erl_crash.dump
+/singularity_app/erl_crash.dump
+
+# Gleam build artifacts
+/singularity_app/gleam/build/
+/singularity_app/gleam/.dev-db/
+
+# Generated Gleam files (from gleam new)
+/singularity_app/gleam/src/gleam_app.gleam
+/singularity_app/gleam/test/gleam_app_test.gleam
+/singularity_app/gleam/README.md
+/singularity_app/gleam/gleam.toml
+/singularity_app/gleam/manifest.toml
+
+# Legacy shell scripts (replaced by Elixir Mix tasks)
+/scripts/extend-analysis-db.sh
+/scripts/query-analysis-db.sh
+
 # Rust build artifacts
 target/
 Cargo.lock
@@ -56,3 +76,4 @@ Cargo.lock
 **/*.rs.bk
 debug/
 
+.nats/

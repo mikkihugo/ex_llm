@@ -80,6 +80,11 @@ defmodule Singularity.MixProject do
       # Vector embeddings for pattern mining
       {:pgvector, "~> 0.2"},
 
+      # ML/AI - Local embeddings with GPU acceleration
+      {:bumblebee, "~> 0.5.3"},
+      {:nx, "~> 0.7.1"},
+      {:exla, "~> 0.7.1"},  # XLA compiler for GPU (CUDA/ROCm)
+
       # Data & Serialization
       {:jason, "~> 1.4"},
       {:nimble_options, "~> 1.1"},
@@ -104,6 +109,9 @@ defmodule Singularity.MixProject do
       {:cachex, "~> 3.6"},
       # Resource pooling for LLM APIs
       {:nimble_pool, "~> 1.0"},
+
+      # MCP (Model Context Protocol)
+      {:hermes_mcp, "~> 0.14.1"},
 
       # Event Processing
       # Data pipelines

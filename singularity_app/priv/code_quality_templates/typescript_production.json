@@ -1,0 +1,47 @@
+{
+  "name": "TypeScript Production Quality",
+  "language": "typescript",
+  "quality_level": "production",
+  "description": "Production standards for TypeScript with strict type checking",
+
+  "requirements": {
+    "documentation": {
+      "jsdoc": {
+        "required": true,
+        "required_for": ["all_public_functions", "classes", "interfaces"],
+        "must_include": ["description", "params", "returns", "examples"]
+      }
+    },
+
+    "type_safety": {
+      "strict_mode": true,
+      "explicit_types": "required",
+      "no_any": true,
+      "prefer_readonly": true
+    },
+
+    "error_handling": {
+      "style": "exceptions_or_result_types",
+      "custom_error_classes": "encouraged",
+      "async_errors": "use_promise_rejection"
+    },
+
+    "testing": {
+      "required": true,
+      "framework": "jest or vitest",
+      "coverage_target": 85,
+      "test_types": ["unit", "integration", "type_tests"]
+    },
+
+    "code_style": {
+      "naming": "camelCase for variables, PascalCase for classes",
+      "max_function_length": 40,
+      "prefer_const": true,
+      "no_var": true
+    }
+  },
+
+  "prompts": {
+    "code_generation": "Generate production-quality TypeScript code for: {task}\n\nREQUIREMENTS:\n- JSDoc for all public functions\n- Strict TypeScript types, no 'any'\n- Proper error handling\n- Unit tests with Jest/Vitest\n- Prefer const, no var\n\nOUTPUT CODE ONLY."
+  }
+}

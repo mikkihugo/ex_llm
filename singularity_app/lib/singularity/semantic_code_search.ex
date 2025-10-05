@@ -1,28 +1,31 @@
-defmodule Singularity.UnifiedCodebaseSchema do
+defmodule Singularity.SemanticCodeSearch do
   @moduledoc """
-  Unified Codebase Schema - PostgreSQL integration with analysis-suite
-  
-  This module creates a PostgreSQL schema that matches the analysis-suite's
-  comprehensive CodebaseMetadata structure while adding graph capabilities.
-  
+  Semantic Code Search - Find code using natural language and embeddings
+
+  This module provides semantic search capabilities for codebases using pgvector
+  embeddings and PostgreSQL. It enables natural language queries like:
+  - "Find authentication code"
+  - "Show me error handling patterns"
+  - "Where is user validation?"
+
   ## Features
-  
-  ### Comprehensive Codebase Metadata
-  - **Single Source of Truth**: All analysis data in one table
-  - **50+ Metrics**: Complexity, quality, security, performance, semantic
-  - **Graph Integration**: Nodes, edges, relationships
-  - **Vector Search**: pgvector integration for semantic search
-  
-  ### Graph Capabilities
-  - **Apache AGE**: Graph database extension for PostgreSQL
-  - **Cypher Queries**: Graph query language support
+
+  ### Semantic Search with Vector Embeddings
+  - **Natural Language Queries**: Ask questions, find code
+  - **Similarity Matching**: Find related/duplicate code
+  - **50+ Code Metrics**: Complexity, quality, security, performance
+  - **Multi-Language**: Rust, Elixir, Gleam, TypeScript
+
+  ### Graph-Based Code Analysis
+  - **Apache AGE**: Graph database for code relationships
+  - **Dependency Analysis**: Track imports, function calls
+  - **Impact Analysis**: What code depends on this?
   - **Graph Algorithms**: PageRank, centrality, shortest path
-  - **ACID Transactions**: Full PostgreSQL compliance
-  
-  ### Analysis-Suite Compatibility
-  - **Direct Mapping**: Rust CodebaseMetadata -> PostgreSQL
-  - **Performance**: Indexed queries, vector search
-  - **Scalability**: Handles large codebases efficiently
+
+  ### Performance & Scalability
+  - **Indexed Vector Search**: Fast similarity lookups with IVFFlat
+  - **Batch Processing**: Embed entire codebases efficiently
+  - **Incremental Updates**: Only re-embed changed files
   """
 
   require Logger

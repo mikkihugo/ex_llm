@@ -20,7 +20,7 @@ This guide shows how to bundle authentication credentials for deploying the AI s
 Create a `.env` file with all credentials:
 
 ```bash
-# Gemini ADC (base64 encoded)
+# Gemini ADC (base64 encoded; auto-populated by direnv if you have gcloud ADC locally)
 GOOGLE_APPLICATION_CREDENTIALS_JSON=<base64 encoded JSON>
 
 # Claude long-term token (starts with sk-ant-oat01-)
@@ -34,13 +34,19 @@ GH_TOKEN=ghp_xxxxxxxxxxxxx
 
 # Gemini Code Assist Project
 GEMINI_CODE_PROJECT=gemini-code-473918
+# (direnv also exports GEMINI_CODE_PROJECT/GOOGLE_CLOUD_PROJECT/CLOUDSDK_CORE_PROJECT to this value by default.)
 ```
 
 **Generate credentials:**
 
 ```bash
-# Gemini ADC
-export GOOGLE_APPLICATION_CREDENTIALS_JSON=$(cat ~/.config/gcloud/application_default_credentials.json | base64 -w 0)
+# Gemini ADC (direnv does this automatically when ~/.config/gcloud/application_default_credentials.json exists)
+export GOOGLE_APPLICATION_CREDENTIALS_JSON=$(python3 - <<'PY'
+import base64, pathlib, os
+path = pathlib.Path(os.path.expanduser('~/.config/gcloud/application_default_credentials.json'))
+print(base64.b64encode(path.read_bytes()).decode('ascii'))
+PY
+)
 
 # Claude long-term token (from claude setup-token)
 export CLAUDE_ACCESS_TOKEN=$(jq -r '.claudeAiOauth.accessToken' ~/.claude/.credentials.json)

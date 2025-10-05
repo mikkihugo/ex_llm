@@ -7,3 +7,5 @@ projects:
   - 'ai-server'
   - 'seed_agent'
   - 'litellm'
+  - 'singularity_app'
+  - 'rust'

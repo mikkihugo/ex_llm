@@ -22,6 +22,28 @@ defmodule Singularity.Telemetry do
       last_value("vm.memory.total", unit: :byte),
       last_value("vm.total_run_queue_lengths.total"),
       summary("singularity.hot_reload.duration", unit: {:native, :millisecond}),
+      summary("singularity.code_generator.generate.duration",
+        event_name: [:singularity, :code_generator, :generate, :stop],
+        measurement: :duration,
+        tags: [:operation, :model, :status],
+        unit: {:native, :millisecond}
+      ),
+      counter("singularity.code_generator.generate.count",
+        event_name: [:singularity, :code_generator, :generate, :stop],
+        measurement: fn _ -> 1 end,
+        tags: [:operation, :model, :status]
+      ),
+      summary("singularity.code_synthesis_pipeline.generate.duration",
+        event_name: [:singularity, :code_synthesis_pipeline, :generate, :stop],
+        measurement: :duration,
+        tags: [:language, :repo, :fast_mode, :status],
+        unit: {:native, :millisecond}
+      ),
+      counter("singularity.code_synthesis_pipeline.generate.count",
+        event_name: [:singularity, :code_synthesis_pipeline, :generate, :stop],
+        measurement: fn _ -> 1 end,
+        tags: [:language, :repo, :fast_mode, :status]
+      ),
       counter("singularity.improvement.attempt.count", tags: [:agent_id, :source]),
       counter("singularity.improvement.queued.count", tags: [:agent_id]),
       counter("singularity.improvement.rate_limited.count", tags: [:agent_id]),

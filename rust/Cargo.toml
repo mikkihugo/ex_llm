@@ -1,9 +1,10 @@
 [workspace]
 members = [
     "analysis_suite",
+    "db_service",
     "linting_engine",
     "prompt_engine",
-    "sparc_fact_system_rust",
+    "tool_doc_index",
     "universal_parser"
 ]
 

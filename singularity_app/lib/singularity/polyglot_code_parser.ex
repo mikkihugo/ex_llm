@@ -1,7 +1,7 @@
-defmodule Singularity.UniversalParserIntegration do
+defmodule Singularity.PolyglotCodeParser do
   @moduledoc """
-  Universal Parser Integration - Elixir wrapper for Rust universal-parser
-  
+  Polyglot Code Parser - Parse and analyze code in any language
+
   This module provides Elixir integration with the Rust universal-parser framework,
   which offers:
   

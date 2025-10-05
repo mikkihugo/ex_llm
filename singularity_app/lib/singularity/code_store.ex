@@ -672,6 +672,114 @@ defmodule Singularity.CodeStore do
     }
   end
 
+  defp analyze_domain_boundaries(codebase_path) do
+    lib_dir = Path.join(codebase_path, "lib")
+
+    domains =
+      case File.ls(lib_dir) do
+        {:ok, entries} ->
+          entries
+          |> Enum.filter(&File.dir?(Path.join(lib_dir, &1)))
+          |> Enum.map(fn entry ->
+            %{
+              domain: entry,
+              module_path: Path.join(lib_dir, entry)
+            }
+          end)
+
+        _ ->
+          []
+      end
+
+    %{
+      domains: domains,
+      detected_at: DateTime.utc_now()
+    }
+  end
+
+  defp analyze_service_separation(codebase_path) do
+    services_dir = Path.join(codebase_path, "services")
+
+    services =
+      case File.ls(services_dir) do
+        {:ok, entries} ->
+          entries
+          |> Enum.filter(&File.dir?(Path.join(services_dir, &1)))
+          |> Enum.map(fn entry ->
+            path = Path.join(services_dir, entry)
+
+            %{
+              service: entry,
+              has_lib?: File.dir?(Path.join(path, "lib")),
+              has_tests?: File.dir?(Path.join(path, "test"))
+            }
+          end)
+
+        _ ->
+          []
+      end
+
+    %{
+      service_count: length(services),
+      services: services
+    }
+  end
+
+  defp analyze_architectural_layers(codebase_path) do
+    lib_dir = Path.join(codebase_path, "lib")
+
+    base_layers = %{
+      presentation: [],
+      domain: [],
+      infrastructure: []
+    }
+
+    layers =
+      case File.ls(lib_dir) do
+        {:ok, entries} ->
+          Enum.reduce(entries, base_layers, fn entry, acc ->
+            down = String.downcase(entry)
+            path = Path.join(lib_dir, entry)
+
+            cond do
+              not File.dir?(path) -> acc
+              String.contains?(down, "web") or String.contains?(down, "ui") ->
+                Map.update!(acc, :presentation, &[entry | &1])
+              String.contains?(down, "infra") or String.contains?(down, "adapter") ->
+                Map.update!(acc, :infrastructure, &[entry | &1])
+              true ->
+                Map.update!(acc, :domain, &[entry | &1])
+            end
+          end)
+
+        _ ->
+          base_layers
+      end
+
+    %{layers: layers, analyzed_at: DateTime.utc_now()}
+  end
+
+  defp analyze_monorepo_structure(codebase_path) do
+    dirs =
+      ["apps", "services", "packages"]
+      |> Enum.map(fn dir -> {dir, Path.join(codebase_path, dir)} end)
+      |> Enum.map(fn {name, path} -> {name, list_subdirs(path)} end)
+
+    %{structure: dirs, analyzed_at: DateTime.utc_now()}
+  end
+
+  defp list_subdirs(path) do
+    case File.ls(path) do
+      {:ok, entries} ->
+        entries
+        |> Enum.filter(&File.dir?(Path.join(path, &1)))
+        |> Enum.sort()
+
+      _ ->
+        []
+    end
+  end
+
   defp analyze_services(codebase_path) do
     services = []
 

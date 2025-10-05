@@ -1,0 +1,326 @@
+{
+  "name": "Elixir Production Quality",
+  "language": "elixir",
+  "quality_level": "production",
+  "description": "Maximum quality standards for production Elixir code",
+
+  "requirements": {
+    "documentation": {
+      "moduledoc": {
+        "required": true,
+        "min_length": 100,
+        "must_include": ["overview", "examples", "usage"]
+      },
+      "doc": {
+        "required_for": ["all_public_functions"],
+        "min_length": 50,
+        "must_include": ["description", "examples", "return_value"]
+      },
+      "inline_comments": {
+        "required_for": ["complex_logic", "algorithms"],
+        "style": "concise"
+      }
+    },
+
+    "type_specs": {
+      "required": true,
+      "required_for": ["all_functions"],
+      "style": "strict",
+      "custom_types": "encouraged"
+    },
+
+    "error_handling": {
+      "style": "tagged_tuples",
+      "required_pattern": "{:ok, result} | {:error, reason}",
+      "no_raise": true,
+      "explicit_errors": true,
+      "error_types": ["atom", "string", "custom_error_struct"]
+    },
+
+    "testing": {
+      "required": true,
+      "coverage_target": 90,
+      "test_types": [
+        "happy_path",
+        "edge_cases",
+        "error_cases",
+        "property_based",
+        "integration"
+      ],
+      "test_framework": "ExUnit",
+      "must_test": ["all_public_functions", "error_paths"]
+    },
+
+    "code_style": {
+      "naming_convention": "snake_case",
+      "max_function_length": 30,
+      "max_line_length": 120,
+      "pattern_matching": "preferred",
+      "guard_clauses": "required_for_validation",
+      "pipe_operator": "encouraged",
+      "with_statements": "for_multiple_operations"
+    },
+
+    "code_smells": {
+      "forbidden": [
+        "TODO",
+        "FIXME",
+        "XXX",
+        "HACK"
+      ],
+      "warnings": [
+        "long_functions",
+        "deeply_nested",
+        "god_modules"
+      ]
+    },
+
+    "architecture": {
+      "single_responsibility": true,
+      "max_module_lines": 500,
+      "separation_of_concerns": true,
+      "prefer_composition": true
+    }
+  },
+
+  "prompts": {
+    "system_prompt": "You are an expert Elixir developer writing PRODUCTION-QUALITY code. Generate code that meets the highest standards: complete documentation, type specs, comprehensive tests, and explicit error handling. Follow Elixir best practices and idioms.",
+
+    "code_generation": "Generate production-quality Elixir code for: {task}\n\nREQUIREMENTS:\n- @moduledoc with overview and examples\n- @doc for EVERY public function\n- @spec for EVERY function\n- Explicit error handling with {:ok, _} | {:error, _}\n- Guard clauses for validation\n- Pattern matching preferred\n- Functions under 30 lines\n- No TODOs or FIXMEs\n\nOUTPUT CODE ONLY - no explanations.",
+
+    "documentation": "Generate complete documentation for this Elixir code:\n\n```elixir\n{code}\n```\n\nInclude:\n- @moduledoc with overview, examples, and important notes\n- @doc for every public function with:\n  - Clear description\n  - Parameter explanations\n  - Return value description\n  - Usage examples\n\nOUTPUT DOCUMENTATION ONLY.",
+
+    "type_specs": "Generate @spec type specifications for this Elixir code:\n\n```elixir\n{code}\n```\n\nBe precise with types:\n- Use String.t(), integer(), float(), map(), list(), etc.\n- Define custom types with @type if needed\n- Include @spec for every function\n\nOUTPUT @spec DECLARATIONS ONLY.",
+
+    "tests": "Generate comprehensive ExUnit tests for this code:\n\n```elixir\n{code}\n```\n\nInclude:\n- Happy path tests (valid inputs)\n- Edge cases (nil, empty, boundary values)\n- Error cases (invalid inputs, failures)\n- Property-based tests (if applicable)\n- Test coverage > 90%\n\nOUTPUT COMPLETE TEST MODULE ONLY.",
+
+    "refactor_quality": "Refactor this Elixir code to meet production quality standards:\n\n```elixir\n{code}\n```\n\nAdd:\n- Missing @moduledoc/@doc/@spec\n- Explicit error handling\n- Guard clauses\n- Better variable names\n- Break long functions into smaller ones\n\nOUTPUT REFACTORED CODE ONLY."
+  },
+
+  "semantic_patterns": {
+    "common_patterns": [
+      {
+        "pattern": "API client",
+        "pseudocode": "module → client_state → request(method, path, params) → {:ok, response} | {:error, reason}",
+        "relationships": ["GenServer for state", "HTTP client (Req/Finch)", "rate limiting", "retry logic"],
+        "keywords": ["http", "api", "request", "client", "endpoint"]
+      },
+      {
+        "pattern": "GenServer cache",
+        "pseudocode": "GenServer → state:map → get(key) → {:ok, value} | :not_found, put(key, value) → :ok, ttl management",
+        "relationships": ["ETS for backing", "periodic cleanup", "pub/sub for invalidation"],
+        "keywords": ["cache", "genserver", "state", "ttl", "get", "put"]
+      },
+      {
+        "pattern": "Data pipeline",
+        "pseudocode": "Broadway → fetch → validate → transform → store → handle_failed",
+        "relationships": ["producers", "processors", "batchers", "error handling"],
+        "keywords": ["pipeline", "stream", "transform", "batch", "flow"]
+      },
+      {
+        "pattern": "Ecto schema",
+        "pseudocode": "schema → fields → associations → changeset → validations → repo operations",
+        "relationships": ["belongs_to", "has_many", "many_to_many", "embeds"],
+        "keywords": ["schema", "changeset", "repo", "association", "validation"]
+      }
+    ],
+
+    "relationship_vectors": {
+      "supervisor_tree": "Supervisor → children → restart_strategy → dynamic vs static",
+      "umbrella_app": "Apps → shared deps → cross-app communication → separate releases",
+      "pubsub_pattern": "Publisher → PubSub → Subscribers → topics → broadcast",
+      "agent_pattern": "Agent → state → get/update → simple vs GenServer",
+      "task_pattern": "Task.async → Task.await → supervision → Task.Supervisor",
+      "nats_pub": "NATS.publish(subject, payload) → fire_and_forget → async messaging",
+      "nats_sub": "NATS.subscribe(subject) → handle_message(msg) → ack/nak → consumer group",
+      "nats_request": "NATS.request(subject, data, timeout) → await_reply → RPC pattern",
+      "nats_stream": "JetStream → durable consumer → ack policy → replay capability",
+      "kafka_producer": "Kafka.produce(topic, key, value) → partition → broker → ack → at_least_once",
+      "kafka_consumer": "Kafka.consume(topic, group_id) → poll → process batch → commit offsets → exactly_once",
+      "kafka_stream": "KafkaStreams → topology → stateful processing → windowing → aggregations",
+      "service_registry": "NATS service → advertise endpoints → health checks → load balancing",
+      "event_sourcing": "Event → NATS/Kafka stream → consumers → projections → state rebuild"
+    },
+
+    "architectural_hints": {
+      "separation": "Context (business logic) → Schema (data) → View (presentation)",
+      "error_flow": "with statement → pattern match → early return → {:error, reason}",
+      "data_flow": "input → validate → transform → side_effects → output",
+      "supervision": "one_for_one | one_for_all | rest_for_one → max_restarts → shutdown",
+      "microservices": "Service → NATS subjects → request/reply → pub/sub → streams",
+      "distributed_state": "CRDT (DeltaCRDT) → eventual consistency → merge conflicts → distributed writes",
+      "service_mesh": "NATS core → service discovery → load balancing → failover",
+      "event_driven": "Command → Event → NATS stream → Consumers → Projections → Query models",
+      "observability": "Telemetry → metrics → traces → logs → NATS monitoring subjects",
+      "circuit_breaker": "Request → check_breaker → open/half_open/closed → fallback → reset timeout"
+    },
+
+    "distributed_patterns": {
+      "nats_microservice": {
+        "structure": "Service module → NATS.Connection → advertise(name, version) → handle_request(subject, payload) → reply",
+        "relationships": [
+          "Service discovery via NATS",
+          "Health checks on $SYS.REQ.SERVER.PING",
+          "Load balancing via queue groups",
+          "Circuit breaker for resilience"
+        ],
+        "example_flow": "Client → NATS.request('user.get', user_id) → [Service1, Service2] queue → Service1.handle → reply → Client receives"
+      },
+      "event_sourcing_nats": {
+        "structure": "Command → validate → Event → NATS.publish('events.user.created') → Stream → Consumers → update_read_models",
+        "relationships": [
+          "JetStream for durable events",
+          "Multiple consumers for different projections",
+          "Replay for rebuilding state",
+          "Acknowledgment for at-least-once delivery"
+        ]
+      },
+      "saga_pattern": {
+        "structure": "Saga coordinator → step1 → publish(event1) → step2 → compensate_if_fails → publish(compensation)",
+        "relationships": [
+          "NATS for event bus",
+          "State machine for progress tracking",
+          "Compensation actions",
+          "Idempotency for retries"
+        ]
+      },
+      "cqrs": {
+        "structure": "Command side → NATS/Kafka → Event → Stream → Query side → read model → materialized view",
+        "relationships": [
+          "Separate write/read models",
+          "Eventual consistency",
+          "Scalable reads",
+          "Event replay for rebuilding"
+        ]
+      },
+      "kafka_broadway_pipeline": {
+        "structure": "Broadway → KafkaProducer → fetch batches → transform → acknowledge → offset commit",
+        "relationships": [
+          "Backpressure handling",
+          "Batching for efficiency",
+          "Fault tolerance with retries",
+          "Dead letter queue"
+        ],
+        "example_flow": "Kafka topic → Broadway → processor pool → batch_handler → store in DB → commit offsets"
+      },
+      "kafka_exactly_once": {
+        "structure": "Read → Process → Write → Commit (transactional) → idempotent producer",
+        "relationships": [
+          "Kafka transactions",
+          "Idempotency keys",
+          "Exactly-once semantics",
+          "State coordination"
+        ]
+      }
+    },
+
+    "service_relationships": {
+      "singularity_to_fact_system": "Singularity agent → NATS.request('facts.query', %{query: 'dependencies for repo X'}) → SPARC fact system → facts → enrich context",
+      "fact_query_patterns": {
+        "technology_stack": "NATS.request('facts.query', %{repo: 'singularity', type: 'tech_stack'}) → [elixir, rust, postgres, nats]",
+        "dependencies": "NATS.request('facts.query', %{package: 'phoenix', type: 'dependents'}) → repos using phoenix",
+        "code_patterns": "NATS.request('facts.query', %{pattern: 'GenServer cache'}) → examples from all repos",
+        "security_vulns": "NATS.request('facts.query', %{repo: 'X', type: 'advisories'}) → CVEs and severity"
+      },
+      "agent_coordination": "Agent1 → publish('task.available') → Agent2 subscribes → claim task → publish('task.claimed')",
+      "distributed_cache": "Service → request → check local cache → miss → NATS.request('cache.get') → cache service → store locally",
+      "health_aggregation": "$SYS.REQ.SERVER.PING → all services reply → aggregate health → expose /health endpoint",
+      "code_generation_with_facts": "User request → query facts about similar code → RAG retrieval → pattern indexer → generate with context"
+    },
+
+    "fact_system_integration": {
+      "query_structure": {
+        "basic": "NATS.request('facts.query', query_payload, timeout: 5000)",
+        "payload_schema": "%{repo: String, type: :tech_stack | :dependencies | :patterns | :advisories, filters: map}",
+        "response_schema": "{:ok, [%Fact{...}]} | {:error, reason}"
+      },
+      "example_queries": [
+        {
+          "query": "Find all repos using Rust",
+          "nats": "NATS.request('facts.query', %{language: 'rust', type: :repos})",
+          "use_case": "Before generating Rust code, find best examples from Rust repos"
+        },
+        {
+          "query": "Get dependency graph",
+          "nats": "NATS.request('facts.query', %{package: 'ecto', type: :dependency_graph})",
+          "use_case": "Understand what other packages are typically used with Ecto"
+        },
+        {
+          "query": "Find code patterns",
+          "nats": "NATS.request('facts.query', %{pattern: 'http_client', language: 'elixir'})",
+          "use_case": "Get examples of HTTP client implementations across all repos"
+        }
+      ],
+      "deduplication_integration": "Before generating → query facts → find similar code → check fingerprints → reuse if duplicate"
+    },
+
+    "detector_framework_integration": {
+      "purpose": "Auto-detect technology stack before code generation",
+      "flow": "File analysis → detector → tech profile → facts → code generation context",
+      "detectors": {
+        "npm_detector": "package.json → dependencies → typescript/react/next.js → suggest patterns",
+        "cargo_detector": "Cargo.toml → dependencies → tokio/serde/actix → suggest async patterns",
+        "mix_detector": "mix.exs → deps → phoenix/ecto/broadway → suggest BEAM patterns",
+        "go_mod_detector": "go.mod → require → gorilla/gin/grpc → suggest Go patterns"
+      },
+      "usage_in_generation": {
+        "1_detect": "Scan repo → run detectors → build tech_profile.json",
+        "2_store_facts": "tech_profile → SPARC facts → NATS.publish('facts.tech_stack', profile)",
+        "3_query_on_generate": "Before generating → NATS.request('facts.query', %{repo: X}) → get tech stack",
+        "4_context_enrichment": "Tech stack → find patterns for detected techs → include in prompts",
+        "5_smart_defaults": "Detected Phoenix → use Phoenix patterns, Ecto schemas, LiveView"
+      },
+      "example_tech_profiles": {
+        "elixir_phoenix_app": {
+          "language": "elixir",
+          "frameworks": ["phoenix", "ecto", "liveview"],
+          "patterns_to_use": ["phoenix_controller", "ecto_schema", "liveview_component", "pubsub"],
+          "dependencies": ["jason", "plug", "postgrex"],
+          "code_gen_hints": "Use contexts, schemas in lib/app_name/, web in lib/app_name_web/"
+        },
+        "rust_tokio_service": {
+          "language": "rust",
+          "frameworks": ["tokio", "axum", "sqlx"],
+          "patterns_to_use": ["async_fn", "tokio_spawn", "axum_handler", "sqlx_query"],
+          "dependencies": ["serde", "anyhow", "tracing"],
+          "code_gen_hints": "Use Result<T, E>, async/await, structured logging with tracing"
+        }
+      },
+      "nats_detector_integration": "Detector runs → publishes to 'detector.tech_profile.{repo}' → fact collector subscribes → stores in DB"
+    }
+  },
+
+  "examples": {
+    "good_code": "defmodule JSONParser do\n  @moduledoc \"\"\"\n  Parses JSON strings with comprehensive error handling.\n\n  ## Examples\n\n      iex> JSONParser.parse(\"{\\\"key\\\": \\\"value\\\"}\")\n      {:ok, %{\"key\" => \"value\"}}\n\n      iex> JSONParser.parse(\"invalid\")\n      {:error, :invalid_json}\n  \"\"\"\n\n  @doc \"\"\"\n  Parses a JSON string into an Elixir map.\n\n  ## Parameters\n\n  - `json` - JSON string to parse\n\n  ## Returns\n\n  - `{:ok, map}` - Successfully parsed JSON\n  - `{:error, reason}` - Parsing failed\n  \"\"\"\n  @spec parse(String.t()) :: {:ok, map()} | {:error, atom()}\n  def parse(json) when is_binary(json) do\n    case Jason.decode(json) do\n      {:ok, data} -> {:ok, data}\n      {:error, _} -> {:error, :invalid_json}\n    end\n  end\n\n  def parse(_), do: {:error, :invalid_input}\nend",
+
+    "bad_code": "def parse(x) do\n  # TODO: add error handling\n  Jason.decode(x)\nend"
+  },
+
+  "quality_checklist": [
+    "Has @moduledoc with examples",
+    "Has @doc for all public functions",
+    "Has @spec for all functions",
+    "Uses {:ok, _} | {:error, _} pattern",
+    "No raise/throw in production code paths",
+    "Functions are under 30 lines",
+    "Descriptive variable names (no x, y, z)",
+    "Guard clauses for validation",
+    "Pattern matching used appropriately",
+    "No TODO/FIXME/XXX markers",
+    "Comprehensive tests (>90% coverage)",
+    "Edge cases handled",
+    "Error cases tested"
+  ],
+
+  "scoring_weights": {
+    "has_moduledoc": 1.0,
+    "has_function_docs": 1.0,
+    "has_type_specs": 1.0,
+    "has_tests": 1.0,
+    "error_handling": 1.0,
+    "no_code_smells": 1.0,
+    "naming_quality": 0.8,
+    "function_length": 0.6,
+    "test_coverage": 1.0
+  }
+}

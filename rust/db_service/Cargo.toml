@@ -1,0 +1,29 @@
+[package]
+name = "db-service"
+version = "0.1.0"
+edition = "2021"
+description = "Database service - PostgreSQL access via NATS JetStream"
+
+[[bin]]
+name = "db-service"
+path = "src/bin/main.rs"
+
+[dependencies]
+# Core
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "json", "chrono", "migrate"] }
+
+# NATS
+async-nats = "0.33"
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+
+# Config
+dotenvy = "0.15"

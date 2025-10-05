@@ -8,6 +8,29 @@ verify:
 	cd singularity_app && MIX_ENV=dev mix quality
 	cd singularity_app && MIX_ENV=test mix test.ci
 
+# Environment management
+dev:
+	nix develop .#dev --command bash
+
+test:
+	nix develop .#test --command bash
+
+prod:
+	nix develop .#prod --command bash
+
+fly:
+	nix develop .#fly --command bash
+
+# Environment-specific commands
+dev-server:
+	nix develop .#dev --command bash -c "cd singularity_app && mix phx.server"
+
+test-run:
+	nix develop .#test --command bash -c "cd singularity_app && mix test"
+
+prod-build:
+	nix develop .#prod --command bash -c "cd singularity_app && mix release"
+
 setup:
 	cd singularity_app && MIX_ENV=dev mix deps.get
 	cd singularity_app && MIX_ENV=dev mix deps.compile

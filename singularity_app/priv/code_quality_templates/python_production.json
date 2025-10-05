@@ -1,0 +1,49 @@
+{
+  "name": "Python Production Quality",
+  "language": "python",
+  "quality_level": "production",
+  "description": "Production standards for Python following PEP 8 and type hints",
+
+  "requirements": {
+    "documentation": {
+      "docstrings": {
+        "required": true,
+        "format": "Google style",
+        "required_for": ["all_functions", "classes", "modules"],
+        "must_include": ["description", "args", "returns", "raises", "examples"]
+      }
+    },
+
+    "type_hints": {
+      "required": true,
+      "required_for": ["all_functions"],
+      "use_generics": true,
+      "mypy_strict": true
+    },
+
+    "error_handling": {
+      "style": "exceptions",
+      "custom_exceptions": "encouraged",
+      "context_managers": "for_resources"
+    },
+
+    "testing": {
+      "required": true,
+      "framework": "pytest",
+      "coverage_target": 90,
+      "test_types": ["unit", "integration", "property_based"]
+    },
+
+    "code_style": {
+      "naming": "snake_case",
+      "max_function_length": 50,
+      "max_line_length": 88,
+      "formatter": "black",
+      "linter": "ruff"
+    }
+  },
+
+  "prompts": {
+    "code_generation": "Generate production-quality Python code for: {task}\n\nREQUIREMENTS:\n- Google-style docstrings for all functions\n- Full type hints (pass mypy --strict)\n- Proper exception handling\n- Pytest unit tests\n- Follow PEP 8, black formatting\n\nOUTPUT CODE ONLY."
+  }
+}

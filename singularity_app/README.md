@@ -84,6 +84,18 @@ cd singularity_app && mix deps.audit                 # Hex package vulnerability
 cd singularity_app && mix quality                    # Runs format, Credo, Dialyzer, Sobelow, deps.audit
 ```
 
+### Editor / LSP support
+
+The Nix dev shell now ships the language servers most editors expect:
+
+- `elixir-ls` for Elixir (already included previously)
+- `erlang_ls` for Erlang modules
+- `gleam lsp` via the `gleam` tool
+- `typescript-language-server` for TypeScript/Litellm utilities
+- `rust-analyzer` and the Rust CLI suite (cargo-* tooling)
+
+Launch `nix develop` (or allow direnv) before starting your editor so it picks up the binaries on `$PATH`. These LSPs are for developer use only; agents do **not** call them directly—instead they query the structured data stored via `Singularity.Analysis` / `Singularity.Quality`.
+
 Health and metrics endpoints:
 - `GET http://localhost:4000/health`
 - `GET http://localhost:4000/health/deep`
