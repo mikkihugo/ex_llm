@@ -17,7 +17,8 @@
           src = elixirSrc;
         };
 
-        commonTools = with pkgs; [
+        # Base tools without CUDA
+        baseTools = with pkgs; [
           git
           gh
           curl
@@ -45,11 +46,6 @@
           # Rust compilation caching
           sccache
 
-          # GPU/CUDA Support for ML (RTX 4080 16GB)
-          # Note: NVIDIA drivers must be installed on Windows host for WSL2
-          cudaPackages.cudatoolkit
-          cudaPackages.cudnn
-
           # Comprehensive Rust development tools
           rust-analyzer       # LSP server for Rust IDE support
           cargo-audit         # Security vulnerability scanning
@@ -71,6 +67,15 @@
           bacon               # Background rust code checker
           mdbook              # Rust book generator
         ];
+
+        # CUDA packages (unfree, only for local dev)
+        cudaTools = with pkgs; [
+          cudaPackages.cudatoolkit
+          cudaPackages.cudnn
+        ];
+
+        # All tools including CUDA
+        commonTools = baseTools ++ cudaTools;
 
         beamTools = [
           beamPackages.erlang
@@ -577,7 +582,7 @@ EOF
         # CI environment - like dev but without CUDA (unfree)
         devShells.ci = pkgs.mkShell {
           name = "singularity-ci";
-          buildInputs = beamTools ++ (builtins.filter (pkg: pkg.pname or "" != "cuda-merged") commonTools) ++ webAndCli ++ qaTools;
+          buildInputs = beamTools ++ baseTools ++ webAndCli ++ qaTools;
 
           shellHook = ''
             export ERL_AFLAGS="-proto_dist inet6_tcp"
