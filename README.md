@@ -1,5 +1,7 @@
 # Singularity
 
+[![Cachix Cache](https://img.shields.io/badge/cachix-mikkihugo-blue)](https://mikkihugo.cachix.org)
+
 Autonomous BEAM-native agents that evolve themselves with rules-first execution and selective LLM usage. Elixir provides the runtime and supervision; Gleam adds type-safe agent logic (HTDAG and rule evaluation) via mix_gleam.
 
 ## Highlights

@@ -72,6 +72,19 @@ jobs:
             cd singularity_app && mix compile
           '
 
+      - name: Format & Lint
+        run: |
+          nix develop -c bash -lc '
+            cd singularity_app && mix format --check-formatted
+            cd singularity_app && mix credo --strict
+          '
+
+      - name: Security & Dependency Audit
+        run: |
+          nix develop -c bash -lc '
+            cd singularity_app && mix deps.audit
+          '
+
       - name: Run tests (Elixir)
         env:
           MIX_ENV: test
