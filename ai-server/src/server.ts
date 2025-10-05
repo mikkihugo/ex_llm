@@ -1291,26 +1291,32 @@ async function handleGeminiCode(req: ChatRequest) {
     // Get ADC token
     const token = await getGeminiCodeToken();
 
-    // Use standard Vertex AI endpoint instead of Cloud Code
-    const VERTEX_ENDPOINT = `https://us-central1-aiplatform.googleapis.com/v1/projects/${GEMINI_CODE_PROJECT}/locations/us-central1/publishers/google/models/${modelName}:generateContent`;
+    // ⚠️ WARNING: ONLY use Cloud Code Private API endpoint
+    // DO NOT switch to Vertex AI - it is FORBIDDEN (costs money and is disabled)
+    // This endpoint requires enabling cloudcode-pa.googleapis.com service
 
-    // Format messages in Vertex AI format
+    // Format messages in Gemini Code Assist format
     const contents = req.messages.map(msg => ({
-      role: msg.role === 'system' ? 'user' : msg.role === 'assistant' ? 'model' : msg.role,
+      role: msg.role === 'system' ? 'user' : msg.role,
       parts: [{ text: msg.content }]
     }));
 
-    // Build request in Vertex AI format
+    // Build request in Code Assist format
     const requestBody = {
-      contents,
-      generationConfig: {
-        temperature: req.temperature ?? 0.7,
-        maxOutputTokens: req.maxTokens,
+      model: modelName,
+      project: GEMINI_CODE_PROJECT,
+      user_prompt_id: crypto.randomUUID(),
+      request: {
+        contents,
+        generationConfig: {
+          temperature: req.temperature ?? 0.7,
+          maxOutputTokens: req.maxTokens,
+        }
       }
     };
 
-    // Call Vertex AI API
-    const response = await fetch(VERTEX_ENDPOINT, {
+    // Call Code Assist API
+    const response = await fetch(GEMINI_CODE_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1327,10 +1333,10 @@ async function handleGeminiCode(req: ChatRequest) {
 
     const data = await response.json() as any;
 
-    // Extract text from Vertex AI response format
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const finishReason = data.candidates?.[0]?.finishReason || 'stop';
-    const usage = data.usageMetadata;
+    // Extract text from wrapped response
+    const text = data.response?.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
+    const finishReason = data.response?.candidates?.[0]?.finishReason || 'stop';
+    const usage = data.response?.usageMetadata;
 
     return {
       text,

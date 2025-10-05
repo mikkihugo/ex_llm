@@ -14,6 +14,7 @@ defmodule Singularity.Repo.Migrations.LoadFrameworkPatternsFromJson do
 
   def down do
     # Patterns will be recreated on next up
+    # NOTE: Table will be renamed to technology_patterns in next migration
     execute "TRUNCATE framework_patterns"
   end
 

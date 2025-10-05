@@ -1,15 +1,47 @@
-defmodule Singularity.TemplateAwareEmbeddings do
+defmodule Singularity.DomainVocabularyTrainer do
   @moduledoc """
-  Teaches CodeT5+ about YOUR custom template keywords & SPARC patterns!
+  Trains embedding models to understand YOUR domain-specific vocabulary.
 
-  This is CRITICAL because your templates have special tokens like:
-  - SPARC phases: sparc-phase-1-research, sparc-architecture
-  - Template vars: {{MODULE_NAME}}, {{SUBJECT}}
-  - Prompt bits: <REASONING>, <CODE_QUALITY>
-  - Custom patterns: use GenServer, Gnat.subscribe
+  Teaches CodeT5+, Voyage, OpenAI embeddings about custom terminology:
+  - SPARC methodology (5-phase workflow: Specification → Pseudocode → Architecture → Refinement → Completion)
+  - Technology patterns (frameworks, languages, tools from technology_patterns table)
+  - Template variables ({{MODULE_NAME}}, {{SUBJECT}})
+  - Prompt bits (<REASONING>, <CODE_QUALITY>)
+  - NATS subjects (db.query, facts.technology_detected)
+  - Custom modules (RAGCodeGenerator, HybridAgent)
 
-  Without this, the model treats these as random text!
-  With this, it understands they're SEMANTIC MARKERS!
+  ## Why This Matters
+
+  Without domain vocabulary training:
+  - "sparc-phase-3-architecture" → tokenized as ["sp", "arc", "-", "phase", "##3", ...]
+  - "{{MODULE_NAME}}" → treated as random punctuation
+  - "use GenServer" → loses semantic meaning as Elixir pattern
+
+  With domain vocabulary training:
+  - "sparc-phase-3-architecture" → understood as SPARC_ARCHITECTURE semantic unit
+  - "{{MODULE_NAME}}" → preserved as template variable token
+  - "use GenServer" → recognized as Elixir OTP pattern
+
+  ## Usage
+
+      # Extract vocabulary from technology_patterns table + templates
+      vocab = DomainVocabularyTrainer.extract_custom_vocabulary()
+
+      # Create training pairs for fine-tuning
+      training_data = DomainVocabularyTrainer.create_template_training_data(vocab)
+
+      # Augment tokenizer with custom tokens
+      tokenizer = DomainVocabularyTrainer.augment_tokenizer(tokenizer, vocab)
+
+      # Preprocess code before embedding
+      processed = DomainVocabularyTrainer.preprocess_for_embedding(code, vocab)
+
+  ## Integration Points
+
+  - Used by: RAGCodeGenerator (semantic code search)
+  - Used by: CodeSynthesisPipeline (template-aware generation)
+  - Used by: SemanticCodeSearch (SPARC-aware retrieval)
+  - Reads from: technology_patterns table (framework detection patterns)
   """
 
   require Logger
@@ -113,26 +145,54 @@ defmodule Singularity.TemplateAwareEmbeddings do
   end
 
   defp extract_framework_patterns do
-    # Get detector signatures from templates
+    # Get detector patterns from technology_patterns table
+    # This includes frameworks, languages, cloud, monitoring, security, AI, messaging
     query = """
     SELECT DISTINCT
-      jsonb_array_elements_text(
-        (content::jsonb->'detector_signatures'->'code_patterns')
-      ) as pattern
-    FROM code_files
-    WHERE file_path LIKE '%.json'
-      AND content::text LIKE '%detector_signatures%'
-    LIMIT 100
+      jsonb_array_elements_text(file_patterns) as pattern
+    FROM technology_patterns
+    WHERE file_patterns IS NOT NULL
+      AND jsonb_array_length(file_patterns) > 0
+    UNION
+    SELECT DISTINCT
+      jsonb_array_elements_text(config_files) as pattern
+    FROM technology_patterns
+    WHERE config_files IS NOT NULL
+      AND jsonb_array_length(config_files) > 0
+    LIMIT 200
     """
 
     case Repo.query(query) do
       {:ok, %{rows: rows}} ->
-        rows |> List.flatten() |> Enum.uniq()
+        patterns = rows |> List.flatten() |> Enum.uniq()
+
+        # Add common code patterns from extended_metadata if available
+        code_patterns_query = """
+        SELECT DISTINCT
+          jsonb_path_query_array(
+            extended_metadata,
+            '$.detect.patterns[*]'
+          ) as patterns
+        FROM technology_patterns
+        WHERE extended_metadata ? 'detect'
+        LIMIT 100
+        """
+
+        additional = case Repo.query(code_patterns_query) do
+          {:ok, %{rows: code_rows}} ->
+            code_rows
+            |> List.flatten()
+            |> Enum.flat_map(fn row -> Jason.decode!(row) end)
+          _ -> []
+        end
+
+        Enum.uniq(patterns ++ additional)
 
       _ ->
-        # Common framework patterns
+        # Fallback to common framework patterns
         ["use GenServer", "use Phoenix", "impl Trait",
-         "async fn", "defmodule", "@Component", "useState"]
+         "async fn", "defmodule", "@Component", "useState",
+         "Cargo.toml", "package.json", "next.config.js"]
     end
   end
 
@@ -149,7 +209,8 @@ defmodule Singularity.TemplateAwareEmbeddings do
 
       # NATS patterns
       "Gnat.subscribe", "nats.publish", "JetStream",
-      "db.query", "facts.framework_detected",
+      "db.query", "db.insert.codebase_snapshots",
+      "facts.technology_patterns", "llm.analyze",
 
       # Your custom patterns
       "RAGCodeGenerator", "CodeSynthesisPipeline",
