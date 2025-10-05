@@ -58,7 +58,7 @@ jobs:
             fi
 
             # Create review request
-            cat > /tmp/review_request.md <<EOF
+            cat > /tmp/review_request.md <<'"'"'HEREDOC'"'"'
 # PR Review Request
 
 **PR #$PR_NUMBER: $PR_TITLE**
@@ -70,16 +70,16 @@ $PR_BODY
 $TASK
 
 ## Changes
-\`\`\`diff
+```diff
 $PR_DIFF
-\`\`\`
+```
 
 Please provide:
 1. Code quality assessment (Elixir, Gleam, Rust, TypeScript)
 2. Architectural concerns
 3. Specific code changes needed (if any)
 4. Approval status (APPROVE / REQUEST_CHANGES / COMMENT)
-EOF
+HEREDOC
 
             # Run Claude Code review
             export CLAUDE_API_KEY="$CLAUDE_CODE_OAUTH_TOKEN"
