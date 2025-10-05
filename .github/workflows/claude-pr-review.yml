@@ -102,4 +102,30 @@ EOJSON
             gh pr comment $PR_NUMBER --body "$REVIEW_OUTPUT"
 
             echo "✅ Review posted to PR #$PR_NUMBER"
+
+            # Auto-merge if Claude approves
+            if echo "$REVIEW_OUTPUT" | grep -qi "APPROVE"; then
+              echo "🎯 Claude approved! Checking if PR can be merged..."
+
+              # Check if PR is mergeable
+              PR_STATUS=$(gh pr view $PR_NUMBER --json mergeable,mergeStateStatus --jq "{mergeable, state: .mergeStateStatus}")
+              MERGEABLE=$(echo "$PR_STATUS" | jq -r ".mergeable")
+              STATE=$(echo "$PR_STATUS" | jq -r ".state")
+
+              if [ "$MERGEABLE" = "MERGEABLE" ] && [ "$STATE" = "CLEAN" ]; then
+                echo "✅ PR is ready - auto-merging..."
+                gh pr merge $PR_NUMBER --squash --auto --delete-branch
+                gh pr comment $PR_NUMBER --body "✅ **Auto-merged by Claude Code**
+
+This PR was automatically merged after Claude approval."
+              else
+                echo "⚠️ PR not ready to merge (mergeable: $MERGEABLE, state: $STATE)"
+                gh pr comment $PR_NUMBER --body "ℹ️ Claude approved this PR, but auto-merge is waiting for:
+- ✅ All checks to pass
+- ✅ No merge conflicts
+- ✅ Branch protection satisfied
+
+Will auto-merge when ready, or you can merge manually."
+              fi
+            fi
           '
