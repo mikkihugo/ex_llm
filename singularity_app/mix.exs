@@ -11,7 +11,7 @@ defmodule Singularity.MixProject do
     [
       app: @app,
       version: project_version(),
-      elixir: ">= 1.20.0-dev",
+      elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       erlc_paths: erlc_paths(Mix.env()),
       erlc_include_path: erlc_include_path(Mix.env()),
@@ -127,6 +127,7 @@ defmodule Singularity.MixProject do
       {:flow, "~> 1.2"},
 
       # Gleam Integration
+      {:mix_gleam, "~> 0.6.2", runtime: false},
       {:gleam_stdlib, "~> 0.65", app: false, manager: :rebar3, override: true},
       {:gleeunit, "~> 1.0", app: false, manager: :rebar3, only: [:dev, :test]},
 
