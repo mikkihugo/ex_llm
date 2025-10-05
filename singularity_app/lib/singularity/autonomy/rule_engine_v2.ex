@@ -156,36 +156,7 @@ defmodule Singularity.Autonomy.RuleEngineV2 do
     end)
   end
 
-  ## Type Conversions (same as before)
-
-  defp elixir_context_to_gleam(context) do
-    %{
-      feature_id: option_to_gleam(context[:feature_id]),
-      epic_id: option_to_gleam(context[:epic_id]),
-      code_snippet: option_to_gleam(context[:code_snippet]),
-      metrics: context[:metrics] || %{},
-      agent_score: context[:agent_score] || 1.0
-    }
-  end
-
-  defp gleam_result_to_elixir(result) do
-    %{
-      rule_id: result.rule_id,
-      confidence: result.confidence,
-      decision: decision_to_elixir(result.decision),
-      reasoning: result.reasoning,
-      execution_time_ms: result.execution_time_ms,
-      cached: result.cached
-    }
-  end
-
-  defp decision_to_elixir(decision) do
-    case decision do
-      {:Autonomous, action} -> {:autonomous, action}
-      {:Collaborative, options} -> {:collaborative, options}
-      {:Escalated, reason} -> {:escalated, reason}
-    end
-  end
+  ## Helper Functions
 
   defp decision_to_string(decision) do
     case decision do
@@ -194,9 +165,6 @@ defmodule Singularity.Autonomy.RuleEngineV2 do
       {:escalated, _} -> "escalated"
     end
   end
-
-  defp option_to_gleam(nil), do: :none
-  defp option_to_gleam(value), do: {:some, value}
 
   defp classify_result(result) do
     case result.decision do

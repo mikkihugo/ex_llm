@@ -3,12 +3,13 @@ defmodule Singularity.Planning.HTDAG do
   Hierarchical Task Directed Acyclic Graph (HTDAG) for recursive task decomposition.
   Based on Deep Agent (2025) research.
 
-  Uses Gleam for type-safe task management, Elixir for LLM integration.
+  Pure Elixir implementation with LLM integration for task decomposition.
   """
 
   require Logger
 
   alias Singularity.Integration.Claude
+  alias Singularity.Planning.HTDAGCore
 
   @max_depth 5
   @atomic_threshold 5.0
@@ -18,13 +19,13 @@ defmodule Singularity.Planning.HTDAG do
   @doc "Decompose a goal into hierarchical tasks"
   def decompose(goal, max_depth \\ @max_depth) do
     # Create initial DAG with root goal
-    dag = :singularity@htdag.new(goal.description)
+    dag = HTDAGCore.new(goal.description || goal[:description] || "")
 
     # Create root task
     root_task = create_task_from_goal(goal)
 
     # Add to DAG
-    dag = :singularity@htdag.add_task(dag, root_task)
+    dag = HTDAGCore.add_task(dag, root_task)
 
     # Recursively decompose
     decompose_recursive(dag, root_task, max_depth)
@@ -32,36 +33,32 @@ defmodule Singularity.Planning.HTDAG do
 
   @doc "Select the next task to work on"
   def select_next_task(dag, _agent_score \\ 1.0) do
-    case :singularity@htdag.select_next_task(dag) do
-      {:some, task} -> gleam_task_to_map(task)
-      :none -> nil
-    end
+    HTDAGCore.select_next_task(dag)
   end
 
   @doc "Mark task as completed"
   def mark_completed(dag, task_id) do
-    :singularity@htdag.mark_completed(dag, task_id)
+    HTDAGCore.mark_completed(dag, task_id)
   end
 
   @doc "Mark task as failed"
   def mark_failed(dag, task_id, reason) do
-    :singularity@htdag.mark_failed(dag, task_id, reason)
+    HTDAGCore.mark_failed(dag, task_id, reason)
   end
 
   @doc "Count total tasks"
   def count_tasks(dag) do
-    :singularity@htdag.count_tasks(dag)
+    HTDAGCore.count_tasks(dag)
   end
 
   @doc "Count completed tasks"
   def count_completed(dag) do
-    :singularity@htdag.count_completed(dag)
+    HTDAGCore.count_completed(dag)
   end
 
   @doc "Get current active tasks"
   def current_tasks(dag) do
-    :singularity@htdag.current_tasks(dag)
-    |> Enum.map(&gleam_task_to_map/1)
+    HTDAGCore.current_tasks(dag)
   end
 
   ## Private Functions
@@ -83,8 +80,7 @@ defmodule Singularity.Planning.HTDAG do
             # Add subtasks to DAG
             new_dag =
               Enum.reduce(subtasks, dag, fn subtask, acc_dag ->
-                gleam_task = map_to_gleam_task(subtask)
-                :singularity@htdag.add_task(acc_dag, gleam_task)
+                HTDAGCore.add_task(acc_dag, subtask)
               end)
 
             # Recursively decompose each subtask
@@ -187,84 +183,6 @@ defmodule Singularity.Planning.HTDAG do
     }
   end
 
-  defp map_to_gleam_task(task_map) do
-    %{
-      id: task_map.id,
-      description: task_map.description,
-      task_type: map_task_type(task_map.task_type),
-      depth: task_map.depth,
-      parent_id:
-        case task_map.parent_id do
-          nil -> :none
-          id -> {:some, id}
-        end,
-      children: task_map.children,
-      dependencies: task_map.dependencies,
-      status: map_status(task_map.status),
-      sparc_phase:
-        case task_map.sparc_phase do
-          nil -> :none
-          phase -> {:some, map_sparc_phase(phase)}
-        end,
-      estimated_complexity: task_map.estimated_complexity,
-      actual_complexity:
-        case task_map.actual_complexity do
-          nil -> :none
-          val -> {:some, val}
-        end,
-      code_files: task_map.code_files,
-      acceptance_criteria: task_map.acceptance_criteria
-    }
-  end
-
-  defp gleam_task_to_map(task) do
-    %{
-      id: task.id,
-      description: task.description,
-      task_type: task.task_type,
-      depth: task.depth,
-      parent_id:
-        case task.parent_id do
-          :none -> nil
-          {:some, id} -> id
-        end,
-      children: task.children,
-      dependencies: task.dependencies,
-      status: task.status,
-      sparc_phase:
-        case task.sparc_phase do
-          :none -> nil
-          {:some, phase} -> phase
-        end,
-      estimated_complexity: task.estimated_complexity,
-      actual_complexity:
-        case task.actual_complexity do
-          :none -> nil
-          {:some, val} -> val
-        end,
-      code_files: task.code_files,
-      acceptance_criteria: task.acceptance_criteria
-    }
-  end
-
-  defp map_task_type(:goal), do: {:goal}
-  defp map_task_type(:milestone), do: {:milestone}
-  defp map_task_type(:implementation), do: {:implementation}
-  defp map_task_type(_), do: {:implementation}
-
-  defp map_status(:pending), do: {:pending}
-  defp map_status(:active), do: {:active}
-  defp map_status(:blocked), do: {:blocked}
-  defp map_status(:completed), do: {:completed}
-  defp map_status(:failed), do: {:failed}
-  defp map_status(_), do: {:pending}
-
-  defp map_sparc_phase(:specification), do: {:specification}
-  defp map_sparc_phase(:pseudocode), do: {:pseudocode}
-  defp map_sparc_phase(:architecture), do: {:architecture}
-  defp map_sparc_phase(:refinement), do: {:refinement}
-  defp map_sparc_phase(:completion), do: {:completion_phase}
-  defp map_sparc_phase(_), do: {:specification}
 
   defp generate_task_id do
     "task-#{System.unique_integer([:positive, :monotonic])}"
