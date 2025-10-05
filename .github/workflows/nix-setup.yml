@@ -39,7 +39,7 @@ jobs:
             gleam --version
           '
 
-      - name: Cache Mix/Hex and Moon
+      - name: Cache Mix/Hex, Moon, and Bun node_modules
         uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
         with:
           path: |
@@ -48,7 +48,8 @@ jobs:
             singularity_app/deps
             singularity_app/_build
             .moon/cache
-          key: ${{ inputs.cache_key_prefix }}-${{ runner.os }}-${{ hashFiles('singularity_app/mix.lock') }}-${{ hashFiles('**/moon.yml') }}
+            ai-server/node_modules
+          key: ${{ inputs.cache_key_prefix }}-${{ runner.os }}-${{ hashFiles('singularity_app/mix.lock') }}-${{ hashFiles('**/moon.yml') }}-${{ hashFiles('ai-server/bun.lock*') }}
           restore-keys: |
             ${{ inputs.cache_key_prefix }}-${{ runner.os }}-
 
