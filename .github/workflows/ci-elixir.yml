@@ -1,4 +1,4 @@
-name: CI (Elixir + Gleam via Nix)
+name: CI (Elixir + Gleam via Nix + Cachix)
 
 on:
   push:
