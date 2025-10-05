@@ -358,8 +358,9 @@ flyctl scale count 3 --app singularity
 - [Documentation Overview](docs/README.md)
 - [Quick Start Guide](docs/setup/QUICKSTART.md)
 - [Agent System](docs/ai/AGENTS.md)
-- [NATS Integration](docs/messaging/NATS_SUBJECTS.md)
-- [Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)
+- [Pattern System](PATTERN_SYSTEM.md)
+- [Package + Code Search](PACKAGE_REGISTRY_AND_CODEBASE_SEARCH.md)
+- [Messaging Reference](docs/messaging/NATS_SUBJECTS.md)
 - [Claude Code Guide](docs/ai/CLAUDE.md)
 
 ## 📄 License

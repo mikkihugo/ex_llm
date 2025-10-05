@@ -139,11 +139,30 @@ Singularity.Autonomy.RuleLoader.get_rules_by_category(:code_quality)
 
 ---
 
+## Interface Architecture
+
+Agents and tools are accessed via **two interfaces**:
+
+1. **MCP Interface** (`lib/singularity/interfaces/mcp.ex`)
+   - For AI assistants (Claude Desktop, Cursor, Continue.dev)
+   - Returns MCP-formatted responses
+
+2. **NATS Interface** (`lib/singularity/interfaces/nats.ex`)
+   - For distributed microservices
+   - Request/Reply and Pub/Sub patterns
+
+
+**Key Point**: Tools are interface-agnostic. Same tools work across all interfaces without duplication. See [INTERFACE_ARCHITECTURE.md](INTERFACE_ARCHITECTURE.md) for details.
+
+---
+
 For deeper code references, check:
 - `singularity_app/lib/singularity/agent*.ex`
 - `singularity_app/lib/singularity/autonomy/`
 - `singularity_app/lib/singularity/agents/hybrid_agent.ex`
 - `singularity_app/lib/singularity/execution_coordinator.ex`
+- `singularity_app/lib/singularity/interfaces/` - Interface implementations
+- `singularity_app/lib/singularity/tools/` - Core tool definitions
 
 Those modules are the source of truth and should be consulted for contract or
 API changes.

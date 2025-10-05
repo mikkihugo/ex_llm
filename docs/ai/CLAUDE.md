@@ -211,6 +211,24 @@ mix ecto.create
 mix ecto.migrate
 ```
 
+## Interface Architecture
+
+### Tools vs Interfaces
+
+Singularity separates **WHAT** (tools) from **HOW** (interfaces):
+
+- **Tools** (`lib/singularity/tools/`) - Core capabilities (quality checks, shell commands, LLM calls)
+- **Interfaces** (`lib/singularity/interfaces/`) - How tools are exposed
+
+**2 Interfaces**:
+1. **MCP** - For AI assistants (Claude Desktop, Cursor)
+2. **NATS** - For distributed services
+
+
+**No External REST API**: External clients use MCP or NATS.
+
+See [INTERFACE_ARCHITECTURE.md](../../INTERFACE_ARCHITECTURE.md) for full details.
+
 ## Development Tips
 
 1. **Use the Nix shell** - All tools are pre-configured with correct versions
@@ -218,6 +236,7 @@ mix ecto.migrate
 3. **NATS for new features** - Publish/subscribe pattern for loose coupling
 4. **Semantic search for navigation** - Use embedding service to find similar code
 5. **Gleam for type-safe logic** - Critical algorithms benefit from Gleam's type system
+6. **Interface abstraction** - Tools are interface-agnostic, use Protocol for execution
 ## Code Naming Conventions & Architecture Patterns
 
 ### Self-Documenting Names
