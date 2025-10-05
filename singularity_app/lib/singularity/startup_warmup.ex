@@ -80,19 +80,17 @@ defmodule Singularity.StartupWarmup do
       "websocket connection"
     ]
 
+    # Pre-compute embeddings using EmbeddingService (Jina/Google)
     try do
-      # If FastEmbeddingService is available
-      if Process.whereis(Singularity.FastEmbeddingService) do
-        Enum.each(common_queries, fn query ->
-          case Singularity.FastEmbeddingService.embed(query) do
-            {:ok, embedding} ->
-              Singularity.MemoryCache.cache_embedding(query, embedding)
-            _ ->
-              :ok
-          end
-        end)
-        Logger.info("Pre-computed #{length(common_queries)} embeddings")
-      end
+      Enum.each(common_queries, fn query ->
+        case Singularity.EmbeddingService.embed(query) do
+          {:ok, embedding} ->
+            Singularity.MemoryCache.cache_embedding(query, embedding)
+          _ ->
+            :ok
+        end
+      end)
+      Logger.info("Pre-computed #{length(common_queries)} embeddings via Jina/Google")
     rescue
       e ->
         Logger.warning("Embedding warmup failed: #{inspect(e)}")

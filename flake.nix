@@ -475,24 +475,14 @@ EOF
             '
             '
 
-            ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null 2>&1 || true
-            ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS pgvecto_rs;" >/dev/null 2>&1 || true
+            # Enable vector extensions in all databases (schema managed by migrations)
+            for db_name in singularity_embeddings singularity_dev singularity_test; do
+              ${postgresqlWithExtensions}/bin/psql -d "$db_name" -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null 2>&1 || true
+              ${postgresqlWithExtensions}/bin/psql -d "$db_name" -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS pgvecto_rs;" >/dev/null 2>&1 || true
+            done
 
-            ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q <<'EOSQL'
-CREATE TABLE IF NOT EXISTS embeddings (
-  id          bigserial PRIMARY KEY,
-  path        text NOT NULL,
-  label       text,
-  metadata    jsonb DEFAULT '{}'::jsonb,
-  embedding   vector(768) NOT NULL,
-  created_at  timestamptz DEFAULT now(),
-  updated_at  timestamptz DEFAULT now()
-);
-EOSQL
-
-            ${postgresqlWithExtensions}/bin/psql -d singularity_embeddings -v ON_ERROR_STOP=1 -q -c \
-"CREATE INDEX IF NOT EXISTS embeddings_embedding_hnsw ON embeddings USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);" \
-              >/dev/null
+            # NOTE: Schema (tables, indexes) is managed by Elixir migrations in singularity_app/priv/repo/migrations/
+            # Run 'mix ecto.migrate' to create tables
 
             if [ -n "${PS1:-}" ]; then
               echo "Loaded singularity development shell"

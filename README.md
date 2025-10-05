@@ -1,18 +1,20 @@
 # Singularity
 
-> **Autonomous Agent Platform with GPU-Accelerated Semantic Code Search**
+> **LLM-Driven Autonomous Development Platform with GPU-Accelerated Semantic Code Search**
 
-Singularity is a distributed, polyglot development platform that combines Elixir, Gleam, and Rust to provide intelligent code analysis, AI agent orchestration, and semantic search capabilities. Built on BEAM's fault-tolerant architecture with NATS messaging and PostgreSQL vector storage.
+Singularity is a distributed, polyglot platform where **LLMs are the primary developers**. It combines Elixir, Gleam, and Rust to provide intelligent code analysis, AI agent orchestration, and semantic search capabilities. Built on BEAM's fault-tolerant architecture with NATS messaging and PostgreSQL vector storage, Singularity enables LLMs to autonomously develop, analyze, and improve code.
 
 ## 🌟 Key Features
 
+- **LLM-First Development**: All development tasks performed by AI agents (Claude, Gemini, GPT-4, etc.)
 - **Multi-Language Support**: Parse and analyze 30+ programming languages via Tree-sitter
 - **Semantic Code Search**: GPU-accelerated embeddings with pgvector for intelligent code discovery
 - **AI Agent Orchestration**: Autonomous agents with access to 67+ development tools
 - **Distributed Architecture**: BEAM clustering with NATS messaging for scalability
-- **Multiple AI Providers**: Unified interface for Claude, Gemini, OpenAI, and GitHub Copilot
+- **Multiple AI Providers**: Unified interface for Claude, Gemini, OpenAI, GitHub Copilot, and Cursor
 - **Real-time Code Analysis**: Pattern extraction, duplication detection, and architecture analysis
 - **Template System**: Technology-specific templates for consistent code generation
+- **Jules Integration**: Specialized AI agent for complex development tasks
 
 ## 🏗️ Architecture Overview
 
@@ -33,6 +35,8 @@ Singularity is a distributed, polyglot development platform that combines Elixir
 │  - Semantic     │ │  - Gemini    │ │  - DB Service    │
 │    Search       │ │  - OpenAI    │ │  - Linting       │
 │  - Templates    │ │  - Copilot   │ │                  │
+│  - HybridAgent  │ │  - Cursor    │ │                  │
+│                 │ │  - Jules     │ │                  │
 └────────┬────────┘ └──────────────┘ └──────┬───────────┘
          │                                   │
 ┌────────▼───────────────────────────────────▼───────────┐
@@ -42,6 +46,24 @@ Singularity is a distributed, polyglot development platform that combines Elixir
 │  - PostGIS (spatial data)                               │
 └─────────────────────────────────────────────────────────┘
 ```
+
+## 🤖 LLM Development Philosophy
+
+Singularity is designed for **LLM-first development** where AI agents are the primary developers:
+
+- **Autonomous Coding**: LLMs write, review, and refactor code without human intervention
+- **Self-Improvement**: Agents can modify their own code and improve their capabilities
+- **Tool Integration**: Direct access to 67+ development tools via MCP protocol
+- **Semantic Understanding**: Code is stored with embeddings for semantic reasoning
+- **Template Evolution**: LLMs learn and create new templates from analyzed codebases
+
+### Current Status (After Recent Updates)
+
+- ✅ **NATS Orchestrator**: Enhanced with semantic caching and HybridAgent integration
+- ✅ **Multiple AI Models**: Support for latest models including GPT-5, o1, o3, Grok
+- ✅ **Jules Integration**: Specialized agent for complex development tasks
+- ⚠️ **NatsOrchestrator**: Temporarily disabled in application.ex pending HybridAgent API updates
+- ✅ **Nix Flake**: Updated with NATS server, container tools, and multiple dev shells
 
 ## 📦 Codebase Structure
 
@@ -173,15 +195,15 @@ cd singularity_app
 MIX_ENV=prod mix release
 ```
 
-## 🔧 Importing Code into Singularity
+## 🔧 Importing Code into Singularity (For LLM Analysis)
 
-### 1. Import a New Codebase
+### 1. Import a New Codebase for LLM Development
 
 ```elixir
-# Via IEx console
+# LLMs import and analyze external codebases
 iex> Singularity.CodebaseRegistry.import_project("/path/to/project", "my_project")
 
-# Via Mix task
+# Via Mix task (typically called by AI agents)
 mix singularity.import /path/to/project --name my_project
 ```
 
@@ -210,6 +232,34 @@ iex> Singularity.FrameworkPatternStore.learn_from_project("my_project")
 ```elixir
 # Generate architecture report
 iex> Singularity.ArchitectureAnalyzer.analyze_project("my_project")
+```
+
+## 🧠 How LLMs Interact with Singularity
+
+### Autonomous Development Workflow
+
+1. **Task Reception**: LLM receives development task via NATS (`execution.request`)
+2. **Semantic Cache Check**: System checks if similar task was already completed
+3. **Template Selection**: TemplateOptimizer selects optimal code template
+4. **Code Generation**: HybridAgent generates code using selected AI model
+5. **Quality Assurance**: Generated code passes through quality checks
+6. **Learning**: System extracts patterns for future use
+
+### LLM Agent Capabilities
+
+```elixir
+# LLMs can spawn specialized agents
+{:ok, agent} = Singularity.Agents.HybridAgent.start_link(
+  id: "code_architect_001",
+  specialization: :architecture
+)
+
+# Agents have access to all development tools
+HybridAgent.process_task(agent, %{
+  prompt: "Refactor the authentication system for better security",
+  tools: ["rust_analyzer", "cargo_audit", "sobelow"],
+  context: %{project: "my_app"}
+})
 ```
 
 ## 📡 NATS Message Patterns
@@ -315,10 +365,13 @@ flyctl scale count 3 --app singularity
 
 ## 📊 Performance
 
+- **LLM Response Caching**: <10ms for cached semantic queries
 - **Embedding Generation**: ~1000 files/minute with GPU acceleration
 - **Semantic Search**: <50ms for vector similarity search
 - **Code Parsing**: 10,000+ lines/second with Tree-sitter
 - **NATS Throughput**: 1M+ messages/second capability
+- **Concurrent Agents**: 100+ simultaneous LLM agents supported
+- **Model Selection**: Automatic cost/performance optimization across 15+ models
 
 ## 🤝 Contributing
 

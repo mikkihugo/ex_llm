@@ -103,13 +103,19 @@ end
 
 # Embedding service configuration
 config :singularity,
-  # Embedding provider priority: :google, :bumblebee, :python, :auto
-  embedding_provider: :auto,
+  # Embedding provider: :bumblebee for local GPU-accelerated code embeddings
+  # Jina-embeddings-v2-base-code is BEST for code (beats Google/Salesforce/Microsoft)
+  embedding_provider: :bumblebee,  # Local Jina only - no external API calls!
 
-  # Bumblebee embedding model (runs on GPU with EXLA)
+  # Bumblebee embedding model (runs on RTX 4080 GPU with EXLA)
+  # - 768 dims (matches all DB tables)
+  # - Trained on 150M coding Q&A pairs
+  # - Supports 30 programming languages
+  # - 8192 token context (handles entire functions)
+  # - No rate limits, no API costs, full privacy
   bumblebee_model: "jina-embeddings-v2-base-code",  # 161M params, 768 dims, code-optimized
 
-  # Google AI API key (from .env)
+  # Google AI API key (optional - not used for embeddings anymore)
   google_ai_api_key: System.get_env("GOOGLE_AI_STUDIO_API_KEY"),
 
   # Code generation model configuration

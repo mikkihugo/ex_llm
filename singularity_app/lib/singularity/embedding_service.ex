@@ -49,17 +49,23 @@ defmodule Singularity.EmbeddingService do
 
   @doc """
   Embed with automatic fallback chain:
-  Google AI → Bumblebee → Zero vector
+  Jina (Bumblebee/local GPU) → Google AI → Zero vector
+
+  Jina-embeddings-v2-base-code is PRIMARY because:
+  - Best for code search (beats Salesforce/Microsoft on benchmarks)
+  - No rate limits (runs on your RTX 4080)
+  - No network latency
+  - Privacy (code never leaves machine)
   """
   def embed_with_fallback(text) do
-    # Try Google AI first (best quality, free)
-    case embed_google(text) do
+    # Try Jina (Bumblebee) first - best for code, runs locally on GPU
+    case embed_bumblebee(text) do
       {:ok, embedding} ->
         {:ok, embedding}
 
       {:error, _} ->
-        # Fallback to Bumblebee (pure Elixir/Nx)
-        case embed_bumblebee(text) do
+        # Fallback to Google AI (general text, requires network)
+        case embed_google(text) do
           {:ok, embedding} ->
             {:ok, embedding}
 
