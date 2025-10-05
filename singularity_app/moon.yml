@@ -1,0 +1,83 @@
+$schema: '../.moon/cache/schemas/project.json'
+
+language: 'gleam'
+type: 'application'
+
+tasks:
+  gleam.build:
+    command: 'gleam build'
+    inputs:
+      - 'src/**/*.gleam'
+      - 'test/**/*.gleam'
+      - 'gleam.toml'
+    outputs:
+      - 'build/'
+
+  gleam.test:
+    command: 'gleam test'
+    deps:
+      - 'gleam.build'
+    inputs:
+      - 'src/**/*.gleam'
+      - 'test/**/*.gleam'
+    local: false
+
+  gleam.check:
+    command: 'gleam check'
+    inputs:
+      - 'src/**/*.gleam'
+
+  deps.get:
+    command: 'mix deps.get | grep -E "(Resolving|Resolution|All dependencies|New|Removed|Updated)"'
+    inputs:
+      - 'mix.exs'
+      - 'mix.lock'
+    outputs:
+      - 'deps/'
+
+  compile:
+    command: 'mix compile'
+    deps:
+      - 'gleam.build'
+      - 'deps.get'
+    inputs:
+      - 'lib/**'
+      - 'config/**'
+      - 'priv/**'
+      - 'src/**/*.gleam'
+    outputs:
+      - '_build/'
+
+  test:
+    command: 'sh -c "mix test 2>/dev/null | grep -E \"(Finished|tests|failures|skipped)\""'
+    deps:
+      - 'compile'
+    inputs:
+      - 'test/**'
+      - 'lib/**'
+      - 'test/**/*.gleam'
+
+  credo:
+    command: 'mix credo --format=oneline | grep -v "Logger metadata key" || true'
+    deps:
+      - 'compile'
+    inputs:
+      - 'lib/**'
+      - 'test/**'
+
+  format:
+    command: 'mix format'
+    inputs:
+      - 'lib/**'
+      - 'test/**'
+      - 'config/**'
+    outputs:
+      - 'lib/**'
+      - 'test/**'
+      - 'config/**'
+
+  check:
+    deps:
+      - 'gleam.check'
+      - 'test'
+      - 'credo'

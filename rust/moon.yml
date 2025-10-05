@@ -1,0 +1,30 @@
+$schema: '../.moon/cache/schemas/project.json'
+
+language: 'rust'
+type: 'library'
+
+tasks:
+  build:
+    command: 'cargo build --release'
+    inputs:
+      - 'src/**/*'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+    outputs:
+      - 'target/'
+
+  test:
+    command: 'cargo test'
+    deps:
+      - 'build'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+
+  check:
+    command: 'cargo check'
+    inputs:
+      - 'src/**/*'
+      - 'Cargo.toml'

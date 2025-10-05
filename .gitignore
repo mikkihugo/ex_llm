@@ -39,10 +39,9 @@ litellm/
 
 /.litellm/
 /litellm/.litellm/
-# moon
+# moon - cache and docker artifacts only
 .moon/cache
 .moon/docker
-moon.yml
 
 # Singularity runtime builds
 /singularity_app/_build/
@@ -54,16 +53,10 @@ moon.yml
 erl_crash.dump
 /singularity_app/erl_crash.dump
 
-# Gleam build artifacts
+# Gleam build artifacts (NOT source files!)
+/singularity_app/build/
 /singularity_app/gleam/build/
-/singularity_app/gleam/.dev-db/
-
-# Generated Gleam files (from gleam new)
-/singularity_app/gleam/src/gleam_app.gleam
-/singularity_app/gleam/test/gleam_app_test.gleam
-/singularity_app/gleam/README.md
-/singularity_app/gleam/gleam.toml
-/singularity_app/gleam/manifest.toml
+/singularity_app/manifest.toml
 
 # Legacy shell scripts (replaced by Elixir Mix tasks)
 /scripts/extend-analysis-db.sh

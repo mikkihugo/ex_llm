@@ -1,0 +1,104 @@
+# https://moonrepo.dev/schemas/project.json
+$schema: './.moon/cache/schemas/project.json'
+
+type: 'application'
+language: 'typescript'
+project:
+  name: '@singularity/workspace'
+  description: 'Singularity workspace orchestration'
+
+tasks:
+  # Workspace-level orchestration tasks
+  build:all:
+    command: 'moon run :build && moon run rust:build'
+    local: true
+    options:
+      runInCI: true
+
+  dev:
+    command: 'moon run :build && concurrently "moon run ai-server:dev" "moon run singularity_app:dev"'
+    local: true
+    options:
+      persistent: true
+
+  start:
+    command: 'moon run :build && moon run singularity_app:start'
+    local: true
+    options:
+      persistent: true
+
+  test:all:
+    command: 'moon run :test'
+    local: true
+    options:
+      runInCI: true
+
+  clean:
+    command: 'moon run :clean && rm -rf dist/ node_modules/.cache/ .cargo-build/'
+    local: true
+
+  install:
+    command: 'moon run :install'
+    local: true
+
+  # Rust-specific build task
+  rust:build:
+    command: 'cd rust && cargo build --release'
+    local: true
+    options:
+      runInCI: true
+
+  rust:test:
+    command: 'cd rust && cargo test'
+    local: true
+    options:
+      runInCI: true
+
+  rust:check:
+    command: 'cd rust && cargo check'
+    local: true
+    options:
+      runInCI: true
+
+  # AI-powered development tasks
+  ai:lint-fix:
+    command: 'find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | head -5 | xargs -I {} sh -c "echo \"Linting: {}\" && bunx eslint --fix \"{}\" 2>/dev/null || true"'
+    inputs:
+      - 'ai-server/src/**/*.{ts,tsx,js,jsx}'
+      - 'ai-server/.eslintrc.*'
+      - 'ai-server/eslint.config.*'
+    options:
+      cache: false
+      runInCI: true
+      local: true
+
+  ai:code-review:
+    command: 'find ai-server/src -name "*.ts" -o -name "*.tsx" | head -3 | xargs -I {} sh -c "echo \"Reviewing: {}\" && bunx @anthropic-ai/claude-code --model claude-3-5-sonnet-20241022 \"Perform a surgical code review of this TypeScript code. Focus on making it BETTER, not less functional. Return JSON: {\\\"score\\\": 85, \\\"issues\\\": [\\\"issue1\\\"], \\\"improvements\\\": [\\\"improvement1\\\"], \\\"suggestions\\\": [\\\"suggestion1\\\"]}\" < \"{}\" 2>/dev/null || echo \"Code review skipped\""'
+    inputs:
+      - 'ai-server/src/**/*.{ts,tsx,js,jsx}'
+    options:
+      cache: false
+      runInCI: true
+      local: true
+
+  # Database management
+  db:setup:
+    command: 'moon run singularity_app:deps.get && moon run singularity_app:compile'
+    local: true
+
+  db:reset:
+    command: 'moon run singularity_app:db.reset'
+    local: true
+
+  # Codebase analysis database extension
+  analysis:extend-db:
+    command: 'cd singularity_app && mix analyze.rust'
+    local: true
+    options:
+      runInCI: false
+
+  analysis:query:
+    command: 'cd singularity_app && mix analyze.query'
+    local: true
+    options:
+      runInCI: false

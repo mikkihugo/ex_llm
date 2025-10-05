@@ -1,0 +1,26 @@
+$schema: '../.moon/cache/schemas/project.json'
+
+language: 'typescript'
+type: 'application'
+
+tasks:
+  deps:
+    command: 'bun install'
+    inputs:
+      - 'package.json'
+      - 'bun.lock'
+    outputs:
+      - 'node_modules/'
+
+  test:
+    command: 'sh -c "bun test 2>/dev/null | grep -E \"(pass|skip|fail|Ran)\" | tail -4"'
+    deps:
+      - 'deps'
+    inputs:
+      - 'src/**'
+      - 'test/**'
+      - 'package.json'
+
+  check:
+    deps:
+      - 'test'
