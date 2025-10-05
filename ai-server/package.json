@@ -13,6 +13,7 @@
     "@ai-sdk/openai": "^1.3.24",
     "@google/gemini-cli-core": "^0.7.0",
     "@google/generative-ai": "^0.24.1",
+    "@openai/codex": "^0.44.0",
     "ai": "^5.0.60",
     "ai-sdk-provider-claude-code": "latest",
     "ai-sdk-provider-gemini-cli": "latest",
