@@ -2,7 +2,8 @@ defmodule Singularity.Repo.Migrations.CreateFrameworkPatterns do
   use Ecto.Migration
 
   def up do
-    # Framework detection patterns (self-learning)
+    # Technology detection patterns (self-learning)
+    # Stores: frameworks, languages, cloud platforms, monitoring tools, security tools, etc.
     execute """
     CREATE TABLE IF NOT EXISTS framework_patterns (
       id BIGSERIAL PRIMARY KEY,
@@ -63,7 +64,14 @@ defmodule Singularity.Repo.Migrations.CreateFrameworkPatterns do
 
     # NOTE: Initial patterns are loaded from JSON templates
     # See migration: 20251005000000_load_framework_patterns_from_json.exs
-    # Templates location: rust/tool_doc_index/templates/framework/*.json
+    # Templates location: rust/tool_doc_index/templates/
+    #   - framework/*.json (React, Next.js, Django, etc.)
+    #   - language/*.json (Rust, Python, TypeScript, etc.)
+    #   - cloud/*.json (AWS, GCP, Azure)
+    #   - monitoring/*.json (Prometheus, Grafana, etc.)
+    #   - security/*.json (Falco, OPA, etc.)
+    #   - ai/*.json (LangChain, CrewAI, MCP, etc.)
+    #   - messaging/*.json (NATS, Kafka, etc.)
   end
 
   def down do

@@ -18,7 +18,9 @@ defmodule Singularity.Repo.Migrations.LoadFrameworkPatternsFromJson do
   end
 
   defp load_patterns_from_json do
-    Logger.info("Loading framework patterns from JSON templates...")
+    Logger.info("Loading technology patterns from JSON templates...")
+    Logger.info("  Source: rust/tool_doc_index/templates/")
+    Logger.info("  Categories: framework, language, cloud, monitoring, security, ai, messaging")
 
     templates = find_all_templates()
     count = Enum.count(templates)
@@ -29,14 +31,34 @@ defmodule Singularity.Repo.Migrations.LoadFrameworkPatternsFromJson do
       insert_pattern(template_data, file_path)
     end)
 
-    Logger.info("✅ Loaded #{count} framework patterns from JSON")
+    Logger.info("✅ Loaded #{count} technology patterns from JSON")
   end
 
   defp find_all_templates do
-    # Scan all JSON files in templates directory
-    [@templates_dir, "framework/*.json"]
-    |> Path.join()
-    |> Path.wildcard()
+    # Scan ALL JSON files in templates directory (all categories)
+    # Categories: framework, language, cloud, monitoring, security, ai, messaging, etc.
+    template_patterns = [
+      "framework/*.json",
+      "language/*.json",
+      "cloud/*.json",
+      "monitoring/*.json",
+      "security/*.json",
+      "ai/*.json",
+      "messaging/*.json",
+      "*.json"  # Root-level templates (microservice patterns, etc.)
+    ]
+
+    template_patterns
+    |> Enum.flat_map(fn pattern ->
+      [@templates_dir, pattern]
+      |> Path.join()
+      |> Path.wildcard()
+    end)
+    # Skip schema files (not detection templates)
+    |> Enum.reject(fn path ->
+      basename = Path.basename(path)
+      basename in ["schema.json", "UNIFIED_SCHEMA.json"]
+    end)
     |> Enum.map(fn file_path ->
       case File.read(file_path) do
         {:ok, content} ->
@@ -131,11 +153,37 @@ defmodule Singularity.Repo.Migrations.LoadFrameworkPatternsFromJson do
 
   defp determine_type(data) do
     case data["category"] do
+      # Frameworks
       "fullstack_framework" -> "fullstack"
       "frontend_framework" -> "frontend"
       "backend_framework" -> "backend"
+      "framework" -> "framework"
+
+      # Languages
       "language" -> "language"
+      "programming_language" -> "language"
+
+      # Infrastructure
+      "cloud" -> "cloud"
+      "cloud_platform" -> "cloud"
+      "monitoring" -> "monitoring"
+      "observability" -> "monitoring"
+      "security" -> "security"
+
+      # AI/ML
+      "ai" -> "ai"
+      "ai_framework" -> "ai"
+      "ml_framework" -> "ai"
+
+      # Messaging
+      "messaging" -> "messaging"
+      "message_queue" -> "messaging"
+
+      # Build tools
       "build_tool" -> "build_tool"
+      "package_manager" -> "build_tool"
+
+      # Default
       _ -> "framework"
     end
   end
