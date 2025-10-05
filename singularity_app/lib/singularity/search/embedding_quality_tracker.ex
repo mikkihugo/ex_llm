@@ -443,6 +443,7 @@ defmodule Singularity.EmbeddingQualityTracker do
   end
 
   defp serialize_embedding(%Pgvector{} = vec), do: Pgvector.to_list(vec) |> Jason.encode!()
+
   defp deserialize_embedding(json) when is_binary(json) do
     {:ok, list} = Jason.decode(json)
     Pgvector.new(list)

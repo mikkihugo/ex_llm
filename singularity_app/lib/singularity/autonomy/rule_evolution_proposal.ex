@@ -50,11 +50,13 @@ defmodule Singularity.Autonomy.RuleEvolutionProposal do
 
   def vote_changeset(proposal, agent_id, vote, confidence) do
     current_votes = proposal.votes || %{}
-    new_votes = Map.put(current_votes, agent_id, %{
-      "vote" => vote,
-      "confidence" => confidence,
-      "voted_at" => DateTime.utc_now()
-    })
+
+    new_votes =
+      Map.put(current_votes, agent_id, %{
+        "vote" => vote,
+        "confidence" => confidence,
+        "voted_at" => DateTime.utc_now()
+      })
 
     proposal
     |> change(%{votes: new_votes})
@@ -73,8 +75,8 @@ defmodule Singularity.Autonomy.RuleEvolutionProposal do
 
     consensus =
       length(vote_list) >= 3 and
-      avg_confidence(vote_list) > 0.85 and
-      no_strong_rejections?(vote_list)
+        avg_confidence(vote_list) > 0.85 and
+        no_strong_rejections?(vote_list)
 
     if consensus do
       changeset

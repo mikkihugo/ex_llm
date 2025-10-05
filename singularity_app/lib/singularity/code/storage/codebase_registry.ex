@@ -44,7 +44,7 @@ defmodule Singularity.CodebaseRegistry do
   def list_snapshots(codebase_id, limit \\ 10) do
     Metadata
     |> where([m], m.codebase_id == ^codebase_id)
-    |> order_by([desc: :inserted_at])
+    |> order_by(desc: :inserted_at)
     |> limit(^limit)
     |> Repo.all()
   end
@@ -53,7 +53,7 @@ defmodule Singularity.CodebaseRegistry do
   def latest_summary(codebase_id) do
     Summary
     |> where([s], s.codebase_id == ^codebase_id)
-    |> order_by([desc: :updated_at])
+    |> order_by(desc: :updated_at)
     |> limit(1)
     |> Repo.one()
   end

@@ -16,7 +16,7 @@ defmodule Singularity.Autonomy.Correlation do
       Correlation.start("epic_creation")
 
       # Correlation auto-flows through same process
-      RuleEngine.execute(rule, context)  # Gets correlation from process dict
+      RuleEngine.execute_by_id(rule.id, context)  # Uses correlation from process dict
 
       # Pass to other GenServers
       GenServer.call(Coordinator, {:add_epic, epic, Correlation.current()})

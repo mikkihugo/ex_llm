@@ -91,8 +91,18 @@ defmodule Singularity.PackageAndCodebaseSearch do
     # 2. Package examples (official code examples)
     # 3. Your code (your implementations)
     tasks = [
-      Task.async(fn -> PackageRegistryKnowledge.search_patterns(task_description, ecosystem: ecosystem, limit: limit) end),
-      Task.async(fn -> PackageRegistryKnowledge.search_examples(task_description, ecosystem: ecosystem, limit: limit) end),
+      Task.async(fn ->
+        PackageRegistryKnowledge.search_patterns(task_description,
+          ecosystem: ecosystem,
+          limit: limit
+        )
+      end),
+      Task.async(fn ->
+        PackageRegistryKnowledge.search_examples(task_description,
+          ecosystem: ecosystem,
+          limit: limit
+        )
+      end),
       Task.async(fn -> search_your_code(task_description, codebase_id, limit) end)
     ]
 
@@ -118,18 +128,21 @@ defmodule Singularity.PackageAndCodebaseSearch do
     ecosystem = Keyword.get(opts, :ecosystem)
 
     # Search packages
-    packages = PackageRegistryKnowledge.search(task_description,
-      ecosystem: ecosystem,
-      limit: 10,
-      min_stars: 100  # Only recommend quality packages
-    )
+    packages =
+      PackageRegistryKnowledge.search(task_description,
+        ecosystem: ecosystem,
+        limit: 10,
+        # Only recommend quality packages
+        min_stars: 100
+      )
 
     # Check if you've used any of these packages before
-    your_code = if codebase_id do
-      search_your_code(task_description, codebase_id, 10)
-    else
-      []
-    end
+    your_code =
+      if codebase_id do
+        search_your_code(task_description, codebase_id, 10)
+      else
+        []
+      end
 
     # Rank packages by combining:
     # 1. Semantic similarity to task
@@ -163,22 +176,25 @@ defmodule Singularity.PackageAndCodebaseSearch do
     codebase_id = Keyword.get(opts, :codebase_id)
 
     # Find equivalents in target ecosystem
-    equivalents = PackageRegistryKnowledge.find_equivalents(package_name,
-      from: from_ecosystem,
-      to: to_ecosystem,
-      limit: 5
-    )
+    equivalents =
+      PackageRegistryKnowledge.find_equivalents(package_name,
+        from: from_ecosystem,
+        to: to_ecosystem,
+        limit: 5
+      )
 
     # For each equivalent, find how YOU used it (if at all)
-    equivalents_with_usage = Enum.map(equivalents, fn equiv ->
-      your_usage = if codebase_id do
-        search_your_code(equiv.package_name, codebase_id, 3)
-      else
-        []
-      end
+    equivalents_with_usage =
+      Enum.map(equivalents, fn equiv ->
+        your_usage =
+          if codebase_id do
+            search_your_code(equiv.package_name, codebase_id, 3)
+          else
+            []
+          end
 
-      Map.put(equiv, :your_usage, your_usage)
-    end)
+        Map.put(equiv, :your_usage, your_usage)
+      end)
 
     %{
       source_tool: %{name: package_name, ecosystem: from_ecosystem},
@@ -198,6 +214,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
   end
 
   defp search_your_code(query, nil, _limit), do: []
+
   defp search_your_code(query, codebase_id, limit) do
     # Use Repo for connection pooling - no manual connection management needed
     with {:ok, query_vector} <- EmbeddingGenerator.embed(query),
@@ -222,8 +239,10 @@ defmodule Singularity.PackageAndCodebaseSearch do
       top_package && top_code ->
         %{
           status: :found_both,
-          message: "Found #{top_package.package_name} #{top_package.version} (official) and your code in #{top_code.path}",
-          recommended_approach: "Use #{top_package.package_name} #{top_package.version} - you've used it before in #{top_code.path}",
+          message:
+            "Found #{top_package.package_name} #{top_package.version} (official) and your code in #{top_code.path}",
+          recommended_approach:
+            "Use #{top_package.package_name} #{top_package.version} - you've used it before in #{top_code.path}",
           package_info: summarize_package(top_package),
           your_pattern: summarize_code(top_code)
         }
@@ -231,8 +250,10 @@ defmodule Singularity.PackageAndCodebaseSearch do
       top_package && !top_code ->
         %{
           status: :found_package_only,
-          message: "Found #{top_package.package_name} #{top_package.version} but no previous usage in your code",
-          recommended_approach: "Try #{top_package.package_name} #{top_package.version} - it's popular and well-maintained",
+          message:
+            "Found #{top_package.package_name} #{top_package.version} but no previous usage in your code",
+          recommended_approach:
+            "Try #{top_package.package_name} #{top_package.version} - it's popular and well-maintained",
           package_info: summarize_package(top_package),
           getting_started: "Check official examples for #{top_package.package_name}"
         }
@@ -259,6 +280,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
       length(patterns) > 0 && length(your_code) > 0 ->
         top_pattern = List.first(patterns)
         top_code = List.first(your_code)
+
         "Follow #{top_pattern.title} from #{top_pattern.package_name}. You have similar code in #{top_code.path}"
 
       length(patterns) > 0 ->
@@ -302,12 +324,13 @@ defmodule Singularity.PackageAndCodebaseSearch do
     downloads_score = min(package.download_count || 0, 10_000_000) / 10_000_000
 
     # Recency score (packages updated in last 6 months get higher score)
-    recency_score = if package.last_release_date do
-      days_since_release = DateTime.diff(DateTime.utc_now(), package.last_release_date, :day)
-      max(0.0, 1.0 - days_since_release / 180)
-    else
-      0.0
-    end
+    recency_score =
+      if package.last_release_date do
+        days_since_release = DateTime.diff(DateTime.utc_now(), package.last_release_date, :day)
+        max(0.0, 1.0 - days_since_release / 180)
+      else
+        0.0
+      end
 
     (stars_score + downloads_score + recency_score) / 3
   end
@@ -318,6 +341,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
       # This is a simple heuristic - extract tool names from dependencies
       # In production, you'd parse imports/requires properly
       path = Map.get(code, :path, "")
+
       if String.contains?(path, ["package.json", "Cargo.toml", "mix.exs"]) do
         # Parse dependencies - simplified for now
         []
@@ -361,6 +385,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
     else
       # Otherwise, pick the one with highest similarity + quality
       top = List.first(equivalents_with_usage)
+
       if top do
         %{
           tool: top.package_name,

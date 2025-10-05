@@ -1,0 +1,217 @@
+defmodule Singularity.NatsExecutionRouter do
+  @moduledoc """
+  NATS Execution Router - Routes AI Server requests to TemplateSparcOrchestrator.
+
+  Handles execution.request messages and routes them through:
+  1. TemplateSparcOrchestrator for task planning
+  2. TemplatePerformanceTracker for optimal template selection
+  3. CostOptimizedAgent for model selection and execution
+  4. MemoryCache for fast retrieval
+  """
+
+  use GenServer
+  require Logger
+  alias Singularity.TemplateSparcOrchestrator
+  alias Singularity.TemplatePerformanceTracker
+  alias Singularity.LLM.SemanticCache
+  alias Singularity.Agents.CostOptimizedAgent
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @impl true
+  def init(_opts) do
+    # Connect to NATS
+    {:ok, gnat} =
+      Gnat.start_link(%{
+        host: System.get_env("NATS_HOST", "127.0.0.1"),
+        port: String.to_integer(System.get_env("NATS_PORT", "4222"))
+      })
+
+    # Subscribe to execution requests
+    {:ok, _sid} = Gnat.sub(gnat, self(), "execution.request")
+
+    # Subscribe to template recommendation requests
+    {:ok, _sid} = Gnat.sub(gnat, self(), "template.recommend")
+
+    Logger.info(
+      "NatsOrchestrator started and listening on execution.request and template.recommend"
+    )
+
+    {:ok, %{gnat: gnat}}
+  end
+
+  @impl true
+  def handle_info({:msg, %{topic: "execution.request", body: body, reply_to: reply_to}}, state) do
+    Task.async(fn ->
+      handle_execution_request(body, reply_to, state.gnat)
+    end)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:msg, %{topic: "template.recommend", body: body, reply_to: reply_to}}, state) do
+    Task.async(fn ->
+      handle_template_recommendation(body, reply_to, state.gnat)
+    end)
+
+    {:noreply, state}
+  end
+
+  defp handle_execution_request(body, reply_to, gnat) do
+    try do
+      request = Jason.decode!(body)
+
+      # Step 1: Check SemanticCache first
+      cache_key = generate_cache_key(request["task"])
+
+      case SemanticCache.get(cache_key) do
+        {:ok, cached_result} ->
+          Logger.info("Cache hit for task: #{String.slice(request["task"], 0..50)}...")
+
+          response = %{
+            result: cached_result.content,
+            template_used: cached_result.template_id || "cached",
+            model_used: cached_result.model || "cached",
+            metrics: %{
+              time_ms: 0,
+              tokens_used: 0,
+              cost_usd: 0.0,
+              cache_hit: true
+            }
+          }
+
+          Gnat.pub(gnat, reply_to, Jason.encode!(response))
+
+        {:error, :not_found} ->
+          # Step 2: No cache, proceed with orchestration
+          Logger.info(
+            "Cache miss, orchestrating task: #{String.slice(request["task"], 0..50)}..."
+          )
+
+          # Get template recommendation from TemplateOptimizer
+          template =
+            TemplatePerformanceTracker.select_template(%{
+              task: request["task"],
+              language: request["language"] || "auto",
+              complexity: request["complexity"] || "medium"
+            })
+
+          # Execute through CostOptimizedAgent with template
+          start_time = System.monotonic_time(:millisecond)
+
+          # Start a CostOptimizedAgent if needed
+          agent_id = "orchestrator_agent_#{:erlang.unique_integer()}"
+          {:ok, _pid} = CostOptimizedAgent.start_link(id: agent_id, specialization: :general)
+
+          # Process the task
+          result =
+            CostOptimizedAgent.process_task(agent_id, %{
+              prompt: request["task"],
+              context: request["context"] || %{},
+              template: template,
+              complexity: request["complexity"]
+            })
+
+          elapsed_ms = System.monotonic_time(:millisecond) - start_time
+
+          # Cache the result
+          SemanticCache.put(cache_key, %{
+            content: result.response,
+            template_id: template.id,
+            model: result.model_used
+          })
+
+          # Extract response based on CostOptimizedAgent response format
+          {response_type, response_content, metadata} = result
+
+          response = %{
+            result: extract_response_text(response_content),
+            template_used: template.id,
+            model_used: metadata[:model] || "rules",
+            metrics: %{
+              time_ms: elapsed_ms,
+              tokens_used: metadata[:tokens] || 0,
+              cost_usd: metadata[:cost] || 0.0,
+              cache_hit: response_type == :cached
+            }
+          }
+
+          Gnat.pub(gnat, reply_to, Jason.encode!(response))
+      end
+    rescue
+      error ->
+        Logger.error("Error handling execution request: #{inspect(error)}")
+
+        error_response = %{
+          error: "Execution failed",
+          message: Exception.message(error)
+        }
+
+        Gnat.pub(gnat, reply_to, Jason.encode!(error_response))
+    end
+  end
+
+  defp handle_template_recommendation(body, reply_to, gnat) do
+    try do
+      request = Jason.decode!(body)
+
+      template =
+        TemplatePerformanceTracker.select_template(%{
+          task: request["task_type"],
+          language: request["language"],
+          complexity: "medium"
+        })
+
+      response = %{template_id: template.id}
+
+      Gnat.pub(gnat, reply_to, Jason.encode!(response))
+    rescue
+      error ->
+        Logger.error("Error handling template recommendation: #{inspect(error)}")
+
+        Gnat.pub(gnat, reply_to, Jason.encode!(%{template_id: "default-template"}))
+    end
+  end
+
+  defp generate_cache_key(task) do
+    # Generate semantic cache key based on task
+    :crypto.hash(:sha256, task)
+    |> Base.encode64(padding: false)
+    |> String.slice(0..16)
+  end
+
+  defp extract_response_text(response) when is_binary(response), do: response
+  defp extract_response_text(%{text: text}), do: text
+  defp extract_response_text(%{content: content}), do: content
+  defp extract_response_text(%{response: response}), do: response
+  defp extract_response_text(response), do: inspect(response)
+
+  defp calculate_cost(model, tokens) do
+    # Cost per 1M tokens (actual models from ai-server)
+    costs = %{
+      "gemini-2.5-flash" => 0.075,
+      "gemini-2.5-pro" => 1.25,
+      "gpt-4o-mini" => 0.15,
+      "gpt-4o" => 2.5,
+      "copilot-gpt-4.1" => 5.0,
+      # Free with subscription
+      "cursor-gpt-4.1" => 0.0,
+      "claude-sonnet-4.5" => 3.0,
+      "claude-opus-4.1" => 15.0,
+      "gpt-5-codex" => 30.0,
+      "o1" => 15.0,
+      "o1-mini" => 3.0,
+      "o1-preview" => 10.0,
+      "o3" => 60.0,
+      # Free with subscription
+      "cursor-auto" => 0.0,
+      "grok-coder-1" => 2.0
+    }
+
+    cost_per_million = Map.get(costs, model, 1.0)
+    tokens / 1_000_000 * cost_per_million
+  end
+end

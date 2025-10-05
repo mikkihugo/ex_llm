@@ -4,7 +4,7 @@ defmodule Singularity.AgentTest do
   alias Singularity.Agent
 
   test "agent starts with unique id" do
-    {:ok, pid} = Agent.start_link([])
+    {:ok, pid} = Agent.start_link(id: "test-agent-1")
     assert Process.alive?(pid)
     state = GenServer.call(pid, :state)
     assert state.id
@@ -22,7 +22,7 @@ defmodule Singularity.AgentTest do
   end
 
   test "agent tracks metrics" do
-    {:ok, pid} = Agent.start_link([])
+    {:ok, pid} = Agent.start_link(id: "test-agent-2")
     GenServer.cast(pid, {:update_metrics, %{requests: 10}})
     Process.sleep(10)
     state = GenServer.call(pid, :state)
@@ -31,7 +31,7 @@ defmodule Singularity.AgentTest do
   end
 
   test "agent handles improvement request" do
-    {:ok, pid} = Agent.start_link([])
+    {:ok, pid} = Agent.start_link(id: "test-agent-3")
     GenServer.cast(pid, {:improve, %{code: "pub fn test() { 1 }"}})
     Process.sleep(10)
     state = GenServer.call(pid, :state)

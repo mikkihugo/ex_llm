@@ -23,9 +23,9 @@ jobs:
       - name: Setup BEAM (Elixir + Gleam + OTP)
         uses: erlef/setup-beam@v1
         with:
-          otp-version: 'latest'
-          elixir-version: 'latest'
-          gleam-version: 'latest'
+          otp-version: '28'
+          elixir-version: '1.18.4'
+          gleam-version: '1.12.0'
 
       - name: Setup Bun (TypeScript)
         uses: oven-sh/setup-bun@v2
@@ -45,6 +45,25 @@ jobs:
       - name: Install dependencies
         run: |
           bun install
+
+      - name: Use Cachix (pull; push if token)
+        uses: cachix/cachix-action@v14
+        with:
+          name: mikkihugo
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Cache Mix/Hex and Moon (PR review)
+        uses: actions/cache@v4
+        with:
+          path: |
+            singularity_app/.mix
+            singularity_app/.hex
+            singularity_app/deps
+            singularity_app/_build
+            .moon/cache
+          key: pr-${{ runner.os }}-otp28-elixir1184-${{ hashFiles('singularity_app/mix.lock') }}-${{ hashFiles('**/moon.yml') }}
+          restore-keys: |
+            pr-${{ runner.os }}-otp28-elixir1184-
 
       - name: Run Claude Code Review
         env:

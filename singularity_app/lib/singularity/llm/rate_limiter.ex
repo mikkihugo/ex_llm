@@ -68,10 +68,11 @@ defmodule Singularity.LLM.RateLimiter do
           result = fun.()
 
           # Extract actual cost if available
-          actual_cost = case result do
-            {:ok, %{cost_usd: cost}} -> cost
-            _ -> estimated_cost
-          end
+          actual_cost =
+            case result do
+              {:ok, %{cost_usd: cost}} -> cost
+              _ -> estimated_cost
+            end
 
           release(actual_cost)
           result
@@ -155,9 +156,10 @@ defmodule Singularity.LLM.RateLimiter do
 
         # All checks passed - grant access
         true ->
-          new_state = %{state |
-            current_concurrent: state.current_concurrent + 1,
-            minute_counter: state.minute_counter + 1
+          new_state = %{
+            state
+            | current_concurrent: state.current_concurrent + 1,
+              minute_counter: state.minute_counter + 1
           }
 
           {:reply, {:ok, :acquired}, new_state}
@@ -184,9 +186,10 @@ defmodule Singularity.LLM.RateLimiter do
   @impl true
   def handle_cast({:release, actual_cost}, state) do
     # Release concurrent slot
-    new_state = %{state |
-      current_concurrent: max(0, state.current_concurrent - 1),
-      daily_spend: state.daily_spend + actual_cost
+    new_state = %{
+      state
+      | current_concurrent: max(0, state.current_concurrent - 1),
+        daily_spend: state.daily_spend + actual_cost
     }
 
     # Process waiting queue if any
@@ -202,10 +205,7 @@ defmodule Singularity.LLM.RateLimiter do
       requests_made: state.minute_counter
     )
 
-    new_state = %{state |
-      daily_spend: 0.0,
-      minute_counter: 0
-    }
+    new_state = %{state | daily_spend: 0.0, minute_counter: 0}
 
     {:noreply, new_state}
   end
@@ -223,10 +223,7 @@ defmodule Singularity.LLM.RateLimiter do
     now = System.monotonic_time(:second)
 
     if now - state.minute_start >= 60 do
-      %{state |
-        minute_counter: 0,
-        minute_start: now
-      }
+      %{state | minute_counter: 0, minute_start: now}
     else
       state
     end
@@ -237,18 +234,19 @@ defmodule Singularity.LLM.RateLimiter do
       {{:value, {from, estimated_cost}}, new_queue} ->
         # Can we process this queued request?
         if state.current_concurrent < state.max_concurrent and
-           state.minute_counter < state.max_per_minute and
-           state.daily_spend + estimated_cost <= state.daily_budget_usd do
-
+             state.minute_counter < state.max_per_minute and
+             state.daily_spend + estimated_cost <= state.daily_budget_usd do
           # Grant to queued requester
           GenServer.reply(from, {:ok, :acquired})
 
-          %{state |
-            waiting_queue: new_queue,
-            current_concurrent: state.current_concurrent + 1,
-            minute_counter: state.minute_counter + 1
+          %{
+            state
+            | waiting_queue: new_queue,
+              current_concurrent: state.current_concurrent + 1,
+              minute_counter: state.minute_counter + 1
           }
-          |> process_waiting_queue()  # Process more if possible
+          # Process more if possible
+          |> process_waiting_queue()
         else
           state
         end
@@ -261,6 +259,7 @@ defmodule Singularity.LLM.RateLimiter do
   defp schedule_daily_reset do
     # Calculate milliseconds until next midnight UTC
     now = DateTime.utc_now()
+
     next_midnight =
       now
       |> DateTime.to_date()

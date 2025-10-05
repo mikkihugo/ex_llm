@@ -42,10 +42,11 @@ defmodule Singularity.MethodologyExecutor do
     }
 
     # Execute each phase sequentially
-    final_context = Enum.reduce(@sparc_phases, context, fn {phase_name, template_id, description}, ctx ->
-      Logger.info("SPARC Phase: #{phase_name} - #{description}")
-      execute_phase(phase_name, template_id, ctx)
-    end)
+    final_context =
+      Enum.reduce(@sparc_phases, context, fn {phase_name, template_id, description}, ctx ->
+        Logger.info("SPARC Phase: #{phase_name} - #{description}")
+        execute_phase(phase_name, template_id, ctx)
+      end)
 
     # Return the final code
     {:ok, final_context.artifacts.code}
@@ -56,14 +57,15 @@ defmodule Singularity.MethodologyExecutor do
     template = TechnologyTemplateLoader.template(template_id)
 
     # Use RAG to find similar specifications
-    {:ok, examples} = RAGCodeGenerator.find_best_examples(
-      "specification for #{context.task}",
-      context.language,
-      [context.repo],
-      3,
-      true,
-      false
-    )
+    {:ok, examples} =
+      RAGCodeGenerator.find_best_examples(
+        "specification for #{context.task}",
+        context.language,
+        [context.repo],
+        3,
+        true,
+        false
+      )
 
     # Generate specification
     prompt = build_phase_prompt(template, context, examples)
@@ -98,14 +100,15 @@ defmodule Singularity.MethodologyExecutor do
     template = TechnologyTemplateLoader.template(template_id)
 
     # Find architectural patterns in codebase
-    {:ok, patterns} = RAGCodeGenerator.find_best_examples(
-      "architecture patterns #{context.language}",
-      context.language,
-      [context.repo],
-      5,
-      true,
-      false
-    )
+    {:ok, patterns} =
+      RAGCodeGenerator.find_best_examples(
+        "architecture patterns #{context.language}",
+        context.language,
+        [context.repo],
+        5,
+        true,
+        false
+      )
 
     prompt = """
     Design the architecture for:
@@ -155,17 +158,18 @@ defmodule Singularity.MethodologyExecutor do
     template = TechnologyTemplateLoader.template(template_id)
 
     # Use RAG to ensure consistency with codebase
-    {:ok, code} = RAGCodeGenerator.generate(
-      task: context.task,
-      language: context.language,
-      repos: [context.repo],
-      context: %{
-        specification: context.artifacts.specification,
-        pseudocode: context.artifacts.pseudocode,
-        architecture: context.artifacts.architecture,
-        refined_design: context.artifacts.refined_design
-      }
-    )
+    {:ok, code} =
+      RAGCodeGenerator.generate(
+        task: context.task,
+        language: context.language,
+        repos: [context.repo],
+        context: %{
+          specification: context.artifacts.specification,
+          pseudocode: context.artifacts.pseudocode,
+          architecture: context.artifacts.architecture,
+          refined_design: context.artifacts.refined_design
+        }
+      )
 
     context
     |> Map.put(:phases_completed, [:completion | context.phases_completed])

@@ -9,7 +9,16 @@ defmodule Singularity.MixProject do
       version: project_version(),
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:gleam | Mix.compilers()],
+      # mix_gleam integration (disabled)
+      # archives: [mix_gleam: "~> 0.6.2"],
+      erlc_paths: [
+        "build/#{Mix.env()}/erlang/#{@app}/_gleam_artefacts",
+        # For Gleam < v0.25.0 (kept for compatibility)
+        "build/#{Mix.env()}/erlang/#{@app}/build"
+      ],
+      erlc_include_path: "build/#{Mix.env()}/erlang/#{@app}/include",
+      # compilers: [:gleam | Mix.compilers()],  # Gleam disabled
+      compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       prune_code_paths: false,
       aliases: aliases(),
@@ -27,7 +36,7 @@ defmodule Singularity.MixProject do
       ],
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
-        flags: [:error_handling, :race_conditions, :underspecs]
+        flags: [:error_handling, :underspecs, :unknown]
       ]
     ]
   end
@@ -39,7 +48,7 @@ defmodule Singularity.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:test), do: ["lib", "test_helpers"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp project_version do
@@ -67,7 +76,8 @@ defmodule Singularity.MixProject do
       # ML/AI - Local embeddings with GPU acceleration
       {:bumblebee, "~> 0.5.3"},
       {:nx, "~> 0.7.1"},
-      {:exla, "~> 0.7.1"},  # XLA compiler for GPU (CUDA/ROCm)
+      # XLA compiler for GPU (CUDA/ROCm) - use precompiled
+      {:exla, "~> 0.7.1", override: true},
 
       # Data & Serialization
       {:jason, "~> 1.4"},
@@ -76,8 +86,6 @@ defmodule Singularity.MixProject do
       # Distributed Systems
       {:libcluster, "~> 3.3"},
       {:delta_crdt, "~> 0.6"},
-      # Event bus for coordinators
-      {:phoenix_pubsub, "~> 2.1"},
       # NATS messaging
       {:gnat, "~> 1.8"},
 
@@ -96,8 +104,7 @@ defmodule Singularity.MixProject do
       # Resource pooling for LLM APIs
       {:nimble_pool, "~> 1.0"},
 
-      # MCP (Model Context Protocol)
-      {:hermes_mcp, "~> 0.14.1"},
+      # Removed MCP - using real LLM providers with tools instead
 
       # Event Processing
       # Data pipelines
@@ -117,6 +124,10 @@ defmodule Singularity.MixProject do
       {:ex_machina, "~> 2.7", only: :test},
       # Mocks
       {:mox, "~> 1.1", only: :test}
+
+      # Gleam integration
+      # {:mix_gleam, "~> 0.6", runtime: false},  # Gleam disabled
+      # {:gleam_stdlib, "~> 0.65", app: false, override: true}
     ]
   end
 
@@ -132,7 +143,8 @@ defmodule Singularity.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get"],
+      "deps.get": ["deps.get", "gleam.deps.get"],
+      setup: ["deps.get", "gleam.deps.get"],
       test: ["test"],
       "test.ci": ["test --color --cover"],
       coverage: ["coveralls.html"],

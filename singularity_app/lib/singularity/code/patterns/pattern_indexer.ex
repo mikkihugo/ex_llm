@@ -48,21 +48,25 @@ defmodule Singularity.PatternIndexer do
 
     templates = load_all_templates()
 
-    patterns = templates
-    |> Enum.flat_map(&extract_patterns/1)
-    |> Enum.uniq_by(& &1.id)
+    patterns =
+      templates
+      |> Enum.flat_map(&extract_patterns/1)
+      |> Enum.uniq_by(& &1.id)
 
     Logger.info("Found #{length(patterns)} unique patterns to index")
 
     # Index each pattern
-    indexed = Enum.reduce(patterns, 0, fn pattern, acc ->
-      case index_pattern(pattern) do
-        {:ok, _} -> acc + 1
-        {:error, reason} ->
-          Logger.warning("Failed to index pattern: #{inspect(reason)}")
-          acc
-      end
-    end)
+    indexed =
+      Enum.reduce(patterns, 0, fn pattern, acc ->
+        case index_pattern(pattern) do
+          {:ok, _} ->
+            acc + 1
+
+          {:error, reason} ->
+            Logger.warning("Failed to index pattern: #{inspect(reason)}")
+            acc
+        end
+      end)
 
     Logger.info("✅ Indexed #{indexed} semantic patterns")
     {:ok, indexed}
@@ -120,7 +124,9 @@ defmodule Singularity.PatternIndexer do
             {:ok, template} -> template
             _ -> nil
           end
-        _ -> nil
+
+        _ ->
+          nil
       end
     end)
     |> Enum.reject(&is_nil/1)
@@ -135,46 +141,49 @@ defmodule Singularity.PatternIndexer do
     architecture = semantic["architectural_hints"] || %{}
 
     # Extract from common_patterns array
-    pattern_list = Enum.map(common_patterns, fn pattern ->
-      %{
-        id: generate_pattern_id(language, pattern["pattern"]),
-        language: language,
-        pattern_name: pattern["pattern"],
-        pseudocode: pattern["pseudocode"],
-        relationships: pattern["relationships"] || [],
-        keywords: pattern["keywords"] || [],
-        type: "common_pattern",
-        searchable_text: build_searchable_text(pattern)
-      }
-    end)
+    pattern_list =
+      Enum.map(common_patterns, fn pattern ->
+        %{
+          id: generate_pattern_id(language, pattern["pattern"]),
+          language: language,
+          pattern_name: pattern["pattern"],
+          pseudocode: pattern["pseudocode"],
+          relationships: pattern["relationships"] || [],
+          keywords: pattern["keywords"] || [],
+          type: "common_pattern",
+          searchable_text: build_searchable_text(pattern)
+        }
+      end)
 
     # Extract from relationship_vectors
-    relationship_list = Enum.map(relationships, fn {key, value} ->
-      %{
-        id: generate_pattern_id(language, to_string(key)),
-        language: language,
-        pattern_name: to_string(key),
-        pseudocode: value,
-        relationships: [],
-        keywords: extract_keywords_from_text(value),
-        type: "relationship",
-        searchable_text: "#{key}: #{value}"
-      }
-    end)
+    relationship_list =
+      Enum.map(relationships, fn {key, value} ->
+        %{
+          id: generate_pattern_id(language, to_string(key)),
+          language: language,
+          pattern_name: to_string(key),
+          pseudocode: value,
+          relationships: [],
+          keywords: extract_keywords_from_text(value),
+          type: "relationship",
+          searchable_text: "#{key}: #{value}"
+        }
+      end)
 
     # Extract from architectural_hints
-    architecture_list = Enum.map(architecture, fn {key, value} ->
-      %{
-        id: generate_pattern_id(language, to_string(key)),
-        language: language,
-        pattern_name: to_string(key),
-        pseudocode: value,
-        relationships: [],
-        keywords: extract_keywords_from_text(value),
-        type: "architecture",
-        searchable_text: "#{key}: #{value}"
-      }
-    end)
+    architecture_list =
+      Enum.map(architecture, fn {key, value} ->
+        %{
+          id: generate_pattern_id(language, to_string(key)),
+          language: language,
+          pattern_name: to_string(key),
+          pseudocode: value,
+          relationships: [],
+          keywords: extract_keywords_from_text(value),
+          type: "architecture",
+          searchable_text: "#{key}: #{value}"
+        }
+      end)
 
     pattern_list ++ relationship_list ++ architecture_list
   end
@@ -261,28 +270,31 @@ defmodule Singularity.PatternIndexer do
     LIMIT $#{if language, do: "3", else: "2"}
     """
 
-    params = if language do
-      [query_embedding, language, top_k]
-    else
-      [query_embedding, top_k]
-    end
+    params =
+      if language do
+        [query_embedding, language, top_k]
+      else
+        [query_embedding, top_k]
+      end
 
     case Repo.query(query, params) do
       {:ok, %{rows: rows}} ->
-        results = Enum.map(rows, fn row ->
-          [id, lang, name, pseudo, rels, kw, type, text, sim] = row
-          %{
-            id: id,
-            language: lang,
-            pattern: name,
-            pseudocode: pseudo,
-            relationships: rels || [],
-            keywords: kw || [],
-            type: type,
-            searchable_text: text,
-            relevance: Float.round(sim, 3)
-          }
-        end)
+        results =
+          Enum.map(rows, fn row ->
+            [id, lang, name, pseudo, rels, kw, type, text, sim] = row
+
+            %{
+              id: id,
+              language: lang,
+              pattern: name,
+              pseudocode: pseudo,
+              relationships: rels || [],
+              keywords: kw || [],
+              type: type,
+              searchable_text: text,
+              relevance: Float.round(sim, 3)
+            }
+          end)
 
         {:ok, results}
 
@@ -295,10 +307,12 @@ defmodule Singularity.PatternIndexer do
     # For each pattern, find actual code examples that match
     # This uses the pattern keywords to search the code_files table
 
-    keywords = patterns
-    |> Enum.flat_map(& &1.keywords)
-    |> Enum.uniq()
-    |> Enum.take(10)  # Top 10 keywords
+    keywords =
+      patterns
+      |> Enum.flat_map(& &1.keywords)
+      |> Enum.uniq()
+      # Top 10 keywords
+      |> Enum.take(10)
 
     keyword_query = Enum.join(keywords, " OR ")
 
@@ -307,9 +321,7 @@ defmodule Singularity.PatternIndexer do
     FROM code_files
     WHERE language = $1
     AND (
-      #{Enum.map_join(1..min(length(keywords), 5), " OR ", fn i ->
-        "content ILIKE $#{i + 1}"
-      end)}
+      #{Enum.map_join(1..min(length(keywords), 5), " OR ", fn i -> "content ILIKE $#{i + 1}" end)}
     )
     LIMIT 5
     """
@@ -319,9 +331,11 @@ defmodule Singularity.PatternIndexer do
 
     case Repo.query(query, params) do
       {:ok, %{rows: rows}} ->
-        examples = Enum.map(rows, fn [path, content, lang] ->
-          %{path: path, content: String.slice(content, 0..500), language: lang}
-        end)
+        examples =
+          Enum.map(rows, fn [path, content, lang] ->
+            %{path: path, content: String.slice(content, 0..500), language: lang}
+          end)
+
         {:ok, examples}
 
       {:error, _} ->
@@ -331,19 +345,21 @@ defmodule Singularity.PatternIndexer do
 
   defp generate_code(task, patterns, code_examples, language) do
     # Build prompt with patterns and examples
-    patterns_text = patterns
-    |> Enum.map(fn p ->
-      """
-      Pattern: #{p.pattern}
-      Structure: #{p.pseudocode}
-      Relationships: #{Enum.join(p.relationships, ", ")}
-      """
-    end)
-    |> Enum.join("\n")
+    patterns_text =
+      patterns
+      |> Enum.map(fn p ->
+        """
+        Pattern: #{p.pattern}
+        Structure: #{p.pseudocode}
+        Relationships: #{Enum.join(p.relationships, ", ")}
+        """
+      end)
+      |> Enum.join("\n")
 
-    examples_text = code_examples
-    |> Enum.map(& &1.content)
-    |> Enum.join("\n\n---\n\n")
+    examples_text =
+      code_examples
+      |> Enum.map(& &1.content)
+      |> Enum.join("\n\n---\n\n")
 
     prompt = """
     Task: #{task}

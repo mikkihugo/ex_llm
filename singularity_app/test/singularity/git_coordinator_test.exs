@@ -1,7 +1,9 @@
 defmodule Singularity.Git.CoordinatorTest do
   use Singularity.DataCase, async: false
 
-  alias Singularity.Git.{Coordinator, Store, Supervisor => GitSupervisor}
+  alias Singularity.Git.Coordinator
+  alias Singularity.Git.Store
+  alias Singularity.Git.Supervisor, as: GitSupervisor
 
   setup do
     original = Application.get_env(:singularity, :git_coordinator, [])
@@ -25,7 +27,9 @@ defmodule Singularity.Git.CoordinatorTest do
   test "delegates to tree coordinator when enabled" do
     tmp_repo =
       System.tmp_dir!()
-      |> Path.join("git_coordinator_test_" <> Integer.to_string(System.unique_integer([:positive])))
+      |> Path.join(
+        "git_coordinator_test_" <> Integer.to_string(System.unique_integer([:positive]))
+      )
 
     Application.put_env(:singularity, :git_coordinator,
       enabled: true,

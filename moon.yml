@@ -10,40 +10,40 @@ project:
 tasks:
   # Workspace-level orchestration tasks
   build:all:
-    command: 'moon run :build && moon run rust:build'
+    command: 'nix develop .#dev --command just compile && nix develop .#dev --command just rust-build'
     local: true
     options:
       runInCI: true
 
   dev:
-    command: 'moon run :build && concurrently "moon run ai-server:dev" "moon run singularity_app:dev"'
+    command: 'nix develop .#dev --command just dev'
     local: true
     options:
       persistent: true
 
   start:
-    command: 'moon run :build && moon run singularity_app:start'
+    command: 'nix develop .#dev --command just dev'
     local: true
     options:
       persistent: true
 
   test:all:
-    command: 'moon run :test'
+    command: 'nix develop .#dev --command just test'
     local: true
     options:
       runInCI: true
 
   clean:
-    command: 'moon run :clean && rm -rf dist/ node_modules/.cache/ .cargo-build/'
+    command: 'nix develop .#dev --command just clean'
     local: true
 
   install:
-    command: 'moon run :install'
+    command: 'nix develop .#dev --command just setup'
     local: true
 
   # Rust-specific build task
   rust:build:
-    command: 'cd rust && cargo build --release'
+    command: 'cd rust && nix develop .#dev --command cargo build --release'
     local: true
     options:
       runInCI: true

@@ -14,7 +14,7 @@ defmodule Singularity.CodeLocationIndex do
   import Ecto.Changeset
 
   alias Singularity.Repo
-  alias Singularity.{CodePatternExtractor, TechnologyDetector}
+  alias Singularity.{CodePatternExtractor, TechnologyAgent}
 
   schema "code_location_index" do
     field :filepath, :string
@@ -24,9 +24,12 @@ defmodule Singularity.CodeLocationIndex do
     field :lines_of_code, :integer
 
     # JSONB fields - dynamic data from tool_doc_index
-    field :metadata, :map  # exports, imports, summary, etc.
-    field :frameworks, :map  # detected frameworks from TechnologyDetector
-    field :microservice, :map  # type, subjects, routes, etc.
+    # exports, imports, summary, etc.
+    field :metadata, :map
+    # detected frameworks from TechnologyDetector
+    field :frameworks, :map
+    # type, subjects, routes, etc.
+    field :microservice, :map
 
     field :last_indexed, :utc_datetime
 
@@ -286,7 +289,9 @@ defmodule Singularity.CodeLocationIndex do
     # Use existing TechnologyDetector
     codebase_dir = Path.dirname(filepath)
 
-    case TechnologyDetector.detect_technologies_elixir(codebase_dir, analysis: %{patterns: patterns}) do
+    case TechnologyDetector.detect_technologies_elixir(codebase_dir,
+           analysis: %{patterns: patterns}
+         ) do
       {:ok, %{technologies: tech}} ->
         %{
           detected: Map.get(tech, :frameworks, []),

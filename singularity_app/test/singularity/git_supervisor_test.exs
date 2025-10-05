@@ -25,7 +25,9 @@ defmodule Singularity.Git.SupervisorTest do
   test "starts tree coordinator when enabled" do
     tmp_repo =
       System.tmp_dir!()
-      |> Path.join("git_supervisor_test_" <> Integer.to_string(System.unique_integer([:positive])))
+      |> Path.join(
+        "git_supervisor_test_" <> Integer.to_string(System.unique_integer([:positive]))
+      )
 
     Application.put_env(:singularity, :git_coordinator,
       enabled: true,

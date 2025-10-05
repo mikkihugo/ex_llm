@@ -36,10 +36,14 @@ defmodule Singularity.TechnologyTemplateStore do
   with a deterministic checksum. Accepts optional metadata such as source
   or version overrides.
   """
-  @spec upsert(template_identifier(), template_map(), keyword()) :: {:ok, Template.t()} | {:error, Changeset.t()}
+  @spec upsert(template_identifier(), template_map(), keyword()) ::
+          {:ok, Template.t()} | {:error, Changeset.t()}
   def upsert(identifier, %{} = template, opts \\ []) do
     key = normalize_identifier(identifier)
-    category = opts[:category] || category_from_identifier(identifier) || template["category"] || "unknown"
+
+    category =
+      opts[:category] || category_from_identifier(identifier) || template["category"] || "unknown"
+
     version = opts[:version] || template["version"] || get_in(template, ["metadata", "version"])
     source = opts[:source] || "seed"
     metadata = opts[:metadata] || %{}
@@ -164,10 +168,17 @@ defmodule Singularity.TechnologyTemplateStore do
     |> Enum.join("/")
   end
 
-  defp category_from_identifier({category, _name}) when is_atom(category), do: Atom.to_string(category)
-  defp category_from_identifier([category | _]) when is_atom(category), do: Atom.to_string(category)
+  defp category_from_identifier({category, _name}) when is_atom(category),
+    do: Atom.to_string(category)
+
+  defp category_from_identifier([category | _]) when is_atom(category),
+    do: Atom.to_string(category)
+
   defp category_from_identifier([category | _]) when is_binary(category), do: category
-  defp category_from_identifier(identifier) when is_atom(identifier), do: Atom.to_string(identifier)
+
+  defp category_from_identifier(identifier) when is_atom(identifier),
+    do: Atom.to_string(identifier)
+
   defp category_from_identifier(identifier) when is_binary(identifier), do: identifier
   defp category_from_identifier(_), do: nil
 

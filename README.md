@@ -1,223 +1,119 @@
 # Singularity
 
-> **LLM-Driven Autonomous Development Platform with GPU-Accelerated Semantic Code Search**
+Autonomous BEAM-native agents that evolve themselves with rules-first execution and selective LLM usage. Elixir provides the runtime and supervision; Gleam adds type-safe agent logic (HTDAG and rule evaluation) via mix_gleam.
 
-Singularity is a distributed, polyglot platform where **LLMs are the primary developers**. It combines Elixir, Gleam, and Rust to provide intelligent code analysis, AI agent orchestration, and semantic search capabilities. Built on BEAM's fault-tolerant architecture with NATS messaging and PostgreSQL vector storage, Singularity enables LLMs to autonomously develop, analyze, and improve code.
+## Highlights
 
-## 🌟 Key Features
+- Agents: long-lived processes supervised by `Singularity.AgentSupervisor` running a self-improvement loop.
+- Rules-first: `Singularity.Autonomy.RuleEngineV2` executes Postgres‑backed rules and caches results in Cachex/ETS.
+- Selective LLMs: workers fall back to semantic cache and then provider calls only when confidence is low.
+- Hot reload: generated code is validated and activated by `Singularity.HotReload.ModuleReloader`.
+- Gleam interop: `:singularity@htdag` and `:singularity@rule_engine` modules are compiled and callable from Elixir.
+- Interfaces: HTTP endpoints by default; optional NATS interface available in `lib/singularity/interfaces/nats.ex`.
 
-- **LLM-First Development**: All development tasks performed by AI agents (Claude, Gemini, GPT-4, etc.)
-- **Multi-Language Support**: Parse and analyze 30+ programming languages via Tree-sitter
-- **Semantic Code Search**: GPU-accelerated embeddings with pgvector for intelligent code discovery
-- **AI Agent Orchestration**: Autonomous agents with access to 67+ development tools
-- **Distributed Architecture**: BEAM clustering with NATS messaging for scalability
-- **Multiple AI Providers**: Unified interface for Claude, Gemini, OpenAI, GitHub Copilot, and Cursor
-- **Real-time Code Analysis**: Pattern extraction, duplication detection, and architecture analysis
-- **Template System**: Technology-specific templates for consistent code generation
-- **Jules Integration**: Specialized AI agent for complex development tasks
-
-## 🏗️ Architecture Overview
+## Architecture (current)
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   Client Applications                    │
-└────────────────┬────────────────────────────────────────┘
-                 │
-┌────────────────▼────────────────────────────────────────┐
-│                   NATS Message Bus                       │
-│  Subjects: ai.*, code.*, agents.*, execution.*          │
-└────────┬──────────────────┬──────────────┬─────────────┘
-         │                  │              │
-┌────────▼────────┐ ┌───────▼──────┐ ┌────▼─────────────┐
-│  Elixir/BEAM    │ │   AI Server  │ │  Rust Services   │
-│  - Orchestrator │ │  (TypeScript)│ │  - Parsers       │
-│  - Agents       │ │  - Claude    │ │  - Analyzers     │
-│  - Semantic     │ │  - Gemini    │ │  - Linting       │
-│    Search       │ │  - OpenAI    │ │  - Linting       │
-│  - Templates    │ │  - Copilot   │ │                  │
-│  - HybridAgent  │ │  - Cursor    │ │                  │
-│                 │ │  - Jules     │ │                  │
-└────────┬────────┘ └──────────────┘ └──────┬───────────┘
-         │                                   │
-┌────────▼───────────────────────────────────▼───────────┐
-│              PostgreSQL 17 with Extensions              │
-│  - pgvector (embeddings)                                │
-│  - TimescaleDB (time-series)                            │
-│  - PostGIS (spatial data)                               │
-└─────────────────────────────────────────────────────────┘
+Elixir/BEAM
+  ├─ Agents (GenServers)
+  │   ├─ Singularity.Agent (self-improving loop)
+  │   └─ Singularity.Agents.CostOptimizedAgent (rules/cache/LLM)
+  ├─ Autonomy
+  │   ├─ RuleEngineV2 (GenServer + Cachex + Repo)
+  │   └─ Planner / Decider / Limiter
+  ├─ Hot Reload (validation + activation)
+  ├─ Tools (domain tools used by agents)
+  └─ HTTP Router (tool execution, chat proxy, health, metrics)
+
+Gleam
+  ├─ singularity/htdag.gleam
+  └─ singularity/rule_engine.gleam
 ```
 
-## 🤖 LLM Development Philosophy
-
-Singularity is designed for **LLM-first development** where AI agents are the primary developers:
-
-- **Autonomous Coding**: LLMs write, review, and refactor code without human intervention
-- **Self-Improvement**: Agents can modify their own code and improve their capabilities
-- **Tool Integration**: Direct access to 67+ development tools via MCP protocol
-- **Semantic Understanding**: Code is stored with embeddings for semantic reasoning
-- **Template Evolution**: LLMs learn and create new templates from analyzed codebases
-
-### Current Status (After Recent Updates)
-
-- ✅ **NATS Orchestrator**: Enhanced with semantic caching and HybridAgent integration
-- ✅ **Multiple AI Models**: Support for latest models including GPT-5, o1, o3, Grok
-- ✅ **Jules Integration**: Specialized agent for complex development tasks
-- ⚠️ **NatsOrchestrator**: Temporarily disabled in application.ex pending HybridAgent API updates
-- ✅ **Nix Flake**: Updated with NATS server, container tools, and multiple dev shells
-
-## 📦 Codebase Structure
+## Repo Layout
 
 ```
-singularity/
-├── singularity_app/          # Main Elixir/Phoenix application
-│   ├── lib/
-│   │   ├── singularity/     # Core modules
-│   │   │   ├── application.ex        # OTP application supervisor
-│   │   │   ├── nats_orchestrator.ex  # NATS messaging handler
-│   │   │   ├── agents/              # Autonomous agent system
-│   │   │   ├── llm/                 # LLM provider integrations
-│   │   │   ├── semantic_code_search.ex # Vector search
-│   │   │   └── patterns/            # Pattern extraction
-│   │   └── mix/tasks/       # Custom Mix tasks
-│   ├── gleam/              # Gleam modules
-│   │   └── src/
-│   │       ├── singularity/ # Type-safe rule engine
-│   │       └── seed/        # Agent improvement logic
-│   └── mix.exs             # Project configuration
-│
-├── rust/                    # High-performance Rust components
-│   ├── universal_parser/    # Tree-sitter based parser
-│   ├── analysis_suite/      # Code analysis tools
-│   ├── prompt_engine/      # Prompt optimization
-│   └── linting_engine/     # Custom linting rules
-│
-├── ai-server/              # TypeScript AI provider server
-│   ├── src/
-│   │   ├── providers/      # AI provider implementations
-│   │   └── server.ts       # Main server
-│   └── package.json
-│
-├── flake.nix              # Nix development environment
-├── start-all.sh           # System startup script
-└── stop-all.sh            # System shutdown script
+singularity_app/
+├── lib/singularity/           # Agents, autonomy, tools, interfaces
+├── src/                       # Gleam modules (compiled via mix_gleam)
+├── config/                    # Mix configs
+├── test/                      # ExUnit tests
+├── mix.exs                    # Mix project (mix_gleam enabled)
+└── gleam.toml                 # Gleam config
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
-### Prerequisites
+Prerequisites: PostgreSQL. Dev shell provides Erlang/Elixir/Gleam.
 
-- Nix package manager with flakes enabled
-- PostgreSQL 17+
-- CUDA-capable GPU (optional, for accelerated embeddings)
+1) Nix dev shell (recommended)
 
-### Installation
-
-1. **Clone and enter the repository**:
-```bash
-git clone https://github.com/yourusername/singularity.git
-cd singularity
 ```
-
-2. **Enter the Nix development shell**:
-```bash
 nix develop
-# Or with direnv:
-direnv allow
+cd singularity_app && mix deps.get && mix compile
 ```
 
-3. **Set up the database**:
-```bash
-createdb singularity_dev
-cd singularity_app
+Binary cache (Cachix)
+- We publish prebuilt Nix artifacts to the public cache: https://mikkihugo.cachix.org
+- One-time setup on your machine (optional but faster):
+  - nix profile install nixpkgs#cachix
+  - cachix use mikkihugo
+- Or just run `./devenv.sh` which enables the cache (pull) and drops you into `nix develop`.
+
+2) Configure DB (defaults via env vars in config)
+
+```
 mix ecto.create
 mix ecto.migrate
 ```
 
-4. **Install dependencies**:
-```bash
-# Elixir dependencies
+3) Run tests
+
+```
+mix test
+```
+
+4) Start the app (optional HTTP control plane)
+
+```
+HTTP_SERVER_ENABLED=true iex -S mix
+```
+
+Endpoints:
+- POST /api/tools/run – execute a tool
+- POST /v1/chat/completions – provider proxy
+- GET /health, /health/deep – health checks
+- GET /metrics – Prometheus text (minimal exporter)
+
+## Notes
+
+- RuleEngineV2 supersedes the older `Singularity.Autonomy.RuleEngine`. New code should depend on V2.
+- MCP docs were removed; an MCP interface is not present in this repo. NATS interface exists but some runtime wiring is optional or commented out.
+- Nix flake pins OTP 28 + Elixir 1.19 and sets UTF‑8 env for stable rebar3; outside Nix, ensure matching versions for smooth `mix_gleam` builds.
+- The core system also runs with Mix alone if your host has compatible Erlang/Elixir/Gleam.
+
+## Gleam via mix_gleam
+
+Gleam modules are compiled automatically by Mix (mix_gleam).
+
+Common commands:
+
+```
 cd singularity_app
-mix setup  # Runs mix deps.get && mix gleam.deps.get
-
-# AI Server dependencies
-cd ../ai-server
-bun install
+mix deps.get                 # also fetches Gleam deps via alias
+mix compile                  # compiles Elixir + Gleam
+gleam check                  # optional fast type-check
+gleam test                   # optional Gleam tests
 ```
 
-5. **Configure environment variables**:
-```bash
-# Copy example env file
-cp .env.example .env
+If Gleam stdlib resolution fails once (rare):
 
-# Add your API keys:
-# ANTHROPIC_API_KEY=your-key
-# OPENAI_API_KEY=your-key
-# GOOGLE_AI_STUDIO_API_KEY=your-key
+```
+mix compile.gleam gleam_stdlib --force
+mix compile
 ```
 
-6. **Start all services**:
-```bash
-./start-all.sh
-```
-
-The system will start:
-- NATS server on port 4222
-- Elixir application on port 4000
-- AI server on port 3000
-
-## 💻 Development
-
-### Running Tests
-
-```bash
-cd singularity_app
-mix test                    # Run all tests
-mix test.ci                 # Run with coverage
-mix coverage                # Generate HTML report
-```
-
-### Code Quality
-
-```bash
-cd singularity_app
-mix quality  # Runs format, credo, dialyzer, sobelow, deps.audit
-```
-
-### Building for Production
-
-```bash
-# Using Nix
-nix build .#singularity-integrated
-
-# Using Mix
-cd singularity_app
-MIX_ENV=prod mix release
-```
-
-## 🔧 Importing Code into Singularity (For LLM Analysis)
-
-### 1. Import a New Codebase for LLM Development
-
-```elixir
-# LLMs import and analyze external codebases
-iex> Singularity.CodebaseRegistry.import_project("/path/to/project", "my_project")
-
-# Via Mix task (typically called by AI agents)
-mix singularity.import /path/to/project --name my_project
-```
-
-### 2. Generate Embeddings for Semantic Search
-
-```elixir
-# Process all files in the imported project
-iex> Singularity.SemanticCodeSearch.index_project("my_project")
-
-# Or selectively index specific languages
-iex> Singularity.SemanticCodeSearch.index_project("my_project", languages: ["rust", "elixir"])
-```
-
-### 3. Extract Patterns and Templates
-
+For deeper details see INTERFACE_ARCHITECTURE.md and docs/setup/QUICKSTART.md.
 ```elixir
 # Extract reusable patterns
 iex> Singularity.CodePatternExtractor.extract_from_project("my_project")

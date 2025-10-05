@@ -24,7 +24,8 @@ defmodule Singularity.MemoryCache do
 
   # Cache TTL (time to live)
   @default_ttl :timer.hours(24)
-  @embedding_ttl :timer.hours(168)  # 7 days for embeddings
+  # 7 days for embeddings
+  @embedding_ttl :timer.hours(168)
 
   # Client API
 
@@ -45,6 +46,7 @@ defmodule Singularity.MemoryCache do
           :ets.delete(@tables[table], key)
           :miss
         end
+
       [] ->
         :miss
     end
@@ -72,6 +74,7 @@ defmodule Singularity.MemoryCache do
 
       :miss ->
         Logger.debug("Cache MISS: #{table}/#{inspect(key)}")
+
         case compute_fn.() do
           {:ok, value} ->
             put(table, key, value, ttl)
@@ -111,11 +114,12 @@ defmodule Singularity.MemoryCache do
       size = :ets.info(table, :size)
       memory = :ets.info(table, :memory) * :erlang.system_info(:wordsize)
 
-      {name, %{
-        entries: size,
-        memory_bytes: memory,
-        memory_mb: Float.round(memory / 1_048_576, 2)
-      }}
+      {name,
+       %{
+         entries: size,
+         memory_bytes: memory,
+         memory_mb: Float.round(memory / 1_048_576, 2)
+       }}
     end)
     |> Enum.into(%{})
   end
@@ -125,19 +129,20 @@ defmodule Singularity.MemoryCache do
   @impl true
   def init(_opts) do
     # Create ETS tables
-    tables = for {name, table_name} <- @tables do
-      # Create table with read concurrency for speed
-      :ets.new(table_name, [
-        :set,
-        :named_table,
-        :public,
-        read_concurrency: true,
-        write_concurrency: true
-      ])
+    tables =
+      for {name, table_name} <- @tables do
+        # Create table with read concurrency for speed
+        :ets.new(table_name, [
+          :set,
+          :named_table,
+          :public,
+          read_concurrency: true,
+          write_concurrency: true
+        ])
 
-      {name, table_name}
-    end
-    |> Enum.into(%{})
+        {name, table_name}
+      end
+      |> Enum.into(%{})
 
     # Schedule cleanup
     schedule_cleanup()
@@ -200,11 +205,13 @@ defmodule Singularity.MemoryCache do
   """
   def cache_llm_response(prompt_hash, response, metadata \\ %{}) do
     key = prompt_hash
+
     value = %{
       response: response,
       metadata: metadata,
       cached_at: DateTime.utc_now()
     }
+
     put(:llm_responses, key, value, :timer.hours(12))
   end
 
@@ -228,12 +235,13 @@ defmodule Singularity.MemoryCache do
 
   defp warmup_templates do
     # Load from TemplateOptimizer's top performers
-    case Singularity.TemplateOptimizer.analyze_performance() do
+    case Singularity.TemplatePerformanceTracker.analyze_performance() do
       {:ok, %{top_performers: performers}} ->
         Enum.each(performers, fn %{template: template_id} ->
           # Cache the template
           put(:templates, template_id, template_id, :timer.hours(48))
         end)
+
       _ ->
         :ok
     end
@@ -253,6 +261,7 @@ defmodule Singularity.MemoryCache do
         Enum.each(rows, fn [path, embedding] ->
           cache_embedding(path, embedding)
         end)
+
       _ ->
         :ok
     end

@@ -22,7 +22,10 @@ defmodule Singularity.TechnologyDetectorTest do
   test "detects phoenix framework via template patterns", %{tmp_dir: tmp_dir} do
     analysis = %{
       files: [
-        %{path: "lib/my_app_web/router.ex", content: "use Phoenix.Router\nuse Phoenix.Controller"},
+        %{
+          path: "lib/my_app_web/router.ex",
+          content: "use Phoenix.Router\nuse Phoenix.Controller"
+        },
         %{path: "lib/my_app_web/endpoint.ex", content: "use Phoenix.Endpoint, otp_app: :my_app"}
       ],
       metadata: %{}
@@ -40,7 +43,10 @@ defmodule Singularity.TechnologyDetectorTest do
   test "detects nats messaging when patterns match", %{tmp_dir: tmp_dir} do
     analysis = %{
       files: [
-        %{path: "lib/singularity/nats/consumer.ex", content: "defmodule Consumer do\n  Gnat.sub(conn, self(), \"events.*\")\nend"}
+        %{
+          path: "lib/singularity/nats/consumer.ex",
+          content: "defmodule Consumer do\n  Gnat.sub(conn, self(), \"events.*\")\nend"
+        }
       ],
       metadata: %{}
     }
@@ -57,7 +63,10 @@ defmodule Singularity.TechnologyDetectorTest do
   test "category detection uses injected analysis", %{tmp_dir: tmp_dir} do
     analysis = %{
       files: [
-        %{path: "lib/singularity/metrics/prom_ex.ex", content: "defmodule Metrics do\n  use PromEx.Plugins.Phoenix\nend"}
+        %{
+          path: "lib/singularity/metrics/prom_ex.ex",
+          content: "defmodule Metrics do\n  use PromEx.Plugins.Phoenix\nend"
+        }
       ],
       metadata: %{}
     }
@@ -74,7 +83,10 @@ defmodule Singularity.TechnologyDetectorTest do
   test "persists snapshot when enabled", %{tmp_dir: tmp_dir} do
     analysis = %{
       files: [
-        %{path: "lib/singularity/nats/consumer.ex", content: "defmodule Consumer do\n  Gnat.sub(conn, self(), \"events.*\")\nend"}
+        %{
+          path: "lib/singularity/nats/consumer.ex",
+          content: "defmodule Consumer do\n  Gnat.sub(conn, self(), \"events.*\")\nend"
+        }
       ],
       metadata: %{}
     }

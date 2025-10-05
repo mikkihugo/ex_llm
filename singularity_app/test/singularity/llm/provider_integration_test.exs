@@ -4,35 +4,40 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
   alias Singularity.LLM.Provider
 
   @moduletag :integration
-  @moduletag timeout: 120_000  # 2 minute timeout for LLM calls
+  # 2 minute timeout for LLM calls
+  @moduletag timeout: 120_000
 
   describe "Model Integration Tests - All Published Models" do
     @tag :slow
     test "claude-sonnet-4.5 - best for coding" do
-      assert {:ok, response} = Provider.call(%{
-        provider: :claude,
-        model: "claude-sonnet-4.5",
-        prompt: "Write a simple hello world in Elixir",
-        max_tokens: 100,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 provider: :claude,
+                 model: "claude-sonnet-4.5",
+                 prompt: "Write a simple hello world in Elixir",
+                 max_tokens: 100,
+                 temperature: 0.7
+               })
 
       assert response.content
       assert response.provider == :claude
       assert response.model == "claude-sonnet-4.5"
       assert response.tokens_used > 0
-      assert String.contains?(response.content, "defmodule") || String.contains?(response.content, "IO.puts")
+
+      assert String.contains?(response.content, "defmodule") ||
+               String.contains?(response.content, "IO.puts")
     end
 
     @tag :slow
     test "claude-opus-4.1 - best for complex reasoning" do
-      assert {:ok, response} = Provider.call(%{
-        provider: :claude,
-        model: "claude-opus-4.1",
-        prompt: "Explain the difference between a monad and a functor",
-        max_tokens: 150,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 provider: :claude,
+                 model: "claude-opus-4.1",
+                 prompt: "Explain the difference between a monad and a functor",
+                 max_tokens: 150,
+                 temperature: 0.7
+               })
 
       assert response.content
       assert response.provider == :claude
@@ -42,29 +47,34 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
 
     @tag :slow
     test "gpt-5-codex - with MCP tools" do
-      assert {:ok, response} = Provider.call(%{
-        provider: :codex,
-        model: "gpt-5-codex",
-        prompt: "Write a Python function to check if a number is prime",
-        max_tokens: 100,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 provider: :codex,
+                 model: "gpt-5-codex",
+                 prompt: "Write a Python function to check if a number is prime",
+                 max_tokens: 100,
+                 temperature: 0.7
+               })
 
       assert response.content
       assert response.provider == :codex
       assert response.model == "gpt-5-codex"
-      assert String.contains?(response.content, "def ") || String.contains?(response.content, "return")
+
+      assert String.contains?(response.content, "def ") ||
+               String.contains?(response.content, "return")
     end
 
     @tag :slow
     test "o3 - deepest thinking model" do
-      assert {:ok, response} = Provider.call(%{
-        provider: :codex,
-        model: "o3",
-        prompt: "Solve: If 5 machines make 5 widgets in 5 minutes, how long for 100 machines to make 100 widgets?",
-        max_tokens: 200,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 provider: :codex,
+                 model: "o3",
+                 prompt:
+                   "Solve: If 5 machines make 5 widgets in 5 minutes, how long for 100 machines to make 100 widgets?",
+                 max_tokens: 200,
+                 temperature: 0.7
+               })
 
       assert response.content
       assert response.provider == :codex
@@ -75,13 +85,14 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
 
     @tag :slow
     test "o1 - fast thinking model" do
-      assert {:ok, response} = Provider.call(%{
-        provider: :codex,
-        model: "o1",
-        prompt: "What is 2+2?",
-        max_tokens: 50,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 provider: :codex,
+                 model: "o1",
+                 prompt: "What is 2+2?",
+                 max_tokens: 50,
+                 temperature: 0.7
+               })
 
       assert response.content
       assert response.provider == :codex
@@ -91,30 +102,33 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
 
     @tag :slow
     test "gemini-2.5-flash - fastest model" do
-      assert {:ok, response} = Provider.call(%{
-        provider: :gemini,
-        model: "gemini-2.5-flash",
-        prompt: "What is Elixir?",
-        max_tokens: 100,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 provider: :gemini,
+                 model: "gemini-2.5-flash",
+                 prompt: "What is Elixir?",
+                 max_tokens: 100,
+                 temperature: 0.7
+               })
 
       assert response.content
       assert response.provider == :gemini
       assert response.model == "gemini-2.5-flash"
+
       assert String.contains?(String.downcase(response.content), "elixir") ||
-             String.contains?(String.downcase(response.content), "erlang")
+               String.contains?(String.downcase(response.content), "erlang")
     end
 
     @tag :slow
     test "gemini-2.5-pro - long context (2M tokens)" do
-      assert {:ok, response} = Provider.call(%{
-        provider: :gemini,
-        model: "gemini-2.5-pro",
-        prompt: "Write a brief description of functional programming",
-        max_tokens: 100,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 provider: :gemini,
+                 model: "gemini-2.5-pro",
+                 prompt: "Write a brief description of functional programming",
+                 max_tokens: 100,
+                 temperature: 0.7
+               })
 
       assert response.content
       assert response.provider == :gemini
@@ -124,29 +138,33 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
 
     @tag :slow
     test "copilot-gpt-4.1 - lighter quota" do
-      assert {:ok, response} = Provider.call(%{
-        provider: :copilot,
-        model: "copilot-gpt-4.1",
-        prompt: "Write a JavaScript arrow function",
-        max_tokens: 50,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 provider: :copilot,
+                 model: "copilot-gpt-4.1",
+                 prompt: "Write a JavaScript arrow function",
+                 max_tokens: 50,
+                 temperature: 0.7
+               })
 
       assert response.content
       assert response.provider == :copilot
       assert response.model == "copilot-gpt-4.1"
-      assert String.contains?(response.content, "=>") || String.contains?(response.content, "const")
+
+      assert String.contains?(response.content, "=>") ||
+               String.contains?(response.content, "const")
     end
 
     @tag :slow
     test "grok-coder-1 - xAI alternative" do
-      assert {:ok, response} = Provider.call(%{
-        provider: :grok,
-        model: "grok-coder-1",
-        prompt: "Hello, test message",
-        max_tokens: 50,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 provider: :grok,
+                 model: "grok-coder-1",
+                 prompt: "Hello, test message",
+                 max_tokens: 50,
+                 temperature: 0.7
+               })
 
       assert response.content
       assert response.provider == :grok
@@ -157,12 +175,13 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
   describe "Complexity-based Auto-Selection" do
     @tag :slow
     test "simple tasks use gemini-flash" do
-      assert {:ok, response} = Provider.call(%{
-        complexity: :simple,
-        prompt: "Say hello",
-        max_tokens: 20,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 complexity: :simple,
+                 prompt: "Say hello",
+                 max_tokens: 20,
+                 temperature: 0.7
+               })
 
       assert response.content
       # Should use Gemini Flash (fastest)
@@ -171,12 +190,13 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
 
     @tag :slow
     test "medium tasks use claude-sonnet or codex" do
-      assert {:ok, response} = Provider.call(%{
-        complexity: :medium,
-        prompt: "Write a function to sort an array",
-        max_tokens: 100,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 complexity: :medium,
+                 prompt: "Write a function to sort an array",
+                 max_tokens: 100,
+                 temperature: 0.7
+               })
 
       assert response.content
       # Should use Claude Sonnet, Codex, or Gemini Pro
@@ -185,12 +205,13 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
 
     @tag :slow
     test "complex tasks use claude-opus or codex" do
-      assert {:ok, response} = Provider.call(%{
-        complexity: :complex,
-        prompt: "Design a distributed system for real-time analytics",
-        max_tokens: 200,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 complexity: :complex,
+                 prompt: "Design a distributed system for real-time analytics",
+                 max_tokens: 200,
+                 temperature: 0.7
+               })
 
       assert response.content
       # Should use Opus or Codex
@@ -199,12 +220,13 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
 
     @tag :slow
     test "reasoning tasks use o3 or opus" do
-      assert {:ok, response} = Provider.call(%{
-        complexity: :reasoning,
-        prompt: "Solve the traveling salesman problem approach",
-        max_tokens: 200,
-        temperature: 0.7
-      })
+      assert {:ok, response} =
+               Provider.call(%{
+                 complexity: :reasoning,
+                 prompt: "Solve the traveling salesman problem approach",
+                 max_tokens: 200,
+                 temperature: 0.7
+               })
 
       assert response.content
       # Should use o3, Opus, or o1
@@ -236,18 +258,20 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
       prompt2 = "Create a hello world program in Python"
 
       # First call - cache miss
-      {:ok, response1} = Provider.call(%{
-        prompt: prompt1,
-        max_tokens: 50,
-        temperature: 0.7
-      })
+      {:ok, response1} =
+        Provider.call(%{
+          prompt: prompt1,
+          max_tokens: 50,
+          temperature: 0.7
+        })
 
       # Similar prompt - might hit cache (92% similarity threshold)
-      {:ok, response2} = Provider.call(%{
-        prompt: prompt2,
-        max_tokens: 50,
-        temperature: 0.7
-      })
+      {:ok, response2} =
+        Provider.call(%{
+          prompt: prompt2,
+          max_tokens: 50,
+          temperature: 0.7
+        })
 
       assert response1.content
       assert response2.content
@@ -281,7 +305,8 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
       assert provider_info[:claude][:extended_thinking] == true
       assert provider_info[:codex][:tools] == true
       assert provider_info[:codex][:thinking_models] == [:o3, :o1]
-      assert provider_info[:gemini][:context] == 2_097_152  # 2M tokens
+      # 2M tokens
+      assert provider_info[:gemini][:context] == 2_097_152
       assert provider_info[:copilot][:quota] == :light
       assert provider_info[:grok][:quota] == :light
     end
@@ -289,6 +314,7 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
 
   # Helper functions for tests
   defp list_providers, do: [:claude, :codex, :gemini, :copilot, :grok]
+
   defp list_models do
     [
       "claude-sonnet-4.5",

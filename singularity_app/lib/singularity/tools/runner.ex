@@ -22,7 +22,7 @@ defmodule Singularity.Tools.Runner do
     Default.ensure_registered()
     Basic.ensure_registered()
 
-    case Registry.fetch_tool(provider, call.name) do
+    case Catalog.get_tool(provider, call.name) do
       {:ok, tool} -> do_execute(tool, call, context)
       :error -> {:error, "Tool #{call.name} is not registered for #{provider}"}
     end

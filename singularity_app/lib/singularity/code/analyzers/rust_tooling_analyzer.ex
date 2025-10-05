@@ -63,7 +63,8 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
 
       {:error, reason} ->
         Logger.warning("⚠️  Could not analyze module structure: #{inspect(reason)}")
-        :ok  # Non-critical, continue
+        # Non-critical, continue
+        :ok
     end
   end
 
@@ -274,7 +275,10 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
           {:ok, output}
 
         {error_output, exit_code} ->
-          Logger.warning("Command failed: #{command} #{Enum.join(args, " ")} (exit: #{exit_code})")
+          Logger.warning(
+            "Command failed: #{command} #{Enum.join(args, " ")} (exit: #{exit_code})"
+          )
+
           Logger.warning("Error: #{error_output}")
           {:error, {:command_failed, exit_code, error_output}}
       end
@@ -331,7 +335,9 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
   defp generate_real_embedding(text) do
     # Use shared EmbeddingService with automatic fallback
     case Singularity.EmbeddingGenerator.embed(text) do
-      {:ok, embedding} -> embedding
+      {:ok, embedding} ->
+        embedding
+
       {:error, reason} ->
         Logger.warning("EmbeddingService failed: #{inspect(reason)}, using zero vector")
         Pgvector.new(List.duplicate(0.0, 768))
@@ -361,7 +367,15 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
         updated_at = now()
     """
 
-    case Repo.query(sql, [path, label, metadata_json, embedding, language, analysis_type, tool_used]) do
+    case Repo.query(sql, [
+           path,
+           label,
+           metadata_json,
+           embedding,
+           language,
+           analysis_type,
+           tool_used
+         ]) do
       {:ok, _} -> :ok
       error -> error
     end

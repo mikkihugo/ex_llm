@@ -90,7 +90,8 @@ if config_env() != :test do
     clients: [
       # RTX 4080 16GB - allocate 75% for models (12GB), leave 4GB for system
       cuda: [platform: :cuda, memory_fraction: 0.75],
-      host: [platform: :host]  # CPU fallback if CUDA unavailable
+      # CPU fallback if CUDA unavailable
+      host: [platform: :host]
     ]
 
   # Configure Bumblebee
@@ -105,7 +106,8 @@ end
 config :singularity,
   # Embedding provider: :bumblebee for local GPU-accelerated code embeddings
   # Jina-embeddings-v2-base-code is BEST for code (beats Google/Salesforce/Microsoft)
-  embedding_provider: :bumblebee,  # Local Jina only - no external API calls!
+  # Local Jina only - no external API calls!
+  embedding_provider: :bumblebee,
 
   # Bumblebee embedding model (runs on RTX 4080 GPU with EXLA)
   # - 768 dims (matches all DB tables)
@@ -113,17 +115,20 @@ config :singularity,
   # - Supports 30 programming languages
   # - 8192 token context (handles entire functions)
   # - No rate limits, no API costs, full privacy
-  bumblebee_model: "jina-embeddings-v2-base-code",  # 161M params, 768 dims, code-optimized
+  # 161M params, 768 dims, code-optimized
+  bumblebee_model: "jina-embeddings-v2-base-code",
 
   # Google AI API key (optional - not used for embeddings anymore)
   google_ai_api_key: System.get_env("GOOGLE_AI_STUDIO_API_KEY"),
 
   # Code generation model configuration
   code_generation: [
-    model: "bigcode/starcoder2-7b",  # 7B params, ~14GB, best quality
+    # 7B params, ~14GB, best quality
+    model: "bigcode/starcoder2-7b",
     # Alternative models:
     # "deepseek-ai/deepseek-coder-1.3b-base" - 1.3B params, faster
     # "bigcode/starcoder2-3b" - 3B params, balanced
     max_tokens: 256,
-    temperature: 0.2  # Lower = fewer errors, more deterministic
+    # Lower = fewer errors, more deterministic
+    temperature: 0.2
   ]

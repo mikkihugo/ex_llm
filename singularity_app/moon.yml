@@ -1,20 +1,19 @@
 $schema: '../.moon/cache/schemas/project.json'
 
-language: 'gleam'
+language: 'elixir'
 type: 'application'
 
 tasks:
   gleam.build:
-    command: 'gleam build'
+    command: 'nix develop ..#dev --command just gleam-build'
     inputs:
       - 'src/**/*.gleam'
-      - 'test/**/*.gleam'
       - 'gleam.toml'
     outputs:
       - 'build/'
 
   gleam.test:
-    command: 'gleam test'
+    command: 'nix develop ..#dev --command just gleam-test'
     deps:
       - 'gleam.build'
     inputs:
@@ -23,23 +22,31 @@ tasks:
     local: false
 
   gleam.check:
-    command: 'gleam check'
+    command: 'nix develop ..#dev --command just gleam-check'
     inputs:
       - 'src/**/*.gleam'
 
   deps.get:
-    command: 'mix deps.get | grep -E "(Resolving|Resolution|All dependencies|New|Removed|Updated)"'
+    command: 'nix develop ..#dev --command just deps-get'
     inputs:
       - 'mix.exs'
       - 'mix.lock'
     outputs:
       - 'deps/'
 
-  compile:
-    command: 'mix compile'
+  deps.compile:
+    command: 'nix develop ..#dev --command just deps-compile'
     deps:
-      - 'gleam.build'
       - 'deps.get'
+    inputs:
+      - 'deps/**'
+    outputs:
+      - '.mix/**'
+
+  compile:
+    command: 'nix develop ..#dev --command just compile'
+    deps:
+      - 'deps.compile'
     inputs:
       - 'lib/**'
       - 'config/**'
@@ -49,7 +56,7 @@ tasks:
       - '_build/'
 
   test:
-    command: 'sh -c "mix test 2>/dev/null | grep -E \"(Finished|tests|failures|skipped)\""'
+    command: 'nix develop ..#dev --command just test'
     deps:
       - 'compile'
     inputs:
@@ -58,7 +65,7 @@ tasks:
       - 'test/**/*.gleam'
 
   credo:
-    command: 'mix credo --format=oneline | grep -v "Logger metadata key" || true'
+    command: 'nix develop ..#dev --command just credo'
     deps:
       - 'compile'
     inputs:
@@ -66,7 +73,7 @@ tasks:
       - 'test/**'
 
   format:
-    command: 'mix format'
+    command: 'nix develop ..#dev --command just format'
     inputs:
       - 'lib/**'
       - 'test/**'

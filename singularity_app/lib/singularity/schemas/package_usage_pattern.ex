@@ -19,16 +19,31 @@ defmodule Singularity.Schemas.PackageUsagePattern do
     field :tags, {:array, :string}
     field :pattern_embedding, Pgvector.Ecto.Vector
 
-    belongs_to :package, Singularity.Schemas.PackageRegistryKnowledge, foreign_key: :tool_id, type: :binary_id
+    belongs_to :package, Singularity.Schemas.PackageRegistryKnowledge,
+      foreign_key: :tool_id,
+      type: :binary_id
 
     timestamps(type: :utc_datetime)
   end
 
   def changeset(pattern, attrs) do
     pattern
-    |> cast(attrs, [:tool_id, :pattern_type, :title, :description, :code_example, :tags, :pattern_embedding])
+    |> cast(attrs, [
+      :tool_id,
+      :pattern_type,
+      :title,
+      :description,
+      :code_example,
+      :tags,
+      :pattern_embedding
+    ])
     |> validate_required([:tool_id, :title])
-    |> validate_inclusion(:pattern_type, ["best_practice", "anti_pattern", "usage_pattern", "migration_guide"])
+    |> validate_inclusion(:pattern_type, [
+      "best_practice",
+      "anti_pattern",
+      "usage_pattern",
+      "migration_guide"
+    ])
     |> foreign_key_constraint(:tool_id)
   end
 end

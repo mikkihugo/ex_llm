@@ -123,7 +123,9 @@ defmodule Singularity.CodeSynthesisPipeline do
     # Auto-detect context from path
     context = detect_context(path, opts)
 
-    Logger.debug("Fast generate: #{task} in #{context.repo}/#{context.language} (fast_mode: #{fast_mode})")
+    Logger.debug(
+      "Fast generate: #{task} in #{context.repo}/#{context.language} (fast_mode: #{fast_mode})"
+    )
 
     telemetry_meta = %{
       repo: context.repo,
@@ -244,15 +246,34 @@ defmodule Singularity.CodeSynthesisPipeline do
     hints = []
 
     # Check directory/file names for clues
-    hints = if String.contains?(path, "phoenix") or String.contains?(path, "_web"), do: ["phoenix" | hints], else: hints
-    hints = if String.contains?(path, "ecto") or String.contains?(path, "/schemas/"), do: ["ecto" | hints], else: hints
+    hints =
+      if String.contains?(path, "phoenix") or String.contains?(path, "_web"),
+        do: ["phoenix" | hints],
+        else: hints
+
+    hints =
+      if String.contains?(path, "ecto") or String.contains?(path, "/schemas/"),
+        do: ["ecto" | hints],
+        else: hints
+
     hints = if String.contains?(path, "broadway"), do: ["broadway" | hints], else: hints
     hints = if String.contains?(path, "liveview"), do: ["liveview" | hints], else: hints
 
-    hints = if String.contains?(path, "tokio") or String.contains?(path, "async"), do: ["tokio" | hints], else: hints
-    hints = if String.contains?(path, "axum") or String.contains?(path, "handler"), do: ["axum" | hints], else: hints
+    hints =
+      if String.contains?(path, "tokio") or String.contains?(path, "async"),
+        do: ["tokio" | hints],
+        else: hints
 
-    hints = if String.contains?(path, "express") or String.contains?(path, "routes"), do: ["express" | hints], else: hints
+    hints =
+      if String.contains?(path, "axum") or String.contains?(path, "handler"),
+        do: ["axum" | hints],
+        else: hints
+
+    hints =
+      if String.contains?(path, "express") or String.contains?(path, "routes"),
+        do: ["express" | hints],
+        else: hints
+
     hints = if String.contains?(path, "react"), do: ["react" | hints], else: hints
 
     hints
@@ -309,14 +330,16 @@ defmodule Singularity.CodeSynthesisPipeline do
       {:tech_context, fn -> enrich_with_tech_context(context) end}
     ]
 
-    results = Task.async_stream(
-      queries,
-      fn {name, fun} -> {name, fun.()} end,
-      max_concurrency: 3,
-      timeout: 500  # 500ms max per query
-    )
-    |> Enum.map(fn {:ok, result} -> result end)
-    |> Map.new()
+    results =
+      Task.async_stream(
+        queries,
+        fn {name, fun} -> {name, fun.()} end,
+        max_concurrency: 3,
+        # 500ms max per query
+        timeout: 500
+      )
+      |> Enum.map(fn {:ok, result} -> result end)
+      |> Map.new()
 
     # Check if duplicate found
     case results.dedup do
@@ -340,7 +363,6 @@ defmodule Singularity.CodeSynthesisPipeline do
          {:ok, examples} <- cached_rag_search(task, context, fast_mode),
          :no_duplicate <- fast_dedup_check(task, context, fast_mode),
          {:ok, tech_context} <- enrich_with_tech_context(context) do
-
       generate_and_cache(task, context, patterns, examples, tech_context, task_hash)
     else
       {:duplicate, code} -> {:ok, %{code: code, cache_hit: true}}
@@ -352,22 +374,24 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   defp enrich_with_tech_context(context) do
     # Add technology-specific hints based on detected stack
-    hints = Enum.map(context.tech_stack, fn tech ->
-      case tech do
-        "phoenix" -> "Use Phoenix.Controller, Ecto schemas, context modules"
-        "ecto" -> "Use Ecto.Schema, changesets, Repo operations"
-        "tokio" -> "Use async fn, tokio::spawn, Result<T, E>"
-        "axum" -> "Use Axum handlers, extractors, Router"
-        _ -> nil
-      end
-    end)
-    |> Enum.reject(&is_nil/1)
+    hints =
+      Enum.map(context.tech_stack, fn tech ->
+        case tech do
+          "phoenix" -> "Use Phoenix.Controller, Ecto schemas, context modules"
+          "ecto" -> "Use Ecto.Schema, changesets, Repo operations"
+          "tokio" -> "Use async fn, tokio::spawn, Result<T, E>"
+          "axum" -> "Use Axum handlers, extractors, Router"
+          _ -> nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
 
-    {:ok, %{
-      tech_stack: context.tech_stack,
-      hints: hints,
-      project_type: context.project_type
-    }}
+    {:ok,
+     %{
+       tech_stack: context.tech_stack,
+       hints: hints,
+       project_type: context.project_type
+     }}
   end
 
   defp cached_pattern_search(task, context) do
@@ -382,6 +406,7 @@ defmodule Singularity.CodeSynthesisPipeline do
         # Cache miss, query DB
         # Search patterns relevant to tech stack
         search_query = "#{task} #{Enum.join(context.tech_stack, " ")}"
+
         case PatternIndexer.search(search_query, language: context.language, top_k: 3) do
           {:ok, patterns} ->
             # Cache for 1 hour
@@ -407,13 +432,15 @@ defmodule Singularity.CodeSynthesisPipeline do
         [] ->
           # Fetch top 3 from SAME repo (context-aware)
           repos = if context.repo != "unknown", do: [context.repo], else: nil
+
           case RAGCodeGenerator.find_best_examples(task, context.language, repos, 3, false, false) do
             {:ok, examples} ->
               :ets.insert(@pattern_cache, {cache_key, examples, System.os_time(:second)})
               {:ok, examples}
 
             {:error, _} ->
-              {:ok, []}  # Continue without examples
+              # Continue without examples
+              {:ok, []}
           end
       end
     else
@@ -429,10 +456,15 @@ defmodule Singularity.CodeSynthesisPipeline do
       :no_duplicate
     else
       # Full dedup check
-      case CodeDeduplicator.find_similar(task, language: context.language, threshold: 0.95, limit: 1) do
+      case CodeDeduplicator.find_similar(task,
+             language: context.language,
+             threshold: 0.95,
+             limit: 1
+           ) do
         {:ok, []} -> :no_duplicate
         {:ok, [match | _]} -> {:duplicate, match.content}
-        {:error, _} -> :no_duplicate  # On error, assume no duplicate
+        # On error, assume no duplicate
+        {:error, _} -> :no_duplicate
       end
     end
   end
@@ -442,7 +474,7 @@ defmodule Singularity.CodeSynthesisPipeline do
     prompt = build_context_aware_prompt(task, context, patterns, examples, tech_context)
 
     # Generate using GPU (pre-warmed model)
-        case CodeModel.complete(prompt, temperature: 0.05) do
+    case CodeModel.complete(prompt, temperature: 0.05) do
       {:ok, code} ->
         # Cache the result
         :ets.insert(@pattern_cache, {task_hash, code, System.os_time(:second)})
@@ -472,8 +504,8 @@ defmodule Singularity.CodeSynthesisPipeline do
     h3 = :erlang.phash2({hash, 2}, 1_000_000_000)
 
     :ets.member(@bloom_filter, h1) and
-    :ets.member(@bloom_filter, h2) and
-    :ets.member(@bloom_filter, h3)
+      :ets.member(@bloom_filter, h2) and
+      :ets.member(@bloom_filter, h3)
   end
 
   defp bloom_filter_add(hash) do
@@ -517,15 +549,18 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   defp build_context_aware_prompt(task, context, patterns, examples, tech_context) do
     # Context-aware prompt with tech stack hints
-    pattern_hints = Enum.map_join(patterns, "\n", fn p ->
-      "Pattern: #{p.pattern} → #{p.pseudocode}"
-    end)
+    pattern_hints =
+      Enum.map_join(patterns, "\n", fn p ->
+        "Pattern: #{p.pattern} → #{p.pseudocode}"
+      end)
 
     tech_hints = Enum.join(tech_context.hints, "\n")
 
-    example_code = examples
-    |> Enum.take(3)  # Only use top 3 in fast mode
-    |> Enum.map_join("\n\n", & &1.content)
+    example_code =
+      examples
+      # Only use top 3 in fast mode
+      |> Enum.take(3)
+      |> Enum.map_join("\n\n", & &1.content)
 
     """
     Task: #{task}
@@ -560,7 +595,8 @@ defmodule Singularity.CodeSynthesisPipeline do
     tasks
     |> Task.async_stream(
       fn task -> generate(task, opts) end,
-      max_concurrency: 4,  # Batch size
+      # Batch size
+      max_concurrency: 4,
       timeout: 5000
     )
     |> Enum.map(fn

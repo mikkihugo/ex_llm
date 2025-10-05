@@ -32,20 +32,27 @@ defmodule Singularity.Tools.Basic do
         :ok
 
       _ ->
-        Enum.each(@providers, &register_tools_for/1)
+        Enum.each(@providers, &add_tools_for/1)
         :persistent_term.put(@registration_key, true)
         :ok
     end
   end
 
-  defp register_tools_for(provider) do
-    Registry.register_tools(provider, [
+  defp add_tools_for(provider) do
+    Catalog.add_tools(provider, [
       fs_list_directory_tool(),
       fs_search_content_tool(),
       fs_write_file_tool(),
-      net_http_fetch_tool(),
+      net_http_get_tool(),
       gh_graphql_tool()
     ])
+
+    # Register advanced tools
+    Singularity.Tools.CodebaseUnderstanding.register(provider)
+    Singularity.Tools.Planning.register(provider)
+    Singularity.Tools.Knowledge.register(provider)
+    Singularity.Tools.CodeAnalysis.register(provider)
+    Singularity.Tools.Summary.register(provider)
   end
 
   defp fs_list_directory_tool do
@@ -121,7 +128,7 @@ defmodule Singularity.Tools.Basic do
     })
   end
 
-  defp net_http_fetch_tool do
+  defp net_http_get_tool do
     Tool.new!(%{
       name: "net_http_fetch",
       description: "Fetch an HTTP(s) URL and return status, headers, and body text.",

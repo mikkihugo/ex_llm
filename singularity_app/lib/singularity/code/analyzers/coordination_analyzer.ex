@@ -62,7 +62,8 @@ defmodule Singularity.Analysis.CoordinationAnalyzer do
     maturity = determine_maturity(metrics)
 
     # Generate recommendations
-    recommendations = generate_recommendations(coupling_score, debug_complexity, observability_score, maturity)
+    recommendations =
+      generate_recommendations(coupling_score, debug_complexity, observability_score, maturity)
 
     %{
       coupling_score: coupling_score,
@@ -110,7 +111,8 @@ defmodule Singularity.Analysis.CoordinationAnalyzer do
       direct_call_patterns = [
         ~r/GenServer\.call\(/,
         ~r/[A-Z][a-zA-Z]+\.[a-z_]+\(/,
-        ~r/alias.*\n.*\1\./  # Aliased module direct calls
+        # Aliased module direct calls
+        ~r/alias.*\n.*\1\./
       ]
 
       calls =
@@ -156,11 +158,13 @@ defmodule Singularity.Analysis.CoordinationAnalyzer do
       content = File.read!(file)
 
       # Find all handle_call/cast functions
-      workflows = Regex.scan(~r/def handle_(?:call|cast)\(\{:([a-z_]+)/, content)
-      |> Enum.map(fn [_, workflow_name] -> workflow_name end)
+      workflows =
+        Regex.scan(~r/def handle_(?:call|cast)\(\{:([a-z_]+)/, content)
+        |> Enum.map(fn [_, workflow_name] -> workflow_name end)
 
       # Check if there's any ETS/state tracking for these workflows
-      has_tracking = String.contains?(content, ":ets.") or String.contains?(content, "workflow_context")
+      has_tracking =
+        String.contains?(content, ":ets.") or String.contains?(content, "workflow_context")
 
       if has_tracking do
         []
@@ -201,7 +205,8 @@ defmodule Singularity.Analysis.CoordinationAnalyzer do
     total_calls = metrics.direct_calls + metrics.event_driven_calls
 
     if total_calls == 0 do
-      0.5  # Neutral if no coordination yet
+      # Neutral if no coordination yet
+      0.5
     else
       # Normalize to 0.0 (perfect decoupling) to 1.0 (tight coupling)
       metrics.direct_calls / total_calls
@@ -211,8 +216,11 @@ defmodule Singularity.Analysis.CoordinationAnalyzer do
   defp calculate_debug_complexity(metrics) do
     # No correlation IDs = high complexity
     # Deep call chains = high complexity
-    correlation_coverage = metrics.modules_with_correlation / max(metrics.total_coordinator_modules, 1)
-    depth_penalty = min(metrics.avg_call_chain_depth / 10, 1.0)  # Normalize to 0-1
+    correlation_coverage =
+      metrics.modules_with_correlation / max(metrics.total_coordinator_modules, 1)
+
+    # Normalize to 0-1
+    depth_penalty = min(metrics.avg_call_chain_depth / 10, 1.0)
 
     # Combine: lack of correlation + deep chains = hard to debug
     (1.0 - correlation_coverage) * 0.6 + depth_penalty * 0.4
@@ -265,19 +273,22 @@ defmodule Singularity.Analysis.CoordinationAnalyzer do
       pattern: :correlation_ids,
       priority: :critical,
       roi_score: 5.0,
-      reasoning: "Debug complexity score #{Float.round(debug_complexity, 2)} - difficult to trace failures without correlation IDs",
+      reasoning:
+        "Debug complexity score #{Float.round(debug_complexity, 2)} - difficult to trace failures without correlation IDs",
       effort_estimate: "2-4 hours (add UUID to workflow contexts)"
     }
   end
 
   defp evaluate_correlation_ids(_), do: nil
 
-  defp evaluate_event_driven(coupling, maturity) when coupling > 0.6 and maturity in [:scaling, :enterprise] do
+  defp evaluate_event_driven(coupling, maturity)
+       when coupling > 0.6 and maturity in [:scaling, :enterprise] do
     %{
       pattern: :event_driven_architecture,
       priority: :high,
       roi_score: 4.0,
-      reasoning: "Coupling score #{Float.round(coupling, 2)} with #{maturity} maturity - tight coupling detected across multiple coordinators",
+      reasoning:
+        "Coupling score #{Float.round(coupling, 2)} with #{maturity} maturity - tight coupling detected across multiple coordinators",
       effort_estimate: "1-2 days (refactor direct calls to PubSub events)"
     }
   end
@@ -287,7 +298,8 @@ defmodule Singularity.Analysis.CoordinationAnalyzer do
       pattern: :event_driven_architecture,
       priority: :low,
       roi_score: 2.0,
-      reasoning: "High coupling (#{Float.round(coupling, 2)}) but early stage - consider deferring until more coordinators added",
+      reasoning:
+        "High coupling (#{Float.round(coupling, 2)}) but early stage - consider deferring until more coordinators added",
       effort_estimate: "1-2 days (may be premature)"
     }
   end
@@ -299,7 +311,8 @@ defmodule Singularity.Analysis.CoordinationAnalyzer do
       pattern: :workflow_tracking,
       priority: :high,
       roi_score: 3.5,
-      reasoning: "Observability score #{Float.round(observability, 2)} - many workflows are black boxes without state tracking",
+      reasoning:
+        "Observability score #{Float.round(observability, 2)} - many workflows are black boxes without state tracking",
       effort_estimate: "4-6 hours (add ETS tracking for active workflows)"
     }
   end

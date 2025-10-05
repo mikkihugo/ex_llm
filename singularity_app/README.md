@@ -65,6 +65,27 @@ mix test
 PORT=4000 iex -S mix
 ```
 
+## Gleam via mix_gleam
+
+Gleam modules in `src/` are compiled automatically by Mix through `mix_gleam`.
+
+Common commands (inside `nix develop` or with a compatible host toolchain):
+
+```
+cd singularity_app
+mix deps.get                 # also fetches Gleam deps via alias
+mix compile                  # compiles Elixir + Gleam
+gleam check                  # optional fast type-check
+gleam test                   # optional Gleam tests
+```
+
+If you ever hit a one‑time stdlib resolution issue, run:
+
+```
+mix compile.gleam gleam_stdlib --force
+mix compile
+```
+
 With Nix/direnv you can lean on the bundled [Just](https://just.systems/) commands:
 
 ```bash

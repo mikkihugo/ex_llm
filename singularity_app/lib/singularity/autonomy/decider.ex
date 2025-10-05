@@ -79,7 +79,7 @@ defmodule Singularity.Autonomy.Decider do
         planner_context =
           state.forced_context |> Map.put(:score, score) |> Map.put(:samples, samples)
 
-        plan = Planner.generate(state, planner_context)
+        plan = Planner.generate_strategy_payload(state, planner_context)
         {:improve, plan, planner_context, Map.put(state, :forced_context, nil)}
 
       not backoff_respected? ->
@@ -87,12 +87,12 @@ defmodule Singularity.Autonomy.Decider do
 
       samples >= @min_samples and score < @score_threshold ->
         trigger = %{reason: :score_drop, score: score, samples: samples, stagnation: stagnation}
-        plan = Planner.generate(state, trigger)
+        plan = Planner.generate_strategy_payload(state, trigger)
         {:improve, plan, trigger, state}
 
       stagnation >= @stagnation_cycles ->
         trigger = %{reason: :stagnation, score: score, samples: samples, stagnation: stagnation}
-        plan = Planner.generate(state, trigger)
+        plan = Planner.generate_strategy_payload(state, trigger)
         {:improve, plan, trigger, state}
 
       true ->

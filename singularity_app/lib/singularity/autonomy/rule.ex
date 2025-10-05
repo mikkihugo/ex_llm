@@ -14,17 +14,20 @@ defmodule Singularity.Autonomy.Rule do
   schema "rules" do
     field :name, :string
     field :description, :string
-    field :category, Ecto.Enum, values: [
-      :code_quality,
-      :performance,
-      :security,
-      :refactoring,
-      :vision,
-      :epic,
-      :feature,
-      :capability,
-      :story
-    ]
+
+    field :category, Ecto.Enum,
+      values: [
+        :code_quality,
+        :performance,
+        :security,
+        :refactoring,
+        :vision,
+        :epic,
+        :feature,
+        :capability,
+        :story
+      ]
+
     field :confidence_threshold, :float
     field :patterns, {:array, :map}
     field :embedding, Pgvector.Ecto.Vector
@@ -64,7 +67,10 @@ defmodule Singularity.Autonomy.Rule do
       :requires_consensus
     ])
     |> validate_required([:name, :category, :patterns])
-    |> validate_number(:confidence_threshold, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0)
+    |> validate_number(:confidence_threshold,
+      greater_than_or_equal_to: 0.0,
+      less_than_or_equal_to: 1.0
+    )
     |> validate_patterns()
     |> unique_constraint(:name)
   end
@@ -96,8 +102,8 @@ defmodule Singularity.Autonomy.Rule do
   end
 
   defp valid_pattern?(%{"type" => type, "weight" => weight})
-       when type in ["regex", "llm", "metric", "dependency", "semantic"]
-       and is_number(weight) do
+       when type in ["regex", "llm", "metric", "dependency", "semantic"] and
+              is_number(weight) do
     true
   end
 

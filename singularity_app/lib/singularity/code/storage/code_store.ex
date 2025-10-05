@@ -742,11 +742,15 @@ defmodule Singularity.CodeStore do
             path = Path.join(lib_dir, entry)
 
             cond do
-              not File.dir?(path) -> acc
+              not File.dir?(path) ->
+                acc
+
               String.contains?(down, "web") or String.contains?(down, "ui") ->
                 Map.update!(acc, :presentation, &[entry | &1])
+
               String.contains?(down, "infra") or String.contains?(down, "adapter") ->
                 Map.update!(acc, :infrastructure, &[entry | &1])
+
               true ->
                 Map.update!(acc, :domain, &[entry | &1])
             end

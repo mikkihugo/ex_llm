@@ -18,12 +18,13 @@ defmodule Singularity.Tools.WebSearch do
   @doc """
   Register web search tool.
 
-  Returns a Tool struct that can be registered in the MCP server.
+  Returns a Tool struct that can be registered in the tool registry.
   """
   def register do
     Tool.new!(%{
       name: "web_search",
-      description: "Search the web for current information. Uses Gemini or Copilot API with built-in search capabilities.",
+      description:
+        "Search the web for current information. Uses Gemini or Copilot API with built-in search capabilities.",
       parameters_schema: %{
         "type" => "object",
         "properties" => %{
@@ -71,7 +72,8 @@ defmodule Singularity.Tools.WebSearch do
         perform_search(provider, query, max_results, context)
 
       {:error, :not_supported} ->
-        {:error, "Web search not available for client '#{mcp_client}'. This tool only works with HTTP API clients (Gemini, Copilot), not CLI clients."}
+        {:error,
+         "Web search not available for client '#{mcp_client}'. This tool only works with HTTP API clients (Gemini, Copilot), not CLI clients."}
     end
   end
 
@@ -109,15 +111,15 @@ defmodule Singularity.Tools.WebSearch do
 
     # Call LLM with search capability
     case Provider.call(%{
-      provider: provider,
-      prompt: search_prompt,
-      max_tokens: 2000,
-      temperature: 0.3,
-      correlation_id: context[:correlation_id],
-      # Pass MCP client through (already in Process dict from MCP server)
-      mcp_client: context[:mcp_client],
-      mcp_session_id: context[:mcp_session_id]
-    }) do
+           provider: provider,
+           prompt: search_prompt,
+           max_tokens: 2000,
+           temperature: 0.3,
+           correlation_id: context[:correlation_id],
+           # Pass client info through (already in Process dict from interface)
+           client_info: context[:client_info],
+           session_id: context[:session_id]
+         }) do
       {:ok, response} ->
         {:ok, response.content}
 

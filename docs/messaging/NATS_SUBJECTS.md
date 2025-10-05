@@ -1,8 +1,8 @@
-# NATS Subject Map - Singularity Architecture
+# NATS Subject Map (Optional)
 
 ## Overview
 
-All services communicate via NATS for distributed coordination and events. Database access is handled directly via Ecto from Elixir services.
+NATS can be enabled for distributed coordination and tool invocation between services. In the current codebase, HTTP is the default interface and LLM provider calls are handled in‑process; previous "LLM via NATS" flows are deprecated.
 
 ## Subject Hierarchy
 

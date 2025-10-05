@@ -38,8 +38,14 @@ defmodule Singularity.Application do
         # Distributed Systems
         Singularity.Control.QueueCrdt,
         {Cluster.Supervisor, [topologies, [name: Singularity.ClusterSupervisor]]},
-        # Event bus
-        {Phoenix.PubSub, name: Singularity.PubSub},
+        # NATS messaging
+        Singularity.NatsClient,
+          # Control system
+          Singularity.Control,
+          # System management
+          Singularity.Manager,
+          # Vision management
+          Singularity.Planning.Vision,
 
         # Monitoring & Telemetry
         Singularity.Telemetry,
@@ -51,12 +57,12 @@ defmodule Singularity.Application do
         Singularity.MemoryCache,
 
         # RAG & Template Optimization
-        Singularity.TemplateOptimizer,
-        Singularity.ExecutionCoordinator,
+        Singularity.TemplatePerformanceTracker,
+        Singularity.TemplateSparcOrchestrator,
 
-        # NATS Orchestrator (connects AI Server to ExecutionCoordinator)
-        # TODO: Fix NatsOrchestrator to work with latest HybridAgent API
-        # Singularity.NatsOrchestrator,
+        # NATS Execution Router (connects AI Server to TemplateSparcOrchestrator)
+        # TODO: Fix NatsExecutionRouter to work with latest CostOptimizedAgent API
+        # Singularity.NatsExecutionRouter,
 
         # Auto-warmup (must be last to ensure all services are ready)
         Singularity.StartupWarmup,
@@ -71,7 +77,7 @@ defmodule Singularity.Application do
 
         # SAFe 6.0 Planning
         Singularity.Conversation.ChatConversationAgent,
-        Singularity.Planning.WorkPlanCoordinator,
+        Singularity.Planning.SafeWorkPlanner,
         Singularity.Planning.SingularityVision,
 
         # Agents

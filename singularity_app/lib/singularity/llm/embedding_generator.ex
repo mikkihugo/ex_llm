@@ -70,7 +70,10 @@ defmodule Singularity.EmbeddingGenerator do
             {:ok, embedding}
 
           {:error, reason} ->
-            Logger.warning("All embedding providers failed, using zero vector: #{inspect(reason)}")
+            Logger.warning(
+              "All embedding providers failed, using zero vector: #{inspect(reason)}"
+            )
+
             {:ok, Pgvector.new(List.duplicate(0.0, 768))}
         end
     end
@@ -92,11 +95,16 @@ defmodule Singularity.EmbeddingGenerator do
   defp embed_bumblebee(text) do
     # Check if Bumblebee is loaded
     if Code.ensure_loaded?(Bumblebee) do
-      model_name = Application.get_env(:singularity, :bumblebee_model, "jina-embeddings-v2-base-code")
+      model_name =
+        Application.get_env(:singularity, :bumblebee_model, "jina-embeddings-v2-base-code")
 
       try do
         # Jina models are under jinaai/, sentence-transformers are under sentence-transformers/
-        repo = if String.starts_with?(model_name, "jina-"), do: "jinaai/#{model_name}", else: "sentence-transformers/#{model_name}"
+        repo =
+          if String.starts_with?(model_name, "jina-"),
+            do: "jinaai/#{model_name}",
+            else: "sentence-transformers/#{model_name}"
+
         {:ok, model_info} = Bumblebee.load_model({:hf, repo})
         {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, repo})
 

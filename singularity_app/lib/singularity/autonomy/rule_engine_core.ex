@@ -141,7 +141,10 @@ defmodule Singularity.Autonomy.RuleEngineCore do
     weight * 0.85
   end
 
-  defp pattern_score(%{type: :metric, metric: metric, threshold: threshold, weight: weight}, context) do
+  defp pattern_score(
+         %{type: :metric, metric: metric, threshold: threshold, weight: weight},
+         context
+       ) do
     metrics = context[:metrics] || %{}
 
     case Map.get(metrics, metric) do
@@ -159,11 +162,12 @@ defmodule Singularity.Autonomy.RuleEngineCore do
   end
 
   defp classify_decision(confidence, rule) when confidence >= @collaborative_threshold do
-    {:collaborative, [
-      "Approve: #{rule.name}",
-      "Reject: #{rule.name}",
-      "Modify parameters"
-    ]}
+    {:collaborative,
+     [
+       "Approve: #{rule.name}",
+       "Reject: #{rule.name}",
+       "Modify parameters"
+     ]}
   end
 
   defp classify_decision(confidence, _rule) do

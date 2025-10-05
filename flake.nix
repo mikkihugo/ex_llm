@@ -13,6 +13,7 @@
           inherit system;
           config.allowUnfree = true;
         };
+        # Use stable OTP 28 toolchain from nixpkgs
         beamPackages = pkgs.beam.packages.erlang_28;
 
         # Base tools without CUDA
@@ -351,12 +352,28 @@ EOF
           buildInputs = beamTools ++ commonTools ++ dataServices ++ webAndCli ++ qaTools ++ aiCliPackages;
 
           shellHook = ''
+            # Cachix binary cache configuration
+            # Pull from cache (public)
+            export NIX_CONFIG="$${NIX_CONFIG:-}\nextra-substituters = https://mikkihugo.cachix.org\nextra-trusted-public-keys = mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
+
+            # Push to cache (requires CACHIX_AUTH_TOKEN from .envrc)
+            if [ -n "$${CACHIX_AUTH_TOKEN:-}" ]; then
+              export CACHIX_SIGNING_KEY="''${CACHIX_AUTH_TOKEN}"
+            fi
+            # Locale + BEAM flags for stable UTF-8 IO
+            export LC_ALL=C.UTF-8
+            export LANG=C.UTF-8
+            export ELIXIR_ERL_OPTIONS="+fnu"
             export ERL_AFLAGS="-proto_dist inet6_tcp"
             export MIX_ENV=''${MIX_ENV:-dev}
             export GLEAM_ERLANG_INCLUDE_PATH="${beamPackages.erlang}/lib/erlang/usr/include"
             export MIX_HOME="$PWD/.mix"
             export HEX_HOME="$PWD/.hex"
-            mkdir -p "$MIX_HOME" "$HEX_HOME" "$PWD/bin"
+            # Stabilize rebar3 paths for Mix/rebar deps
+            export REBAR_CACHE_DIR="$PWD/.rebar3/cache"
+            export REBAR_GLOBAL_CONFIG_DIR="$PWD/.rebar3"
+            export REBAR_PLUGINS_DIR="$PWD/.rebar3/plugins"
+            mkdir -p "$MIX_HOME" "$HEX_HOME" "$REBAR_CACHE_DIR" "$REBAR_PLUGINS_DIR" "$PWD/bin"
             export PATH=$PWD/bin:$PATH
 
             # CUDA/GPU environment for EXLA (RTX 4080)
@@ -465,18 +482,13 @@ EOF
             fi
 
             # Ensure vector extensions and ANN-ready schema
-
-            bash -c '
-            '
-              ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null 2>&1 || true
-              ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS pgvecto_rs;" >/dev/null 2>&1 || true
-              for db_name in singularity_embeddings singularity_dev singularity_test; do
-                if ! ${postgresqlWithExtensions}/bin/psql -d postgres -qAt -c "SELECT 1 FROM pg_database WHERE datname = '$db_name';" | grep -q 1; then
-                  ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE DATABASE \"$db_name\";" >/dev/null 2>&1 || true
-                fi
-              done
-            '
-            '
+            ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null 2>&1 || true
+            ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE EXTENSION IF NOT EXISTS pgvecto_rs;" >/dev/null 2>&1 || true
+            for db_name in singularity_embeddings singularity_dev singularity_test; do
+              if ! ${postgresqlWithExtensions}/bin/psql -d postgres -qAt -c "SELECT 1 FROM pg_database WHERE datname = '$db_name';" | grep -q 1; then
+                ${postgresqlWithExtensions}/bin/psql -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE DATABASE \"$db_name\";" >/dev/null 2>&1 || true
+              fi
+            done
 
             # Enable vector extensions in all databases (schema managed by migrations)
             for db_name in singularity_embeddings singularity_dev singularity_test; do
@@ -509,6 +521,9 @@ EOF
             pkgs.buildah
           ];
           shellHook = ''
+            export LC_ALL=C.UTF-8
+            export LANG=C.UTF-8
+            export ELIXIR_ERL_OPTIONS="+fnu"
             echo "Fly.io deployment shell loaded (Nix-only)"
             export PATH=$PWD/bin:$PATH
           '';
@@ -520,6 +535,9 @@ EOF
           buildInputs = beamTools ++ commonTools ++ dataServices ++ webAndCli ++ qaTools ++ aiCliPackages;
 
           shellHook = ''
+            export LC_ALL=C.UTF-8
+            export LANG=C.UTF-8
+            export ELIXIR_ERL_OPTIONS="+fnu"
             export ERL_AFLAGS="-proto_dist inet6_tcp"
             export MIX_ENV="dev"
             export GLEAM_ERLANG_INCLUDE_PATH="${beamPackages.erlang}/lib/erlang/usr/include"
@@ -541,6 +559,9 @@ EOF
           buildInputs = beamTools ++ commonTools ++ dataServices ++ qaTools;
 
           shellHook = ''
+            export LC_ALL=C.UTF-8
+            export LANG=C.UTF-8
+            export ELIXIR_ERL_OPTIONS="+fnu"
             export ERL_AFLAGS="-proto_dist inet6_tcp"
             export MIX_ENV="test"
             export GLEAM_ERLANG_INCLUDE_PATH="${beamPackages.erlang}/lib/erlang/usr/include"
@@ -562,6 +583,9 @@ EOF
           buildInputs = beamTools ++ webAndCli;
 
           shellHook = ''
+            export LC_ALL=C.UTF-8
+            export LANG=C.UTF-8
+            export ELIXIR_ERL_OPTIONS="+fnu"
             export ERL_AFLAGS="-proto_dist inet6_tcp"
             export MIX_ENV="prod"
             export GLEAM_ERLANG_INCLUDE_PATH="${beamPackages.erlang}/lib/erlang/usr/include"
@@ -583,6 +607,9 @@ EOF
           buildInputs = beamTools ++ baseTools ++ webAndCli ++ qaTools;
 
           shellHook = ''
+            export LC_ALL=C.UTF-8
+            export LANG=C.UTF-8
+            export ELIXIR_ERL_OPTIONS="+fnu"
             export ERL_AFLAGS="-proto_dist inet6_tcp"
             export MIX_ENV="test"
             export GLEAM_ERLANG_INCLUDE_PATH="${beamPackages.erlang}/lib/erlang/usr/include"

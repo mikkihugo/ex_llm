@@ -33,7 +33,17 @@ defmodule Singularity.PackageRegistryCollector do
   alias Singularity.EmbeddingGenerator
 
   # Path to Rust tool_doc_index binary
-  @tool_doc_index_bin Path.join([__DIR__, "..", "..", "..", "rust", "tool_doc_index", "target", "release", "tool_doc_index"])
+  @tool_doc_index_bin Path.join([
+                        __DIR__,
+                        "..",
+                        "..",
+                        "..",
+                        "rust",
+                        "tool_doc_index",
+                        "target",
+                        "release",
+                        "tool_doc_index"
+                      ])
 
   @doc """
   Collect a package from a registry and store in PostgreSQL
@@ -130,10 +140,14 @@ defmodule Singularity.PackageRegistryCollector do
     # Format: tool_doc_index collect --tool tokio --version 1.35.0 --ecosystem cargo --format json
     args = [
       "collect",
-      "--tool", package_name,
-      "--version", version,
-      "--ecosystem", ecosystem,
-      "--format", "json"
+      "--tool",
+      package_name,
+      "--version",
+      version,
+      "--ecosystem",
+      ecosystem,
+      "--format",
+      "json"
     ]
 
     case System.cmd(@tool_doc_index_bin, args, stderr_to_stdout: true) do
@@ -278,11 +292,12 @@ defmodule Singularity.PackageRegistryCollector do
     tags = get_in(fact_data, ["tags"]) || []
     categories = get_in(fact_data, ["categories"]) || []
 
-    [description] ++ keywords ++ tags ++ categories
+    ([description] ++ keywords ++ tags ++ categories)
     |> Enum.join(" ")
   end
 
   defp parse_datetime(nil), do: nil
+
   defp parse_datetime(datetime_string) do
     case DateTime.from_iso8601(datetime_string) do
       {:ok, datetime, _offset} -> datetime
@@ -390,9 +405,11 @@ defmodule Singularity.PackageRegistryCollector do
       {:ok, %{status_code: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, %{"crates" => crates}} ->
-            packages = Enum.map(crates, fn crate ->
-              {crate["name"], crate["newest_version"]}
-            end)
+            packages =
+              Enum.map(crates, fn crate ->
+                {crate["name"], crate["newest_version"]}
+              end)
+
             {:ok, packages}
 
           {:error, reason} ->
@@ -416,10 +433,12 @@ defmodule Singularity.PackageRegistryCollector do
       {:ok, %{status_code: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, %{"results" => results}} ->
-            packages = Enum.map(results, fn result ->
-              package = result["package"]
-              {package["name"], package["version"]}
-            end)
+            packages =
+              Enum.map(results, fn result ->
+                package = result["package"]
+                {package["name"], package["version"]}
+              end)
+
             {:ok, packages}
 
           {:error, reason} ->
@@ -442,11 +461,13 @@ defmodule Singularity.PackageRegistryCollector do
       {:ok, %{status_code: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, packages} ->
-            popular = packages
-            |> Enum.take(limit)
-            |> Enum.map(fn package ->
-              {package["name"], package["latest_stable_version"] || package["latest_version"]}
-            end)
+            popular =
+              packages
+              |> Enum.take(limit)
+              |> Enum.map(fn package ->
+                {package["name"], package["latest_stable_version"] || package["latest_version"]}
+              end)
+
             {:ok, popular}
 
           {:error, reason} ->

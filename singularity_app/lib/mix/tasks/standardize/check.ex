@@ -119,8 +119,10 @@ defmodule Mix.Tasks.Standardize.Check do
         if allowed_exception?(module_name, suffix) do
           []
         else
-          ["#{relative_file}:#{line_num}: Module '#{module_name}' uses generic suffix '#{suffix}'. " <>
-           "Use self-documenting name like '<What><How>' pattern."]
+          [
+            "#{relative_file}:#{line_num}: Module '#{module_name}' uses generic suffix '#{suffix}'. " <>
+              "Use self-documenting name like '<What><How>' pattern."
+          ]
         end
       else
         []
@@ -131,11 +133,16 @@ defmodule Mix.Tasks.Standardize.Check do
   defp allowed_exception?(module_name, suffix) do
     # Allow specific patterns that are descriptive enough
     case suffix do
-      "Generator" -> true  # Generator is specific (e.g., EmbeddingGenerator)
-      "Reloader" -> true   # Reloader is specific (e.g., ModuleReloader)
-      "Loader" -> true     # Loader is specific (e.g., ConfigLoader)
-      "Evolver" -> true    # Evolver is specific (e.g., RuleEvolver)
-      "Monitor" -> String.contains?(module_name, "Health")  # HealthMonitor is OK
+      # Generator is specific (e.g., EmbeddingGenerator)
+      "Generator" -> true
+      # Reloader is specific (e.g., ModuleReloader)
+      "Reloader" -> true
+      # Loader is specific (e.g., ConfigLoader)
+      "Loader" -> true
+      # Evolver is specific (e.g., RuleEvolver)
+      "Evolver" -> true
+      # HealthMonitor is OK
+      "Monitor" -> String.contains?(module_name, "Health")
       "Analyzer" -> String.contains?(module_name, ["OTP", "Code", "Rust", "Architecture"])
       _ -> false
     end
@@ -173,14 +180,25 @@ defmodule Mix.Tasks.Standardize.Check do
     relative_file = Path.relative_to(file, File.cwd!())
 
     # Skip GenServer/OTP callbacks
-    if func_name in ["init", "handle_call", "handle_cast", "handle_info", "terminate", "code_change", "start_link", "child_spec"] do
+    if func_name in [
+         "init",
+         "handle_call",
+         "handle_cast",
+         "handle_info",
+         "terminate",
+         "code_change",
+         "start_link",
+         "child_spec"
+       ] do
       []
     else
       # Check for overly generic names
       Enum.flat_map(@generic_functions, fn generic ->
         if func_name == generic do
-          ["#{relative_file}:#{line_num}: Function '#{func_name}' is too generic. " <>
-           "Be specific: '#{func_name}_what?' (e.g., execute_quality_check, run_analysis)"]
+          [
+            "#{relative_file}:#{line_num}: Function '#{func_name}' is too generic. " <>
+              "Be specific: '#{func_name}_what?' (e.g., execute_quality_check, run_analysis)"
+          ]
         else
           []
         end
@@ -202,24 +220,26 @@ defmodule Mix.Tasks.Standardize.Check do
           violations = []
 
           # Check if @moduledoc exists
-          violations = if content =~ ~r/@moduledoc/ do
-            violations
-          else
-            violations ++ ["#{relative_file}: Missing @moduledoc"]
-          end
+          violations =
+            if content =~ ~r/@moduledoc/ do
+              violations
+            else
+              violations ++ ["#{relative_file}: Missing @moduledoc"]
+            end
 
           # Check for required sections in @moduledoc
-          violations = if content =~ ~r/@moduledoc\s+"""/ do
-            Enum.reduce(@required_moduledoc_sections, violations, fn section, acc ->
-              if content =~ ~r/##\s+#{section}/ do
-                acc
-              else
-                acc ++ ["#{relative_file}: @moduledoc missing '## #{section}' section"]
-              end
-            end)
-          else
-            violations
-          end
+          violations =
+            if content =~ ~r/@moduledoc\s+"""/ do
+              Enum.reduce(@required_moduledoc_sections, violations, fn section, acc ->
+                if content =~ ~r/##\s+#{section}/ do
+                  acc
+                else
+                  acc ++ ["#{relative_file}: @moduledoc missing '## #{section}' section"]
+                end
+              end)
+            else
+              violations
+            end
 
           violations
 
@@ -238,17 +258,25 @@ defmodule Mix.Tasks.Standardize.Check do
           # Check for old patterns that should be updated
           violations = []
 
-          violations = if content =~ ~r/tech\.templates/ and not content =~ ~r/templates\.technology/ do
-            violations ++ ["NATS_SUBJECTS.md: Contains old pattern 'tech.templates', should be 'templates.technology.*'"]
-          else
-            violations
-          end
+          violations =
+            if content =~ ~r/tech\.templates/ and not content =~ ~r/templates\.technology/ do
+              violations ++
+                [
+                  "NATS_SUBJECTS.md: Contains old pattern 'tech.templates', should be 'templates.technology.*'"
+                ]
+            else
+              violations
+            end
 
-          violations = if content =~ ~r/facts\./ and not content =~ ~r/knowledge\.facts/ do
-            violations ++ ["NATS_SUBJECTS.md: Contains old pattern 'facts.*', should be 'knowledge.facts.*'"]
-          else
-            violations
-          end
+          violations =
+            if content =~ ~r/facts\./ and not content =~ ~r/knowledge\.facts/ do
+              violations ++
+                [
+                  "NATS_SUBJECTS.md: Contains old pattern 'facts.*', should be 'knowledge.facts.*'"
+                ]
+            else
+              violations
+            end
 
           violations
 

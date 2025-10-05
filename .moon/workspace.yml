@@ -9,3 +9,6 @@ projects:
   - 'litellm'
   - 'singularity_app'
   - 'rust'
+
+# Note: Moon caches task outputs under .moon/cache by default. CI caches this
+# directory (see .github/workflows/ci-elixir.yml) to speed up repeated runs.

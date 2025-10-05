@@ -32,7 +32,7 @@ defmodule Mix.Tasks.Code.LoadTest do
 
     output =
       capture_io(fn ->
-        Mix.Task.rerun(@task, ["--agent", "cli-agent", "--code", code_file, "--version", "v1"]) 
+        Mix.Task.rerun(@task, ["--agent", "cli-agent", "--code", code_file, "--version", "v1"])
       end)
 
     assert output =~ "Staged"

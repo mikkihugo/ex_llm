@@ -38,7 +38,8 @@ defmodule Singularity.Git.GitStateStore do
     |> validate_required(@required_session_fields)
     |> unique_constraint(:agent_id)
     |> Repo.insert(
-      on_conflict: {:replace, [:branch, :workspace_path, :correlation_id, :status, :meta, :updated_at]},
+      on_conflict:
+        {:replace, [:branch, :workspace_path, :correlation_id, :status, :meta, :updated_at]},
       conflict_target: :agent_id
     )
   end
@@ -87,7 +88,8 @@ defmodule Singularity.Git.GitStateStore do
     %PendingMerge{}
     |> PendingMerge.changeset(attrs)
     |> Repo.insert(
-      on_conflict: {:replace, [:pr_number, :agent_id, :task_id, :correlation_id, :meta, :updated_at]},
+      on_conflict:
+        {:replace, [:pr_number, :agent_id, :task_id, :correlation_id, :meta, :updated_at]},
       conflict_target: :branch
     )
   end
@@ -124,7 +126,15 @@ defmodule Singularity.Git.GitStateStore do
 
     def changeset(struct, attrs) do
       struct
-      |> cast(attrs, [:branch, :agent_id, :task_id, :correlation_id, :merge_commit, :status, :details])
+      |> cast(attrs, [
+        :branch,
+        :agent_id,
+        :task_id,
+        :correlation_id,
+        :merge_commit,
+        :status,
+        :details
+      ])
       |> validate_required(@required)
     end
   end
@@ -132,6 +142,7 @@ defmodule Singularity.Git.GitStateStore do
   @doc "Record a merge outcome (success, conflict, failure, etc.)"
   def log_merge(attrs) when is_map(attrs) do
     attrs = normalize_merge_attrs(attrs)
+
     %MergeHistory{}
     |> MergeHistory.changeset(attrs)
     |> Repo.insert()

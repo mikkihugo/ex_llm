@@ -49,7 +49,8 @@ defmodule Singularity.CodeDeduplicator do
   @spec find_similar(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
   def find_similar(code, opts \\ []) do
     language = Keyword.get(opts, :language)
-    threshold = Keyword.get(opts, :threshold, 0.9)  # 90% = likely duplicate
+    # 90% = likely duplicate
+    threshold = Keyword.get(opts, :threshold, 0.9)
     search_limit = Keyword.get(opts, :limit, 10)
 
     Logger.debug("Searching for code duplicates (threshold: #{threshold})")
@@ -57,7 +58,6 @@ defmodule Singularity.CodeDeduplicator do
     with {:ok, fingerprints} <- extract_fingerprints(code, language),
          {:ok, candidates} <- multi_level_search(fingerprints, language, search_limit),
          {:ok, ranked} <- rank_by_similarity(code, candidates, threshold) do
-
       duplicates = Enum.filter(ranked, fn m -> m.similarity >= threshold end)
 
       if duplicates != [] do
@@ -125,16 +125,17 @@ defmodule Singularity.CodeDeduplicator do
     # Semantic keywords (compact representation)
     keywords = extract_semantic_keywords(code, language)
 
-    {:ok, %{
-      exact_hash: exact_hash,
-      normalized_hash: normalized_hash,
-      ast_hash: ast_hash,
-      pattern_signature: pattern_sig,
-      embedding: embedding,
-      keywords: keywords,
-      length: String.length(code),
-      lines: length(String.split(code, "\n"))
-    }}
+    {:ok,
+     %{
+       exact_hash: exact_hash,
+       normalized_hash: normalized_hash,
+       ast_hash: ast_hash,
+       pattern_signature: pattern_sig,
+       embedding: embedding,
+       keywords: keywords,
+       length: String.length(code),
+       lines: length(String.split(code, "\n"))
+     }}
   end
 
   defp hash_exact(code) do
@@ -143,11 +144,14 @@ defmodule Singularity.CodeDeduplicator do
 
   defp hash_normalized(code) do
     # Remove whitespace, comments, normalize formatting
-    normalized = code
-    |> String.replace(~r/\s+/, " ")          # Collapse whitespace
-    |> String.replace(~r/#.*$/, "", m: :multiline)  # Remove comments
-    |> String.replace(~r/\/\/.*$/, "", m: :multiline)
-    |> String.downcase()
+    normalized =
+      code
+      # Collapse whitespace
+      |> String.replace(~r/\s+/, " ")
+      # Remove comments
+      |> String.replace(~r/#.*$/, "", m: :multiline)
+      |> String.replace(~r/\/\/.*$/, "", m: :multiline)
+      |> String.downcase()
 
     :crypto.hash(:sha256, normalized) |> Base.encode16(case: :lower)
   end
@@ -199,21 +203,28 @@ defmodule Singularity.CodeDeduplicator do
     query = "SELECT id, file_path, content FROM code_fingerprints WHERE exact_hash = $1 LIMIT 10"
 
     case Repo.query(query, [hash]) do
-      {:ok, %{rows: rows}} -> Enum.map(rows, fn [id, path, content] ->
-        %{id: id, path: path, content: content, similarity: 1.0, match_type: :exact}
-      end)
-      _ -> []
+      {:ok, %{rows: rows}} ->
+        Enum.map(rows, fn [id, path, content] ->
+          %{id: id, path: path, content: content, similarity: 1.0, match_type: :exact}
+        end)
+
+      _ ->
+        []
     end
   end
 
   defp search_by_normalized_hash(hash) do
-    query = "SELECT id, file_path, content FROM code_fingerprints WHERE normalized_hash = $1 LIMIT 10"
+    query =
+      "SELECT id, file_path, content FROM code_fingerprints WHERE normalized_hash = $1 LIMIT 10"
 
     case Repo.query(query, [hash]) do
-      {:ok, %{rows: rows}} -> Enum.map(rows, fn [id, path, content] ->
-        %{id: id, path: path, content: content, similarity: 0.95, match_type: :normalized}
-      end)
-      _ -> []
+      {:ok, %{rows: rows}} ->
+        Enum.map(rows, fn [id, path, content] ->
+          %{id: id, path: path, content: content, similarity: 0.95, match_type: :normalized}
+        end)
+
+      _ ->
+        []
     end
   end
 
@@ -227,10 +238,13 @@ defmodule Singularity.CodeDeduplicator do
     """
 
     case Repo.query(query, [pattern, language]) do
-      {:ok, %{rows: rows}} -> Enum.map(rows, fn [id, path, content] ->
-        %{id: id, path: path, content: content, similarity: 0.85, match_type: :pattern}
-      end)
-      _ -> []
+      {:ok, %{rows: rows}} ->
+        Enum.map(rows, fn [id, path, content] ->
+          %{id: id, path: path, content: content, similarity: 0.85, match_type: :pattern}
+        end)
+
+      _ ->
+        []
     end
   end
 
@@ -248,10 +262,13 @@ defmodule Singularity.CodeDeduplicator do
     """
 
     case Repo.query(query, [embedding, language, limit]) do
-      {:ok, %{rows: rows}} -> Enum.map(rows, fn [id, path, content, sim] ->
-        %{id: id, path: path, content: content, similarity: sim, match_type: :semantic}
-      end)
-      _ -> []
+      {:ok, %{rows: rows}} ->
+        Enum.map(rows, fn [id, path, content, sim] ->
+          %{id: id, path: path, content: content, similarity: sim, match_type: :semantic}
+        end)
+
+      _ ->
+        []
     end
   end
 
@@ -315,7 +332,14 @@ defmodule Singularity.CodeDeduplicator do
       extract_by_regex(code, ~r/defmodule\s+([A-Z][A-Za-z0-9.]+)/),
       extract_by_regex(code, ~r/def\s+([a-z_][a-z0-9_?!]*)/),
       extract_by_regex(code, ~r/use\s+([A-Z][A-Za-z0-9.]+)/),
-      extract_patterns(code, ["GenServer", "Supervisor", "Agent", "Task", "Broadway", "Ecto.Schema"]),
+      extract_patterns(code, [
+        "GenServer",
+        "Supervisor",
+        "Agent",
+        "Task",
+        "Broadway",
+        "Ecto.Schema"
+      ]),
       extract_patterns(code, ["http", "api", "request", "cache", "pubsub", "nats", "database"])
     ]
     |> List.flatten()
@@ -367,8 +391,16 @@ defmodule Singularity.CodeDeduplicator do
   defp extract_java_keywords(code) do
     [
       extract_by_regex(code, ~r/class\s+([A-Z][A-Za-z0-9]+)/),
-      extract_by_regex(code, ~r/@([A-Z][A-Za-z0-9]+)/),  # Annotations
-      extract_patterns(code, ["Spring", "Repository", "Service", "Controller", "Entity", "Optional"])
+      # Annotations
+      extract_by_regex(code, ~r/@([A-Z][A-Za-z0-9]+)/),
+      extract_patterns(code, [
+        "Spring",
+        "Repository",
+        "Service",
+        "Controller",
+        "Entity",
+        "Optional"
+      ])
     ]
     |> List.flatten()
     |> Enum.map(&String.downcase/1)

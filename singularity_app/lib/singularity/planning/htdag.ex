@@ -183,7 +183,6 @@ defmodule Singularity.Planning.HTDAG do
     }
   end
 
-
   defp generate_task_id do
     "task-#{System.unique_integer([:positive, :monotonic])}"
   end

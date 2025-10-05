@@ -12,14 +12,14 @@ defmodule Singularity.Autonomy.Planner do
 
   require Logger
 
-  alias Singularity.Planning.{WorkPlanCoordinator, HTDAG, StoryDecomposer}
+  alias Singularity.Planning.{SafeWorkPlanner, HTDAG, StoryDecomposer}
   alias Singularity.Refactoring.Analyzer
   alias Singularity.Learning.PatternMiner
 
   @default_reason "stagnation"
 
-  @spec generate(map(), map()) :: map()
-  def generate(state, context) do
+  @spec generate_strategy_payload(map(), map()) :: map()
+  def generate_strategy_payload(state, context) do
     # Check if there's a vision-driven goal or refactoring need
     case get_current_goal(state) do
       {:vision_task, task} ->
@@ -43,7 +43,7 @@ defmodule Singularity.Autonomy.Planner do
 
       _ ->
         # Priority 2: Check SAFe vision-driven tasks (WSJF prioritized)
-        case WorkPlanCoordinator.get_next_work() do
+        case SafeWorkPlanner.get_next_work() do
           nil ->
             :none
 

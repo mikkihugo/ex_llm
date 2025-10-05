@@ -53,7 +53,10 @@ defmodule Singularity.Autonomy.RuleExecution do
 
   def record_outcome(execution, outcome) do
     execution
-    |> cast(%{outcome: outcome, outcome_recorded_at: DateTime.utc_now()}, [:outcome, :outcome_recorded_at])
+    |> cast(%{outcome: outcome, outcome_recorded_at: DateTime.utc_now()}, [
+      :outcome,
+      :outcome_recorded_at
+    ])
     |> validate_inclusion(:outcome, ["success", "failure", "unknown"])
   end
 end

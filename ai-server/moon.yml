@@ -5,7 +5,7 @@ type: 'application'
 
 tasks:
   deps:
-    command: 'bun install'
+    command: 'nix develop ..#dev --command just ai-server-deps'
     inputs:
       - 'package.json'
       - 'bun.lock'
@@ -13,7 +13,7 @@ tasks:
       - 'node_modules/'
 
   test:
-    command: 'sh -c "bun test 2>/dev/null | grep -E \"(pass|skip|fail|Ran)\" | tail -4"'
+    command: 'nix develop ..#dev --command just ai-server-test'
     deps:
       - 'deps'
     inputs:

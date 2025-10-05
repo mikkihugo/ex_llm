@@ -161,7 +161,12 @@ defmodule Singularity.Autonomy.RuleLoader do
     {:LLMPattern, prompt, weight}
   end
 
-  defp pattern_to_gleam(%{"type" => "metric", "metric" => metric, "threshold" => threshold, "weight" => weight}) do
+  defp pattern_to_gleam(%{
+         "type" => "metric",
+         "metric" => metric,
+         "threshold" => threshold,
+         "weight" => weight
+       }) do
     {:MetricPattern, metric, threshold, weight}
   end
 

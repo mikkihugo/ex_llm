@@ -14,7 +14,7 @@ defmodule Singularity.Tools.Llm do
       Claude.available_profiles()
       |> Enum.map(fn {profile, cfg} -> build_tool(profile, cfg) end)
 
-    Registry.register_tools(provider, tools)
+    Catalog.add_tools(provider, tools)
   end
 
   defp build_tool(profile, cfg) do

@@ -3,17 +3,12 @@ defprotocol Singularity.Interfaces.Protocol do
   Protocol for executing tool calls across different interfaces.
 
   Enables uniform tool execution regardless of the interface:
-  - MCP (Model Context Protocol) - For LLM clients like Claude Desktop
-  - NATS - For distributed messaging
+  - NATS - For distributed messaging and AI Server integration
   - HTTP - For REST APIs
   - CLI - For command-line tools
   - WebSocket - For real-time connections
 
   ## Example
-
-      # MCP interface
-      interface = %Singularity.Interfaces.MCP{session_id: "sess_123"}
-      Singularity.Interfaces.Protocol.execute_tool(interface, tool_call)
 
       # NATS interface
       interface = %Singularity.Interfaces.NATS{reply_to: "responses.123"}

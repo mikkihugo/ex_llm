@@ -23,7 +23,9 @@ defmodule Singularity.TechnologyTemplateStoreTest do
     assert record.checksum != nil
 
     {:ok, updated} =
-      TechnologyTemplateStore.upsert({:ai, :custom}, Map.put(template, "version", "1.1"), source: "test")
+      TechnologyTemplateStore.upsert({:ai, :custom}, Map.put(template, "version", "1.1"),
+        source: "test"
+      )
 
     refute updated.checksum == record.checksum
   end

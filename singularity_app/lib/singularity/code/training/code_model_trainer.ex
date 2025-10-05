@@ -126,10 +126,11 @@ defmodule Singularity.CodeModelTrainer do
 
       Enum.flat_map(samples, fn [_, content, _, repo] ->
         # Pick random samples from different languages
-        other_samples = other_langs
-        |> Map.values()
-        |> List.flatten()
-        |> Enum.take_random(2)
+        other_samples =
+          other_langs
+          |> Map.values()
+          |> List.flatten()
+          |> Enum.take_random(2)
 
         Enum.map(other_samples, fn [_, other_content, _, _] ->
           %{
@@ -291,11 +292,13 @@ defmodule Singularity.CodeModelTrainer do
   defp search_with_embedding(embedding) do
     # Search your codebase with this embedding
     # Returns sorted by similarity
-    []  # Implement actual search
+    # Implement actual search
+    []
   end
 
   defp calculate_improvement(base_results, tuned_results) do
     # Calculate metrics like precision@k, recall, etc
-    "30% better precision"  # Placeholder
+    # Placeholder
+    "30% better precision"
   end
 end

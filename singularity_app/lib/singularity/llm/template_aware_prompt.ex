@@ -29,7 +29,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
     language = Keyword.get(opts, :language, "elixir")
 
     # 1. Ask HTDAG for best template based on history
-    {:ok, template_id} = TemplateOptimizer.get_best_template(task.type, language)
+    {:ok, template_id} = TemplatePerformanceTracker.get_best_template(task.type, language)
 
     # 2. Load the selected template
     template = TechnologyTemplateLoader.template(template_id)
@@ -76,26 +76,28 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
         provider = select_provider_for_template(prompt_data.template)
 
         case Provider.call(provider, %{
-          prompt: prompt_data.prompt,
-          system_prompt: build_system_prompt(prompt_data.template),
-          max_tokens: 4000,
-          temperature: 0.3
-        }) do
+               prompt: prompt_data.prompt,
+               system_prompt: build_system_prompt(prompt_data.template),
+               max_tokens: 4000,
+               temperature: 0.3
+             }) do
           {:ok, response} ->
             # Track performance
             end_time = System.monotonic_time(:millisecond)
+
             metrics = %{
               time_ms: end_time - start_time,
               quality: estimate_quality(response.content),
               success: true,
               lines: count_lines(response.content),
               complexity: estimate_complexity(response.content),
-              coverage: 0.0,  # Would need test results
+              # Would need test results
+              coverage: 0.0,
               feedback: %{}
             }
 
             # Record in HTDAG for learning
-            TemplateOptimizer.record_usage(
+            TemplatePerformanceTracker.record_usage(
               prompt_data.template_id,
               task,
               metrics
@@ -108,7 +110,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
 
           {:error, reason} ->
             # Record failure
-            TemplateOptimizer.record_usage(
+            TemplatePerformanceTracker.record_usage(
               prompt_data.template_id,
               task,
               %{success: false, error: reason}
@@ -177,10 +179,14 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
     RAGCodeGenerator.find_best_examples(
       search_query,
       language,
-      nil,  # All repos
-      5,    # Top 5
-      true, # Prefer recent
-      false # No tests
+      # All repos
+      nil,
+      # Top 5
+      5,
+      # Prefer recent
+      true,
+      # No tests
+      false
     )
   end
 
@@ -200,14 +206,15 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
   end
 
   defp format_patterns(detector_signatures) do
-    patterns = [
-      detector_signatures["import_patterns"],
-      detector_signatures["code_patterns"],
-      detector_signatures["dependencies"]
-    ]
-    |> List.flatten()
-    |> Enum.filter(&(&1))
-    |> Enum.take(10)
+    patterns =
+      [
+        detector_signatures["import_patterns"],
+        detector_signatures["code_patterns"],
+        detector_signatures["dependencies"]
+      ]
+      |> List.flatten()
+      |> Enum.filter(& &1)
+      |> Enum.take(10)
 
     if Enum.any?(patterns) do
       patterns |> Enum.map(&"- #{&1}") |> Enum.join("\n")
@@ -221,9 +228,12 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
     complexity = template["metadata"]["performance"]["complexity"] || 5
 
     cond do
-      complexity <= 3 -> :gemini     # Simple templates
-      complexity <= 7 -> :claude     # Medium complexity
-      true -> :claude                # Complex templates
+      # Simple templates
+      complexity <= 3 -> :gemini
+      # Medium complexity
+      complexity <= 7 -> :claude
+      # Complex templates
+      true -> :claude
     end
   end
 
@@ -232,7 +242,8 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
     score = 0.5
 
     # Has error handling?
-    score = score + if String.contains?(code, ["try", "catch", "rescue", "with"]), do: 0.1, else: 0
+    score =
+      score + if String.contains?(code, ["try", "catch", "rescue", "with"]), do: 0.1, else: 0
 
     # Has documentation?
     score = score + if String.contains?(code, ["@doc", "///", "/**"]), do: 0.1, else: 0
@@ -245,7 +256,8 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
     score = score + if lines > 10 && lines < 500, do: 0.1, else: 0
 
     # Has types/specs?
-    score = score + if String.contains?(code, ["@spec", "::", "type", "interface"]), do: 0.1, else: 0
+    score =
+      score + if String.contains?(code, ["@spec", "::", "type", "interface"]), do: 0.1, else: 0
 
     min(score, 1.0)
   end
@@ -265,7 +277,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
   Get prompt optimization suggestions from HTDAG analysis
   """
   def get_optimization_suggestions do
-    {:ok, analysis} = TemplateOptimizer.analyze_performance()
+    {:ok, analysis} = TemplatePerformanceTracker.analyze_performance()
 
     suggestions = [
       "Top performing templates: #{inspect(Enum.take(analysis.top_performers, 3))}",

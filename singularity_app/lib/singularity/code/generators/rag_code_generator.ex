@@ -56,13 +56,13 @@ defmodule Singularity.RAGCodeGenerator do
   alias Singularity.{CodeStore, SemanticCodeSearch, EmbeddingService, CodeModel}
 
   @type generation_opts :: [
-    task: String.t(),
-    language: String.t() | nil,
-    repos: [String.t()] | nil,
-    top_k: integer(),
-    prefer_recent: boolean(),
-    temperature: float()
-  ]
+          task: String.t(),
+          language: String.t() | nil,
+          repos: [String.t()] | nil,
+          top_k: integer(),
+          prefer_recent: boolean(),
+          temperature: float()
+        ]
 
   @doc """
   Generate code using RAG - finds best examples from all codebases
@@ -89,7 +89,8 @@ defmodule Singularity.RAGCodeGenerator do
 
     Logger.info("RAG Code Generation: #{task}")
 
-    with {:ok, examples} <- find_best_examples(task, language, repos, top_k, prefer_recent, include_tests),
+    with {:ok, examples} <-
+           find_best_examples(task, language, repos, top_k, prefer_recent, include_tests),
          {:ok, prompt} <- build_rag_prompt(task, examples, language),
          {:ok, code} <- CodeModel.complete(prompt, temperature: temperature) do
       Logger.info("✅ Generated #{String.length(code)} chars using #{length(examples)} examples")
@@ -106,8 +107,15 @@ defmodule Singularity.RAGCodeGenerator do
 
   Returns ranked examples with metadata (quality scores, repo, path, etc.)
   """
-  @spec find_best_examples(String.t(), String.t() | nil, [String.t()] | nil, integer(), boolean(), boolean()) ::
-    {:ok, [map()]} | {:error, term()}
+  @spec find_best_examples(
+          String.t(),
+          String.t() | nil,
+          [String.t()] | nil,
+          integer(),
+          boolean(),
+          boolean()
+        ) ::
+          {:ok, [map()]} | {:error, term()}
   def find_best_examples(task, language, repos, top_k, prefer_recent, include_tests) do
     # 1. Create search query (semantic)
     search_query = build_search_query(task, language)
@@ -116,13 +124,14 @@ defmodule Singularity.RAGCodeGenerator do
 
     # 2. Semantic search in PostgreSQL (pgvector)
     with {:ok, embedding} <- EmbeddingService.embed(search_query),
-         {:ok, results} <- semantic_search(embedding, language, repos, top_k * 2) do  # Get 2x, then filter
-
+         # Get 2x, then filter
+         {:ok, results} <- semantic_search(embedding, language, repos, top_k * 2) do
       # 3. Rank and filter results
-      ranked = results
-      |> filter_quality(include_tests)
-      |> rank_by_quality(prefer_recent)
-      |> Enum.take(top_k)
+      ranked =
+        results
+        |> filter_quality(include_tests)
+        |> rank_by_quality(prefer_recent)
+        |> Enum.take(top_k)
 
       Logger.debug("Found #{length(ranked)} high-quality examples")
       {:ok, ranked}
@@ -135,12 +144,13 @@ defmodule Singularity.RAGCodeGenerator do
 
   defp build_search_query(task, language) do
     # Enhance task with language-specific keywords for better retrieval
-    lang_prefix = case language do
-      "elixir" -> "Elixir function module defmodule"
-      "rust" -> "Rust function impl struct"
-      "typescript" -> "TypeScript function class interface"
-      _ -> ""
-    end
+    lang_prefix =
+      case language do
+        "elixir" -> "Elixir function module defmodule"
+        "rust" -> "Rust function impl struct"
+        "typescript" -> "TypeScript function class interface"
+        _ -> ""
+      end
 
     "#{lang_prefix} #{task}"
   end
@@ -156,28 +166,32 @@ defmodule Singularity.RAGCodeGenerator do
     )
     """
 
-    params = [
-      embedding,
-      if(language, do: language, else: nil),
-      if(repos, do: repos, else: nil),
-      limit
-    ] |> Enum.reject(&is_nil/1)
+    params =
+      [
+        embedding,
+        if(language, do: language, else: nil),
+        if(repos, do: repos, else: nil),
+        limit
+      ]
+      |> Enum.reject(&is_nil/1)
 
     case Singularity.Repo.query(query, params) do
       {:ok, %{rows: rows}} ->
-        examples = Enum.map(rows, fn row ->
-          [id, path, content, lang, metadata, repo, updated_at, similarity] = row
-          %{
-            id: id,
-            path: path,
-            content: content,
-            language: lang,
-            metadata: metadata || %{},
-            repo: repo,
-            updated_at: updated_at,
-            similarity: similarity
-          }
-        end)
+        examples =
+          Enum.map(rows, fn row ->
+            [id, path, content, lang, metadata, repo, updated_at, similarity] = row
+
+            %{
+              id: id,
+              path: path,
+              content: content,
+              language: lang,
+              metadata: metadata || %{},
+              repo: repo,
+              updated_at: updated_at,
+              similarity: similarity
+            }
+          end)
 
         {:ok, examples}
 
@@ -214,7 +228,8 @@ defmodule Singularity.RAGCodeGenerator do
       # Similarity threshold
       has_good_similarity = ex.similarity >= 0.7
 
-      has_min_length and not_generated and not_commented_out and include_this and has_good_similarity
+      has_min_length and not_generated and not_commented_out and include_this and
+        has_good_similarity
     end)
   end
 
@@ -222,21 +237,25 @@ defmodule Singularity.RAGCodeGenerator do
     examples
     |> Enum.sort_by(fn ex ->
       # Multi-factor ranking score
-      similarity_score = ex.similarity * 1000  # 0-1000
+      # 0-1000
+      similarity_score = ex.similarity * 1000
 
       # Recency bonus (if preferred)
-      recency_score = if prefer_recent do
-        days_old = DateTime.diff(DateTime.utc_now(), ex.updated_at, :day)
-        max(0, 100 - days_old)  # 100 points for today, 0 for 100+ days
-      else
-        0
-      end
+      recency_score =
+        if prefer_recent do
+          days_old = DateTime.diff(DateTime.utc_now(), ex.updated_at, :day)
+          # 100 points for today, 0 for 100+ days
+          max(0, 100 - days_old)
+        else
+          0
+        end
 
       # Code size bonus (prefer substantial code, not snippets)
       size_score = min(100, div(String.length(ex.content), 10))
 
       # Total score
-      -(similarity_score + recency_score + size_score)  # Negative for DESC sort
+      # Negative for DESC sort
+      -(similarity_score + recency_score + size_score)
     end)
   end
 
@@ -244,17 +263,18 @@ defmodule Singularity.RAGCodeGenerator do
     # Build prompt with examples from best codebases
     language_hint = if language, do: language, else: "auto-detect"
 
-    examples_text = examples
-    |> Enum.with_index(1)
-    |> Enum.map(fn {ex, idx} ->
-      """
-      Example #{idx} (from #{ex.repo}/#{Path.basename(ex.path)}, similarity: #{Float.round(ex.similarity, 2)}):
-      ```#{ex.language}
-      #{String.slice(ex.content, 0..500)}
-      ```
-      """
-    end)
-    |> Enum.join("\n")
+    examples_text =
+      examples
+      |> Enum.with_index(1)
+      |> Enum.map(fn {ex, idx} ->
+        """
+        Example #{idx} (from #{ex.repo}/#{Path.basename(ex.path)}, similarity: #{Float.round(ex.similarity, 2)}):
+        ```#{ex.language}
+        #{String.slice(ex.content, 0..500)}
+        ```
+        """
+      end)
+      |> Enum.join("\n")
 
     prompt = """
     Task: #{task}
@@ -305,21 +325,23 @@ defmodule Singularity.RAGCodeGenerator do
 
     case Singularity.Repo.query(query, params) do
       {:ok, %{rows: rows}} ->
-        stats = Enum.map(rows, fn [repo, lang, count, avg_size, unique] ->
-          %{
-            repo: repo,
-            language: lang,
-            file_count: count,
-            avg_file_size: round(avg_size),
-            unique_files: unique
-          }
-        end)
+        stats =
+          Enum.map(rows, fn [repo, lang, count, avg_size, unique] ->
+            %{
+              repo: repo,
+              language: lang,
+              file_count: count,
+              avg_file_size: round(avg_size),
+              unique_files: unique
+            }
+          end)
 
-        {:ok, %{
-          top_repos: stats,
-          total_repos: length(stats),
-          languages: Enum.map(stats, & &1.language) |> Enum.uniq()
-        }}
+        {:ok,
+         %{
+           top_repos: stats,
+           total_repos: length(stats),
+           languages: Enum.map(stats, & &1.language) |> Enum.uniq()
+         }}
 
       {:error, reason} ->
         {:error, reason}

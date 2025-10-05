@@ -49,12 +49,13 @@ defmodule Singularity.StartupWarmup do
     Logger.info("Loading top-performing templates...")
 
     try do
-      case Singularity.TemplateOptimizer.analyze_performance() do
+      case Singularity.TemplatePerformanceTracker.analyze_performance() do
         {:ok, %{top_performers: performers}} ->
           Enum.each(Enum.take(performers, 10), fn perf ->
             # Cache the template
             Singularity.MemoryCache.put(:templates, perf.template, perf, :timer.hours(48))
           end)
+
           Logger.info("Cached #{min(10, length(performers))} top templates")
 
         _ ->
@@ -86,10 +87,12 @@ defmodule Singularity.StartupWarmup do
         case Singularity.EmbeddingGenerator.embed(query) do
           {:ok, embedding} ->
             Singularity.MemoryCache.cache_embedding(query, embedding)
+
           _ ->
             :ok
         end
       end)
+
       Logger.info("Pre-computed #{length(common_queries)} embeddings via Jina/Google")
     rescue
       e ->
@@ -121,6 +124,7 @@ defmodule Singularity.StartupWarmup do
               :timer.hours(24)
             )
           end)
+
           Logger.info("Loaded #{length(rows)} task-template mappings")
 
         _ ->

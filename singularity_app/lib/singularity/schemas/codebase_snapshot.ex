@@ -21,7 +21,14 @@ defmodule Singularity.Schemas.CodebaseSnapshot do
   @doc false
   def changeset(snapshot, attrs) do
     snapshot
-    |> cast(attrs, [:codebase_id, :snapshot_id, :metadata, :summary, :detected_technologies, :features])
+    |> cast(attrs, [
+      :codebase_id,
+      :snapshot_id,
+      :metadata,
+      :summary,
+      :detected_technologies,
+      :features
+    ])
     |> validate_required([:codebase_id, :snapshot_id])
     |> unique_constraint([:codebase_id, :snapshot_id])
   end

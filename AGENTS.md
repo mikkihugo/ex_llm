@@ -181,6 +181,19 @@ mix setup                # Gets Mix + Gleam deps
 gleam deps download      # Just Gleam deps
 ```
 
+### Mix + Nix Quickstart (recommended)
+
+- Enter dev shell: `nix develop`
+- Fetch deps: `cd singularity_app && mix deps.get`
+- Compile (Gleam via mix_gleam): `mix compile`
+
+Notes:
+- The flake pins OTP 28 + Elixir 1.19 and sets UTF‑8/BEAM flags for stable rebar3 builds.
+- If you ever see a one‑off Gleam stdlib resolution error, run:
+  - `mix compile.gleam gleam_stdlib --force`
+  - then `mix compile`
+
+
 ### File Organization
 
 ```

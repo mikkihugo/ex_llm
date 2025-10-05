@@ -42,12 +42,93 @@ defmodule Singularity.QualityCodeGenerator do
 
   @type quality_level :: :production | :standard | :draft
   @type generation_result :: %{
-    code: String.t(),
-    docs: String.t(),
-    specs: String.t(),
-    tests: String.t(),
-    quality_score: float()
-  }
+          code: String.t(),
+          docs: String.t(),
+          specs: String.t(),
+          tests: String.t(),
+          quality_score: float()
+        }
+
+  @doc """
+  Get quality template for a specific language.
+  
+  Returns the appropriate quality template based on language.
+  """
+  def get_template(language) when language in @supported_languages do
+    case language do
+      "elixir" -> load_template("elixir_production.json")
+      "erlang" -> load_template("erlang_production.json")
+      "gleam" -> load_template("gleam_production.json")
+      "rust" -> load_template("rust_production.json")
+      "go" -> load_template("go_production.json")
+      "typescript" -> load_template("typescript_production.json")
+      "python" -> load_template("python_production.json")
+      _ -> load_template("default_production.json")
+    end
+  end
+
+  def get_template(_language), do: load_template("default_production.json")
+
+  @doc """
+  Load quality template from file.
+  """
+  def load_template(filename) do
+    template_path = Path.join(@templates_dir, filename)
+    
+    case File.read(template_path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, template} -> {:ok, template}
+          {:error, reason} -> {:error, {:json_decode_error, reason}}
+        end
+      {:error, reason} -> 
+        Logger.warning("Template file not found: #{template_path}, using default")
+        {:ok, default_template()}
+    end
+  end
+
+  def load_template(filename, opts) do
+    case load_template(filename) do
+      {:ok, template} -> {:ok, template}
+      {:error, _reason} -> 
+        # Fallback to default template with options
+        {:ok, default_template(opts)}
+    end
+  end
+
+  defp default_template(opts \\ []) do
+    %{
+      "quality_standards" => %{
+        "documentation" => %{
+          "required" => true,
+          "min_coverage" => 0.9
+        },
+        "type_specs" => %{
+          "required" => true,
+          "min_coverage" => 0.8
+        },
+        "tests" => %{
+          "required" => true,
+          "min_coverage" => 0.8
+        },
+        "error_handling" => %{
+          "required" => true,
+          "explicit_errors" => true
+        }
+      },
+      "naming_conventions" => %{
+        "functions" => "snake_case",
+        "modules" => "PascalCase",
+        "variables" => "snake_case"
+      },
+      "code_quality" => %{
+        "max_function_length" => 50,
+        "max_module_length" => 500,
+        "no_todos" => true,
+        "no_debug_prints" => true
+      }
+    }
+  end
 
   @doc """
   Generate high-quality code with enforced standards
@@ -85,7 +166,6 @@ defmodule Singularity.QualityCodeGenerator do
   end
 
   defp generate_with_template(task, language, quality, use_rag, template) do
-
     Logger.info("Generating #{quality} quality code: #{task}")
 
     with {:ok, code} <- generate_implementation(task, language, quality, use_rag, template),
@@ -93,7 +173,6 @@ defmodule Singularity.QualityCodeGenerator do
          {:ok, specs} <- generate_type_specs(code, language, quality),
          {:ok, tests} <- generate_tests(code, task, language, quality),
          {:ok, score} <- calculate_quality_score(code, docs, specs, tests, quality) do
-
       result = %{
         code: code,
         docs: docs,
@@ -130,14 +209,14 @@ defmodule Singularity.QualityCodeGenerator do
          {:ok, enhanced} <- add_error_handling(code, language, quality),
          {:ok, tests} <- generate_tests(enhanced, "existing code", language, quality),
          {:ok, score} <- calculate_quality_score(enhanced, docs, specs, tests, quality) do
-
-      {:ok, %{
-        code: enhanced,
-        docs: docs,
-        specs: specs,
-        tests: tests,
-        quality_score: score
-      }}
+      {:ok,
+       %{
+         code: enhanced,
+         docs: docs,
+         specs: specs,
+         tests: tests,
+         quality_score: score
+       }}
     else
       {:error, reason} -> {:error, reason}
     end
@@ -148,7 +227,8 @@ defmodule Singularity.QualityCodeGenerator do
 
   Templates are JSON files in priv/code_quality_templates/
   """
-  @spec load_template(String.t(), quality_level(), String.t() | nil) :: {:ok, map()} | {:error, term()}
+  @spec load_template(String.t(), quality_level(), String.t() | nil) ::
+          {:ok, map()} | {:error, term()}
   def load_template(language, quality, custom_path \\ nil) do
     path = custom_path || build_template_path(language, quality)
 
@@ -187,7 +267,8 @@ defmodule Singularity.QualityCodeGenerator do
       "quality_level" => to_string(quality),
       "requirements" => %{},
       "prompts" => %{
-        "code_generation" => "Generate #{quality} quality #{language} code for: {task}\n\nOUTPUT CODE ONLY."
+        "code_generation" =>
+          "Generate #{quality} quality #{language} code for: {task}\n\nOUTPUT CODE ONLY."
       }
     }
   end
@@ -407,31 +488,62 @@ defmodule Singularity.QualityCodeGenerator do
     }
 
     # Weight by quality level
-    weights = case quality do
-      :production -> %{has_code: 1.0, has_docs: 1.0, has_specs: 1.0, has_tests: 1.0, no_todos: 1.0, reasonable_length: 0.5}
-      :standard -> %{has_code: 1.0, has_docs: 0.8, has_specs: 0.7, has_tests: 0.6, no_todos: 0.8, reasonable_length: 0.5}
-      :draft -> %{has_code: 1.0, has_docs: 0.3, has_specs: 0.2, has_tests: 0.2, no_todos: 0.5, reasonable_length: 0.5}
-    end
+    weights =
+      case quality do
+        :production ->
+          %{
+            has_code: 1.0,
+            has_docs: 1.0,
+            has_specs: 1.0,
+            has_tests: 1.0,
+            no_todos: 1.0,
+            reasonable_length: 0.5
+          }
+
+        :standard ->
+          %{
+            has_code: 1.0,
+            has_docs: 0.8,
+            has_specs: 0.7,
+            has_tests: 0.6,
+            no_todos: 0.8,
+            reasonable_length: 0.5
+          }
+
+        :draft ->
+          %{
+            has_code: 1.0,
+            has_docs: 0.3,
+            has_specs: 0.2,
+            has_tests: 0.2,
+            no_todos: 0.5,
+            reasonable_length: 0.5
+          }
+      end
 
     total_weight = Map.values(weights) |> Enum.sum()
-    weighted_score = Enum.reduce(scores, 0.0, fn {key, score}, acc ->
-      acc + (score * Map.get(weights, key, 0.0))
-    end)
+
+    weighted_score =
+      Enum.reduce(scores, 0.0, fn {key, score}, acc ->
+        acc + score * Map.get(weights, key, 0.0)
+      end)
 
     {:ok, weighted_score / total_weight}
   end
 
   defp build_quality_prompt_from_template(task, template) do
     # Use template's code_generation prompt
-    prompt_template = get_in(template, ["prompts", "code_generation"]) ||
-                      "Generate code for: {task}\n\nOUTPUT CODE ONLY."
+    prompt_template =
+      get_in(template, ["prompts", "code_generation"]) ||
+        "Generate code for: {task}\n\nOUTPUT CODE ONLY."
 
     String.replace(prompt_template, "{task}", task)
   end
 
   defp build_doc_prompt_from_template(code, template) do
-    prompt_template = get_in(template, ["prompts", "documentation"]) ||
-                      "Generate documentation for:\n\n{code}\n\nOUTPUT DOCS ONLY."
+    prompt_template =
+      get_in(template, ["prompts", "documentation"]) ||
+        "Generate documentation for:\n\n{code}\n\nOUTPUT DOCS ONLY."
 
     String.replace(prompt_template, "{code}", code)
   end
@@ -440,7 +552,8 @@ defmodule Singularity.QualityCodeGenerator do
   defp quality_examples_count(:standard), do: 5
   defp quality_examples_count(:draft), do: 2
 
-  defp quality_temperature(:production), do: 0.05  # Very strict
+  # Very strict
+  defp quality_temperature(:production), do: 0.05
   defp quality_temperature(:standard), do: 0.1
   defp quality_temperature(:draft), do: 0.2
 end

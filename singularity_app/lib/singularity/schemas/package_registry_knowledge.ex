@@ -50,14 +50,29 @@ defmodule Singularity.Schemas.PackageRegistryKnowledge do
   def changeset(package, attrs) do
     package
     |> cast(attrs, [
-      :package_name, :version, :ecosystem, :description, :documentation,
-      :homepage_url, :repository_url, :license, :tags, :categories,
-      :keywords, :semantic_embedding, :description_embedding,
-      :download_count, :github_stars, :last_release_date,
-      :source_url, :collected_at, :last_updated_at
+      :package_name,
+      :version,
+      :ecosystem,
+      :description,
+      :documentation,
+      :homepage_url,
+      :repository_url,
+      :license,
+      :tags,
+      :categories,
+      :keywords,
+      :semantic_embedding,
+      :description_embedding,
+      :download_count,
+      :github_stars,
+      :last_release_date,
+      :source_url,
+      :collected_at,
+      :last_updated_at
     ])
     |> validate_required([:package_name, :version, :ecosystem])
     |> unique_constraint([:package_name, :version, :ecosystem],
-      name: :tools_unique_identifier)
+      name: :tools_unique_identifier
+    )
   end
 end

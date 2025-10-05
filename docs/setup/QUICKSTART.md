@@ -1,163 +1,59 @@
-# Quick Start Guide
+# Quick Start
 
-Get the AI Providers Server deployed to fly.io in 5 minutes.
+Run Singularity locally with Mix. This guide reflects the current codebase (Elixir + Gleam; optional NATS; no separate AI server required).
 
 ## Prerequisites
 
-```bash
-# Install Nix with flakes
-sh <(curl -L https://nixos.org/nix/install) --daemon
-echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+- Erlang/OTP 26+
+- Elixir 1.18+
+- PostgreSQL 14+
+- Gleam (optional) for `gleam check`
 
-# Install fly.io CLI
-curl -L https://fly.io/install.sh | sh
-flyctl auth login
-
-# Install age for encryption
-nix-env -iA nixpkgs.age
-# or: brew install age
-```
-
-## One-Time Setup (5 minutes)
-
-### 1. Authenticate with AI Providers
+## Setup
 
 ```bash
-# Gemini (both providers)
-gcloud auth application-default login
+git clone <repo-url>
+cd singularity/singularity_app
 
-# Claude
-claude setup-token
+# Get deps for Elixir and Gleam
+mix setup
 
-# Cursor
-cursor-agent login
+# Configure DB (defaults are set in config/*.exs via env vars)
+mix ecto.create
+mix ecto.migrate
 
-# GitHub Copilot
-gh auth login
+# Compile
+mix compile
 ```
 
-### 2. Encrypt and Store Credentials
+## Run
 
 ```bash
-cd ai-server
-
-# Generate key and store in fly.io
-./scripts/setup-encryption.sh singularity
-
-# Encrypt credentials
-./scripts/encrypt-credentials.sh
-
-# The script shows a key - copy it
-# Add to GitHub Secrets:
-#   Name: AGE_SECRET_KEY
-#   Value: <paste the key>
+# Enable HTTP control plane (tool run, chat proxy, health, metrics)
+HTTP_SERVER_ENABLED=true iex -S mix
 ```
 
-### 3. Commit Encrypted Credentials
+Endpoints (default port 8080):
+- POST /api/tools/run
+- POST /v1/chat/completions
+- GET /health, /health/deep, /metrics
+
+## Test & Quality
 
 ```bash
-# These are SAFE to commit (encrypted with age)
-git add .credentials.encrypted/*.age
-git commit -m "Add encrypted AI provider credentials"
-git push
+mix test
+mix quality   # format, credo, dialyzer, sobelow, deps.audit
 ```
 
-### 4. Deploy to Fly.io
+## Optional
 
-```bash
-cd ..  # Back to project root
+- NATS interface: see `lib/singularity/interfaces/nats.ex`.
+- Gleam type check: run `gleam check` from repo root.
 
-# Build with Nix
-nix build .#singularity-integrated
+## Troubleshooting
 
-# Deploy
-flyctl deploy --app singularity --config fly-integrated.toml --nixpacks
-```
-
-## That's It!
-
-Your server is now running with:
-- ✅ Elixir app on port 8080
-- ✅ AI Server on port 3000 (internal)
-- ✅ All credentials decrypted automatically
-- ✅ Encrypted credentials safe in git
-
-## Test It
-
-```bash
-# Check status
-flyctl status --app singularity
-
-# View logs
-flyctl logs --app singularity
-
-# Test from Elixir app (internally accessible)
-# The AI server is at http://localhost:3000
-```
-
-## Daily Use
-
-### Update Credentials
-
-```bash
-# Re-authenticate with a provider
-claude setup-token  # Updates ~/.claude/.credentials.json
-
-# Re-encrypt
-cd ai-server
-./scripts/encrypt-credentials.sh
-
-# Commit and push
-git add .credentials.encrypted/*.age
-git commit -m "Update Claude credentials"
-git push  # Auto-deploys via GitHub Actions
-```
-
-### Local Development
-
-```bash
-# Terminal 1: Elixir
-mix phx.server
-
-# Terminal 2: AI Server
-cd ai-server
-bun run dev
-
-# Or run both with Nix
-nix build .#singularity-integrated
-./result/bin/start-singularity
-```
-
-## What Just Happened?
-
-```
-Local Machine:
-  1. ./scripts/setup-encryption.sh
-     ↓
-  2. Generates .age-key.txt
-     ↓
-  3. Stores AGE_SECRET_KEY in fly.io secrets
-     ↓
-  4. ./scripts/encrypt-credentials.sh
-     ↓
-  5. Creates .credentials.encrypted/*.age (SAFE to commit)
-     ↓
-  6. git push
-
-GitHub:
-  7. Actions builds with Nix
-     ↓
-  8. Deploys to fly.io
-
-Fly.io:
-  9. Reads AGE_SECRET_KEY from secrets
-     ↓
-  10. Auto-decrypts .age files at startup
-     ↓
-  11. Runs both Elixir + AI Server
-```
-
-## Key Files
+- Ensure DB env vars match your local Postgres (see `config/config.exs`).
+- If metrics endpoint fails, verify `Singularity.PrometheusExporter` is compiled (it is included by default).
 
 | File | Safe to Commit? | Purpose |
 |------|----------------|---------|

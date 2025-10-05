@@ -65,19 +65,21 @@ defmodule Singularity.CodeTrainer do
     LIMIT $#{if language, do: "3", else: "2"}
     """
 
-    params = if language do
-      [min_length, language, max_examples]
-    else
-      [min_length, max_examples]
-    end
+    params =
+      if language do
+        [min_length, language, max_examples]
+      else
+        [min_length, max_examples]
+      end
 
     case Singularity.Repo.query(query, params) do
       {:ok, %{rows: rows}} when length(rows) > 0 ->
-        dataset = rows
-        |> Enum.map(fn [path, content, lang, metadata] ->
-          prepare_training_example(content, path, lang, metadata)
-        end)
-        |> Enum.filter(&(&1 != nil))
+        dataset =
+          rows
+          |> Enum.map(fn [path, content, lang, metadata] ->
+            prepare_training_example(content, path, lang, metadata)
+          end)
+          |> Enum.filter(&(&1 != nil))
 
         Logger.info("Prepared #{length(dataset)} training examples")
         {:ok, dataset}
@@ -114,8 +116,9 @@ defmodule Singularity.CodeTrainer do
     Logger.info("Using GPU (RTX 4080) with batch_size=#{batch_size}")
 
     # Load base model
-    model_repo = Application.get_env(:singularity, :code_generation, [])
-                 |> Keyword.get(:model, "bigcode/starcoder2-7b")
+    model_repo =
+      Application.get_env(:singularity, :code_generation, [])
+      |> Keyword.get(:model, "bigcode/starcoder2-7b")
 
     with {:ok, model_info} <- load_base_model(model_repo),
          {:ok, tokenizer} <- Bumblebee.load_tokenizer({:hf, model_repo}),
@@ -183,18 +186,20 @@ defmodule Singularity.CodeTrainer do
     # Example: "defmodule Foo do\n  def bar" -> prefix: "defmodule Foo do\n  def bar", output: "(args) do\n    # implementation\n  end"
     lines = String.split(content, "\n")
 
-    pairs = lines
-    |> Enum.chunk_every(10)  # Take chunks of 10 lines
-    |> Enum.map(fn chunk ->
-      text = Enum.join(chunk, "\n")
-      split_point = div(String.length(text), 2)
+    pairs =
+      lines
+      # Take chunks of 10 lines
+      |> Enum.chunk_every(10)
+      |> Enum.map(fn chunk ->
+        text = Enum.join(chunk, "\n")
+        split_point = div(String.length(text), 2)
 
-      %{
-        input: String.slice(text, 0, split_point),
-        output: String.slice(text, split_point..-1//1),
-        metadata: %{language: "elixir"}
-      }
-    end)
+        %{
+          input: String.slice(text, 0, split_point),
+          output: String.slice(text, split_point..-1//1),
+          metadata: %{language: "elixir"}
+        }
+      end)
 
     {:ok, pairs}
   end
@@ -203,18 +208,19 @@ defmodule Singularity.CodeTrainer do
     # Similar for Rust - split at fn definitions
     lines = String.split(content, "\n")
 
-    pairs = lines
-    |> Enum.chunk_every(10)
-    |> Enum.map(fn chunk ->
-      text = Enum.join(chunk, "\n")
-      split_point = div(String.length(text), 2)
+    pairs =
+      lines
+      |> Enum.chunk_every(10)
+      |> Enum.map(fn chunk ->
+        text = Enum.join(chunk, "\n")
+        split_point = div(String.length(text), 2)
 
-      %{
-        input: String.slice(text, 0, split_point),
-        output: String.slice(text, split_point..-1//1),
-        metadata: %{language: "rust"}
-      }
-    end)
+        %{
+          input: String.slice(text, 0, split_point),
+          output: String.slice(text, split_point..-1//1),
+          metadata: %{language: "rust"}
+        }
+      end)
 
     {:ok, pairs}
   end
@@ -223,11 +229,14 @@ defmodule Singularity.CodeTrainer do
     # Generic splitting for other languages
     split_point = div(String.length(content), 2)
 
-    {:ok, [%{
-      input: String.slice(content, 0, split_point),
-      output: String.slice(content, split_point..-1//1),
-      metadata: %{}
-    }]}
+    {:ok,
+     [
+       %{
+         input: String.slice(content, 0, split_point),
+         output: String.slice(content, split_point..-1//1),
+         metadata: %{}
+       }
+     ]}
   end
 
   defp load_base_model(repo) do
@@ -238,12 +247,13 @@ defmodule Singularity.CodeTrainer do
   defp tokenize_dataset(dataset, tokenizer) do
     Logger.info("Tokenizing #{length(dataset)} examples...")
 
-    tokenized = Enum.map(dataset, fn example ->
-      input_ids = Bumblebee.apply_tokenizer(tokenizer, example.input)
-      output_ids = Bumblebee.apply_tokenizer(tokenizer, example.output)
+    tokenized =
+      Enum.map(dataset, fn example ->
+        input_ids = Bumblebee.apply_tokenizer(tokenizer, example.input)
+        output_ids = Bumblebee.apply_tokenizer(tokenizer, example.output)
 
-      %{input: input_ids, output: output_ids}
-    end)
+        %{input: input_ids, output: output_ids}
+      end)
 
     {:ok, tokenized}
   end

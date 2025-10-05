@@ -149,19 +149,21 @@ defmodule Singularity.FrameworkPatternStore do
 
     case Repo.query(sql, [embedding, top_k]) do
       {:ok, %{rows: rows}} ->
-        patterns = Enum.map(rows, fn row ->
-          [name, type, files, dirs, configs, build, dev, sim] = row
-          %{
-            framework_name: name,
-            framework_type: type,
-            file_patterns: files,
-            directory_patterns: dirs,
-            config_files: configs,
-            build_command: build,
-            dev_command: dev,
-            similarity: sim
-          }
-        end)
+        patterns =
+          Enum.map(rows, fn row ->
+            [name, type, files, dirs, configs, build, dev, sim] = row
+
+            %{
+              framework_name: name,
+              framework_type: type,
+              file_patterns: files,
+              directory_patterns: dirs,
+              config_files: configs,
+              build_command: build,
+              dev_command: dev,
+              similarity: sim
+            }
+          end)
 
         {:ok, patterns}
 
@@ -215,14 +217,16 @@ defmodule Singularity.FrameworkPatternStore do
     case Repo.query(query, [repo_path]) do
       {:ok, %{rows: rows}} ->
         # Analyze patterns
-        patterns = Enum.map(rows, fn [ext, count] ->
-          %{extension: ext, file_count: count}
-        end)
+        patterns =
+          Enum.map(rows, fn [ext, count] ->
+            %{extension: ext, file_count: count}
+          end)
 
         # Check if we have known patterns for these extensions
-        unknown = Enum.reject(patterns, fn p ->
-          known_extension?(p.extension)
-        end)
+        unknown =
+          Enum.reject(patterns, fn p ->
+            known_extension?(p.extension)
+          end)
 
         if unknown != [] do
           Logger.info("Discovered #{length(unknown)} potential new framework patterns")
@@ -252,23 +256,24 @@ defmodule Singularity.FrameworkPatternStore do
 
     case Repo.query(query, []) do
       {:ok, %{rows: rows}} ->
-        patterns = Enum.map(rows, fn row ->
-          [name, type, files, dirs, configs, build, dev, install, test, output, conf] = row
+        patterns =
+          Enum.map(rows, fn row ->
+            [name, type, files, dirs, configs, build, dev, install, test, output, conf] = row
 
-          %{
-            framework_name: name,
-            framework_type: type,
-            file_patterns: files,
-            directory_patterns: dirs,
-            config_files: configs,
-            build_command: build,
-            dev_command: dev,
-            install_command: install,
-            test_command: test,
-            output_directory: output,
-            confidence_weight: conf
-          }
-        end)
+            %{
+              framework_name: name,
+              framework_type: type,
+              file_patterns: files,
+              directory_patterns: dirs,
+              config_files: configs,
+              build_command: build,
+              dev_command: dev,
+              install_command: install,
+              test_command: test,
+              output_directory: output,
+              confidence_weight: conf
+            }
+          end)
 
         json = Jason.encode!(patterns, pretty: true)
         File.write!(output_path, json)
@@ -284,7 +289,22 @@ defmodule Singularity.FrameworkPatternStore do
   ## Private Functions
 
   defp build_pattern_struct(row) do
-    [name, type, version, files, dirs, configs, build, dev, install, test, output, conf, count, success] = row
+    [
+      name,
+      type,
+      version,
+      files,
+      dirs,
+      configs,
+      build,
+      dev,
+      install,
+      test,
+      output,
+      conf,
+      count,
+      success
+    ] = row
 
     %{
       framework_name: name,

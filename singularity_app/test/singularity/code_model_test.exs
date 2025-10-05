@@ -14,21 +14,34 @@ defmodule Singularity.CodeModelTest do
     handler_id = "code-generator-telemetry-test-" <> UUID.generate()
     parent = self()
 
-    :telemetry.attach_many(handler_id, @telemetry_events, fn event, measurements, metadata, _ ->
-      send(parent, {:telemetry, event, measurements, metadata})
-    end, nil)
+    :telemetry.attach_many(
+      handler_id,
+      @telemetry_events,
+      fn event, measurements, metadata, _ ->
+        send(parent, {:telemetry, event, measurements, metadata})
+      end,
+      nil
+    )
 
-    on_exit(fn -> :telemetry.detach(handler_id) rescue _ -> :ok end)
+    on_exit(fn ->
+      try do
+        :telemetry.detach(handler_id)
+      rescue
+        _ -> :ok
+      end
+    end)
 
     _ = CodeModel.complete("defmodule Demo do\nend\n", temperature: 0.1, max_tokens: 1)
 
     assert_receive {:telemetry, [:singularity, :code_generator, :generate, :start], _measurements,
-                     %{operation: :complete, prompt_chars: prompt_chars}}, 100
+                    %{operation: :complete, prompt_chars: prompt_chars}},
+                   100
 
     assert is_integer(prompt_chars)
 
     assert_receive {:telemetry, [:singularity, :code_generator, :generate, :stop], measurements,
-                     %{operation: :complete, status: status, model: _model}}, 100
+                    %{operation: :complete, status: status, model: _model}},
+                   100
 
     assert is_integer(measurements.duration)
     assert status in [:ok, :error]

@@ -51,6 +51,7 @@ defmodule Mix.Tasks.Code.Load do
           case Singularity.CodeStore.promote(agent, version_path) do
             {:ok, active_path} ->
               Mix.shell().info("Promoted to #{active_path}")
+
             {:error, reason} ->
               Mix.shell().error("Promotion failed: #{inspect(reason)}")
           end

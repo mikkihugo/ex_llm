@@ -14,14 +14,22 @@ defmodule Singularity.Schemas.PackageDependency do
     field :dependency_type, :string
     field :is_optional, :boolean
 
-    belongs_to :package, Singularity.Schemas.PackageRegistryKnowledge, foreign_key: :tool_id, type: :binary_id
+    belongs_to :package, Singularity.Schemas.PackageRegistryKnowledge,
+      foreign_key: :tool_id,
+      type: :binary_id
 
     timestamps(type: :utc_datetime)
   end
 
   def changeset(dependency, attrs) do
     dependency
-    |> cast(attrs, [:tool_id, :dependency_name, :dependency_version, :dependency_type, :is_optional])
+    |> cast(attrs, [
+      :tool_id,
+      :dependency_name,
+      :dependency_version,
+      :dependency_type,
+      :is_optional
+    ])
     |> validate_required([:tool_id, :dependency_name])
     |> validate_inclusion(:dependency_type, ["runtime", "dev", "peer", "optional"])
     |> foreign_key_constraint(:tool_id)

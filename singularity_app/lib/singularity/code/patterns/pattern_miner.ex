@@ -110,7 +110,14 @@ defmodule Singularity.Learning.PatternMiner do
         case Singularity.Repo.query(query, [task_embedding, top_k]) do
           {:ok, %{rows: rows}} when length(rows) > 0 ->
             patterns =
-              Enum.map(rows, fn [name, pseudocode, relationships, keywords, pattern_type, similarity] ->
+              Enum.map(rows, fn [
+                                  name,
+                                  pseudocode,
+                                  relationships,
+                                  keywords,
+                                  pattern_type,
+                                  similarity
+                                ] ->
                 %{
                   name: name,
                   description: build_pattern_description(pseudocode, relationships, keywords),
@@ -167,21 +174,30 @@ defmodule Singularity.Learning.PatternMiner do
         case Singularity.Repo.query(query, [task_embedding, top_k]) do
           {:ok, %{rows: rows}} when length(rows) > 0 ->
             patterns =
-              Enum.map(rows, fn [path, language, patterns_json, quality, maintainability, similarity] ->
-                patterns_list = if is_binary(patterns_json) do
-                  case Jason.decode(patterns_json) do
-                    {:ok, list} -> list
-                    _ -> []
+              Enum.map(rows, fn [
+                                  path,
+                                  language,
+                                  patterns_json,
+                                  quality,
+                                  maintainability,
+                                  similarity
+                                ] ->
+                patterns_list =
+                  if is_binary(patterns_json) do
+                    case Jason.decode(patterns_json) do
+                      {:ok, list} -> list
+                      _ -> []
+                    end
+                  else
+                    patterns_json || []
                   end
-                else
-                  patterns_json || []
-                end
 
                 pattern_name = extract_pattern_name(path, patterns_list)
 
                 %{
                   name: pattern_name,
-                  description: build_codebase_pattern_description(path, language, patterns_list, quality),
+                  description:
+                    build_codebase_pattern_description(path, language, patterns_list, quality),
                   code_example: "See: #{path}",
                   similarity_score: Float.round(similarity, 3),
                   pattern_type: "codebase_pattern",
@@ -212,17 +228,19 @@ defmodule Singularity.Learning.PatternMiner do
   end
 
   defp build_pattern_description(pseudocode, relationships, keywords) do
-    rel_text = if relationships && length(relationships) > 0 do
-      "\nRelationships: #{Enum.join(relationships, ", ")}"
-    else
-      ""
-    end
+    rel_text =
+      if relationships && length(relationships) > 0 do
+        "\nRelationships: #{Enum.join(relationships, ", ")}"
+      else
+        ""
+      end
 
-    kw_text = if keywords && length(keywords) > 0 do
-      "\nKeywords: #{Enum.join(keywords, ", ")}"
-    else
-      ""
-    end
+    kw_text =
+      if keywords && length(keywords) > 0 do
+        "\nKeywords: #{Enum.join(keywords, ", ")}"
+      else
+        ""
+      end
 
     """
     #{pseudocode}#{rel_text}#{kw_text}
@@ -231,13 +249,14 @@ defmodule Singularity.Learning.PatternMiner do
   end
 
   defp build_codebase_pattern_description(path, language, patterns, quality_score) do
-    patterns_text = if patterns && length(patterns) > 0 do
-      patterns
-      |> Enum.take(3)
-      |> Enum.join(", ")
-    else
-      "No specific patterns"
-    end
+    patterns_text =
+      if patterns && length(patterns) > 0 do
+        patterns
+        |> Enum.take(3)
+        |> Enum.join(", ")
+      else
+        "No specific patterns"
+      end
 
     """
     High-quality #{language} code from: #{path}
@@ -251,11 +270,12 @@ defmodule Singularity.Learning.PatternMiner do
     # Try to get a meaningful name from the file path
     filename = Path.basename(path, Path.extname(path))
 
-    pattern_suffix = if patterns && length(patterns) > 0 do
-      " (#{List.first(patterns)})"
-    else
-      ""
-    end
+    pattern_suffix =
+      if patterns && length(patterns) > 0 do
+        " (#{List.first(patterns)})"
+      else
+        ""
+      end
 
     "#{filename}#{pattern_suffix}"
   end

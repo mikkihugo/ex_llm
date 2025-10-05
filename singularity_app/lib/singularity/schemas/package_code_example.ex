@@ -17,14 +17,25 @@ defmodule Singularity.Schemas.PackageCodeExample do
     field :code_embedding, Pgvector.Ecto.Vector
     field :example_order, :integer
 
-    belongs_to :package, Singularity.Schemas.PackageRegistryKnowledge, foreign_key: :tool_id, type: :binary_id
+    belongs_to :package, Singularity.Schemas.PackageRegistryKnowledge,
+      foreign_key: :tool_id,
+      type: :binary_id
 
     timestamps(type: :utc_datetime)
   end
 
   def changeset(example, attrs) do
     example
-    |> cast(attrs, [:tool_id, :title, :code, :language, :explanation, :tags, :code_embedding, :example_order])
+    |> cast(attrs, [
+      :tool_id,
+      :title,
+      :code,
+      :language,
+      :explanation,
+      :tags,
+      :code_embedding,
+      :example_order
+    ])
     |> validate_required([:tool_id, :title, :code])
     |> foreign_key_constraint(:tool_id)
   end

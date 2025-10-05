@@ -23,9 +23,12 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
 
   defstruct [
     :repo_path,
-    :agent_workspaces,  # %{agent_id => workspace_path}
-    :active_branches,   # %{branch_name => agent_id}
-    :pending_merges,    # [%{branch, pr_number, agent_id}]
+    # %{agent_id => workspace_path}
+    :agent_workspaces,
+    # %{branch_name => agent_id}
+    :active_branches,
+    # [%{branch, pr_number, agent_id}]
+    :pending_merges,
     :base_branch,
     :remote
   ]
@@ -202,9 +205,10 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
       meta: %{task_id: task.id}
     })
 
-    new_state = %{state |
-      agent_workspaces: Map.put(state.agent_workspaces, agent_key, workspace),
-      active_branches: Map.put(state.active_branches, branch, agent_key)
+    new_state = %{
+      state
+      | agent_workspaces: Map.put(state.agent_workspaces, agent_key, workspace),
+        active_branches: Map.put(state.active_branches, branch, agent_key)
     }
 
     Logger.info("Assigned LLM task with branch",
@@ -227,7 +231,8 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
     assignment = %{
       agent_id: agent_id,
       task: task,
-      branch: nil,  # No branch for rule work
+      # No branch for rule work
+      branch: nil,
       workspace: workspace,
       method: :rules
     }
@@ -273,9 +278,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
 
     GitStateStore.upsert_pending_merge(pending_merge)
 
-    new_state = %{state |
-      pending_merges: [pending_merge | state.pending_merges]
-    }
+    new_state = %{state | pending_merges: [pending_merge | state.pending_merges]}
 
     Logger.info("Created pull request",
       branch: branch,
@@ -291,13 +294,22 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
     body = result.pr_body || "Automated pull request from agent"
 
     # Use gh CLI
-    case System.cmd("gh", [
-      "pr", "create",
-      "--base", base,
-      "--head", branch,
-      "--title", title,
-      "--body", body
-    ], cd: workspace) do
+    case System.cmd(
+           "gh",
+           [
+             "pr",
+             "create",
+             "--base",
+             base,
+             "--head",
+             branch,
+             "--title",
+             title,
+             "--body",
+             body
+           ],
+           cd: workspace
+         ) do
       {output, 0} ->
         # Extract PR number from output
         case Regex.run(~r/#(\d+)/, output) do
@@ -322,7 +334,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
       dependencies =
         Enum.filter(prs, fn other_pr ->
           other_pr.pr_number != pr.pr_number and
-          files_overlap?(files_changed, get_changed_files(other_pr.branch, state))
+            files_overlap?(files_changed, get_changed_files(other_pr.branch, state))
         end)
         |> Enum.map(& &1.pr_number)
 
@@ -331,7 +343,9 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
   end
 
   defp get_changed_files(branch, state) do
-    case System.cmd("git", ["diff", "--name-only", "#{state.base_branch}..#{branch}"], cd: state.repo_path) do
+    case System.cmd("git", ["diff", "--name-only", "#{state.base_branch}..#{branch}"],
+           cd: state.repo_path
+         ) do
       {output, 0} ->
         output
         |> String.split("\n", trim: true)
@@ -355,6 +369,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
       graph
       |> Enum.reduce(%{}, fn {node, deps}, acc ->
         acc = Map.put_new(acc, node, 0)
+
         Enum.reduce(deps, acc, fn dep, a ->
           Map.update(a, dep, 1, &(&1 + 1))
         end)
@@ -405,14 +420,16 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
           Logger.info("Merged PR", pr: pr_number, branch: pr.branch)
 
           # Remove from pending
-          new_state = %{st |
-            pending_merges: Enum.reject(st.pending_merges, &(&1.pr_number == pr_number)),
-            active_branches: Map.delete(st.active_branches, pr.branch),
-            agent_workspaces: Map.delete(st.agent_workspaces, pr.agent_id)
+          new_state = %{
+            st
+            | pending_merges: Enum.reject(st.pending_merges, &(&1.pr_number == pr_number)),
+              active_branches: Map.delete(st.active_branches, pr.branch),
+              agent_workspaces: Map.delete(st.agent_workspaces, pr.agent_id)
           }
 
           GitStateStore.delete_pending_merge(pr.branch)
           GitStateStore.delete_session(pr.agent_id)
+
           GitStateStore.log_merge(%{
             branch: pr.branch,
             agent_id: pr.agent_id,
@@ -426,6 +443,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
 
         {:conflict, files} ->
           Logger.warning("Merge conflict", pr: pr_number, files: files)
+
           GitStateStore.log_merge(%{
             branch: pr.branch,
             agent_id: pr.agent_id,
@@ -434,10 +452,12 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
             status: "conflict",
             details: %{files: files}
           })
+
           {[{:conflict, pr_number, files} | results], st}
 
         {:error, reason} ->
           Logger.error("Merge failed", pr: pr_number, reason: reason)
+
           GitStateStore.log_merge(%{
             branch: pr.branch,
             agent_id: pr.agent_id,
@@ -446,6 +466,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
             status: "error",
             details: %{reason: reason}
           })
+
           {[{:error, pr_number, reason} | results], st}
       end
     end)

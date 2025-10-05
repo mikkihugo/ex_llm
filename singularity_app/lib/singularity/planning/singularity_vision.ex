@@ -21,21 +21,30 @@ defmodule Singularity.Planning.SingularityVision do
   defstruct [
     # Vision hierarchy
     :portfolio_vision,
-    :strategic_themes,      # %{id => theme}
-    :epics,                 # %{id => epic}
-    :capabilities,          # %{id => capability}
-    :features,              # %{id => feature}
+    # %{id => theme}
+    :strategic_themes,
+    # %{id => epic}
+    :epics,
+    # %{id => capability}
+    :capabilities,
+    # %{id => feature}
+    :features,
 
     # Relationships and dependencies
-    :theme_epics,           # %{theme_id => [epic_ids]}
-    :epic_capabilities,     # %{epic_id => [capability_ids]}
-    :capability_features,   # %{capability_id => [feature_ids]}
+    # %{theme_id => [epic_ids]}
+    :theme_epics,
+    # %{epic_id => [capability_ids]}
+    :epic_capabilities,
+    # %{capability_id => [feature_ids]}
+    :capability_features,
 
     # WSJF scoring and prioritization
-    :wsjf_scores,           # %{item_id => score}
+    # %{item_id => score}
+    :wsjf_scores,
 
     # Integration with HTDAG for task decomposition
-    :feature_htdags,        # %{feature_id => htdag_id}
+    # %{feature_id => htdag_id}
+    :feature_htdags,
 
     # Metadata
     :created_at,
@@ -43,63 +52,66 @@ defmodule Singularity.Planning.SingularityVision do
   ]
 
   @type portfolio_vision :: %{
-    statement: String.t(),
-    target_year: integer(),
-    success_metrics: [%{metric: String.t(), target: float()}],
-    approved_at: DateTime.t(),
-    approved_by: String.t()
-  }
+          statement: String.t(),
+          target_year: integer(),
+          success_metrics: [%{metric: String.t(), target: float()}],
+          approved_at: DateTime.t(),
+          approved_by: String.t()
+        }
 
   @type strategic_theme :: %{
-    id: String.t(),
-    name: String.t(),
-    description: String.t(),
-    target_bloc: float(),
-    status: :active | :completed | :cancelled,
-    business_value: integer(),      # 1-10
-    time_criticality: integer(),    # 1-10
-    risk_reduction: integer(),      # 1-10
-    created_at: DateTime.t(),
-    epic_ids: [String.t()]
-  }
+          id: String.t(),
+          name: String.t(),
+          description: String.t(),
+          target_bloc: float(),
+          status: :active | :completed | :cancelled,
+          # 1-10
+          business_value: integer(),
+          # 1-10
+          time_criticality: integer(),
+          # 1-10
+          risk_reduction: integer(),
+          created_at: DateTime.t(),
+          epic_ids: [String.t()]
+        }
 
   @type epic :: %{
-    id: String.t(),
-    name: String.t(),
-    description: String.t(),
-    type: :business | :enabler,
-    theme_id: String.t(),
-    status: :ideation | :analysis | :implementation | :done,
-    business_value: integer(),
-    time_criticality: integer(),
-    risk_reduction: integer(),
-    estimated_job_size: integer(),
-    wsjf_score: float(),
-    capability_ids: [String.t()],
-    created_at: DateTime.t()
-  }
+          id: String.t(),
+          name: String.t(),
+          description: String.t(),
+          type: :business | :enabler,
+          theme_id: String.t(),
+          status: :ideation | :analysis | :implementation | :done,
+          business_value: integer(),
+          time_criticality: integer(),
+          risk_reduction: integer(),
+          estimated_job_size: integer(),
+          wsjf_score: float(),
+          capability_ids: [String.t()],
+          created_at: DateTime.t()
+        }
 
   @type capability :: %{
-    id: String.t(),
-    name: String.t(),
-    description: String.t(),
-    epic_id: String.t(),
-    status: :backlog | :implementing | :done,
-    feature_ids: [String.t()],
-    created_at: DateTime.t()
-  }
+          id: String.t(),
+          name: String.t(),
+          description: String.t(),
+          epic_id: String.t(),
+          status: :backlog | :implementing | :done,
+          feature_ids: [String.t()],
+          created_at: DateTime.t()
+        }
 
   @type feature :: %{
-    id: String.t(),
-    name: String.t(),
-    description: String.t(),
-    capability_id: String.t(),
-    status: :backlog | :in_progress | :done,
-    acceptance_criteria: [String.t()],
-    htdag_id: String.t() | nil,
-    created_at: DateTime.t(),
-    completed_at: DateTime.t() | nil
-  }
+          id: String.t(),
+          name: String.t(),
+          description: String.t(),
+          capability_id: String.t(),
+          status: :backlog | :in_progress | :done,
+          acceptance_criteria: [String.t()],
+          htdag_id: String.t() | nil,
+          created_at: DateTime.t(),
+          completed_at: DateTime.t() | nil
+        }
 
   # Client API
 
@@ -125,7 +137,14 @@ defmodule Singularity.Planning.SingularityVision do
   @doc """
   Add a strategic theme
   """
-  def add_strategic_theme(name, description, target_bloc, business_value, time_criticality, risk_reduction) do
+  def add_strategic_theme(
+        name,
+        description,
+        target_bloc,
+        business_value,
+        time_criticality,
+        risk_reduction
+      ) do
     theme = %{
       id: generate_id("theme"),
       name: name,
@@ -145,7 +164,16 @@ defmodule Singularity.Planning.SingularityVision do
   @doc """
   Add an epic under a strategic theme
   """
-  def add_epic(name, description, type, theme_id, business_value, time_criticality, risk_reduction, estimated_job_size) do
+  def add_epic(
+        name,
+        description,
+        type,
+        theme_id,
+        business_value,
+        time_criticality,
+        risk_reduction,
+        estimated_job_size
+      ) do
     epic = %{
       id: generate_id("epic"),
       name: name,
@@ -157,7 +185,8 @@ defmodule Singularity.Planning.SingularityVision do
       time_criticality: time_criticality,
       risk_reduction: risk_reduction,
       estimated_job_size: estimated_job_size,
-      wsjf_score: calculate_wsjf(business_value, time_criticality, risk_reduction, estimated_job_size),
+      wsjf_score:
+        calculate_wsjf(business_value, time_criticality, risk_reduction, estimated_job_size),
       capability_ids: [],
       created_at: DateTime.utc_now()
     }
@@ -267,7 +296,11 @@ defmodule Singularity.Planning.SingularityVision do
 
   def handle_call({:set_portfolio_vision, vision}, _from, state) do
     # Update AgiPortfolio as well
-    AgiPortfolio.set_portfolio_vision(vision.statement, vision.target_year, vision.success_metrics)
+    AgiPortfolio.set_portfolio_vision(
+      vision.statement,
+      vision.target_year,
+      vision.success_metrics
+    )
 
     new_state = %{state | portfolio_vision: vision, last_updated: DateTime.utc_now()}
     {:reply, {:ok, vision}, new_state}
@@ -289,10 +322,11 @@ defmodule Singularity.Planning.SingularityVision do
     # Update theme relationships
     theme_epics = Map.update(state.theme_epics, epic.theme_id, [epic.id], &[epic.id | &1])
 
-    new_state = %{state |
-      epics: epics,
-      theme_epics: theme_epics,
-      last_updated: DateTime.utc_now()
+    new_state = %{
+      state
+      | epics: epics,
+        theme_epics: theme_epics,
+        last_updated: DateTime.utc_now()
     }
 
     # Notify via Google Chat
@@ -305,12 +339,19 @@ defmodule Singularity.Planning.SingularityVision do
     capabilities = Map.put(state.capabilities, capability.id, capability)
 
     # Update epic relationships
-    epic_capabilities = Map.update(state.epic_capabilities, capability.epic_id, [capability.id], &[capability.id | &1])
+    epic_capabilities =
+      Map.update(
+        state.epic_capabilities,
+        capability.epic_id,
+        [capability.id],
+        &[capability.id | &1]
+      )
 
-    new_state = %{state |
-      capabilities: capabilities,
-      epic_capabilities: epic_capabilities,
-      last_updated: DateTime.utc_now()
+    new_state = %{
+      state
+      | capabilities: capabilities,
+        epic_capabilities: epic_capabilities,
+        last_updated: DateTime.utc_now()
     }
 
     {:reply, {:ok, capability}, new_state}
@@ -320,12 +361,19 @@ defmodule Singularity.Planning.SingularityVision do
     features = Map.put(state.features, feature.id, feature)
 
     # Update capability relationships
-    capability_features = Map.update(state.capability_features, feature.capability_id, [feature.id], &[feature.id | &1])
+    capability_features =
+      Map.update(
+        state.capability_features,
+        feature.capability_id,
+        [feature.id],
+        &[feature.id | &1]
+      )
 
-    new_state = %{state |
-      features: features,
-      capability_features: capability_features,
-      last_updated: DateTime.utc_now()
+    new_state = %{
+      state
+      | features: features,
+        capability_features: capability_features,
+        last_updated: DateTime.utc_now()
     }
 
     {:reply, {:ok, feature}, new_state}
@@ -333,14 +381,21 @@ defmodule Singularity.Planning.SingularityVision do
 
   def handle_call(:get_next_work, _from, state) do
     # Find highest WSJF feature that's ready (dependencies met)
-    ready_features = Enum.filter(state.features, fn {_id, feature} ->
-      feature.status == :backlog && dependencies_met?(feature, state)
-    end)
+    ready_features =
+      Enum.filter(state.features, fn {_id, feature} ->
+        feature.status == :backlog && dependencies_met?(feature, state)
+      end)
 
-    highest_priority = Enum.max_by(ready_features, fn {_id, feature} ->
-      epic = state.epics[feature.capability_id]  # Wait, this is wrong - need to trace up the hierarchy
-      epic.wsjf_score
-    end, fn -> nil end)
+    highest_priority =
+      Enum.max_by(
+        ready_features,
+        fn {_id, feature} ->
+          # Wait, this is wrong - need to trace up the hierarchy
+          epic = state.epics[feature.capability_id]
+          epic.wsjf_score
+        end,
+        fn -> nil end
+      )
 
     case highest_priority do
       nil -> {:reply, nil, state}
@@ -349,27 +404,36 @@ defmodule Singularity.Planning.SingularityVision do
   end
 
   def handle_call(:get_hierarchy, _from, state) do
-    hierarchy = Enum.map(state.strategic_themes, fn {theme_id, theme} ->
-      epic_ids = Map.get(state.theme_epics, theme_id, [])
-      epics = Enum.map(epic_ids, fn epic_id ->
-        epic = state.epics[epic_id]
-        capability_ids = Map.get(state.epic_capabilities, epic_id, [])
-        capabilities = Enum.map(capability_ids, fn cap_id ->
-          capability = state.capabilities[cap_id]
-          feature_ids = Map.get(state.capability_features, cap_id, [])
-          features = Enum.map(feature_ids, fn feat_id ->
-            state.features[feat_id]
-          end)
-          Map.put(capability, :features, features)
-        end)
-        Map.put(epic, :capabilities, capabilities)
-      end)
+    hierarchy =
+      Enum.map(state.strategic_themes, fn {theme_id, theme} ->
+        epic_ids = Map.get(state.theme_epics, theme_id, [])
 
-      %{
-        theme: theme,
-        epics: epics
-      }
-    end)
+        epics =
+          Enum.map(epic_ids, fn epic_id ->
+            epic = state.epics[epic_id]
+            capability_ids = Map.get(state.epic_capabilities, epic_id, [])
+
+            capabilities =
+              Enum.map(capability_ids, fn cap_id ->
+                capability = state.capabilities[cap_id]
+                feature_ids = Map.get(state.capability_features, cap_id, [])
+
+                features =
+                  Enum.map(feature_ids, fn feat_id ->
+                    state.features[feat_id]
+                  end)
+
+                Map.put(capability, :features, features)
+              end)
+
+            Map.put(epic, :capabilities, capabilities)
+          end)
+
+        %{
+          theme: theme,
+          epics: epics
+        }
+      end)
 
     {:reply, hierarchy, state}
   end
@@ -403,10 +467,11 @@ defmodule Singularity.Planning.SingularityVision do
         {:reply, {:error, :feature_not_found}, state}
 
       feature ->
-        updated_feature = Map.merge(feature, %{
-          status: status,
-          completed_at: if(status == :completed, do: DateTime.utc_now(), else: nil)
-        })
+        updated_feature =
+          Map.merge(feature, %{
+            status: status,
+            completed_at: if(status == :completed, do: DateTime.utc_now(), else: nil)
+          })
 
         features = Map.put(state.features, feature_id, updated_feature)
         new_state = %{state | features: features, last_updated: DateTime.utc_now()}

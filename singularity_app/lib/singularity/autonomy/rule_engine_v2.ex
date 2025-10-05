@@ -71,7 +71,7 @@ defmodule Singularity.Autonomy.RuleEngineV2 do
         do_execute(rule.id, context, correlation_id, state)
       end)
 
-    # Aggregate results - use highest confidence
+    # Aggregate results - use highest confidence (or sensible fallback when empty)
     aggregated = aggregate_results(results)
     {:reply, aggregated, state}
   end
@@ -139,21 +139,72 @@ defmodule Singularity.Autonomy.RuleEngineV2 do
   defp update_rule_stats(rule_id, result, execution_time) do
     # Update average execution time and success rate
     # Using Postgres aggregates for accuracy
-    Repo.query!("""
-      UPDATE rules
-      SET
-        execution_count = execution_count + 1,
-        avg_execution_time_ms = (avg_execution_time_ms * execution_count + $1) / (execution_count + 1)
-      WHERE id = $2
-    """, [execution_time, rule_id])
+    Repo.query!(
+      """
+        UPDATE rules
+        SET
+          execution_count = execution_count + 1,
+          avg_execution_time_ms = (avg_execution_time_ms * execution_count + $1) / (execution_count + 1)
+        WHERE id = $2
+      """,
+      [execution_time, rule_id]
+    )
   end
 
-  defp aggregate_results(results) do
-    # Take highest confidence result
+  defp aggregate_results([]) do
+    # No rules available for this category → escalate with zero confidence
+    {:escalated,
+     %{
+       rule_id: nil,
+       confidence: 0.0,
+       decision: {:escalated, "No rules available for category"},
+       reasoning: "No rules available for category",
+       execution_time_ms: 0,
+       cached: false
+     }}
+  end
+
+  defp aggregate_results(results) when is_list(results) do
     Enum.max_by(results, fn
+      {:autonomous, result} -> result.confidence
+      {:collaborative, result} -> result.confidence
+      {:escalated, result} -> Map.get(result, :confidence, 0.0)
       {:ok, result} -> result.confidence
       {:error, _} -> 0.0
     end)
+  end
+
+  ## Convenience helpers for planners (compat with legacy RuleEngine)
+
+  @doc "Validate an epic using stored rules for :epic category."
+  def validate_epic_wsjf(epic) do
+    context = %{
+      epic_id: Map.get(epic, :id) || Map.get(epic, "id"),
+      metrics: %{
+        "wsjf_score" => Map.get(epic, :wsjf_score) || Map.get(epic, "wsjf_score"),
+        "business_value" => Map.get(epic, :business_value) || Map.get(epic, "business_value"),
+        "job_size" => Map.get(epic, :job_size) || Map.get(epic, "job_size")
+      }
+    }
+
+    execute_category(:epic, context)
+  end
+
+  @doc "Validate a feature’s readiness using stored rules for :feature category."
+  def validate_feature_readiness(feature) do
+    acceptance =
+      Map.get(feature, :acceptance_criteria) || Map.get(feature, "acceptance_criteria") || []
+
+    context = %{
+      feature_id: Map.get(feature, :id) || Map.get(feature, "id"),
+      metrics: %{
+        "acceptance_criteria_count" => length(acceptance),
+        # Callers can compute dependencies; default to met (1.0) if unknown
+        "dependencies_met" => Map.get(feature, :dependencies_met) || 1.0
+      }
+    }
+
+    execute_category(:feature, context)
   end
 
   ## Helper Functions

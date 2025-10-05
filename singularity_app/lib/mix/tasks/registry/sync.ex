@@ -14,7 +14,10 @@ defmodule Mix.Tasks.Registry.Sync do
 
     {:ok, metadata, file_reports, summary} = Singularity.AnalysisRunner.run()
 
-    Singularity.CodebaseRegistry.upsert_snapshot(Map.merge(metadata, %{codebase_id: codebase_id, snapshot_id: snapshot_id}))
+    Singularity.CodebaseRegistry.upsert_snapshot(
+      Map.merge(metadata, %{codebase_id: codebase_id, snapshot_id: snapshot_id})
+    )
+
     Singularity.CodebaseRegistry.insert_file_reports(codebase_id, snapshot_id, file_reports)
     Singularity.CodebaseRegistry.upsert_summary(codebase_id, snapshot_id, summary)
 

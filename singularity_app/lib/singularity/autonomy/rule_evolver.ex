@@ -193,13 +193,10 @@ defmodule Singularity.Autonomy.RuleEvolver do
 
   defp notify_agents_for_review(proposal) do
     # Send direct messages to agent processes (OTP message passing)
-    # NOT event-driven - find agent PIDs via Registry and send messages
-
-    # Get all active agent PIDs from Registry
-    agents = Registry.lookup(Singularity.AgentRegistry, :all_agents)
-
-    Enum.each(agents, fn {agent_pid, _value} ->
-      send(agent_pid, {:review_evolution_proposal, proposal.id, proposal.rule_id})
+    # Use the AgentSupervisor to enumerate running agent processes
+    Singularity.AgentSupervisor.children()
+    |> Enum.each(fn pid ->
+      send(pid, {:review_evolution_proposal, proposal.id, proposal.rule_id})
     end)
   end
 

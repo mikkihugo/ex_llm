@@ -59,11 +59,16 @@ defmodule Singularity.DomainVocabularyTrainer do
     # 1. SPARC 5-phase keywords (S.P.A.R.C methodology)
     sparc_keywords = [
       # The 5 SPARC phases
-      "sparc-specification",   # S - Define what to build
-      "sparc-pseudocode",      # P - Logic in plain language
-      "sparc-architecture",    # A - System design
-      "sparc-refinement",      # R - Improve and optimize
-      "sparc-completion",      # C - Final implementation
+      # S - Define what to build
+      "sparc-specification",
+      # P - Logic in plain language
+      "sparc-pseudocode",
+      # A - System design
+      "sparc-architecture",
+      # R - Improve and optimize
+      "sparc-refinement",
+      # C - Final implementation
+      "sparc-completion",
 
       # Phase number variants
       "sparc-phase-1-specification",
@@ -110,9 +115,10 @@ defmodule Singularity.DomainVocabularyTrainer do
       prompts: prompt_bits,
       frameworks: framework_patterns,
       patterns: code_patterns,
-      total: length(sparc_keywords) + length(template_vars) +
-             length(prompt_bits) + length(framework_patterns) +
-             length(code_patterns)
+      total:
+        length(sparc_keywords) + length(template_vars) +
+          length(prompt_bits) + length(framework_patterns) +
+          length(code_patterns)
     }
 
     Logger.info("Found #{vocabulary.total} custom tokens to teach the model")
@@ -123,9 +129,17 @@ defmodule Singularity.DomainVocabularyTrainer do
     # Find all {{VARIABLE}} patterns in templates
     # Note: This would query code_files table which may not exist yet
     # For now, return common template variables used in the system
-    ["{{MODULE_NAME}}", "{{SUBJECT}}", "{{MESSAGE_TYPE}}",
-     "{{TASK_NAME}}", "{{REPO_NAME}}", "{{LANGUAGE}}",
-     "{{FRAMEWORK}}", "{{CODEBASE_PATH}}", "{{TECHNOLOGY}}"]
+    [
+      "{{MODULE_NAME}}",
+      "{{SUBJECT}}",
+      "{{MESSAGE_TYPE}}",
+      "{{TASK_NAME}}",
+      "{{REPO_NAME}}",
+      "{{LANGUAGE}}",
+      "{{FRAMEWORK}}",
+      "{{CODEBASE_PATH}}",
+      "{{TECHNOLOGY}}"
+    ]
   end
 
   defp extract_framework_patterns do
@@ -137,7 +151,8 @@ defmodule Singularity.DomainVocabularyTrainer do
     patterns = file_patterns ++ config_patterns
 
     # Add common code patterns from extended_metadata if available
-    additional = Repo.all(TechnologyPattern.code_patterns_query())
+    additional =
+      Repo.all(TechnologyPattern.code_patterns_query())
       |> Enum.flat_map(fn row ->
         case Jason.decode(row) do
           {:ok, decoded} when is_list(decoded) -> decoded
@@ -150,9 +165,18 @@ defmodule Singularity.DomainVocabularyTrainer do
 
     if Enum.empty?(patterns) do
       # Fallback to common framework patterns
-      ["use GenServer", "use Phoenix", "impl Trait",
-       "async fn", "defmodule", "@Component", "useState",
-       "Cargo.toml", "package.json", "next.config.js"]
+      [
+        "use GenServer",
+        "use Phoenix",
+        "impl Trait",
+        "async fn",
+        "defmodule",
+        "@Component",
+        "useState",
+        "Cargo.toml",
+        "package.json",
+        "next.config.js"
+      ]
     else
       Enum.uniq(patterns) |> Enum.take(200)
     end
@@ -188,14 +212,27 @@ defmodule Singularity.DomainVocabularyTrainer do
 
   defp default_patterns do
     [
-      "def handle_call", "def handle_cast", "def handle_info",
-      "use Application", "use Supervisor", "@behaviour",
-      "impl From", "impl Display", "#[derive(",
-      "pub async fn", "tokio::spawn", ".await?",
-      "Gnat.subscribe", "nats.publish", "JetStream",
-      "knowledge.facts.technology_patterns", "llm.analyze",
-      "RAGCodeGenerator", "CodeSynthesisPipeline",
-      "HybridAgent", "PatternIndexer"
+      "def handle_call",
+      "def handle_cast",
+      "def handle_info",
+      "use Application",
+      "use Supervisor",
+      "@behaviour",
+      "impl From",
+      "impl Display",
+      "#[derive(",
+      "pub async fn",
+      "tokio::spawn",
+      ".await?",
+      "Gnat.subscribe",
+      "nats.publish",
+      "JetStream",
+      "knowledge.facts.technology_patterns",
+      "llm.analyze",
+      "RAGCodeGenerator",
+      "CodeSynthesisPipeline",
+      "HybridAgent",
+      "PatternIndexer"
     ]
   end
 
@@ -239,7 +276,8 @@ defmodule Singularity.DomainVocabularyTrainer do
         %{
           anchor: "Module #{var} handles messages",
           positive: "Module {{OTHER_VAR}} processes events",
-          label: 0.3  # Somewhat similar but not the same
+          # Somewhat similar but not the same
+          label: 0.3
         }
       ]
     end)
@@ -255,35 +293,37 @@ defmodule Singularity.DomainVocabularyTrainer do
       {"completion", 5, "C - Completion: Final implementation"}
     ]
 
-    phase_pairs = for {name, num, desc} <- phases do
-      [
-        %{
-          anchor: "sparc-phase-#{num}-#{name}",
-          positive: desc,
-          label: 1.0,
-          metadata: %{phase: num, name: name}
-        },
-        %{
-          anchor: "sparc-#{name}",
-          positive: "Phase #{num}: #{desc}",
-          label: 0.9
-        }
-      ]
-    end
+    phase_pairs =
+      for {name, num, desc} <- phases do
+        [
+          %{
+            anchor: "sparc-phase-#{num}-#{name}",
+            positive: desc,
+            label: 1.0,
+            metadata: %{phase: num, name: name}
+          },
+          %{
+            anchor: "sparc-#{name}",
+            positive: "Phase #{num}: #{desc}",
+            label: 0.9
+          }
+        ]
+      end
 
     List.flatten(phase_pairs)
   end
 
   defp create_pattern_recognition_pairs(patterns) do
     # Group patterns by language/framework
-    grouped = Enum.group_by(patterns, fn pattern ->
-      cond do
-        String.contains?(pattern, ["def ", "defmodule"]) -> :elixir
-        String.contains?(pattern, ["impl ", "pub ", "#["]) -> :rust
-        String.contains?(pattern, ["Gnat", "nats"]) -> :nats
-        true -> :other
-      end
-    end)
+    grouped =
+      Enum.group_by(patterns, fn pattern ->
+        cond do
+          String.contains?(pattern, ["def ", "defmodule"]) -> :elixir
+          String.contains?(pattern, ["impl ", "pub ", "#["]) -> :rust
+          String.contains?(pattern, ["Gnat", "nats"]) -> :nats
+          true -> :other
+        end
+      end)
 
     # Create same-framework pairs (positive)
     Enum.flat_map(grouped, fn {framework, framework_patterns} ->
@@ -291,7 +331,8 @@ defmodule Singularity.DomainVocabularyTrainer do
         %{
           anchor: p1,
           positive: p2,
-          label: 0.8,  # Same framework = similar
+          # Same framework = similar
+          label: 0.8,
           metadata: %{framework: framework}
         }
       end
@@ -305,12 +346,13 @@ defmodule Singularity.DomainVocabularyTrainer do
   """
   def augment_tokenizer(tokenizer, vocabulary) do
     # Add custom tokens to tokenizer
-    custom_tokens = List.flatten([
-      vocabulary.sparc,
-      vocabulary.templates,
-      vocabulary.prompts,
-      vocabulary.patterns
-    ])
+    custom_tokens =
+      List.flatten([
+        vocabulary.sparc,
+        vocabulary.templates,
+        vocabulary.prompts,
+        vocabulary.patterns
+      ])
 
     # Update tokenizer vocabulary
     updated_tokenizer = add_tokens_to_tokenizer(tokenizer, custom_tokens)
@@ -331,19 +373,21 @@ defmodule Singularity.DomainVocabularyTrainer do
   """
   def preprocess_for_embedding(code, vocabulary) do
     # Replace template variables with special markers
-    preserved = vocabulary.templates
-    |> Enum.reduce(code, fn template_var, acc ->
-      # Preserve template variables as atomic units
-      marker = "TOKEN_#{Base.encode16(:crypto.hash(:md5, template_var), case: :lower)}"
-      String.replace(acc, template_var, marker)
-    end)
+    preserved =
+      vocabulary.templates
+      |> Enum.reduce(code, fn template_var, acc ->
+        # Preserve template variables as atomic units
+        marker = "TOKEN_#{Base.encode16(:crypto.hash(:md5, template_var), case: :lower)}"
+        String.replace(acc, template_var, marker)
+      end)
 
     # Preserve SPARC keywords
-    preserved = vocabulary.sparc
-    |> Enum.reduce(preserved, fn sparc_keyword, acc ->
-      marker = "SPARC_#{String.upcase(String.replace(sparc_keyword, "-", "_"))}"
-      String.replace(acc, sparc_keyword, marker)
-    end)
+    preserved =
+      vocabulary.sparc
+      |> Enum.reduce(preserved, fn sparc_keyword, acc ->
+        marker = "SPARC_#{String.upcase(String.replace(sparc_keyword, "-", "_"))}"
+        String.replace(acc, sparc_keyword, marker)
+      end)
 
     preserved
   end

@@ -56,7 +56,8 @@ defmodule Singularity.CodeSession do
   require Logger
   alias Singularity.{CodeSynthesisPipeline, PatternIndexer, RAGCodeGenerator, CodeModel}
 
-  @session_timeout 30_60_000  # 30 minutes
+  # 30 minutes
+  @session_timeout 30_60_000
 
   defstruct [
     :id,
@@ -128,23 +129,25 @@ defmodule Singularity.CodeSession do
     context = detect_project_context(project, files)
 
     # Preload shared resources (do this ONCE for entire session)
-    {:ok, state, {:continue, :preload}} = {:ok, %__MODULE__{
-      id: generate_session_id(),
-      project: project,
-      feature: feature,
-      files: files,
-      context: context,
-      tech_stack: [],
-      patterns: [],
-      rag_examples: [],
-      generated_code: %{},
-      start_time: System.monotonic_time(:millisecond),
-      stats: %{
-        files_generated: 0,
-        cache_hits: 0,
-        total_time_ms: 0
-      }
-    }, {:continue, :preload}}
+    {:ok, state, {:continue, :preload}} =
+      {:ok,
+       %__MODULE__{
+         id: generate_session_id(),
+         project: project,
+         feature: feature,
+         files: files,
+         context: context,
+         tech_stack: [],
+         patterns: [],
+         rag_examples: [],
+         generated_code: %{},
+         start_time: System.monotonic_time(:millisecond),
+         stats: %{
+           files_generated: 0,
+           cache_hits: 0,
+           total_time_ms: 0
+         }
+       }, {:continue, :preload}}
 
     {:ok, state, {:continue, :preload}}
   end
@@ -166,11 +169,7 @@ defmodule Singularity.CodeSession do
     elapsed = System.monotonic_time(:millisecond) - start
     Logger.info("✅ Session context loaded in #{elapsed}ms")
 
-    {:noreply, %{state |
-      tech_stack: tech_stack,
-      patterns: patterns,
-      rag_examples: rag_examples
-    }}
+    {:noreply, %{state | tech_stack: tech_stack, patterns: patterns, rag_examples: rag_examples}}
   end
 
   @impl true
@@ -179,19 +178,23 @@ defmodule Singularity.CodeSession do
     start = System.monotonic_time(:millisecond)
 
     # Generate all files using shared context
-    results = Enum.map(tasks, fn {task_desc, opts} ->
-      generate_with_session_cache(task_desc, opts, state)
-    end)
+    results =
+      Enum.map(tasks, fn {task_desc, opts} ->
+        generate_with_session_cache(task_desc, opts, state)
+      end)
 
     elapsed = System.monotonic_time(:millisecond) - start
     avg_per_file = div(elapsed, length(tasks))
 
-    Logger.info("✅ Generated #{length(tasks)} files in #{elapsed}ms (avg: #{avg_per_file}ms/file)")
+    Logger.info(
+      "✅ Generated #{length(tasks)} files in #{elapsed}ms (avg: #{avg_per_file}ms/file)"
+    )
 
     # Update stats
-    new_stats = %{state.stats |
-      files_generated: state.stats.files_generated + length(tasks),
-      total_time_ms: state.stats.total_time_ms + elapsed
+    new_stats = %{
+      state.stats
+      | files_generated: state.stats.files_generated + length(tasks),
+        total_time_ms: state.stats.total_time_ms + elapsed
     }
 
     {:reply, {:ok, results}, %{state | stats: new_stats}}
@@ -206,9 +209,10 @@ defmodule Singularity.CodeSession do
     elapsed = System.monotonic_time(:millisecond) - start
 
     # Update stats
-    new_stats = %{state.stats |
-      files_generated: state.stats.files_generated + 1,
-      total_time_ms: state.stats.total_time_ms + elapsed
+    new_stats = %{
+      state.stats
+      | files_generated: state.stats.files_generated + 1,
+        total_time_ms: state.stats.total_time_ms + elapsed
     }
 
     {:reply, {:ok, result}, %{state | stats: new_stats}}
@@ -217,11 +221,13 @@ defmodule Singularity.CodeSession do
   @impl true
   def handle_call(:stats, _from, state) do
     session_duration = System.monotonic_time(:millisecond) - state.start_time
-    avg_time = if state.stats.files_generated > 0 do
-      div(state.stats.total_time_ms, state.stats.files_generated)
-    else
-      0
-    end
+
+    avg_time =
+      if state.stats.files_generated > 0 do
+        div(state.stats.total_time_ms, state.stats.files_generated)
+      else
+        0
+      end
 
     stats = %{
       session_id: state.id,
@@ -294,7 +300,10 @@ defmodule Singularity.CodeSession do
     path = Keyword.get(opts, :path)
 
     Logger.debug("Generating: #{task} (#{path})")
-    Logger.debug("Using cached: #{length(state.patterns)} patterns, #{length(state.rag_examples)} examples")
+
+    Logger.debug(
+      "Using cached: #{length(state.patterns)} patterns, #{length(state.rag_examples)} examples"
+    )
 
     # Build context-aware prompt using SESSION cache
     context = %{state.context | path: path}
@@ -303,12 +312,13 @@ defmodule Singularity.CodeSession do
     relevant_examples = filter_relevant_examples(state.rag_examples, path, task)
 
     # Generate using cached patterns and examples (NO re-query!)
-    prompt = build_session_prompt(task, context, state.patterns, relevant_examples, state.tech_stack)
+    prompt =
+      build_session_prompt(task, context, state.patterns, relevant_examples, state.tech_stack)
 
     start = System.monotonic_time(:millisecond)
 
     # Generate code (GPU call, ~1-2s)
-      case CodeModel.complete(prompt, temperature: 0.05) do
+    case CodeModel.complete(prompt, temperature: 0.05) do
       {:ok, code} ->
         elapsed = System.monotonic_time(:millisecond) - start
         Logger.info("Generated in #{elapsed}ms (using session cache)")
@@ -339,17 +349,20 @@ defmodule Singularity.CodeSession do
 
       same_dir or task_match
     end)
-    |> Enum.take(5)  # Top 5 most relevant
+    # Top 5 most relevant
+    |> Enum.take(5)
   end
 
   defp build_session_prompt(task, context, patterns, examples, tech_stack) do
-    pattern_hints = Enum.map_join(patterns, "\n", fn p ->
-      "#{p.pattern}: #{p.pseudocode}"
-    end)
+    pattern_hints =
+      Enum.map_join(patterns, "\n", fn p ->
+        "#{p.pattern}: #{p.pseudocode}"
+      end)
 
-    example_code = Enum.map_join(examples, "\n\n", fn ex ->
-      "// From #{ex.path}:\n#{String.slice(ex.content, 0..500)}"
-    end)
+    example_code =
+      Enum.map_join(examples, "\n\n", fn ex ->
+        "// From #{ex.path}:\n#{String.slice(ex.content, 0..500)}"
+      end)
 
     """
     SESSION CONTEXT:

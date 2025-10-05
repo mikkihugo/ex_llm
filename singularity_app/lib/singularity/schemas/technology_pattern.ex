@@ -48,11 +48,21 @@ defmodule Singularity.Schemas.TechnologyPattern do
   def changeset(pattern, attrs) do
     pattern
     |> cast(attrs, [
-      :technology_name, :technology_type, :version_pattern,
-      :file_patterns, :directory_patterns, :config_files,
-      :build_command, :dev_command, :install_command, :test_command,
-      :output_directory, :confidence_weight,
-      :detection_count, :success_rate, :last_detected_at,
+      :technology_name,
+      :technology_type,
+      :version_pattern,
+      :file_patterns,
+      :directory_patterns,
+      :config_files,
+      :build_command,
+      :dev_command,
+      :install_command,
+      :test_command,
+      :output_directory,
+      :confidence_weight,
+      :detection_count,
+      :success_rate,
+      :last_detected_at,
       :extended_metadata
     ])
     |> validate_required([:technology_name, :technology_type])
@@ -64,7 +74,8 @@ defmodule Singularity.Schemas.TechnologyPattern do
   """
   def file_patterns_query do
     from p in __MODULE__,
-      where: not is_nil(p.file_patterns) and fragment("jsonb_array_length(?)", p.file_patterns) > 0,
+      where:
+        not is_nil(p.file_patterns) and fragment("jsonb_array_length(?)", p.file_patterns) > 0,
       select: fragment("jsonb_array_elements_text(?)", p.file_patterns)
   end
 

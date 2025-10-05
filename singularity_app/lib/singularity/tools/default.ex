@@ -3,7 +3,7 @@ defmodule Singularity.Tools.Default do
   Registers baseline unsafe tooling (shell + file read) using the shared Tool registry.
   """
 
-  @compile {:no_warn_undefined, {Singularity.Tools.Registry, :register_tools, 2}}
+  @compile {:no_warn_undefined, {Singularity.Tools.Catalog, :add_tools, 2}}
   @compile {:no_warn_undefined, {Singularity.Tools.Tool, :new!, 1}}
 
   alias Singularity.Tools.{Registry, Tool}
@@ -30,9 +30,14 @@ defmodule Singularity.Tools.Default do
   end
 
   defp register_defaults(provider) do
-    Registry.register_tools(provider, [shell_tool(), read_file_tool()])
+    Catalog.add_tools(provider, [shell_tool(), read_file_tool()])
     Singularity.Tools.Quality.register(provider)
     Singularity.Tools.Llm.register(provider)
+    Singularity.Tools.CodebaseUnderstanding.register(provider)
+    Singularity.Tools.Planning.register(provider)
+    Singularity.Tools.Knowledge.register(provider)
+    Singularity.Tools.CodeAnalysis.register(provider)
+    Singularity.Tools.Summary.register(provider)
   end
 
   defp shell_tool do

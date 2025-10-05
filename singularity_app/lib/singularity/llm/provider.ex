@@ -14,10 +14,10 @@ defmodule Singularity.LLM.Provider do
   - Claude (claude-code-cli SDK) - Best reasoning & coding
     - Sonnet 4.5: Best for coding, 200K context
     - Opus 4.1: Best for complex reasoning
-  - Codex (codex-cli SDK with MCP tools) - OpenAI GPT-5 family
+  - Codex (codex-cli SDK) - OpenAI GPT-5 family
     - **o3**: Deepest thinking (use for hard problems, research, architecture)
     - **o1**: Fast thinking (use for quick reasoning, debugging)
-    - **gpt-5-codex**: Standard GPT-5 (use for general coding, MCP tools)
+    - **gpt-5-codex**: Standard GPT-5 (use for general coding)
   - Gemini (gemini-code + gemini-code-cli) - Fastest, 2M context
     - Flash: Speed priority
     - Pro: Quality + long context
@@ -41,55 +41,70 @@ defmodule Singularity.LLM.Provider do
   @type task_complexity :: :simple | :medium | :complex | :reasoning
 
   @type call_options :: %{
-    optional(:model) => String.t(),
-    optional(:complexity) => task_complexity(),
-    prompt: String.t(),
-    system_prompt: String.t() | nil,
-    max_tokens: integer(),
-    temperature: float(),
-    correlation_id: String.t() | nil
-  }
+          optional(:model) => String.t(),
+          optional(:complexity) => task_complexity(),
+          prompt: String.t(),
+          system_prompt: String.t() | nil,
+          max_tokens: integer(),
+          temperature: float(),
+          correlation_id: String.t() | nil
+        }
 
   @type response :: %{
-    content: String.t(),
-    model: String.t(),
-    provider: provider(),
-    tokens_used: integer(),
-    duration_ms: integer(),
-    cached: boolean()
-  }
+          content: String.t(),
+          model: String.t(),
+          provider: provider(),
+          tokens_used: integer(),
+          duration_ms: integer(),
+          cached: boolean()
+        }
 
   # AI Server endpoints
   @ai_server_url Application.compile_env(:singularity, :ai_server_url, "http://localhost:3000")
   @emergency_cli_path System.get_env("CLAUDE_CLI_PATH") ||
-                     Path.expand("~/.singularity/emergency/bin/claude-recovery")
+                        Path.expand("~/.singularity/emergency/bin/claude-recovery")
 
   # Model selection by task complexity (quality/capability over cost)
   # Gemini: HTTP tried first, auto-fallback to CLI if HTTP fails
   @model_selection %{
     simple: [
-      {:gemini, "gemini-2.5-flash"},      # HTTP primary
-      {:gemini, "gemini-2.5-flash-cli"},  # CLI fallback
-      {:cursor, "cursor-auto"},           # FREE auto model
-      {:copilot, "copilot-gpt-4.1"},      # GPT-4.1 (lighter quota)
-      {:grok, "grok-coder-1"}             # Grok fallback
+      # HTTP primary
+      {:gemini, "gemini-2.5-flash"},
+      # CLI fallback
+      {:gemini, "gemini-2.5-flash-cli"},
+      # FREE auto model
+      {:cursor, "cursor-auto"},
+      # GPT-4.1 (lighter quota)
+      {:copilot, "copilot-gpt-4.1"},
+      # Grok fallback
+      {:grok, "grok-coder-1"}
     ],
     medium: [
-      {:claude, "claude-sonnet-4.5"},     # Best coding, 200K context
-      {:codex, "gpt-5-codex"},            # GPT-5 + MCP tools
-      {:cursor, "cursor-auto"},           # FREE auto model
-      {:gemini, "gemini-2.5-pro"},        # HTTP primary
-      {:gemini, "gemini-2.5-pro-cli"}     # CLI fallback
+      # Best coding, 200K context
+      {:claude, "claude-sonnet-4.5"},
+      # GPT-5 tools
+      {:codex, "gpt-5-codex"},
+      # FREE auto model
+      {:cursor, "cursor-auto"},
+      # HTTP primary
+      {:gemini, "gemini-2.5-pro"},
+      # CLI fallback
+      {:gemini, "gemini-2.5-pro-cli"}
     ],
     complex: [
-      {:claude, "claude-opus-4.1"},       # Opus for complex tasks
-      {:codex, "gpt-5-codex"}             # GPT-5 fallback
+      # Opus for complex tasks
+      {:claude, "claude-opus-4.1"},
+      # GPT-5 fallback
+      {:codex, "gpt-5-codex"}
     ],
     # Deep reasoning - use thinking models
     reasoning: [
-      {:codex, "o3"},                     # o3 deepest thinking
-      {:claude, "claude-opus-4.1"},       # Opus with extended thinking
-      {:codex, "o1"}                      # o1 fast thinking
+      # o3 deepest thinking
+      {:codex, "o3"},
+      # Opus with extended thinking
+      {:claude, "claude-opus-4.1"},
+      # o1 fast thinking
+      {:codex, "o1"}
     ]
   }
 
@@ -97,26 +112,34 @@ defmodule Singularity.LLM.Provider do
   @provider_info %{
     claude: %{
       speed: :fast,
-      context: 200_000,  # 200K standard, 1M enterprise
+      # 200K standard, 1M enterprise
+      context: 200_000,
       reasoning: :excellent,
-      streaming: true,  # Only provider with streaming
-      tools: false,  # CLI doesn't expose tools to us
-      extended_thinking: true  # Via prompt-level tag
+      # Only provider with streaming
+      streaming: true,
+      # CLI doesn't expose tools to us
+      tools: false,
+      # Via prompt-level tag
+      extended_thinking: true
     },
     codex: %{
       speed: :medium,
       context: 128_000,
       reasoning: :excellent,
       streaming: false,
-      tools: :mcp_only,  # Has MCP tools internally, but can't expose to our Elixir tools
-      thinking_models: [:o3, :o1]  # Dedicated thinking models
+      # Has built-in tools, but can't expose to our Elixir tools
+      tools: :internal_only,
+      # Dedicated thinking models
+      thinking_models: [:o3, :o1]
     },
     gemini: %{
       speed: :fastest,
-      context: 2_097_152,  # 2M tokens
+      # 2M tokens
+      context: 2_097_152,
       reasoning: :good,
       streaming: false,
-      tools: :http_only,  # HTTP API has tools, CLI doesn't expose them
+      # HTTP API has tools, CLI doesn't expose them
+      tools: :http_only,
       note: "Use HTTP for tools (gemini-2.5-flash), CLI as fallback (gemini-2.5-flash-cli)"
     },
     cursor: %{
@@ -124,17 +147,22 @@ defmodule Singularity.LLM.Provider do
       context: 128_000,
       reasoning: :good,
       streaming: false,
-      tools: :mcp_only,  # Has MCP + shell tools, but can't expose to our Elixir tools
-      auto_model: true,  # FREE auto model selection
-      quota: :unlimited  # Auto model is FREE
+      # Has built-in tools, but can't expose to our Elixir tools
+      tools: :internal_only,
+      # FREE auto model selection
+      auto_model: true,
+      # Auto model is FREE
+      quota: :unlimited
     },
     copilot: %{
       speed: :fast,
       context: 128_000,
       reasoning: :good,
       streaming: false,
-      tools: true,  # HTTP API supports function calling (OpenAI format)
-      quota: :light  # GPT-4.1 uses less quota than GPT-5
+      # HTTP API supports function calling (OpenAI format)
+      tools: true,
+      # GPT-4.1 uses less quota than GPT-5
+      quota: :light
     },
     grok: %{
       speed: :fast,
@@ -142,7 +170,8 @@ defmodule Singularity.LLM.Provider do
       reasoning: :good,
       streaming: false,
       tools: false,
-      quota: :light  # Alternative to Copilot
+      # Alternative to Copilot
+      quota: :light
     }
   }
 
@@ -169,10 +198,10 @@ defmodule Singularity.LLM.Provider do
 
     # Check semantic cache first (pgvector similarity)
     case Singularity.LLM.SemanticCache.find_similar(opts.prompt,
-      threshold: 0.92,
-      provider: opts[:provider],
-      model: opts[:model]
-    ) do
+           threshold: 0.92,
+           provider: opts[:provider],
+           model: opts[:model]
+         ) do
       {:ok, cached} ->
         Logger.info("Semantic cache hit",
           similarity: cached.similarity,
@@ -180,14 +209,15 @@ defmodule Singularity.LLM.Provider do
           correlation_id: correlation_id
         )
 
-        {:ok, %{
-          content: cached.response,
-          model: "cached",
-          provider: :cache,
-          tokens_used: 0,
-          duration_ms: 0,
-          cached: true
-        }}
+        {:ok,
+         %{
+           content: cached.response,
+           model: "cached",
+           provider: :cache,
+           tokens_used: 0,
+           duration_ms: 0,
+           cached: true
+         }}
 
       :miss ->
         # Select provider based on complexity or explicit choice
@@ -217,16 +247,19 @@ defmodule Singularity.LLM.Provider do
   def daily_stats do
     today = Date.utc_today()
 
-    Singularity.Repo.query!("""
-      SELECT
-        provider,
-        COUNT(*) as call_count,
-        SUM(tokens_used) as total_tokens,
-        AVG(duration_ms) as avg_duration_ms
-      FROM llm_calls
-      WHERE DATE(called_at) = $1
-      GROUP BY provider
-    """, [today])
+    Singularity.Repo.query!(
+      """
+        SELECT
+          provider,
+          COUNT(*) as call_count,
+          SUM(tokens_used) as total_tokens,
+          AVG(duration_ms) as avg_duration_ms
+        FROM llm_calls
+        WHERE DATE(called_at) = $1
+        GROUP BY provider
+      """,
+      [today]
+    )
     |> then(fn result ->
       Enum.map(result.rows, fn [provider, count, tokens, duration] ->
         %{
@@ -260,8 +293,10 @@ defmodule Singularity.LLM.Provider do
   defp default_model_for_provider(:claude), do: "claude-sonnet-4.5"
   defp default_model_for_provider(:codex), do: "gpt-5-codex"
   defp default_model_for_provider(:gemini), do: "gemini-2.5-flash"
-  defp default_model_for_provider(:cursor), do: "cursor-auto"  # FREE auto model
-  defp default_model_for_provider(:copilot), do: "copilot-gpt-4.1"  # GPT-4.1 lighter quota
+  # FREE auto model
+  defp default_model_for_provider(:cursor), do: "cursor-auto"
+  # GPT-4.1 lighter quota
+  defp default_model_for_provider(:copilot), do: "copilot-gpt-4.1"
   defp default_model_for_provider(:grok), do: "grok-coder-1"
 
   defp try_providers(providers, opts, correlation_id) do
@@ -277,6 +312,7 @@ defmodule Singularity.LLM.Provider do
             provider: provider,
             correlation_id: correlation_id
           )
+
           {:cont, {:error, :http_server_down}}
 
         {:error, reason} ->
@@ -286,6 +322,7 @@ defmodule Singularity.LLM.Provider do
             reason: reason,
             correlation_id: correlation_id
           )
+
           {:cont, {:error, reason}}
       end
     end)
@@ -305,9 +342,9 @@ defmodule Singularity.LLM.Provider do
   defp call_ai_server(provider, model, opts, correlation_id) do
     start_time = System.monotonic_time(:millisecond)
 
-    # Get MCP client info from context (if called via MCP)
-    mcp_client = opts[:mcp_client] || Process.get(:mcp_client) || "direct"
-    mcp_session_id = opts[:mcp_session_id] || Process.get(:mcp_session_id)
+    # Get client info from context
+    client_info = opts[:client_info] || Process.get(:client_info) || "direct"
+    session_id = opts[:session_id] || Process.get(:session_id)
 
     # Build OpenAI-compatible request
     request_body = %{
@@ -318,55 +355,53 @@ defmodule Singularity.LLM.Provider do
       # Add custom metadata for tracking
       metadata: %{
         correlation_id: correlation_id,
-        mcp_client: mcp_client,
-        mcp_session_id: mcp_session_id
+        client_info: client_info,
+        session_id: session_id
       }
     }
 
-    case HTTPoison.post(
-      "#{@ai_server_url}/v1/chat/completions",
-      Jason.encode!(request_body),
-      [{"Content-Type", "application/json"}],
-      recv_timeout: 120_000  # 2 minute timeout
-    ) do
-      {:ok, %{status_code: 200, body: body}} ->
-        response_data = Jason.decode!(body)
-        duration_ms = System.monotonic_time(:millisecond) - start_time
+    case Singularity.NatsClient.request("ai.provider.#{provider}", Jason.encode!(request_body),
+           timeout: 120_000
+         ) do
+      {:ok, %{data: response_data}} ->
+        case Jason.decode(response_data) do
+          {:ok, data} ->
+            duration_ms = System.monotonic_time(:millisecond) - start_time
+            choice = List.first(data["choices"])
+            usage = data["usage"]
 
-        choice = List.first(response_data["choices"])
-        usage = response_data["usage"]
+            response = %{
+              content: choice["message"]["content"],
+              model: model,
+              provider: provider,
+              tokens_used: usage["total_tokens"],
+              duration_ms: duration_ms,
+              cached: false
+            }
 
-        response = %{
-          content: choice["message"]["content"],
-          model: model,
-          provider: provider,
-          tokens_used: usage["total_tokens"],
-          duration_ms: duration_ms,
-          cached: false
-        }
+            # Record call + generate embeddings for semantic cache
+            call_id = record_llm_call(provider, model, opts, response, correlation_id)
+            Task.start(fn -> Singularity.LLM.SemanticCache.store_with_embedding(call_id) end)
 
-        # Record call + generate embeddings for semantic cache
-        call_id = record_llm_call(provider, model, opts, response, correlation_id)
-        Task.start(fn -> Singularity.LLM.SemanticCache.store_with_embedding(call_id) end)
+            Logger.info("LLM call succeeded",
+              provider: provider,
+              model: model,
+              tokens: usage["total_tokens"],
+              duration_ms: duration_ms,
+              correlation_id: correlation_id
+            )
 
-        Logger.info("LLM call succeeded",
-          provider: provider,
-          model: model,
-          tokens: usage["total_tokens"],
-          duration_ms: duration_ms,
-          correlation_id: correlation_id
-        )
+            {:ok, response}
 
-        {:ok, response}
+          {:error, reason} ->
+            {:error, {:json_decode_error, reason}}
+        end
 
-      {:ok, %{status_code: status}} when status >= 500 ->
-        {:error, :http_server_down}
+      {:error, :timeout} ->
+        {:error, :nats_timeout}
 
-      {:error, %{reason: :econnrefused}} ->
-        {:error, :http_server_down}
-
-      {:error, %{reason: :timeout}} ->
-        {:error, :timeout}
+      {:error, :not_connected} ->
+        {:error, :nats_not_connected}
 
       {:error, reason} ->
         {:error, reason}
@@ -374,7 +409,7 @@ defmodule Singularity.LLM.Provider do
   end
 
   defp emergency_fallback(opts, correlation_id) do
-    Logger.error("All HTTP providers failed - using EMERGENCY CLI",
+    Logger.error("All NATS providers failed - using EMERGENCY CLI",
       correlation_id: correlation_id
     )
 
@@ -389,15 +424,20 @@ defmodule Singularity.LLM.Provider do
 
     try do
       # Call emergency CLI with timeouts from EMERGENCY_FALLBACK.md
-      case System.cmd(@emergency_cli_path, [
-        "chat",
-        "--print",
-        "--read-from-file", temp_file,
-        "--model", "sonnet"
-      ],
-        stderr_to_stdout: true,
-        timeout: 60 * 60 * 1000  # 60 minute hard timeout
-      ) do
+      case System.cmd(
+             @emergency_cli_path,
+             [
+               "chat",
+               "--print",
+               "--read-from-file",
+               temp_file,
+               "--model",
+               "sonnet"
+             ],
+             stderr_to_stdout: true,
+             # 60 minute hard timeout
+             timeout: 60 * 60 * 1000
+           ) do
         {output, 0} ->
           duration_ms = System.monotonic_time(:millisecond) - start_time
 
@@ -426,6 +466,7 @@ defmodule Singularity.LLM.Provider do
             error: error,
             correlation_id: correlation_id
           )
+
           {:error, "Emergency CLI failed (#{code}): #{error}"}
       end
     after
@@ -436,22 +477,31 @@ defmodule Singularity.LLM.Provider do
   # Map Elixir model IDs to ai-server model IDs
   defp resolve_ai_server_model(:claude, "claude-sonnet-4.5"), do: "claude-sonnet-4.5"
   defp resolve_ai_server_model(:claude, "claude-opus-4.1"), do: "claude-opus-4.1"
-  defp resolve_ai_server_model(:claude, _model), do: "claude-sonnet-4.5"  # Default Sonnet
+  # Default Sonnet
+  defp resolve_ai_server_model(:claude, _model), do: "claude-sonnet-4.5"
 
-  defp resolve_ai_server_model(:codex, "o3"), do: "o3"  # Thinking mode
-  defp resolve_ai_server_model(:codex, "o1"), do: "o1"  # Thinking mode
+  # Thinking mode
+  defp resolve_ai_server_model(:codex, "o3"), do: "o3"
+  # Thinking mode
+  defp resolve_ai_server_model(:codex, "o1"), do: "o1"
   defp resolve_ai_server_model(:codex, _model), do: "gpt-5-codex"
 
   # Gemini - try HTTP first, CLI as fallback (both can do both)
-  defp resolve_ai_server_model(:gemini, "gemini-2.5-flash"), do: "gemini-2.5-flash"  # HTTP
-  defp resolve_ai_server_model(:gemini, "gemini-2.5-flash-cli"), do: "gemini-2.5-flash-cli"  # CLI fallback
-  defp resolve_ai_server_model(:gemini, "gemini-2.5-pro"), do: "gemini-2.5-pro"  # HTTP
-  defp resolve_ai_server_model(:gemini, "gemini-2.5-pro-cli"), do: "gemini-2.5-pro-cli"  # CLI fallback
-  defp resolve_ai_server_model(:gemini, _model), do: "gemini-2.5-flash"  # Default to Flash HTTP
+  # HTTP
+  defp resolve_ai_server_model(:gemini, "gemini-2.5-flash"), do: "gemini-2.5-flash"
+  # CLI fallback
+  defp resolve_ai_server_model(:gemini, "gemini-2.5-flash-cli"), do: "gemini-2.5-flash-cli"
+  # HTTP
+  defp resolve_ai_server_model(:gemini, "gemini-2.5-pro"), do: "gemini-2.5-pro"
+  # CLI fallback
+  defp resolve_ai_server_model(:gemini, "gemini-2.5-pro-cli"), do: "gemini-2.5-pro-cli"
+  # Default to Flash HTTP
+  defp resolve_ai_server_model(:gemini, _model), do: "gemini-2.5-flash"
 
   defp resolve_ai_server_model(:cursor, "cursor-auto"), do: "cursor-auto"
   defp resolve_ai_server_model(:cursor, "cursor-gpt-4.1"), do: "cursor-gpt-4.1"
-  defp resolve_ai_server_model(:cursor, model), do: model  # Pass through for Cursor's many models
+  # Pass through for Cursor's many models
+  defp resolve_ai_server_model(:cursor, model), do: model
 
   defp resolve_ai_server_model(:copilot, _model), do: "copilot-gpt-4.1"
   defp resolve_ai_server_model(:grok, _model), do: "grok-coder-1"
@@ -459,11 +509,12 @@ defmodule Singularity.LLM.Provider do
   defp build_messages(opts) do
     messages = []
 
-    messages = if opts[:system_prompt] do
-      [%{role: "system", content: opts.system_prompt} | messages]
-    else
-      messages
-    end
+    messages =
+      if opts[:system_prompt] do
+        [%{role: "system", content: opts.system_prompt} | messages]
+      else
+        messages
+      end
 
     [%{role: "user", content: opts.prompt} | messages]
     |> Enum.reverse()
@@ -483,19 +534,21 @@ defmodule Singularity.LLM.Provider do
   end
 
   defp record_llm_call(provider, model, opts, response, correlation_id) do
-    call = Singularity.Repo.insert!(%Singularity.LLM.Call{
-      id: Ecto.UUID.generate(),
-      provider: to_string(provider),
-      model: model,
-      prompt: opts.prompt,
-      system_prompt: opts[:system_prompt],
-      response: response.content,
-      tokens_used: response.tokens_used,
-      cost_usd: 0.0,  # Fixed subscriptions = no cost tracking
-      duration_ms: response.duration_ms,
-      correlation_id: correlation_id,
-      called_at: DateTime.utc_now()
-    })
+    call =
+      Singularity.Repo.insert!(%Singularity.LLM.Call{
+        id: Ecto.UUID.generate(),
+        provider: to_string(provider),
+        model: model,
+        prompt: opts.prompt,
+        system_prompt: opts[:system_prompt],
+        response: response.content,
+        tokens_used: response.tokens_used,
+        # Fixed subscriptions = no cost tracking
+        cost_usd: 0.0,
+        duration_ms: response.duration_ms,
+        correlation_id: correlation_id,
+        called_at: DateTime.utc_now()
+      })
 
     call.id
   end

@@ -97,12 +97,13 @@ defmodule Singularity.PseudocodeGenerator do
       elapsed = System.monotonic_time(:millisecond) - start
       Logger.info("⚡ Pseudocode in #{elapsed}ms")
 
-      {:ok, %{
-        pseudocode: pseudocode,
-        patterns: patterns,
-        context: context,
-        elapsed_ms: elapsed
-      }}
+      {:ok,
+       %{
+         pseudocode: pseudocode,
+         patterns: patterns,
+         context: context,
+         elapsed_ms: elapsed
+       }}
     else
       {:error, reason} -> {:error, reason}
     end
@@ -136,7 +137,8 @@ defmodule Singularity.PseudocodeGenerator do
       path: context.path,
       repo: context.repo,
       language: context.language,
-      fast_mode: false  # Full quality
+      # Full quality
+      fast_mode: false
     )
   end
 
@@ -150,23 +152,24 @@ defmodule Singularity.PseudocodeGenerator do
     context = pseudocode_result.context
 
     # Simple refinements via pattern matching
-    refined = case refinement do
-      %{add: feature} ->
-        "#{current}\n  → #{feature}"
+    refined =
+      case refinement do
+        %{add: feature} ->
+          "#{current}\n  → #{feature}"
 
-      %{remove: feature} ->
-        String.replace(current, ~r/.*#{feature}.*\n/, "")
+        %{remove: feature} ->
+          String.replace(current, ~r/.*#{feature}.*\n/, "")
 
-      %{replace: {old, new}} ->
-        String.replace(current, old, new)
+        %{replace: {old, new}} ->
+          String.replace(current, old, new)
 
-      text when is_binary(text) ->
-        # Free-form refinement - append
-        "#{current}\n  → #{text}"
+        text when is_binary(text) ->
+          # Free-form refinement - append
+          "#{current}\n  → #{text}"
 
-      _ ->
-        current
-    end
+        _ ->
+          current
+      end
 
     {:ok, %{pseudocode_result | pseudocode: refined}}
   end
@@ -248,11 +251,12 @@ defmodule Singularity.PseudocodeGenerator do
     pattern = List.first(patterns)
 
     # Extract structure from pattern pseudocode
-    structure = if pattern && pattern.pseudocode do
-      pattern.pseudocode
-    else
-      generic_structure(context.language)
-    end
+    structure =
+      if pattern && pattern.pseudocode do
+        pattern.pseudocode
+      else
+        generic_structure(context.language)
+      end
 
     # Simple template substitution
     pseudocode = """
@@ -279,15 +283,16 @@ defmodule Singularity.PseudocodeGenerator do
   defp generic_pattern(language) do
     %{
       pattern: "generic_#{language}",
-      pseudocode: case language do
-        "elixir" -> "Module → Functions → Pattern Match → {:ok, result} | {:error, reason}"
-        "rust" -> "struct → impl → fn → Result<T, E>"
-        "go" -> "type → func → (result, error)"
-        "typescript" -> "class → methods → Promise<T> | throws Error"
-        "python" -> "class → methods → return value | raise Exception"
-        "java" -> "class → methods → return Result | throw Exception"
-        _ -> "structure → operations → return result"
-      end
+      pseudocode:
+        case language do
+          "elixir" -> "Module → Functions → Pattern Match → {:ok, result} | {:error, reason}"
+          "rust" -> "struct → impl → fn → Result<T, E>"
+          "go" -> "type → func → (result, error)"
+          "typescript" -> "class → methods → Promise<T> | throws Error"
+          "python" -> "class → methods → return value | raise Exception"
+          "java" -> "class → methods → return Result | throw Exception"
+          _ -> "structure → operations → return result"
+        end
     }
   end
 
@@ -310,36 +315,66 @@ defmodule Singularity.PseudocodeGenerator do
     flow_steps = []
 
     # Check for common patterns
-    flow_steps = if "cache" in keywords do
-      ["1. Check cache for key", "2. If miss, fetch/compute", "3. Store in cache", "4. Return result" | flow_steps]
-    else
-      flow_steps
-    end
+    flow_steps =
+      if "cache" in keywords do
+        [
+          "1. Check cache for key",
+          "2. If miss, fetch/compute",
+          "3. Store in cache",
+          "4. Return result" | flow_steps
+        ]
+      else
+        flow_steps
+      end
 
-    flow_steps = if "http" in keywords or "api" in keywords or "request" in keywords do
-      ["1. Build request", "2. Send HTTP request", "3. Handle response", "4. Parse/validate", "5. Return result" | flow_steps]
-    else
-      flow_steps
-    end
+    flow_steps =
+      if "http" in keywords or "api" in keywords or "request" in keywords do
+        [
+          "1. Build request",
+          "2. Send HTTP request",
+          "3. Handle response",
+          "4. Parse/validate",
+          "5. Return result" | flow_steps
+        ]
+      else
+        flow_steps
+      end
 
-    flow_steps = if "validate" in keywords do
-      ["1. Validate input", "2. Process if valid", "3. Return {:ok, result} or {:error, reason}" | flow_steps]
-    else
-      flow_steps
-    end
+    flow_steps =
+      if "validate" in keywords do
+        [
+          "1. Validate input",
+          "2. Process if valid",
+          "3. Return {:ok, result} or {:error, reason}" | flow_steps
+        ]
+      else
+        flow_steps
+      end
 
-    flow_steps = if "database" in keywords or "db" in keywords or "query" in keywords do
-      ["1. Build query", "2. Execute transaction", "3. Handle errors", "4. Return result" | flow_steps]
-    else
-      flow_steps
-    end
+    flow_steps =
+      if "database" in keywords or "db" in keywords or "query" in keywords do
+        [
+          "1. Build query",
+          "2. Execute transaction",
+          "3. Handle errors",
+          "4. Return result" | flow_steps
+        ]
+      else
+        flow_steps
+      end
 
     # GenServer specific
-    flow_steps = if "genserver" in String.downcase(structure) and context.language == "elixir" do
-      ["1. Start GenServer", "2. Handle calls/casts", "3. Update state", "4. Reply to caller" | flow_steps]
-    else
-      flow_steps
-    end
+    flow_steps =
+      if "genserver" in String.downcase(structure) and context.language == "elixir" do
+        [
+          "1. Start GenServer",
+          "2. Handle calls/casts",
+          "3. Update state",
+          "4. Reply to caller" | flow_steps
+        ]
+      else
+        flow_steps
+      end
 
     if flow_steps == [] do
       "1. Receive input\n2. Process/transform\n3. Return output"
@@ -354,11 +389,31 @@ defmodule Singularity.PseudocodeGenerator do
     ops = []
 
     ops = if "get" in keywords, do: ["get(key) → lookup → return value" | ops], else: ops
-    ops = if "put" in keywords or "set" in keywords, do: ["put(key, value) → store → :ok" | ops], else: ops
-    ops = if "delete" in keywords or "remove" in keywords, do: ["delete(key) → remove → :ok" | ops], else: ops
-    ops = if "list" in keywords or "all" in keywords, do: ["list() → fetch all → return collection" | ops], else: ops
-    ops = if "create" in keywords, do: ["create(attrs) → validate → insert → return {:ok, record}" | ops], else: ops
-    ops = if "update" in keywords, do: ["update(id, attrs) → validate → modify → return {:ok, record}" | ops], else: ops
+
+    ops =
+      if "put" in keywords or "set" in keywords,
+        do: ["put(key, value) → store → :ok" | ops],
+        else: ops
+
+    ops =
+      if "delete" in keywords or "remove" in keywords,
+        do: ["delete(key) → remove → :ok" | ops],
+        else: ops
+
+    ops =
+      if "list" in keywords or "all" in keywords,
+        do: ["list() → fetch all → return collection" | ops],
+        else: ops
+
+    ops =
+      if "create" in keywords,
+        do: ["create(attrs) → validate → insert → return {:ok, record}" | ops],
+        else: ops
+
+    ops =
+      if "update" in keywords,
+        do: ["update(id, attrs) → validate → modify → return {:ok, record}" | ops],
+        else: ops
 
     if ops == [] do
       "- process(input) → transform → output"
@@ -381,7 +436,8 @@ defmodule Singularity.PseudocodeGenerator do
     tasks
     |> Task.async_stream(
       fn task -> generate(task, opts) end,
-      max_concurrency: 10,  # Very lightweight, can parallelize heavily
+      # Very lightweight, can parallelize heavily
+      max_concurrency: 10,
       timeout: 1000
     )
     |> Enum.map(fn
@@ -409,8 +465,10 @@ defmodule Singularity.PseudocodeGenerator do
 
     %{
       cache_entries: cache_size,
-      avg_generation_ms: 200,  # Approximate
-      cache_hit_rate: 0.7  # Approximate
+      # Approximate
+      avg_generation_ms: 200,
+      # Approximate
+      cache_hit_rate: 0.7
     }
   end
 end

@@ -38,10 +38,10 @@ defmodule Singularity.CodeModel do
   require Logger
 
   @type generation_opts :: [
-    temperature: float(),
-    max_tokens: integer(),
-    top_p: float()
-  ]
+          temperature: float(),
+          max_tokens: integer(),
+          top_p: float()
+        ]
 
   @doc """
   Generate code completion from a prompt
@@ -57,17 +57,18 @@ defmodule Singularity.CodeModel do
     temperature = Keyword.get(opts, :temperature, 0.1)
     max_tokens = Keyword.get(opts, :max_tokens, 256)
 
-    stop_sequences = Keyword.get(opts, :stop_sequences, [
-      "\n\n\n",
-      "# Explanation:",
-      "# Note:",
-      "# This code",
-      "# The above",
-      "/*\n *",
-      "```",
-      "Here's",
-      "This is"
-    ])
+    stop_sequences =
+      Keyword.get(opts, :stop_sequences, [
+        "\n\n\n",
+        "# Explanation:",
+        "# Note:",
+        "# This code",
+        "# The above",
+        "/*\n *",
+        "```",
+        "Here's",
+        "This is"
+      ])
 
     meta = %{
       operation: :complete,
@@ -98,23 +99,25 @@ defmodule Singularity.CodeModel do
   def fill_in_middle(opts) do
     prefix = Keyword.fetch!(opts, :prefix)
     suffix = Keyword.get(opts, :suffix, "")
-    temperature = Keyword.get(opts, :temperature, 0.05)  # Extra low for FIM
+    # Extra low for FIM
+    temperature = Keyword.get(opts, :temperature, 0.05)
     max_tokens = Keyword.get(opts, :max_tokens, 256)
 
     model = get_model_name()
 
     # Different models use different FIM tokens
-    prompt = case model do
-      "deepseek-ai/deepseek-coder" <> _ ->
-        "<｜fim▁begin｜>#{prefix}<｜fim▁hole｜>#{suffix}<｜fim▁end｜>"
+    prompt =
+      case model do
+        "deepseek-ai/deepseek-coder" <> _ ->
+          "<｜fim▁begin｜>#{prefix}<｜fim▁hole｜>#{suffix}<｜fim▁end｜>"
 
-      "bigcode/starcoder" <> _ ->
-        "<fim_prefix>#{prefix}<fim_suffix>#{suffix}<fim_middle>"
+        "bigcode/starcoder" <> _ ->
+          "<fim_prefix>#{prefix}<fim_suffix>#{suffix}<fim_middle>"
 
-      _ ->
-        # Fallback to simple concatenation
-        prefix <> suffix
-    end
+        _ ->
+          # Fallback to simple concatenation
+          prefix <> suffix
+      end
 
     # FIM mode uses stricter stop sequences (code-only)
     stop_sequences = [suffix, "\n\n\n", "# Explanation:", "```"]
@@ -139,7 +142,8 @@ defmodule Singularity.CodeModel do
     :telemetry.span([:singularity, :code_generator, :generate], base_meta, fn ->
       result =
         with {:ok, serving} <- get_serving(),
-             {:ok, generated} <- generate(serving, prompt, temperature, max_tokens, stop_sequences) do
+             {:ok, generated} <-
+               generate(serving, prompt, temperature, max_tokens, stop_sequences) do
           clean_code = cleanup_generated_code(generated)
           {:ok, clean_code}
         end
@@ -179,21 +183,26 @@ defmodule Singularity.CodeModel do
           |> Map.put(:max_new_tokens, 256)
           |> Map.put(:strategy, %{type: :multinomial_sampling})
           # Penalties to prevent prose/explanations
-          |> Map.put(:repetition_penalty, 1.1)  # Avoid repetitive explanations
-          |> Map.put(:no_repeat_ngram_size, 3)  # Prevent phrase repetition
+          # Avoid repetitive explanations
+          |> Map.put(:repetition_penalty, 1.1)
+          # Prevent phrase repetition
+          |> Map.put(:no_repeat_ngram_size, 3)
 
-        serving = Bumblebee.Text.generation(model_info, tokenizer, generation_config,
-          compile: [batch_size: 1, sequence_length: 1024],
-          defn_options: [compiler: EXLA],
-          preallocate_params: true  # Faster GPU loading
-        )
+        serving =
+          Bumblebee.Text.generation(model_info, tokenizer, generation_config,
+            compile: [batch_size: 1, sequence_length: 1024],
+            defn_options: [compiler: EXLA],
+            # Faster GPU loading
+            preallocate_params: true
+          )
 
         # Start as named serving
-        {:ok, _pid} = Nx.Serving.start_link(
-          serving: serving,
-          name: __MODULE__.Serving,
-          batch_timeout: 100
-        )
+        {:ok, _pid} =
+          Nx.Serving.start_link(
+            serving: serving,
+            name: __MODULE__.Serving,
+            batch_timeout: 100
+          )
 
         Logger.info("Code generation model loaded successfully")
         {:ok, __MODULE__.Serving}
@@ -209,13 +218,14 @@ defmodule Singularity.CodeModel do
 
   defp generate(serving, prompt, temperature, max_tokens, stop_sequences) do
     try do
-      result = Nx.Serving.run(serving, %{
-        text: prompt,
-        max_new_tokens: max_tokens,
-        temperature: temperature,
-        # Stop at these sequences (prevents explanations)
-        stop_sequences: stop_sequences
-      })
+      result =
+        Nx.Serving.run(serving, %{
+          text: prompt,
+          max_new_tokens: max_tokens,
+          temperature: temperature,
+          # Stop at these sequences (prevents explanations)
+          stop_sequences: stop_sequences
+        })
 
       generated_text =
         result.results
@@ -238,7 +248,14 @@ defmodule Singularity.CodeModel do
     |> String.split("\n")
     |> Enum.take_while(fn line ->
       # Stop at explanation markers
-      not String.starts_with?(String.trim(line), ["# Explanation", "# Note:", "# This", "# The", "Here's", "This is"])
+      not String.starts_with?(String.trim(line), [
+        "# Explanation",
+        "# Note:",
+        "# This",
+        "# The",
+        "Here's",
+        "This is"
+      ])
     end)
     |> Enum.join("\n")
     |> String.trim()

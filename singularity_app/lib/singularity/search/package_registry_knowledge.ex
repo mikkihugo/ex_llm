@@ -37,7 +37,14 @@ defmodule Singularity.PackageRegistryKnowledge do
   import Ecto.Query
   require Logger
   alias Singularity.Repo
-  alias Singularity.Schemas.{PackageRegistryKnowledge, PackageCodeExample, PackageUsagePattern, PackageDependency}
+
+  alias Singularity.Schemas.{
+    PackageRegistryKnowledge,
+    PackageCodeExample,
+    PackageUsagePattern,
+    PackageDependency
+  }
+
   alias Singularity.EmbeddingGenerator
 
   @doc """
@@ -71,7 +78,9 @@ defmodule Singularity.PackageRegistryKnowledge do
     # Filter by recency if specified
     query =
       if recency_months do
-        cutoff_date = DateTime.utc_now() |> DateTime.add(-recency_months * 30 * 24 * 60 * 60, :second)
+        cutoff_date =
+          DateTime.utc_now() |> DateTime.add(-recency_months * 30 * 24 * 60 * 60, :second)
+
         from t in query, where: t.last_release_date >= ^cutoff_date
       else
         query
@@ -95,7 +104,8 @@ defmodule Singularity.PackageRegistryKnowledge do
         keywords: t.keywords,
         similarity_score: fragment("1 - (? <-> ?)", t.semantic_embedding, ^query_embedding)
       },
-      order_by: fragment("? <-> ?", t.semantic_embedding, ^query_embedding))
+      order_by: fragment("? <-> ?", t.semantic_embedding, ^query_embedding)
+    )
     |> limit(^limit)
     |> Repo.all()
   end
@@ -109,7 +119,8 @@ defmodule Singularity.PackageRegistryKnowledge do
     query =
       from(t in PackageRegistryKnowledge,
         where: t.package_name == ^package_name,
-        order_by: [desc: t.last_release_date])
+        order_by: [desc: t.last_release_date]
+      )
       |> limit(1)
 
     query =
@@ -126,7 +137,11 @@ defmodule Singularity.PackageRegistryKnowledge do
   Get a specific version of a tool
   """
   def get_version(package_name, version, ecosystem) do
-    Repo.get_by(PackageRegistryKnowledge, package_name: package_name, version: version, ecosystem: ecosystem)
+    Repo.get_by(PackageRegistryKnowledge,
+      package_name: package_name,
+      version: version,
+      ecosystem: ecosystem
+    )
   end
 
   @doc """
@@ -160,9 +175,11 @@ defmodule Singularity.PackageRegistryKnowledge do
           ecosystem: t.ecosystem,
           description: t.description,
           github_stars: t.github_stars,
-          similarity_score: fragment("1 - (? <-> ?)", t.semantic_embedding, ^source_tool.semantic_embedding)
+          similarity_score:
+            fragment("1 - (? <-> ?)", t.semantic_embedding, ^source_tool.semantic_embedding)
         },
-        order_by: fragment("? <-> ?", t.semantic_embedding, ^source_tool.semantic_embedding))
+        order_by: fragment("? <-> ?", t.semantic_embedding, ^source_tool.semantic_embedding)
+      )
       |> limit(^limit)
       |> Repo.all()
     end
@@ -176,7 +193,8 @@ defmodule Singularity.PackageRegistryKnowledge do
 
     from(e in PackageCodeExample,
       where: e.tool_id == ^tool_id,
-      order_by: [asc: e.example_order])
+      order_by: [asc: e.example_order]
+    )
     |> limit(^limit)
     |> Repo.all()
   end
@@ -195,7 +213,8 @@ defmodule Singularity.PackageRegistryKnowledge do
     # Build base query
     base_query =
       from e in PackageCodeExample,
-        join: t in PackageRegistryKnowledge, on: e.tool_id == t.id,
+        join: t in PackageRegistryKnowledge,
+        on: e.tool_id == t.id,
         where: not is_nil(e.code_embedding)
 
     # Filter by ecosystem if specified
@@ -227,7 +246,8 @@ defmodule Singularity.PackageRegistryKnowledge do
         explanation: e.explanation,
         similarity_score: fragment("1 - (? <-> ?)", e.code_embedding, ^query_embedding)
       },
-      order_by: fragment("? <-> ?", e.code_embedding, ^query_embedding))
+      order_by: fragment("? <-> ?", e.code_embedding, ^query_embedding)
+    )
     |> limit(^limit)
     |> Repo.all()
   end
@@ -267,7 +287,8 @@ defmodule Singularity.PackageRegistryKnowledge do
     # Build base query
     base_query =
       from p in PackageUsagePattern,
-        join: t in PackageRegistryKnowledge, on: p.tool_id == t.id,
+        join: t in PackageRegistryKnowledge,
+        on: p.tool_id == t.id,
         where: not is_nil(p.pattern_embedding)
 
     # Filter by ecosystem if specified
@@ -299,7 +320,8 @@ defmodule Singularity.PackageRegistryKnowledge do
         code_example: p.code_example,
         similarity_score: fragment("1 - (? <-> ?)", p.pattern_embedding, ^query_embedding)
       },
-      order_by: fragment("? <-> ?", p.pattern_embedding, ^query_embedding))
+      order_by: fragment("? <-> ?", p.pattern_embedding, ^query_embedding)
+    )
     |> limit(^limit)
     |> Repo.all()
   end
@@ -330,11 +352,13 @@ defmodule Singularity.PackageRegistryKnowledge do
   """
   def get_popular(ecosystem, opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
-    sort_by = Keyword.get(opts, :sort_by, :github_stars) # or :download_count
+    # or :download_count
+    sort_by = Keyword.get(opts, :sort_by, :github_stars)
 
     from(t in PackageRegistryKnowledge,
       where: t.ecosystem == ^ecosystem,
-      order_by: [desc: field(t, ^sort_by)])
+      order_by: [desc: field(t, ^sort_by)]
+    )
     |> limit(^limit)
     |> Repo.all()
   end
@@ -351,7 +375,8 @@ defmodule Singularity.PackageRegistryKnowledge do
     from(t in PackageRegistryKnowledge,
       where: t.ecosystem == ^ecosystem,
       where: t.last_release_date >= ^cutoff_date,
-      order_by: [desc: t.last_release_date])
+      order_by: [desc: t.last_release_date]
+    )
     |> limit(^limit)
     |> Repo.all()
   end
@@ -360,7 +385,7 @@ defmodule Singularity.PackageRegistryKnowledge do
   Upsert a tool (used by Rust collectors)
   """
   def upsert_tool(attrs) do
-    % PackageRegistryKnowledge{}
+    %PackageRegistryKnowledge{}
     |> PackageRegistryKnowledge.changeset(attrs)
     |> Repo.insert(
       on_conflict: {:replace_all_except, [:id, :inserted_at]},

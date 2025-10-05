@@ -26,7 +26,8 @@ defmodule Singularity.FrameworkPatternSync do
   require Logger
 
   @ets_table :framework_patterns_cache
-  @refresh_interval 5 * 60 * 1000  # 5 minutes
+  # 5 minutes
+  @refresh_interval 5 * 60 * 1000
   @nats_subject "knowledge.facts.framework_patterns"
   @json_export_path "rust/tool_doc_index/framework_patterns.json"
 
@@ -252,7 +253,8 @@ defmodule Singularity.FrameworkPatternSync do
     %{
       cache_size: :ets.info(@ets_table, :size),
       cache_memory_bytes: :ets.info(@ets_table, :memory) * :erlang.system_info(:wordsize),
-      last_refresh: :ets.info(@ets_table, :size)  # Placeholder
+      # Placeholder
+      last_refresh: :ets.info(@ets_table, :size)
     }
   end
 end

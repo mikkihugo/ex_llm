@@ -12,7 +12,9 @@ defmodule Mix.Tasks.Registry.Report do
     File.mkdir_p!(dest)
 
     case Singularity.CodebaseRegistry.latest_summary(codebase_id) do
-      nil -> Mix.raise("No registry summary stored for #{codebase_id}")
+      nil ->
+        Mix.raise("No registry summary stored for #{codebase_id}")
+
       summary ->
         file = Path.join(dest, "#{codebase_id}-latest.json")
         File.write!(file, Jason.encode!(summary, pretty: true))

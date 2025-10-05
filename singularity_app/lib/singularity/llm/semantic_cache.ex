@@ -16,7 +16,8 @@ defmodule Singularity.LLM.SemanticCache do
   import Ecto.Query
   alias Singularity.{Repo, LLM}
 
-  @similarity_threshold 0.92  # 92% similar = reuse
+  # 92% similar = reuse
+  @similarity_threshold 0.92
 
   @doc """
   Find similar LLM call by prompt embedding.
@@ -56,13 +57,14 @@ defmodule Singularity.LLM.SemanticCache do
             new_prompt: String.slice(prompt, 0..100)
           )
 
-          {:ok, %{
-            response: call.response,
-            original_prompt: call.prompt,
-            similarity: similarity,
-            original_cost: call.cost_usd,
-            tokens_saved: call.tokens_used
-          }}
+          {:ok,
+           %{
+             response: call.response,
+             original_prompt: call.prompt,
+             similarity: similarity,
+             original_cost: call.cost_usd,
+             tokens_saved: call.tokens_used
+           }}
         else
           Logger.debug("Semantic cache near-miss",
             similarity: Float.round(similarity, 3),
@@ -129,7 +131,8 @@ defmodule Singularity.LLM.SemanticCache do
       :google -> generate_google_embedding(text)
       :openai -> generate_openai_embedding(text)
       :local -> generate_local_embedding(text)
-      _ -> generate_google_embedding(text)  # Default to Google (FREE!)
+      # Default to Google (FREE!)
+      _ -> generate_google_embedding(text)
     end
   end
 
@@ -156,9 +159,10 @@ defmodule Singularity.LLM.SemanticCache do
     # - Best multilingual support (100+ languages)
     # API: https://ai.google.dev/gemini-api/docs/embeddings
 
-    api_key = System.get_env("GOOGLE_AI_STUDIO_API_KEY") ||
-              System.get_env("GOOGLE_AI_API_KEY") ||
-              Application.get_env(:singularity, :google_ai_api_key)
+    api_key =
+      System.get_env("GOOGLE_AI_STUDIO_API_KEY") ||
+        System.get_env("GOOGLE_AI_API_KEY") ||
+        Application.get_env(:singularity, :google_ai_api_key)
 
     if is_nil(api_key) do
       Logger.error("GOOGLE_AI_STUDIO_API_KEY not set, falling back to zero vector")
@@ -175,11 +179,12 @@ defmodule Singularity.LLM.SemanticCache do
       }
 
       case Req.post(url,
-        json: body,
-        headers: [{"x-goog-api-key", api_key}],
-        receive_timeout: 30_000
-      ) do
-        {:ok, %{status: 200, body: %{"embedding" => %{"values" => embedding}}}} when is_list(embedding) ->
+             json: body,
+             headers: [{"x-goog-api-key", api_key}],
+             receive_timeout: 30_000
+           ) do
+        {:ok, %{status: 200, body: %{"embedding" => %{"values" => embedding}}}}
+        when is_list(embedding) ->
           Pgvector.new(embedding)
 
         {:ok, %{status: status, body: error_body}} ->
@@ -187,6 +192,7 @@ defmodule Singularity.LLM.SemanticCache do
             status: status,
             error: error_body
           )
+
           Pgvector.new(List.duplicate(0.0, 768))
 
         {:error, reason} ->
@@ -222,6 +228,6 @@ defmodule Singularity.LLM.SemanticCache do
     magnitude1 = :math.sqrt(Enum.sum(Enum.map(list1, &(&1 * &1))))
     magnitude2 = :math.sqrt(Enum.sum(Enum.map(list2, &(&1 * &1))))
 
-    1.0 - (dot_product / (magnitude1 * magnitude2))
+    1.0 - dot_product / (magnitude1 * magnitude2)
   end
 end

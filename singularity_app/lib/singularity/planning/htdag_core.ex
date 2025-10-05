@@ -35,7 +35,8 @@ defmodule Singularity.Planning.HTDAGCore do
 
   @type task_type :: :goal | :milestone | :implementation
   @type task_status :: :pending | :active | :blocked | :completed | :failed
-  @type sparc_phase :: :specification | :pseudocode | :architecture | :refinement | :completion_phase
+  @type sparc_phase ::
+          :specification | :pseudocode | :architecture | :refinement | :completion_phase
 
   @type task :: %{
           id: String.t(),
