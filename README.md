@@ -60,6 +60,13 @@ Binary cache (Cachix)
   - cachix use mikkihugo
 - Or just run `./devenv.sh` which enables the cache (pull) and drops you into `nix develop`.
 
+Nix builds (conventional names)
+ - Build dev shell symlink as `.result`:
+   - `just devshell`
+ - Build packages:
+   - `just pkg-ai` → `.result-ai`
+   - `just pkg-integrated` → `.result-integrated`
+
 2) Configure DB (defaults via env vars in config)
 
 ```

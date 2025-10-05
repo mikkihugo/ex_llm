@@ -6,7 +6,13 @@ node_modules/
 
 # Local tooling & build outputs
 .direnv/
-/result
+ /result
+ /.result
+ /.result-ai
+ /.result-integrated
+ /result-ai
+ /result-integrated
+ /result-devshell
 /singularity_data/
 /ai_providers_data/
 .singularity/

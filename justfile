@@ -181,3 +181,12 @@ release-micro:
 
 release-baseline:
 	./scripts/release.sh baseline
+# Nix builds (conventional symlink names)
+devshell:
+	nix build .#devShells.$(nix eval --raw --expr builtins.currentSystem).default -o .result -L
+
+pkg-ai:
+	nix build .#packages.$(nix eval --raw --expr builtins.currentSystem).ai-server -o .result-ai -L
+
+pkg-integrated:
+	nix build .#packages.$(nix eval --raw --expr builtins.currentSystem).singularity-integrated -o .result-integrated -L
