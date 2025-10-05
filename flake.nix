@@ -212,9 +212,12 @@ EOF
             # Install AI Server
             cp -r ai-server/* $out/ai-server/
 
-            cp ${beamPackages.elixir}/bin/.mix-wrapped $out/bin/mix-wrapped
-            substituteInPlace $out/bin/mix-wrapped --replace '#!/usr/bin/env elixir' '#!${beamPackages.elixir}/bin/elixir'
-            chmod +x $out/bin/mix-wrapped
+            # Provide a stable 'mix' wrapper in $out/bin that delegates to nixpkgs Elixir
+            cat > $out/bin/mix <<'EOF'
+#!${pkgs.bash}/bin/bash
+exec ${beamPackages.elixir}/bin/mix "$@"
+EOF
+            chmod +x $out/bin/mix
 
             cat > $out/bin/start-singularity <<'EOF'
 #!${pkgs.bash}/bin/bash
@@ -251,9 +254,9 @@ ${pkgs.bun}/bin/bun run src/server.ts &
 AI_PID=$!
 
 cd "$ELIXIR_DIR"
-if [ ! -d deps ]; then __OUT__/bin/mix-wrapped deps.get --only prod; fi
-if [ ! -d _build/prod ]; then __OUT__/bin/mix-wrapped compile; fi
-__OUT__/bin/mix-wrapped phx.server &
+if [ ! -d deps ]; then __OUT__/bin/mix deps.get --only prod; fi
+if [ ! -d _build/prod ]; then __OUT__/bin/mix compile; fi
+__OUT__/bin/mix phx.server &
 WEB_PID=$!
 
 trap 'kill $AI_PID $WEB_PID 2>/dev/null' EXIT
@@ -273,7 +276,7 @@ EOF
             cat > $out/bin/web <<EOF
 #!${pkgs.bash}/bin/bash
 cd $out/elixir
-exec $out/bin/mix-wrapped phx.server
+exec $out/bin/mix phx.server
 EOF
             chmod +x $out/bin/web
 
