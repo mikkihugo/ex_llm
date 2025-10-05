@@ -1,12 +1,17 @@
 defmodule Singularity.EmbeddingService do
   @moduledoc """
-  Modern embedding service using Codex for semantic search and similarity.
+  Dual-model embedding service with intelligent model selection.
 
-  Provides a clean interface for:
-  - Text embedding generation
+  **Model Strategy:**
+  - **CodeT5** (fine-tuned) - For code chunks, functions, modules
+  - **Jina v2** (8192 tokens) - For docs, comments, long text, requirements
+
+  Provides:
+  - Automatic model selection based on content type
   - Semantic similarity calculation
   - Batch embedding processing
   - Caching and optimization
+  - Fallback to Google text-embedding-004 if local fails
   """
 
   use GenServer
@@ -15,6 +20,11 @@ defmodule Singularity.EmbeddingService do
   alias Cachex
   alias Bumblebee.Text
   alias Bumblebee.Text.TextEmbedding
+
+  # Model configurations
+  @codet5_model "Salesforce/codet5p-110m-embedding"
+  @codet5_finetuned "priv/models/codet5-finetuned"
+  @jina_v2_model "jinaai/jina-embeddings-v2-base-en"
 
   @type embedding :: list(float())
   @type similarity_score :: float()
@@ -40,12 +50,21 @@ defmodule Singularity.EmbeddingService do
   ## Client API
 
   @doc """
-  Generate embedding for text using Codex.
+  Generate embedding for text with intelligent model selection.
+
+  ## Options
+  - `:type` - Content type (`:code`, `:text`, `:auto` - default)
+  - `:model` - Force specific model (overrides auto-detection)
 
   ## Examples
 
-      iex> Singularity.EmbeddingService.embed("Hello world")
-      {:ok, %{embedding: [0.1, 0.2, ...], model: "text-embedding-ada-002", ...}}
+      # Auto-detect model based on content
+      iex> Singularity.EmbeddingService.embed("def foo(x), do: x * 2")
+      {:ok, %{embedding: [...], model: "codet5-finetuned", type: :code}}
+
+      # Force Jina v2 for long documentation
+      iex> Singularity.EmbeddingService.embed(long_doc, type: :text)
+      {:ok, %{embedding: [...], model: "jina-v2", type: :text}}
   """
   @spec embed(String.t(), keyword()) :: {:ok, embedding_response()} | {:error, term()}
   def embed(text, opts \\ []) when is_binary(text) do

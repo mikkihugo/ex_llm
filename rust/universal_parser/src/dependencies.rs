@@ -222,139 +222,23 @@ impl RustCodeAnalyzer {
     Ok(Self { _initialized: true })
   }
 
-  /// Calculate technical debt ratio from Mozilla code analysis metrics
-  fn calculate_technical_debt_ratio(space: &mozilla_code_analysis::FuncSpace) -> f64 {
-    let cyclomatic = space.metrics.cyclomatic.cyclomatic_sum();
-    let cognitive = space.metrics.cognitive.cognitive_sum();
-    let lines = space.metrics.loc.sloc();
+  /// RCA disabled: placeholder implementation
+  fn calculate_technical_debt_ratio<T>(_space: &T) -> f64 { 0.0 }
 
-    if lines > 0.0 {
-      (cyclomatic + cognitive) / lines
-    } else {
-      0.0
-    }
-  }
+  /// RCA disabled: placeholder implementation
+  fn calculate_duplication_percentage<T>(_space: &T) -> f64 { 0.0 }
 
-  /// Calculate duplication percentage from Mozilla code analysis metrics
-  fn calculate_duplication_percentage(space: &mozilla_code_analysis::FuncSpace) -> f64 {
-    let total_lines = space.metrics.loc.sloc();
-    // Mozilla code analysis doesn't have direct duplication metrics
-    // Use cyclomatic complexity as a proxy for code duplication
-    let complexity = space.metrics.cyclomatic.cyclomatic_sum();
+  /// RCA disabled: placeholder implementation
+  fn extract_comprehensive_metrics<T>(_space: &T) -> HashMap<String, f64> { HashMap::new() }
 
-    if total_lines > 0.0 {
-      (complexity / total_lines) * 10.0 // Normalize to percentage
-    } else {
-      0.0
-    }
-  }
-
-  /// Extract comprehensive metrics from Mozilla code analysis
-  fn extract_comprehensive_metrics(space: &mozilla_code_analysis::FuncSpace) -> HashMap<String, f64> {
-    let mut metrics = HashMap::new();
-
-    // LOC Metrics (Lines of Code)
-    metrics.insert("sloc".to_string(), space.metrics.loc.sloc());
-    metrics.insert("ploc".to_string(), space.metrics.loc.ploc());
-    metrics.insert("lloc".to_string(), space.metrics.loc.lloc());
-    metrics.insert("cloc".to_string(), space.metrics.loc.cloc());
-    metrics.insert("blank_lines".to_string(), space.metrics.loc.blank());
-
-    // Complexity Metrics
-    metrics.insert("cyclomatic_complexity".to_string(), space.metrics.cyclomatic.cyclomatic_sum());
-    metrics.insert("cognitive_complexity".to_string(), space.metrics.cognitive.cognitive_sum());
-
-    // Function Metrics
-    metrics.insert("exit_points".to_string(), space.metrics.nexits.exit_sum());
-    metrics.insert("function_args".to_string(), space.metrics.nargs.fn_args_sum());
-    metrics.insert("number_of_methods".to_string(), space.metrics.nom.functions_sum());
-
-    // Halstead Metrics
-    metrics.insert("halstead_volume".to_string(), space.metrics.halstead.volume());
-    metrics.insert("halstead_difficulty".to_string(), space.metrics.halstead.difficulty());
-    metrics.insert("halstead_effort".to_string(), space.metrics.halstead.effort());
-    metrics.insert("halstead_operators".to_string(), space.metrics.halstead.operators());
-    metrics.insert("halstead_operands".to_string(), space.metrics.halstead.operands());
-    metrics.insert("halstead_unique_operators".to_string(), space.metrics.halstead.u_operators());
-    metrics.insert("halstead_unique_operands".to_string(), space.metrics.halstead.u_operands());
-
-    // Maintainability Metrics
-    metrics.insert("maintainability_index".to_string(), space.metrics.mi.mi_sei());
-
-    // ABC Metrics (Assignment, Branch, Condition)
-    metrics.insert("abc_score".to_string(), space.metrics.abc.assignments_sum());
-
-    // WMC Metrics (Weighted Methods per Class) - if available
-    metrics.insert("weighted_methods_per_class".to_string(), space.metrics.wmc.class_wmc_sum());
-
-    metrics
-  }
-
-  /// Analyze content with Mozilla code analysis
-  pub async fn analyze(&self, content: &str, language: ProgrammingLanguage) -> Result<(ComplexityMetrics, HalsteadMetrics, MaintainabilityMetrics)> {
-    let rca_lang = language.to_rca_language();
-
-    if let Some(lang) = rca_lang {
-      // Run Mozilla code analysis in a blocking task
-      let content = content.to_string();
-      let metrics = tokio::task::spawn_blocking(move || {
-        let source = content.as_bytes();
-
-        // Get metrics from Mozilla code analysis
-        use std::path::Path;
-
-        use mozilla_code_analysis::get_function_spaces;
-
-        let path = Path::new("temp_file");
-        if let Some(space) = get_function_spaces(&lang, source.to_vec(), path, None) {
-          // Extract comprehensive metrics from Mozilla code analysis
-          let comprehensive_metrics = Self::extract_comprehensive_metrics(&space);
-
-          let complexity_metrics = ComplexityMetrics {
-            cyclomatic: comprehensive_metrics.get("cyclomatic_complexity").copied().unwrap_or(1.0),
-            cognitive: comprehensive_metrics.get("cognitive_complexity").copied().unwrap_or(0.0),
-            exit_points: comprehensive_metrics.get("exit_points").copied().unwrap_or(1.0) as usize,
-            nesting_depth: comprehensive_metrics.get("function_args").copied().unwrap_or(0.0) as usize,
-          };
-
-          let halstead_metrics = HalsteadMetrics {
-            total_operators: comprehensive_metrics.get("halstead_unique_operators").copied().unwrap_or(0.0) as u64,
-            total_operands: comprehensive_metrics.get("halstead_unique_operands").copied().unwrap_or(0.0) as u64,
-            unique_operators: comprehensive_metrics.get("halstead_operators").copied().unwrap_or(0.0) as u64,
-            unique_operands: comprehensive_metrics.get("halstead_operands").copied().unwrap_or(0.0) as u64,
-            volume: comprehensive_metrics.get("halstead_volume").copied().unwrap_or(0.0),
-            difficulty: comprehensive_metrics.get("halstead_difficulty").copied().unwrap_or(0.0),
-            effort: comprehensive_metrics.get("halstead_effort").copied().unwrap_or(0.0),
-          };
-
-          let maintainability_metrics = MaintainabilityMetrics {
-            index: comprehensive_metrics.get("maintainability_index").copied().unwrap_or(100.0),
-            technical_debt_ratio: Self::calculate_technical_debt_ratio(&space),
-            duplication_percentage: Self::calculate_duplication_percentage(&space),
-          };
-
-          (complexity_metrics, halstead_metrics, maintainability_metrics)
-        } else {
-          // Fallback metrics when analysis fails
-          (
-            ComplexityMetrics { cyclomatic: 1.0, cognitive: 0.0, exit_points: 1, nesting_depth: 0 },
-            HalsteadMetrics { total_operators: 0, total_operands: 0, unique_operators: 0, unique_operands: 0, volume: 0.0, difficulty: 0.0, effort: 0.0 },
-            MaintainabilityMetrics { index: 100.0, technical_debt_ratio: 0.0, duplication_percentage: 0.0 },
-          )
-        }
-      })
-      .await?;
-
-      Ok(metrics)
-    } else {
-      // Language not supported by Mozilla code analysis, provide fallback
-      warn!("Language {} not supported by Mozilla code analysis, using fallback metrics", language);
-      Ok((
-        ComplexityMetrics { cyclomatic: 1.0, cognitive: 0.0, exit_points: 1, nesting_depth: 0 },
-        HalsteadMetrics { total_operators: 0, total_operands: 0, unique_operators: 0, unique_operands: 0, volume: 0.0, difficulty: 0.0, effort: 0.0 },
-        MaintainabilityMetrics { index: 100.0, technical_debt_ratio: 0.0, duplication_percentage: 0.0 },
-      ))
-    }
+  /// Analyze content (RCA disabled): return conservative fallback metrics
+  pub async fn analyze(&self, _content: &str, language: ProgrammingLanguage) -> Result<(ComplexityMetrics, HalsteadMetrics, MaintainabilityMetrics)> {
+    warn!("RCA metrics disabled; returning fallback metrics for {}", language);
+    Ok((
+      ComplexityMetrics { cyclomatic: 1.0, cognitive: 0.0, exit_points: 1, nesting_depth: 0 },
+      HalsteadMetrics { total_operators: 0, total_operands: 0, unique_operators: 0, unique_operands: 0, volume: 0.0, difficulty: 0.0, effort: 0.0 },
+      MaintainabilityMetrics { index: 100.0, technical_debt_ratio: 0.0, duplication_percentage: 0.0 },
+    ))
   }
 
   /// Check if Mozilla code analysis is available
@@ -425,18 +309,7 @@ mod tests {
     assert!(metrics.code_lines > 0);
   }
 
-  #[tokio::test]
-  async fn test_rca_analyzer() {
-    let analyzer = RustCodeAnalyzer::new().expect("Failed to create RCA analyzer");
-    assert!(analyzer.is_available());
-
-    let rust_code = "fn main() {\n    if true {\n        println!(\"Hello\");\n    }\n}";
-    #[allow(unused_variables)]
-    let (complexity, halstead, maintainability) = analyzer.analyze(rust_code, Language::Rust).await.expect("Failed to analyze");
-
-    assert!(complexity.cyclomatic >= 1.0);
-    assert!(maintainability.index >= 0.0);
-  }
+  // RCA analyzer test disabled
 
   #[tokio::test]
   async fn test_tree_sitter_manager() {

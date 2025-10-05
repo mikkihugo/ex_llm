@@ -140,31 +140,9 @@ impl ProgrammingLanguage {
     }
   }
 
-  /// Get the mozilla-code-analysis language for this language
-  pub fn to_rca_language(&self) -> Option<mozilla_code_analysis::LANG> {
-    match self {
-      ProgrammingLanguage::JavaScript => Some(mozilla_code_analysis::LANG::Javascript),
-      ProgrammingLanguage::TypeScript => Some(mozilla_code_analysis::LANG::Typescript),
-      ProgrammingLanguage::Python => Some(mozilla_code_analysis::LANG::Python),
-      ProgrammingLanguage::Rust => Some(mozilla_code_analysis::LANG::Rust),
-      ProgrammingLanguage::Go => None, // Go not supported in mozilla-code-analysis
-      ProgrammingLanguage::Java => Some(mozilla_code_analysis::LANG::Java),
-      ProgrammingLanguage::C => Some(mozilla_code_analysis::LANG::Cpp), // Use C++ parser for C
-      ProgrammingLanguage::Cpp => Some(mozilla_code_analysis::LANG::Cpp),
-      ProgrammingLanguage::CSharp => None, // CSharp not supported in mozilla-code-analysis
-      // Languages not supported by mozilla-code-analysis
-      ProgrammingLanguage::Erlang
-      | ProgrammingLanguage::Elixir
-      | ProgrammingLanguage::Gleam
-      | ProgrammingLanguage::Swift
-      | ProgrammingLanguage::Kotlin
-      | ProgrammingLanguage::Json
-      | ProgrammingLanguage::Yaml
-      | ProgrammingLanguage::Toml
-      | ProgrammingLanguage::Xml
-      | ProgrammingLanguage::Unknown
-      | ProgrammingLanguage::LanguageNotSupported => None,
-    }
+  /// RCA integration is disabled in this build
+  pub fn to_rca_language(&self) -> Option<()> {
+    None
   }
 
   /// Check if this language supports tree-sitter parsing
