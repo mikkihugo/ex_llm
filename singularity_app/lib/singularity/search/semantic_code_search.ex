@@ -541,18 +541,18 @@ defmodule Singularity.SemanticCodeSearch do
       vector_embedding
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8,
-      $8, $9, $10, $11,
-      $12, $13, $14, $15, $16, $17,
-      $18, $19, $20, $21,
-      $22, $23, $24, $25, $26,
-      $27, $28, $29, $30,
-      $31, $32, $33,
-      $34, $35,
-      $36, $37, $38,
-      $39, $40, $41, $42, $43, $44,
-      $45, $46, $47, $48,
-      $49, $50, $51, $52, $53,
-      $54
+      $9, $10, $11, $12,
+      $13, $14, $15, $16, $17, $18,
+      $19, $20, $21, $22,
+      $23, $24, $25, $26, $27,
+      $28, $29, $30, $31,
+      $32, $33, $34,
+      $35, $36,
+      $37, $38, $39,
+      $40, $41, $42, $43, $44, $45,
+      $46, $47, $48, $49,
+      $50, $51, $52, $53, $54,
+      $55
     )
     ON CONFLICT (codebase_id, path) DO UPDATE SET
       size = EXCLUDED.size,
@@ -610,6 +610,7 @@ defmodule Singularity.SemanticCodeSearch do
       updated_at = NOW()
     """, [
       codebase_id,
+      codebase_path,
       metadata.path,
       metadata.size,
       metadata.lines,
@@ -723,10 +724,22 @@ defmodule Singularity.SemanticCodeSearch do
 
   @doc """
   Perform semantic search using vector similarity
+
+  Accepts either an Ecto.Repo module or a raw Postgrex connection.
+  Using Repo (recommended) leverages connection pooling for better performance.
+
+  ## Examples
+
+      # With Ecto.Repo (recommended - uses connection pooling)
+      SemanticCodeSearch.semantic_search(Singularity.Repo, "my-codebase", vector, 10)
+
+      # With raw Postgrex connection (for backwards compatibility)
+      {:ok, conn} = Postgrex.start_link(...)
+      SemanticCodeSearch.semantic_search(conn, "my-codebase", vector, 10)
   """
-  def semantic_search(db_conn, codebase_id, query_vector, limit \\ 10) do
-    Postgrex.query!(db_conn, """
-    SELECT 
+  def semantic_search(repo_or_conn, codebase_id, query_vector, limit \\ 10) do
+    query = """
+    SELECT
       path,
       language,
       file_type,
@@ -734,13 +747,29 @@ defmodule Singularity.SemanticCodeSearch do
       maintainability_index,
       vector_embedding <-> $2 as distance,
       1 - (vector_embedding <-> $2) as similarity_score
-    FROM codebase_metadata 
+    FROM codebase_metadata
     WHERE codebase_id = $1 AND vector_embedding IS NOT NULL
     ORDER BY vector_embedding <-> $2
     LIMIT $3
-    """, [codebase_id, query_vector, limit])
-    |> Map.get(:rows)
-    |> Enum.map(fn [path, language, file_type, quality_score, maintainability_index, distance, similarity_score] ->
+    """
+
+    params = [codebase_id, query_vector, limit]
+
+    rows = case repo_or_conn do
+      # Ecto.Repo module (connection pooling)
+      repo when is_atom(repo) ->
+        case Ecto.Adapters.SQL.query!(repo, query, params) do
+          %{rows: rows} -> rows
+        end
+
+      # Raw Postgrex connection (backwards compatibility)
+      conn ->
+        case Postgrex.query!(conn, query, params) do
+          %{rows: rows} -> rows
+        end
+    end
+
+    Enum.map(rows, fn [path, language, file_type, quality_score, maintainability_index, _distance, similarity_score] ->
       %{
         path: path,
         language: language,

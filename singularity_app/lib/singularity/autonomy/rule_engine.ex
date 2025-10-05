@@ -31,8 +31,7 @@ defmodule Singularity.Autonomy.RuleEngine do
   """
   def execute(rule, context) do
     # Convert to Gleam types
-    gleam_rule = elixir_rule_to_gleam(rule)
-    gleam_context = elixir_context_to_gleam(context)
+    context = normalize_context(context)
 
     # Check cache first
     cache_key = generate_cache_key(rule, context)
@@ -43,19 +42,17 @@ defmodule Singularity.Autonomy.RuleEngine do
         {:ok, Map.put(cached_result, :cached, true)}
 
       :miss ->
-        # Execute rule via Gleam
-        result = :singularity@rule_engine.execute_rule(gleam_rule, gleam_context)
-        gleam_result = gleam_result_to_elixir(result)
+        result = run_rule(rule, context)
 
         # Cache if high confidence
-        if gleam_result.confidence >= 0.9 do
-          cache_result(cache_key, gleam_result)
+        if should_cache?(result) do
+          cache_result(cache_key, result)
         end
 
         # Broadcast event
-        broadcast_rule_executed(gleam_result)
+        broadcast_rule_executed(result)
 
-        classify_result(gleam_result)
+        classify_result(result)
     end
   end
 
@@ -112,8 +109,8 @@ defmodule Singularity.Autonomy.RuleEngine do
   end
 
   defp generate_cache_key(rule, context) do
-    fingerprint = :singularity@rule_engine.context_fingerprint(elixir_context_to_gleam(context))
-    :singularity@rule_engine.cache_key(rule.id, fingerprint)
+    fingerprint = context_fingerprint(context)
+    cache_key(rule.id, fingerprint)
   end
 
   ## Event Broadcasting
@@ -138,75 +135,6 @@ defmodule Singularity.Autonomy.RuleEngine do
 
   ## Type Conversions
 
-  defp elixir_rule_to_gleam(rule) do
-    %{
-      id: rule.id,
-      name: rule.name,
-      description: rule.description,
-      category: category_to_gleam(rule.category),
-      patterns: Enum.map(rule.patterns, &pattern_to_gleam/1),
-      confidence_threshold: rule.confidence_threshold
-    }
-  end
-
-  defp elixir_context_to_gleam(context) do
-    %{
-      feature_id: option_to_gleam(context[:feature_id]),
-      epic_id: option_to_gleam(context[:epic_id]),
-      code_snippet: option_to_gleam(context[:code_snippet]),
-      metrics: context[:metrics] || %{},
-      agent_score: context[:agent_score] || 1.0
-    }
-  end
-
-  defp gleam_result_to_elixir(result) do
-    %{
-      rule_id: result.rule_id,
-      confidence: result.confidence,
-      decision: decision_to_elixir(result.decision),
-      reasoning: result.reasoning,
-      execution_time_ms: result.execution_time_ms,
-      cached: result.cached
-    }
-  end
-
-  defp category_to_gleam(category) do
-    case category do
-      :code_quality -> {:CodeQuality}
-      :performance -> {:Performance}
-      :security -> {:Security}
-      :refactoring -> {:Refactoring}
-      :vision -> {:Vision}
-      :epic -> {:Epic}
-      :feature -> {:Feature}
-      _ -> {:CodeQuality}
-    end
-  end
-
-  defp pattern_to_gleam(pattern) do
-    case pattern do
-      {:regex, expression, opts} ->
-        {:RegexPattern, expression, Keyword.get(opts, :weight, 1.0)}
-
-      {:llm, prompt, opts} ->
-        {:LLMPattern, prompt, Keyword.get(opts, :weight, 1.0)}
-
-      {:metric, metric, _op, threshold, opts} ->
-        {:MetricPattern, metric, threshold, Keyword.get(opts, :weight, 1.0)}
-    end
-  end
-
-  defp decision_to_elixir(decision) do
-    case decision do
-      {:Autonomous, action} -> {:autonomous, action}
-      {:Collaborative, options} -> {:collaborative, options}
-      {:Escalated, reason} -> {:escalated, reason}
-    end
-  end
-
-  defp option_to_gleam(nil), do: :none
-  defp option_to_gleam(value), do: {:some, value}
-
   ## Result Classification
 
   defp classify_result(result) do
@@ -220,6 +148,170 @@ defmodule Singularity.Autonomy.RuleEngine do
       {:escalated, _reason} ->
         {:escalated, result}
     end
+  end
+
+  ## Rule execution (Elixir implementation)
+
+  defp run_rule(rule, context) do
+    start_time = System.monotonic_time(:millisecond)
+    patterns = rule.patterns || []
+    confidence = calculate_confidence(patterns, context)
+    decision = classify_decision(confidence, rule)
+    reasoning = generate_reasoning(confidence, rule)
+    execution_time = System.monotonic_time(:millisecond) - start_time
+
+    %{
+      rule_id: rule.id,
+      confidence: confidence,
+      decision: decision,
+      reasoning: reasoning,
+      execution_time_ms: execution_time,
+      cached: false
+    }
+  end
+
+  defp should_cache?(result), do: result.confidence >= 0.9
+
+  defp calculate_confidence([], _context), do: 0.5
+
+  defp calculate_confidence(patterns, context) do
+    scores = Enum.map(patterns, &pattern_score(&1, context))
+    total = Enum.reduce(scores, 0.0, &+/2)
+    count = length(scores)
+
+    if count == 0 do
+      0.5
+    else
+      total / count
+    end
+  end
+
+  defp pattern_score({:regex, _expression, opts}, _context) do
+    weight = Keyword.get(opts, :weight, 1.0)
+    weight * 0.8
+  end
+
+  defp pattern_score({:llm, _prompt, opts}, _context) do
+    weight = Keyword.get(opts, :weight, 1.0)
+    weight * 0.85
+  end
+
+  defp pattern_score({:metric, metric, op, threshold, opts}, context) do
+    weight = Keyword.get(opts, :weight, 1.0)
+    metrics = context.metrics
+    value = fetch_metric(metrics, metric)
+
+    cond do
+      is_number(value) and passes_threshold?(value, op, threshold) ->
+        weight
+
+      is_number(value) and threshold not in [0, 0.0] ->
+        ratio = value / threshold
+        weight * ratio
+
+      is_number(value) ->
+        weight * 0.5
+
+      true ->
+        weight * 0.5
+    end
+  end
+
+  defp pattern_score(_other, _context), do: 0.5
+
+  defp passes_threshold?(value, op, threshold) do
+    case op do
+      :>= -> value >= threshold
+      :> -> value > threshold
+      :<= -> value <= threshold
+      :< -> value < threshold
+      :== -> value == threshold
+      "<" -> value < threshold
+      "<=" -> value <= threshold
+      ">" -> value > threshold
+      ">=" -> value >= threshold
+      "==" -> value == threshold
+      _ -> value >= threshold
+    end
+  end
+
+  defp classify_decision(confidence, rule) when confidence >= 0.9 do
+    {:autonomous, "Execute automatically: #{rule.name}"}
+  end
+
+  defp classify_decision(confidence, rule) when confidence >= 0.7 do
+    {:collaborative,
+     [
+       "Approve: #{rule.name}",
+       "Reject: #{rule.name}",
+       "Modify parameters"
+     ]}
+  end
+
+  defp classify_decision(confidence, rule) do
+    {:escalated, "Low confidence (#{format_percent(confidence)}) - Human decision required"}
+  end
+
+  defp generate_reasoning(confidence, rule) when confidence >= 0.9 do
+    "High confidence (#{format_percent(confidence)}) - #{rule.description} - Executing autonomously"
+  end
+
+  defp generate_reasoning(confidence, rule) when confidence >= 0.7 do
+    "Moderate confidence (#{format_percent(confidence)}) - #{rule.description} - Requesting collaboration"
+  end
+
+  defp generate_reasoning(confidence, rule) do
+    "Low confidence (#{format_percent(confidence)}) - #{rule.description} - Escalating to human"
+  end
+
+  defp context_fingerprint(context) do
+    feature = context[:feature_id] || context[:feature] || "none"
+    epic = context[:epic_id] || context[:epic] || "none"
+    score = context[:agent_score] || 1.0
+
+    Enum.join([feature, epic, to_string(score)], "|")
+  end
+
+  defp cache_key(rule_id, fingerprint), do: "moonshine:#{rule_id}:#{fingerprint}"
+
+  defp normalize_context(context) do
+    context
+    |> Map.new()
+    |> Map.update(:metrics, %{}, &normalize_metrics/1)
+    |> Map.put_new(:agent_score, 1.0)
+  end
+
+  defp normalize_metrics(nil), do: %{}
+  defp normalize_metrics(map) when is_map(map) do
+    Enum.reduce(map, %{}, fn {key, value}, acc ->
+      key_str =
+        cond do
+          is_binary(key) -> key
+          is_atom(key) -> Atom.to_string(key)
+          true -> to_string(key)
+        end
+
+      Map.put(acc, key_str, value)
+    end)
+  end
+  defp normalize_metrics(_), do: %{}
+
+  defp fetch_metric(metrics, metric) do
+    metrics
+    |> Map.get(normalize_metric_key(metric))
+  end
+
+  defp normalize_metric_key(metric) when is_binary(metric), do: metric
+  defp normalize_metric_key(metric) when is_atom(metric), do: Atom.to_string(metric)
+  defp normalize_metric_key(metric), do: to_string(metric)
+
+  defp format_percent(confidence) do
+    confidence
+    |> Kernel.*(100.0)
+    |> Float.round()
+    |> trunc()
+    |> Integer.to_string()
+    |> Kernel.<>("%")
   end
 
   ## High-Level Helpers

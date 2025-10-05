@@ -1,5 +1,6 @@
 import gleam/string
 import gleam/result
+import gleam/bool
 
 pub type ValidationError {
   ValidationError(message: String)
@@ -11,7 +12,9 @@ pub fn validate(code: String) -> Result(String, ValidationError) {
     n if n > 1_000_000 -> Error(ValidationError("code payload too large (max 1MB)"))
     _ -> {
       // Basic validation: check for valid Gleam-like structure
-      case string.contains(code, "pub fn") || string.contains(code, "fn ") {
+      let has_pub_fn = string.contains(code, "pub fn")
+      let has_fn = string.contains(code, "fn ")
+      case has_pub_fn || has_fn {
         True -> Ok(code)
         False -> Error(ValidationError("code must contain at least one function"))
       }

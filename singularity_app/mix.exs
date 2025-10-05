@@ -1,10 +1,6 @@
 defmodule Singularity.MixProject do
   use Mix.Project
 
-  Code.require_file("lib/mix/tasks/gleam_helpers.ex", __DIR__)
-  Code.require_file("lib/mix/tasks/compile/gleam.ex", __DIR__)
-  Code.require_file("lib/mix/tasks/gleam/deps/get.ex", __DIR__)
-
   @app :singularity
 
   def project do
@@ -13,9 +9,7 @@ defmodule Singularity.MixProject do
       version: project_version(),
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
-      erlc_paths: erlc_paths(Mix.env()),
-      erlc_include_path: erlc_include_path(Mix.env()),
-      compilers: [:gleam | Mix.compilers()],
+      compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       prune_code_paths: false,
       aliases: aliases(),
@@ -53,19 +47,6 @@ defmodule Singularity.MixProject do
     |> Path.expand(__DIR__)
     |> File.read!()
     |> String.trim()
-  end
-
-  defp erlc_paths(env) do
-    build_path = Path.join(["build", Atom.to_string(env), "erlang", Atom.to_string(@app)])
-
-    [
-      Path.join(build_path, "_gleam_artefacts"),
-      Path.join(build_path, "build")
-    ]
-  end
-
-  defp erlc_include_path(env) do
-    Path.join(["build", Atom.to_string(env), "erlang", Atom.to_string(@app), "include"])
   end
 
   defp deps do
@@ -126,11 +107,6 @@ defmodule Singularity.MixProject do
       # Parallel processing
       {:flow, "~> 1.2"},
 
-      # Gleam Integration
-      {:mix_gleam, "~> 0.6.2", runtime: false},
-      {:gleam_stdlib, "~> 0.65", app: false, manager: :rebar3, override: true},
-      {:gleeunit, "~> 1.0", app: false, manager: :rebar3, only: [:dev, :test]},
-
       # Development & Testing
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
@@ -156,7 +132,7 @@ defmodule Singularity.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "gleam.deps.get"],
+      setup: ["deps.get"],
       test: ["test"],
       "test.ci": ["test --color --cover"],
       coverage: ["coveralls.html"],

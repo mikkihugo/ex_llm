@@ -4,12 +4,12 @@ defmodule Singularity.Autonomy.RuleEngineV2 do
 
   **NO EVENT-DRIVEN** - uses GenServer message passing.
   **Rules in Postgres** - evolve via consensus.
-  **Gleam execution** - fast, type-safe pattern matching.
+  **Pure Elixir execution** - migrated from Gleam for simplicity.
   **Correlation tracking** - via OTP process dictionary.
 
   Architecture:
   - RuleLoader (GenServer) - caches rules from Postgres in ETS
-  - RuleEngine (this module) - executes rules via Gleam
+  - RuleEngine (this module) - executes rules via RuleEngineCore
   - RuleEvolutionManager (GenServer) - handles consensus voting
   """
 
@@ -17,7 +17,7 @@ defmodule Singularity.Autonomy.RuleEngineV2 do
   require Logger
 
   alias Singularity.{Repo, Autonomy}
-  alias Autonomy.{Rule, RuleExecution, RuleLoader}
+  alias Autonomy.{Rule, RuleExecution, RuleLoader, RuleEngineCore}
 
   ## Client API
 
@@ -96,11 +96,9 @@ defmodule Singularity.Autonomy.RuleEngineV2 do
       _ ->
         # Load rule from ETS/DB
         case RuleLoader.get_rule(rule_id) do
-          {:ok, gleam_rule} ->
-            # Execute via Gleam
-            gleam_context = elixir_context_to_gleam(context)
-            gleam_result = :singularity@rule_engine.execute_rule(gleam_rule, gleam_context)
-            result = gleam_result_to_elixir(gleam_result)
+          {:ok, rule} ->
+            # Execute via pure Elixir RuleEngineCore
+            result = RuleEngineCore.execute_rule(rule, context)
 
             execution_time = System.monotonic_time(:millisecond) - start_time
 

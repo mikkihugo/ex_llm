@@ -12,7 +12,7 @@ defmodule Singularity.Autonomy.Planner do
 
   require Logger
 
-  alias Singularity.Planning.{Coordinator, HTDAG, StoryDecomposer}
+  alias Singularity.Planning.{WorkPlanCoordinator, HTDAG, StoryDecomposer}
   alias Singularity.Refactoring.Analyzer
   alias Singularity.Learning.PatternMiner
 
@@ -43,7 +43,7 @@ defmodule Singularity.Autonomy.Planner do
 
       _ ->
         # Priority 2: Check SAFe vision-driven tasks (WSJF prioritized)
-        case Coordinator.get_next_work() do
+        case WorkPlanCoordinator.get_next_work() do
           nil ->
             :none
 

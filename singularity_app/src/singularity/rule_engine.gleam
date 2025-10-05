@@ -7,10 +7,11 @@
 //// - <70% confidence: Escalate to human
 ////
 
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 import gleam/list
 import gleam/string
 import gleam/float
+import gleam/int
 import gleam/result
 import gleam/dict.{type Dict}
 
@@ -109,7 +110,7 @@ fn calculate_confidence(patterns: List(Pattern), context: Context) -> Float {
         pattern_score(pattern, context)
       })
       let total = list.fold(scores, 0.0, float.add)
-      let count = list.length(scores) |> float.from_int()
+      let count = list.length(scores) |> int.to_float()
       float.divide(total, count) |> result.unwrap(0.5)
     }
   }
@@ -118,13 +119,13 @@ fn calculate_confidence(patterns: List(Pattern), context: Context) -> Float {
 /// Score individual pattern
 fn pattern_score(pattern: Pattern, context: Context) -> Float {
   case pattern {
-    RegexPattern(_, weight) -> weight * 0.8  // Regex patterns are deterministic
-    LLMPattern(_, weight) -> weight * 0.85   // LLM patterns have high confidence
+    RegexPattern(_, weight) -> weight *. 0.8  // Regex patterns are deterministic
+    LLMPattern(_, weight) -> weight *. 0.85   // LLM patterns have high confidence
     MetricPattern(metric, threshold, weight) -> {
       case dict.get(context.metrics, metric) {
-        Ok(value) if value >= threshold -> weight
-        Ok(value) -> weight * {value /. threshold}
-        Error(_) -> weight * 0.5
+        Ok(value) if value >=. threshold -> weight
+        Ok(value) -> weight *. {value /. threshold}
+        Error(_) -> weight *. 0.5
       }
     }
   }
@@ -132,21 +133,22 @@ fn pattern_score(pattern: Pattern, context: Context) -> Float {
 
 /// Classify decision based on confidence
 fn classify_decision(confidence: Float, rule: Rule) -> Decision {
-  case confidence {
-    c if c >= autonomous_threshold ->
+  case confidence >=. autonomous_threshold {
+    True ->
       Autonomous(action: "Execute automatically: " <> rule.name)
-
-    c if c >= collaborative_threshold && c < autonomous_threshold ->
-      Collaborative(options: [
-        "Approve: " <> rule.name,
-        "Reject: " <> rule.name,
-        "Modify parameters"
-      ])
-
-    _ ->
-      Escalated(
-        reason: "Low confidence (" <> float.to_string(confidence) <> ") - Human decision required"
-      )
+    False ->
+      case confidence >=. collaborative_threshold {
+        True ->
+          Collaborative(options: [
+            "Approve: " <> rule.name,
+            "Reject: " <> rule.name,
+            "Modify parameters"
+          ])
+        False ->
+          Escalated(
+            reason: "Low confidence (" <> float.to_string(confidence) <> ") - Human decision required"
+          )
+      }
   }
 }
 

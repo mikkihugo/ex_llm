@@ -40,9 +40,9 @@ defmodule Singularity.Schemas.PackageRegistryKnowledge do
     field :collected_at, :utc_datetime
     field :last_updated_at, :utc_datetime
 
-    has_many :examples, Singularity.Schemas.PackageCodeExample
-    has_many :patterns, Singularity.Schemas.PackageUsagePattern
-    has_many :dependencies, Singularity.Schemas.PackageDependency
+    has_many :examples, Singularity.Schemas.PackageCodeExample, foreign_key: :tool_id
+    has_many :patterns, Singularity.Schemas.PackageUsagePattern, foreign_key: :tool_id
+    has_many :dependencies, Singularity.Schemas.PackageDependency, foreign_key: :tool_id
 
     timestamps(type: :utc_datetime)
   end

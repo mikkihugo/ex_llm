@@ -27,11 +27,237 @@ defmodule Singularity.Learning.PatternMiner do
     ranked
   end
 
-  @doc "Retrieve patterns relevant to a task"
+  @doc """
+  Retrieve patterns relevant to a task using vector similarity search
+
+  Searches the semantic_patterns table for patterns similar to the task description.
+  Falls back to codebase metadata search if no semantic patterns are found.
+
+  Returns list of pattern maps with:
+  - name: Pattern name
+  - description: Pattern description/pseudocode
+  - code_example: Code template or example
+  - similarity_score: Similarity to task (0.0-1.0)
+
+  ## Examples
+
+      iex> retrieve_patterns_for_task(%{description: "Create a GenServer cache"})
+      [%{name: "GenServer cache", description: "...", similarity_score: 0.92}]
+  """
   def retrieve_patterns_for_task(task) do
-    # TODO: Query vector DB for similar patterns
-    # For now, return empty
-    []
+    task_description = extract_task_description(task)
+
+    Logger.debug("Retrieving patterns for task: #{task_description}")
+
+    # Try semantic patterns first (indexed from quality templates)
+    case search_semantic_patterns(task_description) do
+      {:ok, patterns} when length(patterns) > 0 ->
+        Logger.info("Found #{length(patterns)} semantic patterns for task")
+        patterns
+
+      _ ->
+        # Fallback to codebase metadata patterns (from actual code)
+        Logger.debug("No semantic patterns found, searching codebase metadata")
+
+        case search_codebase_patterns(task_description) do
+          {:ok, patterns} when length(patterns) > 0 ->
+            Logger.info("Found #{length(patterns)} codebase patterns for task")
+            patterns
+
+          _ ->
+            Logger.warning("No patterns found for task: #{task_description}")
+            []
+        end
+    end
+  end
+
+  ## Private Pattern Search Functions
+
+  defp extract_task_description(task) when is_binary(task), do: task
+
+  defp extract_task_description(%{description: description}) when is_binary(description),
+    do: description
+
+  defp extract_task_description(%{"description" => description}) when is_binary(description),
+    do: description
+
+  defp extract_task_description(task) do
+    # Fallback: inspect the task structure
+    inspect(task)
+  end
+
+  defp search_semantic_patterns(task_description, opts \\ []) do
+    top_k = Keyword.get(opts, :top_k, 5)
+
+    # Generate embedding for task
+    case Singularity.EmbeddingGenerator.embed(task_description) do
+      {:ok, task_embedding} ->
+        # Query semantic_patterns table
+        query = """
+        SELECT
+          pattern_name,
+          pseudocode,
+          relationships,
+          keywords,
+          pattern_type,
+          1 - (embedding <=> $1::vector) AS similarity_score
+        FROM semantic_patterns
+        WHERE embedding IS NOT NULL
+        ORDER BY embedding <=> $1::vector
+        LIMIT $2
+        """
+
+        case Singularity.Repo.query(query, [task_embedding, top_k]) do
+          {:ok, %{rows: rows}} when length(rows) > 0 ->
+            patterns =
+              Enum.map(rows, fn [name, pseudocode, relationships, keywords, pattern_type, similarity] ->
+                %{
+                  name: name,
+                  description: build_pattern_description(pseudocode, relationships, keywords),
+                  code_example: pseudocode,
+                  similarity_score: Float.round(similarity, 3),
+                  pattern_type: pattern_type,
+                  metadata: %{
+                    relationships: relationships || [],
+                    keywords: keywords || []
+                  }
+                }
+              end)
+
+            {:ok, patterns}
+
+          {:ok, %{rows: []}} ->
+            {:error, :no_patterns_found}
+
+          {:error, reason} ->
+            Logger.error("Failed to query semantic patterns: #{inspect(reason)}")
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        Logger.error("Failed to generate embedding for task: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  defp search_codebase_patterns(task_description, opts \\ []) do
+    top_k = Keyword.get(opts, :top_k, 5)
+
+    # Generate embedding for task
+    case Singularity.EmbeddingGenerator.embed(task_description) do
+      {:ok, task_embedding} ->
+        # Query codebase_metadata table for high-quality code patterns
+        query = """
+        SELECT
+          path,
+          language,
+          patterns,
+          quality_score,
+          maintainability_index,
+          1 - (vector_embedding <=> $1::vector) AS similarity_score
+        FROM codebase_metadata
+        WHERE vector_embedding IS NOT NULL
+          AND quality_score > 70
+          AND patterns IS NOT NULL
+          AND jsonb_array_length(patterns) > 0
+        ORDER BY vector_embedding <=> $1::vector
+        LIMIT $2
+        """
+
+        case Singularity.Repo.query(query, [task_embedding, top_k]) do
+          {:ok, %{rows: rows}} when length(rows) > 0 ->
+            patterns =
+              Enum.map(rows, fn [path, language, patterns_json, quality, maintainability, similarity] ->
+                patterns_list = if is_binary(patterns_json) do
+                  case Jason.decode(patterns_json) do
+                    {:ok, list} -> list
+                    _ -> []
+                  end
+                else
+                  patterns_json || []
+                end
+
+                pattern_name = extract_pattern_name(path, patterns_list)
+
+                %{
+                  name: pattern_name,
+                  description: build_codebase_pattern_description(path, language, patterns_list, quality),
+                  code_example: "See: #{path}",
+                  similarity_score: Float.round(similarity, 3),
+                  pattern_type: "codebase_pattern",
+                  metadata: %{
+                    file_path: path,
+                    language: language,
+                    quality_score: quality,
+                    maintainability_index: maintainability,
+                    patterns: patterns_list
+                  }
+                }
+              end)
+
+            {:ok, patterns}
+
+          {:ok, %{rows: []}} ->
+            {:error, :no_patterns_found}
+
+          {:error, reason} ->
+            Logger.error("Failed to query codebase patterns: #{inspect(reason)}")
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        Logger.error("Failed to generate embedding for task: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  defp build_pattern_description(pseudocode, relationships, keywords) do
+    rel_text = if relationships && length(relationships) > 0 do
+      "\nRelationships: #{Enum.join(relationships, ", ")}"
+    else
+      ""
+    end
+
+    kw_text = if keywords && length(keywords) > 0 do
+      "\nKeywords: #{Enum.join(keywords, ", ")}"
+    else
+      ""
+    end
+
+    """
+    #{pseudocode}#{rel_text}#{kw_text}
+    """
+    |> String.trim()
+  end
+
+  defp build_codebase_pattern_description(path, language, patterns, quality_score) do
+    patterns_text = if patterns && length(patterns) > 0 do
+      patterns
+      |> Enum.take(3)
+      |> Enum.join(", ")
+    else
+      "No specific patterns"
+    end
+
+    """
+    High-quality #{language} code from: #{path}
+    Quality Score: #{Float.round(quality_score, 1)}/100
+    Patterns: #{patterns_text}
+    """
+    |> String.trim()
+  end
+
+  defp extract_pattern_name(path, patterns) do
+    # Try to get a meaningful name from the file path
+    filename = Path.basename(path, Path.extname(path))
+
+    pattern_suffix = if patterns && length(patterns) > 0 do
+      " (#{List.first(patterns)})"
+    else
+      ""
+    end
+
+    "#{filename}#{pattern_suffix}"
   end
 
   ## Private Functions

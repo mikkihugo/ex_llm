@@ -49,6 +49,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
   alias Singularity.PackageRegistryKnowledge
   alias Singularity.SemanticCodeSearch
   alias Singularity.EmbeddingGenerator
+  alias Singularity.Repo
 
   @doc """
   Unified search combining packages and your codebase combining Tool Knowledge + RAG
@@ -198,22 +199,19 @@ defmodule Singularity.PackageAndCodebaseSearch do
 
   defp search_your_code(query, nil, _limit), do: []
   defp search_your_code(query, codebase_id, limit) do
-    # Get database connection (you'll need to configure this)
-    {:ok, conn} = Postgrex.start_link(
-      hostname: System.get_env("DB_HOST", "localhost"),
-      database: System.get_env("DB_NAME", "singularity_dev"),
-      username: System.get_env("DB_USER", "postgres"),
-      password: System.get_env("DB_PASSWORD", "postgres")
-    )
-
-    # Generate embedding for query
-    {:ok, query_vector} = EmbeddingGenerator.embed(query)
-
-    # Search your codebase
-    results = SemanticCodeSearch.semantic_search(conn, codebase_id, query_vector, limit)
-
-    GenServer.stop(conn)
-    results
+    # Use Repo for connection pooling - no manual connection management needed
+    with {:ok, query_vector} <- EmbeddingGenerator.embed(query),
+         results <- SemanticCodeSearch.semantic_search(Repo, codebase_id, query_vector, limit) do
+      results
+    else
+      {:error, reason} ->
+        Logger.warning("Failed to search your code: #{inspect(reason)}")
+        []
+    end
+  rescue
+    error ->
+      Logger.error("Error searching your code: #{inspect(error)}")
+      []
   end
 
   defp generate_insights(query, packages, your_code, ecosystem) do
