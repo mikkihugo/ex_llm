@@ -12,14 +12,14 @@ defmodule Singularity.TechnologyTemplateStore do
   alias Singularity.Schemas.TechnologyTemplate, as: Template
   alias Singularity.{Repo, TechnologyTemplateLoader}
 
-  @type identifier :: atom() | String.t() | [atom() | String.t()] | {atom(), atom()}
+  @type template_identifier :: atom() | String.t() | [atom() | String.t()] | {atom(), atom()}
   @type template_map :: map()
 
   @doc """
   Fetch a technology template from the database for the given identifier.
   Returns the decoded template map or `nil` when absent.
   """
-  @spec get(identifier()) :: template_map() | nil
+  @spec get(template_identifier()) :: template_map() | nil
   def get(identifier) do
     key = normalize_identifier(identifier)
 
@@ -36,7 +36,7 @@ defmodule Singularity.TechnologyTemplateStore do
   with a deterministic checksum. Accepts optional metadata such as source
   or version overrides.
   """
-  @spec upsert(identifier(), template_map(), keyword()) :: {:ok, Template.t()} | {:error, Changeset.t()}
+  @spec upsert(template_identifier(), template_map(), keyword()) :: {:ok, Template.t()} | {:error, Changeset.t()}
   def upsert(identifier, %{} = template, opts \\ []) do
     key = normalize_identifier(identifier)
     category = opts[:category] || category_from_identifier(identifier) || template["category"] || "unknown"
@@ -176,41 +176,5 @@ defmodule Singularity.TechnologyTemplateStore do
     |> Jason.encode!()
     |> then(&:crypto.hash(:sha256, &1))
     |> Base.encode16(case: :lower)
-  end
-
-  @doc false
-  defmodule Template do
-    @moduledoc false
-    use Ecto.Schema
-    import Ecto.Changeset
-
-    schema "technology_templates" do
-      field :identifier, :string
-      field :category, :string
-      field :version, :string
-      field :source, :string
-      field :template, :map
-      field :metadata, :map, default: %{}
-      field :checksum, :string
-
-      timestamps(type: :utc_datetime_usec)
-    end
-
-    @required ~w(identifier category template)a
-
-    def changeset(struct, attrs) do
-      struct
-      |> cast(attrs, [:identifier, :category, :version, :source, :template, :metadata, :checksum])
-      |> validate_required(@required)
-      |> unique_constraint(:identifier)
-      |> validate_template_is_object()
-    end
-
-    defp validate_template_is_object(changeset) do
-      case get_field(changeset, :template) do
-        %{} -> changeset
-        _ -> add_error(changeset, :template, "must be a JSON object")
-      end
-    end
   end
 end

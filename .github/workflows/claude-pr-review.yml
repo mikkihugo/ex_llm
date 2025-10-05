@@ -23,9 +23,9 @@ jobs:
       - name: Setup BEAM (Elixir + Gleam + OTP)
         uses: erlef/setup-beam@v1
         with:
-          otp-version: '28.x'
-          elixir-version: '1.20.x'  # Latest stable
-          gleam-version: '1.6.x'
+          otp-version: '27.x'  # Stable
+          elixir-version: '1.17.3'  # Known working version
+          gleam-version: '1.5.1'  # Stable
 
       - name: Setup Bun (TypeScript)
         uses: oven-sh/setup-bun@v2
