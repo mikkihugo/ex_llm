@@ -1,0 +1,103 @@
+name: "Copilot Setup Steps"
+
+# Automatically run the setup steps when they are changed to allow for easy validation, and
+# allow manual testing through the repository's "Actions" tab
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    # Set the permissions to the lowest permissions possible needed for your steps.
+    # Copilot will be given its own token for its operations.
+    permissions:
+      # If you want to clone the repository as part of your setup steps, for example to install dependencies, 
+      # you'll need the `contents: read` permission. If you don't clone the repository in your setup steps, 
+      # Copilot will do this for you automatically after the steps complete.
+      contents: read
+
+    # You can define any steps you want, and they will run before the agent starts.
+    # If you do not check out your code, Copilot will do this for you.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+
+      - name: Setup Nix cache
+        uses: cachix/cachix-action@v15
+        with:
+          name: singularity
+          # If you have a cachix token, uncomment and add it to repository secrets:
+          # authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipPush: true
+
+      - name: Install dependencies via Nix
+        run: |
+          # Enter the dev shell to install all dependencies
+          nix develop .#dev --command bash -c "
+            echo 'Nix development environment loaded successfully'
+            echo 'Available tools:'
+            which elixir || echo 'elixir not found'
+            which gleam || echo 'gleam not found'
+            which cargo || echo 'cargo not found'
+            which just || echo 'just not found'
+            elixir --version || true
+            gleam --version || true
+            cargo --version || true
+          "
+
+      - name: Install Elixir dependencies
+        run: |
+          nix develop .#dev --command bash -c "
+            cd singularity_app
+            mix local.hex --force
+            mix local.rebar --force
+            mix deps.get
+            mix gleam.deps.get
+          "
+
+      - name: Install JavaScript dependencies
+        run: |
+          nix develop .#dev --command bash -c "
+            if [ -f bun.lock ] || [ -f bun.lockb ]; then
+              bun install --frozen-lockfile
+            else
+              bun install
+            fi
+          "
+
+      - name: Verify setup
+        run: |
+          nix develop .#dev --command bash -c "
+            echo '=== Environment Verification ==='
+            echo 'Elixir version:'
+            elixir --version
+            echo ''
+            echo 'Gleam version:'
+            gleam --version
+            echo ''
+            echo 'Rust version:'
+            cargo --version
+            echo ''
+            echo 'Just version:'
+            just --version
+            echo ''
+            echo 'Mix deps status:'
+            cd singularity_app && mix deps
+            echo ''
+            echo 'Setup complete! Copilot can now use this environment.'
+          "
