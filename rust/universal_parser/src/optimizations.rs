@@ -438,7 +438,7 @@ impl StreamingAnalyzer {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::Language;
+  use crate::languages::ProgrammingLanguage;
 
   #[tokio::test]
   async fn test_analysis_cache() {

@@ -1,0 +1,64 @@
+# Moon project config for templates_data (Living Knowledge Base)
+type: 'library'
+language: 'unknown'  # Data project, not code
+
+project:
+  name: '@singularity/templates'
+  description: 'Living knowledge base - Git source ←→ PostgreSQL runtime (internal tooling)'
+
+tags: ['data', 'templates', 'embeddings', 'learning']
+
+# Monorepo mode: All tasks run in Nix (prod/test/dev)
+# Git ←→ PostgreSQL bidirectional sync for learning loops
+
+tasks:
+  # Validate JSON against schema
+  validate:
+    command: 'bun run validate.ts'
+    inputs:
+      - '**/*.json'
+      - '!learned/**'
+      - 'schema.json'
+    options:
+      runInCI: true
+
+  # Sync Git → PostgreSQL
+  sync-to-db:
+    command: 'cd ../singularity_app && mix run -e "Singularity.Knowledge.ArtifactStore.sync_from_git()"'
+    deps: ['~:validate']
+    inputs:
+      - '**/*.json'
+      - '!learned/**'
+    options:
+      cache: false
+
+  # Sync PostgreSQL → Git (learned patterns)
+  sync-from-db:
+    command: 'cd ../singularity_app && mix run -e "Singularity.Knowledge.ArtifactStore.export_learned_to_git()"'
+    outputs:
+      - 'learned/**/*.json'
+    options:
+      cache: false
+
+  # Create vector index (after bulk import)
+  embed-all:
+    command: 'cd ../singularity_app && mix run -e "Singularity.Knowledge.ArtifactStore.create_vector_index()"'
+    deps: ['~:sync-to-db']
+    options:
+      cache: false
+
+  # Statistics report
+  stats:
+    command: 'cd ../singularity_app && mix templates.stats'
+    options:
+      cache: false
+
+fileGroups:
+  sources:
+    - 'quality/**/*.json'
+    - 'frameworks/**/*.json'
+    - 'prompts/**/*.json'
+    - 'code_generation/**/*.json'
+
+  generated:
+    - 'learned/**/*.json'

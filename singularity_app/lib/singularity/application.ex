@@ -52,9 +52,16 @@ defmodule Singularity.Application do
 
         # Caching (Rule Engine)
         {Cachex, name: :rule_engine_cache},
+        # Embedding cache
+        {Cachex, name: :embedding_cache},
 
         # Memory Cache (Ultra-fast)
         Singularity.MemoryCache,
+
+        # Embedding Service (with Rustler GPU acceleration)
+        Singularity.EmbeddingService,
+        # Preload embedding models (downloads from HuggingFace if needed)
+        Singularity.EmbeddingModelLoader,
 
         # RAG & Template Optimization
         Singularity.TemplatePerformanceTracker,

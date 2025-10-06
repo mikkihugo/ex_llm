@@ -1,10 +1,12 @@
 [workspace]
 members = [
     "analysis_suite",
+    "embedding_engine",
     "linting_engine",
     "prompt_engine",
     "tool_doc_index",
-    "universal_parser"
+    "universal_parser",
+    "mozilla-code-analysis"
 ]
 
 [workspace.dependencies]
@@ -21,6 +23,7 @@ walkdir = "2.5"
 ignore = "0.4"
 glob = "0.3"
 toml = "0.8"
+aho-corasick = "1.1"
 
 # UUID generation
 uuid = { version = "1.0", features = ["v4", "serde"] }
@@ -67,6 +70,18 @@ thiserror = "1.0"
 tree-sitter = "0.22"
 tree-sitter-javascript = "0.21"
 tree-sitter-typescript = "0.21"
+tree-sitter-python = "0.21"
+tree-sitter-rust = "0.21"
+tree-sitter-go = "0.21"
+tree-sitter-erlang = "0.4"
+tree-sitter-elixir = "0.2"
+tree-sitter-gleam = "1.0"
+tree-sitter-java = "0.21"
+tree-sitter-c = "0.21"
+tree-sitter-cpp = "0.21"
+tree-sitter-c-sharp = "0.21"
+tree-sitter-swift = "0.4"
+tree-sitter-kotlin = "0.3"
 
 # Cryptography and security
 ahash = "0.8"

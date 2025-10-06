@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# Database setup script for Singularity (Nix PostgreSQL)
+# Creates shared database with extensions for all environments
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+DB_NAME="${SINGULARITY_DB_NAME:-singularity}"
+DB_USER="${SINGULARITY_DB_USER:-${USER}}"
+
+echo -e "${GREEN}🗄️  Singularity Database Setup${NC}"
+echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+# Check if PostgreSQL is running
+if ! pg_isready -q 2>/dev/null; then
+    echo -e "${YELLOW}⚠️  PostgreSQL is not running${NC}"
+    echo ""
+    echo "Starting PostgreSQL in Nix..."
+    echo "If using devenv/nix develop, PostgreSQL should auto-start."
+    echo ""
+    echo "Manual start options:"
+    echo "  1. nix develop (recommended)"
+    echo "  2. pg_ctl -D \$PGDATA -l logfile start"
+    echo ""
+    exit 1
+fi
+
+echo -e "${GREEN}✅ PostgreSQL is running${NC}"
+echo ""
+
+# Check if database exists
+if psql -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
+    echo -e "${YELLOW}📊 Database '$DB_NAME' already exists${NC}"
+    read -p "Do you want to recreate it? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}Dropping database...${NC}"
+        dropdb "$DB_NAME" || true
+    else
+        echo "Skipping database creation. Will proceed with migrations."
+        DB_EXISTS=true
+    fi
+fi
+
+# Create database if needed
+if [ -z "$DB_EXISTS" ]; then
+    echo -e "${GREEN}Creating database '$DB_NAME'...${NC}"
+    createdb "$DB_NAME" -O "$DB_USER"
+    echo -e "${GREEN}✅ Database created${NC}"
+    echo ""
+fi
+
+# Install extensions
+echo -e "${GREEN}📦 Installing PostgreSQL extensions...${NC}"
+
+psql -d "$DB_NAME" <<SQL
+-- Vector embeddings (pgvector)
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- TimescaleDB (time-series data)
+CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+
+-- PostGIS (geospatial, if needed)
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+-- UUID generation
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Full-text search (pg_trgm for similarity)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+SELECT 'Extension installed: ' || extname
+FROM pg_extension
+WHERE extname IN ('vector', 'timescaledb', 'postgis', 'uuid-ossp', 'pg_trgm');
+SQL
+
+echo -e "${GREEN}✅ Extensions installed${NC}"
+echo ""
+
+# Run Ecto migrations
+echo -e "${GREEN}🔄 Running Ecto migrations...${NC}"
+cd "$PROJECT_ROOT/singularity_app"
+
+mix ecto.migrate
+
+echo -e "${GREEN}✅ Migrations complete${NC}"
+echo ""
+
+# Verify setup
+echo -e "${GREEN}🔍 Verifying database setup...${NC}"
+
+psql -d "$DB_NAME" <<SQL
+-- Check tables
+SELECT
+  schemaname,
+  tablename
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY tablename;
+SQL
+
+echo ""
+echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}✨ Database setup complete!${NC}"
+echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+echo "Database name: $DB_NAME"
+echo "Database user: $DB_USER"
+echo ""
+echo "Next steps:"
+echo "  1. Import knowledge artifacts: mix knowledge.migrate"
+echo "  2. Generate embeddings:        moon run templates_data:embed-all"
+echo "  3. View statistics:            moon run templates_data:stats"
+echo ""

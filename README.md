@@ -1,19 +1,22 @@
-# Singularity
+# Singularity - Internal AI Development Environment
 
 [![Cachix Cache](https://img.shields.io/badge/cachix-mikkihugo-blue)](https://mikkihugo.cachix.org)
 
-Autonomous BEAM-native agents that evolve themselves with rules-first execution and selective LLM usage. Elixir provides the runtime and supervision; Gleam adds type-safe agent logic (HTDAG and rule evaluation) via mix_gleam.
+**Personal AI-powered development tooling** - not shipped software. Your autonomous coding companion.
 
-## Highlights
+Autonomous agents, semantic code search, living knowledge base, and multi-AI orchestration running on BEAM (Elixir/Gleam/Rust) with GPU acceleration and Nix reproducibility.
 
-- **Agents**: Long-lived processes supervised by `Singularity.AgentSupervisor` running a self-improvement loop
-- **Rules-first**: `Singularity.Autonomy.RuleEngine` executes Postgres‑backed rules and caches results in Cachex/ETS
-- **Selective LLMs**: Workers fall back to semantic cache and then provider calls only when confidence is low
-- **Real Embeddings**: Local Bumblebee (`microsoft/codebert-base`) with Jinja3 preprocessing + Google fallback
-- **NATS Messaging**: Real distributed messaging with Gnat for inter-service communication
-- **Hot Reload**: Generated code is validated and activated by `Singularity.HotReload.ModuleReloader`
-- **Gleam Interop**: `:singularity@htdag` and `:singularity@rule_engine` modules are compiled and callable from Elixir
-- **Modern Architecture**: Production-ready with real values, no stubs or placeholders
+**Priorities:** Features & Learning > Speed & Security (internal use only)
+
+## What It Does (Internal Tooling)
+
+- **Living Knowledge Base** - Git ←→ PostgreSQL bidirectional learning (templates, patterns, prompts)
+- **Semantic Search** - GPU-accelerated (RTX 4080) code + package search with pgvector
+- **Autonomous Agents** - Self-improving Elixir/Gleam agents with HTDAG task decomposition
+- **Multi-AI Orchestration** - Claude, Gemini, OpenAI, Copilot via NATS messaging
+- **Code Quality** - Rust-powered parsing, linting, analysis for 30+ languages
+- **Nix Everywhere** - Single reproducible environment (dev/test/prod)
+- **Internal Only** - No scale/security constraints, maximum features & learning
 
 ## Architecture (current)
 
@@ -52,55 +55,53 @@ singularity_app/
 └── gleam.toml                 # Gleam config
 ```
 
-## Quick Start
+## Quick Start (Internal Tooling - Simple!)
 
-Prerequisites: PostgreSQL. Dev shell provides Erlang/Elixir/Gleam.
-
-1) Nix dev shell (recommended)
-
-```
-nix develop
-cd singularity_app && mix deps.get && mix compile
+### 1. Enter Nix Shell
+```bash
+nix develop   # Or: direnv allow
 ```
 
-Binary cache (Cachix)
-- We publish prebuilt Nix artifacts to the public cache: https://mikkihugo.cachix.org
-- One-time setup on your machine (optional but faster):
-  - nix profile install nixpkgs#cachix
-  - cachix use mikkihugo
-- Or just run `./devenv.sh` which enables the cache (pull) and drops you into `nix develop`.
+This auto-starts:
+- PostgreSQL 17 (with pgvector, timescaledb, postgis)
+- All tools (Elixir, Gleam, Rust, Bun)
 
-Nix builds (conventional names)
- - Build dev shell symlink as `.result`:
-   - `just devshell`
- - Build packages:
-   - `just pkg-ai` → `.result-ai`
-   - `just pkg-integrated` → `.result-integrated`
-
-2) Configure DB (defaults via env vars in config)
-
-```
-mix ecto.create
-mix ecto.migrate
+### 2. Setup Database (Single Shared DB)
+```bash
+./scripts/setup-database.sh  # Creates 'singularity' DB
 ```
 
-3) Run tests
+**One database for all:**
+- Dev: Direct access
+- Test: Sandboxed (Ecto.Sandbox)
+- Prod: Same DB (internal tooling, no isolation needed)
 
+### 3. Import Knowledge Artifacts
+```bash
+cd singularity_app
+mix knowledge.migrate              # Import templates_data/**/*.json
+moon run templates_data:embed-all  # Generate embeddings
 ```
+
+### 4. Start Services
+```bash
+./start-all.sh  # Starts NATS, Elixir app, AI server
+```
+
+### 5. Test It
+```bash
+# Run tests (uses shared DB + sandbox)
+cd singularity_app
 mix test
+
+# Or start IEx
+iex -S mix
+
+# Try semantic search
+iex> Singularity.Knowledge.ArtifactStore.search("async worker", language: "elixir")
 ```
 
-4) Start the app (optional HTTP control plane)
-
-```
-HTTP_SERVER_ENABLED=true iex -S mix
-```
-
-Endpoints:
-- POST /api/tools/run – execute a tool
-- POST /v1/chat/completions – provider proxy
-- GET /health, /health/deep – health checks
-- GET /metrics – Prometheus text (minimal exporter)
+**That's it!** Everything runs in Nix, uses one database, and learns from your usage.
 
 ## Notes
 
@@ -241,40 +242,39 @@ flyctl logs --app singularity
 flyctl scale count 3 --app singularity
 ```
 
-## 🔐 Security
+## Internal Tooling Philosophy
 
-- Credentials are encrypted using `age` encryption
-- API keys stored in environment variables
-- PostgreSQL connections use SSL in production
-- NATS supports TLS for secure messaging
+**Features & Learning > Speed & Security**
 
-## 📊 Performance
+This is **personal development tooling** (not production software), so:
 
-- **LLM Response Caching**: <10ms for cached semantic queries
-- **Embedding Generation**: ~1000 files/minute with GPU acceleration
-- **Semantic Search**: <50ms for vector similarity search
-- **Code Parsing**: 10,000+ lines/second with Tree-sitter
-- **NATS Throughput**: 1M+ messages/second capability
-- **Concurrent Agents**: 100+ simultaneous LLM agents supported
-- **Model Selection**: Automatic cost/performance optimization across 15+ models
+✅ **Optimize for:**
+- Rich features, experimentation, fast iteration
+- Developer experience, powerful workflows
+- Learning loops (usage tracking, pattern extraction)
+- Verbose logging, debugging, introspection
+- Aggressive caching (no memory limits)
 
-## 🤝 Contributing
+❌ **Don't optimize for:**
+- Performance/scale (internal use only)
+- Security hardening (you control everything)
+- Production constraints (no SLAs, no multi-tenant)
+- Backwards compatibility (break things, learn fast)
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+**Example:** Store everything (raw JSON + JSONB + embeddings + usage history + search logs) for maximum learning - storage is cheap, insights are valuable!
 
 ## 📚 Documentation
 
-- [Documentation Overview](docs/README.md)
-- [Quick Start Guide](docs/setup/QUICKSTART.md)
-- [Agent System](docs/ai/AGENTS.md)
-- [Pattern System](PATTERN_SYSTEM.md)
-- [Package + Code Search](PACKAGE_REGISTRY_AND_CODEBASE_SEARCH.md)
-- [Messaging Reference](docs/messaging/NATS_SUBJECTS.md)
-- [Claude Code Guide](docs/ai/CLAUDE.md)
+**Setup & Architecture:**
+- [CLAUDE.md](CLAUDE.md) - Main guide for Claude Code AI
+- [KNOWLEDGE_ARTIFACTS_SETUP.md](KNOWLEDGE_ARTIFACTS_SETUP.md) - Living knowledge base setup
+- [DATABASE_STRATEGY.md](DATABASE_STRATEGY.md) - Single shared DB approach
+- [INTERFACE_ARCHITECTURE.md](INTERFACE_ARCHITECTURE.md) - Tools vs Interfaces
+
+**Features:**
+- [PATTERN_SYSTEM.md](PATTERN_SYSTEM.md) - Pattern extraction & learning
+- [PACKAGE_REGISTRY_AND_CODEBASE_SEARCH.md](PACKAGE_REGISTRY_AND_CODEBASE_SEARCH.md) - Semantic search
+- [NATS_SUBJECTS.md](docs/messaging/NATS_SUBJECTS.md) - Messaging reference
 
 ## 📄 License
 

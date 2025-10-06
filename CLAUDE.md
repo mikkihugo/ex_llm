@@ -4,7 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Singularity is an autonomous agent platform combining Elixir, Gleam, and Rust for GPU-accelerated semantic code search, AI agent orchestration, and distributed systems development. It uses NATS for messaging, PostgreSQL with pgvector for embeddings, and integrates multiple AI providers.
+**Singularity is INTERNAL TOOLING** - not shipped software. This is your personal AI development environment.
+
+**Priorities:**
+1. **Features & Learning** - Rich capabilities, experimentation, fast iteration
+2. **Developer Experience** - Simple workflows, powerful tools
+3. **Speed & Security** - Not prioritized (internal use only, no scale requirements)
+
+**What it does:**
+- Autonomous AI agents (Elixir/Gleam/Rust)
+- GPU-accelerated semantic code search (RTX 4080 + pgvector)
+- Living knowledge base (Git ←→ PostgreSQL bidirectional learning)
+- Multi-AI provider orchestration (Claude, Gemini, OpenAI, Copilot)
+- Distributed messaging (NATS with JetStream)
+
+**Environment:** All runs in Nix (dev/test/prod) with single shared PostgreSQL database.
 
 ## Technology Stack
 
@@ -18,21 +32,29 @@ Singularity is an autonomous agent platform combining Elixir, Gleam, and Rust fo
 
 ## Common Development Commands
 
-### Environment Setup
+### Environment Setup (Internal Tooling - Simple!)
 ```bash
-# Enter development shell with all tools
+# 1. Enter Nix shell (starts PostgreSQL automatically)
 nix develop
-# Or with direnv
+# Or with direnv (recommended)
 direnv allow
 
-# Install dependencies
-cd singularity_app
-mix setup  # Runs mix deps.get && mix gleam.deps.get
+# 2. Setup database (ONE shared database for dev/test/prod)
+./scripts/setup-database.sh  # Creates 'singularity' DB with extensions
 
-# Set up database
-createdb singularity_dev
-mix ecto.migrate
+# 3. Install dependencies
+cd singularity_app
+mix setup  # Installs Elixir + Gleam deps
+
+# 4. Import knowledge artifacts (JSON → PostgreSQL)
+mix knowledge.migrate        # Imports templates_data/**/*.json
+moon run templates_data:embed-all  # Generates embeddings
 ```
+
+**Note:** Uses **single shared database** (`singularity`) for all environments.
+- Dev: Direct access
+- Test: Sandboxed transactions (Ecto.Sandbox)
+- Prod: Same DB (internal tooling, no separation needed)
 
 ### Running the Application
 ```bash
@@ -70,17 +92,16 @@ mix dialyzer  # Type checking
 mix sobelow --exit-on-warning  # Security analysis
 ```
 
-### Building & Deployment
+### Building (Internal Tooling - Optional)
 ```bash
-# Build with Nix
+# Build with Nix (if deploying internally)
 nix build .#singularity-integrated
 
-# Build release
+# Build release (rarely needed for internal tooling)
 cd singularity_app
 MIX_ENV=prod mix release
 
-# Deploy to Fly.io
-flyctl deploy --app singularity --config fly-integrated.toml --nixpacks
+# Usually run directly in Nix shell instead!
 ```
 
 ### Rust Components
@@ -521,3 +542,142 @@ FrameworkPatternStore         # Stores framework patterns
 - Use compound names: `<What><How>` or `<What><WhatItDoes>`
 - Prefer clarity over brevity
 - Make AI-assisted development easier with self-documenting code!
+
+## Living Knowledge Base (Internal Tooling Feature)
+
+### Overview
+
+Singularity includes a **Living Knowledge Base** - bidirectional learning between Git and PostgreSQL.
+
+**Git** (`templates_data/`) ←→ **PostgreSQL** (`knowledge_artifacts` table)
+
+### Key Concepts
+
+1. **Dual Storage** (Raw JSON + JSONB)
+   - `content_raw` (TEXT) - Exact original JSON (audit trail, export)
+   - `content` (JSONB) - Parsed for fast queries
+   - `embedding` (vector) - Semantic search (pgvector)
+
+2. **Artifact Types**
+   - `quality_template` - Language quality standards
+   - `framework_pattern` - Framework-specific patterns
+   - `system_prompt` - AI/LLM system prompts
+   - `code_template_*` - Code generation templates
+   - `package_metadata` - npm/cargo/hex/pypi packages
+
+3. **Learning Loop**
+   ```
+   Dev uses template
+        ↓
+   Track usage (success_rate, usage_count)
+        ↓
+   High success (100+ uses, 95%+ success)
+        ↓
+   Auto-export to Git (templates_data/learned/)
+        ↓
+   Human reviews, promotes to curated
+   ```
+
+### Common Workflows
+
+#### Add New Template (Git → DB)
+```bash
+# 1. Create JSON
+vim templates_data/quality/python-production.json
+
+# 2. Validate
+moon run templates_data:validate
+
+# 3. Sync to DB
+moon run templates_data:sync-to-db
+
+# 4. Query immediately!
+iex> Singularity.Knowledge.ArtifactStore.get("quality_template", "python-production")
+```
+
+#### Semantic Search
+```elixir
+alias Singularity.Knowledge.ArtifactStore
+
+# Search across all artifacts
+{:ok, results} = ArtifactStore.search(
+  "async worker with error handling",
+  language: "elixir",
+  top_k: 5
+)
+
+# JSONB queries (fast with GIN index)
+{:ok, templates} = ArtifactStore.query_jsonb(
+  artifact_type: "quality_template",
+  filter: %{"language" => "elixir", "quality_level" => "production"}
+)
+```
+
+#### Export Learned Patterns (DB → Git)
+```bash
+# After your code tracks usage:
+# ArtifactStore.record_usage("elixir-nats-consumer", success: true)
+
+# Export high-quality learned patterns
+moon run templates_data:sync-from-db
+
+# Review what was learned
+ls templates_data/learned/
+
+# Promote if good
+mv templates_data/learned/code_template_messaging/improved-nats-consumer.json \
+   templates_data/code_generation/patterns/messaging/
+```
+
+### Files & Modules
+
+- `lib/singularity/knowledge/artifact_store.ex` - Main API
+- `lib/singularity/knowledge/knowledge_artifact.ex` - Ecto schema
+- `lib/mix/tasks/knowledge.migrate.ex` - JSON import task
+- `templates_data/` - Git source (Moon data library)
+- `KNOWLEDGE_ARTIFACTS_SETUP.md` - Full setup guide
+- `DATABASE_STRATEGY.md` - Single DB strategy
+
+### Moon Tasks
+
+```bash
+moon run templates_data:validate       # Validate JSONs
+moon run templates_data:sync-to-db     # Git → PostgreSQL
+moon run templates_data:sync-from-db   # PostgreSQL → Git (learned)
+moon run templates_data:embed-all      # Generate embeddings
+moon run templates_data:stats          # Usage statistics
+```
+
+### Database (Internal Tooling - Simplified)
+
+**Single shared database:** `singularity`
+
+- **Dev:** Direct access
+- **Test:** Sandboxed (Ecto.Adapters.SQL.Sandbox)
+- **Prod:** Same DB (internal tooling, no isolation needed)
+
+**Why?**
+- Internal use only (no multi-tenancy)
+- Learning across environments (dev experiments → test validation)
+- Simpler (one connection, one place for knowledge)
+- Nix-friendly (single PostgreSQL service)
+
+**Setup:**
+```bash
+nix develop
+./scripts/setup-database.sh  # Creates 'singularity' DB
+mix knowledge.migrate         # Import JSONs
+```
+
+### Priority: Features over Speed/Security
+
+**Internal tooling means:**
+- ✅ Rich features, experimentation, learning
+- ✅ Fast iteration, no backwards compatibility constraints
+- ✅ Verbose logging, debugging capabilities
+- ✅ Aggressive caching, no memory limits
+- ❌ Speed optimization (not needed at this scale)
+- ❌ Security hardening (internal use only)
+- ❌ Production constraints (no SLAs, no multi-tenant)
+
+**Example:** Store everything (raw + parsed + embeddings + usage + search history) for maximum learning and debugging - storage is cheap, insights are valuable!

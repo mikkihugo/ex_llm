@@ -2,7 +2,7 @@ defmodule Singularity.EmbeddingService do
   @moduledoc """
   Dual-model embedding service with intelligent model selection.
 
-  **Model Strategy:**
+  **Model Strategy (All via Bumblebee):**
   - **CodeT5** (fine-tuned) - For code chunks, functions, modules
   - **Jina v2** (8192 tokens) - For docs, comments, long text, requirements
 
@@ -18,10 +18,8 @@ defmodule Singularity.EmbeddingService do
   require Logger
 
   alias Cachex
-  alias Bumblebee.Text
-  alias Bumblebee.Text.TextEmbedding
 
-  # Model configurations
+  # Model configurations (all Bumblebee-compatible)
   @codet5_model "Salesforce/codet5p-110m-embedding"
   @codet5_finetuned "priv/models/codet5-finetuned"
   @jina_v2_model "jinaai/jina-embeddings-v2-base-en"
@@ -186,6 +184,48 @@ defmodule Singularity.EmbeddingService do
   def embed_batch(texts, opts \\ []) when is_list(texts) do
     start_time = System.monotonic_time(:millisecond)
 
+    # Try Rustler batch embedding (much faster - GPU batch processing)
+    case embed_batch_rustler(texts, opts) do
+      {:ok, responses} ->
+        Logger.debug("Processed Rustler embedding batch", %{
+          batch_size: length(texts),
+          processing_time_ms: System.monotonic_time(:millisecond) - start_time
+        })
+        {:ok, responses}
+
+      {:error, _reason} ->
+        # Fallback to one-by-one processing
+        Logger.warning("Rustler batch failed, falling back to sequential")
+        embed_batch_sequential(texts, opts, start_time)
+    end
+  end
+
+  defp embed_batch_rustler(texts, opts) do
+    # Detect content type from first text (assume homogeneous batch)
+    content_type = detect_content_type(List.first(texts) || "")
+    model_type = if content_type == :code, do: :qodo_embed, else: :jina_v3
+
+    case Singularity.EmbeddingEngine.embed_batch(texts, model: model_type) do
+      {:ok, embeddings} ->
+        responses =
+          embeddings
+          |> Enum.map(fn embedding ->
+            %{
+              embedding: embedding,
+              model: Atom.to_string(model_type),
+              cached: false,
+              processing_time_ms: 0
+            }
+          end)
+
+        {:ok, responses}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp embed_batch_sequential(texts, opts, start_time) do
     results =
       texts
       |> Enum.map(fn text ->
@@ -201,7 +241,7 @@ defmodule Singularity.EmbeddingService do
         successful_results = Enum.map(results, fn {:ok, response} -> response end)
 
         # Log batch processing
-        Logger.debug("Processed embedding batch", %{
+        Logger.debug("Processed embedding batch (sequential)", %{
           batch_size: length(texts),
           processing_time_ms: System.monotonic_time(:millisecond) - start_time
         })
@@ -357,13 +397,13 @@ defmodule Singularity.EmbeddingService do
 
   defp generate_embedding(text) do
     try do
-      # Try local NX/Bumblebee embedding first
-      case generate_local_embedding(text) do
+      # Try Rustler NIF (GPU-accelerated) first
+      case generate_rustler_embedding(text) do
         {:ok, embedding} ->
           {:ok, embedding}
 
         {:error, _reason} ->
-          Logger.warning("Local embedding failed, falling back to Google")
+          Logger.warning("Rustler embedding failed, falling back to Google")
           generate_google_embedding(text)
       end
     rescue
@@ -373,44 +413,89 @@ defmodule Singularity.EmbeddingService do
     end
   end
 
-  defp generate_local_embedding(text) do
-    # Use real Bumblebee with Jinja2-compatible embedding model
+  defp generate_rustler_embedding(text, type \\ :auto) do
+    # Auto-detect content type
+    content_type = if type == :auto, do: detect_content_type(text), else: type
+
+    # Use Rustler NIF for GPU-accelerated embedding
+    model_type = if content_type == :code, do: :qodo_embed, else: :jina_v3
+
+    case Singularity.EmbeddingEngine.embed(text, model: model_type) do
+      {:ok, embedding} ->
+        Logger.debug("Generated Rustler embedding", %{
+          model: model_type,
+          type: content_type,
+          dim: length(embedding)
+        })
+        {:ok, embedding}
+
+      {:error, reason} ->
+        Logger.warning("Rustler embedding failed: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  defp generate_local_embedding(text, type \\ :auto) do
+    # Auto-detect content type if not specified
+    content_type = if type == :auto, do: detect_content_type(text), else: type
+
     try do
-      case load_embedding_model() do
+      case load_embedding_model(content_type) do
         {:ok, model_info} ->
-          # Preprocess text for Jinja2 templating context
-          processed_text = preprocess_for_jinja2(text)
-
-          # Generate real embedding using Bumblebee
-          inputs = %{text: [processed_text]}
-
-          # Run inference using the model's apply function
-          %{embedding: %{hidden_state: hidden_state}} =
-            model_info.apply(inputs)
-
-          # Convert to list format
-          embedding =
-            hidden_state
-            |> Nx.squeeze()
-            |> Nx.to_list()
-
-          Logger.debug("Generated real Bumblebee embedding with Jinja3 preprocessing", %{
-            model: "microsoft/codebert-base",
-            embedding_dimension: length(embedding),
-            jinja3_processed: processed_text != text
-          })
-
-          {:ok, embedding}
+          # Generate embedding using Bumblebee (CodeT5 or Jina v2)
+          generate_bumblebee_embedding(text, model_info, content_type)
 
         {:error, reason} ->
-          Logger.warning("Bumblebee model loading failed: #{inspect(reason)}")
+          Logger.warning("Model loading failed (#{content_type}): #{inspect(reason)}")
           {:error, reason}
       end
     rescue
       error ->
-        Logger.error("Bumblebee embedding generation failed: #{inspect(error)}")
+        Logger.error("Local embedding failed: #{inspect(error)}")
         {:error, error}
     end
+  end
+
+  defp detect_content_type(text) do
+    # Detect if text is code or natural language
+    code_patterns = [~r/def\s+\w+/, ~r/class\s+\w+/, ~r/import\s+/, ~r/\{.*\}/, ~r/=>/, ~r/::\w+/]
+    code_score = Enum.count(code_patterns, &Regex.match?(&1, text))
+
+    if code_score >= 2 or String.length(text) < 200, do: :code, else: :text
+  end
+
+  defp generate_bumblebee_embedding(text, model_info, content_type) do
+    # Preprocess for Jinja templates
+    processed_text = preprocess_for_jinja2(text)
+
+    # Load tokenizer for the model
+    {:ok, tokenizer} = load_tokenizer(content_type)
+
+    # Run model inference
+    inputs = Bumblebee.apply_tokenizer(tokenizer, processed_text)
+    %{embedding: embedding} = Bumblebee.Text.text_embedding(model_info, tokenizer, inputs)
+
+    # Convert to list
+    embedding_list = embedding |> Nx.squeeze() |> Nx.to_list()
+
+    model_name = if content_type == :code, do: "codet5", else: "jina-v2"
+
+    Logger.debug("Generated embedding", %{
+      model: model_name,
+      type: content_type,
+      dim: length(embedding_list),
+      max_tokens: if(content_type == :text, do: 8192, else: 512)
+    })
+
+    {:ok, embedding_list}
+  end
+
+  defp load_tokenizer(:code) do
+    Bumblebee.load_tokenizer({:hf, @codet5_model})
+  end
+
+  defp load_tokenizer(:text) do
+    Bumblebee.load_tokenizer({:hf, @jina_v2_model})
   end
 
   defp preprocess_for_jinja2(text) do
@@ -434,16 +519,36 @@ defmodule Singularity.EmbeddingService do
     |> String.replace(~r/\{\%\s*macro\s+.*?\%\}/, "[JINJA3_MACRO]")
   end
 
-  defp load_embedding_model do
-    # Load a real Bumblebee embedding model for Jinja3 templating with training support
+  defp load_embedding_model(type \\ :code) do
+    # Load embedding model based on content type (all via Bumblebee)
+    # :code -> CodeT5 for code chunks
+    # :text -> Jina v2 for long text/docs (8192 tokens)
     try do
-      # Use a model specifically designed for code generation and templating with fine-tuning support
-      {:ok, model_info} = Bumblebee.load_model({:hf, "microsoft/codebert-base"})
-      {:ok, model_info}
+      case type do
+        :code ->
+          # Try fine-tuned CodeT5 first, fallback to base
+          case load_codet5_finetuned() do
+            {:ok, model} -> {:ok, model}
+            {:error, _} -> Bumblebee.load_model({:hf, @codet5_model})
+          end
+
+        :text ->
+          # Load Jina v2 (8192 token context)
+          Bumblebee.load_model({:hf, @jina_v2_model})
+      end
     rescue
-      error -> 
-        Logger.warning("Failed to load Bumblebee model: #{inspect(error)}")
+      error ->
+        Logger.warning("Failed to load embedding model (#{type}): #{inspect(error)}")
         {:error, error}
+    end
+  end
+
+  defp load_codet5_finetuned do
+    # Try to load fine-tuned CodeT5 from local path
+    if File.exists?(@codet5_finetuned) do
+      Bumblebee.load_model({:local, @codet5_finetuned})
+    else
+      {:error, :not_finetuned}
     end
   end
 

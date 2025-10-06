@@ -1,6 +1,7 @@
 //! Language definitions and detection for universal parser
 
 use std::path::Path;
+use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
@@ -38,6 +39,33 @@ pub enum ProgrammingLanguage {
 
   // Language not recognized or not supported by the parser
   LanguageNotSupported,
+}
+
+impl fmt::Display for ProgrammingLanguage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ProgrammingLanguage::JavaScript => write!(f, "javascript"),
+            ProgrammingLanguage::TypeScript => write!(f, "typescript"),
+            ProgrammingLanguage::Python => write!(f, "python"),
+            ProgrammingLanguage::Rust => write!(f, "rust"),
+            ProgrammingLanguage::Go => write!(f, "go"),
+            ProgrammingLanguage::Erlang => write!(f, "erlang"),
+            ProgrammingLanguage::Elixir => write!(f, "elixir"),
+            ProgrammingLanguage::Gleam => write!(f, "gleam"),
+            ProgrammingLanguage::Java => write!(f, "java"),
+            ProgrammingLanguage::C => write!(f, "c"),
+            ProgrammingLanguage::Cpp => write!(f, "cpp"),
+            ProgrammingLanguage::CSharp => write!(f, "csharp"),
+            ProgrammingLanguage::Swift => write!(f, "swift"),
+            ProgrammingLanguage::Kotlin => write!(f, "kotlin"),
+            ProgrammingLanguage::Unknown => write!(f, "unknown"),
+            ProgrammingLanguage::Json => write!(f, "json"),
+            ProgrammingLanguage::Yaml => write!(f, "yaml"),
+            ProgrammingLanguage::Toml => write!(f, "toml"),
+            ProgrammingLanguage::Xml => write!(f, "xml"),
+            ProgrammingLanguage::LanguageNotSupported => write!(f, "unsupported"),
+        }
+    }
 }
 
 pub mod adapters;
@@ -225,33 +253,6 @@ impl ProgrammingLanguage {
       ProgrammingLanguage::Swift => &["Package.swift", "Package.resolved"],
       ProgrammingLanguage::Kotlin => &["build.gradle.kts", "pom.xml"],
       _ => &[],
-    }
-  }
-}
-
-impl std::fmt::Display for ProgrammingLanguage {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      ProgrammingLanguage::JavaScript => write!(f, "JavaScript"),
-      ProgrammingLanguage::TypeScript => write!(f, "TypeScript"),
-      ProgrammingLanguage::Python => write!(f, "Python"),
-      ProgrammingLanguage::Rust => write!(f, "Rust"),
-      ProgrammingLanguage::Go => write!(f, "Go"),
-      ProgrammingLanguage::Erlang => write!(f, "Erlang"),
-      ProgrammingLanguage::Elixir => write!(f, "Elixir"),
-      ProgrammingLanguage::Gleam => write!(f, "Gleam"),
-      ProgrammingLanguage::Java => write!(f, "Java"),
-      ProgrammingLanguage::C => write!(f, "C"),
-      ProgrammingLanguage::Cpp => write!(f, "C++"),
-      ProgrammingLanguage::CSharp => write!(f, "C#"),
-      ProgrammingLanguage::Swift => write!(f, "Swift"),
-      ProgrammingLanguage::Kotlin => write!(f, "Kotlin"),
-      ProgrammingLanguage::Json => write!(f, "JSON"),
-      ProgrammingLanguage::Yaml => write!(f, "YAML"),
-      ProgrammingLanguage::Toml => write!(f, "TOML"),
-      ProgrammingLanguage::Xml => write!(f, "XML"),
-      ProgrammingLanguage::Unknown => write!(f, "Unknown"),
-      ProgrammingLanguage::LanguageNotSupported => write!(f, "Language Not Supported"),
     }
   }
 }

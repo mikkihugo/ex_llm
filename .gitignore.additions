@@ -1,0 +1,17 @@
+
+# Monorepo shared artifacts
+/shared/_build/
+/shared/deps/
+/shared/node_modules/
+/shared/target/
+/shared/.hex/
+/shared/.mix/
+
+# Keep project-specific artifacts in project dirs
+**/node_modules/
+**/_build/
+**/deps/
+**/target/
+**/.hex/
+**/.mix/
+**/.dev-db/

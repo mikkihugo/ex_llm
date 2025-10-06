@@ -88,7 +88,7 @@ impl HybridSearchEngine {
     pub fn new() -> Result<Self> {
         Ok(Self {
             tantivy_engine: TantivySearchEngine::new()?,
-            semantic_engine: SemanticSearchEngine::new(),
+            semantic_engine: SemanticSearchEngine::new()?,
         })
     }
     

@@ -13,13 +13,25 @@ categories = ["development-tools", "parsing"]
 [dependencies]
 # Universal dependency analysis - pre-release includes security fixes
 tokei = "13.0.0-alpha.9"
-# Our Mozilla code analysis port (replaces rust-code-analysis)
-# mozilla-code-analysis = { path = "../mozilla-code-analysis" }  # Commented out - crate doesn't exist
+# Optional: Mozilla/RCA metrics library (feature-gated)
+mozilla-code-analysis = { path = "../mozilla-code-analysis", optional = true }
 
 # Tree-sitter core only (languages handled by individual parser crates)
 tree-sitter = { workspace = true }
 tree-sitter-javascript = { workspace = true }
 tree-sitter-typescript = { workspace = true }
+tree-sitter-python = "0.21"
+tree-sitter-rust = "0.21"
+tree-sitter-go = "0.21"
+tree-sitter-erlang = "0.4"
+tree-sitter-elixir = "0.2"
+tree-sitter-gleam = "1.0"
+tree-sitter-java = "0.21"
+tree-sitter-c = "0.21"
+tree-sitter-cpp = "0.21"
+tree-sitter-c-sharp = "0.21"
+tree-sitter-swift = "0.4"
+tree-sitter-kotlin = "0.3"
 
 # Core utilities - LATEST VERSIONS
 anyhow = { workspace = true }
@@ -51,3 +63,7 @@ criterion = { workspace = true }
 [[bench]]
 name = "parser_performance"
 harness = false
+[features]
+default = []
+# Enable Mozilla rust-code-analysis metrics
+rca = ["mozilla-code-analysis"]

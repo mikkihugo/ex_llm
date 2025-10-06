@@ -38,6 +38,7 @@
 
 pub mod dependencies;
 pub mod errors;
+pub mod beam;
 pub mod interfaces;
 pub mod languages;
 pub mod optimizations;

@@ -8,14 +8,20 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+// Optional submodules; gate to avoid unused compile errors when features are off
+#[cfg(feature = "storage")]
 pub mod storage_template;
+#[cfg(feature = "detection")]
 pub mod selector;
 pub mod loader;
+#[cfg(feature = "detection")]
 pub mod context_builder;
 
 // Re-exports
+#[cfg(feature = "detection")]
 pub use selector::TemplateSelector;
 pub use loader::TemplateLoader;
+#[cfg(feature = "detection")]
 pub use context_builder::{ContextBuilder, PromptContext, CodeSnippet, BestPractice};
 
 // Include the generated AI templates
@@ -40,9 +46,8 @@ pub struct AiSignature {
 }
 
 impl AiSignature {
-  /// Convert to a full DSPy MetaSignature when prompt-engine is available
+  #[cfg(feature = "prompt-engine")]
   pub fn to_metasignature(&self) -> prompt_engine::dspy::InstructionGenerator {
-    // Convert AiSignature to InstructionGenerator MetaSignature
     prompt_engine::dspy::InstructionGenerator {
       current_instruction: self.instruction.clone(),
       optimized_instruction: self.instruction.clone(),

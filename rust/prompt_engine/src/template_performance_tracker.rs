@@ -74,7 +74,7 @@ impl TemplatePerformanceTracker {
             .unwrap_or_else(|| self.get_default_template(task_type, language));
 
         // Load the template
-        self.load_template(&template_id)
+        self.load_template(&template_id, language)
     }
 
     /// Record template usage and performance
@@ -129,7 +129,8 @@ impl TemplatePerformanceTracker {
         template_id: &str,
         task_context: &HashMap<String, String>,
     ) -> Result<String> {
-        let template = self.load_template(template_id)?;
+        let lang = task_context.get("language").cloned().unwrap_or_else(|| "unknown".to_string());
+        let template = self.load_template(template_id, &lang)?;
         let metrics = self.get_metrics(template_id);
 
         // Build enhanced prompt with performance context
@@ -247,12 +248,15 @@ impl TemplatePerformanceTracker {
         }
     }
 
-    fn load_template(&self, template_id: &str) -> Result<PromptTemplate> {
+    fn load_template(&self, template_id: &str, language: &str) -> Result<PromptTemplate> {
         // Load from SPARC generator or template registry
         Ok(PromptTemplate {
             name: template_id.to_string(),
             template: self.sparc_generator.get_template(template_id)
                 .unwrap_or_else(|| format!("Template {} not found", template_id)),
+            language: language.to_string(),
+            domain: "sparc".to_string(),
+            quality_score: 0.8,
         })
     }
 

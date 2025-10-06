@@ -35,7 +35,7 @@ impl AnalysisEngine {
   /// Create new analysis engine with default config
   pub fn new() -> Self {
     Self {
-      database: CodebaseDatabase::new(),
+      database: CodebaseDatabase::new("default").unwrap(),
       config: CodebaseConfig::default(),
       parser_registry: ParserRegistry::new(),
     }
@@ -44,7 +44,7 @@ impl AnalysisEngine {
   /// Create analysis engine with configuration
   pub fn with_config(config: CodebaseConfig) -> Self {
     Self {
-      database: CodebaseDatabase::new(),
+      database: CodebaseDatabase::new("default").unwrap(),
       config,
       parser_registry: ParserRegistry::new(),
     }
@@ -291,7 +291,7 @@ impl AnalysisEngine {
     complexity += content.matches("for ").count() as f64;
     
     // Additional complexity for nesting
-    let mut nesting_level = 0;
+    let mut nesting_level: i32 = 0;
     for line in content.lines() {
       let trimmed = line.trim();
       if trimmed.contains("{") {

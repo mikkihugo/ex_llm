@@ -11,4 +11,4 @@ config :libcluster,
 
 config :singularity, :http_server_enabled, true
 
-config :singularity, Singularity.Repo, database: "singularity_dev"
+config :singularity, Singularity.Repo, database: "singularity"

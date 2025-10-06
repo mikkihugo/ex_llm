@@ -104,7 +104,7 @@ pub use graphql::{GitHubGraphQLClient, GitHubVersionAnalysis};
 pub use auto_orchestrator::AutoFactOrchestrator;
 
 // Storage - filesystem-based global facts storage
-pub use storage::filesystem_storage::FilesystemFactStorage;
+// Export storage traits/helpers; filesystem backend is internal
 pub use storage::{create_storage, FactStorage, StorageConfig};
 
 // NEW: Embeddings and search

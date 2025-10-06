@@ -5,8 +5,8 @@
 
 use anyhow::{Context, Result};
 use serde_json::Value;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::path::PathBuf;
+use walkdir::{DirEntry, WalkDir};
 
 /// Template loader that references tool_doc_index templates
 pub struct TemplateLoader {
@@ -78,14 +78,12 @@ impl TemplateLoader {
         let mut templates = Vec::new();
 
         // Walk the tool_doc_index template directory
-        for entry in walkdir::WalkDir::new(&self.tool_doc_path)
+        for entry in WalkDir::new(&self.tool_doc_path)
             .into_iter()
             .filter_map(Result::ok)
-            .filter(|e| e.path().extension().map_or(false, |ext| ext == "json"))
+            .filter(|e: &DirEntry| e.path().extension().map_or(false, |ext| ext == "json"))
         {
-            if let Some(stem) = entry.path().file_stem() {
-                templates.push(stem.to_string_lossy().to_string());
-            }
+            if let Some(stem) = entry.path().file_stem() { templates.push(stem.to_string_lossy().to_string()); }
         }
 
         templates.sort();

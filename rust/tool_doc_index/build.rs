@@ -78,8 +78,11 @@ fn main() {
             generated_code.push_str("                complexity: template_data[\"metadata\"][\"performance\"][\"complexity\"].as_u64().unwrap() as u8,\n");
             generated_code.push_str("            },\n");
             generated_code.push_str("        },\n");
-            generated_code.push_str("        ai_signature: Some(serde_json::from_value(template_data[\"ai_signature\"].clone()).unwrap()),\n");
-            generated_code.push_str("        template_content: Some(template_data[\"template_content\"].as_str().unwrap().to_string()),\n");
+            generated_code.push_str("        ai_signature: serde_json::from_value(template_data.get(\"ai_signature\").cloned().unwrap_or(Value::Null)).ok(),\n");
+            generated_code.push_str("        template_content: template_data.get(\"template_content\").and_then(|v| v.as_str()).map(|s| s.to_string()),\n");
+            generated_code.push_str("        extends: None,\n");
+            generated_code.push_str("        compose: None,\n");
+            generated_code.push_str("        workflows: None,\n");
             generated_code.push_str("    }\n");
             generated_code.push_str("}\n\n");
         }

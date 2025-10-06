@@ -85,10 +85,10 @@ tantivy = { version = "0.21", optional = true }
 
 # SPARC Engine crates as dependencies
 # parser-coordinator = { path = "../parser-coordinator" }  # Removed during cleanup
-# linting-engine = { path = "../linting-engine" }  # Commented out - circular dependency
-# universal-parser = { path = "../universal-parser" }  # Commented out - circular dependency
+linting-engine = { path = "../linting_engine" }
+universal-parser = { path = "../universal_parser" }
 # sparc-methodology = { path = "../sparc-methodology" }  # Commented out - crate doesn't exist
-# prompt-engine = { path = "../prompt-engine" }  # Commented out - circular dependency
+prompt-engine = { path = "../prompt_engine" }
 # mozilla-code-analysis = { path = "../mozilla-code-analysis" }  # Commented out - crate doesn't exist
 
 # Language parsers - commented out as crates don't exist yet

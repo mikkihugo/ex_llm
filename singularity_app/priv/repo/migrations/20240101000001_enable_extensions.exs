@@ -4,7 +4,7 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
   def up do
     # Core PostgreSQL extensions
     execute "CREATE EXTENSION IF NOT EXISTS pgcrypto"
-    execute "CREATE EXTENSION IF NOT EXISTS uuid-ossp"
+    execute ~s(CREATE EXTENSION IF NOT EXISTS "uuid-ossp")
 
     # Vector and similarity search
     execute "CREATE EXTENSION IF NOT EXISTS vector"
@@ -18,8 +18,8 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
     execute "CREATE EXTENSION IF NOT EXISTS btree_gin"
     execute "CREATE EXTENSION IF NOT EXISTS btree_gist"
 
-    # Time-series data
-    execute "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE"
+    # Time-series data (skip for now - can cause PostgreSQL to crash)
+    # execute "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE"
 
     # Performance monitoring
     execute "CREATE EXTENSION IF NOT EXISTS pg_stat_statements"
@@ -37,14 +37,14 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
     execute "DROP EXTENSION IF EXISTS pg_prewarm"
     execute "DROP EXTENSION IF EXISTS pg_buffercache"
     execute "DROP EXTENSION IF EXISTS pg_stat_statements"
-    execute "DROP EXTENSION IF EXISTS timescaledb"
+    # execute "DROP EXTENSION IF EXISTS timescaledb"
     execute "DROP EXTENSION IF EXISTS btree_gist"
     execute "DROP EXTENSION IF EXISTS btree_gin"
     execute "DROP EXTENSION IF EXISTS unaccent"
     execute "DROP EXTENSION IF EXISTS fuzzystrmatch"
     execute "DROP EXTENSION IF EXISTS pg_trgm"
     execute "DROP EXTENSION IF EXISTS vector"
-    execute "DROP EXTENSION IF EXISTS uuid-ossp"
+    execute ~s(DROP EXTENSION IF EXISTS "uuid-ossp")
     execute "DROP EXTENSION IF EXISTS pgcrypto"
   end
 end

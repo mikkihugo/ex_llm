@@ -1,0 +1,64 @@
+[package]
+name = "embedding_engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "embedding_engine"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Rustler for Elixir NIFs
+rustler = "0.34"
+
+# ONNX Runtime for Jina v3 (GPU-accelerated)
+ort = { version = "2.0.0-rc.10", features = ["cuda", "load-dynamic"] }
+
+# Candle for CodeT5 PyTorch models (GPU-accelerated)
+candle-core = { version = "0.8", features = ["cuda"] }
+candle-nn = "0.8"
+candle-transformers = "0.8"
+
+# Tokenizers (HuggingFace compatible)
+tokenizers = { version = "0.20", features = ["http"] }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Array operations
+ndarray = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# HTTP client for downloading models
+reqwest = { version = "0.12", features = ["json", "stream"] }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+
+# Progress tracking
+indicatif = "0.17"
+
+# File system operations
+dirs = { workspace = true }
+
+# Concurrent processing
+rayon = { workspace = true }
+
+# Async file I/O
+futures-util = "0.3"
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "embedding_benchmark"
+harness = false

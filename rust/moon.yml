@@ -5,7 +5,7 @@ type: 'library'
 
 tasks:
   build:
-    command: 'cargo build --release'
+    command: 'cargo build --release -p prompt-engine -p universal-parser'
     inputs:
       - 'src/**/*'
       - 'Cargo.toml'
@@ -14,7 +14,7 @@ tasks:
       - 'target/'
 
   test:
-    command: 'cargo test'
+    command: 'cargo test -p prompt-engine -p universal-parser'
     deps:
       - 'build'
     inputs:
@@ -24,7 +24,7 @@ tasks:
       - 'Cargo.lock'
 
   check:
-    command: 'cargo check'
+    command: 'cargo check -p prompt-engine -p universal-parser'
     inputs:
       - 'src/**/*'
       - 'Cargo.toml'

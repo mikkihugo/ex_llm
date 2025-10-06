@@ -6,14 +6,14 @@ set -euo pipefail
 CACHE_NAME="mikkihugo"
 PUBLIC_KEY="mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="
 
-echo "👉 Ensuring Cachix binary cache is configured (pulls only)"
+echo "👉 Binary cache: flake provides nixConfig (pulls)"
 if command -v cachix >/dev/null 2>&1; then
+  # Optional: set cache globally for non-flake commands too
   cachix use "$CACHE_NAME" || true
 else
-  echo "ℹ️  'cachix' not found; using NIX_CONFIG fallback inside dev shell."
-  echo "    To install permanently: nix profile install nixpkgs#cachix && cachix use $CACHE_NAME"
+  echo "ℹ️  'cachix' not found; flake-local cache config will still be used."
+  echo "    Optional global setup: nix profile install nixpkgs#cachix && cachix use $CACHE_NAME"
 fi
 
 echo "🚀 Entering Nix dev shell (OTP 28, Elixir stable, Gleam)"
 exec nix develop
-

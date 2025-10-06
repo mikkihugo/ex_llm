@@ -4,6 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
+use universal_parser::UniversalParserFrameworkConfig;
 
 /// Unified configuration for codebase analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,6 +17,8 @@ pub struct CodebaseConfig {
   pub storage: StorageConfig,
   /// Performance configuration
   pub performance: PerformanceConfig,
+  /// Analysis configuration
+  pub analysis: UniversalParserFrameworkConfig,
 }
 
 impl Default for CodebaseConfig {
@@ -25,6 +28,7 @@ impl Default for CodebaseConfig {
       graphs: GraphConfig::default(),
       storage: StorageConfig::default(),
       performance: PerformanceConfig::default(),
+      analysis: UniversalParserFrameworkConfig::default(),
     }
   }
 }

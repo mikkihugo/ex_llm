@@ -273,19 +273,61 @@ defmodule Singularity.CodeTrainer do
   defp run_training(model, train_data, epochs, batch_size, learning_rate) do
     Logger.info("Training: #{epochs} epochs, batch_size=#{batch_size}, lr=#{learning_rate}")
 
-    # Build training loop with Axon
-    # This is a simplified version - full implementation would:
-    # 1. Create data pipeline with batching
-    # 2. Define loss function (cross-entropy)
-    # 3. Set up optimizer (AdamW)
-    # 4. Run training loop with EXLA compilation
-    # 5. Track validation loss
+    try do
+      # Build training loop with Axon
+      loss_fn = &cross_entropy_loss/2
 
-    # Simulated training for now
-    Logger.info("Epoch 1/#{epochs} - Loss: 2.34")
-    Logger.info("Epoch 2/#{epochs} - Loss: 1.87")
-    Logger.info("Epoch 3/#{epochs} - Loss: 1.52")
+      trained_model =
+        model
+        |> Axon.Loop.trainer(
+          loss_fn,
+          Polaris.Optimizers.adamw(learning_rate: learning_rate, weight_decay: 0.01)
+        )
+        |> Axon.Loop.metric(:accuracy)
+        |> Axon.Loop.metric(:loss)
+        |> Axon.Loop.run(
+          create_training_batches(train_data, batch_size),
+          %{},
+          epochs: epochs,
+          iterations: div(length(train_data), batch_size)
+        )
 
-    {:ok, model}
+      Logger.info("Training completed successfully")
+      {:ok, trained_model}
+    rescue
+      error ->
+        Logger.error("Training failed: #{inspect(error)}")
+        {:error, error}
+    end
+  end
+
+  defp cross_entropy_loss(predictions, targets) do
+    # Compute cross-entropy loss for code generation
+    logits = predictions.logits
+    labels = targets.labels
+
+    # Apply softmax to logits
+    probs = Nx.softmax(logits, axis: -1)
+
+    # Compute cross-entropy loss
+    # Add small epsilon to avoid log(0)
+    log_probs = Nx.log(probs + 1.0e-8)
+    loss = Nx.mean(Nx.negate(Nx.sum(Nx.multiply(log_probs, labels), axes: [-1])))
+
+    loss
+  end
+
+  defp create_training_batches(train_data, batch_size) do
+    train_data
+    |> Enum.chunk_every(batch_size)
+    |> Enum.map(fn batch ->
+      inputs = Enum.map(batch, & &1.input)
+      targets = Enum.map(batch, & &1.target)
+
+      %{
+        inputs: inputs,
+        targets: targets
+      }
+    end)
   end
 end

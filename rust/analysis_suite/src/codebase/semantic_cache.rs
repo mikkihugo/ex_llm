@@ -5,7 +5,7 @@
 
 use crate::paths::SPARCPaths;
 use anyhow::Result;
-use redb::{Database, ReadableTable, TableDefinition};
+use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition};
 use std::sync::Arc;
 
 // Global semantic cache table (content_hash -> semantic_vector)

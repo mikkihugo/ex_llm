@@ -29,7 +29,7 @@ pub struct ComplexityMetrics {
 }
 
 /// Halstead metrics
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HalsteadMetrics {
     pub vocabulary: f64,
     pub length: f64,

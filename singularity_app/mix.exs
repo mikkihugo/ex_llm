@@ -78,6 +78,8 @@ defmodule Singularity.MixProject do
       {:nx, "~> 0.7.1"},
       # XLA compiler for GPU (CUDA/ROCm) - use precompiled
       {:exla, "~> 0.7.1", override: true},
+      # Rustler NIF for GPU-accelerated embeddings (ort + candle)
+      {:rustler, "~> 0.34.0", runtime: false},
 
       # Data & Serialization
       {:jason, "~> 1.4"},
