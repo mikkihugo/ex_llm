@@ -1,5 +1,0 @@
-# Bun runtime (replaces Node.js)
-bun = "1.2.23"
-
-# Moon build orchestrator
-moon = "1.41.1"

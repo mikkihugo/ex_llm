@@ -54,6 +54,12 @@
           # Rust compilation caching
           sccache
 
+          # Rust toolchain (REQUIRED for Rustler NIFs)
+          rustc
+          cargo
+          rustfmt
+          clippy
+
           # Comprehensive Rust development tools
           rust-analyzer       # LSP server for Rust IDE support
           cargo-audit         # Security vulnerability scanning

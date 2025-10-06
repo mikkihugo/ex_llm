@@ -89,7 +89,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
   import Ecto.Query
   alias Singularity.Repo
   alias Singularity.Knowledge.KnowledgeArtifact
-  alias Singularity.EmbeddingService
+  alias Singularity.EmbeddingGenerator  # Single embedding source with auto-fallback
 
   require Logger
 
@@ -193,7 +193,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
   """
   def search(query_text, opts \\ []) do
     # Generate embedding for query
-    case EmbeddingService.embed(query_text) do
+    case EmbeddingGenerator.embed(query_text, provider: :auto) do
       {:ok, embedding} ->
         results = search_by_embedding(embedding, opts)
         {:ok, results}

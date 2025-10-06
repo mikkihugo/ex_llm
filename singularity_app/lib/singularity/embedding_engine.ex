@@ -26,8 +26,10 @@ defmodule Singularity.EmbeddingEngine do
       EmbeddingEngine.preload_models([:jina_v3, :qodo_embed])
   """
 
-  # Temporarily disabled for migration setup - requires cargo
-  # use Rustler, otp_app: :singularity, crate: "embedding_engine"
+  use Rustler,
+    otp_app: :singularity,
+    crate: "embedding_engine",
+    path: Path.join([__DIR__, "..", "..", "..", "rust", "embedding_engine"])
 
   @type embedding :: list(float())
   @type model_type :: :jina_v3 | :qodo_embed | :code | :text
