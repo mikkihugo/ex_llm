@@ -482,6 +482,8 @@ interface ModelCatalogEntry {
   upstreamId?: string;
   ownedBy?: string;
   contextWindow?: number;
+  cost?: 'free' | 'limited' | 'pay-per-use';
+  subscription?: string;
   capabilities?: {
     completion?: boolean;
     streaming?: boolean;
@@ -538,6 +540,8 @@ function toOpenAIModel(entry: ModelCatalogEntry) {
     upstream_id: entry.upstreamId,
     description: entry.description,
     name: entry.displayName,
+    cost: entry.cost,
+    subscription: entry.subscription,
   };
 }
 

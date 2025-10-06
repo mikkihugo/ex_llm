@@ -107,13 +107,28 @@ export function createGitHubModelsProvider(config: GitHubModelsConfig = {}): Git
       }
 
       return {
-        ...model,
-        limits: {
-          max_input_tokens: maxInput,
-          max_output_tokens: maxOutput,
-          // Keep original for reference
-          model_max_input_tokens: model.limits?.max_input_tokens,
-          model_max_output_tokens: model.limits?.max_output_tokens,
+        id: model.id,
+        displayName: model.friendly_name || model.id,
+        description: `${model.friendly_name || model.id} via GitHub Models (${Math.floor(maxInput / 1000)}K input, ${Math.floor(maxOutput / 1000)}K output)`,
+        contextWindow: maxInput + maxOutput,
+        capabilities: {
+          completion: true,
+          streaming: true,
+          reasoning: false,
+          vision: model.supported_input_modalities?.includes?.('image') ?? false,
+          tools: model.capabilities?.includes?.('tool-calling') ?? false,
+        },
+        cost: 'free' as const,
+        subscription: undefined,
+        // Keep original data for reference
+        _raw: {
+          ...model,
+          limits: {
+            max_input_tokens: maxInput,
+            max_output_tokens: maxOutput,
+            model_max_input_tokens: model.limits?.max_input_tokens,
+            model_max_output_tokens: model.limits?.max_output_tokens,
+          },
         },
       };
     });

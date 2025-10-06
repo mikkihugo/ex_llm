@@ -15,7 +15,7 @@ use crate::{
 };
 
 /// NIF resource for UniversalDependencies
-rustler::resource!(UniversalParserResource, Env, UniversalDependencies);
+rustler::resource!(UniversalParserResource, UniversalDependencies);
 
 /// Initialize the universal parser NIF
 #[rustler::nif]

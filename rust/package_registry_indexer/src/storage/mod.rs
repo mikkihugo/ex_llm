@@ -105,8 +105,8 @@ pub struct FactData {
   pub version: String,
   pub ecosystem: String,
   pub documentation: String,
-  pub snippets: Vec<FactSnippet>,
-  pub examples: Vec<FactExample>,
+  pub snippets: Vec<FactSnippet>,  // Parsed from package source (via universal_parser)
+  pub examples: Vec<FactExample>,  // Examples from README/docs
   pub best_practices: Vec<FactBestPractice>,
   pub troubleshooting: Vec<FactTroubleshooting>,
   pub github_sources: Vec<FactGitHubSource>,
@@ -239,20 +239,23 @@ impl FactData {
   }
 }
 
+/// Code snippet parsed from package source files
+/// Extracted by universal_parser (tree-sitter) from downloaded tarballs
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FactSnippet {
   pub title: String,
   pub code: String,
   pub language: String,
   pub description: String,
-  pub file_path: String,
+  pub file_path: String,    // Relative path within package
   pub line_number: u32,
 }
 
+/// Example from package documentation (README, docs site)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FactExample {
   pub title: String,
-  pub code: String,
+  pub code: String,         // Example code from docs (as text)
   pub explanation: String,
   pub tags: Vec<String>,
 }

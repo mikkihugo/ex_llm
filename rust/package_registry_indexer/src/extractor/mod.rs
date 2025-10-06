@@ -1,55 +1,129 @@
-//! Code Snippet Extractor
+//! Code Snippet Extractor - Delegates to universal_parser
 //!
-//! Temporarily uses analysis-suite parsers to extract useful snippets,
-//! then discards the full analysis. Only stores extracted results.
+//! This module provides a bridge between package_registry_indexer and
+//! universal_parser for extracting code snippets from downloaded packages.
 //!
 //! Architecture:
-//! 1. Parse code with tree-sitter (from analysis-suite)
-//! 2. Extract snippets, examples, patterns
-//! 3. Discard AST and analysis data
-//! 4. Return only useful extracted data
+//! 1. package_registry_indexer downloads tarball (npm, cargo, etc.)
+//! 2. Extractor calls universal_parser to parse with tree-sitter
+//! 3. Converts universal_parser results to FactSnippet format
+//! 4. Returns snippets for storage
 
 use crate::storage::{FactSnippet, FactExample};
 use anyhow::Result;
 use std::path::Path;
+use universal_parser::{UniversalDependencies, ProgrammingLanguage};
 
-#[cfg(feature = "tree-sitter-extraction")]
-pub mod tree_sitter;
+/// Code extractor that delegates to universal_parser
+pub struct UniversalParserExtractor {
+    parser: UniversalDependencies,
+}
 
-#[cfg(not(feature = "tree-sitter-extraction"))]
-pub mod fallback;
+impl UniversalParserExtractor {
+    /// Create new extractor
+    pub fn new() -> Result<Self> {
+        Ok(Self {
+            parser: UniversalDependencies::new()?,
+        })
+    }
 
-/// Code extractor trait
-#[async_trait::async_trait]
-pub trait CodeExtractor: Send + Sync {
-    /// Extract code snippets from a source file
+    /// Extract code snippets from a source file using universal_parser
     ///
     /// Process:
-    /// 1. Parse with appropriate parser
-    /// 2. Extract useful code snippets (exported functions, classes, etc.)
-    /// 3. Discard AST
-    /// 4. Return only snippets
-    async fn extract_snippets(
+    /// 1. Call universal_parser to parse file
+    /// 2. Extract public exports (functions, classes, etc.)
+    /// 3. Convert to FactSnippet format
+    pub async fn extract_snippets(
         &self,
         file_path: &Path,
         source: &str,
-    ) -> Result<Vec<FactSnippet>>;
+    ) -> Result<Vec<FactSnippet>> {
+        // Detect language from file extension
+        let lang = detect_language(file_path)?;
 
-    /// Extract usage examples from test files
-    async fn extract_examples(
+        // Parse with universal_parser
+        let analysis = self.parser.analyze_code(source, lang)?;
+
+        // Convert public symbols to FactSnippets
+        let mut snippets = Vec::new();
+        for symbol in analysis.symbols {
+            if symbol.visibility == "public" || symbol.exported {
+                snippets.push(FactSnippet {
+                    title: symbol.name.clone(),
+                    code: source[symbol.byte_range.clone()].to_string(),
+                    language: format!("{:?}", lang).to_lowercase(),
+                    description: symbol.doc_comment.unwrap_or_default(),
+                    file_path: file_path.to_string_lossy().to_string(),
+                    line_number: symbol.line as u32,
+                });
+            }
+        }
+
+        Ok(snippets)
+    }
+
+    /// Extract usage examples from documentation files
+    pub async fn extract_examples(
         &self,
-        test_file: &Path,
-        source: &str,
-    ) -> Result<Vec<FactExample>>;
+        doc_file: &Path,
+        content: &str,
+    ) -> Result<Vec<FactExample>> {
+        // Extract code blocks from markdown/docs
+        // TODO: Parse markdown code fences
+        let _ = (doc_file, content);
+        Ok(Vec::new())
+    }
 
-    /// Extract snippets from entire directory
-    async fn extract_from_directory(
+    /// Extract snippets from entire directory (package)
+    pub async fn extract_from_directory(
         &self,
         dir: &Path,
-    ) -> Result<ExtractedCode>;
+    ) -> Result<ExtractedCode> {
+        use std::fs;
+        use walkdir::WalkDir;
+
+        let mut extracted = ExtractedCode::default();
+
+        // Walk directory and parse source files
+        for entry in WalkDir::new(dir)
+            .follow_links(false)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_file())
+        {
+            let path = entry.path();
+
+            // Skip if not a source file
+            if detect_language(path).is_err() {
+                continue;
+            }
+
+            // Read and parse
+            if let Ok(content) = fs::read_to_string(path) {
+                if let Ok(snippets) = self.extract_snippets(path, &content).await {
+                    extracted.snippets.extend(snippets);
+                }
+            }
+        }
+
+        Ok(extracted)
+    }
 }
 
-/// Extracted code data (what we keep)
+/// Detect programming language from file extension
+fn detect_language(path: &Path) -> Result<ProgrammingLanguage> {
+    match path.extension().and_then(|e| e.to_str()) {
+        Some("rs") => Ok(ProgrammingLanguage::Rust),
+        Some("ts") | Some("tsx") => Ok(ProgrammingLanguage::TypeScript),
+        Some("js") | Some("jsx") => Ok(ProgrammingLanguage::JavaScript),
+        Some("py") => Ok(ProgrammingLanguage::Python),
+        Some("go") => Ok(ProgrammingLanguage::Go),
+        Some("ex") | Some("exs") => Ok(ProgrammingLanguage::Elixir),
+        _ => anyhow::bail!("Unsupported language"),
+    }
+}
+
+/// Extracted code data from a package
 #[derive(Debug, Clone, Default)]
 pub struct ExtractedCode {
     pub snippets: Vec<FactSnippet>,
@@ -57,15 +131,7 @@ pub struct ExtractedCode {
     pub exports: Vec<String>,  // List of exported symbols
 }
 
-/// Create appropriate extractor based on features
-pub fn create_extractor() -> Result<Box<dyn CodeExtractor>> {
-    #[cfg(feature = "tree-sitter-extraction")]
-    {
-        Ok(Box::new(tree_sitter::TreeSitterExtractor::new()?))
-    }
-
-    #[cfg(not(feature = "tree-sitter-extraction"))]
-    {
-        Ok(Box::new(fallback::FallbackExtractor::new()))
-    }
+/// Create extractor (unified interface)
+pub fn create_extractor() -> Result<UniversalParserExtractor> {
+    UniversalParserExtractor::new()
 }

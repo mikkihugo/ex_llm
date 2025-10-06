@@ -1,0 +1,21 @@
+# Codex Configuration for Singularity Integration
+#
+# This config disables Codex builtin tools so ALL tools come from
+# Elixir via MCP. This ensures:
+# - Tools have access to knowledge base
+# - Tools have access to quality standards
+# - Tools have access to templates
+# - Tools operate on real codebase (not sandbox)
+# - All operations go through Elixir orchestration
+
+[builtin_tools]
+# Disable ALL built-in tools (use MCP only)
+include = []
+
+# Alternatively, you can exclude specific tools:
+# exclude = ["local_shell", "read_file", "write_file", "list_dir"]
+
+# MCP servers will provide all tool functionality
+[mcp_servers.singularity]
+# url = "http://localhost:4000/mcp"  # Elixir app MCP endpoint
+# Uncomment when MCP integration is ready

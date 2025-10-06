@@ -4,7 +4,7 @@
 //! Extracts: public API, functions, classes, interfaces, types, examples
 
 use super::{CollectionStats, DataSourcePriority, PackageCollector};
-use crate::extractor::{CodeExtractor, create_extractor};
+use crate::extractor::{UniversalParserExtractor, create_extractor};
 use crate::storage::{FactData, FactSnippet};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -30,8 +30,8 @@ pub struct NpmCollector {
   #[cfg(feature = "npm-collector")]
   advisory_collector: NpmAdvisoryCollector,
 
-  /// Code extractor (uses tree-sitter if available)
-  extractor: Box<dyn CodeExtractor>,
+  /// Code extractor (delegates to universal_parser)
+  extractor: UniversalParserExtractor,
 }
 
 /// NPM registry package metadata
