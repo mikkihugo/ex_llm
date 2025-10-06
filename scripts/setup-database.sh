@@ -2,7 +2,15 @@
 # Database setup script for Singularity (Nix PostgreSQL)
 # Creates shared database with extensions for all environments
 
-set -e
+set -euo pipefail
+
+# Nix guard
+GUARD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib"
+if [[ -f "${GUARD_DIR}/nix_guard.sh" ]]; then
+  # shellcheck source=/dev/null
+  source "${GUARD_DIR}/nix_guard.sh"
+  require_nix_shell
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

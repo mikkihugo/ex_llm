@@ -55,7 +55,7 @@ singularity_app/
 └── gleam.toml                 # Gleam config
 ```
 
-## Quick Start (Internal Tooling - Simple!)
+## Quick Start (Nix-only)
 
 ### 1. Enter Nix Shell
 ```bash
@@ -102,6 +102,22 @@ iex> Singularity.Knowledge.ArtifactStore.search("async worker", language: "elixi
 ```
 
 **That's it!** Everything runs in Nix, uses one database, and learns from your usage.
+
+Commit guard
+- Git hooks live in `.githooks`. Enable once locally:
+  ```bash
+  git config core.hooksPath .githooks
+  ```
+- The pre-commit hook refuses commits outside a Nix dev shell.
+
+Binary cache
+- The flake’s `nixConfig` sets the Cachix substituter globally for this flake.
+- Optional push from your machine:
+  ```bash
+  nix profile install nixpkgs#cachix
+  cachix authtoken <TOKEN>
+  cachix watch-exec mikkihugo -- nix build .#devShells.$(nix eval --raw --impure --expr builtins.currentSystem).default -L
+  ```
 
 ## Notes
 

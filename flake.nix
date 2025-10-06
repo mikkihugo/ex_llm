@@ -385,7 +385,8 @@ EOF
             export REBAR_GLOBAL_CONFIG_DIR="$PWD/.rebar3"
             export REBAR_PLUGINS_DIR="$PWD/.rebar3/plugins"
             mkdir -p "$MIX_HOME" "$HEX_HOME" "$REBAR_CACHE_DIR" "$REBAR_PLUGINS_DIR" "$PWD/bin"
-            export PATH=$PWD/bin:$PATH
+            # Don't override PATH - let Nix handle it via buildInputs
+            # export PATH=$PWD/bin:$PATH
 
             # CUDA/GPU environment for EXLA (RTX 4080)
             export CUDA_HOME="${pkgs.cudaPackages.cudatoolkit}"
@@ -510,11 +511,10 @@ EOF
             # NOTE: Schema (tables, indexes) is managed by Elixir migrations in singularity_app/priv/repo/migrations/
             # Run 'mix ecto.migrate' to create tables
 
-            if [ -n "${PS1:-}" ]; then
-              echo "Loaded singularity development shell"
-              echo "AI CLIs: gemini, claude, codex, copilot, cursor-agent"
-              echo "Run 'just help' for task shortcuts."
-            fi
+            # Always show shell info (works in both interactive and non-interactive modes)
+            echo "Loaded singularity development shell"
+            echo "AI CLIs: gemini, claude, codex, copilot, cursor-agent"
+            echo "Run 'just help' for task shortcuts."
           '';
         };
 
@@ -557,8 +557,15 @@ EOF
             mkdir -p "$MIX_HOME" "$HEX_HOME" "$PWD/bin"
             export PATH=$PWD/bin:$PATH
 
+            # CUDA setup for GPU-accelerated development
+            export CUDA_HOME="${pkgs.cudaPackages.cudatoolkit}"
+            export CUDA_PATH="${pkgs.cudaPackages.cudatoolkit}"
+            export PATH="${pkgs.cudaPackages.cudatoolkit}/bin:$PATH"
+            export LD_LIBRARY_PATH="${pkgs.cudaPackages.cudatoolkit}/lib:$LD_LIBRARY_PATH"
+
             echo "🚀 Singularity Development Environment"
             echo "  MIX_ENV=dev"
+            echo "  CUDA: $CUDA_HOME"
             echo "  Full development tooling enabled"
             echo "  Run: mix phx.server"
           '';

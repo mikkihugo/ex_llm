@@ -25,7 +25,8 @@ pub fn load_model(model_type: ModelType) -> Result<Box<dyn EmbeddingModel>> {
 
 /// Jina v3 ONNX model loader
 fn load_jina_v3() -> Result<Box<dyn EmbeddingModel>> {
-    use ort::{Session, SessionBuilder, ExecutionProvider};
+    use ort::session::{Session, builder::SessionBuilder};
+    use ort::execution_providers::ExecutionProvider;
 
     info!("Loading Jina v3 ONNX model...");
 
@@ -68,7 +69,7 @@ fn load_qodo_embed() -> Result<Box<dyn EmbeddingModel>> {
     })?;
 
     // Use GPU if available
-    let device = if candle_core::cuda_is_available() {
+    let device = if candle_core::utils::cuda_is_available() {
         Device::new_cuda(0)?
     } else {
         warn!("CUDA not available, using CPU for Qodo-Embed");
@@ -101,7 +102,7 @@ struct JinaV3Model {
 
 impl EmbeddingModel for JinaV3Model {
     fn embed_batch(&self, texts: &[String]) -> Result<Vec<Vec<f32>>> {
-        use ort::Value;
+        use ort::value::Value;
         use ndarray::{Array2, Array1};
 
         // Tokenize texts

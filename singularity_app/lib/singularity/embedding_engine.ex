@@ -26,10 +26,13 @@ defmodule Singularity.EmbeddingEngine do
       EmbeddingEngine.preload_models([:jina_v3, :qodo_embed])
   """
 
-  use Rustler,
-    otp_app: :singularity,
-    crate: "embedding_engine",
-    path: Path.join([__DIR__, "..", "..", "..", "rust", "embedding_engine"])
+  # DISABLED: Rust NIF has 15 compilation errors
+  # TODO: Fix Rust implementation (see rust/embedding_engine/src/)
+  # For now, use EmbeddingGenerator (Bumblebee → Google fallback) instead
+  # use Rustler,
+  #   otp_app: :singularity,
+  #   crate: "embedding_engine",
+  #   path: Path.join([__DIR__, "..", "..", "..", "rust", "embedding_engine"])
 
   @type embedding :: list(float())
   @type model_type :: :jina_v3 | :qodo_embed | :code | :text

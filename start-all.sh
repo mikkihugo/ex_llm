@@ -1,8 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Singularity Complete System Startup Script
 # Starts all required services in proper order
 
-set -e
+set -euo pipefail
+
+# Nix guard
+if [[ -f "scripts/lib/nix_guard.sh" ]]; then
+  # shellcheck source=/dev/null
+  source scripts/lib/nix_guard.sh
+  require_nix_shell
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"

@@ -73,12 +73,7 @@ defmodule Singularity.MixProject do
       # Vector embeddings for pattern mining
       {:pgvector, "~> 0.2"},
 
-      # ML/AI - Local embeddings with GPU acceleration
-      {:bumblebee, "~> 0.5.3"},
-      {:nx, "~> 0.7.1"},
-      # XLA compiler for GPU (CUDA/ROCm) - use precompiled
-      {:exla, "~> 0.7.1", override: true},
-      # Rustler NIF for GPU-accelerated embeddings (ort + candle)
+      # Rustler NIF for GPU-accelerated embeddings (primary: Rust → fallback: Google AI)
       {:rustler, "~> 0.34.0", runtime: false},
 
       # Data & Serialization

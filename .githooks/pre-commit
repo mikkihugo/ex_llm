@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Enforce Nix-only workflow for local commits.
+# If you're not committing from a Nix dev shell, refuse with a clear hint.
+
+if [[ -z "${IN_NIX_SHELL:-}" ]]; then
+  echo "[pre-commit] Not inside a Nix dev shell."
+  echo "Run 'nix develop' (or 'direnv allow' with use flake) and retry."
+  exit 1
+fi
+
+exit 0
+

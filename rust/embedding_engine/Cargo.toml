@@ -11,11 +11,11 @@ crate-type = ["cdylib"]
 # Rustler for Elixir NIFs
 rustler = "0.34"
 
-# ONNX Runtime for Jina v3 (GPU-accelerated)
-ort = { version = "2.0.0-rc.10", features = ["cuda", "load-dynamic"] }
+# ONNX Runtime for Jina v3 (CPU fallback for WSL2 without CUDA)
+ort = { version = "2.0.0-rc.10", features = ["load-dynamic"] }
 
-# Candle for CodeT5 PyTorch models (GPU-accelerated)
-candle-core = { version = "0.8", features = ["cuda"] }
+# Candle for CodeT5 PyTorch models (CPU fallback for WSL2 without CUDA)
+candle-core = { version = "0.8" }
 candle-nn = "0.8"
 candle-transformers = "0.8"
 

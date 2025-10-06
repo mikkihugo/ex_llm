@@ -5,29 +5,23 @@ type: 'application'
 language: 'typescript'
 project:
   name: '@singularity/workspace'
-  description: 'Singularity workspace orchestration'
+  description: 'Singularity AI development environment - polyglot monorepo'
 
 tasks:
-  # Workspace-level orchestration tasks
-  build:all:
-    command: 'nix develop .#dev --command just compile && nix develop .#dev --command just rust-build'
-    local: true
-    options:
-      runInCI: true
-
+  # Core development tasks
   dev:
     command: 'nix develop .#dev --command just dev'
     local: true
     options:
       persistent: true
 
-  start:
-    command: 'nix develop .#dev --command just dev'
+  build:
+    command: 'nix develop .#dev --command just compile && nix develop .#dev --command just rust-build'
     local: true
     options:
-      persistent: true
+      runInCI: true
 
-  test:all:
+  test:
     command: 'nix develop .#dev --command just test'
     local: true
     options:
@@ -37,43 +31,32 @@ tasks:
     command: 'nix develop .#dev --command just clean'
     local: true
 
-  install:
+  setup:
     command: 'nix develop .#dev --command just setup'
     local: true
 
-  # Rust-specific build task
+  # Language-specific tasks
   rust:build:
-    command: 'cd rust && nix develop .#dev --command cargo build --release'
+    command: 'cd rust && nix develop ..#dev --command cargo build --release'
     local: true
     options:
       runInCI: true
 
   rust:test:
-    command: 'cd rust && cargo test'
+    command: 'cd rust && nix develop ..#dev --command cargo test'
     local: true
     options:
       runInCI: true
 
   rust:check:
-    command: 'cd rust && cargo check'
+    command: 'cd rust && nix develop ..#dev --command cargo check'
     local: true
     options:
       runInCI: true
 
-  # AI-powered development tasks
-  ai:lint-fix:
-    command: 'find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | head -5 | xargs -I {} sh -c "echo \"Linting: {}\" && bunx eslint --fix \"{}\" 2>/dev/null || true"'
-    inputs:
-      - 'ai-server/src/**/*.{ts,tsx,js,jsx}'
-      - 'ai-server/.eslintrc.*'
-      - 'ai-server/eslint.config.*'
-    options:
-      cache: false
-      runInCI: true
-      local: true
-
-  ai:code-review:
-    command: 'find ai-server/src -name "*.ts" -o -name "*.tsx" | head -3 | xargs -I {} sh -c "echo \"Reviewing: {}\" && bunx @anthropic-ai/claude-code --model claude-3-5-sonnet-20241022 \"Perform a surgical code review of this TypeScript code. Focus on making it BETTER, not less functional. Return JSON: {\\\"score\\\": 85, \\\"issues\\\": [\\\"issue1\\\"], \\\"improvements\\\": [\\\"improvement1\\\"], \\\"suggestions\\\": [\\\"suggestion1\\\"]}\" < \"{}\" 2>/dev/null || echo \"Code review skipped\""'
+  # AI development tasks
+  ai:lint:
+    command: 'cd ai-server && nix develop ..#dev --command bunx eslint --fix src/'
     inputs:
       - 'ai-server/src/**/*.{ts,tsx,js,jsx}'
     options:
@@ -81,24 +64,41 @@ tasks:
       runInCI: true
       local: true
 
-  # Database management
+  ai:test:
+    command: 'cd ai-server && nix develop ..#dev --command bun test'
+    local: true
+    options:
+      runInCI: true
+
+  # Database tasks
   db:setup:
-    command: 'moon run singularity_app:deps.get && moon run singularity_app:compile'
+    command: 'cd singularity_app && nix develop ..#dev --command mix ecto.setup'
+    local: true
+
+  db:migrate:
+    command: 'cd singularity_app && nix develop ..#dev --command mix ecto.migrate'
     local: true
 
   db:reset:
-    command: 'moon run singularity_app:db.reset'
+    command: 'cd singularity_app && nix develop ..#dev --command mix ecto.reset'
     local: true
 
-  # Codebase analysis database extension
-  analysis:extend-db:
-    command: 'cd singularity_app && mix analyze.rust'
+  # Quality assurance
+  quality:
+    command: 'cd singularity_app && nix develop ..#dev --command mix quality'
+    local: true
+    options:
+      runInCI: true
+
+  # Analysis tasks
+  analysis:rust:
+    command: 'cd singularity_app && nix develop ..#dev --command mix analyze.rust'
     local: true
     options:
       runInCI: false
 
   analysis:query:
-    command: 'cd singularity_app && mix analyze.query'
+    command: 'cd singularity_app && nix develop ..#dev --command mix analyze.query'
     local: true
     options:
       runInCI: false
