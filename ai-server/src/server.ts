@@ -74,6 +74,13 @@ let DYNAMIC_MODEL_CATALOG: ModelCatalogEntry[] = [];
 async function refreshModelCatalog() {
   console.log(`${blue}🔄${reset} Refreshing model catalog...`);
 
+  // Ensure GitHub Models are loaded first
+  try {
+    await githubModels.refreshModels();
+  } catch (error: any) {
+    console.warn('⚠️  Failed to load GitHub Models:', error.message);
+  }
+
   MODELS = await buildModelCatalog({
     'gemini-code': geminiCode as unknown as ProviderWithModels,
     'claude-code': claudeCode as unknown as ProviderWithModels,
@@ -770,6 +777,28 @@ Bun.serve({
       );
     }
 
+    // GET /provider-tiers - Show provider priority and usage stats
+    if (url.pathname === '/provider-tiers') {
+      if (req.method !== 'GET') {
+        return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
+      }
+
+      try {
+        const { PROVIDER_TIERS, getUsageStats, getProvidersByPriority } = await import('./provider-router.js');
+        return new Response(
+          JSON.stringify({
+            tiers: PROVIDER_TIERS,
+            priority_order: getProvidersByPriority(),
+            usage: getUsageStats(),
+          }),
+          { headers }
+        );
+      } catch (error: any) {
+        console.error('Failed to get provider tiers:', error);
+        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers });
+      }
+    }
+
     return new Response(JSON.stringify({
       error: 'Not found',
       endpoints: [
@@ -778,6 +807,7 @@ Bun.serve({
         'POST /v1/chat/completions',
         'GET  /copilot/auth/start',
         'POST /copilot/auth/complete',
+        'GET  /provider-tiers',
       ],
     }), {
       status: 404,

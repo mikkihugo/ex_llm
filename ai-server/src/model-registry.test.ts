@@ -26,9 +26,9 @@ import {
 describe('Model Registry', () => {
   let models: ModelInfo[];
 
-  beforeAll(() => {
+  beforeAll(async () => {
     // Build catalog with providers that have getModelMetadata()
-    models = buildModelCatalog({
+    models = await buildModelCatalog({
       'openai-codex': codex as unknown as ProviderWithMetadata,
       'github-copilot': copilot as unknown as ProviderWithMetadata,
       'github-models': githubModels as unknown as ProviderWithMetadata,

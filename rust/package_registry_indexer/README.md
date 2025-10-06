@@ -65,8 +65,12 @@ package-registry-indexer collect --ecosystem npm --package react --version 18.2.
 # Collect cargo package
 package-registry-indexer collect --ecosystem cargo --package tokio --version 1.35.0
 
+# Collect hex package
+package-registry-indexer collect --ecosystem hex --package phoenix --version 1.7.0
+
 # Search locally
 package-registry-indexer search "async runtime" --ecosystem cargo
+package-registry-indexer search "web framework" --ecosystem hex
 ```
 
 ## Integration with Singularity
@@ -74,7 +78,9 @@ package-registry-indexer search "async runtime" --ecosystem cargo
 Elixir calls this via:
 ```elixir
 Singularity.PackageRegistryCollector.collect("tokio", "1.35.0", :cargo)
+Singularity.PackageRegistryCollector.collect("phoenix", "1.7.0", :hex)
 Singularity.PackageRegistryKnowledge.search("async runtime", ecosystem: :cargo)
+Singularity.PackageRegistryKnowledge.search("web framework", ecosystem: :hex)
 ```
 
 The Rust binary runs as a separate process, queried by Elixir for package knowledge.

@@ -23,7 +23,7 @@ export const CODEX_MODELS = [
     description: 'OpenAI GPT-5 (default, supports extended thinking)',
     contextWindow: 200000,
     capabilities: { completion: true, streaming: true, reasoning: true, vision: false, tools: true },
-    cost: 'subscription' as const,
+    cost: 'free' as const,
     subscription: 'ChatGPT Plus/Pro',
   },
   {
@@ -32,7 +32,7 @@ export const CODEX_MODELS = [
     description: 'GPT-5 optimized for software engineering (supports extended thinking)',
     contextWindow: 200000,
     capabilities: { completion: true, streaming: true, reasoning: true, vision: false, tools: true },
-    cost: 'subscription' as const,
+    cost: 'free' as const,
     subscription: 'ChatGPT Plus/Pro',
   },
   {
@@ -41,7 +41,7 @@ export const CODEX_MODELS = [
     description: 'Smaller, faster GPT-5 (supports extended thinking)',
     contextWindow: 200000,
     capabilities: { completion: true, streaming: true, reasoning: true, vision: false, tools: true },
-    cost: 'subscription' as const,
+    cost: 'free' as const,
     subscription: 'ChatGPT Plus/Pro',
   },
 ] as const;

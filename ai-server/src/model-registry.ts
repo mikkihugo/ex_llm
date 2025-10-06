@@ -47,12 +47,16 @@ export async function registerProviderModels(
   // Check if provider has getModelMetadata (customProvider-based)
   let models: readonly any[];
 
-  if ('getModelMetadata' in providerInstance && typeof providerInstance.getModelMetadata === 'function') {
-    const result = providerInstance.getModelMetadata();
+  // Try getModelMetadata first (works with Proxies)
+  if (typeof (providerInstance as any).getModelMetadata === 'function') {
+    const result = (providerInstance as any).getModelMetadata();
     models = result instanceof Promise ? await result : result;
-  } else if ('listModels' in providerInstance && typeof providerInstance.listModels === 'function') {
-    models = providerInstance.listModels();
+    console.log(`[ModelRegistry] Provider ${provider}: getModelMetadata returned ${models.length} models`);
+  } else if (typeof (providerInstance as any).listModels === 'function') {
+    models = (providerInstance as any).listModels();
+    console.log(`[ModelRegistry] Provider ${provider}: listModels returned ${models.length} models`);
   } else {
+    console.log(`[ModelRegistry] Provider ${provider}: NO metadata method found`);
     models = [];
   }
 

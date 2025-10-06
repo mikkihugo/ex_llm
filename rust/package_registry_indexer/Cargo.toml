@@ -107,7 +107,8 @@ storage = []
 # Package collectors
 cargo-collector = ["dep:reqwest", "dep:flate2", "dep:tar"]
 npm-collector = ["dep:reqwest", "dep:flate2", "dep:tar"]
-collectors = ["cargo-collector", "npm-collector"]
+hex-collector = ["dep:reqwest", "dep:flate2", "dep:tar"]
+collectors = ["cargo-collector", "npm-collector", "hex-collector"]
 # Tree-sitter extraction using universal-parser framework
 # tree-sitter-extraction = ["dep:universal-parser"]  # Commented out - dependency not available
 

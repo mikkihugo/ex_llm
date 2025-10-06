@@ -2,7 +2,7 @@
 
 /**
  * NATS Handler for AI Server
- * 
+ *
  * Handles NATS requests from Elixir and routes them to appropriate AI providers.
  * Subscribes to ai.llm.request and publishes responses to ai.llm.response.
  */
@@ -15,6 +15,7 @@ import { codex } from 'ai-sdk-provider-codex';
 import { copilot } from './providers/copilot';
 import { githubModels } from './providers/github-models';
 import { julesWithMetadata } from './providers/google-ai-jules';
+import { convertOpenAIToolsToAISDK, type OpenAITool } from './tool-converter.js';
 
 interface LLMRequest {
   model: string;
@@ -24,6 +25,7 @@ interface LLMRequest {
   temperature?: number;
   stream?: boolean;
   correlation_id?: string;
+  tools?: OpenAITool[];  // Tools from Elixir in OpenAI format
 }
 
 interface LLMResponse {
@@ -98,22 +100,34 @@ class NATSHandler {
   }
 
   async processLLMRequest(request: LLMRequest): Promise<LLMResponse> {
-    const { model, messages, max_tokens = 4000, temperature = 0.7, stream = false } = request;
-    
+    const { model, messages, max_tokens = 4000, temperature = 0.7, stream = false, tools } = request;
+
+    // Convert tools from OpenAI format to AI SDK format
+    let aiSDKTools = undefined;
+    if (tools && tools.length > 0) {
+      console.log(`📦 Converting ${tools.length} tools from OpenAI format to AI SDK format`);
+      aiSDKTools = convertOpenAIToolsToAISDK(tools, async (toolName, args) => {
+        // Execute tool by calling Elixir via NATS
+        console.log(`🔧 Executing tool: ${toolName}`, args);
+        const result = await this.nc!.request(`tools.execute.${toolName}`, JSON.stringify(args));
+        return JSON.parse(result.data.toString());
+      });
+    }
+
     // Determine provider from model name
     const provider = this.getProviderFromModel(model);
-    
+
     // Route to appropriate provider
     let result;
-    
+
     if (stream) {
       // Handle streaming requests
-      result = await this.handleStreamingRequest(provider, model, messages, { max_tokens, temperature });
+      result = await this.handleStreamingRequest(provider, model, messages, { max_tokens, temperature, tools: aiSDKTools });
     } else {
       // Handle non-streaming requests
-      result = await this.handleNonStreamingRequest(provider, model, messages, { max_tokens, temperature });
+      result = await this.handleNonStreamingRequest(provider, model, messages, { max_tokens, temperature, tools: aiSDKTools });
     }
-    
+
     return {
       text: result.text,
       model: model,
@@ -195,9 +209,10 @@ class NATSHandler {
         model: codex(model),
         messages: messages,
         maxTokens: options.max_tokens,
-        temperature: options.temperature
+        temperature: options.temperature,
+        tools: options.tools  // Pass tools to Codex
       });
-      
+
       return {
         text: result.text,
         tokens_used: result.usage?.totalTokens || 0,

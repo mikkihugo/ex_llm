@@ -14,6 +14,7 @@
     "@google/gemini-cli-core": "^0.7.0",
     "@google/generative-ai": "^0.24.1",
     "@openai/codex": "^0.44.0",
+    "@openai/codex-sdk": "^0.45.0",
     "ai": "5.1.0-beta.22",
     "ai-sdk-provider-claude-code": "latest",
     "ai-sdk-provider-codex": "file:vendor/ai-sdk-provider-codex",

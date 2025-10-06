@@ -15,6 +15,9 @@ pub mod cargo;
 #[cfg(feature = "npm-collector")]
 pub mod npm;
 
+#[cfg(feature = "hex-collector")]
+pub mod hex;
+
 #[cfg(feature = "npm-collector")]
 pub mod npm_advisory;
 

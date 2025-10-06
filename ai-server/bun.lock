@@ -8,6 +8,7 @@
         "@google/gemini-cli-core": "^0.7.0",
         "@google/generative-ai": "^0.24.1",
         "@openai/codex": "^0.44.0",
+        "@openai/codex-sdk": "^0.45.0",
         "ai": "5.1.0-beta.22",
         "ai-sdk-provider-claude-code": "latest",
         "ai-sdk-provider-codex": "file:vendor/ai-sdk-provider-codex",
@@ -234,6 +235,8 @@
     "@open-draft/until": ["@open-draft/until@2.1.0", "", {}, "sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg=="],
 
     "@openai/codex": ["@openai/codex@0.44.0", "", { "bin": { "codex": "bin/codex.js" } }, "sha512-5QNxwcuNn1aZMIzBs9E//vVLLRTZ8jkJRZas2XJgYdBNiSSlGzIuOfPBPXPNiQ2hRPKVqI4/APWIck4jxhw2KA=="],
+
+    "@openai/codex-sdk": ["@openai/codex-sdk@0.45.0", "", {}, "sha512-ZaxyFRTPiJ5ENSLivYxSLPcbEG40M8zC4/hgn6u3kHSXmVq6slq3AXdTlq75zqHguZb03yEACrR9YkIeRggCzQ=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
 

@@ -1,6 +1,6 @@
 import type { LanguageModelV1 } from '@ai-sdk/provider';
-import { CodexSDK } from 'codex-js-sdk';
-import type { CodexResponse, CodexMessageType, InputItem } from 'codex-js-sdk';
+import { Codex } from '@openai/codex-sdk';
+import type { Message } from '@openai/codex-sdk';
 
 export interface CodexModelConfig {
   model?: string;
@@ -27,69 +27,68 @@ export class CodexLanguageModel implements LanguageModelV1 {
   }
 
   async doGenerate(options: Parameters<LanguageModelV1['doGenerate']>[0]): Promise<Awaited<ReturnType<LanguageModelV1['doGenerate']>>> {
-    const sdk = new CodexSDK({
-      logLevel: (this.config.logLevel || 'error') as any,
+    const codex = new Codex({
+      // Config options for the Codex CLI
       config: {
-        approval_policy: (this.config.approvalPolicy || 'never') as any,
         model: this.modelId,
-        mcp_servers: this.config.mcpServers,
+        approval_policy: (this.config.approvalPolicy || 'never') as any,
         model_reasoning_effort: this.config.reasoningEffort,
         model_reasoning_summary: this.config.reasoningSummary,
       },
     });
 
-    return new Promise((resolve, reject) => {
-      let responseText = '';
-      let toolCalls: any[] = [];
-      let isComplete = false;
+    // Start a thread
+    const thread = codex.startThread();
 
-      const timeout = setTimeout(() => {
-        if (!isComplete) {
-          sdk.stop();
-          reject(new Error('Codex request timeout after 60s'));
-        }
-      }, 60000);
+    // Convert AI SDK messages to a single prompt
+    const prompt = this.convertMessagesToPrompt(options.prompt);
 
-      sdk.onResponse((response: CodexResponse<CodexMessageType>) => {
-        const msg = response.msg;
-
-        if (msg.type === 'agent_message') {
-          responseText += msg.message;
-        } else if (msg.type === 'agent_reasoning') {
-          // Extended thinking/reasoning - include in response
-          responseText += `\n[Thinking: ${msg.text}]\n`;
-        } else if (msg.type === 'mcp_tool_call_begin') {
-          toolCalls.push({
-            toolCallType: 'function' as const,
-            toolCallId: msg.call_id,
-            toolName: msg.tool,
-            args: JSON.stringify(msg.arguments || {}),
-          });
-        } else if (msg.type === 'task_complete') {
-          isComplete = true;
-          clearTimeout(timeout);
-
-          resolve({
-            text: responseText,
-            finishReason: 'stop' as const,
-            usage: {
-              promptTokens: 0,
-              completionTokens: 0,
-            },
-            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-          } as any);
-        } else if (msg.type === 'error') {
-          isComplete = true;
-          clearTimeout(timeout);
-          reject(new Error(`Codex error: ${(msg as any).error || 'Unknown error'}`));
-        }
+    try {
+      // Run the prompt and get the result
+      const turn = await thread.run(prompt, {
+        tools: this.convertTools(options.tools),
       });
 
-      // Convert AI SDK messages to Codex input
-      const inputItems = this.convertMessages(options.prompt);
-      sdk.start();
-      sdk.sendUserMessage(inputItems);
-    });
+      return {
+        text: turn.finalResponse || '',
+        finishReason: 'stop' as const,
+        usage: {
+          promptTokens: turn.usage?.promptTokens || 0,
+          completionTokens: turn.usage?.completionTokens || 0,
+        },
+        toolCalls: turn.items
+          ?.filter((item: any) => item.type === 'tool_call')
+          .map((item: any) => ({
+            toolCallType: 'function' as const,
+            toolCallId: item.id,
+            toolName: item.name,
+            args: JSON.stringify(item.input || {}),
+          })),
+      } as any;
+    } catch (error) {
+      throw new Error(`Codex error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private convertMessagesToPrompt(prompt: any[]): string {
+    // Convert AI SDK prompt array to a single string
+    return prompt
+      .map((msg) => {
+        if (typeof msg.content === 'string') {
+          return msg.content;
+        }
+        if (Array.isArray(msg.content)) {
+          return msg.content.map((part: any) => part.text || '').join('\n');
+        }
+        return '';
+      })
+      .join('\n\n');
+  }
+
+  private convertTools(tools: any): any {
+    if (!tools) return undefined;
+    // Convert AI SDK tools to Codex tool format if needed
+    return tools;
   }
 
   async doStream(options: Parameters<LanguageModelV1['doStream']>[0]): Promise<Awaited<ReturnType<LanguageModelV1['doStream']>>> {
@@ -120,25 +119,4 @@ export class CodexLanguageModel implements LanguageModelV1 {
     };
   }
 
-  private convertMessages(prompt: any): InputItem[] {
-    // Convert AI SDK prompt format to Codex InputItem[]
-    if (typeof prompt === 'string') {
-      return [{ type: 'text', text: prompt }];
-    }
-
-    if (Array.isArray(prompt)) {
-      const text = prompt
-        .map((msg: any) => {
-          if (msg.role === 'user') return msg.content;
-          if (msg.role === 'assistant') return msg.content;
-          return '';
-        })
-        .filter(Boolean)
-        .join('\n\n');
-
-      return [{ type: 'text', text }];
-    }
-
-    return [{ type: 'text', text: String(prompt) }];
-  }
 }
