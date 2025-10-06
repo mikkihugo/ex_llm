@@ -44,23 +44,65 @@ export interface ModelMetadata {
 }
 
 const MODELS_DEV_URL = 'https://models.dev/api.json';
-const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 7 days (models.dev is stable, rarely changes)
+const CACHE_FILE = '.cache/models-dev.json';
 
 let cachedData: ModelsDev | null = null;
 let cacheTime: number = 0;
 
 /**
+ * Load cached data from disk
+ */
+async function loadFromDisk(): Promise<{ data: ModelsDev; time: number } | null> {
+  try {
+    const file = Bun.file(CACHE_FILE);
+    if (await file.exists()) {
+      const content = await file.json();
+      console.log(`📂 Loaded models.dev from disk cache (${Object.keys(content.data.providers).length} providers)`);
+      return content;
+    }
+  } catch (error) {
+    console.error('⚠️  Failed to load disk cache:', error);
+  }
+  return null;
+}
+
+/**
+ * Save data to disk cache
+ */
+async function saveToDisk(data: ModelsDev, time: number): Promise<void> {
+  try {
+    await Bun.write(CACHE_FILE, JSON.stringify({ data, time }, null, 2));
+    console.log(`💾 Saved models.dev to disk cache`);
+  } catch (error) {
+    console.error('⚠️  Failed to save disk cache:', error);
+  }
+}
+
+/**
  * Fetch model metadata from models.dev
  */
 export async function fetchModelsDevData(): Promise<ModelsDev> {
-  // Return cached data if fresh
   const now = Date.now();
+
+  // 1. Check in-memory cache first
   if (cachedData && now - cacheTime < CACHE_TTL) {
     return cachedData;
   }
 
+  // 2. Check disk cache if memory is empty
+  if (!cachedData) {
+    const diskCache = await loadFromDisk();
+    if (diskCache && now - diskCache.time < CACHE_TTL) {
+      cachedData = diskCache.data;
+      cacheTime = diskCache.time;
+      return cachedData;
+    }
+  }
+
+  // 3. Fetch from API if cache expired or missing
   try {
-    console.log('🔄 Fetching model metadata from models.dev...');
+    console.log('🔄 Fetching fresh model metadata from models.dev...');
     const response = await fetch(MODELS_DEV_URL, {
       headers: {
         'User-Agent': 'Singularity-AI-Server/1.0'
@@ -75,11 +117,24 @@ export async function fetchModelsDevData(): Promise<ModelsDev> {
     cachedData = { providers: data };
     cacheTime = now;
 
+    // Save to disk for next time
+    await saveToDisk(cachedData, cacheTime);
+
     console.log(`✅ Fetched metadata for ${Object.keys(data).length} providers`);
     return cachedData;
   } catch (error) {
     console.error('⚠️  Failed to fetch models.dev data:', error);
-    // Return cached data even if stale, or empty
+
+    // 4. Try disk cache even if stale as fallback
+    const diskCache = await loadFromDisk();
+    if (diskCache) {
+      console.log('📂 Using stale disk cache as fallback');
+      cachedData = diskCache.data;
+      cacheTime = diskCache.time;
+      return cachedData;
+    }
+
+    // 5. Return in-memory cache or empty
     return cachedData || { providers: {} };
   }
 }

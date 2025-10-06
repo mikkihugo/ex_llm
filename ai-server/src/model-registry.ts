@@ -79,19 +79,83 @@ export async function registerProviderModels(
   }));
 }
 
+const MODEL_CATALOG_CACHE_FILE = '.cache/model-catalog.json';
+const MODEL_CATALOG_CACHE_TTL = 1000 * 60 * 5; // 5 minutes (providers can go offline/rate-limit)
+
+/**
+ * Load model catalog from disk cache
+ */
+async function loadCatalogFromDisk(): Promise<{ models: ModelInfo[]; time: number } | null> {
+  try {
+    const file = Bun.file(MODEL_CATALOG_CACHE_FILE);
+    if (await file.exists()) {
+      const content = await file.json();
+      console.log(`📂 Loaded model catalog from disk (${content.models.length} models)`);
+      return content;
+    }
+  } catch (error) {
+    console.error('⚠️  Failed to load catalog cache:', error);
+  }
+  return null;
+}
+
+/**
+ * Save model catalog to disk cache
+ */
+async function saveCatalogToDisk(models: ModelInfo[], time: number): Promise<void> {
+  try {
+    await Bun.write(MODEL_CATALOG_CACHE_FILE, JSON.stringify({ models, time }, null, 2));
+    console.log(`💾 Saved model catalog to disk (${models.length} models)`);
+  } catch (error) {
+    console.error('⚠️  Failed to save catalog cache:', error);
+  }
+}
+
 /**
  * Build model catalog from provider registry
  * Call this after creating the provider registry
  * Supports both legacy listModels() and AI SDK customProvider() approaches
+ *
+ * Uses disk cache to avoid rebuilding on every startup
  */
 export async function buildModelCatalog(
-  providers: Record<string, ProviderWithModels | ProviderWithMetadata>
+  providers: Record<string, ProviderWithModels | ProviderWithMetadata>,
+  options: { useCache?: boolean; enrichWithModelsDevData?: boolean } = {}
 ): Promise<ModelInfo[]> {
+  const { useCache = true, enrichWithModelsDevData = true } = options;
+  const now = Date.now();
+
+  // Try disk cache first (if enabled)
+  if (useCache) {
+    const diskCache = await loadCatalogFromDisk();
+    if (diskCache && now - diskCache.time < MODEL_CATALOG_CACHE_TTL) {
+      console.log('⚡ Using cached model catalog (fast startup)');
+
+      // Async: Rebuild in background after startup
+      setTimeout(async () => {
+        console.log('🔄 Refreshing model catalog in background...');
+        const freshModels = await buildModelCatalog(providers, { useCache: false });
+        await saveCatalogToDisk(freshModels, Date.now());
+      }, 5000); // Wait 5s after startup
+
+      return diskCache.models;
+    }
+  }
+
+  // Build from scratch
+  console.log('🔨 Building model catalog from providers...');
   const models: ModelInfo[] = [];
 
   for (const [providerName, provider] of Object.entries(providers)) {
     const providerModels = await registerProviderModels(providerName, provider);
     models.push(...providerModels);
+  }
+
+  console.log(`✅ Discovered ${models.length} models from ${Object.keys(providers).length} providers`);
+
+  // Save to disk for next startup
+  if (useCache) {
+    await saveCatalogToDisk(models, now);
   }
 
   return models;

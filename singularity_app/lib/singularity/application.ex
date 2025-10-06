@@ -67,6 +67,11 @@ defmodule Singularity.Application do
         Singularity.TemplatePerformanceTracker,
         Singularity.TemplateSparcOrchestrator,
 
+        # Template Cache (ETS + NATS JetStream KV)
+        Singularity.Knowledge.TemplateCache,
+        # Template NATS Service (exposes templates via NATS)
+        Singularity.Knowledge.TemplateService,
+
         # NATS Execution Router (connects AI Server to TemplateSparcOrchestrator)
         # TODO: Fix NatsExecutionRouter to work with latest CostOptimizedAgent API
         # Singularity.NatsExecutionRouter,
