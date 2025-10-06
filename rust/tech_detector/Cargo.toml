@@ -1,0 +1,48 @@
+[package]
+name = "tech-detector"
+version = "1.0.0"
+authors = ["mikkihugo"]
+edition = "2021"
+description = "Technology and Framework Detector - Multi-level detection with AI fallback"
+homepage = "https://github.com/mikkihugo/claude-code-zen"
+repository = "https://github.com/mikkihugo/claude-code-zen"
+license = "MIT"
+readme = "README.md"
+keywords = ["detection", "framework", "technology", "ai", "analysis"]
+categories = ["algorithms", "development-tools"]
+
+[lib]
+name = "tech_detector"
+path = "src/lib.rs"
+
+[dependencies]
+# Core dependencies
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+ahash = { workspace = true }
+parking_lot = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+log = { workspace = true }
+
+# Async
+tokio = { workspace = true, features = ["full"] }
+async-trait = { workspace = true }
+
+# File operations
+walkdir = { workspace = true }
+glob = { workspace = true }
+regex = { workspace = true }
+
+# Universal parser for AST analysis
+universal-parser = { path = "../universal_parser" }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[features]
+default = []

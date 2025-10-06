@@ -1,0 +1,362 @@
+{
+  "models": [
+    {
+      "id": "openai-codex:gpt-5",
+      "provider": "openai-codex",
+      "model": "gpt-5",
+      "displayName": "GPT-5",
+      "description": "OpenAI GPT-5 (default, supports extended thinking)",
+      "contextWindow": 200000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": true,
+        "vision": false,
+        "tools": true
+      },
+      "cost": "free",
+      "subscription": "ChatGPT Plus/Pro"
+    },
+    {
+      "id": "openai-codex:gpt-5-codex",
+      "provider": "openai-codex",
+      "model": "gpt-5-codex",
+      "displayName": "GPT-5 Codex",
+      "description": "GPT-5 optimized for software engineering (supports extended thinking)",
+      "contextWindow": 200000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": true,
+        "vision": false,
+        "tools": true
+      },
+      "cost": "free",
+      "subscription": "ChatGPT Plus/Pro"
+    },
+    {
+      "id": "openai-codex:gpt-5-mini",
+      "provider": "openai-codex",
+      "model": "gpt-5-mini",
+      "displayName": "GPT-5 Mini",
+      "description": "Smaller, faster GPT-5 (supports extended thinking)",
+      "contextWindow": 200000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": true,
+        "vision": false,
+        "tools": true
+      },
+      "cost": "free",
+      "subscription": "ChatGPT Plus/Pro"
+    },
+    {
+      "id": "github-copilot:gpt-4.1",
+      "provider": "github-copilot",
+      "model": "gpt-4.1",
+      "displayName": "GPT-4.1",
+      "description": "GPT-4.1 via GitHub Copilot (128K context, no quota limits)",
+      "contextWindow": 128000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": true,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "free",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:gpt-5-mini",
+      "provider": "github-copilot",
+      "model": "gpt-5-mini",
+      "displayName": "GPT-5 mini",
+      "description": "GPT-5 mini via GitHub Copilot (264K context, no quota limits)",
+      "contextWindow": 264000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": true,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "free",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:gpt-5",
+      "provider": "github-copilot",
+      "model": "gpt-5",
+      "displayName": "GPT-5",
+      "description": "GPT-5 via GitHub Copilot (264K context, quota-limited)",
+      "contextWindow": 264000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": true,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:gpt-4o",
+      "provider": "github-copilot",
+      "model": "gpt-4o",
+      "displayName": "GPT-4o",
+      "description": "GPT-4o via GitHub Copilot (128K context, quota-limited)",
+      "contextWindow": 128000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": false,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:o3-mini",
+      "provider": "github-copilot",
+      "model": "o3-mini",
+      "displayName": "o3-mini",
+      "description": "o3-mini via GitHub Copilot (200K context, quota-limited)",
+      "contextWindow": 200000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": true,
+        "vision": false,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:grok-code-fast-1",
+      "provider": "github-copilot",
+      "model": "grok-code-fast-1",
+      "displayName": "Grok Code Fast 1 (Preview)",
+      "description": "Grok Code Fast 1 (Preview) via GitHub Copilot (128K context, no quota limits)",
+      "contextWindow": 128000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": true,
+        "vision": false,
+        "tools": true
+      },
+      "cost": "free",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:gpt-5-codex",
+      "provider": "github-copilot",
+      "model": "gpt-5-codex",
+      "displayName": "GPT-5-Codex (Preview)",
+      "description": "GPT-5-Codex (Preview) via GitHub Copilot (200K context, quota-limited)",
+      "contextWindow": 200000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": true,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:claude-3.5-sonnet",
+      "provider": "github-copilot",
+      "model": "claude-3.5-sonnet",
+      "displayName": "Claude Sonnet 3.5",
+      "description": "Claude Sonnet 3.5 via GitHub Copilot (90K context, quota-limited)",
+      "contextWindow": 90000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": false,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:claude-3.7-sonnet",
+      "provider": "github-copilot",
+      "model": "claude-3.7-sonnet",
+      "displayName": "Claude Sonnet 3.7",
+      "description": "Claude Sonnet 3.7 via GitHub Copilot (200K context, quota-limited)",
+      "contextWindow": 200000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": false,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:claude-3.7-sonnet-thought",
+      "provider": "github-copilot",
+      "model": "claude-3.7-sonnet-thought",
+      "displayName": "Claude Sonnet 3.7 Thinking",
+      "description": "Claude Sonnet 3.7 Thinking via GitHub Copilot (200K context, quota-limited)",
+      "contextWindow": 200000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": false,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:claude-sonnet-4",
+      "provider": "github-copilot",
+      "model": "claude-sonnet-4",
+      "displayName": "Claude Sonnet 4",
+      "description": "Claude Sonnet 4 via GitHub Copilot (216K context, quota-limited)",
+      "contextWindow": 216000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": false,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:claude-opus-4",
+      "provider": "github-copilot",
+      "model": "claude-opus-4",
+      "displayName": "Claude Opus 4",
+      "description": "Claude Opus 4 via GitHub Copilot (80K context, quota-limited)",
+      "contextWindow": 80000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": false,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:claude-sonnet-4.5",
+      "provider": "github-copilot",
+      "model": "claude-sonnet-4.5",
+      "displayName": "Claude Sonnet 4.5 (Preview)",
+      "description": "Claude Sonnet 4.5 (Preview) via GitHub Copilot (144K context, quota-limited)",
+      "contextWindow": 144000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": false,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:claude-opus-41",
+      "provider": "github-copilot",
+      "model": "claude-opus-41",
+      "displayName": "Claude Opus 4.1",
+      "description": "Claude Opus 4.1 via GitHub Copilot (80K context, quota-limited)",
+      "contextWindow": 80000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": false,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:gemini-2.0-flash-001",
+      "provider": "github-copilot",
+      "model": "gemini-2.0-flash-001",
+      "displayName": "Gemini 2.0 Flash",
+      "description": "Gemini 2.0 Flash via GitHub Copilot (1000K context, quota-limited)",
+      "contextWindow": 1000000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": false,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:gemini-2.5-pro",
+      "provider": "github-copilot",
+      "model": "gemini-2.5-pro",
+      "displayName": "Gemini 2.5 Pro",
+      "description": "Gemini 2.5 Pro via GitHub Copilot (128K context, quota-limited)",
+      "contextWindow": 128000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": false,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:o3",
+      "provider": "github-copilot",
+      "model": "o3",
+      "displayName": "o3 (Preview)",
+      "description": "o3 (Preview) via GitHub Copilot (128K context, quota-limited)",
+      "contextWindow": 128000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": true,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    },
+    {
+      "id": "github-copilot:o4-mini",
+      "provider": "github-copilot",
+      "model": "o4-mini",
+      "displayName": "o4-mini (Preview)",
+      "description": "o4-mini (Preview) via GitHub Copilot (128K context, quota-limited)",
+      "contextWindow": 128000,
+      "capabilities": {
+        "completion": true,
+        "streaming": true,
+        "reasoning": true,
+        "vision": true,
+        "tools": true
+      },
+      "cost": "limited",
+      "subscription": "GitHub Copilot"
+    }
+  ],
+  "time": 1759784472286
+}

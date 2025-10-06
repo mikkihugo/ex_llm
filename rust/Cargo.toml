@@ -5,6 +5,7 @@ members = [
     "linting_engine",
     "prompt_engine",
     "package_registry_indexer",
+    "tech_detector",
     "universal_parser",
     "mozilla-code-analysis"
 ]
