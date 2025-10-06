@@ -11,6 +11,7 @@
 import { describe, test, expect, beforeAll, afterAll, mock } from 'bun:test';
 import { connect, NatsConnection } from 'nats';
 import { generateText } from 'ai';
+import { NATSHandler } from '../nats-handler';
 
 // Mock AI SDK for testing
 mock.module('ai', () => ({
@@ -55,6 +56,17 @@ interface LLMError {
   correlation_id?: string;
   timestamp: string;
 }
+
+let handler: NATSHandler;
+
+beforeAll(async () => {
+  handler = new NATSHandler();
+  await handler.connect();
+});
+
+afterAll(async () => {
+  await handler?.close();
+});
 
 describe('NATS Handler - LLM Request Processing', () => {
   let nc: NatsConnection;

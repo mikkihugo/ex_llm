@@ -63,6 +63,16 @@ export interface JulesActivity {
   timestamp: string;
 }
 
+type JulesTaskType = 'feature' | 'bug_fix' | 'test_generation';
+
+interface JulesTask {
+  type: JulesTaskType;
+  description: string;
+  context?: {
+    files?: unknown;
+  };
+}
+
 export class JulesProvider {
   private config: JulesConfig;
 
@@ -289,3 +299,19 @@ export interface JulesProviderWithModels extends ReturnType<typeof createJulesMo
 export const julesWithModels = Object.assign(jules, {
   listModels: () => JULES_MODELS,
 }) as JulesProviderWithModels;
+
+/**
+ * Backwards-compatible helper for legacy imports.
+ * Maps requested model id to the AI SDK model instance with metadata.
+ */
+export function julesWithMetadata(modelId: string) {
+  const normalized = modelId?.toLowerCase();
+  const taskType: JulesTask['type'] =
+    normalized && normalized.includes('bug')
+      ? 'bug_fix'
+      : normalized && normalized.includes('test')
+        ? 'test_generation'
+        : 'feature';
+
+  return createJulesModel(taskType);
+}

@@ -206,7 +206,7 @@ defmodule Singularity.FrameworkPatternStore do
     SELECT DISTINCT
       SUBSTRING(file_path FROM '\\.([^.]+)$') AS extension,
       COUNT(*) AS count
-    FROM code_files
+    FROM codebase_chunks
     WHERE repo_name = $1
     GROUP BY extension
     HAVING COUNT(*) > 5

@@ -6,9 +6,9 @@ members = [
     "prompt_engine",
     "package_registry_indexer",
     "tech_detector",
-    "universal_parser",
-    "mozilla-code-analysis"
-]
+    "source-code-parser",
+    "mozilla-code-analysis",
+    "dependency-parser"]
 
 [workspace.dependencies]
 # Serialization
@@ -48,6 +48,7 @@ tracing = "0.1"
 # Additional common dependencies
 futures = "0.3"
 indexmap = "2.0"
+crossbeam = "0.8"
 log = "0.4"
 tempfile = "3.0"
 redb = "2.0"

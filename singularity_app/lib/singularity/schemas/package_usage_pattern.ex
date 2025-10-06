@@ -11,7 +11,7 @@ defmodule Singularity.Schemas.PackageUsagePattern do
   use Ecto.Schema
   import Ecto.Changeset
 
-  schema "tool_patterns" do
+  schema "dependency_catalog_patterns" do
     field :pattern_type, :string
     field :title, :string
     field :description, :string
@@ -19,8 +19,8 @@ defmodule Singularity.Schemas.PackageUsagePattern do
     field :tags, {:array, :string}
     field :pattern_embedding, Pgvector.Ecto.Vector
 
-    belongs_to :package, Singularity.Schemas.PackageRegistryKnowledge,
-      foreign_key: :tool_id,
+    belongs_to :package, Singularity.Schemas.DependencyCatalog,
+      foreign_key: :dependency_id,
       type: :binary_id
 
     timestamps(type: :utc_datetime)
@@ -29,7 +29,7 @@ defmodule Singularity.Schemas.PackageUsagePattern do
   def changeset(pattern, attrs) do
     pattern
     |> cast(attrs, [
-      :tool_id,
+      :dependency_id,
       :pattern_type,
       :title,
       :description,

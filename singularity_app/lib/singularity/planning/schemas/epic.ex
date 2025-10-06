@@ -15,7 +15,7 @@ defmodule Singularity.Planning.Schemas.Epic do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "epics" do
+  schema "safe_methodology_epics" do
     field :name, :string
     field :description, :string
     field :type, :string

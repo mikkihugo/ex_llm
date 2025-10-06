@@ -4,7 +4,7 @@ defmodule Singularity.TechnologyTemplateLoader do
 
   Sources:
   * `priv/technology_patterns/` for local overrides/defaults
-  * `rust/tool_doc_index/templates/` for shared templates shipped with the repo
+  * `rust/package_registry_indexer/templates/` for shared templates shipped with the repo
 
   JSON structure may either expose a top-level `patterns` list or nested
   `detector_signatures` (e.g. `import_patterns`, `dependencies`, etc.).
@@ -75,7 +75,7 @@ defmodule Singularity.TechnologyTemplateLoader do
       [
         Application.get_env(:singularity, :technology_pattern_dir),
         Application.app_dir(:singularity, "priv/technology_patterns"),
-        Path.expand("../../rust/tool_doc_index/templates", __DIR__)
+        Path.expand("../../rust/package_registry_indexer/templates", __DIR__)
       ]
       |> Enum.filter(&(&1 && File.dir?(&1)))
 

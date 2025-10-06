@@ -1,7 +1,7 @@
 //! NPM Security Advisory Collector
 //!
 //! Collects vulnerability data from npm security advisories and GitHub Security Database
-//! Populates FactData with CVE, GHSA, and vulnerability information
+//! Populates PackageMetadata with CVE, GHSA, and vulnerability information
 
 use crate::storage::SecurityVulnerability;
 use anyhow::{Context, Result};

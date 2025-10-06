@@ -1,0 +1,21 @@
+[package]
+name = "dependency-parser"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "Parser for extracting dependencies from package files (package.json, Cargo.toml, mix.exs, etc.)"
+license = "MIT"
+repository = "https://github.com/your-org/singularity"
+keywords = ["dependencies", "package", "parser", "npm", "cargo", "hex"]
+categories = ["development-tools"]
+
+[dependencies]
+# Core dependencies
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+toml = "0.8"
+regex = "1.10"
+anyhow = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

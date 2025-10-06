@@ -11,7 +11,7 @@ defmodule Singularity.Autonomy.Rule do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "rules" do
+  schema "agent_behavior_confidence_rules" do
     field :name, :string
     field :description, :string
 

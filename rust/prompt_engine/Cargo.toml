@@ -44,6 +44,8 @@ candle-nn = { version = "0.8", optional = true }
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
 
+async-nats = "0.33"
+
 [features]
 default = []
 ml-analysis = ["candle-core", "candle-nn"]

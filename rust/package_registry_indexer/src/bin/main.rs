@@ -622,10 +622,10 @@ async fn auto_command(
   directories: Option<String>,
   github_enabled: bool,
 ) -> Result<()> {
-  use fact_tools::auto_orchestrator::{AutoConfig, AutoFactOrchestrator};
+  use fact_tools::package_file_watcher::{PackageFileWatcherConfig, PackageFileWatcher};
   use std::path::PathBuf;
 
-  let mut config = AutoConfig {
+  let mut config = PackageFileWatcherConfig {
     update_interval_hours: interval,
     max_concurrent: concurrent,
     auto_github: github_enabled,
@@ -639,7 +639,7 @@ async fn auto_command(
 
   if start {
     info!("🤖 Starting automatic FACT orchestration");
-    let mut orchestrator = AutoFactOrchestrator::new(config)?;
+    let mut orchestrator = PackageFileWatcher::new(config)?;
 
     match orchestrator.start().await {
       Ok(()) => {

@@ -1,0 +1,70 @@
+[package]
+name = "source-code-parser"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["claude-code-zen Team"]
+description = "Source code parser for AST analysis, complexity metrics, and language detection using tree-sitter"
+repository = "https://github.com/claude-code-zen/zenflow"
+readme = "README.md"
+keywords = ["parser", "source-code", "ast", "code-analysis", "tree-sitter", "complexity", "metrics"]
+categories = ["development-tools", "parsing"]
+
+[dependencies]
+rustler = "0.34"
+# Universal dependency analysis - pre-release includes security fixes
+tokei = "13.0.0-alpha.9"
+# Optional: Mozilla/RCA metrics library (feature-gated)
+mozilla-code-analysis = { path = "../mozilla-code-analysis", optional = true }
+
+# Tree-sitter core only (languages handled by individual parser crates)
+tree-sitter = { workspace = true }
+tree-sitter-javascript = { workspace = true }
+tree-sitter-typescript = { workspace = true }
+tree-sitter-python = "0.21"
+tree-sitter-rust = "0.21"
+tree-sitter-go = "0.21"
+tree-sitter-erlang = "0.4"
+tree-sitter-elixir = "0.2"
+tree-sitter-gleam = "1.0"
+tree-sitter-java = "0.21"
+tree-sitter-c = "0.21"
+tree-sitter-cpp = "0.21"
+tree-sitter-c-sharp = "0.21"
+tree-sitter-swift = "0.4"
+tree-sitter-kotlin = "0.3"
+
+# Core utilities - LATEST VERSIONS
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+chrono = { workspace = true, features = ["serde"] }
+tempfile = { workspace = true }
+
+# Performance optimizations - LATEST STABLE VERSIONS
+lru = "0.12"
+dashmap = { workspace = true }
+
+# PageRank for ML central heuristics (merged from parser-coordinator)
+petgraph = { workspace = true }
+
+# Regular expressions for refactoring
+regex = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "parser_performance"
+harness = false
+[features]
+default = []
+# Enable Mozilla rust-code-analysis metrics
+rca = ["mozilla-code-analysis"]

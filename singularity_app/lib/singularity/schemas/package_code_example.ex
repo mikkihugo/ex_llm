@@ -8,7 +8,7 @@ defmodule Singularity.Schemas.PackageCodeExample do
   use Ecto.Schema
   import Ecto.Changeset
 
-  schema "tool_examples" do
+  schema "dependency_catalog_examples" do
     field :title, :string
     field :code, :string
     field :language, :string
@@ -17,8 +17,8 @@ defmodule Singularity.Schemas.PackageCodeExample do
     field :code_embedding, Pgvector.Ecto.Vector
     field :example_order, :integer
 
-    belongs_to :package, Singularity.Schemas.PackageRegistryKnowledge,
-      foreign_key: :tool_id,
+    belongs_to :package, Singularity.Schemas.DependencyCatalog,
+      foreign_key: :dependency_id,
       type: :binary_id
 
     timestamps(type: :utc_datetime)
@@ -27,7 +27,7 @@ defmodule Singularity.Schemas.PackageCodeExample do
   def changeset(example, attrs) do
     example
     |> cast(attrs, [
-      :tool_id,
+      :dependency_id,
       :title,
       :code,
       :language,

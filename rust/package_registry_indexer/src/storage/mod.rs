@@ -14,24 +14,24 @@ pub mod semver;
 
 /// FACT storage abstraction trait (dyn-compatible)
 #[async_trait::async_trait]
-pub trait FactStorage: Send + Sync {
+pub trait PackageStorage: Send + Sync {
   /// Store FACT data for a tool
-  async fn store_fact(&self, key: &FactKey, data: &FactData) -> Result<()>;
+  async fn store_fact(&self, key: &PackageKey, data: &PackageMetadata) -> Result<()>;
 
   /// Retrieve FACT data for a tool
-  async fn get_fact(&self, key: &FactKey) -> Result<Option<FactData>>;
+  async fn get_fact(&self, key: &PackageKey) -> Result<Option<PackageMetadata>>;
 
   /// Check if FACT data exists for a tool
-  async fn exists(&self, key: &FactKey) -> Result<bool>;
+  async fn exists(&self, key: &PackageKey) -> Result<bool>;
 
   /// Delete FACT data for a tool
-  async fn delete_fact(&self, key: &FactKey) -> Result<()>;
+  async fn delete_fact(&self, key: &PackageKey) -> Result<()>;
 
   /// List all tools in an ecosystem
-  async fn list_tools(&self, ecosystem: &str) -> Result<Vec<FactKey>>;
+  async fn list_tools(&self, ecosystem: &str) -> Result<Vec<PackageKey>>;
 
   /// Search tools by prefix
-  async fn search_tools(&self, prefix: &str) -> Result<Vec<FactKey>>;
+  async fn search_tools(&self, prefix: &str) -> Result<Vec<PackageKey>>;
 
   /// Get storage statistics
   async fn stats(&self) -> Result<StorageStats>;
@@ -39,15 +39,15 @@ pub trait FactStorage: Send + Sync {
   // ========== NEW METHODS FOR EXTENDED SEARCH ==========
 
   /// Search facts by tags (for filtering)
-  async fn search_by_tags(&self, tags: &[String]) -> Result<Vec<FactKey>>;
+  async fn search_by_tags(&self, tags: &[String]) -> Result<Vec<PackageKey>>;
 
   /// Get all facts (for building indexes)
-  async fn get_all_facts(&self) -> Result<Vec<(FactKey, FactData)>>;
+  async fn get_all_facts(&self) -> Result<Vec<(PackageKey, PackageMetadata)>>;
 }
 
 /// Storage management trait for lifecycle operations
 #[async_trait::async_trait]
-pub trait FactStorageManagement: Send + Sync {
+pub trait PackageStorageManagement: Send + Sync {
   /// Compact/optimize storage
   async fn compact(&mut self) -> Result<()>;
 
@@ -55,15 +55,15 @@ pub trait FactStorageManagement: Send + Sync {
   async fn close(&mut self) -> Result<()>;
 }
 
-/// FACT storage key structure
+/// Package key - Unique identifier for stored package/tool data
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct FactKey {
+pub struct PackageKey {
   pub tool: String,
   pub version: String,
   pub ecosystem: String,
 }
 
-impl FactKey {
+impl PackageKey {
   #[must_use]
   pub const fn new(tool: String, version: String, ecosystem: String) -> Self {
     Self {
@@ -79,7 +79,7 @@ impl FactKey {
     format!("fact:{}:{}:{}", self.ecosystem, self.tool, self.version)
   }
 
-  /// Parse storage key string back to `FactKey`
+  /// Parse storage key string back to `PackageKey`
   ///
   /// # Errors
   /// Returns an error if the storage key format is invalid
@@ -99,17 +99,17 @@ impl FactKey {
 
 /// FACT data structure (extended for prompt bits, embeddings, and learning)
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FactData {
+pub struct PackageMetadata {
   // ========== EXISTING FIELDS (KEEP ALL) ==========
   pub tool: String,
   pub version: String,
   pub ecosystem: String,
   pub documentation: String,
-  pub snippets: Vec<FactSnippet>,  // Parsed from package source (via universal_parser)
-  pub examples: Vec<FactExample>,  // Examples from README/docs
-  pub best_practices: Vec<FactBestPractice>,
-  pub troubleshooting: Vec<FactTroubleshooting>,
-  pub github_sources: Vec<FactGitHubSource>,
+  pub snippets: Vec<CodeSnippet>,  // Parsed from package source (via source code parser)
+  pub examples: Vec<PackageExample>,  // Examples from README/docs
+  pub best_practices: Vec<PackageBestPractice>,
+  pub troubleshooting: Vec<PackageTroubleshooting>,
+  pub github_sources: Vec<GitHubSource>,
   pub dependencies: Vec<String>,
   pub tags: Vec<String>,
   pub last_updated: SystemTime,
@@ -152,7 +152,7 @@ pub struct FactData {
 
   // ========== NEW: RELATIONSHIPS ==========
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
-  pub relationships: Vec<FactRelationship>,
+  pub relationships: Vec<PackageRelationship>,
 
   // ========== NEW: LEARNING DATA ==========
   #[serde(default)]
@@ -175,14 +175,14 @@ pub struct FactData {
   pub license_info: Option<LicenseInfo>,
 }
 
-impl Default for FactData {
+impl Default for PackageMetadata {
   fn default() -> Self {
     Self::new()
   }
 }
 
-impl FactData {
-  /// Create a new empty FactData instance
+impl PackageMetadata {
+  /// Create a new empty PackageMetadata instance
   pub fn new() -> Self {
     Self {
       tool: String::new(),
@@ -240,9 +240,9 @@ impl FactData {
 }
 
 /// Code snippet parsed from package source files
-/// Extracted by universal_parser (tree-sitter) from downloaded tarballs
+/// Extracted by source code parser (tree-sitter) from downloaded tarballs
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FactSnippet {
+pub struct CodeSnippet {
   pub title: String,
   pub code: String,
   pub language: String,
@@ -253,7 +253,7 @@ pub struct FactSnippet {
 
 /// Example from package documentation (README, docs site)
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FactExample {
+pub struct PackageExample {
   pub title: String,
   pub code: String,         // Example code from docs (as text)
   pub explanation: String,
@@ -261,21 +261,21 @@ pub struct FactExample {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FactBestPractice {
+pub struct PackageBestPractice {
   pub practice: String,
   pub rationale: String,
   pub example: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FactTroubleshooting {
+pub struct PackageTroubleshooting {
   pub issue: String,
   pub solution: String,
   pub references: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FactGitHubSource {
+pub struct GitHubSource {
   pub repo: String,
   pub stars: u32,
   pub last_update: String,
@@ -327,8 +327,8 @@ impl Default for StorageConfig {
 /// Returns an error if the storage cannot be initialized
 pub async fn create_storage(
   config: StorageConfig,
-) -> Result<Box<dyn FactStorage>> {
-  let storage = filesystem_storage::FilesystemFactStorage::new(config).await?;
+) -> Result<Box<dyn PackageStorage>> {
+  let storage = filesystem_storage::FilesystemPackageStorage::new(config).await?;
   Ok(Box::new(storage))
 }
 
@@ -336,8 +336,8 @@ pub async fn create_storage(
 ///
 /// # Errors
 /// Returns an error if the storage cannot be initialized
-pub async fn create_versioned_storage() -> Result<Box<dyn FactStorage>> {
-  let storage = versioned_storage::VersionedFactStorage::new_global().await?;
+pub async fn create_versioned_storage() -> Result<Box<dyn PackageStorage>> {
+  let storage = versioned_storage::VersionedPackageStorage::new_global().await?;
   Ok(Box::new(storage))
 }
 
@@ -352,27 +352,27 @@ mod filesystem_storage {
   use std::path::PathBuf;
   use tokio::sync::RwLock as AsyncRwLock;
 
-  pub struct FilesystemFactStorage {
+  pub struct FilesystemPackageStorage {
     root: PathBuf,
     // simple in-memory cache to reduce IO in tests/checks
-    cache: AsyncRwLock<HashMap<String, FactData>>,
+    cache: AsyncRwLock<HashMap<String, PackageMetadata>>,
   }
 
-  impl FilesystemFactStorage {
+  impl FilesystemPackageStorage {
     pub async fn new(config: StorageConfig) -> Result<Self> {
       let root = PathBuf::from(&config.global_facts_dir);
       fs::create_dir_all(&root)?;
       Ok(Self { root, cache: AsyncRwLock::new(HashMap::new()) })
     }
 
-    fn path_for(&self, key: &FactKey) -> PathBuf {
+    fn path_for(&self, key: &PackageKey) -> PathBuf {
       self.root.join(format!("{}.json", key.storage_key()))
     }
   }
 
   #[async_trait::async_trait]
-  impl FactStorage for FilesystemFactStorage {
-    async fn store_fact(&self, key: &FactKey, data: &FactData) -> Result<()> {
+  impl PackageStorage for FilesystemPackageStorage {
+    async fn store_fact(&self, key: &PackageKey, data: &PackageMetadata) -> Result<()> {
       let path = self.path_for(key);
       if let Some(parent) = path.parent() { fs::create_dir_all(parent)?; }
       let json = serde_json::to_string_pretty(data)?;
@@ -381,41 +381,41 @@ mod filesystem_storage {
       Ok(())
     }
 
-    async fn get_fact(&self, key: &FactKey) -> Result<Option<FactData>> {
+    async fn get_fact(&self, key: &PackageKey) -> Result<Option<PackageMetadata>> {
       if let Some(v) = self.cache.read().await.get(&key.storage_key()).cloned() { return Ok(Some(v)); }
       let path = self.path_for(key);
       if !path.exists() { return Ok(None); }
       let bytes = tokio::fs::read(path).await?;
-      let data: FactData = serde_json::from_slice(&bytes)?;
+      let data: PackageMetadata = serde_json::from_slice(&bytes)?;
       Ok(Some(data))
     }
 
-    async fn exists(&self, key: &FactKey) -> Result<bool> {
+    async fn exists(&self, key: &PackageKey) -> Result<bool> {
       let path = self.path_for(key);
       Ok(path.exists())
     }
 
-    async fn delete_fact(&self, key: &FactKey) -> Result<()> {
+    async fn delete_fact(&self, key: &PackageKey) -> Result<()> {
       let path = self.path_for(key);
       let _ = tokio::fs::remove_file(path).await;
       self.cache.write().await.remove(&key.storage_key());
       Ok(())
     }
 
-    async fn list_tools(&self, _ecosystem: &str) -> Result<Vec<FactKey>> {
+    async fn list_tools(&self, _ecosystem: &str) -> Result<Vec<PackageKey>> {
       // Simple best-effort scan
       let mut out = Vec::new();
       if !self.root.exists() { return Ok(out); }
       for entry in fs::read_dir(&self.root)? { let entry = entry?; if entry.file_type()?.is_file() {
         let name = entry.file_name().to_string_lossy().to_string();
         if let Some(stripped) = name.strip_suffix(".json") {
-          if let Ok(key) = FactKey::from_storage_key(stripped) { out.push(key); }
+          if let Ok(key) = PackageKey::from_storage_key(stripped) { out.push(key); }
         }
       }}
       Ok(out)
     }
 
-    async fn search_tools(&self, prefix: &str) -> Result<Vec<FactKey>> {
+    async fn search_tools(&self, prefix: &str) -> Result<Vec<PackageKey>> {
       let all = self.list_tools("").await?;
       Ok(all.into_iter().filter(|k| k.tool.starts_with(prefix)).collect())
     }
@@ -424,31 +424,31 @@ mod filesystem_storage {
       Ok(StorageStats { total_entries: self.list_tools("").await?.len() as u64, total_size_bytes: 0, ecosystems: Default::default(), last_compaction: None })
     }
 
-    async fn search_by_tags(&self, _tags: &[String]) -> Result<Vec<FactKey>> { Ok(vec![]) }
-    async fn get_all_facts(&self) -> Result<Vec<(FactKey, FactData)>> { Ok(vec![]) }
+    async fn search_by_tags(&self, _tags: &[String]) -> Result<Vec<PackageKey>> { Ok(vec![]) }
+    async fn get_all_facts(&self) -> Result<Vec<(PackageKey, PackageMetadata)>> { Ok(vec![]) }
   }
 }
 
 mod versioned_storage {
   use super::*;
 
-  pub struct VersionedFactStorage;
+  pub struct VersionedPackageStorage;
 
-  impl VersionedFactStorage {
+  impl VersionedPackageStorage {
     pub async fn new_global() -> Result<Self> { Ok(Self) }
   }
 
   #[async_trait::async_trait]
-  impl FactStorage for VersionedFactStorage {
-    async fn store_fact(&self, _key: &FactKey, _data: &FactData) -> Result<()> { Ok(()) }
-    async fn get_fact(&self, _key: &FactKey) -> Result<Option<FactData>> { Ok(None) }
-    async fn exists(&self, _key: &FactKey) -> Result<bool> { Ok(false) }
-    async fn delete_fact(&self, _key: &FactKey) -> Result<()> { Ok(()) }
-    async fn list_tools(&self, _ecosystem: &str) -> Result<Vec<FactKey>> { Ok(vec![]) }
-    async fn search_tools(&self, _prefix: &str) -> Result<Vec<FactKey>> { Ok(vec![]) }
+  impl PackageStorage for VersionedPackageStorage {
+    async fn store_fact(&self, _key: &PackageKey, _data: &PackageMetadata) -> Result<()> { Ok(()) }
+    async fn get_fact(&self, _key: &PackageKey) -> Result<Option<PackageMetadata>> { Ok(None) }
+    async fn exists(&self, _key: &PackageKey) -> Result<bool> { Ok(false) }
+    async fn delete_fact(&self, _key: &PackageKey) -> Result<()> { Ok(()) }
+    async fn list_tools(&self, _ecosystem: &str) -> Result<Vec<PackageKey>> { Ok(vec![]) }
+    async fn search_tools(&self, _prefix: &str) -> Result<Vec<PackageKey>> { Ok(vec![]) }
     async fn stats(&self) -> Result<StorageStats> { Ok(StorageStats { total_entries: 0, total_size_bytes: 0, ecosystems: Default::default(), last_compaction: None }) }
-    async fn search_by_tags(&self, _tags: &[String]) -> Result<Vec<FactKey>> { Ok(vec![]) }
-    async fn get_all_facts(&self) -> Result<Vec<(FactKey, FactData)>> { Ok(vec![]) }
+    async fn search_by_tags(&self, _tags: &[String]) -> Result<Vec<PackageKey>> { Ok(vec![]) }
+    async fn get_all_facts(&self) -> Result<Vec<(PackageKey, PackageMetadata)>> { Ok(vec![]) }
   }
 }
 
@@ -458,8 +458,8 @@ mod versioned_storage {
 
 /// Code index from repository analysis
 ///
-/// DEPRECATED: Removed from FactData. Code analysis should be done by analysis-suite.
-/// fact-system only stores extracted snippets in FactSnippet format.
+/// DEPRECATED: Removed from PackageMetadata. Code analysis should be done by analysis-suite.
+/// fact-system only stores extracted snippets in CodeSnippet format.
 /// This struct may be removed in future versions.
 #[deprecated(since = "1.2.0", note = "Use analysis-suite for code analysis instead")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -613,7 +613,7 @@ pub struct GraphEmbedding {
 
 /// Relationship between facts
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FactRelationship {
+pub struct PackageRelationship {
   pub target_fact: String,
   pub relationship_type: RelationType,
   pub strength: f64,
@@ -742,7 +742,7 @@ mod tests {
 
   #[test]
   fn test_fact_key_storage() {
-    let key = FactKey::new(
+    let key = PackageKey::new(
       "phoenix".to_string(),
       "1.7.0".to_string(),
       "beam".to_string(),
@@ -750,14 +750,17 @@ mod tests {
     let storage_key = key.storage_key();
     assert_eq!(storage_key, "fact:beam:phoenix:1.7.0");
 
-    let parsed_key = FactKey::from_storage_key(&storage_key)
+    let parsed_key = PackageKey::from_storage_key(&storage_key)
       .expect("Failed to parse storage key");
     assert_eq!(parsed_key, key);
   }
 
   #[test]
   fn test_invalid_storage_key() {
-    assert!(FactKey::from_storage_key("invalid:key").is_err());
-    assert!(FactKey::from_storage_key("fact:beam:phoenix").is_err()); // Missing version
+    assert!(PackageKey::from_storage_key("invalid:key").is_err());
+    assert!(PackageKey::from_storage_key("fact:beam:phoenix").is_err()); // Missing version
   }
 }
+
+pub mod dependency_catalog_storage;
+pub use dependency_catalog_storage::DependencyCatalogStorage;

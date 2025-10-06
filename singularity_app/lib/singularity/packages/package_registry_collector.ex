@@ -9,23 +9,9 @@ defmodule Singularity.PackageRegistryCollector do
 
       Rust Collectors              Elixir Bridge                PostgreSQL
       ───────────────              ─────────────                ──────────
-      CargoCollector    ───>       collect_and_s  defp get_latest_version(package_name, :npm) do
-    url = "https://registry.npmjs.org/#{package_name}/latest"
-
-    case Req.get(url) do
-      {:ok, %{status: 200, body: body}} ->
-        case Jason.decode(body) do
-          {:ok, %{"version" => version}} ->
-            {:ok, version}
-
-          {:error, reason} ->
-            {:error, reason}
-        end
-
-      {:ok, %{status: status}} ->
-        {:error, "HTTP #{status}"} table
-      NpmCollector                 FactData → Schema           tool_examples
-      HexCollector                                             tool_patterns
+      CargoCollector    ───>       collect_and_store           dependency_catalog
+      NpmCollector                 FactData → Schema           dependency_catalog_examples
+      HexCollector                                             dependency_catalog_patterns
 
   ## Usage:
 

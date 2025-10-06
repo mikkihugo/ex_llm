@@ -4,8 +4,8 @@
 //! Extracts: public API, functions, modules, types, examples
 
 use super::{CollectionStats, DataSourcePriority, PackageCollector};
-use crate::extractor::{UniversalParserExtractor, create_extractor};
-use crate::storage::FactData;
+use crate::extractor::{SourceCodeExtractor, create_extractor};
+use crate::storage::PackageMetadata;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -23,8 +23,8 @@ pub struct HexCollector {
     /// HTTP client for registry API
     client: reqwest::Client,
 
-    /// Code extractor (delegates to universal_parser)
-    extractor: UniversalParserExtractor,
+    /// Code extractor (delegates to source code parser)
+    extractor: SourceCodeExtractor,
 }
 
 /// Hex.pm API package metadata
@@ -241,12 +241,12 @@ impl HexCollector {
     }
 
     /// Analyze downloaded package
-    async fn analyze_package(&self, package_dir: &Path) -> Result<FactData> {
+    async fn analyze_package(&self, package_dir: &Path) -> Result<PackageMetadata> {
         // Extract code snippets from package source
         let extracted = self.extractor.extract_from_directory(package_dir).await?;
 
-        // Build FactData
-        let mut fact = FactData {
+        // Build PackageMetadata
+        let mut fact = PackageMetadata {
             tool: package_dir
                 .file_name()
                 .and_then(|n| n.to_str())
@@ -297,7 +297,7 @@ impl PackageCollector for HexCollector {
         "hex"
     }
 
-    async fn collect(&self, package: &str, version: &str) -> Result<FactData> {
+    async fn collect(&self, package: &str, version: &str) -> Result<PackageMetadata> {
         log::info!("Collecting hex package: {}@{}", package, version);
 
         // Get package metadata

@@ -8,14 +8,14 @@ defmodule Singularity.Schemas.PackageDependency do
   use Ecto.Schema
   import Ecto.Changeset
 
-  schema "tool_dependencies" do
+  schema "dependency_catalog_deps" do
     field :dependency_name, :string
     field :dependency_version, :string
     field :dependency_type, :string
     field :is_optional, :boolean
 
-    belongs_to :package, Singularity.Schemas.PackageRegistryKnowledge,
-      foreign_key: :tool_id,
+    belongs_to :package, Singularity.Schemas.DependencyCatalog,
+      foreign_key: :dependency_id,
       type: :binary_id
 
     timestamps(type: :utc_datetime)
@@ -24,7 +24,7 @@ defmodule Singularity.Schemas.PackageDependency do
   def changeset(dependency, attrs) do
     dependency
     |> cast(attrs, [
-      :tool_id,
+      :dependency_id,
       :dependency_name,
       :dependency_version,
       :dependency_type,

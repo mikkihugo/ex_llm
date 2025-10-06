@@ -1,9 +1,10 @@
-defmodule Singularity.PackageRegistryKnowledge do
+defmodule Singularity.DependencyCatalog do
+  alias Singularity.Schemas.DependencyCatalog
   @moduledoc """
   Package Registry Knowledge System - Structured package metadata queries (NOT RAG)
 
   This module provides semantic search for external packages (npm, cargo, hex, pypi)
-  using structured metadata collected by Rust tool_doc_index collectors.
+  using structured metadata collected by Rust package_registry_indexer collectors.
 
   ## Key Differences from RAG:
 
@@ -39,7 +40,7 @@ defmodule Singularity.PackageRegistryKnowledge do
   alias Singularity.Repo
 
   alias Singularity.Schemas.{
-    PackageRegistryKnowledge,
+    DependencyCatalog,
     PackageCodeExample,
     PackageUsagePattern,
     PackageDependency
@@ -62,7 +63,7 @@ defmodule Singularity.PackageRegistryKnowledge do
 
     # Build base query
     base_query =
-      from t in PackageRegistryKnowledge,
+      from t in DependencyCatalog,
         where: not is_nil(t.semantic_embedding),
         where: t.github_stars >= ^min_stars,
         where: t.download_count >= ^min_downloads
@@ -117,7 +118,7 @@ defmodule Singularity.PackageRegistryKnowledge do
     ecosystem = Keyword.get(opts, :ecosystem)
 
     query =
-      from(t in PackageRegistryKnowledge,
+      from(t in DependencyCatalog,
         where: t.package_name == ^package_name,
         order_by: [desc: t.last_release_date]
       )
@@ -137,7 +138,7 @@ defmodule Singularity.PackageRegistryKnowledge do
   Get a specific version of a tool
   """
   def get_version(package_name, version, ecosystem) do
-    Repo.get_by(PackageRegistryKnowledge,
+    Repo.get_by(DependencyCatalog,
       package_name: package_name,
       version: version,
       ecosystem: ecosystem
@@ -164,7 +165,7 @@ defmodule Singularity.PackageRegistryKnowledge do
       []
     else
       # Find similar tools in target ecosystem
-      from(t in PackageRegistryKnowledge,
+      from(t in DependencyCatalog,
         where: t.ecosystem == ^to_ecosystem,
         where: t.package_name != ^package_name,
         where: not is_nil(t.semantic_embedding),
@@ -213,7 +214,7 @@ defmodule Singularity.PackageRegistryKnowledge do
     # Build base query
     base_query =
       from e in PackageCodeExample,
-        join: t in PackageRegistryKnowledge,
+        join: t in DependencyCatalog,
         on: e.tool_id == t.id,
         where: not is_nil(e.code_embedding)
 
@@ -287,7 +288,7 @@ defmodule Singularity.PackageRegistryKnowledge do
     # Build base query
     base_query =
       from p in PackageUsagePattern,
-        join: t in PackageRegistryKnowledge,
+        join: t in DependencyCatalog,
         on: p.tool_id == t.id,
         where: not is_nil(p.pattern_embedding)
 
@@ -355,7 +356,7 @@ defmodule Singularity.PackageRegistryKnowledge do
     # or :download_count
     sort_by = Keyword.get(opts, :sort_by, :github_stars)
 
-    from(t in PackageRegistryKnowledge,
+    from(t in DependencyCatalog,
       where: t.ecosystem == ^ecosystem,
       order_by: [desc: field(t, ^sort_by)]
     )
@@ -372,7 +373,7 @@ defmodule Singularity.PackageRegistryKnowledge do
 
     cutoff_date = DateTime.utc_now() |> DateTime.add(-days * 24 * 60 * 60, :second)
 
-    from(t in PackageRegistryKnowledge,
+    from(t in DependencyCatalog,
       where: t.ecosystem == ^ecosystem,
       where: t.last_release_date >= ^cutoff_date,
       order_by: [desc: t.last_release_date]
@@ -385,8 +386,8 @@ defmodule Singularity.PackageRegistryKnowledge do
   Upsert a tool (used by Rust collectors)
   """
   def upsert_tool(attrs) do
-    %PackageRegistryKnowledge{}
-    |> PackageRegistryKnowledge.changeset(attrs)
+    %DependencyCatalog{}
+    |> DependencyCatalog.changeset(attrs)
     |> Repo.insert(
       on_conflict: {:replace_all_except, [:id, :inserted_at]},
       conflict_target: [:package_name, :version, :ecosystem]

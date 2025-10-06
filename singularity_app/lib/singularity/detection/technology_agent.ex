@@ -1,17 +1,21 @@
 defmodule Singularity.TechnologyAgent do
   @moduledoc """
   Technology detection orchestrator.
-  Delegates to Rust LayeredDetector via Port for performance.
+
+  Delegates to Rust tech_detector library (via package_registry_indexer) for performance.
   Falls back to Elixir implementation if Rust unavailable.
+
+  **Architecture:**
+  - Elixir → NATS → package_registry_indexer → tech_detector (Rust library)
   """
 
   require Logger
   alias Singularity.{PolyglotCodeParser, TechnologyTemplateLoader, Repo}
   alias Singularity.Schemas.CodebaseSnapshot
 
-  @rust_detector_path "rust/target/release/tool-doc-index"
+  @rust_detector_path "rust/target/release/package-registry-indexer"
 
-  @doc "Detect all technologies (Rust LayeredDetector with Elixir fallback)"
+  @doc "Detect all technologies (Rust tech_detector with Elixir fallback)"
   def detect_technologies(codebase_path, opts \\ []) do
     Logger.info("Detecting technologies in: #{codebase_path}")
 
@@ -23,10 +27,10 @@ defmodule Singularity.TechnologyAgent do
           build_snapshot(
             codebase_path,
             technologies,
-            Keyword.put(opts, :detection_method, :rust_layered)
+            Keyword.put(opts, :detection_method, :rust_tech_detector)
           )
 
-        maybe_persist_snapshot(snapshot, Keyword.put(opts, :detection_method, :rust_layered))
+        maybe_persist_snapshot(snapshot, Keyword.put(opts, :detection_method, :rust_tech_detector))
 
         {:ok, snapshot}
 

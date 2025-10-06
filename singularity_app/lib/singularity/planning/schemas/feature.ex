@@ -15,7 +15,7 @@ defmodule Singularity.Planning.Schemas.Feature do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "features" do
+  schema "safe_methodology_features" do
     field :name, :string
     field :description, :string
     field :status, :string, default: "backlog"

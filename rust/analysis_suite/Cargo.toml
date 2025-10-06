@@ -72,6 +72,9 @@ redb = { workspace = true }
 sha2 = { workspace = true }
 seahash = "4.1"
 
+# NIF bindings for Elixir (optional)
+rustler = { version = "0.34", optional = true }
+
 # ML & Embeddings (optional)
 candle-core = { version = "0.7", optional = true }
 candle-nn = { version = "0.7", optional = true }
@@ -86,7 +89,7 @@ tantivy = { version = "0.21", optional = true }
 # SPARC Engine crates as dependencies
 # parser-coordinator = { path = "../parser-coordinator" }  # Removed during cleanup
 linting-engine = { path = "../linting_engine" }
-universal-parser = { path = "../universal_parser" }
+source-code-parser = { path = "../source-code-parser" }
 # sparc-methodology = { path = "../sparc-methodology" }  # Commented out - crate doesn't exist
 prompt-engine = { path = "../prompt_engine" }
 # mozilla-code-analysis = { path = "../mozilla-code-analysis" }  # Commented out - crate doesn't exist
@@ -116,3 +119,9 @@ default = []
 # Semantic embeddings with Candle transformers (downloads all-MiniLM-L6-v2 from HuggingFace)
 semantic = ["candle-core", "candle-nn", "candle-transformers", "tokenizers", "hf-hub"]
 advanced-search = ["tantivy"]
+# NIF bindings for Elixir integration
+nif = ["rustler"]
+
+[lib]
+# Support both library and NIF builds
+crate-type = ["lib", "cdylib"]

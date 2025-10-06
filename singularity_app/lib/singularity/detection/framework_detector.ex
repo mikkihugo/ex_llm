@@ -1,18 +1,21 @@
 defmodule Singularity.FrameworkDetector do
   @moduledoc """
-  Dynamic framework detection using tool_doc_index.
+  Dynamic framework detection using tech_detector (via package_registry_indexer).
 
-  Instead of hardcoding frameworks, this queries the Rust tool_doc_index
+  Instead of hardcoding frameworks, this queries the Rust tech_detector library
   to get framework patterns dynamically from the indexed knowledge base.
 
   This way, new frameworks are automatically detected as they're added
-  to the tool documentation index.
+  to the package registry knowledge base.
+
+  **Architecture:**
+  - Elixir → NATS → package_registry_indexer → tech_detector (Rust library)
   """
 
   @doc """
-  Detect frameworks from patterns using tool_doc_index.
+  Detect frameworks from patterns using tech_detector.
 
-  Falls back to hardcoded list if tool_doc_index unavailable.
+  Falls back to hardcoded list if tech_detector unavailable.
 
   ## Examples
 
@@ -20,8 +23,8 @@ defmodule Singularity.FrameworkDetector do
       ["Phoenix", "NATS"]
   """
   def detect_frameworks(patterns) do
-    # Try to load from tool_doc_index first
-    case load_from_tool_doc_index(patterns) do
+    # Try to load from tech_detector first
+    case load_from_tech_detector(patterns) do
       {:ok, frameworks} when frameworks != [] ->
         frameworks
 
@@ -32,42 +35,48 @@ defmodule Singularity.FrameworkDetector do
   end
 
   @doc """
-  Load framework patterns from tool_doc_index via NATS.
+  Load framework patterns from tech_detector via NATS.
 
-  Sends request to Rust tool_doc_index service to get framework
-  definitions and matches them against patterns.
+  Sends request to package_registry_indexer which uses tech_detector library
+  to get framework definitions and matches them against patterns.
   """
-  def load_from_tool_doc_index(_patterns) do
-    # TODO: Call Rust tool_doc_index via NATS
-    # Subject: "tool_doc.match_frameworks"
-    # Payload: %{patterns: patterns}
-    # Response: %{frameworks: ["Phoenix", "Broadway", ...]}
+  def load_from_tech_detector(patterns) do
+    # Call package_registry_indexer via NATS
+    payload = Jason.encode!(%{patterns: patterns})
 
-    # For now, return error to trigger fallback
-    {:error, :not_implemented}
+    case Singularity.NatsClient.request("packages.registry.detect.frameworks", payload, timeout: 5000) do
+      {:ok, response} ->
+        case Jason.decode(response) do
+          {:ok, %{"frameworks" => frameworks}} -> {:ok, frameworks}
+          {:error, _} -> {:error, :invalid_response}
+        end
+
+      {:error, _reason} -> {:error, :nats_error}
+    end
   end
 
   @doc """
-  Get all known frameworks from tool_doc_index.
+  Get all known frameworks from tech_detector.
 
   This should query the Rust service for complete framework list.
   """
   def list_all_frameworks do
-    # TODO: Query tool_doc_index for all frameworks
-    # Subject: "tool_doc.list_frameworks"
-    # Response: [
-    #   %{name: "Phoenix", patterns: ["phoenix", "endpoint", ...], category: "web"},
-    #   %{name: "Broadway", patterns: ["broadway", "pipeline"], category: "stream"},
-    #   ...
-    # ]
+    # Query package_registry_indexer (tech_detector) for all frameworks
+    case Singularity.NatsClient.request("packages.registry.detect.list_frameworks", "{}", timeout: 5000) do
+      {:ok, response} ->
+        case Jason.decode(response) do
+          {:ok, %{"frameworks" => frameworks}} -> {:ok, frameworks}
+          {:error, _} -> {:error, :invalid_response}
+        end
 
-    {:error, :not_implemented}
+      {:error, _reason} -> {:error, :nats_error}
+    end
   end
 
   @doc """
   Classify microservice type based on patterns.
 
-  This should also come from tool_doc_index eventually.
+  This should also come from tech_detector eventually.
   """
   def classify_microservice(patterns) do
     cond do
@@ -80,7 +89,7 @@ defmodule Singularity.FrameworkDetector do
     end
   end
 
-  # Fallback detection (temporary until tool_doc_index integration)
+  # Fallback detection (temporary until tech_detector integration)
   defp detect_frameworks_fallback(patterns) do
     framework_map = %{
       "Phoenix" => ["phoenix", "endpoint", "channel", "live"],

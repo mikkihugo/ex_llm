@@ -81,14 +81,20 @@ async function refreshModelCatalog() {
     console.warn('⚠️  Failed to load GitHub Models:', error.message);
   }
 
-  MODELS = await buildModelCatalog({
-    'gemini-code': geminiCode as unknown as ProviderWithModels,
-    'claude-code': claudeCode as unknown as ProviderWithModels,
-    'openai-codex': codex as unknown as ProviderWithMetadata,
-    'google-jules': jules as unknown as ProviderWithModels,
-    'github-copilot': copilot as unknown as ProviderWithMetadata,
-    'github-models': githubModels as unknown as ProviderWithMetadata,
-  });
+  try {
+    MODELS = await buildModelCatalog({
+      'gemini-code': geminiCode as unknown as ProviderWithModels,
+      'claude-code': claudeCode as unknown as ProviderWithModels,
+      'openai-codex': codex as unknown as ProviderWithMetadata,
+      'google-jules': jules as unknown as ProviderWithModels,
+      'github-copilot': copilot as unknown as ProviderWithMetadata,
+      'github-models': githubModels as unknown as ProviderWithMetadata,
+    });
+  } catch (error: any) {
+    console.error('❌ Failed to build model catalog:', error.message);
+    console.warn('⚠️  Using existing MODELS catalog to prevent stale data');
+    return; // Keep existing MODELS intact
+  }
 
   // Post-process: Apply correct cost tiers to Copilot models
   const FREE_COPILOT_MODELS = new Set(['gpt-4.1', 'gpt-5-mini', 'grok-code-fast-1']);
@@ -139,7 +145,12 @@ async function refreshModelCatalog() {
 
   // Refresh every hour
   setInterval(async () => {
-    await refreshModelCatalog();
+    try {
+      await refreshModelCatalog();
+    } catch (error: any) {
+      console.error('❌ Scheduled model catalog refresh failed:', error.message);
+      console.warn('⚠️  Continuing with existing catalog');
+    }
   }, 60 * 60 * 1000); // 1 hour
 })();
 

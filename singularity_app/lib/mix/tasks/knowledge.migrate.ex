@@ -21,7 +21,7 @@ defmodule Mix.Tasks.Knowledge.Migrate do
   1. Finds all JSON files in:
      - templates_data/
      - singularity_app/priv/code_quality_templates/
-     - rust/tool_doc_index/templates/ (framework/language only)
+     - rust/package_registry_indexer/templates/ (framework/language only)
 
   2. Validates JSON structure
   3. Inserts into knowledge_artifacts (dual storage: raw + JSONB)
@@ -81,8 +81,8 @@ defmodule Mix.Tasks.Knowledge.Migrate do
     [
       "templates_data/**/*.json",
       "singularity_app/priv/code_quality_templates/*.json",
-      "rust/tool_doc_index/templates/framework/*.json",
-      "rust/tool_doc_index/templates/language/*.json"
+      "rust/package_registry_indexer/templates/framework/*.json",
+      "rust/package_registry_indexer/templates/language/*.json"
     ]
     |> Enum.flat_map(&Path.wildcard/1)
     |> Enum.reject(&String.contains?(&1, "learned/"))
@@ -183,13 +183,13 @@ defmodule Mix.Tasks.Knowledge.Migrate do
         filename = List.last(parts) |> Path.rootname()
         {"quality_template", filename}
 
-      # rust/tool_doc_index/templates/framework/nextjs.json
-      "tool_doc_index" in parts and "framework" in parts ->
+      # rust/package_registry_indexer/templates/framework/nextjs.json
+      "package_registry_indexer" in parts and "framework" in parts ->
         filename = List.last(parts) |> Path.rootname()
         {"framework_pattern", filename}
 
-      # rust/tool_doc_index/templates/language/rust.json
-      "tool_doc_index" in parts and "language" in parts ->
+      # rust/package_registry_indexer/templates/language/rust.json
+      "package_registry_indexer" in parts and "language" in parts ->
         filename = List.last(parts) |> Path.rootname()
         {"language_template", filename}
 

@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use universal_parser::UniversalParserFrameworkConfig;
+use source_code_parser::UniversalParserFrameworkConfig;
 
 /// Unified configuration for codebase analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]

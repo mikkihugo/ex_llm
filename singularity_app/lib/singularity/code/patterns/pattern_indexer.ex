@@ -305,7 +305,7 @@ defmodule Singularity.PatternIndexer do
 
   defp find_code_matching_patterns(patterns, language) do
     # For each pattern, find actual code examples that match
-    # This uses the pattern keywords to search the code_files table
+    # This uses the pattern keywords to search the codebase_chunks table (YOUR code)
 
     keywords =
       patterns
@@ -318,7 +318,7 @@ defmodule Singularity.PatternIndexer do
 
     query = """
     SELECT file_path, content, language
-    FROM code_files
+    FROM codebase_chunks
     WHERE language = $1
     AND (
       #{Enum.map_join(1..min(length(keywords), 5), " OR ", fn i -> "content ILIKE $#{i + 1}" end)}

@@ -433,7 +433,7 @@ impl EngineFact {
     &self,
     context: serde_json::Value,
   ) -> Result<serde_json::Value> {
-    use crate::storage::{create_storage, FactData, FactKey, StorageConfig};
+    use crate::storage::{create_storage, PackageMetadata, PackageKey, StorageConfig};
     use std::time::SystemTime;
     use tracing::{debug, info, warn};
 
@@ -471,7 +471,7 @@ impl EngineFact {
     );
 
     // Step 2: Create FACT data structure
-    let fact_data = FactData {
+    let fact_data = PackageMetadata {
       tool: tool.to_string(),
       version: version.to_string(),
       ecosystem: ecosystem.to_string(),
@@ -519,7 +519,7 @@ impl EngineFact {
       FactError::ProcessingError(format!("Failed to create storage: {}", e))
     })?;
 
-    let fact_key = FactKey::new(
+    let fact_key = PackageKey::new(
       tool.to_string(),
       version.to_string(),
       ecosystem.to_string(),
@@ -568,7 +568,7 @@ impl EngineFact {
   fn parse_snippets(
     &self,
     context: &serde_json::Value,
-  ) -> Result<Vec<crate::storage::FactSnippet>> {
+  ) -> Result<Vec<crate::storage::CodeSnippet>> {
     let mut snippets = Vec::new();
 
     if let Some(snippets_array) =
@@ -580,7 +580,7 @@ impl EngineFact {
           snippet.get("code").and_then(|v| v.as_str()),
           snippet.get("description").and_then(|v| v.as_str()),
         ) {
-          snippets.push(crate::storage::FactSnippet {
+          snippets.push(crate::storage::CodeSnippet {
             title: title.to_string(),
             code: code.to_string(),
             language: snippet
@@ -610,7 +610,7 @@ impl EngineFact {
   fn parse_examples(
     &self,
     context: &serde_json::Value,
-  ) -> Result<Vec<crate::storage::FactExample>> {
+  ) -> Result<Vec<crate::storage::PackageExample>> {
     let mut examples = Vec::new();
 
     if let Some(examples_array) =
@@ -622,7 +622,7 @@ impl EngineFact {
           example.get("code").and_then(|v| v.as_str()),
           example.get("explanation").and_then(|v| v.as_str()),
         ) {
-          examples.push(crate::storage::FactExample {
+          examples.push(crate::storage::PackageExample {
             title: title.to_string(),
             code: code.to_string(),
             explanation: explanation.to_string(),
@@ -648,7 +648,7 @@ impl EngineFact {
   fn parse_best_practices(
     &self,
     context: &serde_json::Value,
-  ) -> Result<Vec<crate::storage::FactBestPractice>> {
+  ) -> Result<Vec<crate::storage::PackageBestPractice>> {
     let mut practices = Vec::new();
 
     if let Some(practices_array) =
@@ -659,7 +659,7 @@ impl EngineFact {
           practice.get("practice").and_then(|v| v.as_str()),
           practice.get("rationale").and_then(|v| v.as_str()),
         ) {
-          practices.push(crate::storage::FactBestPractice {
+          practices.push(crate::storage::PackageBestPractice {
             practice: practice_text.to_string(),
             rationale: rationale.to_string(),
             example: practice
@@ -678,7 +678,7 @@ impl EngineFact {
   fn parse_troubleshooting(
     &self,
     context: &serde_json::Value,
-  ) -> Result<Vec<crate::storage::FactTroubleshooting>> {
+  ) -> Result<Vec<crate::storage::PackageTroubleshooting>> {
     let mut troubleshooting = Vec::new();
 
     if let Some(troubleshooting_array) =
@@ -689,7 +689,7 @@ impl EngineFact {
           item.get("issue").and_then(|v| v.as_str()),
           item.get("solution").and_then(|v| v.as_str()),
         ) {
-          troubleshooting.push(crate::storage::FactTroubleshooting {
+          troubleshooting.push(crate::storage::PackageTroubleshooting {
             issue: issue.to_string(),
             solution: solution.to_string(),
             references: item
@@ -714,7 +714,7 @@ impl EngineFact {
   fn parse_github_sources(
     &self,
     context: &serde_json::Value,
-  ) -> Result<Vec<crate::storage::FactGitHubSource>> {
+  ) -> Result<Vec<crate::storage::GitHubSource>> {
     let mut sources = Vec::new();
 
     if let Some(sources_array) =
@@ -722,7 +722,7 @@ impl EngineFact {
     {
       for source in sources_array {
         if let Some(repo) = source.get("repo").and_then(|v| v.as_str()) {
-          sources.push(crate::storage::FactGitHubSource {
+          sources.push(crate::storage::GitHubSource {
             repo: repo.to_string(),
             stars: source.get("stars").and_then(|v| v.as_u64()).unwrap_or(0)
               as u32,

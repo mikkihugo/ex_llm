@@ -70,14 +70,14 @@ export class JulesTodoCManager {
           1. Add gnat dependency to Elixir singularity_app/mix.exs
           2. Wire up NatsOrchestrator in application.ex supervision tree
           3. Make rust/db_service the ONLY service with PostgreSQL access
-          4. Update tool_doc_index to use NATS db.query instead of direct DB
+          4. Update package_registry_indexer to use NATS db.query instead of direct DB
           5. Test pub/sub flow between TypeScript, Elixir, and Rust services`,
         files: [
           'singularity_app/mix.exs',
           'singularity_app/lib/singularity/application.ex',
           'singularity_app/lib/singularity/nats_orchestrator.ex',
           'rust/db_service/src/nats_db_service.rs',
-          'rust/tool_doc_index/src/main.rs'
+          'rust/package_registry_indexer/src/main.rs'
         ],
         complexity: 'massive',
         languages: ['elixir', 'rust', 'typescript'],

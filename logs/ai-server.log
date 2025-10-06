@@ -1,0 +1,53 @@
+[copilot-oauth] Loaded token store from disk
+[34m🔐[0m Loading AI provider credentials...
+[copilot-oauth] OAuth token already exists, ignoring GITHUB_TOKEN env var
+
+[1m📋 AI Provider Credentials[0m
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ [1mProvider    [0m │ [1mStatus    [0m │ [1mDetails                                                                                   [0m │
+├──────────────┼────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Gemini (prim │ [32m✓ Ready[0m │ Gemini API [1m(preferred)[0m [1m(active)[0m | Gemini CLI |                             │
+│              │            │ File:/home/mhugo/.config/gcloud/application_default_credentials.json [1m(active)[0m      │
+│              │            │ ([32mReady[0m) | gcloud auth application-default login [1mwe are logged in with the ADC │
+│              │            │ JSON (default)[0m | Env:GOOGLE_APPLICATION_CREDENTIALS_JSON ([31mMissing[0m) [1mwe are │
+│              │            │ logged in with the ADC JSON (default)[0m | CLI:gcloud auth application-default login      │
+│              │            │ ([31mMissing[0m)                                                                         │
+│ Claude       │ [32m✓ Ready[0m │ Claude CLI [1m(preferred)[0m [1m(active)[0m | Claude API |                             │
+│              │            │ File:/home/mhugo/.claude/.credentials.json [1m(active)[0m ([32mReady[0m) | claude      │
+│              │            │ setup-token | Env:CLAUDE_CODE_OAUTH_TOKEN ([32mReady[0m) | Env:CLAUDE_ACCESS_TOKEN       │
+│              │            │ ([31mMissing[0m) | CLI:claude setup-token ([31mMissing[0m)                             │
+│ Cursor       │ [32m✓ Ready[0m │ File:/home/mhugo/.config/cursor/auth.json [1m(active)[0m ([32mReady[0m) | cursor-agent │
+│              │            │ login | File:/home/mhugo/.cursor/auth.json ([31mMissing[0m) | cursor-agent login |       │
+│              │            │ Env:CURSOR_AUTH_JSON ([31mMissing[0m) | CLI:cursor-agent login ([31mMissing[0m)        │
+│ GitHub       │ [32m✓ Ready[0m │ Copilot API [1m(preferred)[0m [1m(active)[0m | Copilot CLI | GitHub Models |           │
+│              │            │ Env:GH_TOKEN ([31mMissing[0m) | Env:GITHUB_TOKEN [1m(active)[0m ([32mReady[0m) |     │
+│              │            │ CLI:set GH_TOKEN/GITHUB_TOKEN ([31mMissing[0m)                                           │
+│ Codex        │ [32m✓ Ready[0m │ Codex CLI [1m(preferred)[0m [1m(active)[0m | File:/home/mhugo/.codex/auth.json         │
+│              │            │ [1m(active)[0m ([32mReady[0m) | codex login | Env:CODEX_ACCESS_TOKEN ([32mReady[0m)  │
+│              │            │ | CLI:codex login ([31mMissing[0m)                                                       │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+[33mLegend:[0m (primary) marks the preferred provider (set via SINGULARITY_DEFAULT_PROVIDER/DEFAULT_PROVIDER) or selected as first available.
+[33mLegend:[0m [1m(active)[0m marks the credential source currently used by the server for that provider.
+
+[34m🔄[0m Refreshing model catalog...
+[32m🚀[0m Server ready at [1mhttp://localhost:3000[0m
+[1m🔗 Endpoints:[0m /health  /v1/models  /v1/chat/completions
+[1m✨ Refactored:[0m Using AI SDK streaming utilities (~100 lines removed)
+📡 Connected to NATS JetStream
+✅ Connected to NATS for Elixir bridge
+📂 Loaded model catalog from disk (73 models)
+⚡ Using cached model catalog (fast startup)
+[34m✨[0m AI SDK Provider Registry updated
+   Providers: gemini-code, openai-codex, google-jules, github-copilot, github-models
+   Models: 73 total
+   Copilot: 18 models (3 free, 15 limited)
+🔄 Refreshing model catalog in background...
+🔨 Building model catalog from providers...
+[ModelRegistry] Provider gemini-code: listModels returned 2 models
+[ModelRegistry] Provider claude-code: NO metadata method found
+[ModelRegistry] Provider openai-codex: getModelMetadata returned 3 models
+[ModelRegistry] Provider google-jules: listModels returned 1 models
+[ModelRegistry] Provider github-copilot: getModelMetadata returned 18 models
+[ModelRegistry] Provider github-models: getModelMetadata returned 49 models
+✅ Discovered 73 models from 6 providers
+💾 Saved model catalog to disk (73 models)

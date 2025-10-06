@@ -58,7 +58,7 @@ defmodule Singularity.CodeTrainer do
     # Query code from database
     query = """
     SELECT file_path, content, language, metadata
-    FROM code_files
+    FROM codebase_chunks
     WHERE LENGTH(content) >= $1
     #{if language, do: "AND language = $2", else: ""}
     ORDER BY RANDOM()

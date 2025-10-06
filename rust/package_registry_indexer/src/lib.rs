@@ -50,7 +50,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use thiserror::Error;
 
-pub mod auto_orchestrator;
+pub mod package_file_watcher;
 pub mod cache;
 pub mod engine;
 pub mod processor;
@@ -79,12 +79,14 @@ pub mod collector;
 // NEW: Code snippet extractor - temporary analysis for extraction
 pub mod extractor;
 
-// NEW: Framework detection (optional feature)
-#[cfg(feature = "detection")]
-pub mod detection;
+// Detection now delegated to tech_detector library (no local module)
+// Re-export tech_detector for convenience
+pub use tech_detector;
 
-// NEW: Prompt management (will connect to detection)
-#[cfg(feature = "detection")]
+// NATS service (package_registry_indexer is a service, not just a library)
+pub mod nats_service;
+
+// NEW: Prompt management
 pub mod prompts;
 
 pub use cache::{Cache, CacheStats};
@@ -101,21 +103,23 @@ pub use graphql::{GitHubGraphQLClient, GitHubVersionAnalysis};
 
 // Auto orchestrator - use correct export name
 #[cfg(feature = "auto")]
-pub use auto_orchestrator::AutoFactOrchestrator;
+pub use package_file_watcher::{PackageFileWatcher, PackageFileWatcherConfig};
 
-// Storage - filesystem-based global facts storage
-// Export storage traits/helpers; filesystem backend is internal
-pub use storage::{create_storage, FactStorage, StorageConfig};
+// Storage - package metadata storage
+// Export storage traits and key types
+pub use storage::{
+  create_storage, PackageStorage, StorageConfig,
+  PackageKey, PackageMetadata, CodeSnippet, PackageExample, DependencyCatalogStorage
+};
 
 // NEW: Embeddings and search
 pub use embedding::EmbeddingGenerator;
 pub use search::{IndexStats, VectorIndex};
 
-// NEW: Detection and prompts (optional)
-#[cfg(feature = "detection")]
-pub use detection::{
-  DetectionMethod, DetectionResult, FrameworkDetector, FrameworkInfo,
-  TechnologyDetector,
+// Re-export tech_detector types for convenience
+pub use tech_detector::{
+  TechDetector, DetectionResults, FrameworkDetection, LanguageDetection,
+  DatabaseDetection, DetectionMethod,
 };
 
 /// Result type for FACT operations

@@ -2,6 +2,10 @@ import { describe, test, expect, beforeAll } from 'bun:test';
 import { codex } from 'ai-sdk-provider-codex';
 import { copilot } from './providers/copilot';
 import { githubModels } from './providers/github-models';
+import { claudeCode } from './providers/claude-code';
+import { createGeminiProvider } from './providers/gemini-code';
+import { cursor } from './providers/cursor';
+import { julesWithModels } from './providers/google-ai-jules';
 import {
   buildModelCatalog,
   registerProviderModels,
@@ -25,13 +29,18 @@ import {
 
 describe('Model Registry', () => {
   let models: ModelInfo[];
+  const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
 
   beforeAll(async () => {
-    // Build catalog with providers that have getModelMetadata()
+    // Build catalog with ALL providers (production + experimental)
     models = await buildModelCatalog({
       'openai-codex': codex as unknown as ProviderWithMetadata,
+      'claude-code': claudeCode as unknown as ProviderWithMetadata,
+      'gemini-code': geminiCode as unknown as ProviderWithMetadata,
       'github-copilot': copilot as unknown as ProviderWithMetadata,
       'github-models': githubModels as unknown as ProviderWithMetadata,
+      'cursor': cursor as unknown as ProviderWithMetadata,
+      'google-jules': julesWithModels as unknown as ProviderWithMetadata,
     });
   });
 
@@ -49,7 +58,7 @@ describe('Model Registry', () => {
         expect(model.displayName).toBeTruthy();
         expect(model.contextWindow).toBeGreaterThan(0);
         expect(model.capabilities).toBeDefined();
-        expect(model.cost).toMatch(/^(free|subscription)$/);
+        expect(model.cost).toMatch(/^(free|subscription|limited)$/);
       }
     });
 
@@ -235,16 +244,82 @@ describe('Model Registry', () => {
   });
 
   describe('registerProviderModels', () => {
-    test('registers models from provider with getModelMetadata', () => {
-      const registered = registerProviderModels('github-copilot', copilot as unknown as ProviderWithMetadata);
+    test('registers models from openai-codex', async () => {
+      const registered = await registerProviderModels('openai-codex', codex as unknown as ProviderWithMetadata);
+
+      expect(registered.length).toBeGreaterThan(0);
+      expect(registered[0].provider).toBe('openai-codex');
+      expect(registered[0].id).toMatch(/^openai-codex:/);
+    });
+
+    test('registers models from claude-code', async () => {
+      const registered = await registerProviderModels('claude-code', claudeCode as unknown as ProviderWithMetadata);
+
+      expect(registered.length).toBe(2); // sonnet, opus
+      expect(registered[0].provider).toBe('claude-code');
+      expect(registered[0].cost).toBe('subscription');
+      expect(registered.some(m => m.model === 'sonnet')).toBe(true);
+      expect(registered.some(m => m.model === 'opus')).toBe(true);
+    });
+
+    test('registers models from gemini-code', async () => {
+      const registered = await registerProviderModels('gemini-code', geminiCode as unknown as ProviderWithMetadata);
+
+      expect(registered.length).toBe(2); // flash, pro
+      expect(registered[0].provider).toBe('gemini-code');
+      expect(registered[0].cost).toBe('free');
+      expect(registered[0].contextWindow).toBe(1048576); // 1M tokens
+      expect(registered.some(m => m.model === 'gemini-2.5-flash')).toBe(true);
+      expect(registered.some(m => m.model === 'gemini-2.5-pro')).toBe(true);
+    });
+
+    test('registers models from github-copilot', async () => {
+      const registered = await registerProviderModels('github-copilot', copilot as unknown as ProviderWithMetadata);
 
       expect(registered.length).toBeGreaterThan(0);
       expect(registered[0].provider).toBe('github-copilot');
       expect(registered[0].id).toMatch(/^github-copilot:/);
     });
 
-    test('registered models have all required fields', () => {
-      const registered = registerProviderModels('openai-codex', codex as unknown as ProviderWithMetadata);
+    test('registers models from github-models', async () => {
+      const registered = await registerProviderModels('github-models', githubModels as unknown as ProviderWithMetadata);
+
+      // GitHub Models can return 0 models if rate limited or auth fails (external service)
+      // Just verify the structure works when models ARE available
+      expect(Array.isArray(registered)).toBe(true);
+      if (registered.length > 0) {
+        expect(registered[0].provider).toBe('github-models');
+        // GitHub Models defaults to 'free' (500 requests/day free tier)
+        expect(['free', 'limited']).toContain(registered[0].cost);
+      }
+    });
+
+    test('registers models from cursor', async () => {
+      const registered = await registerProviderModels('cursor', cursor as unknown as ProviderWithMetadata);
+
+      // Cursor plugin returns 4 models (plugin overrides local CURSOR_MODELS)
+      expect(registered.length).toBe(4); // auto, gpt-4.1, sonnet-4, sonnet-4-thinking
+      expect(registered[0].provider).toBe('cursor');
+      expect(registered.some(m => m.model === 'auto')).toBe(true);
+      expect(registered.some(m => m.model === 'gpt-4.1')).toBe(true);
+      expect(registered.some(m => m.model === 'sonnet-4')).toBe(true);
+      // Cursor has mix of free (auto) and subscription (premium models)
+      expect(registered.some(m => m.cost === 'free')).toBe(true);
+      expect(registered.some(m => m.cost === 'subscription')).toBe(true);
+    });
+
+    test('registers models from google-jules (experimental agent)', async () => {
+      const registered = await registerProviderModels('google-jules', julesWithModels as unknown as ProviderWithMetadata);
+
+      expect(registered.length).toBe(1); // jules-v1
+      expect(registered[0].provider).toBe('google-jules');
+      expect(registered[0].model).toBe('jules-v1');
+      expect(registered[0].cost).toBe('free'); // 15 tasks/day free tier
+      expect(registered[0].contextWindow).toBe(2097152); // 2M tokens (Gemini 2.5 Pro)
+    });
+
+    test('registered models have all required fields', async () => {
+      const registered = await registerProviderModels('openai-codex', codex as unknown as ProviderWithMetadata);
 
       for (const model of registered) {
         expect(model.id).toBeTruthy();
@@ -258,11 +333,16 @@ describe('Model Registry', () => {
 });
 
 describe('Model Registry Summary', () => {
-  test('print complete model inventory', () => {
-    const models = buildModelCatalog({
+  test('print complete model inventory', async () => {
+    const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
+    const models = await buildModelCatalog({
       'openai-codex': codex as unknown as ProviderWithMetadata,
+      'claude-code': claudeCode as unknown as ProviderWithMetadata,
+      'gemini-code': geminiCode as unknown as ProviderWithMetadata,
       'github-copilot': copilot as unknown as ProviderWithMetadata,
       'github-models': githubModels as unknown as ProviderWithMetadata,
+      'cursor': cursor as unknown as ProviderWithMetadata,
+      'google-jules': julesWithModels as unknown as ProviderWithMetadata,
     });
 
     console.log('\n📊 MODEL REGISTRY INVENTORY');

@@ -1,0 +1,504 @@
+Compiling 182 files (.ex)
+     warning: variable "size" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 127 │       size = get_in(embedding.metadata, ["size"]) || 0
+     │       ~
+     │
+     └─ lib/mix/tasks/analyze.query.ex:127:7: Mix.Tasks.Analyze.Query.show_binary_analysis/0
+
+    warning: unused import Ecto.Query
+    │
+ 21 │   import Ecto.Query
+    │   ~
+    │
+    └─ lib/mix/tasks/analyze.query.ex:21:3
+
+     warning: Logger.warn/1 is deprecated. Use Logger.warning/2 instead
+     │
+ 428 │         Logger.warn("AgentFlowTracker: Session #{session_id} failed: #{inspect(error)}")
+     │                ~
+     │
+     └─ lib/singularity/agent_flow_tracker.ex:428:16: Singularity.AgentFlowTracker.fail_session/2
+
+     warning: function select_optimal_model/1 is unused
+     │
+ 285 │   defp select_optimal_model(complexity) do
+     │        ~
+     │
+     └─ lib/singularity/agents/cost_optimized_agent.ex:285:8: Singularity.Agents.CostOptimizedAgent (module)
+
+    warning: unused import Ecto.Query
+    │
+ 53 │   import Ecto.Query
+    │   ~
+    │
+    └─ lib/singularity/agent_flow_tracker.ex:53:3
+
+    warning: unused alias LLM
+    │
+ 16 │   alias Singularity.{Autonomy, LLM, ProcessRegistry}
+    │   ~
+    │
+    └─ lib/singularity/agents/cost_optimized_agent.ex:16:3
+
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 416 │   defp run_architecture_analysis(codebase_path, rust_engines) do
+     │                                  ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:416:34: Singularity.ArchitectureAgent.run_architecture_analysis/2
+
+     warning: variable "rust_engines" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 416 │   defp run_architecture_analysis(codebase_path, rust_engines) do
+     │                                                 ~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:416:49: Singularity.ArchitectureAgent.run_architecture_analysis/2
+
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 464 │   defp run_framework_detection(codebase_path, rust_engines) do
+     │                                ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:464:32: Singularity.ArchitectureAgent.run_framework_detection/2
+
+     warning: variable "rust_engines" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 464 │   defp run_framework_detection(codebase_path, rust_engines) do
+     │                                               ~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:464:47: Singularity.ArchitectureAgent.run_framework_detection/2
+
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 501 │   defp run_quality_analysis_rust(codebase_path, rust_engines, opts) do
+     │                                  ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:501:34: Singularity.ArchitectureAgent.run_quality_analysis_rust/3
+
+     warning: variable "opts" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 501 │   defp run_quality_analysis_rust(codebase_path, rust_engines, opts) do
+     │                                                               ~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:501:63: Singularity.ArchitectureAgent.run_quality_analysis_rust/3
+
+     warning: variable "rust_engines" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 501 │   defp run_quality_analysis_rust(codebase_path, rust_engines, opts) do
+     │                                                 ~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:501:49: Singularity.ArchitectureAgent.run_quality_analysis_rust/3
+
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 546 │   defp run_semantic_analysis(codebase_path, rust_engines) do
+     │                              ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:546:30: Singularity.ArchitectureAgent.run_semantic_analysis/2
+
+     warning: variable "rust_engines" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 546 │   defp run_semantic_analysis(codebase_path, rust_engines) do
+     │                                             ~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:546:45: Singularity.ArchitectureAgent.run_semantic_analysis/2
+
+     warning: variable "semantic" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 571 │   defp generate_analysis_summary(architecture, frameworks, quality, semantic) do
+     │                                                                     ~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:571:69: Singularity.ArchitectureAgent.generate_analysis_summary/4
+
+     warning: variable "frameworks" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 634 │   defp extract_top_recommendations(architecture, frameworks, quality) do
+     │                                                  ~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:634:50: Singularity.ArchitectureAgent.extract_top_recommendations/3
+
+     warning: variable "frameworks" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 649 │   defp identify_risk_factors(architecture, frameworks, quality) do
+     │                                            ~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:649:44: Singularity.ArchitectureAgent.identify_risk_factors/3
+
+     warning: variable "context" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 844 │   defp get_intelligent_naming_suggestions(element_type, context, rust_engines, opts) do
+     │                                                         ~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:844:57: Singularity.ArchitectureAgent.get_intelligent_naming_suggestions/4
+
+     warning: variable "element_type" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 844 │   defp get_intelligent_naming_suggestions(element_type, context, rust_engines, opts) do
+     │                                           ~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:844:43: Singularity.ArchitectureAgent.get_intelligent_naming_suggestions/4
+
+     warning: variable "opts" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 844 │   defp get_intelligent_naming_suggestions(element_type, context, rust_engines, opts) do
+     │                                                                                ~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:844:80: Singularity.ArchitectureAgent.get_intelligent_naming_suggestions/4
+
+     warning: variable "rust_engines" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 844 │   defp get_intelligent_naming_suggestions(element_type, context, rust_engines, opts) do
+     │                                                                  ~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/architecture_agent.ex:844:66: Singularity.ArchitectureAgent.get_intelligent_naming_suggestions/4
+
+     warning: variable "opts" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 269 │   def find_similar(:semantic, query, opts) do
+     │                                      ~~~~
+     │
+     └─ lib/singularity/cache.ex:269:38: Singularity.Cache.find_similar/3
+
+     warning: variable "query" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 269 │   def find_similar(:semantic, query, opts) do
+     │                               ~~~~~
+     │
+     └─ lib/singularity/cache.ex:269:31: Singularity.Cache.find_similar/3
+
+     warning: variable "consolidation_mapping" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 431 │   defp find_affected_services(consolidation_mapping) do
+     │                               ~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/consolidation_engine.ex:431:31: Singularity.CodeAnalysis.ConsolidationEngine.find_affected_services/1
+
+     warning: variable "affected_services" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 437 │   defp update_references_in_services(affected_services, consolidation_mapping) do
+     │                                      ~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/consolidation_engine.ex:437:38: Singularity.CodeAnalysis.ConsolidationEngine.update_references_in_services/2
+
+     warning: variable "consolidation_mapping" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 437 │   defp update_references_in_services(affected_services, consolidation_mapping) do
+     │                                                         ~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/consolidation_engine.ex:437:57: Singularity.CodeAnalysis.ConsolidationEngine.update_references_in_services/2
+
+     warning: variable "content" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 353 │   defp parse_toml(content) do
+     │                   ~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/microservice_analyzer.ex:353:19: Singularity.CodeAnalysis.MicroserviceAnalyzer.parse_toml/1
+
+     warning: variable "content" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 358 │   defp parse_go_mod(content) do
+     │                     ~~~~~~~
+     │
+     └─ lib/singularity/code/analyzers/microservice_analyzer.ex:358:21: Singularity.CodeAnalysis.MicroserviceAnalyzer.parse_go_mod/1
+
+    warning: unused alias DependencyMapper
+    │
+ 10 │   alias Singularity.CodeAnalysis.{DependencyMapper, ServiceAnalyzer}
+    │   ~
+    │
+    └─ lib/singularity/code/analyzers/consolidation_engine.ex:10:3
+
+     warning: variable "opts" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 118 │   def to_code(pseudocode_result, opts \\ []) do
+     │                                  ~~~~
+     │
+     └─ lib/singularity/code/generators/pseudocode_generator.ex:118:34: Singularity.PseudocodeGenerator.to_code/2
+
+     warning: variable "opts" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 170 │   defp detect_context(path, opts) when is_binary(path) do
+     │                             ~~~~
+     │
+     └─ lib/singularity/code/generators/code_synthesis_pipeline.ex:170:29: Singularity.CodeSynthesisPipeline.detect_context/2
+
+     warning: variable "patterns" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 122 │     patterns = pseudocode_result.patterns
+     │     ~~~~~~~~
+     │
+     └─ lib/singularity/code/generators/pseudocode_generator.ex:122:5: Singularity.PseudocodeGenerator.to_code/2
+
+     warning: variable "context" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 152 │     context = pseudocode_result.context
+     │     ~~~~~~~
+     │
+     └─ lib/singularity/code/generators/pseudocode_generator.ex:152:5: Singularity.PseudocodeGenerator.refine/3
+
+     warning: variable "repo" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 238 │   defp query_tech_stack_from_facts(repo) do
+     │                                    ~~~~
+     │
+     └─ lib/singularity/code/generators/code_synthesis_pipeline.ex:238:36: Singularity.CodeSynthesisPipeline.query_tech_stack_from_facts/1
+
+     warning: variable "opts" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 150 │   def refine(pseudocode_result, refinement, opts \\ []) do
+     │                                             ~~~~
+     │
+     └─ lib/singularity/code/generators/pseudocode_generator.ex:150:45: Singularity.PseudocodeGenerator.refine/3
+
+     warning: variable "repo" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 282 │   defp detect_project_type(repo, path) do
+     │                            ~~~~
+     │
+     └─ lib/singularity/code/generators/code_synthesis_pipeline.ex:282:28: Singularity.CodeSynthesisPipeline.detect_project_type/2
+
+     warning: variable "context" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 386 │   defp infer_operations(task, context) do
+     │                               ~~~~~~~
+     │
+     └─ lib/singularity/code/generators/pseudocode_generator.ex:386:31: Singularity.PseudocodeGenerator.infer_operations/2
+
+     warning: variable "language" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 592 │     language = Keyword.get(opts, :language, "elixir")
+     │     ~~~~~~~~
+     │
+     └─ lib/singularity/code/generators/code_synthesis_pipeline.ex:592:5: Singularity.CodeSynthesisPipeline.batch_generate/2
+
+    warning: variable "reason" is unused (if the variable is not meant to be used, prefix it with an underscore)
+    │
+ 85 │       {:error, reason} ->
+    │                ~
+    │
+    └─ lib/singularity/code/generators/quality_code_generator.ex:85:16: Singularity.QualityCodeGenerator.load_template/1
+
+     warning: variable "opts" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 102 │   defp default_template(opts \\ []) do
+     │                         ~~~~
+     │
+     └─ lib/singularity/code/generators/quality_code_generator.ex:102:25: Singularity.QualityCodeGenerator.default_template/1
+
+     warning: variable "quality" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 425 │   defp add_missing_docs(code, "elixir", quality) do
+     │                                         ~~~~~~~
+     │
+     └─ lib/singularity/code/generators/quality_code_generator.ex:425:41: Singularity.QualityCodeGenerator.add_missing_docs/3
+
+     warning: variable "code" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 442 │   defp add_missing_docs(code, _language, _quality), do: {:ok, ""}
+     │                         ~~~~
+     │
+     └─ lib/singularity/code/generators/quality_code_generator.ex:442:25: Singularity.QualityCodeGenerator.add_missing_docs/3
+
+     warning: variable "code" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 460 │   defp add_missing_specs(code, _language, _quality), do: {:ok, ""}
+     │                          ~~~~
+     │
+     └─ lib/singularity/code/generators/quality_code_generator.ex:460:26: Singularity.QualityCodeGenerator.add_missing_specs/3
+
+    warning: unused alias CodebaseStore
+    │
+  9 │   alias Singularity.Engine.CodebaseStore
+    │   ~
+    │
+    └─ lib/singularity/code/analyzers/microservice_analyzer.ex:9:3
+
+     warning: function build_doc_prompt_from_template/2 is unused
+     │
+ 546 │   defp build_doc_prompt_from_template(code, template) do
+     │        ~
+     │
+     └─ lib/singularity/code/generators/quality_code_generator.ex:546:8: Singularity.QualityCodeGenerator (module)
+
+     warning: variable "metadata" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 217 │       metadata = ex.metadata
+     │       ~
+     │
+     └─ lib/singularity/code/generators/rag_code_generator.ex:217:7: Singularity.RAGCodeGenerator.filter_quality/2
+
+     warning: function build_limit_param_index/2 is unused
+     │
+ 203 │   defp build_limit_param_index(language, repos) do
+     │        ~
+     │
+     └─ lib/singularity/code/generators/rag_code_generator.ex:203:8: Singularity.RAGCodeGenerator (module)
+
+     warning: function initialize_universal_dependencies/0 is unused
+     │
+ 197 │   defp initialize_universal_dependencies do
+     │        ~
+     │
+     └─ lib/singularity/code/parsers/polyglot_code_parser.ex:197:8: Singularity.PolyglotCodeParser (module)
+
+     warning: function initialize_parser_registry/0 is unused
+     │
+ 206 │   defp initialize_parser_registry do
+     │        ~
+     │
+     └─ lib/singularity/code/parsers/polyglot_code_parser.ex:206:8: Singularity.PolyglotCodeParser (module)
+
+     warning: function get_default_config/0 is unused
+     │
+ 226 │   defp get_default_config do
+     │        ~
+     │
+     └─ lib/singularity/code/parsers/polyglot_code_parser.ex:226:8: Singularity.PolyglotCodeParser (module)
+
+     warning: this clause for load_template/2 cannot match because a previous clause at line 91 always matches
+     │
+ 235 │   def load_template(language, quality, custom_path \\ nil) do
+     │       ~
+     │
+     └─ lib/singularity/code/generators/quality_code_generator.ex:235:7
+
+     warning: variable "keyword_query" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 317 │     keyword_query = Enum.join(keywords, " OR ")
+     │     ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/patterns/pattern_indexer.ex:317:5: Singularity.PatternIndexer.find_code_matching_patterns/2
+
+    warning: unused alias CodeStore
+    │
+ 56 │   alias Singularity.{CodeStore, SemanticCodeSearch, EmbeddingService, CodeModel}
+    │   ~
+    │
+    └─ lib/singularity/code/generators/rag_code_generator.ex:56:3
+
+    warning: unused alias SemanticCodeSearch
+    │
+ 56 │   alias Singularity.{CodeStore, SemanticCodeSearch, EmbeddingService, CodeModel}
+    │   ~
+    │
+    └─ lib/singularity/code/generators/rag_code_generator.ex:56:3
+
+    warning: unused alias Repo
+    │
+  4 │   alias Singularity.Repo
+    │   ~
+    │
+    └─ lib/singularity/code/parsers/polyglot_code_parser.ex:4:3
+
+    warning: unused import Ecto.Query
+    │
+  3 │   import Ecto.Query
+    │   ~
+    │
+    └─ lib/singularity/code/parsers/polyglot_code_parser.ex:3:3
+
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_call/3" was previously defined (lib/singularity/code/storage/code_store.ex:140)
+     │
+ 349 │   def handle_call({:register_codebase, codebase_id, codebase_path, type, metadata}, _from, state) do
+     │       ~
+     │
+     └─ lib/singularity/code/storage/code_store.ex:349:7
+
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_cast/2" was previously defined (lib/singularity/code/storage/code_store.ex:225)
+     │
+ 458 │   def handle_cast({:store_analysis, codebase_id, analysis_data}, state) do
+     │       ~
+     │
+     └─ lib/singularity/code/storage/code_store.ex:458:7
+
+    warning: do not use "length(rows) > 0" to check if a list is not empty since length always traverses the whole list. Prefer to pattern match on a non-empty list, such as [_ | _], or use "rows != []" as a guard
+    │
+ 76 │       {:ok, %{rows: rows}} when length(rows) > 0 ->
+    │                                              ~
+    │
+    └─ lib/singularity/code/training/code_trainer.ex:76:46
+
+     warning: variable "model_info" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 141 │   def save_model(model_info, path) do
+     │                  ~~~~~~~~~~
+     │
+     └─ lib/singularity/code/training/code_trainer.ex:141:18: Singularity.CodeTrainer.save_model/2
+
+     warning: variable "path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 175 │   defp prepare_training_example(content, path, language, _metadata) do
+     │                                          ~~~~
+     │
+     └─ lib/singularity/code/training/code_trainer.ex:175:42: Singularity.CodeTrainer.prepare_training_example/4
+
+     warning: variable "sparc_keywords" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 286 │   defp create_sparc_phase_pairs(sparc_keywords) do
+     │                                 ~~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/training/domain_vocabulary_trainer.ex:286:33: Singularity.DomainVocabularyTrainer.create_sparc_phase_pairs/1
+
+     warning: variable "training_data" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 403 │     training_data = create_template_training_data(vocab)
+     │     ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/code/training/domain_vocabulary_trainer.ex:403:5: Singularity.DomainVocabularyTrainer.train_with_template_awareness/0
+
+    warning: unused alias CodeStore
+    │
+ 35 │   alias Singularity.CodeStore
+    │   ~
+    │
+    └─ lib/singularity/code/training/code_trainer.ex:35:3
+
+    warning: unused import Ecto.Query
+    │
+ 50 │   import Ecto.Query
+    │   ~
+    │
+    └─ lib/singularity/code/training/domain_vocabulary_trainer.ex:50:3
+
+    warning: module attribute @conversation_types was set but never used
+    │
+ 15 │   @conversation_types [
+    │   ~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/singularity/conversation/chat_conversation_agent.ex:15: Singularity.Conversation.ChatConversationAgent (module)
+
+    error: undefined variable "ka"
+    │
+ 38 │       select: ka
+    │               ^^
+    │
+    └─ lib/singularity/detection/technology_pattern_adapter.ex:38:15: Singularity.TechnologyPatternAdapter.all/0
+
+    error: misplaced operator ^@artifact_type
+
+    The pin operator ^ is supported only inside matches or inside custom macros. Make sure you are inside a match or all necessary macros have been required
+    │
+ 37 │       where: ka.artifact_type == ^@artifact_type,
+    │                                  ^
+    │
+    └─ lib/singularity/detection/technology_pattern_adapter.ex:37:34: Singularity.TechnologyPatternAdapter.all/0
+
+    error: undefined variable "ka"
+    │
+ 37 │       where: ka.artifact_type == ^@artifact_type,
+    │              ^^
+    │
+    └─ lib/singularity/detection/technology_pattern_adapter.ex:37:14: Singularity.TechnologyPatternAdapter.all/0
+
+    error: undefined variable "ka"
+    │
+ 36 │     query = from ka in "knowledge_artifacts",
+    │                  ^^
+    │
+    └─ lib/singularity/detection/technology_pattern_adapter.ex:36:18: Singularity.TechnologyPatternAdapter.all/0
+
+
+== Compilation error in file lib/singularity/detection/technology_pattern_adapter.ex ==
+** (CompileError) lib/singularity/detection/technology_pattern_adapter.ex: cannot compile module Singularity.TechnologyPatternAdapter (errors have been logged)
+

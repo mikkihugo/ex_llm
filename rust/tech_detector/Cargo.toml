@@ -39,7 +39,7 @@ glob = { workspace = true }
 regex = { workspace = true }
 
 # Universal parser for AST analysis
-universal-parser = { path = "../universal_parser" }
+source-code-parser = { path = "../source-code-parser" }
 
 [dev-dependencies]
 tempfile = { workspace = true }

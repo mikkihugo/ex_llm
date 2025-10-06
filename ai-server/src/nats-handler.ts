@@ -8,7 +8,7 @@
  */
 
 import { connect, NatsConnection, Subscription } from 'nats';
-import { generateText, streamText } from 'ai';
+import { generateText } from 'ai';
 import { createGeminiProvider } from './providers/gemini-code.js';
 import { claudeCode } from 'ai-sdk-provider-claude-code';
 import { codex } from 'ai-sdk-provider-codex';
@@ -44,9 +44,28 @@ interface LLMError {
   timestamp: string;
 }
 
+class ValidationError extends Error {
+  readonly code = 'VALIDATION_ERROR';
+
+  constructor(message: string) {
+    super(`validation error: ${message}`);
+    this.name = 'ValidationError';
+  }
+}
+
+class ProviderNotFoundError extends Error {
+  readonly code = 'PROVIDER_NOT_FOUND';
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProviderNotFoundError';
+  }
+}
+
 class NATSHandler {
   private nc: NatsConnection | null = null;
   private subscriptions: Subscription[] = [];
+  private subscriptionTasks: Promise<void>[] = [];
 
   async connect() {
     try {
@@ -71,30 +90,68 @@ class NATSHandler {
     }
 
     const subscription = this.nc.subscribe('ai.llm.request');
-    
+    this.subscriptions.push(subscription);
+
+    const processor = this.handleLLMRequestStream(subscription);
+    this.subscriptionTasks.push(processor);
+
+    processor.catch(error => {
+      console.error('❌ Unhandled error in LLM request stream:', error);
+    });
+  }
+
+  private async handleLLMRequestStream(subscription: Subscription) {
     for await (const msg of subscription) {
+      let request: LLMRequest | null = null;
       try {
-        const request = JSON.parse(msg.data.toString()) as LLMRequest;
+        request = JSON.parse(msg.data.toString()) as LLMRequest;
+        this.validateRequest(request);
         console.log('📨 Received LLM request:', request.model);
-        
-        // Process the request
+
         const response = await this.processLLMRequest(request);
-        
-        // Publish response
         await this.publishResponse(response);
-        
       } catch (error) {
         console.error('❌ Error processing LLM request:', error);
-        
-        // Publish error response
+
         const errorResponse: LLMError = {
           error: error instanceof Error ? error.message : 'Unknown error',
-          error_code: 'LLM_ERROR',
-          correlation_id: (error as any)?.correlation_id,
+          error_code: this.extractErrorCode(error),
+          correlation_id: request?.correlation_id,
           timestamp: new Date().toISOString()
         };
-        
+
         await this.publishError(errorResponse);
+      }
+    }
+  }
+
+  private validateRequest(request: LLMRequest) {
+    if (!request || typeof request !== 'object') {
+      throw new ValidationError('Request payload must be an object');
+    }
+
+    if (!request.model || typeof request.model !== 'string') {
+      throw new ValidationError('Request must include a model string');
+    }
+
+    if (!Array.isArray(request.messages) || request.messages.length === 0) {
+      throw new ValidationError('Request must include at least one message');
+    }
+
+    if (request.provider !== undefined && typeof request.provider !== 'string') {
+      throw new ValidationError('Provider must be a string when provided');
+    }
+
+    for (let index = 0; index < request.messages.length; index++) {
+      const message = request.messages[index];
+      if (!message || typeof message !== 'object') {
+        throw new ValidationError(`Message at index ${index} must be an object`);
+      }
+      if (typeof message.role !== 'string' || message.role.length === 0) {
+        throw new ValidationError(`Message at index ${index} must include a role`);
+      }
+      if (typeof message.content !== 'string' || message.content.length === 0) {
+        throw new ValidationError(`Message at index ${index} must include content`);
       }
     }
   }
@@ -114,8 +171,8 @@ class NATSHandler {
       });
     }
 
-    // Determine provider from model name
-    const provider = this.getProviderFromModel(model);
+    // Determine provider from request
+    const provider = this.determineProvider(request);
 
     // Route to appropriate provider
     let result;
@@ -138,6 +195,34 @@ class NATSHandler {
     };
   }
 
+  private determineProvider(request: LLMRequest): string {
+    if (request.provider) {
+      const normalized = this.normalizeProvider(request.provider);
+      if (normalized) {
+        return normalized;
+      }
+      throw new ProviderNotFoundError(`Unknown provider: ${request.provider}`);
+    }
+
+    const inferred = this.getProviderFromModel(request.model);
+    if (inferred) {
+      return inferred;
+    }
+
+    throw new ProviderNotFoundError(`Unable to determine provider for model: ${request.model}`);
+  }
+
+  private normalizeProvider(provider: string): string | null {
+    const value = provider.toLowerCase();
+    if (value.includes('claude')) return 'claude';
+    if (value.includes('gemini')) return 'gemini';
+    if (value.includes('codex')) return 'codex';
+    if (value.includes('copilot') || value.includes('cursor') || value.includes('grok')) return 'copilot';
+    if (value.includes('github')) return 'github';
+    if (value.includes('jules')) return 'jules';
+    return null;
+  }
+
   async handleNonStreamingRequest(provider: string, model: string, messages: any[], options: any) {
     switch (provider) {
       case 'claude':
@@ -153,7 +238,7 @@ class NATSHandler {
       case 'jules':
         return await this.callJules(model, messages, options);
       default:
-        throw new Error(`Unknown provider: ${provider}`);
+        throw new ProviderNotFoundError(`Unknown provider: ${provider}`);
     }
   }
 
@@ -284,14 +369,16 @@ class NATSHandler {
     }
   }
 
-  getProviderFromModel(model: string): string {
+  getProviderFromModel(model: string): string | null {
     if (model.startsWith('claude')) return 'claude';
     if (model.startsWith('gemini')) return 'gemini';
     if (model.startsWith('gpt-5') || model.startsWith('o3')) return 'codex';
+    if (model.startsWith('gpt-4')) return 'copilot';
+    if (model.startsWith('grok')) return 'copilot';
     if (model.startsWith('cursor')) return 'copilot';
     if (model.startsWith('github')) return 'github';
     if (model.startsWith('jules')) return 'jules';
-    return 'claude'; // Default fallback
+    return null;
   }
 
   calculateClaudeCost(tokens: number, model: string): number {
@@ -322,6 +409,17 @@ class NATSHandler {
     return 0;
   }
 
+  private extractErrorCode(error: unknown): string {
+    if (error && typeof error === 'object' && 'code' in error) {
+      const code = (error as { code?: unknown }).code;
+      if (typeof code === 'string' && code.length > 0) {
+        return code;
+      }
+    }
+
+    return 'LLM_ERROR';
+  }
+
   async publishResponse(response: LLMResponse) {
     if (!this.nc) {
       throw new Error('NATS not connected');
@@ -341,6 +439,20 @@ class NATSHandler {
   }
 
   async close() {
+    for (const subscription of this.subscriptions) {
+      try {
+        subscription.unsubscribe();
+      } catch (error) {
+        console.error('⚠️ Failed to unsubscribe from NATS subject:', error);
+      }
+    }
+    this.subscriptions = [];
+
+    if (this.subscriptionTasks.length > 0) {
+      await Promise.allSettled(this.subscriptionTasks);
+    }
+    this.subscriptionTasks = [];
+
     if (this.nc) {
       await this.nc.close();
       console.log('🔌 Disconnected from NATS');

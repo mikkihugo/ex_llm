@@ -1,14 +1,14 @@
 //! Vector index for semantic search over FACT storage
 
 use crate::embedding::EmbeddingGenerator;
-use crate::storage::{FactData, FactKey, FactStorage};
+use crate::storage::{PackageMetadata, PackageKey, PackageStorage};
 use anyhow::Result;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Vector index for fast similarity search
 pub struct VectorIndex {
-  storage: Arc<dyn FactStorage>,
+  storage: Arc<dyn PackageStorage>,
   embedder: Arc<EmbeddingGenerator>,
   semantic_index: HashMap<String, Vec<f32>>, // fact_id -> semantic embedding
   code_index: HashMap<String, Vec<f32>>,     // fact_id -> code embedding
@@ -16,7 +16,7 @@ pub struct VectorIndex {
 
 impl VectorIndex {
   /// Build a new vector index from storage
-  pub async fn build(storage: Arc<dyn FactStorage>) -> Result<Self> {
+  pub async fn build(storage: Arc<dyn PackageStorage>) -> Result<Self> {
     let mut embedder = EmbeddingGenerator::new()?;
 
     // Get all facts to build vocabulary
@@ -74,7 +74,7 @@ impl VectorIndex {
     &self,
     query: &str,
     limit: usize,
-  ) -> Result<Vec<(FactKey, f64)>> {
+  ) -> Result<Vec<(PackageKey, f64)>> {
     // Generate query embedding
     let query_embedding = self.embedder.embed_text(query)?;
 
@@ -93,13 +93,13 @@ impl VectorIndex {
       b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    // Take top results and convert to FactKey
+    // Take top results and convert to PackageKey
     Ok(
       scores
         .into_iter()
         .take(limit)
         .filter_map(|(id, score)| {
-          FactKey::from_storage_key(&id).ok().map(|key| (key, score))
+          PackageKey::from_storage_key(&id).ok().map(|key| (key, score))
         })
         .collect(),
     )
@@ -111,7 +111,7 @@ impl VectorIndex {
     code_snippet: &str,
     language: &str,
     limit: usize,
-  ) -> Result<Vec<(FactKey, f64)>> {
+  ) -> Result<Vec<(PackageKey, f64)>> {
     // Generate code embedding
     let query_embedding = self.embedder.embed_code(code_snippet, language)?;
 
@@ -136,7 +136,7 @@ impl VectorIndex {
         .into_iter()
         .take(limit)
         .filter_map(|(id, score)| {
-          FactKey::from_storage_key(&id).ok().map(|key| (key, score))
+          PackageKey::from_storage_key(&id).ok().map(|key| (key, score))
         })
         .collect(),
     )
@@ -145,8 +145,8 @@ impl VectorIndex {
   /// Add or update a fact in the index
   pub async fn index_fact(
     &mut self,
-    key: &FactKey,
-    fact: &FactData,
+    key: &PackageKey,
+    fact: &PackageMetadata,
   ) -> Result<()> {
     let fact_id = key.storage_key();
 
@@ -182,7 +182,7 @@ impl VectorIndex {
   }
 
   /// Remove a fact from the index
-  pub fn remove_fact(&mut self, key: &FactKey) {
+  pub fn remove_fact(&mut self, key: &PackageKey) {
     let fact_id = key.storage_key();
     self.semantic_index.remove(&fact_id);
     self.code_index.remove(&fact_id);
@@ -211,37 +211,37 @@ pub struct IndexStats {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::storage::{FactData, FactExample, UsageStats};
+  use crate::storage::{PackageMetadata, PackageExample, UsageStats};
   use std::time::SystemTime;
 
   // Mock storage for testing
   struct MockStorage {
-    facts: HashMap<String, FactData>,
+    facts: HashMap<String, PackageMetadata>,
   }
 
   #[async_trait::async_trait]
-  impl FactStorage for MockStorage {
-    async fn store_fact(&self, _key: &FactKey, _data: &FactData) -> Result<()> {
+  impl PackageStorage for MockStorage {
+    async fn store_fact(&self, _key: &PackageKey, _data: &PackageMetadata) -> Result<()> {
       Ok(())
     }
 
-    async fn get_fact(&self, key: &FactKey) -> Result<Option<FactData>> {
+    async fn get_fact(&self, key: &PackageKey) -> Result<Option<PackageMetadata>> {
       Ok(self.facts.get(&key.storage_key()).cloned())
     }
 
-    async fn exists(&self, key: &FactKey) -> Result<bool> {
+    async fn exists(&self, key: &PackageKey) -> Result<bool> {
       Ok(self.facts.contains_key(&key.storage_key()))
     }
 
-    async fn delete_fact(&self, _key: &FactKey) -> Result<()> {
+    async fn delete_fact(&self, _key: &PackageKey) -> Result<()> {
       Ok(())
     }
 
-    async fn list_tools(&self, _ecosystem: &str) -> Result<Vec<FactKey>> {
+    async fn list_tools(&self, _ecosystem: &str) -> Result<Vec<PackageKey>> {
       Ok(vec![])
     }
 
-    async fn search_tools(&self, _prefix: &str) -> Result<Vec<FactKey>> {
+    async fn search_tools(&self, _prefix: &str) -> Result<Vec<PackageKey>> {
       Ok(vec![])
     }
 
@@ -254,17 +254,17 @@ mod tests {
       })
     }
 
-    async fn search_by_tags(&self, _tags: &[String]) -> Result<Vec<FactKey>> {
+    async fn search_by_tags(&self, _tags: &[String]) -> Result<Vec<PackageKey>> {
       Ok(vec![])
     }
 
-    async fn get_all_facts(&self) -> Result<Vec<(FactKey, FactData)>> {
+    async fn get_all_facts(&self) -> Result<Vec<(PackageKey, PackageMetadata)>> {
       Ok(
         self
           .facts
           .iter()
           .filter_map(|(id, fact)| {
-            FactKey::from_storage_key(id)
+            PackageKey::from_storage_key(id)
               .ok()
               .map(|key| (key, fact.clone()))
           })
@@ -273,14 +273,14 @@ mod tests {
     }
   }
 
-  fn create_test_fact(tool: &str, docs: &str) -> FactData {
-    FactData {
+  fn create_test_fact(tool: &str, docs: &str) -> PackageMetadata {
+    PackageMetadata {
       tool: tool.to_string(),
       version: "1.0".to_string(),
       ecosystem: "test".to_string(),
       documentation: docs.to_string(),
       snippets: vec![],
-      examples: vec![FactExample {
+      examples: vec![PackageExample {
         title: "Example".to_string(),
         code: "fn main() {}".to_string(),
         explanation: "Test example".to_string(),

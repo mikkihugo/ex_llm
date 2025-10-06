@@ -1,17 +1,6 @@
 //! Prompt Management and Generation Module
 //!
-//! AI-powered prompt generation system integrated with FACT:
-//! - Generate prompts from framework detection
-//! - Store prompts in unified FACT storage
-//! - A/B testing infrastructure
-//! - Feedback collection and learning
+//! **NOTE:** Prompt generation moved to prompt_engine service (rust/prompt_engine).
 //!
-//! Uses FACT's storage, caching, and vector search capabilities.
-
-pub mod generator;
-
-// Re-export main types
-pub use generator::{
-  convert_to_detected_framework_knowledge, query_technology_knowledge,
-  store_technology_knowledge,
-};
+//! This module is a placeholder for backwards compatibility.
+//! Use prompt_engine via NATS for AI prompt generation.

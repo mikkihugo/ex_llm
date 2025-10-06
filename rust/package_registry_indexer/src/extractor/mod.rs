@@ -1,63 +1,66 @@
-//! Code Snippet Extractor - Delegates to universal_parser
+//! Code Snippet Extractor - Delegates to source code parser
 //!
 //! This module provides a bridge between package_registry_indexer and
-//! universal_parser for extracting code snippets from downloaded packages.
+//! source code parser for extracting code snippets from downloaded packages.
 //!
 //! Architecture:
 //! 1. package_registry_indexer downloads tarball (npm, cargo, etc.)
-//! 2. Extractor calls universal_parser to parse with tree-sitter
-//! 3. Converts universal_parser results to FactSnippet format
+//! 2. Extractor calls source code parser to parse with tree-sitter
+//! 3. Converts source code parser results to CodeSnippet format
 //! 4. Returns snippets for storage
 
-use crate::storage::{FactSnippet, FactExample};
+use crate::storage::{CodeSnippet, PackageExample};
+use crate::package_file_watcher::ProgrammingLanguage;
 use anyhow::Result;
 use std::path::Path;
-use universal_parser::{UniversalDependencies, ProgrammingLanguage};
+// use source_code_parser::{SourceCodeParser, ProgrammingLanguage};  // Temporarily disabled
 
-/// Code extractor that delegates to universal_parser
-pub struct UniversalParserExtractor {
-    parser: UniversalDependencies,
+/// Code extractor that delegates to source code parser (temporarily disabled)
+pub struct SourceCodeExtractor {
+    // parser: SourceCodeParser,  // Temporarily disabled
 }
 
-impl UniversalParserExtractor {
+impl SourceCodeExtractor {
     /// Create new extractor
     pub fn new() -> Result<Self> {
         Ok(Self {
-            parser: UniversalDependencies::new()?,
+            // parser: SourceCodeParser::new()?,  // Temporarily disabled
         })
     }
 
-    /// Extract code snippets from a source file using universal_parser
+    /// Extract code snippets from a source file using source code parser
     ///
     /// Process:
-    /// 1. Call universal_parser to parse file
+    /// 1. Call source code parser to parse file
     /// 2. Extract public exports (functions, classes, etc.)
-    /// 3. Convert to FactSnippet format
+    /// 3. Convert to CodeSnippet format
     pub async fn extract_snippets(
         &self,
         file_path: &Path,
         source: &str,
-    ) -> Result<Vec<FactSnippet>> {
+    ) -> Result<Vec<CodeSnippet>> {
         // Detect language from file extension
         let lang = detect_language(file_path)?;
 
-        // Parse with universal_parser
-        let analysis = self.parser.analyze_code(source, lang)?;
+        // Parse with source code parser
+        // let analysis = self.parser.analyze_code(source, lang)?;  // Temporarily disabled
+        // TODO: Implement analysis when source code parser is available
 
-        // Convert public symbols to FactSnippets
+        // Convert public symbols to FactSnippets (temporarily disabled)
         let mut snippets = Vec::new();
-        for symbol in analysis.symbols {
-            if symbol.visibility == "public" || symbol.exported {
-                snippets.push(FactSnippet {
-                    title: symbol.name.clone(),
-                    code: source[symbol.byte_range.clone()].to_string(),
-                    language: format!("{:?}", lang).to_lowercase(),
-                    description: symbol.doc_comment.unwrap_or_default(),
-                    file_path: file_path.to_string_lossy().to_string(),
-                    line_number: symbol.line as u32,
-                });
-            }
-        }
+        // TODO: Implement when source code parser is available
+        // for symbol in analysis.symbols {
+        //     if symbol.visibility == "public" || symbol.exported {
+        //         snippets.push(CodeSnippet {
+        //             title: symbol.name.clone(),
+        //             code: source[symbol.byte_range.clone()].to_string(),
+        //             language: format!("{:?}", lang).to_lowercase(),
+        //             description: symbol.doc_comment.unwrap_or_default(),
+        //             file_path: file_path.to_string_lossy().to_string(),
+        //             line_number: symbol.line as u32,
+        //         });
+        //     }
+        // }
 
         Ok(snippets)
     }
@@ -67,7 +70,7 @@ impl UniversalParserExtractor {
         &self,
         doc_file: &Path,
         content: &str,
-    ) -> Result<Vec<FactExample>> {
+    ) -> Result<Vec<PackageExample>> {
         // Extract code blocks from markdown/docs
         // TODO: Parse markdown code fences
         let _ = (doc_file, content);
@@ -126,12 +129,12 @@ fn detect_language(path: &Path) -> Result<ProgrammingLanguage> {
 /// Extracted code data from a package
 #[derive(Debug, Clone, Default)]
 pub struct ExtractedCode {
-    pub snippets: Vec<FactSnippet>,
-    pub examples: Vec<FactExample>,
+    pub snippets: Vec<CodeSnippet>,
+    pub examples: Vec<PackageExample>,
     pub exports: Vec<String>,  // List of exported symbols
 }
 
 /// Create extractor (unified interface)
-pub fn create_extractor() -> Result<UniversalParserExtractor> {
-    UniversalParserExtractor::new()
+pub fn create_extractor() -> Result<SourceCodeExtractor> {
+    SourceCodeExtractor::new()
 }

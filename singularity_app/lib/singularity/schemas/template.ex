@@ -13,7 +13,7 @@ defmodule Singularity.Schemas.Template do
   @primary_key {:id, :string, autogenerate: false}
   @foreign_key_type :string
 
-  schema "templates" do
+  schema "code_generation_templates" do
     field :version, :string
     field :type, :string
 

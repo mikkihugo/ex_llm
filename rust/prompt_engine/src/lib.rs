@@ -45,6 +45,9 @@ pub mod prompt_tracking;
 // DSPy learning integration with FACT
 pub mod dspy_learning;
 
+// NATS service (prompt_engine is a service)
+pub mod nats_service;
+
 // Re-export main types
 use std::collections::HashMap;
 

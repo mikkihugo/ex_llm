@@ -83,39 +83,45 @@ describe('Provider Integration', () => {
       }
     });
 
-    test('Codex provider has model metadata', () => {
+    test('Codex provider has model metadata', async () => {
       if ('getModelMetadata' in codex) {
         const metadata = codex.getModelMetadata();
-        expect(Array.isArray(metadata)).toBe(true);
-        expect(metadata.length).toBeGreaterThan(0);
-        console.log(`  Codex: ${metadata.length} models`);
+        // Handle both sync and async returns
+        const resolvedMetadata = metadata instanceof Promise ? await metadata : metadata;
+        expect(Array.isArray(resolvedMetadata)).toBe(true);
+        expect(resolvedMetadata.length).toBeGreaterThan(0);
+        console.log(`  Codex: ${resolvedMetadata.length} models`);
       }
     });
 
-    test('Copilot provider has model metadata', () => {
+    test('Copilot provider has model metadata', async () => {
       if ('getModelMetadata' in copilot) {
         const metadata = copilot.getModelMetadata();
-        expect(Array.isArray(metadata)).toBe(true);
-        expect(metadata.length).toBeGreaterThan(0);
-        console.log(`  Copilot: ${metadata.length} models`);
+        // Handle both sync and async returns
+        const resolvedMetadata = metadata instanceof Promise ? await metadata : metadata;
+        expect(Array.isArray(resolvedMetadata)).toBe(true);
+        expect(resolvedMetadata.length).toBeGreaterThan(0);
+        console.log(`  Copilot: ${resolvedMetadata.length} models`);
       }
     });
 
-    test('GitHub Models provider has model metadata', () => {
+    test('GitHub Models provider has model metadata', async () => {
       if ('getModelMetadata' in githubModels) {
         const metadata = githubModels.getModelMetadata();
-        expect(Array.isArray(metadata)).toBe(true);
-        expect(metadata.length).toBeGreaterThan(0);
-        console.log(`  GitHub Models: ${metadata.length} models`);
+        // Handle both sync and async returns
+        const resolvedMetadata = metadata instanceof Promise ? await metadata : metadata;
+        expect(Array.isArray(resolvedMetadata)).toBe(true);
+        expect(resolvedMetadata.length).toBeGreaterThan(0);
+        console.log(`  GitHub Models: ${resolvedMetadata.length} models`);
       }
     });
   });
 
   describe('Model Catalog Integration', () => {
-    test('buildModelCatalog works with all providers', () => {
+    test('buildModelCatalog works with all providers', async () => {
       const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
 
-      const models = buildModelCatalog({
+      const models = await buildModelCatalog({
         'gemini-code': geminiCode as unknown as ProviderWithModels,
         'claude-code': claudeCode as unknown as ProviderWithModels,
         'openai-codex': codex as unknown as ProviderWithMetadata,
@@ -137,10 +143,10 @@ describe('Provider Integration', () => {
       }
     });
 
-    test('models from different providers have unique IDs', () => {
+    test('models from different providers have unique IDs', async () => {
       const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
 
-      const models = buildModelCatalog({
+      const models = await buildModelCatalog({
         'gemini-code': geminiCode as unknown as ProviderWithModels,
         'claude-code': claudeCode as unknown as ProviderWithModels,
         'openai-codex': codex as unknown as ProviderWithMetadata,
@@ -152,10 +158,10 @@ describe('Provider Integration', () => {
       expect(uniqueIds.size).toBe(ids.length);
     });
 
-    test('provider:model format is consistent', () => {
+    test('provider:model format is consistent', async () => {
       const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
 
-      const models = buildModelCatalog({
+      const models = await buildModelCatalog({
         'gemini-code': geminiCode as unknown as ProviderWithModels,
         'openai-codex': codex as unknown as ProviderWithMetadata,
       });
@@ -168,9 +174,9 @@ describe('Provider Integration', () => {
   });
 
   describe('Provider-Specific Features', () => {
-    test('Gemini models support various modalities', () => {
+    test('Gemini models support various modalities', async () => {
       const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
-      const models = buildModelCatalog({
+      const models = await buildModelCatalog({
         'gemini-code': geminiCode as unknown as ProviderWithModels,
       });
 
@@ -181,8 +187,8 @@ describe('Provider Integration', () => {
       }
     });
 
-    test('Claude models have context windows', () => {
-      const models = buildModelCatalog({
+    test('Claude models have context windows', async () => {
+      const models = await buildModelCatalog({
         'claude-code': claudeCode as unknown as ProviderWithModels,
       });
 
@@ -192,8 +198,8 @@ describe('Provider Integration', () => {
       }
     });
 
-    test('Codex models include reasoning models', () => {
-      const models = buildModelCatalog({
+    test('Codex models include reasoning models', async () => {
+      const models = await buildModelCatalog({
         'openai-codex': codex as unknown as ProviderWithMetadata,
       });
 
@@ -203,7 +209,7 @@ describe('Provider Integration', () => {
   });
 
   describe('Registry and Catalog Consistency', () => {
-    test('registry can load all catalogued models', () => {
+    test('registry can load all catalogued models', async () => {
       const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
 
       const registry = createProviderRegistry({
@@ -212,7 +218,7 @@ describe('Provider Integration', () => {
         'openai-codex': codex,
       });
 
-      const models = buildModelCatalog({
+      const models = await buildModelCatalog({
         'gemini-code': geminiCode as unknown as ProviderWithModels,
         'claude-code': claudeCode as unknown as ProviderWithModels,
         'openai-codex': codex as unknown as ProviderWithMetadata,
@@ -233,7 +239,7 @@ describe('Provider Integration', () => {
       console.log(`  ✅ Successfully loaded ${sampleSize} sample models from registry`);
     });
 
-    test('all catalog entries can create model instances', () => {
+    test('all catalog entries can create model instances', async () => {
       const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
 
       const registry = createProviderRegistry({
@@ -241,7 +247,7 @@ describe('Provider Integration', () => {
         'openai-codex': codex,
       });
 
-      const models = buildModelCatalog({
+      const models = await buildModelCatalog({
         'gemini-code': geminiCode as unknown as ProviderWithModels,
         'openai-codex': codex as unknown as ProviderWithMetadata,
       });
@@ -263,7 +269,7 @@ describe('Provider Integration', () => {
 });
 
 describe('Provider Summary', () => {
-  test('print provider capabilities matrix', () => {
+  test('print provider capabilities matrix', async () => {
     const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
 
     const providers = {
@@ -274,7 +280,7 @@ describe('Provider Summary', () => {
       'github-models': githubModels as unknown as ProviderWithMetadata,
     };
 
-    const models = buildModelCatalog(providers);
+    const models = await buildModelCatalog(providers);
 
     console.log('\n🔧 PROVIDER CAPABILITIES MATRIX');
     console.log('═'.repeat(80));

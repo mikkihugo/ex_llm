@@ -312,7 +312,7 @@ defmodule Singularity.RAGCodeGenerator do
         COUNT(*) as file_count,
         AVG(LENGTH(cf.content)) as avg_file_size,
         COUNT(DISTINCT cf.file_path) as unique_files
-      FROM code_files cf
+      FROM codebase_chunks cf
       #{if language, do: "WHERE cf.language = $1", else: ""}
       GROUP BY cf.repo_name, cf.language
       ORDER BY file_count DESC

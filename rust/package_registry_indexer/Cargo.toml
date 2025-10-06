@@ -85,7 +85,7 @@ tar = { version = "0.4", optional = true }
 # prompt-engine = { path = "../prompt-engine" }  # Commented out - circular dependency
 
 # Code analysis integration - for tree-sitter snippet extraction
-universal-parser = { path = "../universal_parser" }  # For code snippet extraction
+source-code-parser = { path = "../source-code-parser" }  # For code snippet extraction
 
 [dev-dependencies]
 criterion = { workspace = true, features = ["html_reports"] }
@@ -110,7 +110,7 @@ npm-collector = ["dep:reqwest", "dep:flate2", "dep:tar"]
 hex-collector = ["dep:reqwest", "dep:flate2", "dep:tar"]
 collectors = ["cargo-collector", "npm-collector", "hex-collector"]
 # Tree-sitter extraction using universal-parser framework
-# tree-sitter-extraction = ["dep:universal-parser"]  # Commented out - dependency not available
+# tree-sitter-extraction = ["dep:source-code-parser"]  # Commented out - dependency not available
 
 
 

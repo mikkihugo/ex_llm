@@ -9,7 +9,7 @@ use regex::Regex;
 use chrono::{DateTime, Utc};
 
 // Use universal parser framework - it handles all language parsers internally
-use universal_parser::{
+use source_code_parser::{
     UniversalParser, 
     UniversalParserFrameworkConfig,
     dependencies::UniversalDependencies,
@@ -436,7 +436,7 @@ pub struct SemanticSearchEngine {
     architecture_analyzer: ArchitectureAnalyzer,
     security_analyzer: SecurityAnalyzer,
     code_documents: HashMap<String, CodeDocument>,
-    universal_parser: UniversalParser,
+    source_code_parser: UniversalParser,
 }
 
 /// Trait for code parsers
@@ -584,7 +584,7 @@ impl SemanticSearchEngine {
     pub fn new() -> Result<Self> {
         // Initialize universal parser framework with all language plugins
         let config = UniversalParserFrameworkConfig::default();
-        let universal_parser = UniversalParser::new_with_config(config)?;
+        let source_code_parser = UniversalParser::new_with_config(config)?;
         
         Ok(Self {
             fact_system_interface: FactSystemInterface::new(),
@@ -593,7 +593,7 @@ impl SemanticSearchEngine {
             architecture_analyzer: ArchitectureAnalyzer::new(),
             security_analyzer: SecurityAnalyzer::new(),
             code_documents: HashMap::new(),
-            universal_parser,
+            source_code_parser,
         })
     }
     
@@ -623,7 +623,7 @@ impl SemanticSearchEngine {
     /// Parse code using universal parser framework
     pub async fn parse_code(&self, content: &str, file_path: &str, language: ProgrammingLanguage) -> Result<AstNode> {
         // Use universal parser framework to parse code
-        let analysis_result = self.universal_parser.analyze(content, file_path, language).await?;
+        let analysis_result = self.source_code_parser.analyze(content, file_path, language).await?;
         
         // Convert universal analysis result to our AstNode format
         Ok(self.convert_universal_analysis_result(analysis_result, language))

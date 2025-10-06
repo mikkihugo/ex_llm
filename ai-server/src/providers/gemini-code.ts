@@ -41,6 +41,11 @@ export interface GeminiProvider extends BaseGeminiProvider {
  * Create Gemini provider with model listing
  */
 export function createGeminiProvider(options?: GeminiProviderOptions): GeminiProvider {
+  // Set default GCP project if not in env (not a secret, just project ID)
+  if (!process.env.GOOGLE_CLOUD_PROJECT) {
+    process.env.GOOGLE_CLOUD_PROJECT = 'gemini-code-473918';
+  }
+
   const baseProvider = baseCreateGeminiProvider(options);
 
   // Extend with listModels()

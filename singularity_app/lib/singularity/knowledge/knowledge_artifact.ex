@@ -15,7 +15,7 @@ defmodule Singularity.Knowledge.KnowledgeArtifact do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "knowledge_artifacts" do
+  schema "curated_knowledge_artifacts" do
     field :artifact_type, :string
     field :artifact_id, :string
     field :version, :string, default: "1.0.0"

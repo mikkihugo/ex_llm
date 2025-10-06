@@ -82,7 +82,7 @@ defmodule Singularity.CodeModelTrainer do
       content,
       language,
       repo_name
-    FROM code_files
+    FROM codebase_chunks
     WHERE LENGTH(content) BETWEEN 100 AND 2000
     #{if repo_filter, do: "AND repo_name = ANY($1)", else: ""}
     ORDER BY RANDOM()

@@ -4,8 +4,8 @@
 //! Extracts: public API, functions, classes, interfaces, types, examples
 
 use super::{CollectionStats, DataSourcePriority, PackageCollector};
-use crate::extractor::{UniversalParserExtractor, create_extractor};
-use crate::storage::{FactData, FactSnippet};
+use crate::extractor::{SourceCodeExtractor, create_extractor};
+use crate::storage::{PackageMetadata, CodeSnippet};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -30,8 +30,8 @@ pub struct NpmCollector {
   #[cfg(feature = "npm-collector")]
   advisory_collector: NpmAdvisoryCollector,
 
-  /// Code extractor (delegates to universal_parser)
-  extractor: UniversalParserExtractor,
+  /// Code extractor (delegates to source code parser)
+  extractor: SourceCodeExtractor,
 }
 
 /// NPM registry package metadata
@@ -225,7 +225,7 @@ impl PackageCollector for NpmCollector {
     "npm"
   }
 
-  async fn collect(&self, package: &str, version: &str) -> Result<FactData> {
+  async fn collect(&self, package: &str, version: &str) -> Result<PackageMetadata> {
     let start_time = std::time::Instant::now();
 
     log::info!("Collecting npm package: {} v{}", package, version);
@@ -292,7 +292,7 @@ impl PackageCollector for NpmCollector {
       duration
     );
 
-    Ok(FactData {
+    Ok(PackageMetadata {
       tool: package.to_string(),
       version: version.to_string(),
       ecosystem: "npm".to_string(),

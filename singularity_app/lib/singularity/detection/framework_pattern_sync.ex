@@ -29,7 +29,7 @@ defmodule Singularity.FrameworkPatternSync do
   # 5 minutes
   @refresh_interval 5 * 60 * 1000
   @nats_subject "knowledge.facts.framework_patterns"
-  @json_export_path "rust/tool_doc_index/framework_patterns.json"
+  @json_export_path "rust/package_registry_indexer/framework_patterns.json"
 
   ## Client API
 

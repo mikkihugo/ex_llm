@@ -110,7 +110,7 @@ defmodule Singularity.TemplateStore do
         quality,
         usage,
         1 - (embedding <=> $1::vector) AS similarity
-      FROM templates
+      FROM code_generation_templates
       WHERE 1=1
         #{if language, do: "AND metadata->>'language' = $2", else: ""}
         #{if type, do: "AND type = $3", else: ""}
@@ -183,7 +183,7 @@ defmodule Singularity.TemplateStore do
     success = Keyword.get(opts, :success, true)
 
     sql = """
-    UPDATE templates
+    UPDATE code_generation_templates
     SET
       usage = jsonb_set(
         jsonb_set(

@@ -25,7 +25,7 @@ describe('Real Provider Streaming', () => {
   let registry: ReturnType<typeof createProviderRegistry>;
   let availableModels: string[] = [];
 
-  beforeAll(() => {
+  beforeAll(async () => {
     const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
 
     registry = createProviderRegistry({
@@ -36,7 +36,7 @@ describe('Real Provider Streaming', () => {
     });
 
     // Build model catalog to know what's available
-    const models = buildModelCatalog({
+    const models = await buildModelCatalog({
       'gemini-code': geminiCode as unknown as ProviderWithModels,
       'claude-code': claudeCode as unknown as ProviderWithModels,
       'openai-codex': codex as unknown as ProviderWithMetadata,

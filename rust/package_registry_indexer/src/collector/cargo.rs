@@ -5,7 +5,7 @@
 
 use super::{CollectionStats, DataSourcePriority, PackageCollector};
 use crate::storage::{
-  CodeIndex, Export, FactData, FactSnippet, IndexedFile, NamingConventions,
+  CodeIndex, Export, PackageMetadata, CodeSnippet, IndexedFile, NamingConventions,
 };
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
@@ -290,7 +290,7 @@ impl CargoCollector {
   async fn extract_examples(
     &self,
     crate_dir: &Path,
-  ) -> Result<Vec<FactSnippet>> {
+  ) -> Result<Vec<CodeSnippet>> {
     let examples_dir = crate_dir.join("examples");
     let mut snippets = Vec::new();
 
@@ -311,7 +311,7 @@ impl CargoCollector {
           .unwrap_or("example")
           .to_string();
 
-        snippets.push(FactSnippet {
+        snippets.push(CodeSnippet {
           title: format!("Example: {}", title),
           code: content.clone(),
           language: "rust".to_string(),
@@ -341,7 +341,7 @@ impl PackageCollector for CargoCollector {
     "cargo"
   }
 
-  async fn collect(&self, package: &str, version: &str) -> Result<FactData> {
+  async fn collect(&self, package: &str, version: &str) -> Result<PackageMetadata> {
     let start_time = std::time::Instant::now();
 
     log::info!("Collecting cargo package: {} v{}", package, version);
@@ -410,7 +410,7 @@ impl PackageCollector for CargoCollector {
       duration
     );
 
-    Ok(FactData {
+    Ok(PackageMetadata {
       tool: package.to_string(),
       version: version.to_string(),
       ecosystem: "cargo".to_string(),

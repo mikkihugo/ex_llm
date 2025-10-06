@@ -183,7 +183,7 @@ defmodule Singularity.ArchitectureAgent do
     rust_engines = %{
       analysis_suite: initialize_analysis_suite(),
       linting_engine: initialize_linting_engine(),
-      universal_parser: initialize_universal_parser(),
+      source_code_parser: initialize_source_code_parser(),
       prompt_engine: initialize_prompt_engine()
     }
 
@@ -211,12 +211,12 @@ defmodule Singularity.ArchitectureAgent do
     }
   end
 
-  defp initialize_universal_parser do
+  defp initialize_source_code_parser do
     # Initialize the Rust universal-parser
     %{
-      language_parsers: :universal_parser_languages,
-      dependency_analyzer: :universal_parser_deps,
-      performance_optimizer: :universal_parser_perf
+      language_parsers: :source_code_parser_languages,
+      dependency_analyzer: :source_code_parser_deps,
+      performance_optimizer: :source_code_parser_perf
     }
   end
 

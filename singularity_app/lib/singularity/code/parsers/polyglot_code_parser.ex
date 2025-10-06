@@ -259,12 +259,12 @@ defmodule Singularity.PolyglotCodeParser do
       )
 
     # Create universal parser tables if they don't exist
-    create_universal_parser_tables(conn)
+    create_source_code_parser_tables(conn)
 
     {:ok, conn}
   end
 
-  defp create_universal_parser_tables(conn) do
+  defp create_source_code_parser_tables(conn) do
     # Create tables for storing universal parser analysis results
 
     # Universal analysis results table
@@ -389,7 +389,7 @@ defmodule Singularity.PolyglotCodeParser do
 
   defp initialize_analysis_cache do
     # Initialize analysis cache for performance
-    {:ok, cache} = Cachex.start_link(name: :universal_parser_cache)
+    {:ok, cache} = Cachex.start_link(name: :source_code_parser_cache)
     {:ok, cache}
   end
 
@@ -793,7 +793,7 @@ defmodule Singularity.PolyglotCodeParser do
   defp get_rust_parser_metadata(_rust_parser) do
     # Get parser metadata from Rust universal parser
     %{
-      universal_parser_version: "1.0.0",
+      source_code_parser_version: "1.0.0",
       supported_languages: [
         "elixir",
         "erlang",

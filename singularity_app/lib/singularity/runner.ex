@@ -341,7 +341,7 @@ defmodule Singularity.Runner do
       },
       status: "completed",
       metadata: %{
-        algorithm: "universal_parser",
+        algorithm: "source_code_parser",
         version: "1.0.0"
       }
     }

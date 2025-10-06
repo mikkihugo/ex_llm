@@ -116,5 +116,9 @@ pub use storage::*;
 // Main analyzer that orchestrates everything
 pub mod analyzer;
 
+// NIF bindings for Elixir integration (optional - only when building as NIF)
+#[cfg(feature = "nif")]
+pub mod nif_bindings;
+
 // Re-export the main analyzer
 pub use analyzer::*;

@@ -5,7 +5,7 @@
 //! - User request
 //! - Detected technologies
 
-use crate::detection::{DetectionResult, FrameworkInfo};
+use tech_detector::{DetectionResults, FrameworkDetection};
 use crate::template::{RegistryTemplate, Template, TemplateLoader};
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
