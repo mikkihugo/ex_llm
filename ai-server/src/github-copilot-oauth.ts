@@ -235,6 +235,7 @@ export async function getCopilotAccessToken(): Promise<string | null> {
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[copilot-oauth] Failed to exchange token: ${response.status} - ${errorText.substring(0, 200)}`);
     throw new Error(`Failed to get Copilot token: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
@@ -243,7 +244,9 @@ export async function getCopilotAccessToken(): Promise<string | null> {
   // Update token store with new Copilot API token
   tokenStore.copilotToken = tokenData.token;
   tokenStore.expiresAt = tokenData.expires_at * 1000;
+  saveTokenStore();
 
+  console.log('[copilot-oauth] Successfully obtained and saved Copilot API token');
   return tokenData.token;
 }
 

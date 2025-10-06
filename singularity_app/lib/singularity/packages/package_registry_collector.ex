@@ -1,9 +1,9 @@
 defmodule Singularity.PackageRegistryCollector do
   @moduledoc """
-  Bridge between Rust tool_doc_index collectors and Elixir PackageRegistryKnowledge
+  Bridge between Rust package_registry_indexer collectors and Elixir PackageRegistryKnowledge
 
   This module calls Rust collectors to download and analyze packages,
-  then stores the results in PostgreSQL tool_knowledge tables.
+  then stores the results in PostgreSQL package registry tables.
 
   ## Architecture:
 
@@ -45,18 +45,18 @@ defmodule Singularity.PackageRegistryCollector do
   require Logger
   alias Singularity.PackageRegistryKnowledge
 
-  # Path to Rust tool_doc_index binary
-  @tool_doc_index_bin Path.join([
-                        __DIR__,
-                        "..",
-                        "..",
-                        "..",
-                        "rust",
-                        "tool_doc_index",
-                        "target",
-                        "release",
-                        "tool_doc_index"
-                      ])
+  # Path to Rust package_registry_indexer binary
+  @package_registry_indexer_bin Path.join([
+                                  __DIR__,
+                                  "..",
+                                  "..",
+                                  "..",
+                                  "rust",
+                                  "package_registry_indexer",
+                                  "target",
+                                  "release",
+                                  "package-registry-indexer"
+                                ])
 
   @doc """
   Collect a package from a registry and store in PostgreSQL
@@ -149,8 +149,8 @@ defmodule Singularity.PackageRegistryCollector do
   ## Private Functions
 
   defp call_rust_collector(package_name, version, ecosystem) do
-    # Call Rust tool_doc_index CLI
-    # Format: tool_doc_index collect --tool tokio --version 1.35.0 --ecosystem cargo --format json
+    # Call Rust package_registry_indexer CLI
+    # Format: package-registry-indexer collect --tool tokio --version 1.35.0 --ecosystem cargo --format json
     args = [
       "collect",
       "--tool",
@@ -163,7 +163,7 @@ defmodule Singularity.PackageRegistryCollector do
       "json"
     ]
 
-    case System.cmd(@tool_doc_index_bin, args, stderr_to_stdout: true) do
+    case System.cmd(@package_registry_indexer_bin, args, stderr_to_stdout: true) do
       {output, 0} ->
         # Parse JSON output
         case Jason.decode(output) do

@@ -64,7 +64,7 @@ defmodule Singularity.Repo.Migrations.CreateFrameworkPatterns do
 
     # NOTE: Initial patterns are loaded from JSON templates
     # See migration: 20251005000000_load_framework_patterns_from_json.exs
-    # Templates location: rust/tool_doc_index/templates/
+    # Templates location: rust/package_registry_indexer/templates/
     #   - framework/*.json (React, Next.js, Django, etc.)
     #   - language/*.json (Rust, Python, TypeScript, etc.)
     #   - cloud/*.json (AWS, GCP, Azure)

@@ -42,29 +42,14 @@ const FREE_TIER_MODELS = new Set(['gpt-4.1', 'gpt-5-mini', 'grok-code-fast-1']);
  */
 async function fetchCopilotModels(tokenFn?: () => Promise<string | null>): Promise<any[]> {
   try {
-    // Get GitHub token
-    const githubToken = tokenFn ? await tokenFn() : process.env.GITHUB_TOKEN || process.env.COPILOT_TOKEN;
-    if (!githubToken) {
-      console.warn('[Copilot] No GitHub token found, returning empty model list');
+    // Get Copilot API token (already exchanged from GitHub token by getCopilotAccessToken())
+    const copilotToken = tokenFn ? await tokenFn() : null;
+    if (!copilotToken) {
+      console.warn('[Copilot] No Copilot API token found, returning empty model list');
       return [];
     }
 
-    // Get Copilot API token
-    const tokenResponse = await fetch('https://api.github.com/copilot_internal/v2/token', {
-      headers: {
-        Authorization: `Bearer ${githubToken}`,
-        'editor-version': 'vscode/1.99.3',
-      },
-    });
-
-    if (!tokenResponse.ok) {
-      console.warn('[Copilot] Failed to get Copilot token:', tokenResponse.status);
-      return [];
-    }
-
-    const { token: copilotToken } = (await tokenResponse.json()) as { token: string };
-
-    // Fetch models
+    // Fetch models from Copilot API
     const modelsResponse = await fetch('https://api.githubcopilot.com/models', {
       headers: {
         Authorization: `Bearer ${copilotToken}`,

@@ -4,7 +4,7 @@ defmodule Singularity.Repo.Migrations.LoadFrameworkPatternsFromJson do
 
   @templates_dir Path.join([
     __DIR__, "..", "..", "..", "..",
-    "rust", "tool_doc_index", "templates"
+    "rust", "package_registry_indexer", "templates"
   ])
 
   def up do
@@ -20,7 +20,7 @@ defmodule Singularity.Repo.Migrations.LoadFrameworkPatternsFromJson do
 
   defp load_patterns_from_json do
     Logger.info("Loading technology patterns from JSON templates...")
-    Logger.info("  Source: rust/tool_doc_index/templates/")
+    Logger.info("  Source: rust/package_registry_indexer/templates/")
     Logger.info("  Categories: framework, language, cloud, monitoring, security, ai, messaging")
 
     templates = find_all_templates()

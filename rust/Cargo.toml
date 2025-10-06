@@ -4,7 +4,7 @@ members = [
     "embedding_engine",
     "linting_engine",
     "prompt_engine",
-    "tool_doc_index",
+    "package_registry_indexer",
     "universal_parser",
     "mozilla-code-analysis"
 ]

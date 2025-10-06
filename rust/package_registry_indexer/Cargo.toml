@@ -1,23 +1,23 @@
 [package]
-name = "tool-doc-index"
+name = "package-registry-indexer"
 version = "1.1.0"
 authors = ["mikkihugo"]
 edition = "2021"
-description = "Tool Documentation Index - Semantic search and indexing for package and tool documentation"
+description = "Package Registry Indexer - Semantic search and indexing for npm, cargo, hex, and pypi packages"
 homepage = "https://github.com/mikkihugo/claude-code-zen"
 repository = "https://github.com/mikkihugo/claude-code-zen"
 license = "MIT"
 readme = "README.md"
-keywords = ["tools", "documentation", "search", "semantic", "index"]
+keywords = ["packages", "registry", "search", "semantic", "index"]
 categories = ["algorithms", "development-tools", "command-line-utilities"]
 
 [lib]
-name = "tool_doc_index"
+name = "package_registry_indexer"
 path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "tool-doc-index"
+name = "package-registry-indexer"
 path = "src/bin/main.rs"
 
 [dependencies]

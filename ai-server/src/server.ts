@@ -83,9 +83,27 @@ async function refreshModelCatalog() {
     'github-models': githubModels as unknown as ProviderWithMetadata,
   });
 
+  // Post-process: Apply correct cost tiers to Copilot models
+  const FREE_COPILOT_MODELS = new Set(['gpt-4.1', 'gpt-5-mini', 'grok-code-fast-1']);
+  MODELS = MODELS.map(m => {
+    if (m.provider === 'github-copilot') {
+      return {
+        ...m,
+        cost: FREE_COPILOT_MODELS.has(m.model) ? ('free' as const) : ('limited' as const),
+        subscription: 'GitHub Copilot',
+      };
+    }
+    return m;
+  });
+
   console.log(`${blue}✨${reset} AI SDK Provider Registry updated`);
   console.log(`   Providers: ${Object.keys(MODELS.reduce((acc: any, m: any) => ({ ...acc, [m.provider]: true }), {})).join(', ')}`);
   console.log(`   Models: ${MODELS.length} total`);
+
+  const copilotModels = MODELS.filter(m => m.provider === 'github-copilot');
+  if (copilotModels.length > 0) {
+    console.log(`   Copilot: ${copilotModels.length} models (${copilotModels.filter(m => m.cost === 'free').length} free, ${copilotModels.filter(m => m.cost === 'limited').length} limited)`);
+  }
 
   // Convert MODELS to ModelCatalogEntry format
   DYNAMIC_MODEL_CATALOG = MODELS.map(m => ({
@@ -96,6 +114,8 @@ async function refreshModelCatalog() {
   description: m.description,
   ownedBy: m.provider,
   contextWindow: m.contextWindow,
+  cost: m.cost,
+  subscription: m.subscription,
   capabilities: {
     completion: m.capabilities.completion,
     streaming: m.capabilities.streaming,

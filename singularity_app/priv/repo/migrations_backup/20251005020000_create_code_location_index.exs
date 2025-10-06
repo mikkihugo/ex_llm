@@ -10,7 +10,7 @@ defmodule Singularity.Repo.Migrations.CreateCodeLocationIndex do
       add :file_hash, :text
       add :lines_of_code, :integer
 
-      # JSONB for flexible, dynamic data from tool_doc_index
+      # JSONB for flexible, dynamic data from package_registry_indexer
       add :metadata, :jsonb, default: "{}"  # Exports, imports, summary, etc.
       add :frameworks, :jsonb, default: "{}"  # From TechnologyDetector
       add :microservice, :jsonb  # Type, subjects, routes, etc.
