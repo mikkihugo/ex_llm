@@ -9,15 +9,13 @@ defmodule Singularity.Tools.CodeAnalysis do
   - ConsolidationEngine - Code consolidation
   """
 
-  alias Singularity.Tools.{Registry, Tool}
+  alias Singularity.Tools.Tool
   alias Singularity.Code.Quality.RefactoringAnalyzer
   alias Singularity.Code.Analyzers.{RustToolingAnalyzer, TodoDetector, ConsolidationEngine}
 
-  @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http, :codex, :cursor, :copilot]
-
   @doc "Register code analysis tools with the shared registry."
   def register(provider) do
-    Catalog.add_tools(provider, [
+    Singularity.Tools.Catalog.add_tools(provider, [
       code_refactor_tool(),
       code_complexity_tool(),
       code_todos_tool(),
@@ -431,7 +429,7 @@ defmodule Singularity.Tools.CodeAnalysis do
     end
   end
 
-  defp run_rust_analysis(path, analysis_type) do
+  defp run_rust_analysis(_path, analysis_type) do
     # Use existing RustToolingAnalyzer
     results = %{}
 
@@ -468,7 +466,7 @@ defmodule Singularity.Tools.CodeAnalysis do
     results
   end
 
-  defp run_elixir_analysis(path, analysis_type) do
+  defp run_elixir_analysis(_path, analysis_type) do
     # Elixir-specific analysis
     %{
       language: "elixir",
@@ -478,7 +476,7 @@ defmodule Singularity.Tools.CodeAnalysis do
     }
   end
 
-  defp run_typescript_analysis(path, analysis_type) do
+  defp run_typescript_analysis(_path, analysis_type) do
     # TypeScript-specific analysis
     %{
       language: "typescript",
@@ -488,7 +486,7 @@ defmodule Singularity.Tools.CodeAnalysis do
     }
   end
 
-  defp run_python_analysis(path, analysis_type) do
+  defp run_python_analysis(_path, analysis_type) do
     # Python-specific analysis
     %{
       language: "python",
@@ -498,7 +496,7 @@ defmodule Singularity.Tools.CodeAnalysis do
     }
   end
 
-  defp run_go_analysis(path, analysis_type) do
+  defp run_go_analysis(_path, analysis_type) do
     # Go-specific analysis
     %{
       language: "go",
@@ -508,7 +506,7 @@ defmodule Singularity.Tools.CodeAnalysis do
     }
   end
 
-  defp run_java_analysis(path, analysis_type) do
+  defp run_java_analysis(_path, analysis_type) do
     # Java-specific analysis
     %{
       language: "java",
@@ -518,7 +516,7 @@ defmodule Singularity.Tools.CodeAnalysis do
     }
   end
 
-  defp run_generic_analysis(path, analysis_type) do
+  defp run_generic_analysis(_path, analysis_type) do
     # Generic analysis for unsupported languages
     %{
       language: "generic",

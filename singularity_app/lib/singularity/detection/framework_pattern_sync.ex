@@ -180,7 +180,7 @@ defmodule Singularity.FrameworkPatternSync do
 
   defp publish_to_nats(pattern) do
     # Publish to NATS for SPARC fact system
-    message = %{
+    _message = %{
       type: "framework_pattern",
       framework: pattern.framework_name,
       data: pattern,

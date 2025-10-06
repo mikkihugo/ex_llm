@@ -31,7 +31,7 @@ defmodule Singularity.TechnologyAgent do
         {:ok, snapshot}
 
       {:error, reason} when reason in [:rust_unavailable, :not_found] ->
-        Logger.warn("Rust detector unavailable, using Elixir fallback")
+        Logger.warninging("Rust detector unavailable, using Elixir fallback")
         detect_technologies_elixir(codebase_path, opts)
 
       {:error, reason} ->
@@ -170,7 +170,7 @@ defmodule Singularity.TechnologyAgent do
           :ok
 
         {:error, changeset} ->
-          Logger.warn("Failed to persist snapshot to database",
+          Logger.warninging("Failed to persist snapshot to database",
             codebase_id: codebase_id,
             errors: inspect(changeset.errors)
           )

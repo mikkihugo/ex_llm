@@ -133,8 +133,8 @@ defmodule Singularity.NatsClient do
   end
 
   @impl true
-  def handle_call({:publish, subject, data, _opts}, _from, %{connection: nil} = state) do
-    Logger.warning("NATS not connected, cannot publish to #{subject}")
+  def handle_call({:publish, subject, _data, _opts}, _from, %{connection: nil} = state) do
+    Logger.warninging("NATS not connected, cannot publish to #{subject}")
     {:reply, {:error, :not_connected}, state}
   end
 
@@ -161,8 +161,8 @@ defmodule Singularity.NatsClient do
   end
 
   @impl true
-  def handle_call({:request, subject, data, timeout, _headers}, _from, %{connection: nil} = state) do
-    Logger.warning("NATS not connected, cannot request from #{subject}")
+  def handle_call({:request, subject, _data, _timeout, _headers}, _from, %{connection: nil} = state) do
+    Logger.warninging("NATS not connected, cannot request from #{subject}")
     {:reply, {:error, :not_connected}, state}
   end
 
@@ -264,7 +264,7 @@ defmodule Singularity.NatsClient do
   end
 
   @impl true
-  def handle_info({:nats_message, subject, data, reply, headers}, state) do
+  def handle_info({:nats_message, subject, _data, _reply, _headers}, state) do
     # Handle incoming NATS messages
     Logger.debug("Received NATS message on #{subject}")
 
@@ -284,23 +284,5 @@ defmodule Singularity.NatsClient do
 
   defp generate_subscription_id do
     "sub_" <> (:crypto.strong_rand_bytes(8) |> Base.encode64(padding: false))
-  end
-
-  defp simulate_response(subject, data) do
-    case String.contains?(subject, "ai.provider") do
-      true ->
-        %{
-          data: "Simulated AI response for: #{inspect(data)}",
-          subject: subject,
-          headers: %{}
-        }
-
-      false ->
-        %{
-          data: "Simulated response for: #{inspect(data)}",
-          subject: subject,
-          headers: %{}
-        }
-    end
   end
 end

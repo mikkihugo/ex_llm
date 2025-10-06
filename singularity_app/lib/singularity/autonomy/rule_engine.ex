@@ -17,7 +17,7 @@ defmodule Singularity.Autonomy.RuleEngine do
   require Logger
 
   alias Singularity.{Repo, Autonomy}
-  alias Autonomy.{Rule, RuleExecution, RuleLoader, RuleEngineCore}
+  alias Autonomy.{RuleExecution, RuleLoader, RuleEngineCore}
 
   ## Client API
 
@@ -136,7 +136,7 @@ defmodule Singularity.Autonomy.RuleEngine do
     |> Repo.insert()
   end
 
-  defp update_rule_stats(rule_id, result, execution_time) do
+  defp update_rule_stats(rule_id, _result, execution_time) do
     # Update average execution time and success rate
     # Using Postgres aggregates for accuracy
     Repo.query!(

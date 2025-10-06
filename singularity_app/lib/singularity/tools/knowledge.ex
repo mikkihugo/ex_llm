@@ -9,17 +9,15 @@ defmodule Singularity.Tools.Knowledge do
   - CodeDeduplicator - Duplicate detection
   """
 
-  alias Singularity.Tools.{Registry, Tool}
+  alias Singularity.Tools.Tool
   alias Singularity.Search.PackageRegistryKnowledge
   alias Singularity.Code.Patterns.PatternMiner
   alias Singularity.Detection.FrameworkPatternStore
   alias Singularity.Code.Quality.CodeDeduplicator
 
-  @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http, :codex, :cursor, :copilot]
-
   @doc "Register knowledge tools with the shared registry."
   def register(provider) do
-    Catalog.add_tools(provider, [
+    Singularity.Tools.Catalog.add_tools(provider, [
       knowledge_packages_tool(),
       knowledge_patterns_tool(),
       knowledge_frameworks_tool(),

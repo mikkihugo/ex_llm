@@ -354,12 +354,12 @@ defmodule Singularity.ServiceConfigSync do
     end
   end
 
-  defp check_format_consistency(config, errors) do
+  defp check_format_consistency(_config, errors) do
     # Check for format consistency
     errors
   end
 
-  defp check_environment_values(config, errors) do
+  defp check_environment_values(_config, errors) do
     # Check for environment-specific values
     errors
   end
@@ -413,7 +413,7 @@ defmodule Singularity.ServiceConfigSync do
     {:ok, updated_config}
   end
 
-  defp validate_updated_config(updated_config) do
+  defp validate_updated_config(_updated_config) do
     # Validate updated configuration
     validation_result = %{
       status: :valid,
@@ -423,7 +423,7 @@ defmodule Singularity.ServiceConfigSync do
     {:ok, validation_result}
   end
 
-  defp save_service_config(service_name, updated_config) do
+  defp save_service_config(service_name, _updated_config) do
     # Save service configuration
     save_result = %{
       service_name: service_name,
@@ -453,12 +453,12 @@ defmodule Singularity.ServiceConfigSync do
     }
   end
 
-  defp adapt_config_for_environment(config_data, environment) do
+  defp adapt_config_for_environment(config_data, _environment) do
     # Adapt configuration for specific environment
     config_data
   end
 
-  defp validate_environment_configs(env_configs) do
+  defp validate_environment_configs(_env_configs) do
     # Validate environment configurations
     validation_result = %{
       status: :valid,

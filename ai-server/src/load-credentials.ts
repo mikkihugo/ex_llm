@@ -150,16 +150,32 @@ export function loadCredentialsFromEnv(): CredentialStats {
     }
   }
 
-  // GitHub token is already in environment, just verify
-  if (process.env.GH_TOKEN || process.env.GITHUB_TOKEN) {
+  // GitHub token - check env or get from gh CLI
+  if (!process.env.GH_TOKEN && !process.env.GITHUB_TOKEN) {
+    try {
+      // Try to get token from gh CLI if logged in
+      const { execSync } = require('child_process');
+      const ghToken = execSync('gh auth token', { encoding: 'utf8' }).trim();
+      if (ghToken && ghToken.startsWith('gho_')) {
+        process.env.GITHUB_TOKEN = ghToken;
+        stats.github = true;
+      }
+    } catch (error) {
+      // gh not installed or not logged in, that's ok
+    }
+  } else {
     stats.github = true;
   }
 
   // Load GitHub Copilot tokens
-  // Priority: GITHUB_COPILOT_TOKEN env var > copilot-api token file
+  // Priority:
+  // 1. GITHUB_COPILOT_TOKEN env var (explicit Copilot token)
+  // 2. copilot-api token file (from OAuth device flow - preferred for Copilot)
+  // 3. GITHUB_TOKEN from env or gh CLI (fallback, may not have Copilot access)
+
   let copilotToken = process.env.GITHUB_COPILOT_TOKEN;
 
-  // Try loading from copilot-api token file
+  // Try loading from copilot-api token file (OAuth device flow)
   if (!copilotToken) {
     try {
       const copilotApiTokenFile = join(homedir(), '.local', 'share', 'copilot-api', 'github_token');
@@ -168,6 +184,17 @@ export function loadCredentialsFromEnv(): CredentialStats {
       }
     } catch (error) {
       // Silently ignore
+    }
+  }
+
+  // Fallback to GITHUB_TOKEN (from env or gh CLI)
+  // NOTE: This may not work for Copilot API if token doesn't have Copilot app access
+  // Better to use Copilot OAuth device flow via /copilot/auth/start endpoint
+  if (!copilotToken) {
+    copilotToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+    if (copilotToken) {
+      // Test if this token works with Copilot API
+      // If not, user should use /copilot/auth/start to get proper token
     }
   }
 
@@ -362,7 +389,7 @@ export function printCredentialStatus(stats: CredentialStats): void {
     // Map implementation ids to the stats or readiness checks
     switch (implId) {
       case 'gemini-code':
-      case 'gemini-code-cli':
+      case 'gemini':
         return stats.geminiADC;
       case 'claude-code':
       case 'claude-code-cli':

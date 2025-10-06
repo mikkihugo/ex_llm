@@ -292,7 +292,7 @@ defmodule Singularity.Integration.Claude do
             System.cmd(cli, args, cli_opts)
           catch
             :timeout ->
-              Logger.warning("Claude CLI inactivity timeout (#{@inactivity_timeout}ms)")
+              Logger.warninging("Claude CLI inactivity timeout (#{@inactivity_timeout}ms)")
               {"", 124}
           end
         else
@@ -307,7 +307,7 @@ defmodule Singularity.Integration.Claude do
         result
 
       nil ->
-        Logger.warning("Claude CLI exceeded hard timeout (#{hard_timeout}ms), killed")
+        Logger.warninging("Claude CLI exceeded hard timeout (#{hard_timeout}ms), killed")
         {"", 124}
 
       {:exit, reason} ->
@@ -495,7 +495,7 @@ defmodule Singularity.Integration.Claude do
         if timeout && now - last_time > timeout do
           require Logger
 
-          Logger.warning(
+          Logger.warninging(
             "Claude CLI inactivity: no output for #{div(timeout, 60_000)} minutes, throwing timeout"
           )
 

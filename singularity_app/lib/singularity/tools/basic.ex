@@ -39,7 +39,7 @@ defmodule Singularity.Tools.Basic do
   end
 
   defp add_tools_for(provider) do
-    Catalog.add_tools(provider, [
+    Singularity.Tools.Catalog.add_tools(provider, [
       fs_list_directory_tool(),
       fs_search_content_tool(),
       fs_write_file_tool(),

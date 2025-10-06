@@ -18,7 +18,7 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
 
   @doc "Register codebase understanding tools with the shared registry."
   def register(provider) do
-    Catalog.add_tools(provider, [
+    Singularity.Tools.Catalog.add_tools(provider, [
       codebase_search_tool(),
       codebase_analyze_tool(),
       codebase_technologies_tool(),

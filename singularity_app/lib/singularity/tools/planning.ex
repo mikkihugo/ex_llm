@@ -9,16 +9,14 @@ defmodule Singularity.Tools.Planning do
   - TemplateSparcOrchestrator - Task orchestration
   """
 
-  alias Singularity.Tools.{Registry, Tool}
+  alias Singularity.Tools.Tool
   alias Singularity.Planning.{SafeWorkPlanner, HTDAGCore}
   alias Singularity.Autonomy.Planner
   alias Singularity.Agents.TemplateSparcOrchestrator
 
-  @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http, :codex, :cursor, :copilot]
-
   @doc "Register planning tools with the shared registry."
   def register(provider) do
-    Catalog.add_tools(provider, [
+    Singularity.Tools.Catalog.add_tools(provider, [
       planning_work_plan_tool(),
       planning_decompose_tool(),
       planning_prioritize_tool(),

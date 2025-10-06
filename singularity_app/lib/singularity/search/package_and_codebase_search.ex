@@ -213,7 +213,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
     )
   end
 
-  defp search_your_code(query, nil, _limit), do: []
+  defp search_your_code(_query, nil, _limit), do: []
 
   defp search_your_code(query, codebase_id, limit) do
     # Use Repo for connection pooling - no manual connection management needed
@@ -222,7 +222,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
       results
     else
       {:error, reason} ->
-        Logger.warning("Failed to search your code: #{inspect(reason)}")
+        Logger.warninging("Failed to search your code: #{inspect(reason)}")
         []
     end
   rescue

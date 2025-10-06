@@ -141,24 +141,6 @@ defmodule Singularity.Agents.CostOptimizedAgent do
   defp try_llm_with_cache(task, rule_result, state, correlation_id) do
     # Check semantic similarity cache
     case check_semantic_cache(task) do
-      {:ok, cached_result} ->
-        # Cache hit - adapt cached response (FREE)
-        Logger.info("LLM cache hit via semantic similarity",
-          agent_id: state.id,
-          correlation_id: correlation_id
-        )
-
-        adapted_code = adapt_cached_response(cached_result, task, state.workspace)
-
-        new_state = %{
-          state
-          | # Cache is like free rule
-            rule_calls_count: state.rule_calls_count + 1,
-            status: :idle
-        }
-
-        {adapted_code, 0.0, :cached, new_state}
-
       :miss ->
         # Cache miss - call LLM (EXPENSIVE)
         call_llm(task, rule_result, state, correlation_id)
@@ -166,7 +148,7 @@ defmodule Singularity.Agents.CostOptimizedAgent do
   end
 
   defp call_llm(task, rule_result, state, correlation_id) do
-    Logger.warning("Calling LLM - will incur cost",
+    Logger.warninging("Calling LLM - will incur cost",
       agent_id: state.id,
       task_id: task.id,
       rule_confidence: rule_result && elem(rule_result, 1).confidence,
@@ -176,18 +158,15 @@ defmodule Singularity.Agents.CostOptimizedAgent do
     # Build prompt with context from rules
     prompt = build_llm_prompt(task, rule_result, state.specialization)
 
-    # Select cheapest model that can do the job
-    {provider, model} = select_optimal_model(task.complexity)
+    # Call LLM with automatic model selection
+    messages = [%{role: "user", content: prompt}]
+    opts = [
+      system_prompt: system_prompt_for_specialization(state.specialization),
+      max_tokens: 4000,
+      temperature: 0.7
+    ]
 
-    # Call LLM
-    case LLM.Provider.call(provider, %{
-           model: model,
-           prompt: prompt,
-           system_prompt: system_prompt_for_specialization(state.specialization),
-           max_tokens: 4000,
-           temperature: 0.7,
-           correlation_id: correlation_id
-         }) do
+    case Singularity.LLM.Service.call(:complex, messages, opts) do
       {:ok, response} ->
         # Write code to workspace
         code_result = write_llm_code_to_workspace(response.content, task, state.workspace)
@@ -272,16 +251,10 @@ defmodule Singularity.Agents.CostOptimizedAgent do
     end
   end
 
-  defp check_semantic_cache(task) do
+  defp check_semantic_cache(_task) do
     # TODO: Use pgvector to find similar past LLM calls
     # For now, simple exact match
     :miss
-  end
-
-  defp adapt_cached_response(cached_result, task, workspace) do
-    # Adapt previous LLM response to new task
-    # (Simple version - could use lightweight LLM for adaptation)
-    cached_result
   end
 
   defp build_llm_prompt(task, rule_result, specialization) do

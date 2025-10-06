@@ -1,0 +1,30 @@
+{
+  "name": "ai-sdk-provider-github-models",
+  "version": "0.1.0",
+  "description": "AI SDK provider for GitHub Models API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "ai-sdk",
+    "github-models",
+    "openai",
+    "llama",
+    "deepseek"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@ai-sdk/openai": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "typescript": "^5.4.5"
+  },
+  "peerDependencies": {
+    "ai": "^4.0.0"
+  }
+}

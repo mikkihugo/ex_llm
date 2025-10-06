@@ -138,7 +138,7 @@ defmodule Singularity.Conversation.GoogleChat do
 
   defp send_card(card_data) do
     if is_nil(@webhook_url) do
-      Logger.warning("Google Chat webhook URL not configured. Set GOOGLE_CHAT_WEBHOOK_URL")
+      Logger.warninging("Google Chat webhook URL not configured. Set GOOGLE_CHAT_WEBHOOK_URL")
       {:error, :no_webhook_url}
     else
       payload = build_payload(card_data)

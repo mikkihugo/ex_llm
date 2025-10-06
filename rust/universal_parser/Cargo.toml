@@ -11,6 +11,7 @@ keywords = ["parser", "universal", "ast", "code-analysis", "sparc", "tree-sitter
 categories = ["development-tools", "parsing"]
 
 [dependencies]
+rustler = "0.34"
 # Universal dependency analysis - pre-release includes security fixes
 tokei = "13.0.0-alpha.9"
 # Optional: Mozilla/RCA metrics library (feature-gated)

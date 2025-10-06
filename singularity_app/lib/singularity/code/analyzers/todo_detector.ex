@@ -6,8 +6,6 @@ defmodule Singularity.CodeAnalysis.TodoDetector do
 
   require Logger
 
-  alias Singularity.Engine.CodebaseStore
-
   @doc "Scan for TODO items in a service"
   def scan_for_todos(service_path) do
     Logger.info("Scanning for TODOs in service: #{service_path}")

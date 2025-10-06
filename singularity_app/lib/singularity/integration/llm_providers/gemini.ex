@@ -114,7 +114,7 @@ defmodule Singularity.Integration.Gemini do
   end
 
   defp extract_text(result) do
-    Logger.warning("Unexpected Gemini response format", result: inspect(result))
+    Logger.warninging("Unexpected Gemini response format", result: inspect(result))
     {:error, {:invalid_response_format, result}}
   end
 end

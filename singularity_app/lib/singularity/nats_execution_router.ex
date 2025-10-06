@@ -93,7 +93,7 @@ defmodule Singularity.NatsExecutionRouter do
 
           # Get template recommendation from TemplateOptimizer
           template =
-            TemplatePerformanceTracker.select_template(%{
+            Singularity.TemplatePerformanceTracker.select_template(%{
               task: request["task"],
               language: request["language"] || "auto",
               complexity: request["complexity"] || "medium"
@@ -159,7 +159,7 @@ defmodule Singularity.NatsExecutionRouter do
       request = Jason.decode!(body)
 
       template =
-        TemplatePerformanceTracker.select_template(%{
+        Singularity.TemplatePerformanceTracker.select_template(%{
           task: request["task_type"],
           language: request["language"],
           complexity: "medium"

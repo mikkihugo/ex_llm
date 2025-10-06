@@ -24,7 +24,7 @@ defmodule Singularity.TemplatePerformanceTracker do
   require Logger
 
   alias Singularity.Planning.{HTDAG, HTDAGCore}
-  alias Singularity.{CodeStore, RAGCodeGenerator}
+  alias Singularity.CodeStore
 
   defstruct [
     :dag,
@@ -349,7 +349,7 @@ defmodule Singularity.TemplatePerformanceTracker do
     |> Enum.sort_by(&elem(&1, 1), :desc)
   end
 
-  defp analyze_quality_trends(dag) do
+  defp analyze_quality_trends(_dag) do
     # Analyze quality over time using HTDAG temporal features
     # This would query the DAG for temporal patterns
     %{
@@ -359,7 +359,7 @@ defmodule Singularity.TemplatePerformanceTracker do
     }
   end
 
-  defp generate_recommendations(state) do
+  defp generate_recommendations(_state) do
     [
       "Consider using 'elixir-nats-consumer' more often - 95% success rate",
       "Template 'rust-microservice' performs poorly on small tasks - consider alternatives",

@@ -229,7 +229,7 @@ defmodule Singularity.SelfImprovingAgent do
   def handle_info({:reload_failed, reason}, state) do
     QueueCrdt.release(state.id, state.pending_fingerprint)
 
-    Logger.warning("Agent improvement failed",
+    Logger.warninging("Agent improvement failed",
       agent_id: state.id,
       reason: inspect(reason)
     )
@@ -275,7 +275,7 @@ defmodule Singularity.SelfImprovingAgent do
     if regression?(baseline, current) do
       QueueCrdt.release(state.id, state.pending_fingerprint)
 
-      Logger.warning("Validation detected regression, rolling back",
+      Logger.warninging("Validation detected regression, rolling back",
         agent_id: state.id,
         version: version,
         baseline: baseline,
@@ -389,7 +389,7 @@ defmodule Singularity.SelfImprovingAgent do
   defp start_improvement_if_valid(state, payload, context, fingerprint) do
     case ensure_valid_payload(payload) do
       {:error, {_tag, msg}} ->
-        Logger.warning("Preflight validation failed",
+        Logger.warninging("Preflight validation failed",
           agent_id: state.id,
           reason: inspect(msg)
         )
@@ -522,7 +522,7 @@ defmodule Singularity.SelfImprovingAgent do
   defp process_validated_entry(state, entry, rest, fingerprint) do
     case ensure_valid_payload(entry.payload) do
       {:error, {_tag, msg}} ->
-        Logger.warning("Preflight validation failed (queued)",
+        Logger.warninging("Preflight validation failed (queued)",
           agent_id: state.id,
           reason: inspect(msg)
         )
@@ -702,7 +702,7 @@ defmodule Singularity.SelfImprovingAgent do
   end
 
   defp rollback_to_previous(%{pending_previous_code: nil} = state, _version) do
-    Logger.warning("No previous code available for rollback", agent_id: state.id)
+    Logger.warninging("No previous code available for rollback", agent_id: state.id)
 
     state
     |> Map.put(:pending_fingerprint, nil)

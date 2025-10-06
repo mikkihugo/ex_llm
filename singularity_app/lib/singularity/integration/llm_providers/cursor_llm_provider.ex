@@ -66,7 +66,7 @@ defmodule Singularity.Integration.LlmProviders.CursorLlmProvider do
   end
 
   defp extract_text(result) do
-    Logger.warning("Unexpected Cursor Agent response format", result: inspect(result))
+    Logger.warninging("Unexpected Cursor Agent response format", result: inspect(result))
     {:error, {:invalid_response_format, result}}
   end
 end

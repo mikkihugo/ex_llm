@@ -13,7 +13,6 @@ defmodule Singularity.Analysis.CoordinationAnalyzer do
   """
 
   require Logger
-  alias Singularity.Analysis.Summary
 
   @type coordination_health :: %{
           coupling_score: float(),

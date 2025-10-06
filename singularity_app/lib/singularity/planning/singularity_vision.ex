@@ -16,7 +16,7 @@ defmodule Singularity.Planning.SingularityVision do
 
   use GenServer
   require Logger
-  alias Singularity.{Planning.AgiPortfolio, CodeStore}
+  alias Singularity.Planning.AgiPortfolio
 
   defstruct [
     # Vision hierarchy
@@ -399,7 +399,7 @@ defmodule Singularity.Planning.SingularityVision do
 
     case highest_priority do
       nil -> {:reply, nil, state}
-      {feature_id, feature} -> {:reply, feature, state}
+      {_feature_id, feature} -> {:reply, feature, state}
     end
   end
 
@@ -453,7 +453,7 @@ defmodule Singularity.Planning.SingularityVision do
     {:reply, progress, state}
   end
 
-  def handle_call({:analyze_chunk, chunk_text, approved_by}, _from, state) do
+  def handle_call({:analyze_chunk, chunk_text, _approved_by}, _from, state) do
     # Use LLM to analyze the chunk and suggest relationships
     # This would integrate with the AI system to understand context
     analysis = analyze_chunk_with_llm(chunk_text, state)
@@ -517,7 +517,7 @@ defmodule Singularity.Planning.SingularityVision do
   end
 
   defp notify_theme_added(theme) do
-    message = """
+    _message = """
     ✅ Strategic Theme Added
 
     Name: #{theme.name}
@@ -532,7 +532,7 @@ defmodule Singularity.Planning.SingularityVision do
   end
 
   defp notify_epic_added(epic, theme) do
-    message = """
+    _message = """
     ✅ Epic Added
 
     Name: #{epic.name}

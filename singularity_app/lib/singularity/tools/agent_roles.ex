@@ -9,7 +9,7 @@ defmodule Singularity.Tools.AgentRoles do
   4. Prevent tool confusion
   """
 
-  alias Singularity.Tools.{Catalog, Tool}
+  alias Singularity.Tools.Catalog
 
   @agent_roles %{
     # Core development roles
@@ -248,7 +248,7 @@ defmodule Singularity.Tools.AgentRoles do
       {:ok, tool_names} ->
         # Register only the tools for this role
         tools = load_tools_by_names(tool_names)
-        Catalog.add_tools(provider, tools)
+        Singularity.Tools.Catalog.add_tools(provider, tools)
         {:ok, length(tools)}
 
       {:error, reason} ->

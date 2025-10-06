@@ -37,7 +37,7 @@ defmodule Singularity.FrameworkDetector do
   Sends request to Rust tool_doc_index service to get framework
   definitions and matches them against patterns.
   """
-  def load_from_tool_doc_index(patterns) do
+  def load_from_tool_doc_index(_patterns) do
     # TODO: Call Rust tool_doc_index via NATS
     # Subject: "tool_doc.match_frameworks"
     # Payload: %{patterns: patterns}

@@ -13,7 +13,7 @@ defmodule Singularity.RefactoringAgent do
     # Get latest codebase analysis
     case Analysis.Summary.fetch_latest() do
       nil ->
-        Logger.warning("No codebase analysis available")
+        Logger.warninging("No codebase analysis available")
         []
 
       analysis ->

@@ -175,9 +175,6 @@ defmodule Singularity.TechnologyTemplateLoader do
     payload = %{identifier: identifier}
 
     case NatsConnector.fetch_template(subject, payload) do
-      {:ok, %{} = template} ->
-        {:ok, persist_template(identifier, template, :nats, opts)}
-
       {:error, reason} ->
         Logger.debug("NATS template fetch failed",
           identifier: inspect(identifier),

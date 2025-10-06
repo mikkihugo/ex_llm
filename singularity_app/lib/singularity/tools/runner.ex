@@ -3,7 +3,7 @@ defmodule Singularity.Tools.Runner do
   Executes registered tools and normalizes responses into ToolResult structs.
   """
 
-  alias Singularity.Tools.{Basic, Default, Registry, Tool, ToolCall, ToolResult}
+  alias Singularity.Tools.{Basic, Default, Tool, ToolCall, ToolResult}
 
   @provider_aliases %{
     "claude_cli" => :claude_cli,
@@ -22,7 +22,7 @@ defmodule Singularity.Tools.Runner do
     Default.ensure_registered()
     Basic.ensure_registered()
 
-    case Catalog.get_tool(provider, call.name) do
+    case Singularity.Tools.Catalog.get_tool(provider, call.name) do
       {:ok, tool} -> do_execute(tool, call, context)
       :error -> {:error, "Tool #{call.name} is not registered for #{provider}"}
     end

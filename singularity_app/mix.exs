@@ -60,7 +60,7 @@ defmodule Singularity.MixProject do
 
   defp deps do
     [
-      # Web & HTTP
+      # Minimal HTTP for health/metrics only
       {:bandit, "~> 1.5"},
       {:plug, "~> 1.15"},
       {:finch, "~> 0.17"},

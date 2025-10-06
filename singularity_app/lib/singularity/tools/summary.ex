@@ -11,11 +11,9 @@ defmodule Singularity.Tools.Summary do
 
   alias Singularity.Tools.{Catalog, Tool}
 
-  @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http, :codex, :cursor, :copilot]
-
   @doc "Register summary tools with the shared registry."
   def register(provider) do
-    Catalog.add_tools(provider, [
+    Singularity.Tools.Catalog.add_tools(provider, [
       tools_summary_tool(),
       codebase_summary_tool(),
       planning_summary_tool(),
@@ -248,9 +246,6 @@ defmodule Singularity.Tools.Summary do
           else
             Map.values(tools_by_category) |> List.flatten()
           end
-
-        _ ->
-          Map.values(tools_by_category) |> List.flatten()
       end
 
     result = %{

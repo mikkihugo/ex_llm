@@ -24,7 +24,7 @@ defmodule Mix.Tasks.Analyze.Rust do
   alias Singularity.CodeAnalysis.RustToolingAnalyzer
 
   @impl Mix.Task
-  def run(args) do
+  def run(_args) do
     # Start the application to ensure database connection
     Mix.Task.run("app.start", [])
 

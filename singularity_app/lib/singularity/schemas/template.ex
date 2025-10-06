@@ -153,7 +153,7 @@ defmodule Singularity.Schemas.Template do
 
     if embedding do
       # Qodo-Embed-1 produces 1536-dimensional vectors
-      case Pgvector.Ecto.Vector.to_list(embedding) do
+      case Pgvector.to_list(embedding) do
         {:ok, list} when length(list) == 1536 ->
           changeset
 

@@ -16,7 +16,6 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
 
   require Logger
 
-  alias Singularity.TemplateOptimizer
   alias Singularity.{TechnologyTemplateLoader, RAGCodeGenerator}
   alias Singularity.LLM.{Provider, SemanticCache}
 
@@ -29,7 +28,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
     language = Keyword.get(opts, :language, "elixir")
 
     # 1. Ask HTDAG for best template based on history
-    {:ok, template_id} = TemplatePerformanceTracker.get_best_template(task.type, language)
+    {:ok, template_id} = Singularity.TemplatePerformanceTracker.get_best_template(task.type, language)
 
     # 2. Load the selected template
     template = TechnologyTemplateLoader.template(template_id)
@@ -67,10 +66,6 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
     cache_key = {task.type, task.description, prompt_data.template_id}
 
     case SemanticCache.get(cache_key) do
-      {:ok, cached_result} ->
-        Logger.info("Cache hit for template #{prompt_data.template_id}")
-        {:ok, cached_result, :cached}
-
       :miss ->
         # Execute LLM call
         provider = select_provider_for_template(prompt_data.template)
@@ -97,7 +92,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
             }
 
             # Record in HTDAG for learning
-            TemplatePerformanceTracker.record_usage(
+            Singularity.TemplatePerformanceTracker.record_usage(
               prompt_data.template_id,
               task,
               metrics
@@ -110,7 +105,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
 
           {:error, reason} ->
             # Record failure
-            TemplatePerformanceTracker.record_usage(
+            Singularity.TemplatePerformanceTracker.record_usage(
               prompt_data.template_id,
               task,
               %{success: false, error: reason}
@@ -277,7 +272,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
   Get prompt optimization suggestions from HTDAG analysis
   """
   def get_optimization_suggestions do
-    {:ok, analysis} = TemplatePerformanceTracker.analyze_performance()
+    {:ok, analysis} = Singularity.TemplatePerformanceTracker.analyze_performance()
 
     suggestions = [
       "Top performing templates: #{inspect(Enum.take(analysis.top_performers, 3))}",

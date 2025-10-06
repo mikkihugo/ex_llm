@@ -63,7 +63,7 @@ defmodule Singularity.PatternIndexer do
             acc + 1
 
           {:error, reason} ->
-            Logger.warning("Failed to index pattern: #{inspect(reason)}")
+            Logger.warninging("Failed to index pattern: #{inspect(reason)}")
             acc
         end
       end)

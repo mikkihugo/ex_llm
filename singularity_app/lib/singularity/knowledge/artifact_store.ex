@@ -528,7 +528,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
     # Generate text for embedding (combines key fields)
     text = generate_embedding_text(artifact)
 
-    case EmbeddingService.embed(text) do
+    case Singularity.FastEmbeddingService.embed(text) do
       {:ok, embedding} ->
         artifact
         |> KnowledgeArtifact.changeset(%{embedding: embedding})

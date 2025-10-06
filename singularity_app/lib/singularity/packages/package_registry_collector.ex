@@ -9,7 +9,21 @@ defmodule Singularity.PackageRegistryCollector do
 
       Rust Collectors              Elixir Bridge                PostgreSQL
       ───────────────              ─────────────                ──────────
-      CargoCollector    ───>       collect_and_store    ───>   tools table
+      CargoCollector    ───>       collect_and_s  defp get_latest_version(package_name, :npm) do
+    url = "https://registry.npmjs.org/#{package_name}/latest"
+
+    case Req.get(url) do
+      {:ok, %{status: 200, body: body}} ->
+        case Jason.decode(body) do
+          {:ok, %{"version" => version}} ->
+            {:ok, version}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:ok, %{status: status}} ->
+        {:error, "HTTP #{status}"} table
       NpmCollector                 FactData → Schema           tool_examples
       HexCollector                                             tool_patterns
 
@@ -30,7 +44,6 @@ defmodule Singularity.PackageRegistryCollector do
 
   require Logger
   alias Singularity.PackageRegistryKnowledge
-  alias Singularity.EmbeddingGenerator
 
   # Path to Rust tool_doc_index binary
   @tool_doc_index_bin Path.join([
@@ -174,11 +187,11 @@ defmodule Singularity.PackageRegistryCollector do
 
     # Generate embeddings
     description = get_in(fact_data, ["description"]) || ""
-    {:ok, description_embedding} = EmbeddingService.generate_embedding(description)
+    {:ok, description_embedding} = Singularity.EmbeddingGenerator.embed(description)
 
     # Build semantic text for embedding (description + keywords + tags)
     semantic_text = build_semantic_text(fact_data)
-    {:ok, semantic_embedding} = EmbeddingService.generate_embedding(semantic_text)
+    {:ok, semantic_embedding} = Singularity.EmbeddingGenerator.embed(semantic_text)
 
     # Upsert tool
     tool_attrs = %{
@@ -230,7 +243,7 @@ defmodule Singularity.PackageRegistryCollector do
     |> Enum.with_index()
     |> Enum.each(fn {snippet, index} ->
       code = get_in(snippet, ["code"]) || ""
-      {:ok, code_embedding} = EmbeddingService.generate_embedding(code)
+      {:ok, code_embedding} = Singularity.EmbeddingGenerator.embed(code)
 
       example_attrs = %{
         tool_id: tool_id,
@@ -253,7 +266,7 @@ defmodule Singularity.PackageRegistryCollector do
     patterns
     |> Enum.each(fn pattern ->
       pattern_text = get_in(pattern, ["description"]) || ""
-      {:ok, pattern_embedding} = EmbeddingService.generate_embedding(pattern_text)
+      {:ok, pattern_embedding} = Singularity.EmbeddingGenerator.embed(pattern_text)
 
       pattern_attrs = %{
         tool_id: tool_id,
@@ -392,7 +405,7 @@ defmodule Singularity.PackageRegistryCollector do
     |> Enum.map(fn {name, version} -> {name, version} end)
   end
 
-  defp extract_mix_dependencies(content) do
+  defp extract_mix_dependencies(_content) do
     # Very simplified - properly parse Elixir AST in production
     []
   end
@@ -401,8 +414,8 @@ defmodule Singularity.PackageRegistryCollector do
     # Call crates.io API for popular crates
     url = "https://crates.io/api/v1/crates?page=1&per_page=#{limit}&sort=downloads"
 
-    case HTTPoison.get(url, [{"User-Agent", "Singularity/1.0"}]) do
-      {:ok, %{status_code: 200, body: body}} ->
+    case Req.get(url, headers: [{"User-Agent", "Singularity/1.0"}]) do
+      {:ok, %{status: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, %{"crates" => crates}} ->
             packages =
@@ -429,8 +442,8 @@ defmodule Singularity.PackageRegistryCollector do
     # npm doesn't have a simple "popular" endpoint, so we'd use npms.io
     url = "https://api.npms.io/v2/search?q=boost-exact:false&size=#{limit}"
 
-    case HTTPoison.get(url) do
-      {:ok, %{status_code: 200, body: body}} ->
+    case Req.get(url) do
+      {:ok, %{status: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, %{"results" => results}} ->
             packages =
@@ -457,8 +470,8 @@ defmodule Singularity.PackageRegistryCollector do
     # Call hex.pm API for popular packages
     url = "https://hex.pm/api/packages?sort=downloads&page=1"
 
-    case HTTPoison.get(url) do
-      {:ok, %{status_code: 200, body: body}} ->
+    case Req.get(url) do
+      {:ok, %{status: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, packages} ->
             popular =
@@ -485,8 +498,8 @@ defmodule Singularity.PackageRegistryCollector do
   defp get_latest_version(package_name, :cargo) do
     url = "https://crates.io/api/v1/crates/#{package_name}"
 
-    case HTTPoison.get(url, [{"User-Agent", "Singularity/1.0"}]) do
-      {:ok, %{status_code: 200, body: body}} ->
+    case Req.get(url, headers: [{"User-Agent", "Singularity/1.0"}]) do
+      {:ok, %{status: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, %{"crate" => %{"newest_version" => version}}} ->
             {:ok, version}
@@ -495,7 +508,7 @@ defmodule Singularity.PackageRegistryCollector do
             {:error, reason}
         end
 
-      {:ok, %{status_code: status}} ->
+      {:ok, %{status: status}} ->
         {:error, "HTTP #{status}"}
 
       {:error, reason} ->
@@ -506,8 +519,8 @@ defmodule Singularity.PackageRegistryCollector do
   defp get_latest_version(package_name, :npm) do
     url = "https://registry.npmjs.org/#{package_name}/latest"
 
-    case HTTPoison.get(url) do
-      {:ok, %{status_code: 200, body: body}} ->
+    case Req.get(url) do
+      {:ok, %{status: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, %{"version" => version}} ->
             {:ok, version}
@@ -516,7 +529,7 @@ defmodule Singularity.PackageRegistryCollector do
             {:error, reason}
         end
 
-      {:ok, %{status_code: status}} ->
+      {:ok, %{status: status}} ->
         {:error, "HTTP #{status}"}
 
       {:error, reason} ->
@@ -527,8 +540,8 @@ defmodule Singularity.PackageRegistryCollector do
   defp get_latest_version(package_name, :hex) do
     url = "https://hex.pm/api/packages/#{package_name}"
 
-    case HTTPoison.get(url) do
-      {:ok, %{status_code: 200, body: body}} ->
+    case Req.get(url) do
+      {:ok, %{status: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, %{"latest_stable_version" => version}} when not is_nil(version) ->
             {:ok, version}

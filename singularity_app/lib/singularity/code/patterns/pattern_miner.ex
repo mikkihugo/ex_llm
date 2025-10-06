@@ -51,7 +51,7 @@ defmodule Singularity.Learning.PatternMiner do
 
     # Try semantic patterns first (indexed from quality templates)
     case search_semantic_patterns(task_description) do
-      {:ok, patterns} when length(patterns) > 0 ->
+      {:ok, [_ | _] = patterns} ->
         Logger.info("Found #{length(patterns)} semantic patterns for task")
         patterns
 
@@ -60,12 +60,12 @@ defmodule Singularity.Learning.PatternMiner do
         Logger.debug("No semantic patterns found, searching codebase metadata")
 
         case search_codebase_patterns(task_description) do
-          {:ok, patterns} when length(patterns) > 0 ->
+          {:ok, [_ | _] = patterns} ->
             Logger.info("Found #{length(patterns)} codebase patterns for task")
             patterns
 
           _ ->
-            Logger.warning("No patterns found for task: #{task_description}")
+            Logger.warninging("No patterns found for task: #{task_description}")
             []
         end
     end
@@ -108,7 +108,7 @@ defmodule Singularity.Learning.PatternMiner do
         """
 
         case Singularity.Repo.query(query, [task_embedding, top_k]) do
-          {:ok, %{rows: rows}} when length(rows) > 0 ->
+          {:ok, %{rows: [_ | _] = rows}} ->
             patterns =
               Enum.map(rows, fn [
                                   name,
@@ -172,7 +172,7 @@ defmodule Singularity.Learning.PatternMiner do
         """
 
         case Singularity.Repo.query(query, [task_embedding, top_k]) do
-          {:ok, %{rows: rows}} when length(rows) > 0 ->
+          {:ok, %{rows: [_ | _] = rows}} ->
             patterns =
               Enum.map(rows, fn [
                                   path,

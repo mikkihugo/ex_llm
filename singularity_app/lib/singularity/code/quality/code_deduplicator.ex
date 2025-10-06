@@ -61,7 +61,7 @@ defmodule Singularity.CodeDeduplicator do
       duplicates = Enum.filter(ranked, fn m -> m.similarity >= threshold end)
 
       if duplicates != [] do
-        Logger.warning("Found #{length(duplicates)} potential duplicates")
+        Logger.warninging("Found #{length(duplicates)} potential duplicates")
       end
 
       {:ok, ranked}

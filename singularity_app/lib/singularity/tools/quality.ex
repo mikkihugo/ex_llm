@@ -4,13 +4,13 @@ defmodule Singularity.Tools.Quality do
   """
 
   alias Singularity.Quality
-  alias Singularity.Tools.{Tool, Registry}
+  alias Singularity.Tools.Tool
 
   @project_root Path.expand("../../..", __DIR__)
 
   @doc "Register quality-related tools with the shared registry."
   def register(provider) do
-    Catalog.add_tools(provider, [sobelow_tool(), mix_audit_tool()])
+    Singularity.Tools.Singularity.Tools.Catalog.add_tools(provider, [sobelow_tool(), mix_audit_tool()])
   end
 
   defp sobelow_tool do

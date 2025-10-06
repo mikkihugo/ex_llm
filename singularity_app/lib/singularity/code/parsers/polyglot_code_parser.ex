@@ -1,4 +1,8 @@
 defmodule Singularity.PolyglotCodeParser do
+  require Logger
+  import Ecto.Query
+  alias Singularity.Repo
+
   @moduledoc """
   Polyglot Code Parser - Parse and analyze code in any language
 
@@ -178,17 +182,16 @@ defmodule Singularity.PolyglotCodeParser do
   ## Private Functions
 
   defp initialize_rust_parser do
-    # Initialize the Rust universal parser framework
-    # This would be a NIF or external process call
-
-    rust_parser = %{
-      universal_dependencies: initialize_universal_dependencies(),
-      parser_registry: initialize_parser_registry(),
-      # The Rust parser has its own in-memory cache - we don't need to duplicate it
-      config: get_default_config()
-    }
-
-    {:ok, rust_parser}
+    # Initialize the Rust universal parser framework via NIF
+    Logger.info("Initializing Rust universal parser framework")
+    case Singularity.UniversalParserNif.init() do
+      {:ok, parser} ->
+        Logger.info("Rust universal parser initialized successfully")
+        {:ok, parser}
+      {:error, reason} ->
+        Logger.error("Failed to initialize Rust universal parser", reason: reason)
+        {:error, reason}
+    end
   end
 
   defp initialize_universal_dependencies do
@@ -390,14 +393,33 @@ defmodule Singularity.PolyglotCodeParser do
     {:ok, cache}
   end
 
-  defp run_file_analysis(file_path, rust_parser, opts) do
-    # Call Rust universal parser to analyze file
-    # This would be a NIF call or external process
+  defp run_file_analysis(file_path, rust_parser, _opts) do
+    # Call Rust universal parser to analyze file via NIF
+    Logger.info("Analyzing file with Rust universal parser", file_path: file_path)
 
-    # For now, simulate the result structure based on universal-parser
+    language = detect_language_from_path(file_path)
+    language_str = language_to_string(language)
+
+    case Singularity.UniversalParserNif.analyze_file(rust_parser, file_path, language_str) do
+      {:ok, json_result} ->
+        case Jason.decode(json_result) do
+          {:ok, result} ->
+            Logger.info("File analysis completed", file_path: file_path, duration_ms: result["analysis_duration_ms"])
+            result
+          {:error, reason} ->
+            Logger.error("Failed to parse analysis result", reason: reason)
+            create_fallback_result(file_path, language)
+        end
+      {:error, reason} ->
+        Logger.error("Rust universal parser analysis failed", reason: reason)
+        create_fallback_result(file_path, language)
+    end
+  end
+
+  defp create_fallback_result(file_path, language) do
     %{
       file_path: file_path,
-      language: detect_language_from_path(file_path),
+      language: language,
       analysis_timestamp: DateTime.utc_now(),
       line_metrics: %{
         total_lines: 150,
@@ -430,19 +452,46 @@ defmodule Singularity.PolyglotCodeParser do
     }
   end
 
-  defp run_content_analysis(content, file_path, rust_parser, opts) do
-    # Call Rust universal parser to analyze content
-    # This would be a NIF call or external process
+  defp run_content_analysis(content, file_path, rust_parser, _opts) do
+    # Call Rust universal parser to analyze content via NIF
+    Logger.info("Analyzing content with Rust universal parser", file_path: file_path)
 
-    # For now, simulate the result structure
-    base_result = run_file_analysis(file_path, rust_parser, opts)
+    language = detect_language_from_path(file_path)
+    language_str = language_to_string(language)
 
-    # Add content-specific analysis
-    Map.put(base_result, :content_analysis, %{
-      content_length: String.length(content),
-      complexity_score: calculate_content_complexity(content),
-      quality_score: calculate_content_quality(content)
-    })
+    case Singularity.UniversalParserNif.analyze_content(rust_parser, content, file_path, language_str) do
+      {:ok, json_result} ->
+        case Jason.decode(json_result) do
+          {:ok, result} ->
+            Logger.info("Content analysis completed", file_path: file_path, duration_ms: result["analysis_duration_ms"])
+            result
+          {:error, reason} ->
+            Logger.error("Failed to parse analysis result", reason: reason)
+            create_fallback_content_result(content, file_path, language)
+        end
+      {:error, reason} ->
+        Logger.error("Rust universal parser analysis failed", reason: reason)
+        create_fallback_content_result(content, file_path, language)
+    end
+  end
+
+  defp create_fallback_content_result(content, file_path, language) do
+    %{
+      file_path: file_path,
+      language: language,
+      analysis_timestamp: DateTime.utc_now(),
+      line_metrics: %{
+        total_lines: String.split(content, "\n") |> length(),
+        code_lines: String.split(content, "\n") |> Enum.count(&(&1 != "" and not String.starts_with?(&1, "#") and not String.starts_with?(&1, "//"))),
+        comment_lines: String.split(content, "\n") |> Enum.count(&(String.starts_with?(&1, "#") or String.starts_with?(&1, "//"))),
+        blank_lines: String.split(content, "\n") |> Enum.count(&(&1 == ""))
+      },
+      content_analysis: %{
+        content_length: String.length(content),
+        complexity_score: calculate_content_complexity(content),
+        quality_score: calculate_content_quality(content)
+      }
+    }
   end
 
   defp run_codebase_analysis(codebase_path, rust_parser, opts) do
@@ -490,6 +539,15 @@ defmodule Singularity.PolyglotCodeParser do
       ".cc" -> "cpp"
       ".cxx" -> "cpp"
       ".cs" -> "csharp"
+      _ -> "unknown"
+    end
+  end
+
+  defp language_to_string(language) do
+    # Convert atom to string for NIF calls
+    case language do
+      atom when is_atom(atom) -> Atom.to_string(atom)
+      string when is_binary(string) -> string
       _ -> "unknown"
     end
   end
@@ -732,7 +790,7 @@ defmodule Singularity.PolyglotCodeParser do
     }
   end
 
-  defp get_rust_parser_metadata(rust_parser) do
+  defp get_rust_parser_metadata(_rust_parser) do
     # Get parser metadata from Rust universal parser
     %{
       universal_parser_version: "1.0.0",
@@ -854,17 +912,6 @@ defmodule Singularity.PolyglotCodeParser do
         Jason.encode!(codebase_result.architecture_insights)
       ]
     )
-  end
-
-  defp update_analysis_cache(analysis_result, cache) do
-    # Update analysis cache for performance
-    cache_key = "analysis:#{analysis_result.file_path}"
-    Cachex.put(cache, cache_key, analysis_result, ttl: :timer.hours(24))
-  end
-
-  defp clear_analysis_cache(cache) do
-    # Clear analysis cache
-    Cachex.clear(cache)
   end
 
   defp clear_rust_parser_cache(_parser), do: :ok

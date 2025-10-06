@@ -18,15 +18,15 @@ defmodule Singularity.Application do
     thousand_island_opts =
       if transport_opts == [], do: [], else: [transport_options: transport_opts]
 
-    bandit_child =
-      if http_enabled? do
-        Bandit.child_spec(
-          plug: SingularityWeb.Router,
-          scheme: :http,
-          port: port,
-          thousand_island_options: thousand_island_opts
-        )
-      end
+    # Minimal HTTP server for health/metrics only
+    bandit_child = if http_enabled? do
+      Bandit.child_spec(
+        plug: SingularityWeb.HealthRouter,
+        scheme: :http,
+        port: port,
+        thousand_island_options: thousand_island_opts
+      )
+    end
 
     :ok = Singularity.Autonomy.Limiter.ensure_table()
 
@@ -91,7 +91,7 @@ defmodule Singularity.Application do
         Singularity.AgentSupervisor,
         Singularity.HotReload.ModuleReloader,
 
-        # HTTP Server
+        # Minimal HTTP for health/metrics only
         bandit_child
       ]
       |> Enum.reject(&is_nil/1)

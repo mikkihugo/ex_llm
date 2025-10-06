@@ -231,7 +231,7 @@ defmodule Singularity.DuplicationDetector do
     |> MapSet.to_list()
   end
 
-  defp find_duplicates_in_group(type, services) when length(services) < 2, do: []
+  defp find_duplicates_in_group(_type, services) when length(services) < 2, do: []
 
   defp find_duplicates_in_group(type, services) do
     for s1 <- services,

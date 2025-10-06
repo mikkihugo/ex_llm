@@ -9,7 +9,7 @@ defmodule Singularity.Tools.ToolSelector do
   - Performance considerations
   """
 
-  alias Singularity.Tools.{Registry, AgentRoles, AgentToolSelector}
+  alias Singularity.Tools.{AgentRoles, AgentToolSelector}
 
   @max_tools_per_request 6
   @tool_categories %{
@@ -44,7 +44,7 @@ defmodule Singularity.Tools.ToolSelector do
     {:ok, role_tools} = AgentRoles.get_tools_for_role(agent_role)
 
     # Get context recommendations
-    {:ok, recommendations} = AgentToolSelector.recommend_tools(task_description, context)
+    {:ok, _recommendations} = AgentToolSelector.recommend_tools(task_description, context)
 
     # Analyze task requirements
     task_requirements = analyze_task_requirements(task_description)
@@ -151,50 +151,58 @@ defmodule Singularity.Tools.ToolSelector do
     issues = []
 
     # Check for too many tools
-    if length(tools) > @max_tools_per_request do
-      issues = [
+    issues = if length(tools) > @max_tools_per_request do
+      [
         %{
           type: :too_many_tools,
           message: "Too many tools selected (#{length(tools)} > #{@max_tools_per_request})"
         }
         | issues
       ]
+    else
+      issues
     end
 
     # Check for conflicting tools
     conflicts = find_tool_conflicts(tools)
 
-    if conflicts != [] do
-      issues = [
+    issues = if conflicts != [] do
+      [
         %{type: :tool_conflicts, message: "Conflicting tools: #{Enum.join(conflicts, ", ")}"}
         | issues
       ]
+    else
+      issues
     end
 
     # Check for missing essential tools
     missing_essential = find_missing_essential_tools(tools, context)
 
-    if missing_essential != [] do
-      issues = [
+    issues = if missing_essential != [] do
+      [
         %{
           type: :missing_essential,
           message: "Missing essential tools: #{Enum.join(missing_essential, ", ")}"
         }
         | issues
       ]
+    else
+      issues
     end
 
     # Check for performance issues
     performance_issues = check_performance_issues(tools)
 
-    if performance_issues != [] do
-      issues = [
+    issues = if performance_issues != [] do
+      [
         %{
           type: :performance,
           message: "Performance concerns: #{Enum.join(performance_issues, ", ")}"
         }
         | issues
       ]
+    else
+      issues
     end
 
     if issues == [] do
@@ -353,7 +361,7 @@ defmodule Singularity.Tools.ToolSelector do
     tools
   end
 
-  defp generate_selection_reasoning(requirements, tools) do
+  defp generate_selection_reasoning(requirements, _tools) do
     reasoning = []
 
     reasoning =
@@ -443,7 +451,7 @@ defmodule Singularity.Tools.ToolSelector do
     |> Enum.uniq()
   end
 
-  defp find_missing_essential_tools(tools, context) do
+  defp find_missing_essential_tools(tools, _context) do
     essential = []
 
     # Always need file operations
@@ -478,13 +486,17 @@ defmodule Singularity.Tools.ToolSelector do
 
     slow_count = Enum.count(tools, &(&1 in slow_tools))
 
-    if slow_count > 2 do
-      issues = ["Too many slow tools (#{slow_count})"] ++ issues
+    issues = if slow_count > 2 do
+      ["Too many slow tools (#{slow_count})"] ++ issues
+    else
+      issues
     end
 
     # Check for tool combinations that might be slow
-    if "codebase_analyze" in tools and "code_quality" in tools do
-      issues = ["codebase_analyze + code_quality combination is very slow"] ++ issues
+    issues = if "codebase_analyze" in tools and "code_quality" in tools do
+      ["codebase_analyze + code_quality combination is very slow"] ++ issues
+    else
+      issues
     end
 
     issues

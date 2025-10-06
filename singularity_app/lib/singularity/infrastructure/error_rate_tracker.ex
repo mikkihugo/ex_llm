@@ -215,7 +215,7 @@ defmodule Singularity.Infrastructure.ErrorRateTracker do
     if webhook_url do
       send_google_chat_alert(webhook_url, operation, rate_info)
     else
-      Logger.warning("Google Chat webhook not configured - would send alert for high error rate",
+      Logger.warninging("Google Chat webhook not configured - would send alert for high error rate",
         operation: operation,
         error_rate: rate_info.error_rate
       )
@@ -270,7 +270,7 @@ defmodule Singularity.Infrastructure.ErrorRateTracker do
         Logger.info("Error alert sent to Google Chat", operation: operation)
 
       {:ok, %{status: status}} ->
-        Logger.warning("Failed to send Google Chat alert", status: status)
+        Logger.warninging("Failed to send Google Chat alert", status: status)
 
       {:error, reason} ->
         Logger.error("Error sending Google Chat alert", reason: reason)

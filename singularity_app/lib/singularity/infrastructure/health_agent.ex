@@ -145,7 +145,7 @@ defmodule Singularity.Infrastructure.HealthAgent do
 
   defp check_service_health_endpoint(service) do
     # Check service health endpoint
-    health_url = build_health_url(service)
+    _health_url = build_health_url(service)
 
     # This would use HTTP client in practice
     %{

@@ -105,7 +105,7 @@ defmodule Singularity.Planning.WorkPlanAPI do
   end
 
   def handle_info(msg, state) do
-    Logger.warning("WorkPlanAPI received unexpected message: #{inspect(msg)}")
+    Logger.warninging("WorkPlanAPI received unexpected message: #{inspect(msg)}")
     {:noreply, state}
   end
 
@@ -253,7 +253,7 @@ defmodule Singularity.Planning.WorkPlanAPI do
   end
 
   defp route_message(topic, _attrs) do
-    Logger.warning("Unknown NATS subject: #{topic}")
+    Logger.warninging("Unknown NATS subject: #{topic}")
 
     %{
       status: "error",

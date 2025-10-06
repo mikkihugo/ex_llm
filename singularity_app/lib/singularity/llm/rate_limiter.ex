@@ -147,7 +147,7 @@ defmodule Singularity.LLM.RateLimiter do
 
         # Too many requests this minute
         state.minute_counter >= state.max_per_minute ->
-          Logger.warning("Rate limit exceeded",
+          Logger.warninging("Rate limit exceeded",
             count: state.minute_counter,
             max_per_minute: state.max_per_minute
           )

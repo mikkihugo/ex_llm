@@ -17,7 +17,6 @@ defmodule Singularity.Planning.SafeWorkPlanner do
   require Logger
 
   alias Singularity.{CodeStore, Conversation}
-  alias Singularity.Planning.HTDAG
   alias Singularity.Autonomy.RuleEngine, as: RuleEngine
 
   defstruct [
@@ -164,7 +163,7 @@ defmodule Singularity.Planning.SafeWorkPlanner do
         {:ok, deserialize_state(persisted)}
 
       _old_format ->
-        Logger.warning("Old vision format detected - starting fresh")
+        Logger.warninging("Old vision format detected - starting fresh")
         {:ok, state}
     end
   end
@@ -213,7 +212,7 @@ defmodule Singularity.Planning.SafeWorkPlanner do
 
       {:collaborative, result} ->
         # Medium confidence - ask for approval
-        Logger.warning("RuleEngine requires collaboration",
+        Logger.warninging("RuleEngine requires collaboration",
           level: analysis.level,
           confidence: result.confidence,
           reasoning: result.reasoning
@@ -283,7 +282,7 @@ defmodule Singularity.Planning.SafeWorkPlanner do
 
     existing_items = format_existing_items(state)
 
-    prompt = """
+    _prompt = """
     Analyze this vision chunk and determine how it fits into SAFe 6.0 Essential hierarchy.
 
     Vision chunk:

@@ -12,7 +12,7 @@ defmodule Singularity.Autonomy.Planner do
 
   require Logger
 
-  alias Singularity.Planning.{SafeWorkPlanner, HTDAG, StoryDecomposer}
+  alias Singularity.Planning.{SafeWorkPlanner, StoryDecomposer}
   alias Singularity.Refactoring.Analyzer
   alias Singularity.Learning.PatternMiner
 

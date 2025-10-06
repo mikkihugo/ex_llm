@@ -16,7 +16,6 @@ defmodule Singularity.TemplateSparcOrchestrator do
   use GenServer
   require Logger
 
-  alias Singularity.TemplateOptimizer
   alias Singularity.Planning.HTDAG
   alias Singularity.MethodologyExecutor
 
@@ -74,7 +73,7 @@ defmodule Singularity.TemplateSparcOrchestrator do
     task_type = extract_task_type(goal)
     language = Keyword.get(opts, :language, "elixir")
 
-    {:ok, template_id} = TemplatePerformanceTracker.get_best_template(task_type, language)
+    {:ok, template_id} = Singularity.TemplatePerformanceTracker.get_best_template(task_type, language)
 
     Logger.info("Template DAG selected: #{template_id}")
 
@@ -99,7 +98,7 @@ defmodule Singularity.TemplateSparcOrchestrator do
       feedback: %{source: "orchestrator", auto_evaluated: true}
     }
 
-    TemplatePerformanceTracker.record_usage(
+    Singularity.TemplatePerformanceTracker.record_usage(
       template_id,
       %{type: task_type, language: language, description: goal.description},
       metrics

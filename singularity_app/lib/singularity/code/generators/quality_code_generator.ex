@@ -83,7 +83,7 @@ defmodule Singularity.QualityCodeGenerator do
         end
 
       {:error, reason} ->
-        Logger.warning("Template file not found: #{template_path}, using default")
+        Logger.warninging("Template file not found: #{template_path}, using default")
         {:ok, default_template()}
     end
   end
@@ -248,7 +248,7 @@ defmodule Singularity.QualityCodeGenerator do
         end
 
       {:error, :enoent} ->
-        Logger.warning("Template not found: #{path}, using defaults")
+        Logger.warninging("Template not found: #{path}, using defaults")
         {:ok, default_template(language, quality)}
 
       {:error, reason} ->

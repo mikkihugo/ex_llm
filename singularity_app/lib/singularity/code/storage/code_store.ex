@@ -141,6 +141,10 @@ defmodule Singularity.CodeStore do
     {:reply, state, state}
   end
 
+  def handle_call({:stage, _agent_id, _version, _code, _metadata}, _from, state) do
+    {:reply, {:error, :invalid_code}, state}
+  end
+
   def handle_call({:stage, agent_id, version, code, metadata}, _from, state)
       when is_binary(code) and byte_size(code) > 0 do
     version_id =
@@ -161,10 +165,6 @@ defmodule Singularity.CodeStore do
         File.rm(metadata_file)
         {:reply, {:error, {:stage_failed, reason}}, state}
     end
-  end
-
-  def handle_call({:stage, _agent_id, _version, _code, _metadata}, _from, state) do
-    {:reply, {:error, :invalid_code}, state}
   end
 
   def handle_call({:promote, agent_id, version_path}, _from, state) do
@@ -552,7 +552,7 @@ defmodule Singularity.CodeStore do
 
   defp extract_technologies_from_detection(technologies_map) do
     # Extract high-confidence technologies (>0.7 confidence)
-    Enum.flat_map(technologies_map, fn {category, techs} ->
+    Enum.flat_map(technologies_map, fn {_category, techs} ->
       case techs do
         list when is_list(list) ->
           Enum.map(list, fn tech ->
@@ -790,15 +790,19 @@ defmodule Singularity.CodeStore do
     # Look for services in services/ directory
     services_dir = Path.join(codebase_path, "services")
 
-    if File.exists?(services_dir) do
-      services = services ++ find_services_in_directory(services_dir)
+    services = if File.exists?(services_dir) do
+      services ++ find_services_in_directory(services_dir)
+    else
+      services
     end
 
     # Look for services in apps/ directory (umbrella project)
     apps_dir = Path.join(codebase_path, "apps")
 
-    if File.exists?(apps_dir) do
-      services = services ++ find_services_in_directory(apps_dir)
+    services = if File.exists?(apps_dir) do
+      services ++ find_services_in_directory(apps_dir)
+    else
+      services
     end
 
     services

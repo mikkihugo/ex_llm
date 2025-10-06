@@ -1,0 +1,3 @@
+[universal_parser]
+crate = "universal_parser"
+path = "native/universal_parser"

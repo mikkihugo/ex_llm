@@ -440,7 +440,7 @@ defmodule Singularity.EmbeddingQualityTracker do
       {:ok, training_pairs} = extract_training_pairs_from_feedback()
 
       if length(training_pairs) < 100 do
-        Logger.warning(
+        Logger.warninging(
           "Insufficient training data (#{length(training_pairs)} pairs), need at least 100"
         )
 
@@ -648,7 +648,7 @@ defmodule Singularity.EmbeddingQualityTracker do
       # Send message to EmbeddingService to reload model
       case Process.whereis(Singularity.EmbeddingService) do
         nil ->
-          Logger.warning("EmbeddingService not found, cannot update model")
+          Logger.warninging("EmbeddingService not found, cannot update model")
 
         pid ->
           GenServer.cast(pid, {:reload_model, model_path})

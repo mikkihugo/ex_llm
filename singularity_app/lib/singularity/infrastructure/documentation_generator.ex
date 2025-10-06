@@ -208,7 +208,7 @@ defmodule Singularity.DocumentationGenerator do
     """
   end
 
-  defp extract_service_features(service) do
+  defp extract_service_features(_service) do
     # Extract features from service code
     [
       "Feature 1: Core functionality",
@@ -217,7 +217,7 @@ defmodule Singularity.DocumentationGenerator do
     ]
   end
 
-  defp extract_service_dependencies(service) do
+  defp extract_service_dependencies(_service) do
     # Extract dependencies from service
     %{
       runtime_dependencies: [],
@@ -226,7 +226,7 @@ defmodule Singularity.DocumentationGenerator do
     }
   end
 
-  defp extract_service_configuration(service) do
+  defp extract_service_configuration(_service) do
     # Extract configuration options
     %{
       environment_variables: [],
@@ -235,7 +235,7 @@ defmodule Singularity.DocumentationGenerator do
     }
   end
 
-  defp generate_service_examples(service) do
+  defp generate_service_examples(_service) do
     # Generate usage examples
     [
       %{
@@ -314,7 +314,7 @@ defmodule Singularity.DocumentationGenerator do
     |> Enum.into(%{})
   end
 
-  defp identify_communication_patterns(services) do
+  defp identify_communication_patterns(_services) do
     # Identify communication patterns
     %{
       synchronous: ["HTTP REST", "gRPC"],
@@ -323,7 +323,7 @@ defmodule Singularity.DocumentationGenerator do
     }
   end
 
-  defp map_data_flow(services) do
+  defp map_data_flow(_services) do
     # Map data flow between services
     %{
       data_sources: [],
@@ -332,7 +332,7 @@ defmodule Singularity.DocumentationGenerator do
     }
   end
 
-  defp generate_service_diagram(services) do
+  defp generate_service_diagram(_services) do
     # Generate service diagram (Mermaid format)
     diagram_content = """
     graph TB
@@ -358,7 +358,7 @@ defmodule Singularity.DocumentationGenerator do
     {:ok, diagram_content}
   end
 
-  defp generate_data_flow_diagram(services) do
+  defp generate_data_flow_diagram(_services) do
     # Generate data flow diagram
     diagram_content = """
     graph LR
@@ -652,7 +652,7 @@ defmodule Singularity.DocumentationGenerator do
     {:ok, updated_docs}
   end
 
-  defp update_single_doc(doc, service_changes) do
+  defp update_single_doc(doc, _service_changes) do
     # Update a single documentation file
     %{
       doc_name: doc.service_name,

@@ -121,7 +121,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
         create_pull_request(agent_id, result, state)
 
       other ->
-        Logger.warning("Agent attempted to submit work for branch owned by another agent",
+        Logger.warninging("Agent attempted to submit work for branch owned by another agent",
           branch: result.branch,
           requested_by: agent_id,
           owner: other
@@ -442,7 +442,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
           {[{:ok, pr_number, merge_commit} | results], new_state}
 
         {:conflict, files} ->
-          Logger.warning("Merge conflict", pr: pr_number, files: files)
+          Logger.warninging("Merge conflict", pr: pr_number, files: files)
 
           GitStateStore.log_merge(%{
             branch: pr.branch,

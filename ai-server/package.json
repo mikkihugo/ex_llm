@@ -14,10 +14,11 @@
     "@google/gemini-cli-core": "^0.7.0",
     "@google/generative-ai": "^0.24.1",
     "@openai/codex": "^0.44.0",
-    "codex-js-sdk": "file:vendor/codex-js-sdk",
-    "ai": "^5.0.60",
+    "ai": "5.1.0-beta.22",
     "ai-sdk-provider-claude-code": "latest",
+    "ai-sdk-provider-codex": "file:vendor/ai-sdk-provider-codex",
     "ai-sdk-provider-gemini-cli": "latest",
+    "codex-js-sdk": "file:vendor/codex-js-sdk",
     "escape-html": "^1.0.3",
     "google-auth-library": "^10.4.0",
     "jsonrepair": "^3.13.1",
@@ -27,7 +28,8 @@
   "devDependencies": {
     "@types/escape-html": "^1.0.4",
     "@types/node": "^24.6.2",
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "msw": "^2.11.3"
   },
   "overrides": {
     "@openai/codex": "0.44.0"

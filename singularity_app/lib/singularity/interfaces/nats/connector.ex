@@ -6,15 +6,13 @@ defmodule Singularity.PlatformIntegration.NatsConnector do
 
   require Logger
 
-  alias Singularity.Engine.CodebaseStore
-
   @doc "Connect to singularity-engine NATS cluster"
   def connect_to_engine_cluster do
     Logger.info("Connecting to singularity-engine NATS cluster")
 
     with {:ok, cluster_config} <- load_cluster_config(),
          {:ok, connection} <- establish_nats_connection(cluster_config),
-         {:ok, jetstream} <- setup_jetstream(connection) do
+         {:ok, _jetstream} <- setup_jetstream(connection) do
       %{
         cluster_name: cluster_config.name,
         connection_status: :connected,

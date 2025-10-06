@@ -56,9 +56,6 @@ defmodule Singularity.CodeSession do
   require Logger
   alias Singularity.{CodeSynthesisPipeline, PatternIndexer, RAGCodeGenerator, CodeModel}
 
-  # 30 minutes
-  @session_timeout 30_60_000
-
   defstruct [
     :id,
     :project,
@@ -389,7 +386,7 @@ defmodule Singularity.CodeSession do
     {:error, :not_implemented}
   end
 
-  defp detect_from_hints(context) do
+  defp detect_from_hints(_context) do
     # Fallback tech detection
     []
   end

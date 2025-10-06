@@ -14,7 +14,7 @@ defmodule Singularity.CodeLocationIndex do
   import Ecto.Changeset
 
   alias Singularity.Repo
-  alias Singularity.{CodePatternExtractor, TechnologyAgent}
+  alias Singularity.CodePatternExtractor
 
   schema "code_location_index" do
     field :filepath, :string
@@ -272,7 +272,7 @@ defmodule Singularity.CodeLocationIndex do
     filename = Path.basename(filepath, Path.extname(filepath))
 
     # Extract domain from patterns
-    domain_words = Enum.filter(patterns, &String.match?(&1, ~r/^[a-z]+$/))
+    _domain_words = Enum.filter(patterns, &String.match?(&1, ~r/^[a-z]+$/))
 
     top_patterns = Enum.take(patterns, 3)
 

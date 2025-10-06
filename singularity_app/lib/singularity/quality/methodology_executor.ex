@@ -97,7 +97,7 @@ defmodule Singularity.MethodologyExecutor do
 
   defp execute_phase(:architecture, template_id, context) do
     # Phase 3: Design architecture from pseudocode
-    template = TechnologyTemplateLoader.template(template_id)
+    _template = TechnologyTemplateLoader.template(template_id)
 
     # Find architectural patterns in codebase
     {:ok, patterns} =
@@ -127,7 +127,7 @@ defmodule Singularity.MethodologyExecutor do
 
   defp execute_phase(:refinement, template_id, context) do
     # Phase 4: Refine and optimize
-    template = TechnologyTemplateLoader.template(template_id)
+    _template = TechnologyTemplateLoader.template(template_id)
 
     # Check quality standards
     quality_template = QualityCodeGenerator.get_template(context.language)
@@ -155,7 +155,7 @@ defmodule Singularity.MethodologyExecutor do
 
   defp execute_phase(:completion, template_id, context) do
     # Phase 5: Generate final code
-    template = TechnologyTemplateLoader.template(template_id)
+    _template = TechnologyTemplateLoader.template(template_id)
 
     # Use RAG to ensure consistency with codebase
     {:ok, code} =

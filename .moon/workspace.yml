@@ -15,6 +15,7 @@ projects:
   - 'rust/prompt_engine'
   - 'rust/linting_engine'
   - 'templates_data'
+  # - 'vendor/codex'  # Codex fork for builtin tool filtering (temporarily disabled for compilation)
 
 # Note: Moon caches task outputs under .moon/cache by default. CI caches this
 # directory (see .github/workflows/ci-elixir.yml) to speed up repeated runs.

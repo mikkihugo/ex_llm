@@ -68,7 +68,7 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
             execute_and_record(circuit_name, fun, timeout_ms)
 
           false ->
-            Logger.warning("Circuit breaker is open, rejecting request", circuit: circuit_name)
+            Logger.warninging("Circuit breaker is open, rejecting request", circuit: circuit_name)
             {:error, :circuit_open}
         end
     end
@@ -218,7 +218,7 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
             last_failure_time: DateTime.utc_now()
         }
       else
-        Logger.warning("Circuit breaker recorded failure",
+        Logger.warninging("Circuit breaker recorded failure",
           name: state.name,
           failure_count: new_failure_count,
           threshold: state.failure_threshold
@@ -264,6 +264,10 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
       result = Task.await(task, timeout_ms)
       GenServer.call(via_tuple(circuit_name), {:record_success}, 5000)
       {:ok, result}
+    rescue
+      error ->
+        GenServer.call(via_tuple(circuit_name), {:record_failure}, 5000)
+        {:error, error}
     catch
       :exit, {:timeout, _} ->
         Task.shutdown(task, :brutal_kill)
@@ -273,10 +277,6 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
       :exit, reason ->
         GenServer.call(via_tuple(circuit_name), {:record_failure}, 5000)
         {:error, {:exit, reason}}
-    rescue
-      error ->
-        GenServer.call(via_tuple(circuit_name), {:record_failure}, 5000)
-        {:error, error}
     end
   end
 

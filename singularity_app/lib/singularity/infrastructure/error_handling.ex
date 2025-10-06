@@ -207,7 +207,7 @@ defmodule Singularity.Infrastructure.ErrorHandling do
         if is_retryable?(error, retryable_errors) do
           delay = calculate_delay(attempt, base_delay, max_delay, exp_base, jitter)
 
-          Logger.warning("Operation failed, retrying",
+          Logger.warninging("Operation failed, retrying",
             attempt: attempt,
             max_attempts: max_attempts,
             delay_ms: delay,
@@ -316,7 +316,7 @@ defmodule Singularity.Infrastructure.ErrorHandling do
       {:ok, result}
     catch
       :exit, {:timeout, _} ->
-        Logger.warning("Operation timeout", timeout_ms: timeout_ms)
+        Logger.warninging("Operation timeout", timeout_ms: timeout_ms)
         Task.shutdown(task, :brutal_kill)
         {:error, :timeout}
     end
@@ -397,7 +397,7 @@ defmodule Singularity.Infrastructure.ErrorHandling do
   - {:degraded, reasons} - Partial functionality
   - {:unhealthy, reasons} - Critical failure
   """
-  def health_check(server, checks \\ []) do
+  def health_check(_server, checks \\ []) do
     results =
       Enum.map(checks, fn {name, check_fun} ->
         case check_fun.() do
@@ -509,7 +509,7 @@ defmodule Singularity.Infrastructure.ErrorHandling do
     end
   end
 
-  defp send_error_alert_to_google_chat(webhook_url, error, stacktrace, context) do
+  defp send_error_alert_to_google_chat(webhook_url, error, _stacktrace, context) do
     error_summary = extract_error_summary(error)
 
     message = %{
@@ -567,7 +567,7 @@ defmodule Singularity.Infrastructure.ErrorHandling do
         )
 
       {:ok, %{status: status}} ->
-        Logger.warning("Failed to send Google Chat error alert", status: status)
+        Logger.warninging("Failed to send Google Chat error alert", status: status)
 
       {:error, reason} ->
         Logger.error("Error sending Google Chat alert", reason: reason)

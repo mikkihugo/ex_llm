@@ -36,7 +36,6 @@ defmodule Mix.Tasks.Knowledge.Migrate do
   require Logger
 
   alias Singularity.Knowledge.ArtifactStore
-  alias Singularity.Repo
 
   @shortdoc "Migrate existing JSON templates to knowledge_artifacts table"
 

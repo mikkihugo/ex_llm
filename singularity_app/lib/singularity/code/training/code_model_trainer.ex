@@ -18,7 +18,7 @@ defmodule Singularity.CodeModelTrainer do
   """
 
   require Logger
-  alias Singularity.{CodeStore, Repo}
+  alias Singularity.Repo
 
   @base_model "Qodo/Qodo-Embed-1-1.5B"
   @learning_rate 5.0e-5
@@ -300,7 +300,7 @@ defmodule Singularity.CodeModelTrainer do
     }
   end
 
-  defp search_with_embedding(embedding) do
+  defp search_with_embedding(_embedding) do
     # Search your codebase with this embedding
     # Returns sorted by similarity
     # Implement actual search

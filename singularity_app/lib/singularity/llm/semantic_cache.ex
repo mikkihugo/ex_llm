@@ -230,4 +230,22 @@ defmodule Singularity.LLM.SemanticCache do
 
     1.0 - dot_product / (magnitude1 * magnitude2)
   end
+
+  @doc """
+  Simple key-based cache get operation.
+  """
+  def get(cache_key) do
+    # For now, just return :miss since we use embedding-based caching
+    # TODO: Implement key-based caching if needed
+    :miss
+  end
+
+  @doc """
+  Simple key-based cache put operation.
+  """
+  def put(cache_key, value) do
+    # For now, just ignore since we use embedding-based caching
+    # TODO: Implement key-based caching if needed
+    :ok
+  end
 end

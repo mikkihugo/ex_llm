@@ -5,7 +5,7 @@ defmodule Singularity.Tools.Llm do
   """
 
   alias Singularity.Integration.Claude
-  alias Singularity.Tools.{Registry, Tool}
+  alias Singularity.Tools.Tool
 
   @doc "Register LLM emergency tools for a provider."
   @spec register(term()) :: :ok
@@ -14,7 +14,7 @@ defmodule Singularity.Tools.Llm do
       Claude.available_profiles()
       |> Enum.map(fn {profile, cfg} -> build_tool(profile, cfg) end)
 
-    Catalog.add_tools(provider, tools)
+    Singularity.Tools.Catalog.add_tools(provider, tools)
   end
 
   defp build_tool(profile, cfg) do

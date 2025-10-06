@@ -235,7 +235,7 @@ defmodule Singularity.MemoryCache do
 
   defp warmup_templates do
     # Load from TemplateOptimizer's top performers
-    case Singularity.TemplatePerformanceTracker.analyze_performance() do
+    case Singularity.Singularity.TemplatePerformanceTracker.analyze_performance() do
       {:ok, %{top_performers: performers}} ->
         Enum.each(performers, fn %{template: template_id} ->
           # Cache the template

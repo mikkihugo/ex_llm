@@ -30,6 +30,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Bun** for TypeScript/JavaScript runtime
 - **Nix** for reproducible development environment
 
+## AI Provider Policy
+
+**CRITICAL:** This project uses ONLY subscription-based or FREE AI providers. Never enable pay-per-use API billing.
+
+See [AI_PROVIDER_POLICY.md](AI_PROVIDER_POLICY.md) for full details.
+
+**Approved providers:**
+- Gemini (FREE via gemini-cli-core + ADC)
+- Claude (Claude Pro/Max subscription via claude-code SDK)
+- Codex (ChatGPT Plus/Pro subscription via CLI)
+- Copilot (GitHub Copilot subscription)
+- Cursor (Cursor subscription)
+
+**Forbidden:** OpenAI API, Vertex AI API, Anthropic API (all pay-per-token)
+
 ## Common Development Commands
 
 ### Environment Setup (Internal Tooling - Simple!)

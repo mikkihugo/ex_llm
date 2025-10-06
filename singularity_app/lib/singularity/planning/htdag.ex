@@ -63,7 +63,7 @@ defmodule Singularity.Planning.HTDAG do
 
   ## Private Functions
 
-  defp decompose_recursive(dag, task, max_depth) when max_depth <= 0 do
+  defp decompose_recursive(dag, _task, max_depth) when max_depth <= 0 do
     {:ok, dag}
   end
 

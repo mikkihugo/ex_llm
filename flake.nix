@@ -563,6 +563,10 @@ EOF
             export PATH="${pkgs.cudaPackages.cudatoolkit}/bin:$PATH"
             export LD_LIBRARY_PATH="${pkgs.cudaPackages.cudatoolkit}/lib:$LD_LIBRARY_PATH"
 
+            # Ensure just is available
+            export PATH="${pkgs.just}/bin:$PATH"
+            echo "DEBUG: Added just to PATH: ${pkgs.just}/bin"
+
             echo "🚀 Singularity Development Environment"
             echo "  MIX_ENV=dev"
             echo "  CUDA: $CUDA_HOME"

@@ -1,19 +1,15 @@
-import { openai } from '@ai-sdk/openai';
+/**
+ * GitHub Models Provider
+ *
+ * Free tier access to GPT-4.1, Llama 4, DeepSeek, Mistral, and more.
+ * Uses full AI SDK provider with dynamic model listing.
+ */
 
-// Create a custom GitHub Models provider using OpenAI-compatible API
-export const githubModels = (modelName: string) => {
-  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+import { githubModels as baseProvider } from '../../vendor/ai-sdk-provider-github-models/dist/index.js';
 
-  if (!token) {
-    throw new Error('GitHub token not found. Please set GITHUB_TOKEN or GH_TOKEN environment variable.');
-  }
+// Pre-load models at startup (async, fire-and-forget)
+baseProvider.refreshModels().catch(err => {
+  console.error('⚠️  Failed to load GitHub Models catalog:', err.message);
+});
 
-  // GitHub Models uses Azure AI inference endpoint with OpenAI-compatible API
-  return openai(modelName, {
-    apiKey: token,
-    baseURL: 'https://models.inference.ai.azure.com',
-    headers: {
-      'azureml-model-deployment': modelName,
-    },
-  });
-};
+export const githubModels = baseProvider;

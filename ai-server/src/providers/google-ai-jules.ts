@@ -261,3 +261,31 @@ export function createJulesModel(taskType: JulesTask['type'] = 'feature') {
     },
   };
 }
+
+/**
+ * Model metadata for Google Jules provider
+ */
+export const JULES_MODELS = [
+  {
+    id: 'jules-v1',
+    displayName: 'Google Jules',
+    description: 'Autonomous AI coding agent for complex tasks',
+    contextWindow: 2097152,  // 2M tokens (uses Gemini 2.5 Pro)
+    capabilities: { completion: true, streaming: true, reasoning: false, vision: false, tools: true },
+    cost: 'free' as const,  // Free tier: 15 tasks/day
+  },
+] as const;
+
+/**
+ * Extended Jules provider type with model listing capability
+ */
+export interface JulesProviderWithModels extends ReturnType<typeof createJulesModel> {
+  listModels(): typeof JULES_MODELS;
+}
+
+/**
+ * Jules provider instance with model listing
+ */
+export const julesWithModels = Object.assign(jules, {
+  listModels: () => JULES_MODELS,
+}) as JulesProviderWithModels;

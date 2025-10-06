@@ -21,7 +21,6 @@ defmodule Singularity.SPARC.Orchestrator do
   require Logger
 
   alias Singularity.{TechnologyTemplateLoader, RAGCodeGenerator}
-  alias Singularity.Planning.HTDAG
 
   defstruct [
     :current_phase,
@@ -172,22 +171,7 @@ defmodule Singularity.SPARC.Orchestrator do
     :ok
   end
 
-  defp start_phase_coordinators do
-    %{
-      specification: start_coordinator(SpecificationCoordinator),
-      pseudocode: start_coordinator(PseudocodeCoordinator),
-      architecture: start_coordinator(ArchitectureCoordinator),
-      refinement: start_coordinator(RefinementCoordinator),
-      completion: start_coordinator(CompletionCoordinator)
-    }
-  end
-
-  defp start_coordinator(module) do
-    {:ok, pid} = module.start_link()
-    pid
-  end
-
-  defp execute_coordinator(coordinator, phase, context) do
+  defp execute_coordinator(coordinator, _phase, context) do
     GenServer.call(coordinator, {:execute, context}, :infinity)
   end
 end

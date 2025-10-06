@@ -294,7 +294,7 @@ defmodule Singularity.TemplateStore do
       |> Enum.filter(fn
         {:ok, _} -> true
         {:error, reason} ->
-          Logger.warning("Skipping invalid template: #{inspect(reason)}")
+          Logger.warninging("Skipping invalid template: #{inspect(reason)}")
           false
       end)
       |> Enum.map(fn {:ok, template} -> template end)

@@ -7,7 +7,7 @@ defmodule Singularity.TechnologyTemplateStore do
   JSONB constraints.
   """
 
-  import Ecto.{Changeset, Query}
+  import Ecto.Query
 
   alias Singularity.Schemas.TechnologyTemplate, as: Template
   alias Singularity.{Repo, TechnologyTemplateLoader}
@@ -113,8 +113,8 @@ defmodule Singularity.TechnologyTemplateStore do
            ) do
       :ok
     else
-      {:error, reason} -> {:error, reason}
       {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
+      {:error, reason} -> {:error, reason}
     end
   rescue
     error -> {:error, Exception.message(error)}
