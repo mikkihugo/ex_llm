@@ -310,7 +310,20 @@ defmodule Singularity.DomainVocabularyTrainer do
         ]
       end
 
-    List.flatten(phase_pairs)
+    # Filter phases based on provided keywords
+    filtered_pairs = 
+      if sparc_keywords && length(sparc_keywords) > 0 do
+        Enum.filter(List.flatten(phase_pairs), fn pair ->
+          Enum.any?(sparc_keywords, fn keyword ->
+            String.contains?(pair.anchor, keyword) || 
+            String.contains?(pair.positive, keyword)
+          end)
+        end)
+      else
+        List.flatten(phase_pairs)
+      end
+
+    filtered_pairs
   end
 
   defp create_pattern_recognition_pairs(patterns) do
@@ -401,6 +414,13 @@ defmodule Singularity.DomainVocabularyTrainer do
 
     # 2. Create template-aware training data
     training_data = create_template_training_data(vocab)
+    
+    # Log training data statistics
+    Logger.info("Created template training data", 
+      vocab_size: length(vocab),
+      training_examples: length(training_data),
+      avg_examples_per_pattern: length(training_data) / max(length(vocab), 1)
+    )
 
     # 3. Load and augment tokenizer
     {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, "Salesforce/codet5p-110m-embedding"})

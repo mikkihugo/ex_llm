@@ -36,7 +36,7 @@ defmodule Singularity.Schemas.PackageCodeExample do
       :code_embedding,
       :example_order
     ])
-    |> validate_required([:tool_id, :title, :code])
-    |> foreign_key_constraint(:tool_id)
+    |> validate_required([:dependency_id, :title, :code])
+    |> foreign_key_constraint(:dependency_id)
   end
 end

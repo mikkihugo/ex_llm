@@ -35,24 +35,24 @@ tree-sitter-swift = "0.4"
 tree-sitter-kotlin = "0.3"
 
 # Core utilities - LATEST VERSIONS
-anyhow = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-async-trait = { workspace = true }
-futures = { workspace = true }
-tokio = { workspace = true, features = ["full"] }
-chrono = { workspace = true, features = ["serde"] }
-tempfile = { workspace = true }
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+async-trait = "0.1"
+futures = "0.3"
+tokio = { version = "1.0", features = ["full"] }
+chrono = { version = "0.4", features = ["serde"] }
+tempfile = "3.0"
 
 # Performance optimizations - LATEST STABLE VERSIONS
 lru = "0.12"
-dashmap = { workspace = true }
+dashmap = "5.0"
 
 # PageRank for ML central heuristics (merged from parser-coordinator)
-petgraph = { workspace = true }
+petgraph = "0.6"
 
 # Regular expressions for refactoring
-regex = { workspace = true }
+regex = "1.0"
 
 # Logging
 tracing = { workspace = true }

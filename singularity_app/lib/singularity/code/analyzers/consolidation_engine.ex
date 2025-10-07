@@ -428,13 +428,13 @@ defmodule Singularity.CodeAnalysis.ConsolidationEngine do
     |> Enum.uniq_by(& &1.table_name)
   end
 
-  defp find_affected_services(consolidation_mapping) do
+  defp find_affected_services(_consolidation_mapping) do
     # Find services that reference the services being consolidated
     # Placeholder
     {:ok, []}
   end
 
-  defp update_references_in_services(affected_services, consolidation_mapping) do
+  defp update_references_in_services(_affected_services, _consolidation_mapping) do
     # Update references in affected services
     # Placeholder
     {:ok, []}

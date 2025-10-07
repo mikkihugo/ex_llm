@@ -106,36 +106,39 @@ defmodule Singularity.NatsExecutionRouter do
           agent_id = "orchestrator_agent_#{:erlang.unique_integer()}"
           {:ok, _pid} = CostOptimizedAgent.start_link(id: agent_id, specialization: :general)
 
-          # Process the task
-          result =
-            CostOptimizedAgent.process_task(agent_id, %{
-              prompt: request["task"],
-              context: request["context"] || %{},
-              template: template,
-              complexity: request["complexity"]
-            })
+          # Process the task - CostOptimizedAgent expects a task struct
+          task = %{
+            id: "task_#{:erlang.unique_integer()}",
+            type: :code_generation,
+            description: request["task"],
+            acceptance_criteria: request["acceptance_criteria"] || [],
+            target_file: request["target_file"],
+            workspace: request["workspace"] || "/tmp/singularity_workspace"
+          }
+
+          result = CostOptimizedAgent.process_task(agent_id, task)
 
           elapsed_ms = System.monotonic_time(:millisecond) - start_time
 
+          # Extract response based on CostOptimizedAgent response format: {method, result, cost: cost}
+          {method, result_content, cost: cost} = result
+
           # Cache the result
           SemanticCache.put(cache_key, %{
-            content: result.response,
+            content: extract_response_text(result_content),
             template_id: template.id,
-            model: result.model_used
+            model: method_to_model(method)
           })
 
-          # Extract response based on CostOptimizedAgent response format
-          {response_type, response_content, metadata} = result
-
           response = %{
-            result: extract_response_text(response_content),
+            result: extract_response_text(result_content),
             template_used: template.id,
-            model_used: metadata[:model] || "rules",
+            model_used: method_to_model(method),
             metrics: %{
               time_ms: elapsed_ms,
-              tokens_used: metadata[:tokens] || 0,
-              cost_usd: metadata[:cost] || 0.0,
-              cache_hit: response_type == :cached
+              tokens_used: 0, # CostOptimizedAgent doesn't return token count
+              cost_usd: cost,
+              cache_hit: method == :autonomous
             }
           }
 
@@ -188,6 +191,15 @@ defmodule Singularity.NatsExecutionRouter do
   defp extract_response_text(%{content: content}), do: content
   defp extract_response_text(%{response: response}), do: response
   defp extract_response_text(response), do: inspect(response)
+
+  defp method_to_model(method) do
+    case method do
+      :autonomous -> "rules"
+      :llm_assisted -> "llm"
+      :fallback -> "rules-fallback"
+      _ -> "unknown"
+    end
+  end
 
   defp calculate_cost(model, tokens) do
     # Cost per 1M tokens (actual models from ai-server)

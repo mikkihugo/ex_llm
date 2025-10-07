@@ -58,7 +58,8 @@ defmodule Singularity.Knowledge.TemplateService do
 
   @impl true
   def init(_opts) do
-    gnat_name = Singularity.NatsOrchestrator.gnat_name()
+    # Use the default Gnat connection
+    gnat_name = :nats_client
 
     # Subscribe to template requests
     {:ok, _sub} = Gnat.sub(gnat_name, self(), "template.get.>")
@@ -129,7 +130,7 @@ defmodule Singularity.Knowledge.TemplateService do
 
   defp handle_get_request(_gnat, _artifact_type, _artifact_id, nil) do
     # No reply_to - can't respond
-    Logger.warn("Received template.get request without reply_to")
+    Logger.warning("Received template.get request without reply_to")
   end
 
   defp handle_search_request(gnat, query, reply_to) when is_binary(reply_to) do
@@ -150,7 +151,7 @@ defmodule Singularity.Knowledge.TemplateService do
   end
 
   defp handle_search_request(_gnat, _query, nil) do
-    Logger.warn("Received template.search request without reply_to")
+    Logger.warning("Received template.search request without reply_to")
   end
 
   defp send_error(gnat, reply_to, message) when is_binary(reply_to) do

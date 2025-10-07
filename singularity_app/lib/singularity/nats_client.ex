@@ -134,7 +134,7 @@ defmodule Singularity.NatsClient do
 
   @impl true
   def handle_call({:publish, subject, _data, _opts}, _from, %{connection: nil} = state) do
-    Logger.warninging("NATS not connected, cannot publish to #{subject}")
+    Logger.warning("NATS not connected, cannot publish to #{subject}")
     {:reply, {:error, :not_connected}, state}
   end
 

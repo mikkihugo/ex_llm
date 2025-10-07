@@ -99,7 +99,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # Concurrent data structures
 dashmap = "6.0"
-crossbeam = "0.8"
 rayon = "1.8"
 
 # XML processing
@@ -107,6 +106,13 @@ quick-xml = "0.31"
 
 # Code analysis
 tokei = "13.0.0-alpha.9"
+
+# Mozilla code analysis dependencies
+num = "0.4"
+num-derive = "0.4"
+num-format = "0.4"
+termcolor = "1.2"
+globset = "0.4"
 
 # Testing and benchmarking
 criterion = { version = "0.5", features = ["html_reports"] }

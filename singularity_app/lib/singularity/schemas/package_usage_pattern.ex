@@ -37,13 +37,13 @@ defmodule Singularity.Schemas.PackageUsagePattern do
       :tags,
       :pattern_embedding
     ])
-    |> validate_required([:tool_id, :title])
+    |> validate_required([:dependency_id, :title])
     |> validate_inclusion(:pattern_type, [
       "best_practice",
       "anti_pattern",
       "usage_pattern",
       "migration_guide"
     ])
-    |> foreign_key_constraint(:tool_id)
+    |> foreign_key_constraint(:dependency_id)
   end
 end

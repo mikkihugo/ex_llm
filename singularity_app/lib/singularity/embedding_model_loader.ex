@@ -36,12 +36,12 @@ defmodule Singularity.EmbeddingModelLoader do
         Logger.info("Embedding models ready: #{message}")
 
       {:error, reason} ->
-        Logger.warninging("Model preload failed (will retry on first use): #{inspect(reason)}")
+        Logger.warning("Model preload failed (will retry on first use): #{inspect(reason)}")
         Logger.info("Models will auto-download on first embedding generation")
     end
   rescue
     error ->
-      Logger.warninging("Model preload error (will retry on first use): #{inspect(error)}")
+      Logger.warning("Model preload error (will retry on first use): #{inspect(error)}")
       Logger.info("Models will auto-download on first embedding generation")
   end
 end

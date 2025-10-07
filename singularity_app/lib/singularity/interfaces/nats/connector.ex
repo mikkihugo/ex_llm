@@ -82,12 +82,46 @@ defmodule Singularity.PlatformIntegration.NatsConnector do
     end
   end
 
-  @doc "Fetch a technology template via NATS request (placeholder implementation)"
+  @doc "Fetch a technology template via NATS request"
   def fetch_template(subject, payload) do
     Logger.debug("Requesting template via NATS", subject: subject, payload: payload)
 
-    # TODO: Replace with actual NATS RPC call once available
-    {:error, :not_implemented}
+    try do
+      # Use the existing NATS client from NatsClient
+      case Singularity.NatsClient.request(subject, Jason.encode!(payload), timeout: 5000) do
+        {:ok, response} ->
+          case Jason.decode(response.body) do
+            {:ok, template} ->
+              Logger.debug("Successfully fetched template", subject: subject)
+              {:ok, template}
+
+            {:error, reason} ->
+              Logger.error("Failed to decode template response", 
+                subject: subject, 
+                reason: inspect(reason)
+              )
+              {:error, :decode_failed}
+          end
+
+        {:error, :timeout} ->
+          Logger.warning("Template request timed out", subject: subject)
+          {:error, :timeout}
+
+        {:error, reason} ->
+          Logger.error("Template request failed", 
+            subject: subject, 
+            reason: inspect(reason)
+          )
+          {:error, reason}
+      end
+    rescue
+      error ->
+        Logger.error("Template fetch error", 
+          subject: subject, 
+          error: inspect(error)
+        )
+        {:error, :internal_error}
+    end
   end
 
   @doc "Create JetStream streams for service coordination"

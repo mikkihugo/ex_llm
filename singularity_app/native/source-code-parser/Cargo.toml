@@ -15,7 +15,7 @@ rustler = "0.34"
 # Universal dependency analysis - pre-release includes security fixes
 tokei = "13.0.0-alpha.9"
 # Optional: Mozilla/RCA metrics library (feature-gated)
-mozilla-code-analysis = { path = "../../rust/mozilla-code-analysis", optional = true }
+mozilla-code-analysis = { path = "../../../rust/mozilla-code-analysis", optional = true }
 
 # Tree-sitter core only (languages handled by individual parser crates)
 tree-sitter = "0.22"
@@ -66,5 +66,6 @@ name = "parser_performance"
 harness = false
 [features]
 default = ["nif"]
+nif = []
 # Enable Mozilla rust-code-analysis metrics
 rca = ["mozilla-code-analysis"]

@@ -350,7 +350,7 @@ defmodule Singularity.CodeAnalysis.MicroserviceAnalyzer do
     missing
   end
 
-  defp parse_toml(content) do
+  defp parse_toml(_content) do
     # Simple TOML parsing - in production, use a proper TOML library
     %{"dependencies" => %{}, "dev-dependencies" => %{}}
   end

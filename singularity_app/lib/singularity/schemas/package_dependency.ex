@@ -30,8 +30,8 @@ defmodule Singularity.Schemas.PackageDependency do
       :dependency_type,
       :is_optional
     ])
-    |> validate_required([:tool_id, :dependency_name])
+    |> validate_required([:dependency_id, :dependency_name])
     |> validate_inclusion(:dependency_type, ["runtime", "dev", "peer", "optional"])
-    |> foreign_key_constraint(:tool_id)
+    |> foreign_key_constraint(:dependency_id)
   end
 end

@@ -73,7 +73,7 @@ defmodule Singularity.CodeTrainer do
       end
 
     case Singularity.Repo.query(query, params) do
-      {:ok, %{rows: rows}} when length(rows) > 0 ->
+      {:ok, %{rows: [_ | _] = rows}} ->
         dataset =
           rows
           |> Enum.map(fn [path, content, lang, metadata] ->

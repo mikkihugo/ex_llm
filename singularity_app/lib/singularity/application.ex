@@ -73,8 +73,7 @@ defmodule Singularity.Application do
         Singularity.Knowledge.TemplateService,
 
         # NATS Execution Router (connects AI Server to TemplateSparcOrchestrator)
-        # TODO: Fix NatsExecutionRouter to work with latest CostOptimizedAgent API
-        # Singularity.NatsExecutionRouter,
+        Singularity.NatsExecutionRouter,
 
         # Auto-warmup (must be last to ensure all services are ready)
         Singularity.StartupWarmup,

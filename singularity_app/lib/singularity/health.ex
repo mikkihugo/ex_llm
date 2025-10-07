@@ -31,7 +31,7 @@ defmodule Singularity.Health do
 
   defp safe_queue_depth do
     try do
-      Manager.queue_depth()
+      Singularity.Manager.queue_depth()
     catch
       :exit, _ -> 0
     end

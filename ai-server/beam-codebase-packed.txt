@@ -265,7 +265,7 @@ lib/
     quality.ex
     repo.ex
     runner.ex
-    rust_analyzer.ex
+    source_code_analyzer.ex
     source_code_parser_nif.ex
     startup_warmup.ex
     store.ex
@@ -8141,7 +8141,7 @@ lib/
  25:     Logger.info("FlowAnalyzer: Analyzing #{file_path}")
  26: 
  27:     # Call existing Rust analyzer (extends it with CFG)
- 28:     case call_rust_analyzer(file_path) do
+ 28:     case call_source_code_analyzer(file_path) do
  29:       {:ok, result} ->
  30:         # Store using existing graph tables!
  31:         store_analysis_result(file_path, result)
@@ -8187,9 +8187,9 @@ lib/
  71: 
  72:   ## Private Functions
  73: 
- 74:   defp call_rust_analyzer(file_path) do
+ 74:   defp call_source_code_analyzer(file_path) do
  75:     # Call Rust NIF - pure computation, NO I/O!
- 76:     case Singularity.RustAnalyzer.analyze_control_flow(file_path) do
+ 76:     case Singularity.SourceCodeAnalyzer.analyze_control_flow(file_path) do
  77:       {:ok, result} ->
  78:         # Convert Rust struct to map
  79:         {:ok, %{
@@ -18833,7 +18833,7 @@ lib/
  47:           id: node["id"],
  48:           label: node["label"],
  49:           type: node["type"],
- 50:           isDead End: Enum.any?(cfg.dead_ends, &(&1["node_id"] == node["id"]))
+ 50:           is_dead_end: Enum.any?(cfg.dead_ends, &(&1["node_id"] == node["id"]))
  51:         }
  52:       end),
  53:       edges: Enum.map(cfg.edges, fn edge ->
@@ -48046,11 +48046,11 @@ lib/
 449: end
 ````
 
-## File: lib/singularity/rust_analyzer.ex
+## File: lib/singularity/source_code_analyzer.ex
 ````elixir
-  1: defmodule Singularity.RustAnalyzer do
+  1: defmodule Singularity.SourceCodeAnalyzer do
   2:   @moduledoc """
-  3:   Rust NIF bindings for analysis_suite
+  3:   Source Code Analyzer - Rust NIF bindings for source-code-parser
   4: 
   5:   Provides pure-computation analysis from Rust with NO I/O.
   6:   Elixir handles all PostgreSQL storage via Ecto.
@@ -48058,7 +48058,7 @@ lib/
   8:   ## Architecture
   9: 
  10:   ```
- 11:   Rust (analysis_suite)
+ 11:   Rust (source-code-parser)
  12:     ↓ Fast computation (CFG, graphs, metrics)
  13:     ↓ Returns data structures
  14:   Elixir (this module)
@@ -48070,7 +48070,7 @@ lib/
  20: 
  21:   ```elixir
  22:   # Pure computation - no DB access in Rust!
- 23:   {:ok, result} = RustAnalyzer.analyze_control_flow("lib/user.ex")
+ 23:   {:ok, result} = SourceCodeAnalyzer.analyze_control_flow("lib/user.ex")
  24: 
  25:   # Result:
  26:   %ControlFlowResult{
@@ -48083,7 +48083,7 @@ lib/
  33: 
  34:   use Rustler,
  35:     otp_app: :singularity,
- 36:     crate: "analysis_suite",
+ 36:     crate: "source-code-parser",
  37:     mode: :release,
  38:     features: ["nif"]
  39: 

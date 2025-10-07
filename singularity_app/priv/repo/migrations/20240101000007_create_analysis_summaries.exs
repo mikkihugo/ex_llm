@@ -27,7 +27,6 @@ defmodule Singularity.Repo.Migrations.CreateAnalysisSummaries do
     end
 
     # Primary indexes for querying
-    create index(:analysis_summaries, [:codebase_id, :analyzed_at])
     create index(:analysis_summaries, [:analyzed_at])
 
     # Index for cleanup queries

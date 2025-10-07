@@ -263,7 +263,7 @@ defmodule Singularity.Cache do
     provider = Keyword.get(opts, :provider)
     model = Keyword.get(opts, :model)
 
-    LLMCache.find_similar(query, threshold: threshold, provider: provider, model: model)
+    Singularity.LLM.SemanticCache.find_similar(query, threshold: threshold, provider: provider, model: model)
   end
 
   def find_similar(:semantic, query, opts) do
@@ -287,7 +287,7 @@ defmodule Singularity.Cache do
   end
 
   def clear(:memory) do
-    MemoryCache.clear()
+    Singularity.MemoryCache.clear(:all)
   end
 
   def clear(_type) do
@@ -309,7 +309,7 @@ defmodule Singularity.Cache do
   end
 
   def stats(:memory) do
-    MemoryCache.stats()
+    Singularity.MemoryCache.stats()
   end
 
   def stats(_type) do
