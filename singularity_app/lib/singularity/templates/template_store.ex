@@ -292,9 +292,11 @@ defmodule Singularity.TemplateStore do
       files
       |> Enum.map(&load_and_validate_template/1)
       |> Enum.filter(fn
-        {:ok, _} -> true
+        {:ok, _} ->
+          true
+
         {:error, reason} ->
-          Logger.warninging("Skipping invalid template: #{inspect(reason)}")
+          Logger.warning("Skipping invalid template: #{inspect(reason)}")
           false
       end)
       |> Enum.map(fn {:ok, template} -> template end)
@@ -311,16 +313,106 @@ defmodule Singularity.TemplateStore do
   end
 
   defp validate_schema(data) do
-    # TODO: Implement JSON schema validation
-    # For now, just check required fields
-    required = ["version", "type", "metadata", "content"]
-
-    if Enum.all?(required, &Map.has_key?(data, &1)) do
-      :ok
-    else
-      {:error, :invalid_schema}
+    try do
+      # Basic required fields validation
+      required_fields = ["version", "type", "metadata", "content"]
+      
+      missing_fields = Enum.reject(required_fields, &Map.has_key?(data, &1))
+      
+      if Enum.empty?(missing_fields) do
+        # Validate field types and formats
+        validation_results = [
+          validate_version(data["version"]),
+          validate_type(data["type"]),
+          validate_metadata(data["metadata"]),
+          validate_content(data["content"])
+        ]
+        
+        errors = Enum.filter(validation_results, &match?({:error, _}, &1))
+        
+        if Enum.empty?(errors) do
+          :ok
+        else
+          error_messages = Enum.map(errors, fn {:error, msg} -> msg end)
+          {:error, "Schema validation failed: #{Enum.join(error_messages, ", ")}"}
+        end
+      else
+        {:error, "Missing required fields: #{Enum.join(missing_fields, ", ")}"}
+      end
+    rescue
+      error ->
+        {:error, "Schema validation error: #{inspect(error)}"}
     end
   end
+
+  defp validate_version(version) when is_binary(version) do
+    # Validate semantic version format (e.g., "1.0.0")
+    if Regex.match?(~r/^\d+\.\d+\.\d+$/, version) do
+      :ok
+    else
+      {:error, "Invalid version format: #{version}"}
+    end
+  end
+
+  defp validate_version(_), do: {:error, "Version must be a string"}
+
+  defp validate_type(type) when is_binary(type) do
+    # Validate template type
+    valid_types = [
+      "quality_template", "framework_pattern", "system_prompt", 
+      "code_template", "architecture_template", "testing_template",
+      "deployment_template", "monitoring_template"
+    ]
+    
+    if type in valid_types do
+      :ok
+    else
+      {:error, "Invalid template type: #{type}. Valid types: #{Enum.join(valid_types, ", ")}"}
+    end
+  end
+
+  defp validate_type(_), do: {:error, "Type must be a string"}
+
+  defp validate_metadata(metadata) when is_map(metadata) do
+    # Validate metadata structure
+    required_metadata = ["name", "description", "author"]
+    missing_metadata = Enum.reject(required_metadata, &Map.has_key?(metadata, &1))
+    
+    if Enum.empty?(missing_metadata) do
+      # Validate metadata field types
+      name_valid = is_binary(metadata["name"]) and String.length(metadata["name"]) > 0
+      desc_valid = is_binary(metadata["description"]) and String.length(metadata["description"]) > 0
+      author_valid = is_binary(metadata["author"]) and String.length(metadata["author"]) > 0
+      
+      cond do
+        not name_valid -> {:error, "Metadata name must be a non-empty string"}
+        not desc_valid -> {:error, "Metadata description must be a non-empty string"}
+        not author_valid -> {:error, "Metadata author must be a non-empty string"}
+        true -> :ok
+      end
+    else
+      {:error, "Missing required metadata fields: #{Enum.join(missing_metadata, ", ")}"}
+    end
+  end
+
+  defp validate_metadata(_), do: {:error, "Metadata must be a map"}
+
+  defp validate_content(content) when is_map(content) do
+    # Validate content structure
+    if Map.has_key?(content, "template") do
+      template = content["template"]
+      
+      if is_binary(template) and String.length(template) > 0 do
+        :ok
+      else
+        {:error, "Content template must be a non-empty string"}
+      end
+    else
+      {:error, "Content must have a 'template' field"}
+    end
+  end
+
+  defp validate_content(_), do: {:error, "Content must be a map"}
 
   defp upsert_templates(templates, force) do
     count =

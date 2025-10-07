@@ -33,7 +33,7 @@ defmodule Mix.Tasks.Code.Load do
 
     {opts, _, invalid} = OptionParser.parse(args, switches: @switches)
 
-    unless invalid == [] do
+    if invalid != [] do
       invalid_opts = invalid |> Enum.map_join(", ", &elem(&1, 0))
       Mix.raise("Invalid options supplied: #{invalid_opts}")
     end

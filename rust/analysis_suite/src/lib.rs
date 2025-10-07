@@ -77,7 +77,6 @@ pub mod repository; // Repository analysis
 pub mod types;    // Legacy types (being migrated)
 pub mod codebase; // NEW: Single source of truth for all code metadata
 pub mod search;   // Semantic search with custom vectors
-pub mod technology_detection; // Technology detection via tool_doc_index
 
 // Unified storage system
 pub mod storage;
@@ -115,10 +114,6 @@ pub use storage::*;
 
 // Main analyzer that orchestrates everything
 pub mod analyzer;
-
-// NIF bindings for Elixir integration (optional - only when building as NIF)
-#[cfg(feature = "nif")]
-pub mod nif_bindings;
 
 // Re-export the main analyzer
 pub use analyzer::*;

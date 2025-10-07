@@ -1,10 +1,11 @@
-use anyhow::{Result, Context};
+use anyhow::Result;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use std::sync::Arc;
 use std::path::PathBuf;
 use tokenizers::Tokenizer;
 use crate::models::ModelType;
+// use crate::downloader::ensure_model_downloaded_sync;
 
 /// Global tokenizer cache
 static JINA_V3_TOKENIZER: Lazy<Arc<RwLock<Option<Tokenizer>>>> =
@@ -41,11 +42,10 @@ pub fn get_tokenizer(model_type: ModelType) -> Result<Tokenizer> {
     // Fallback: re-read from cache
     let read_lock = cache.read();
     read_lock.as_ref()
-        .ok_or_else(|| anyhow::anyhow!("Tokenizer not loaded"))
-        .map(|t| t.clone())
+        .ok_or_else(|| anyhow::anyhow!("Tokenizer not loaded")).cloned()
 }
 
-/// Load tokenizer from disk or download from HuggingFace
+/// Load tokenizer from disk or download from `HuggingFace`
 fn load_tokenizer(model_type: ModelType) -> Result<Tokenizer> {
     let tokenizer_path = match model_type {
         ModelType::JinaV3 => {
@@ -62,13 +62,13 @@ fn load_tokenizer(model_type: ModelType) -> Result<Tokenizer> {
                 let model_dir = crate::downloader::ensure_model_downloaded_sync(
                     &crate::downloader::ModelConfig::qodo_embed()
                 )?;
-                Ok(model_dir.join("tokenizer.json"))
+                Ok::<PathBuf, anyhow::Error>(model_dir.join("tokenizer.json"))
             })?
         }
     };
 
     Tokenizer::from_file(&tokenizer_path)
-        .context(format!("Failed to load tokenizer from {:?}", tokenizer_path))
+        .map_err(|e| anyhow::anyhow!("Failed to load tokenizer from {:?}: {}", tokenizer_path, e))
 }
 
 /// Helper: Get tokenizer path

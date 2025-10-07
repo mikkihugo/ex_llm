@@ -41,7 +41,7 @@ defmodule Singularity.StartupWarmup do
       Logger.info("Memory cache loaded: #{inspect(stats)}")
     rescue
       e ->
-        Logger.warninging("Memory cache warmup failed: #{inspect(e)}")
+        Logger.warning("Memory cache warmup failed: #{inspect(e)}")
     end
   end
 
@@ -63,7 +63,7 @@ defmodule Singularity.StartupWarmup do
       end
     rescue
       e ->
-        Logger.warninging("Template warmup failed: #{inspect(e)}")
+        Logger.warning("Template warmup failed: #{inspect(e)}")
     end
   end
 
@@ -96,7 +96,7 @@ defmodule Singularity.StartupWarmup do
       Logger.info("Pre-computed #{length(common_queries)} embeddings via Jina/Google")
     rescue
       e ->
-        Logger.warninging("Embedding warmup failed: #{inspect(e)}")
+        Logger.warning("Embedding warmup failed: #{inspect(e)}")
     end
   end
 
@@ -132,7 +132,7 @@ defmodule Singularity.StartupWarmup do
       end
     rescue
       e ->
-        Logger.warninging("HTDAG warmup failed: #{inspect(e)}")
+        Logger.warning("HTDAG warmup failed: #{inspect(e)}")
     end
   end
 end

@@ -8,7 +8,7 @@ defmodule Singularity.Planning.HTDAG do
 
   require Logger
 
-  alias Singularity.Integration.Claude
+  alias Singularity.LLM.Service
   alias Singularity.Planning.HTDAGCore
 
   @max_depth 5
@@ -127,9 +127,14 @@ defmodule Singularity.Planning.HTDAG do
     ]
     """
 
-    case Claude.chat(prompt) do
-      {:ok, response} ->
-        case Jason.decode(response["content"] || response.content || "[]") do
+    messages = [%{role: "user", content: prompt}]
+
+    case Service.call(:medium, messages,
+           task_type: "architect",
+           capabilities: [:reasoning, :speed]
+         ) do
+      {:ok, %{text: text}} ->
+        case Jason.decode(text) do
           {:ok, subtasks} ->
             # Enrich subtasks with parent info
             parent_id = task[:id] || task.id || "unknown"

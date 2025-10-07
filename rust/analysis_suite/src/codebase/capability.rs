@@ -159,7 +159,7 @@ pub enum EnablerType {
 }
 
 /// Search result for capability queries
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct CapabilitySearchResult {
     /// The capability
     pub capability: CodeCapability,

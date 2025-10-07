@@ -1,5 +1,5 @@
 use regex::Regex;
-use tree_sitter::Language;
+use tree_sitter_erlang;
 
 use crate::{ComplexityMetrics, HalsteadMetrics, MaintainabilityMetrics};
 use super::{ast_complexity, halstead_estimate, mi_visual_studio, td_from_mi};
@@ -9,11 +9,15 @@ pub fn compute_erlang_metrics(
   sloc: usize,
   cloc: usize,
 ) -> (ComplexityMetrics, HalsteadMetrics, MaintainabilityMetrics) {
-  // Temporarily disabled due to tree-sitter version incompatibilities
-  // let lang: Language = tree_sitter_erlang::language();
-  // let (cyclomatic, cognitive, nesting_depth, exit_points) =
-  //   ast_complexity(content, lang, &branch_kinds, &exit_kinds, &boolean_kinds);
-  let (cyclomatic, cognitive, nesting_depth, exit_points) = (1.0, 0.0, 0, 0);
+  // Use tree-sitter parsing with latest versions
+  let branch_kinds = ["if", "case", "receive", "try", "catch", "when", "call", "source_file", "fun_decl"];
+  let exit_kinds = ["return", "exit", "throw", "error", "call"];
+  let boolean_kinds = ["andalso", "orelse", "and", "or", "!"];
+  let (cyclomatic, cognitive, nesting_depth, exit_points) = 
+    ast_complexity(content, tree_sitter_erlang::language(), &branch_kinds, &exit_kinds, &boolean_kinds);
+  
+  // Ensure at least one exit point (every function has an implicit return)
+  let exit_points = exit_points.max(1);
 
   let ops_regex = Regex::new(r"<-|->|::|andalso|orelse|not|==|=/=|=:=|=/=|=|\+|\-|\*|/|%|!|;|\bif\b|\bcase\b|\breceive\b|\bfun\b|\btry\b").unwrap();
   let ident_regex = Regex::new(r"[A-Za-z_][A-Za-z0-9_@]*").unwrap();

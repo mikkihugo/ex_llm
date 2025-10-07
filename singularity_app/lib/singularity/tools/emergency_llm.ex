@@ -1,7 +1,34 @@
-defmodule Singularity.Tools.Llm do
+defmodule Singularity.Tools.EmergencyLLM do
   @moduledoc """
-  Registers tool wrappers around the emergency Claude CLI profiles so agents can
-  invoke safe or write-enabled fallbacks via the tool runner.
+  Emergency LLM Fallback Tools - Direct Claude CLI Access
+
+  ⚠️  DO NOT USE FOR REGULAR LLM CALLS ⚠️
+
+  This module provides EMERGENCY fallback tools that call Claude CLI directly.
+  These are only used when:
+  - NATS AI server is down
+  - Emergency recovery scenarios
+  - Agent tools that explicitly request CLI fallback
+
+  ## Regular LLM Usage
+
+  For normal LLM calls from Elixir code, use:
+
+      Singularity.LLM.Service.call("claude-sonnet-4.5", messages)
+
+  This goes through NATS → AI Server → AI SDK providers.
+
+  ## Emergency Tools
+
+  This module registers tools like:
+  - `llm_claude_safe` - Read-only Claude CLI
+  - `llm_claude_write` - Can edit files
+  - `llm_claude_dangerous` - Unrestricted (recovery only)
+
+  ## Architecture
+
+  Normal:  Elixir → NATS → AI Server → AI SDK → Providers
+  Emergency: Agent Tool → This Module → Claude CLI (direct)
   """
 
   alias Singularity.Integration.Claude

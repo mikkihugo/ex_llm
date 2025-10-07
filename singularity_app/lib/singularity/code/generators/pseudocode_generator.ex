@@ -115,11 +115,11 @@ defmodule Singularity.PseudocodeGenerator do
   This is the expensive step (GPU, RAG, etc.)
   Only called after user approves pseudocode.
   """
-  def to_code(pseudocode_result, opts \\ []) do
+  def to_code(pseudocode_result, _opts \\ []) do
     # Extract approved pseudocode
     pseudocode = pseudocode_result.pseudocode
     context = pseudocode_result.context
-    patterns = pseudocode_result.patterns
+    _patterns = pseudocode_result.patterns
 
     Logger.info("Converting pseudocode to full code...")
 
@@ -147,9 +147,9 @@ defmodule Singularity.PseudocodeGenerator do
 
   Super fast - just pattern matching and text manipulation.
   """
-  def refine(pseudocode_result, refinement, opts \\ []) do
+  def refine(pseudocode_result, refinement, _opts \\ []) do
     current = pseudocode_result.pseudocode
-    context = pseudocode_result.context
+    _context = pseudocode_result.context
 
     # Simple refinements via pattern matching
     refined =
@@ -383,7 +383,7 @@ defmodule Singularity.PseudocodeGenerator do
     end
   end
 
-  defp infer_operations(task, context) do
+  defp infer_operations(task, _context) do
     keywords = extract_keywords(task)
 
     ops = []

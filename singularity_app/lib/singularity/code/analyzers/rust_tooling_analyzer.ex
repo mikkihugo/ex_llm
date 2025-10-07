@@ -62,7 +62,7 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
         :ok
 
       {:error, reason} ->
-        Logger.warninging("⚠️  Could not analyze module structure: #{inspect(reason)}")
+        Logger.warning("⚠️  Could not analyze module structure: #{inspect(reason)}")
         # Non-critical, continue
         :ok
     end
@@ -97,13 +97,13 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
             end)
 
           _ ->
-            Logger.warninging("⚠️  Could not parse cargo-audit output")
+            Logger.warning("⚠️  Could not parse cargo-audit output")
         end
 
         :ok
 
       {:error, reason} ->
-        Logger.warninging("⚠️  Could not run security analysis: #{inspect(reason)}")
+        Logger.warning("⚠️  Could not run security analysis: #{inspect(reason)}")
         :ok
     end
   end
@@ -138,13 +138,13 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
             end)
 
           _ ->
-            Logger.warninging("⚠️  Could not parse cargo-bloat output")
+            Logger.warning("⚠️  Could not parse cargo-bloat output")
         end
 
         :ok
 
       {:error, reason} ->
-        Logger.warninging("⚠️  Could not analyze binary size: #{inspect(reason)}")
+        Logger.warning("⚠️  Could not analyze binary size: #{inspect(reason)}")
         :ok
     end
   end
@@ -179,13 +179,13 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
             end)
 
           _ ->
-            Logger.warninging("⚠️  Could not parse cargo-license output")
+            Logger.warning("⚠️  Could not parse cargo-license output")
         end
 
         :ok
 
       {:error, reason} ->
-        Logger.warninging("⚠️  Could not analyze licenses: #{inspect(reason)}")
+        Logger.warning("⚠️  Could not analyze licenses: #{inspect(reason)}")
         :ok
     end
   end
@@ -222,13 +222,13 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
             end)
 
           _ ->
-            Logger.warninging("⚠️  Could not parse cargo-outdated output")
+            Logger.warning("⚠️  Could not parse cargo-outdated output")
         end
 
         :ok
 
       {:error, reason} ->
-        Logger.warninging("⚠️  Could not analyze outdated dependencies: #{inspect(reason)}")
+        Logger.warning("⚠️  Could not analyze outdated dependencies: #{inspect(reason)}")
         :ok
     end
   end
@@ -260,7 +260,7 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
         :ok
 
       {:error, reason} ->
-        Logger.warninging("⚠️  Could not analyze unused dependencies: #{inspect(reason)}")
+        Logger.warning("⚠️  Could not analyze unused dependencies: #{inspect(reason)}")
         :ok
     end
   end
@@ -275,16 +275,16 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
           {:ok, output}
 
         {error_output, exit_code} ->
-          Logger.warninging(
+          Logger.warning(
             "Command failed: #{command} #{Enum.join(args, " ")} (exit: #{exit_code})"
           )
 
-          Logger.warninging("Error: #{error_output}")
+          Logger.warning("Error: #{error_output}")
           {:error, {:command_failed, exit_code, error_output}}
       end
     rescue
       e ->
-        Logger.warninging("Could not run command #{command}: #{inspect(e)}")
+        Logger.warning("Could not run command #{command}: #{inspect(e)}")
         {:error, {:command_error, e}}
     end
   end
@@ -327,7 +327,7 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
         Logger.debug("Inserted analysis with embedding: #{path}")
 
       {:error, reason} ->
-        Logger.warninging("Failed to insert analysis for #{path}: #{inspect(reason)}")
+        Logger.warning("Failed to insert analysis for #{path}: #{inspect(reason)}")
     end
   end
 
@@ -339,7 +339,7 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
         embedding
 
       {:error, reason} ->
-        Logger.warninging("EmbeddingService failed: #{inspect(reason)}, using zero vector")
+        Logger.warning("EmbeddingService failed: #{inspect(reason)}, using zero vector")
         Pgvector.new(List.duplicate(0.0, 768))
     end
   end
@@ -382,7 +382,7 @@ defmodule Singularity.CodeAnalysis.RustToolingAnalyzer do
   rescue
     error ->
       # Fallback: log the error and data
-      Logger.warninging("Failed to insert embedding: #{inspect(error)}")
+      Logger.warning("Failed to insert embedding: #{inspect(error)}")
       Logger.info("Analysis data: #{path} | #{label} | #{inspect(metadata)}")
       :ok
   end

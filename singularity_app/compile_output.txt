@@ -1,0 +1,213 @@
+Compiling 31 files (.ex)
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 618 │   defp has_typescript_service?(codebase_path, analysis) do
+     │                                ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/detection/technology_agent.ex:618:32: Singularity.TechnologyAgent.has_typescript_service?/2
+
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 633 │   defp has_rust_service?(codebase_path, analysis) do
+     │                          ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/detection/technology_agent.ex:633:26: Singularity.TechnologyAgent.has_rust_service?/2
+
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 637 │   defp has_python_service?(codebase_path, analysis) do
+     │                            ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/detection/technology_agent.ex:637:28: Singularity.TechnologyAgent.has_python_service?/2
+
+spawn: Could not cd to native/embedding_engine
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 649 │   defp has_go_service?(codebase_path, analysis) do
+     │                        ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/detection/technology_agent.ex:649:24: Singularity.TechnologyAgent.has_go_service?/2
+
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 653 │   defp analyze_typescript_services(codebase_path, analysis) do
+     │                                    ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/detection/technology_agent.ex:653:36: Singularity.TechnologyAgent.analyze_typescript_services/2
+
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 667 │   defp analyze_rust_services(codebase_path, analysis) do
+     │                              ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/detection/technology_agent.ex:667:30: Singularity.TechnologyAgent.analyze_rust_services/2
+
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 681 │   defp analyze_python_services(codebase_path, analysis) do
+     │                                ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/detection/technology_agent.ex:681:32: Singularity.TechnologyAgent.analyze_python_services/2
+
+     warning: variable "codebase_path" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 695 │   defp analyze_go_services(codebase_path, analysis) do
+     │                            ~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/detection/technology_agent.ex:695:28: Singularity.TechnologyAgent.analyze_go_services/2
+
+      warning: variable "profile_types" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1323 │   defp collect_profiling_data(target, profile_types, duration, sample_rate) do
+      │                                       ~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1323:39: Singularity.Tools.Performance.collect_profiling_data/4
+
+      warning: variable "target" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1323 │   defp collect_profiling_data(target, profile_types, duration, sample_rate) do
+      │                               ~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1323:31: Singularity.Tools.Performance.collect_profiling_data/4
+
+      warning: variable "profiling_data" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1337 │   defp generate_call_graph(profiling_data) do
+      │                            ~~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1337:28: Singularity.Tools.Performance.generate_call_graph/1
+
+      warning: variable "analysis_types" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1440 │   defp collect_memory_data(target, analysis_types, duration) do
+      │                                    ~~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1440:36: Singularity.Tools.Performance.collect_memory_data/3
+
+      warning: variable "target" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1440 │   defp collect_memory_data(target, analysis_types, duration) do
+      │                            ~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1440:28: Singularity.Tools.Performance.collect_memory_data/3
+
+      warning: variable "target" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1454 │   defp generate_heap_dump(target) do
+      │                           ~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1454:27: Singularity.Tools.Performance.generate_heap_dump/1
+
+      warning: variable "threshold" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1466 │   defp analyze_memory_patterns(memory_data, heap_dump, threshold) do
+      │                                                        ~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1466:56: Singularity.Tools.Performance.analyze_memory_patterns/3
+
+      warning: variable "analysis_depth" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1571 │   defp detect_bottlenecks(target, bottleneck_types, analysis_depth, severity_threshold) do
+      │                                                     ~~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1571:53: Singularity.Tools.Performance.detect_bottlenecks/4
+
+      warning: variable "severity_threshold" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1571 │   defp detect_bottlenecks(target, bottleneck_types, analysis_depth, severity_threshold) do
+      │                                                                     ~~~~~~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1571:69: Singularity.Tools.Performance.detect_bottlenecks/4
+
+      warning: variable "optimization_level" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1754 │   defp generate_optimizations(target, optimization_types, optimization_level, target_improvement) do
+      │                                                           ~~~~~~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1754:59: Singularity.Tools.Performance.generate_optimizations/4
+
+      warning: variable "target" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1754 │   defp generate_optimizations(target, optimization_types, optimization_level, target_improvement) do
+      │                               ~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1754:31: Singularity.Tools.Performance.generate_optimizations/4
+
+      warning: variable "target_improvement" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1754 │   defp generate_optimizations(target, optimization_types, optimization_level, target_improvement) do
+      │                                                                               ~~~~~~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1754:79: Singularity.Tools.Performance.generate_optimizations/4
+
+      warning: variable "target" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1821 │   defp generate_performance_benchmarks(target, optimizations) do
+      │                                        ~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1821:40: Singularity.Tools.Performance.generate_performance_benchmarks/2
+
+      warning: variable "analysis_types" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1920 │   defp collect_cpu_data(target, analysis_types, duration, include_per_core) do
+      │                                 ~~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1920:33: Singularity.Tools.Performance.collect_cpu_data/4
+
+      warning: variable "target" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 1920 │   defp collect_cpu_data(target, analysis_types, duration, include_per_core) do
+      │                         ~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:1920:25: Singularity.Tools.Performance.collect_cpu_data/4
+
+      warning: variable "analysis_types" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 2047 │   defp collect_database_performance_data(database, analysis_types, duration, slow_query_threshold) do
+      │                                                    ~~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:2047:52: Singularity.Tools.Performance.collect_database_performance_data/4
+
+      warning: variable "database" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 2047 │   defp collect_database_performance_data(database, analysis_types, duration, slow_query_threshold) do
+      │                                          ~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:2047:42: Singularity.Tools.Performance.collect_database_performance_data/4
+
+      warning: variable "slow_query_threshold" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 2047 │   defp collect_database_performance_data(database, analysis_types, duration, slow_query_threshold) do
+      │                                                                              ~~~~~~~~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:2047:78: Singularity.Tools.Performance.collect_database_performance_data/4
+
+      warning: variable "analysis_types" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 2149 │   defp collect_network_performance_data(target, analysis_types, duration, include_remote_testing) do
+      │                                                 ~~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:2149:49: Singularity.Tools.Performance.collect_network_performance_data/4
+
+      warning: variable "include_remote_testing" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 2149 │   defp collect_network_performance_data(target, analysis_types, duration, include_remote_testing) do
+      │                                                                           ~~~~~~~~~~~~~~~~~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:2149:75: Singularity.Tools.Performance.collect_network_performance_data/4
+
+      warning: variable "target" is unused (if the variable is not meant to be used, prefix it with an underscore)
+      │
+ 2149 │   defp collect_network_performance_data(target, analysis_types, duration, include_remote_testing) do
+      │                                         ~~~~~~
+      │
+      └─ lib/singularity/tools/performance.ex:2149:41: Singularity.Tools.Performance.collect_network_performance_data/4
+
+
+== Compilation error in file lib/singularity/embedding_engine.ex ==
+** (RuntimeError) calling `cargo metadata` failed.
+
+    (rustler 0.34.0) lib/rustler/compiler/config.ex:81: Rustler.Compiler.Config.metadata!/1
+    (rustler 0.34.0) lib/rustler/compiler/config.ex:63: Rustler.Compiler.Config.build/1
+    (rustler 0.34.0) lib/rustler/compiler.ex:8: Rustler.Compiler.compile_crate/3
+    lib/singularity/embedding_engine.ex:7: (module)

@@ -161,8 +161,12 @@ defmodule Singularity.NatsClient do
   end
 
   @impl true
-  def handle_call({:request, subject, _data, _timeout, _headers}, _from, %{connection: nil} = state) do
-    Logger.warninging("NATS not connected, cannot request from #{subject}")
+  def handle_call(
+        {:request, subject, _data, _timeout, _headers},
+        _from,
+        %{connection: nil} = state
+      ) do
+    Logger.warning("NATS not connected, cannot request from #{subject}")
     {:reply, {:error, :not_connected}, state}
   end
 

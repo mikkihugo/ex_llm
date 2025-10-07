@@ -114,19 +114,64 @@ defmodule Singularity.TemplateMatcher do
     base_patterns ++ architectural ++ integration
   end
 
+  defp extract_section_patterns(section) when is_map(section) do
+    patterns = []
+    
+    # Extract patterns from section content
+    patterns = if Map.has_key?(section, "patterns") do
+      Map.get(section, "patterns", []) |> List.wrap() |> Enum.map(&normalize_pattern/1)
+    else
+      patterns
+    end
+    
+    # Extract patterns from section metadata
+    patterns = if Map.has_key?(section, "metadata") do
+      metadata_patterns = Map.get(section, "metadata", %{})
+      |> Map.get("patterns", [])
+      |> List.wrap()
+      |> Enum.map(&normalize_pattern/1)
+      
+      patterns ++ metadata_patterns
+    else
+      patterns
+    end
+    
+    # Extract patterns from section tags
+    patterns = if Map.has_key?(section, "tags") do
+      tag_patterns = Map.get(section, "tags", [])
+      |> List.wrap()
+      |> Enum.map(&normalize_pattern/1)
+      
+      patterns ++ tag_patterns
+    else
+      patterns
+    end
+    
+    patterns |> Enum.uniq() |> Enum.reject(&is_nil/1)
+  end
+
   defp extract_section_patterns(section) when is_list(section) do
-    Enum.map(section, fn pattern ->
-      %{
-        name: pattern["name"] || pattern["pattern"] || "unknown",
-        keywords: extract_keywords(pattern),
-        relationships: pattern["relationships"] || pattern["related"] || [],
-        description: pattern["description"] || "",
-        code_structure: pattern["structure"] || pattern["example"] || ""
-      }
-    end)
+    section
+    |> Enum.flat_map(&extract_section_patterns/1)
+    |> Enum.uniq()
   end
 
   defp extract_section_patterns(_), do: []
+
+  defp normalize_pattern(pattern) when is_binary(pattern) do
+    String.trim(pattern)
+  end
+
+  defp normalize_pattern(pattern) when is_atom(pattern) do
+    Atom.to_string(pattern)
+  end
+
+  defp normalize_pattern(%{"name" => name}), do: normalize_pattern(name)
+  defp normalize_pattern(%{name: name}), do: normalize_pattern(name)
+  defp normalize_pattern(%{"pattern" => pattern}), do: normalize_pattern(pattern)
+  defp normalize_pattern(%{pattern: pattern}), do: normalize_pattern(pattern)
+
+  defp normalize_pattern(_), do: nil
 
   defp extract_keywords(pattern) do
     # Keywords can be explicit or derived from name/description
@@ -223,6 +268,7 @@ defmodule Singularity.TemplateMatcher do
   defp suggest_missing_patterns(matches, template) do
     # If code uses certain patterns, suggest what else it should have
     detected = Enum.map(matches, & &1.pattern.name)
+    template_patterns = extract_template_patterns(template)
 
     suggestions = []
 
@@ -247,6 +293,26 @@ defmodule Singularity.TemplateMatcher do
         suggestions
       end
 
-    suggestions
+    # Add template-specific suggestions based on template patterns
+    template_suggestions =
+      template_patterns
+      |> Enum.filter(fn pattern -> pattern not in detected end)
+      |> Enum.map(fn pattern -> "Consider adding #{pattern} pattern from template" end)
+
+    suggestions ++ template_suggestions
+  end
+
+  defp extract_template_patterns(template) do
+    # Extract patterns that the template expects
+    case template do
+      %{"patterns" => patterns} when is_list(patterns) ->
+        Enum.map(patterns, & &1["name"])
+
+      %{"framework_patterns" => patterns} when is_list(patterns) ->
+        Enum.map(patterns, & &1["name"])
+
+      _ ->
+        []
+    end
   end
 end

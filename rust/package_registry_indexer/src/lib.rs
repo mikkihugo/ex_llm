@@ -81,6 +81,7 @@ pub mod extractor;
 
 // Detection now delegated to tech_detector library (no local module)
 // Re-export tech_detector for convenience
+#[cfg(feature = "detection")]
 pub use tech_detector;
 
 // NATS service (package_registry_indexer is a service, not just a library)
@@ -117,6 +118,7 @@ pub use embedding::EmbeddingGenerator;
 pub use search::{IndexStats, VectorIndex};
 
 // Re-export tech_detector types for convenience
+#[cfg(feature = "detection")]
 pub use tech_detector::{
   TechDetector, DetectionResults, FrameworkDetection, LanguageDetection,
   DatabaseDetection, DetectionMethod,

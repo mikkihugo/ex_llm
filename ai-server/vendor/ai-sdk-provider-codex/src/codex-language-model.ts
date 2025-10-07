@@ -1,4 +1,6 @@
-import type { LanguageModelV1 } from '@ai-sdk/provider';
+import { generateText, streamText } from 'ai';
+import type { LanguageModelV2 } from '@ai-sdk/provider';
+import { createGeminiProvider } from '../../src/providers/gemini-code';
 import { Codex } from '@openai/codex-sdk';
 import type {
   ThreadEvent,
@@ -15,8 +17,8 @@ export interface CodexModelConfig {
   reasoningSummary?: 'none' | 'auto' | 'concise' | 'detailed';
 }
 
-export class CodexLanguageModel implements LanguageModelV1 {
-  readonly specificationVersion = 'v1' as const;
+export class CodexLanguageModel implements LanguageModelV2 {
+  readonly specificationVersion = 'v2' as const;
   readonly provider = 'openai.codex' as const;
   readonly modelId: string;
   readonly config: CodexModelConfig;
@@ -31,7 +33,16 @@ export class CodexLanguageModel implements LanguageModelV1 {
   }
 
   async doGenerate(options: Parameters<LanguageModelV1['doGenerate']>[0]): Promise<Awaited<ReturnType<LanguageModelV1['doGenerate']>>> {
-    const { promptText, messagesForUsage } = this.convertMessagesToPrompt(options.prompt);
+    if (this.modelId.startsWith('gemini')) {
+      const gemini = createGeminiProvider({ authType: 'oauth-personal' });
+      const result = await generateText({
+        model: gemini(this.modelId as any),
+        ...options,
+      });
+      return result as any;
+    }
+
+    const { promptText, messagesForUsage } = this.convertMessagesToPrompt(options.prompt, options.tools);
 
     try {
       const turn = await this.runCodexTurn(promptText);
@@ -72,7 +83,7 @@ export class CodexLanguageModel implements LanguageModelV1 {
     };
   }
 
-  private convertMessagesToPrompt(prompt: any[]): { promptText: string; messagesForUsage: string[] } {
+  private convertMessagesToPrompt(prompt: any[], tools?: Record<string, any>): { promptText: string; messagesForUsage: string[] } {
     const ordered: string[] = [];
 
     for (const message of prompt) {
@@ -86,12 +97,48 @@ export class CodexLanguageModel implements LanguageModelV1 {
       ordered.push(`${role.toUpperCase()}:\n${text}`);
     }
 
-    const promptText = ordered.join("\n\n");
+    let promptText = ordered.join("\n\n");
+
+    if (tools) {
+      const toolInstruction = this.buildToolInstructionBlock(tools);
+      if (toolInstruction) {
+        ordered.push(`SYSTEM:\n${toolInstruction}`);
+        promptText = ordered.join("\n\n");
+      }
+    }
 
     return {
       promptText,
       messagesForUsage: ordered,
     };
+  }
+
+  private buildToolInstructionBlock(tools: Record<string, any> | undefined): string | null {
+    if (!tools || typeof tools !== 'object') {
+      return null;
+    }
+
+    const entries = Object.entries(tools);
+    if (entries.length === 0) {
+      return null;
+    }
+
+    const lines: string[] = ['You have access to the following callable tools. When a tool is required, respond with JSON {"tool": "<name>", "arguments": {...}} and wait for the result before continuing.'];
+
+    for (const [name, definition] of entries) {
+      const description = typeof definition?.description === 'string' ? definition.description.trim() : '';
+      const parameters = definition?.parameters ? JSON.stringify(definition.parameters) : undefined;
+      const lineParts = [`- ${name}`];
+      if (description) {
+        lineParts.push(`description: ${description}`);
+      }
+      if (parameters) {
+        lineParts.push(`schema: ${parameters}`);
+      }
+      lines.push(lineParts.join(' '));
+    }
+
+    return lines.join('\n');
   }
 
   private extractMessageTextParts(content: any): string[] {
@@ -167,7 +214,7 @@ export class CodexLanguageModel implements LanguageModelV1 {
   }
 
   async doStream(options: Parameters<LanguageModelV1['doStream']>[0]): Promise<Awaited<ReturnType<LanguageModelV1['doStream']>>> {
-    const { promptText, messagesForUsage } = this.convertMessagesToPrompt(options.prompt);
+    const { promptText, messagesForUsage } = this.convertMessagesToPrompt(options.prompt, options.tools);
 
     const codex = this.createCodexClient();
     const thread = codex.startThread();

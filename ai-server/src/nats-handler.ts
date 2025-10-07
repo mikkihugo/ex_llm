@@ -15,10 +15,19 @@ import { codex } from 'ai-sdk-provider-codex';
 import { copilot } from './providers/copilot';
 import { githubModels } from './providers/github-models';
 import { julesWithMetadata } from './providers/google-ai-jules';
+import { cursor } from './providers/cursor.js';
+import { openrouter } from './providers/openrouter.js';
+import { selectOpenRouterModel } from './openrouter-selector.js';
+import { MODEL_CAPABILITIES } from './data/model-capabilities-loader.js';
 import { convertOpenAIToolsToAISDK, type OpenAITool } from './tool-converter.js';
+import { analyzeTaskComplexity, type TaskComplexity } from './task-complexity.js';
+
+type TaskType = 'general' | 'architect' | 'coder' | 'qa';
+
+type CapabilityHint = 'code' | 'reasoning' | 'creativity' | 'speed' | 'cost';
 
 interface LLMRequest {
-  model: string;
+  model?: string;
   provider?: string;
   messages: Array<{ role: string; content: string }>;
   max_tokens?: number;
@@ -26,6 +35,9 @@ interface LLMRequest {
   stream?: boolean;
   correlation_id?: string;
   tools?: OpenAITool[];  // Tools from Elixir in OpenAI format
+  complexity?: TaskComplexity;
+  task_type?: string;
+  capabilities?: CapabilityHint[];
 }
 
 interface LLMResponse {
@@ -43,6 +55,115 @@ interface LLMError {
   correlation_id?: string;
   timestamp: string;
 }
+
+type ProviderKey = 'claude' | 'gemini' | 'codex' | 'copilot' | 'github' | 'jules' | 'cursor' | 'openrouter';
+
+const MODEL_SELECTION_MATRIX: Record<TaskType, Record<TaskComplexity, Array<{ provider: ProviderKey; model: string }>>> = {
+  general: {
+    simple: [
+      { provider: 'gemini', model: 'gemini-2.5-flash' },
+      { provider: 'copilot', model: 'gpt-5-mini' },  // Small fast OpenAI via Copilot
+      { provider: 'copilot', model: 'grok-code-fast-1' },  // Grok fast model
+      { provider: 'codex', model: 'o3-mini-codex' },  // Small OpenAI via Codex
+      { provider: 'cursor', model: 'auto' }  // FREE unlimited fallback
+    ],
+    medium: [
+      { provider: 'copilot', model: 'gpt-4o' },  // FREE unlimited GPT-4o
+      { provider: 'claude', model: 'claude-3-5-sonnet-20241022' },
+      { provider: 'gemini', model: 'gemini-2.5-pro' },
+      { provider: 'codex', model: 'gpt-5-codex' },
+      { provider: 'copilot', model: 'gpt-4.1' },
+      { provider: 'cursor', model: 'auto' }  // FREE unlimited fallback
+    ],
+    complex: [
+      { provider: 'claude', model: 'claude-sonnet-4.5' },
+      { provider: 'codex', model: 'gpt-5-codex' },
+      { provider: 'claude', model: 'opus-4.1' },  // Fallback: best reasoning + creativity
+      { provider: 'copilot', model: 'gpt-4o' },  // FREE unlimited GPT-4o
+      { provider: 'gemini', model: 'gemini-2.5-pro' },
+      { provider: 'copilot', model: 'gpt-4.1' },
+      { provider: 'cursor', model: 'cheetah' }  // FREE unlimited fast fallback
+    ]
+  },
+  architect: {
+    simple: [
+      { provider: 'copilot', model: 'gpt-4o' },  // FREE unlimited GPT-4o
+      { provider: 'claude', model: 'claude-3-5-sonnet-20241022' },
+      { provider: 'openrouter', model: 'auto' },  // Dynamic: best for architect/simple
+      { provider: 'gemini', model: 'gemini-2.5-flash' },
+      { provider: 'cursor', model: 'auto' }  // FREE unlimited fallback
+    ],
+    medium: [
+      { provider: 'copilot', model: 'gpt-4o' },  // FREE unlimited GPT-4o
+      { provider: 'claude', model: 'claude-3-5-sonnet-20241022' },
+      { provider: 'openrouter', model: 'auto' },  // Dynamic: best for architect/medium (DeepSeek R1)
+      { provider: 'codex', model: 'gpt-5-codex' },
+      { provider: 'gemini', model: 'gemini-2.5-pro' },
+      { provider: 'copilot', model: 'gpt-4.1' },
+      { provider: 'cursor', model: 'auto' }  // FREE unlimited fallback
+    ],
+    complex: [
+      { provider: 'claude', model: 'claude-sonnet-4.5' },
+      { provider: 'openrouter', model: 'auto' },  // Dynamic: best for architect/complex (DeepSeek R1)
+      { provider: 'codex', model: 'gpt-5-codex' },
+      { provider: 'claude', model: 'opus-4.1' },  // Fallback: excellent reasoning + creativity
+      { provider: 'copilot', model: 'gpt-4o' },  // FREE unlimited GPT-4o
+      { provider: 'copilot', model: 'gpt-4.1' },
+      { provider: 'cursor', model: 'cheetah' }  // FREE unlimited fast fallback
+    ]
+  },
+  coder: {
+    simple: [
+      { provider: 'copilot', model: 'gpt-5-mini' },  // Small fast OpenAI for coding
+      { provider: 'copilot', model: 'grok-code-fast-1' },  // Grok fast for code
+      { provider: 'openrouter', model: 'auto' },  // Dynamic: best for coder/simple (fast models)
+      { provider: 'gemini', model: 'gemini-2.5-flash' },
+      { provider: 'codex', model: 'o3-mini-codex' },
+      { provider: 'cursor', model: 'auto' }  // FREE unlimited fallback
+    ],
+    medium: [
+      { provider: 'copilot', model: 'gpt-4o' },  // FREE unlimited GPT-4o
+      { provider: 'codex', model: 'gpt-5-codex' },
+      { provider: 'openrouter', model: 'auto' },  // Dynamic: best for coder/medium (Qwen3 Coder)
+      { provider: 'copilot', model: 'gpt-4.1' },
+      { provider: 'claude', model: 'claude-3-5-sonnet-20241022' },
+      { provider: 'cursor', model: 'auto' }  // FREE unlimited fallback
+    ],
+    complex: [
+      { provider: 'codex', model: 'gpt-5-codex' },
+      { provider: 'claude', model: 'claude-sonnet-4.5' },
+      { provider: 'copilot', model: 'gpt-4o' },  // FREE unlimited GPT-4o
+      { provider: 'openrouter', model: 'auto' },  // Dynamic: best for coder/complex (Qwen3 Coder 480B!)
+      { provider: 'claude', model: 'opus-4.1' },  // Fallback: strong code + reasoning
+      { provider: 'cursor', model: 'cheetah' }  // FREE unlimited fast fallback
+    ]
+  },
+  qa: {
+    simple: [
+      { provider: 'copilot', model: 'gpt-4o' },  // FREE unlimited GPT-4o
+      { provider: 'gemini', model: 'gemini-2.5-flash' },
+      { provider: 'claude', model: 'claude-3-5-sonnet-20241022' },
+      { provider: 'cursor', model: 'auto' }  // FREE unlimited fallback
+    ],
+    medium: [
+      { provider: 'copilot', model: 'gpt-4o' },  // FREE unlimited GPT-4o
+      { provider: 'claude', model: 'claude-3-5-sonnet-20241022' },
+      { provider: 'gemini', model: 'gemini-2.5-pro' },
+      { provider: 'copilot', model: 'gpt-4.1' },
+      { provider: 'cursor', model: 'auto' }  // FREE unlimited fallback
+    ],
+    complex: [
+      { provider: 'claude', model: 'claude-3-5-sonnet-20241022' },
+      { provider: 'codex', model: 'gpt-5-codex' },
+      { provider: 'copilot', model: 'gpt-4o' },  // FREE unlimited GPT-4o
+      { provider: 'copilot', model: 'gpt-4.1' },
+      { provider: 'cursor', model: 'cheetah' }  // FREE unlimited fast fallback
+    ]
+  }
+};
+
+// MODEL_CAPABILITIES loaded from ./data/model-capabilities.json
+// Run `bun run generate:capabilities` to auto-generate scores
 
 class ValidationError extends Error {
   readonly code = 'VALIDATION_ERROR';
@@ -130,8 +251,8 @@ class NATSHandler {
       throw new ValidationError('Request payload must be an object');
     }
 
-    if (!request.model || typeof request.model !== 'string') {
-      throw new ValidationError('Request must include a model string');
+    if (request.model !== undefined && typeof request.model !== 'string') {
+      throw new ValidationError('Model must be a string when provided');
     }
 
     if (!Array.isArray(request.messages) || request.messages.length === 0) {
@@ -140,6 +261,23 @@ class NATSHandler {
 
     if (request.provider !== undefined && typeof request.provider !== 'string') {
       throw new ValidationError('Provider must be a string when provided');
+    }
+
+    if (request.complexity !== undefined && !['simple', 'medium', 'complex'].includes(request.complexity)) {
+      throw new ValidationError('Complexity must be simple, medium, or complex when provided');
+    }
+
+    if (request.task_type !== undefined && typeof request.task_type !== 'string') {
+      throw new ValidationError('Task type must be a string when provided');
+    }
+
+    if (request.capabilities !== undefined) {
+      if (!Array.isArray(request.capabilities)) {
+        throw new ValidationError('Capabilities must be an array when provided');
+      }
+      if (request.capabilities.some(cap => typeof cap !== 'string')) {
+        throw new ValidationError('Capabilities entries must be strings');
+      }
     }
 
     for (let index = 0; index < request.messages.length; index++) {
@@ -157,7 +295,15 @@ class NATSHandler {
   }
 
   async processLLMRequest(request: LLMRequest): Promise<LLMResponse> {
-    const { model, messages, max_tokens = 4000, temperature = 0.7, stream = false, tools } = request;
+    const selection = this.resolveModelSelection(request);
+    const model = selection.model;
+    const provider = selection.provider;
+    const complexity = selection.complexity;
+    const messages = request.messages;
+    const max_tokens = request.max_tokens ?? 4000;
+    const temperature = request.temperature ?? 0.7;
+    const stream = request.stream ?? false;
+    const tools = request.tools;
 
     // Convert tools from OpenAI format to AI SDK format
     let aiSDKTools = undefined;
@@ -171,18 +317,26 @@ class NATSHandler {
       });
     }
 
-    // Determine provider from request
-    const provider = this.determineProvider(request);
+    console.log('🧠 Model selection', {
+      requestedModel: request.model,
+      selectedModel: model,
+      provider,
+      taskType: this.normalizeTaskType(request),
+      complexity,
+      correlationId: request.correlation_id
+    });
 
     // Route to appropriate provider
     let result;
+
+    const taskType = this.normalizeTaskType(request);
 
     if (stream) {
       // Handle streaming requests
       result = await this.handleStreamingRequest(provider, model, messages, { max_tokens, temperature, tools: aiSDKTools });
     } else {
       // Handle non-streaming requests
-      result = await this.handleNonStreamingRequest(provider, model, messages, { max_tokens, temperature, tools: aiSDKTools });
+      result = await this.handleNonStreamingRequest(provider, model, messages, { max_tokens, temperature, tools: aiSDKTools }, taskType, complexity);
     }
 
     return {
@@ -195,35 +349,165 @@ class NATSHandler {
     };
   }
 
-  private determineProvider(request: LLMRequest): string {
-    if (request.provider) {
-      const normalized = this.normalizeProvider(request.provider);
-      if (normalized) {
-        return normalized;
+  private resolveModelSelection(request: LLMRequest): { model: string; provider: ProviderKey; complexity: TaskComplexity } {
+    const normalizedProviderHint = request.provider ? this.normalizeProvider(request.provider) : null;
+
+    if (request.model && request.model !== 'auto') {
+      const provider = normalizedProviderHint ?? this.getProviderFromModel(request.model);
+      if (!provider) {
+        throw new ProviderNotFoundError(`Unable to determine provider for model: ${request.model}`);
       }
-      throw new ProviderNotFoundError(`Unknown provider: ${request.provider}`);
+
+      const complexity = request.complexity ?? this.inferComplexity(request, this.taskTypeFromRequest(request));
+      return { model: request.model, provider: provider as ProviderKey, complexity };
     }
 
-    const inferred = this.getProviderFromModel(request.model);
-    if (inferred) {
-      return inferred;
+    const taskType = this.taskTypeFromRequest(request);
+    const complexity = request.complexity ?? this.inferComplexity(request, taskType);
+    const candidates = this.getModelCandidates(
+      taskType,
+      complexity,
+      normalizedProviderHint as ProviderKey | null,
+      request.capabilities  // Pass capabilities for scoring
+    );
+
+    if (candidates.length === 0) {
+      throw new ProviderNotFoundError(`No models available for task_type=${taskType} complexity=${complexity}`);
     }
 
-    throw new ProviderNotFoundError(`Unable to determine provider for model: ${request.model}`);
+    const choice = candidates[0];
+    return { model: choice.model, provider: choice.provider, complexity };
   }
 
+  private taskTypeFromRequest(request: LLMRequest): TaskType {
+    if (request.task_type) {
+      const mapped = this.normalizeTaskTypeString(request.task_type);
+      if (mapped) {
+        return mapped;
+      }
+    }
+
+    if (request.capabilities && request.capabilities.some(cap => this.normalizeCapability(cap) === 'code')) {
+      return 'coder';
+    }
+
+    if (request.capabilities && request.capabilities.some(cap => this.normalizeCapability(cap) === 'reasoning')) {
+      return 'architect';
+    }
+
+    return 'general';
+  }
+
+  private normalizeTaskType(request: LLMRequest): TaskType {
+    return this.taskTypeFromRequest(request);
+  }
+
+  private normalizeTaskTypeString(raw: string): TaskType | null {
+    const value = raw.toLowerCase();
+    if (['architect', 'architecture', 'planner', 'analysis', 'research'].includes(value)) return 'architect';
+    if (['coder', 'developer', 'implementation', 'build', 'codegen'].includes(value)) return 'coder';
+    if (['qa', 'tester', 'reviewer', 'validation', 'code_review', 'code-review', 'testing'].includes(value)) return 'qa';
+    if (['general', 'auto', 'default'].includes(value)) return 'general';
+    return null;
+  }
+
+  private normalizeCapability(raw: string): CapabilityHint | null {
+    const value = raw.toLowerCase();
+    if (['code', 'codegen', 'coding'].includes(value)) return 'code';
+    if (['reasoning', 'analysis', 'architect'].includes(value)) return 'reasoning';
+    if (['creativity', 'creative', 'design'].includes(value)) return 'creativity';
+    if (['speed', 'fast'].includes(value)) return 'speed';
+    if (['cost', 'cheap'].includes(value)) return 'cost';
+    return null;
+  }
+
+  private inferComplexity(request: LLMRequest, taskType: TaskType): TaskComplexity {
+    const text = request.messages?.map(message => message.content).join('\n') ?? '';
+    const contextLength = text.length;
+    const hasCapability = (capability: CapabilityHint) =>
+      request.capabilities?.some(cap => this.normalizeCapability(cap) === capability) ?? false;
+
+    const analysis = analyzeTaskComplexity(text, {
+      requiresCode: taskType === 'coder' || hasCapability('code'),
+      requiresReasoning: taskType === 'architect' || hasCapability('reasoning'),
+      requiresCreativity: hasCapability('creativity'),
+      contextLength
+    });
+
+    return analysis.complexity;
+  }
+
+  private calculateCapabilityScore(
+    candidate: { provider: ProviderKey; model: string },
+    capabilities: CapabilityHint[]
+  ): number {
+    const profile = MODEL_CAPABILITIES[candidate.model];
+    if (!profile) return 50; // Default score
+
+    let score = 0;
+    let weight = 0;
+
+    capabilities.forEach((cap, index) => {
+      const normalized = this.normalizeCapability(cap);
+      if (!normalized) return;
+
+      // First capability gets more weight
+      const capWeight = capabilities.length - index;
+      score += profile[normalized] * capWeight;
+      weight += capWeight;
+    });
+
+    return weight > 0 ? score / weight : 50;
+  }
+
+  private getModelCandidates(taskType: TaskType, complexity: TaskComplexity, providerHint: ProviderKey | null, capabilities?: CapabilityHint[]) {
+    const preferences = MODEL_SELECTION_MATRIX[taskType] ?? MODEL_SELECTION_MATRIX.general;
+    let candidates = preferences[complexity] ?? [];
+
+    if (providerHint) {
+      const filtered = candidates.filter(candidate => candidate.provider === providerHint);
+      if (filtered.length > 0) {
+        candidates = filtered;
+      } else {
+        const fallback = MODEL_SELECTION_MATRIX.general[complexity].filter(candidate => candidate.provider === providerHint);
+        if (fallback.length > 0) {
+          candidates = fallback;
+        }
+      }
+    }
+
+    if (candidates.length === 0 && preferences !== MODEL_SELECTION_MATRIX.general) {
+      candidates = MODEL_SELECTION_MATRIX.general[complexity] ?? [];
+    }
+
+    // Apply capability-based scoring and re-ranking
+    if (capabilities && capabilities.length > 0) {
+      const scored = candidates.map(candidate => ({
+        ...candidate,
+        score: this.calculateCapabilityScore(candidate, capabilities)
+      }));
+
+      // Sort by score DESC
+      scored.sort((a, b) => b.score - a.score);
+      return scored;
+    }
+
+    return candidates;
+  }
   private normalizeProvider(provider: string): string | null {
     const value = provider.toLowerCase();
     if (value.includes('claude')) return 'claude';
     if (value.includes('gemini')) return 'gemini';
     if (value.includes('codex')) return 'codex';
-    if (value.includes('copilot') || value.includes('cursor') || value.includes('grok')) return 'copilot';
+    if (value.includes('copilot')) return 'copilot';
+    if (value.includes('cursor')) return 'cursor';
+    if (value.includes('grok')) return 'copilot';
     if (value.includes('github')) return 'github';
     if (value.includes('jules')) return 'jules';
     return null;
   }
 
-  async handleNonStreamingRequest(provider: string, model: string, messages: any[], options: any) {
+  async handleNonStreamingRequest(provider: string, model: string, messages: any[], options: any, taskType?: TaskType, complexity?: TaskComplexity) {
     switch (provider) {
       case 'claude':
         return await this.callClaude(model, messages, options);
@@ -233,6 +517,10 @@ class NATSHandler {
         return await this.callCodex(model, messages, options);
       case 'copilot':
         return await this.callCopilot(model, messages, options);
+      case 'cursor':
+        return await this.callCursor(model, messages, options);
+      case 'openrouter':
+        return await this.callOpenRouter(model, messages, options, taskType || 'general', complexity || 'medium');
       case 'github':
         return await this.callGitHubModels(model, messages, options);
       case 'jules':
@@ -349,6 +637,59 @@ class NATSHandler {
     }
   }
 
+  async callCursor(model: string, messages: any[], options: any) {
+    try {
+      // Cursor in read-only mode (safe for fallback)
+      const result = await generateText({
+        model: cursor(model, {
+          approvalPolicy: 'read-only'  // Only read operations allowed
+        }),
+        messages: messages,
+        maxTokens: options.max_tokens,
+        temperature: options.temperature
+      });
+
+      return {
+        text: result.text,
+        tokens_used: result.usage?.totalTokens || 0,
+        cost_cents: 0 // Cursor is FREE unlimited (auto/cheetah models)
+      };
+    } catch (error) {
+      console.error('Cursor API error:', error);
+      throw error;
+    }
+  }
+
+  async callOpenRouter(model: string, messages: any[], options: any, taskType: TaskType, complexity: TaskComplexity) {
+    try {
+      // If model is 'auto', dynamically select best model for task
+      let selectedModel = model;
+      if (model === 'auto') {
+        const dynamicModel = await selectOpenRouterModel(taskType, complexity);
+        if (!dynamicModel) {
+          throw new Error(`No OpenRouter model available for ${taskType}/${complexity}`);
+        }
+        selectedModel = dynamicModel;
+      }
+
+      const result = await generateText({
+        model: openrouter(selectedModel),
+        messages: messages,
+        maxTokens: options.max_tokens,
+        temperature: options.temperature
+      });
+
+      return {
+        text: result.text,
+        tokens_used: result.usage?.totalTokens || 0,
+        cost_cents: 0 // All OpenRouter FREE models
+      };
+    } catch (error) {
+      console.error('OpenRouter API error:', error);
+      throw error;
+    }
+  }
+
   async callJules(model: string, messages: any[], options: any) {
     try {
       const result = await generateText({
@@ -357,7 +698,7 @@ class NATSHandler {
         maxTokens: options.max_tokens,
         temperature: options.temperature
       });
-      
+
       return {
         text: result.text,
         tokens_used: result.usage?.totalTokens || 0,
@@ -372,10 +713,11 @@ class NATSHandler {
   getProviderFromModel(model: string): string | null {
     if (model.startsWith('claude')) return 'claude';
     if (model.startsWith('gemini')) return 'gemini';
-    if (model.startsWith('gpt-5') || model.startsWith('o3')) return 'codex';
     if (model.startsWith('gpt-4')) return 'copilot';
+    if (model.startsWith('gpt-5')) return 'codex';
+    if (model.startsWith('o3')) return 'codex';
     if (model.startsWith('grok')) return 'copilot';
-    if (model.startsWith('cursor')) return 'copilot';
+    if (model.startsWith('cursor')) return 'cursor';
     if (model.startsWith('github')) return 'github';
     if (model.startsWith('jules')) return 'jules';
     return null;
@@ -482,7 +824,7 @@ async function startNATSHandler() {
 }
 
 // Export for use in other modules
-export { NATSHandler };
+export { NATSHandler, startNATSHandler };
 
 // Start if this file is run directly
 if (import.meta.main) {

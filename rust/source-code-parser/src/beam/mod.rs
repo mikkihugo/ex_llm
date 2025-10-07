@@ -15,7 +15,7 @@ pub use gleam_metrics::compute_gleam_metrics;
 use regex::Regex;
 use tree_sitter::{Language, Node, Parser};
 
-use crate::{ComplexityMetrics, HalsteadMetrics, MaintainabilityMetrics};
+use crate::HalsteadMetrics;
 
 pub(crate) fn ast_complexity(
   content: &str,
@@ -31,46 +31,54 @@ pub(crate) fn ast_complexity(
   let tree = match parser.parse(content, None) { Some(t) => t, None => return (1.0, 0.0, 0, 0) };
   let root = tree.root_node();
 
-  let mut cyclo: i64 = 1; // base
-  let mut cognitive: i64 = 0;
-  let mut max_depth: usize = 0;
-  let mut exits: i64 = 0;
+  struct AnalysisState {
+    cyclo: i64,
+    cognitive: i64,
+    max_depth: usize,
+    exits: i64,
+  }
 
-  fn walk(
+  fn walk_node(
     node: Node,
     depth: usize,
-    cyclo: &mut i64,
-    cognitive: &mut i64,
-    max_depth: &mut usize,
-    exits: &mut i64,
+    state: &mut AnalysisState,
     branch_kinds: &[&str],
     exit_kinds: &[&str],
     boolean_kinds: &[&str],
   ) {
     let kind = node.kind();
+    
     if branch_kinds.contains(&kind) {
-      *cyclo += 1;
-      *cognitive += 1 + depth as i64; // penalize nesting
-      if depth + 1 > *max_depth {
-        *max_depth = depth + 1;
+      state.cyclo += 1;
+      state.cognitive += 1 + depth as i64; // penalize nesting
+      if depth + 1 > state.max_depth {
+        state.max_depth = depth + 1;
       }
     }
     if exit_kinds.contains(&kind) {
-      *exits += 1;
+      state.exits += 1;
     }
     if boolean_kinds.contains(&kind) {
-      *cognitive += 1;
+      state.cognitive += 1;
     }
-    for i in 0..node.named_child_count() {
+    
+    for (i, _) in (0..node.named_child_count()).enumerate() {
       if let Some(ch) = node.named_child(i) {
-        walk(ch, depth + 1, cyclo, cognitive, max_depth, exits, branch_kinds, exit_kinds, boolean_kinds);
+        walk_node(ch, depth + 1, state, branch_kinds, exit_kinds, boolean_kinds);
       }
     }
   }
 
-  walk(root, 0, &mut cyclo, &mut cognitive, &mut max_depth, &mut exits, branch_kinds, exit_kinds, boolean_kinds);
+  let mut state = AnalysisState {
+    cyclo: 0,
+    cognitive: 0,
+    max_depth: 0,
+    exits: 0,
+  };
 
-  (cyclo.max(1) as f64, cognitive.max(0) as f64, max_depth, exits.max(0) as usize)
+  walk_node(root, 0, &mut state, branch_kinds, exit_kinds, boolean_kinds);
+
+  (state.cyclo.max(1) as f64, state.cognitive.max(0) as f64, state.max_depth, state.exits.max(0) as usize)
 }
 
 pub(crate) fn halstead_estimate(
@@ -94,17 +102,17 @@ pub(crate) fn halstead_estimate(
 
   let n1 = op_counts.len() as u64;
   let n2 = operand_counts.len() as u64;
-  let N1: u64 = op_counts.values().sum();
-  let N2: u64 = operand_counts.values().sum();
-  let length = (N1 + N2) as f64;
+  let n1_total: u64 = op_counts.values().sum();
+  let n2_total: u64 = operand_counts.values().sum();
+  let length = (n1_total + n2_total) as f64;
   let vocab = (n1 + n2) as f64;
   let volume = if vocab > 1.0 { length * vocab.log2() } else { 0.0 };
-  let difficulty = if n2 > 0 { (n1 as f64 / 2.0) * (N2 as f64 / n2 as f64) } else { 0.0 };
+  let difficulty = if n2 > 0 { (n1 as f64 / 2.0) * (n2_total as f64 / n2 as f64) } else { 0.0 };
   let effort = difficulty * volume;
 
   HalsteadMetrics {
-    total_operators: N1,
-    total_operands: N2,
+    total_operators: n1_total,
+    total_operands: n2_total,
     unique_operators: n1,
     unique_operands: n2,
     volume,

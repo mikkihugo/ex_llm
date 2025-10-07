@@ -10,7 +10,7 @@ defmodule Singularity.Planning.StoryDecomposer do
 
   require Logger
 
-  alias Singularity.Integration.Claude
+  alias Singularity.LLM.Service
 
   @doc "Decompose a user story using SPARC methodology"
   def decompose_story(story, opts \\ []) do
@@ -160,11 +160,13 @@ defmodule Singularity.Planning.StoryDecomposer do
   ## Helpers
 
   defp call_llm(prompt, opts) do
-    provider = Keyword.get(opts, :provider, :claude)
+    # Use LLM.Service via NATS (supports all providers)
+    model = Keyword.get(opts, :model, "claude-sonnet-4.5")
+    messages = [%{role: "user", content: prompt}]
 
-    case provider do
-      :claude -> Claude.chat(prompt, opts)
-      _ -> {:error, :unsupported_provider}
+    case Service.call(model, messages, opts) do
+      {:ok, %{text: text}} -> {:ok, text}
+      error -> error
     end
   end
 end

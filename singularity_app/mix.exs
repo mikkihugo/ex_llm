@@ -75,6 +75,8 @@ defmodule Singularity.MixProject do
 
       # Rustler NIF for GPU-accelerated embeddings (primary: Rust → fallback: Google AI)
       {:rustler, "~> 0.34.0", runtime: false},
+      # Analysis Suite NIF for unified code intelligence
+      {:analysis_suite, path: "../rust/analysis_suite", runtime: false},
 
       # Data & Serialization
       {:jason, "~> 1.4"},

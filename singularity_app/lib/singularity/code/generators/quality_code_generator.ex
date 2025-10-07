@@ -79,11 +79,11 @@ defmodule Singularity.QualityCodeGenerator do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, template} -> {:ok, template}
-          {:error, reason} -> {:error, {:json_decode_error, reason}}
+          {:error, _reason} -> {:error, :json_decode_error}
         end
 
-      {:error, reason} ->
-        Logger.warninging("Template file not found: #{template_path}, using default")
+      {:error, _reason} ->
+        Logger.warning("Template file not found: #{template_path}, using default")
         {:ok, default_template()}
     end
   end
@@ -99,7 +99,7 @@ defmodule Singularity.QualityCodeGenerator do
     end
   end
 
-  defp default_template(opts \\ []) do
+  defp default_template(_opts \\ []) do
     %{
       "quality_standards" => %{
         "documentation" => %{
@@ -248,7 +248,7 @@ defmodule Singularity.QualityCodeGenerator do
         end
 
       {:error, :enoent} ->
-        Logger.warninging("Template not found: #{path}, using defaults")
+        Logger.warning("Template not found: #{path}, using defaults")
         {:ok, default_template(language, quality)}
 
       {:error, reason} ->
@@ -424,8 +424,14 @@ defmodule Singularity.QualityCodeGenerator do
 
   defp add_missing_docs(code, "elixir", quality) do
     # Check which functions are missing @doc
+    quality_instruction = case quality do
+      :production -> "Add comprehensive @moduledoc and @doc with examples for production code."
+      :standard -> "Add @moduledoc and @doc for public functions."
+      _ -> "Add basic @doc for public functions."
+    end
+
     prompt = """
-    Add @moduledoc and @doc to functions that are missing documentation.
+    #{quality_instruction}
     Keep existing docs unchanged.
 
     Code:
@@ -439,7 +445,66 @@ defmodule Singularity.QualityCodeGenerator do
     CodeModel.complete(prompt, temperature: 0.05)
   end
 
-  defp add_missing_docs(code, _language, _quality), do: {:ok, ""}
+  defp add_missing_docs(code, "typescript", quality) do
+    quality_instruction = case quality do
+      :production -> "Add JSDoc comments with @param, @returns, and @example for all public functions."
+      :standard -> "Add JSDoc comments for public functions."
+      _ -> "Add basic JSDoc comments."
+    end
+
+    prompt = """
+    #{quality_instruction}
+
+    Code:
+    ```typescript
+    #{code}
+    ```
+
+    OUTPUT CODE WITH DOCS:
+    """
+
+    CodeModel.complete(prompt, temperature: 0.1)
+  end
+
+  defp add_missing_docs(code, "rust", quality) do
+    quality_instruction = case quality do
+      :production -> "Add comprehensive documentation comments with examples and safety notes."
+      :standard -> "Add documentation comments for public items."
+      _ -> "Add basic documentation comments."
+    end
+
+    prompt = """
+    #{quality_instruction}
+
+    Code:
+    ```rust
+    #{code}
+    ```
+
+    OUTPUT CODE WITH DOCS:
+    """
+
+    CodeModel.complete(prompt, temperature: 0.1)
+  end
+
+  defp add_missing_docs(code, language, quality) do
+    # Generic documentation addition for unsupported languages
+    Logger.info("Adding documentation for #{language} code (quality: #{quality})")
+
+    prompt = """
+    Add appropriate documentation comments for #{language} code.
+    Follow language conventions for documentation.
+
+    Code:
+    ```#{language}
+    #{code}
+    ```
+
+    OUTPUT CODE WITH DOCS:
+    """
+
+    CodeModel.complete(prompt, temperature: 0.2)
+  end
 
   defp add_missing_specs(code, "elixir", quality) when quality in [:production, :standard] do
     prompt = """
@@ -457,27 +522,275 @@ defmodule Singularity.QualityCodeGenerator do
     CodeModel.complete(prompt, temperature: 0.05)
   end
 
-  defp add_missing_specs(code, _language, _quality), do: {:ok, ""}
-
-  defp add_error_handling(code, language, quality) when quality == :production do
+  defp add_missing_specs(code, "typescript", quality) when quality in [:production, :standard] do
     prompt = """
-    Add explicit error handling to this #{language} code.
-    - Use {:ok, result} | {:error, reason} tuples (Elixir)
-    - Use Result<T, E> (Rust)
-    - Handle all error cases explicitly
+    Add TypeScript type annotations to functions that are missing them.
+    Use appropriate TypeScript types and interfaces.
+
+    Code:
+    ```typescript
+    #{code}
+    ```
+
+    OUTPUT CODE WITH TYPES:
+    """
+
+    CodeModel.complete(prompt, temperature: 0.1)
+  end
+
+  defp add_missing_specs(code, "rust", quality) when quality in [:production, :standard] do
+    prompt = """
+    Add explicit type annotations to functions that are missing them.
+    Use Rust's type system effectively.
+
+    Code:
+    ```rust
+    #{code}
+    ```
+
+    OUTPUT CODE WITH TYPES:
+    """
+
+    CodeModel.complete(prompt, temperature: 0.1)
+  end
+
+  defp add_missing_specs(code, language, quality) do
+    # Generic type specification addition for unsupported languages
+    Logger.info("Adding type specs for #{language} code (quality: #{quality})")
+
+    prompt = """
+    Add appropriate type annotations or specifications for #{language} code.
+    Follow language conventions for type safety.
 
     Code:
     ```#{language}
     #{code}
     ```
 
-    OUTPUT ENHANCED CODE ONLY:
+    OUTPUT CODE WITH TYPES:
     """
 
-    CodeModel.complete(prompt, temperature: 0.05)
+    CodeModel.complete(prompt, temperature: 0.2)
   end
 
-  defp add_error_handling(code, _language, _quality), do: {:ok, code}
+  defp add_error_handling(code, language, quality) do
+    try do
+      case language do
+        :elixir ->
+          add_elixir_error_handling(code, quality)
+        
+        :rust ->
+          add_rust_error_handling(code, quality)
+        
+        :javascript ->
+          add_javascript_error_handling(code, quality)
+        
+        :typescript ->
+          add_typescript_error_handling(code, quality)
+        
+        _ ->
+          {:ok, code}
+      end
+    rescue
+      error ->
+        Logger.warning("Error handling addition failed: #{inspect(error)}")
+        {:ok, code}
+    end
+  end
+
+  defp add_elixir_error_handling(code, quality) do
+    case quality do
+      :production ->
+        # Add comprehensive error handling for production
+        enhanced_code = """
+        #{code}
+
+        # Error handling utilities
+        defmodule ErrorHandler do
+          @moduledoc \"\"\"
+          Production error handling utilities.
+          \"\"\"
+
+          @spec handle_error(term(), String.t()) :: {:error, map()}
+          def handle_error(error, context) do
+            error_info = %{
+              error: inspect(error),
+              context: context,
+              timestamp: DateTime.utc_now(),
+              stacktrace: __STACKTRACE__
+            }
+            
+            Logger.error("Error in #{context}: #{inspect(error)}")
+            {:error, error_info}
+          end
+
+          @spec safe_call(function(), String.t()) :: {:ok, term()} | {:error, map()}
+          def safe_call(fun, context) do
+            try do
+              result = fun.()
+              {:ok, result}
+            rescue
+              error ->
+                handle_error(error, context)
+            end
+          end
+        end
+        """
+        {:ok, enhanced_code}
+
+      :development ->
+        # Add basic error handling for development
+        enhanced_code = """
+        #{code}
+
+        # Basic error handling for development
+        defmodule DevErrorHandler do
+          def handle_error(error, context) do
+            IO.puts("Error in #{context}: #{inspect(error)}")
+            {:error, %{error: error, context: context}}
+          end
+        end
+        """
+        {:ok, enhanced_code}
+
+      _ ->
+        {:ok, code}
+    end
+  end
+
+  defp add_rust_error_handling(code, quality) do
+    case quality do
+      :production ->
+        enhanced_code = """
+        #{code}
+
+        // Production error handling
+        use std::error::Error;
+        use std::fmt;
+
+        #[derive(Debug)]
+        pub struct AppError {
+            pub message: String,
+            pub context: String,
+        }
+
+        impl fmt::Display for AppError {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(f, "Error in {}: {}", self.context, self.message)
+            }
+        }
+
+        impl Error for AppError {}
+
+        pub fn handle_error<E: Error>(error: E, context: &str) -> AppError {
+            AppError {
+                message: error.to_string(),
+                context: context.to_string(),
+            }
+        }
+        """
+        {:ok, enhanced_code}
+
+      _ ->
+        {:ok, code}
+    end
+  end
+
+  defp add_javascript_error_handling(code, quality) do
+    case quality do
+      :production ->
+        enhanced_code = """
+        #{code}
+
+        // Production error handling
+        class AppError extends Error {
+          constructor(message, context) {
+            super(message);
+            this.name = 'AppError';
+            this.context = context;
+            this.timestamp = new Date().toISOString();
+          }
+        }
+
+        function handleError(error, context) {
+          const errorInfo = {
+            message: error.message,
+            context: context,
+            timestamp: new Date().toISOString(),
+            stack: error.stack
+          };
+          
+          console.error('Error in', context, ':', error);
+          return new AppError(error.message, context);
+        }
+
+        function safeCall(fn, context) {
+          try {
+            return { ok: true, result: fn() };
+          } catch (error) {
+            return { ok: false, error: handleError(error, context) };
+          }
+        }
+        """
+        {:ok, enhanced_code}
+
+      _ ->
+        {:ok, code}
+    end
+  end
+
+  defp add_typescript_error_handling(code, quality) do
+    case quality do
+      :production ->
+        enhanced_code = """
+        #{code}
+
+        // Production error handling
+        interface ErrorInfo {
+          message: string;
+          context: string;
+          timestamp: string;
+          stack?: string;
+        }
+
+        class AppError extends Error {
+          public readonly context: string;
+          public readonly timestamp: string;
+
+          constructor(message: string, context: string) {
+            super(message);
+            this.name = 'AppError';
+            this.context = context;
+            this.timestamp = new Date().toISOString();
+          }
+        }
+
+        function handleError(error: Error, context: string): AppError {
+          const errorInfo: ErrorInfo = {
+            message: error.message,
+            context: context,
+            timestamp: new Date().toISOString(),
+            stack: error.stack
+          };
+          
+          console.error('Error in', context, ':', error);
+          return new AppError(error.message, context);
+        }
+
+        function safeCall<T>(fn: () => T, context: string): { ok: true; result: T } | { ok: false; error: AppError } {
+          try {
+            return { ok: true, result: fn() };
+          } catch (error) {
+            return { ok: false, error: handleError(error as Error, context) };
+          }
+        }
+        """
+        {:ok, enhanced_code}
+
+      _ ->
+        {:ok, code}
+    end
+  end
 
   defp calculate_quality_score(code, docs, specs, tests, quality) do
     # Multi-factor quality scoring

@@ -2,4 +2,5 @@
 
 pub mod javascript;
 pub mod typescript;
-// TODO: add other language modules (typescript, python, java, etc.)
+pub mod unknown;
+// TODO: add other language modules (python, java, rust, etc.)

@@ -1,0 +1,19 @@
+[package]
+name = "parser-framework"
+version = "0.1.0"
+edition = "2021"
+description = "Core framework for language-specific parsers"
+
+[dependencies]
+# Core dependencies
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+# Tree-sitter core (no language bindings)
+tree-sitter = { workspace = true }
+
+# Common types
+uuid = { workspace = true, features = ["v4", "serde"] }
+chrono = { workspace = true, features = ["serde"] }

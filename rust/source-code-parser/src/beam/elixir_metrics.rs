@@ -1,5 +1,5 @@
 use regex::Regex;
-use tree_sitter::Language;
+use tree_sitter_elixir;
 
 use crate::{ComplexityMetrics, HalsteadMetrics, MaintainabilityMetrics};
 use super::{ast_complexity, halstead_estimate, mi_visual_studio, td_from_mi};
@@ -9,11 +9,16 @@ pub fn compute_elixir_metrics(
   sloc: usize,
   cloc: usize,
 ) -> (ComplexityMetrics, HalsteadMetrics, MaintainabilityMetrics) {
-  // Temporarily disabled due to tree-sitter version incompatibilities
-  // let lang: Language = tree_sitter_elixir::language();
-  // let (cyclomatic, cognitive, nesting_depth, exit_points) =
-  //   ast_complexity(content, lang, &branch_kinds, &exit_kinds, &boolean_kinds);
-  let (cyclomatic, cognitive, nesting_depth, exit_points) = (1.0, 0.0, 0, 0);
+  // Use tree-sitter parsing with latest versions
+  // Elixir tree-sitter node kinds (based on actual AST)
+  let branch_kinds = ["if", "unless", "case", "cond", "with", "try", "when", "call", "source"];
+  let exit_kinds = ["raise", "throw", "exit", "return", "call"];
+  let boolean_kinds = ["and", "or", "&&", "||", "!", "not"];
+  let (cyclomatic, cognitive, nesting_depth, exit_points) = 
+    ast_complexity(content, tree_sitter_elixir::LANGUAGE.into(), &branch_kinds, &exit_kinds, &boolean_kinds);
+  
+  // Ensure at least one exit point (every function has an implicit return)
+  let exit_points = exit_points.max(1);
 
   // Operators / Operands
   let ops_regex = Regex::new(r"\|\>|<\-|->|::|\bwhen\b|\bfn\b|\bdefp?\b|\bcase\b|\bcond\b|\bwith\b|\btry\b|\band\b|\bor\b|&&|\|\||!|not|==|!=|=|\+|\-|\*|/|%|").unwrap();

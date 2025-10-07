@@ -6,8 +6,6 @@ defmodule Singularity.EngineDatabaseManager do
 
   require Logger
 
-  alias Singularity.Engine.CodebaseStore
-
   @doc "Connect to all singularity-engine databases"
   def connect_to_engine_databases do
     Logger.info("Connecting to singularity-engine databases")

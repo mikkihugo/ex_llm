@@ -176,7 +176,7 @@ defmodule Singularity.Tools.EnhancedDescriptions do
 
       EXAMPLES:
       - "Find React UI libraries" → Material-UI, Ant Design, Chakra UI
-      - "Search Elixir HTTP clients" → HTTPoison, Req, Tesla
+      - "Search Elixir HTTP clients" → Finch, Req, Tesla
       - "Look for Rust web frameworks" → Actix, Warp, Axum
 
       PERFORMANCE: Fast (cached registry data), use for library research

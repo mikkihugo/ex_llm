@@ -142,6 +142,7 @@ cargo audit
 
 **AI/LLM Integration**
 - `singularity_app/lib/singularity/llm/`: Provider abstraction for Claude, Gemini, OpenAI, Copilot
+- **Model Selection**: Multi-dimensional capability-based ranking (see [MODEL_CAPABILITY_MATRIX.md](MODEL_CAPABILITY_MATRIX.md))
 - MCP (Model Context Protocol) federation via `hermes_mcp`
 - Jules AI agent integration for specialized tasks
 

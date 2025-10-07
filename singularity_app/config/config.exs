@@ -61,7 +61,8 @@ config :singularity, :claude,
 import_config "#{config_env()}.exs"
 
 config :singularity, Singularity.Repo,
-  database: System.get_env("SINGULARITY_DB_NAME", "singularity"),  # Single shared DB
+  # Single shared DB
+  database: System.get_env("SINGULARITY_DB_NAME", "singularity"),
   username: System.get_env("SINGULARITY_DB_USER") || System.get_env("USER") || "postgres",
   password: System.get_env("SINGULARITY_DB_PASSWORD", ""),
   hostname: System.get_env("SINGULARITY_DB_HOST", "localhost"),

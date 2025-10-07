@@ -9,7 +9,7 @@ use regex::Regex;
 use chrono::{DateTime, Utc};
 
 // Use universal parser framework - it handles all language parsers internally
-use source_code_parser::{
+use universal_parser::{
     UniversalParser, 
     UniversalParserFrameworkConfig,
     dependencies::UniversalDependencies,
@@ -436,7 +436,7 @@ pub struct SemanticSearchEngine {
     architecture_analyzer: ArchitectureAnalyzer,
     security_analyzer: SecurityAnalyzer,
     code_documents: HashMap<String, CodeDocument>,
-    source_code_parser: UniversalParser,
+    universal_parser: UniversalParser,
 }
 
 /// Trait for code parsers
@@ -584,7 +584,7 @@ impl SemanticSearchEngine {
     pub fn new() -> Result<Self> {
         // Initialize universal parser framework with all language plugins
         let config = UniversalParserFrameworkConfig::default();
-        let source_code_parser = UniversalParser::new_with_config(config)?;
+        let universal_parser = UniversalParser::new_with_config(config)?;
         
         Ok(Self {
             fact_system_interface: FactSystemInterface::new(),
@@ -593,7 +593,7 @@ impl SemanticSearchEngine {
             architecture_analyzer: ArchitectureAnalyzer::new(),
             security_analyzer: SecurityAnalyzer::new(),
             code_documents: HashMap::new(),
-            source_code_parser,
+            universal_parser,
         })
     }
     
@@ -623,7 +623,7 @@ impl SemanticSearchEngine {
     /// Parse code using universal parser framework
     pub async fn parse_code(&self, content: &str, file_path: &str, language: ProgrammingLanguage) -> Result<AstNode> {
         // Use universal parser framework to parse code
-        let analysis_result = self.source_code_parser.analyze(content, file_path, language).await?;
+        let analysis_result = self.universal_parser.analyze(content, file_path, language).await?;
         
         // Convert universal analysis result to our AstNode format
         Ok(self.convert_universal_analysis_result(analysis_result, language))
@@ -663,6 +663,19 @@ impl SemanticSearchEngine {
                     attributes.insert("language_specific".to_string(), format!("{:?}", lang_specific));
                 }
             }
+        }
+        
+        // Extract functions, classes, imports from analysis result
+        if let Some(functions) = analysis_result.functions {
+            attributes.insert("function_count".to_string(), functions.len().to_string());
+        }
+        
+        if let Some(classes) = analysis_result.classes {
+            attributes.insert("class_count".to_string(), classes.len().to_string());
+        }
+        
+        if let Some(imports) = analysis_result.imports {
+            attributes.insert("import_count".to_string(), imports.len().to_string());
         }
         
         AstNode {
@@ -1618,6 +1631,31 @@ impl RustParserWrapper {
         // Convert Rust analysis result to our unified AST format
         let mut attributes = HashMap::new();
         
+        // Extract function information
+        if let Some(functions) = analysis_result.functions {
+            attributes.insert("function_count".to_string(), functions.len().to_string());
+        }
+        
+        // Extract struct information
+        if let Some(structs) = analysis_result.structs {
+            attributes.insert("struct_count".to_string(), structs.len().to_string());
+        }
+        
+        // Extract trait information
+        if let Some(traits) = analysis_result.traits {
+            attributes.insert("trait_count".to_string(), traits.len().to_string());
+        }
+        
+        // Extract ownership patterns
+        if let Some(ownership_patterns) = analysis_result.ownership_patterns {
+            attributes.insert("ownership_patterns".to_string(), format!("{:?}", ownership_patterns));
+        }
+        
+        // Extract concurrency analysis
+        if let Some(concurrency) = analysis_result.concurrency_analysis {
+            attributes.insert("concurrency_patterns".to_string(), format!("{:?}", concurrency));
+        }
+        
         AstNode {
             node_type: "rust_file".to_string(),
             children: Vec::new(), // Would extract from analysis result
@@ -1756,6 +1794,31 @@ impl PythonParserWrapper {
     fn convert_analysis_result(&self, analysis_result: python_parser::PythonAnalysisResult) -> AstNode {
         // Convert Python analysis result to our unified AST format
         let mut attributes = HashMap::new();
+        
+        // Extract function information
+        if let Some(functions) = analysis_result.functions {
+            attributes.insert("function_count".to_string(), functions.len().to_string());
+        }
+        
+        // Extract class information
+        if let Some(classes) = analysis_result.classes {
+            attributes.insert("class_count".to_string(), classes.len().to_string());
+        }
+        
+        // Extract import information
+        if let Some(imports) = analysis_result.imports {
+            attributes.insert("import_count".to_string(), imports.len().to_string());
+        }
+        
+        // Extract decorator information
+        if let Some(decorators) = analysis_result.decorators {
+            attributes.insert("decorator_count".to_string(), decorators.len().to_string());
+        }
+        
+        // Extract async information
+        if let Some(async_functions) = analysis_result.async_functions {
+            attributes.insert("async_function_count".to_string(), async_functions.len().to_string());
+        }
         
         AstNode {
             node_type: "python_file".to_string(),

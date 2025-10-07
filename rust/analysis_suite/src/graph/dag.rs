@@ -68,7 +68,7 @@ use std::collections::HashMap;
 // use crate::llm::prompts::PromptCoordinator;
 use serde::{Deserialize, Serialize};
 
-// use crate::crates::source_code_parser::metadata_interface::{
+// use crate::crates::universal_parser::metadata_interface::{
 //   CommonDocumentationMetadata, DocumentationMetadataProvider,
 // };
 use crate::storage::graph::ComplexityMetrics;

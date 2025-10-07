@@ -1,7 +1,5 @@
 defmodule Singularity.PolyglotCodeParser do
   require Logger
-  import Ecto.Query
-  alias Singularity.Repo
 
   @moduledoc """
   Polyglot Code Parser - Parse and analyze code in any language
@@ -184,67 +182,16 @@ defmodule Singularity.PolyglotCodeParser do
   defp initialize_rust_parser do
     # Initialize the Rust universal parser framework via NIF
     Logger.info("Initializing Rust universal parser framework")
+
     case Singularity.UniversalParserNif.init() do
       {:ok, parser} ->
         Logger.info("Rust universal parser initialized successfully")
         {:ok, parser}
+
       {:error, reason} ->
         Logger.error("Failed to initialize Rust universal parser", reason: reason)
         {:error, reason}
     end
-  end
-
-  defp initialize_universal_dependencies do
-    # Initialize universal dependencies (tokei, mozilla code analysis, tree-sitter)
-    %{
-      tokei_analyzer: :tokei_analyzer,
-      complexity_analyzer: :rust_code_analyzer,
-      tree_sitter_manager: :tree_sitter_backend
-    }
-  end
-
-  defp initialize_parser_registry do
-    # Initialize parser registry for all supported languages
-    %{
-      javascript: :javascript_parser,
-      typescript: :typescript_parser,
-      rust: :rust_parser,
-      python: :python_parser,
-      go: :go_parser,
-      java: :java_parser,
-      c: :c_parser,
-      cpp: :cpp_parser,
-      csharp: :csharp_parser,
-      elixir: :elixir_parser,
-      erlang: :erlang_parser,
-      gleam: :gleam_parser
-    }
-  end
-
-  # Removed - Rust parser has its own in-memory cache
-
-  defp get_default_config do
-    %{
-      enable_caching: true,
-      cache_size: 1000,
-      enable_parallel: true,
-      # 10MB
-      max_file_size: 10 * 1024 * 1024,
-      # 30 seconds
-      timeout_ms: 30000,
-      enable_memory_optimization: true,
-      # 1 hour
-      cache_ttl: 3600,
-      enable_content_hashing: true,
-      max_concurrent: 4,
-      enable_lsp_features: true,
-      enable_real_time_analysis: false,
-      enable_auto_fix: false,
-      enable_live_errors: true,
-      enable_interactive_debugging: false,
-      enable_advanced_analysis: true,
-      enable_enterprise_features: true
-    }
   end
 
   defp initialize_database_connections do
@@ -404,12 +351,18 @@ defmodule Singularity.PolyglotCodeParser do
       {:ok, json_result} ->
         case Jason.decode(json_result) do
           {:ok, result} ->
-            Logger.info("File analysis completed", file_path: file_path, duration_ms: result["analysis_duration_ms"])
+            Logger.info("File analysis completed",
+              file_path: file_path,
+              duration_ms: result["analysis_duration_ms"]
+            )
+
             result
+
           {:error, reason} ->
             Logger.error("Failed to parse analysis result", reason: reason)
             create_fallback_result(file_path, language)
         end
+
       {:error, reason} ->
         Logger.error("Rust universal parser analysis failed", reason: reason)
         create_fallback_result(file_path, language)
@@ -459,16 +412,27 @@ defmodule Singularity.PolyglotCodeParser do
     language = detect_language_from_path(file_path)
     language_str = language_to_string(language)
 
-    case Singularity.UniversalParserNif.analyze_content(rust_parser, content, file_path, language_str) do
+    case Singularity.UniversalParserNif.analyze_content(
+           rust_parser,
+           content,
+           file_path,
+           language_str
+         ) do
       {:ok, json_result} ->
         case Jason.decode(json_result) do
           {:ok, result} ->
-            Logger.info("Content analysis completed", file_path: file_path, duration_ms: result["analysis_duration_ms"])
+            Logger.info("Content analysis completed",
+              file_path: file_path,
+              duration_ms: result["analysis_duration_ms"]
+            )
+
             result
+
           {:error, reason} ->
             Logger.error("Failed to parse analysis result", reason: reason)
             create_fallback_content_result(content, file_path, language)
         end
+
       {:error, reason} ->
         Logger.error("Rust universal parser analysis failed", reason: reason)
         create_fallback_content_result(content, file_path, language)
@@ -482,8 +446,14 @@ defmodule Singularity.PolyglotCodeParser do
       analysis_timestamp: DateTime.utc_now(),
       line_metrics: %{
         total_lines: String.split(content, "\n") |> length(),
-        code_lines: String.split(content, "\n") |> Enum.count(&(&1 != "" and not String.starts_with?(&1, "#") and not String.starts_with?(&1, "//"))),
-        comment_lines: String.split(content, "\n") |> Enum.count(&(String.starts_with?(&1, "#") or String.starts_with?(&1, "//"))),
+        code_lines:
+          String.split(content, "\n")
+          |> Enum.count(
+            &(&1 != "" and not String.starts_with?(&1, "#") and not String.starts_with?(&1, "//"))
+          ),
+        comment_lines:
+          String.split(content, "\n")
+          |> Enum.count(&(String.starts_with?(&1, "#") or String.starts_with?(&1, "//"))),
         blank_lines: String.split(content, "\n") |> Enum.count(&(&1 == ""))
       },
       content_analysis: %{
@@ -914,5 +884,23 @@ defmodule Singularity.PolyglotCodeParser do
     )
   end
 
-  defp clear_rust_parser_cache(_parser), do: :ok
+  defp clear_rust_parser_cache(parser) do
+    try do
+      # Clear parser cache if it exists
+      if function_exported?(parser, :clear_cache, 0) do
+        parser.clear_cache()
+      end
+      
+      # Clear any internal caches
+      if function_exported?(parser, :reset, 0) do
+        parser.reset()
+      end
+      
+      :ok
+    rescue
+      error ->
+        Logger.warning("Failed to clear Rust parser cache: #{inspect(error)}")
+        :ok
+    end
+  end
 end

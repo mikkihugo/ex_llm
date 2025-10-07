@@ -190,11 +190,26 @@ impl ProgrammingLanguage {
       // Kotlin
       "kt" | "kts" => ProgrammingLanguage::Kotlin,
 
-      // Configuration formats
+      // PHP / Ruby / Lua
+      "php" | "phtml" => ProgrammingLanguage::Php,
+      "rb" => ProgrammingLanguage::Ruby,
+      "lua" => ProgrammingLanguage::Lua,
+
+      // Web formats
+      "html" | "htm" => ProgrammingLanguage::Html,
+      "css" | "scss" | "less" => ProgrammingLanguage::Css,
+
+      // Data/config formats
       "json" => ProgrammingLanguage::Json,
       "yaml" | "yml" => ProgrammingLanguage::Yaml,
       "toml" => ProgrammingLanguage::Toml,
-      "xml" | "xhtml" | "html" | "htm" => ProgrammingLanguage::Xml,
+      "xml" | "xhtml" => ProgrammingLanguage::Xml,
+
+      // Shell / scripting
+      "sh" | "bash" => ProgrammingLanguage::Bash,
+
+      // Configuration formats
+      "ini" => ProgrammingLanguage::Ini,
 
       _ => ProgrammingLanguage::LanguageNotSupported,
     }
@@ -275,6 +290,14 @@ impl ProgrammingLanguage {
         | ProgrammingLanguage::CSharp
         | ProgrammingLanguage::Swift
         | ProgrammingLanguage::Kotlin
+        | ProgrammingLanguage::Php
+        | ProgrammingLanguage::Ruby
+        | ProgrammingLanguage::Lua
+        | ProgrammingLanguage::Json
+        | ProgrammingLanguage::Yaml
+        | ProgrammingLanguage::Bash
+        | ProgrammingLanguage::Html
+        | ProgrammingLanguage::Css
     )
   }
 
@@ -295,6 +318,14 @@ impl ProgrammingLanguage {
       ProgrammingLanguage::CSharp => Some("tree_sitter_c_sharp"),
       ProgrammingLanguage::Swift => Some("tree_sitter_swift"),
       ProgrammingLanguage::Kotlin => Some("tree_sitter_kotlin"),
+      ProgrammingLanguage::Php => Some("tree_sitter_php"),
+      ProgrammingLanguage::Ruby => Some("tree_sitter_ruby"),
+      ProgrammingLanguage::Lua => Some("tree_sitter_lua"),
+      ProgrammingLanguage::Json => Some("tree_sitter_json"),
+      ProgrammingLanguage::Yaml => Some("tree_sitter_yaml"),
+      ProgrammingLanguage::Bash => Some("tree_sitter_bash"),
+      ProgrammingLanguage::Html => Some("tree_sitter_html"),
+      ProgrammingLanguage::Css => Some("tree_sitter_css"),
       _ => None,
     }
   }

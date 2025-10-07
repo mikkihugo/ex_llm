@@ -11,5 +11,6 @@ config :logger, level: :warning
 config :singularity, :http_server_enabled, false
 
 config :singularity, Singularity.Repo,
-  database: "singularity",  # Shared DB, sandboxed for tests
+  # Shared DB, sandboxed for tests
+  database: "singularity",
   pool: Ecto.Adapters.SQL.Sandbox

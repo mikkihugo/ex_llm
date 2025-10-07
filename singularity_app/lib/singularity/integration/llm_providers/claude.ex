@@ -216,8 +216,9 @@ defmodule Singularity.Integration.Claude do
     end
   end
 
-  defp message_to_text(%{role: "user", content: content}), do: extract_text(content)
   defp message_to_text(%{"role" => "user", "content" => content}), do: extract_text(content)
+  defp message_to_text(%{"role" => "assistant", "content" => content}), do: extract_text(content)
+  defp message_to_text(%{"role" => "system", "content" => content}), do: extract_text(content)
   defp message_to_text(binary) when is_binary(binary), do: binary
   defp message_to_text(_), do: nil
 
@@ -229,8 +230,20 @@ defmodule Singularity.Integration.Claude do
       %{"text" => text} -> text
       %{type: "text", text: text} -> text
       %{"type" => "text", "text" => text} -> text
+      %{type: "image_url", image_url: %{url: url}} -> "[Image: #{url}]"
+      %{"type" => "image_url", "image_url" => %{"url" => url}} -> "[Image: #{url}]"
       other -> inspect(other)
     end)
+  end
+
+  defp extract_text(content) when is_map(content) do
+    cond do
+      Map.has_key?(content, "text") -> Map.get(content, "text")
+      Map.has_key?(content, :text) -> Map.get(content, :text)
+      Map.has_key?(content, "content") -> extract_text(Map.get(content, "content"))
+      Map.has_key?(content, :content) -> extract_text(Map.get(content, :content))
+      true -> inspect(content)
+    end
   end
 
   defp extract_text(_), do: nil
@@ -292,7 +305,7 @@ defmodule Singularity.Integration.Claude do
             System.cmd(cli, args, cli_opts)
           catch
             :timeout ->
-              Logger.warninging("Claude CLI inactivity timeout (#{@inactivity_timeout}ms)")
+              Logger.warning("Claude CLI inactivity timeout (#{@inactivity_timeout}ms)")
               {"", 124}
           end
         else
@@ -307,7 +320,7 @@ defmodule Singularity.Integration.Claude do
         result
 
       nil ->
-        Logger.warninging("Claude CLI exceeded hard timeout (#{hard_timeout}ms), killed")
+        Logger.warning("Claude CLI exceeded hard timeout (#{hard_timeout}ms), killed")
         {"", 124}
 
       {:exit, reason} ->
@@ -495,7 +508,7 @@ defmodule Singularity.Integration.Claude do
         if timeout && now - last_time > timeout do
           require Logger
 
-          Logger.warninging(
+          Logger.warning(
             "Claude CLI inactivity: no output for #{div(timeout, 60_000)} minutes, throwing timeout"
           )
 

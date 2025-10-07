@@ -9,6 +9,7 @@
         "@google/generative-ai": "^0.24.1",
         "@openai/codex": "^0.44.0",
         "@openai/codex-sdk": "^0.45.0",
+        "@openrouter/ai-sdk-provider": "^1.2.0",
         "@tokenlens/helpers": "^1.3.1",
         "ai": "5.1.0-beta.22",
         "ai-sdk-provider-claude-code": "latest",
@@ -238,6 +239,8 @@
     "@openai/codex": ["@openai/codex@0.44.0", "", { "bin": { "codex": "bin/codex.js" } }, "sha512-5QNxwcuNn1aZMIzBs9E//vVLLRTZ8jkJRZas2XJgYdBNiSSlGzIuOfPBPXPNiQ2hRPKVqI4/APWIck4jxhw2KA=="],
 
     "@openai/codex-sdk": ["@openai/codex-sdk@0.45.0", "", {}, "sha512-ZaxyFRTPiJ5ENSLivYxSLPcbEG40M8zC4/hgn6u3kHSXmVq6slq3AXdTlq75zqHguZb03yEACrR9YkIeRggCzQ=="],
+
+    "@openrouter/ai-sdk-provider": ["@openrouter/ai-sdk-provider@1.2.0", "", { "peerDependencies": { "ai": "^5.0.0", "zod": "^3.24.1 || ^v4" } }, "sha512-stuIwq7Yb7DNmk3GuCtz+oS3nZOY4TXEV3V5KsknDGQN7Fpu3KRMQVWRc1J073xKdf0FC9EHOctSyzsACmp5Ag=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
 

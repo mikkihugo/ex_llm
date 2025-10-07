@@ -15,7 +15,7 @@
 //! @complexity medium
 //! @since 1.0.0
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use indexmap::IndexMap;
 use uuid::Uuid;
@@ -112,42 +112,42 @@ impl Predict {
   /// @complexity high
   /// @since 2.0.0
   async fn execute_prediction_with_retry(&self, adapter: Arc<dyn Adapter>, lm: &mut LM, inputs: Example, max_retries: u32) -> anyhow::Result<Prediction> {
-    let mut last_error = None;
-    let mut retry_count = 0;
+    let mut retry_count = 0u32;
+    let mut last_error: Option<anyhow::Error> = None;
 
     while retry_count <= max_retries {
       match adapter.call(lm, self.signature.as_ref(), inputs.clone()).await {
         Ok(prediction) => {
-          // Success - use Moon PDK host logging for recovery notification
           if retry_count > 0 {
-            // Log recovery success through Moon's logging system
             eprintln!("DSPy prediction recovered after {} retries", retry_count);
           }
           return Ok(prediction);
         }
-        Err(e) => {
-          last_error = Some(e);
-          retry_count += 1;
-
-          if retry_count <= max_retries {
-            // Conservative exponential backoff for WASM environment
-            let delay_ms = std::cmp::min((1 << retry_count) * 50, 2000); // Cap at 2s
-
-            // Log retry attempt through Moon's system
-            eprintln!("DSPy prediction retry {}/{}, waiting {}ms", retry_count, max_retries, delay_ms);
-
-            // Use tokio-compatible delay (supported in Moon WASM runtime)
-            tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
+        Err(err) => {
+          last_error = Some(err);
+          if retry_count >= max_retries {
+            break;
           }
+
+          retry_count += 1;
+          let delay_ms = std::cmp::min((1 << retry_count) * 50, 2000);
+          eprintln!(
+            "DSPy prediction retry {}/{}, waiting {}ms",
+            retry_count,
+            max_retries,
+            delay_ms
+          );
+          tokio::time::sleep(Duration::from_millis(delay_ms)).await;
         }
       }
     }
 
-    // All retries exhausted - provide detailed error for Moon logging
     Err(anyhow::anyhow!(
       "DSPy prediction failed permanently after {} attempts in Moon extension. Last error: {}",
       max_retries + 1,
-      last_error.map(|e| e.to_string()).unwrap_or_else(|| "Unknown error during AI provider communication".to_string())
+      last_error
+        .map(|e| e.to_string())
+        .unwrap_or_else(|| "Unknown error during AI provider communication".to_string())
     ))
   }
 }

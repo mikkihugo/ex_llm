@@ -542,7 +542,7 @@ defmodule Singularity.SemanticCodeSearch do
       Logger.info("Apache AGE extension created successfully")
     rescue
       _error ->
-        Logger.warninging(
+        Logger.warning(
           "Apache AGE extension not available - using native PostgreSQL graph features"
         )
     end

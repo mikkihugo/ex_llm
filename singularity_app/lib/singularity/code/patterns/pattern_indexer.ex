@@ -29,7 +29,7 @@ defmodule Singularity.PatternIndexer do
   """
 
   require Logger
-  alias Singularity.{EmbeddingService, Repo}
+  alias Singularity.{EmbeddingEngine, Repo}
 
   @templates_dir "priv/code_quality_templates"
 
@@ -63,7 +63,7 @@ defmodule Singularity.PatternIndexer do
             acc + 1
 
           {:error, reason} ->
-            Logger.warninging("Failed to index pattern: #{inspect(reason)}")
+            Logger.warning("Failed to index pattern: #{inspect(reason)}")
             acc
         end
       end)
@@ -84,7 +84,7 @@ defmodule Singularity.PatternIndexer do
 
     Logger.debug("Searching patterns: #{query}")
 
-    with {:ok, query_embedding} <- EmbeddingService.embed(query),
+    with {:ok, query_embedding} <- EmbeddingEngine.embed(query),
          {:ok, results} <- search_vector_db(query_embedding, language, top_k) do
       {:ok, results}
     else
@@ -214,7 +214,7 @@ defmodule Singularity.PatternIndexer do
 
   defp index_pattern(pattern) do
     # Generate embedding for the searchable text
-    with {:ok, embedding} <- EmbeddingService.embed(pattern.searchable_text) do
+    with {:ok, embedding} <- EmbeddingEngine.embed(pattern.searchable_text) do
       # Store in patterns table with embedding
       query = """
       INSERT INTO semantic_patterns (

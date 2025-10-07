@@ -42,21 +42,23 @@ defmodule Singularity.FlowVisualizer do
     {:ok, cfg} = load_cfg_from_db(function_name, codebase_name)
 
     %{
-      nodes: Enum.map(cfg.nodes, fn node ->
-        %{
-          id: node["id"],
-          label: node["label"],
-          type: node["type"],
-          is_dead_end: Enum.any?(cfg.dead_ends, &(&1["node_id"] == node["id"]))
-        }
-      end),
-      edges: Enum.map(cfg.edges, fn edge ->
-        %{
-          source: edge["from"],
-          target: edge["to"],
-          type: edge["type"]
-        }
-      end)
+      nodes:
+        Enum.map(cfg.nodes, fn node ->
+          %{
+            id: node["id"],
+            label: node["label"],
+            type: node["type"],
+            is_dead_end: Enum.any?(cfg.dead_ends, &(&1["node_id"] == node["id"]))
+          }
+        end),
+      edges:
+        Enum.map(cfg.edges, fn edge ->
+          %{
+            source: edge["from"],
+            target: edge["to"],
+            type: edge["type"]
+          }
+        end)
     }
   end
 
@@ -77,22 +79,24 @@ defmodule Singularity.FlowVisualizer do
         edges = Jason.decode!(edges_json)
 
         # Find dead end nodes
-        dead_ends = if has_dead_ends do
-          Enum.filter(nodes, fn node ->
-            # Nodes with no outgoing edges
-            outgoing = Enum.filter(edges, &(&1["from"] == node["id"]))
-            Enum.empty?(outgoing) and node["type"] != "return"
-          end)
-        else
-          []
-        end
+        dead_ends =
+          if has_dead_ends do
+            Enum.filter(nodes, fn node ->
+              # Nodes with no outgoing edges
+              outgoing = Enum.filter(edges, &(&1["from"] == node["id"]))
+              Enum.empty?(outgoing) and node["type"] != "return"
+            end)
+          else
+            []
+          end
 
-        {:ok, %{
-          nodes: nodes,
-          edges: edges,
-          dead_ends: dead_ends,
-          has_unreachable: has_unreachable
-        }}
+        {:ok,
+         %{
+           nodes: nodes,
+           edges: edges,
+           dead_ends: dead_ends,
+           has_unreachable: has_unreachable
+         }}
 
       {:ok, %{rows: []}} ->
         {:error, :not_found}
@@ -110,19 +114,21 @@ defmodule Singularity.FlowVisualizer do
       label = node["label"] || node["name"] || node["id"]
 
       # Choose shape based on type
-      {shape_start, shape_end} = case node["type"] do
-        "entry" -> {"{", "}"}
-        "return" -> {"([", "])"}
-        "case_branch" -> {"{", "}"}
-        _ -> {"[", "]"}
-      end
+      {shape_start, shape_end} =
+        case node["type"] do
+          "entry" -> {"{", "}"}
+          "return" -> {"([", "])"}
+          "case_branch" -> {"{", "}"}
+          _ -> {"[", "]"}
+        end
 
       # Add class for styling
-      class = cond do
-        MapSet.member?(dead_end_ids, node["id"]) -> ":::deadEnd"
-        node["type"] == "unreachable" -> ":::unreachable"
-        true -> ":::normal"
-      end
+      class =
+        cond do
+          MapSet.member?(dead_end_ids, node["id"]) -> ":::deadEnd"
+          node["type"] == "unreachable" -> ":::unreachable"
+          true -> ":::normal"
+        end
 
       "  #{node_id}#{shape_start}#{label}#{shape_end}#{class}"
     end)
@@ -134,11 +140,12 @@ defmodule Singularity.FlowVisualizer do
       to_id = safe_id(edge["to"])
 
       # Edge style based on type
-      arrow = cond do
-        edge["is_error_path"] -> "-.->|error|"
-        edge["condition"] -> "-->|#{edge["condition"]}|"
-        true -> "-->"
-      end
+      arrow =
+        cond do
+          edge["is_error_path"] -> "-.->|error|"
+          edge["condition"] -> "-->|#{edge["condition"]}|"
+          true -> "-->"
+        end
 
       "  #{from_id} #{arrow} #{to_id}"
     end)
@@ -149,5 +156,6 @@ defmodule Singularity.FlowVisualizer do
     id
     |> String.replace(~r/[^a-zA-Z0-9_]/, "_")
   end
+
   defp safe_id(id), do: "node_#{id}"
 end

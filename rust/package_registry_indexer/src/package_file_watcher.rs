@@ -468,7 +468,7 @@ impl PackageFileWatcher {
             path: package_file.parent().unwrap_or(repo_path).to_path_buf(),
             name: project_name.clone(),
             language: project_language,
-            dependencies: dependencies.iter().map(|dep| VersionedDependency {
+            dependencies: dependencies.iter().map(|dep: &PackageDependency| VersionedDependency {
               name: dep.name.clone(),
               version: dep.version.clone(),
               ecosystem: dep.ecosystem.clone(),

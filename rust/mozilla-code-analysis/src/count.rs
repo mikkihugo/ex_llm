@@ -1,4 +1,4 @@
-extern crate num_format;
+// use num_format;
 
 use std::{
   fmt,

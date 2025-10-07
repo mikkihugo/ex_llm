@@ -3,7 +3,7 @@
 //! Downloads and analyzes Elixir/Erlang packages from hex.pm
 //! Extracts: public API, functions, modules, types, examples
 
-use super::{CollectionStats, DataSourcePriority, PackageCollector};
+use super::{CollectionStats as SuperCollectionStats, DataSourcePriority as SuperDataSourcePriority, PackageCollector};
 use crate::extractor::{SourceCodeExtractor, create_extractor};
 use crate::storage::PackageMetadata;
 use anyhow::{Context, Result};

@@ -38,7 +38,7 @@ defmodule Mix.Tasks.Standardize.Check do
     strict = "--strict" in args
     violations_only = "--violations-only" in args
 
-    unless violations_only do
+    if !violations_only do
       Mix.shell().info("🔍 Checking codebase for standardization violations...")
       Mix.shell().info("")
     end

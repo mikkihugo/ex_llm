@@ -52,7 +52,8 @@ end
 ```elixir
 def call_external_api(params) do
   with_circuit_breaker(:external_api, fn ->
-    HTTPoison.post("https://api.example.com/endpoint", params)
+    request = Finch.build(:post, "https://api.example.com/endpoint", [], Jason.encode!(params))
+    Finch.request(request, Singularity.HttpClient)
   end,
     failure_threshold: 5,
     timeout_ms: 5_000,

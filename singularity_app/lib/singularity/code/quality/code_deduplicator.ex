@@ -39,7 +39,7 @@ defmodule Singularity.CodeDeduplicator do
   """
 
   require Logger
-  alias Singularity.{EmbeddingService, Repo}
+  alias Singularity.{EmbeddingEngine, Repo}
 
   @doc """
   Find similar code in the entire codebase (750M lines)
@@ -61,7 +61,7 @@ defmodule Singularity.CodeDeduplicator do
       duplicates = Enum.filter(ranked, fn m -> m.similarity >= threshold end)
 
       if duplicates != [] do
-        Logger.warninging("Found #{length(duplicates)} potential duplicates")
+        Logger.warning("Found #{length(duplicates)} potential duplicates")
       end
 
       {:ok, ranked}
@@ -120,7 +120,7 @@ defmodule Singularity.CodeDeduplicator do
     pattern_sig = extract_pattern_signature(code, language)
 
     # Semantic embedding (most expensive, but catches renamed variables)
-    {:ok, embedding} = EmbeddingService.embed(code, provider: :google)
+    {:ok, embedding} = EmbeddingEngine.embed(code, provider: :google)
 
     # Semantic keywords (compact representation)
     keywords = extract_semantic_keywords(code, language)

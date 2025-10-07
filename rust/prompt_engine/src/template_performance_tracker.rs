@@ -269,12 +269,20 @@ impl TemplatePerformanceTracker {
 }
 
 impl SparcTemplateGenerator {
-    /// Resolve SPARC template via tool_doc_index registry (generated + DB-backed)
+    /// Resolve SPARC template via package_registry_indexer registry (generated + DB-backed)
     pub fn get_template(&self, template_id: &str) -> Option<String> {
-        // Use tool_doc_index's registry which loads generated AI templates
-        let registry = tool_doc_index::RegistryTemplate::new();
-        registry
-            .get(template_id)
-            .and_then(|t| t.template_content.clone())
+        // Use package_registry_indexer's registry which loads generated AI templates
+        #[cfg(feature = "with-package-indexer")]
+        {
+            let registry = package_registry_indexer::RegistryTemplate::new();
+            registry
+                .get(template_id)
+                .and_then(|t| t.template_content.clone())
+        }
+        #[cfg(not(feature = "with-package-indexer"))]
+        {
+            // Fallback: return None when package indexer is not available
+            None
+        }
     }
 }

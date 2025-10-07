@@ -89,7 +89,8 @@ defmodule Singularity.Knowledge.ArtifactStore do
   import Ecto.Query
   alias Singularity.Repo
   alias Singularity.Knowledge.KnowledgeArtifact
-  alias Singularity.EmbeddingGenerator  # Single embedding source with auto-fallback
+  # Single embedding source with auto-fallback
+  alias Singularity.EmbeddingGenerator
 
   require Logger
 
@@ -128,7 +129,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
     |> case do
       {:ok, artifact} ->
         # Generate embedding async (unless skipped)
-        unless opts[:skip_embedding] do
+        if !opts[:skip_embedding] do
           Task.start(fn -> generate_embedding_async(artifact) end)
         end
 
@@ -381,8 +382,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
         {:ok, %{artifact_type: "system_prompt", artifact_id: Path.rootname(filename)}}
 
       ["code_generation", "patterns", category, filename] ->
-        {:ok,
-         %{artifact_type: "code_template_#{category}", artifact_id: Path.rootname(filename)}}
+        {:ok, %{artifact_type: "code_template_#{category}", artifact_id: Path.rootname(filename)}}
 
       _ ->
         # Fallback: use directory name as type

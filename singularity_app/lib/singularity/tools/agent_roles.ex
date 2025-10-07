@@ -10,6 +10,7 @@ defmodule Singularity.Tools.AgentRoles do
   """
 
   alias Singularity.Tools.Catalog
+  import Logger
 
   @agent_roles %{
     # Core development roles
@@ -30,6 +31,7 @@ defmodule Singularity.Tools.AgentRoles do
         "knowledge_packages",
         "knowledge_patterns",
         "knowledge_examples",
+        "package_search",
         # Basic tools
         "fs_list_directory",
         "fs_search_content",
@@ -101,6 +103,7 @@ defmodule Singularity.Tools.AgentRoles do
         # Knowledge
         "knowledge_packages",
         "knowledge_frameworks",
+        "package_search",
         # Summary tools
         "planning_summary",
         "codebase_summary",
@@ -117,6 +120,7 @@ defmodule Singularity.Tools.AgentRoles do
         "knowledge_patterns",
         "knowledge_frameworks",
         "knowledge_examples",
+        "package_search",
         "knowledge_duplicates",
         "knowledge_documentation",
         # Search
@@ -324,10 +328,376 @@ defmodule Singularity.Tools.AgentRoles do
   # Private functions
 
   defp load_tools_by_names(tool_names) do
-    # This would load actual tool definitions by name
-    # For now, return placeholder tool names
-    Enum.map(tool_names, fn name ->
-      %{name: name, description: "Tool: #{name}"}
-    end)
+    # Load actual tool definitions by name from existing tool modules
+    try do
+      tool_names
+      |> Enum.map(&load_single_tool/1)
+      |> Enum.filter(&(&1 != nil))
+    rescue
+      error ->
+        Logger.warning("Failed to load tools by names: #{inspect(error)}")
+        # Fallback to basic tool definitions
+        Enum.map(tool_names, fn name ->
+          %{name: name, description: "Tool: #{name}", status: "fallback"}
+        end)
+    end
+  end
+
+  defp load_single_tool(tool_name) do
+    # Load individual tool definition based on name
+    case tool_name do
+      "code_analysis" -> load_code_analysis_tool()
+      "quality_assurance" -> load_quality_assurance_tool()
+      "testing" -> load_testing_tool()
+      "security" -> load_security_tool()
+      "performance" -> load_performance_tool()
+      "deployment" -> load_deployment_tool()
+      "monitoring" -> load_monitoring_tool()
+      "documentation" -> load_documentation_tool()
+      "database" -> load_database_tool()
+      "file_system" -> load_file_system_tool()
+      "git" -> load_git_tool()
+      "nats" -> load_nats_tool()
+      "analytics" -> load_analytics_tool()
+      "backup" -> load_backup_tool()
+      "communication" -> load_communication_tool()
+      "integration" -> load_integration_tool()
+      "development" -> load_development_tool()
+      "process_system" -> load_process_system_tool()
+      "code_generation" -> load_code_generation_tool()
+      "code_naming" -> load_code_naming_tool()
+      _ -> load_generic_tool(tool_name)
+    end
+  end
+
+  defp load_code_analysis_tool do
+    %{
+      name: "code_analysis",
+      description: "Comprehensive code analysis across multiple languages",
+      capabilities: [
+        "Multi-language analysis (Elixir, Rust, TypeScript, Python, Go, Java)",
+        "Security vulnerability detection",
+        "Code quality assessment",
+        "Dependency analysis",
+        "Architecture pattern detection"
+      ],
+      status: "active",
+      module: "Singularity.Tools.CodeAnalysis"
+    }
+  end
+
+  defp load_quality_assurance_tool do
+    %{
+      name: "quality_assurance",
+      description: "Code quality assurance and testing tools",
+      capabilities: [
+        "Unit testing",
+        "Integration testing",
+        "Code coverage analysis",
+        "Quality metrics calculation",
+        "Test automation"
+      ],
+      status: "active",
+      module: "Singularity.Tools.QualityAssurance"
+    }
+  end
+
+  defp load_testing_tool do
+    %{
+      name: "testing",
+      description: "Comprehensive testing framework and tools",
+      capabilities: [
+        "Test execution",
+        "Test result analysis",
+        "Performance testing",
+        "Load testing",
+        "Test reporting"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Testing"
+    }
+  end
+
+  defp load_security_tool do
+    %{
+      name: "security",
+      description: "Security analysis and vulnerability detection",
+      capabilities: [
+        "Security scanning",
+        "Vulnerability assessment",
+        "Security policy enforcement",
+        "Threat modeling",
+        "Security reporting"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Security"
+    }
+  end
+
+  defp load_performance_tool do
+    %{
+      name: "performance",
+      description: "Performance analysis and optimization tools",
+      capabilities: [
+        "Performance profiling",
+        "Bottleneck identification",
+        "Optimization recommendations",
+        "Performance monitoring",
+        "Resource usage analysis"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Performance"
+    }
+  end
+
+  defp load_deployment_tool do
+    %{
+      name: "deployment",
+      description: "Deployment automation and infrastructure management",
+      capabilities: [
+        "Deployment automation",
+        "Infrastructure provisioning",
+        "Configuration management",
+        "Rollback capabilities",
+        "Deployment monitoring"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Deployment"
+    }
+  end
+
+  defp load_monitoring_tool do
+    %{
+      name: "monitoring",
+      description: "System monitoring and observability tools",
+      capabilities: [
+        "System metrics collection",
+        "Log analysis",
+        "Alerting",
+        "Performance monitoring",
+        "Health checks"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Monitoring"
+    }
+  end
+
+  defp load_documentation_tool do
+    %{
+      name: "documentation",
+      description: "Documentation generation and management",
+      capabilities: [
+        "API documentation generation",
+        "Code documentation",
+        "Architecture documentation",
+        "User guides",
+        "Documentation validation"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Documentation"
+    }
+  end
+
+  defp load_database_tool do
+    %{
+      name: "database",
+      description: "Database management and analysis tools",
+      capabilities: [
+        "Database schema analysis",
+        "Query optimization",
+        "Database migration",
+        "Data validation",
+        "Database monitoring"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Database"
+    }
+  end
+
+  defp load_file_system_tool do
+    %{
+      name: "file_system",
+      description: "File system operations and analysis",
+      capabilities: [
+        "File operations",
+        "Directory analysis",
+        "File search",
+        "File monitoring",
+        "Disk usage analysis"
+      ],
+      status: "active",
+      module: "Singularity.Tools.FileSystem"
+    }
+  end
+
+  defp load_git_tool do
+    %{
+      name: "git",
+      description: "Git repository management and analysis",
+      capabilities: [
+        "Git operations",
+        "Repository analysis",
+        "Commit history analysis",
+        "Branch management",
+        "Git workflow automation"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Git"
+    }
+  end
+
+  defp load_nats_tool do
+    %{
+      name: "nats",
+      description: "NATS messaging system integration",
+      capabilities: [
+        "NATS message publishing",
+        "NATS subscription management",
+        "Message routing",
+        "NATS monitoring",
+        "Message queuing"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Nats"
+    }
+  end
+
+  defp load_analytics_tool do
+    %{
+      name: "analytics",
+      description: "Data analytics and reporting tools",
+      capabilities: [
+        "Data analysis",
+        "Statistical analysis",
+        "Report generation",
+        "Data visualization",
+        "Trend analysis"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Analytics"
+    }
+  end
+
+  defp load_backup_tool do
+    %{
+      name: "backup",
+      description: "Backup and recovery tools",
+      capabilities: [
+        "Data backup",
+        "Backup verification",
+        "Recovery operations",
+        "Backup scheduling",
+        "Backup monitoring"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Backup"
+    }
+  end
+
+  defp load_communication_tool do
+    %{
+      name: "communication",
+      description: "Communication and notification tools",
+      capabilities: [
+        "Email notifications",
+        "Slack integration",
+        "Webhook notifications",
+        "Message templates",
+        "Communication logging"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Communication"
+    }
+  end
+
+  defp load_integration_tool do
+    %{
+      name: "integration",
+      description: "System integration and API management",
+      capabilities: [
+        "API integration",
+        "Data synchronization",
+        "Webhook management",
+        "Integration testing",
+        "API monitoring"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Integration"
+    }
+  end
+
+  defp load_development_tool do
+    %{
+      name: "development",
+      description: "Development environment and tooling",
+      capabilities: [
+        "Development environment setup",
+        "Code generation",
+        "Development workflow automation",
+        "Development monitoring",
+        "Development analytics"
+      ],
+      status: "active",
+      module: "Singularity.Tools.Development"
+    }
+  end
+
+  defp load_process_system_tool do
+    %{
+      name: "process_system",
+      description: "Process and system management tools",
+      capabilities: [
+        "Process monitoring",
+        "System resource management",
+        "Process automation",
+        "System health checks",
+        "Process optimization"
+      ],
+      status: "active",
+      module: "Singularity.Tools.ProcessSystem"
+    }
+  end
+
+  defp load_code_generation_tool do
+    %{
+      name: "code_generation",
+      description: "Automated code generation and scaffolding",
+      capabilities: [
+        "Code scaffolding",
+        "Template-based generation",
+        "Code refactoring",
+        "Code optimization",
+        "Code generation validation"
+      ],
+      status: "active",
+      module: "Singularity.Tools.CodeGeneration"
+    }
+  end
+
+  defp load_code_naming_tool do
+    %{
+      name: "code_naming",
+      description: "Intelligent code naming and suggestion tools",
+      capabilities: [
+        "Variable naming suggestions",
+        "Function naming suggestions",
+        "Class naming suggestions",
+        "Naming convention enforcement",
+        "Naming quality assessment"
+      ],
+      status: "active",
+      module: "Singularity.Tools.CodeNaming"
+    }
+  end
+
+  defp load_generic_tool(tool_name) do
+    # Generic tool definition for unknown tools
+    %{
+      name: tool_name,
+      description: "Generic tool: #{tool_name}",
+      capabilities: ["Basic functionality"],
+      status: "generic",
+      module: "Singularity.Tools.Generic"
+    }
   end
 end

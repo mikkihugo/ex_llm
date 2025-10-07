@@ -156,7 +156,8 @@ defmodule Singularity.Infrastructure.ErrorHandling do
   ## Examples
 
       with_retry(fn ->
-        HTTPoison.get("https://api.example.com/data")
+        request = Finch.build(:get, "https://api.example.com/data")
+        Finch.request(request, Singularity.HttpClient)
       end, max_attempts: 5, base_delay_ms: 200)
   """
   def with_retry(fun, opts \\ []) when is_function(fun, 0) do
@@ -207,7 +208,7 @@ defmodule Singularity.Infrastructure.ErrorHandling do
         if is_retryable?(error, retryable_errors) do
           delay = calculate_delay(attempt, base_delay, max_delay, exp_base, jitter)
 
-          Logger.warninging("Operation failed, retrying",
+          Logger.warning("Operation failed, retrying",
             attempt: attempt,
             max_attempts: max_attempts,
             delay_ms: delay,
@@ -316,7 +317,7 @@ defmodule Singularity.Infrastructure.ErrorHandling do
       {:ok, result}
     catch
       :exit, {:timeout, _} ->
-        Logger.warninging("Operation timeout", timeout_ms: timeout_ms)
+        Logger.warning("Operation timeout", timeout_ms: timeout_ms)
         Task.shutdown(task, :brutal_kill)
         {:error, :timeout}
     end
@@ -567,7 +568,7 @@ defmodule Singularity.Infrastructure.ErrorHandling do
         )
 
       {:ok, %{status: status}} ->
-        Logger.warninging("Failed to send Google Chat error alert", status: status)
+        Logger.warning("Failed to send Google Chat error alert", status: status)
 
       {:error, reason} ->
         Logger.error("Error sending Google Chat alert", reason: reason)

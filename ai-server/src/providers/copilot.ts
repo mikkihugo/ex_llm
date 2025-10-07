@@ -3,7 +3,7 @@
  * Integrates ai-sdk-provider-copilot with GitHub Copilot OAuth flow
  */
 
-import { createCopilotWithOAuth } from '../../vendor/ai-sdk-provider-copilot/dist/index.js';
+import { createCopilotProvider } from '../../vendor/ai-sdk-provider-copilot/dist/copilot-provider.js';
 import { getCopilotAccessToken } from '../github-copilot-oauth';
 
 /**
@@ -24,12 +24,12 @@ import { getCopilotAccessToken } from '../github-copilot-oauth';
  * 2. Token caching with expiration
  * 3. Automatic refresh
  */
-const baseCopilot = createCopilotWithOAuth(getCopilotAccessToken);
+const baseCopilotProvider = createCopilotProvider();
 
 /**
  * Extended Copilot provider with synchronous listModels method and callable interface
  */
-export const copilot = Object.assign(baseCopilot, {
+export const copilot = {
   listModels: () => [
     {
       id: 'gpt-4.1',
@@ -61,10 +61,10 @@ export const copilot = Object.assign(baseCopilot, {
     {
       id: 'gpt-4o',
       displayName: 'GPT-4o',
-      description: 'GPT-4o model via GitHub Copilot (limited quota)',
+      description: 'GPT-4o model via GitHub Copilot (FREE unlimited)',
       contextWindow: 131072,
       capabilities: { completion: true, streaming: true, reasoning: true, vision: true, tools: true },
-      cost: 'limited' as const,
+      cost: 'free' as const,
       subscription: 'GitHub Copilot',
     },
     {
@@ -78,5 +78,5 @@ export const copilot = Object.assign(baseCopilot, {
     },
   ],
   // Make provider callable for AI SDK compatibility
-  languageModel: (modelId: string) => baseCopilot.languageModel(modelId),
-});
+  languageModel: (modelId: string) => baseCopilotProvider(modelId, { token: getCopilotAccessToken }),
+};

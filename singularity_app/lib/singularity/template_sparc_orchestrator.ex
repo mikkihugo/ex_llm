@@ -73,7 +73,8 @@ defmodule Singularity.TemplateSparcOrchestrator do
     task_type = extract_task_type(goal)
     language = Keyword.get(opts, :language, "elixir")
 
-    {:ok, template_id} = Singularity.TemplatePerformanceTracker.get_best_template(task_type, language)
+    {:ok, template_id} =
+      Singularity.TemplatePerformanceTracker.get_best_template(task_type, language)
 
     Logger.info("Template DAG selected: #{template_id}")
 

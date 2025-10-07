@@ -9,7 +9,7 @@ defmodule Singularity.Tools.Basic do
   • Descriptions should tell the model *when* to use the tool and note any safety steps (e.g. “call read_file first, overwrite requires explicit opt-in”).
   """
 
-  alias Singularity.Tools.{Registry, Tool}
+  alias Singularity.Tools.Tool
 
   @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http]
   @workspace_root File.cwd!()
@@ -470,38 +470,102 @@ defmodule Singularity.Tools.Basic do
 
   defp truthy?(value), do: value in [true, 1]
 
-  defp normalize_headers(list) when is_list(list) do
-    list
-    |> Enum.reduce([], fn
-      %{"name" => name, "value" => value}, acc when is_binary(name) ->
-        [{name, to_string(value)} | acc]
-
-      %{name: name, value: value}, acc when is_binary(name) or is_atom(name) ->
-        key = if is_atom(name), do: Atom.to_string(name), else: name
-        [{key, to_string(value)} | acc]
-
-      _other, acc ->
-        acc
+  defp normalize_headers(headers) when is_map(headers) do
+    headers
+    |> Enum.map(fn {key, value} ->
+      normalized_key = normalize_header_key(key)
+      normalized_value = normalize_header_value(value)
+      {normalized_key, normalized_value}
     end)
-    |> Enum.reverse()
+    |> Enum.reject(fn {_key, value} -> is_nil(value) or value == "" end)
+    |> Enum.into(%{})
   end
 
-  defp normalize_headers(map) when is_map(map) do
-    map
-    |> Enum.reduce([], fn
-      {key, value}, acc when is_binary(key) and (is_binary(value) or is_number(value)) ->
-        [{key, to_string(value)} | acc]
-
-      {key, value}, acc when is_atom(key) and (is_binary(value) or is_number(value)) ->
-        [{Atom.to_string(key), to_string(value)} | acc]
-
-      _, acc ->
-        acc
+  defp normalize_headers(headers) when is_list(headers) do
+    headers
+    |> Enum.map(fn
+      {key, value} -> {normalize_header_key(key), normalize_header_value(value)}
+      [key, value] -> {normalize_header_key(key), normalize_header_value(value)}
+      header when is_binary(header) -> 
+        case String.split(header, ":", parts: 2) do
+          [key, value] -> {normalize_header_key(key), normalize_header_value(value)}
+          _ -> nil
+        end
     end)
-    |> Enum.reverse()
+    |> Enum.reject(&is_nil/1)
+    |> Enum.into(%{})
   end
 
-  defp normalize_headers(_), do: []
+  defp normalize_headers(_), do: %{}
+
+  defp normalize_response_headers(headers) when is_map(headers) do
+    headers
+    |> Enum.map(fn {key, value} ->
+      normalized_key = normalize_response_header_key(key)
+      normalized_value = normalize_header_value(value)
+      {normalized_key, normalized_value}
+    end)
+    |> Enum.reject(fn {_key, value} -> is_nil(value) or value == "" end)
+    |> Enum.into(%{})
+  end
+
+  defp normalize_response_headers(headers) when is_list(headers) do
+    headers
+    |> Enum.map(fn
+      {key, value} -> {normalize_response_header_key(key), normalize_header_value(value)}
+      [key, value] -> {normalize_response_header_key(key), normalize_header_value(value)}
+      header when is_binary(header) -> 
+        case String.split(header, ":", parts: 2) do
+          [key, value] -> {normalize_response_header_key(key), normalize_header_value(value)}
+          _ -> nil
+        end
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.into(%{})
+  end
+
+  defp normalize_response_headers(_), do: %{}
+
+  defp normalize_header_key(key) when is_binary(key) do
+    key
+    |> String.trim()
+    |> String.downcase()
+  end
+
+  defp normalize_header_key(key) when is_atom(key) do
+    key
+    |> Atom.to_string()
+    |> normalize_header_key()
+  end
+
+  defp normalize_header_key(_), do: ""
+
+  defp normalize_response_header_key(key) when is_binary(key) do
+    # Response headers are case-sensitive and should preserve original case
+    String.trim(key)
+  end
+
+  defp normalize_response_header_key(key) when is_atom(key) do
+    key
+    |> Atom.to_string()
+    |> normalize_response_header_key()
+  end
+
+  defp normalize_response_header_key(_), do: ""
+
+  defp normalize_header_value(value) when is_binary(value) do
+    String.trim(value)
+  end
+
+  defp normalize_header_value(value) when is_number(value) do
+    to_string(value)
+  end
+
+  defp normalize_header_value(value) when is_atom(value) do
+    Atom.to_string(value)
+  end
+
+  defp normalize_header_value(_), do: ""
 
   defp validate_http_url(url) do
     case URI.parse(url) do
@@ -509,15 +573,6 @@ defmodule Singularity.Tools.Basic do
       _ -> {:error, "url must start with http:// or https://"}
     end
   end
-
-  defp normalize_response_headers(headers) when is_list(headers) do
-    Enum.map(headers, fn
-      {k, v} -> %{name: k, value: v}
-      other -> %{value: to_string(other)}
-    end)
-  end
-
-  defp normalize_response_headers(_), do: []
 
   defp fetch_github_token do
     token =

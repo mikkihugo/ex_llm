@@ -47,7 +47,6 @@ defmodule Singularity.DomainVocabularyTrainer do
   require Logger
   alias Singularity.Repo
   alias Singularity.Schemas.TechnologyPattern
-  import Ecto.Query
 
   @doc """
   Extract ALL custom keywords from your templates & codebase
@@ -311,12 +310,12 @@ defmodule Singularity.DomainVocabularyTrainer do
       end
 
     # Filter phases based on provided keywords
-    filtered_pairs = 
+    filtered_pairs =
       if sparc_keywords && length(sparc_keywords) > 0 do
         Enum.filter(List.flatten(phase_pairs), fn pair ->
           Enum.any?(sparc_keywords, fn keyword ->
-            String.contains?(pair.anchor, keyword) || 
-            String.contains?(pair.positive, keyword)
+            String.contains?(pair.anchor, keyword) ||
+              String.contains?(pair.positive, keyword)
           end)
         end)
       else
@@ -414,9 +413,9 @@ defmodule Singularity.DomainVocabularyTrainer do
 
     # 2. Create template-aware training data
     training_data = create_template_training_data(vocab)
-    
+
     # Log training data statistics
-    Logger.info("Created template training data", 
+    Logger.info("Created template training data",
       vocab_size: length(vocab),
       training_examples: length(training_data),
       avg_examples_per_pattern: length(training_data) / max(length(vocab), 1)

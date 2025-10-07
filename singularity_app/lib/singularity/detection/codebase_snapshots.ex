@@ -56,18 +56,23 @@ defmodule Singularity.CodebaseSnapshots do
     |> Map.update(:detected_technologies, [], &ensure_string_list/1)
   end
 
-  defp ensure_map(%{} = value), do: value
+  defp ensure_map(data) when is_map(data), do: data
+  defp ensure_map(data) when is_list(data), do: Enum.into(data, %{})
+  defp ensure_map(data) when is_nil(data), do: %{}
   defp ensure_map(_), do: %{}
 
-  defp ensure_string_list(list) when is_list(list) do
-    list
+  defp ensure_string_list(data) when is_list(data) do
+    data
     |> Enum.map(fn
-      value when is_atom(value) -> Atom.to_string(value)
-      value when is_binary(value) -> value
-      value -> to_string(value)
+      item when is_binary(item) -> item
+      item when is_atom(item) -> Atom.to_string(item)
+      item -> to_string(item)
     end)
-    |> Enum.uniq()
+    |> Enum.reject(&(&1 == ""))
   end
 
+  defp ensure_string_list(data) when is_binary(data), do: [data]
+  defp ensure_string_list(data) when is_atom(data), do: [Atom.to_string(data)]
+  defp ensure_string_list(data) when is_nil(data), do: []
   defp ensure_string_list(_), do: []
 end

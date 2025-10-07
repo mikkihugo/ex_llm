@@ -31,7 +31,10 @@
 //!
 //! impl UniversalParser for MyLanguageParser {
 //!     async fn analyze_content(&self, content: &str, file_path: &str) -> Result<AnalysisResult> {
-//!         self.deps.analyze_with_all_tools(content, ProgrammingLanguage::MyLanguage).await
+//!         self
+//!             .deps
+//!             .analyze_with_all_tools(content, ProgrammingLanguage::MyLanguage, file_path)
+//!             .await
 //!     }
 //! }
 //! ```

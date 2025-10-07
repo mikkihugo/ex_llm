@@ -6,7 +6,7 @@ defmodule Singularity.Tools.Default do
   @compile {:no_warn_undefined, {Singularity.Tools.Catalog, :add_tools, 2}}
   @compile {:no_warn_undefined, {Singularity.Tools.Tool, :new!, 1}}
 
-  alias Singularity.Tools.{Registry, Tool}
+  alias Singularity.Tools.Tool
 
   @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http]
   @defaults_key {:singularity, :tools, :defaults_loaded}
@@ -32,12 +32,31 @@ defmodule Singularity.Tools.Default do
   defp register_defaults(provider) do
     Singularity.Tools.Catalog.add_tools(provider, [shell_tool(), read_file_tool()])
     Singularity.Tools.Quality.register(provider)
-    Singularity.Tools.Llm.register(provider)
+    Singularity.Tools.EmergencyLLM.register(provider)
     Singularity.Tools.CodebaseUnderstanding.register(provider)
     Singularity.Tools.Planning.register(provider)
     Singularity.Tools.Knowledge.register(provider)
     Singularity.Tools.CodeAnalysis.register(provider)
     Singularity.Tools.Summary.register(provider)
+    Singularity.Tools.FileSystem.register(provider)
+    Singularity.Tools.CodeGeneration.register(provider)
+    Singularity.Tools.CodeNaming.register(provider)
+    Singularity.Tools.Git.register(provider)
+    Singularity.Tools.Database.register(provider)
+    Singularity.Tools.Testing.register(provider)
+    Singularity.Tools.NATS.register(provider)
+    Singularity.Tools.ProcessSystem.register(provider)
+    Singularity.Tools.Documentation.register(provider)
+    Singularity.Tools.Monitoring.register(provider)
+    Singularity.Tools.Security.register(provider)
+    Singularity.Tools.Performance.register(provider)
+    Singularity.Tools.Deployment.register(provider)
+    Singularity.Tools.Communication.register(provider)
+    Singularity.Tools.Backup.register(provider)
+    Singularity.Tools.Analytics.register(provider)
+    Singularity.Tools.Integration.register(provider)
+    Singularity.Tools.QualityAssurance.register(provider)
+    Singularity.Tools.Development.register(provider)
   end
 
   defp shell_tool do

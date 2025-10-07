@@ -229,7 +229,7 @@ defmodule Singularity.SelfImprovingAgent do
   def handle_info({:reload_failed, reason}, state) do
     QueueCrdt.release(state.id, state.pending_fingerprint)
 
-    Logger.warninging("Agent improvement failed",
+    Logger.warning("Agent improvement failed",
       agent_id: state.id,
       reason: inspect(reason)
     )
@@ -275,7 +275,7 @@ defmodule Singularity.SelfImprovingAgent do
     if regression?(baseline, current) do
       QueueCrdt.release(state.id, state.pending_fingerprint)
 
-      Logger.warninging("Validation detected regression, rolling back",
+      Logger.warning("Validation detected regression, rolling back",
         agent_id: state.id,
         version: version,
         baseline: baseline,
@@ -389,7 +389,7 @@ defmodule Singularity.SelfImprovingAgent do
   defp start_improvement_if_valid(state, payload, context, fingerprint) do
     case ensure_valid_payload(payload) do
       {:error, {_tag, msg}} ->
-        Logger.warninging("Preflight validation failed",
+        Logger.warning("Preflight validation failed",
           agent_id: state.id,
           reason: inspect(msg)
         )
@@ -522,7 +522,7 @@ defmodule Singularity.SelfImprovingAgent do
   defp process_validated_entry(state, entry, rest, fingerprint) do
     case ensure_valid_payload(entry.payload) do
       {:error, {_tag, msg}} ->
-        Logger.warninging("Preflight validation failed (queued)",
+        Logger.warning("Preflight validation failed (queued)",
           agent_id: state.id,
           reason: inspect(msg)
         )
@@ -647,11 +647,23 @@ defmodule Singularity.SelfImprovingAgent do
   defp ensure_valid_payload(_), do: {:error, {:invalid_payload, :missing_code}}
 
   defp payload_fingerprint(payload) when is_map(payload) do
-    payload
-    |> :erlang.term_to_binary()
-    |> :erlang.phash2()
-  rescue
-    _ -> nil
+    try do
+      # Create a stable fingerprint by sorting keys and converting to binary
+      sorted_payload = 
+        payload
+        |> Map.to_list()
+        |> Enum.sort_by(fn {k, _} -> k end)
+        |> Enum.into(%{})
+      
+      :erlang.term_to_binary(sorted_payload)
+      |> :erlang.phash2()
+    rescue
+      _ -> nil
+    end
+  end
+
+  defp payload_fingerprint(payload) when is_binary(payload) do
+    :erlang.phash2(payload)
   end
 
   defp payload_fingerprint(_), do: nil
@@ -702,7 +714,7 @@ defmodule Singularity.SelfImprovingAgent do
   end
 
   defp rollback_to_previous(%{pending_previous_code: nil} = state, _version) do
-    Logger.warninging("No previous code available for rollback", agent_id: state.id)
+    Logger.warning("No previous code available for rollback", agent_id: state.id)
 
     state
     |> Map.put(:pending_fingerprint, nil)
@@ -816,8 +828,19 @@ defmodule Singularity.SelfImprovingAgent do
     }
   end
 
-  defp context_fetch(map, key) when is_map(map) do
-    Map.get(map, key) || Map.get(map, Atom.to_string(key)) || Map.get(map, to_string(key))
+  defp context_fetch(context, key) when is_map(context) do
+    # Try different key formats
+    cond do
+      Map.has_key?(context, key) -> Map.get(context, key)
+      Map.has_key?(context, Atom.to_string(key)) -> Map.get(context, Atom.to_string(key))
+      Map.has_key?(context, to_string(key)) -> Map.get(context, to_string(key))
+      true -> nil
+    end
+  end
+
+  defp context_fetch(context, key) when is_list(context) do
+    # Handle keyword list context
+    Keyword.get(context, key) || Keyword.get(context, Atom.to_string(key))
   end
 
   defp context_fetch(_, _), do: nil

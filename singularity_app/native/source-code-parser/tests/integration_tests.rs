@@ -12,6 +12,30 @@ use anyhow::Result;
 use tokio_test;
 use source_code_parser::*;
 
+fn sample_file_path(language: Language) -> &'static str {
+  match language {
+    Language::JavaScript => "sample.js",
+    Language::TypeScript => "sample.ts",
+    Language::Python => "sample.py",
+    Language::Rust => "sample.rs",
+    Language::Go => "sample.go",
+    Language::Erlang => "sample.erl",
+    Language::Elixir => "sample.ex",
+    Language::Gleam => "sample.gleam",
+    Language::Java => "sample.java",
+    Language::C => "sample.c",
+    Language::Cpp => "sample.cpp",
+    Language::CSharp => "sample.cs",
+    Language::Swift => "sample.swift",
+    Language::Kotlin => "sample.kt",
+    Language::Json => "sample.json",
+    Language::Yaml => "sample.yaml",
+    Language::Toml => "sample.toml",
+    Language::Xml => "sample.xml",
+    Language::Unknown | Language::LanguageNotSupported => "sample.txt",
+  }
+}
+
 /// Test data representing typical code samples for each language
 mod test_data {
   pub const JAVASCRIPT_CODE: &str = r#"
@@ -406,7 +430,14 @@ mod integration_tests {
     let deps = init().expect("Failed to initialize");
     let start = Instant::now();
 
-    let result = deps.analyze_with_all_tools(JAVASCRIPT_CODE, Language::JavaScript).await.expect("JavaScript analysis failed");
+    let result = deps
+      .analyze_with_all_tools(
+        JAVASCRIPT_CODE,
+        Language::JavaScript,
+        sample_file_path(Language::JavaScript),
+      )
+      .await
+      .expect("JavaScript analysis failed");
 
     let duration = start.elapsed();
 
@@ -431,7 +462,14 @@ mod integration_tests {
     let deps = init().expect("Failed to initialize");
     let start = Instant::now();
 
-    let result = deps.analyze_with_all_tools(PYTHON_CODE, Language::Python).await.expect("Python analysis failed");
+    let result = deps
+      .analyze_with_all_tools(
+        PYTHON_CODE,
+        Language::Python,
+        sample_file_path(Language::Python),
+      )
+      .await
+      .expect("Python analysis failed");
 
     let duration = start.elapsed();
 
@@ -455,7 +493,14 @@ mod integration_tests {
     let deps = init().expect("Failed to initialize");
     let start = Instant::now();
 
-    let result = deps.analyze_with_all_tools(RUST_CODE, Language::Rust).await.expect("Rust analysis failed");
+    let result = deps
+      .analyze_with_all_tools(
+        RUST_CODE,
+        Language::Rust,
+        sample_file_path(Language::Rust),
+      )
+      .await
+      .expect("Rust analysis failed");
 
     let duration = start.elapsed();
 
@@ -479,7 +524,14 @@ mod integration_tests {
     let deps = init().expect("Failed to initialize");
     let start = Instant::now();
 
-    let result = deps.analyze_with_all_tools(JAVA_CODE, Language::Java).await.expect("Java analysis failed");
+    let result = deps
+      .analyze_with_all_tools(
+        JAVA_CODE,
+        Language::Java,
+        sample_file_path(Language::Java),
+      )
+      .await
+      .expect("Java analysis failed");
 
     let duration = start.elapsed();
 
@@ -503,7 +555,14 @@ mod integration_tests {
     let deps = init().expect("Failed to initialize");
     let start = Instant::now();
 
-    let result = deps.analyze_with_all_tools(CSHARP_CODE, Language::CSharp).await.expect("C# analysis failed");
+    let result = deps
+      .analyze_with_all_tools(
+        CSHARP_CODE,
+        Language::CSharp,
+        sample_file_path(Language::CSharp),
+      )
+      .await
+      .expect("C# analysis failed");
 
     let duration = start.elapsed();
 
@@ -527,7 +586,14 @@ mod integration_tests {
     let deps = init().expect("Failed to initialize");
     let start = Instant::now();
 
-    let result = deps.analyze_with_all_tools(CPP_CODE, Language::Cpp).await.expect("C++ analysis failed");
+    let result = deps
+      .analyze_with_all_tools(
+        CPP_CODE,
+        Language::Cpp,
+        sample_file_path(Language::Cpp),
+      )
+      .await
+      .expect("C++ analysis failed");
 
     let duration = start.elapsed();
 
@@ -618,7 +684,11 @@ mod integration_tests {
     let mut tasks = Vec::new();
     for (code, language) in test_files {
       let deps_clone = deps.clone();
-      let task = tokio::spawn(async move { deps_clone.analyze_with_all_tools(code, language).await });
+      let task = tokio::spawn(async move {
+        deps_clone
+          .analyze_with_all_tools(code, language, sample_file_path(language))
+          .await
+      });
       tasks.push(task);
     }
 
@@ -643,12 +713,18 @@ mod integration_tests {
 
     // First analysis (cold cache)
     let start1 = Instant::now();
-    let _result1 = deps.analyze_with_all_tools(RUST_CODE, Language::Rust).await.expect("First analysis failed");
+    let _result1 = deps
+      .analyze_with_all_tools(RUST_CODE, Language::Rust, sample_file_path(Language::Rust))
+      .await
+      .expect("First analysis failed");
     let duration1 = start1.elapsed();
 
     // Second analysis (warm cache)
     let start2 = Instant::now();
-    let _result2 = deps.analyze_with_all_tools(RUST_CODE, Language::Rust).await.expect("Second analysis failed");
+    let _result2 = deps
+      .analyze_with_all_tools(RUST_CODE, Language::Rust, sample_file_path(Language::Rust))
+      .await
+      .expect("Second analysis failed");
     let duration2 = start2.elapsed();
 
     // Cached analysis should be significantly faster
@@ -670,7 +746,14 @@ mod integration_tests {
     let large_code = JAVA_CODE.repeat(10); // 10x larger
 
     for i in 0..5 {
-      let result = deps.analyze_with_all_tools(&large_code, Language::Java).await.expect(&format!("Analysis {} failed", i));
+      let result = deps
+        .analyze_with_all_tools(
+          &large_code,
+          Language::Java,
+          sample_file_path(Language::Java),
+        )
+        .await
+        .expect(&format!("Analysis {} failed", i));
 
       assert!(result.line_metrics.code_lines > 200);
 
@@ -697,7 +780,10 @@ mod integration_tests {
     ];
 
     for (code, expected_lang) in test_cases {
-      let result = deps.analyze_with_all_tools(code, expected_lang).await.expect("Language detection analysis failed");
+      let result = deps
+        .analyze_with_all_tools(code, expected_lang, sample_file_path(expected_lang))
+        .await
+        .expect("Language detection analysis failed");
 
       assert_eq!(result.language, expected_lang);
     }
@@ -718,7 +804,9 @@ mod integration_tests {
     ];
 
     for (code, language) in malformed_codes {
-      let result = deps.analyze_with_all_tools(code, language).await;
+      let result = deps
+        .analyze_with_all_tools(code, language, sample_file_path(language))
+        .await;
 
       // Should handle gracefully, not panic
       match result {
@@ -764,7 +852,10 @@ mod performance_benchmarks {
 
     for (name, code, language) in test_cases {
       let start = Instant::now();
-      let result = deps.analyze_with_all_tools(code, language).await.expect("Benchmark analysis failed");
+      let result = deps
+        .analyze_with_all_tools(code, language, sample_file_path(language))
+        .await
+        .expect("Benchmark analysis failed");
       let duration = start.elapsed();
 
       let lines_per_sec = if duration.as_millis() > 0 {
@@ -795,7 +886,14 @@ mod performance_benchmarks {
       let scaled_code = base_code.repeat(size);
 
       let start = Instant::now();
-      let result = deps.analyze_with_all_tools(&scaled_code, Language::Java).await.expect("Scalability benchmark failed");
+      let result = deps
+        .analyze_with_all_tools(
+          &scaled_code,
+          Language::Java,
+          sample_file_path(Language::Java),
+        )
+        .await
+        .expect("Scalability benchmark failed");
       let duration = start.elapsed();
 
       let lines_per_sec = if duration.as_millis() > 0 {
@@ -826,7 +924,10 @@ mod feature_comparison_tests {
     println!("Testing that new universal parser provides at least as much functionality as old parsers...\n");
 
     // Test comprehensive analysis capabilities
-    let result = deps.analyze_with_all_tools(JAVA_CODE, Language::Java).await.expect("Feature parity test failed");
+    let result = deps
+      .analyze_with_all_tools(JAVA_CODE, Language::Java, sample_file_path(Language::Java))
+      .await
+      .expect("Feature parity test failed");
 
     // Old parser capabilities that MUST be preserved
     assert!(result.line_metrics.code_lines > 0, "❌ Line counting missing");

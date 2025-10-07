@@ -96,10 +96,11 @@ defmodule Singularity.PlatformIntegration.NatsConnector do
               {:ok, template}
 
             {:error, reason} ->
-              Logger.error("Failed to decode template response", 
-                subject: subject, 
+              Logger.error("Failed to decode template response",
+                subject: subject,
                 reason: inspect(reason)
               )
+
               {:error, :decode_failed}
           end
 
@@ -108,18 +109,20 @@ defmodule Singularity.PlatformIntegration.NatsConnector do
           {:error, :timeout}
 
         {:error, reason} ->
-          Logger.error("Template request failed", 
-            subject: subject, 
+          Logger.error("Template request failed",
+            subject: subject,
             reason: inspect(reason)
           )
+
           {:error, reason}
       end
     rescue
       error ->
-        Logger.error("Template fetch error", 
-          subject: subject, 
+        Logger.error("Template fetch error",
+          subject: subject,
           error: inspect(error)
         )
+
         {:error, :internal_error}
     end
   end

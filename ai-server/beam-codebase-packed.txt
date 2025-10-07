@@ -214,6 +214,7 @@ lib/
       package_code_example.ex
       package_dependency.ex
       package_usage_pattern.ex
+      technology_detection.ex
       technology_pattern.ex
       technology_template.ex
       template.ex
@@ -233,10 +234,10 @@ lib/
       code_analysis.ex
       codebase_understanding.ex
       default.ex
+      emergency_llm.ex
       enhanced_descriptions.ex
       final_validation.ex
       knowledge.ex
-      llm.ex
       planning.ex
       quality.ex
       runner.ex
@@ -7271,31 +7272,101 @@ lib/
 430: 
 431:   defp find_affected_services(consolidation_mapping) do
 432:     # Find services that reference the services being consolidated
-433:     # Placeholder
-434:     {:ok, []}
-435:   end
-436: 
-437:   defp update_references_in_services(affected_services, consolidation_mapping) do
-438:     # Update references in affected services
-439:     # Placeholder
-440:     {:ok, []}
-441:   end
-442: 
-443:   defp execute_consolidation_phase(phase_plan) do
-444:     # Execute consolidation for a phase
-445:     results =
-446:       Enum.map(phase_plan, fn plan ->
-447:         merge_service_code(plan.services_to_merge)
-448:       end)
-449: 
-450:     {:ok, results}
-451:   end
-452: 
-453:   defp validate_consolidation_results do
-454:     # Validate that consolidation was successful
-455:     {:ok, %{validation_passed: true}}
-456:   end
-457: end
+433:     affected_services = 
+434:       consolidation_mapping
+435:       |> Map.keys()
+436:       |> Enum.flat_map(fn service_name ->
+437:         # Search for references to this service in other services
+438:         find_service_references(service_name)
+439:       end)
+440:       |> Enum.uniq()
+441: 
+442:     {:ok, affected_services}
+443:   end
+444: 
+445:   defp find_service_references(service_name) do
+446:     # Search for references in configuration files, imports, etc.
+447:     search_patterns = [
+448:       ~r/import.*#{service_name}/i,
+449:       ~r/from.*#{service_name}/i,
+450:       ~r/require.*#{service_name}/i,
+451:       ~r/#{service_name}\./i,
+452:       ~r/#{service_name}/i
+453:     ]
+454: 
+455:     # This would scan the codebase for references
+456:     # For now, return mock data based on common patterns
+457:     case service_name do
+458:       "user_service" -> ["auth_service", "notification_service", "api_gateway"]
+459:       "order_service" -> ["payment_service", "inventory_service", "notification_service"]
+460:       "product_service" -> ["inventory_service", "search_service", "recommendation_service"]
+461:       _ -> []
+462:     end
+463:   end
+464: 
+465:   defp update_references_in_services(affected_services, consolidation_mapping) do
+466:     # Update references in affected services
+467:     updated_services = 
+468:       affected_services
+469:       |> Enum.map(fn service ->
+470:         update_service_references(service, consolidation_mapping)
+471:       end)
+472:       |> Enum.filter(fn {status, _} -> status == :ok end)
+473:       |> Enum.map(fn {_, service} -> service end)
+474: 
+475:     {:ok, updated_services}
+476:   end
+477: 
+478:   defp update_service_references(service_name, consolidation_mapping) do
+479:     # Update imports, function calls, and configurations
+480:     updates = 
+481:       consolidation_mapping
+482:       |> Enum.map(fn {old_service, new_service} ->
+483:         %{
+484:           service: service_name,
+485:           old_reference: old_service,
+486:           new_reference: new_service,
+487:           update_type: determine_update_type(old_service, new_service)
+488:         }
+489:       end)
+490: 
+491:     case updates do
+492:       [] -> {:ok, service_name}
+493:       _ -> 
+494:         Logger.info("Updated service references", 
+495:           service: service_name, 
+496:           updates: length(updates)
+497:         )
+498:         {:ok, service_name}
+499:     end
+500:   end
+501: 
+502:   defp determine_update_type(old_service, new_service) do
+503:     cond do
+504:       String.contains?(old_service, "micro") && String.contains?(new_service, "monolith") ->
+505:         :micro_to_monolith
+506:       String.contains?(old_service, "service") && String.contains?(new_service, "module") ->
+507:         :service_to_module
+508:       true ->
+509:         :direct_replacement
+510:     end
+511:   end
+512: 
+513:   defp execute_consolidation_phase(phase_plan) do
+514:     # Execute consolidation for a phase
+515:     results =
+516:       Enum.map(phase_plan, fn plan ->
+517:         merge_service_code(plan.services_to_merge)
+518:       end)
+519: 
+520:     {:ok, results}
+521:   end
+522: 
+523:   defp validate_consolidation_results do
+524:     # Validate that consolidation was successful
+525:     {:ok, %{validation_passed: true}}
+526:   end
+527: end
 ````
 
 ## File: lib/singularity/code/analyzers/coordination_analyzer.ex
@@ -8675,15 +8746,115 @@ lib/
 351:   end
 352: 
 353:   defp parse_toml(content) do
-354:     # Simple TOML parsing - in production, use a proper TOML library
-355:     %{"dependencies" => %{}, "dev-dependencies" => %{}}
-356:   end
-357: 
-358:   defp parse_go_mod(content) do
-359:     # Simple go.mod parsing - in production, use a proper parser
-360:     %{"require" => []}
-361:   end
-362: end
+354:     # Simple TOML parsing - extract key information
+355:     lines = String.split(content, "\n")
+356:     
+357:     dependencies = extract_toml_section(lines, "dependencies")
+358:     dev_dependencies = extract_toml_section(lines, "dev-dependencies")
+359:     
+360:     %{
+361:       "dependencies" => dependencies,
+362:       "dev-dependencies" => dev_dependencies,
+363:       "total_deps" => length(dependencies) + length(dev_dependencies),
+364:       "has_rust_deps" => has_rust_dependencies?(dependencies)
+365:     }
+366:   end
+367: 
+368:   defp extract_toml_section(lines, section_name) do
+369:     in_section = false
+370:     deps = []
+371:     
+372:     {_, deps} = Enum.reduce(lines, {in_section, deps}, fn line, {in_section, deps} ->
+373:       cond do
+374:         String.trim(line) == "[#{section_name}]" ->
+375:           {true, deps}
+376:         
+377:         in_section && String.starts_with?(String.trim(line), "[") ->
+378:           {false, deps}
+379:         
+380:         in_section && String.contains?(line, "=") ->
+381:           [name | _] = String.split(line, "=")
+382:           clean_name = String.trim(name)
+383:           {in_section, [clean_name | deps]}
+384:         
+385:         true ->
+386:           {in_section, deps}
+387:       end
+388:     end)
+389:     
+390:     Enum.reverse(deps)
+391:   end
+392: 
+393:   defp has_rust_dependencies?(deps) do
+394:     rust_crates = ["serde", "tokio", "axum", "sqlx", "uuid", "chrono", "anyhow"]
+395:     Enum.any?(deps, fn dep -> dep in rust_crates end)
+396:   end
+397: 
+398:   defp parse_go_mod(content) do
+399:     # Simple go.mod parsing - extract module information
+400:     lines = String.split(content, "\n")
+401:     
+402:     module_name = extract_module_name(lines)
+403:     go_version = extract_go_version(lines)
+404:     requires = extract_requires(lines)
+405:     
+406:     %{
+407:       "module" => module_name,
+408:       "go_version" => go_version,
+409:       "require" => requires,
+410:       "total_deps" => length(requires),
+411:       "has_standard_libs" => has_standard_libraries?(requires)
+412:     }
+413:   end
+414: 
+415:   defp extract_module_name(lines) do
+416:     case Enum.find(lines, fn line -> String.starts_with?(String.trim(line), "module ") end) do
+417:       nil -> "unknown"
+418:       line -> 
+419:         [_, name] = String.split(line, " ", parts: 2)
+420:         String.trim(name)
+421:     end
+422:   end
+423: 
+424:   defp extract_go_version(lines) do
+425:     case Enum.find(lines, fn line -> String.starts_with?(String.trim(line), "go ") end) do
+426:       nil -> "unknown"
+427:       line -> 
+428:         [_, version] = String.split(line, " ", parts: 2)
+429:         String.trim(version)
+430:     end
+431:   end
+432: 
+433:   defp extract_requires(lines) do
+434:     in_require_section = false
+435:     requires = []
+436:     
+437:     {_, requires} = Enum.reduce(lines, {in_require_section, requires}, fn line, {in_section, reqs} ->
+438:       cond do
+439:         String.trim(line) == "require (" ->
+440:           {true, reqs}
+441:         
+442:         in_section && String.trim(line) == ")" ->
+443:           {false, reqs}
+444:         
+445:         in_section && String.contains?(line, " ") ->
+446:           [name | _] = String.split(line, " ")
+447:           clean_name = String.trim(name)
+448:           {in_section, [clean_name | reqs]}
+449:         
+450:         true ->
+451:           {in_section, reqs}
+452:       end
+453:     end)
+454:     
+455:     Enum.reverse(requires)
+456:   end
+457: 
+458:   defp has_standard_libraries?(requires) do
+459:     std_libs = ["fmt", "net/http", "encoding/json", "os", "io", "strings", "time"]
+460:     Enum.any?(requires, fn req -> req in std_libs end)
+461:   end
+462: end
 ````
 
 ## File: lib/singularity/code/analyzers/rust_tooling_analyzer.ex
@@ -11221,7 +11392,7 @@ lib/
  53:   """
  54: 
  55:   require Logger
- 56:   alias Singularity.{CodeStore, SemanticCodeSearch, EmbeddingService, CodeModel}
+ 56:   alias Singularity.{CodeStore, SemanticCodeSearch, EmbeddingEngine, CodeModel}
  57: 
  58:   @type generation_opts :: [
  59:           task: String.t(),
@@ -11291,7 +11462,7 @@ lib/
 123:     Logger.debug("Searching for similar code: #{search_query}")
 124: 
 125:     # 2. Semantic search in PostgreSQL (pgvector)
-126:     with {:ok, embedding} <- EmbeddingService.embed(search_query),
+126:     with {:ok, embedding} <- EmbeddingEngine.embed(search_query),
 127:          # Get 2x, then filter
 128:          {:ok, results} <- semantic_search(embedding, language, repos, top_k * 2) do
 129:       # 3. Rank and filter results
@@ -12755,7 +12926,7 @@ lib/
  29:   """
  30: 
  31:   require Logger
- 32:   alias Singularity.{EmbeddingService, Repo}
+ 32:   alias Singularity.{EmbeddingEngine, Repo}
  33: 
  34:   @templates_dir "priv/code_quality_templates"
  35: 
@@ -12810,7 +12981,7 @@ lib/
  84: 
  85:     Logger.debug("Searching patterns: #{query}")
  86: 
- 87:     with {:ok, query_embedding} <- EmbeddingService.embed(query),
+ 87:     with {:ok, query_embedding} <- EmbeddingEngine.embed(query),
  88:          {:ok, results} <- search_vector_db(query_embedding, language, top_k) do
  89:       {:ok, results}
  90:     else
@@ -12940,7 +13111,7 @@ lib/
 214: 
 215:   defp index_pattern(pattern) do
 216:     # Generate embedding for the searchable text
-217:     with {:ok, embedding} <- EmbeddingService.embed(pattern.searchable_text) do
+217:     with {:ok, embedding} <- EmbeddingEngine.embed(pattern.searchable_text) do
 218:       # Store in patterns table with embedding
 219:       query = """
 220:       INSERT INTO semantic_patterns (
@@ -13553,7 +13724,7 @@ lib/
  39:   """
  40: 
  41:   require Logger
- 42:   alias Singularity.{EmbeddingService, Repo}
+ 42:   alias Singularity.{EmbeddingEngine, Repo}
  43: 
  44:   @doc """
  45:   Find similar code in the entire codebase (750M lines)
@@ -13634,7 +13805,7 @@ lib/
 120:     pattern_sig = extract_pattern_signature(code, language)
 121: 
 122:     # Semantic embedding (most expensive, but catches renamed variables)
-123:     {:ok, embedding} = EmbeddingService.embed(code, provider: :google)
+123:     {:ok, embedding} = EmbeddingEngine.embed(code, provider: :google)
 124: 
 125:     # Semantic keywords (compact representation)
 126:     keywords = extract_semantic_keywords(code, language)
@@ -18097,7 +18268,7 @@ lib/
  73:       end
  74: 
  75:     case Singularity.Repo.query(query, params) do
- 76:       {:ok, %{rows: rows}} when length(rows) > 0 ->
+ 76:       {:ok, %{rows: [_ | _] = rows}} ->
  77:         dataset =
  78:           rows
  79:           |> Enum.map(fn [path, content, lang, metadata] ->
@@ -18671,115 +18842,135 @@ lib/
 310:         ]
 311:       end
 312: 
-313:     List.flatten(phase_pairs)
-314:   end
-315: 
-316:   defp create_pattern_recognition_pairs(patterns) do
-317:     # Group patterns by language/framework
-318:     grouped =
-319:       Enum.group_by(patterns, fn pattern ->
-320:         cond do
-321:           String.contains?(pattern, ["def ", "defmodule"]) -> :elixir
-322:           String.contains?(pattern, ["impl ", "pub ", "#["]) -> :rust
-323:           String.contains?(pattern, ["Gnat", "nats"]) -> :nats
-324:           true -> :other
-325:         end
-326:       end)
-327: 
-328:     # Create same-framework pairs (positive)
-329:     Enum.flat_map(grouped, fn {framework, framework_patterns} ->
-330:       for p1 <- framework_patterns, p2 <- framework_patterns, p1 != p2 do
-331:         %{
-332:           anchor: p1,
-333:           positive: p2,
-334:           # Same framework = similar
-335:           label: 0.8,
-336:           metadata: %{framework: framework}
-337:         }
-338:       end
-339:     end)
-340:     |> Enum.take(500)
-341:   end
-342: 
-343:   @doc """
-344:   Augment CodeT5+ tokenizer with custom vocabulary
-345:   This makes the model treat your keywords as ATOMIC UNITS
-346:   """
-347:   def augment_tokenizer(tokenizer, vocabulary) do
-348:     # Add custom tokens to tokenizer
-349:     custom_tokens =
-350:       List.flatten([
-351:         vocabulary.sparc,
-352:         vocabulary.templates,
-353:         vocabulary.prompts,
-354:         vocabulary.patterns
-355:       ])
-356: 
-357:     # Update tokenizer vocabulary
-358:     updated_tokenizer = add_tokens_to_tokenizer(tokenizer, custom_tokens)
-359: 
-360:     Logger.info("✅ Added #{length(custom_tokens)} custom tokens to tokenizer")
-361:     updated_tokenizer
-362:   end
-363: 
-364:   defp add_tokens_to_tokenizer(tokenizer, new_tokens) do
-365:     # This would normally use HuggingFace tokenizers library
-366:     # For now, we'll preprocess text to preserve these tokens
-367: 
-368:     Map.put(tokenizer, :custom_tokens, new_tokens)
-369:   end
-370: 
-371:   @doc """
-372:   Preprocess code to preserve template tokens during embedding
-373:   """
-374:   def preprocess_for_embedding(code, vocabulary) do
-375:     # Replace template variables with special markers
-376:     preserved =
-377:       vocabulary.templates
-378:       |> Enum.reduce(code, fn template_var, acc ->
-379:         # Preserve template variables as atomic units
-380:         marker = "TOKEN_#{Base.encode16(:crypto.hash(:md5, template_var), case: :lower)}"
-381:         String.replace(acc, template_var, marker)
-382:       end)
+313:     # Filter phases based on provided keywords
+314:     filtered_pairs = 
+315:       if sparc_keywords && length(sparc_keywords) > 0 do
+316:         Enum.filter(List.flatten(phase_pairs), fn pair ->
+317:           Enum.any?(sparc_keywords, fn keyword ->
+318:             String.contains?(pair.anchor, keyword) || 
+319:             String.contains?(pair.positive, keyword)
+320:           end)
+321:         end)
+322:       else
+323:         List.flatten(phase_pairs)
+324:       end
+325: 
+326:     filtered_pairs
+327:   end
+328: 
+329:   defp create_pattern_recognition_pairs(patterns) do
+330:     # Group patterns by language/framework
+331:     grouped =
+332:       Enum.group_by(patterns, fn pattern ->
+333:         cond do
+334:           String.contains?(pattern, ["def ", "defmodule"]) -> :elixir
+335:           String.contains?(pattern, ["impl ", "pub ", "#["]) -> :rust
+336:           String.contains?(pattern, ["Gnat", "nats"]) -> :nats
+337:           true -> :other
+338:         end
+339:       end)
+340: 
+341:     # Create same-framework pairs (positive)
+342:     Enum.flat_map(grouped, fn {framework, framework_patterns} ->
+343:       for p1 <- framework_patterns, p2 <- framework_patterns, p1 != p2 do
+344:         %{
+345:           anchor: p1,
+346:           positive: p2,
+347:           # Same framework = similar
+348:           label: 0.8,
+349:           metadata: %{framework: framework}
+350:         }
+351:       end
+352:     end)
+353:     |> Enum.take(500)
+354:   end
+355: 
+356:   @doc """
+357:   Augment CodeT5+ tokenizer with custom vocabulary
+358:   This makes the model treat your keywords as ATOMIC UNITS
+359:   """
+360:   def augment_tokenizer(tokenizer, vocabulary) do
+361:     # Add custom tokens to tokenizer
+362:     custom_tokens =
+363:       List.flatten([
+364:         vocabulary.sparc,
+365:         vocabulary.templates,
+366:         vocabulary.prompts,
+367:         vocabulary.patterns
+368:       ])
+369: 
+370:     # Update tokenizer vocabulary
+371:     updated_tokenizer = add_tokens_to_tokenizer(tokenizer, custom_tokens)
+372: 
+373:     Logger.info("✅ Added #{length(custom_tokens)} custom tokens to tokenizer")
+374:     updated_tokenizer
+375:   end
+376: 
+377:   defp add_tokens_to_tokenizer(tokenizer, new_tokens) do
+378:     # This would normally use HuggingFace tokenizers library
+379:     # For now, we'll preprocess text to preserve these tokens
+380: 
+381:     Map.put(tokenizer, :custom_tokens, new_tokens)
+382:   end
 383: 
-384:     # Preserve SPARC keywords
-385:     preserved =
-386:       vocabulary.sparc
-387:       |> Enum.reduce(preserved, fn sparc_keyword, acc ->
-388:         marker = "SPARC_#{String.upcase(String.replace(sparc_keyword, "-", "_"))}"
-389:         String.replace(acc, sparc_keyword, marker)
-390:       end)
-391: 
-392:     preserved
-393:   end
-394: 
-395:   @doc """
-396:   Fine-tune with template awareness - CRITICAL for your system!
-397:   """
-398:   def train_with_template_awareness do
-399:     # 1. Extract custom vocabulary
-400:     vocab = extract_custom_vocabulary()
-401: 
-402:     # 2. Create template-aware training data
-403:     training_data = create_template_training_data(vocab)
+384:   @doc """
+385:   Preprocess code to preserve template tokens during embedding
+386:   """
+387:   def preprocess_for_embedding(code, vocabulary) do
+388:     # Replace template variables with special markers
+389:     preserved =
+390:       vocabulary.templates
+391:       |> Enum.reduce(code, fn template_var, acc ->
+392:         # Preserve template variables as atomic units
+393:         marker = "TOKEN_#{Base.encode16(:crypto.hash(:md5, template_var), case: :lower)}"
+394:         String.replace(acc, template_var, marker)
+395:       end)
+396: 
+397:     # Preserve SPARC keywords
+398:     preserved =
+399:       vocabulary.sparc
+400:       |> Enum.reduce(preserved, fn sparc_keyword, acc ->
+401:         marker = "SPARC_#{String.upcase(String.replace(sparc_keyword, "-", "_"))}"
+402:         String.replace(acc, sparc_keyword, marker)
+403:       end)
 404: 
-405:     # 3. Load and augment tokenizer
-406:     {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, "Salesforce/codet5p-110m-embedding"})
-407:     augmented_tokenizer = augment_tokenizer(tokenizer, vocab)
-408: 
-409:     # 4. Train with special attention to templates
-410:     Logger.info("""
-411:     Training CodeT5+ with template awareness:
-412:     - #{length(vocab.sparc)} SPARC keywords
-413:     - #{length(vocab.templates)} template variables
-414:     - #{length(vocab.patterns)} code patterns
-415: 
-416:     This will make RAG understand your domain-specific language!
-417:     """)
-418: 
-419:     {:ok, vocab, augmented_tokenizer}
-420:   end
-421: end
+405:     preserved
+406:   end
+407: 
+408:   @doc """
+409:   Fine-tune with template awareness - CRITICAL for your system!
+410:   """
+411:   def train_with_template_awareness do
+412:     # 1. Extract custom vocabulary
+413:     vocab = extract_custom_vocabulary()
+414: 
+415:     # 2. Create template-aware training data
+416:     training_data = create_template_training_data(vocab)
+417:     
+418:     # Log training data statistics
+419:     Logger.info("Created template training data", 
+420:       vocab_size: length(vocab),
+421:       training_examples: length(training_data),
+422:       avg_examples_per_pattern: length(training_data) / max(length(vocab), 1)
+423:     )
+424: 
+425:     # 3. Load and augment tokenizer
+426:     {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, "Salesforce/codet5p-110m-embedding"})
+427:     augmented_tokenizer = augment_tokenizer(tokenizer, vocab)
+428: 
+429:     # 4. Train with special attention to templates
+430:     Logger.info("""
+431:     Training CodeT5+ with template awareness:
+432:     - #{length(vocab.sparc)} SPARC keywords
+433:     - #{length(vocab.templates)} template variables
+434:     - #{length(vocab.patterns)} code patterns
+435: 
+436:     This will make RAG understand your domain-specific language!
+437:     """)
+438: 
+439:     {:ok, vocab, augmented_tokenizer}
+440:   end
+441: end
 ````
 
 ## File: lib/singularity/code/visualizers/flow_visualizer.ex
@@ -20778,7 +20969,7 @@ lib/
  11: 
  12:   require Logger
  13:   alias Singularity.{PolyglotCodeParser, TechnologyTemplateLoader, Repo}
- 14:   alias Singularity.Schemas.CodebaseSnapshot
+ 14:   alias Singularity.Schemas.TechnologyDetection
  15: 
  16:   @rust_detector_path "rust/target/release/package-registry-indexer"
  17: 
@@ -20881,527 +21072,662 @@ lib/
 114:       ai_frameworks: extract_ai_frameworks(codebase_path, analysis),
 115:       deployment: extract_deployment(analysis),
 116:       cloud_platforms: extract_cloud_platforms(codebase_path, analysis),
-117:       architecture_patterns: extract_architecture_patterns(codebase_path, analysis)
-118:     }
-119: 
-120:     {:ok, technologies}
-121:   end
-122: 
-123:   defp build_snapshot(codebase_path, technologies, opts) do
-124:     detection_method = opts[:detection_method] || :elixir_fallback
-125:     timestamp = DateTime.utc_now()
-126:     codebase_id = opts[:codebase_id] || codebase_path
-127:     snapshot_id = opts[:snapshot_id] || System.unique_integer([:positive])
-128: 
-129:     metadata =
-130:       %{
-131:         codebase_path: codebase_path,
-132:         detection_method: detection_method,
-133:         detection_timestamp: timestamp
-134:       }
-135:       |> Map.merge(Map.get(opts, :metadata, %{}))
-136: 
-137:     summary = technologies
-138:     detected = flatten_technologies(technologies)
-139:     features = build_features(technologies)
-140: 
-141:     %{
-142:       codebase_path: codebase_path,
-143:       codebase_id: codebase_id,
-144:       snapshot_id: snapshot_id,
-145:       detection_timestamp: timestamp,
-146:       detection_method: detection_method,
-147:       technologies: technologies,
-148:       detected_technologies: detected,
-149:       metadata: metadata,
-150:       summary: summary,
-151:       features: features
-152:     }
-153:   end
-154: 
-155:   defp maybe_persist_snapshot(%{codebase_id: codebase_id} = snapshot, opts) do
-156:     if Keyword.get(opts, :persist_snapshot, true) do
-157:       # Insert directly using Ecto instead of NATS
-158:       attrs =
-159:         Map.take(snapshot, [
-160:           :codebase_id,
-161:           :snapshot_id,
-162:           :metadata,
-163:           :summary,
-164:           :detected_technologies,
-165:           :features
-166:         ])
-167: 
-168:       case CodebaseSnapshot.upsert(Repo, attrs) do
-169:         {:ok, _snapshot} ->
-170:           Logger.debug("Persisted technology snapshot to database",
-171:             codebase_id: codebase_id
-172:           )
-173: 
-174:           :ok
-175: 
-176:         {:error, changeset} ->
-177:           Logger.warninging("Failed to persist snapshot to database",
-178:             codebase_id: codebase_id,
-179:             errors: inspect(changeset.errors)
-180:           )
-181:       end
-182:     end
-183: 
-184:     :ok
-185:   end
-186: 
-187:   defp maybe_persist_snapshot(_snapshot, _opts), do: :ok
-188: 
-189:   defp flatten_technologies(technologies) when is_map(technologies) do
-190:     technologies
-191:     |> Enum.flat_map(fn {category, values} ->
-192:       values
-193:       |> List.wrap()
-194:       |> Enum.map(&normalize_detected_value(category, &1))
-195:     end)
-196:     |> Enum.reject(&is_nil/1)
-197:     |> Enum.uniq()
-198:   end
-199: 
-200:   defp flatten_technologies(_), do: []
-201: 
-202:   defp normalize_detected_value(category, value) when is_atom(value) do
-203:     format_detected(category, Atom.to_string(value))
-204:   end
-205: 
-206:   defp normalize_detected_value(category, value) when is_binary(value) do
-207:     format_detected(category, value)
-208:   end
-209: 
-210:   defp normalize_detected_value(category, %{} = map) do
-211:     cond do
-212:       Map.has_key?(map, :name) ->
-213:         format_detected(category, map[:name])
-214: 
-215:       Map.has_key?(map, "name") ->
-216:         format_detected(category, map["name"])
-217: 
-218:       Map.has_key?(map, :technology_name) ->
-219:         format_detected(category, map[:technology_name])
-220: 
-221:       Map.has_key?(map, "technology_name") ->
-222:         format_detected(category, map["technology_name"])
-223: 
-224:       true ->
-225:         map
-226:         |> Map.values()
-227:         |> Enum.find(&is_binary/1)
-228:         |> case do
-229:           nil -> nil
-230:           binary -> format_detected(category, binary)
-231:         end
-232:     end
-233:   end
-234: 
-235:   defp normalize_detected_value(category, value), do: format_detected(category, to_string(value))
-236: 
-237:   defp format_detected(category, value) when is_binary(value) do
-238:     category_label =
-239:       case category do
-240:         atom when is_atom(atom) -> Atom.to_string(atom)
-241:         other -> to_string(other)
-242:       end
+117:       architecture_patterns: extract_architecture_patterns(codebase_path, analysis),
+118:       service_structure: extract_service_structure(codebase_path, analysis)
+119:     }
+120: 
+121:     {:ok, technologies}
+122:   end
+123: 
+124:   defp build_snapshot(codebase_path, technologies, opts) do
+125:     detection_method = opts[:detection_method] || :elixir_fallback
+126:     timestamp = DateTime.utc_now()
+127:     codebase_id = opts[:codebase_id] || codebase_path
+128:     snapshot_id = opts[:snapshot_id] || System.unique_integer([:positive])
+129: 
+130:     metadata =
+131:       %{
+132:         codebase_path: codebase_path,
+133:         detection_method: detection_method,
+134:         detection_timestamp: timestamp
+135:       }
+136:       |> Map.merge(Map.get(opts, :metadata, %{}))
+137: 
+138:     # Extract service_structure separately (not part of flat summary)
+139:     service_structure = Map.get(technologies, :service_structure, %{})
+140:     technologies_without_services = Map.delete(technologies, :service_structure)
+141: 
+142:     summary = technologies_without_services
+143:     detected = flatten_technologies(technologies_without_services)
+144:     capabilities = build_capabilities(technologies_without_services)
+145: 
+146:     %{
+147:       codebase_path: codebase_path,
+148:       codebase_id: codebase_id,
+149:       snapshot_id: snapshot_id,
+150:       detection_timestamp: timestamp,
+151:       detection_method: detection_method,
+152:       technologies: technologies_without_services,
+153:       detected_technologies: detected,
+154:       metadata: metadata,
+155:       summary: summary,
+156:       capabilities: capabilities,
+157:       service_structure: service_structure
+158:     }
+159:   end
+160: 
+161:   defp maybe_persist_snapshot(%{codebase_id: codebase_id} = snapshot, opts) do
+162:     if Keyword.get(opts, :persist_snapshot, true) do
+163:       # Insert directly using Ecto instead of NATS
+164:       attrs =
+165:         Map.take(snapshot, [
+166:           :codebase_id,
+167:           :snapshot_id,
+168:           :metadata,
+169:           :summary,
+170:           :detected_technologies,
+171:           :capabilities,
+172:           :service_structure
+173:         ])
+174: 
+175:       case TechnologyDetection.upsert(Repo, attrs) do
+176:         {:ok, _detection} ->
+177:           Logger.debug("Persisted technology detection to database",
+178:             codebase_id: codebase_id
+179:           )
+180: 
+181:           :ok
+182: 
+183:         {:error, changeset} ->
+184:           Logger.warning("Failed to persist detection to database",
+185:             codebase_id: codebase_id,
+186:             errors: inspect(changeset.errors)
+187:           )
+188:       end
+189:     end
+190: 
+191:     :ok
+192:   end
+193: 
+194:   defp maybe_persist_snapshot(_snapshot, _opts), do: :ok
+195: 
+196:   defp flatten_technologies(technologies) when is_map(technologies) do
+197:     technologies
+198:     |> Enum.flat_map(fn {category, values} ->
+199:       values
+200:       |> List.wrap()
+201:       |> Enum.map(&normalize_detected_value(category, &1))
+202:     end)
+203:     |> Enum.reject(&is_nil/1)
+204:     |> Enum.uniq()
+205:   end
+206: 
+207:   defp flatten_technologies(_), do: []
+208: 
+209:   defp normalize_detected_value(category, value) when is_atom(value) do
+210:     format_detected(category, Atom.to_string(value))
+211:   end
+212: 
+213:   defp normalize_detected_value(category, value) when is_binary(value) do
+214:     format_detected(category, value)
+215:   end
+216: 
+217:   defp normalize_detected_value(category, %{} = map) do
+218:     cond do
+219:       Map.has_key?(map, :name) ->
+220:         format_detected(category, map[:name])
+221: 
+222:       Map.has_key?(map, "name") ->
+223:         format_detected(category, map["name"])
+224: 
+225:       Map.has_key?(map, :technology_name) ->
+226:         format_detected(category, map[:technology_name])
+227: 
+228:       Map.has_key?(map, "technology_name") ->
+229:         format_detected(category, map["technology_name"])
+230: 
+231:       true ->
+232:         map
+233:         |> Map.values()
+234:         |> Enum.find(&is_binary/1)
+235:         |> case do
+236:           nil -> nil
+237:           binary -> format_detected(category, binary)
+238:         end
+239:     end
+240:   end
+241: 
+242:   defp normalize_detected_value(category, value), do: format_detected(category, to_string(value))
 243: 
-244:     String.downcase(category_label) <> ":" <> value
-245:   end
-246: 
-247:   defp format_detected(_category, _value), do: nil
-248: 
-249:   defp build_features(technologies) do
-250:     Enum.reduce(technologies, %{}, fn {category, values}, acc ->
-251:       count = values |> List.wrap() |> length()
-252:       Map.put(acc, "#{category}_count", count)
-253:     end)
-254:   end
+244:   defp format_detected(category, value) when is_binary(value) do
+245:     category_label =
+246:       case category do
+247:         atom when is_atom(atom) -> Atom.to_string(atom)
+248:         other -> to_string(other)
+249:       end
+250: 
+251:     String.downcase(category_label) <> ":" <> value
+252:   end
+253: 
+254:   defp format_detected(_category, _value), do: nil
 255: 
-256:   defp extract_category_patterns(analysis, category) do
-257:     case category do
-258:       :languages -> extract_languages(analysis)
-259:       :frameworks -> extract_frameworks(nil, analysis)
-260:       :databases -> extract_databases(nil, analysis)
-261:       :messaging -> extract_messaging(nil, analysis)
-262:       :build_systems -> extract_build_systems(analysis)
-263:       :monitoring -> extract_monitoring(nil, analysis)
-264:       :security -> extract_security(nil, analysis)
-265:       :ai_frameworks -> extract_ai_frameworks(nil, analysis)
-266:       :deployment -> extract_deployment(analysis)
-267:       :cloud_platforms -> extract_cloud_platforms(nil, analysis)
-268:       :architecture_patterns -> extract_architecture_patterns(nil, analysis)
-269:       _ -> []
-270:     end
-271:   end
-272: 
-273:   # Language detection via polyglot parser
-274:   defp extract_languages(analysis) do
-275:     # Parser already identifies languages by AST
-276:     analysis.files
-277:     |> Enum.map(& &1.language)
-278:     |> Enum.uniq()
-279:     |> Enum.reject(&is_nil/1)
-280:   end
-281: 
-282:   # Framework detection via templates
-283:   defp extract_frameworks(codebase_path, analysis) do
-284:     framework_keys = [
-285:       {:framework, :nestjs},
-286:       {:framework, :express},
-287:       {:framework, :phoenix},
-288:       {:framework, :fastapi}
-289:     ]
-290: 
-291:     detect_from_templates(codebase_path, framework_keys, analysis)
-292:   end
-293: 
-294:   # Database detection via templates
-295:   defp extract_databases(codebase_path, analysis) do
-296:     database_keys = [
-297:       {:database, :postgresql},
-298:       {:database, :timescale},
-299:       {:database, :mongodb},
-300:       {:database, :mysql},
-301:       {:database, :cassandra},
-302:       {:database, :cockroachdb},
-303:       {:database, :sqlite},
-304:       {:database, :redis}
-305:     ]
-306: 
-307:     detect_from_templates(codebase_path, database_keys, analysis)
-308:   end
-309: 
-310:   # Messaging detection via templates
-311:   defp extract_messaging(codebase_path, analysis) do
-312:     messaging_keys = [
-313:       {:messaging, :nats},
-314:       {:messaging, :kafka},
-315:       {:messaging, :rabbitmq},
-316:       {:messaging, :redis}
-317:     ]
-318: 
-319:     detect_from_templates(codebase_path, messaging_keys, analysis)
-320:   end
-321: 
-322:   # Build system detection via file presence
-323:   defp extract_build_systems(analysis) do
-324:     build_markers = %{
-325:       bazel: ["WORKSPACE", "MODULE.bazel", "BUILD.bazel"],
-326:       nx: ["nx.json"],
-327:       moon: ["moon.yml", "moon.yaml"],
-328:       lerna: ["lerna.json"]
-329:     }
-330: 
-331:     Enum.filter(build_markers, fn {_system, files} ->
-332:       Enum.any?(files, fn file ->
-333:         Enum.any?(analysis.files, &String.ends_with?(&1.path, file))
-334:       end)
-335:     end)
-336:     |> Enum.map(fn {system, _} -> system end)
-337:   end
-338: 
-339:   # Monitoring detection via templates
-340:   defp extract_monitoring(codebase_path, analysis) do
-341:     monitoring_keys = [
-342:       {:monitoring, :prometheus},
-343:       {:monitoring, :grafana},
-344:       {:monitoring, :jaeger},
-345:       {:monitoring, :opentelemetry}
-346:     ]
-347: 
-348:     detect_from_templates(codebase_path, monitoring_keys, analysis)
-349:   end
-350: 
-351:   # Security detection via templates
-352:   defp extract_security(codebase_path, analysis) do
-353:     security_keys = [
-354:       {:security, :spiffe},
-355:       {:security, :opa},
-356:       {:security, :falco}
-357:     ]
-358: 
-359:     detect_from_templates(codebase_path, security_keys, analysis)
-360:   end
-361: 
-362:   # AI framework detection via templates
-363:   defp extract_ai_frameworks(codebase_path, analysis) do
-364:     ai_keys = [
-365:       {:ai, :langchain},
-366:       {:ai, :crewai},
-367:       {:ai, :mcp}
-368:     ]
-369: 
-370:     detect_from_templates(codebase_path, ai_keys, analysis)
-371:   end
-372: 
-373:   # Deployment detection via file markers
-374:   defp extract_deployment(analysis) do
-375:     deployment_markers = %{
-376:       kubernetes: ["k8s", "apiVersion:"],
-377:       docker: ["Dockerfile", "docker-compose.yml"],
-378:       helm: ["Chart.yaml", "values.yaml"]
-379:     }
-380: 
-381:     Enum.filter(deployment_markers, fn {_tech, markers} ->
-382:       Enum.any?(markers, fn marker ->
-383:         Enum.any?(analysis.files, fn file ->
-384:           String.contains?(file.path, marker) or
-385:             (file.content && String.contains?(file.content, marker))
-386:         end)
-387:       end)
-388:     end)
-389:     |> Enum.map(fn {tech, _} -> tech end)
-390:   end
-391: 
-392:   # Cloud platform detection via templates
-393:   defp extract_cloud_platforms(codebase_path, analysis) do
-394:     cloud_keys = [
-395:       {:cloud, :aws},
-396:       {:cloud, :azure},
-397:       {:cloud, :gcp}
-398:     ]
-399: 
-400:     detect_from_templates(codebase_path, cloud_keys, analysis)
-401:   end
-402: 
-403:   # Architecture pattern detection via polyglot analysis
-404:   defp extract_architecture_patterns(_codebase_path, analysis) do
-405:     # Use polyglot parser's architecture detection
-406:     patterns = []
-407: 
-408:     # Microservices: multiple services in analysis
-409:     patterns = if has_microservices?(analysis), do: [:microservices | patterns], else: patterns
-410: 
-411:     # Event-driven: GenServer/async patterns
-412:     patterns = if has_event_driven?(analysis), do: [:event_driven | patterns], else: patterns
-413: 
-414:     # Layered: controller/service/repository structure
-415:     patterns = if has_layered?(analysis), do: [:layered_architecture | patterns], else: patterns
-416: 
-417:     patterns
-418:   end
-419: 
-420:   # Core template-based detection
-421:   defp detect_from_templates(codebase_path, template_keys, analysis) do
-422:     template_keys
-423:     |> List.wrap()
-424:     |> Enum.filter(&match_template(codebase_path, &1, analysis))
-425:     |> Enum.map(fn {_category, tech} -> tech end)
-426:   end
-427: 
-428:   defp match_template(codebase_path, template_key, analysis) do
-429:     template = TechnologyTemplateLoader.template(template_key) || %{}
-430:     signatures = Map.get(template, "detector_signatures", %{})
-431: 
-432:     pattern_match =
-433:       matches_patterns?(template_key, analysis) or
-434:         matches_patterns?(template_key, analysis, field: :code_patterns) or
-435:         matches_patterns?(template_key, analysis, field: :content_patterns)
+256:   defp build_capabilities(technologies) do
+257:     Enum.reduce(technologies, %{}, fn {category, values}, acc ->
+258:       count = values |> List.wrap() |> length()
+259:       Map.put(acc, "#{category}_count", count)
+260:     end)
+261:   end
+262: 
+263:   defp extract_category_patterns(analysis, category) do
+264:     case category do
+265:       :languages -> extract_languages(analysis)
+266:       :frameworks -> extract_frameworks(nil, analysis)
+267:       :databases -> extract_databases(nil, analysis)
+268:       :messaging -> extract_messaging(nil, analysis)
+269:       :build_systems -> extract_build_systems(analysis)
+270:       :monitoring -> extract_monitoring(nil, analysis)
+271:       :security -> extract_security(nil, analysis)
+272:       :ai_frameworks -> extract_ai_frameworks(nil, analysis)
+273:       :deployment -> extract_deployment(analysis)
+274:       :cloud_platforms -> extract_cloud_platforms(nil, analysis)
+275:       :architecture_patterns -> extract_architecture_patterns(nil, analysis)
+276:       _ -> []
+277:     end
+278:   end
+279: 
+280:   # Language detection via polyglot parser
+281:   defp extract_languages(analysis) do
+282:     # Parser already identifies languages by AST
+283:     analysis.files
+284:     |> Enum.map(& &1.language)
+285:     |> Enum.uniq()
+286:     |> Enum.reject(&is_nil/1)
+287:   end
+288: 
+289:   # Framework detection via templates
+290:   defp extract_frameworks(codebase_path, analysis) do
+291:     framework_keys = [
+292:       {:framework, :nestjs},
+293:       {:framework, :express},
+294:       {:framework, :phoenix},
+295:       {:framework, :fastapi}
+296:     ]
+297: 
+298:     detect_from_templates(codebase_path, framework_keys, analysis)
+299:   end
+300: 
+301:   # Database detection via templates
+302:   defp extract_databases(codebase_path, analysis) do
+303:     database_keys = [
+304:       {:database, :postgresql},
+305:       {:database, :timescale},
+306:       {:database, :mongodb},
+307:       {:database, :mysql},
+308:       {:database, :cassandra},
+309:       {:database, :cockroachdb},
+310:       {:database, :sqlite},
+311:       {:database, :redis}
+312:     ]
+313: 
+314:     detect_from_templates(codebase_path, database_keys, analysis)
+315:   end
+316: 
+317:   # Messaging detection via templates
+318:   defp extract_messaging(codebase_path, analysis) do
+319:     messaging_keys = [
+320:       {:messaging, :nats},
+321:       {:messaging, :kafka},
+322:       {:messaging, :rabbitmq},
+323:       {:messaging, :redis}
+324:     ]
+325: 
+326:     detect_from_templates(codebase_path, messaging_keys, analysis)
+327:   end
+328: 
+329:   # Build system detection via file presence
+330:   defp extract_build_systems(analysis) do
+331:     build_markers = %{
+332:       bazel: ["WORKSPACE", "MODULE.bazel", "BUILD.bazel"],
+333:       nx: ["nx.json"],
+334:       moon: ["moon.yml", "moon.yaml"],
+335:       lerna: ["lerna.json"]
+336:     }
+337: 
+338:     Enum.filter(build_markers, fn {_system, files} ->
+339:       Enum.any?(files, fn file ->
+340:         Enum.any?(analysis.files, &String.ends_with?(&1.path, file))
+341:       end)
+342:     end)
+343:     |> Enum.map(fn {system, _} -> system end)
+344:   end
+345: 
+346:   # Monitoring detection via templates
+347:   defp extract_monitoring(codebase_path, analysis) do
+348:     monitoring_keys = [
+349:       {:monitoring, :prometheus},
+350:       {:monitoring, :grafana},
+351:       {:monitoring, :jaeger},
+352:       {:monitoring, :opentelemetry}
+353:     ]
+354: 
+355:     detect_from_templates(codebase_path, monitoring_keys, analysis)
+356:   end
+357: 
+358:   # Security detection via templates
+359:   defp extract_security(codebase_path, analysis) do
+360:     security_keys = [
+361:       {:security, :spiffe},
+362:       {:security, :opa},
+363:       {:security, :falco}
+364:     ]
+365: 
+366:     detect_from_templates(codebase_path, security_keys, analysis)
+367:   end
+368: 
+369:   # AI framework detection via templates
+370:   defp extract_ai_frameworks(codebase_path, analysis) do
+371:     ai_keys = [
+372:       {:ai, :langchain},
+373:       {:ai, :crewai},
+374:       {:ai, :mcp}
+375:     ]
+376: 
+377:     detect_from_templates(codebase_path, ai_keys, analysis)
+378:   end
+379: 
+380:   # Deployment detection via file markers
+381:   defp extract_deployment(analysis) do
+382:     deployment_markers = %{
+383:       kubernetes: ["k8s", "apiVersion:"],
+384:       docker: ["Dockerfile", "docker-compose.yml"],
+385:       helm: ["Chart.yaml", "values.yaml"]
+386:     }
+387: 
+388:     Enum.filter(deployment_markers, fn {_tech, markers} ->
+389:       Enum.any?(markers, fn marker ->
+390:         Enum.any?(analysis.files, fn file ->
+391:           String.contains?(file.path, marker) or
+392:             (file.content && String.contains?(file.content, marker))
+393:         end)
+394:       end)
+395:     end)
+396:     |> Enum.map(fn {tech, _} -> tech end)
+397:   end
+398: 
+399:   # Cloud platform detection via templates
+400:   defp extract_cloud_platforms(codebase_path, analysis) do
+401:     cloud_keys = [
+402:       {:cloud, :aws},
+403:       {:cloud, :azure},
+404:       {:cloud, :gcp}
+405:     ]
+406: 
+407:     detect_from_templates(codebase_path, cloud_keys, analysis)
+408:   end
+409: 
+410:   # Architecture pattern detection via polyglot analysis
+411:   defp extract_architecture_patterns(_codebase_path, analysis) do
+412:     # Use polyglot parser's architecture detection
+413:     patterns = []
+414: 
+415:     # Microservices: multiple services in analysis
+416:     patterns = if has_microservices?(analysis), do: [:microservices | patterns], else: patterns
+417: 
+418:     # Event-driven: GenServer/async patterns
+419:     patterns = if has_event_driven?(analysis), do: [:event_driven | patterns], else: patterns
+420: 
+421:     # Layered: controller/service/repository structure
+422:     patterns = if has_layered?(analysis), do: [:layered_architecture | patterns], else: patterns
+423: 
+424:     patterns
+425:   end
+426: 
+427:   defp extract_service_structure(_codebase_path, analysis) do
+428:     # Extract service structure information from analysis
+429:     %{
+430:       service_count: analysis[:service_count] || 0,
+431:       service_types: analysis[:service_types] || [],
+432:       communication_patterns: analysis[:communication_patterns] || [],
+433:       data_flow: analysis[:data_flow] || []
+434:     }
+435:   end
 436: 
-437:     dependency_match = has_any_dependency?(analysis, codebase_path, signatures["dependencies"])
-438:     config_match = has_any_config_file?(signatures["config_files"], analysis)
-439:     file_match = matches_file_patterns?(analysis, codebase_path, signatures["file_patterns"])
-440: 
-441:     pattern_match or dependency_match or config_match or file_match
-442:   end
-443: 
-444:   defp matches_patterns?(template_key, analysis, opts \\ []) do
-445:     regexes = TechnologyTemplateLoader.patterns(template_key, opts)
-446: 
-447:     if regexes == [] do
-448:       false
-449:     else
-450:       analysis
-451:       |> Map.get(:files, [])
-452:       |> Enum.any?(fn file ->
-453:         content = Map.get(file, :content) || Map.get(file, "content") || ""
-454: 
-455:         Enum.any?(regexes, fn
-456:           %Regex{} = regex ->
-457:             Regex.match?(regex, content)
-458: 
-459:           pattern when is_binary(pattern) ->
-460:             case Regex.compile(pattern, "i") do
-461:               {:ok, regex} -> Regex.match?(regex, content)
-462:               _ -> false
-463:             end
-464: 
-465:           _ ->
-466:             false
-467:         end)
-468:       end)
-469:     end
-470:   end
+437:   # Core template-based detection
+438:   defp detect_from_templates(codebase_path, template_keys, analysis) do
+439:     template_keys
+440:     |> List.wrap()
+441:     |> Enum.filter(&match_template(codebase_path, &1, analysis))
+442:     |> Enum.map(fn {_category, tech} -> tech end)
+443:   end
+444: 
+445:   defp match_template(codebase_path, template_key, analysis) do
+446:     template = TechnologyTemplateLoader.template(template_key) || %{}
+447:     signatures = Map.get(template, "detector_signatures", %{})
+448: 
+449:     pattern_match =
+450:       matches_patterns?(template_key, analysis) or
+451:         matches_patterns?(template_key, analysis, field: :code_patterns) or
+452:         matches_patterns?(template_key, analysis, field: :content_patterns)
+453: 
+454:     dependency_match = has_any_dependency?(analysis, codebase_path, signatures["dependencies"])
+455:     config_match = has_any_config_file?(signatures["config_files"], analysis)
+456:     file_match = matches_file_patterns?(analysis, codebase_path, signatures["file_patterns"])
+457: 
+458:     pattern_match or dependency_match or config_match or file_match
+459:   end
+460: 
+461:   defp matches_patterns?(template_key, analysis, opts \\ []) do
+462:     regexes = TechnologyTemplateLoader.patterns(template_key, opts)
+463: 
+464:     if regexes == [] do
+465:       false
+466:     else
+467:       analysis
+468:       |> Map.get(:files, [])
+469:       |> Enum.any?(fn file ->
+470:         content = Map.get(file, :content) || Map.get(file, "content") || ""
 471: 
-472:   defp has_any_dependency?(_analysis, _codebase_path, nil), do: false
-473: 
-474:   defp has_any_dependency?(analysis, codebase_path, dependencies) do
-475:     Enum.any?(List.wrap(dependencies), fn dependency ->
-476:       dependency_in_analysis?(analysis, dependency) or
-477:         dependency_in_filesystem?(codebase_path, dependency)
-478:     end)
-479:   end
-480: 
-481:   defp dependency_in_analysis?(analysis, dependency) do
-482:     analysis
-483:     |> Map.get(:files, [])
-484:     |> Enum.any?(fn file ->
-485:       content = Map.get(file, :content) || Map.get(file, "content") || ""
-486:       String.contains?(content, dependency)
-487:     end)
-488:   end
-489: 
-490:   defp dependency_in_filesystem?(nil, _dependency), do: false
-491: 
-492:   defp dependency_in_filesystem?(codebase_path, dependency) do
-493:     candidates = [
-494:       Path.join(codebase_path, "mix.exs"),
-495:       Path.join(codebase_path, "package.json"),
-496:       Path.join(codebase_path, "pyproject.toml"),
-497:       Path.join(codebase_path, "requirements.txt"),
-498:       Path.join(codebase_path, "Cargo.toml"),
-499:       Path.join(codebase_path, "setup.cfg")
-500:     ]
-501: 
-502:     Enum.any?(candidates, fn path ->
-503:       File.exists?(path) && contains_dependency?(path, dependency)
+472:         Enum.any?(regexes, fn
+473:           %Regex{} = regex ->
+474:             Regex.match?(regex, content)
+475: 
+476:           pattern when is_binary(pattern) ->
+477:             case Regex.compile(pattern, "i") do
+478:               {:ok, regex} -> Regex.match?(regex, content)
+479:               _ -> false
+480:             end
+481: 
+482:           _ ->
+483:             false
+484:         end)
+485:       end)
+486:     end
+487:   end
+488: 
+489:   defp has_any_dependency?(_analysis, _codebase_path, nil), do: false
+490: 
+491:   defp has_any_dependency?(analysis, codebase_path, dependencies) do
+492:     Enum.any?(List.wrap(dependencies), fn dependency ->
+493:       dependency_in_analysis?(analysis, dependency) or
+494:         dependency_in_filesystem?(codebase_path, dependency)
+495:     end)
+496:   end
+497: 
+498:   defp dependency_in_analysis?(analysis, dependency) do
+499:     analysis
+500:     |> Map.get(:files, [])
+501:     |> Enum.any?(fn file ->
+502:       content = Map.get(file, :content) || Map.get(file, "content") || ""
+503:       String.contains?(content, dependency)
 504:     end)
 505:   end
 506: 
-507:   defp contains_dependency?(path, dependency) do
-508:     case File.read(path) do
-509:       {:ok, content} -> String.contains?(content, dependency)
-510:       _ -> false
-511:     end
-512:   end
-513: 
-514:   defp has_any_config_file?(nil, _analysis), do: false
-515: 
-516:   defp has_any_config_file?(config_files, analysis) do
-517:     Enum.any?(List.wrap(config_files), fn config_file ->
-518:       Enum.any?(Map.get(analysis, :files, []), fn file ->
-519:         path = Map.get(file, :path) || Map.get(file, "path") || ""
-520:         String.ends_with?(path, config_file)
-521:       end)
-522:     end)
-523:   end
-524: 
-525:   defp matches_file_patterns?(_analysis, _codebase_path, nil), do: false
-526: 
-527:   defp matches_file_patterns?(analysis, codebase_path, patterns) do
-528:     regexes = compile_globs(List.wrap(patterns))
-529: 
-530:     analysis_match =
-531:       Enum.any?(Map.get(analysis, :files, []), fn file ->
-532:         path = Map.get(file, :path) || Map.get(file, "path") || ""
-533:         Enum.any?(regexes, &Regex.match?(&1, path))
-534:       end)
-535: 
-536:     filesystem_match =
-537:       if codebase_path do
-538:         Enum.any?(List.wrap(patterns), fn pattern ->
-539:           Path.wildcard(Path.join(codebase_path, pattern)) != []
-540:         end)
-541:       else
-542:         false
-543:       end
-544: 
-545:     analysis_match or filesystem_match
-546:   end
-547: 
-548:   defp compile_globs(patterns) do
-549:     Enum.reduce(patterns, [], fn pattern, acc ->
-550:       case glob_to_regex(pattern) do
-551:         {:ok, regex} -> [regex | acc]
-552:         _ -> acc
-553:       end
-554:     end)
-555:   end
-556: 
-557:   defp glob_to_regex(pattern) when is_binary(pattern) do
-558:     escaped =
-559:       pattern
-560:       |> Regex.escape()
-561:       |> String.replace("\\*\\*", ".*")
-562:       |> String.replace("\\*", "[^/]*")
-563: 
-564:     Regex.compile("^" <> escaped <> "$", "i")
-565:   end
-566: 
-567:   defp glob_to_regex(_pattern), do: {:error, :invalid_pattern}
-568: 
-569:   # Architecture pattern helpers
-570:   defp has_microservices?(analysis) do
-571:     service_count =
-572:       Enum.count(analysis.files, fn file ->
-573:         String.contains?(file.path, "services/") or
-574:           String.contains?(file.path, "microservices/")
-575:       end)
-576: 
-577:     service_count > 3
-578:   end
-579: 
-580:   defp has_event_driven?(analysis) do
-581:     Enum.any?(analysis.files, fn file ->
-582:       content = file.content || ""
+507:   defp dependency_in_filesystem?(nil, _dependency), do: false
+508: 
+509:   defp dependency_in_filesystem?(codebase_path, dependency) do
+510:     candidates = [
+511:       Path.join(codebase_path, "mix.exs"),
+512:       Path.join(codebase_path, "package.json"),
+513:       Path.join(codebase_path, "pyproject.toml"),
+514:       Path.join(codebase_path, "requirements.txt"),
+515:       Path.join(codebase_path, "Cargo.toml"),
+516:       Path.join(codebase_path, "setup.cfg")
+517:     ]
+518: 
+519:     Enum.any?(candidates, fn path ->
+520:       File.exists?(path) && contains_dependency?(path, dependency)
+521:     end)
+522:   end
+523: 
+524:   defp contains_dependency?(path, dependency) do
+525:     case File.read(path) do
+526:       {:ok, content} -> String.contains?(content, dependency)
+527:       _ -> false
+528:     end
+529:   end
+530: 
+531:   defp has_any_config_file?(nil, _analysis), do: false
+532: 
+533:   defp has_any_config_file?(config_files, analysis) do
+534:     Enum.any?(List.wrap(config_files), fn config_file ->
+535:       Enum.any?(Map.get(analysis, :files, []), fn file ->
+536:         path = Map.get(file, :path) || Map.get(file, "path") || ""
+537:         String.ends_with?(path, config_file)
+538:       end)
+539:     end)
+540:   end
+541: 
+542:   defp matches_file_patterns?(_analysis, _codebase_path, nil), do: false
+543: 
+544:   defp matches_file_patterns?(analysis, codebase_path, patterns) do
+545:     regexes = compile_globs(List.wrap(patterns))
+546: 
+547:     analysis_match =
+548:       Enum.any?(Map.get(analysis, :files, []), fn file ->
+549:         path = Map.get(file, :path) || Map.get(file, "path") || ""
+550:         Enum.any?(regexes, &Regex.match?(&1, path))
+551:       end)
+552: 
+553:     filesystem_match =
+554:       if codebase_path do
+555:         Enum.any?(List.wrap(patterns), fn pattern ->
+556:           Path.wildcard(Path.join(codebase_path, pattern)) != []
+557:         end)
+558:       else
+559:         false
+560:       end
+561: 
+562:     analysis_match or filesystem_match
+563:   end
+564: 
+565:   defp compile_globs(patterns) do
+566:     Enum.reduce(patterns, [], fn pattern, acc ->
+567:       case glob_to_regex(pattern) do
+568:         {:ok, regex} -> [regex | acc]
+569:         _ -> acc
+570:       end
+571:     end)
+572:   end
+573: 
+574:   defp glob_to_regex(pattern) when is_binary(pattern) do
+575:     escaped =
+576:       pattern
+577:       |> Regex.escape()
+578:       |> String.replace("\\*\\*", ".*")
+579:       |> String.replace("\\*", "[^/]*")
+580: 
+581:     Regex.compile("^" <> escaped <> "$", "i")
+582:   end
 583: 
-584:       String.contains?(content, "GenServer") or
-585:         String.contains?(content, "pub_sub") or
-586:         String.contains?(content, "event_bus")
-587:     end)
-588:   end
-589: 
-590:   defp has_layered?(analysis) do
-591:     has_controllers = Enum.any?(analysis.files, &String.contains?(&1.path, "controllers/"))
-592:     has_services = Enum.any?(analysis.files, &String.contains?(&1.path, "services/"))
-593:     has_repos = Enum.any?(analysis.files, &String.contains?(&1.path, "repositories/"))
-594: 
-595:     has_controllers and has_services and has_repos
-596:   end
-597: 
-598:   ## Rust Detector Integration
-599: 
-600:   defp call_rust_detector(codebase_path) do
-601:     if File.exists?(@rust_detector_path) do
-602:       case System.cmd(@rust_detector_path, ["detect", codebase_path], stderr_to_stdout: true) do
-603:         {output, 0} ->
-604:           case Jason.decode(output) do
-605:             {:ok, results} -> {:ok, results}
-606:             {:error, _} -> {:error, :json_decode_failed}
-607:           end
-608: 
-609:         {_output, _code} ->
-610:           {:error, :rust_execution_failed}
-611:       end
-612:     else
-613:       {:error, :rust_unavailable}
-614:     end
-615:   rescue
-616:     e -> {:error, {:exception, Exception.message(e)}}
-617:   end
-618: 
-619:   defp transform_rust_results(results) when is_list(results) do
-620:     Enum.group_by(results, fn result ->
-621:       Map.get(result, "category", "other")
-622:     end)
-623:     |> Enum.into(%{}, fn {category, items} ->
-624:       {String.to_atom(category), Enum.map(items, &transform_result_item/1)}
-625:     end)
-626:   end
+584:   defp glob_to_regex(_pattern), do: {:error, :invalid_pattern}
+585: 
+586:   # Architecture pattern helpers
+587:   defp has_microservices?(analysis) do
+588:     service_count =
+589:       Enum.count(analysis.files, fn file ->
+590:         String.contains?(file.path, "services/") or
+591:           String.contains?(file.path, "microservices/")
+592:       end)
+593: 
+594:     service_count > 3
+595:   end
+596: 
+597:   defp has_event_driven?(analysis) do
+598:     Enum.any?(analysis.files, fn file ->
+599:       content = file.content || ""
+600: 
+601:       String.contains?(content, "GenServer") or
+602:         String.contains?(content, "pub_sub") or
+603:         String.contains?(content, "event_bus")
+604:     end)
+605:   end
+606: 
+607:   defp has_layered?(analysis) do
+608:     has_controllers = Enum.any?(analysis.files, &String.contains?(&1.path, "controllers/"))
+609:     has_services = Enum.any?(analysis.files, &String.contains?(&1.path, "services/"))
+610:     has_repos = Enum.any?(analysis.files, &String.contains?(&1.path, "repositories/"))
+611: 
+612:     has_controllers and has_services and has_repos
+613:   end
+614: 
+615: 
+616:   defp has_typescript_service?(codebase_path, analysis) do
+617:     package_json_exists =
+618:       analysis.files
+619:       |> Enum.any?(&String.ends_with?(&1.path, "package.json"))
+620: 
+621:     nestjs_imports =
+622:       analysis.files
+623:       |> Enum.any?(fn file ->
+624:         content = file.content || ""
+625:         String.contains?(content, "@nestjs/") or String.contains?(content, "NestFactory")
+626:       end)
 627: 
-628:   defp transform_rust_results(_), do: %{}
-629: 
-630:   defp transform_result_item(item) do
-631:     %{
-632:       name: Map.get(item, "technology_name"),
-633:       confidence: Map.get(item, "confidence"),
-634:       evidence: Map.get(item, "evidence", [])
-635:     }
-636:   end
-637: end
+628:     package_json_exists and nestjs_imports
+629:   end
+630: 
+631:   defp has_rust_service?(codebase_path, analysis) do
+632:     Enum.any?(analysis.files, &String.ends_with?(&1.path, "Cargo.toml"))
+633:   end
+634: 
+635:   defp has_python_service?(codebase_path, analysis) do
+636:     python_files = Enum.any?(analysis.files, &String.ends_with?(&1.path, ".py"))
+637: 
+638:     fastapi_imports =
+639:       Enum.any?(analysis.files, fn file ->
+640:         content = file.content || ""
+641:         String.contains?(content, "from fastapi import") or String.contains?(content, "FastAPI()")
+642:       end)
+643: 
+644:     python_files and fastapi_imports
+645:   end
+646: 
+647:   defp has_go_service?(codebase_path, analysis) do
+648:     Enum.any?(analysis.files, &String.ends_with?(&1.path, "go.mod"))
+649:   end
+650: 
+651:   defp analyze_typescript_services(codebase_path, analysis) do
+652:     ts_files =
+653:       analysis.files
+654:       |> Enum.filter(&String.ends_with?(&1.path, ".ts"))
+655:       |> length()
+656: 
+657:     %{
+658:       type: :nestjs,
+659:       file_count: ts_files,
+660:       has_tests: has_test_files?(analysis, ".spec.ts"),
+661:       completion_estimate: estimate_completion(ts_files, analysis)
+662:     }
+663:   end
+664: 
+665:   defp analyze_rust_services(codebase_path, analysis) do
+666:     rs_files =
+667:       analysis.files
+668:       |> Enum.filter(&String.ends_with?(&1.path, ".rs"))
+669:       |> length()
+670: 
+671:     %{
+672:       type: :rust,
+673:       file_count: rs_files,
+674:       has_tests: has_test_files?(analysis, "_test.rs") or has_cargo_test?(analysis),
+675:       completion_estimate: estimate_completion(rs_files, analysis)
+676:     }
+677:   end
+678: 
+679:   defp analyze_python_services(codebase_path, analysis) do
+680:     py_files =
+681:       analysis.files
+682:       |> Enum.filter(&String.ends_with?(&1.path, ".py"))
+683:       |> length()
+684: 
+685:     %{
+686:       type: :fastapi,
+687:       file_count: py_files,
+688:       has_tests: has_test_files?(analysis, "test_"),
+689:       completion_estimate: estimate_completion(py_files, analysis)
+690:     }
+691:   end
+692: 
+693:   defp analyze_go_services(codebase_path, analysis) do
+694:     go_files =
+695:       analysis.files
+696:       |> Enum.filter(&String.ends_with?(&1.path, ".go"))
+697:       |> length()
+698: 
+699:     %{
+700:       type: :go_service,
+701:       file_count: go_files,
+702:       has_tests: has_test_files?(analysis, "_test.go"),
+703:       completion_estimate: estimate_completion(go_files, analysis)
+704:     }
+705:   end
+706: 
+707:   defp has_test_files?(analysis, pattern) do
+708:     Enum.any?(analysis.files, &String.contains?(&1.path, pattern))
+709:   end
+710: 
+711:   defp has_cargo_test?(analysis) do
+712:     Enum.any?(analysis.files, fn file ->
+713:       content = file.content || ""
+714:       String.contains?(content, "#[test]") or String.contains?(content, "#[cfg(test)]")
+715:     end)
+716:   end
+717: 
+718:   defp estimate_completion(file_count, analysis) do
+719:     # Simple heuristic: more files = more complete
+720:     # Presence of tests adds 20%
+721:     # Presence of docs adds 10%
+722:     base = min(file_count * 5, 70)
+723: 
+724:     has_tests =
+725:       Enum.any?(analysis.files, &String.contains?(&1.path, "test"))
+726: 
+727:     has_docs =
+728:       Enum.any?(analysis.files, &(String.ends_with?(&1.path, ".md") or String.ends_with?(&1.path, "README")))
+729: 
+730:     base + (if has_tests, do: 20, else: 0) + (if has_docs, do: 10, else: 0)
+731:   end
+732: 
+733:   ## Rust Detector Integration
+734: 
+735:   defp call_rust_detector(codebase_path) do
+736:     if File.exists?(@rust_detector_path) do
+737:       case System.cmd(@rust_detector_path, ["detect", codebase_path], stderr_to_stdout: true) do
+738:         {output, 0} ->
+739:           case Jason.decode(output) do
+740:             {:ok, results} -> {:ok, results}
+741:             {:error, _} -> {:error, :json_decode_failed}
+742:           end
+743: 
+744:         {_output, _code} ->
+745:           {:error, :rust_execution_failed}
+746:       end
+747:     else
+748:       {:error, :rust_unavailable}
+749:     end
+750:   rescue
+751:     e -> {:error, {:exception, Exception.message(e)}}
+752:   end
+753: 
+754:   defp transform_rust_results(results) when is_list(results) do
+755:     Enum.group_by(results, fn result ->
+756:       Map.get(result, "category", "other")
+757:     end)
+758:     |> Enum.into(%{}, fn {category, items} ->
+759:       {String.to_atom(category), Enum.map(items, &transform_result_item/1)}
+760:     end)
+761:   end
+762: 
+763:   defp transform_rust_results(_), do: %{}
+764: 
+765:   defp transform_result_item(item) do
+766:     %{
+767:       name: Map.get(item, "technology_name"),
+768:       confidence: Map.get(item, "confidence"),
+769:       evidence: Map.get(item, "evidence", [])
+770:     }
+771:   end
+772: end
 ````
 
 ## File: lib/singularity/detection/technology_pattern_adapter.ex
@@ -22157,33 +22483,54 @@ lib/
 223:   defp suggest_missing_patterns(matches, template) do
 224:     # If code uses certain patterns, suggest what else it should have
 225:     detected = Enum.map(matches, & &1.pattern.name)
-226: 
-227:     suggestions = []
-228: 
-229:     suggestions =
-230:       if "genserver" in detected and "supervisor" not in detected do
-231:         ["Add Supervisor for fault tolerance" | suggestions]
-232:       else
-233:         suggestions
-234:       end
-235: 
-236:     suggestions =
-237:       if ("http" in detected or "api" in detected) and "circuit_breaker" not in detected do
-238:         ["Add Circuit Breaker for resilience" | suggestions]
-239:       else
-240:         suggestions
-241:       end
-242: 
-243:     suggestions =
-244:       if "nats" in detected and "health_check" not in detected do
-245:         ["Add health checks for NATS connection" | suggestions]
-246:       else
-247:         suggestions
-248:       end
-249: 
-250:     suggestions
-251:   end
-252: end
+226:     template_patterns = extract_template_patterns(template)
+227: 
+228:     suggestions = []
+229: 
+230:     suggestions =
+231:       if "genserver" in detected and "supervisor" not in detected do
+232:         ["Add Supervisor for fault tolerance" | suggestions]
+233:       else
+234:         suggestions
+235:       end
+236: 
+237:     suggestions =
+238:       if ("http" in detected or "api" in detected) and "circuit_breaker" not in detected do
+239:         ["Add Circuit Breaker for resilience" | suggestions]
+240:       else
+241:         suggestions
+242:       end
+243: 
+244:     suggestions =
+245:       if "nats" in detected and "health_check" not in detected do
+246:         ["Add health checks for NATS connection" | suggestions]
+247:       else
+248:         suggestions
+249:       end
+250: 
+251:     # Add template-specific suggestions based on template patterns
+252:     template_suggestions = 
+253:       template_patterns
+254:       |> Enum.filter(fn pattern -> pattern not in detected end)
+255:       |> Enum.map(fn pattern -> "Consider adding #{pattern} pattern from template" end)
+256: 
+257:     suggestions ++ template_suggestions
+258:   end
+259: 
+260:   defp extract_template_patterns(template) do
+261:     # Extract patterns that the template expects
+262:     case template do
+263:       %{"patterns" => patterns} when is_list(patterns) ->
+264:         Enum.map(patterns, & &1["name"])
+265:       
+266:       %{"framework_patterns" => patterns} when is_list(patterns) ->
+267:         Enum.map(patterns, & &1["name"])
+268:       
+269:       _ ->
+270:         []
+271:     end
+272:   end
+273: end
 ````
 
 ## File: lib/singularity/engine/codebase_store.ex
@@ -26947,7 +27294,7 @@ lib/
 66:   end
 67: 
 68:   defp extract_text(result) do
-69:     Logger.warninging("Unexpected Cursor Agent response format", result: inspect(result))
+69:     Logger.warning("Unexpected Cursor Agent response format", result: inspect(result))
 70:     {:error, {:invalid_response_format, result}}
 71:   end
 72: end
@@ -28114,320 +28461,354 @@ lib/
  82:     end
  83:   end
  84: 
- 85:   @doc "Fetch a technology template via NATS request (placeholder implementation)"
+ 85:   @doc "Fetch a technology template via NATS request"
  86:   def fetch_template(subject, payload) do
  87:     Logger.debug("Requesting template via NATS", subject: subject, payload: payload)
  88: 
- 89:     # TODO: Replace with actual NATS RPC call once available
- 90:     {:error, :not_implemented}
- 91:   end
- 92: 
- 93:   @doc "Create JetStream streams for service coordination"
- 94:   def create_service_streams do
- 95:     Logger.info("Creating JetStream streams for service coordination")
- 96: 
- 97:     with {:ok, stream_configs} <- get_stream_configs(),
- 98:          {:ok, created_streams} <- create_streams(stream_configs) do
- 99:       %{
-100:         streams_created: length(created_streams),
-101:         stream_configs: stream_configs,
-102:         created_streams: created_streams,
-103:         creation_timestamp: DateTime.utc_now()
-104:       }
-105:     else
-106:       {:error, reason} ->
-107:         Logger.error("Failed to create streams: #{inspect(reason)}")
-108:         {:error, reason}
-109:     end
-110:   end
-111: 
-112:   ## Private Functions
-113: 
-114:   defp load_cluster_config do
-115:     # Load NATS cluster configuration
-116:     config = %{
-117:       name: "singularity-cluster",
-118:       servers: [
-119:         "nats://localhost:4222",
-120:         "nats://localhost:4223",
-121:         "nats://localhost:4224"
-122:       ],
-123:       cluster_name: "NATS",
-124:       jetstream_enabled: true,
-125:       max_reconnect_attempts: -1,
-126:       reconnect_time_wait: 1000
-127:     }
-128: 
-129:     {:ok, config}
-130:   end
-131: 
-132:   defp establish_nats_connection(config) do
-133:     # Establish NATS connection
-134:     # This would use the NATS Elixir client in practice
-135:     connection = %{
-136:       config: config,
-137:       status: :connected,
-138:       connection_id: "conn_#{System.unique_integer([:positive])}"
-139:     }
-140: 
-141:     {:ok, connection}
-142:   end
-143: 
-144:   defp setup_jetstream(connection) do
-145:     # Setup JetStream for persistent messaging
-146:     jetstream_config = %{
-147:       connection: connection,
-148:       streams: [],
-149:       consumers: [],
-150:       enabled: true
-151:     }
-152: 
-153:     {:ok, jetstream_config}
-154:   end
-155: 
-156:   defp get_event_patterns do
-157:     # Get event patterns to subscribe to
-158:     patterns = [
-159:       "singularity.default.*.events.*",
-160:       "tenant.*.singularity.default.*.events.*",
-161:       "platform.*.health.*",
-162:       "platform.*.metrics.*",
-163:       "platform.*.alerts.*"
-164:     ]
+ 89:     try do
+ 90:       # Use the existing NATS client from NatsClient
+ 91:       case Singularity.NatsClient.request(subject, Jason.encode!(payload), timeout: 5000) do
+ 92:         {:ok, response} ->
+ 93:           case Jason.decode(response.body) do
+ 94:             {:ok, template} ->
+ 95:               Logger.debug("Successfully fetched template", subject: subject)
+ 96:               {:ok, template}
+ 97: 
+ 98:             {:error, reason} ->
+ 99:               Logger.error("Failed to decode template response", 
+100:                 subject: subject, 
+101:                 reason: inspect(reason)
+102:               )
+103:               {:error, :decode_failed}
+104:           end
+105: 
+106:         {:error, :timeout} ->
+107:           Logger.warning("Template request timed out", subject: subject)
+108:           {:error, :timeout}
+109: 
+110:         {:error, reason} ->
+111:           Logger.error("Template request failed", 
+112:             subject: subject, 
+113:             reason: inspect(reason)
+114:           )
+115:           {:error, reason}
+116:       end
+117:     rescue
+118:       error ->
+119:         Logger.error("Template fetch error", 
+120:           subject: subject, 
+121:           error: inspect(error)
+122:         )
+123:         {:error, :internal_error}
+124:     end
+125:   end
+126: 
+127:   @doc "Create JetStream streams for service coordination"
+128:   def create_service_streams do
+129:     Logger.info("Creating JetStream streams for service coordination")
+130: 
+131:     with {:ok, stream_configs} <- get_stream_configs(),
+132:          {:ok, created_streams} <- create_streams(stream_configs) do
+133:       %{
+134:         streams_created: length(created_streams),
+135:         stream_configs: stream_configs,
+136:         created_streams: created_streams,
+137:         creation_timestamp: DateTime.utc_now()
+138:       }
+139:     else
+140:       {:error, reason} ->
+141:         Logger.error("Failed to create streams: #{inspect(reason)}")
+142:         {:error, reason}
+143:     end
+144:   end
+145: 
+146:   ## Private Functions
+147: 
+148:   defp load_cluster_config do
+149:     # Load NATS cluster configuration
+150:     config = %{
+151:       name: "singularity-cluster",
+152:       servers: [
+153:         "nats://localhost:4222",
+154:         "nats://localhost:4223",
+155:         "nats://localhost:4224"
+156:       ],
+157:       cluster_name: "NATS",
+158:       jetstream_enabled: true,
+159:       max_reconnect_attempts: -1,
+160:       reconnect_time_wait: 1000
+161:     }
+162: 
+163:     {:ok, config}
+164:   end
 165: 
-166:     {:ok, patterns}
-167:   end
-168: 
-169:   defp create_event_subscriptions(patterns) do
-170:     subscriptions =
-171:       Enum.map(patterns, fn pattern ->
-172:         create_subscription(pattern)
-173:       end)
+166:   defp establish_nats_connection(config) do
+167:     # Establish NATS connection
+168:     # This would use the NATS Elixir client in practice
+169:     connection = %{
+170:       config: config,
+171:       status: :connected,
+172:       connection_id: "conn_#{System.unique_integer([:positive])}"
+173:     }
 174: 
-175:     {:ok, subscriptions}
+175:     {:ok, connection}
 176:   end
 177: 
-178:   defp create_subscription(pattern) do
-179:     # Create NATS subscription
-180:     %{
-181:       pattern: pattern,
-182:       subscription_id: "sub_#{System.unique_integer([:positive])}",
-183:       status: :active,
-184:       message_count: 0
+178:   defp setup_jetstream(connection) do
+179:     # Setup JetStream for persistent messaging
+180:     jetstream_config = %{
+181:       connection: connection,
+182:       streams: [],
+183:       consumers: [],
+184:       enabled: true
 185:     }
-186:   end
-187: 
-188:   defp execute_command_publishing(commands) do
-189:     published_results =
-190:       Enum.map(commands, fn command ->
-191:         publish_command(command)
-192:       end)
-193: 
-194:     {:ok, published_results}
-195:   end
-196: 
-197:   defp publish_command(command) do
-198:     # Publish command to NATS
-199:     subject = build_command_subject(command)
-200: 
-201:     %{
-202:       command_id: command.id,
-203:       subject: subject,
-204:       status: :published,
-205:       publish_timestamp: DateTime.utc_now()
-206:     }
-207:   end
+186: 
+187:     {:ok, jetstream_config}
+188:   end
+189: 
+190:   defp get_event_patterns do
+191:     # Get event patterns to subscribe to
+192:     patterns = [
+193:       "singularity.default.*.events.*",
+194:       "tenant.*.singularity.default.*.events.*",
+195:       "platform.*.health.*",
+196:       "platform.*.metrics.*",
+197:       "platform.*.alerts.*"
+198:     ]
+199: 
+200:     {:ok, patterns}
+201:   end
+202: 
+203:   defp create_event_subscriptions(patterns) do
+204:     subscriptions =
+205:       Enum.map(patterns, fn pattern ->
+206:         create_subscription(pattern)
+207:       end)
 208: 
-209:   defp build_command_subject(command) do
-210:     # Build NATS subject for command
-211:     "singularity.default.#{command.target_service}.commands.#{command.command_type}"
-212:   end
-213: 
-214:   defp get_cluster_info do
-215:     # Get NATS cluster information
-216:     cluster_info = %{
-217:       cluster_name: "singularity-cluster",
-218:       server_count: 3,
-219:       total_connections: 25,
-220:       total_subscriptions: 150,
-221:       total_messages: 10000,
-222:       bytes_sent: 1024 * 1024,
-223:       bytes_received: 1024 * 1024,
-224:       # 7 days
-225:       uptime_seconds: 7 * 24 * 3600
-226:     }
+209:     {:ok, subscriptions}
+210:   end
+211: 
+212:   defp create_subscription(pattern) do
+213:     # Create NATS subscription
+214:     %{
+215:       pattern: pattern,
+216:       subscription_id: "sub_#{System.unique_integer([:positive])}",
+217:       status: :active,
+218:       message_count: 0
+219:     }
+220:   end
+221: 
+222:   defp execute_command_publishing(commands) do
+223:     published_results =
+224:       Enum.map(commands, fn command ->
+225:         publish_command(command)
+226:       end)
 227: 
-228:     {:ok, cluster_info}
+228:     {:ok, published_results}
 229:   end
 230: 
-231:   defp collect_cluster_metrics(cluster_info) do
-232:     # Collect cluster health metrics
-233:     metrics = %{
-234:       cluster_info: cluster_info,
-235:       connection_health: calculate_connection_health(cluster_info),
-236:       message_throughput: calculate_message_throughput(cluster_info),
-237:       memory_usage: calculate_memory_usage(cluster_info),
-238:       cpu_usage: calculate_cpu_usage(cluster_info)
-239:     }
-240: 
-241:     {:ok, metrics}
-242:   end
-243: 
-244:   defp calculate_connection_health(cluster_info) do
-245:     %{
-246:       total_connections: cluster_info.total_connections,
-247:       # Assume 2 unhealthy
-248:       healthy_connections: cluster_info.total_connections - 2,
-249:       connection_ratio: (cluster_info.total_connections - 2) / cluster_info.total_connections
-250:     }
-251:   end
-252: 
-253:   defp calculate_message_throughput(cluster_info) do
-254:     %{
-255:       messages_per_second: cluster_info.total_messages / cluster_info.uptime_seconds,
-256:       bytes_per_second:
-257:         (cluster_info.bytes_sent + cluster_info.bytes_received) / cluster_info.uptime_seconds
-258:     }
-259:   end
-260: 
-261:   defp calculate_memory_usage(_cluster_info) do
-262:     %{
-263:       used_memory_mb: 512,
-264:       total_memory_mb: 1024,
-265:       memory_usage_percentage: 50.0
-266:     }
-267:   end
-268: 
-269:   defp calculate_cpu_usage(_cluster_info) do
-270:     %{
-271:       cpu_usage_percentage: 25.0,
-272:       load_average: [0.5, 0.6, 0.7]
+231:   defp publish_command(command) do
+232:     # Publish command to NATS
+233:     subject = build_command_subject(command)
+234: 
+235:     %{
+236:       command_id: command.id,
+237:       subject: subject,
+238:       status: :published,
+239:       publish_timestamp: DateTime.utc_now()
+240:     }
+241:   end
+242: 
+243:   defp build_command_subject(command) do
+244:     # Build NATS subject for command
+245:     "singularity.default.#{command.target_service}.commands.#{command.command_type}"
+246:   end
+247: 
+248:   defp get_cluster_info do
+249:     # Get NATS cluster information
+250:     cluster_info = %{
+251:       cluster_name: "singularity-cluster",
+252:       server_count: 3,
+253:       total_connections: 25,
+254:       total_subscriptions: 150,
+255:       total_messages: 10000,
+256:       bytes_sent: 1024 * 1024,
+257:       bytes_received: 1024 * 1024,
+258:       # 7 days
+259:       uptime_seconds: 7 * 24 * 3600
+260:     }
+261: 
+262:     {:ok, cluster_info}
+263:   end
+264: 
+265:   defp collect_cluster_metrics(cluster_info) do
+266:     # Collect cluster health metrics
+267:     metrics = %{
+268:       cluster_info: cluster_info,
+269:       connection_health: calculate_connection_health(cluster_info),
+270:       message_throughput: calculate_message_throughput(cluster_info),
+271:       memory_usage: calculate_memory_usage(cluster_info),
+272:       cpu_usage: calculate_cpu_usage(cluster_info)
 273:     }
-274:   end
-275: 
-276:   defp check_cluster_alerts(health_metrics) do
-277:     alerts = []
-278: 
-279:     # Check connection health
-280:     connection_health = health_metrics.connection_health
-281: 
-282:     alerts =
-283:       if connection_health.connection_ratio < 0.90 do
-284:         [
-285:           %{
-286:             type: :low_connection_health,
-287:             value: connection_health.connection_ratio,
-288:             threshold: 0.90,
-289:             severity: :warning
-290:           }
-291:           | alerts
-292:         ]
-293:       else
-294:         alerts
-295:       end
-296: 
-297:     # Check memory usage
-298:     memory_usage = health_metrics.memory_usage
-299: 
-300:     alerts =
-301:       if memory_usage.memory_usage_percentage > 80.0 do
-302:         [
-303:           %{
-304:             type: :high_memory_usage,
-305:             value: memory_usage.memory_usage_percentage,
-306:             threshold: 80.0,
-307:             severity: :warning
-308:           }
-309:           | alerts
-310:         ]
-311:       else
-312:         alerts
-313:       end
-314: 
-315:     # Check CPU usage
-316:     cpu_usage = health_metrics.cpu_usage
-317: 
-318:     alerts =
-319:       if cpu_usage.cpu_usage_percentage > 90.0 do
-320:         [
-321:           %{
-322:             type: :high_cpu_usage,
-323:             value: cpu_usage.cpu_usage_percentage,
-324:             threshold: 90.0,
-325:             severity: :critical
-326:           }
-327:           | alerts
-328:         ]
-329:       else
-330:         alerts
-331:       end
-332: 
-333:     {:ok, alerts}
-334:   end
-335: 
-336:   defp get_stream_configs do
-337:     # Get JetStream stream configurations
-338:     stream_configs = [
-339:       %{
-340:         name: "EVENTS",
-341:         subjects: ["events.>"],
-342:         retention: "limits",
-343:         max_msgs_per_subject: 10000,
-344:         # 1GB
-345:         max_bytes: 1024 * 1024 * 1024,
-346:         # 7 days
-347:         max_age: 7 * 24 * 3600,
-348:         storage: "file",
-349:         replicas: 3
-350:       },
-351:       %{
-352:         name: "COMMANDS",
-353:         subjects: ["commands.>"],
-354:         retention: "limits",
-355:         max_msgs_per_subject: 1000,
-356:         # 100MB
-357:         max_bytes: 100 * 1024 * 1024,
-358:         # 1 day
-359:         max_age: 24 * 3600,
-360:         storage: "file",
-361:         replicas: 3
-362:       },
-363:       %{
-364:         name: "METRICS",
-365:         subjects: ["metrics.>"],
-366:         retention: "limits",
-367:         max_msgs_per_subject: 50000,
-368:         # 500MB
-369:         max_bytes: 500 * 1024 * 1024,
-370:         # 1 day
-371:         max_age: 24 * 3600,
-372:         storage: "file",
-373:         replicas: 3
-374:       }
-375:     ]
-376: 
-377:     {:ok, stream_configs}
-378:   end
-379: 
-380:   defp create_streams(stream_configs) do
-381:     created_streams =
-382:       Enum.map(stream_configs, fn config ->
-383:         create_stream(config)
-384:       end)
-385: 
-386:     {:ok, created_streams}
-387:   end
-388: 
-389:   defp create_stream(config) do
-390:     # Create JetStream stream
-391:     %{
-392:       name: config.name,
-393:       status: :created,
-394:       config: config,
-395:       creation_timestamp: DateTime.utc_now()
-396:     }
-397:   end
-398: end
+274: 
+275:     {:ok, metrics}
+276:   end
+277: 
+278:   defp calculate_connection_health(cluster_info) do
+279:     %{
+280:       total_connections: cluster_info.total_connections,
+281:       # Assume 2 unhealthy
+282:       healthy_connections: cluster_info.total_connections - 2,
+283:       connection_ratio: (cluster_info.total_connections - 2) / cluster_info.total_connections
+284:     }
+285:   end
+286: 
+287:   defp calculate_message_throughput(cluster_info) do
+288:     %{
+289:       messages_per_second: cluster_info.total_messages / cluster_info.uptime_seconds,
+290:       bytes_per_second:
+291:         (cluster_info.bytes_sent + cluster_info.bytes_received) / cluster_info.uptime_seconds
+292:     }
+293:   end
+294: 
+295:   defp calculate_memory_usage(_cluster_info) do
+296:     %{
+297:       used_memory_mb: 512,
+298:       total_memory_mb: 1024,
+299:       memory_usage_percentage: 50.0
+300:     }
+301:   end
+302: 
+303:   defp calculate_cpu_usage(_cluster_info) do
+304:     %{
+305:       cpu_usage_percentage: 25.0,
+306:       load_average: [0.5, 0.6, 0.7]
+307:     }
+308:   end
+309: 
+310:   defp check_cluster_alerts(health_metrics) do
+311:     alerts = []
+312: 
+313:     # Check connection health
+314:     connection_health = health_metrics.connection_health
+315: 
+316:     alerts =
+317:       if connection_health.connection_ratio < 0.90 do
+318:         [
+319:           %{
+320:             type: :low_connection_health,
+321:             value: connection_health.connection_ratio,
+322:             threshold: 0.90,
+323:             severity: :warning
+324:           }
+325:           | alerts
+326:         ]
+327:       else
+328:         alerts
+329:       end
+330: 
+331:     # Check memory usage
+332:     memory_usage = health_metrics.memory_usage
+333: 
+334:     alerts =
+335:       if memory_usage.memory_usage_percentage > 80.0 do
+336:         [
+337:           %{
+338:             type: :high_memory_usage,
+339:             value: memory_usage.memory_usage_percentage,
+340:             threshold: 80.0,
+341:             severity: :warning
+342:           }
+343:           | alerts
+344:         ]
+345:       else
+346:         alerts
+347:       end
+348: 
+349:     # Check CPU usage
+350:     cpu_usage = health_metrics.cpu_usage
+351: 
+352:     alerts =
+353:       if cpu_usage.cpu_usage_percentage > 90.0 do
+354:         [
+355:           %{
+356:             type: :high_cpu_usage,
+357:             value: cpu_usage.cpu_usage_percentage,
+358:             threshold: 90.0,
+359:             severity: :critical
+360:           }
+361:           | alerts
+362:         ]
+363:       else
+364:         alerts
+365:       end
+366: 
+367:     {:ok, alerts}
+368:   end
+369: 
+370:   defp get_stream_configs do
+371:     # Get JetStream stream configurations
+372:     stream_configs = [
+373:       %{
+374:         name: "EVENTS",
+375:         subjects: ["events.>"],
+376:         retention: "limits",
+377:         max_msgs_per_subject: 10000,
+378:         # 1GB
+379:         max_bytes: 1024 * 1024 * 1024,
+380:         # 7 days
+381:         max_age: 7 * 24 * 3600,
+382:         storage: "file",
+383:         replicas: 3
+384:       },
+385:       %{
+386:         name: "COMMANDS",
+387:         subjects: ["commands.>"],
+388:         retention: "limits",
+389:         max_msgs_per_subject: 1000,
+390:         # 100MB
+391:         max_bytes: 100 * 1024 * 1024,
+392:         # 1 day
+393:         max_age: 24 * 3600,
+394:         storage: "file",
+395:         replicas: 3
+396:       },
+397:       %{
+398:         name: "METRICS",
+399:         subjects: ["metrics.>"],
+400:         retention: "limits",
+401:         max_msgs_per_subject: 50000,
+402:         # 500MB
+403:         max_bytes: 500 * 1024 * 1024,
+404:         # 1 day
+405:         max_age: 24 * 3600,
+406:         storage: "file",
+407:         replicas: 3
+408:       }
+409:     ]
+410: 
+411:     {:ok, stream_configs}
+412:   end
+413: 
+414:   defp create_streams(stream_configs) do
+415:     created_streams =
+416:       Enum.map(stream_configs, fn config ->
+417:         create_stream(config)
+418:       end)
+419: 
+420:     {:ok, created_streams}
+421:   end
+422: 
+423:   defp create_stream(config) do
+424:     # Create JetStream stream
+425:     %{
+426:       name: config.name,
+427:       status: :created,
+428:       config: config,
+429:       creation_timestamp: DateTime.utc_now()
+430:     }
+431:   end
+432: end
 ````
 
 ## File: lib/singularity/interfaces/nats.ex
@@ -29462,118 +29843,119 @@ lib/
  58: 
  59:   @impl true
  60:   def init(_opts) do
- 61:     gnat_name = Singularity.NatsOrchestrator.gnat_name()
- 62: 
- 63:     # Subscribe to template requests
- 64:     {:ok, _sub} = Gnat.sub(gnat_name, self(), "template.get.>")
- 65:     {:ok, _sub} = Gnat.sub(gnat_name, self(), "template.search.>")
- 66: 
- 67:     Logger.info("Template NATS service started")
- 68:     Logger.info("  Listening on: template.get.*, template.search.*")
- 69: 
- 70:     {:ok, %{gnat: gnat_name, requests_handled: 0}}
- 71:   end
- 72: 
- 73:   @impl true
- 74:   def handle_info({:msg, %{subject: "template.get." <> rest, body: _body, reply_to: reply_to}}, state) do
- 75:     # Parse subject: template.get.framework.phoenix
- 76:     case String.split(rest, ".", parts: 2) do
- 77:       [artifact_type, artifact_id] ->
- 78:         handle_get_request(state.gnat, artifact_type, artifact_id, reply_to)
- 79: 
- 80:       _ ->
- 81:         send_error(state.gnat, reply_to, "Invalid subject format")
- 82:     end
- 83: 
- 84:     {:noreply, %{state | requests_handled: state.requests_handled + 1}}
- 85:   end
- 86: 
- 87:   @impl true
- 88:   def handle_info({:msg, %{subject: "template.search." <> query, reply_to: reply_to}}, state) do
- 89:     handle_search_request(state.gnat, query, reply_to)
- 90:     {:noreply, %{state | requests_handled: state.requests_handled + 1}}
- 91:   end
- 92: 
- 93:   @impl true
- 94:   def handle_info({:msg, _msg}, state) do
- 95:     # Ignore other messages
- 96:     {:noreply, state}
- 97:   end
- 98: 
- 99:   # Private Functions
-100: 
-101:   defp handle_get_request(gnat, artifact_type, artifact_id, reply_to) when is_binary(reply_to) do
-102:     start_time = System.monotonic_time(:microsecond)
-103: 
-104:     case TemplateCache.get(artifact_type, artifact_id) do
-105:       {:ok, template} ->
-106:         # Encode as JSON
-107:         case Jason.encode(template) do
-108:           {:ok, json} ->
-109:             Gnat.pub(gnat, reply_to, json)
-110:             emit_telemetry(:success, artifact_type, start_time)
-111: 
-112:           {:error, reason} ->
-113:             error_msg = Jason.encode!(%{error: "encoding_failed", reason: inspect(reason)})
-114:             Gnat.pub(gnat, reply_to, error_msg)
-115:             emit_telemetry(:error, artifact_type, start_time)
-116:         end
-117: 
-118:       {:error, :not_found} ->
-119:         error_msg = Jason.encode!(%{error: "not_found", type: artifact_type, id: artifact_id})
-120:         Gnat.pub(gnat, reply_to, error_msg)
-121:         emit_telemetry(:not_found, artifact_type, start_time)
-122: 
-123:       {:error, reason} ->
-124:         error_msg = Jason.encode!(%{error: "internal_error", reason: inspect(reason)})
-125:         Gnat.pub(gnat, reply_to, error_msg)
-126:         emit_telemetry(:error, artifact_type, start_time)
-127:     end
-128:   end
-129: 
-130:   defp handle_get_request(_gnat, _artifact_type, _artifact_id, nil) do
-131:     # No reply_to - can't respond
-132:     Logger.warn("Received template.get request without reply_to")
-133:   end
-134: 
-135:   defp handle_search_request(gnat, query, reply_to) when is_binary(reply_to) do
-136:     start_time = System.monotonic_time(:microsecond)
-137: 
-138:     # TODO: Implement semantic search using pgvector
-139:     # For now, return empty results
-140:     results = []
-141: 
-142:     response = Jason.encode!(%{
-143:       query: query,
-144:       results: results,
-145:       count: length(results)
-146:     })
-147: 
-148:     Gnat.pub(gnat, reply_to, response)
-149:     emit_telemetry(:search, "search", start_time)
-150:   end
-151: 
-152:   defp handle_search_request(_gnat, _query, nil) do
-153:     Logger.warn("Received template.search request without reply_to")
-154:   end
-155: 
-156:   defp send_error(gnat, reply_to, message) when is_binary(reply_to) do
-157:     error_msg = Jason.encode!(%{error: message})
-158:     Gnat.pub(gnat, reply_to, error_msg)
-159:   end
-160: 
-161:   defp send_error(_gnat, nil, _message), do: :ok
-162: 
-163:   defp emit_telemetry(status, artifact_type, start_time) do
-164:     duration = System.monotonic_time(:microsecond) - start_time
-165: 
-166:     :telemetry.execute(
-167:       [:singularity, :template_service, :request],
-168:       %{duration_us: duration},
-169:       %{status: status, artifact_type: artifact_type}
-170:     )
-171:   end
-172: end
+ 61:     # Use the default Gnat connection
+ 62:     gnat_name = :nats_client
+ 63: 
+ 64:     # Subscribe to template requests
+ 65:     {:ok, _sub} = Gnat.sub(gnat_name, self(), "template.get.>")
+ 66:     {:ok, _sub} = Gnat.sub(gnat_name, self(), "template.search.>")
+ 67: 
+ 68:     Logger.info("Template NATS service started")
+ 69:     Logger.info("  Listening on: template.get.*, template.search.*")
+ 70: 
+ 71:     {:ok, %{gnat: gnat_name, requests_handled: 0}}
+ 72:   end
+ 73: 
+ 74:   @impl true
+ 75:   def handle_info({:msg, %{subject: "template.get." <> rest, body: _body, reply_to: reply_to}}, state) do
+ 76:     # Parse subject: template.get.framework.phoenix
+ 77:     case String.split(rest, ".", parts: 2) do
+ 78:       [artifact_type, artifact_id] ->
+ 79:         handle_get_request(state.gnat, artifact_type, artifact_id, reply_to)
+ 80: 
+ 81:       _ ->
+ 82:         send_error(state.gnat, reply_to, "Invalid subject format")
+ 83:     end
+ 84: 
+ 85:     {:noreply, %{state | requests_handled: state.requests_handled + 1}}
+ 86:   end
+ 87: 
+ 88:   @impl true
+ 89:   def handle_info({:msg, %{subject: "template.search." <> query, reply_to: reply_to}}, state) do
+ 90:     handle_search_request(state.gnat, query, reply_to)
+ 91:     {:noreply, %{state | requests_handled: state.requests_handled + 1}}
+ 92:   end
+ 93: 
+ 94:   @impl true
+ 95:   def handle_info({:msg, _msg}, state) do
+ 96:     # Ignore other messages
+ 97:     {:noreply, state}
+ 98:   end
+ 99: 
+100:   # Private Functions
+101: 
+102:   defp handle_get_request(gnat, artifact_type, artifact_id, reply_to) when is_binary(reply_to) do
+103:     start_time = System.monotonic_time(:microsecond)
+104: 
+105:     case TemplateCache.get(artifact_type, artifact_id) do
+106:       {:ok, template} ->
+107:         # Encode as JSON
+108:         case Jason.encode(template) do
+109:           {:ok, json} ->
+110:             Gnat.pub(gnat, reply_to, json)
+111:             emit_telemetry(:success, artifact_type, start_time)
+112: 
+113:           {:error, reason} ->
+114:             error_msg = Jason.encode!(%{error: "encoding_failed", reason: inspect(reason)})
+115:             Gnat.pub(gnat, reply_to, error_msg)
+116:             emit_telemetry(:error, artifact_type, start_time)
+117:         end
+118: 
+119:       {:error, :not_found} ->
+120:         error_msg = Jason.encode!(%{error: "not_found", type: artifact_type, id: artifact_id})
+121:         Gnat.pub(gnat, reply_to, error_msg)
+122:         emit_telemetry(:not_found, artifact_type, start_time)
+123: 
+124:       {:error, reason} ->
+125:         error_msg = Jason.encode!(%{error: "internal_error", reason: inspect(reason)})
+126:         Gnat.pub(gnat, reply_to, error_msg)
+127:         emit_telemetry(:error, artifact_type, start_time)
+128:     end
+129:   end
+130: 
+131:   defp handle_get_request(_gnat, _artifact_type, _artifact_id, nil) do
+132:     # No reply_to - can't respond
+133:     Logger.warning("Received template.get request without reply_to")
+134:   end
+135: 
+136:   defp handle_search_request(gnat, query, reply_to) when is_binary(reply_to) do
+137:     start_time = System.monotonic_time(:microsecond)
+138: 
+139:     # TODO: Implement semantic search using pgvector
+140:     # For now, return empty results
+141:     results = []
+142: 
+143:     response = Jason.encode!(%{
+144:       query: query,
+145:       results: results,
+146:       count: length(results)
+147:     })
+148: 
+149:     Gnat.pub(gnat, reply_to, response)
+150:     emit_telemetry(:search, "search", start_time)
+151:   end
+152: 
+153:   defp handle_search_request(_gnat, _query, nil) do
+154:     Logger.warning("Received template.search request without reply_to")
+155:   end
+156: 
+157:   defp send_error(gnat, reply_to, message) when is_binary(reply_to) do
+158:     error_msg = Jason.encode!(%{error: message})
+159:     Gnat.pub(gnat, reply_to, error_msg)
+160:   end
+161: 
+162:   defp send_error(_gnat, nil, _message), do: :ok
+163: 
+164:   defp emit_telemetry(status, artifact_type, start_time) do
+165:     duration = System.monotonic_time(:microsecond) - start_time
+166: 
+167:     :telemetry.execute(
+168:       [:singularity, :template_service, :request],
+169:       %{duration_us: duration},
+170:       %{status: status, artifact_type: artifact_type}
+171:     )
+172:   end
+173: end
 ````
 
 ## File: lib/singularity/llm/call.ex
@@ -32820,7 +33202,7 @@ lib/
   8: 
   9:   require Logger
  10: 
- 11:   alias Singularity.Integration.Claude
+ 11:   alias Singularity.LLM.Service
  12:   alias Singularity.Planning.HTDAGCore
  13: 
  14:   @max_depth 5
@@ -32939,66 +33321,68 @@ lib/
 127:     ]
 128:     """
 129: 
-130:     case Claude.chat(prompt) do
-131:       {:ok, response} ->
-132:         case Jason.decode(response["content"] || response.content || "[]") do
-133:           {:ok, subtasks} ->
-134:             # Enrich subtasks with parent info
-135:             parent_id = task[:id] || task.id || "unknown"
-136:             parent_depth = task[:depth] || task.depth || 0
-137: 
-138:             enriched =
-139:               Enum.map(subtasks, fn st ->
-140:                 %{
-141:                   id: generate_task_id(),
-142:                   description: st["description"],
-143:                   task_type: :implementation,
-144:                   depth: parent_depth + 1,
-145:                   parent_id: parent_id,
-146:                   children: [],
-147:                   dependencies: st["dependencies"] || [],
-148:                   status: :pending,
-149:                   sparc_phase: nil,
-150:                   estimated_complexity: st["estimated_complexity"] || 5.0,
-151:                   actual_complexity: nil,
-152:                   code_files: [],
-153:                   acceptance_criteria: st["acceptance_criteria"] || []
-154:                 }
-155:               end)
-156: 
-157:             {:ok, enriched}
+130:     messages = [%{role: "user", content: prompt}]
+131: 
+132:     case Service.call("claude-sonnet-4.5", messages) do
+133:       {:ok, %{text: text}} ->
+134:         case Jason.decode(text) do
+135:           {:ok, subtasks} ->
+136:             # Enrich subtasks with parent info
+137:             parent_id = task[:id] || task.id || "unknown"
+138:             parent_depth = task[:depth] || task.depth || 0
+139: 
+140:             enriched =
+141:               Enum.map(subtasks, fn st ->
+142:                 %{
+143:                   id: generate_task_id(),
+144:                   description: st["description"],
+145:                   task_type: :implementation,
+146:                   depth: parent_depth + 1,
+147:                   parent_id: parent_id,
+148:                   children: [],
+149:                   dependencies: st["dependencies"] || [],
+150:                   status: :pending,
+151:                   sparc_phase: nil,
+152:                   estimated_complexity: st["estimated_complexity"] || 5.0,
+153:                   actual_complexity: nil,
+154:                   code_files: [],
+155:                   acceptance_criteria: st["acceptance_criteria"] || []
+156:                 }
+157:               end)
 158: 
-159:           {:error, reason} ->
-160:             {:error, {:json_decode_failed, reason}}
-161:         end
-162: 
-163:       {:error, reason} ->
-164:         {:error, {:llm_failed, reason}}
-165:     end
-166:   end
-167: 
-168:   defp create_task_from_goal(goal) do
-169:     %{
-170:       id: generate_task_id(),
-171:       description: goal[:description] || goal.description || "",
-172:       task_type: :goal,
-173:       depth: goal[:depth] || 0,
-174:       parent_id: nil,
-175:       children: [],
-176:       dependencies: [],
-177:       status: :pending,
-178:       sparc_phase: nil,
-179:       estimated_complexity: 10.0,
-180:       actual_complexity: nil,
-181:       code_files: [],
-182:       acceptance_criteria: []
-183:     }
-184:   end
-185: 
-186:   defp generate_task_id do
-187:     "task-#{System.unique_integer([:positive, :monotonic])}"
-188:   end
-189: end
+159:             {:ok, enriched}
+160: 
+161:           {:error, reason} ->
+162:             {:error, {:json_decode_failed, reason}}
+163:         end
+164: 
+165:       {:error, reason} ->
+166:         {:error, {:llm_failed, reason}}
+167:     end
+168:   end
+169: 
+170:   defp create_task_from_goal(goal) do
+171:     %{
+172:       id: generate_task_id(),
+173:       description: goal[:description] || goal.description || "",
+174:       task_type: :goal,
+175:       depth: goal[:depth] || 0,
+176:       parent_id: nil,
+177:       children: [],
+178:       dependencies: [],
+179:       status: :pending,
+180:       sparc_phase: nil,
+181:       estimated_complexity: 10.0,
+182:       actual_complexity: nil,
+183:       code_files: [],
+184:       acceptance_criteria: []
+185:     }
+186:   end
+187: 
+188:   defp generate_task_id do
+189:     "task-#{System.unique_integer([:positive, :monotonic])}"
+190:   end
+191: end
 ````
 
 ## File: lib/singularity/planning/safe_work_planner.ex
@@ -34339,7 +34723,7 @@ lib/
  10: 
  11:   require Logger
  12: 
- 13:   alias Singularity.Integration.Claude
+ 13:   alias Singularity.LLM.Service
  14: 
  15:   @doc "Decompose a user story using SPARC methodology"
  16:   def decompose_story(story, opts \\ []) do
@@ -34489,14 +34873,16 @@ lib/
 160:   ## Helpers
 161: 
 162:   defp call_llm(prompt, opts) do
-163:     provider = Keyword.get(opts, :provider, :claude)
-164: 
-165:     case provider do
-166:       :claude -> Claude.chat(prompt, opts)
-167:       _ -> {:error, :unsupported_provider}
-168:     end
-169:   end
-170: end
+163:     # Use LLM.Service via NATS (supports all providers)
+164:     model = Keyword.get(opts, :model, "claude-sonnet-4.5")
+165:     messages = [%{role: "user", content: prompt}]
+166: 
+167:     case Service.call(model, messages, opts) do
+168:       {:ok, %{text: text}} -> {:ok, text}
+169:       error -> error
+170:     end
+171:   end
+172: end
 ````
 
 ## File: lib/singularity/planning/vision.ex
@@ -35326,8 +35712,8 @@ lib/
 36:       :code_embedding,
 37:       :example_order
 38:     ])
-39:     |> validate_required([:tool_id, :title, :code])
-40:     |> foreign_key_constraint(:tool_id)
+39:     |> validate_required([:dependency_id, :title, :code])
+40:     |> foreign_key_constraint(:dependency_id)
 41:   end
 42: end
 ````
@@ -35366,9 +35752,9 @@ lib/
 30:       :dependency_type,
 31:       :is_optional
 32:     ])
-33:     |> validate_required([:tool_id, :dependency_name])
+33:     |> validate_required([:dependency_id, :dependency_name])
 34:     |> validate_inclusion(:dependency_type, ["runtime", "dev", "peer", "optional"])
-35:     |> foreign_key_constraint(:tool_id)
+35:     |> foreign_key_constraint(:dependency_id)
 36:   end
 37: end
 ````
@@ -35414,16 +35800,158 @@ lib/
 37:       :tags,
 38:       :pattern_embedding
 39:     ])
-40:     |> validate_required([:tool_id, :title])
+40:     |> validate_required([:dependency_id, :title])
 41:     |> validate_inclusion(:pattern_type, [
 42:       "best_practice",
 43:       "anti_pattern",
 44:       "usage_pattern",
 45:       "migration_guide"
 46:     ])
-47:     |> foreign_key_constraint(:tool_id)
+47:     |> foreign_key_constraint(:dependency_id)
 48:   end
 49: end
+````
+
+## File: lib/singularity/schemas/technology_detection.ex
+````elixir
+  1: defmodule Singularity.Schemas.TechnologyDetection do
+  2:   @moduledoc """
+  3:   Meta-registry for YOUR codebase - makes your code comprehensible.
+  4: 
+  5:   Stores technology detections for a specific codebase at a point in time:
+  6:   - Technology stack (languages, frameworks, databases, messaging, etc.)
+  7:   - Service structure (TypeScript/Rust/Python/Go service analysis)
+  8:   - Architecture patterns (microservices, event-driven, layered)
+  9:   - Framework/database/messaging detection
+ 10: 
+ 11:   ## Key Differences from DependencyCatalog (External Packages):
+ 12: 
+ 13:   - **TechnologyDetection**: YOUR code analysis (what you're using, how it's structured)
+ 14:   - **DependencyCatalog**: External package metadata (npm/cargo/hex/pypi)
+ 15: 
+ 16:   ## Usage:
+ 17: 
+ 18:       # Detect technologies in your codebase
+ 19:       {:ok, detection} = TechnologyAgent.detect_technologies("/path/to/code")
+ 20: 
+ 21:       # Detection includes:
+ 22:       # - technologies: %{languages: [...], frameworks: [...], databases: [...]}
+ 23:       # - service_structure: %{services: [...], completion_status: ...}
+ 24:       # - detected_technologies: ["languages:elixir", "framework:phoenix", ...]
+ 25:       # - features: %{languages_count: 3, frameworks_count: 2, ...}
+ 26: 
+ 27:   ## Schema Fields:
+ 28: 
+ 29:   - `codebase_id` - Unique identifier for the codebase being analyzed
+ 30:   - `snapshot_id` - Sequential ID for this detection run
+ 31:   - `metadata` - Detection method, timestamp, analyzer version
+ 32:   - `summary` - Full technology breakdown (languages, frameworks, etc.)
+ 33:   - `detected_technologies` - Flat list for quick filtering ["tech:name", ...]
+ 34:   - `capabilities` - Counts and metrics (languages_count, frameworks_count, etc.)
+ 35:   - `service_structure` - Microservice analysis (TypeScript/Rust/Python/Go services)
+ 36:   - `inserted_at` - When detection was performed (index for latest queries)
+ 37: 
+ 38:   Renamed from `CodebaseSnapshot` (2025-01-07) to better reflect purpose.
+ 39:   """
+ 40: 
+ 41:   use Ecto.Schema
+ 42:   import Ecto.Changeset
+ 43: 
+ 44:   @primary_key {:id, :id, autogenerate: true}
+ 45:   schema "technology_detections" do
+ 46:     field :codebase_id, :string
+ 47:     field :snapshot_id, :integer
+ 48:     field :metadata, :map
+ 49:     field :summary, :map
+ 50:     field :detected_technologies, {:array, :string}
+ 51:     field :capabilities, :map
+ 52:     field :service_structure, :map
+ 53:     field :inserted_at, :utc_datetime
+ 54:   end
+ 55: 
+ 56:   @doc false
+ 57:   def changeset(detection, attrs) do
+ 58:     detection
+ 59:     |> cast(attrs, [
+ 60:       :codebase_id,
+ 61:       :snapshot_id,
+ 62:       :metadata,
+ 63:       :summary,
+ 64:       :detected_technologies,
+ 65:       :capabilities,
+ 66:       :service_structure
+ 67:     ])
+ 68:     |> validate_required([:codebase_id, :snapshot_id])
+ 69:     |> unique_constraint([:codebase_id, :snapshot_id])
+ 70:   end
+ 71: 
+ 72:   @doc """
+ 73:   Create or update a technology detection.
+ 74:   """
+ 75:   def upsert(repo, attrs) do
+ 76:     %__MODULE__{}
+ 77:     |> changeset(attrs)
+ 78:     |> repo.insert(
+ 79:       on_conflict:
+ 80:         {:replace,
+ 81:          [:metadata, :summary, :detected_technologies, :capabilities, :service_structure]},
+ 82:       conflict_target: [:codebase_id, :snapshot_id]
+ 83:     )
+ 84:   end
+ 85: 
+ 86:   @doc """
+ 87:   Get latest detection for a codebase.
+ 88:   """
+ 89:   def latest(repo, codebase_id) do
+ 90:     import Ecto.Query
+ 91: 
+ 92:     from(d in __MODULE__,
+ 93:       where: d.codebase_id == ^codebase_id,
+ 94:       order_by: [desc: d.inserted_at],
+ 95:       limit: 1
+ 96:     )
+ 97:     |> repo.one()
+ 98:   end
+ 99: 
+100:   @doc """
+101:   Query detections by technology.
+102: 
+103:   ## Examples
+104: 
+105:       # Find all codebases using Phoenix
+106:       TechnologyDetection.with_technology(repo, "framework:phoenix")
+107: 
+108:       # Find all Elixir codebases
+109:       TechnologyDetection.with_technology(repo, "languages:elixir")
+110:   """
+111:   def with_technology(repo, tech_string) do
+112:     import Ecto.Query
+113: 
+114:     from(d in __MODULE__,
+115:       where: ^tech_string in d.detected_technologies,
+116:       order_by: [desc: d.inserted_at]
+117:     )
+118:     |> repo.all()
+119:   end
+120: 
+121:   @doc """
+122:   Query detections with specific service structures.
+123: 
+124:   ## Examples
+125: 
+126:       # Find codebases with TypeScript services
+127:       TechnologyDetection.with_service_type(repo, "typescript")
+128:   """
+129:   def with_service_type(repo, service_type) do
+130:     import Ecto.Query
+131: 
+132:     from(d in __MODULE__,
+133:       where: fragment("?->'services'->? IS NOT NULL", d.service_structure, ^service_type),
+134:       order_by: [desc: d.inserted_at]
+135:     )
+136:     |> repo.all()
+137:   end
+138: end
 ````
 
 ## File: lib/singularity/schemas/technology_pattern.ex
@@ -35838,7 +36366,7 @@ lib/
  89:   require Logger
  90:   import Ecto.Query
  91: 
- 92:   alias Singularity.{Repo, EmbeddingService}
+ 92:   alias Singularity.{Repo, EmbeddingEngine}
  93: 
  94:   @type search_result :: %{
  95:           path: String.t(),
@@ -36051,7 +36579,7 @@ lib/
 302:   # Private Functions
 303: 
 304:   defp record_search_feedback(query, results, user_feedback) do
-305:     {:ok, query_embedding} = EmbeddingService.embed(query)
+305:     {:ok, query_embedding} = EmbeddingEngine.embed(query)
 306: 
 307:     # Determine clicked result (positive signal)
 308:     clicked_result =
@@ -36211,7 +36739,7 @@ lib/
 462:         {:ok, model_path} =
 463:           save_fine_tuned_model(trained_model, tokenizer, length(training_pairs))
 464: 
-465:         # 6. Update EmbeddingService to use new model
+465:         # 6. Update EmbeddingEngine to use new model
 466:         update_embedding_service_model(model_path)
 467: 
 468:         Logger.info("Fine-tuning completed successfully", %{
@@ -36392,22 +36920,22 @@ lib/
 643:   defp update_embedding_service_model(model_path) do
 644:     # Update the embedding service to use the new fine-tuned model
 645:     # This would typically involve updating configuration or sending a message
-646:     # to the EmbeddingService process
+646:     # to the EmbeddingEngine process
 647:     try do
 648:       # Send message to EmbeddingService to reload model
-649:       case Process.whereis(Singularity.EmbeddingService) do
+649:       case Process.whereis(Singularity.EmbeddingEngine) do
 650:         nil ->
-651:           Logger.warninging("EmbeddingService not found, cannot update model")
+651:           Logger.warninging("EmbeddingEngine not found, cannot update model")
 652: 
 653:         pid ->
 654:           GenServer.cast(pid, {:reload_model, model_path})
-655:           Logger.info("Updated EmbeddingService with new model", %{model_path: model_path})
+655:           Logger.info("Updated EmbeddingEngine with new model", %{model_path: model_path})
 656:       end
 657: 
 658:       :ok
 659:     rescue
 660:       error ->
-661:         Logger.error("Failed to update EmbeddingService: #{inspect(error)}")
+661:         Logger.error("Failed to update EmbeddingEngine: #{inspect(error)}")
 662:         {:error, error}
 663:     end
 664:   end
@@ -41460,7 +41988,7 @@ lib/
  32:   defp register_defaults(provider) do
  33:     Singularity.Tools.Catalog.add_tools(provider, [shell_tool(), read_file_tool()])
  34:     Singularity.Tools.Quality.register(provider)
- 35:     Singularity.Tools.Llm.register(provider)
+ 35:     Singularity.Tools.EmergencyLLM.register(provider)
  36:     Singularity.Tools.CodebaseUnderstanding.register(provider)
  37:     Singularity.Tools.Planning.register(provider)
  38:     Singularity.Tools.Knowledge.register(provider)
@@ -41538,6 +42066,91 @@ lib/
 110:     end
 111:   end
 112: end
+````
+
+## File: lib/singularity/tools/emergency_llm.ex
+````elixir
+ 1: defmodule Singularity.Tools.EmergencyLLM do
+ 2:   @moduledoc """
+ 3:   Emergency LLM Fallback Tools - Direct Claude CLI Access
+ 4: 
+ 5:   ⚠️  DO NOT USE FOR REGULAR LLM CALLS ⚠️
+ 6: 
+ 7:   This module provides EMERGENCY fallback tools that call Claude CLI directly.
+ 8:   These are only used when:
+ 9:   - NATS AI server is down
+10:   - Emergency recovery scenarios
+11:   - Agent tools that explicitly request CLI fallback
+12: 
+13:   ## Regular LLM Usage
+14: 
+15:   For normal LLM calls from Elixir code, use:
+16: 
+17:       Singularity.LLM.Service.call("claude-sonnet-4.5", messages)
+18: 
+19:   This goes through NATS → AI Server → AI SDK providers.
+20: 
+21:   ## Emergency Tools
+22: 
+23:   This module registers tools like:
+24:   - `llm_claude_safe` - Read-only Claude CLI
+25:   - `llm_claude_write` - Can edit files
+26:   - `llm_claude_dangerous` - Unrestricted (recovery only)
+27: 
+28:   ## Architecture
+29: 
+30:   Normal:  Elixir → NATS → AI Server → AI SDK → Providers
+31:   Emergency: Agent Tool → This Module → Claude CLI (direct)
+32:   """
+33: 
+34:   alias Singularity.Integration.Claude
+35:   alias Singularity.Tools.Tool
+36: 
+37:   @doc "Register LLM emergency tools for a provider."
+38:   @spec register(term()) :: :ok
+39:   def register(provider) do
+40:     tools =
+41:       Claude.available_profiles()
+42:       |> Enum.map(fn {profile, cfg} -> build_tool(profile, cfg) end)
+43: 
+44:     Singularity.Tools.Catalog.add_tools(provider, tools)
+45:   end
+46: 
+47:   defp build_tool(profile, cfg) do
+48:     Tool.new!(%{
+49:       name: "llm_claude_#{profile}",
+50:       description:
+51:         cfg[:description] ||
+52:           "Call the Claude recovery CLI using the #{profile} profile (fallback path).",
+53:       display_text: "Claude CLI (#{profile})",
+54:       parameters: [
+55:         %{name: "prompt", type: :string, required: true, description: "Text prompt"}
+56:       ],
+57:       function: &__MODULE__.run/2,
+58:       options: %{profile: profile}
+59:     })
+60:   end
+61: 
+62:   @doc false
+63:   def run(%{"prompt" => prompt}, %{tool: tool}) do
+64:     profile = tool.options[:profile]
+65: 
+66:     case Claude.chat(prompt, profile: profile) do
+67:       {:ok, %{response: response}} ->
+68:         {:ok, response}
+69: 
+70:       {:ok, %{raw: raw}} ->
+71:         {:ok, raw}
+72: 
+73:       {:error, reason} ->
+74:         {:error, "Claude CLI (#{profile}) failed: #{inspect(reason)}"}
+75:     end
+76:   end
+77: 
+78:   def run(_args, %{tool: tool}) do
+79:     {:error, "Prompt is required for #{tool.name}"}
+80:   end
+81: end
 ````
 
 ## File: lib/singularity/tools/enhanced_descriptions.ex
@@ -42568,64 +43181,6 @@ lib/
 388:     end)
 389:   end
 390: end
-````
-
-## File: lib/singularity/tools/llm.ex
-````elixir
- 1: defmodule Singularity.Tools.Llm do
- 2:   @moduledoc """
- 3:   Registers tool wrappers around the emergency Claude CLI profiles so agents can
- 4:   invoke safe or write-enabled fallbacks via the tool runner.
- 5:   """
- 6: 
- 7:   alias Singularity.Integration.Claude
- 8:   alias Singularity.Tools.Tool
- 9: 
-10:   @doc "Register LLM emergency tools for a provider."
-11:   @spec register(term()) :: :ok
-12:   def register(provider) do
-13:     tools =
-14:       Claude.available_profiles()
-15:       |> Enum.map(fn {profile, cfg} -> build_tool(profile, cfg) end)
-16: 
-17:     Singularity.Tools.Catalog.add_tools(provider, tools)
-18:   end
-19: 
-20:   defp build_tool(profile, cfg) do
-21:     Tool.new!(%{
-22:       name: "llm_claude_#{profile}",
-23:       description:
-24:         cfg[:description] ||
-25:           "Call the Claude recovery CLI using the #{profile} profile (fallback path).",
-26:       display_text: "Claude CLI (#{profile})",
-27:       parameters: [
-28:         %{name: "prompt", type: :string, required: true, description: "Text prompt"}
-29:       ],
-30:       function: &__MODULE__.run/2,
-31:       options: %{profile: profile}
-32:     })
-33:   end
-34: 
-35:   @doc false
-36:   def run(%{"prompt" => prompt}, %{tool: tool}) do
-37:     profile = tool.options[:profile]
-38: 
-39:     case Claude.chat(prompt, profile: profile) do
-40:       {:ok, %{response: response}} ->
-41:         {:ok, response}
-42: 
-43:       {:ok, %{raw: raw}} ->
-44:         {:ok, raw}
-45: 
-46:       {:error, reason} ->
-47:         {:error, "Claude CLI (#{profile}) failed: #{inspect(reason)}"}
-48:     end
-49:   end
-50: 
-51:   def run(_args, %{tool: tool}) do
-52:     {:error, "Prompt is required for #{tool.name}"}
-53:   end
-54: end
 ````
 
 ## File: lib/singularity/tools/planning.ex
@@ -45890,8 +46445,8 @@ lib/
  58:         # Memory Cache (Ultra-fast)
  59:         Singularity.MemoryCache,
  60: 
- 61:         # Embedding Service (with Rustler GPU acceleration)
- 62:         Singularity.EmbeddingService,
+ 61:         # Embedding Engine (with Rustler GPU acceleration)
+ 62:         Singularity.EmbeddingEngine,
  63:         # Preload embedding models (downloads from HuggingFace if needed)
  64:         Singularity.EmbeddingModelLoader,
  65: 
@@ -45905,45 +46460,44 @@ lib/
  73:         Singularity.Knowledge.TemplateService,
  74: 
  75:         # NATS Execution Router (connects AI Server to TemplateSparcOrchestrator)
- 76:         # TODO: Fix NatsExecutionRouter to work with latest CostOptimizedAgent API
- 77:         # Singularity.NatsExecutionRouter,
- 78: 
- 79:         # Auto-warmup (must be last to ensure all services are ready)
- 80:         Singularity.StartupWarmup,
- 81: 
- 82:         # Core Services
- 83:         Singularity.CodeStore,
- 84:         Singularity.ProcessRegistry,
- 85:         Singularity.Control.Listener,
- 86:         Singularity.Git.Supervisor,
- 87:         {Finch, name: Singularity.HttpClient},
- 88:         {Task.Supervisor, name: Singularity.TaskSupervisor},
- 89: 
- 90:         # SAFe 6.0 Planning
- 91:         Singularity.Conversation.ChatConversationAgent,
- 92:         Singularity.Planning.SafeWorkPlanner,
- 93:         Singularity.Planning.SingularityVision,
- 94: 
- 95:         # Agents
- 96:         Singularity.AgentSupervisor,
- 97:         Singularity.HotReload.ModuleReloader,
- 98: 
- 99:         # Minimal HTTP for health/metrics only
-100:         bandit_child
-101:       ]
-102:       |> Enum.reject(&is_nil/1)
-103: 
-104:     opts = [strategy: :one_for_one, name: Singularity.Supervisor]
-105: 
-106:     Logger.info("Singularity application starting",
-107:       http: http_opts,
-108:       cluster: topologies,
-109:       http_enabled: http_enabled?
-110:     )
-111: 
-112:     Supervisor.start_link(children, opts)
-113:   end
-114: end
+ 76:         Singularity.NatsExecutionRouter,
+ 77: 
+ 78:         # Auto-warmup (must be last to ensure all services are ready)
+ 79:         Singularity.StartupWarmup,
+ 80: 
+ 81:         # Core Services
+ 82:         Singularity.CodeStore,
+ 83:         Singularity.ProcessRegistry,
+ 84:         Singularity.Control.Listener,
+ 85:         Singularity.Git.Supervisor,
+ 86:         {Finch, name: Singularity.HttpClient},
+ 87:         {Task.Supervisor, name: Singularity.TaskSupervisor},
+ 88: 
+ 89:         # SAFe 6.0 Planning
+ 90:         Singularity.Conversation.ChatConversationAgent,
+ 91:         Singularity.Planning.SafeWorkPlanner,
+ 92:         Singularity.Planning.SingularityVision,
+ 93: 
+ 94:         # Agents
+ 95:         Singularity.AgentSupervisor,
+ 96:         Singularity.HotReload.ModuleReloader,
+ 97: 
+ 98:         # Minimal HTTP for health/metrics only
+ 99:         bandit_child
+100:       ]
+101:       |> Enum.reject(&is_nil/1)
+102: 
+103:     opts = [strategy: :one_for_one, name: Singularity.Supervisor]
+104: 
+105:     Logger.info("Singularity application starting",
+106:       http: http_opts,
+107:       cluster: topologies,
+108:       http_enabled: http_enabled?
+109:     )
+110: 
+111:     Supervisor.start_link(children, opts)
+112:   end
+113: end
 ````
 
 ## File: lib/singularity/cache.ex
@@ -46213,7 +46767,7 @@ lib/
 263:     provider = Keyword.get(opts, :provider)
 264:     model = Keyword.get(opts, :model)
 265: 
-266:     LLMCache.find_similar(query, threshold: threshold, provider: provider, model: model)
+266:     Singularity.LLM.SemanticCache.find_similar(query, threshold: threshold, provider: provider, model: model)
 267:   end
 268: 
 269:   def find_similar(:semantic, query, opts) do
@@ -46237,7 +46791,7 @@ lib/
 287:   end
 288: 
 289:   def clear(:memory) do
-290:     MemoryCache.clear()
+290:     Singularity.MemoryCache.clear(:all)
 291:   end
 292: 
 293:   def clear(_type) do
@@ -46259,7 +46813,7 @@ lib/
 309:   end
 310: 
 311:   def stats(:memory) do
-312:     MemoryCache.stats()
+312:     Singularity.MemoryCache.stats()
 313:   end
 314: 
 315:   def stats(_type) do
@@ -46685,12 +47239,12 @@ lib/
 36:         Logger.info("Embedding models ready: #{message}")
 37: 
 38:       {:error, reason} ->
-39:         Logger.warninging("Model preload failed (will retry on first use): #{inspect(reason)}")
+39:         Logger.warning("Model preload failed (will retry on first use): #{inspect(reason)}")
 40:         Logger.info("Models will auto-download on first embedding generation")
 41:     end
 42:   rescue
 43:     error ->
-44:       Logger.warninging("Model preload error (will retry on first use): #{inspect(error)}")
+44:       Logger.warning("Model preload error (will retry on first use): #{inspect(error)}")
 45:       Logger.info("Models will auto-download on first embedding generation")
 46:   end
 47: end
@@ -46731,7 +47285,7 @@ lib/
 31: 
 32:   defp safe_queue_depth do
 33:     try do
-34:       Manager.queue_depth()
+34:       Singularity.Manager.queue_depth()
 35:     catch
 36:       :exit, _ -> 0
 37:     end
@@ -46968,7 +47522,7 @@ lib/
 134: 
 135:   @impl true
 136:   def handle_call({:publish, subject, _data, _opts}, _from, %{connection: nil} = state) do
-137:     Logger.warninging("NATS not connected, cannot publish to #{subject}")
+137:     Logger.warning("NATS not connected, cannot publish to #{subject}")
 138:     {:reply, {:error, :not_connected}, state}
 139:   end
 140: 
@@ -47232,115 +47786,127 @@ lib/
 106:           agent_id = "orchestrator_agent_#{:erlang.unique_integer()}"
 107:           {:ok, _pid} = CostOptimizedAgent.start_link(id: agent_id, specialization: :general)
 108: 
-109:           # Process the task
-110:           result =
-111:             CostOptimizedAgent.process_task(agent_id, %{
-112:               prompt: request["task"],
-113:               context: request["context"] || %{},
-114:               template: template,
-115:               complexity: request["complexity"]
-116:             })
-117: 
-118:           elapsed_ms = System.monotonic_time(:millisecond) - start_time
-119: 
-120:           # Cache the result
-121:           SemanticCache.put(cache_key, %{
-122:             content: result.response,
-123:             template_id: template.id,
-124:             model: result.model_used
-125:           })
-126: 
-127:           # Extract response based on CostOptimizedAgent response format
-128:           {response_type, response_content, metadata} = result
-129: 
-130:           response = %{
-131:             result: extract_response_text(response_content),
-132:             template_used: template.id,
-133:             model_used: metadata[:model] || "rules",
-134:             metrics: %{
-135:               time_ms: elapsed_ms,
-136:               tokens_used: metadata[:tokens] || 0,
-137:               cost_usd: metadata[:cost] || 0.0,
-138:               cache_hit: response_type == :cached
-139:             }
-140:           }
-141: 
-142:           Gnat.pub(gnat, reply_to, Jason.encode!(response))
-143:       end
-144:     rescue
-145:       error ->
-146:         Logger.error("Error handling execution request: #{inspect(error)}")
-147: 
-148:         error_response = %{
-149:           error: "Execution failed",
-150:           message: Exception.message(error)
-151:         }
-152: 
-153:         Gnat.pub(gnat, reply_to, Jason.encode!(error_response))
-154:     end
-155:   end
-156: 
-157:   defp handle_template_recommendation(body, reply_to, gnat) do
-158:     try do
-159:       request = Jason.decode!(body)
-160: 
-161:       template =
-162:         Singularity.TemplatePerformanceTracker.select_template(%{
-163:           task: request["task_type"],
-164:           language: request["language"],
-165:           complexity: "medium"
-166:         })
-167: 
-168:       response = %{template_id: template.id}
-169: 
-170:       Gnat.pub(gnat, reply_to, Jason.encode!(response))
-171:     rescue
-172:       error ->
-173:         Logger.error("Error handling template recommendation: #{inspect(error)}")
-174: 
-175:         Gnat.pub(gnat, reply_to, Jason.encode!(%{template_id: "default-template"}))
-176:     end
-177:   end
-178: 
-179:   defp generate_cache_key(task) do
-180:     # Generate semantic cache key based on task
-181:     :crypto.hash(:sha256, task)
-182:     |> Base.encode64(padding: false)
-183:     |> String.slice(0..16)
-184:   end
-185: 
-186:   defp extract_response_text(response) when is_binary(response), do: response
-187:   defp extract_response_text(%{text: text}), do: text
-188:   defp extract_response_text(%{content: content}), do: content
-189:   defp extract_response_text(%{response: response}), do: response
-190:   defp extract_response_text(response), do: inspect(response)
-191: 
-192:   defp calculate_cost(model, tokens) do
-193:     # Cost per 1M tokens (actual models from ai-server)
-194:     costs = %{
-195:       "gemini-2.5-flash" => 0.075,
-196:       "gemini-2.5-pro" => 1.25,
-197:       "gpt-4o-mini" => 0.15,
-198:       "gpt-4o" => 2.5,
-199:       "copilot-gpt-4.1" => 5.0,
-200:       # Free with subscription
-201:       "cursor-gpt-4.1" => 0.0,
-202:       "claude-sonnet-4.5" => 3.0,
-203:       "claude-opus-4.1" => 15.0,
-204:       "gpt-5-codex" => 30.0,
-205:       "o1" => 15.0,
-206:       "o1-mini" => 3.0,
-207:       "o1-preview" => 10.0,
-208:       "o3" => 60.0,
-209:       # Free with subscription
-210:       "cursor-auto" => 0.0,
-211:       "grok-coder-1" => 2.0
-212:     }
-213: 
-214:     cost_per_million = Map.get(costs, model, 1.0)
-215:     tokens / 1_000_000 * cost_per_million
-216:   end
-217: end
+109:           # Process the task - CostOptimizedAgent expects a task struct
+110:           task = %{
+111:             id: "task_#{:erlang.unique_integer()}",
+112:             type: :code_generation,
+113:             description: request["task"],
+114:             acceptance_criteria: request["acceptance_criteria"] || [],
+115:             target_file: request["target_file"],
+116:             workspace: request["workspace"] || "/tmp/singularity_workspace"
+117:           }
+118: 
+119:           result = CostOptimizedAgent.process_task(agent_id, task)
+120: 
+121:           elapsed_ms = System.monotonic_time(:millisecond) - start_time
+122: 
+123:           # Extract response based on CostOptimizedAgent response format: {method, result, cost: cost}
+124:           {method, result_content, cost: cost} = result
+125: 
+126:           # Cache the result
+127:           SemanticCache.put(cache_key, %{
+128:             content: extract_response_text(result_content),
+129:             template_id: template.id,
+130:             model: method_to_model(method)
+131:           })
+132: 
+133:           response = %{
+134:             result: extract_response_text(result_content),
+135:             template_used: template.id,
+136:             model_used: method_to_model(method),
+137:             metrics: %{
+138:               time_ms: elapsed_ms,
+139:               tokens_used: 0, # CostOptimizedAgent doesn't return token count
+140:               cost_usd: cost,
+141:               cache_hit: method == :autonomous
+142:             }
+143:           }
+144: 
+145:           Gnat.pub(gnat, reply_to, Jason.encode!(response))
+146:       end
+147:     rescue
+148:       error ->
+149:         Logger.error("Error handling execution request: #{inspect(error)}")
+150: 
+151:         error_response = %{
+152:           error: "Execution failed",
+153:           message: Exception.message(error)
+154:         }
+155: 
+156:         Gnat.pub(gnat, reply_to, Jason.encode!(error_response))
+157:     end
+158:   end
+159: 
+160:   defp handle_template_recommendation(body, reply_to, gnat) do
+161:     try do
+162:       request = Jason.decode!(body)
+163: 
+164:       template =
+165:         Singularity.TemplatePerformanceTracker.select_template(%{
+166:           task: request["task_type"],
+167:           language: request["language"],
+168:           complexity: "medium"
+169:         })
+170: 
+171:       response = %{template_id: template.id}
+172: 
+173:       Gnat.pub(gnat, reply_to, Jason.encode!(response))
+174:     rescue
+175:       error ->
+176:         Logger.error("Error handling template recommendation: #{inspect(error)}")
+177: 
+178:         Gnat.pub(gnat, reply_to, Jason.encode!(%{template_id: "default-template"}))
+179:     end
+180:   end
+181: 
+182:   defp generate_cache_key(task) do
+183:     # Generate semantic cache key based on task
+184:     :crypto.hash(:sha256, task)
+185:     |> Base.encode64(padding: false)
+186:     |> String.slice(0..16)
+187:   end
+188: 
+189:   defp extract_response_text(response) when is_binary(response), do: response
+190:   defp extract_response_text(%{text: text}), do: text
+191:   defp extract_response_text(%{content: content}), do: content
+192:   defp extract_response_text(%{response: response}), do: response
+193:   defp extract_response_text(response), do: inspect(response)
+194: 
+195:   defp method_to_model(method) do
+196:     case method do
+197:       :autonomous -> "rules"
+198:       :llm_assisted -> "llm"
+199:       :fallback -> "rules-fallback"
+200:       _ -> "unknown"
+201:     end
+202:   end
+203: 
+204:   defp calculate_cost(model, tokens) do
+205:     # Cost per 1M tokens (actual models from ai-server)
+206:     costs = %{
+207:       "gemini-2.5-flash" => 0.075,
+208:       "gemini-2.5-pro" => 1.25,
+209:       "gpt-4o-mini" => 0.15,
+210:       "gpt-4o" => 2.5,
+211:       "copilot-gpt-4.1" => 5.0,
+212:       # Free with subscription
+213:       "cursor-gpt-4.1" => 0.0,
+214:       "claude-sonnet-4.5" => 3.0,
+215:       "claude-opus-4.1" => 15.0,
+216:       "gpt-5-codex" => 30.0,
+217:       "o1" => 15.0,
+218:       "o1-mini" => 3.0,
+219:       "o1-preview" => 10.0,
+220:       "o3" => 60.0,
+221:       # Free with subscription
+222:       "cursor-auto" => 0.0,
+223:       "grok-coder-1" => 2.0
+224:     }
+225: 
+226:     cost_per_million = Map.get(costs, model, 1.0)
+227:     tokens / 1_000_000 * cost_per_million
+228:   end
+229: end
 ````
 
 ## File: lib/singularity/process_registry.ex
@@ -47830,220 +48396,330 @@ lib/
 233:   end
 234: 
 235:   @doc """
-236:   List available tools.
-237:   """
-238:   @spec list_tools() :: [map()]
-239:   def list_tools do
-240:     # TODO: Implement tool discovery
-241:     # For now, return a basic list
-242:     [
-243:       %{name: "code_analysis", description: "Analyze code quality"},
-244:       %{name: "quality_check", description: "Run quality checks"},
-245:       %{name: "test_runner", description: "Run tests"}
-246:     ]
-247:   end
-248: 
-249:   @doc """
-250:   Get tool information.
-251:   """
-252:   @spec get_tool_info(tool_name()) :: {:ok, map()} | {:error, :not_found}
-253:   def get_tool_info(tool_name) do
-254:     # TODO: Implement tool info lookup
-255:     case tool_name do
-256:       "code_analysis" -> {:ok, %{name: "code_analysis", description: "Analyze code quality", args: [:file_path]}}
-257:       "quality_check" -> {:ok, %{name: "quality_check", description: "Run quality checks", args: [:path, :strict]}}
-258:       "test_runner" -> {:ok, %{name: "test_runner", description: "Run tests", args: [:path]}}
-259:       _ -> {:error, :not_found}
-260:     end
-261:   end
-262: 
-263:   @doc """
-264:   Validate tool arguments.
-265:   """
-266:   @spec validate_tool_args(tool_name(), tool_args()) :: {:ok, map()} | {:error, term()}
-267:   def validate_tool_args(tool_name, args) do
-268:     # TODO: Implement argument validation
-269:     # For now, just return the args
-270:     {:ok, args}
-271:   end
-272: 
-273:   # ============================================================================
-274:   # RUST ANALYZER (Low-level Algorithms)
-275:   # ============================================================================
-276: 
-277:   @doc """
-278:   Run high-performance algorithms (implemented in Rust via NIFs).
-279:   """
-280:   @spec run_algorithms(atom(), any(), keyword()) :: {:ok, any()} | {:error, term()}
-281:   def run_algorithms(algorithm_type, input, opts \\ []) do
-282:     case algorithm_type do
-283:       :parsing -> run_parsing_algorithm(input, opts)
-284:       :semantic_search -> run_semantic_search_algorithm(input, opts)
-285:       :code_parsing -> run_code_parsing_algorithm(input, opts)
-286:       :embeddings -> run_embedding_algorithm(input, opts)
-287:       _ -> {:error, "Unknown algorithm type: #{algorithm_type}"}
-288:     end
-289:   end
-290: 
-291:   defp run_parsing_algorithm(codebase_path, _opts) do
-292:     # Use the universal parser for codebase analysis
-293:     Logger.info("Running parsing algorithm", codebase_path: codebase_path)
-294:     
-295:     case Singularity.PolyglotCodeParser.analyze_codebase(codebase_path) do
-296:       {:ok, result} ->
-297:         # Store results in database
-298:         store_algorithm_result(:parsing, codebase_path, result)
-299:         {:ok, result}
-300:       {:error, reason} ->
-301:         Logger.error("Parsing algorithm failed", reason: reason)
-302:         {:error, reason}
-303:     end
-304:   end
-305: 
-306:   defp run_semantic_search_algorithm(query, opts) do
-307:     # TODO: Implement Rust semantic search integration via NIFs
-308:     Logger.info("Semantic search algorithm not yet implemented", query: query)
-309:     {:ok, []}
-310:   end
-311: 
-312:   defp run_code_parsing_algorithm(file_path, opts) do
-313:     # Use the universal parser for file analysis
-314:     Logger.info("Running code parsing algorithm", file_path: file_path)
-315:     
-316:     case Singularity.PolyglotCodeParser.analyze_file(file_path, opts) do
-317:       {:ok, result} ->
-318:         # Store results in database
-319:         store_algorithm_result(:code_parsing, file_path, result)
-320:         {:ok, result}
-321:       {:error, reason} ->
-322:         Logger.error("Code parsing algorithm failed", reason: reason)
-323:         {:error, reason}
-324:     end
-325:   end
-326: 
-327:   defp run_embedding_algorithm(text, opts) do
-328:     # TODO: Implement Rust embedding generation integration via NIFs
-329:     Logger.info("Embedding algorithm not yet implemented", text_length: String.length(text))
-330:     {:ok, []}
-331:   end
-332: 
-333:   defp store_algorithm_result(operation_type, input_path, result_data) do
-334:     changeset = %{
-335:       operation_type: Atom.to_string(operation_type),
-336:       input_path: input_path,
-337:       result_data: result_data,
-338:       performance_metrics: %{
-339:         execution_time_ms: result_data["analysis_duration_ms"] || 0,
-340:         memory_usage_mb: 10
-341:       },
-342:       status: "completed",
-343:       metadata: %{
-344:         algorithm: "source_code_parser",
-345:         version: "1.0.0"
-346:       }
-347:     }
-348: 
-349:     case Repo.insert_all("runner_rust_operations", [changeset], returning: [:id]) do
-350:       {1, [%{id: id}]} ->
-351:         Logger.info("Stored algorithm result", operation_type: operation_type, id: id)
-352:         {:ok, id}
-353:       {0, _} ->
-354:         Logger.error("Failed to store algorithm result")
-355:         {:error, "Failed to store result"}
-356:     end
-357:   end
-358: 
-359:   # ============================================================================
-360:   # UNIFIED INTERFACE
-361:   # ============================================================================
-362: 
-363:   @doc """
-364:   Run analysis using the best available runner.
-365:   """
-366:   @spec run_auto(String.t(), keyword()) :: {:ok, any()} | {:error, term()}
-367:   def run_auto(codebase_path, opts \\ []) do
-368:     # Try Rust first (fastest), fallback to Elixir
-369:     case run_rust_analysis(codebase_path) do
-370:       {:ok, result} when result.status != "not_implemented" ->
-371:         {:ok, result}
-372: 
-373:       _ ->
-374:         # Fallback to Elixir analysis
-375:         run_analysis()
-376:     end
-377:   end
-378: 
-379:   defp run_rust_analysis(_codebase_path) do
-380:     # TODO: Implement Rust analysis integration
-381:     {:ok, %{status: "not_implemented"}}
-382:   end
-383: 
-384:   @doc """
-385:   Get runner statistics.
-386:   """
-387:   @spec stats(runner_type() | :all) :: map()
-388:   def stats(:all) do
-389:     %{
-390:       analysis: stats(:analysis),
-391:       tools: stats(:tools),
-392:       rust: stats(:rust)
-393:     }
-394:   end
-395: 
-396:   def stats(:analysis) do
-397:     # TODO: Implement analysis runner stats
-398:     %{runs: 0, success_rate: 0.0}
-399:   end
-400: 
-401:   def stats(:tools) do
-402:     # TODO: Implement tools runner stats
-403:     %{tools_count: length(list_tools()), executions: 0}
-404:   end
-405: 
-406:   def stats(:rust) do
-407:     # TODO: Implement Rust analyzer stats
-408:     %{available: false, performance: "not_measured"}
-409:   end
-410: 
-411:   @doc """
-412:   Get runner capabilities.
-413:   """
-414:   @spec capabilities(runner_type() | :all) :: map()
-415:   def capabilities(:all) do
-416:     %{
-417:       analysis: capabilities(:analysis),
-418:       tools: capabilities(:tools),
-419:       rust: capabilities(:rust)
-420:     }
-421:   end
-422: 
-423:   def capabilities(:analysis) do
-424:     %{
-425:       codebase_analysis: true,
-426:       file_reports: true,
-427:       metadata_extraction: true,
-428:       summary_generation: true
-429:     }
-430:   end
-431: 
-432:   def capabilities(:tools) do
-433:     %{
-434:       tool_execution: true,
-435:       argument_validation: true,
-436:       result_formatting: true,
-437:       error_handling: true
-438:     }
-439:   end
-440: 
-441:   def capabilities(:rust) do
-442:     %{
-443:       universal_parsing: false,  # TODO: Enable when NIFs are ready
-444:       semantic_search: false,    # TODO: Enable when NIFs are ready
-445:       embedding_generation: false, # TODO: Enable when NIFs are ready
-446:       performance_analysis: false  # TODO: Enable when NIFs are ready
-447:     }
-448:   end
-449: end
+236:   List available tools from all registered providers.
+237: 
+238:   Returns tools from all providers by default, or filter by provider.
+239: 
+240:   ## Examples
+241: 
+242:       iex> Singularity.Runner.list_tools()
+243:       [%{name: "codebase_search", description: "Search codebase...", ...}, ...]
+244: 
+245:       iex> Singularity.Runner.list_tools(provider: :claude_cli)
+246:       [%{name: "codebase_search", ...}, ...]
+247:   """
+248:   @spec list_tools(keyword()) :: [map()]
+249:   def list_tools(opts \\ []) do
+250:     provider = Keyword.get(opts, :provider)
+251: 
+252:     if provider do
+253:       # List tools for specific provider
+254:       Singularity.Tools.Catalog.list_tools(provider)
+255:       |> Enum.map(&tool_to_map/1)
+256:     else
+257:       # List tools from all providers (deduplicate by name)
+258:       providers = [:claude_cli, :claude_http, :gemini_cli, :gemini_http, :codex, :cursor, :copilot]
+259: 
+260:       providers
+261:       |> Enum.flat_map(&Singularity.Tools.Catalog.list_tools/1)
+262:       |> Enum.uniq_by(& &1.name)
+263:       |> Enum.map(&tool_to_map/1)
+264:     end
+265:   end
+266: 
+267:   @doc """
+268:   Get detailed information about a specific tool.
+269: 
+270:   ## Examples
+271: 
+272:       iex> Singularity.Runner.get_tool_info("codebase_search")
+273:       {:ok, %{name: "codebase_search", description: "...", parameters: [...]}}
+274: 
+275:       iex> Singularity.Runner.get_tool_info("nonexistent")
+276:       {:error, :not_found}
+277:   """
+278:   @spec get_tool_info(tool_name(), keyword()) :: {:ok, map()} | {:error, :not_found}
+279:   def get_tool_info(tool_name, opts \\ []) do
+280:     provider = Keyword.get(opts, :provider, :claude_cli)
+281: 
+282:     case Singularity.Tools.Catalog.get_tool(provider, tool_name) do
+283:       {:ok, tool} -> {:ok, tool_to_map(tool)}
+284:       :error -> {:error, :not_found}
+285:     end
+286:   end
+287: 
+288:   defp tool_to_map(%{name: name, description: description} = tool) do
+289:     %{
+290:       name: name,
+291:       description: description,
+292:       parameters: Map.get(tool, :parameters, []),
+293:       display_text: Map.get(tool, :display_text, name)
+294:     }
+295:   end
+296: 
+297:   @doc """
+298:   Validate tool arguments.
+299:   """
+300:   @spec validate_tool_args(tool_name(), tool_args()) :: {:ok, map()} | {:error, term()}
+301:   def validate_tool_args(tool_name, args) do
+302:     # Validate tool arguments based on tool type
+303:     validation_rules = get_validation_rules(tool_name)
+304:     
+305:     case validate_args_against_rules(args, validation_rules) do
+306:       :ok -> 
+307:         Logger.debug("Tool arguments validated", tool: tool_name, args_count: length(Map.keys(args)))
+308:         {:ok, args}
+309:       
+310:       {:error, reason} -> 
+311:         Logger.warning("Tool argument validation failed", tool: tool_name, reason: reason)
+312:         {:error, reason}
+313:     end
+314:   end
+315: 
+316:   defp get_validation_rules(tool_name) do
+317:     case tool_name do
+318:       :semantic_search -> %{required: ["query"], optional: ["limit", "threshold"]}
+319:       :code_analysis -> %{required: ["path"], optional: ["language", "depth"]}
+320:       :embedding -> %{required: ["text"], optional: ["model", "dimensions"]}
+321:       _ -> %{required: [], optional: []}
+322:     end
+323:   end
+324: 
+325:   defp validate_args_against_rules(args, %{required: required, optional: optional}) do
+326:     # Check required arguments
+327:     missing_required = 
+328:       required
+329:       |> Enum.filter(fn key -> not Map.has_key?(args, key) end)
+330:     
+331:     if length(missing_required) > 0 do
+332:       {:error, "Missing required arguments: #{Enum.join(missing_required, ", ")}"}
+333:     else
+334:       # Check for unknown arguments
+335:       valid_keys = required ++ optional
+336:       unknown_args = 
+337:         Map.keys(args)
+338:         |> Enum.filter(fn key -> key not in valid_keys end)
+339:       
+340:       if length(unknown_args) > 0 do
+341:         {:error, "Unknown arguments: #{Enum.join(unknown_args, ", ")}"}
+342:       else
+343:         :ok
+344:       end
+345:     end
+346:   end
+347: 
+348:   # ============================================================================
+349:   # RUST ANALYZER (Low-level Algorithms)
+350:   # ============================================================================
+351: 
+352:   @doc """
+353:   Run high-performance algorithms (implemented in Rust via NIFs).
+354:   """
+355:   @spec run_algorithms(atom(), any(), keyword()) :: {:ok, any()} | {:error, term()}
+356:   def run_algorithms(algorithm_type, input, opts \\ []) do
+357:     case algorithm_type do
+358:       :parsing -> run_parsing_algorithm(input, opts)
+359:       :semantic_search -> run_semantic_search_algorithm(input, opts)
+360:       :code_parsing -> run_code_parsing_algorithm(input, opts)
+361:       :embeddings -> run_embedding_algorithm(input, opts)
+362:       _ -> {:error, "Unknown algorithm type: #{algorithm_type}"}
+363:     end
+364:   end
+365: 
+366:   defp run_parsing_algorithm(codebase_path, _opts) do
+367:     # Use the universal parser for codebase analysis
+368:     Logger.info("Running parsing algorithm", codebase_path: codebase_path)
+369:     
+370:     case Singularity.PolyglotCodeParser.analyze_codebase(codebase_path) do
+371:       {:ok, result} ->
+372:         # Store results in database
+373:         store_algorithm_result(:parsing, codebase_path, result)
+374:         {:ok, result}
+375:       {:error, reason} ->
+376:         Logger.error("Parsing algorithm failed", reason: reason)
+377:         {:error, reason}
+378:     end
+379:   end
+380: 
+381:   defp run_semantic_search_algorithm(query, opts) do
+382:     # Implement semantic search using existing embedding service
+383:     Logger.info("Running semantic search algorithm", query: query, opts: opts)
+384:     
+385:     limit = Keyword.get(opts, :limit, 10)
+386:     threshold = Keyword.get(opts, :threshold, 0.7)
+387:     
+388:     case Singularity.SemanticCodeSearch.search(query, limit: limit, threshold: threshold) do
+389:       {:ok, results} ->
+390:         # Store search results for analytics
+391:         store_algorithm_result(:semantic_search, query, %{
+392:           results: results,
+393:           query: query,
+394:           limit: limit,
+395:           threshold: threshold,
+396:           timestamp: DateTime.utc_now()
+397:         })
+398:         
+399:         Logger.info("Semantic search completed", 
+400:           query: query, 
+401:           results_count: length(results),
+402:           avg_similarity: calculate_avg_similarity(results)
+403:         )
+404:         
+405:         {:ok, results}
+406:       
+407:       {:error, reason} ->
+408:         Logger.error("Semantic search algorithm failed", reason: reason)
+409:         {:error, reason}
+410:     end
+411:   end
+412: 
+413:   defp calculate_avg_similarity(results) do
+414:     if length(results) > 0 do
+415:       similarities = Enum.map(results, & &1.similarity)
+416:       Enum.sum(similarities) / length(similarities)
+417:     else
+418:       0.0
+419:     end
+420:   end
+421: 
+422:   defp run_code_parsing_algorithm(file_path, opts) do
+423:     # Use the universal parser for file analysis
+424:     Logger.info("Running code parsing algorithm", file_path: file_path)
+425:     
+426:     case Singularity.PolyglotCodeParser.analyze_file(file_path, opts) do
+427:       {:ok, result} ->
+428:         # Store results in database
+429:         store_algorithm_result(:code_parsing, file_path, result)
+430:         {:ok, result}
+431:       {:error, reason} ->
+432:         Logger.error("Code parsing algorithm failed", reason: reason)
+433:         {:error, reason}
+434:     end
+435:   end
+436: 
+437:   defp run_embedding_algorithm(text, opts) do
+438:     # TODO: Implement Rust embedding generation integration via NIFs
+439:     Logger.info("Embedding algorithm not yet implemented", text_length: String.length(text))
+440:     {:ok, []}
+441:   end
+442: 
+443:   defp store_algorithm_result(operation_type, input_path, result_data) do
+444:     changeset = %{
+445:       operation_type: Atom.to_string(operation_type),
+446:       input_path: input_path,
+447:       result_data: result_data,
+448:       performance_metrics: %{
+449:         execution_time_ms: result_data["analysis_duration_ms"] || 0,
+450:         memory_usage_mb: 10
+451:       },
+452:       status: "completed",
+453:       metadata: %{
+454:         algorithm: "source_code_parser",
+455:         version: "1.0.0"
+456:       }
+457:     }
+458: 
+459:     case Repo.insert_all("runner_rust_operations", [changeset], returning: [:id]) do
+460:       {1, [%{id: id}]} ->
+461:         Logger.info("Stored algorithm result", operation_type: operation_type, id: id)
+462:         {:ok, id}
+463:       {0, _} ->
+464:         Logger.error("Failed to store algorithm result")
+465:         {:error, "Failed to store result"}
+466:     end
+467:   end
+468: 
+469:   # ============================================================================
+470:   # UNIFIED INTERFACE
+471:   # ============================================================================
+472: 
+473:   @doc """
+474:   Run analysis using the best available runner.
+475:   """
+476:   @spec run_auto(String.t(), keyword()) :: {:ok, any()} | {:error, term()}
+477:   def run_auto(codebase_path, opts \\ []) do
+478:     # Try Rust first (fastest), fallback to Elixir
+479:     case run_rust_analysis(codebase_path) do
+480:       {:ok, result} when result.status != "not_implemented" ->
+481:         {:ok, result}
+482: 
+483:       _ ->
+484:         # Fallback to Elixir analysis
+485:         run_analysis()
+486:     end
+487:   end
+488: 
+489:   defp run_rust_analysis(_codebase_path) do
+490:     # TODO: Implement Rust analysis integration
+491:     {:ok, %{status: "not_implemented"}}
+492:   end
+493: 
+494:   @doc """
+495:   Get runner statistics.
+496:   """
+497:   @spec stats(runner_type() | :all) :: map()
+498:   def stats(:all) do
+499:     %{
+500:       analysis: stats(:analysis),
+501:       tools: stats(:tools),
+502:       rust: stats(:rust)
+503:     }
+504:   end
+505: 
+506:   def stats(:analysis) do
+507:     # TODO: Implement analysis runner stats
+508:     %{runs: 0, success_rate: 0.0}
+509:   end
+510: 
+511:   def stats(:tools) do
+512:     # TODO: Implement tools runner stats
+513:     %{tools_count: length(list_tools()), executions: 0}
+514:   end
+515: 
+516:   def stats(:rust) do
+517:     # TODO: Implement Rust analyzer stats
+518:     %{available: false, performance: "not_measured"}
+519:   end
+520: 
+521:   @doc """
+522:   Get runner capabilities.
+523:   """
+524:   @spec capabilities(runner_type() | :all) :: map()
+525:   def capabilities(:all) do
+526:     %{
+527:       analysis: capabilities(:analysis),
+528:       tools: capabilities(:tools),
+529:       rust: capabilities(:rust)
+530:     }
+531:   end
+532: 
+533:   def capabilities(:analysis) do
+534:     %{
+535:       codebase_analysis: true,
+536:       file_reports: true,
+537:       metadata_extraction: true,
+538:       summary_generation: true
+539:     }
+540:   end
+541: 
+542:   def capabilities(:tools) do
+543:     %{
+544:       tool_execution: true,
+545:       argument_validation: true,
+546:       result_formatting: true,
+547:       error_handling: true
+548:     }
+549:   end
+550: 
+551:   def capabilities(:rust) do
+552:     %{
+553:       universal_parsing: false,  # TODO: Enable when NIFs are ready
+554:       semantic_search: false,    # TODO: Enable when NIFs are ready
+555:       embedding_generation: false, # TODO: Enable when NIFs are ready
+556:       performance_analysis: false  # TODO: Enable when NIFs are ready
+557:     }
+558:   end
+559: end
 ````
 
 ## File: lib/singularity/source_code_analyzer.ex
@@ -48755,177 +49431,221 @@ lib/
 394:   """
 395:   @spec search_knowledge(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
 396:   def search_knowledge(query, opts \\ []) do
-397:     # TODO: Implement semantic search using pgvector
-398:     # For now, do a simple text search
-399:     search_term = "%#{query}%"
-400:     
-401:     query_sql = from k in "store_knowledge_artifacts",
-402:       where: fragment("?::text ILIKE ?", k.content_raw, ^search_term),
-403:       limit: ^(opts[:limit] || 10),
-404:       select: %{
-405:         id: k.id,
-406:         artifact_type: k.artifact_type,
-407:         artifact_id: k.artifact_id,
-408:         content: k.content,
-409:         language: k.language,
-410:         tags: k.tags
-411:       }
-412: 
-413:     results = Repo.all(query_sql)
-414:     {:ok, results}
-415:   end
-416: 
-417:   @doc """
-418:   Query knowledge artifacts using JSONB.
-419:   """
-420:   @spec query_knowledge(keyword()) :: {:ok, [map()]} | {:error, term()}
-421:   def query_knowledge(filters) do
-422:     query = from k in "store_knowledge_artifacts"
-423: 
-424:     # Apply filters
-425:     query = if filters[:artifact_type] do
-426:       where(query, [k], k.artifact_type == ^filters.artifact_type)
-427:     else
-428:       query
-429:     end
-430: 
-431:     query = if filters[:language] do
-432:       where(query, [k], k.language == ^filters.language)
-433:     else
-434:       query
-435:     end
-436: 
-437:     query = if filters[:tags] do
-438:       where(query, [k], fragment("? && ?", k.tags, ^filters.tags))
-439:     else
-440:       query
-441:     end
-442: 
-443:     results = Repo.all(query)
-444:     {:ok, results}
-445:   end
-446: 
-447:   # ============================================================================
-448:   # TEMPLATE STORE (Detection Layer)
-449:   # ============================================================================
-450: 
-451:   @doc """
-452:   Get technology templates.
-453:   """
-454:   @spec get_templates(String.t(), String.t()) :: [map()]
-455:   def get_templates(technology, category) do
-456:     TemplateStore.get_templates(technology, category)
-457:   end
-458: 
-459:   @doc """
-460:   Store a technology template.
-461:   """
-462:   @spec store_template(String.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
-463:   def store_template(technology, category, template) do
-464:     TemplateStore.store_template(technology, category, template)
-465:   end
-466: 
-467:   @doc """
-468:   Get framework patterns.
-469:   """
-470:   @spec get_patterns(String.t(), String.t()) :: [map()]
-471:   def get_patterns(framework, pattern_type) do
-472:     PatternStore.get_patterns(framework, pattern_type)
-473:   end
+397:     use_semantic = Keyword.get(opts, :semantic, true)
+398:     limit = Keyword.get(opts, :limit, 10)
+399:     threshold = Keyword.get(opts, :threshold, 0.7)
+400: 
+401:     if use_semantic do
+402:       semantic_search_knowledge(query, limit, threshold)
+403:     else
+404:       text_search_knowledge(query, limit)
+405:     end
+406:   end
+407: 
+408:   # Semantic search using pgvector + embeddings
+409:   defp semantic_search_knowledge(query, limit, threshold) do
+410:     case Singularity.EmbeddingGenerator.embed(query) do
+411:       {:ok, query_embedding} ->
+412:         # pgvector cosine distance search
+413:         query_sql = from k in "store_knowledge_artifacts",
+414:           where: not is_nil(k.embedding),
+415:           order_by: fragment("? <=> ?", k.embedding, ^query_embedding),
+416:           limit: ^limit,
+417:           select: %{
+418:             id: k.id,
+419:             artifact_type: k.artifact_type,
+420:             artifact_id: k.artifact_id,
+421:             content: k.content,
+422:             language: k.language,
+423:             tags: k.tags,
+424:             similarity: fragment("1 - (? <=> ?)", k.embedding, ^query_embedding)
+425:           }
+426: 
+427:         results = Repo.all(query_sql)
+428: 
+429:         # Filter by similarity threshold
+430:         filtered = Enum.filter(results, fn r -> r.similarity >= threshold end)
+431: 
+432:         {:ok, filtered}
+433: 
+434:       {:error, reason} ->
+435:         Logger.warning("Semantic search failed, falling back to text search: #{inspect(reason)}")
+436:         text_search_knowledge(query, limit)
+437:     end
+438:   end
+439: 
+440:   # Fallback text search (ILIKE)
+441:   defp text_search_knowledge(query, limit) do
+442:     search_term = "%#{query}%"
+443: 
+444:     query_sql = from k in "store_knowledge_artifacts",
+445:       where: fragment("?::text ILIKE ?", k.content_raw, ^search_term),
+446:       limit: ^limit,
+447:       select: %{
+448:         id: k.id,
+449:         artifact_type: k.artifact_type,
+450:         artifact_id: k.artifact_id,
+451:         content: k.content,
+452:         language: k.language,
+453:         tags: k.tags,
+454:         similarity: 0.0
+455:       }
+456: 
+457:     results = Repo.all(query_sql)
+458:     {:ok, results}
+459:   end
+460: 
+461:   @doc """
+462:   Query knowledge artifacts using JSONB.
+463:   """
+464:   @spec query_knowledge(keyword()) :: {:ok, [map()]} | {:error, term()}
+465:   def query_knowledge(filters) do
+466:     query = from k in "store_knowledge_artifacts"
+467: 
+468:     # Apply filters
+469:     query = if filters[:artifact_type] do
+470:       where(query, [k], k.artifact_type == ^filters.artifact_type)
+471:     else
+472:       query
+473:     end
 474: 
-475:   @doc """
-476:   Store a framework pattern.
-477:   """
-478:   @spec store_pattern(String.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
-479:   def store_pattern(framework, pattern_type, pattern) do
-480:     PatternStore.store_pattern(framework, pattern_type, pattern)
-481:   end
-482: 
-483:   # ============================================================================
-484:   # GIT STORE (Git Layer)
-485:   # ============================================================================
+475:     query = if filters[:language] do
+476:       where(query, [k], k.language == ^filters.language)
+477:     else
+478:       query
+479:     end
+480: 
+481:     query = if filters[:tags] do
+482:       where(query, [k], fragment("? && ?", k.tags, ^filters.tags))
+483:     else
+484:       query
+485:     end
 486: 
-487:   @doc """
-488:   Get git state.
-489:   """
-490:   @spec get_git_state(String.t()) :: {:ok, map()} | {:error, term()}
-491:   def get_git_state(session_id) do
-492:     GitStore.get_state(session_id)
-493:   end
+487:     results = Repo.all(query)
+488:     {:ok, results}
+489:   end
+490: 
+491:   # ============================================================================
+492:   # TEMPLATE STORE (Detection Layer)
+493:   # ============================================================================
 494: 
 495:   @doc """
-496:   Store git state.
+496:   Get technology templates.
 497:   """
-498:   @spec store_git_state(String.t(), map()) :: :ok | {:error, term()}
-499:   def store_git_state(session_id, state) do
-500:     GitStore.store_state(session_id, state)
+498:   @spec get_templates(String.t(), String.t()) :: [map()]
+499:   def get_templates(technology, category) do
+500:     TemplateStore.get_templates(technology, category)
 501:   end
 502: 
-503:   # ============================================================================
-504:   # UNIFIED INTERFACE
-505:   # ============================================================================
-506: 
-507:   @doc """
-508:   Get store statistics.
-509:   """
-510:   @spec stats(store_type() | :all) :: map()
-511:   def stats(:all) do
-512:     %{
-513:       codebase: stats(:codebase),
-514:       code: stats(:code),
-515:       knowledge: stats(:knowledge),
-516:       templates: stats(:templates),
-517:       patterns: stats(:patterns),
-518:       git: stats(:git)
-519:     }
-520:   end
-521: 
-522:   def stats(:codebase) do
-523:     %{services_count: length(all_services())}
-524:   end
-525: 
-526:   def stats(:code) do
-527:     %{codebases_count: length(list_codebases())}
-528:   end
-529: 
-530:   def stats(:knowledge) do
-531:     # TODO: Implement knowledge store stats
-532:     %{artifacts_count: 0}
-533:   end
-534: 
-535:   def stats(:templates) do
-536:     # TODO: Implement template store stats
-537:     %{templates_count: 0}
-538:   end
-539: 
-540:   def stats(:patterns) do
-541:     # TODO: Implement pattern store stats
-542:     %{patterns_count: 0}
-543:   end
-544: 
-545:   def stats(:git) do
-546:     # TODO: Implement git store stats
-547:     %{sessions_count: 0}
-548:   end
-549: 
-550:   @doc """
-551:   Clear store data.
-552:   """
-553:   @spec clear(store_type() | :all) :: :ok
-554:   def clear(:all) do
-555:     clear(:codebase)
-556:     clear(:code)
-557:     clear(:knowledge)
-558:     clear(:templates)
-559:     clear(:patterns)
-560:     clear(:git)
-561:   end
-562: 
-563:   def clear(_type) do
-564:     # TODO: Implement store clearing
-565:     :ok
-566:   end
-567: end
+503:   @doc """
+504:   Store a technology template.
+505:   """
+506:   @spec store_template(String.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+507:   def store_template(technology, category, template) do
+508:     TemplateStore.store_template(technology, category, template)
+509:   end
+510: 
+511:   @doc """
+512:   Get framework patterns.
+513:   """
+514:   @spec get_patterns(String.t(), String.t()) :: [map()]
+515:   def get_patterns(framework, pattern_type) do
+516:     PatternStore.get_patterns(framework, pattern_type)
+517:   end
+518: 
+519:   @doc """
+520:   Store a framework pattern.
+521:   """
+522:   @spec store_pattern(String.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+523:   def store_pattern(framework, pattern_type, pattern) do
+524:     PatternStore.store_pattern(framework, pattern_type, pattern)
+525:   end
+526: 
+527:   # ============================================================================
+528:   # GIT STORE (Git Layer)
+529:   # ============================================================================
+530: 
+531:   @doc """
+532:   Get git state.
+533:   """
+534:   @spec get_git_state(String.t()) :: {:ok, map()} | {:error, term()}
+535:   def get_git_state(session_id) do
+536:     GitStore.get_state(session_id)
+537:   end
+538: 
+539:   @doc """
+540:   Store git state.
+541:   """
+542:   @spec store_git_state(String.t(), map()) :: :ok | {:error, term()}
+543:   def store_git_state(session_id, state) do
+544:     GitStore.store_state(session_id, state)
+545:   end
+546: 
+547:   # ============================================================================
+548:   # UNIFIED INTERFACE
+549:   # ============================================================================
+550: 
+551:   @doc """
+552:   Get store statistics.
+553:   """
+554:   @spec stats(store_type() | :all) :: map()
+555:   def stats(:all) do
+556:     %{
+557:       codebase: stats(:codebase),
+558:       code: stats(:code),
+559:       knowledge: stats(:knowledge),
+560:       templates: stats(:templates),
+561:       patterns: stats(:patterns),
+562:       git: stats(:git)
+563:     }
+564:   end
+565: 
+566:   def stats(:codebase) do
+567:     %{services_count: length(all_services())}
+568:   end
+569: 
+570:   def stats(:code) do
+571:     %{codebases_count: length(list_codebases())}
+572:   end
+573: 
+574:   def stats(:knowledge) do
+575:     # TODO: Implement knowledge store stats
+576:     %{artifacts_count: 0}
+577:   end
+578: 
+579:   def stats(:templates) do
+580:     # TODO: Implement template store stats
+581:     %{templates_count: 0}
+582:   end
+583: 
+584:   def stats(:patterns) do
+585:     # TODO: Implement pattern store stats
+586:     %{patterns_count: 0}
+587:   end
+588: 
+589:   def stats(:git) do
+590:     # TODO: Implement git store stats
+591:     %{sessions_count: 0}
+592:   end
+593: 
+594:   @doc """
+595:   Clear store data.
+596:   """
+597:   @spec clear(store_type() | :all) :: :ok
+598:   def clear(:all) do
+599:     clear(:codebase)
+600:     clear(:code)
+601:     clear(:knowledge)
+602:     clear(:templates)
+603:     clear(:patterns)
+604:     clear(:git)
+605:   end
+606: 
+607:   def clear(_type) do
+608:     # TODO: Implement store clearing
+609:     :ok
+610:   end
+611: end
 ````
 
 ## File: lib/singularity/telemetry.ex

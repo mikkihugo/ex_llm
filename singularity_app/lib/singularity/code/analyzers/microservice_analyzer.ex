@@ -6,8 +6,6 @@ defmodule Singularity.CodeAnalysis.MicroserviceAnalyzer do
 
   require Logger
 
-  alias Singularity.Engine.CodebaseStore
-
   @doc "Analyze a TypeScript/NestJS service"
   def analyze_typescript_service(service_path) do
     Logger.info("Analyzing TypeScript service: #{service_path}")
@@ -350,13 +348,119 @@ defmodule Singularity.CodeAnalysis.MicroserviceAnalyzer do
     missing
   end
 
-  defp parse_toml(_content) do
-    # Simple TOML parsing - in production, use a proper TOML library
-    %{"dependencies" => %{}, "dev-dependencies" => %{}}
+  defp parse_toml(content) do
+    # Simple TOML parsing - extract key information
+    lines = String.split(content, "\n")
+
+    dependencies = extract_toml_section(lines, "dependencies")
+    dev_dependencies = extract_toml_section(lines, "dev-dependencies")
+
+    %{
+      "dependencies" => dependencies,
+      "dev-dependencies" => dev_dependencies,
+      "total_deps" => length(dependencies) + length(dev_dependencies),
+      "has_rust_deps" => has_rust_dependencies?(dependencies)
+    }
+  end
+
+  defp extract_toml_section(lines, section_name) do
+    in_section = false
+    deps = []
+
+    {_, deps} =
+      Enum.reduce(lines, {in_section, deps}, fn line, {in_section, deps} ->
+        cond do
+          String.trim(line) == "[#{section_name}]" ->
+            {true, deps}
+
+          in_section && String.starts_with?(String.trim(line), "[") ->
+            {false, deps}
+
+          in_section && String.contains?(line, "=") ->
+            [name | _] = String.split(line, "=")
+            clean_name = String.trim(name)
+            {in_section, [clean_name | deps]}
+
+          true ->
+            {in_section, deps}
+        end
+      end)
+
+    Enum.reverse(deps)
+  end
+
+  defp has_rust_dependencies?(deps) do
+    rust_crates = ["serde", "tokio", "axum", "sqlx", "uuid", "chrono", "anyhow"]
+    Enum.any?(deps, fn dep -> dep in rust_crates end)
   end
 
   defp parse_go_mod(content) do
-    # Simple go.mod parsing - in production, use a proper parser
-    %{"require" => []}
+    # Simple go.mod parsing - extract module information
+    lines = String.split(content, "\n")
+
+    module_name = extract_module_name(lines)
+    go_version = extract_go_version(lines)
+    requires = extract_requires(lines)
+
+    %{
+      "module" => module_name,
+      "go_version" => go_version,
+      "require" => requires,
+      "total_deps" => length(requires),
+      "has_standard_libs" => has_standard_libraries?(requires)
+    }
+  end
+
+  defp extract_module_name(lines) do
+    case Enum.find(lines, fn line -> String.starts_with?(String.trim(line), "module ") end) do
+      nil ->
+        "unknown"
+
+      line ->
+        [_, name] = String.split(line, " ", parts: 2)
+        String.trim(name)
+    end
+  end
+
+  defp extract_go_version(lines) do
+    case Enum.find(lines, fn line -> String.starts_with?(String.trim(line), "go ") end) do
+      nil ->
+        "unknown"
+
+      line ->
+        [_, version] = String.split(line, " ", parts: 2)
+        String.trim(version)
+    end
+  end
+
+  defp extract_requires(lines) do
+    in_require_section = false
+    requires = []
+
+    {_, requires} =
+      Enum.reduce(lines, {in_require_section, requires}, fn line, {in_section, reqs} ->
+        cond do
+          String.trim(line) == "require (" ->
+            {true, reqs}
+
+          in_section && String.trim(line) == ")" ->
+            {false, reqs}
+
+          in_section && String.contains?(line, " ") ->
+            [name | _] = String.split(line, " ")
+            clean_name = String.trim(name)
+            {in_section, [clean_name | reqs]}
+
+          true ->
+            {in_section, reqs}
+        end
+      end)
+
+    Enum.reverse(requires)
+  end
+
+  defp has_standard_libraries?(requires) do
+    std_libs = ["fmt", "net/http", "encoding/json", "os", "io", "strings", "time"]
+    Enum.any?(requires, fn req -> req in std_libs end)
   end
 end

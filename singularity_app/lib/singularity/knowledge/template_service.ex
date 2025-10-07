@@ -72,7 +72,10 @@ defmodule Singularity.Knowledge.TemplateService do
   end
 
   @impl true
-  def handle_info({:msg, %{subject: "template.get." <> rest, body: _body, reply_to: reply_to}}, state) do
+  def handle_info(
+        {:msg, %{subject: "template.get." <> rest, body: _body, reply_to: reply_to}},
+        state
+      ) do
     # Parse subject: template.get.framework.phoenix
     case String.split(rest, ".", parts: 2) do
       [artifact_type, artifact_id] ->
@@ -133,20 +136,37 @@ defmodule Singularity.Knowledge.TemplateService do
     Logger.warning("Received template.get request without reply_to")
   end
 
-  defp handle_search_request(gnat, query, reply_to) when is_binary(reply_to) do
+  defp handle_search_request(gnat, query, reply_to) do
     start_time = System.monotonic_time(:microsecond)
 
-    # TODO: Implement semantic search using pgvector
-    # For now, return empty results
-    results = []
+    # Implement semantic search using pgvector
+    case Singularity.Knowledge.ArtifactStore.search(query, top_k: 10) do
+      {:ok, results} ->
+        formatted_results = Enum.map(results, fn artifact ->
+          %{
+            id: artifact.id,
+            artifact_type: artifact.artifact_type,
+            name: artifact.name,
+            description: artifact.description,
+            similarity: artifact.similarity,
+            content_preview: String.slice(artifact.content_raw || "", 0, 200) <> "..."
+          }
+        end)
 
-    response = Jason.encode!(%{
-      query: query,
-      results: results,
-      count: length(results)
-    })
+        response =
+          Jason.encode!(%{
+            query: query,
+            results: formatted_results,
+            count: length(formatted_results)
+          })
 
-    Gnat.pub(gnat, reply_to, response)
+        Gnat.pub(gnat, reply_to, response)
+
+      {:error, reason} ->
+        Logger.error("Semantic search failed: #{inspect(reason)}")
+        send_error(gnat, reply_to, "Search failed: #{inspect(reason)}")
+    end
+
     emit_telemetry(:search, "search", start_time)
   end
 

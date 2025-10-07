@@ -306,6 +306,27 @@ defmodule Singularity.Analysis.Metadata do
   defp coerce_float(_), do: 0.0
 
   defp coerce_list(nil), do: []
-  defp coerce_list(value) when is_list(value), do: Enum.map(value, &to_string/1)
-  defp coerce_list(value), do: [to_string(value)]
+
+  defp coerce_list(list) when is_list(list), do: list
+
+  defp coerce_list(value) when is_binary(value) do
+    # Try to parse as JSON array first
+    case Jason.decode(value) do
+      {:ok, decoded} when is_list(decoded) -> decoded
+      _ -> [value]
+    end
+  end
+
+  defp coerce_list(value) when is_atom(value), do: [Atom.to_string(value)]
+
+  defp coerce_list(value) when is_number(value), do: [value]
+
+  defp coerce_list(value) when is_map(value) do
+    # Convert map to list of key-value pairs
+    value
+    |> Map.to_list()
+    |> Enum.map(fn {k, v} -> %{key: k, value: v} end)
+  end
+
+  defp coerce_list(value), do: [value]
 end

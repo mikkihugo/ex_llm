@@ -44,14 +44,17 @@ defmodule Singularity.FrameworkDetector do
     # Call package_registry_indexer via NATS
     payload = Jason.encode!(%{patterns: patterns})
 
-    case Singularity.NatsClient.request("packages.registry.detect.frameworks", payload, timeout: 5000) do
+    case Singularity.NatsClient.request("packages.registry.detect.frameworks", payload,
+           timeout: 5000
+         ) do
       {:ok, response} ->
         case Jason.decode(response) do
           {:ok, %{"frameworks" => frameworks}} -> {:ok, frameworks}
           {:error, _} -> {:error, :invalid_response}
         end
 
-      {:error, _reason} -> {:error, :nats_error}
+      {:error, _reason} ->
+        {:error, :nats_error}
     end
   end
 
@@ -62,14 +65,17 @@ defmodule Singularity.FrameworkDetector do
   """
   def list_all_frameworks do
     # Query package_registry_indexer (tech_detector) for all frameworks
-    case Singularity.NatsClient.request("packages.registry.detect.list_frameworks", "{}", timeout: 5000) do
+    case Singularity.NatsClient.request("packages.registry.detect.list_frameworks", "{}",
+           timeout: 5000
+         ) do
       {:ok, response} ->
         case Jason.decode(response) do
           {:ok, %{"frameworks" => frameworks}} -> {:ok, frameworks}
           {:error, _} -> {:error, :invalid_response}
         end
 
-      {:error, _reason} -> {:error, :nats_error}
+      {:error, _reason} ->
+        {:error, :nats_error}
     end
   end
 

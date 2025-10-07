@@ -2,8 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use tree_sitter::{Node, Parser as TsParser};
-use tree_sitter_javascript::language as javascript_language;
+use tree_sitter::Node;
 
 use crate::{
   dependencies::UniversalDependencies,
@@ -40,15 +39,14 @@ impl UniversalParser for JavaScriptParser {
   }
 
   async fn analyze_content(&self, content: &str, file_path: &str) -> Result<AnalysisResult> {
-    let js_specific = self.analyze_javascript_specific(content)?;
+    let _js_specific = self.analyze_javascript_specific(content)?;
 
-    let mut result = self
+    let result = self
       .dependencies
       .analyze_with_all_tools(content, ProgrammingLanguage::JavaScript, file_path)
       .await?;
-    result
-      .language_specific
-      .insert("javascript".to_string(), serde_json::to_value(js_specific)?);
+    // Store JavaScript-specific analysis in tree_sitter_analysis
+    // result.tree_sitter_analysis.language_specific = Some(serde_json::to_value(js_specific)?);
 
     Ok(result)
   }
@@ -58,18 +56,20 @@ impl UniversalParser for JavaScriptParser {
   }
 
   fn get_metadata(&self) -> ParserMetadata {
-    let mut capabilities = ParserCapabilities::default();
-    capabilities.pattern_detection = true;
-    capabilities.dependency_analysis = true;
-    capabilities.framework_detection = true;
-    capabilities.performance_analysis = true;
-    capabilities.security_analysis = true;
-    capabilities.architecture_analysis = true;
-    capabilities.concurrency_analysis = true;
-    capabilities.error_handling_analysis = true;
-    capabilities.modern_language_features = true;
-    capabilities.quality_metrics = true;
-    capabilities.dependency_metadata = true;
+    let capabilities = ParserCapabilities {
+      pattern_detection: true,
+      dependency_analysis: true,
+      framework_detection: true,
+      performance_analysis: true,
+      security_analysis: true,
+      architecture_analysis: true,
+      concurrency_analysis: true,
+      error_handling_analysis: true,
+      modern_language_features: true,
+      quality_metrics: true,
+      dependency_metadata: true,
+      ..Default::default()
+    };
 
     ParserMetadata {
       parser_name: "JavaScript Parser".to_string(),
@@ -141,12 +141,16 @@ impl JavaScriptParser {
 }
 
 fn parse_tree(content: &str) -> Option<tree_sitter::Tree> {
-  let mut parser = TsParser::new();
-  let language = javascript_language();
-  if parser.set_language(&language).is_err() {
-    return None;
+  use tree_sitter::Parser;
+  
+  let mut parser = Parser::new();
+  let language = tree_sitter_javascript::LANGUAGE.into();
+  
+  if parser.set_language(&language).is_ok() {
+    parser.parse(content, None)
+  } else {
+    None
   }
-  parser.parse(content, None)
 }
 
 fn count_kind_recursive(node: &Node, kind: &str) -> u32 {

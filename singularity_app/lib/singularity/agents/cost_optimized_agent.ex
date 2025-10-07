@@ -13,7 +13,7 @@ defmodule Singularity.Agents.CostOptimizedAgent do
   use GenServer
   require Logger
 
-  alias Singularity.{Autonomy, LLM, ProcessRegistry}
+  alias Singularity.{Autonomy, ProcessRegistry}
   alias Autonomy.{RuleEngine, Correlation}
 
   defstruct [
@@ -148,7 +148,7 @@ defmodule Singularity.Agents.CostOptimizedAgent do
   end
 
   defp call_llm(task, rule_result, state, correlation_id) do
-    Logger.warninging("Calling LLM - will incur cost",
+    Logger.warning("Calling LLM - will incur cost",
       agent_id: state.id,
       task_id: task.id,
       rule_confidence: rule_result && elem(rule_result, 1).confidence,
@@ -160,6 +160,7 @@ defmodule Singularity.Agents.CostOptimizedAgent do
 
     # Call LLM with automatic model selection
     messages = [%{role: "user", content: prompt}]
+
     opts = [
       system_prompt: system_prompt_for_specialization(state.specialization),
       max_tokens: 4000,
@@ -280,17 +281,6 @@ defmodule Singularity.Agents.CostOptimizedAgent do
 
     Generate production-ready code following best practices.
     """
-  end
-
-  defp select_optimal_model(complexity) do
-    case complexity do
-      # Cheapest: $0.075/M tokens
-      :simple -> {:gemini, "gemini-1.5-flash"}
-      # Mid: $1/M tokens
-      :medium -> {:claude, "claude-3-5-haiku-20241022"}
-      # Best: $3/M tokens
-      :complex -> {:claude, "claude-3-5-sonnet-20241022"}
-    end
   end
 
   defp system_prompt_for_specialization(specialization) do

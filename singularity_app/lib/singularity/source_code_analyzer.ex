@@ -46,7 +46,7 @@ defmodule Singularity.SourceCodeAnalyzer do
   Elixir code is responsible for storing results.
   """
   @spec analyze_control_flow(String.t()) ::
-    {:ok, ControlFlowResult.t()} | {:error, String.t()}
+          {:ok, ControlFlowResult.t()} | {:error, String.t()}
   def analyze_control_flow(_file_path) do
     :erlang.nif_error(:nif_not_loaded)
   end
@@ -61,14 +61,14 @@ defmodule Singularity.SourceCodeAnalyzer do
     """
 
     @type t :: %__MODULE__{
-      dead_ends: [DeadEnd.t()],
-      unreachable_code: [UnreachableCode.t()],
-      completeness_score: float(),
-      total_paths: non_neg_integer(),
-      complete_paths: non_neg_integer(),
-      incomplete_paths: non_neg_integer(),
-      has_issues: boolean()
-    }
+            dead_ends: [DeadEnd.t()],
+            unreachable_code: [UnreachableCode.t()],
+            completeness_score: float(),
+            total_paths: non_neg_integer(),
+            complete_paths: non_neg_integer(),
+            incomplete_paths: non_neg_integer(),
+            has_issues: boolean()
+          }
 
     defstruct [
       :dead_ends,
@@ -89,11 +89,11 @@ defmodule Singularity.SourceCodeAnalyzer do
     """
 
     @type t :: %__MODULE__{
-      node_id: String.t(),
-      function_name: String.t(),
-      line_number: non_neg_integer(),
-      reason: String.t()
-    }
+            node_id: String.t(),
+            function_name: String.t(),
+            line_number: non_neg_integer(),
+            reason: String.t()
+          }
 
     defstruct [:node_id, :function_name, :line_number, :reason]
   end
@@ -106,10 +106,10 @@ defmodule Singularity.SourceCodeAnalyzer do
     """
 
     @type t :: %__MODULE__{
-      node_id: String.t(),
-      line_number: non_neg_integer(),
-      reason: String.t()
-    }
+            node_id: String.t(),
+            line_number: non_neg_integer(),
+            reason: String.t()
+          }
 
     defstruct [:node_id, :line_number, :reason]
   end

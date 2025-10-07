@@ -101,6 +101,30 @@
           pkgs.gleam
         ];
 
+        pythonTrainingEnv = pkgs.python311.withPackages (ps: with ps; [
+          ps.pip
+          ps.setuptools
+          ps.wheel
+          ps.numpy
+          ps.scipy
+          ps.pandas
+          ps.torch
+          ps.torchvision
+          ps.torchaudio
+          ps.tokenizers
+          ps.safetensors
+          ps.transformers
+          ps.datasets
+          ps.accelerate
+          ps.peft
+          ps.evaluate
+          ps.tqdm
+          ps.regex
+          ps.huggingface-hub
+          ps.jinja2
+          ps.protobuf
+        ]);
+
         postgresqlWithExtensions = pkgs.postgresql_17.withPackages (_: [
           pkgs.postgresql_17.pkgs.timescaledb
           pkgs.postgresql_17.pkgs.postgis
@@ -600,6 +624,31 @@ EOF
         };
 
         # Production-like environment for staging/validation
+        devShells.llm-train = pkgs.mkShell {
+          name = "singularity-llm-train";
+          buildInputs = commonTools ++ [
+            pythonTrainingEnv
+            pkgs.git-lfs
+          ];
+
+          shellHook = ''
+            export LC_ALL=C.UTF-8
+            export LANG=C.UTF-8
+            export PYTHONUTF8=1
+            export HF_HOME="$PWD/.cache/huggingface"
+            export TRANSFORMERS_CACHE="$PWD/.cache/huggingface"
+            export HF_DATASETS_CACHE="$PWD/.cache/huggingface"
+            export CUDA_HOME=${pkgs.cudaPackages.cudatoolkit}
+            export CUDNN_HOME=${pkgs.cudaPackages.cudnn}
+            export LD_LIBRARY_PATH=${pkgs.cudaPackages.cudatoolkit}/lib:${pkgs.cudaPackages.cudnn}/lib:''${LD_LIBRARY_PATH:-}
+            mkdir -p "$HF_HOME"
+            echo "🤖 LLM training shell ready"
+            echo "  Python: $(python3 --version)"
+            echo "  PyTorch CUDA build: $(python3 -c \"import torch; print(torch.version.cuda if torch.cuda.is_available() else 'cpu')\" 2>/dev/null || echo 'not found')"
+            echo "  Use: accelerate launch train_codet5.py"
+          '';
+        };
+
         devShells.prod = pkgs.mkShell {
           name = "singularity-prod";
           buildInputs = beamTools ++ webAndCli;

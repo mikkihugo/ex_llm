@@ -6,7 +6,7 @@ use anyhow::Result;
 use std::collections::HashSet;
 
 use crate::graph::{CodeDependencyGraph, GraphNode, GraphEdge, GraphType};
-use petgraph::{Direction, visit::Dfs};
+use petgraph::{Direction, visit::{Dfs, EdgeRef}};
 
 /// Control Flow Graph - extends existing graph infrastructure
 pub struct ControlFlowGraph {
@@ -284,12 +284,13 @@ pub fn analyze_function_flow(graph: CodeDependencyGraph) -> Result<ControlFlowAn
     let dead_ends = cfg.find_dead_ends();
     let unreachable = cfg.find_unreachable_code();
     let completeness = cfg.calculate_completeness();
+    let has_issues = !dead_ends.is_empty() || !unreachable.is_empty() || completeness.completeness_score < 1.0;
 
     Ok(ControlFlowAnalysis {
         dead_ends,
         unreachable_code: unreachable,
         completeness,
-        has_issues: !dead_ends.is_empty() || !unreachable.is_empty() || completeness.completeness_score < 1.0,
+        has_issues,
     })
 }
 

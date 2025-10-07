@@ -32,13 +32,16 @@ mock.module('ai', () => ({
 }));
 
 interface LLMRequest {
-  model: string;
-  provider: string;
+  model?: string;
+  provider?: string;
   messages: Array<{ role: string; content: string }>;
   max_tokens?: number;
   temperature?: number;
   stream?: boolean;
   correlation_id?: string;
+  complexity?: 'simple' | 'medium' | 'complex';
+  task_type?: string;
+  capabilities?: string[];
 }
 
 interface LLMResponse {
@@ -208,6 +211,43 @@ describe('NATS Handler - LLM Request Processing', () => {
     expect(error.error_code).toBe('VALIDATION_ERROR');
 
     errorSub.unsubscribe();
+  }, 15000);
+
+  test('auto-selects model based on complexity hints', async () => {
+    const correlationId = `test-auto-${Date.now()}`;
+
+    const request: LLMRequest = {
+      complexity: 'simple',
+      task_type: 'coder',
+      capabilities: ['code'],
+      messages: [{ role: 'user', content: 'Write a small function to add two numbers' }],
+      correlation_id: correlationId
+    };
+
+    const responseSub = nc.subscribe('ai.llm.response');
+    const responsePromise = new Promise<LLMResponse>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Timeout waiting for auto-selected response')), 10000);
+
+      (async () => {
+        for await (const msg of responseSub) {
+          const response = JSON.parse(msg.data.toString()) as LLMResponse;
+          if (response.correlation_id === correlationId) {
+            clearTimeout(timeout);
+            resolve(response);
+            break;
+          }
+        }
+      })();
+    });
+
+    nc.publish('ai.llm.request', JSON.stringify(request));
+
+    const response = await responsePromise;
+
+    expect(response.model).toBe('gemini-2.5-flash');
+    expect(response.text).toContain('Mock response');
+
+    responseSub.unsubscribe();
   }, 15000);
 
   test('handles multiple concurrent requests', async () => {

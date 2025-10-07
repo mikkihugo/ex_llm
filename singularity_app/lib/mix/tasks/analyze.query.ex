@@ -18,7 +18,6 @@ defmodule Mix.Tasks.Analyze.Query do
   """
 
   use Mix.Task
-  import Ecto.Query
 
   @impl Mix.Task
   def run(args) do
@@ -124,7 +123,7 @@ defmodule Mix.Tasks.Analyze.Query do
     query_binary()
     |> Enum.take(10)
     |> Enum.each(fn embedding ->
-      size = get_in(embedding.metadata, ["size"]) || 0
+      _size = get_in(embedding.metadata, ["size"]) || 0
       IO.puts("  • #{embedding.label}")
     end)
 

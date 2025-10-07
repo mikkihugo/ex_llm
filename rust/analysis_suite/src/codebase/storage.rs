@@ -3,7 +3,6 @@
 //! Uses redb (embedded key-value store) for persistent codebase analysis storage.
 //! Paths managed by SPARCPaths - no hardcoded paths allowed.
 
-use redb::{Database, ReadableTableMetadata, ReadableTable, TableDefinition};
 use crate::codebase::metadata::{CodebaseMetadata, FileAnalysis, CodebaseAnalysis};
 use crate::codebase::vectors::CodeVector;
 use crate::embeddings::{HybridCodeEmbedder, HybridEmbedding, HybridConfig, CodeMatch};

@@ -168,18 +168,49 @@ defmodule Singularity.TechnologyTemplateStore do
     |> Enum.join("/")
   end
 
-  defp category_from_identifier({category, _name}) when is_atom(category),
-    do: Atom.to_string(category)
+  defp category_from_identifier(identifier) when is_binary(identifier) do
+    case String.downcase(identifier) do
+      "framework" -> :framework
+      "frameworks" -> :framework
+      "language" -> :language
+      "languages" -> :language
+      "database" -> :database
+      "databases" -> :database
+      "tool" -> :tool
+      "tools" -> :tool
+      "service" -> :service
+      "services" -> :service
+      "library" -> :library
+      "libraries" -> :library
+      "runtime" -> :runtime
+      "runtimes" -> :runtime
+      "build" -> :build_tool
+      "build_tool" -> :build_tool
+      "build_tools" -> :build_tool
+      "package_manager" -> :package_manager
+      "package_managers" -> :package_manager
+      "testing" -> :testing
+      "testing_framework" -> :testing
+      "testing_frameworks" -> :testing
+      "deployment" -> :deployment
+      "deployment_tool" -> :deployment
+      "deployment_tools" -> :deployment
+      "monitoring" -> :monitoring
+      "monitoring_tool" -> :monitoring
+      "monitoring_tools" -> :monitoring
+      "logging" -> :logging
+      "logging_tool" -> :logging
+      "logging_tools" -> :logging
+      _ -> :unknown
+    end
+  end
 
-  defp category_from_identifier([category | _]) when is_atom(category),
-    do: Atom.to_string(category)
+  defp category_from_identifier(identifier) when is_atom(identifier) do
+    identifier
+    |> Atom.to_string()
+    |> category_from_identifier()
+  end
 
-  defp category_from_identifier([category | _]) when is_binary(category), do: category
-
-  defp category_from_identifier(identifier) when is_atom(identifier),
-    do: Atom.to_string(identifier)
-
-  defp category_from_identifier(identifier) when is_binary(identifier), do: identifier
   defp category_from_identifier(_), do: nil
 
   defp compute_checksum(template) do

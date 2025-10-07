@@ -17,13 +17,12 @@
 //! - **semantic/**: Semantic analysis and vector embeddings
 //! - **graph/**: Code graph construction and analysis
 //! - **dag/**: Directed Acyclic Graph for file relationships
-//! - **control_flow/**: Control flow analysis (dead ends, unreachable code)
 
 pub mod architecture;
-pub mod control_flow;
 pub mod dag;
 pub mod dependency;
 pub mod evolution;
+pub mod framework;
 pub mod graph;
 pub mod metrics;
 pub mod multilang;
@@ -38,10 +37,10 @@ pub mod semantic;
 
 // Re-export main types
 pub use architecture::*;
-pub use control_flow::*;
 pub use dag::*;
 pub use dependency::*;
 pub use evolution::*;
+pub use framework::*;
 pub use graph::*;
 pub use metrics::*;
 pub use multilang::*;

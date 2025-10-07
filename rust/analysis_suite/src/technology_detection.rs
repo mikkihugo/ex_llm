@@ -4,51 +4,78 @@
 
 use anyhow::Result;
 use std::path::Path;
-use tool_doc_index::detection::{LayeredDetector, LayeredDetectionResult};
+use dependency_parser::DependencyParser;
+// use tool_doc_index::detection::{LayeredDetector, LayeredDetectionResult}; // Removed - crate doesn't exist
 
 /// Technology detection facade for analysis suite
 pub struct TechnologyDetection {
-    detector: LayeredDetector,
+    dependency_parser: DependencyParser,
 }
 
 impl TechnologyDetection {
     /// Create new technology detection
     pub async fn new() -> Result<Self> {
-        let detector = LayeredDetector::new().await?;
-        Ok(Self { detector })
+        let dependency_parser = DependencyParser::new();
+        Ok(Self { dependency_parser })
     }
 
     /// Detect technologies in a codebase
-    pub async fn detect_technologies(&self, codebase_path: &Path) -> Result<Vec<LayeredDetectionResult>> {
-        self.detector.detect(codebase_path).await
+    pub async fn detect_technologies(&self, codebase_path: &Path) -> Result<Vec<String>> {
+        use walkdir::WalkDir;
+        
+        let mut technologies = Vec::new();
+        
+        // Walk through the codebase looking for package files
+        for entry in WalkDir::new(codebase_path).max_depth(3) {
+            let entry = entry?;
+            let file_path = entry.path();
+            
+            if let Some(file_name) = file_path.file_name().and_then(|n| n.to_str()) {
+                match file_name {
+                    "package.json" | "Cargo.toml" | "mix.exs" | "requirements.txt" | 
+                    "pyproject.toml" | "go.mod" | "composer.json" => {
+                        if let Ok(dependencies) = self.dependency_parser.parse_package_file(file_path) {
+                            for dep in dependencies {
+                                technologies.push(format!("{}@{} ({})", dep.name, dep.version, dep.ecosystem));
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        
+        Ok(technologies)
     }
 
     /// Detect and return summary
     pub async fn detect_summary(&self, codebase_path: &Path) -> Result<TechnologySummary> {
-        let results = self.detect_technologies(codebase_path).await?;
+        let technologies = self.detect_technologies(codebase_path).await?;
 
         let mut summary = TechnologySummary {
             languages: Vec::new(),
             frameworks: Vec::new(),
             databases: Vec::new(),
             total_confidence: 0.0,
-            detection_count: results.len(),
+            detection_count: technologies.len(),
         };
 
-        for result in results {
-            match result.category.as_str() {
-                "language" => summary.languages.push(result.technology_name.clone()),
-                "frontend_framework" | "backend_framework" | "fullstack_framework" => {
-                    summary.frameworks.push(result.technology_name.clone())
-                }
-                "database" => summary.databases.push(result.technology_name.clone()),
-                _ => {}
+        // Categorize detected technologies
+        for tech in &technologies {
+            if tech.contains("react") || tech.contains("vue") || tech.contains("angular") {
+                summary.frameworks.push(tech.clone());
+            } else if tech.contains("express") || tech.contains("django") || tech.contains("rails") {
+                summary.frameworks.push(tech.clone());
+            } else if tech.contains("postgres") || tech.contains("mysql") || tech.contains("mongodb") {
+                summary.databases.push(tech.clone());
+            } else {
+                summary.languages.push(tech.clone());
             }
-            summary.total_confidence += result.confidence;
         }
 
-        if !results.is_empty() {
-            summary.total_confidence /= results.len() as f32;
+        // Calculate confidence based on number of detections
+        if !technologies.is_empty() {
+            summary.total_confidence = (technologies.len() as f32 / 10.0).min(1.0);
         }
 
         Ok(summary)

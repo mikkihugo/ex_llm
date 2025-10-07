@@ -63,8 +63,8 @@ pub enum DetectionMethod {
     /// Cross-referenced with knowledge base (PostgreSQL lookup)
     KnowledgeBaseMatch,
 
-    /// AI identified (LLM analysis - expensive!)
-    AiIdentified,
+    /// AI analysis (LLM analysis - expensive!)
+    AiAnalysis,
 }
 
 impl DetectionMethod {
@@ -75,7 +75,7 @@ impl DetectionMethod {
             Self::MatchedCodePattern => "Matched code patterns like 'import React' or 'use Phoenix.Controller'",
             Self::ParsedCodeStructure => "Analyzed code structure with tree-sitter parser",
             Self::KnowledgeBaseMatch => "Matched against knowledge base patterns in PostgreSQL",
-            Self::AiIdentified => "Identified by AI (Claude/GPT) - unknown framework",
+            Self::AiAnalysis => "Identified by AI (Claude/GPT) - unknown framework",
         }
     }
 
@@ -86,7 +86,7 @@ impl DetectionMethod {
             Self::MatchedCodePattern => "cheap",
             Self::ParsedCodeStructure => "moderate",
             Self::KnowledgeBaseMatch => "moderate",
-            Self::AiIdentified => "expensive",
+            Self::AiAnalysis => "expensive",
         }
     }
 }

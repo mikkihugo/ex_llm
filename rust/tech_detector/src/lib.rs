@@ -28,6 +28,7 @@ pub mod tech_detector;
 pub mod detection_methods;
 pub mod detection_results;
 pub mod template_loader;
+pub mod ai_client;
 
 // Re-exports
 pub use tech_detector::TechDetector;

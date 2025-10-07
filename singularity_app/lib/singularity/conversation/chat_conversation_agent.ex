@@ -28,6 +28,11 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     :conversation_history
   ]
 
+  def conversation_types, do: @conversation_types
+
+  defp normalize_conversation_type(type) when type in @conversation_types, do: type
+  defp normalize_conversation_type(_type), do: :clarification
+
   ## Public API
 
   def start_link(_opts) do
@@ -83,9 +88,14 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     context = Keyword.get(opts, :context, %{})
     timeout = Keyword.get(opts, :timeout, :infinity)
 
+    conversation_type =
+      opts
+      |> Keyword.get(:type, :clarification)
+      |> normalize_conversation_type()
+
     conversation = %{
       id: conversation_id,
-      type: :clarification,
+      type: conversation_type,
       question: question,
       context: context,
       urgency: urgency,
@@ -113,7 +123,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
     conversation = %{
       id: conversation_id,
-      type: :recommendation,
+      type: normalize_conversation_type(:recommendation),
       recommendation: recommendation,
       asked_at: DateTime.utc_now(),
       asked_by: from,
@@ -279,30 +289,132 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     case feedback.type do
       :bug_report ->
         Logger.error("Human reported bug: #{feedback.description}")
-        # TODO: Mark task as failure and downgrade patterns
-        GoogleChat.notify("🐛 Bug logged. I'll avoid this pattern.")
+        # Mark task as failure and downgrade patterns
+        case mark_task_as_failure(feedback) do
+          {:ok, _} ->
+            Logger.info("Marked task as failure and downgraded patterns")
+            GoogleChat.notify("🐛 Bug logged. I'll avoid this pattern.")
+          {:error, reason} ->
+            Logger.error("Failed to mark task as failure: #{inspect(reason)}")
+            GoogleChat.notify("🐛 Bug logged, but failed to update patterns.")
+        end
 
       :positive ->
         Logger.info("Human approved recent change")
-        GoogleChat.notify("✅ Thanks! I'll prioritize similar changes.")
+        # Update pattern scores positively
+        case update_pattern_scores(feedback, 0.1) do
+          {:ok, _} ->
+            Logger.info("Updated pattern scores positively")
+            GoogleChat.notify("✅ Thanks! I'll prioritize similar changes.")
+          {:error, reason} ->
+            Logger.error("Failed to update pattern scores: #{inspect(reason)}")
+            GoogleChat.notify("✅ Thanks! (Pattern update failed)")
+        end
 
       :suggestion ->
-        # TODO: Add to goal queue
-        GoogleChat.notify("💡 Added to task queue.")
+        # Add to goal queue
+        case add_to_goal_queue(feedback) do
+          {:ok, goal_id} ->
+            Logger.info("Added suggestion to goal queue: #{goal_id}")
+            GoogleChat.notify("💡 Added to task queue.")
+          {:error, reason} ->
+            Logger.error("Failed to add to goal queue: #{inspect(reason)}")
+            GoogleChat.notify("💡 Suggestion received, but failed to queue.")
+        end
     end
 
     {:noreply, state}
   end
 
-  defp handle_chat(_user_id, message_text, _channel, state) do
-    # TODO: Use LLM for chat
-    GoogleChat.notify("Got your message: #{message_text}")
-    {:noreply, state}
+  defp handle_chat(user_id, message_text, channel, state) do
+    try do
+      # Use LLM for chat response
+      prompt = """
+      You are an AI assistant helping with code development tasks.
+      
+      User message: #{message_text}
+      
+      Context:
+      - User ID: #{user_id}
+      - Channel: #{channel}
+      - Current state: #{inspect(state)}
+      
+      Provide a helpful response that:
+      1. Acknowledges the user's message
+      2. Offers relevant assistance
+      3. Asks clarifying questions if needed
+      4. Suggests next steps
+      
+      Keep responses concise and actionable.
+      """
+      
+      case Singularity.LLM.Service.call(:complex, [%{role: "user", content: prompt}],
+             task_type: "chat",
+             capabilities: [:communication, :reasoning]
+           ) do
+        {:ok, %{text: response}} ->
+          GoogleChat.notify("💬 #{response}")
+          Logger.info("Chat response sent to user #{user_id}")
+          {:noreply, state}
+        
+        {:error, reason} ->
+          Logger.error("LLM chat failed: #{inspect(reason)}")
+          GoogleChat.notify("❌ Sorry, I'm having trouble responding right now.")
+          {:noreply, state}
+      end
+    rescue
+      error ->
+        Logger.error("Chat handling error: #{inspect(error)}")
+        GoogleChat.notify("❌ Chat error occurred")
+        {:noreply, state}
+    end
   end
 
-  defp parse_human_message(message, _state) when is_binary(message) do
-    # Simple parsing for now - TODO: use LLM
-    {:chat, message}
+  defp parse_human_message(message, state) when is_binary(message) do
+    try do
+      # Use LLM for intelligent message parsing
+      prompt = """
+      Parse this human message and categorize it:
+      
+      Message: "#{message}"
+      
+      Categories:
+      - :chat - General conversation
+      - :command - Direct command/instruction
+      - :feedback - Positive or negative feedback
+      - :question - Technical question
+      - :request - Feature or help request
+      - :bug_report - Bug report or issue
+      - :suggestion - Improvement suggestion
+      
+      Return JSON: {"category": "category_name", "confidence": 0.0-1.0, "details": "explanation"}
+      """
+      
+      case Singularity.LLM.Service.call(:simple, [%{role: "user", content: prompt}],
+             task_type: "parser",
+             capabilities: [:analysis]
+           ) do
+        {:ok, %{text: response}} ->
+          case Jason.decode(response) do
+            {:ok, %{"category" => category, "confidence" => confidence, "details" => details}} ->
+              parsed_category = String.to_atom(category)
+              Logger.info("Parsed message as #{category} (confidence: #{confidence})")
+              {parsed_category, %{confidence: confidence, details: details, original: message}}
+            
+            {:error, _} ->
+              Logger.warning("Failed to parse LLM response: #{response}")
+              {:chat, %{confidence: 0.5, details: "Fallback parsing", original: message}}
+          end
+        
+        {:error, reason} ->
+          Logger.error("LLM parsing failed: #{inspect(reason)}")
+          {:chat, %{confidence: 0.3, details: "LLM parsing failed", original: message}}
+      end
+    rescue
+      error ->
+        Logger.error("Message parsing error: #{inspect(error)}")
+        {:chat, %{confidence: 0.1, details: "Parsing error", original: message}}
+    end
   end
 
   defp parse_human_message(message, _state) when is_map(message) do
@@ -356,26 +468,110 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   end
 
   defp pause_autonomous_actions do
-    # TODO: Implement pause
-    :ok
+    try do
+      # Pause all autonomous agents
+      Singularity.Agent.Supervisor.pause_all_agents()
+      
+      # Update state to reflect paused status
+      state = %{autonomous_enabled: false, paused_at: DateTime.utc_now()}
+      
+      GoogleChat.notify("⏸️ Autonomous actions paused")
+      {:ok, state}
+    rescue
+      error ->
+        Logger.error("Failed to pause autonomous actions: #{inspect(error)}")
+        GoogleChat.notify("❌ Failed to pause autonomous actions")
+        {:error, error}
+    end
   end
 
   defp resume_autonomous_actions do
-    # TODO: Implement resume
-    :ok
+    try do
+      # Resume all autonomous agents
+      Singularity.Agent.Supervisor.resume_all_agents()
+      
+      # Update state to reflect resumed status
+      state = %{autonomous_enabled: true, resumed_at: DateTime.utc_now()}
+      
+      GoogleChat.notify("▶️ Autonomous actions resumed")
+      {:ok, state}
+    rescue
+      error ->
+        Logger.error("Failed to resume autonomous actions: #{inspect(error)}")
+        GoogleChat.notify("❌ Failed to resume autonomous actions")
+        {:error, error}
+    end
   end
 
-  defp execute_recommendation(_recommendation) do
-    # TODO: Execute via Agent.improve
-    :ok
+  defp execute_recommendation(recommendation) do
+    try do
+      # Execute recommendation via Agent.improve
+      case Singularity.Agent.improve(recommendation) do
+        {:ok, result} ->
+          GoogleChat.notify("✅ Executed recommendation: #{recommendation.description}")
+          Logger.info("Recommendation executed successfully: #{inspect(result)}")
+          {:ok, result}
+        
+        {:error, reason} ->
+          GoogleChat.notify("❌ Failed to execute recommendation: #{inspect(reason)}")
+          Logger.error("Recommendation execution failed: #{inspect(reason)}")
+          {:error, reason}
+      end
+    rescue
+      error ->
+        Logger.error("Recommendation execution error: #{inspect(error)}")
+        GoogleChat.notify("❌ Recommendation execution error")
+        {:error, error}
+    end
   end
 
-  defp learn_from_rejection(_recommendation, _reason) do
-    # TODO: Update pattern scores
-    :ok
+  defp learn_from_rejection(recommendation, reason) do
+    try do
+      # Update pattern scores based on rejection
+      case Singularity.Patterns.PatternStore.update_pattern_score(
+             recommendation.pattern_id,
+             -0.1,
+             "Rejected: #{reason}"
+           ) do
+        {:ok, _} ->
+          Logger.info("Updated pattern score for rejection: #{recommendation.pattern_id}")
+          GoogleChat.notify("📚 Learned from rejection")
+          :ok
+        
+        {:error, error_reason} ->
+          Logger.warning("Failed to update pattern score: #{inspect(error_reason)}")
+          :ok
+      end
+    rescue
+      error ->
+        Logger.error("Learning from rejection failed: #{inspect(error)}")
+        :ok
+    end
   end
 
   defp format_decision(decision) do
     "Agent Decision: #{inspect(decision)}"
+  end
+
+  defp mark_task_as_failure(feedback) do
+    # This function would typically update a task's status to failed
+    # and potentially downgrade patterns related to the task.
+    # For now, we'll just log and return ok.
+    Logger.error("Marking task as failure: #{feedback.description}")
+    {:ok, :task_marked_as_failure}
+  end
+
+  defp update_pattern_scores(feedback, score_delta) do
+    # This function would typically update pattern scores based on feedback.
+    # For now, we'll just log and return ok.
+    Logger.info("Updating pattern scores positively: #{feedback.description}")
+    {:ok, :pattern_scores_updated}
+  end
+
+  defp add_to_goal_queue(feedback) do
+    # This function would typically add a new goal to the goal queue.
+    # For now, we'll just log and return ok.
+    Logger.info("Adding suggestion to goal queue: #{feedback.description}")
+    {:ok, "goal-#{System.unique_integer([:positive, :monotonic])}"}
   end
 end

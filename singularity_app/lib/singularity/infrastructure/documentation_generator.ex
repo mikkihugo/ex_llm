@@ -35,9 +35,98 @@ defmodule Singularity.DocumentationGenerator do
     end
   end
 
-  defp generate_architecture_documentation, do: {:ok, []}
+  defp generate_architecture_documentation do
+    try do
+      # Generate architecture documentation by analyzing the codebase
+      codebase_path = Application.get_env(:singularity_app, :codebase_path, ".")
+      
+      case Singularity.Code.Analyzers.ArchitectureAgent.analyze_architecture(codebase_path) do
+        {:ok, analysis} ->
+          doc_content = build_architecture_doc(analysis)
+          {:ok, [%{type: "architecture", content: doc_content, generated_at: DateTime.utc_now()}]}
+        
+        {:error, reason} ->
+          Logger.warning("Architecture analysis failed: #{inspect(reason)}")
+          {:ok, []}
+      end
+    rescue
+      error ->
+        Logger.error("Architecture documentation generation failed: #{inspect(error)}")
+        {:ok, []}
+    end
+  end
 
-  defp generate_api_documentation(_services), do: {:ok, []}
+  defp generate_api_documentation(services) when is_list(services) do
+    try do
+      docs = Enum.map(services, fn service ->
+        case generate_service_api_doc(service) do
+          {:ok, doc} -> doc
+          {:error, _} -> nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+      
+      {:ok, docs}
+    rescue
+      error ->
+        Logger.error("API documentation generation failed: #{inspect(error)}")
+        {:ok, []}
+    end
+  end
+
+  defp generate_api_documentation(_), do: {:ok, []}
+
+  defp build_architecture_doc(analysis) do
+    """
+    # Architecture Documentation
+
+    ## Overview
+    Generated on: #{DateTime.utc_now() |> DateTime.to_date()}
+
+    ## Detected Patterns
+    #{Enum.map_join(analysis.patterns || [], "\n", fn pattern ->
+      """
+      ### #{pattern.pattern_type |> Atom.to_string() |> String.capitalize()}
+      - Confidence: #{pattern.confidence}
+      - Description: #{pattern.description}
+      - Location: #{inspect(pattern.location)}
+      - Benefits: #{Enum.join(pattern.benefits || [], ", ")}
+      - Implementation Quality: #{pattern.implementation_quality}
+      """
+    end)}
+
+    ## Architecture Principles
+    #{Enum.map_join(analysis.principles || [], "\n", fn principle ->
+      """
+      ### #{principle.principle_type |> Atom.to_string() |> String.capitalize()}
+      - Compliance Score: #{principle.compliance_score}
+      - Description: #{principle.description}
+      - Violations: #{inspect(principle.violations)}
+      - Recommendations: #{Enum.join(principle.recommendations || [], ", ")}
+      """
+    end)}
+
+    ## Violations
+    #{Enum.map_join(analysis.violations || [], "\n", fn violation ->
+      """
+      ### #{violation.violation_type |> Atom.to_string() |> String.capitalize()}
+      - Severity: #{violation.severity}
+      - Description: #{violation.description}
+      - Location: #{inspect(violation.location)}
+      - Impact: #{inspect(violation.impact)}
+      """
+    end)}
+
+    ## Recommendations
+    #{Enum.join(analysis.recommendations || [], "\n- ")}
+
+    ## Metrics
+    - Architecture Score: #{analysis.architecture_score}
+    - Analysis Time: #{analysis.metadata.analysis_time_ms}ms
+    - Files Analyzed: #{analysis.metadata.files_analyzed}
+    - Complexity Score: #{analysis.metadata.complexity_score}
+    """
+  end
 
   @doc "Generate service-specific documentation"
   def generate_service_docs(service_name) do

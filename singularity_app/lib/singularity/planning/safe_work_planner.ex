@@ -163,7 +163,7 @@ defmodule Singularity.Planning.SafeWorkPlanner do
         {:ok, deserialize_state(persisted)}
 
       _old_format ->
-        Logger.warninging("Old vision format detected - starting fresh")
+        Logger.warning("Old vision format detected - starting fresh")
         {:ok, state}
     end
   end
@@ -212,7 +212,7 @@ defmodule Singularity.Planning.SafeWorkPlanner do
 
       {:collaborative, result} ->
         # Medium confidence - ask for approval
-        Logger.warninging("RuleEngine requires collaboration",
+        Logger.warning("RuleEngine requires collaboration",
           level: analysis.level,
           confidence: result.confidence,
           reasoning: result.reasoning
@@ -278,11 +278,10 @@ defmodule Singularity.Planning.SafeWorkPlanner do
   ## Analysis & Intelligence
 
   defp analyze_chunk(state, text, relates_to, updates_id) do
-    # Use LLM to analyze the vision chunk
-
+    # Use LLM for intelligent work item classification
     existing_items = format_existing_items(state)
 
-    _prompt = """
+    prompt = """
     Analyze this vision chunk and determine how it fits into SAFe 6.0 Essential hierarchy.
 
     Vision chunk:
@@ -305,8 +304,32 @@ defmodule Singularity.Planning.SafeWorkPlanner do
     Return JSON with this structure.
     """
 
-    # TODO: Call LLM here
-    # For now, heuristic based on keywords
+    case Singularity.LLM.Service.call(:simple, [%{role: "user", content: prompt}],
+           task_type: "classifier",
+           capabilities: [:analysis, :reasoning]
+         ) do
+      {:ok, %{text: response}} ->
+        case Jason.decode(response) do
+          {:ok, %{"level" => level_str, "confidence" => confidence, "reasoning" => reasoning}} ->
+            level = String.to_atom(level_str)
+            Logger.info("Classified work item as #{level} (confidence: #{confidence})")
+            {:ok, %{level: level, confidence: confidence, reasoning: reasoning}}
+          
+          {:error, _} ->
+            Logger.warning("Failed to parse LLM classification response: #{response}")
+            # Fallback to heuristic classification
+            fallback_classification(text)
+        end
+      
+      {:error, reason} ->
+        Logger.error("LLM classification failed: #{inspect(reason)}")
+        # Fallback to heuristic classification
+        fallback_classification(text)
+    end
+  end
+
+  defp fallback_classification(text) do
+    # Heuristic based on keywords as fallback
     level =
       cond do
         String.contains?(text, ~r/(theme|strategic|BLOC)/i) -> :strategic_theme
@@ -314,23 +337,8 @@ defmodule Singularity.Planning.SafeWorkPlanner do
         String.contains?(text, ~r/(capability|cross-team)/i) -> :capability
         true -> :feature
       end
-
-    action = if updates_id, do: :update, else: :create
-
-    %{
-      level: level,
-      action: action,
-      type: if(level == :epic, do: guess_epic_type(text), else: nil),
-      name: extract_name(text),
-      description: text,
-      relates_to: relates_to || find_semantic_parent(state, text, level),
-      depends_on: [],
-      business_value: 5,
-      time_criticality: 5,
-      risk_reduction: 5,
-      job_size: 8,
-      acceptance_criteria: if(level == :feature, do: extract_criteria(text), else: [])
-    }
+    
+    {:ok, %{level: level, confidence: 0.3, reasoning: "Heuristic fallback classification"}}
   end
 
   defp guess_epic_type(text) do
@@ -356,10 +364,77 @@ defmodule Singularity.Planning.SafeWorkPlanner do
     |> Enum.map(fn [_, criterion] -> String.trim(criterion) end)
   end
 
-  defp find_semantic_parent(_state, _text, _level) do
-    # TODO: Use embeddings to find most related parent
-    nil
+  defp find_semantic_parent(state, text, level) do
+    try do
+      # Use embeddings to find most related parent
+      case Singularity.EmbeddingEngine.embed(text) do
+        {:ok, embedding} ->
+          # Find most similar existing items at the appropriate level
+          parent_level = get_parent_level(level)
+          
+          candidates = 
+            state.work_items
+            |> Enum.filter(fn {_id, item} -> item.level == parent_level end)
+            |> Enum.map(fn {id, item} ->
+              case Singularity.EmbeddingEngine.embed(item.description) do
+                {:ok, item_embedding} ->
+                  similarity = calculate_cosine_similarity(embedding, item_embedding)
+                  {id, item, similarity}
+                
+                {:error, _} ->
+                  nil
+              end
+            end)
+            |> Enum.reject(&is_nil/1)
+            |> Enum.sort_by(fn {_id, _item, similarity} -> similarity end, :desc)
+          
+          case List.first(candidates) do
+            {id, _item, similarity} when similarity > 0.7 ->
+              Logger.info("Found semantic parent #{id} with similarity #{similarity}")
+              id
+            
+            _ ->
+              Logger.info("No suitable semantic parent found")
+              nil
+          end
+        
+        {:error, reason} ->
+          Logger.warning("Embedding generation failed: #{inspect(reason)}")
+          nil
+      end
+    rescue
+      error ->
+        Logger.error("Semantic parent finding error: #{inspect(error)}")
+        nil
+    end
   end
+
+  defp get_parent_level(level) do
+    case level do
+      :feature -> :capability
+      :capability -> :epic
+      :epic -> :strategic_theme
+      _ -> nil
+    end
+  end
+
+  defp calculate_cosine_similarity(vec1, vec2) when length(vec1) == length(vec2) do
+    dot_product = 
+      Enum.zip(vec1, vec2)
+      |> Enum.map(fn {a, b} -> a * b end)
+      |> Enum.sum()
+    
+    magnitude1 = :math.sqrt(Enum.sum(Enum.map(vec1, &(&1 * &1))))
+    magnitude2 = :math.sqrt(Enum.sum(Enum.map(vec2, &(&1 * &1))))
+    
+    if magnitude1 > 0 and magnitude2 > 0 do
+      dot_product / (magnitude1 * magnitude2)
+    else
+      0.0
+    end
+  end
+
+  defp calculate_cosine_similarity(_, _), do: 0.0
 
   defp format_existing_items(state) do
     """

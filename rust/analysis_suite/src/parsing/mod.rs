@@ -5,4 +5,4 @@
 
 // Re-export external parser types for convenience
 pub use sparc_methodology::*;
-pub use source_code_parser::*;
+pub use universal_parser::*;

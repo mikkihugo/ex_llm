@@ -40,6 +40,7 @@ import { buildModelCatalog, type ProviderWithModels, type ProviderWithMetadata }
 // Load credentials
 const green = '\x1b[32m';
 const blue = '\x1b[34m';
+const red = '\x1b[31m';
 const reset = '\x1b[0m';
 const bold = '\x1b[1m';
 
@@ -139,9 +140,14 @@ async function refreshModelCatalog() {
   }));
 }
 
-// Initial load + schedule hourly refresh
+// Initial load + schedule hourly refresh (non-blocking)
 (async () => {
-  await refreshModelCatalog();
+  try {
+    await refreshModelCatalog();
+  } catch (error: any) {
+    console.error('❌ Initial model catalog refresh failed:', error.message);
+    console.warn('⚠️  Server starting with empty catalog - models will load on first request');
+  }
 
   // Refresh every hour
   setInterval(async () => {
@@ -830,3 +836,13 @@ Bun.serve({
 console.log(`${green}🚀${reset} Server ready at ${bold}http://localhost:${PORT}${reset}`);
 console.log(`${bold}🔗 Endpoints:${reset} /health  /v1/models  /v1/chat/completions`);
 console.log(`${bold}✨ Refactored:${reset} Using AI SDK streaming utilities (~100 lines removed)`);
+
+// Start NATS handler for Elixir integration
+console.log(`${blue}📡${reset} Starting NATS handler for Elixir integration...`);
+import('./nats-handler.js').then(module => {
+  module.startNATSHandler();
+  console.log(`${green}✓${reset} NATS handler started - listening on ai.llm.request`);
+}).catch(error => {
+  console.error(`${red}✗${reset} Failed to start NATS handler:`, error);
+  console.error('  Elixir→AI Server integration will not work!');
+});

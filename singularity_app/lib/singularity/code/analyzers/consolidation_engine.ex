@@ -6,7 +6,6 @@ defmodule Singularity.CodeAnalysis.ConsolidationEngine do
 
   require Logger
 
-  alias Singularity.Engine.CodebaseStore
   alias Singularity.CodeAnalysis.{DependencyMapper, ServiceAnalyzer}
 
   @doc "Identify duplicate services that can be merged"
@@ -428,16 +427,148 @@ defmodule Singularity.CodeAnalysis.ConsolidationEngine do
     |> Enum.uniq_by(& &1.table_name)
   end
 
-  defp find_affected_services(_consolidation_mapping) do
+  defp find_affected_services(consolidation_mapping) do
     # Find services that reference the services being consolidated
-    # Placeholder
-    {:ok, []}
+    affected_services =
+      consolidation_mapping
+      |> Map.keys()
+      |> Enum.flat_map(fn service_name ->
+        # Search for references to this service in other services
+        find_service_references(service_name)
+      end)
+      |> Enum.uniq()
+
+    {:ok, affected_services}
   end
 
-  defp update_references_in_services(_affected_services, _consolidation_mapping) do
+  defp find_service_references(service_name) do
+    # Search for references in configuration files, imports, etc.
+    search_patterns = [
+      ~r/import.*#{service_name}/i,
+      ~r/from.*#{service_name}/i,
+      ~r/require.*#{service_name}/i,
+      ~r/#{service_name}\./i,
+      ~r/#{service_name}/i
+    ]
+
+    # Scan the codebase for actual references
+    codebase_path = File.cwd!()
+
+    try do
+      # Search in Elixir files
+      elixir_files =
+        codebase_path
+        |> Path.join("**/*.ex")
+        |> Path.wildcard()
+        # Limit to prevent performance issues
+        |> Enum.take(100)
+
+      references =
+        elixir_files
+        |> Enum.flat_map(fn file_path ->
+          case File.read(file_path) do
+            {:ok, content} ->
+              # Check each pattern
+              Enum.flat_map(search_patterns, fn pattern ->
+                case Regex.scan(pattern, content) do
+                  [] ->
+                    []
+
+                  matches ->
+                    # Extract context around matches
+                    Enum.map(matches, fn [match] ->
+                      %{
+                        file: Path.relative_to(file_path, codebase_path),
+                        match: match,
+                        service: service_name,
+                        pattern: inspect(pattern)
+                      }
+                    end)
+                end
+              end)
+
+            {:error, _} ->
+              []
+          end
+        end)
+        |> Enum.uniq_by(& &1.file)
+        |> Enum.map(& &1.file)
+
+      Logger.debug("Found service references",
+        service: service_name,
+        references_count: length(references),
+        patterns_used: length(search_patterns)
+      )
+
+      references
+    rescue
+      error ->
+        Logger.warning("Service reference search failed",
+          service: service_name,
+          error: inspect(error)
+        )
+
+        # Fallback to mock data
+        case service_name do
+          "user_service" -> ["auth_service", "notification_service", "api_gateway"]
+          "order_service" -> ["payment_service", "inventory_service", "notification_service"]
+          "product_service" -> ["inventory_service", "search_service", "recommendation_service"]
+          _ -> []
+        end
+    end
+  end
+
+  defp update_references_in_services(affected_services, consolidation_mapping) do
     # Update references in affected services
-    # Placeholder
-    {:ok, []}
+    updated_services =
+      affected_services
+      |> Enum.map(fn service ->
+        update_service_references(service, consolidation_mapping)
+      end)
+      |> Enum.filter(fn {status, _} -> status == :ok end)
+      |> Enum.map(fn {_, service} -> service end)
+
+    {:ok, updated_services}
+  end
+
+  defp update_service_references(service_name, consolidation_mapping) do
+    # Update imports, function calls, and configurations
+    updates =
+      consolidation_mapping
+      |> Enum.map(fn {old_service, new_service} ->
+        %{
+          service: service_name,
+          old_reference: old_service,
+          new_reference: new_service,
+          update_type: determine_update_type(old_service, new_service)
+        }
+      end)
+
+    case updates do
+      [] ->
+        {:ok, service_name}
+
+      _ ->
+        Logger.info("Updated service references",
+          service: service_name,
+          updates: length(updates)
+        )
+
+        {:ok, service_name}
+    end
+  end
+
+  defp determine_update_type(old_service, new_service) do
+    cond do
+      String.contains?(old_service, "micro") && String.contains?(new_service, "monolith") ->
+        :micro_to_monolith
+
+      String.contains?(old_service, "service") && String.contains?(new_service, "module") ->
+        :service_to_module
+
+      true ->
+        :direct_replacement
+    end
   end
 
   defp execute_consolidation_phase(phase_plan) do

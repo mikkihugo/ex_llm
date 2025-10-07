@@ -104,19 +104,20 @@ end
 
 # Embedding service configuration
 config :singularity,
-  # Embedding provider: :bumblebee for local GPU-accelerated code embeddings
-  # Jina-embeddings-v2-base-code is BEST for code (beats Google/Salesforce/Microsoft)
-  # Local Jina only - no external API calls!
-  embedding_provider: :bumblebee,
-
-  # Bumblebee embedding model (runs on RTX 4080 GPU with EXLA)
-  # - 768 dims (matches all DB tables)
-  # - Trained on 150M coding Q&A pairs
-  # - Supports 30 programming languages
-  # - 8192 token context (handles entire functions)
+  # Embedding provider: :rustler for GPU-accelerated Rust NIF embeddings
+  # Jina v3 + Qodo-Embed-1 with CUDA acceleration on RTX 4080
+  # - 1024 dims (Jina v3) / 1536 dims (Qodo-Embed)
+  # - GPU-accelerated with ONNX Runtime + Candle
   # - No rate limits, no API costs, full privacy
-  # 161M params, 768 dims, code-optimized
-  bumblebee_model: "jina-embeddings-v2-base-code",
+  embedding_provider: :rustler,
+
+  # Rust NIF embedding models (RTX 4080 GPU with CUDA)
+  # - Jina v3: 1024 dims, text/docs (8192 tokens)
+  # - Qodo-Embed-1: 1536 dims, code (32k tokens) - SOTA 2025
+  rustler_models: [
+    jina_v3: "jina-embeddings-v3",
+    qodo_embed: "qodo-embed-1-1.5b"
+  ],
 
   # Google AI API key (optional - not used for embeddings anymore)
   google_ai_api_key: System.get_env("GOOGLE_AI_STUDIO_API_KEY"),

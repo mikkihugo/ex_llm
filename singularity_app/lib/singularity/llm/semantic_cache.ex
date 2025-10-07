@@ -235,17 +235,41 @@ defmodule Singularity.LLM.SemanticCache do
   Simple key-based cache get operation.
   """
   def get(cache_key) do
-    # For now, just return :miss since we use embedding-based caching
-    # TODO: Implement key-based caching if needed
-    :miss
+    # Implement key-based caching using ETS
+    case :ets.lookup(:semantic_cache, cache_key) do
+      [{^cache_key, value, timestamp}] ->
+        # Check if cache entry is still valid (24 hours)
+        if System.system_time(:second) - timestamp < 86400 do
+          Logger.debug("Cache hit", key: cache_key)
+          {:ok, value}
+        else
+          # Expired, remove from cache
+          :ets.delete(:semantic_cache, cache_key)
+          Logger.debug("Cache expired", key: cache_key)
+          {:error, :not_found}
+        end
+
+      [] ->
+        Logger.debug("Cache miss", key: cache_key)
+        {:error, :not_found}
+    end
   end
 
   @doc """
   Simple key-based cache put operation.
   """
   def put(cache_key, value) do
-    # For now, just ignore since we use embedding-based caching
-    # TODO: Implement key-based caching if needed
-    :ok
+    # Implement key-based caching using ETS
+    timestamp = System.system_time(:second)
+
+    case :ets.insert(:semantic_cache, {cache_key, value, timestamp}) do
+      true ->
+        Logger.debug("Cache stored", key: cache_key, value_size: byte_size(inspect(value)))
+        :ok
+
+      false ->
+        Logger.warning("Failed to store in cache", key: cache_key)
+        :error
+    end
   end
 end

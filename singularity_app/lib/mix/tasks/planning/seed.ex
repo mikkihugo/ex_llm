@@ -34,7 +34,7 @@ defmodule Mix.Tasks.Planning.Seed do
   def run(args) do
     {opts, _, _} = OptionParser.parse(args, strict: [quiet: :boolean])
 
-    unless opts[:quiet] do
+    if !opts[:quiet] do
       Mix.shell().info("Seeding work plan database...")
     end
 
@@ -43,7 +43,7 @@ defmodule Mix.Tasks.Planning.Seed do
     if File.exists?(seed_file) do
       Code.eval_file(seed_file)
 
-      unless opts[:quiet] do
+      if !opts[:quiet] do
         Mix.shell().info("Work plan seeded successfully!")
       end
     else

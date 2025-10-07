@@ -11,7 +11,7 @@ defmodule Singularity.TechnologyAgent do
 
   require Logger
   alias Singularity.{PolyglotCodeParser, TechnologyTemplateLoader, Repo}
-  alias Singularity.Schemas.CodebaseSnapshot
+  alias Singularity.Schemas.TechnologyDetection
 
   @rust_detector_path "rust/target/release/package-registry-indexer"
 
@@ -30,12 +30,15 @@ defmodule Singularity.TechnologyAgent do
             Keyword.put(opts, :detection_method, :rust_tech_detector)
           )
 
-        maybe_persist_snapshot(snapshot, Keyword.put(opts, :detection_method, :rust_tech_detector))
+        maybe_persist_snapshot(
+          snapshot,
+          Keyword.put(opts, :detection_method, :rust_tech_detector)
+        )
 
         {:ok, snapshot}
 
       {:error, reason} when reason in [:rust_unavailable, :not_found] ->
-        Logger.warninging("Rust detector unavailable, using Elixir fallback")
+        Logger.warning("Rust detector unavailable, using Elixir fallback")
         detect_technologies_elixir(codebase_path, opts)
 
       {:error, reason} ->
@@ -114,7 +117,8 @@ defmodule Singularity.TechnologyAgent do
       ai_frameworks: extract_ai_frameworks(codebase_path, analysis),
       deployment: extract_deployment(analysis),
       cloud_platforms: extract_cloud_platforms(codebase_path, analysis),
-      architecture_patterns: extract_architecture_patterns(codebase_path, analysis)
+      architecture_patterns: extract_architecture_patterns(codebase_path, analysis),
+      service_structure: extract_service_structure(codebase_path, analysis)
     }
 
     {:ok, technologies}
@@ -134,9 +138,13 @@ defmodule Singularity.TechnologyAgent do
       }
       |> Map.merge(Map.get(opts, :metadata, %{}))
 
-    summary = technologies
-    detected = flatten_technologies(technologies)
-    features = build_features(technologies)
+    # Extract service_structure separately (not part of flat summary)
+    service_structure = Map.get(technologies, :service_structure, %{})
+    technologies_without_services = Map.delete(technologies, :service_structure)
+
+    summary = technologies_without_services
+    detected = flatten_technologies(technologies_without_services)
+    capabilities = build_capabilities(technologies_without_services)
 
     %{
       codebase_path: codebase_path,
@@ -144,11 +152,12 @@ defmodule Singularity.TechnologyAgent do
       snapshot_id: snapshot_id,
       detection_timestamp: timestamp,
       detection_method: detection_method,
-      technologies: technologies,
+      technologies: technologies_without_services,
       detected_technologies: detected,
       metadata: metadata,
       summary: summary,
-      features: features
+      capabilities: capabilities,
+      service_structure: service_structure
     }
   end
 
@@ -162,19 +171,20 @@ defmodule Singularity.TechnologyAgent do
           :metadata,
           :summary,
           :detected_technologies,
-          :features
+          :capabilities,
+          :service_structure
         ])
 
-      case CodebaseSnapshot.upsert(Repo, attrs) do
-        {:ok, _snapshot} ->
-          Logger.debug("Persisted technology snapshot to database",
+      case TechnologyDetection.upsert(Repo, attrs) do
+        {:ok, _detection} ->
+          Logger.debug("Persisted technology detection to database",
             codebase_id: codebase_id
           )
 
           :ok
 
         {:error, changeset} ->
-          Logger.warninging("Failed to persist snapshot to database",
+          Logger.warning("Failed to persist detection to database",
             codebase_id: codebase_id,
             errors: inspect(changeset.errors)
           )
@@ -189,12 +199,25 @@ defmodule Singularity.TechnologyAgent do
   defp flatten_technologies(technologies) when is_map(technologies) do
     technologies
     |> Enum.flat_map(fn {category, values} ->
-      values
-      |> List.wrap()
-      |> Enum.map(&normalize_detected_value(category, &1))
+      case values do
+        list when is_list(list) ->
+          Enum.map(list, fn value ->
+            %{
+              category: category,
+              value: value,
+              formatted: format_detected(category, value)
+            }
+          end)
+        
+        value ->
+          [%{
+            category: category,
+            value: value,
+            formatted: format_detected(category, value)
+          }]
+      end
     end)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.uniq()
+    |> Enum.reject(fn tech -> is_nil(tech.value) or tech.value == "" end)
   end
 
   defp flatten_technologies(_), do: []
@@ -235,18 +258,83 @@ defmodule Singularity.TechnologyAgent do
   defp normalize_detected_value(category, value), do: format_detected(category, to_string(value))
 
   defp format_detected(category, value) when is_binary(value) do
-    category_label =
-      case category do
-        atom when is_atom(atom) -> Atom.to_string(atom)
-        other -> to_string(other)
-      end
-
-    String.downcase(category_label) <> ":" <> value
+    case category do
+      :framework -> format_framework(value)
+      :language -> format_language(value)
+      :database -> format_database(value)
+      :tool -> format_tool(value)
+      :service -> format_service(value)
+      _ -> value
+    end
   end
 
-  defp format_detected(_category, _value), do: nil
+  defp format_detected(category, value) when is_list(value) do
+    value
+    |> Enum.map(&format_detected(category, &1))
+    |> Enum.reject(&is_nil/1)
+  end
 
-  defp build_features(technologies) do
+  defp format_detected(_category, value), do: value
+
+  defp format_framework(framework) do
+    case String.downcase(framework) do
+      "phoenix" -> "Phoenix Framework"
+      "ecto" -> "Ecto ORM"
+      "absinthe" -> "Absinthe GraphQL"
+      "liveview" -> "Phoenix LiveView"
+      "nats" -> "NATS Messaging"
+      "rabbitmq" -> "RabbitMQ"
+      "redis" -> "Redis"
+      _ -> String.capitalize(framework)
+    end
+  end
+
+  defp format_language(language) do
+    case String.downcase(language) do
+      "elixir" -> "Elixir"
+      "gleam" -> "Gleam"
+      "erlang" -> "Erlang"
+      "javascript" -> "JavaScript"
+      "typescript" -> "TypeScript"
+      "rust" -> "Rust"
+      "python" -> "Python"
+      _ -> String.capitalize(language)
+    end
+  end
+
+  defp format_database(database) do
+    case String.downcase(database) do
+      "postgresql" -> "PostgreSQL"
+      "postgres" -> "PostgreSQL"
+      "mysql" -> "MySQL"
+      "sqlite" -> "SQLite"
+      "mongodb" -> "MongoDB"
+      _ -> String.capitalize(database)
+    end
+  end
+
+  defp format_tool(tool) do
+    case String.downcase(tool) do
+      "mix" -> "Mix Build Tool"
+      "hex" -> "Hex Package Manager"
+      "rebar3" -> "Rebar3 Build Tool"
+      "npm" -> "npm Package Manager"
+      "yarn" -> "Yarn Package Manager"
+      "cargo" -> "Cargo Package Manager"
+      _ -> String.capitalize(tool)
+    end
+  end
+
+  defp format_service(service) do
+    case String.downcase(service) do
+      "nats-server" -> "NATS Server"
+      "postgres" -> "PostgreSQL Service"
+      "redis-server" -> "Redis Server"
+      _ -> String.capitalize(service)
+    end
+  end
+
+  defp build_capabilities(technologies) do
     Enum.reduce(technologies, %{}, fn {category, values}, acc ->
       count = values |> List.wrap() |> length()
       Map.put(acc, "#{category}_count", count)
@@ -401,7 +489,7 @@ defmodule Singularity.TechnologyAgent do
   end
 
   # Architecture pattern detection via polyglot analysis
-  defp extract_architecture_patterns(_codebase_path, analysis) do
+  defp extract_architecture_patterns(codebase_path, analysis) do
     # Use polyglot parser's architecture detection
     patterns = []
 
@@ -415,6 +503,16 @@ defmodule Singularity.TechnologyAgent do
     patterns = if has_layered?(analysis), do: [:layered_architecture | patterns], else: patterns
 
     patterns
+  end
+
+  defp extract_service_structure(codebase_path, analysis) do
+    # Extract service structure information from analysis
+    %{
+      service_count: analysis[:service_count] || 0,
+      service_types: analysis[:service_types] || [],
+      communication_patterns: analysis[:communication_patterns] || [],
+      data_flow: analysis[:data_flow] || []
+    }
   end
 
   # Core template-based detection
@@ -595,19 +693,155 @@ defmodule Singularity.TechnologyAgent do
     has_controllers and has_services and has_repos
   end
 
+  defp has_typescript_service?(_codebase_path, analysis) do
+    package_json_exists =
+      analysis.files
+      |> Enum.any?(&String.ends_with?(&1.path, "package.json"))
+
+    nestjs_imports =
+      analysis.files
+      |> Enum.any?(fn file ->
+        content = file.content || ""
+        String.contains?(content, "@nestjs/") or String.contains?(content, "NestFactory")
+      end)
+
+    package_json_exists and nestjs_imports
+  end
+
+  defp has_rust_service?(_codebase_path, analysis) do
+    Enum.any?(analysis.files, &String.ends_with?(&1.path, "Cargo.toml"))
+  end
+
+  defp has_python_service?(_codebase_path, analysis) do
+    python_files = Enum.any?(analysis.files, &String.ends_with?(&1.path, ".py"))
+
+    fastapi_imports =
+      Enum.any?(analysis.files, fn file ->
+        content = file.content || ""
+        String.contains?(content, "from fastapi import") or String.contains?(content, "FastAPI()")
+      end)
+
+    python_files and fastapi_imports
+  end
+
+  defp has_go_service?(_codebase_path, analysis) do
+    Enum.any?(analysis.files, &String.ends_with?(&1.path, "go.mod"))
+  end
+
+  defp analyze_typescript_services(_codebase_path, analysis) do
+    ts_files =
+      analysis.files
+      |> Enum.filter(&String.ends_with?(&1.path, ".ts"))
+      |> length()
+
+    %{
+      type: :nestjs,
+      file_count: ts_files,
+      has_tests: has_test_files?(analysis, ".spec.ts"),
+      completion_estimate: estimate_completion(ts_files, analysis)
+    }
+  end
+
+  defp analyze_rust_services(_codebase_path, analysis) do
+    rs_files =
+      analysis.files
+      |> Enum.filter(&String.ends_with?(&1.path, ".rs"))
+      |> length()
+
+    %{
+      type: :rust,
+      file_count: rs_files,
+      has_tests: has_test_files?(analysis, "_test.rs") or has_cargo_test?(analysis),
+      completion_estimate: estimate_completion(rs_files, analysis)
+    }
+  end
+
+  defp analyze_python_services(_codebase_path, analysis) do
+    py_files =
+      analysis.files
+      |> Enum.filter(&String.ends_with?(&1.path, ".py"))
+      |> length()
+
+    %{
+      type: :fastapi,
+      file_count: py_files,
+      has_tests: has_test_files?(analysis, "test_"),
+      completion_estimate: estimate_completion(py_files, analysis)
+    }
+  end
+
+  defp analyze_go_services(_codebase_path, analysis) do
+    go_files =
+      analysis.files
+      |> Enum.filter(&String.ends_with?(&1.path, ".go"))
+      |> length()
+
+    %{
+      type: :go_service,
+      file_count: go_files,
+      has_tests: has_test_files?(analysis, "_test.go"),
+      completion_estimate: estimate_completion(go_files, analysis)
+    }
+  end
+
+  defp has_test_files?(analysis, pattern) do
+    Enum.any?(analysis.files, &String.contains?(&1.path, pattern))
+  end
+
+  defp has_cargo_test?(analysis) do
+    Enum.any?(analysis.files, fn file ->
+      content = file.content || ""
+      String.contains?(content, "#[test]") or String.contains?(content, "#[cfg(test)]")
+    end)
+  end
+
+  defp estimate_completion(file_count, analysis) do
+    # Simple heuristic: more files = more complete
+    # Presence of tests adds 20%
+    # Presence of docs adds 10%
+    base = min(file_count * 5, 70)
+
+    has_tests =
+      Enum.any?(analysis.files, &String.contains?(&1.path, "test"))
+
+    has_docs =
+      Enum.any?(
+        analysis.files,
+        &(String.ends_with?(&1.path, ".md") or String.ends_with?(&1.path, "README"))
+      )
+
+    base + if(has_tests, do: 20, else: 0) + if has_docs, do: 10, else: 0
+  end
+
   ## Rust Detector Integration
 
   defp call_rust_detector(codebase_path) do
     if File.exists?(@rust_detector_path) do
-      case System.cmd(@rust_detector_path, ["detect", codebase_path], stderr_to_stdout: true) do
-        {output, 0} ->
-          case Jason.decode(output) do
-            {:ok, results} -> {:ok, results}
-            {:error, _} -> {:error, :json_decode_failed}
+      # Use Runner for Rust detector execution
+      case Singularity.Runner.execute_task(%{
+        type: :tool,
+        args: %{
+          tool: "rust_detector",
+          command: @rust_detector_path,
+          args: ["detect", codebase_path]
+        }
+      }) do
+        {:ok, result} ->
+          case result.result do
+            %{output: output, exit_code: 0} ->
+              case Jason.decode(output) do
+                {:ok, results} -> {:ok, results}
+                {:error, _} -> {:error, :json_decode_failed}
+              end
+            %{output: output, exit_code: _} ->
+              Logger.error("Rust detector failed: #{output}")
+              {:error, :detector_failed}
+            _ ->
+              {:error, :no_output}
           end
-
-        {_output, _code} ->
-          {:error, :rust_execution_failed}
+        {:error, reason} ->
+          Logger.error("Runner execution failed: #{inspect(reason)}")
+          {:error, reason}
       end
     else
       {:error, :rust_unavailable}

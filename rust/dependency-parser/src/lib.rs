@@ -32,7 +32,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// A dependency extracted from a package file
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PackageDependency {
     /// Name of the dependency
     pub name: String,
@@ -48,7 +48,8 @@ pub struct DependencyParser;
 
 impl DependencyParser {
     /// Create a new dependency parser
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self
     }
 
@@ -59,6 +60,9 @@ impl DependencyParser {
     ///
     /// # Returns
     /// Vector of dependencies found in the file
+    ///
+    /// # Errors
+    /// Returns an error if the file cannot be read or parsed
     ///
     /// # Examples
     /// ```rust
@@ -74,7 +78,7 @@ impl DependencyParser {
     /// ```
     pub fn parse_package_file(&self, file_path: &Path) -> Result<Vec<PackageDependency>> {
         let content = std::fs::read_to_string(file_path)
-            .map_err(|e| anyhow::anyhow!("Failed to read package file: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("Failed to read package file: {e}"))?;
 
         let file_name = file_path
             .file_name()
@@ -82,101 +86,127 @@ impl DependencyParser {
             .unwrap_or("unknown");
 
         match file_name {
-            "package.json" => Ok(self.parse_npm_dependencies(&content)),
-            "Cargo.toml" => Ok(self.parse_cargo_dependencies(&content)),
-            "mix.exs" => Ok(self.parse_mix_dependencies(&content)),
-            "requirements.txt" => Ok(self.parse_pip_dependencies(&content)),
-            "pyproject.toml" => Ok(self.parse_pyproject_dependencies(&content)),
-            "go.mod" => Ok(self.parse_go_dependencies(&content)),
-            "composer.json" => Ok(self.parse_composer_dependencies(&content)),
+            "package.json" => Ok(Self::parse_npm_dependencies(&content)),
+            "package-lock.json" => Ok(Self::parse_npm_lock_dependencies(&content)),
+            "Cargo.toml" => Ok(Self::parse_cargo_dependencies(&content)),
+            "mix.exs" => Ok(Self::parse_mix_dependencies(&content)),
+            "requirements.txt" => Ok(Self::parse_pip_dependencies(&content)),
+            "pyproject.toml" => Ok(Self::parse_pyproject_dependencies(&content)),
+            "go.mod" => Ok(Self::parse_go_dependencies(&content)),
+            "composer.json" => Ok(Self::parse_composer_dependencies(&content)),
             _ => Ok(vec![]),
         }
     }
 
     /// Parse npm dependencies from package.json
-    fn parse_npm_dependencies(&self, content: &str) -> Vec<PackageDependency> {
-        match serde_json::from_str::<serde_json::Value>(content) {
-            Ok(package_json) => {
-                let mut dependencies = Vec::new();
+    fn parse_npm_dependencies(content: &str) -> Vec<PackageDependency> {
+        serde_json::from_str::<serde_json::Value>(content).map_or_else(|_| vec![], |package_json| {
+            let mut dependencies = Vec::new();
 
-                // Parse dependencies
-                if let Some(deps) = package_json.get("dependencies").and_then(|d| d.as_object()) {
-                    for (name, version) in deps {
-                        dependencies.push(PackageDependency {
-                            name: name.clone(),
-                            version: version.as_str().unwrap_or("unknown").to_string(),
-                            ecosystem: "npm".to_string(),
-                        });
-                    }
+            // Parse dependencies
+            if let Some(deps) = package_json.get("dependencies").and_then(|d| d.as_object()) {
+                for (name, version) in deps {
+                    dependencies.push(PackageDependency {
+                        name: name.clone(),
+                        version: version.as_str().unwrap_or("unknown").to_string(),
+                        ecosystem: "npm".to_string(),
+                    });
                 }
-
-                // Parse devDependencies
-                if let Some(dev_deps) = package_json.get("devDependencies").and_then(|d| d.as_object()) {
-                    for (name, version) in dev_deps {
-                        dependencies.push(PackageDependency {
-                            name: name.clone(),
-                            version: version.as_str().unwrap_or("unknown").to_string(),
-                            ecosystem: "npm".to_string(),
-                        });
-                    }
-                }
-
-                dependencies
             }
-            Err(_) => vec![],
+
+            // Parse devDependencies
+            if let Some(dev_deps) = package_json.get("devDependencies").and_then(|d| d.as_object()) {
+                for (name, version) in dev_deps {
+                    dependencies.push(PackageDependency {
+                        name: name.clone(),
+                        version: version.as_str().unwrap_or("unknown").to_string(),
+                        ecosystem: "npm".to_string(),
+                    });
+                }
+            }
+
+            dependencies
+        })
+    }
+
+    /// Parse npm lockfile dependencies from package-lock.json
+    fn parse_npm_lock_dependencies(content: &str) -> Vec<PackageDependency> {
+        fn collect_dependencies(
+            deps: &serde_json::Map<String, serde_json::Value>,
+            acc: &mut Vec<PackageDependency>,
+        ) {
+            for (name, value) in deps {
+                if let Some(obj) = value.as_object() {
+                    if let Some(version) = obj.get("version").and_then(|v| v.as_str()) {
+                        acc.push(PackageDependency {
+                            name: name.clone(),
+                            version: version.to_string(),
+                            ecosystem: "npm".to_string(),
+                        });
+                    }
+                    if let Some(sub_deps) = obj.get("dependencies").and_then(|v| v.as_object()) {
+                        collect_dependencies(sub_deps, acc);
+                    }
+                }
+            }
         }
+
+        serde_json::from_str::<serde_json::Value>(content).map_or_else(|_| vec![], |lock| {
+            let mut dependencies = Vec::new();
+            if let Some(deps) = lock.get("dependencies").and_then(|d| d.as_object()) {
+                collect_dependencies(deps, &mut dependencies);
+            }
+            dependencies
+        })
     }
 
     /// Parse Cargo dependencies from Cargo.toml
-    fn parse_cargo_dependencies(&self, content: &str) -> Vec<PackageDependency> {
-        match toml::from_str::<toml::Value>(content) {
-            Ok(cargo_toml) => {
-                let mut dependencies = Vec::new();
+    fn parse_cargo_dependencies(content: &str) -> Vec<PackageDependency> {
+        toml::from_str::<toml::Value>(content).map_or_else(|_| vec![], |cargo_toml| {
+            let mut dependencies = Vec::new();
 
-                // Parse [dependencies]
-                if let Some(deps) = cargo_toml.get("dependencies").and_then(|d| d.as_table()) {
-                    for (name, version) in deps {
-                        let version_str = match version {
-                            toml::Value::String(s) => s.clone(),
-                            toml::Value::Table(t) => {
-                                t.get("version").and_then(|v| v.as_str()).unwrap_or("unknown").to_string()
-                            }
-                            _ => "unknown".to_string(),
-                        };
-                        dependencies.push(PackageDependency {
-                            name: name.clone(),
-                            version: version_str,
-                            ecosystem: "crates".to_string(),
-                        });
-                    }
+            // Parse [dependencies]
+            if let Some(deps) = cargo_toml.get("dependencies").and_then(|d| d.as_table()) {
+                for (name, version) in deps {
+                    let version_str = match version {
+                        toml::Value::String(s) => s.clone(),
+                        toml::Value::Table(t) => {
+                            t.get("version").and_then(|v| v.as_str()).unwrap_or("unknown").to_string()
+                        }
+                        _ => "unknown".to_string(),
+                    };
+                    dependencies.push(PackageDependency {
+                        name: name.clone(),
+                        version: version_str,
+                        ecosystem: "crates".to_string(),
+                    });
                 }
-
-                // Parse [dev-dependencies]
-                if let Some(dev_deps) = cargo_toml.get("dev-dependencies").and_then(|d| d.as_table()) {
-                    for (name, version) in dev_deps {
-                        let version_str = match version {
-                            toml::Value::String(s) => s.clone(),
-                            toml::Value::Table(t) => {
-                                t.get("version").and_then(|v| v.as_str()).unwrap_or("unknown").to_string()
-                            }
-                            _ => "unknown".to_string(),
-                        };
-                        dependencies.push(PackageDependency {
-                            name: name.clone(),
-                            version: version_str,
-                            ecosystem: "crates".to_string(),
-                        });
-                    }
-                }
-
-                dependencies
             }
-            Err(_) => vec![],
-        }
+
+            // Parse [dev-dependencies]
+            if let Some(dev_deps) = cargo_toml.get("dev-dependencies").and_then(|d| d.as_table()) {
+                for (name, version) in dev_deps {
+                    let version_str = match version {
+                        toml::Value::String(s) => s.clone(),
+                        toml::Value::Table(t) => {
+                            t.get("version").and_then(|v| v.as_str()).unwrap_or("unknown").to_string()
+                        }
+                        _ => "unknown".to_string(),
+                    };
+                    dependencies.push(PackageDependency {
+                        name: name.clone(),
+                        version: version_str,
+                        ecosystem: "crates".to_string(),
+                    });
+                }
+            }
+
+            dependencies
+        })
     }
 
     /// Parse mix dependencies from mix.exs (simplified regex-based parsing)
-    fn parse_mix_dependencies(&self, content: &str) -> Vec<PackageDependency> {
+    fn parse_mix_dependencies(content: &str) -> Vec<PackageDependency> {
         let mut dependencies = Vec::new();
         
         // Simple regex-based parsing for mix.exs
@@ -196,7 +226,7 @@ impl DependencyParser {
     }
 
     /// Parse pip dependencies from requirements.txt
-    fn parse_pip_dependencies(&self, content: &str) -> Vec<PackageDependency> {
+    fn parse_pip_dependencies(content: &str) -> Vec<PackageDependency> {
         let mut dependencies = Vec::new();
 
         for line in content.lines() {
@@ -215,13 +245,13 @@ impl DependencyParser {
             } else if let Some((name, version)) = line.split_once(">=") {
                 dependencies.push(PackageDependency {
                     name: name.to_string(),
-                    version: format!(">={}", version),
+                    version: format!(">={version}"),
                     ecosystem: "pypi".to_string(),
                 });
             } else if let Some((name, version)) = line.split_once("~=") {
                 dependencies.push(PackageDependency {
                     name: name.to_string(),
-                    version: format!("~={}", version),
+                    version: format!("~={version}"),
                     ecosystem: "pypi".to_string(),
                 });
             } else {
@@ -238,13 +268,99 @@ impl DependencyParser {
     }
 
     /// Parse pyproject.toml dependencies
-    fn parse_pyproject_dependencies(&self, _content: &str) -> Vec<PackageDependency> {
-        // TODO: Implement pyproject.toml parsing
-        vec![]
+    fn parse_pyproject_dependencies(content: &str) -> Vec<PackageDependency> {
+        const OPERATORS: [&str; 7] = ["==", ">=", "<=", "~=", "!=", ">", "<"];
+        
+        fn parse_spec(spec: &str) -> (String, String) {
+            let trimmed = spec.trim();
+            for op in OPERATORS {
+                if let Some((name, version)) = trimmed.split_once(op) {
+                    return (
+                        name.trim().to_string(),
+                        format!("{}{}", op, version.trim()),
+                    );
+                }
+            }
+            if let Some((name, version)) = trimmed.split_once(' ') {
+                return (name.trim().to_string(), version.trim().to_string());
+            }
+            (trimmed.to_string(), "unknown".to_string())
+        }
+
+        fn add_project_dependencies(entries: &mut Vec<PackageDependency>, items: &[toml::Value]) {
+            for item in items {
+                if let Some(spec) = item.as_str() {
+                    let (name, version) = parse_spec(spec);
+                    entries.push(PackageDependency {
+                        name,
+                        version,
+                        ecosystem: "pypi".to_string(),
+                    });
+                }
+            }
+        }
+
+        fn add_poetry_table(entries: &mut Vec<PackageDependency>, table: &toml::value::Table) {
+            for (name, value) in table {
+                if name.eq_ignore_ascii_case("python") {
+                    continue;
+                }
+                let version = match value {
+                    toml::Value::String(s) => s.clone(),
+                    toml::Value::Table(t) => t
+                        .get("version")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unknown")
+                        .to_string(),
+                    _ => "unknown".to_string(),
+                };
+                entries.push(PackageDependency {
+                    name: name.clone(),
+                    version,
+                    ecosystem: "pypi".to_string(),
+                });
+            }
+        }
+
+        let mut dependencies = Vec::new();
+        let Ok(pyproject) = toml::from_str::<toml::Value>(content) else {
+            return dependencies;
+        };
+
+        if let Some(project) = pyproject.get("project") {
+            if let Some(items) = project
+                .get("dependencies")
+                .and_then(|deps| deps.as_array())
+            {
+                add_project_dependencies(&mut dependencies, items);
+            }
+
+            if let Some(optional) = project
+                .get("optional-dependencies")
+                .and_then(|deps| deps.as_table())
+            {
+                for items in optional.values().filter_map(|v| v.as_array()) {
+                    add_project_dependencies(&mut dependencies, items);
+                }
+            }
+        }
+
+        if let Some(tool) = pyproject.get("tool").and_then(|t| t.as_table()) {
+            if let Some(poetry) = tool.get("poetry").and_then(|p| p.as_table()) {
+                if let Some(table) = poetry.get("dependencies").and_then(|t| t.as_table()) {
+                    add_poetry_table(&mut dependencies, table);
+                }
+                if let Some(table) = poetry.get("dev-dependencies").and_then(|t| t.as_table()) {
+                    add_poetry_table(&mut dependencies, table);
+                }
+            }
+        }
+
+        dependencies
     }
 
     /// Parse go.mod dependencies
-    fn parse_go_dependencies(&self, content: &str) -> Vec<PackageDependency> {
+    fn parse_go_dependencies(content: &str) -> Vec<PackageDependency> {
         let mut dependencies = Vec::new();
 
         for line in content.lines() {
@@ -266,9 +382,43 @@ impl DependencyParser {
     }
 
     /// Parse composer.json dependencies
-    fn parse_composer_dependencies(&self, _content: &str) -> Vec<PackageDependency> {
-        // TODO: Implement composer.json parsing
-        vec![]
+    fn parse_composer_dependencies(content: &str) -> Vec<PackageDependency> {
+        serde_json::from_str::<serde_json::Value>(content).map_or_else(|_| vec![], |composer_json| {
+            let mut dependencies = Vec::new();
+
+            if let Some(require) = composer_json.get("require").and_then(|d| d.as_object()) {
+                for (name, version) in require {
+                    let version_str = match version {
+                        serde_json::Value::String(s) => s.clone(),
+                        _ => "unknown".to_string(),
+                    };
+                    dependencies.push(PackageDependency {
+                        name: name.clone(),
+                        version: version_str,
+                        ecosystem: "composer".to_string(),
+                    });
+                }
+            }
+
+            if let Some(require_dev) = composer_json
+                .get("require-dev")
+                .and_then(|d| d.as_object())
+            {
+                for (name, version) in require_dev {
+                    let version_str = match version {
+                        serde_json::Value::String(s) => s.clone(),
+                        _ => "unknown".to_string(),
+                    };
+                    dependencies.push(PackageDependency {
+                        name: name.clone(),
+                        version: version_str,
+                        ecosystem: "composer".to_string(),
+                    });
+                }
+            }
+
+            dependencies
+        })
     }
 }
 
@@ -281,8 +431,6 @@ impl Default for DependencyParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::Path;
-
     #[test]
     fn test_parse_npm_dependencies() {
         let parser = DependencyParser::new();
@@ -335,5 +483,107 @@ tempfile = "0.3"
         assert!(dependencies.iter().any(|d| d.name == "tokio" && d.ecosystem == "crates"));
         assert!(dependencies.iter().any(|d| d.name == "serde" && d.ecosystem == "crates"));
         assert!(dependencies.iter().any(|d| d.name == "tempfile" && d.ecosystem == "crates"));
+    }
+
+    #[test]
+    fn test_parse_npm_lock_dependencies() {
+        let parser = DependencyParser::new();
+        let lock_json = r#"{
+  "name": "test",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  "dependencies": {
+    "react": {
+      "version": "18.2.0",
+      "resolved": "https://registry.npmjs.org/react/-/react-18.2.0.tgz",
+      "integrity": "sha512-...",
+      "requires": {
+        "loose-envify": "^1.1.0"
+      }
+    },
+    "loose-envify": {
+      "version": "1.4.0"
+    },
+    "@types/node": {
+      "version": "20.9.0",
+      "dependencies": {
+        "undici-types": {
+          "version": "5.25.3"
+        }
+      }
+    }
+  }
+}"#;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let temp_file = temp_dir.path().join("package-lock.json");
+        std::fs::write(&temp_file, lock_json).unwrap();
+
+        let mut dependencies = parser.parse_package_file(&temp_file).unwrap();
+        dependencies.sort_by(|a, b| a.name.cmp(&b.name));
+
+        assert!(dependencies.iter().any(|d| d.name == "react" && d.version == "18.2.0"));
+        assert!(dependencies.iter().any(|d| d.name == "loose-envify" && d.version == "1.4.0"));
+        assert!(dependencies.iter().any(|d| d.name == "@types/node"));
+        assert!(dependencies.iter().any(|d| d.name == "undici-types"));
+    }
+
+    #[test]
+    fn test_parse_pyproject_dependencies() {
+        let parser = DependencyParser::new();
+        let pyproject = r#"
+[project]
+dependencies = [
+    "requests >=2.0",
+    "numpy==1.26.0"
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "black==22.0"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.110.0"
+
+[tool.poetry.dev-dependencies]
+mypy = "^1.8.0"
+"#;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let temp_file = temp_dir.path().join("pyproject.toml");
+        std::fs::write(&temp_file, pyproject).unwrap();
+
+        let dependencies = parser.parse_package_file(&temp_file).unwrap();
+
+        assert!(dependencies.iter().any(|d| d.name == "requests" && d.version.contains(">=")));
+        assert!(dependencies.iter().any(|d| d.name == "numpy" && d.version.contains("==1.26.0")));
+        assert!(dependencies.iter().any(|d| d.name == "pytest"));
+        assert!(dependencies.iter().any(|d| d.name == "fastapi"));
+        assert!(dependencies.iter().any(|d| d.name == "mypy"));
+    }
+
+    #[test]
+    fn test_parse_composer_dependencies() {
+        let parser = DependencyParser::new();
+        let composer_json = r#"{
+            "require": {
+                "php": "^8.1",
+                "laravel/framework": "^11.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^11.0"
+            }
+        }"#;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let temp_file = temp_dir.path().join("composer.json");
+        std::fs::write(&temp_file, composer_json).unwrap();
+
+        let dependencies = parser.parse_package_file(&temp_file).unwrap();
+
+        assert!(dependencies.iter().any(|d| d.name == "laravel/framework" && d.ecosystem == "composer"));
+        assert!(dependencies.iter().any(|d| d.name == "phpunit/phpunit" && d.ecosystem == "composer"));
+        // PHP runtime entry is expected but should still be captured (version constraint)
+        assert!(dependencies.iter().any(|d| d.name == "php"));
     }
 }

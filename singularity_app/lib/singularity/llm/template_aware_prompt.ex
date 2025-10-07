@@ -17,18 +17,122 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
   require Logger
 
   alias Singularity.{TechnologyTemplateLoader, RAGCodeGenerator}
-  alias Singularity.LLM.{Provider, SemanticCache}
+  alias Singularity.LLM.{Provider, SemanticCache, PromptEngineClient}
 
   @doc """
   Generate LLM prompt with optimal template selection
 
   The HTDAG tells us which template performed best for similar tasks!
+  Now enhanced with Rust prompt engine for context-aware generation.
   """
   def generate_prompt(task, opts \\ []) do
     language = Keyword.get(opts, :language, "elixir")
+    use_prompt_engine = Keyword.get(opts, :use_prompt_engine, true)
 
+    if use_prompt_engine do
+      generate_prompt_with_engine(task, language, opts)
+    else
+      generate_prompt_legacy(task, language, opts)
+    end
+  end
+
+  defp generate_prompt_with_engine(task, language, opts) do
+    # 1. Try to use prompt engine for context-aware generation
+    case detect_context_type(task) do
+      {:framework, framework, category} ->
+        case PromptEngineClient.generate_framework_prompt(task.description, framework, category, language) do
+          {:ok, %{prompt: prompt, confidence: confidence, template_used: template_used}} ->
+            Logger.info("Generated prompt using prompt engine", 
+              framework: framework, 
+              category: category, 
+              confidence: confidence
+            )
+            
+            %{
+              prompt: prompt,
+              template_id: template_used,
+              template: %{name: template_used, framework: framework, category: category},
+              examples_count: 0,
+              metadata: %{
+                task_type: task.type,
+                language: language,
+                timestamp: DateTime.utc_now(),
+                generated_by: :prompt_engine,
+                confidence: confidence
+              }
+            }
+          
+          {:error, reason} ->
+            Logger.warning("Prompt engine failed, falling back to legacy", reason: reason)
+            generate_prompt_legacy(task, language, opts)
+        end
+      
+      {:language, lang, category} ->
+        case PromptEngineClient.generate_language_prompt(task.description, lang, category) do
+          {:ok, %{prompt: prompt, confidence: confidence, template_used: template_used}} ->
+            Logger.info("Generated prompt using prompt engine", 
+              language: lang, 
+              category: category, 
+              confidence: confidence
+            )
+            
+            %{
+              prompt: prompt,
+              template_id: template_used,
+              template: %{name: template_used, language: lang, category: category},
+              examples_count: 0,
+              metadata: %{
+                task_type: task.type,
+                language: language,
+                timestamp: DateTime.utc_now(),
+                generated_by: :prompt_engine,
+                confidence: confidence
+              }
+            }
+          
+          {:error, reason} ->
+            Logger.warning("Prompt engine failed, falling back to legacy", reason: reason)
+            generate_prompt_legacy(task, language, opts)
+        end
+      
+      {:pattern, pattern, category} ->
+        case PromptEngineClient.generate_pattern_prompt(task.description, pattern, category, language) do
+          {:ok, %{prompt: prompt, confidence: confidence, template_used: template_used}} ->
+            Logger.info("Generated prompt using prompt engine", 
+              pattern: pattern, 
+              category: category, 
+              confidence: confidence
+            )
+            
+            %{
+              prompt: prompt,
+              template_id: template_used,
+              template: %{name: template_used, pattern: pattern, category: category},
+              examples_count: 0,
+              metadata: %{
+                task_type: task.type,
+                language: language,
+                timestamp: DateTime.utc_now(),
+                generated_by: :prompt_engine,
+                confidence: confidence
+              }
+            }
+          
+          {:error, reason} ->
+            Logger.warning("Prompt engine failed, falling back to legacy", reason: reason)
+            generate_prompt_legacy(task, language, opts)
+        end
+      
+      :unknown ->
+        # Fall back to legacy template system
+        generate_prompt_legacy(task, language, opts)
+    end
+  end
+
+  defp generate_prompt_legacy(task, language, opts) do
     # 1. Ask HTDAG for best template based on history
-    {:ok, template_id} = Singularity.TemplatePerformanceTracker.get_best_template(task.type, language)
+    {:ok, template_id} =
+      Singularity.TemplatePerformanceTracker.get_best_template(task.type, language)
 
     # 2. Load the selected template
     template = TechnologyTemplateLoader.template(template_id)
@@ -48,7 +152,8 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
       metadata: %{
         task_type: task.type,
         language: language,
-        timestamp: DateTime.utc_now()
+        timestamp: DateTime.utc_now(),
+        generated_by: :legacy
       }
     }
   end
@@ -67,11 +172,14 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
 
     case SemanticCache.get(cache_key) do
       :miss ->
+        # Optimize prompt using prompt engine if available
+        optimized_prompt = optimize_prompt_if_available(prompt_data.prompt, task, opts)
+
         # Execute LLM call
         provider = select_provider_for_template(prompt_data.template)
 
         case Provider.call(provider, %{
-               prompt: prompt_data.prompt,
+               prompt: optimized_prompt,
                system_prompt: build_system_prompt(prompt_data.template),
                max_tokens: 4000,
                temperature: 0.3
@@ -88,7 +196,8 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
               complexity: estimate_complexity(response.content),
               # Would need test results
               coverage: 0.0,
-              feedback: %{}
+              feedback: %{},
+              prompt_optimized: optimized_prompt != prompt_data.prompt
             }
 
             # Record in HTDAG for learning
@@ -298,5 +407,113 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
     |> Enum.take(3)
     |> Enum.map(& &1.template)
     |> Enum.join(", ")
+  end
+
+  # Helper functions for prompt engine integration
+
+  defp detect_context_type(task) do
+    description = String.downcase(task.description)
+    
+    # Detect framework patterns
+    cond do
+      String.contains?(description, "phoenix") ->
+        {:framework, "phoenix", detect_category(description)}
+      
+      String.contains?(description, "rails") ->
+        {:framework, "rails", detect_category(description)}
+      
+      String.contains?(description, "nextjs") or String.contains?(description, "next.js") ->
+        {:framework, "nextjs", detect_category(description)}
+      
+      String.contains?(description, "react") ->
+        {:framework, "react", detect_category(description)}
+      
+      String.contains?(description, "spring") ->
+        {:framework, "spring", detect_category(description)}
+      
+      # Detect language patterns
+      String.contains?(description, "rust") ->
+        {:language, "rust", detect_category(description)}
+      
+      String.contains?(description, "elixir") ->
+        {:language, "elixir", detect_category(description)}
+      
+      String.contains?(description, "python") ->
+        {:language, "python", detect_category(description)}
+      
+      String.contains?(description, "javascript") or String.contains?(description, "js") ->
+        {:language, "javascript", detect_category(description)}
+      
+      String.contains?(description, "go") ->
+        {:language, "go", detect_category(description)}
+      
+      # Detect pattern types
+      String.contains?(description, "microservice") ->
+        {:pattern, "microservice", detect_category(description)}
+      
+      String.contains?(description, "api") ->
+        {:pattern, "api", detect_category(description)}
+      
+      String.contains?(description, "database") or String.contains?(description, "db") ->
+        {:pattern, "database", detect_category(description)}
+      
+      String.contains?(description, "test") or String.contains?(description, "testing") ->
+        {:pattern, "testing", detect_category(description)}
+      
+      true ->
+        :unknown
+    end
+  end
+
+  defp detect_category(description) do
+    cond do
+      String.contains?(description, "command") or String.contains?(description, "run") ->
+        "commands"
+      
+      String.contains?(description, "depend") or String.contains?(description, "install") ->
+        "dependencies"
+      
+      String.contains?(description, "config") or String.contains?(description, "setup") ->
+        "configuration"
+      
+      String.contains?(description, "example") or String.contains?(description, "sample") ->
+        "examples"
+      
+      String.contains?(description, "test") or String.contains?(description, "testing") ->
+        "testing"
+      
+      String.contains?(description, "deploy") or String.contains?(description, "production") ->
+        "deployment"
+      
+      String.contains?(description, "integrate") or String.contains?(description, "connect") ->
+        "integration"
+      
+      true ->
+        "commands"  # Default fallback
+    end
+  end
+
+  defp optimize_prompt_if_available(prompt, task, opts) do
+    use_optimization = Keyword.get(opts, :optimize_prompt, true)
+    
+    if use_optimization do
+      case PromptEngineClient.optimize_prompt(prompt, 
+        context: task.description,
+        language: Keyword.get(opts, :language, "elixir")
+      ) do
+        {:ok, %{optimized_prompt: optimized}} ->
+          Logger.info("Prompt optimized using prompt engine", 
+            original_length: String.length(prompt),
+            optimized_length: String.length(optimized)
+          )
+          optimized
+        
+        {:error, reason} ->
+          Logger.debug("Prompt optimization failed, using original", reason: reason)
+          prompt
+      end
+    else
+      prompt
+    end
   end
 end

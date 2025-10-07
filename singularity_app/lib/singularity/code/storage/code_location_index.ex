@@ -250,23 +250,128 @@ defmodule Singularity.CodeLocationIndex do
     end
   end
 
-  defp extract_exports(code, :elixir) do
-    # Extract public functions: def name(
+  defp extract_exports(code, language) do
+    case language do
+      :elixir ->
+        extract_elixir_exports(code)
+      
+      :javascript ->
+        extract_javascript_exports(code)
+      
+      :typescript ->
+        extract_typescript_exports(code)
+      
+      :rust ->
+        extract_rust_exports(code)
+      
+      _ ->
+        []
+    end
+  end
+
+  defp extract_imports(code, language) do
+    case language do
+      :elixir ->
+        extract_elixir_imports(code)
+      
+      :javascript ->
+        extract_javascript_imports(code)
+      
+      :typescript ->
+        extract_typescript_imports(code)
+      
+      :rust ->
+        extract_rust_imports(code)
+      
+      _ ->
+        []
+    end
+  end
+
+  defp extract_elixir_exports(code) do
+    # Extract public functions (def, defp is private)
     Regex.scan(~r/def\s+(\w+)\s*\(/, code)
     |> Enum.map(fn [_, name] -> name end)
+    |> Enum.uniq()
   end
 
-  defp extract_exports(_code, _language), do: []
-
-  defp extract_imports(code, :elixir) do
-    # Extract alias/import statements
+  defp extract_elixir_imports(code) do
     alias_imports = Regex.scan(~r/alias\s+([\w.]+)/, code) |> Enum.map(fn [_, mod] -> mod end)
     import_imports = Regex.scan(~r/import\s+([\w.]+)/, code) |> Enum.map(fn [_, mod] -> mod end)
-
-    (alias_imports ++ import_imports) |> Enum.uniq()
+    require_imports = Regex.scan(~r/require\s+([\w.]+)/, code) |> Enum.map(fn [_, mod] -> mod end)
+    
+    (alias_imports ++ import_imports ++ require_imports) |> Enum.uniq()
   end
 
-  defp extract_imports(_code, _language), do: []
+  defp extract_javascript_exports(code) do
+    # Extract exports (export function, export const, export default)
+    export_functions = Regex.scan(~r/export\s+function\s+(\w+)/, code) |> Enum.map(fn [_, name] -> name end)
+    export_constants = Regex.scan(~r/export\s+const\s+(\w+)/, code) |> Enum.map(fn [_, name] -> name end)
+    export_defaults = Regex.scan(~r/export\s+default\s+(\w+)/, code) |> Enum.map(fn [_, name] -> name end)
+    
+    (export_functions ++ export_constants ++ export_defaults) |> Enum.uniq()
+  end
+
+  defp extract_javascript_imports(code) do
+    # Extract imports (import ... from, import { ... } from)
+    named_imports = Regex.scan(~r/import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/, code) 
+                   |> Enum.map(fn [_, names, module] -> 
+                     names |> String.split(",") |> Enum.map(&String.trim/1) |> Enum.map(&{&1, module})
+                   end)
+                   |> List.flatten()
+    
+    default_imports = Regex.scan(~r/import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/, code)
+                     |> Enum.map(fn [_, name, module] -> {name, module} end)
+    
+    (named_imports ++ default_imports) |> Enum.uniq()
+  end
+
+  defp extract_typescript_exports(code) do
+    # Similar to JavaScript but with type exports
+    export_functions = Regex.scan(~r/export\s+function\s+(\w+)/, code) |> Enum.map(fn [_, name] -> name end)
+    export_constants = Regex.scan(~r/export\s+const\s+(\w+)/, code) |> Enum.map(fn [_, name] -> name end)
+    export_types = Regex.scan(~r/export\s+type\s+(\w+)/, code) |> Enum.map(fn [_, name] -> name end)
+    export_interfaces = Regex.scan(~r/export\s+interface\s+(\w+)/, code) |> Enum.map(fn [_, name] -> name end)
+    
+    (export_functions ++ export_constants ++ export_types ++ export_interfaces) |> Enum.uniq()
+  end
+
+  defp extract_typescript_imports(code) do
+    # Similar to JavaScript but with type imports
+    named_imports = Regex.scan(~r/import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/, code) 
+                   |> Enum.map(fn [_, names, module] -> 
+                     names |> String.split(",") |> Enum.map(&String.trim/1) |> Enum.map(&{&1, module})
+                   end)
+                   |> List.flatten()
+    
+    default_imports = Regex.scan(~r/import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/, code)
+                     |> Enum.map(fn [_, name, module] -> {name, module} end)
+    
+    type_imports = Regex.scan(~r/import\s+type\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/, code)
+                  |> Enum.map(fn [_, names, module] -> 
+                    names |> String.split(",") |> Enum.map(&String.trim/1) |> Enum.map(&{&1, module})
+                  end)
+                  |> List.flatten()
+    
+    (named_imports ++ default_imports ++ type_imports) |> Enum.uniq()
+  end
+
+  defp extract_rust_exports(code) do
+    # Extract public functions and structs
+    pub_functions = Regex.scan(~r/pub\s+fn\s+(\w+)/, code) |> Enum.map(fn [_, name] -> name end)
+    pub_structs = Regex.scan(~r/pub\s+struct\s+(\w+)/, code) |> Enum.map(fn [_, name] -> name end)
+    pub_enums = Regex.scan(~r/pub\s+enum\s+(\w+)/, code) |> Enum.map(fn [_, name] -> name end)
+    
+    (pub_functions ++ pub_structs ++ pub_enums) |> Enum.uniq()
+  end
+
+  defp extract_rust_imports(code) do
+    # Extract use statements
+    use_statements = Regex.scan(~r/use\s+([\w:]+)/, code) |> Enum.map(fn [_, module] -> module end)
+    use_crate_statements = Regex.scan(~r/use\s+crate::([\w:]+)/, code) |> Enum.map(fn [_, module] -> "crate::#{module}" end)
+    
+    (use_statements ++ use_crate_statements) |> Enum.uniq()
+  end
 
   defp generate_summary(filepath, patterns) do
     filename = Path.basename(filepath, Path.extname(filepath))

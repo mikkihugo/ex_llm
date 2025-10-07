@@ -67,7 +67,7 @@ defmodule Singularity.Integration.Copilot do
   end
 
   defp extract_text(result) do
-    Logger.warninging("Unexpected Copilot response format", result: inspect(result))
+    Logger.warning("Unexpected Copilot response format", result: inspect(result))
     {:error, {:invalid_response_format, result}}
   end
 end

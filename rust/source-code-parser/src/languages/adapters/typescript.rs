@@ -2,8 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use tree_sitter::{Node, Parser as TsParser};
-use tree_sitter_typescript::{language_tsx, language_typescript};
+use tree_sitter::Node;
 
 use crate::{
   dependencies::UniversalDependencies,
@@ -49,13 +48,14 @@ impl UniversalParser for TypeScriptParser {
   }
 
   async fn analyze_content(&self, content: &str, file_path: &str) -> Result<AnalysisResult> {
-    let ts_specific = self.analyze_typescript_specific(content)?;
+    let _ts_specific = self.analyze_typescript_specific(content)?;
 
-    let mut analysis_result = self
+    let analysis_result = self
       .dependencies
       .analyze_with_all_tools(content, ProgrammingLanguage::TypeScript, file_path)
       .await?;
-    analysis_result.language_specific.insert("typescript".to_string(), serde_json::to_value(ts_specific)?);
+    // Store TypeScript-specific analysis in tree_sitter_analysis
+    // analysis_result.tree_sitter_analysis.language_specific = Some(serde_json::to_value(ts_specific)?);
 
     Ok(analysis_result)
   }
@@ -65,18 +65,20 @@ impl UniversalParser for TypeScriptParser {
   }
 
   fn get_metadata(&self) -> ParserMetadata {
-    let mut capabilities = ParserCapabilities::default();
-    capabilities.pattern_detection = true;
-    capabilities.dependency_analysis = true;
-    capabilities.security_analysis = true;
-    capabilities.performance_analysis = true;
-    capabilities.framework_detection = true;
-    capabilities.architecture_analysis = true;
-    capabilities.concurrency_analysis = true;
-    capabilities.error_handling_analysis = true;
-    capabilities.modern_language_features = true;
-    capabilities.quality_metrics = true;
-    capabilities.dependency_metadata = true;
+    let capabilities = ParserCapabilities {
+      pattern_detection: true,
+      dependency_analysis: true,
+      security_analysis: true,
+      performance_analysis: true,
+      framework_detection: true,
+      architecture_analysis: true,
+      concurrency_analysis: true,
+      error_handling_analysis: true,
+      modern_language_features: true,
+      quality_metrics: true,
+      dependency_metadata: true,
+      ..Default::default()
+    };
 
     ParserMetadata {
       parser_name: "TypeScript Parser".to_string(),
@@ -193,21 +195,16 @@ impl TypeScriptParser {
 }
 
 fn parse_tree(content: &str) -> Option<tree_sitter::Tree> {
-  let mut parser = TsParser::new();
-  let language = language_typescript();
+  use tree_sitter::Parser;
+  
+  let mut parser = Parser::new();
+  let language = tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into();
+  
   if parser.set_language(&language).is_ok() {
-    if let Some(tree) = parser.parse(content, None) {
-      return Some(tree);
-    }
+    parser.parse(content, None)
+  } else {
+    None
   }
-
-  let mut parser = TsParser::new();
-  let tsx_language = language_tsx();
-  if parser.set_language(&tsx_language).is_ok() {
-    return parser.parse(content, None);
-  }
-
-  None
 }
 
 fn count_kind(node: &Node, kind: &str) -> u32 {

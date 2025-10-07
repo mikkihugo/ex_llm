@@ -10,7 +10,7 @@
 use super::capability::{CodeCapability, CapabilitySearchResult, CapabilityIndex};
 use super::storage::CodebaseDatabase;
 use anyhow::{Result, Context};
-use redb::{ReadableTable, TableDefinition};
+use redb::TableDefinition;
 use std::collections::HashMap;
 
 // redb table for capabilities
@@ -220,7 +220,7 @@ impl CapabilityStorage {
 
         let mut index = CapabilityIndex::new();
         for result in table.iter()? {
-            let (_key, value): (String, redb::AccessGuard) = result?;
+            let (_key, value) = result?;
             let capability: CodeCapability = bincode::deserialize(value.value())?;
             index.add(capability);
         }

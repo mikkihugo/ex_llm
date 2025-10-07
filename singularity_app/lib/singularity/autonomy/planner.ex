@@ -15,6 +15,7 @@ defmodule Singularity.Autonomy.Planner do
   alias Singularity.Planning.{SafeWorkPlanner, StoryDecomposer}
   alias Singularity.Refactoring.Analyzer
   alias Singularity.Learning.PatternMiner
+  alias Singularity.LLM.Service
 
   @default_reason "stagnation"
 
@@ -108,19 +109,142 @@ defmodule Singularity.Autonomy.Planner do
 
   ## Code Generation Helpers
 
-  defp generate_implementation_code(_task, _sparc_result, _patterns) do
-    # TODO: Use LLM to generate actual implementation based on SPARC output
-    "defmodule Placeholder do\n  def placeholder, do: :ok\nend"
+  defp generate_implementation_code(task, sparc_result, patterns) do
+    prompt = build_code_generation_prompt(task, sparc_result, patterns)
+
+    case Service.call(:complex, [%{role: "user", content: prompt}],
+           task_type: "coder",
+           capabilities: [:code, :reasoning]
+         ) do
+      {:ok, %{text: code}} ->
+        # Extract just the Elixir code if LLM wrapped it in markdown
+        extract_elixir_code(code)
+
+      {:error, reason} ->
+        Logger.error("LLM code generation failed: #{inspect(reason)}")
+        # Fallback to placeholder
+        "defmodule Placeholder do\n  def placeholder, do: :ok\nend"
+    end
   end
 
-  defp generate_deduplication_code(_refactoring_need) do
-    # TODO: Generate code to extract common patterns
-    "defmodule Placeholder do\n  def placeholder, do: :ok\nend"
+  defp generate_deduplication_code(refactoring_need) do
+    prompt = """
+    Generate Elixir code to extract common patterns and eliminate duplication.
+
+    Refactoring Need:
+    - Type: #{refactoring_need.type}
+    - Affected Files: #{inspect(refactoring_need.affected_files)}
+    - Description: #{refactoring_need.description || "No description"}
+
+    Requirements:
+    1. Create a shared module for common functionality
+    2. Follow Elixir best practices
+    3. Include @moduledoc and @doc
+    4. Return ONLY the Elixir code, no markdown or explanations
+
+    Generate the refactored code:
+    """
+
+    case Service.call(:complex, [%{role: "user", content: prompt}],
+           task_type: "architect",
+           capabilities: [:code, :creativity, :reasoning]
+         ) do
+      {:ok, %{text: code}} ->
+        extract_elixir_code(code)
+
+      {:error, reason} ->
+        Logger.error("LLM deduplication generation failed: #{inspect(reason)}")
+        "defmodule Placeholder do\n  def placeholder, do: :ok\nend"
+    end
   end
 
-  defp generate_simplification_code(_refactoring_need) do
-    # TODO: Generate code to simplify complex modules
-    "defmodule Placeholder do\n  def placeholder, do: :ok\nend"
+  defp generate_simplification_code(refactoring_need) do
+    prompt = """
+    Generate simplified Elixir code to reduce technical debt.
+
+    Refactoring Need:
+    - Type: #{refactoring_need.type}
+    - Affected Files: #{inspect(refactoring_need.affected_files)}
+    - Description: #{refactoring_need.description || "No description"}
+
+    Requirements:
+    1. Simplify complex logic
+    2. Improve readability
+    3. Follow Elixir best practices
+    4. Include @moduledoc and @doc
+    5. Return ONLY the Elixir code, no markdown or explanations
+
+    Generate the simplified code:
+    """
+
+    case Service.call(:complex, [%{role: "user", content: prompt}],
+           task_type: "architect",
+           capabilities: [:code, :reasoning]
+         ) do
+      {:ok, %{text: code}} ->
+        extract_elixir_code(code)
+
+      {:error, reason} ->
+        Logger.error("LLM simplification generation failed: #{inspect(reason)}")
+        "defmodule Placeholder do\n  def placeholder, do: :ok\nend"
+    end
+  end
+
+  defp build_code_generation_prompt(task, sparc_result, patterns) do
+    """
+    Generate production-quality Elixir code based on SPARC decomposition.
+
+    ## Task
+    #{task.description || task[:description] || "No description"}
+
+    ## SPARC Analysis
+    #{format_sparc_result(sparc_result)}
+
+    ## Learned Patterns (Best Practices)
+    #{format_patterns(patterns)}
+
+    ## Requirements
+    1. Generate complete, working Elixir module(s)
+    2. Follow BEAM/OTP best practices
+    3. Include comprehensive @moduledoc and @doc
+    4. Use pattern matching and guards effectively
+    5. Handle errors gracefully with {:ok, result} | {:error, reason}
+    6. Return ONLY the Elixir code, no markdown code blocks or explanations
+
+    Generate the implementation:
+    """
+  end
+
+  defp format_sparc_result(sparc_result) do
+    """
+    Specification: #{inspect(sparc_result.specification, pretty: true)}
+    Pseudocode: #{inspect(sparc_result.pseudocode, pretty: true)}
+    Architecture: #{inspect(sparc_result.architecture, pretty: true)}
+    Refinement: #{inspect(sparc_result.refinement, pretty: true)}
+    Tasks: #{inspect(sparc_result.tasks, pretty: true)}
+    """
+  end
+
+  defp format_patterns(patterns) when is_list(patterns) and length(patterns) > 0 do
+    patterns
+    |> Enum.map(fn pattern ->
+      """
+      Pattern: #{pattern.name || "Unnamed"}
+      Description: #{pattern.description || "No description"}
+      Code: #{pattern.code || "No code"}
+      """
+    end)
+    |> Enum.join("\n---\n")
+  end
+
+  defp format_patterns(_), do: "No learned patterns available"
+
+  defp extract_elixir_code(text) do
+    # Remove markdown code blocks if present
+    text
+    |> String.replace(~r/```elixir\n/, "")
+    |> String.replace(~r/```\n?/, "")
+    |> String.trim()
   end
 
   defp build_module_simple(state, context) do

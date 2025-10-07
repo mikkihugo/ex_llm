@@ -136,7 +136,8 @@ defmodule Singularity.NatsExecutionRouter do
             model_used: method_to_model(method),
             metrics: %{
               time_ms: elapsed_ms,
-              tokens_used: 0, # CostOptimizedAgent doesn't return token count
+              # CostOptimizedAgent doesn't return token count
+              tokens_used: 0,
               cost_usd: cost,
               cache_hit: method == :autonomous
             }

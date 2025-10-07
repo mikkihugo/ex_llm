@@ -21,6 +21,16 @@ export interface ModelInfo {
   };
   cost: 'free' | 'limited' | 'pay-per-use';
   subscription?: string;   // e.g., "Claude Pro", "ChatGPT Plus", "GitHub Copilot"
+  capabilityScores?: {     // Auto-generated capability scores (1-10 scale)
+    code: number;          // Code generation quality
+    reasoning: number;     // Analysis and planning
+    creativity: number;    // Novel solutions
+    speed: number;         // Response latency
+    cost: number;          // 10=FREE, 5=quota, 1=pay-per-use
+    tool_capacity: number; // Max tools based on context window (1=4 tools, 10=30 tools)
+    confidence?: 'high' | 'medium' | 'low';
+    reasoning_text?: string;
+  };
 }
 
 /**
@@ -153,8 +163,23 @@ export async function buildModelCatalog(
 
   console.log(`✅ Discovered ${models.length} models from ${Object.keys(providers).length} providers`);
 
-  // Save to disk for next startup
+  // Detect new models and auto-regenerate capability scores
   if (useCache) {
+    const oldCatalog = await loadCatalogFromDisk();
+    const hasNewModels = !oldCatalog || models.length > oldCatalog.models.length;
+
+    if (hasNewModels && oldCatalog) {
+      const newCount = models.length - oldCatalog.models.length;
+      console.log(`📊 Found ${newCount} new model${newCount !== 1 ? 's' : ''}!`);
+      console.log('🔄 Auto-regenerating capability scores in background...\n');
+
+      // Auto-regenerate capability scores (non-blocking)
+      import('./tools/capability-matrix-generator.js')
+        .then(({ generateAndSaveCapabilities }) => generateAndSaveCapabilities(models))
+        .catch(err => console.warn('⚠️  Auto-regeneration failed:', err.message));
+    }
+
+    // Save to disk for next startup
     await saveCatalogToDisk(models, now);
   }
 
@@ -198,5 +223,34 @@ export function toOpenAIModelsFormat(models: ModelInfo[]) {
       parent: null,
     })),
   };
+}
+
+/**
+ * Calculate tool capacity score (1-10) based on context window size
+ *
+ * Maps context window to max tool count, then scores it on 1-10 scale:
+ * - 1-2: Tiny models (< 16k) → 4 tools
+ * - 3-4: Small models (16k-64k) → 8 tools
+ * - 5-6: Medium models (64k-200k) → 12 tools
+ * - 7-8: Large models (200k-1M) → 20 tools
+ * - 9-10: Huge models (1M+) → 30 tools
+ */
+export function calculateToolCapacityScore(contextWindow: number): number {
+  if (contextWindow < 16_000) return 2;      // Tiny: 4 tools
+  if (contextWindow < 64_000) return 4;      // Small: 8 tools
+  if (contextWindow < 200_000) return 6;     // Medium: 12 tools
+  if (contextWindow < 1_000_000) return 8;   // Large: 20 tools
+  return 10;                                  // Huge: 30 tools
+}
+
+/**
+ * Get maximum tools supported by a model based on context window
+ */
+export function getMaxToolsForModel(contextWindow: number): number {
+  if (contextWindow < 16_000) return 4;
+  if (contextWindow < 64_000) return 8;
+  if (contextWindow < 200_000) return 12;
+  if (contextWindow < 1_000_000) return 20;
+  return 30;
 }
 

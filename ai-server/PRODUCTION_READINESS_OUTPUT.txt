@@ -1,0 +1,89 @@
+🔬 PROTOTYPE → PRODUCTION GAP ANALYSIS
+
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+🔍 Loading latest BEAM codebase (2.6M tokens)...
+
+📊 Codebase: 2,584,210 tokens (246.4% of 1M limit)
+⚠️  TOO BIG for single request! Using conversational approach...
+
+📝 Using multi-turn conversation to handle large codebase...
+
+🚀 Asking Gemini: "What makes this production-ready for internal use?"
+
+Loaded cached credentials.
+Of course. Here is a production readiness analysis for your internal AI coding system.
+
+# Production Readiness Analysis
+
+This analysis is based on the provided architecture and recent updates, focusing on the transition from a working prototype to a reliable internal tool for a single developer. The primary bottleneck is the chasm between planning/analysis and actual, reliable code modification.
+
+---
+
+## 🚨 Critical Blockers
+[Must fix for reliable internal use]
+
+1.  **Non-Functional Core Coder (`generate_implementation_code/3` stub):** This is the most significant blocker. The system's entire purpose is to generate code, but this core function is a placeholder. All other features (planning, model selection, file system tools) are orchestration *around* a non-existent capability. The system cannot perform its primary function until this is a robust, working implementation.
+
+2.  **Lack of a Human-in-the-Loop (HITL) Confirmation Step:** The system has `FileSystem` tools, meaning it can directly modify the codebase. Without a mandatory "review and approve" step before any file is written, a single bug, hallucination, or bad plan could irrevocably corrupt the local codebase. This creates an unacceptable risk and makes the tool untrustworthy for daily use. An autonomous system must not have write access without explicit user confirmation of the proposed changes (diff view).
+
+3.  **Insufficient Context Retrieval for a 2.6M Token Codebase:** A single-shot semantic search (pgvector) is inadequate for complex coding tasks in a large repository. It will inevitably miss critical context (e.g., a related module in a different directory, a type definition, a utility function). This leads to code that is syntactically correct but functionally wrong, causing compilation errors or subtle runtime bugs. The system needs an iterative or multi-pronged context-building strategy.
+
+---
+
+## ⚠️ High Priority
+[Should fix soon]
+
+1.  **No Cross-Service Observability/Traceability:** With Elixir, Rust, and TypeScript services communicating via NATS, debugging a failed request is nearly impossible. You need a way to trace a single operation (e.g., "add a feature to service X") across all microservices. Lacking a shared request/trace ID, you cannot correlate logs, identify which service failed, or understand the full state of the system when an error occurred.
+
+2.  **Lack of State Management & Resumability:** Complex coding tasks are long-running processes. A failure 15 minutes into a 20-minute job (e.g., an API timeout, a transient NATS error) forces a complete restart. This is incredibly inefficient and frustrating. The system needs to checkpoint its state (e.g., the plan, gathered context, generated code snippets) to a persistent store (like PostgreSQL) so it can resume from the last successful step.
+
+3.  **Brittle Error Handling & No Fallbacks:** The system relies on many external services (multiple LLM providers, NATS). What happens if OpenRouter's selected model is down? Or returns malformed JSON? The prototype likely just crashes. A production system needs robust error handling:
+    *   **Retries with exponential backoff** for transient network errors.
+    *   **Model Fallbacks:** If the primary selected model fails, it should automatically try a secondary, compatible model.
+    *   **Dead-letter Queues (DLQ) in NATS:** Failed messages should be routed to a DLQ for later inspection, rather than being lost.
+
+4.  **No Formal Evaluation Framework:** How do you know if a change to a prompt or the model selection matrix actually improved performance? You're currently flying blind. You need a simple "evals" suite: a set of representative coding tasks (e.g., "fix this bug," "add this endpoint") that you can run against the system to produce objective metrics (e.g., pass/fail on compilation, pass/fail on unit tests, code quality score).
+
+---
+
+## 💡 Quick Wins (< 2 hours)
+[Easy + high value]
+
+1.  **Implement a `--dry-run` Flag:** This is the simplest form of HITL. Add a global flag that prevents the `FileSystem` tools from actually writing files. Instead, they should print the intended file path and the content/diff to the console. This immediately makes the system safe to experiment with.
+
+2.  **Add Manual Model Override:** The dynamic model selection is great, but for debugging or critical tasks, you need an escape hatch. Add a command-line argument like `--model=openai/gpt-4o` to bypass the entire selection logic and force the use of a specific model.
+
+3.  **Log All LLM Calls with Cost/Token Usage:** Instrument every LLM call to log the model used, prompt tokens, completion tokens, and total time. Most APIs provide this in the response headers. This is invaluable for debugging why a task is slow or expensive and for identifying context window overflow issues.
+
+4.  **Centralized Configuration File:** Move API keys, default model preferences, NATS URLs, and other settings from environment variables or hardcoded values into a single `config.toml` or `.env` file. This makes managing the system much easier.
+
+---
+
+## 📋 Can Defer
+[Not needed for internal tooling]
+
+1.  **Web UI / Dashboard:** A CLI is perfectly sufficient for a single-developer internal tool. A fancy web interface is a significant effort for little gain at this stage.
+2.  **Auto-Updating Model Capability Matrix:** The current matrix is a huge step up. Manually updating the scores once a week or as new models are released is fine. A fully automated benchmark-and-update pipeline is a "nice-to-have" optimization.
+3.  **Advanced RAG Strategies:** More complex techniques like graph-based retrieval (Code-As-A-Graph) or hierarchical context summarization can be explored later. The priority is to make the *current* retrieval iterative and more robust first.
+4.  **Performance Optimization:** Aggressive caching of LLM calls, parallelizing independent sub-tasks in the plan, etc. First, make it work reliably. Then, make it fast.
+
+---
+
+## 🎯 Implementation Order
+
+Here is a prioritized 5-step plan to move from prototype to a reliable internal tool:
+
+1.  **Implement `generate_implementation_code/3`:** Replace the stub with a real implementation that calls an LLM with the gathered context and task description. This unblocks all real-world testing.
+2.  **Implement `--dry-run` and a Diff-based Confirmation Prompt:** Immediately after #1, implement the safety features. The system must show you a `diff` of proposed changes and require a `[y/N]` confirmation before touching any files. This builds essential trust.
+3.  **Implement Cross-Service Traceability:** Before tackling complex bugs, establish a logging/tracing foundation. Pass a unique `trace_id` through all NATS messages and log it in every service. This makes the distributed system debuggable.
+4.  **Build Basic State Management & Resume:** Implement checkpointing of the agent's plan and state to PostgreSQL after each major step. This makes dealing with failures in long-running tasks tolerable and enables more ambitious testing.
+5.  **Create a Simple Evals Harness:** Define 5-10 standard tasks. Create a script that runs the AI on each task and checks if the resulting code compiles and/or passes existing unit tests. This is the first step toward data-driven improvement.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+📊 Stats: 43.9s, 2,044 tokens
+
+💾 Saved to: PRODUCTION_READINESS_ANALYSIS.md
+

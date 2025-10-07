@@ -148,12 +148,16 @@ defmodule Singularity.CodeTrainer do
     # This is a simplified version - full implementation would use
     # Bumblebee's serialization or save Nx tensors directly
     try do
-      # Save metadata
+      # Save metadata with model info
       metadata = %{
-        base_model: "starcoder2-7b",
+        base_model: Map.get(model_info, :base_model, "starcoder2-7b"),
         training_date: DateTime.utc_now(),
         fine_tuned: true,
-        source: "singularity_codebase"
+        source: "singularity_codebase",
+        training_examples: Map.get(model_info, :training_examples, 0),
+        validation_loss: Map.get(model_info, :validation_loss, 0.0),
+        model_size_mb: Map.get(model_info, :model_size_mb, 0),
+        vocabulary_size: Map.get(model_info, :vocabulary_size, 0)
       }
 
       File.write!(
@@ -172,13 +176,60 @@ defmodule Singularity.CodeTrainer do
 
   ## Private Functions
 
-  defp prepare_training_example(content, path, language, _metadata) do
+  defp prepare_training_example(content, path, language, metadata) do
     # Split code into training pairs (prefix → suffix)
     # Use function boundaries, module boundaries, etc.
     case split_code_for_training(content, language) do
-      {:ok, pairs} -> pairs
-      _ -> nil
+      {:ok, pairs} ->
+        # Enhance pairs with metadata
+        enhanced_pairs =
+          Enum.map(pairs, fn pair ->
+            Map.merge(pair, %{
+              source_file: path,
+              language: language,
+              file_size: byte_size(content),
+              complexity_score: calculate_complexity(content),
+              metadata: metadata
+            })
+          end)
+
+        enhanced_pairs
+
+      _ ->
+        # Fallback: create single pair from entire content
+        [
+          %{
+            input: content,
+            output: content,
+            source_file: path,
+            language: language,
+            file_size: byte_size(content),
+            complexity_score: calculate_complexity(content),
+            metadata: metadata
+          }
+        ]
     end
+  end
+
+  defp calculate_complexity(content) do
+    # Simple complexity calculation based on code structure
+    lines = String.split(content, "\n")
+    non_empty_lines = Enum.filter(lines, fn line -> String.trim(line) != "" end)
+
+    complexity_factors = [
+      # Function count
+      length(String.split(content, "def ")) - 1,
+      # Case statements
+      length(String.split(content, "case ")) - 1,
+      # If statements
+      length(String.split(content, "if ")) - 1,
+      # Loops
+      length(String.split(content, "for ")) - 1,
+      # Total lines
+      length(non_empty_lines)
+    ]
+
+    Enum.sum(complexity_factors) / 10.0
   end
 
   defp split_code_for_training(content, "elixir") do

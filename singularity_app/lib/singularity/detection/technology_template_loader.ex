@@ -137,15 +137,30 @@ defmodule Singularity.TechnologyTemplateLoader do
 
   defp extract_patterns(nil, _field), do: []
 
-  defp extract_patterns(%{"detector_signatures" => signatures} = template, field)
-       when is_atom(field) do
-    case Map.get(signatures, Atom.to_string(field)) do
-      list when is_list(list) -> list
-      _ -> extract_patterns(Map.delete(template, "detector_signatures"), nil)
+  defp extract_patterns(template, field) when is_map(template) do
+    case Map.get(template, field) do
+      patterns when is_list(patterns) ->
+        patterns
+        |> Enum.map(&normalize_pattern/1)
+        |> Enum.reject(&is_nil/1)
+      
+      pattern when is_binary(pattern) ->
+        [String.trim(pattern)]
+      
+      pattern when is_atom(pattern) ->
+        [Atom.to_string(pattern)]
+      
+      _ ->
+        []
     end
   end
 
-  defp extract_patterns(%{"patterns" => patterns}, _field) when is_list(patterns), do: patterns
+  defp extract_patterns(template, field) when is_list(template) do
+    template
+    |> Enum.flat_map(&extract_patterns(&1, field))
+    |> Enum.uniq()
+  end
+
   defp extract_patterns(_template, _field), do: []
 
   defp compile_patterns(patterns) do
@@ -215,4 +230,20 @@ defmodule Singularity.TechnologyTemplateLoader do
   end
 
   defp persist_template(_identifier, template, _source, _opts), do: template
+
+  defp normalize_pattern(pattern) when is_binary(pattern) do
+    trimmed = String.trim(pattern)
+    if trimmed == "", do: nil, else: trimmed
+  end
+
+  defp normalize_pattern(pattern) when is_atom(pattern) do
+    Atom.to_string(pattern)
+  end
+
+  defp normalize_pattern(%{"name" => name}), do: normalize_pattern(name)
+  defp normalize_pattern(%{name: name}), do: normalize_pattern(name)
+  defp normalize_pattern(%{"pattern" => pattern}), do: normalize_pattern(pattern)
+  defp normalize_pattern(%{pattern: pattern}), do: normalize_pattern(pattern)
+
+  defp normalize_pattern(_), do: nil
 end

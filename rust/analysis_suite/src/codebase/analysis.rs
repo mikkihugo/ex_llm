@@ -8,7 +8,7 @@ use anyhow::Result;
 use sha2::{Sha256, Digest};
 
 // Universal parser and individual parser imports
-use source_code_parser::{AnalysisResult as UniversalAnalysisResult, ProgrammingLanguage};
+use universal_parser::{AnalysisResult as UniversalAnalysisResult, ProgrammingLanguage};
 use rust_parser::{RustParser, RustSpecificAnalysis};
 use python_parser::{PythonParser, PythonAnalysisResult};
 use javascript_parser::{JavaScriptParser, JavaScriptSpecificAnalysis};
@@ -35,7 +35,7 @@ impl AnalysisEngine {
   /// Create new analysis engine with default config
   pub fn new() -> Self {
     Self {
-      database: CodebaseDatabase::new("default").unwrap(),
+      database: CodebaseDatabase::new(),
       config: CodebaseConfig::default(),
       parser_registry: ParserRegistry::new(),
     }
@@ -44,7 +44,7 @@ impl AnalysisEngine {
   /// Create analysis engine with configuration
   pub fn with_config(config: CodebaseConfig) -> Self {
     Self {
-      database: CodebaseDatabase::new("default").unwrap(),
+      database: CodebaseDatabase::new(),
       config,
       parser_registry: ParserRegistry::new(),
     }
@@ -92,7 +92,7 @@ impl AnalysisEngine {
 
     // Use universal parser for comprehensive analysis
     let language = self.detect_language_from_path(path);
-    let universal_result = self.analyze_with_source_code_parser(content, language, path).await?;
+    let universal_result = self.analyze_with_universal_parser(content, language, path).await?;
     
     // Convert universal parser result to CodebaseMetadata
     let metadata = self.convert_universal_to_metadata(&universal_result, path, content)?;
@@ -291,7 +291,7 @@ impl AnalysisEngine {
     complexity += content.matches("for ").count() as f64;
     
     // Additional complexity for nesting
-    let mut nesting_level: i32 = 0;
+    let mut nesting_level = 0;
     for line in content.lines() {
       let trimmed = line.trim();
       if trimmed.contains("{") {
@@ -307,13 +307,13 @@ impl AnalysisEngine {
   }
 
   /// Analyze content using universal parser
-  async fn analyze_with_source_code_parser(
+  async fn analyze_with_universal_parser(
     &self,
     content: &str,
-    language: source_code_parser::ProgrammingLanguage,
+    language: universal_parser::ProgrammingLanguage,
     file_path: &str,
-  ) -> Result<source_code_parser::AnalysisResult, String> {
-    use source_code_parser::ProgrammingLanguage;
+  ) -> Result<universal_parser::AnalysisResult, String> {
+    use universal_parser::ProgrammingLanguage;
 
     match language {
       ProgrammingLanguage::Rust => {
@@ -389,7 +389,7 @@ impl AnalysisEngine {
   /// Convert universal parser result to CodebaseMetadata
   fn convert_universal_to_metadata(
     &self,
-    universal_result: &source_code_parser::AnalysisResult,
+    universal_result: &universal_parser::AnalysisResult,
     path: &str,
     content: &str,
   ) -> Result<CodebaseMetadata, String> {
@@ -435,29 +435,29 @@ impl AnalysisEngine {
   fn extract_language_specific_data(
     &self,
     metadata: &mut CodebaseMetadata,
-    universal_result: &source_code_parser::AnalysisResult,
+    universal_result: &universal_parser::AnalysisResult,
   ) -> Result<(), String> {
     // Process language-specific data for each supported language
     match universal_result.language {
-      source_code_parser::ProgrammingLanguage::Rust => {
+      universal_parser::ProgrammingLanguage::Rust => {
         self.process_rust_specific_data(metadata, &universal_result.language_specific)?;
       }
-      source_code_parser::ProgrammingLanguage::Python => {
+      universal_parser::ProgrammingLanguage::Python => {
         self.process_python_specific_data(metadata, &universal_result.language_specific)?;
       }
-      source_code_parser::ProgrammingLanguage::JavaScript => {
+      universal_parser::ProgrammingLanguage::JavaScript => {
         self.process_javascript_specific_data(metadata, &universal_result.language_specific)?;
       }
-      source_code_parser::ProgrammingLanguage::TypeScript => {
+      universal_parser::ProgrammingLanguage::TypeScript => {
         self.process_typescript_specific_data(metadata, &universal_result.language_specific)?;
       }
-      source_code_parser::ProgrammingLanguage::Go => {
+      universal_parser::ProgrammingLanguage::Go => {
         self.process_go_specific_data(metadata, &universal_result.language_specific)?;
       }
-      source_code_parser::ProgrammingLanguage::Java => {
+      universal_parser::ProgrammingLanguage::Java => {
         self.process_java_specific_data(metadata, &universal_result.language_specific)?;
       }
-      source_code_parser::ProgrammingLanguage::CSharp => {
+      universal_parser::ProgrammingLanguage::CSharp => {
         self.process_csharp_specific_data(metadata, &universal_result.language_specific)?;
       }
       _ => {
@@ -664,8 +664,8 @@ impl AnalysisEngine {
   }
 
   /// Detect language from file path
-  fn detect_language_from_path(&self, path: &str) -> source_code_parser::ProgrammingLanguage {
-    use source_code_parser::ProgrammingLanguage;
+  fn detect_language_from_path(&self, path: &str) -> universal_parser::ProgrammingLanguage {
+    use universal_parser::ProgrammingLanguage;
     
     let extension = std::path::Path::new(path)
       .extension()

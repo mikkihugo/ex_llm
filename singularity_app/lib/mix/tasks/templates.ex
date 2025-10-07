@@ -351,14 +351,19 @@ defmodule Mix.Tasks.Templates.Stats do
 
     total = length(templates)
     by_type = Enum.group_by(templates, & &1.type) |> Enum.map(fn {k, v} -> {k, length(v)} end)
-    by_language = Enum.group_by(templates, & &1.metadata["language"]) |> Enum.map(fn {k, v} -> {k, length(v)} end)
 
-    total_usage = Enum.sum(Enum.map(templates, & &1.usage["count"] || 0))
-    avg_success_rate = Enum.sum(Enum.map(templates, & &1.usage["success_rate"] || 0.0)) / max(total, 1)
+    by_language =
+      Enum.group_by(templates, & &1.metadata["language"])
+      |> Enum.map(fn {k, v} -> {k, length(v)} end)
+
+    total_usage = Enum.sum(Enum.map(templates, &(&1.usage["count"] || 0)))
+
+    avg_success_rate =
+      Enum.sum(Enum.map(templates, &(&1.usage["success_rate"] || 0.0))) / max(total, 1)
 
     most_used =
       templates
-      |> Enum.sort_by(& &1.usage["count"] || 0, :desc)
+      |> Enum.sort_by(&(&1.usage["count"] || 0), :desc)
       |> Enum.take(5)
 
     Mix.shell().info("""

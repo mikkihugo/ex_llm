@@ -259,17 +259,12 @@ defmodule Singularity.CodeStore do
 
   defp queue_path(dir, agent_id), do: Path.join(dir, "#{agent_id}.json")
 
-  defp queue_entry_to_map(%{
-         payload: payload,
-         context: context,
-         inserted_at: inserted_at,
-         fingerprint: fingerprint
-       }) do
+  defp queue_entry_to_map(%{payload: payload, context: context, inserted_at: inserted_at} = entry) do
     %{
-      "payload" => stringify_keys(payload),
-      "context" => stringify_keys(context),
+      "payload" => payload,
+      "context" => context,
       "inserted_at" => inserted_at,
-      "fingerprint" => fingerprint
+      "fingerprint" => Map.get(entry, :fingerprint)
     }
   end
 
@@ -790,20 +785,22 @@ defmodule Singularity.CodeStore do
     # Look for services in services/ directory
     services_dir = Path.join(codebase_path, "services")
 
-    services = if File.exists?(services_dir) do
-      services ++ find_services_in_directory(services_dir)
-    else
-      services
-    end
+    services =
+      if File.exists?(services_dir) do
+        services ++ find_services_in_directory(services_dir)
+      else
+        services
+      end
 
     # Look for services in apps/ directory (umbrella project)
     apps_dir = Path.join(codebase_path, "apps")
 
-    services = if File.exists?(apps_dir) do
-      services ++ find_services_in_directory(apps_dir)
-    else
-      services
-    end
+    services =
+      if File.exists?(apps_dir) do
+        services ++ find_services_in_directory(apps_dir)
+      else
+        services
+      end
 
     services
   end

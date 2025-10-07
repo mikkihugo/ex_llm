@@ -5,7 +5,7 @@
  * Executes cursor-agent with READ-ONLY tools + optional MCP servers.
  */
 
-import type { LanguageModelV1 } from '@ai-sdk/provider';
+import type { LanguageModelV2 } from '@ai-sdk/provider';
 
 export interface MCPServerConfig {
   command: string;
@@ -54,8 +54,8 @@ export interface CursorModelConfig {
   additionalFlags?: string[];
 }
 
-export class CursorLanguageModel implements LanguageModelV1 {
-  readonly specificationVersion = 'v1' as const;
+export class CursorLanguageModel implements LanguageModelV2 {
+  readonly specificationVersion = 'v2' as const;
   readonly provider = 'cursor' as const;
   readonly modelId: string;
   readonly config: CursorModelConfig;

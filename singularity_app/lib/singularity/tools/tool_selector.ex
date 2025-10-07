@@ -2,16 +2,45 @@ defmodule Singularity.Tools.ToolSelector do
   @moduledoc """
   Intelligent tool selection for AI agents.
 
-  Helps agents choose the right tools based on:
-  - Task requirements
-  - Agent role/specialization
-  - Context and constraints
-  - Performance considerations
+  Unified tool selector combining workflow-based recommendations
+  with requirement-based selection and validation.
+
+  Features:
+  - Workflow-based recommendations (predefined task patterns)
+  - Requirement-based selection (analyze task needs)
+  - Role-based filtering (match agent capabilities)
+  - Conflict detection and performance optimization
+  - Context-aware tool suggestions
+
+  ## Selection Process:
+  1. Analyze task requirements (understanding, planning, execution, etc.)
+  2. Match to predefined workflows if applicable
+  3. Filter by agent role capabilities
+  4. Validate for conflicts and performance issues
+  5. Return optimal toolset (max 6 tools)
   """
 
-  alias Singularity.Tools.{AgentRoles, AgentToolSelector}
+  alias Singularity.Tools.{AgentRoles, EnhancedDescriptions}
 
-  @max_tools_per_request 6
+  # Dynamic tool limits based on model context windows
+  # Context window -> Max tools mapping (conservative to leave room for task context)
+  @tool_limits_by_context %{
+    # Tiny models (< 16k tokens) - Very limited
+    {0, 16_000} => 4,
+    # Small models (16k-64k tokens) - Limited
+    {16_000, 64_000} => 8,
+    # Medium models (64k-200k tokens) - Standard
+    {64_000, 200_000} => 12,
+    # Large models (200k-1M tokens) - Extended
+    {200_000, 1_000_000} => 20,
+    # Huge models (1M+ tokens) - Maximum
+    {1_000_000, :infinity} => 30
+  }
+
+  # Default for unknown models (medium tier)
+  @default_max_tools 12
+  # For recommendations (no hard execution limit)
+  @max_workflow_recommendations 15
   @tool_categories %{
     "understanding" => [
       "codebase_search",
@@ -29,43 +58,263 @@ defmodule Singularity.Tools.ToolSelector do
       "knowledge_packages",
       "knowledge_patterns",
       "knowledge_frameworks",
-      "knowledge_examples"
+      "knowledge_examples",
+      "package_search"
     ],
     "analysis" => ["code_refactor", "code_quality", "code_complexity", "code_todos"],
     "execution" => ["fs_write_file", "sh_run_command", "planning_execute"],
     "summary" => ["tools_summary", "codebase_summary", "planning_summary"]
   }
 
+  @tool_workflows %{
+    "understand_codebase" => %{
+      description: "Understand a new or existing codebase",
+      steps: ["codebase_technologies", "codebase_architecture", "codebase_search", "code_quality"],
+      context: "Use when starting work on a new codebase or reviewing existing code"
+    },
+    "implement_feature" => %{
+      description: "Implement a new feature from scratch",
+      steps: [
+        "planning_decompose",
+        "knowledge_packages",
+        "knowledge_patterns",
+        "codebase_search",
+        "planning_estimate",
+        "planning_execute"
+      ],
+      context: "Use when implementing new features or functionality"
+    },
+    "refactor_code" => %{
+      description: "Refactor and improve existing code",
+      steps: [
+        "code_refactor",
+        "knowledge_duplicates",
+        "code_complexity",
+        "code_quality",
+        "knowledge_patterns"
+      ],
+      context: "Use when improving code quality or reducing technical debt"
+    },
+    "debug_issue" => %{
+      description: "Debug and fix issues",
+      steps: ["codebase_search", "code_todos", "code_quality", "codebase_dependencies"],
+      context: "Use when debugging bugs or investigating issues"
+    },
+    "plan_project" => %{
+      description: "Plan and organize a project",
+      steps: [
+        "planning_work_plan",
+        "codebase_architecture",
+        "planning_decompose",
+        "planning_prioritize",
+        "planning_estimate"
+      ],
+      context: "Use for project planning, sprint planning, or work organization"
+    },
+    "research_technology" => %{
+      description: "Research and compare technologies",
+      steps: [
+        "knowledge_packages",
+        "knowledge_frameworks",
+        "knowledge_examples",
+        "codebase_search"
+      ],
+      context: "Use when researching technologies, libraries, or architectural decisions"
+    }
+  }
+
+  @tool_relationships %{
+    "codebase_search" => ["codebase_analyze", "codebase_technologies", "knowledge_patterns"],
+    "planning_decompose" => ["planning_estimate", "planning_prioritize", "planning_execute"],
+    "code_refactor" => ["knowledge_duplicates", "code_complexity", "code_quality"],
+    "knowledge_packages" => ["knowledge_examples", "knowledge_frameworks"],
+    "codebase_analyze" => ["code_quality", "codebase_architecture"]
+  }
+
+  @performance_guidelines %{
+    "fast" => ["codebase_search", "knowledge_packages", "planning_work_plan", "tools_summary"],
+    "medium" => [
+      "codebase_technologies",
+      "planning_decompose",
+      "knowledge_patterns",
+      "code_refactor"
+    ],
+    "slow" => [
+      "codebase_analyze",
+      "code_quality",
+      "code_language_analyze",
+      "codebase_architecture"
+    ]
+  }
+
   @doc """
   Select the best tools for a given task and agent role.
+
+  Combines workflow-based recommendations with requirement analysis.
+  Returns validated, conflict-free toolset optimized for performance.
+
+  ## Options
+
+  - `:model_context_window` - Model's context window size in tokens (for dynamic tool limits)
+  - `:max_tools` - Override maximum tool count (defaults to dynamic calculation)
+
+  ## Examples
+
+      iex> ToolSelector.select_tools("implement async worker", :code_developer)
+      {:ok, %{
+        selected_tools: ["planning_decompose", "knowledge_packages", ...],
+        workflow: "implement_feature",
+        max_tools_allowed: 12,
+        reasoning: ["Added planning tools for task organization", ...],
+        alternatives: %{"planning_decompose" => ["planning_estimate"]}
+      }}
+
+      # With large context model (Gemini 2.5 Pro)
+      iex> ToolSelector.select_tools("complex task", :code_developer, model_context_window: 2_000_000)
+      {:ok, %{
+        selected_tools: [...],  # Up to 30 tools!
+        max_tools_allowed: 30,
+        ...
+      }}
   """
   def select_tools(task_description, agent_role, context \\ %{}) do
     # Get role-specific tools
     {:ok, role_tools} = AgentRoles.get_tools_for_role(agent_role)
 
-    # Get context recommendations
-    {:ok, _recommendations} = AgentToolSelector.recommend_tools(task_description, context)
+    # Calculate dynamic tool limit based on model context window
+    max_tools = calculate_max_tools(context)
+
+    # Find matching workflows
+    matching_workflows = find_matching_workflows(task_description)
 
     # Analyze task requirements
     task_requirements = analyze_task_requirements(task_description)
 
-    # Select tools based on requirements and role
-    selected_tools = select_tools_by_requirements(task_requirements, role_tools, context)
+    # Combine workflow tools with requirement-based tools
+    workflow_tools =
+      matching_workflows
+      |> Enum.flat_map(& &1.steps)
+      |> Enum.filter(&(&1 in role_tools))
+      |> Enum.uniq()
 
-    # Limit tools to prevent context overflow
-    final_tools =
-      selected_tools
-      |> Enum.take(@max_tools_per_request)
-      |> add_essential_tools(agent_role)
+    requirement_tools = select_tools_by_requirements(task_requirements, role_tools, context)
+
+    # Merge and prioritize (essential tools first, then workflow, then requirement-based)
+    essential_tools = get_essential_tools(agent_role)
+
+    combined_tools =
+      (essential_tools ++ workflow_tools ++ requirement_tools)
+      |> Enum.uniq()
+      # Dynamic limit based on model capacity
+      |> Enum.take(max_tools)
+
+    # Determine primary workflow
+    primary_workflow = List.first(matching_workflows)
 
     {:ok,
      %{
        task: task_description,
        agent_role: agent_role,
-       selected_tools: final_tools,
-       reasoning: generate_selection_reasoning(task_requirements, final_tools),
-       alternatives: get_alternative_tools(final_tools, role_tools)
+       selected_tools: combined_tools,
+       max_tools_allowed: max_tools,
+       model_context_window: Map.get(context, :model_context_window),
+       workflow: if(primary_workflow, do: primary_workflow.name, else: nil),
+       reasoning:
+         generate_selection_reasoning(task_requirements, combined_tools, matching_workflows),
+       alternatives: get_alternative_tools(combined_tools, role_tools)
      }}
+  end
+
+  @doc """
+  Get recommended tools for a specific task with workflow suggestions.
+
+  Similar to select_tools/3 but returns workflow-based recommendations
+  without strict role filtering. Useful for agent initialization.
+  """
+  def recommend_tools(task_description, context \\ %{}) do
+    # Analyze task
+    keywords = extract_keywords(task_description)
+    matching_workflows = find_matching_workflows(task_description)
+
+    # Get role recommendation
+    role = AgentRoles.recommend_role(task_description)
+    {:ok, role_tools} = AgentRoles.get_tools_for_role(role)
+
+    # Get workflow-based recommendations
+    recommended_tools =
+      case matching_workflows do
+        [] ->
+          role_tools
+
+        workflows ->
+          workflows
+          |> Enum.flat_map(& &1.steps)
+          |> Enum.filter(&(&1 in role_tools))
+          |> Enum.uniq()
+      end
+
+    # Add context-specific tools
+    context_tools = get_context_tools(context)
+
+    # Combine and limit
+    all_tools =
+      (recommended_tools ++ context_tools)
+      |> Enum.uniq()
+      |> Enum.take(@max_workflow_recommendations)
+
+    {:ok,
+     %{
+       task: task_description,
+       role: role,
+       recommended_tools: all_tools,
+       workflows: matching_workflows,
+       context: context
+     }}
+  end
+
+  @doc """
+  Get tool usage guidance for a specific tool.
+  """
+  def get_tool_guidance(tool_name) do
+    case EnhancedDescriptions.get_description(tool_name) do
+      nil -> {:error, "Tool not found: #{tool_name}"}
+      description -> {:ok, description}
+    end
+  end
+
+  @doc """
+  Get related tools that work well with the given tool.
+  """
+  def get_related_tools(tool_name) do
+    related = Map.get(@tool_relationships, tool_name, [])
+    {:ok, related}
+  end
+
+  @doc """
+  Get performance characteristics for tools.
+  """
+  def get_tool_performance(tool_names) when is_list(tool_names) do
+    performance_map =
+      Enum.reduce(tool_names, %{}, fn tool_name, acc ->
+        performance =
+          cond do
+            tool_name in @performance_guidelines["fast"] -> "fast"
+            tool_name in @performance_guidelines["medium"] -> "medium"
+            tool_name in @performance_guidelines["slow"] -> "slow"
+            true -> "unknown"
+          end
+
+        Map.put(acc, tool_name, performance)
+      end)
+
+    {:ok, performance_map}
+  end
+
+  @doc """
+  Get available workflows for common tasks.
+  """
+  def get_workflows do
+    @tool_workflows
   end
 
   @doc """
@@ -150,60 +399,64 @@ defmodule Singularity.Tools.ToolSelector do
   def validate_tool_selection(tools, context) do
     issues = []
 
-    # Check for too many tools
-    issues = if length(tools) > @max_tools_per_request do
-      [
-        %{
-          type: :too_many_tools,
-          message: "Too many tools selected (#{length(tools)} > #{@max_tools_per_request})"
-        }
-        | issues
-      ]
-    else
-      issues
-    end
+    # Check for too many tools (using default limit for validation)
+    issues =
+      if length(tools) > @default_max_tools do
+        [
+          %{
+            type: :too_many_tools,
+            message: "Too many tools selected (#{length(tools)} > #{@default_max_tools})"
+          }
+          | issues
+        ]
+      else
+        issues
+      end
 
     # Check for conflicting tools
     conflicts = find_tool_conflicts(tools)
 
-    issues = if conflicts != [] do
-      [
-        %{type: :tool_conflicts, message: "Conflicting tools: #{Enum.join(conflicts, ", ")}"}
-        | issues
-      ]
-    else
-      issues
-    end
+    issues =
+      if conflicts != [] do
+        [
+          %{type: :tool_conflicts, message: "Conflicting tools: #{Enum.join(conflicts, ", ")}"}
+          | issues
+        ]
+      else
+        issues
+      end
 
     # Check for missing essential tools
     missing_essential = find_missing_essential_tools(tools, context)
 
-    issues = if missing_essential != [] do
-      [
-        %{
-          type: :missing_essential,
-          message: "Missing essential tools: #{Enum.join(missing_essential, ", ")}"
-        }
-        | issues
-      ]
-    else
-      issues
-    end
+    issues =
+      if missing_essential != [] do
+        [
+          %{
+            type: :missing_essential,
+            message: "Missing essential tools: #{Enum.join(missing_essential, ", ")}"
+          }
+          | issues
+        ]
+      else
+        issues
+      end
 
     # Check for performance issues
     performance_issues = check_performance_issues(tools)
 
-    issues = if performance_issues != [] do
-      [
-        %{
-          type: :performance,
-          message: "Performance concerns: #{Enum.join(performance_issues, ", ")}"
-        }
-        | issues
-      ]
-    else
-      issues
-    end
+    issues =
+      if performance_issues != [] do
+        [
+          %{
+            type: :performance,
+            message: "Performance concerns: #{Enum.join(performance_issues, ", ")}"
+          }
+          | issues
+        ]
+      else
+        issues
+      end
 
     if issues == [] do
       {:ok, %{valid: true, tools: tools}}
@@ -319,25 +572,17 @@ defmodule Singularity.Tools.ToolSelector do
     # Remove duplicates and limit
     selected
     |> Enum.uniq()
-    |> Enum.take(@max_tools_per_request)
+    |> Enum.take(@default_max_tools)
   end
 
-  defp add_essential_tools(tools, agent_role) do
+  defp get_essential_tools(agent_role) do
     # Always include basic file operations for most roles
-    essential =
-      case agent_role do
-        # Read-only for PMs
-        :project_manager -> ["fs_read_file"]
-        # Read + list for others
-        _ -> ["fs_read_file", "fs_list_directory"]
-      end
-
-    # Add essential tools if not already present
-    essential_tools =
-      essential
-      |> Enum.reject(&(&1 in tools))
-
-    tools ++ essential_tools
+    case agent_role do
+      # Read-only for PMs
+      :project_manager -> ["fs_read_file"]
+      # Read + list for others
+      _ -> ["fs_read_file", "fs_list_directory"]
+    end
   end
 
   defp get_context_specific_tools(context, role_tools) do
@@ -361,8 +606,104 @@ defmodule Singularity.Tools.ToolSelector do
     tools
   end
 
-  defp generate_selection_reasoning(requirements, _tools) do
+  defp calculate_max_tools(context) do
+    # Allow explicit override
+    case Map.get(context, :max_tools) do
+      max when is_integer(max) and max > 0 ->
+        max
+
+      _ ->
+        # Calculate based on model context window
+        context_window = Map.get(context, :model_context_window)
+        get_tool_limit_for_context(context_window)
+    end
+  end
+
+  defp get_tool_limit_for_context(nil), do: @default_max_tools
+
+  defp get_tool_limit_for_context(context_size) when is_integer(context_size) do
+    @tool_limits_by_context
+    |> Enum.find(fn {{min, max}, _limit} ->
+      context_size >= min and (max == :infinity or context_size < max)
+    end)
+    |> case do
+      {_range, limit} -> limit
+      nil -> @default_max_tools
+    end
+  end
+
+  defp get_tool_limit_for_context(_), do: @default_max_tools
+
+  defp extract_keywords(text) do
+    text
+    |> String.downcase()
+    |> String.split(~r/\W+/)
+    |> Enum.filter(fn word ->
+      String.length(word) > 3 and
+        word not in ~w[
+          the and for are but not you all can had her was one our out
+          day get has him his how its may new now old see two way who
+          boy did man oil sit try use with this that from they have
+          been more when your what were said some into than make like
+          time could just know take used work well also made
+        ]
+    end)
+  end
+
+  defp find_matching_workflows(task_description) do
+    keywords = extract_keywords(task_description)
+
+    @tool_workflows
+    |> Enum.filter(fn {_name, workflow} ->
+      workflow_text =
+        (workflow.description <> " " <> Enum.join(workflow.steps, " "))
+        |> String.downcase()
+
+      Enum.any?(keywords, fn keyword ->
+        String.contains?(workflow_text, keyword)
+      end)
+    end)
+    |> Enum.map(fn {name, workflow} -> Map.put(workflow, :name, name) end)
+  end
+
+  defp get_context_tools(context) do
+    tools = []
+
+    tools =
+      if Map.get(context, :needs_summary, false) do
+        ["tools_summary", "codebase_summary"] ++ tools
+      else
+        tools
+      end
+
+    tools =
+      if Map.get(context, :needs_planning, false) do
+        ["planning_work_plan", "planning_summary"] ++ tools
+      else
+        tools
+      end
+
+    tools =
+      if Map.get(context, :needs_knowledge, false) do
+        ["knowledge_packages", "knowledge_patterns"] ++ tools
+      else
+        tools
+      end
+
+    tools
+  end
+
+  defp generate_selection_reasoning(requirements, _tools, matching_workflows) do
     reasoning = []
+
+    # Add workflow-based reasoning
+    reasoning =
+      if matching_workflows != [] do
+        workflow_names = Enum.map(matching_workflows, & &1.name)
+        ["Matched workflows: #{Enum.join(workflow_names, ", ")}"] ++ reasoning
+      else
+        reasoning
+      end
 
     reasoning =
       if requirements.needs_understanding do
@@ -414,7 +755,7 @@ defmodule Singularity.Tools.ToolSelector do
         category = find_tool_category(tool)
 
         alternatives =
-          @tool_categories[category]
+          (@tool_categories[category] || [])
           |> Enum.filter(&(&1 in role_tools and &1 != tool))
           |> Enum.take(2)
 
@@ -486,18 +827,20 @@ defmodule Singularity.Tools.ToolSelector do
 
     slow_count = Enum.count(tools, &(&1 in slow_tools))
 
-    issues = if slow_count > 2 do
-      ["Too many slow tools (#{slow_count})"] ++ issues
-    else
-      issues
-    end
+    issues =
+      if slow_count > 2 do
+        ["Too many slow tools (#{slow_count})"] ++ issues
+      else
+        issues
+      end
 
     # Check for tool combinations that might be slow
-    issues = if "codebase_analyze" in tools and "code_quality" in tools do
-      ["codebase_analyze + code_quality combination is very slow"] ++ issues
-    else
-      issues
-    end
+    issues =
+      if "codebase_analyze" in tools and "code_quality" in tools do
+        ["codebase_analyze + code_quality combination is very slow"] ++ issues
+      else
+        issues
+      end
 
     issues
   end

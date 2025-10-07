@@ -46,13 +46,8 @@ pub struct AiSignature {
 }
 
 impl AiSignature {
-  #[cfg(feature = "prompt-engine")]
-  pub fn to_metasignature(&self) -> prompt_engine::dspy::InstructionGenerator {
-    prompt_engine::dspy::InstructionGenerator {
-      current_instruction: self.instruction.clone(),
-      optimized_instruction: self.instruction.clone(),
-    }
-  }
+  // Removed to_metasignature method - prompt_engine integration removed to avoid cycles
+  // Integration should be done via NATS messaging instead of direct dependencies
 }
 
 /// A cognitive template for processing

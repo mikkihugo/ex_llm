@@ -30,12 +30,13 @@ defmodule Singularity.FlowAnalyzer do
         # Store using existing graph tables!
         store_analysis_result(file_path, result)
 
-        {:ok, %{
-          dead_ends: result["dead_ends"] || [],
-          unreachable_code: result["unreachable_code"] || [],
-          completeness: result["completeness"] || %{},
-          has_issues: result["has_issues"] || false
-        }}
+        {:ok,
+         %{
+           dead_ends: result["dead_ends"] || [],
+           unreachable_code: result["unreachable_code"] || [],
+           completeness: result["completeness"] || %{},
+           has_issues: result["has_issues"] || false
+         }}
 
       {:error, reason} ->
         Logger.error("FlowAnalyzer: Failed to analyze #{file_path}: #{inspect(reason)}")
@@ -58,11 +59,12 @@ defmodule Singularity.FlowAnalyzer do
 
     case Repo.query(query, [codebase_name]) do
       {:ok, %{rows: [[dead_ends, unreachable, avg_completeness]]}} ->
-        {:ok, %{
-          files_with_dead_ends: dead_ends || 0,
-          files_with_unreachable_code: unreachable || 0,
-          avg_completeness: avg_completeness || 0.0
-        }}
+        {:ok,
+         %{
+           files_with_dead_ends: dead_ends || 0,
+           files_with_unreachable_code: unreachable || 0,
+           avg_completeness: avg_completeness || 0.0
+         }}
 
       {:error, reason} ->
         {:error, reason}
@@ -76,20 +78,22 @@ defmodule Singularity.FlowAnalyzer do
     case Singularity.SourceCodeAnalyzer.analyze_control_flow(file_path) do
       {:ok, result} ->
         # Convert Rust struct to map
-        {:ok, %{
-          "dead_ends" => Enum.map(result.dead_ends, &Map.from_struct/1),
-          "unreachable_code" => Enum.map(result.unreachable_code, &Map.from_struct/1),
-          "completeness" => %{
-            "completeness_score" => result.completeness_score,
-            "total_paths" => result.total_paths,
-            "complete_paths" => result.complete_paths
-          },
-          "has_issues" => result.has_issues
-        }}
+        {:ok,
+         %{
+           "dead_ends" => Enum.map(result.dead_ends, &Map.from_struct/1),
+           "unreachable_code" => Enum.map(result.unreachable_code, &Map.from_struct/1),
+           "completeness" => %{
+             "completeness_score" => result.completeness_score,
+             "total_paths" => result.total_paths,
+             "complete_paths" => result.complete_paths
+           },
+           "has_issues" => result.has_issues
+         }}
 
       {:error, :nif_not_loaded} ->
         # Fallback if NIF not available
-        Logger.warn("Rust NIF not loaded, using fallback")
+        Logger.warning("Rust NIF not loaded, using fallback")
+
         case File.read(file_path) do
           {:ok, source_code} -> basic_analysis(source_code)
           {:error, reason} -> {:error, reason}
@@ -111,7 +115,9 @@ defmodule Singularity.FlowAnalyzer do
     }
 
     case Singularity.NatsOrchestrator.request("flow.analyze", request, timeout: 30_000) do
-      {:ok, response} -> {:ok, response}
+      {:ok, response} ->
+        {:ok, response}
+
       {:error, _reason} ->
         # Fallback: Basic analysis using existing Elixir code
         basic_analysis(source_code)
@@ -124,12 +130,13 @@ defmodule Singularity.FlowAnalyzer do
 
     dead_ends = find_simple_dead_ends(lines)
 
-    {:ok, %{
-      "dead_ends" => dead_ends,
-      "unreachable_code" => [],
-      "completeness" => %{"completeness_score" => if(Enum.empty?(dead_ends), do: 1.0, else: 0.5)},
-      "has_issues" => !Enum.empty?(dead_ends)
-    }}
+    {:ok,
+     %{
+       "dead_ends" => dead_ends,
+       "unreachable_code" => [],
+       "completeness" => %{"completeness_score" => if(Enum.empty?(dead_ends), do: 1.0, else: 0.5)},
+       "has_issues" => !Enum.empty?(dead_ends)
+     }}
   end
 
   defp find_simple_dead_ends(lines) do
@@ -139,8 +146,8 @@ defmodule Singularity.FlowAnalyzer do
     |> Enum.filter(fn {line, _idx} ->
       # Functions that might raise without handling
       String.contains?(line, "!") and
-      not String.contains?(line, "rescue") and
-      not String.contains?(line, "try")
+        not String.contains?(line, "rescue") and
+        not String.contains?(line, "try")
     end)
     |> Enum.map(fn {line, idx} ->
       %{
@@ -189,7 +196,9 @@ defmodule Singularity.FlowAnalyzer do
     ]
 
     case Repo.query(query, params) do
-      {:ok, _} -> :ok
+      {:ok, _} ->
+        :ok
+
       {:error, reason} ->
         Logger.error("FlowAnalyzer: Failed to store result: #{inspect(reason)}")
         :ok

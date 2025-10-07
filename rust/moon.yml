@@ -28,3 +28,18 @@ tasks:
     inputs:
       - 'src/**/*'
       - 'Cargo.toml'
+
+  service:
+    command: 'cargo build --release --bin singularity-rust-service'
+    inputs:
+      - 'src/**/*'
+      - 'Cargo.toml'
+    outputs:
+      - 'target/release/singularity-rust-service'
+
+  start:
+    command: 'cargo run --release --bin singularity-rust-service'
+    deps:
+      - 'service'
+    options:
+      persistent: true

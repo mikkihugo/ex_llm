@@ -297,11 +297,47 @@ defmodule Singularity.PackageRegistryCollector do
 
   defp parse_datetime(nil), do: nil
 
-  defp parse_datetime(datetime_string) do
-    case DateTime.from_iso8601(datetime_string) do
-      {:ok, datetime, _offset} -> datetime
-      {:error, _} -> nil
+  defp parse_datetime(datetime) when is_binary(datetime) do
+    case DateTime.from_iso8601(datetime) do
+      {:ok, dt, _} -> dt
+      {:error, _} ->
+        # Try parsing as Unix timestamp
+        case Integer.parse(datetime) do
+          {timestamp, ""} when is_integer(timestamp) ->
+            DateTime.from_unix(timestamp)
+          _ ->
+            # Try parsing common formats
+            case parse_common_datetime_formats(datetime) do
+              {:ok, dt} -> dt
+              {:error, _} -> nil
+            end
+        end
     end
+  end
+
+  defp parse_datetime(datetime) when is_integer(datetime) do
+    DateTime.from_unix(datetime)
+  end
+
+  defp parse_datetime(_), do: nil
+
+  defp parse_common_datetime_formats(datetime) do
+    # Try common datetime formats
+    formats = [
+      "%Y-%m-%d %H:%M:%S",
+      "%Y-%m-%dT%H:%M:%S",
+      "%Y-%m-%dT%H:%M:%SZ",
+      "%Y-%m-%dT%H:%M:%S.%fZ",
+      "%Y-%m-%dT%H:%M:%S%z",
+      "%Y-%m-%dT%H:%M:%S.%f%z"
+    ]
+
+    Enum.find_value(formats, fn format ->
+      case Timex.parse(datetime, format) do
+        {:ok, dt} -> {:ok, dt}
+        {:error, _} -> nil
+      end
+    end) || {:error, :invalid_format}
   end
 
   defp parse_manifest(manifest_path) do

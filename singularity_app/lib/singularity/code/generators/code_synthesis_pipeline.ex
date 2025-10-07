@@ -167,7 +167,7 @@ defmodule Singularity.CodeSynthesisPipeline do
     }
   end
 
-  defp detect_context(path, opts) when is_binary(path) do
+  defp detect_context(path, _opts) when is_binary(path) do
     # Parse path to extract context
     # Examples:
     #   "singularity_app/lib/singularity/cache.ex" → elixir, phoenix app
@@ -242,6 +242,253 @@ defmodule Singularity.CodeSynthesisPipeline do
     {:error, :not_implemented}
   end
 
+  defp query_facts_for_tech_stack(repo) do
+    try do
+      # Use existing knowledge base systems to query tech stack facts
+      tech_stack_facts = get_tech_stack_facts(repo)
+      
+      if tech_stack_facts != [] do
+        {:ok, tech_stack_facts}
+      else
+        # Fallback to basic tech detection
+        basic_tech_detection = detect_basic_tech_stack(repo)
+        {:ok, basic_tech_detection}
+      end
+    rescue
+      error ->
+        Logger.warning("Failed to query tech stack facts for #{repo}: #{inspect(error)}")
+        {:error, :query_failed}
+    end
+  end
+
+  defp get_tech_stack_facts(repo) do
+    # Query existing knowledge base systems
+    facts = []
+    
+    # Query package registry knowledge
+    case Singularity.Search.PackageRegistryKnowledge.search("tech stack", %{ecosystem: :all, top_k: 10}) do
+      {:ok, results} ->
+        facts = facts ++ Enum.map(results, &format_package_fact/1)
+      _ -> :ok
+    end
+    
+    # Query semantic code search for tech patterns
+    case Singularity.Search.SemanticCodeSearch.search("technology stack patterns", %{codebase_id: repo, top_k: 5}) do
+      {:ok, results} ->
+        facts = facts ++ Enum.map(results, &format_semantic_fact/1)
+      _ -> :ok
+    end
+    
+    # Query framework pattern store
+    case Singularity.Code.Patterns.FrameworkPatternStore.search("framework patterns", %{top_k: 5}) do
+      {:ok, results} ->
+        facts = facts ++ Enum.map(results, &format_framework_fact/1)
+      _ -> :ok
+    end
+    
+    facts
+  end
+
+  defp format_package_fact(result) do
+    %{
+      type: "package",
+      name: Map.get(result, :package_name, "unknown"),
+      version: Map.get(result, :version, "unknown"),
+      ecosystem: Map.get(result, :ecosystem, "unknown"),
+      description: Map.get(result, :description, ""),
+      confidence: Map.get(result, :similarity, 0.0),
+      source: "package_registry"
+    }
+  end
+
+  defp format_semantic_fact(result) do
+    %{
+      type: "semantic_pattern",
+      content: Map.get(result, :content, ""),
+      file_path: Map.get(result, :file_path, ""),
+      similarity: Map.get(result, :similarity, 0.0),
+      source: "semantic_search"
+    }
+  end
+
+  defp format_framework_fact(result) do
+    %{
+      type: "framework_pattern",
+      pattern_name: Map.get(result, :pattern_name, "unknown"),
+      framework: Map.get(result, :framework, "unknown"),
+      description: Map.get(result, :description, ""),
+      confidence: Map.get(result, :confidence, 0.0),
+      source: "framework_patterns"
+    }
+  end
+
+  defp detect_basic_tech_stack(repo) do
+    # Basic tech stack detection using file system analysis
+    tech_stack = []
+    
+    # Check for common tech stack indicators
+    tech_stack = tech_stack ++ detect_elixir_stack(repo)
+    tech_stack = tech_stack ++ detect_rust_stack(repo)
+    tech_stack = tech_stack ++ detect_javascript_stack(repo)
+    tech_stack = tech_stack ++ detect_python_stack(repo)
+    tech_stack = tech_stack ++ detect_go_stack(repo)
+    tech_stack = tech_stack ++ detect_java_stack(repo)
+    
+    tech_stack
+  end
+
+  defp detect_elixir_stack(repo) do
+    if File.exists?(Path.join(repo, "mix.exs")) do
+      [%{
+        type: "language",
+        name: "Elixir",
+        version: detect_elixir_version(repo),
+        confidence: 0.9,
+        source: "file_detection"
+      }]
+    else
+      []
+    end
+  end
+
+  defp detect_rust_stack(repo) do
+    if File.exists?(Path.join(repo, "Cargo.toml")) do
+      [%{
+        type: "language",
+        name: "Rust",
+        version: detect_rust_version(repo),
+        confidence: 0.9,
+        source: "file_detection"
+      }]
+    else
+      []
+    end
+  end
+
+  defp detect_javascript_stack(repo) do
+    if File.exists?(Path.join(repo, "package.json")) do
+      [%{
+        type: "language",
+        name: "JavaScript/TypeScript",
+        version: detect_node_version(repo),
+        confidence: 0.8,
+        source: "file_detection"
+      }]
+    else
+      []
+    end
+  end
+
+  defp detect_python_stack(repo) do
+    if File.exists?(Path.join(repo, "requirements.txt")) or File.exists?(Path.join(repo, "pyproject.toml")) do
+      [%{
+        type: "language",
+        name: "Python",
+        version: detect_python_version(repo),
+        confidence: 0.8,
+        source: "file_detection"
+      }]
+    else
+      []
+    end
+  end
+
+  defp detect_go_stack(repo) do
+    if File.exists?(Path.join(repo, "go.mod")) do
+      [%{
+        type: "language",
+        name: "Go",
+        version: detect_go_version(repo),
+        confidence: 0.9,
+        source: "file_detection"
+      }]
+    else
+      []
+    end
+  end
+
+  defp detect_java_stack(repo) do
+    if File.exists?(Path.join(repo, "pom.xml")) or File.exists?(Path.join(repo, "build.gradle")) do
+      [%{
+        type: "language",
+        name: "Java",
+        version: detect_java_version(repo),
+        confidence: 0.8,
+        source: "file_detection"
+      }]
+    else
+      []
+    end
+  end
+
+  defp detect_elixir_version(repo) do
+    case File.read(Path.join(repo, "mix.exs")) do
+      {:ok, content} ->
+        case Regex.run(~r/elixir: "([^"]+)"/, content) do
+          [_, version] -> version
+          _ -> "unknown"
+        end
+      _ -> "unknown"
+    end
+  end
+
+  defp detect_rust_version(repo) do
+    case File.read(Path.join(repo, "Cargo.toml")) do
+      {:ok, content} ->
+        case Regex.run(~r/edition = "([^"]+)"/, content) do
+          [_, edition] -> edition
+          _ -> "unknown"
+        end
+      _ -> "unknown"
+    end
+  end
+
+  defp detect_node_version(repo) do
+    case File.read(Path.join(repo, "package.json")) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} ->
+            Map.get(data, "engines", %{})
+            |> Map.get("node", "unknown")
+          _ -> "unknown"
+        end
+      _ -> "unknown"
+    end
+  end
+
+  defp detect_python_version(repo) do
+    case File.read(Path.join(repo, "pyproject.toml")) do
+      {:ok, content} ->
+        case Regex.run(~r/python = "([^"]+)"/, content) do
+          [_, version] -> version
+          _ -> "unknown"
+        end
+      _ -> "unknown"
+    end
+  end
+
+  defp detect_go_version(repo) do
+    case File.read(Path.join(repo, "go.mod")) do
+      {:ok, content} ->
+        case Regex.run(~r/go (\d+\.\d+)/, content) do
+          [_, version] -> version
+          _ -> "unknown"
+        end
+      _ -> "unknown"
+    end
+  end
+
+  defp detect_java_version(repo) do
+    case File.read(Path.join(repo, "pom.xml")) do
+      {:ok, content} ->
+        case Regex.run(~r/<java\.version>([^<]+)<\/java\.version>/, content) do
+          [_, version] -> version
+          _ -> "unknown"
+        end
+      _ -> "unknown"
+    end
+  end
+
   defp detect_tech_from_path_hints(path) do
     hints = []
 
@@ -279,7 +526,7 @@ defmodule Singularity.CodeSynthesisPipeline do
     hints
   end
 
-  defp detect_project_type(repo, path) do
+  defp detect_project_type(_repo, path) do
     cond do
       String.contains?(path, "_web") or String.contains?(path, "phoenix") -> :phoenix_app
       String.contains?(path, "lib/") and String.ends_with?(path, ".ex") -> :elixir_library
@@ -589,7 +836,7 @@ defmodule Singularity.CodeSynthesisPipeline do
   Much faster than sequential generation.
   """
   def batch_generate(tasks, opts \\ []) do
-    language = Keyword.get(opts, :language, "elixir")
+    _language = Keyword.get(opts, :language, "elixir")
 
     # Generate all in parallel
     tasks

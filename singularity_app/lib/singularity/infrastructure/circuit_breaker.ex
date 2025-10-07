@@ -68,7 +68,7 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
             execute_and_record(circuit_name, fun, timeout_ms)
 
           false ->
-            Logger.warninging("Circuit breaker is open, rejecting request", circuit: circuit_name)
+            Logger.warning("Circuit breaker is open, rejecting request", circuit: circuit_name)
             {:error, :circuit_open}
         end
     end
@@ -218,7 +218,7 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
             last_failure_time: DateTime.utc_now()
         }
       else
-        Logger.warninging("Circuit breaker recorded failure",
+        Logger.warning("Circuit breaker recorded failure",
           name: state.name,
           failure_count: new_failure_count,
           threshold: state.failure_threshold

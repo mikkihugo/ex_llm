@@ -122,11 +122,11 @@ defmodule Singularity.Repo.Migrations.CreateSemanticCodeSearchTables do
     create index(:codebase_metadata, [:codebase_id, :pagerank_score])
 
     # Vector index for similarity search (ivfflat for cosine similarity)
-    create index(:codebase_metadata, [:vector_embedding],
-      using: :ivfflat,
-      name: :idx_codebase_metadata_vector,
-      prefix: :vector_cosine_ops
-    )
+    execute """
+    CREATE INDEX idx_codebase_metadata_vector ON codebase_metadata 
+    USING ivfflat (vector_embedding vector_cosine_ops) 
+    WITH (lists = 100)
+    """
 
     # ===== CODEBASE REGISTRY TABLE =====
     # Tracks codebase paths and analysis status
@@ -169,11 +169,11 @@ defmodule Singularity.Repo.Migrations.CreateSemanticCodeSearchTables do
     create index(:graph_nodes, [:codebase_id, :node_type])
 
     # Vector index for graph node embeddings
-    create index(:graph_nodes, [:vector_embedding],
-      using: :ivfflat,
-      name: :idx_graph_nodes_vector,
-      prefix: :vector_cosine_ops
-    )
+    execute """
+    CREATE INDEX idx_graph_nodes_vector ON graph_nodes 
+    USING ivfflat (vector_embedding vector_cosine_ops) 
+    WITH (lists = 100)
+    """
 
     # ===== GRAPH EDGES TABLE =====
     # Graph edges for relationships (supports DAG)
@@ -235,11 +235,11 @@ defmodule Singularity.Repo.Migrations.CreateSemanticCodeSearchTables do
     create index(:vector_search, [:codebase_id])
 
     # Vector index for semantic search
-    create index(:vector_search, [:vector_embedding],
-      using: :ivfflat,
-      name: :idx_vector_search_embedding,
-      prefix: :vector_cosine_ops
-    )
+    execute """
+    CREATE INDEX idx_vector_search_embedding ON vector_search 
+    USING ivfflat (vector_embedding vector_cosine_ops) 
+    WITH (lists = 100)
+    """
 
     # ===== VECTOR SIMILARITY CACHE TABLE =====
     # Performance cache for similarity scores

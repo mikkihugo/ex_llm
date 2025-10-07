@@ -50,7 +50,6 @@ defmodule Singularity.AgentFlowTracker do
 
   require Logger
   alias Singularity.Repo
-  import Ecto.Query
 
   @type session_id :: binary()
   @type agent_id :: String.t()
@@ -317,7 +316,8 @@ defmodule Singularity.AgentFlowTracker do
       Keyword.get(opts, :decision_method, "unknown"),
       Keyword.get(opts, :rules_applied),
       Jason.encode!(rejected),
-      Keyword.get(opts, :rejection_reasons) && Jason.encode!(Keyword.get(opts, :rejection_reasons))
+      Keyword.get(opts, :rejection_reasons) &&
+        Jason.encode!(Keyword.get(opts, :rejection_reasons))
     ]
 
     case Repo.query(query, params) do
@@ -425,7 +425,10 @@ defmodule Singularity.AgentFlowTracker do
 
     case Repo.query(query, [session_id, Jason.encode!(error)]) do
       {:ok, _} ->
-        Logger.warn("AgentFlowTracker: Session #{session_id} failed: #{inspect(error)}")
+        Logger.warning("AgentFlowTracker: Session #{session_id} failed: #{inspect(error)}", %{
+          session_id: session_id
+        })
+
         :ok
 
       {:error, reason} ->

@@ -33,14 +33,14 @@ defmodule Singularity.PackageAndCodebaseSearch do
       # => %{
       #   packages: [
       #     %{package_name: "Floki", ecosystem: "hex", version: "0.36.0", ...},
-      #     %{package_name: "HTTPoison", ecosystem: "hex", version: "2.2.0", ...}
+      #     %{package_name: "Finch", ecosystem: "hex", version: "0.16.0", ...}
       #   ],
       #   your_code: [
       #     %{path: "lib/scraper.ex", code: "def scrape_page...", similarity: 0.94}
       #   ],
       #   combined_insights: %{
       #     recommended_approach: "Use Floki 0.36 (latest) for parsing HTML",
-      #     your_previous_implementation: "lib/scraper.ex:15 - You used HTTPoison + Floki before"
+      #     your_previous_implementation: "lib/scraper.ex:15 - You used Finch + Floki before"
       #   }
       # }
   """
@@ -213,22 +213,43 @@ defmodule Singularity.PackageAndCodebaseSearch do
     )
   end
 
-  defp search_your_code(_query, nil, _limit), do: []
-
-  defp search_your_code(query, codebase_id, limit) do
-    # Use Repo for connection pooling - no manual connection management needed
-    with {:ok, query_vector} <- EmbeddingGenerator.embed(query),
-         results <- SemanticCodeSearch.semantic_search(Repo, codebase_id, query_vector, limit) do
-      results
-    else
-      {:error, reason} ->
-        Logger.warninging("Failed to search your code: #{inspect(reason)}")
+  defp search_your_code(query, codebase_id, limit) when is_binary(query) and is_binary(codebase_id) do
+    try do
+      case Singularity.Search.SemanticCodeSearch.search(query, %{
+             codebase_id: codebase_id,
+             limit: limit || 10
+           }) do
+        {:ok, results} ->
+          results
+          |> Enum.map(fn result ->
+            %{
+              path: result.path,
+              similarity: result.similarity,
+              content_preview: String.slice(result.content || "", 0, 200) <> "...",
+              language: result.language,
+              functions: result.functions || [],
+              metadata: result.metadata || %{}
+            }
+          end)
+        
+        {:error, reason} ->
+          Logger.warning("Semantic code search failed: #{inspect(reason)}")
+          []
+      end
+    rescue
+      error ->
+        Logger.error("Code search error: #{inspect(error)}")
         []
     end
-  rescue
-    error ->
-      Logger.error("Error searching your code: #{inspect(error)}")
-      []
+  end
+
+  defp search_your_code(_query, nil, _limit) do
+    Logger.warning("No codebase_id provided for code search")
+    []
+  end
+
+  defp search_your_code(_query, _codebase_id, _limit) do
+    []
   end
 
   defp generate_insights(query, packages, your_code, ecosystem) do

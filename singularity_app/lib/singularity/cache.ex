@@ -1,54 +1,54 @@
 defmodule Singularity.Cache do
   @moduledoc """
   Unified caching interface that consolidates all cache implementations.
-  
+
   ## Problem Solved
-  
+
   Previously had 5+ scattered cache implementations:
   - `LLM.SemanticCache` (PostgreSQL) - LLM response caching
   - `Packages.MemoryCache` (ETS) - In-memory caching  
   - `GlobalSemanticCache` (Rust + redb) - Code embedding caching
   - `vector_similarity_cache` (PostgreSQL) - Similarity scores
   - `rag_documents` (PostgreSQL) - RAG document caching
-  
+
   ## Architecture
-  
+
   **Multi-Layer Caching Strategy:**
-  
+
   1. **Memory Cache** (L1) - Fastest, limited size (ETS)
   2. **PostgreSQL Cache** (L2) - Persistent, semantic search (pgvector)
   3. **Rust Cache** (L3) - High-performance code content (redb)
-  
+
   ## Cache Types & Their Purposes
-  
+
   ### `:llm` - LLM Response Caching
   - **Storage**: PostgreSQL + pgvector
   - **Purpose**: Cache LLM responses for similar prompts
   - **Use Case**: Avoid expensive Claude/GPT calls for similar questions
   - **Key Format**: `prompt_embedding -> response`
   - **TTL**: Configurable (default: 1 hour)
-  
+
   ### `:embeddings` - Code Embedding Caching  
   - **Storage**: Rust + redb (embedded database)
   - **Purpose**: Cache expensive embedding computations during code parsing
   - **Use Case**: Avoid recomputing embeddings for identical code content
   - **Key Format**: `content_hash -> semantic_vector` (768-dim)
   - **Context**: Used in `CandleTransformer.embed()` during analysis
-  
+
   ### `:semantic` - Semantic Similarity Caching
   - **Storage**: PostgreSQL + pgvector
   - **Purpose**: Cache similarity scores for performance
   - **Use Case**: Avoid recomputing cosine similarity for same queries
   - **Key Format**: `query_vector_hash -> similarity_scores`
-  
+
   ### `:memory` - In-Memory Caching
   - **Storage**: ETS (Erlang Term Storage)
   - **Purpose**: Fast access to frequently used data
   - **Use Case**: Session data, temporary results, hot paths
   - **TTL**: Configurable (default: 1 hour)
-  
+
   ## Usage Examples
-  
+
       # LLM response caching (saves money on API calls)
       {:ok, response} = Cache.get(:llm, "prompt_hash")
       Cache.put(:llm, "prompt_hash", response, ttl: 3600)
@@ -63,9 +63,9 @@ defmodule Singularity.Cache do
       # Memory caching (fastest access)
       {:ok, data} = Cache.get(:memory, "session_123")
       Cache.put(:memory, "session_123", data, ttl: 1800)
-  
+
   ## Migration from Old Modules
-  
+
   ### Before (Scattered)
       alias Singularity.LLM.SemanticCache
       alias Singularity.Packages.MemoryCache
@@ -73,30 +73,30 @@ defmodule Singularity.Cache do
       
       SemanticCache.find_similar(prompt)
       MemoryCache.get(key)
-  
+
   ### After (Unified)
       alias Singularity.Cache
       
       Cache.find_similar(:llm, prompt)
       Cache.get(:memory, key)
-  
+
   ## Performance Characteristics
-  
+
   - **Memory Cache**: ~1μs access time, limited to ~100MB
   - **PostgreSQL Cache**: ~1ms access time, unlimited size, persistent
   - **Rust Cache**: ~100μs access time, optimized for code content
-  
+
   ## Database Schema
-  
+
   All cache data is stored in unified `cache.*` tables:
-  
+
   - **`cache_llm_responses`** - LLM response caching (PostgreSQL + pgvector)
   - **`cache_code_embeddings`** - Code embedding caching (PostgreSQL + pgvector)  
   - **`cache_semantic_similarity`** - Similarity score caching (PostgreSQL)
   - **`cache_memory`** - In-memory caching (PostgreSQL with TTL)
-  
+
   ## Implementation Status
-  
+
   - ✅ `:llm` - Fully implemented (unified database)
   - ✅ `:memory` - Fully implemented (unified database)
   - ✅ `:embeddings` - Fully implemented (unified database)
@@ -117,15 +117,16 @@ defmodule Singularity.Cache do
   """
   @spec get(cache_type(), cache_key()) :: {:ok, cache_value()} | :miss
   def get(:llm, key) do
-    query = from c in "cache_llm_responses",
-      where: c.cache_key == ^key,
-      select: %{
-        response: c.response,
-        model: c.model,
-        provider: c.provider,
-        tokens_used: c.tokens_used,
-        cost_cents: c.cost_cents
-      }
+    query =
+      from c in "cache_llm_responses",
+        where: c.cache_key == ^key,
+        select: %{
+          response: c.response,
+          model: c.model,
+          provider: c.provider,
+          tokens_used: c.tokens_used,
+          cost_cents: c.cost_cents
+        }
 
     case Repo.one(query) do
       nil -> :miss
@@ -134,9 +135,11 @@ defmodule Singularity.Cache do
   end
 
   def get(:memory, key) do
-    query = from c in "cache_memory",
-      where: c.cache_key == ^key and (is_nil(c.expires_at) or c.expires_at > ^DateTime.utc_now()),
-      select: %{value: c.value}
+    query =
+      from c in "cache_memory",
+        where:
+          c.cache_key == ^key and (is_nil(c.expires_at) or c.expires_at > ^DateTime.utc_now()),
+        select: %{value: c.value}
 
     case Repo.one(query) do
       nil -> :miss
@@ -145,14 +148,15 @@ defmodule Singularity.Cache do
   end
 
   def get(:embeddings, key) do
-    query = from c in "cache_code_embeddings",
-      where: c.content_hash == ^key,
-      select: %{
-        embedding: c.embedding,
-        content: c.content,
-        language: c.language,
-        file_path: c.file_path
-      }
+    query =
+      from c in "cache_code_embeddings",
+        where: c.content_hash == ^key,
+        select: %{
+          embedding: c.embedding,
+          content: c.content,
+          language: c.language,
+          file_path: c.file_path
+        }
 
     case Repo.one(query) do
       nil -> :miss
@@ -161,13 +165,14 @@ defmodule Singularity.Cache do
   end
 
   def get(:semantic, key) do
-    query = from c in "cache_semantic_similarity",
-      where: c.query_hash == ^key,
-      select: %{
-        similarity_score: c.similarity_score,
-        target_hash: c.target_hash,
-        query_type: c.query_type
-      }
+    query =
+      from c in "cache_semantic_similarity",
+        where: c.query_hash == ^key,
+        select: %{
+          similarity_score: c.similarity_score,
+          target_hash: c.target_hash,
+          query_type: c.query_type
+        }
 
     case Repo.one(query) do
       nil -> :miss
@@ -195,10 +200,11 @@ defmodule Singularity.Cache do
       metadata: opts[:metadata] || %{}
     }
 
-    Repo.insert_all("cache_llm_responses", [changeset], 
+    Repo.insert_all("cache_llm_responses", [changeset],
       on_conflict: {:replace, [:response, :tokens_used, :cost_cents, :last_accessed]},
       conflict_target: [:cache_key]
     )
+
     :ok
   end
 
@@ -217,6 +223,7 @@ defmodule Singularity.Cache do
       on_conflict: {:replace, [:value, :ttl_seconds, :expires_at, :hit_count]},
       conflict_target: [:cache_key]
     )
+
     :ok
   end
 
@@ -234,6 +241,7 @@ defmodule Singularity.Cache do
       on_conflict: {:replace, [:embedding, :content]},
       conflict_target: [:content_hash]
     )
+
     :ok
   end
 
@@ -249,6 +257,7 @@ defmodule Singularity.Cache do
       on_conflict: {:replace, [:similarity_score]},
       conflict_target: [:query_hash, :target_hash]
     )
+
     :ok
   end
 
@@ -263,12 +272,43 @@ defmodule Singularity.Cache do
     provider = Keyword.get(opts, :provider)
     model = Keyword.get(opts, :model)
 
-    Singularity.LLM.SemanticCache.find_similar(query, threshold: threshold, provider: provider, model: model)
+    Singularity.LLM.SemanticCache.find_similar(query,
+      threshold: threshold,
+      provider: provider,
+      model: model
+    )
   end
 
   def find_similar(:semantic, query, opts) do
-    # TODO: Implement semantic similarity search
-    :miss
+    # Implement semantic similarity search using embedding service
+    threshold = Keyword.get(opts, :threshold, 0.8)
+    limit = Keyword.get(opts, :limit, 10)
+
+    case Singularity.EmbeddingService.generate_embedding(query) do
+      {:ok, query_embedding} ->
+        # Search for similar embeddings in the database
+        case Singularity.CodeStore.find_similar_embeddings(query_embedding,
+               threshold: threshold,
+               limit: limit
+             ) do
+          {:ok, results} ->
+            Logger.debug("Semantic search completed",
+              query: query,
+              results_count: length(results),
+              threshold: threshold
+            )
+
+            {:ok, results}
+
+          {:error, reason} ->
+            Logger.error("Semantic search failed", reason: reason)
+            :miss
+        end
+
+      {:error, reason} ->
+        Logger.error("Embedding generation failed", reason: reason)
+        :miss
+    end
   end
 
   def find_similar(_type, _query, _opts) do
@@ -279,20 +319,94 @@ defmodule Singularity.Cache do
   Clear cache by type or all caches.
   """
   @spec clear(cache_type() | :all) :: :ok
-  def clear(:all) do
-    clear(:llm)
-    clear(:memory)
-    clear(:embeddings)
-    clear(:semantic)
-  end
-
   def clear(:memory) do
-    Singularity.MemoryCache.clear(:all)
+    try do
+      Singularity.MemoryCache.clear(:all)
+      Logger.info("Cleared memory cache")
+      :ok
+    rescue
+      error ->
+        Logger.error("Failed to clear memory cache: #{inspect(error)}")
+        {:error, error}
+    end
   end
 
-  def clear(_type) do
-    # TODO: Implement cache clearing for other types
-    :ok
+  def clear(:semantic) do
+    try do
+      # Clear semantic search cache
+      Singularity.Search.SemanticCodeSearch.clear_cache()
+      Logger.info("Cleared semantic cache")
+      :ok
+    rescue
+      error ->
+        Logger.error("Failed to clear semantic cache: #{inspect(error)}")
+        {:error, error}
+    end
+  end
+
+  def clear(:llm) do
+    try do
+      # Clear LLM response cache
+      Singularity.LLM.SemanticCache.clear_all()
+      Logger.info("Cleared LLM cache")
+      :ok
+    rescue
+      error ->
+        Logger.error("Failed to clear LLM cache: #{inspect(error)}")
+        {:error, error}
+    end
+  end
+
+  def clear(:embedding) do
+    try do
+      # Clear embedding cache
+      Singularity.EmbeddingEngine.clear_cache()
+      Logger.info("Cleared embedding cache")
+      :ok
+    rescue
+      error ->
+        Logger.error("Failed to clear embedding cache: #{inspect(error)}")
+        {:error, error}
+    end
+  end
+
+  def clear(:analysis) do
+    try do
+      # Clear analysis result cache
+      Singularity.Code.Analyzers.ArchitectureAgent.clear_cache()
+      Logger.info("Cleared analysis cache")
+      :ok
+    rescue
+      error ->
+        Logger.error("Failed to clear analysis cache: #{inspect(error)}")
+        {:error, error}
+    end
+  end
+
+  def clear(:all) do
+    # Clear all cache types
+    results = [
+      clear(:memory),
+      clear(:semantic),
+      clear(:llm),
+      clear(:embedding),
+      clear(:analysis)
+    ]
+    
+    failed = Enum.filter(results, &match?({:error, _}, &1))
+    
+    if Enum.empty?(failed) do
+      Logger.info("Successfully cleared all caches")
+      :ok
+    else
+      Logger.error("Failed to clear some caches: #{inspect(failed)}")
+      {:error, failed}
+    end
+  end
+
+  def clear(type) do
+    Logger.warning("Unknown cache type for clearing: #{inspect(type)}")
+    {:error, :unknown_cache_type}
   end
 
   @doc """

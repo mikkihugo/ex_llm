@@ -233,21 +233,178 @@ defmodule Singularity.DuplicationDetector do
 
   defp find_duplicates_in_group(_type, services) when length(services) < 2, do: []
 
-  defp find_duplicates_in_group(type, services) do
-    for s1 <- services,
-        s2 <- services,
-        s1.filepath < s2.filepath do
-      similarity = calculate_similarity(s1.patterns, s2.patterns)
-
-      if similarity >= 0.7 do
-        %{
-          type: type,
-          duplicates: [s1, s2],
-          similarity: similarity
-        }
+  defp find_duplicates_in_group(type, services) when is_list(services) do
+    try do
+      case type do
+        :function ->
+          find_function_duplicates(services)
+        
+        :module ->
+          find_module_duplicates(services)
+        
+        :pattern ->
+          find_pattern_duplicates(services)
+        
+        :structure ->
+          find_structure_duplicates(services)
+        
+        _ ->
+          find_generic_duplicates(services)
       end
+    rescue
+      error ->
+        Logger.warning("Duplicate detection failed for type #{type}: #{inspect(error)}")
+        []
     end
-    |> Enum.reject(&is_nil/1)
+  end
+
+  defp find_duplicates_in_group(_, _), do: []
+
+  defp find_function_duplicates(services) do
+    services
+    |> Enum.group_by(&extract_function_signature/1)
+    |> Enum.filter(fn {_signature, group} -> length(group) > 1 end)
+    |> Enum.map(fn {signature, group} ->
+      %{
+        type: :function,
+        signature: signature,
+        count: length(group),
+        services: group,
+        similarity_score: calculate_similarity_score(group)
+      }
+    end)
+  end
+
+  defp find_module_duplicates(services) do
+    services
+    |> Enum.group_by(&extract_module_structure/1)
+    |> Enum.filter(fn {_structure, group} -> length(group) > 1 end)
+    |> Enum.map(fn {structure, group} ->
+      %{
+        type: :module,
+        structure: structure,
+        count: length(group),
+        services: group,
+        similarity_score: calculate_similarity_score(group)
+      }
+    end)
+  end
+
+  defp find_pattern_duplicates(services) do
+    services
+    |> Enum.group_by(&extract_code_pattern/1)
+    |> Enum.filter(fn {_pattern, group} -> length(group) > 1 end)
+    |> Enum.map(fn {pattern, group} ->
+      %{
+        type: :pattern,
+        pattern: pattern,
+        count: length(group),
+        services: group,
+        similarity_score: calculate_similarity_score(group)
+      }
+    end)
+  end
+
+  defp find_structure_duplicates(services) do
+    services
+    |> Enum.group_by(&extract_structural_features/1)
+    |> Enum.filter(fn {_features, group} -> length(group) > 1 end)
+    |> Enum.map(fn {features, group} ->
+      %{
+        type: :structure,
+        features: features,
+        count: length(group),
+        services: group,
+        similarity_score: calculate_similarity_score(group)
+      }
+    end)
+  end
+
+  defp find_generic_duplicates(services) do
+    services
+    |> Enum.group_by(&extract_generic_features/1)
+    |> Enum.filter(fn {_features, group} -> length(group) > 1 end)
+    |> Enum.map(fn {features, group} ->
+      %{
+        type: :generic,
+        features: features,
+        count: length(group),
+        services: group,
+        similarity_score: calculate_similarity_score(group)
+      }
+    end)
+  end
+
+  defp extract_function_signature(service) do
+    # Extract function signature from service
+    case service do
+      %{functions: functions} when is_list(functions) ->
+        functions
+        |> Enum.map(fn func ->
+          "#{func.name}(#{Enum.join(func.params || [], ", ")})"
+        end)
+        |> Enum.sort()
+        |> Enum.join("; ")
+      
+      _ ->
+        "unknown"
+    end
+  end
+
+  defp extract_module_structure(service) do
+    # Extract module structure from service
+    case service do
+      %{module_name: name, functions: functions} ->
+        "#{name}:#{length(functions || [])}"
+      
+      _ ->
+        "unknown"
+    end
+  end
+
+  defp extract_code_pattern(service) do
+    # Extract code pattern from service
+    case service do
+      %{code: code} when is_binary(code) ->
+        # Simple pattern extraction based on common structures
+        patterns = []
+        patterns = if String.contains?(code, "def "), do: ["def" | patterns], else: patterns
+        patterns = if String.contains?(code, "case "), do: ["case" | patterns], else: patterns
+        patterns = if String.contains?(code, "with "), do: ["with" | patterns], else: patterns
+        patterns = if String.contains?(code, "try "), do: ["try" | patterns], else: patterns
+        
+        Enum.sort(patterns) |> Enum.join(",")
+      
+      _ ->
+        "unknown"
+    end
+  end
+
+  defp extract_structural_features(service) do
+    # Extract structural features from service
+    features = []
+    features = if Map.has_key?(service, :functions), do: ["functions" | features], else: features
+    features = if Map.has_key?(service, :types), do: ["types" | features], else: features
+    features = if Map.has_key?(service, :macros), do: ["macros" | features], else: features
+    features = if Map.has_key?(service, :callbacks), do: ["callbacks" | features], else: features
+    
+    Enum.sort(features) |> Enum.join(",")
+  end
+
+  defp extract_generic_features(service) do
+    # Extract generic features for comparison
+    Map.keys(service)
+    |> Enum.sort()
+    |> Enum.join(",")
+  end
+
+  defp calculate_similarity_score(group) do
+    if length(group) > 1 do
+      # Simple similarity score based on group size
+      min(1.0, length(group) / 10.0)
+    else
+      0.0
+    end
   end
 
   defp generate_consolidation_suggestion(file1, file2) do

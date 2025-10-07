@@ -141,7 +141,7 @@ defmodule Singularity.Autonomy.RuleEvolver do
         {:noreply, state}
 
       proposal ->
-        Logger.warninging("Proposal timed out without consensus",
+        Logger.warning("Proposal timed out without consensus",
           proposal_id: proposal_id
         )
 

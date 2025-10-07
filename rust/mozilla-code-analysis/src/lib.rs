@@ -41,6 +41,7 @@
 mod c_langs_macros;
 mod c_macro;
 mod getter;
+pub use crate::getter::*;
 mod macros;
 
 mod alterator;

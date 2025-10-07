@@ -74,7 +74,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
     File.mkdir_p!(repo_path)
 
     # Initialize git repo if needed
-    unless File.exists?(Path.join(repo_path, ".git")) do
+    if !File.exists?(Path.join(repo_path, ".git")) do
       System.cmd("git", ["init"], cd: repo_path)
       System.cmd("git", ["commit", "--allow-empty", "-m", "Initial commit"], cd: repo_path)
     end
@@ -121,7 +121,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
         create_pull_request(agent_id, result, state)
 
       other ->
-        Logger.warninging("Agent attempted to submit work for branch owned by another agent",
+        Logger.warning("Agent attempted to submit work for branch owned by another agent",
           branch: result.branch,
           requested_by: agent_id,
           owner: other
@@ -179,7 +179,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
     File.mkdir_p!(workspace)
 
     # Clone repo to workspace if needed
-    unless File.exists?(Path.join(workspace, ".git")) do
+    if !File.exists?(Path.join(workspace, ".git")) do
       System.cmd("git", ["clone", state.repo_path, workspace])
     end
 
@@ -442,7 +442,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
           {[{:ok, pr_number, merge_commit} | results], new_state}
 
         {:conflict, files} ->
-          Logger.warninging("Merge conflict", pr: pr_number, files: files)
+          Logger.warning("Merge conflict", pr: pr_number, files: files)
 
           GitStateStore.log_merge(%{
             branch: pr.branch,

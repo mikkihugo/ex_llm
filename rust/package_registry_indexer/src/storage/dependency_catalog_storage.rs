@@ -55,7 +55,7 @@ impl JetStreamCache {
             bucket: "dependency_catalog".to_string(),
             max_value_size: 1024 * 1024,
             history: 1,
-            ttl: std::time::Duration::from_secs(3600),
+            max_age: std::time::Duration::from_secs(3600),
             ..Default::default()
         }).await?;
         
@@ -95,7 +95,7 @@ impl PackageStorage for DependencyCatalogStorage {
              VALUES ($1, $2, $3, $4, $5, $6, $7)
              ON CONFLICT (package_name, version, ecosystem)
              DO UPDATE SET description = $5, documentation = $6, tags = $7",
-            &[&id, &key.tool, &key.version, &key.ecosystem, 
+            &[&id.to_string(), &key.tool, &key.version, &key.ecosystem, 
               &data.documentation.get(..500).unwrap_or(""), 
               &data.documentation, &data.tags]
         ).await?;
@@ -178,10 +178,10 @@ impl PackageStorage for DependencyCatalogStorage {
     async fn stats(&self) -> Result<StorageStats> {
         let row = self.pg_client.query_one("SELECT COUNT(*) FROM dependency_catalog", &[]).await?;
         Ok(StorageStats {
-            total_facts: row.get::<_, i64>(0) as usize,
+            total_entries: row.get::<_, i64>(0) as u64,
             total_size_bytes: 0,
-            cache_hits: 0,
-            cache_misses: 0,
+            ecosystems: std::collections::HashMap::new(),
+            last_compaction: None,
         })
     }
 

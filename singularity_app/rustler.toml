@@ -1,3 +1,3 @@
-[universal_parser]
-crate = "universal_parser"
-path = "native/universal_parser"
+[source_code_parser]
+crate = "source-code-parser"
+path = "native/source-code-parser"

@@ -53,7 +53,7 @@ defmodule Singularity.RAGCodeGenerator do
   """
 
   require Logger
-  alias Singularity.{CodeStore, SemanticCodeSearch, EmbeddingService, CodeModel}
+  alias Singularity.{EmbeddingEngine, CodeModel}
 
   @type generation_opts :: [
           task: String.t(),
@@ -123,7 +123,7 @@ defmodule Singularity.RAGCodeGenerator do
     Logger.debug("Searching for similar code: #{search_query}")
 
     # 2. Semantic search in PostgreSQL (pgvector)
-    with {:ok, embedding} <- EmbeddingService.embed(search_query),
+    with {:ok, embedding} <- EmbeddingEngine.embed(search_query),
          # Get 2x, then filter
          {:ok, results} <- semantic_search(embedding, language, repos, top_k * 2) do
       # 3. Rank and filter results
@@ -221,6 +221,19 @@ defmodule Singularity.RAGCodeGenerator do
       not_generated = not String.contains?(content, ["TODO", "FIXME", "XXX"])
       not_commented_out = not String.starts_with?(String.trim(content), "#")
 
+      # Metadata-based quality checks
+      has_good_metadata = case metadata do
+        %{"language" => lang, "complexity" => complexity} when is_number(complexity) ->
+          # Prefer code with reasonable complexity
+          complexity > 0.1 and complexity < 0.9
+        %{"language" => _lang} ->
+          # Has language info
+          true
+        _ ->
+          # No metadata or incomplete
+          false
+      end
+
       # Test file handling
       is_test = String.contains?(ex.path, ["test", "spec", "_test."])
       include_this = if include_tests, do: true, else: not is_test
@@ -228,8 +241,8 @@ defmodule Singularity.RAGCodeGenerator do
       # Similarity threshold
       has_good_similarity = ex.similarity >= 0.7
 
-      has_min_length and not_generated and not_commented_out and include_this and
-        has_good_similarity
+      has_min_length and not_generated and not_commented_out and has_good_metadata and
+        include_this and has_good_similarity
     end)
   end
 

@@ -9,7 +9,7 @@ defmodule Singularity.Tools.AgentGuide do
   - Common mistakes to avoid
   """
 
-  alias Singularity.Tools.{AgentRoles, AgentToolSelector, ToolSelector, EnhancedDescriptions}
+  alias Singularity.Tools.{AgentRoles, ToolSelector, EnhancedDescriptions}
 
   @doc """
   Get comprehensive tool usage guide for agents.

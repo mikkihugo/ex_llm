@@ -452,22 +452,20 @@ mod tests {
     // Create a dummy result
     let result = AnalysisResult {
       file_path: "test.rs".to_string(),
-      language,
-      line_metrics: crate::LineMetrics { total_lines: 1, code_lines: 1, comment_lines: 0, blank_lines: 0 },
-      complexity_metrics: crate::ComplexityMetrics { cyclomatic: 1.0, cognitive: 0.0, exit_points: 1, nesting_depth: 0 },
-      halstead_metrics: crate::HalsteadMetrics {
-        total_operators: 0,
-        total_operands: 0,
-        unique_operators: 0,
-        unique_operands: 0,
-        volume: 0.0,
-        difficulty: 0.0,
-        effort: 0.0,
+      language: language.to_string(),
+      metrics: crate::CodeMetrics {
+        lines_of_code: 1,
+        lines_of_comments: 0,
+        blank_lines: 0,
+        total_lines: 1,
+        functions: 0,
+        classes: 0,
+        complexity_score: 1.0,
       },
-      maintainability_metrics: crate::MaintainabilityMetrics { index: 100.0, technical_debt_ratio: 0.0, duplication_percentage: 0.0 },
-      language_specific: HashMap::new(),
-      timestamp: chrono::Utc::now(),
-      analysis_duration_ms: 100,
+      mozilla_metrics: None,
+      tree_sitter_analysis: None,
+      dependency_analysis: None,
+      analysis_timestamp: chrono::Utc::now(),
     };
 
     // Put in cache
@@ -498,22 +496,20 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
         Ok(AnalysisResult {
           file_path: file,
-          language: ProgrammingLanguage::Rust,
-          line_metrics: crate::LineMetrics { total_lines: 1, code_lines: 1, comment_lines: 0, blank_lines: 0 },
-          complexity_metrics: crate::ComplexityMetrics { cyclomatic: 1.0, cognitive: 0.0, exit_points: 1, nesting_depth: 0 },
-          halstead_metrics: crate::HalsteadMetrics {
-            total_operators: 0,
-            total_operands: 0,
-            unique_operators: 0,
-            unique_operands: 0,
-            volume: 0.0,
-            difficulty: 0.0,
-            effort: 0.0,
+          language: ProgrammingLanguage::Rust.to_string(),
+          metrics: crate::CodeMetrics {
+            lines_of_code: 1,
+            lines_of_comments: 0,
+            blank_lines: 0,
+            total_lines: 1,
+            functions: 0,
+            classes: 0,
+            complexity_score: 1.0,
           },
-          maintainability_metrics: crate::MaintainabilityMetrics { index: 100.0, technical_debt_ratio: 0.0, duplication_percentage: 0.0 },
-          language_specific: HashMap::new(),
-          timestamp: chrono::Utc::now(),
-          analysis_duration_ms: 10,
+          mozilla_metrics: None,
+          tree_sitter_analysis: None,
+          dependency_analysis: None,
+          analysis_timestamp: chrono::Utc::now(),
         })
       })
       .await;
@@ -552,22 +548,20 @@ mod tests {
       .analyze_streaming(content, |chunk, index| async move {
         Ok(AnalysisResult {
           file_path: format!("chunk_{}", index),
-          language: ProgrammingLanguage::LanguageNotSupported,
-          line_metrics: crate::LineMetrics { total_lines: chunk.lines().count(), code_lines: chunk.lines().count(), comment_lines: 0, blank_lines: 0 },
-          complexity_metrics: crate::ComplexityMetrics { cyclomatic: 1.0, cognitive: 0.0, exit_points: 1, nesting_depth: 0 },
-          halstead_metrics: crate::HalsteadMetrics {
-            total_operators: 0,
-            total_operands: 0,
-            unique_operators: 0,
-            unique_operands: 0,
-            volume: 0.0,
-            difficulty: 0.0,
-            effort: 0.0,
+          language: ProgrammingLanguage::LanguageNotSupported.to_string(),
+          metrics: crate::CodeMetrics {
+            lines_of_code: chunk.lines().count() as u64,
+            lines_of_comments: 0,
+            blank_lines: 0,
+            total_lines: chunk.lines().count() as u64,
+            functions: 0,
+            classes: 0,
+            complexity_score: 1.0,
           },
-          maintainability_metrics: crate::MaintainabilityMetrics { index: 100.0, technical_debt_ratio: 0.0, duplication_percentage: 0.0 },
-          language_specific: HashMap::new(),
-          timestamp: chrono::Utc::now(),
-          analysis_duration_ms: 1,
+          mozilla_metrics: None,
+          tree_sitter_analysis: None,
+          dependency_analysis: None,
+          analysis_timestamp: chrono::Utc::now(),
         })
       })
       .await

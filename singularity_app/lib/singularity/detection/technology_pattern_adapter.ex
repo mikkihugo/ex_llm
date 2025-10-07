@@ -3,7 +3,7 @@ defmodule Singularity.TechnologyPatternAdapter do
   Adapter for TechnologyPattern - transparently uses knowledge_artifacts
 
   **Migration:** technology_patterns table → knowledge_artifacts (artifact_type="technology_pattern")
-  
+
   This adapter maintains backward compatibility while using the unified knowledge base.
   """
 
@@ -23,21 +23,23 @@ defmodule Singularity.TechnologyPatternAdapter do
 
   @doc "Get all patterns for a language"
   def get_by_language(language) do
-    {:ok, results} = ArtifactStore.search("", 
-      artifact_type: @artifact_type,
-      language: language,
-      top_k: 1000
-    )
-    
+    {:ok, results} =
+      ArtifactStore.search("",
+        artifact_type: @artifact_type,
+        language: language,
+        top_k: 1000
+      )
+
     Enum.map(results, &to_pattern_struct/1)
   end
 
   @doc "Get all patterns"
   def all do
-    query = from ka in "knowledge_artifacts",
-      where: ka.artifact_type == ^@artifact_type,
-      select: ka
-      
+    query =
+      from ka in "knowledge_artifacts",
+        where: ka.artifact_type == ^@artifact_type,
+        select: ka
+
     Repo.all(query)
     |> Enum.map(&to_pattern_struct/1)
   end
@@ -51,7 +53,7 @@ defmodule Singularity.TechnologyPatternAdapter do
       content: pattern_attrs,
       metadata: %{source: "elixir_code"}
     }
-    
+
     ArtifactStore.store(artifact)
   end
 
@@ -66,17 +68,20 @@ defmodule Singularity.TechnologyPatternAdapter do
 
   @doc "Search patterns"
   def search(query, opts \\ []) do
-    {:ok, results} = ArtifactStore.search(query, 
-      Keyword.merge([artifact_type: @artifact_type], opts)
-    )
-    
+    {:ok, results} =
+      ArtifactStore.search(
+        query,
+        Keyword.merge([artifact_type: @artifact_type], opts)
+      )
+
     Enum.map(results, &to_pattern_struct/1)
   end
 
   # Convert knowledge_artifact to pattern-like struct
   defp to_pattern_struct(artifact) do
-    content = if is_binary(artifact.content), do: Jason.decode!(artifact.content), else: artifact.content
-    
+    content =
+      if is_binary(artifact.content), do: Jason.decode!(artifact.content), else: artifact.content
+
     %{
       id: artifact.id,
       name: content["name"],
@@ -101,5 +106,6 @@ defmodule Singularity.TechnologyPatternAdapter do
     |> String.downcase()
     |> String.replace(~r/[^a-z0-9]+/, "_")
   end
+
   defp normalize_id(nil), do: "unknown"
 end

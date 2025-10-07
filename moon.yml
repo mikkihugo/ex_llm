@@ -54,6 +54,18 @@ tasks:
     options:
       runInCI: true
 
+  rust:service:
+    command: 'cd rust && nix develop ..#dev --command cargo build --release --bin singularity-rust-service'
+    local: true
+    options:
+      runInCI: true
+
+  rust:start:
+    command: 'cd rust && nix develop ..#dev --command cargo run --release --bin singularity-rust-service'
+    local: true
+    options:
+      persistent: true
+
   # AI development tasks
   ai:lint:
     command: 'cd ai-server && nix develop ..#dev --command bunx eslint --fix src/'

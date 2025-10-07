@@ -89,7 +89,7 @@ defmodule Singularity.EmbeddingQualityTracker do
   require Logger
   import Ecto.Query
 
-  alias Singularity.{Repo, EmbeddingService}
+  alias Singularity.{Repo, EmbeddingEngine}
 
   @type search_result :: %{
           path: String.t(),
@@ -302,7 +302,7 @@ defmodule Singularity.EmbeddingQualityTracker do
   # Private Functions
 
   defp record_search_feedback(query, results, user_feedback) do
-    {:ok, query_embedding} = EmbeddingService.embed(query)
+    {:ok, query_embedding} = EmbeddingEngine.embed(query)
 
     # Determine clicked result (positive signal)
     clicked_result =
@@ -440,7 +440,7 @@ defmodule Singularity.EmbeddingQualityTracker do
       {:ok, training_pairs} = extract_training_pairs_from_feedback()
 
       if length(training_pairs) < 100 do
-        Logger.warninging(
+        Logger.warning(
           "Insufficient training data (#{length(training_pairs)} pairs), need at least 100"
         )
 
@@ -462,7 +462,7 @@ defmodule Singularity.EmbeddingQualityTracker do
         {:ok, model_path} =
           save_fine_tuned_model(trained_model, tokenizer, length(training_pairs))
 
-        # 6. Update EmbeddingService to use new model
+        # 6. Update EmbeddingEngine to use new model
         update_embedding_service_model(model_path)
 
         Logger.info("Fine-tuning completed successfully", %{
@@ -643,22 +643,22 @@ defmodule Singularity.EmbeddingQualityTracker do
   defp update_embedding_service_model(model_path) do
     # Update the embedding service to use the new fine-tuned model
     # This would typically involve updating configuration or sending a message
-    # to the EmbeddingService process
+    # to the EmbeddingEngine process
     try do
       # Send message to EmbeddingService to reload model
-      case Process.whereis(Singularity.EmbeddingService) do
+      case Process.whereis(Singularity.EmbeddingEngine) do
         nil ->
-          Logger.warninging("EmbeddingService not found, cannot update model")
+          Logger.warning("EmbeddingEngine not found, cannot update model")
 
         pid ->
           GenServer.cast(pid, {:reload_model, model_path})
-          Logger.info("Updated EmbeddingService with new model", %{model_path: model_path})
+          Logger.info("Updated EmbeddingEngine with new model", %{model_path: model_path})
       end
 
       :ok
     rescue
       error ->
-        Logger.error("Failed to update EmbeddingService: #{inspect(error)}")
+        Logger.error("Failed to update EmbeddingEngine: #{inspect(error)}")
         {:error, error}
     end
   end

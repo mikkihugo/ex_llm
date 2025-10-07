@@ -33,19 +33,28 @@ reqwest = { workspace = true, features = ["json"] }
 once_cell = "1.19"
 walkdir = { workspace = true }
 
-# Use templates provided by package_registry_indexer instead of embedding files
-package_registry_indexer = { path = "../package_registry_indexer", package = "package-registry-indexer" }
+# Use templates provided by package_registry_indexer instead of embedding files (optional to avoid cycle)
+package-registry-indexer = { path = "../package_registry_indexer", optional = true }
 
 # Optional ML dependencies (behind feature flag)
 # Only Candle is used for neural networks - ndarray/smartcore removed to keep it lightweight
-candle-core = { version = "0.8", optional = true }
-candle-nn = { version = "0.8", optional = true }
+candle-core = { version = "0.9", optional = true }
+candle-nn = { version = "0.9", optional = true }
+
+# NATS messaging
+async-nats = "0.33"
+
+# Logging
+tracing-subscriber = "0.3"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
 
-async-nats = "0.33"
+[[bin]]
+name = "prompt_engine_service"
+path = "src/bin/prompt_engine_service.rs"
 
 [features]
 default = []
 ml-analysis = ["candle-core", "candle-nn"]
+with-package-indexer = ["dep:package-registry-indexer"]

@@ -30,3 +30,15 @@ packages.registry.collect.hex       # Collect hex package
 packages.registry.detect.frameworks # Detect frameworks in codebase
 packages.registry.detect.list       # List all known frameworks
 ```
+
+### Package Analysis Storage (Context7 on Steroids!)
+```
+packages.analysis.store             # Store analysis results for package
+packages.analysis.get               # Get analysis results for package
+packages.analysis.search            # Search packages by analysis criteria
+packages.analysis.quality           # Get quality scores for package
+packages.analysis.security          # Get security analysis for package
+packages.analysis.performance       # Get performance analysis for package
+packages.analysis.architecture      # Get architecture analysis for package
+packages.analysis.insights          # Get cross-package insights
+```

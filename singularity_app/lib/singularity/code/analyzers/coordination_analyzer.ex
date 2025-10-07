@@ -255,7 +255,7 @@ defmodule Singularity.Analysis.CoordinationAnalyzer do
 
   defp generate_recommendations(coupling, debug_complexity, observability, maturity) do
     [
-      evaluate_correlation_ids(debug_complexity),
+      evaluate_correlation_ids(observability),
       evaluate_event_driven(coupling, maturity),
       evaluate_workflow_tracking(observability),
       evaluate_time_escalation(maturity),
@@ -267,13 +267,12 @@ defmodule Singularity.Analysis.CoordinationAnalyzer do
     end)
   end
 
-  defp evaluate_correlation_ids(debug_complexity) when debug_complexity > 0.6 do
+  defp evaluate_correlation_ids(observability) when observability < 0.4 do
     %{
       pattern: :correlation_ids,
-      priority: :critical,
-      roi_score: 5.0,
-      reasoning:
-        "Debug complexity score #{Float.round(debug_complexity, 2)} - difficult to trace failures without correlation IDs",
+      priority: :high,
+      roi_score: 3.5,
+      reasoning: "Low observability (#{Float.round(observability, 2)}) - correlation IDs would improve debugging significantly",
       effort_estimate: "2-4 hours (add UUID to workflow contexts)"
     }
   end
