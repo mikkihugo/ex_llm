@@ -435,13 +435,19 @@ EOF
             export XLA_FLAGS="--xla_gpu_cuda_data_dir=$CUDA_HOME"
             export EXLA_TARGET="cuda"
 
+            # WSL2: Add Windows NVIDIA drivers to PATH (if available)
+            if [ -d /usr/lib/wsl/lib ]; then
+              export PATH="/usr/lib/wsl/lib:$PATH"
+              export LD_LIBRARY_PATH="/usr/lib/wsl/lib:$LD_LIBRARY_PATH"
+            fi
+
             # Verify CUDA is available (WSL2 gets GPU access from Windows host)
             if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
               echo "🎮 GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader,nounits 2>/dev/null || echo 'NVIDIA GPU available')"
-              echo "   CUDA: $(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9.]+' || echo 'available')"
+              echo "   CUDA: $(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9.]+' || nvidia-smi | grep -oP 'CUDA Version: \K[0-9.]+')"
             else
               echo "⚠️  GPU: NVIDIA driver not available (install Windows NVIDIA drivers for WSL2)"
-              echo "   CUDA: $(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9.]+' || echo 'available')"
+              echo "   CUDA: $(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9.]+' || echo 'not found')"
             fi
 
             # NATS JetStream setup
