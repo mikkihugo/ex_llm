@@ -75,6 +75,9 @@ defmodule Singularity.NatsServer do
     {:ok, _sid} = Gnat.sub(gnat, self(), "nats.request.medium")
     {:ok, _sid} = Gnat.sub(gnat, self(), "nats.request.complex")
 
+    # Subscribe to engine discovery subjects (for introspection/autonomy)
+    Singularity.Nats.EngineDiscoveryHandler.subscribe(gnat)
+
     Logger.info("🚀 NATS Server started - Single entry point for all services")
 
     {:ok, %{gnat: gnat}}
@@ -96,33 +99,42 @@ defmodule Singularity.NatsServer do
     start_time = System.monotonic_time(:millisecond)
 
     try do
-      request = Jason.decode!(body)
-      complexity = extract_complexity_from_topic(topic)
-      service = determine_service(request, complexity)
+      # Route engine discovery requests to dedicated handler
+      if String.starts_with?(topic, "system.") do
+        Singularity.Nats.EngineDiscoveryHandler.handle_message(
+          %{topic: topic, body: body, reply_to: reply_to},
+          gnat
+        )
+      else
+        # Regular NATS request handling
+        request = Jason.decode!(body)
+        complexity = extract_complexity_from_topic(topic)
+        service = determine_service(request, complexity)
 
-      Logger.debug("NATS Server routing request",
-        type: request["type"],
-        complexity: complexity,
-        service: service,
-        correlation_id: request["correlation_id"]
-      )
+        Logger.debug("NATS Server routing request",
+          type: request["type"],
+          complexity: complexity,
+          service: service,
+          correlation_id: request["correlation_id"]
+        )
 
-      # Route to appropriate service
-      result = route_to_service(service, request, complexity)
+        # Route to appropriate service
+        result = route_to_service(service, request, complexity)
 
-      # Build NATS response
-      response = build_nats_response(result, service, complexity, request["correlation_id"])
+        # Build NATS response
+        response = build_nats_response(result, service, complexity, request["correlation_id"])
 
-      # Add performance metrics
-      end_time = System.monotonic_time(:millisecond)
-      response = Map.put(response, :metrics, %{
-        processing_time_ms: end_time - start_time,
-        service: service,
-        complexity: complexity
-      })
+        # Add performance metrics
+        end_time = System.monotonic_time(:millisecond)
+        response = Map.put(response, :metrics, %{
+          processing_time_ms: end_time - start_time,
+          service: service,
+          complexity: complexity
+        })
 
-      # Send response back via NATS
-      Gnat.pub(gnat, reply_to, Jason.encode!(response))
+        # Send response back via NATS
+        Gnat.pub(gnat, reply_to, Jason.encode!(response))
+      end
 
     rescue
       error ->

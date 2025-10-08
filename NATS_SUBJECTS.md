@@ -84,12 +84,48 @@ tools.generation.create.result # Code generation tool results
 ```
 system.health               # Health check requests
 system.health.result        # Health check results
+system.health.engines       # Engine health check (all engines)
 system.metrics              # Metrics collection
 system.metrics.query        # Metrics query requests
 system.events               # System-wide events
 system.config               # Configuration updates
 system.config.query         # Configuration query requests
 system.shutdown             # System shutdown requests
+```
+
+### Engine Discovery (Introspection/Autonomy)
+**Purpose:** Singularity uses this to discover its own capabilities at runtime.
+Enables autonomous agents to query "what can I do?" without hard-coded knowledge.
+
+```
+system.engines.list                  # List all engines (architecture, code, prompt, quality, generator)
+system.engines.get.<engine_id>       # Get specific engine details (e.g., system.engines.get.prompt)
+system.capabilities.list             # List all capabilities (flat index across engines)
+system.capabilities.available        # List only available capabilities
+```
+
+**Use Cases:**
+1. **Autonomous Agents** - Query available capabilities before task execution
+2. **MCP Federation** - Expose capabilities to external tools (Claude Desktop, Cursor)
+3. **Health Monitoring** - Track which engines are healthy/degraded
+4. **Runtime Introspection** - Engines discover each other's capabilities
+
+**Example: Agent discovering what it can do**
+```elixir
+# Agent sends NATS request
+{:ok, response} = Gnat.request(conn, "system.capabilities.available", %{})
+
+# Response shows all available capabilities
+%{
+  capabilities: [
+    %{id: :parse_ast, engine: :code, label: "Parse AST", available?: true},
+    %{id: :generate_code, engine: :generator, label: "Generate Code", available?: true},
+    %{id: :optimize_prompt, engine: :prompt, label: "Optimize Prompt", available?: false}
+  ],
+  total: 15,
+  available_count: 12,
+  unavailable_count: 3
+}
 ```
 
 ### Planning & Work Management (SAFe 6.0)

@@ -14,8 +14,8 @@ defmodule Singularity.Application do
     children = [
       # Start the Ecto repository
       Singularity.Repo,
-      # Start the Telemetry metrics
-      {Telemetry.Metrics, metrics: Singularity.Telemetry.metrics()},
+      # Start the Telemetry supervisor (metrics + poller)
+      Singularity.Telemetry,
       # Start the main application supervisor
       Singularity.ApplicationSupervisor,
       # Start the Runner for task execution
