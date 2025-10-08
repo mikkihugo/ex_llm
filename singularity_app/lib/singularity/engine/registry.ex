@@ -6,6 +6,7 @@ defmodule Singularity.Engine.Registry do
   """
 
   alias Singularity.Engine
+  require Logger
 
   @default_engines [
     Singularity.ArchitectureEngine,
@@ -87,25 +88,49 @@ defmodule Singularity.Engine.Registry do
   defp summarise(module) do
     %{
       module: module,
-      id: safe_call(module, :id, []),
-      label: safe_call(module, :label, []),
-      description: safe_call(module, :description, []),
-      capabilities: safe_call(module, :capabilities, []),
+      id: safe_call(module, :id, [], default_id(module)),
+      label: safe_call(module, :label, [], default_label(module)),
+      description: safe_call(module, :description, [], ""),
+      capabilities: safe_call(module, :capabilities, [], []),
       health: health(module)
     }
   end
 
   defp health(module) do
     if function_exported?(module, :health, 0) do
-      safe_call(module, :health, [])
+      safe_call(module, :health, [], :ok)
     else
       :ok
     end
   end
 
-  defp safe_call(module, fun, args) do
+  defp safe_call(module, fun, args, default) do
     apply(module, fun, args)
   rescue
-    error -> {:error, {module, fun, error}}
+    error ->
+      Logger.warning(fn ->
+        "Engine registry call #{inspect(module)}.#{fun}/#{length(args)} failed: " <>
+          Exception.message(error)
+      end)
+
+      default
+  end
+
+  defp default_id(module) do
+    module
+    |> Module.split()
+    |> List.last()
+    |> Macro.underscore()
+    |> String.to_atom()
+  rescue
+    _ -> module
+  end
+
+  defp default_label(module) do
+    module
+    |> Module.split()
+    |> List.last()
+  rescue
+    _ -> inspect(module)
   end
 end

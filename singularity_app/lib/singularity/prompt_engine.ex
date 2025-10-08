@@ -23,33 +23,36 @@ defmodule Singularity.PromptEngine do
 
   @impl Singularity.Engine
   def capabilities do
+    backend_available = backend_available?()
+    cache_available = cache_available?()
+
     [
       %{
         id: :prompt_generation,
         label: "Prompt Generation",
         description: "Generate prompts using NIF, NATS service, or local templates.",
-        available?: true,
+        available?: backend_available,
         tags: [:prompting, :nif, :nats]
       },
       %{
         id: :prompt_optimization,
         label: "Prompt Optimization",
         description: "Optimize prompts with COPRO-backed heuristics and local fallbacks.",
-        available?: true,
+        available?: backend_available,
         tags: [:prompting, :optimization]
       },
       %{
         id: :template_catalog,
         label: "Template Catalog",
         description: "Expose built-in templates plus remote template discovery via NATS.",
-        available?: true,
+        available?: backend_available || true,
         tags: [:templates]
       },
       %{
         id: :prompt_cache,
         label: "Prompt Cache",
         description: "Access cache lifecycle operations through the NIF interface.",
-        available?: true,
+        available?: cache_available,
         tags: [:cache]
       }
     ]
