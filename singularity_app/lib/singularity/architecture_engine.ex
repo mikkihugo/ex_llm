@@ -31,6 +31,56 @@ defmodule Singularity.ArchitectureEngine do
 
   alias Singularity.{Repo, Schemas.TechnologyDetection, NatsClient}
 
+  @behaviour Singularity.Engine
+
+  @impl Singularity.Engine
+  def id, do: :architecture
+
+  @impl Singularity.Engine
+  def label, do: "Architecture Engine"
+
+  @impl Singularity.Engine
+  def description,
+    do:
+      "Architecture-aware naming, meta-registry management, and repository analysis for large codebases."
+
+  @impl Singularity.Engine
+  def capabilities do
+    [
+      %{
+        id: :naming,
+        label: "Naming Suggestions",
+        description: "Generate architecture-aware names across functions, modules, and services.",
+        available?: true,
+        tags: [:nif, :naming, :architecture]
+      },
+      %{
+        id: :meta_registry,
+        label: "Meta-Registry",
+        description: "Register repositories and broadcast architecture insights over NATS.",
+        available?: true,
+        tags: [:registry, :nats, :database]
+      },
+      %{
+        id: :analysis,
+        label: "Architecture Analysis",
+        description: "Run autonomous structure, framework, and quality analysis workflows.",
+        available?: true,
+        tags: [:analysis, :autonomy]
+      },
+      %{
+        id: :repository_detection,
+        label: "Repository Structure Detection",
+        description: "Identify monorepo characteristics and workspace tooling.",
+        available?: true,
+        tags: [:repository, :detection]
+      }
+    ]
+  end
+
+  @impl Singularity.Engine
+  def health, do: :ok
+
   # ============================================================================
   # NIF FUNCTIONS (Fast Local)
   # ============================================================================

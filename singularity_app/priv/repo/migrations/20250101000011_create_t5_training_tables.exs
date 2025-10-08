@@ -33,7 +33,7 @@ defmodule Singularity.Repo.Migrations.CreateT5TrainingTables do
     create table(:t5_training_examples, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :training_session_id, references(:t5_training_sessions, type: :binary_id, on_delete: :delete_all)
-      add :code_chunk_id, references(:code_chunks, type: :binary_id, on_delete: :nilify_all)
+      add :code_chunk_id, references(:codebase_chunks, type: :binary_id, on_delete: :nilify_all)
       add :instruction, :text, null: false
       add :input, :text, null: false
       add :output, :text, null: false

@@ -9,6 +9,55 @@ defmodule Singularity.PromptEngine do
   require Logger
   alias Singularity.NatsClient
 
+  @behaviour Singularity.Engine
+
+  @impl Singularity.Engine
+  def id, do: :prompt
+
+  @impl Singularity.Engine
+  def label, do: "Prompt Engine"
+
+  @impl Singularity.Engine
+  def description,
+    do: "Prompt generation, optimization, and template management with NIF/NATS fallbacks."
+
+  @impl Singularity.Engine
+  def capabilities do
+    [
+      %{
+        id: :prompt_generation,
+        label: "Prompt Generation",
+        description: "Generate prompts using NIF, NATS service, or local templates.",
+        available?: true,
+        tags: [:prompting, :nif, :nats]
+      },
+      %{
+        id: :prompt_optimization,
+        label: "Prompt Optimization",
+        description: "Optimize prompts with COPRO-backed heuristics and local fallbacks.",
+        available?: true,
+        tags: [:prompting, :optimization]
+      },
+      %{
+        id: :template_catalog,
+        label: "Template Catalog",
+        description: "Expose built-in templates plus remote template discovery via NATS.",
+        available?: true,
+        tags: [:templates]
+      },
+      %{
+        id: :prompt_cache,
+        label: "Prompt Cache",
+        description: "Access cache lifecycle operations through the NIF interface.",
+        available?: true,
+        tags: [:cache]
+      }
+    ]
+  end
+
+  @impl Singularity.Engine
+  def health, do: health_check()
+
   @type prompt_response :: {:ok, map()} | {:error, term()}
 
   @default_templates [

@@ -10,6 +10,55 @@ defmodule Singularity.QualityEngine do
   use GenServer
   require Logger
 
+  @behaviour Singularity.Engine
+
+  @impl Singularity.Engine
+  def id, do: :quality
+
+  @impl Singularity.Engine
+  def label, do: "Quality Engine"
+
+  @impl Singularity.Engine
+  def description,
+    do: "GenServer façade for lightweight quality analysis, rules, and gate enforcement."
+
+  @impl Singularity.Engine
+  def capabilities do
+    [
+      %{
+        id: :analysis,
+        label: "Code Quality Analysis",
+        description: "Evaluate readability, maintainability, and AI-specific patterns.",
+        available?: true,
+        tags: [:quality, :analysis]
+      },
+      %{
+        id: :gates,
+        label: "Quality Gates",
+        description: "Run project-level gating with configurable thresholds.",
+        available?: true,
+        tags: [:quality, :gates]
+      },
+      %{
+        id: :rules,
+        label: "Quality Rules",
+        description: "Manage rule sets and adjustments at runtime.",
+        available?: true,
+        tags: [:quality, :configuration]
+      },
+      %{
+        id: :metrics,
+        label: "Quality Metrics API",
+        description: "Expose aggregated scoring with summary metrics.",
+        available?: true,
+        tags: [:quality, :metrics]
+      }
+    ]
+  end
+
+  @impl Singularity.Engine
+  def health, do: health_check()
+
   @type state :: %{
           config: map(),
           rules: %{optional(String.t()) => [map()]}

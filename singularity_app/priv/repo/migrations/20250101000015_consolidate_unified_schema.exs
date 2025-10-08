@@ -272,39 +272,19 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
     # ============================================================================
 
     # LLM response embeddings
-    create index(:cache_llm_responses, [:prompt_embedding], 
-      using: :ivfflat, 
-      with: "vector_cosine_ops",
-      name: :idx_cache_llm_prompt_embedding
-    )
+    execute "CREATE INDEX IF NOT EXISTS idx_cache_llm_prompt_embedding ON cache_llm_responses USING ivfflat (prompt_embedding vector_cosine_ops) WITH (lists = 100)"
 
     # Code embeddings
-    create index(:cache_code_embeddings, [:embedding], 
-      using: :ivfflat, 
-      with: "vector_cosine_ops",
-      name: :idx_cache_code_embedding
-    )
+    execute "CREATE INDEX IF NOT EXISTS idx_cache_code_embedding ON cache_code_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
 
     # Knowledge artifact embeddings
-    create index(:store_knowledge_artifacts, [:embedding], 
-      using: :ivfflat, 
-      with: "vector_cosine_ops",
-      name: :idx_store_knowledge_embedding
-    )
+    execute "CREATE INDEX IF NOT EXISTS idx_store_knowledge_embedding ON store_knowledge_artifacts USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
 
     # Template embeddings
-    create index(:store_templates, [:embedding], 
-      using: :ivfflat, 
-      with: "vector_cosine_ops",
-      name: :idx_store_templates_embedding
-    )
+    execute "CREATE INDEX IF NOT EXISTS idx_store_templates_embedding ON store_templates USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
 
     # Package embeddings
-    create index(:store_packages, [:embedding], 
-      using: :ivfflat, 
-      with: "vector_cosine_ops",
-      name: :idx_store_packages_embedding
-    )
+    execute "CREATE INDEX IF NOT EXISTS idx_store_packages_embedding ON store_packages USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
   end
 
   def down do

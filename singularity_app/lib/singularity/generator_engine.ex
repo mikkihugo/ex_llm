@@ -24,6 +24,55 @@ defmodule Singularity.GeneratorEngine do
       {:ok, structure} = GeneratorEngine.suggest_microservice_structure("user-service", "elixir")
   """
 
+  @behaviour Singularity.Engine
+
+  @impl Singularity.Engine
+  def id, do: :generator
+
+  @impl Singularity.Engine
+  def label, do: "Generator Engine"
+
+  @impl Singularity.Engine
+  def description,
+    do: "AI-assisted code and pseudocode generation with architecture-aware naming support."
+
+  @impl Singularity.Engine
+  def capabilities do
+    [
+      %{
+        id: :code_generation,
+        label: "Code Generation",
+        description: "Transform natural language intents into language-specific code snippets.",
+        available?: true,
+        tags: [:generation, :ai, :nif_fallback]
+      },
+      %{
+        id: :pseudocode,
+        label: "Pseudocode Planning",
+        description: "Produce structured pseudocode plans to guide downstream generation.",
+        available?: true,
+        tags: [:planning, :generation]
+      },
+      %{
+        id: :architecture_structures,
+        label: "Architecture Structures",
+        description: "Suggest microservice and monorepo scaffolding for new projects.",
+        available?: true,
+        tags: [:architecture, :scaffolding]
+      },
+      %{
+        id: :naming_validation,
+        label: "Naming Validation",
+        description: "Validate identifiers against language-specific conventions.",
+        available?: true,
+        tags: [:naming, :lint]
+      }
+    ]
+  end
+
+  @impl Singularity.Engine
+  def health, do: :ok
+
   # ============================================================================
   # NIF FUNCTIONS (Fast Local)
   # ============================================================================

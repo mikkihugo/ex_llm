@@ -7,6 +7,55 @@ defmodule Singularity.CodeEngine do
   previous API shape.
   """
 
+  @behaviour Singularity.Engine
+
+  @impl Singularity.Engine
+  def id, do: :code
+
+  @impl Singularity.Engine
+  def label, do: "Code Engine"
+
+  @impl Singularity.Engine
+  def description,
+    do: "Heuristic code analysis, refactoring insights, and language-aware quality metrics."
+
+  @impl Singularity.Engine
+  def capabilities do
+    [
+      %{
+        id: :file_analysis,
+        label: "File Analysis",
+        description: "Calculate size, complexity, and TODO density for source files.",
+        available?: true,
+        tags: [:analysis, :heuristic]
+      },
+      %{
+        id: :quality_metrics,
+        label: "Quality Metrics",
+        description: "Estimate maintainability/readability scores and highlight issues.",
+        available?: true,
+        tags: [:quality, :metrics]
+      },
+      %{
+        id: :refactoring,
+        label: "Refactoring Opportunities",
+        description: "Surface candidate blocks for consolidation and improvement.",
+        available?: true,
+        tags: [:refactoring]
+      },
+      %{
+        id: :language_specific,
+        label: "Language-Specific Analysis",
+        description: "Infer language traits and recommend targeted improvements.",
+        available?: true,
+        tags: [:language, :analysis]
+      }
+    ]
+  end
+
+  @impl Singularity.Engine
+  def health, do: :ok
+
   @type analysis :: %{
           path: String.t(),
           language: String.t(),
