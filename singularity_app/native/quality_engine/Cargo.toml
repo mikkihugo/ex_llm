@@ -1,5 +1,5 @@
 [package]
-name = "linting-engine"
+name = "quality_engine"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -7,7 +7,7 @@ authors = ["claude-code-zen Team"]
 description = "Multi-language quality gate enforcement with comprehensive linter support"
 repository = "https://github.com/claude-code-zen/zenflow"
 readme = "README.md"
-keywords = ["linting-engine", "sparc", "methodology", "testing", "validation", "linting", "multi-language"]
+keywords = ["quality-engine", "sparc", "methodology", "testing", "validation", "linting", "multi-language"]
 categories = ["development-tools", "testing"]
 
 [dependencies]
@@ -23,8 +23,11 @@ chrono = { workspace = true, features = ["serde"] }
 walkdir = { workspace = true }
 tracing = { workspace = true }
 
+# NIF dependencies
+rustler = { version = "0.34", features = ["derive"], optional = true }
+
 [features]
-default = ["rust-clippy", "javascript-eslint", "typescript-eslint", "python-pylint", "go-golangci", "java-spotbugs", "cpp-clang-tidy", "csharp-sonar", "elixir-credo", "erlang-dialyzer", "gleam-check"]
+default = ["rust-clippy", "javascript-eslint", "typescript-eslint", "python-pylint", "go-golangci", "java-spotbugs", "cpp-clang-tidy", "csharp-sonar", "elixir-credo", "erlang-dialyzer", "gleam-check", "nif"]
 rust-clippy = []
 javascript-eslint = []
 typescript-eslint = []
@@ -36,7 +39,8 @@ csharp-sonar = []
 elixir-credo = []
 erlang-dialyzer = []
 gleam-check = []
+nif = ["rustler"]
 
 [lib]
-name = "quality-engine"
-crate-type = ["cdylib", "rlib", "staticlib"]
+name = "quality_engine"
+crate-type = ["cdylib", "rlib"]

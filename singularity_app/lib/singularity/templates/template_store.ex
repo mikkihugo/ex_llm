@@ -524,4 +524,6 @@ defmodule Singularity.TemplateStore do
       similarity: row["similarity"]
     }
   end
+
+  defp record_package_prompt_usage(_context, _template_id, _success), do: :ok
 end

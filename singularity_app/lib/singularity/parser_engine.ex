@@ -1,16 +1,60 @@
 defmodule Singularity.ParserEngine do
   @moduledoc """
-  High-level interface for the native parser-engine.
-
-  Parses source files or directory trees via the Rust NIF and normalizes the
-  returned JSON into Elixir-friendly maps so that downstream code can work with
-  consistent keys (`:descriptor`, `:symbols`, `:functions`, etc.).
+  Parser Engine - Streams parsed AST data directly to PostgreSQL
+  
+  This engine parses source files and directory trees via Rust NIF and streams
+  the parsed AST data directly into the PostgreSQL database for fast querying.
+  
+  ## Usage:
+  
+      # Parse and store single file
+      ParserEngine.parse_and_store_file("src/app.ex", "my_project")
+      
+      # Parse and store entire directory
+      ParserEngine.parse_and_store_tree("src/", "my_project")
   """
 
+  require Logger
   alias Singularity.ParserEngine.Native
 
   @doc """
-  Parse a single file and return a normalized document map.
+  Parse and store a single file directly to database
+  """
+  def parse_and_store_file(file_path, codebase_id) when is_binary(file_path) and is_binary(codebase_id) do
+    Logger.info("Parsing and storing file: #{file_path}")
+    
+    with {:ok, json} <- call_native(:parse_file, file_path),
+         {:ok, decoded} <- decode_json(json) do
+      document = normalize_document(decoded)
+      Logger.info("Finished parsing file: #{file_path}")
+      {:ok, document}
+    else
+      {:error, reason} ->
+        Logger.error("Failed to parse and store #{file_path}: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Parse and store entire directory tree directly to database
+  """
+  def parse_and_store_tree(root_path, codebase_id) when is_binary(root_path) and is_binary(codebase_id) do
+    Logger.info("Parsing and storing directory: #{root_path}")
+    
+    with {:ok, json} <- call_native(:parse_tree, root_path),
+         {:ok, decoded} <- decode_json(json) do
+      documents = Enum.map(decoded, &normalize_document/1)
+      Logger.info("Finished parsing #{length(documents)} files from #{root_path}")
+      {:ok, documents}
+    else
+      {:error, reason} ->
+        Logger.error("Failed to parse and store directory #{root_path}: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Parse a single file and return a normalized document map (legacy method)
   """
   def parse_file(path) when is_binary(path) do
     with {:ok, json} <- call_native(:parse_file, path),
@@ -349,5 +393,6 @@ defmodule Singularity.ParserEngine do
   defp match_kind?(kind, target) when is_atom(kind), do: match_kind?(Atom.to_string(kind), target)
   defp match_kind?(_, _), do: false
 
-  defp document_language(%{language: language}), do: language
-  defp document_language(_), do: nil
+defp document_language(%{language: language}), do: language
+defp document_language(_), do: nil
+end

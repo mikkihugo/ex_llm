@@ -165,6 +165,25 @@ pub struct LintingEngine {
 pub mod refactoring;
 pub use refactoring::*;
 
+#[cfg(feature = "nif")]
+pub mod nif;
+
+#[cfg(feature = "nif")]
+rustler::init!("Elixir.Singularity.QualityEngine", [
+    analyze_code_quality,
+    run_quality_gates,
+    calculate_quality_metrics,
+    detect_ai_patterns,
+    get_quality_config,
+    update_quality_config,
+    get_supported_languages,
+    get_quality_rules,
+    add_quality_rule,
+    remove_quality_rule,
+    get_version,
+    health_check
+]);
+
 impl LintingEngine {
     /// Create a new linting engine with default configuration
     #[must_use]

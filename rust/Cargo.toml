@@ -37,4 +37,4 @@ semantic_embedding_engine = { path = "semantic_embedding_engine", package = "emb
 
 # Suite dependencies (Central server - comprehensive analysis)
 package_analysis_suite = { path = "package_analysis_suite", package = "package-analysis-suite" }
-prompt_analysis_suite = { path = "prompt_analysis_suite", package = "prompt-analysis-suite" }
+prompt_engine = { path = "prompt_engine", package = "prompt-engine" }

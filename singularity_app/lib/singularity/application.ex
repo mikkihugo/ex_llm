@@ -20,6 +20,8 @@ defmodule Singularity.Application do
       Singularity.ApplicationSupervisor,
       # Start the Runner for task execution
       Singularity.Runner,
+      # Start the unified NATS server (single entry point)
+      Singularity.NatsServer,
       # Start the NATS execution router
       Singularity.NatsExecutionRouter,
       # Start the SPARC orchestrator
@@ -42,6 +44,8 @@ defmodule Singularity.Application do
       Singularity.TemplatePerformanceTracker,
       # Start the embedding engine
       Singularity.EmbeddingEngine,
+      # Start the quality engine
+      Singularity.QualityEngine,
       # Start the source code analyzer
       Singularity.SourceCodeAnalyzer,
       # Start the knowledge artifact store
@@ -86,8 +90,8 @@ defmodule Singularity.Application do
       Singularity.Code.Analyzers.CoordinationAnalyzer,
       # Start the flow analyzer
       Singularity.Code.Analyzers.FlowAnalyzer,
-      # Start the microservice analyzer
-      Singularity.Code.Analyzers.MicroserviceAnalyzer,
+      # Microservice analyzer removed (feature disabled in this build)
+      # Singularity.Code.Analyzers.MicroserviceAnalyzer,
       # Start the Rust tooling analyzer
       Singularity.Code.Analyzers.RustToolingAnalyzer,
       # Start the code trainer
@@ -98,8 +102,6 @@ defmodule Singularity.Application do
       Singularity.Code.Visualizers.FlowVisualizer,
       # Start the chat conversation agent
       Singularity.Conversation.ChatConversationAgent,
-      # Start the analysis suite integration
-      Singularity.AnalysisSuite,
       # Start the Google Chat integration
       Singularity.Conversation.GoogleChat,
       # Start the codebase snapshots

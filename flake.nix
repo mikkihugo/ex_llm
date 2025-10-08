@@ -78,6 +78,17 @@
           cargo-modules       # Visualize crate's module structure
           cargo-criterion     # Benchmarking harness
           cargo-cache         # Manage cargo cache
+          cargo-tarpaulin     # Code coverage tool
+          cargo-udeps         # Find unused dependencies
+          cargo-hack          # Test with different feature combinations
+          cargo-all-features  # Test all feature combinations
+          cargo-semver-checks # Check semver compatibility
+          cargo-spellcheck    # Spell check documentation
+          cargo-insta         # Snapshot testing
+          cargo-fuzz          # Fuzz testing
+          cargo-benchcmp      # Benchmark comparison
+          cargo-valgrind      # Valgrind integration
+          cargo-workspaces    # Workspace management
           bacon               # Background rust code checker
           mdbook              # Rust book generator
 

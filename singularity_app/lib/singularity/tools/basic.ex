@@ -52,7 +52,6 @@ defmodule Singularity.Tools.Basic do
     Singularity.Tools.Planning.register(provider)
     Singularity.Tools.Knowledge.register(provider)
     Singularity.Tools.CodeAnalysis.register(provider)
-    Singularity.Tools.Summary.register(provider)
   end
 
   defp fs_list_directory_tool do

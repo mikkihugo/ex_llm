@@ -74,4 +74,4 @@ pub fn calculate_quality_metrics_nif(code: Option<String>, language: String) -> 
 }
 
 // Initialize the NIF module
-rustler::init!("Elixir.Singularity.AnalysisSuite");
+rustler::init!("Elixir.Singularity.CodeEngine");

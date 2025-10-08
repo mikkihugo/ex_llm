@@ -620,7 +620,7 @@ defmodule Singularity.QualityCodeGenerator do
               stacktrace: __STACKTRACE__
             }
             
-            Logger.error("Error in #{context}: #{inspect(error_info)}")
+            Logger.error("Error in \#{context}: \#{inspect(error_info)}")
             {:error, error_info}
           end
 
@@ -646,7 +646,7 @@ defmodule Singularity.QualityCodeGenerator do
         # Basic error handling for development
         defmodule DevErrorHandler do
           def handle_error(error, context) do
-            IO.puts("Error in #{context}: #{inspect(error)}")
+            IO.puts("Error in \#{context}: \#{inspect(error)}")
             {:error, %{error: error, context: context}}
           end
         end

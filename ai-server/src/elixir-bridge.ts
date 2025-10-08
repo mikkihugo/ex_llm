@@ -46,7 +46,7 @@ export class ElixirBridge {
   }
 
   /**
-   * Execute task through Elixir ExecutionCoordinator
+   * Execute task through unified NATS server
    */
   async executeTask(request: ExecutionRequest): Promise<ExecutionResponse> {
     // Analyze complexity if not provided
@@ -56,11 +56,58 @@ export class ElixirBridge {
     }
 
     if (this.connected && this.nc) {
-      // Use NATS to call Elixir ExecutionCoordinator
-      return await this.executeViaNats(request);
+      // Use unified NATS server
+      return await this.executeViaUnifiedNats(request);
     } else {
       // Fallback to HTTP API
       return await this.executeViaHttp(request);
+    }
+  }
+
+  private async executeViaUnifiedNats(request: ExecutionRequest): Promise<ExecutionResponse> {
+    const payload = {
+      type: 'generate_code',
+      data: {
+        task: request.task,
+        language: request.language || 'auto',
+        context: request.context || {}
+      },
+      complexity: request.complexity,
+      correlation_id: `ai-server-${Date.now()}`
+    };
+
+    try {
+      // Use unified NATS server
+      const response = await (nats as any).nc?.request(
+        'nats.request',
+        new TextEncoder().encode(JSON.stringify(payload)),
+        { timeout: 30000 }
+      );
+
+      if (!response) {
+        throw new Error('No response from unified NATS server');
+      }
+
+      const result = JSON.parse(new TextDecoder().decode(response.data));
+      
+      if (result.success) {
+        return {
+          result: result.data.text || result.data.result || 'No result',
+          template_used: result.data.template_used || 'unified',
+          model_used: result.data.model_used || 'unified',
+          metrics: result.metrics || {
+            time_ms: 0,
+            tokens_used: 0,
+            cost_usd: 0,
+            cache_hit: false
+          }
+        };
+      } else {
+        throw new Error(result.error || 'Unified NATS server error');
+      }
+    } catch (error) {
+      console.error('Unified NATS execution failed:', error);
+      throw error;
     }
   }
 

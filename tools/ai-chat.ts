@@ -59,63 +59,18 @@ async function main() {
       process.exit(1);
     }
 
-    const token = process.env.VERCEL_AI_GATEWAY_TOKEN;
-    if (!token) {
-      console.error(JSON.stringify({
-        error: 'Missing VERCEL_AI_GATEWAY_TOKEN environment variable'
-      }));
-      process.exit(1);
-    }
+    // TODO: AI chat tool is stubbed out - implement when needed
+    console.log("AI chat tool called (stubbed):", request.model, request.messages.length, "messages");
 
-    // Parse model string (e.g., "openai/gpt-5-codex" or "gpt-5-codex")
-    const modelParts = request.model.split('/');
-    const modelName = modelParts.length > 1 ? modelParts[1] : modelParts[0];
-    const provider = modelParts.length > 1 ? modelParts[0] : 'openai';
-
-    // Use Vercel AI Gateway URL
-    const baseUrl = process.env.VERCEL_AI_GATEWAY_URL || 'https://gateway.vercel.com/v1';
-    const url = `${baseUrl}/chat/completions`;
-
-    const payload = {
-      model: `${provider}/${modelName}`,
-      messages: request.messages,
-      temperature: request.temperature ?? 0.7,
-      ...(request.maxTokens && { max_tokens: request.maxTokens })
-    };
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
-
-    // Add team ID header if provided
-    const teamId = process.env.VERCEL_TEAM_ID;
-    if (teamId) {
-      headers['x-vercel-team-id'] = teamId;
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(JSON.stringify({
-        error: `API request failed: ${response.status} ${response.statusText}`,
-        details: errorText
-      }));
-      process.exit(1);
-    }
-
-    const result: ChatResponse = await response.json();
-
-    // Output JSON result
+    // Stub implementation - returns empty response
     console.log(JSON.stringify({
-      text: result.choices[0]?.message?.content || '',
-      finishReason: result.choices[0]?.finish_reason || 'unknown',
-      usage: result.usage,
+      text: 'AI chat tool is currently stubbed out - functionality not implemented',
+      finishReason: 'stop',
+      usage: {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0
+      },
       model: request.model
     }));
 

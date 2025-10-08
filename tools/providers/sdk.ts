@@ -3,6 +3,7 @@
 import { configureOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@anthropic-ai/sdk";
 
+// TODO: OpenAI tools are stubbed out - implement when needed
 export const openaiLanguageModel = configureOpenAI({
   apiKey: process.env.OPENAI_API_KEY ?? "",
 });
@@ -12,23 +13,12 @@ const anthropicClient = createAnthropic({
   apiKey: process.env.ANTHROPIC_API_KEY ?? "",
 });
 
+// TODO: Anthropic chat is stubbed out - implement when needed
 export async function anthropicChat(prompt: string, opts: { model?: string } = {}) {
   const model = opts.model ?? process.env.CLAUDE_DEFAULT_MODEL ?? "sonnet";
-  const response = await anthropicClient.messages.create({
-    model,
-    max_tokens: 1024,
-    messages: [
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-  });
-
-  const message = response?.content?.[0];
-  if (!message || message.type !== "text") {
-    throw new Error("No text response from Anthropic");
-  }
-
-  return message.text;
+  
+  // Stub implementation - returns empty response
+  console.log("Anthropic chat called (stubbed):", model, prompt.substring(0, 50) + "...");
+  
+  return "Anthropic chat is currently stubbed out - functionality not implemented";
 }

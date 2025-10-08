@@ -11,11 +11,10 @@ readme = "README.md"
 keywords = ["architecture", "naming", "patterns", "meta-registry", "standards"]
 categories = ["algorithms", "development-tools"]
 
-[workspace]
-
 [lib]
 name = "architecture_engine"
 path = "src/lib.rs"
+crate-type = ["cdylib"]
 
 [dependencies]
 # Core dependencies

@@ -39,7 +39,7 @@ defmodule Singularity.CodeDeduplicator do
   """
 
   require Logger
-  alias Singularity.{EmbeddingEngine, Repo}
+  alias Singularity.{EmbeddingEngine, Repo, ParserEngine}
 
   @doc """
   Find similar code in the entire codebase (750M lines)
@@ -327,83 +327,120 @@ defmodule Singularity.CodeDeduplicator do
   # Language-specific keyword extraction
 
   defp extract_elixir_keywords(code) do
-    # Extract: module names, function names, GenServer patterns, etc.
-    [
-      extract_by_regex(code, ~r/defmodule\s+([A-Z][A-Za-z0-9.]+)/),
-      extract_by_regex(code, ~r/def\s+([a-z_][a-z0-9_?!]*)/),
-      extract_by_regex(code, ~r/use\s+([A-Z][A-Za-z0-9.]+)/),
-      extract_patterns(code, [
-        "GenServer",
-        "Supervisor",
-        "Agent",
-        "Task",
-        "Broadway",
-        "Ecto.Schema"
-      ]),
-      extract_patterns(code, ["http", "api", "request", "cache", "pubsub", "nats", "database"])
-    ]
-    |> List.flatten()
-    |> Enum.map(&String.downcase/1)
+    # Use ParserEngine for accurate AST-based extraction
+    case ParserEngine.extract_functions(code) do
+      {:ok, functions} ->
+        function_names = Enum.map(functions, & &1.name)
+        module_names = extract_module_names_from_code(code)
+        framework_patterns = extract_patterns(code, [
+          "GenServer", "Supervisor", "Agent", "Task", "Broadway", "Ecto.Schema"
+        ])
+        domain_patterns = extract_patterns(code, [
+          "http", "api", "request", "cache", "pubsub", "nats", "database"
+        ])
+        
+        (function_names ++ module_names ++ framework_patterns ++ domain_patterns)
+        |> Enum.map(&String.downcase/1)
+      
+      {:error, _} ->
+        # Fallback to basic extraction
+        extract_generic_keywords(code)
+    end
   end
 
   defp extract_rust_keywords(code) do
-    [
-      extract_by_regex(code, ~r/struct\s+([A-Z][A-Za-z0-9]+)/),
-      extract_by_regex(code, ~r/fn\s+([a-z_][a-z0-9_]*)/),
-      extract_by_regex(code, ~r/impl\s+([A-Z][A-Za-z0-9]+)/),
-      extract_patterns(code, ["Result", "Option", "Vec", "HashMap", "async", "tokio", "serde"])
-    ]
-    |> List.flatten()
-    |> Enum.map(&String.downcase/1)
+    # Use ParserEngine for accurate AST-based extraction
+    case ParserEngine.extract_functions(code) do
+      {:ok, functions} ->
+        function_names = Enum.map(functions, & &1.name)
+        class_names = extract_class_names_from_code(code)
+        framework_patterns = extract_patterns(code, [
+          "Result", "Option", "Vec", "HashMap", "async", "tokio", "serde"
+        ])
+        
+        (function_names ++ class_names ++ framework_patterns)
+        |> Enum.map(&String.downcase/1)
+      
+      {:error, _} ->
+        # Fallback to basic extraction
+        extract_generic_keywords(code)
+    end
   end
 
   defp extract_go_keywords(code) do
-    [
-      extract_by_regex(code, ~r/type\s+([A-Z][A-Za-z0-9]+)/),
-      extract_by_regex(code, ~r/func\s+([A-Z][A-Za-z0-9]+)/),
-      extract_patterns(code, ["http", "context", "goroutine", "channel", "error", "interface"])
-    ]
-    |> List.flatten()
-    |> Enum.map(&String.downcase/1)
+    # Use ParserEngine for accurate AST-based extraction
+    case ParserEngine.extract_functions(code) do
+      {:ok, functions} ->
+        function_names = Enum.map(functions, & &1.name)
+        class_names = extract_class_names_from_code(code)
+        framework_patterns = extract_patterns(code, [
+          "http", "context", "goroutine", "channel", "error", "interface"
+        ])
+        
+        (function_names ++ class_names ++ framework_patterns)
+        |> Enum.map(&String.downcase/1)
+      
+      {:error, _} ->
+        # Fallback to basic extraction
+        extract_generic_keywords(code)
+    end
   end
 
   defp extract_ts_keywords(code) do
-    [
-      extract_by_regex(code, ~r/class\s+([A-Z][A-Za-z0-9]+)/),
-      extract_by_regex(code, ~r/interface\s+([A-Z][A-Za-z0-9]+)/),
-      extract_by_regex(code, ~r/function\s+([a-z][A-Za-z0-9]+)/),
-      extract_patterns(code, ["async", "await", "Promise", "Observable", "http", "api"])
-    ]
-    |> List.flatten()
-    |> Enum.map(&String.downcase/1)
+    # Use ParserEngine for accurate AST-based extraction
+    case ParserEngine.extract_functions(code) do
+      {:ok, functions} ->
+        function_names = Enum.map(functions, & &1.name)
+        class_names = extract_class_names_from_code(code)
+        framework_patterns = extract_patterns(code, [
+          "async", "await", "Promise", "Observable", "http", "api"
+        ])
+        
+        (function_names ++ class_names ++ framework_patterns)
+        |> Enum.map(&String.downcase/1)
+      
+      {:error, _} ->
+        # Fallback to basic extraction
+        extract_generic_keywords(code)
+    end
   end
 
   defp extract_python_keywords(code) do
-    [
-      extract_by_regex(code, ~r/class\s+([A-Z][A-Za-z0-9]+)/),
-      extract_by_regex(code, ~r/def\s+([a-z_][a-z0-9_]*)/),
-      extract_patterns(code, ["async", "await", "dataclass", "pydantic", "fastapi", "django"])
-    ]
-    |> List.flatten()
-    |> Enum.map(&String.downcase/1)
+    # Use ParserEngine for accurate AST-based extraction
+    case ParserEngine.extract_functions(code) do
+      {:ok, functions} ->
+        function_names = Enum.map(functions, & &1.name)
+        class_names = extract_class_names_from_code(code)
+        framework_patterns = extract_patterns(code, [
+          "async", "await", "dataclass", "pydantic", "fastapi", "django"
+        ])
+        
+        (function_names ++ class_names ++ framework_patterns)
+        |> Enum.map(&String.downcase/1)
+      
+      {:error, _} ->
+        # Fallback to basic extraction
+        extract_generic_keywords(code)
+    end
   end
 
   defp extract_java_keywords(code) do
-    [
-      extract_by_regex(code, ~r/class\s+([A-Z][A-Za-z0-9]+)/),
-      # Annotations
-      extract_by_regex(code, ~r/@([A-Z][A-Za-z0-9]+)/),
-      extract_patterns(code, [
-        "Spring",
-        "Repository",
-        "Service",
-        "Controller",
-        "Entity",
-        "Optional"
-      ])
-    ]
-    |> List.flatten()
-    |> Enum.map(&String.downcase/1)
+    # Use ParserEngine for accurate AST-based extraction
+    case ParserEngine.extract_functions(code) do
+      {:ok, functions} ->
+        function_names = Enum.map(functions, & &1.name)
+        class_names = extract_class_names_from_code(code)
+        framework_patterns = extract_patterns(code, [
+          "Spring", "Repository", "Service", "Controller", "Entity", "Optional"
+        ])
+        
+        (function_names ++ class_names ++ framework_patterns)
+        |> Enum.map(&String.downcase/1)
+      
+      {:error, _} ->
+        # Fallback to basic extraction
+        extract_generic_keywords(code)
+    end
   end
 
   defp extract_generic_keywords(code) do
@@ -415,6 +452,44 @@ defmodule Singularity.CodeDeduplicator do
     |> Enum.sort_by(fn {_, count} -> -count end)
     |> Enum.take(20)
     |> Enum.map(fn {word, _} -> word end)
+  end
+
+  defp extract_module_names_from_code(code) do
+    # Try ParserEngine first, fallback to regex
+    case ParserEngine.detect_language(code) do
+      {:ok, "elixir"} ->
+        case ParserEngine.parse_file(code) do
+          {:ok, document} -> 
+            # Extract module names from AST
+            extract_module_from_ast(document.ast)
+          {:error, _} -> 
+            extract_by_regex(code, ~r/defmodule\s+([A-Z][A-Za-z0-9_.]+)/)
+        end
+      _ ->
+        extract_by_regex(code, ~r/defmodule\s+([A-Z][A-Za-z0-9_.]+)/)
+    end
+  end
+
+  defp extract_class_names_from_code(code) do
+    # Try ParserEngine first, fallback to regex
+    case ParserEngine.extract_classes(code) do
+      {:ok, classes} ->
+        Enum.map(classes, & &1.name)
+      {:error, _} ->
+        extract_by_regex(code, ~r/(?:class|struct)\s+([A-Z][A-Za-z0-9_]+)/)
+    end
+  end
+
+  defp extract_module_from_ast(ast) do
+    # Extract module names from Elixir AST
+    case ast do
+      %{"type" => "Program", "body" => body} when is_list(body) ->
+        body
+        |> Enum.filter(&(&1["type"] == "ModuleDeclaration"))
+        |> Enum.map(& &1["name"])
+      _ ->
+        []
+    end
   end
 
   defp extract_by_regex(code, regex) do

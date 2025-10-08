@@ -377,17 +377,15 @@ defmodule Singularity.ArchitectureEngine do
   Run framework detection on a codebase
   """
   def detect_frameworks(codebase_path) do
-    # Use existing framework detection logic
-    # This would integrate with the tech detection capabilities
-    {:ok, %{
-      frameworks: [
-        %{name: "phoenix", confidence: 0.95, version: "1.7.0"},
-        %{name: "ecto", confidence: 0.90, version: "3.10.0"}
-      ],
-      languages: ["elixir"],
-      databases: ["postgresql"]
-    }}
+    # Use NIF for fast local detection
+    case detect_frameworks_nif(codebase_path) do
+      {:ok, frameworks} -> {:ok, %{frameworks: frameworks}}
+      {:error, reason} -> {:error, reason}
+    end
   end
+
+  # NIF function - fast local detection
+  defp detect_frameworks_nif(_codebase_path), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc """
   Run quality analysis with linting engine
@@ -850,9 +848,9 @@ defmodule Singularity.ArchitectureEngine do
 
   defp calculate_complexity(content) do
     # Simple complexity calculation
-    def_count = content |> String.split("def ") |> length() - 1
-    case_count = content |> String.split("case ") |> length() - 1
-    if_count = content |> String.split("if ") |> length() - 1
+    def_count = (content |> String.split("def ") |> length()) - 1
+    case_count = (content |> String.split("case ") |> length()) - 1
+    if_count = (content |> String.split("if ") |> length()) - 1
     
     def_count + case_count + if_count
   end
@@ -1666,12 +1664,13 @@ defmodule Singularity.ArchitectureEngine do
     end
 
     # Element type score
-    type_score = case element_type do
-      "function" when String.contains?(name, "_") -> 1.0
-      "module" when String.match?(name, ~r/^[A-Z]/) -> 1.0
-      "variable" when String.match?(name, ~r/^[a-z]/) -> 1.0
-      _ -> 0.7
-    end
+    type_score =
+      cond do
+        element_type == "function" and String.contains?(name, "_") -> 1.0
+        element_type == "module" and String.match?(name, ~r/^[A-Z]/) -> 1.0
+        element_type == "variable" and String.match?(name, ~r/^[a-z]/) -> 1.0
+        true -> 0.7
+      end
 
     (length_score + context_score + type_score) / 3.0
   end

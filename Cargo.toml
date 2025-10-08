@@ -11,6 +11,9 @@ members = [
     "singularity_app/native/parser-engine/languages/typescript",
     "singularity_app/native/parser-engine/languages/python",
     "singularity_app/native/parser-engine/template_meta_parser",
+    "singularity_app/native/architecture_engine",
+    "singularity_app/native/code_engine",
+    "singularity_app/native/embedding_engine",
 ]
 
 [workspace.dependencies]

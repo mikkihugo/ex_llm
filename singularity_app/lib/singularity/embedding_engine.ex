@@ -7,8 +7,8 @@ defmodule Singularity.EmbeddingEngine do
 
   use Rustler,
     otp_app: :singularity,
-    crate: "embedding_engine",
-    path: "../rust/embedding_engine"
+    crate: :embedding_engine,
+    path: "native/embedding_engine"
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)

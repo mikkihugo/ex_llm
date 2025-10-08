@@ -1,26 +1,17 @@
 import { createLanguageModel } from "ai";
 
+// TODO: OpenAI tools are stubbed out - implement when needed
 export const openaiLanguageModel = createLanguageModel({
   doGenerate: async (options) => {
-    const { openai, messages } = await import("./sdk.ts");
-    const model = options.model ?? "gpt-4o-mini";
-    const prompt = messages ?? [];
-
-    const client = openai({ apiKey: process.env.OPENAI_API_KEY ?? "" });
-
-    const result = await client.chat.completions.create({
-      model,
-      messages: prompt as any,
-    });
-
-    const text = result.choices[0]?.message?.content ?? "";
-
+    // Stub implementation - returns empty response
+    console.log("OpenAI tool called (stubbed):", options.model ?? "gpt-4o-mini");
+    
     return {
       type: "text-generation",
-      text,
+      text: "OpenAI tool is currently stubbed out - functionality not implemented",
       usage: {
-        inputTokens: result.usage?.prompt_tokens ?? 0,
-        outputTokens: result.usage?.completion_tokens ?? 0,
+        inputTokens: 0,
+        outputTokens: 0,
       },
     };
   },

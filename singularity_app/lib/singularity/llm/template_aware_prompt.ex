@@ -17,7 +17,8 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
   require Logger
 
   alias Singularity.{TechnologyTemplateLoader, RAGCodeGenerator}
-  alias Singularity.LLM.{Provider, SemanticCache, PromptEngineClient}
+  alias Singularity.LLM.{Provider, SemanticCache}
+  alias Singularity.PromptEngine
 
   @doc """
   Generate LLM prompt with optimal template selection
@@ -40,7 +41,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
     # 1. Try to use prompt engine for context-aware generation
     case detect_context_type(task) do
       {:framework, framework, category} ->
-        case PromptEngineClient.generate_framework_prompt(task.description, framework, category, language) do
+        case PromptEngine.generate_framework_prompt(task.description, framework, category, language) do
           {:ok, %{prompt: prompt, confidence: confidence, template_used: template_used}} ->
             Logger.info("Generated prompt using prompt engine", 
               framework: framework, 
@@ -68,7 +69,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
         end
       
       {:language, lang, category} ->
-        case PromptEngineClient.generate_language_prompt(task.description, lang, category) do
+        case PromptEngine.generate_language_prompt(task.description, lang, category) do
           {:ok, %{prompt: prompt, confidence: confidence, template_used: template_used}} ->
             Logger.info("Generated prompt using prompt engine", 
               language: lang, 
@@ -96,7 +97,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
         end
       
       {:pattern, pattern, category} ->
-        case PromptEngineClient.generate_pattern_prompt(task.description, pattern, category, language) do
+        case PromptEngine.generate_pattern_prompt(task.description, pattern, category, language) do
           {:ok, %{prompt: prompt, confidence: confidence, template_used: template_used}} ->
             Logger.info("Generated prompt using prompt engine", 
               pattern: pattern, 
@@ -167,10 +168,13 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
     # Get template-aware prompt
     prompt_data = generate_prompt(task, opts)
 
-    # Check semantic cache first (with template context)
-    cache_key = {task.type, task.description, prompt_data.template_id}
+    # Check memory cache first (faster than semantic cache)
+    cache_key = :erlang.phash2({task.type, task.description, prompt_data.template_id})
 
-    case SemanticCache.get(cache_key) do
+    case Cache.get(:memory, cache_key) do
+      {:ok, cached_response} ->
+        Logger.info("Using cached prompt response", cache_key: cache_key)
+        cached_response
       :miss ->
         # Optimize prompt using prompt engine if available
         optimized_prompt = optimize_prompt_if_available(prompt_data.prompt, task, opts)
@@ -207,8 +211,8 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
               metrics
             )
 
-            # Cache the result
-            SemanticCache.put(cache_key, response.content)
+            # Cache the result (using ETS for fast access)
+            Cache.put(:memory, cache_key, response.content, ttl: :timer.hours(1))
 
             {:ok, response.content, :generated}
 
@@ -497,7 +501,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
     use_optimization = Keyword.get(opts, :optimize_prompt, true)
     
     if use_optimization do
-      case PromptEngineClient.optimize_prompt(prompt, 
+      case PromptEngine.optimize_prompt(prompt, 
         context: task.description,
         language: Keyword.get(opts, :language, "elixir")
       ) do

@@ -508,7 +508,7 @@ defmodule Singularity.Learning.PatternMiner do
         acc
         |> Enum.map(fn cluster ->
           cluster_embedding = cluster.centroid
-          similarity = calculate_cosine_similarity(embedding, cluster_centroid)
+          similarity = calculate_cosine_similarity(embedding, cluster_embedding)
           {cluster, similarity}
         end)
         |> Enum.max_by(fn {_cluster, similarity} -> similarity end, fn -> {nil, 0.0} end)

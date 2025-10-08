@@ -54,6 +54,7 @@ defmodule Singularity.Runner do
   require Logger
   import Ecto.Query
   alias Singularity.Repo
+  alias Singularity.Code.Analyzers.MicroserviceAnalyzer
 
   @type execution_id :: String.t()
   @type task :: map()
@@ -1025,9 +1026,8 @@ defmodule Singularity.Runner do
     end
   end
 
-  # Delegate to existing microservice analyzer
   defp has_microservices_structure(discovery) do
-    case Singularity.Code.Analyzers.MicroserviceAnalyzer.detect_completion_status(%{source_files: discovery.files || []}) do
+    case MicroserviceAnalyzer.detect_completion_status(discovery) do
       %{status: status} when status in [:microservices, :distributed] -> true
       _ -> false
     end

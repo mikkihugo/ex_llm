@@ -302,6 +302,11 @@ function convertOpenAIToolsToAISDK(openaiTools: Tool[]) {
     tools[tool.function.name] = {
       description: tool.function.description || '',
       parameters: tool.function.parameters || {},
+      execute: async (params: any) => {
+        // TODO: OpenAI tools are stubbed out - implement when needed
+        console.log(`OpenAI tool '${tool.function.name}' called (stubbed):`, params);
+        return { result: `OpenAI tool '${tool.function.name}' is currently stubbed out - functionality not implemented` };
+      }
     };
   }
 

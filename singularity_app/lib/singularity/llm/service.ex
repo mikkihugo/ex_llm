@@ -8,7 +8,7 @@ defmodule Singularity.LLM.Service do
 
   require Logger
   alias Singularity.NatsClient
-  alias Singularity.LLM.PromptEngineClient
+  alias Singularity.PromptEngine
 
   @capability_aliases %{
     "code" => "code",
@@ -428,9 +428,39 @@ defmodule Singularity.LLM.Service do
     end
   end
 
+  defp detect_complexity_from_prompt(prompt) when is_binary(prompt) do
+    length = String.length(prompt)
+
+    cond do
+      length > 500 -> :complex
+      length > 200 -> :medium
+      true -> :simple
+    end
+  end
+
+  defp detect_complexity_from_prompt(_), do: :medium
+
+  defp detect_context_from_prompt(prompt) when is_binary(prompt) do
+    down = String.downcase(prompt)
+
+    cond do
+      String.contains?(down, ["architecture", "diagram", "design"]) -> :architecture
+      String.contains?(down, ["test", "spec", "unit"]) -> :testing
+      String.contains?(down, ["api", "controller", "service"]) -> :coding
+      true -> :general
+    end
+  end
+
+  defp detect_context_from_prompt(_), do: :general
+
+  defp do_call_optimized_contextual(complexity, context, prompt, language, opts) do
+    opts = Keyword.put_new(opts, :context, context)
+    do_call_optimized(complexity, prompt, language, opts)
+  end
+
   defp do_call_optimized(complexity, prompt, language, opts) do
     # Try to optimize the prompt using prompt engine
-    case PromptEngineClient.optimize_prompt(prompt, 
+    case PromptEngine.optimize_prompt(prompt, 
       context: prompt,
       language: language
     ) do

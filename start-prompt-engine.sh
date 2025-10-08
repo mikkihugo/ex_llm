@@ -31,7 +31,7 @@ echo "🔧 Log level: $RUST_LOG"
 cd rust/prompt_engine
 
 echo "🔨 Building prompt engine service..."
-cargo build --release --bin prompt_engine_service
+cargo build --release --bin prompt_analysis_service
 
 echo "🎯 Starting prompt engine service..."
-cargo run --release --bin prompt_engine_service
+cargo run --release --bin prompt_analysis_service

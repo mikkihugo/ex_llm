@@ -2,6 +2,9 @@ defmodule Singularity.NatsExecutionRouter do
   @moduledoc """
   NATS Execution Router - Routes AI Server requests to TemplateSparcOrchestrator.
 
+  DEPRECATED: This is now handled by the unified NATS server.
+  This router is kept for backward compatibility but should use NatsServer instead.
+
   Handles execution.request messages and routes them through:
   1. TemplateSparcOrchestrator for task planning
   2. TemplatePerformanceTracker for optimal template selection

@@ -4,6 +4,15 @@ This document defines the NATS subject hierarchy for Singularity's distributed a
 
 ## Subject Hierarchy
 
+### Unified NATS Server (Single Entry Point)
+```
+nats.request                # All requests go here (unified entry point)
+nats.response               # All responses come back
+nats.request.simple         # Simple complexity requests
+nats.request.medium         # Medium complexity requests  
+nats.request.complex        # Complex complexity requests
+```
+
 ### AI/LLM Communication
 ```
 ai.llm.request              # All LLM requests from Elixir to AI Server
@@ -12,6 +21,16 @@ ai.llm.error                # LLM errors from AI Server to Elixir
 ai.llm.stream               # Streaming LLM requests
 ai.tools.execute            # AI tool execution requests
 ai.tools.result             # AI tool execution results
+```
+
+### Framework Detection (Consolidated)
+```
+detector.analyze            # Framework detection requests
+detector.analyze.simple     # Simple detection (file patterns)
+detector.analyze.medium     # Medium detection (pattern matching)
+detector.analyze.complex    # Complex detection (LLM analysis)
+detector.match.patterns     # Pattern matching only
+detector.llm.analyze        # LLM analysis for unknown frameworks
 ```
 
 ### Code Analysis & Processing

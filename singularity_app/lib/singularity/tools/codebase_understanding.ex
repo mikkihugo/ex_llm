@@ -3,22 +3,20 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
   Agent tools for codebase understanding and analysis.
 
   Wraps existing powerful analysis capabilities:
+  - CodeEngine - NIF-based code analysis and generation
   - SemanticCodeSearch - Vector-based code search
-  - ArchitectureEngine - Full codebase analysis
+  - ArchitectureEngine - Naming and architecture patterns
   - TechnologyAgent - Tech stack detection
-  - DependencyMapper - Dependency analysis
-  - MicroserviceAnalyzer - Service analysis
   """
 
   alias Singularity.Tools.{Catalog, Tool}
-  alias Singularity.{SemanticCodeSearch, TechnologyAgent}
-  alias Singularity.CodeAnalysis.{DependencyMapper, MicroserviceAnalyzer}
-
-  @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http, :codex, :cursor, :copilot]
+  alias Singularity.{SemanticCodeSearch, TechnologyAgent, CodeEngine}
+  alias Singularity.CodeAnalysis.DependencyMapper
+  alias Singularity.Code.Analyzers.MicroserviceAnalyzer
 
   @doc "Register codebase understanding tools with the shared registry."
   def register(provider) do
-    Singularity.Tools.Catalog.add_tools(provider, [
+    Catalog.add_tools(provider, [
       codebase_search_tool(),
       codebase_analyze_tool(),
       codebase_technologies_tool(),
@@ -203,8 +201,8 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
   def codebase_analyze(%{"codebase_path" => path} = args, _ctx) do
     analysis_type = Map.get(args, "analysis_type", "full")
 
-    # ArchitectureAgent removed - use ArchitectureEngine or other engines
-    case {:ok, %{status: :not_implemented}} do
+    # Use CodeEngine for codebase analysis
+    case CodeEngine.analyze_code(path, "auto") do
       {:ok, analysis} ->
         {:ok,
          %{
@@ -270,26 +268,11 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
 
     services =
       case service_type do
-        "typescript" ->
-          MicroserviceAnalyzer.analyze_typescript_service(path)
-
-        "rust" ->
-          MicroserviceAnalyzer.analyze_rust_service(path)
-
-        "python" ->
-          MicroserviceAnalyzer.analyze_python_service(path)
-
-        "go" ->
-          MicroserviceAnalyzer.analyze_go_service(path)
-
-        nil ->
-          # Analyze all service types
-          %{
-            typescript: MicroserviceAnalyzer.analyze_typescript_service(path),
-            rust: MicroserviceAnalyzer.analyze_rust_service(path),
-            python: MicroserviceAnalyzer.analyze_python_service(path),
-            go: MicroserviceAnalyzer.analyze_go_service(path)
-          }
+        "typescript" -> %{typescript: MicroserviceAnalyzer.analyze_typescript_service(path)}
+        "rust" -> %{rust: MicroserviceAnalyzer.analyze_rust_service(path)}
+        "python" -> %{python: MicroserviceAnalyzer.analyze_python_service(path)}
+        "go" -> %{go: MicroserviceAnalyzer.analyze_go_service(path)}
+        _ -> MicroserviceAnalyzer.analyze_services(path)
       end
 
     {:ok,
@@ -303,8 +286,8 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
   def codebase_architecture(%{"codebase_path" => path} = args, _ctx) do
     detail_level = Map.get(args, "detail_level", "medium")
 
-    # ArchitectureAgent removed - use ArchitectureEngine or other engines
-    case {:ok, %{status: :not_implemented}} do
+    # Use CodeEngine for architecture analysis
+    case CodeEngine.analyze_code(path, "auto") do
       {:ok, architecture} ->
         filtered_architecture =
           case detail_level do

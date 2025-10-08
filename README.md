@@ -18,6 +18,26 @@ Autonomous agents, semantic code search, living knowledge base, and multi-AI orc
 - **Nix Everywhere** - Single reproducible environment (dev/test/prod)
 - **Internal Only** - No scale/security constraints, maximum features & learning
 
+## Unified NATS Architecture
+
+**Single Entry Point**: All services now use one unified NATS server instead of multiple disconnected bridges.
+
+```
+All Requests → nats.request → Unified NATS Server → Route by complexity/service
+```
+
+**Key Components:**
+- **🎯 NatsServer** - Single entry point for all requests
+- **⚡ Local Detection** - NIF for fast local codebase analysis  
+- **🌐 Remote Detection** - Consolidated Rust detector for external packages
+- **🤖 LLM Auto-discovery** - 5-level detection with AI fallback
+- **📊 Complexity Routing** - Simple/Medium/Complex task routing
+
+**NATS Subjects:**
+- `nats.request` - Single entry point
+- `detector.analyze` - Framework detection
+- `ai.llm.request` - LLM requests
+
 ## Architecture (current)
 
 ```

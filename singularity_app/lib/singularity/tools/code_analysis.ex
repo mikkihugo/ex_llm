@@ -922,7 +922,7 @@ defmodule Singularity.Tools.CodeAnalysis do
     
     %{
       coverage: coverage,
-      status: if String.contains?(output, "test failure"), do: "failed", else: "passed"
+      status: (if String.contains?(output, "test failure"), do: "failed", else: "passed")
     }
   end
 
@@ -980,7 +980,7 @@ defmodule Singularity.Tools.CodeAnalysis do
 
   defp parse_npm_test_output(output) do
     %{
-      status: if String.contains?(output, "failing"), do: "failed", else: "passed",
+      status: (if String.contains?(output, "failing"), do: "failed", else: "passed"),
       output: output
     }
   end
@@ -1040,7 +1040,7 @@ defmodule Singularity.Tools.CodeAnalysis do
     
     %{
       coverage: coverage,
-      status: if String.contains?(output, "FAILED"), do: "failed", else: "passed"
+      status: (if String.contains?(output, "FAILED"), do: "failed", else: "passed")
     }
   end
 
@@ -1091,7 +1091,7 @@ defmodule Singularity.Tools.CodeAnalysis do
 
   defp parse_go_test_output(output) do
     %{
-      status: if String.contains?(output, "FAIL"), do: "failed", else: "passed",
+      status: (if String.contains?(output, "FAIL"), do: "failed", else: "passed"),
       output: output
     }
   end
@@ -1146,7 +1146,7 @@ defmodule Singularity.Tools.CodeAnalysis do
 
   defp parse_maven_test_output(output) do
     %{
-      status: if String.contains?(output, "BUILD FAILURE"), do: "failed", else: "passed",
+      status: (if String.contains?(output, "BUILD FAILURE"), do: "failed", else: "passed"),
       output: output
     }
   end
