@@ -124,6 +124,25 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
   end
 
   @doc """
+  Convenience helpers returning individual subjects used for subscriptions.
+  """
+  def naming_suggestions, do: app_facing(:naming)
+  def architecture_patterns, do: app_facing(:architecture)
+  def quality_checks, do: app_facing(:quality)
+  def dependencies_analysis, do: app_facing(:dependencies)
+  def patterns_suggestions, do: app_facing(:patterns)
+  def templates_suggestions, do: app_facing(:templates)
+  def refactoring_suggestions, do: app_facing(:refactoring)
+
+  def meta_registry_naming, do: meta(:naming)
+  def meta_registry_architecture, do: meta(:architecture)
+  def meta_registry_quality, do: meta(:quality)
+  def meta_registry_dependencies, do: meta(:dependencies)
+  def meta_registry_patterns, do: meta(:patterns)
+  def meta_registry_templates, do: meta(:templates)
+  def meta_registry_refactoring, do: meta(:refactoring)
+
+  @doc """
   Detect tech stack and return appropriate subjects.
   
   ## Examples

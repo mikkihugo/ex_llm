@@ -40,7 +40,7 @@ defmodule Singularity.DocumentationGenerator do
       # Generate architecture documentation by analyzing the codebase
       codebase_path = Application.get_env(:singularity_app, :codebase_path, ".")
       
-      case Singularity.Code.Analyzers.ArchitectureAgent.analyze_architecture(codebase_path) do
+      case Singularity.ArchitectureEngine.analyze_architecture(codebase_path) do
         {:ok, analysis} ->
           doc_content = build_architecture_doc(analysis)
           {:ok, [%{type: "architecture", content: doc_content, generated_at: DateTime.utc_now()}]}

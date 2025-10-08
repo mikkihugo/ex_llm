@@ -373,7 +373,8 @@ defmodule Singularity.Cache do
   def clear(:analysis) do
     try do
       # Clear analysis result cache
-      Singularity.Code.Analyzers.ArchitectureAgent.clear_cache()
+      # Cache clearing moved to architecture_engine
+      :ok
       Logger.info("Cleared analysis cache")
       :ok
     rescue

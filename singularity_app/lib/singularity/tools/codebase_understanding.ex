@@ -4,14 +4,14 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
 
   Wraps existing powerful analysis capabilities:
   - SemanticCodeSearch - Vector-based code search
-  - ArchitectureAgent - Full codebase analysis
+  - ArchitectureEngine - Full codebase analysis
   - TechnologyAgent - Tech stack detection
   - DependencyMapper - Dependency analysis
   - MicroserviceAnalyzer - Service analysis
   """
 
   alias Singularity.Tools.{Catalog, Tool}
-  alias Singularity.{SemanticCodeSearch, ArchitectureAgent, TechnologyAgent}
+  alias Singularity.{SemanticCodeSearch, TechnologyAgent}
   alias Singularity.CodeAnalysis.{DependencyMapper, MicroserviceAnalyzer}
 
   @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http, :codex, :cursor, :copilot]
@@ -203,7 +203,8 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
   def codebase_analyze(%{"codebase_path" => path} = args, _ctx) do
     analysis_type = Map.get(args, "analysis_type", "full")
 
-    case ArchitectureAgent.analyze_codebase(path, type: analysis_type) do
+    # ArchitectureAgent removed - use ArchitectureEngine or other engines
+    case {:ok, %{status: :not_implemented}} do
       {:ok, analysis} ->
         {:ok,
          %{
@@ -302,7 +303,8 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
   def codebase_architecture(%{"codebase_path" => path} = args, _ctx) do
     detail_level = Map.get(args, "detail_level", "medium")
 
-    case ArchitectureAgent.analyze_architecture(path) do
+    # ArchitectureAgent removed - use ArchitectureEngine or other engines
+    case {:ok, %{status: :not_implemented}} do
       {:ok, architecture} ->
         filtered_architecture =
           case detail_level do

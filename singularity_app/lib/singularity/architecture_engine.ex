@@ -336,24 +336,25 @@ defmodule Singularity.ArchitectureEngine do
           analyzed_at: DateTime.utc_now()
         })
 
-      # Publish analysis results
-      NatsClient.publish("architecture.analysis.complete", %{
-        codebase_path: codebase_path,
-        architecture: architecture,
-        frameworks: frameworks,
-        quality: quality,
-        violations: length(violations),
-        analyzed_at: DateTime.utc_now()
-      })
+        # Publish analysis results
+        NatsClient.publish("architecture.analysis.complete", %{
+          codebase_path: codebase_id,
+          architecture: architecture,
+          frameworks: frameworks,
+          quality: quality,
+          violations: length(violations),
+          analyzed_at: DateTime.utc_now()
+        })
 
-      {:ok, %{
-        architecture: architecture,
-        frameworks: frameworks,
-        quality: quality,
-        violations: violations
-      }}
-    else
-      error -> error
+        {:ok, %{
+          architecture: architecture,
+          frameworks: frameworks,
+          quality: quality,
+          violations: violations
+        }}
+      else
+        error -> error
+      end
     end
   end
 

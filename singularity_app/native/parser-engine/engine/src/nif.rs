@@ -83,4 +83,4 @@ impl<'a> Serialize for SerializeDocuments<'a> {
     }
 }
 
-rustler::init!("Elixir.Singularity.UniversalParser");
+rustler::init!("Elixir.Singularity.ParserEngine.Native");

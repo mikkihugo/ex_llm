@@ -79,8 +79,7 @@ defmodule Singularity.Application do
       # Start the RAG code generator
       Singularity.Code.Generators.RAGCodeGenerator,
       # ParserEngine is a NIF module - no need to start it
-      # Start the architecture analyzer
-      Singularity.Code.Analyzers.ArchitectureAgent,
+      # ArchitectureAgent removed - functionality moved to ArchitectureEngine
       # Start the consolidation engine
       Singularity.Code.Analyzers.ConsolidationEngine,
       # Start the coordination analyzer

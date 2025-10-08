@@ -23,7 +23,6 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
   """
 
   alias Singularity.MetaRegistry.QuerySystem
-  alias Singularity.MetaRegistry.NatsSubjects
 
   @doc """
   Learn from NATS messaging patterns.
@@ -38,9 +37,24 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
       })
   """
   def learn_nats_patterns(attrs) do
-    QuerySystem.learn_architecture_patterns("nats-framework", %{
-      patterns: attrs.patterns,
-      services: attrs.subjects
+    codebase_id =
+      Map.get(attrs, :codebase_id) ||
+        Map.get(attrs, "codebase_id") ||
+        "nats-framework"
+
+    patterns =
+      Map.get(attrs, :patterns) ||
+        Map.get(attrs, "patterns") ||
+        []
+
+    subjects =
+      Map.get(attrs, :subjects) ||
+        Map.get(attrs, "subjects") ||
+        []
+
+    QuerySystem.learn_architecture_patterns(codebase_id, %{
+      patterns: List.wrap(patterns),
+      services: List.wrap(subjects)
     })
   end
 
@@ -65,20 +79,24 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
   end
 
   @doc """
-  Learn from Singularity's own NATS messaging patterns.
-  
-  ## Examples
-  
-      # Learn from our own NATS subjects
-      learn_nats_patterns(%{
-        subjects: ["ai.provider.claude", "code.analysis.parse", "meta.registry.naming"],
-        patterns: ["ai.provider.*", "code.analysis.*", "meta.registry.*"]
-      })
+  Learn from Rust coding patterns used across Singularity NIFs.
   """
-  def learn_nats_patterns(attrs) do
-    QuerySystem.learn_architecture_patterns("singularity-nats", %{
-      patterns: attrs.patterns,
-      services: attrs.subjects
+  def learn_rust_patterns(attrs) do
+    QuerySystem.learn_naming_patterns("singularity-rust", %{
+      language: Map.get(attrs, :language, "rust"),
+      framework: Map.get(attrs, :framework, "rustler"),
+      patterns: List.wrap(attrs.patterns)
+    })
+  end
+
+  @doc """
+  Learn from Elixir coding patterns used across Singularity modules.
+  """
+  def learn_elixir_patterns(attrs) do
+    QuerySystem.learn_naming_patterns("singularity-elixir", %{
+      language: Map.get(attrs, :language, "elixir"),
+      framework: Map.get(attrs, :framework, "otp"),
+      patterns: List.wrap(attrs.patterns)
     })
   end
 

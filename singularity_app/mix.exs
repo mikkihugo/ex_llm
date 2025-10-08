@@ -76,7 +76,9 @@ defmodule Singularity.MixProject do
       # Rustler NIF for GPU-accelerated embeddings (primary: Rust → fallback: Google AI)
       {:rustler, "~> 0.34.0", runtime: false},
   # Code engine NIF for unified code intelligence (migrated from analysis_suite)
-  {:code_engine, path: "../native/code_engine", runtime: false},
+  {:code_engine, path: "native/code_engine", runtime: false, app: false, compile: false},
+  # Parser engine NIF for AST parsing and code analysis
+  {:parser_engine, path: "native/parser-engine/engine", runtime: false, app: false, compile: false},
 
       # Data & Serialization
       {:jason, "~> 1.4"},

@@ -620,7 +620,7 @@ defmodule Singularity.QualityCodeGenerator do
               stacktrace: __STACKTRACE__
             }
             
-            Logger.error("Error in #{context}: #{inspect(error)}")
+            Logger.error("Error in #{context}: #{inspect(error_info)}")
             {:error, error_info}
           end
 
