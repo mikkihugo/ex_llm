@@ -140,12 +140,13 @@
           ps.protobuf
         ]);
 
-        postgresqlWithExtensions = pkgs.postgresql_17.withPackages (_: [
-          pkgs.postgresql_17.pkgs.timescaledb
-          pkgs.postgresql_17.pkgs.postgis
-          pkgs.postgresql_17.pkgs.pgrouting
-          pkgs.postgresql_17.pkgs.pgtap
-          pkgs.postgresql_17.pkgs.pg_cron
+        postgresqlWithExtensions = pkgs.postgresql_17.withPackages (ps: [
+          ps.timescaledb
+          ps.postgis
+          ps.pgrouting
+          ps.pgtap
+          ps.pg_cron
+          ps.pgvector        # Vector similarity search (Jina v3, Qodo-Embed-1)
         ]);
 
         dataServices = [
