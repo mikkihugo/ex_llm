@@ -25,6 +25,7 @@ defmodule Singularity.PromptEngine do
   def capabilities do
     backend_available = backend_available?()
     cache_available = cache_available?()
+    templates_available = local_templates_available?()
 
     [
       %{
@@ -45,7 +46,7 @@ defmodule Singularity.PromptEngine do
         id: :template_catalog,
         label: "Template Catalog",
         description: "Expose built-in templates plus remote template discovery via NATS.",
-        available?: backend_available || true,
+        available?: backend_available || templates_available,
         tags: [:templates]
       },
       %{
@@ -60,6 +61,19 @@ defmodule Singularity.PromptEngine do
 
   @impl Singularity.Engine
   def health, do: health_check()
+
+  defp backend_available? do
+    nif_loaded?() or nats_available?()
+  end
+
+  defp cache_available? do
+    case call_nif(fn -> Native.cache_stats() end) do
+      {:ok, _} -> true
+      _ -> false
+    end
+  end
+
+  defp local_templates_available?, do: true
 
   @type prompt_response :: {:ok, map()} | {:error, term()}
 
