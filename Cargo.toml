@@ -59,7 +59,7 @@ proptest = "1"
 mockall = "0.12"
 futures = "0.3"
 indexmap = "2"
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 aho-corasick = "1"
 tree-sitter = "0.20.10"
 tree-sitter-java = "0.23.5"

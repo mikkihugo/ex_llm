@@ -46,6 +46,9 @@ defmodule Singularity.ArchitectureEngine do
 
   @impl Singularity.Engine
   def capabilities do
+    repo_available = repo_available?()
+    nats_connected = nats_connected?()
+
     [
       %{
         id: :naming,
@@ -58,14 +61,14 @@ defmodule Singularity.ArchitectureEngine do
         id: :meta_registry,
         label: "Meta-Registry",
         description: "Register repositories and broadcast architecture insights over NATS.",
-        available?: true,
+        available?: repo_available and nats_connected,
         tags: [:registry, :nats, :database]
       },
       %{
         id: :analysis,
         label: "Architecture Analysis",
         description: "Run autonomous structure, framework, and quality analysis workflows.",
-        available?: true,
+        available?: repo_available,
         tags: [:analysis, :autonomy]
       },
       %{
@@ -79,7 +82,32 @@ defmodule Singularity.ArchitectureEngine do
   end
 
   @impl Singularity.Engine
-  def health, do: :ok
+  def health do
+    repo_available = repo_available?()
+    nats_connected = nats_connected?()
+
+    cond do
+      repo_available and nats_connected -> :ok
+      repo_available -> {:error, :nats_unavailable}
+      nats_connected -> {:error, :repo_unavailable}
+      true -> {:error, :dependencies_unavailable}
+    end
+  end
+
+  defp repo_available? do
+    case Process.whereis(Repo) do
+      pid when is_pid(pid) -> Process.alive?(pid)
+      _ -> false
+    end
+  end
+
+  defp nats_connected? do
+    NatsClient.connected?()
+  catch
+    :exit, _ -> false
+  rescue
+    _ -> false
+  end
 
   # ============================================================================
   # NIF FUNCTIONS (Fast Local)
