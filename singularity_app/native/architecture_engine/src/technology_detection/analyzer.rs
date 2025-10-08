@@ -56,10 +56,13 @@ impl FrameworkAnalyzer {
     }
 
     /// Analyze codebase for frameworks
-    pub fn analyze_codebase(&self, file_contents: &[(String, String)]) -> Result<FrameworkAnalysisResult> {
+    pub fn analyze_codebase(
+        &self,
+        file_contents: &[(String, String)],
+    ) -> Result<FrameworkAnalysisResult> {
         // Pure analysis function - accepts file contents as parameters
         // Elixir layer handles file I/O and passes data to NIF
-        
+
         let mut all_detections = Vec::new();
         let ecosystem_insights = Vec::new();
 
@@ -71,7 +74,7 @@ impl FrameworkAnalyzer {
 
         // Aggregate and analyze
         let aggregated = self.aggregate_detections(all_detections)?;
-        let insights = self.generate_insights(&aggregated)?;
+        let _insights = self.generate_insights(&aggregated)?;
         let recommendations = self.generate_recommendations(&aggregated)?;
 
         Ok(FrameworkAnalysisResult {
@@ -128,7 +131,7 @@ impl FrameworkAnalyzer {
     /// Aggregate detections across files
     fn aggregate_detections(
         &self,
-        detections: Vec<FrameworkDetection>,
+        _detections: Vec<FrameworkDetection>,
     ) -> Result<FrameworkDetection> {
         // PSEUDO CODE:
         /*
@@ -165,7 +168,7 @@ impl FrameworkAnalyzer {
     }
 
     /// Generate ecosystem insights
-    fn generate_insights(&self, detection: &FrameworkDetection) -> Result<Vec<EcosystemInsight>> {
+    fn generate_insights(&self, _detection: &FrameworkDetection) -> Result<Vec<EcosystemInsight>> {
         // PSEUDO CODE:
         /*
         let mut insights = Vec::new();
@@ -198,7 +201,7 @@ impl FrameworkAnalyzer {
     /// Generate recommendations
     fn generate_recommendations(
         &self,
-        detection: &FrameworkDetection,
+        _detection: &FrameworkDetection,
     ) -> Result<Vec<Recommendation>> {
         // PSEUDO CODE:
         /*

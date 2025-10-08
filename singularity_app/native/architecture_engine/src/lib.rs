@@ -28,8 +28,8 @@
 pub mod architecture;
 pub mod code_evolution;
 pub mod naming_conventions;
+pub mod naming_service;
 pub mod patterns;
-pub mod refactoring;
 pub mod technology_detection;
 
 // Re-exports for naming
@@ -39,6 +39,7 @@ pub use naming_conventions::{
     NamingDetectionReport, NamingExplanation, NamingLintReport, NamingRecommendation,
     NamingSummary, Priority, RefactorFlag, RefactorPriority, RefactorType, Severity,
 };
+pub use naming_service::{evaluate_name, NamingEvaluation};
 
 // Re-exports for architecture
 pub use architecture::{
@@ -50,7 +51,18 @@ pub use architecture::{
 // Import the types we need for NIFs (already imported above)
 
 // NIF functions for Elixir
-use rustler::Error;
+use rustler::{Error, NifStruct};
+
+#[derive(NifStruct)]
+#[module = "Singularity.ArchitectureEngine.NamingEvaluation"]
+struct NifNamingEvaluation {
+    name: String,
+    element_type: String,
+    language: Option<String>,
+    is_valid: bool,
+    messages: Vec<String>,
+    suggestions: Vec<String>,
+}
 
 /// NIF: Suggest function names
 #[rustler::nif]
@@ -97,6 +109,31 @@ fn validate_naming_convention(name: String, element_type: String) -> Result<bool
         _ => false, // Or return an error for unknown types
     };
     Ok(result)
+}
+
+#[rustler::nif(name = "evaluate_name")]
+fn evaluate_name_nif(
+    name: String,
+    element_type: String,
+    language: Option<String>,
+    description: Option<String>,
+) -> NifNamingEvaluation {
+    let element = parse_code_element_type(&element_type);
+    let evaluation = naming_service::evaluate_name(
+        &name,
+        element.clone(),
+        language.as_deref(),
+        description.as_deref(),
+    );
+
+    NifNamingEvaluation {
+        name: evaluation.name,
+        element_type: format_code_element_type(&element),
+        language: evaluation.language,
+        is_valid: evaluation.is_valid,
+        messages: evaluation.messages,
+        suggestions: evaluation.suggestions,
+    }
 }
 
 /// NIF: Suggest monorepo names
@@ -187,6 +224,32 @@ fn suggest_names_for_architecture(
     naming.suggest_names_for_architecture(&description, &architecture, context.as_deref())
 }
 
+fn parse_code_element_type(value: &str) -> CodeElementType {
+    match value.to_lowercase().as_str() {
+        "function" => CodeElementType::Function,
+        "module" => CodeElementType::Module,
+        "variable" => CodeElementType::Variable,
+        "file" => CodeElementType::File,
+        "directory" => CodeElementType::Directory,
+        "class" => CodeElementType::Class,
+        "interface" => CodeElementType::Interface,
+        _ => CodeElementType::Function,
+    }
+}
+
+fn format_code_element_type(element: &CodeElementType) -> String {
+    match element {
+        CodeElementType::Function => "function",
+        CodeElementType::Module => "module",
+        CodeElementType::Variable => "variable",
+        CodeElementType::File => "file",
+        CodeElementType::Directory => "directory",
+        CodeElementType::Class => "class",
+        CodeElementType::Interface => "interface",
+    }
+    .to_string()
+}
+
 // Rustler NIF initialization
 rustler::init!(
     "Elixir.Singularity.ArchitectureEngine",
@@ -206,6 +269,7 @@ rustler::init!(
         suggest_topic_name,
         suggest_nats_subject,
         suggest_kafka_topic,
-        suggest_names_for_architecture
+        suggest_names_for_architecture,
+        evaluate_name_nif
     ]
 );

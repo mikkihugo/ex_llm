@@ -181,4 +181,4 @@ fn convert_analysis_to_result(analysis: ControlFlowAnalysis) -> ControlFlowResul
 }
 
 /// Initialize Rustler module
-rustler::init!("Elixir.Singularity.RustAnalyzer", [analyze_control_flow]);
+rustler::init!("Elixir.Singularity.RustAnalyzer");

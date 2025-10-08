@@ -58,8 +58,8 @@ impl NamingCodePatternsDetector {
     /// Detect naming patterns in code
     pub fn detect_naming_patterns(
         &self,
-        code: &str,
-        file_path: &str,
+        _code: &str,
+        _file_path: &str,
     ) -> Vec<PatternNamingCodePattern> {
         // TODO: Implement naming pattern detection
         vec![]

@@ -76,25 +76,15 @@ pub trait FrameworkDetectorTrait {
 pub struct FrameworkPatternRegistry {
     patterns: HashMap<String, FrameworkPattern>,
     detectors: Vec<Box<dyn FrameworkDetectorTrait>>,
-    fact_system_interface: FactSystemInterface,
 }
 
-/// Interface to fact-system for framework knowledge
-pub struct FactSystemInterface {
-    // PSEUDO CODE: Interface to fact-system
-    // This provides access to:
-    // - Framework pattern definitions
-    // - Framework best practices
-    // - Historical framework decisions
-    // - Ecosystem knowledge
-}
+// Fact system interface removed - NIF should not have external system dependencies
 
 impl FrameworkPatternRegistry {
     pub fn new() -> Self {
         Self {
             patterns: HashMap::new(),
             detectors: Vec::new(),
-            fact_system_interface: FactSystemInterface::new(),
         }
     }
 
@@ -212,71 +202,9 @@ impl FrameworkPatternRegistry {
     }
 }
 
-impl FactSystemInterface {
-    pub fn new() -> Self {
-        Self {}
-    }
+// Fact system implementation removed - NIF should not have external system dependencies
 
-    /// Load framework patterns from fact-system
-    pub async fn load_framework_patterns(&self) -> Result<Vec<FrameworkPattern>> {
-        // PSEUDO CODE:
-        /*
-        // Query fact-system for framework patterns
-        // Return pattern definitions with detection rules
-        let patterns = fact_system.query("SELECT * FROM framework_patterns").await?;
-        return patterns;
-        */
-        Ok(Vec::new())
-    }
-
-    /// Get framework best practices
-    pub async fn get_framework_best_practices(&self, _framework: &str) -> Result<Vec<String>> {
-        // PSEUDO CODE:
-        /*
-        // Query fact-system for best practices for specific framework
-        let practices = fact_system.query(
-            "SELECT practice FROM framework_best_practices WHERE framework = ?",
-            framework
-        ).await?;
-        return practices;
-        */
-        Ok(Vec::new())
-    }
-
-    /// Get historical framework decisions
-    pub async fn get_historical_decisions(&self, _context: &str) -> Result<Vec<FrameworkDecision>> {
-        // PSEUDO CODE:
-        /*
-        // Query fact-system for historical decisions in similar contexts
-        let decisions = fact_system.query(
-            "SELECT * FROM framework_decisions WHERE context LIKE ?",
-            format!("%{}%", context)
-        ).await?;
-        return decisions;
-        */
-        Ok(Vec::new())
-    }
-
-    /// Get ecosystem knowledge
-    pub async fn get_ecosystem_knowledge(&self, ecosystem: &str) -> Result<EcosystemKnowledge> {
-        // PSEUDO CODE:
-        /*
-        // Query fact-system for ecosystem knowledge
-        let knowledge = fact_system.query(
-            "SELECT * FROM ecosystem_knowledge WHERE ecosystem = ?",
-            ecosystem
-        ).await?;
-        return knowledge;
-        */
-        Ok(EcosystemKnowledge {
-            ecosystem: ecosystem.to_string(),
-            frameworks: Vec::new(),
-            patterns: Vec::new(),
-            best_practices: Vec::new(),
-        })
-    }
-}
-
+/// Get historical framework decisions
 /// Framework decision from fact-system
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FrameworkDecision {

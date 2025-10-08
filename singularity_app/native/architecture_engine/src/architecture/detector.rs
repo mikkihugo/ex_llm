@@ -3,6 +3,7 @@
 //! Pure analysis library that detects architectural patterns and returns results.
 //! Elixir layer handles NATS communication to central architecture service.
 
+use crate::architecture::patterns::{ComponentPattern, RelationshipPattern};
 use crate::naming_conventions::RecommendationPriority;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -227,26 +228,11 @@ pub trait ArchitectureDetectorTrait {
 /// Architecture pattern registry with fact-system integration
 pub struct ArchitecturePatternRegistry {
     detectors: Vec<Box<dyn ArchitectureDetectorTrait>>,
-    fact_system_interface: FactSystemInterface,
+    #[allow(dead_code)]
     patterns: Vec<ArchitecturePatternDefinition>,
 }
 
-/// Interface to fact-system for architectural knowledge
-pub struct FactSystemInterface {
-    // PSEUDO CODE: Interface to fact-system
-    // This provides access to:
-    // - Architectural pattern definitions
-    // - Design principle rules
-    // - Violation patterns
-    // - Best practices
-    // - Historical architectural decisions
-}
-
-impl FactSystemInterface {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
+// Fact system interface removed - NIF should not have external system dependencies
 
 /// Architecture pattern definition from fact-system
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -264,7 +250,6 @@ impl ArchitecturePatternRegistry {
     pub fn new() -> Self {
         Self {
             detectors: Vec::new(),
-            fact_system_interface: FactSystemInterface::new(),
             patterns: Vec::new(),
         }
     }
@@ -323,10 +308,10 @@ impl ArchitecturePatternRegistry {
             violations.extend(detector_violations);
         }
 
-        // Calculate architecture score
+        // Calculate architecture score using implemented method
         let architecture_score = self.calculate_architecture_score(&patterns, &principles, &violations);
 
-        // Generate recommendations
+        // Generate recommendations using implemented method
         let recommendations = self.generate_recommendations(&patterns, &principles, &violations);
 
         Ok(ArchitectureAnalysis {
@@ -366,149 +351,264 @@ impl ArchitecturePatternRegistry {
     /// Detect pattern using fact-system definition
     fn detect_pattern_with_definition(
         &self,
-        _content: &str,
-        _file_path: &str,
-        _pattern_def: &ArchitecturePatternDefinition,
+        content: &str,
+        file_path: &str,
+        pattern_def: &ArchitecturePatternDefinition,
     ) -> Result<Vec<ArchitectureAnalysisPattern>> {
-        // PSEUDO CODE:
-        /*
         let mut detected_patterns = Vec::new();
 
+        // Check if any detection patterns match
+        let mut pattern_matches = 0;
         for detection_pattern in &pattern_def.detection_patterns {
-            if let Ok(regex) = Regex::new(detection_pattern) {
-                if regex.is_match(content) {
-                    let confidence = self.calculate_pattern_confidence(content, pattern_def);
-
-                    if confidence >= pattern_def.confidence_threshold {
-                        detected_patterns.push(ArchitectureAnalysisPattern {
-                            pattern_type: pattern_def.pattern_type.clone(),
-                            confidence,
-                            description: pattern_def.name.clone(),
-                            location: PatternLocation {
-                                file_path: file_path.to_string(),
-                                line_range: None,
-                                module_name: None,
-                                component_name: None,
-                                context: None,
-                            },
-                            benefits: pattern_def.benefits.clone(),
-                            implementation_quality: self.assess_implementation_quality(content, pattern_def),
-                        });
-                    }
-                }
+            if content.contains(detection_pattern) {
+                pattern_matches += 1;
             }
         }
 
-        return detected_patterns;
-        */
+        // Only proceed if we have matches
+        if pattern_matches > 0 {
+            let confidence = self.calculate_pattern_confidence(content, pattern_def);
 
-        Ok(Vec::new())
+            if confidence >= pattern_def.confidence_threshold {
+                detected_patterns.push(ArchitectureAnalysisPattern {
+                    pattern_type: pattern_def.pattern_type.clone(),
+                    confidence,
+                    description: pattern_def.name.clone(),
+                    location: PatternLocation {
+                        file_path: file_path.to_string(),
+                        line_range: Some((1, content.lines().count() as u32)),
+                        module_name: None,
+                        component_name: None,
+                        context: None,
+                    },
+                    benefits: pattern_def.benefits.clone(),
+                    implementation_quality: self
+                        .assess_implementation_quality(content, pattern_def),
+                });
+            }
+        }
+
+        Ok(detected_patterns)
     }
 
     /// Calculate pattern confidence
     fn calculate_pattern_confidence(
         &self,
-        _content: &str,
-        _pattern_def: &ArchitecturePatternDefinition,
+        content: &str,
+        pattern_def: &ArchitecturePatternDefinition,
     ) -> f64 {
-        // PSEUDO CODE:
-        /*
         let mut matches = 0;
         let total_patterns = pattern_def.detection_patterns.len();
 
+        if total_patterns == 0 {
+            return 0.0;
+        }
+
         for pattern in &pattern_def.detection_patterns {
-            if Regex::new(pattern).unwrap().is_match(content) {
+            if content.contains(pattern) {
                 matches += 1;
             }
         }
 
-        return matches as f64 / total_patterns as f64;
-        */
-
-        1.0
+        matches as f64 / total_patterns as f64
     }
 
     /// Assess implementation quality
     fn assess_implementation_quality(
         &self,
-        _content: &str,
-        _pattern_def: &ArchitecturePatternDefinition,
+        content: &str,
+        pattern_def: &ArchitecturePatternDefinition,
     ) -> f64 {
-        // PSEUDO CODE:
-        /*
-        let mut quality_score = 0.0;
+        let mut quality_score: f64 = 0.0;
 
+        // Check for implementation guidelines
         for guideline in &pattern_def.implementation_guidelines {
             if content.contains(guideline) {
                 quality_score += 0.1;
             }
         }
 
-        return quality_score.min(1.0);
-        */
+        // Check for implementation guidelines
+        for guideline in &pattern_def.implementation_guidelines {
+            if content.contains(guideline) {
+                quality_score += 0.2;
+            }
+        }
 
-        1.0
+        quality_score.min(1.0)
+    }
+
+    /// Detect component pattern in content
+    fn detect_component_pattern(&self, content: &str, component: &ComponentPattern) -> bool {
+        // Simple pattern matching for component detection
+        content.contains(&component.name)
+            || content.contains(&component.detection_pattern)
+            || component
+                .responsibilities
+                .iter()
+                .any(|resp| content.contains(resp))
+    }
+
+    /// Detect relationship pattern in content
+    fn detect_relationship_pattern(
+        &self,
+        content: &str,
+        relationship: &RelationshipPattern,
+    ) -> bool {
+        // Simple pattern matching for relationship detection
+        content.contains(&relationship.from_component)
+            || content.contains(&relationship.to_component)
+            || content.contains(&relationship.detection_pattern)
+            || content.contains(&relationship.description)
     }
 
     /// Calculate overall architecture score
     fn calculate_architecture_score(
         &self,
-        _patterns: &[ArchitectureAnalysisPattern],
-        _principles: &[DesignPrinciple],
-        _violations: &[ArchitectureViolation],
+        patterns: &[ArchitectureAnalysisPattern],
+        principles: &[DesignPrinciple],
+        violations: &[ArchitectureViolation],
     ) -> f64 {
-        // PSEUDO CODE:
-        /*
-        let pattern_score = patterns.iter().map(|p| p.confidence).sum::<f64>() / patterns.len().max(1) as f64;
-        let principle_score = principles.iter().map(|p| p.compliance_score).sum::<f64>() / principles.len().max(1) as f64;
-        let violation_penalty = violations.iter().map(|v| self.get_violation_penalty(v)).sum::<f64>();
+        let pattern_score = if patterns.is_empty() {
+            0.0
+        } else {
+            patterns.iter().map(|p| p.confidence).sum::<f64>() / patterns.len() as f64
+        };
 
-        return (pattern_score + principle_score - violation_penalty).max(0.0).min(1.0);
-        */
+        let principle_score = if principles.is_empty() {
+            0.0
+        } else {
+            principles.iter().map(|p| p.compliance_score).sum::<f64>() / principles.len() as f64
+        };
 
-        1.0
+        let violation_penalty = violations
+            .iter()
+            .map(|v| self.get_violation_penalty(v))
+            .sum::<f64>();
+
+        (pattern_score + principle_score - violation_penalty)
+            .max(0.0)
+            .min(1.0)
+    }
+
+    /// Get violation penalty score
+    fn get_violation_penalty(&self, violation: &ArchitectureViolation) -> f64 {
+        match violation.severity {
+            ViolationSeverity::Critical => 0.3,
+            ViolationSeverity::High => 0.2,
+            ViolationSeverity::Medium => 0.1,
+            ViolationSeverity::Low => 0.05,
+            ViolationSeverity::Info => 0.01,
+        }
     }
 
     /// Generate recommendations
     fn generate_recommendations(
         &self,
-        _patterns: &[ArchitectureAnalysisPattern],
-        _principles: &[DesignPrinciple],
-        _violations: &[ArchitectureViolation],
+        patterns: &[ArchitectureAnalysisPattern],
+        principles: &[DesignPrinciple],
+        violations: &[ArchitectureViolation],
     ) -> Vec<ArchitectureRecommendation> {
-        // PSEUDO CODE:
-        /*
         let mut recommendations = Vec::new();
 
         // Generate recommendations based on violations
         for violation in violations {
             recommendations.push(ArchitectureRecommendation {
                 priority: self.get_recommendation_priority(violation),
-                category: self.get_violation_category(violation),
-                title: format!("Fix {}", violation.violation_type),
+                category: self.get_violation_category_enum(violation),
+                title: format!("Fix {:?}", violation.violation_type),
                 description: violation.description.clone(),
                 implementation: violation.remediation.clone(),
-                expected_benefit: self.calculate_expected_benefit(violation),
+                expected_benefit: self.get_violation_penalty(violation),
             });
         }
 
-        // Generate recommendations based on missing patterns
-        let missing_patterns = self.identify_missing_patterns(patterns);
-        for missing_pattern in missing_patterns {
-            recommendations.push(ArchitectureRecommendation {
-                priority: RecommendationPriority::Medium,
-                category: ArchitectureCategory::Structural,
-                title: format!("Consider implementing {}", missing_pattern),
-                description: format!("The {} pattern could improve your architecture", missing_pattern),
-                implementation: self.get_pattern_implementation_guide(missing_pattern),
-                expected_benefit: 0.7,
-            });
+        // Generate recommendations based on patterns
+        for pattern in patterns {
+            if pattern.confidence < 0.7 {
+                recommendations.push(ArchitectureRecommendation {
+                    priority: RecommendationPriority::Medium,
+                    category: ArchitectureCategory::Structural,
+                    title: format!("Improve {:?} pattern implementation", pattern.pattern_type),
+                    description: format!(
+                        "The {} pattern could be better implemented",
+                        pattern.description
+                    ),
+                    implementation: "Review pattern implementation guidelines".to_string(),
+                    expected_benefit: 0.7,
+                });
+            }
         }
 
-        return recommendations;
-        */
+        // Generate recommendations based on principles
+        for principle in principles {
+            if principle.compliance_score < 0.8 {
+                recommendations.push(ArchitectureRecommendation {
+                    priority: RecommendationPriority::High,
+                    category: ArchitectureCategory::Maintainability,
+                    title: format!("Improve {:?} compliance", principle.principle_type),
+                    description: format!(
+                        "Better adherence to {:?} principle needed",
+                        principle.principle_type
+                    ),
+                    implementation: "Review and refactor code to follow design principles"
+                        .to_string(),
+                    expected_benefit: 0.8,
+                });
+            }
+        }
 
-        Vec::new()
+        recommendations
+    }
+
+    /// Get recommendation priority based on violation
+    fn get_recommendation_priority(
+        &self,
+        violation: &ArchitectureViolation,
+    ) -> RecommendationPriority {
+        match violation.severity {
+            ViolationSeverity::Critical => RecommendationPriority::Critical,
+            ViolationSeverity::High => RecommendationPriority::High,
+            ViolationSeverity::Medium => RecommendationPriority::Medium,
+            ViolationSeverity::Low => RecommendationPriority::Low,
+            ViolationSeverity::Info => RecommendationPriority::Low,
+        }
+    }
+
+    /// Get violation category as enum
+    fn get_violation_category_enum(
+        &self,
+        violation: &ArchitectureViolation,
+    ) -> ArchitectureCategory {
+        match violation.violation_type {
+            ViolationType::CircularDependency => ArchitectureCategory::Structural,
+            ViolationType::GodClass => ArchitectureCategory::Structural,
+            ViolationType::LongParameterList => ArchitectureCategory::Maintainability,
+            ViolationType::FeatureEnvy => ArchitectureCategory::Maintainability,
+            ViolationType::DataClumps => ArchitectureCategory::Data,
+            ViolationType::DuplicateCode => ArchitectureCategory::Maintainability,
+            ViolationType::DeadCode => ArchitectureCategory::Maintainability,
+            ViolationType::PrimitiveObsession => ArchitectureCategory::Maintainability,
+            ViolationType::LongMethod => ArchitectureCategory::Maintainability,
+            ViolationType::LargeClass => ArchitectureCategory::Structural,
+            ViolationType::TightCoupling => ArchitectureCategory::Structural,
+            ViolationType::LooseCohesion => ArchitectureCategory::Structural,
+            ViolationType::ViolationOfLayering => ArchitectureCategory::Structural,
+            ViolationType::MissingAbstraction => ArchitectureCategory::Structural,
+            ViolationType::OverEngineering => ArchitectureCategory::Maintainability,
+            ViolationType::UnderEngineering => ArchitectureCategory::Structural,
+        }
+    }
+
+    /// Assess recommendation impact
+    fn assess_recommendation_impact(&self, violation: &ArchitectureViolation) -> String {
+        match violation.severity {
+            ViolationSeverity::Critical => "Critical impact on system architecture".to_string(),
+            ViolationSeverity::High => "High impact on code quality".to_string(),
+            ViolationSeverity::Medium => "Medium impact on maintainability".to_string(),
+            ViolationSeverity::Low => "Low impact on code consistency".to_string(),
+            ViolationSeverity::Info => "Informational impact".to_string(),
+        }
     }
 }
 

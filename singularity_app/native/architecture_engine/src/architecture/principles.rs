@@ -204,14 +204,10 @@ pub struct PrinciplesMetadata {
 
 /// Design principles detector
 pub struct DesignPrinciplesDetector {
-    fact_system_interface: FactSystemInterface,
     principle_definitions: Vec<PrincipleDefinition>,
 }
 
-/// Interface to fact-system for design principles knowledge
-pub struct FactSystemInterface {
-    // PSEUDO CODE: Interface to fact-system for design principles knowledge
-}
+// Fact system interface removed - NIF should not have external system dependencies
 
 /// Principle definition
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -241,7 +237,6 @@ pub struct ViolationPattern {
 impl DesignPrinciplesDetector {
     pub fn new() -> Self {
         Self {
-            fact_system_interface: FactSystemInterface::new(),
             principle_definitions: Vec::new(),
         }
     }
@@ -261,8 +256,8 @@ impl DesignPrinciplesDetector {
     /// Analyze design principles
     pub async fn analyze(
         &self,
-        content: &str,
-        file_path: &str,
+        _content: &str,
+        _file_path: &str,
     ) -> Result<DesignPrinciplesAnalysis> {
         // PSEUDO CODE:
         /*
@@ -300,15 +295,41 @@ impl DesignPrinciplesDetector {
         })
         */
 
+        let mut principles = Vec::new();
+        let mut violations = Vec::new();
+
+        // Detect design principles
+        for principle_def in &self.principle_definitions {
+            let detected_principles = self
+                .detect_principle(_content, _file_path, principle_def)
+                .await?;
+            principles.extend(detected_principles);
+        }
+
+        // Detect principle violations
+        for principle_def in &self.principle_definitions {
+            let detected_violations = self
+                .detect_violations(_content, _file_path, principle_def)
+                .await?;
+            violations.extend(detected_violations);
+        }
+
+        // Generate recommendations
+        let recommendations = self.generate_recommendations(&principles, &violations);
+
+        // Calculate lengths before moving values
+        let principles_count = principles.len();
+        let violations_count = violations.len();
+
         Ok(DesignPrinciplesAnalysis {
-            principles: Vec::new(),
-            violations: Vec::new(),
-            recommendations: Vec::new(),
+            principles,
+            violations,
+            recommendations,
             metadata: PrinciplesMetadata {
                 analysis_time: chrono::Utc::now(),
                 files_analyzed: 1,
-                principles_detected: 0,
-                violations_found: 0,
+                principles_detected: principles_count,
+                violations_found: violations_count,
                 detector_version: "1.0.0".to_string(),
                 fact_system_version: "1.0.0".to_string(),
             },
@@ -318,9 +339,9 @@ impl DesignPrinciplesDetector {
     /// Detect specific principle
     async fn detect_principle(
         &self,
-        content: &str,
-        file_path: &str,
-        principle_def: &PrincipleDefinition,
+        _content: &str,
+        _file_path: &str,
+        _principle_def: &PrincipleDefinition,
     ) -> Result<Vec<DesignPrinciple>> {
         // PSEUDO CODE:
         /*
@@ -358,9 +379,9 @@ impl DesignPrinciplesDetector {
     /// Detect principle violations
     async fn detect_violations(
         &self,
-        content: &str,
-        file_path: &str,
-        principle_def: &PrincipleDefinition,
+        _content: &str,
+        _file_path: &str,
+        _principle_def: &PrincipleDefinition,
     ) -> Result<Vec<PrincipleViolation>> {
         // PSEUDO CODE:
         /*
@@ -405,8 +426,8 @@ impl DesignPrinciplesDetector {
     /// Generate recommendations
     fn generate_recommendations(
         &self,
-        principles: &[DesignPrinciple],
-        violations: &[PrincipleViolation],
+        _principles: &[DesignPrinciple],
+        _violations: &[PrincipleViolation],
     ) -> Vec<PrincipleRecommendation> {
         // PSEUDO CODE:
         /*
@@ -450,32 +471,4 @@ impl DesignPrinciplesDetector {
     }
 }
 
-impl FactSystemInterface {
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    // PSEUDO CODE: These methods would integrate with the actual fact-system
-    /*
-    pub async fn load_design_principles(&self) -> Result<Vec<PrincipleDefinition>> {
-        // Query fact-system for design principles
-        // Return SOLID, DRY, KISS, YAGNI, etc.
-    }
-
-    pub async fn get_principle_best_practices(&self, principle_type: &str) -> Result<Vec<String>> {
-        // Query fact-system for best practices for specific principle
-    }
-
-    pub async fn get_principle_examples(&self, principle_type: &str) -> Result<Vec<String>> {
-        // Query fact-system for examples of principle implementation
-    }
-
-    pub async fn get_principle_anti_patterns(&self, principle_type: &str) -> Result<Vec<String>> {
-        // Query fact-system for anti-patterns to avoid
-    }
-
-    pub async fn get_principle_guidelines(&self, context: &str) -> Result<Vec<String>> {
-        // Query fact-system for principle guidelines
-    }
-    */
-}
+// Fact system implementation removed - NIF should not have external system dependencies

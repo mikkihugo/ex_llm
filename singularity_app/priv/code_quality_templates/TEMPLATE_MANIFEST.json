@@ -1,0 +1,37 @@
+{
+    "generated_at": "2025-10-08T00:00:00Z",
+    "templates": [
+        {
+            "file": "elixir_production.json",
+            "language": "elixir",
+            "quality_level": "production",
+            "spec_version": "2.0",
+            "capabilities": [
+                "quality",
+                "graph",
+                "rag"
+            ]
+        },
+        {
+            "file": "elixir_standard.json",
+            "language": "elixir",
+            "quality_level": "standard",
+            "spec_version": "1.0",
+            "capabilities": [
+                "quality"
+            ]
+        },
+        {
+            "file": "rust_production.json",
+            "language": "rust",
+            "quality_level": "production",
+            "spec_version": "2.0",
+            "capabilities": [
+                "quality",
+                "graph",
+                "rag"
+            ]
+        }
+    ],
+    "notes": "Manifest is authoritative for spec_version tracking; update during template evolution."
+}

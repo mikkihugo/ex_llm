@@ -56,9 +56,9 @@ impl NamingEvolutionAnalyzer {
     /// Analyze naming evolution
     pub fn analyze_evolution(
         &self,
-        old_code: &str,
-        new_code: &str,
-        file_path: &str,
+        _old_code: &str,
+        _new_code: &str,
+        _file_path: &str,
     ) -> Vec<NamingEvolution> {
         // TODO: Implement naming evolution analysis
         vec![]

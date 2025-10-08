@@ -33,15 +33,9 @@
 //! let quality = analysis.quality;
 //! let complexity = quality.complexity_score;
 //!
-//! // Get naming suggestions
-//! let namer = IntelligentNamer::new();
-//! let suggestions = namer.suggest_name(
-//!   "user_auth",
-//!   CodeElementType::Function,
-//!   CodeElementCategory::Security,
-//!   &context,
-//!   &analyzer.storage,
-//! );
+//! // Get naming suggestions from the architecture engine
+//! let naming = architecture_engine::NamingConventions::new();
+//! let suggestions = naming.suggest_function_names("user_auth", None);
 //!
 //! // Get pattern analysis
 //! let patterns = analysis.patterns;

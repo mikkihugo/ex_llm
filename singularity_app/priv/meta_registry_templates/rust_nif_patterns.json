@@ -1,0 +1,35 @@
+{
+  "framework": "rust_nif",
+  "version": "1.0.0",
+  "patterns": {
+    "modules": [
+      "ArchitectureEngine",
+      "CodeEngine",
+      "SemanticEngine"
+    ],
+    "functions": [
+      "analyze_architecture",
+      "detect_patterns",
+      "generate_embeddings"
+    ],
+    "types": [
+      "Result<",
+      "Option<",
+      "Vec<",
+      "HashMap<"
+    ],
+    "patterns": [
+      "pub fn",
+      "use rustler",
+      "rustler::init!",
+      "pub struct",
+      "pub enum",
+      "impl"
+    ]
+  },
+  "suggestions": {
+    "module": "{pattern}Engine",
+    "function": "{pattern}_{context}",
+    "struct": "{pattern}Struct"
+  }
+}

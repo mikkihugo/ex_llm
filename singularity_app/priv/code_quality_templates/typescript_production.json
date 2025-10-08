@@ -1,38 +1,52 @@
 {
   "name": "TypeScript Production Quality",
+  "spec_version": "2.0",
+  "capabilities": [
+    "quality",
+    "graph",
+    "rag"
+  ],
   "language": "typescript",
   "quality_level": "production",
   "description": "Production standards for TypeScript with strict type checking",
-
   "requirements": {
     "documentation": {
       "jsdoc": {
         "required": true,
-        "required_for": ["all_public_functions", "classes", "interfaces"],
-        "must_include": ["description", "params", "returns", "examples"]
+        "required_for": [
+          "all_public_functions",
+          "classes",
+          "interfaces"
+        ],
+        "must_include": [
+          "description",
+          "params",
+          "returns",
+          "examples"
+        ]
       }
     },
-
     "type_safety": {
       "strict_mode": true,
       "explicit_types": "required",
       "no_any": true,
       "prefer_readonly": true
     },
-
     "error_handling": {
       "style": "exceptions_or_result_types",
       "custom_error_classes": "encouraged",
       "async_errors": "use_promise_rejection"
     },
-
     "testing": {
       "required": true,
       "framework": "jest or vitest",
       "coverage_target": 85,
-      "test_types": ["unit", "integration", "type_tests"]
+      "test_types": [
+        "unit",
+        "integration",
+        "type_tests"
+      ]
     },
-
     "code_style": {
       "naming": "camelCase for variables, PascalCase for classes",
       "max_function_length": 40,
@@ -40,8 +54,64 @@
       "no_var": true
     }
   },
-
   "prompts": {
     "code_generation": "Generate production-quality TypeScript code for: {task}\n\nREQUIREMENTS:\n- JSDoc for all public functions\n- Strict TypeScript types, no 'any'\n- Proper error handling\n- Unit tests with Jest/Vitest\n- Prefer const, no var\n\nOUTPUT CODE ONLY."
-  }
+  },
+  "graph_model": {
+    "version": 1,
+    "node_types": {
+      "module": {
+        "id_format": "ts://{path}",
+        "merge_keys": [
+          "path"
+        ]
+      },
+      "function": {
+        "id_format": "ts://{path}#{name}/{arity}",
+        "merge_keys": [
+          "signature_hash"
+        ]
+      }
+    },
+    "edge_types": {
+      "calls": {
+        "from": "function",
+        "to": "function",
+        "weight": 0.9
+      },
+      "declares": {
+        "from": "module",
+        "to": "function",
+        "weight": 1.0
+      }
+    },
+    "extraction_rules": {
+      "function_detection": "TypeScript AST (tsserver) traverse",
+      "call_graph": "identifier -> symbol resolution where possible"
+    },
+    "temporal": {
+      "track": true,
+      "fields": [
+        "first_seen",
+        "last_modified"
+      ],
+      "update_policy": "touch_last_modified_on_signature_change"
+    },
+    "error_semantics": {
+      "severity_enum": [
+        "fatal",
+        "transient",
+        "validation",
+        "resource"
+      ],
+      "classification_enum": [
+        "user_input",
+        "system_state",
+        "external_dependency"
+      ],
+      "default_severity": "logic"
+    }
+  },
+  "version": 2,
+  "last_updated": "2025-10-08"
 }

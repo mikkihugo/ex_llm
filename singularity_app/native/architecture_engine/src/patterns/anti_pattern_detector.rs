@@ -69,7 +69,7 @@ impl AntiCodePatternDetector {
     }
 
     /// Detect anti-patterns in code
-    pub fn detect_anti_patterns(&self, code: &str, file_path: &str) -> Vec<AntiCodePattern> {
+    pub fn detect_anti_patterns(&self, _code: &str, _file_path: &str) -> Vec<AntiCodePattern> {
         // TODO: Implement anti-pattern detection
         vec![]
     }

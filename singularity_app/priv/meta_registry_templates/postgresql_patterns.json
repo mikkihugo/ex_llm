@@ -1,0 +1,39 @@
+{
+  "framework": "postgresql",
+  "version": "1.0.0",
+  "patterns": {
+    "tables": [
+      "code_chunks",
+      "technology_detections",
+      "file_architecture_patterns",
+      "file_naming_violations",
+      "code_quality_metrics",
+      "dependency_analysis"
+    ],
+    "queries": [
+      "SELECT",
+      "INSERT",
+      "UPDATE",
+      "DELETE"
+    ],
+    "indexes": [
+      "GIN",
+      "B-tree",
+      "Hash"
+    ],
+    "patterns": [
+      "codebase_id",
+      "snapshot_id",
+      "metadata",
+      "summary",
+      "detected_technologies",
+      "capabilities",
+      "service_structure"
+    ]
+  },
+  "suggestions": {
+    "table": "{context}_{pattern}",
+    "column": "{context}_{pattern}",
+    "index": "{context}_{pattern}_idx"
+  }
+}

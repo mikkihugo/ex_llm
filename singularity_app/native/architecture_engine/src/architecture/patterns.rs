@@ -263,14 +263,10 @@ pub struct ArchitectureMetadata {
 
 /// Architectural pattern detector
 pub struct ArchitecturalPatternDetector {
-    fact_system_interface: FactSystemInterface,
     pattern_definitions: Vec<ArchitecturalPatternDefinition>,
 }
 
-/// Interface to fact-system for architectural knowledge
-pub struct FactSystemInterface {
-    // PSEUDO CODE: Interface to fact-system for architectural knowledge
-}
+// Fact system interface removed - NIF should not have external system dependencies
 
 /// Architectural pattern definition
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -319,7 +315,6 @@ pub struct ViolationPattern {
 impl ArchitecturalPatternDetector {
     pub fn new() -> Self {
         Self {
-            fact_system_interface: FactSystemInterface::new(),
             pattern_definitions: Vec::new(),
         }
     }
@@ -339,8 +334,8 @@ impl ArchitecturalPatternDetector {
     /// Analyze architectural patterns
     pub async fn analyze(
         &self,
-        content: &str,
-        file_path: &str,
+        _content: &str,
+        _file_path: &str,
     ) -> Result<ArchitecturalPatternAnalysis> {
         // PSEUDO CODE:
         /*
@@ -378,15 +373,41 @@ impl ArchitecturalPatternDetector {
         })
         */
 
+        let mut patterns = Vec::new();
+        let mut violations = Vec::new();
+
+        // Detect architectural patterns
+        for pattern_def in &self.pattern_definitions {
+            let detected_patterns = self
+                .detect_pattern(_content, _file_path, pattern_def)
+                .await?;
+            patterns.extend(detected_patterns);
+        }
+
+        // Detect architecture violations
+        for pattern_def in &self.pattern_definitions {
+            let detected_violations = self
+                .detect_violations(_content, _file_path, pattern_def)
+                .await?;
+            violations.extend(detected_violations);
+        }
+
+        // Generate recommendations
+        let recommendations = self.generate_recommendations(&patterns, &violations);
+
+        // Calculate lengths before moving values
+        let patterns_count = patterns.len();
+        let violations_count = violations.len();
+
         Ok(ArchitecturalPatternAnalysis {
-            patterns: Vec::new(),
-            violations: Vec::new(),
-            recommendations: Vec::new(),
+            patterns,
+            violations,
+            recommendations,
             metadata: ArchitectureMetadata {
                 analysis_time: chrono::Utc::now(),
                 files_analyzed: 1,
-                patterns_detected: 0,
-                violations_found: 0,
+                patterns_detected: patterns_count,
+                violations_found: violations_count,
                 detector_version: "1.0.0".to_string(),
                 fact_system_version: "1.0.0".to_string(),
             },
@@ -400,41 +421,50 @@ impl ArchitecturalPatternDetector {
         file_path: &str,
         pattern_def: &ArchitecturalPatternDefinition,
     ) -> Result<Vec<ArchitecturalPattern>> {
-        // PSEUDO CODE:
-        /*
         let mut patterns = Vec::new();
 
         // Check detection patterns
         for detection_pattern in &pattern_def.detection_patterns {
-            if let Ok(regex) = Regex::new(detection_pattern) {
-                if regex.is_match(content) {
-                    // Found pattern, analyze components and relationships
-                    let components = self.analyze_components(content, &pattern_def.component_patterns).await?;
-                    let relationships = self.analyze_relationships(content, &pattern_def.relationship_patterns).await?;
-
-                    patterns.push(ArchitecturalPattern {
-                        id: generate_pattern_id(),
-                        pattern_type: pattern_def.pattern_type.clone(),
-                        confidence: self.calculate_confidence(&components, &relationships),
-                        description: pattern_def.description.clone(),
-                        location: PatternLocation {
-                            file_path: file_path.to_string(),
-                            line_number: None,
-                            function_name: None,
-                            code_snippet: None,
-                            context: None,
-                        },
-                        components,
-                        relationships,
-                    });
-                }
+            if self.matches_pattern(content, detection_pattern) {
+                patterns.push(ArchitecturalPattern {
+                    id: format!("pattern_{}", patterns.len()),
+                    pattern_type: pattern_def.pattern_type.clone(),
+                    confidence: self.calculate_confidence(content, detection_pattern),
+                    description: pattern_def.description.clone(),
+                    location: PatternLocation {
+                        file_path: file_path.to_string(),
+                        line_number: Some(1),
+                        function_name: None,
+                        code_snippet: None,
+                        context: None,
+                    },
+                    components: Vec::new(),
+                    relationships: Vec::new(),
+                });
             }
         }
 
-        return patterns;
-        */
+        Ok(patterns)
+    }
 
-        Ok(Vec::new())
+    /// Check if content matches a detection pattern
+    fn matches_pattern(&self, content: &str, detection_pattern: &str) -> bool {
+        // Simple pattern matching - can be enhanced with regex or AST analysis
+        content.contains(detection_pattern)
+    }
+
+    /// Calculate confidence score for pattern match
+    fn calculate_confidence(&self, content: &str, detection_pattern: &str) -> f64 {
+        // Simple confidence calculation based on pattern frequency
+        let pattern_count = content.matches(detection_pattern).count();
+        let total_lines = content.lines().count();
+
+        if total_lines == 0 {
+            return 0.0;
+        }
+
+        let frequency = pattern_count as f64 / total_lines as f64;
+        (frequency * 100.0).min(100.0)
     }
 
     /// Detect architecture violations
@@ -444,42 +474,51 @@ impl ArchitecturalPatternDetector {
         file_path: &str,
         pattern_def: &ArchitecturalPatternDefinition,
     ) -> Result<Vec<ArchitectureViolation>> {
-        // PSEUDO CODE:
-        /*
         let mut violations = Vec::new();
 
+        // Check for common architectural violations
         for violation_pattern in &pattern_def.violation_patterns {
-            if let Ok(regex) = Regex::new(&violation_pattern.detection_pattern) {
-                for mat in regex.find_iter(content) {
-                    violations.push(ArchitectureViolation {
-                        id: generate_violation_id(),
-                        violation_type: violation_pattern.violation_type.clone(),
-                        severity: violation_pattern.severity.clone(),
-                        description: violation_pattern.description.clone(),
-                        location: ViolationLocation {
-                            file_path: file_path.to_string(),
-                            line_number: Some(get_line_number(content, mat.start())),
-                            function_name: extract_function_name(content, mat.start()),
-                            code_snippet: Some(extract_code_snippet(content, mat.start(), mat.end())),
-                            context: None,
-                        },
-                        impact: ViolationImpact {
-                            maintainability_impact: 0.5,
-                            testability_impact: 0.5,
-                            scalability_impact: 0.5,
-                            performance_impact: 0.5,
-                            security_impact: 0.5,
-                        },
-                        remediation: violation_pattern.remediation.clone(),
-                    });
-                }
+            if self.matches_pattern(content, &violation_pattern.detection_pattern) {
+                violations.push(ArchitectureViolation {
+                    id: format!("violation_{}", violations.len()),
+                    violation_type: violation_pattern.violation_type.clone(),
+                    severity: self.assess_severity(content, &violation_pattern.detection_pattern),
+                    description: format!(
+                        "Architectural violation detected: {}",
+                        violation_pattern.description
+                    ),
+                    location: ViolationLocation {
+                        file_path: file_path.to_string(),
+                        line_number: Some(1),
+                        function_name: None,
+                        code_snippet: None,
+                        context: None,
+                    },
+                    impact: ViolationImpact {
+                        maintainability_impact: 0.5,
+                        testability_impact: 0.5,
+                        scalability_impact: 0.5,
+                        performance_impact: 0.5,
+                        security_impact: 0.5,
+                    },
+                    remediation: violation_pattern.remediation.clone(),
+                });
             }
         }
 
-        return violations;
-        */
+        Ok(violations)
+    }
 
-        Ok(Vec::new())
+    /// Assess severity of a violation
+    fn assess_severity(&self, content: &str, violation_pattern: &str) -> ViolationSeverity {
+        let pattern_count = content.matches(violation_pattern).count();
+        match pattern_count {
+            0 => ViolationSeverity::Info,
+            1..=2 => ViolationSeverity::Low,
+            3..=5 => ViolationSeverity::Medium,
+            6..=10 => ViolationSeverity::High,
+            _ => ViolationSeverity::Critical,
+        }
     }
 
     /// Generate recommendations
@@ -488,67 +527,49 @@ impl ArchitecturalPatternDetector {
         patterns: &[ArchitecturalPattern],
         violations: &[ArchitectureViolation],
     ) -> Vec<ArchitectureRecommendation> {
-        // PSEUDO CODE:
-        /*
         let mut recommendations = Vec::new();
 
         // Generate recommendations based on violations
         for violation in violations {
             recommendations.push(ArchitectureRecommendation {
-                priority: self.get_priority_for_severity(&violation.severity),
-                category: self.get_category_for_violation_type(&violation.violation_type),
-                title: format!("Fix {}", violation.violation_type),
-                description: violation.description.clone(),
-                implementation: violation.remediation.clone(),
-                expected_benefit: self.calculate_expected_benefit(violation),
-                effort_required: self.estimate_effort(violation),
+                title: format!("Fix {}", format!("{:?}", violation.violation_type)),
+                description: violation.remediation.clone(),
+                priority: self.calculate_priority(violation),
+                category: ArchitectureCategory::Structural,
+                implementation: format!("Refactor code to address: {}", violation.description),
+                expected_benefit: 0.8,
+                effort_required: EffortEstimate::Medium,
             });
         }
 
         // Generate recommendations based on patterns
         for pattern in patterns {
-            if pattern.confidence < 0.7 {
+            if pattern.confidence < 80.0 {
                 recommendations.push(ArchitectureRecommendation {
+                    title: format!("Improve {}", format!("{:?}", pattern.pattern_type)),
+                    description: format!("Enhance implementation of pattern"),
                     priority: RecommendationPriority::Medium,
                     category: ArchitectureCategory::Structural,
-                    title: format!("Strengthen {}", pattern.pattern_type),
-                    description: format!("Improve implementation of {} pattern", pattern.pattern_type),
-                    implementation: "Refactor code to better match pattern requirements".to_string(),
-                    expected_benefit: 0.3,
+                    implementation: format!("Strengthen the pattern implementation"),
+                    expected_benefit: 0.6,
                     effort_required: EffortEstimate::Medium,
                 });
             }
         }
 
-        return recommendations;
-        */
+        recommendations
+    }
 
-        Vec::new()
+    /// Calculate priority for a violation
+    fn calculate_priority(&self, violation: &ArchitectureViolation) -> RecommendationPriority {
+        match violation.severity {
+            ViolationSeverity::Critical => RecommendationPriority::High,
+            ViolationSeverity::High => RecommendationPriority::High,
+            ViolationSeverity::Medium => RecommendationPriority::Medium,
+            ViolationSeverity::Low => RecommendationPriority::Low,
+            ViolationSeverity::Info => RecommendationPriority::Low,
+        }
     }
 }
 
-impl FactSystemInterface {
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    // PSEUDO CODE: These methods would integrate with the actual fact-system
-    /*
-    pub async fn load_architectural_patterns(&self) -> Result<Vec<ArchitecturalPatternDefinition>> {
-        // Query fact-system for architectural patterns
-        // Return patterns for MVC, MVP, Microservices, etc.
-    }
-
-    pub async fn get_architectural_best_practices(&self, pattern_type: &str) -> Result<Vec<String>> {
-        // Query fact-system for best practices for specific pattern
-    }
-
-    pub async fn get_architectural_anti_patterns(&self, pattern_type: &str) -> Result<Vec<String>> {
-        // Query fact-system for anti-patterns to avoid
-    }
-
-    pub async fn get_architectural_guidelines(&self, context: &str) -> Result<Vec<String>> {
-        // Query fact-system for architectural guidelines
-    }
-    */
-}
+// Fact system implementation removed - NIF should not have external system dependencies

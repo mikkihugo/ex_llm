@@ -1,0 +1,9 @@
+[package]
+name = "python_parser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+parser-framework = { path = "../../language_framework" }
+tree-sitter = "0.20.10"
+tree-sitter-python = "0.23.2"

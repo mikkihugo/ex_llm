@@ -58,7 +58,7 @@ impl CodePatternDetector {
     }
 
     /// Detect patterns in code
-    pub fn detect_patterns(&self, code: &str, file_path: &str) -> Vec<DesignCodePattern> {
+    pub fn detect_patterns(&self, _code: &str, _file_path: &str) -> Vec<DesignCodePattern> {
         // TODO: Implement pattern detection
         vec![]
     }

@@ -1,542 +1,654 @@
 {
-  "name": "Elixir Production Quality",
+  "name": "Elixir Core Production Quality",
+  "spec_version": "2.0",
+  "capabilities": [
+    "quality",
+    "graph",
+    "rag"
+  ],
   "language": "elixir",
   "quality_level": "production",
-  "description": "Maximum quality standards for production Elixir code",
-
+  "description": "Core (framework-agnostic) Elixir production quality standards. Domain/framework specific layers (Phoenix, Ecto, messaging, etc.) are added by the prompt engine separately.",
+  "extends": [],
+  "modules": {
+    "extension_note": "This core spec intentionally contains only pure Elixir/OTP guidance. Higher-level concerns are composed elsewhere."
+  },
   "requirements": {
     "documentation": {
       "moduledoc": {
         "required": true,
-        "min_length": 100,
-        "must_include": ["overview", "examples", "usage"]
+        "min_length": 60,
+        "must_include": [
+          "overview",
+          "examples"
+        ]
       },
       "doc": {
-        "required_for": ["all_public_functions"],
-        "min_length": 50,
-        "must_include": ["description", "examples", "return_value"]
+        "required_for": [
+          "all_public_functions"
+        ],
+        "min_length": 30,
+        "must_include": [
+          "description",
+          "return_value"
+        ]
       },
       "inline_comments": {
-        "required_for": ["complex_logic", "algorithms"],
+        "required_for": [
+          "complex_pattern_matching",
+          "non_trivial_recursion"
+        ],
         "style": "concise"
+      },
+      "structured_sections": [
+        {
+          "id": "overview",
+          "required": true,
+          "min_length": 40,
+          "purpose": "High-level what/why in first 2 sentences",
+          "must_answer": [
+            "What does this module represent?",
+            "Why does it exist vs alternatives?"
+          ]
+        },
+        {
+          "id": "public_api_contract",
+          "required": true,
+          "min_length": 60,
+          "purpose": "List of stable public functions with concise contract lines",
+          "format": "one line per function: name(args) :: return -- short purpose"
+        },
+        {
+          "id": "error_matrix",
+          "required": true,
+          "min_length": 40,
+          "purpose": "Enumerate all {:error, reason} atoms with meaning",
+          "format": "reason_atom | scenario"
+        },
+        {
+          "id": "invariants",
+          "required": false,
+          "min_length": 30,
+          "purpose": "State safety & data invariants enforced"
+        },
+        {
+          "id": "performance_notes",
+          "required": false,
+          "purpose": "Big-O or qualitative perf notes + allocation hotspots"
+        },
+        {
+          "id": "concurrency_semantics",
+          "required": false,
+          "purpose": "Thread / process safety, GenServer serialization boundaries"
+        },
+        {
+          "id": "examples",
+          "required": true,
+          "min_examples": 2,
+          "purpose": "Executable iex examples covering success + error path"
+        }
+      ],
+      "metadata_fields": {
+        "stability": {
+          "enum": [
+            "experimental",
+            "beta",
+            "stable",
+            "deprecated"
+          ],
+          "required": true
+        },
+        "side_effects": {
+          "enum": [
+            "none",
+            "io",
+            "network",
+            "filesystem",
+            "external_process"
+          ],
+          "multi": true
+        },
+        "statefulness": {
+          "enum": [
+            "pure",
+            "process_state",
+            "ets",
+            "persistent"
+          ],
+          "multi": true
+        },
+        "idempotency": {
+          "enum": [
+            "idempotent",
+            "non_idempotent"
+          ],
+          "required": true
+        },
+        "thread_safety": {
+          "enum": [
+            "n_a",
+            "process_isolated",
+            "shared_send_only"
+          ],
+          "required": true
+        },
+        "security": {
+          "fields": [
+            "inputs_validated",
+            "taint_sensitive",
+            "handles_pii",
+            "privileged_calls"
+          ],
+          "type": "boolean_map"
+        },
+        "dependencies_local": {
+          "type": "list",
+          "purpose": "Internal module dependencies (public API only)"
+        },
+        "dependencies_external": {
+          "type": "list",
+          "purpose": "Library/runtime dependencies directly invoked"
+        }
+      },
+      "embedding_hints": {
+        "stable_anchor_format": "@@MOD:{module}|SEC:{section}@@",
+        "deterministic_section_order": true,
+        "avoid_noise_phrases": [
+          "just",
+          "simply",
+          "basically"
+        ],
+        "prefer_explicit_atoms": true
       }
     },
-
     "type_specs": {
       "required": true,
-      "required_for": ["all_functions"],
-      "style": "strict",
+      "required_for": [
+        "all_functions"
+      ],
+      "dialyzer": "recommended",
       "custom_types": "encouraged"
     },
-
     "error_handling": {
       "style": "tagged_tuples",
-      "required_pattern": "{:ok, result} | {:error, reason}",
-      "no_raise": true,
-      "explicit_errors": true,
-      "error_types": ["atom", "string", "custom_error_struct"]
+      "required_pattern": "{:ok, value} | {:error, reason}",
+      "no_raise_for_flow": true,
+      "allowed_raise": [
+        "startup_failures",
+        "irrecoverable_invariants"
+      ],
+      "define_error_atoms": true
     },
-
     "testing": {
       "required": true,
       "coverage_target": 90,
-      "test_types": [
-        "happy_path",
-        "edge_cases",
-        "error_cases",
-        "property_based",
-        "integration"
+      "must_test": [
+        "public_api",
+        "error_paths"
       ],
-      "test_framework": "ExUnit",
-      "must_test": ["all_public_functions", "error_paths"]
+      "types": [
+        "unit",
+        "property_optional",
+        "edge_cases"
+      ],
+      "async_default": true
     },
-
     "code_style": {
-      "naming_convention": "snake_case",
-      "max_function_length": 30,
+      "naming": "snake_case",
+      "module_naming": "PascalCase",
+      "max_function_lines": 30,
+      "max_module_lines": 500,
       "max_line_length": 120,
-      "pattern_matching": "preferred",
-      "guard_clauses": "required_for_validation",
-      "pipe_operator": "encouraged",
-      "with_statements": "for_multiple_operations"
+      "prefer_pattern_matching": true,
+      "prefer_guard_clauses": true,
+      "pipe_operator": "encouraged_small_transform_chains",
+      "avoid_nested_with": true
     },
-
     "code_smells": {
       "forbidden": [
         "TODO",
         "FIXME",
-        "XXX",
         "HACK"
       ],
-      "warnings": [
+      "warn": [
+        "deep_nesting",
         "long_functions",
-        "deeply_nested",
         "god_modules"
+      ],
+      "long_function_threshold": 30
+    },
+    "design_principles": {
+      "single_responsibility": true,
+      "explicit_boundaries": true,
+      "prefer_composition_over_inheritance": true,
+      "pure_functions_for_business_logic": true
+    },
+    "complexity": {
+      "max_decision_points": 10,
+      "refactor_if_exceeds": true
+    },
+    "stubs": {
+      "prohibited": true,
+      "note": "All functions shipped to main must have working logic or be clearly feature-flag guarded."
+    }
+  },
+  "prompts": {
+    "system_prompt": "You are an expert Elixir developer producing CORE (framework-agnostic) Elixir code: clean, documented, tested, explicit in errors, leveraging OTP appropriately.",
+    "code_generation": "Generate core Elixir module for: {task}\nREQUIREMENTS:\n- @moduledoc (overview + example)\n- @doc for every public function\n- @spec for every function\n- Use {:ok, _} | {:error, _} pattern (no raise for control flow)\n- Pattern match + guards for validation\n- Functions <= 30 LOC\n- No TODO/FIXME\nOUTPUT ONLY CODE.",
+    "tests": "Generate ExUnit tests for: {code}\nCover: happy paths, edge cases (nil/empty/boundaries), error cases. Ensure isolation and use async when safe. OUTPUT ONLY TEST MODULE.",
+    "refactor_quality": "Refactor this Elixir code to production quality core standards: {code}\nAdd missing docs/specs, simplify branching, replace raise with tagged tuples, break up long functions. OUTPUT ONLY REFACTORED CODE."
+  },
+  "patterns": {
+    "genserver_basic": {
+      "intent": "Stateful process abstraction with message handling.",
+      "pseudocode": "use GenServer -> init(state) -> handle_call/handle_cast -> state transitions",
+      "when_to_use": [
+        "stateful_logic",
+        "infrequent_mutation",
+        "coordination"
+      ],
+      "avoid_if": [
+        "pure_stateless_transform"
+      ],
+      "quality_checks": [
+        "terminate/2 only if needed",
+        "don’t leak PIDs",
+        "reply consistency"
       ]
     },
-
-    "architecture": {
-      "single_responsibility": true,
-      "max_module_lines": 500,
-      "separation_of_concerns": true,
-      "prefer_composition": true
-    }
-  },
-
-  "prompts": {
-    "system_prompt": "You are an expert Elixir developer writing PRODUCTION-QUALITY code. Generate code that meets the highest standards: complete documentation, type specs, comprehensive tests, and explicit error handling. Follow Elixir best practices and idioms.",
-
-    "code_generation": "Generate production-quality Elixir code for: {task}\n\nREQUIREMENTS:\n- @moduledoc with overview and examples\n- @doc for EVERY public function\n- @spec for EVERY function\n- Explicit error handling with {:ok, _} | {:error, _}\n- Guard clauses for validation\n- Pattern matching preferred\n- Functions under 30 lines\n- No TODOs or FIXMEs\n\nOUTPUT CODE ONLY - no explanations.",
-
-    "documentation": "Generate complete documentation for this Elixir code:\n\n```elixir\n{code}\n```\n\nInclude:\n- @moduledoc with overview, examples, and important notes\n- @doc for every public function with:\n  - Clear description\n  - Parameter explanations\n  - Return value description\n  - Usage examples\n\nOUTPUT DOCUMENTATION ONLY.",
-
-    "type_specs": "Generate @spec type specifications for this Elixir code:\n\n```elixir\n{code}\n```\n\nBe precise with types:\n- Use String.t(), integer(), float(), map(), list(), etc.\n- Define custom types with @type if needed\n- Include @spec for every function\n\nOUTPUT @spec DECLARATIONS ONLY.",
-
-    "tests": "Generate comprehensive ExUnit tests for this code:\n\n```elixir\n{code}\n```\n\nInclude:\n- Happy path tests (valid inputs)\n- Edge cases (nil, empty, boundary values)\n- Error cases (invalid inputs, failures)\n- Property-based tests (if applicable)\n- Test coverage > 90%\n\nOUTPUT COMPLETE TEST MODULE ONLY.",
-
-    "refactor_quality": "Refactor this Elixir code to meet production quality standards:\n\n```elixir\n{code}\n```\n\nAdd:\n- Missing @moduledoc/@doc/@spec\n- Explicit error handling\n- Guard clauses\n- Better variable names\n- Break long functions into smaller ones\n\nOUTPUT REFACTORED CODE ONLY."
-  },
-
-  "semantic_patterns": {
-    "common_patterns": [
-      {
-        "pattern": "API client",
-        "pseudocode": "module → client_state → request(method, path, params) → {:ok, response} | {:error, reason}",
-        "relationships": ["GenServer for state", "HTTP client (Req/Finch)", "rate limiting", "retry logic"],
-        "keywords": ["http", "api", "request", "client", "endpoint"]
-      },
-      {
-        "pattern": "GenServer cache",
-        "pseudocode": "GenServer → state:map → get(key) → {:ok, value} | :not_found, put(key, value) → :ok, ttl management",
-        "relationships": ["ETS for backing", "periodic cleanup", "pub/sub for invalidation"],
-        "keywords": ["cache", "genserver", "state", "ttl", "get", "put"]
-      },
-      {
-        "pattern": "Data pipeline",
-        "pseudocode": "Broadway → fetch → validate → transform → store → handle_failed",
-        "relationships": ["producers", "processors", "batchers", "error handling"],
-        "keywords": ["pipeline", "stream", "transform", "batch", "flow"]
-      },
-      {
-        "pattern": "Ecto schema",
-        "pseudocode": "schema → fields → associations → changeset → validations → repo operations",
-        "relationships": ["belongs_to", "has_many", "many_to_many", "embeds"],
-        "keywords": ["schema", "changeset", "repo", "association", "validation"]
-      }
-    ],
-
-    "relationship_vectors": {
-      "supervisor_tree": "Supervisor → children → restart_strategy → dynamic vs static",
-      "umbrella_app": "Apps → shared deps → cross-app communication → separate releases",
-      "pubsub_pattern": "Publisher → PubSub → Subscribers → topics → broadcast",
-      "agent_pattern": "Agent → state → get/update → simple vs GenServer",
-      "task_pattern": "Task.async → Task.await → supervision → Task.Supervisor",
-      "nats_pub": "NATS.publish(subject, payload) → fire_and_forget → async messaging",
-      "nats_sub": "NATS.subscribe(subject) → handle_message(msg) → ack/nak → consumer group",
-      "nats_request": "NATS.request(subject, data, timeout) → await_reply → RPC pattern",
-      "nats_stream": "JetStream → durable consumer → ack policy → replay capability",
-      "kafka_producer": "Kafka.produce(topic, key, value) → partition → broker → ack → at_least_once",
-      "kafka_consumer": "Kafka.consume(topic, group_id) → poll → process batch → commit offsets → exactly_once",
-      "kafka_stream": "KafkaStreams → topology → stateful processing → windowing → aggregations",
-      "service_registry": "NATS service → advertise endpoints → health checks → load balancing",
-      "event_sourcing": "Event → NATS/Kafka stream → consumers → projections → state rebuild"
-    },
-
-    "architectural_hints": {
-      "web_apps": "Context (business logic) → Schema (data) → View (presentation) [Phoenix web apps]",
-      "libraries_platforms": "Domain folder → Functional subfolders (analyzers/, generators/, storage/) [Non-web libraries]",
-      "interfaces_not_api": "Tools (WHAT) → Interfaces (HOW: MCP, NATS) → NO HTTP API [Distributed platforms]",
-      "error_flow": "with statement → pattern match → early return → {:error, reason}",
-      "data_flow": "input → validate → transform → side_effects → output",
-      "supervision": "one_for_one | one_for_all | rest_for_one → max_restarts → shutdown",
-      "microservices": "Service → NATS subjects → request/reply → pub/sub → streams",
-      "distributed_state": "CRDT (DeltaCRDT) → eventual consistency → merge conflicts → distributed writes",
-      "service_mesh": "NATS core → service discovery → load balancing → failover",
-      "event_driven": "Command → Event → NATS stream → Consumers → Projections → Query models",
-      "observability": "Telemetry → metrics → traces → logs → NATS monitoring subjects",
-      "circuit_breaker": "Request → check_breaker → open/half_open/closed → fallback → reset timeout"
-    },
-
-    "distributed_patterns": {
-      "nats_microservice": {
-        "structure": "Service module → NATS.Connection → advertise(name, version) → handle_request(subject, payload) → reply",
-        "relationships": [
-          "Service discovery via NATS",
-          "Health checks on $SYS.REQ.SERVER.PING",
-          "Load balancing via queue groups",
-          "Circuit breaker for resilience"
-        ],
-        "example_flow": "Client → NATS.request('user.get', user_id) → [Service1, Service2] queue → Service1.handle → reply → Client receives"
-      },
-      "event_sourcing_nats": {
-        "structure": "Command → validate → Event → NATS.publish('events.user.created') → Stream → Consumers → update_read_models",
-        "relationships": [
-          "JetStream for durable events",
-          "Multiple consumers for different projections",
-          "Replay for rebuilding state",
-          "Acknowledgment for at-least-once delivery"
-        ]
-      },
-      "saga_pattern": {
-        "structure": "Saga coordinator → step1 → publish(event1) → step2 → compensate_if_fails → publish(compensation)",
-        "relationships": [
-          "NATS for event bus",
-          "State machine for progress tracking",
-          "Compensation actions",
-          "Idempotency for retries"
-        ]
-      },
-      "cqrs": {
-        "structure": "Command side → NATS/Kafka → Event → Stream → Query side → read model → materialized view",
-        "relationships": [
-          "Separate write/read models",
-          "Eventual consistency",
-          "Scalable reads",
-          "Event replay for rebuilding"
-        ]
-      },
-      "kafka_broadway_pipeline": {
-        "structure": "Broadway → KafkaProducer → fetch batches → transform → acknowledge → offset commit",
-        "relationships": [
-          "Backpressure handling",
-          "Batching for efficiency",
-          "Fault tolerance with retries",
-          "Dead letter queue"
-        ],
-        "example_flow": "Kafka topic → Broadway → processor pool → batch_handler → store in DB → commit offsets"
-      },
-      "kafka_exactly_once": {
-        "structure": "Read → Process → Write → Commit (transactional) → idempotent producer",
-        "relationships": [
-          "Kafka transactions",
-          "Idempotency keys",
-          "Exactly-once semantics",
-          "State coordination"
-        ]
-      }
-    },
-
-    "service_relationships": {
-      "singularity_to_fact_system": "Singularity agent → NATS.request('facts.query', %{query: 'dependencies for repo X'}) → SPARC fact system → facts → enrich context",
-      "fact_query_patterns": {
-        "technology_stack": "NATS.request('facts.query', %{repo: 'singularity', type: 'tech_stack'}) → [elixir, rust, postgres, nats]",
-        "dependencies": "NATS.request('facts.query', %{package: 'phoenix', type: 'dependents'}) → repos using phoenix",
-        "code_patterns": "NATS.request('facts.query', %{pattern: 'GenServer cache'}) → examples from all repos",
-        "security_vulns": "NATS.request('facts.query', %{repo: 'X', type: 'advisories'}) → CVEs and severity"
-      },
-      "agent_coordination": "Agent1 → publish('task.available') → Agent2 subscribes → claim task → publish('task.claimed')",
-      "distributed_cache": "Service → request → check local cache → miss → NATS.request('cache.get') → cache service → store locally",
-      "health_aggregation": "$SYS.REQ.SERVER.PING → all services reply → aggregate health → expose /health endpoint",
-      "code_generation_with_facts": "User request → query facts about similar code → RAG retrieval → pattern indexer → generate with context"
-    },
-
-    "fact_system_integration": {
-      "query_structure": {
-        "basic": "NATS.request('facts.query', query_payload, timeout: 5000)",
-        "payload_schema": "%{repo: String, type: :tech_stack | :dependencies | :patterns | :advisories, filters: map}",
-        "response_schema": "{:ok, [%Fact{...}]} | {:error, reason}"
-      },
-      "example_queries": [
-        {
-          "query": "Find all repos using Rust",
-          "nats": "NATS.request('facts.query', %{language: 'rust', type: :repos})",
-          "use_case": "Before generating Rust code, find best examples from Rust repos"
-        },
-        {
-          "query": "Get dependency graph",
-          "nats": "NATS.request('facts.query', %{package: 'ecto', type: :dependency_graph})",
-          "use_case": "Understand what other packages are typically used with Ecto"
-        },
-        {
-          "query": "Find code patterns",
-          "nats": "NATS.request('facts.query', %{pattern: 'http_client', language: 'elixir'})",
-          "use_case": "Get examples of HTTP client implementations across all repos"
-        }
+    "supervision_tree": {
+      "intent": "Fault tolerance via hierarchical supervision.",
+      "pseudocode": "Supervisor.start_link(children, strategy: :one_for_one)",
+      "strategies": [
+        "one_for_one",
+        "rest_for_one",
+        "one_for_all"
       ],
-      "deduplication_integration": "Before generating → query facts → find similar code → check fingerprints → reuse if duplicate"
+      "guidelines": [
+        "keep children small",
+        "restart only what’s needed"
+      ]
     },
-
-    "detector_framework_integration": {
-      "purpose": "Auto-detect technology stack before code generation",
-      "flow": "File analysis → detector → tech profile → facts → code generation context",
-      "detectors": {
-        "npm_detector": "package.json → dependencies → typescript/react/next.js → suggest patterns",
-        "cargo_detector": "Cargo.toml → dependencies → tokio/serde/actix → suggest async patterns",
-        "mix_detector": "mix.exs → deps → phoenix/ecto/broadway → suggest BEAM patterns",
-        "go_mod_detector": "go.mod → require → gorilla/gin/grpc → suggest Go patterns"
-      },
-      "usage_in_generation": {
-        "1_detect": "Scan repo → run detectors → build tech_profile.json",
-        "2_store_facts": "tech_profile → SPARC facts → NATS.publish('facts.tech_stack', profile)",
-        "3_query_on_generate": "Before generating → NATS.request('facts.query', %{repo: X}) → get tech stack",
-        "4_context_enrichment": "Tech stack → find patterns for detected techs → include in prompts",
-        "5_smart_defaults": "Detected Phoenix → use Phoenix patterns, Ecto schemas, LiveView"
-      },
-      "example_tech_profiles": {
-        "elixir_phoenix_app": {
-          "language": "elixir",
-          "frameworks": ["phoenix", "ecto", "liveview"],
-          "patterns_to_use": ["phoenix_controller", "ecto_schema", "liveview_component", "pubsub"],
-          "dependencies": ["jason", "plug", "postgrex"],
-          "code_gen_hints": "USE CONTEXTS: lib/app_name/ (business logic), lib/app_name_web/ (controllers/views) - Phoenix web apps ONLY"
-        },
-        "elixir_library_platform": {
-          "language": "elixir",
-          "frameworks": ["ecto", "nats", "genserver"],
-          "patterns_to_use": ["genserver", "supervisor", "ecto_schema", "protocol", "behaviour"],
-          "dependencies": ["jason", "ecto", "gnat"],
-          "code_gen_hints": "USE DOMAIN FOLDERS: lib/app_name/domain/ with functional subfolders (analyzers/, generators/, storage/) - Non-web libraries/platforms"
-        },
-        "rust_tokio_service": {
-          "language": "rust",
-          "frameworks": ["tokio", "axum", "sqlx"],
-          "patterns_to_use": ["async_fn", "tokio_spawn", "axum_handler", "sqlx_query"],
-          "dependencies": ["serde", "anyhow", "tracing"],
-          "code_gen_hints": "Use Result<T, E>, async/await, structured logging with tracing"
-        }
-      },
-      "nats_detector_integration": "Detector runs → publishes to 'detector.tech_profile.{repo}' → fact collector subscribes → stores in DB"
+    "application_startup": {
+      "intent": "Define start/2 for OTP application lifecycle.",
+      "pseudocode": "def start(_type, _args), do: Supervisor.start_link(children, opts)",
+      "guidelines": [
+        "minimal work in start",
+        "fail fast on irrecoverable config"
+      ]
+    },
+    "behaviour_contract": {
+      "intent": "Define callback contract for pluggable modules.",
+      "pseudocode": "@callback handle(input) :: {:ok, term} | {:error, term}",
+      "guidelines": [
+        "document callbacks",
+        "supply test implementation"
+      ],
+      "anti": [
+        "using protocols when static dispatch sufficient"
+      ]
+    },
+    "protocol_dispatch": {
+      "intent": "Polymorphic dispatch on data types.",
+      "pseudocode": "defprotocol Encoder; defimpl Encoder, for: Map do ... end",
+      "guidelines": [
+        "only when extensibility by external types needed"
+      ],
+      "anti": [
+        "protocol explosion for internal variants"
+      ]
+    },
+    "ets_cache": {
+      "intent": "In-memory fast lookup table.",
+      "pseudocode": ":ets.new(:table, [:set, :public, read_concurrency: true])",
+      "guidelines": [
+        "guard concurrent access",
+        "avoid premature caching"
+      ],
+      "anti": [
+        "storing large binaries unbounded"
+      ]
+    },
+    "with_error_flow": {
+      "intent": "Sequential operations with early exit on error.",
+      "pseudocode": "with {:ok, a} <- step1(), {:ok, b} <- step2(a) do {:ok, transform(b)} else {:error, r} -> {:error, r} end",
+      "guidelines": [
+        "limit to ~3-5 steps",
+        "log final error context"
+      ]
+    },
+    "task_async": {
+      "intent": "Concurrent fire-and-gather pattern.",
+      "pseudocode": "tasks = Enum.map(items, &Task.async(fn -> work(&1) end)); Enum.map(tasks, &Task.await/1)",
+      "guidelines": [
+        "don’t saturate schedulers",
+        "timeout control"
+      ],
+      "anti": [
+        "unbounded task spawning"
+      ]
     }
   },
-
-  "ast_extraction": {
-    "genserver_cache": {
-      "ast_signature": ["defmodule", "use GenServer", "handle_call(:get", "handle_call(:put", "init(%{})"],
-      "extract_pseudocode": "GenServer → state:map → get(key) → {:ok, value} | :not_found, put(key, value) → :ok",
-      "confidence_score": 0.95,
-      "required_functions": ["get", "put", "init"]
-    },
-    "with_error_handling": {
-      "ast_signature": ["with", "<- [multiple]", "else"],
-      "extract_pseudocode": "with step1 <- op1, step2 <- op2 do success else error end",
-      "confidence_score": 0.90
-    },
-    "protocol_implementation": {
-      "ast_signature": ["defprotocol", "defimpl Protocol, for:"],
-      "extract_pseudocode": "defprotocol Protocol → defimpl for Type → polymorphism",
-      "confidence_score": 0.98
-    },
-    "ecto_schema": {
-      "ast_signature": ["schema", "field", "belongs_to", "has_many"],
-      "extract_pseudocode": "schema → fields → associations → changeset → validations",
-      "confidence_score": 0.97
-    }
-  },
-
-  "singularity_patterns": {
-    "technology_detection": {
-      "pattern": "Technology Detection",
-      "pseudocode": "TechnologyDetector.detect(path) → Port → Rust LayeredDetector → tree-sitter → {:ok, technologies}",
-      "relationships": ["Rust via Port (not NIF)", "LayeredDetector (5 levels)", "Template matching", "Pattern store (PostgreSQL)"],
-      "keywords": ["detection", "technology", "framework", "rust", "tree-sitter", "port"],
-      "file_locations": ["lib/singularity/detection/technology_detector.ex", "rust/tool_doc_index/src/detection/"]
-    },
-    "interface_protocol": {
-      "pattern": "Interface Abstraction",
-      "pseudocode": "Tool definition → Protocol.execute_tool(interface, call) → defimpl for MCP/NATS → format result",
-      "relationships": ["Protocol-based polymorphism", "MCP interface (AI assistants)", "NATS interface (distributed)", "NO HTTP API"],
-      "keywords": ["interface", "protocol", "mcp", "nats", "abstraction", "polymorphism"],
-      "file_locations": ["lib/singularity/interfaces/protocol.ex", "lib/singularity/interfaces/mcp.ex", "lib/singularity/interfaces/nats.ex"]
-    },
-    "domain_folder_organization": {
-      "pattern": "Domain Folder Structure",
-      "pseudocode": "lib/domain/ → functional_subfolders/ (analyzers/, generators/, storage/) → NOT contexts",
-      "relationships": ["Library/platform pattern", "NOT Phoenix contexts", "Self-documenting structure", "Functional grouping"],
-      "keywords": ["organization", "domain", "folder", "library", "platform", "structure"],
-      "anti_pattern": "Phoenix contexts (for web apps only)"
-    },
-    "ecto_direct_access": {
-      "pattern": "Direct Ecto (No db_service)",
-      "pseudocode": "Module → Repo.insert(schema, attrs) → PostgreSQL (no NATS for DB)",
-      "relationships": ["Direct Ecto access", "No db_service microservice", "10x faster than NATS", "Ecto schemas in schemas/"],
-      "keywords": ["ecto", "database", "postgresql", "direct", "repo"],
-      "removed_pattern": "NATS → db_service → PostgreSQL (deprecated)"
-    }
-  },
-
-  "architecture_fingerprints": {
-    "phoenix_web_app": {
-      "detect_structure": {
-        "required_paths": ["lib/*_web/"],
-        "required_files": ["lib/*_web/router.ex", "lib/*_web/endpoint.ex"],
-        "not_present": []
-      },
-      "architecture_type": "phoenix_web",
-      "recommended_pattern": "Phoenix Contexts",
-      "pseudocode_template": "Context (business) → Schema (data) → View (presentation)",
-      "confidence": 0.98
-    },
-    "elixir_library_platform": {
-      "detect_structure": {
-        "required_paths": ["lib/*/"],
-        "required_files": [],
-        "not_present": ["lib/*_web/"]
-      },
-      "architecture_type": "library",
-      "recommended_pattern": "Domain Folders",
-      "pseudocode_template": "Domain folder → Functional subfolders (analyzers/, generators/)",
-      "confidence": 0.95
-    },
-    "umbrella_app": {
-      "detect_structure": {
-        "required_paths": ["apps/"],
-        "required_files": ["mix.exs"],
-        "file_contains": {"mix.exs": "umbrella: true"}
-      },
-      "architecture_type": "umbrella",
-      "recommended_pattern": "Multi-app",
-      "pseudocode_template": "apps/ → app1/ + app2/ → shared deps",
-      "confidence": 1.0
-    }
-  },
-
-  "vector_search_config": {
-    "embedding_model": "text-embedding-004",
-    "embedding_dimensions": 768,
-    "similarity_metric": "cosine",
-    "similarity_thresholds": {
-      "exact_match": 0.95,
-      "very_similar": 0.85,
-      "similar": 0.75,
-      "somewhat_related": 0.65,
-      "min_threshold": 0.60
-    },
-    "search_strategy": {
-      "max_results": 10,
-      "rerank": true,
-      "boost_recent": 0.1,
-      "boost_same_repo": 0.2
-    }
-  },
-
-  "pattern_composition": {
-    "genserver_with_supervision": {
-      "combines": ["genserver_cache", "supervisor_tree"],
-      "pseudocode": "Supervisor → starts GenServer cache → monitor → restart on crash",
-      "relationship_strength": 0.9,
-      "keywords": ["supervision", "genserver", "fault-tolerance", "otp"]
-    },
-    "nats_with_ecto": {
-      "combines": ["nats_request", "ecto_direct_access"],
-      "pseudocode": "NATS.request → Service → Ecto.Repo.query → reply",
-      "relationship_strength": 0.85,
-      "keywords": ["nats", "ecto", "distributed", "database"]
-    },
-    "interface_with_tools": {
-      "combines": ["interface_protocol", "tool_registry"],
-      "pseudocode": "Tool.register → Protocol.execute_tool(interface) → format per interface",
-      "relationship_strength": 0.95,
-      "keywords": ["tools", "interface", "protocol", "abstraction"]
-    }
-  },
-
   "anti_patterns": {
-    "phoenix_context_in_library": {
-      "bad_pseudocode": "lib/my_lib.ex (context) + lib/my_lib/ (internals) in non-web library",
-      "why_bad": "Context pattern is for Phoenix web apps, not libraries",
-      "correct_pattern": "domain_folder_organization",
-      "detection": {
-        "has": ["lib/context.ex", "lib/context/"],
-        "missing": ["lib/*_web/"]
-      },
-      "severity": "warning"
+    "long_function": {
+      "symptom": "> 30 lines",
+      "why_bad": "Hard to reason about, violates single responsibility.",
+      "fix": "Extract pure helper functions."
     },
-    "http_api_for_tools": {
-      "bad_pseudocode": "Tools → HTTP REST API → External clients",
-      "why_bad": "We use MCP and NATS interfaces, not HTTP API",
-      "correct_pattern": "interface_protocol",
-      "detection": {
-        "has": ["lib/*_web/controllers/api/"]
-      },
-      "severity": "error"
+    "process_mailbox_leak": {
+      "symptom": "receive loops without timeouts or selective patterns",
+      "why_bad": "Unbounded mailbox growth.",
+      "fix": "Use GenServer or add timeout + pattern narrowing."
     },
-    "nats_for_database": {
-      "bad_pseudocode": "Module → NATS.publish('db.insert') → db_service → PostgreSQL",
-      "why_bad": "Use direct Ecto access (10x faster, removed db_service)",
-      "correct_pattern": "ecto_direct_access",
-      "detection": {
-        "has": ["NATS.publish(\"db."]
-      },
-      "severity": "error",
-      "migration_guide": "See DB_SERVICE_REMOVAL.md"
+    "raise_for_control_flow": {
+      "symptom": "Using raise to signal expected domain failures",
+      "why_bad": "Breaks tagged tuple conventions.",
+      "fix": "Return {:error, reason}."
+    },
+    "global_state_via_module_attribute": {
+      "symptom": "@state mutated at compile then treated as runtime",
+      "why_bad": "Unexpected immutability / stale values.",
+      "fix": "Use proper process or configuration."
+    },
+    "generic_names": {
+      "symptom": "Modules named Util/Helper/Misc",
+      "why_bad": "Non-descriptive, hinders discoverability.",
+      "fix": "Rename to domain-specific responsibility."
     }
   },
-
-  "quality_signals": {
-    "has_specs": {
-      "signal": "@spec present for all public functions",
-      "weight": 1.0,
-      "check": "ast_contains('@spec')"
-    },
-    "has_docs": {
-      "signal": "@moduledoc and @doc present",
-      "weight": 1.0,
-      "check": "ast_contains('@moduledoc') && ast_contains('@doc')"
-    },
-    "error_handling": {
-      "signal": "Uses {:ok, _} | {:error, _} pattern",
-      "weight": 1.0,
-      "check": "returns_tagged_tuples()"
-    },
-    "pattern_quality_score": {
-      "formula": "sum(weights * signals_present) / sum(weights)",
-      "min_production_score": 0.9
-    }
-  },
-
   "pattern_lifecycle": {
-    "db_service_pattern": {
+    "gen_fsm": {
       "status": "deprecated",
-      "deprecated_date": "2025-10-05",
-      "reason": "Replaced by direct Ecto access (10x faster)",
-      "migration_path": "ecto_direct_access",
-      "removal_date": "2026-01-01"
+      "replacement": ":gen_statem",
+      "note": "Use :gen_statem for newer finite state machines."
     },
-    "interface_protocol": {
-      "status": "active",
-      "introduced_date": "2025-10-05",
-      "stability": "stable",
-      "recommended": true
+    ":erl_prim_loader_usage": {
+      "status": "discouraged",
+      "note": "Avoid depending on internal OTP loader modules."
     },
-    "domain_folder_organization": {
-      "status": "active",
-      "introduced_date": "2025-10-05",
-      "stability": "stable",
-      "recommended": true
+    "genserver_basic": {
+      "status": "active"
+    },
+    "supervision_tree": {
+      "status": "active"
     }
   },
-
   "examples": {
-    "good_code": "defmodule JSONParser do\n  @moduledoc \"\"\"\n  Parses JSON strings with comprehensive error handling.\n\n  ## Examples\n\n      iex> JSONParser.parse(\"{\\\"key\\\": \\\"value\\\"}\")\n      {:ok, %{\"key\" => \"value\"}}\n\n      iex> JSONParser.parse(\"invalid\")\n      {:error, :invalid_json}\n  \"\"\"\n\n  @doc \"\"\"\n  Parses a JSON string into an Elixir map.\n\n  ## Parameters\n\n  - `json` - JSON string to parse\n\n  ## Returns\n\n  - `{:ok, map}` - Successfully parsed JSON\n  - `{:error, reason}` - Parsing failed\n  \"\"\"\n  @spec parse(String.t()) :: {:ok, map()} | {:error, atom()}\n  def parse(json) when is_binary(json) do\n    case Jason.decode(json) do\n      {:ok, data} -> {:ok, data}\n      {:error, _} -> {:error, :invalid_json}\n    end\n  end\n\n  def parse(_), do: {:error, :invalid_input}\nend",
-
-    "bad_code": "def parse(x) do\n  # TODO: add error handling\n  Jason.decode(x)\nend"
+    "good_code": "defmodule SafeParser do\n  @moduledoc \"\n  Parses inputs into integers safely.\n  ## Examples\n      iex> SafeParser.parse(\"12\")\n      {:ok, 12}\n      iex> SafeParser.parse(\"x\")\n      {:error, :invalid}\n  \"\n  @spec parse(term) :: {:ok, integer} | {:error, :invalid} | {:error, :type} \n  def parse(input) when is_binary(input) do\n    case Integer.parse(input) do\n      {n, \"\"} -> {:ok, n}\n      _ -> {:error, :invalid}\n    end\n  end\n  def parse(input) when is_integer(input), do: {:ok, input}\n  def parse(_), do: {:error, :type}\nend",
+    "bad_code": "defmodule P do\n  def p(x), do: Integer.parse(x) # TODO handle errors later\nend"
   },
-
   "quality_checklist": [
-    "Has @moduledoc with examples",
-    "Has @doc for all public functions",
-    "Has @spec for all functions",
-    "Uses {:ok, _} | {:error, _} pattern",
-    "No raise/throw in production code paths",
-    "Functions are under 30 lines",
-    "Descriptive variable names (no x, y, z)",
-    "Guard clauses for validation",
-    "Pattern matching used appropriately",
-    "No TODO/FIXME/XXX markers",
-    "Comprehensive tests (>90% coverage)",
-    "Edge cases handled",
-    "Error cases tested"
+    "@moduledoc present + example",
+    "@doc for every public function",
+    "@spec for every function",
+    "No raises used for normal domain errors",
+    "Functions <= 30 LOC",
+    "Meaningful module & function names",
+    "Tagged tuple error style consistent",
+    "Edge cases covered in tests"
   ],
-
   "scoring_weights": {
-    "has_moduledoc": 1.0,
-    "has_function_docs": 1.0,
-    "has_type_specs": 1.0,
-    "has_tests": 1.0,
-    "error_handling": 1.0,
-    "no_code_smells": 1.0,
-    "naming_quality": 0.8,
-    "function_length": 0.6,
-    "test_coverage": 1.0
+    "docs": 1.0,
+    "specs": 1.0,
+    "tests": 1.0,
+    "error_style": 1.0,
+    "structure": 0.8,
+    "naming": 0.6
+  },
+  "rag_indexing": {
+    "segmentation_rules": {
+      "max_tokens_per_chunk": 450,
+      "min_tokens_per_chunk": 120,
+      "logical_split_order": [
+        "structured_sections",
+        "functions",
+        "examples",
+        "error_matrix"
+      ],
+      "preserve_section_boundary": true
+    },
+    "canonical_id_rules": {
+      "module_id_format": "elixir://{app}/{module}",
+      "function_id_format": "elixir://{app}/{module}.{function}/{arity}",
+      "anchor_format": "@@ID:{type}:{value}@@"
+    },
+    "entity_extraction": {
+      "enabled": true,
+      "entities": [
+        "module",
+        "function",
+        "error_atom",
+        "type",
+        "process_pattern"
+      ]
+    },
+    "ranking_weights": {
+      "section_priority": {
+        "public_api_contract": 1.0,
+        "error_matrix": 0.9,
+        "overview": 0.85,
+        "examples": 0.8,
+        "invariants": 0.75
+      },
+      "freshness": 0.1,
+      "stability_bonus": {
+        "stable": 0.05,
+        "deprecated": -0.2
+      }
+    },
+    "language_facets": [
+      "otp",
+      "pure",
+      "stateful",
+      "concurrency",
+      "pattern"
+    ],
+    "cross_linking": {
+      "link_pattern": "See also: {module_or_function}",
+      "max_links_per_section": 5
+    }
+  },
+  "doc_block_schema": {
+    "module": {
+      "fields": [
+        "overview",
+        "public_api_contract",
+        "error_matrix",
+        "invariants",
+        "examples"
+      ]
+    },
+    "function": {
+      "fields": [
+        "summary",
+        "parameters",
+        "returns",
+        "errors",
+        "examples",
+        "notes"
+      ],
+      "parameters_format": "name :: type - purpose",
+      "errors_format": "{:error, atom} - meaning"
+    }
+  },
+  "function_doc_requirements": {
+    "summary_max_sentences": 2,
+    "require_examples": true,
+    "require_error_atoms_if_any": true,
+    "parameter_doc_required": true,
+    "disallow_phrases": [
+      "stuff",
+      "misc",
+      "various"
+    ],
+    "preferred_verbs": [
+      "parse",
+      "build",
+      "transform",
+      "encode",
+      "decode",
+      "validate"
+    ]
+  },
+  "semantic_anchors": [
+    "@@MOD:START@@",
+    "@@MOD:END@@",
+    "@@SEC:overview@@",
+    "@@SEC:public_api_contract@@",
+    "@@SEC:error_matrix@@",
+    "@@SEC:examples@@"
+  ],
+  "modular": true,
+  "version": 3,
+  "last_updated": "2025-10-08",
+  "graph_model": {
+    "version": 1,
+    "purpose": "Guidance for automated extraction into a polyglot code knowledge graph.",
+    "node_types": {
+      "module": {
+        "id_format": "elixir://{app}/{module}",
+        "key_props": [
+          "stability",
+          "statefulness",
+          "idempotency"
+        ],
+        "merge_keys": [
+          "name"
+        ]
+      },
+      "function": {
+        "id_format": "elixir://{app}/{module}.{function}/{arity}",
+        "key_props": [
+          "side_effects",
+          "idempotency"
+        ],
+        "merge_keys": [
+          "signature_hash"
+        ]
+      },
+      "error_atom": {
+        "id_format": "elixir://{app}/{module}#error/{atom}",
+        "key_props": [
+          "meaning"
+        ],
+        "merge_keys": [
+          "atom"
+        ]
+      },
+      "type_spec": {
+        "id_format": "elixir://{app}/{module}#type/{name}",
+        "key_props": [
+          "definition"
+        ],
+        "merge_keys": [
+          "name"
+        ]
+      },
+      "process_pattern": {
+        "id_format": "elixir://{app}/{module}#pattern/{pattern}",
+        "key_props": [
+          "intent"
+        ],
+        "merge_keys": [
+          "pattern"
+        ]
+      }
+    },
+    "edge_types": {
+      "calls": {
+        "from": "function",
+        "to": "function",
+        "props": [
+          "arity_match",
+          "direct"
+        ],
+        "weight": 0.9
+      },
+      "declares": {
+        "from": "module",
+        "to": "function",
+        "weight": 1.0
+      },
+      "uses_error": {
+        "from": "function",
+        "to": "error_atom",
+        "weight": 0.8
+      },
+      "defines_type": {
+        "from": "module",
+        "to": "type_spec",
+        "weight": 0.85
+      },
+      "applies_pattern": {
+        "from": "module",
+        "to": "process_pattern",
+        "weight": 0.7
+      },
+      "wraps_call": {
+        "from": "function",
+        "to": "function",
+        "props": [
+          "error_wrapped"
+        ],
+        "weight": 0.6
+      },
+      "transforms": {
+        "from": "function",
+        "to": "type_spec",
+        "props": [
+          "direction"
+        ],
+        "weight": 0.65
+      }
+    },
+    "extraction_rules": {
+      "function_signature_hash": "md5(module_name <> function_name <> arity <> spec_string)",
+      "error_atom_detection": "scan @moduledoc error_matrix + pattern match on {:error, atom}",
+      "pattern_detection": "match against known OTP idioms (GenServer, Supervisor, Task.async, with chains)",
+      "call_graph": "static AST traversal; exclude macro-expanded remote calls unless resolvable"
+    },
+    "relation_taxonomy": {
+      "stability_inheritance": "function inherits module stability unless overridden",
+      "error_propagation": "if function returns {:error, X} and calls Y returning {:error, X}, edge Y -> X (uses_error) forms transitive cluster",
+      "pattern_cluster": "modules sharing same process_pattern become implicit cluster"
+    },
+    "confidence_scoring": {
+      "base": 0.75,
+      "boosts": {
+        "dialyzer_spec_present": 0.1,
+        "doc_error_matrix_present": 0.05,
+        "examples_cover_error": 0.05
+      },
+      "penalties": {
+        "missing_specs": -0.15,
+        "no_error_docs": -0.1
+      }
+    },
+    "integrity_checks": [
+      "every function must have declares edge from a module",
+      "error_atom must be referenced by at least one function uses_error edge",
+      "type_spec without defines_type after 2 passes => mark orphan"
+    ],
+    "graph_export": {
+      "canonical_formats": [
+        "graphml",
+        "jsonl_edges",
+        "neo4j_csv"
+      ],
+      "batching": {
+        "max_nodes_per_file": 50000,
+        "max_edges_per_file": 200000
+      },
+      "file_naming": "graph_export_{date}_{shard}.{ext}",
+      "shard_key_priority": [
+        "module",
+        "function"
+      ]
+    },
+    "query_hints": {
+      "find_unstable_public_surface": "MATCH (m:module {stability:'beta'})-[:declares]->(f:function) RETURN f",
+      "error_usage_distribution": "MATCH (f:function)-[:uses_error]->(e:error_atom) RETURN e, count(f) ORDER BY count(f) DESC",
+      "pattern_adoption": "MATCH (m:module)-[:applies_pattern]->(p:process_pattern) RETURN p, count(m)"
+    }
   }
 }

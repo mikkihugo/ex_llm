@@ -2196,86 +2196,68 @@ impl NamingConventions {
                 format!("{}-{}", base_name.to_lowercase(), "operator"),
             ]);
         }
+    }
 
-        // Microsoft-style naming patterns
-        if description.to_lowercase().contains("microsoft")
-            || description.to_lowercase().contains("ms")
-            || context.map_or(false, |c| c.to_lowercase().contains("microsoft"))
-        {
-            // Microsoft patterns: dotnet, typescript, vscode, azure
-            suggestions.extend(vec![
-                format!("{}", base_name.to_lowercase()),
-                format!("{}-{}", base_name.to_lowercase(), "dotnet"),
-                format!("{}-{}", base_name.to_lowercase(), "ts"),
-                format!("{}-{}", base_name.to_lowercase(), "vscode"),
-                format!("{}-{}", base_name.to_lowercase(), "azure"),
-                format!("{}-{}", base_name.to_lowercase(), "core"),
-                format!("{}-{}", base_name.to_lowercase(), "framework"),
-                format!("{}-{}", base_name.to_lowercase(), "runtime"),
-                format!("{}-{}", base_name.to_lowercase(), "sdk"),
-                format!("{}-{}", base_name.to_lowercase(), "cli"),
-            ]);
-        }
+    /// Generate database naming suggestions (tables, columns, indexes)
+    fn generate_database_suggestions(
+        &self,
+        description: &str,
+        context: Option<&str>,
+    ) -> Vec<String> {
+        let base_name = self.extract_base_name(description);
+        vec![base_name.to_snake_case()]
+    }
 
-        // Facebook/Meta-style naming patterns
-        if description.to_lowercase().contains("facebook")
-            || description.to_lowercase().contains("meta")
-            || context.map_or(false, |c| c.to_lowercase().contains("facebook"))
-        {
-            // Meta patterns: react, jest, flow, graphql
-            suggestions.extend(vec![
-                format!("{}", base_name.to_lowercase()),
-                format!("{}-{}", base_name.to_lowercase(), "react"),
-                format!("{}-{}", base_name.to_lowercase(), "jest"),
-                format!("{}-{}", base_name.to_lowercase(), "flow"),
-                format!("{}-{}", base_name.to_lowercase(), "graphql"),
-                format!("{}-{}", base_name.to_lowercase(), "js"),
-                format!("{}-{}", base_name.to_lowercase(), "ts"),
-                format!("{}-{}", base_name.to_lowercase(), "native"),
-                format!("{}-{}", base_name.to_lowercase(), "web"),
-                format!("{}-{}", base_name.to_lowercase(), "mobile"),
-            ]);
-        }
+    /// Generate API naming suggestions (endpoints, routes, resources)
+    fn generate_api_suggestions(
+        &self,
+        description: &str,
+        context: Option<&str>,
+    ) -> Vec<String> {
+        let base_name = self.extract_base_name(description);
+        vec![base_name.to_kebab_case()]
+    }
 
-        // Netflix-style naming patterns
-        if description.to_lowercase().contains("netflix")
-            || context.map_or(false, |c| c.to_lowercase().contains("netflix"))
-        {
-            // Netflix patterns: zuul, eureka, hystrix, ribbon
-            suggestions.extend(vec![
-                format!("{}", base_name.to_lowercase()),
-                format!("{}-{}", base_name.to_lowercase(), "zuul"),
-                format!("{}-{}", base_name.to_lowercase(), "eureka"),
-                format!("{}-{}", base_name.to_lowercase(), "hystrix"),
-                format!("{}-{}", base_name.to_lowercase(), "ribbon"),
-                format!("{}-{}", base_name.to_lowercase(), "gateway"),
-                format!("{}-{}", base_name.to_lowercase(), "service"),
-                format!("{}-{}", base_name.to_lowercase(), "client"),
-                format!("{}-{}", base_name.to_lowercase(), "server"),
-                format!("{}-{}", base_name.to_lowercase(), "proxy"),
-            ]);
-        }
+    /// Generate microservice naming suggestions
+    fn generate_microservice_suggestions(
+        &self,
+        description: &str,
+        context: Option<&str>,
+    ) -> Vec<String> {
+        let base_name = self.extract_base_name(description);
+        vec![format!("{}-service", base_name.to_kebab_case())]
+    }
 
-        // Uber-style naming patterns
-        if description.to_lowercase().contains("uber")
-            || context.map_or(false, |c| c.to_lowercase().contains("uber"))
-        {
-            // Uber patterns: jaeger, cadence, ringpop, tchannel
-            suggestions.extend(vec![
-                format!("{}", base_name.to_lowercase()),
-                format!("{}-{}", base_name.to_lowercase(), "jaeger"),
-                format!("{}-{}", base_name.to_lowercase(), "cadence"),
-                format!("{}-{}", base_name.to_lowercase(), "ringpop"),
-                format!("{}-{}", base_name.to_lowercase(), "tchannel"),
-                format!("{}-{}", base_name.to_lowercase(), "tracing"),
-                format!("{}-{}", base_name.to_lowercase(), "workflow"),
-                format!("{}-{}", base_name.to_lowercase(), "service"),
-                format!("{}-{}", base_name.to_lowercase(), "client"),
-                format!("{}-{}", base_name.to_lowercase(), "server"),
-            ]);
-        }
+    /// Generate messaging naming suggestions
+    fn generate_messaging_suggestions(
+        &self,
+        description: &str,
+        context: Option<&str>,
+    ) -> Vec<String> {
+        let base_name = self.extract_base_name(description);
+        vec![base_name.to_kebab_case()]
+    }
 
-        // Airbnb-style naming patterns
+    /// Generate NATS subject naming suggestions
+    fn generate_nats_suggestions(
+        &self,
+        description: &str,
+        context: Option<&str>,
+    ) -> Vec<String> {
+        let base_name = self.extract_base_name(description);
+        vec![base_name.to_kebab_case()]
+    }
+
+    /// Generate Kafka topic naming suggestions
+    fn generate_kafka_suggestions(
+        &self,
+        description: &str,
+        context: Option<&str>,
+    ) -> Vec<String> {
+        let base_name = self.extract_base_name(description);
+        vec![base_name.to_kebab_case()]
+    }
+}
         if description.to_lowercase().contains("airbnb")
             || context.map_or(false, |c| c.to_lowercase().contains("airbnb"))
         {

@@ -54,9 +54,9 @@ impl ChangeAnalyzer {
     /// Analyze changes in code
     pub fn analyze_changes(
         &self,
-        old_code: &str,
-        new_code: &str,
-        file_path: &str,
+        _old_code: &str,
+        _new_code: &str,
+        _file_path: &str,
     ) -> Vec<CodeChange> {
         // TODO: Implement change analysis
         vec![]

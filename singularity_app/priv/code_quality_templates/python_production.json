@@ -1,39 +1,56 @@
 {
   "name": "Python Production Quality",
+  "spec_version": "2.0",
+  "capabilities": [
+    "quality",
+    "graph",
+    "rag"
+  ],
   "language": "python",
   "quality_level": "production",
   "description": "Production standards for Python following PEP 8 and type hints",
-
   "requirements": {
     "documentation": {
       "docstrings": {
         "required": true,
         "format": "Google style",
-        "required_for": ["all_functions", "classes", "modules"],
-        "must_include": ["description", "args", "returns", "raises", "examples"]
+        "required_for": [
+          "all_functions",
+          "classes",
+          "modules"
+        ],
+        "must_include": [
+          "description",
+          "args",
+          "returns",
+          "raises",
+          "examples"
+        ]
       }
     },
-
     "type_hints": {
       "required": true,
-      "required_for": ["all_functions"],
+      "required_for": [
+        "all_functions"
+      ],
       "use_generics": true,
       "mypy_strict": true
     },
-
     "error_handling": {
       "style": "exceptions",
       "custom_exceptions": "encouraged",
       "context_managers": "for_resources"
     },
-
     "testing": {
       "required": true,
       "framework": "pytest",
       "coverage_target": 90,
-      "test_types": ["unit", "integration", "property_based"]
+      "test_types": [
+        "unit",
+        "integration",
+        "property_based"
+      ]
     },
-
     "code_style": {
       "naming": "snake_case",
       "max_function_length": 50,
@@ -42,8 +59,65 @@
       "linter": "ruff"
     }
   },
-
   "prompts": {
     "code_generation": "Generate production-quality Python code for: {task}\n\nREQUIREMENTS:\n- Google-style docstrings for all functions\n- Full type hints (pass mypy --strict)\n- Proper exception handling\n- Pytest unit tests\n- Follow PEP 8, black formatting\n\nOUTPUT CODE ONLY."
-  }
+  },
+  "graph_model": {
+    "version": 1,
+    "node_types": {
+      "module": {
+        "id_format": "py://{module_path}",
+        "merge_keys": [
+          "module_path"
+        ]
+      },
+      "function": {
+        "id_format": "py://{module_path}.{function}/{arity}",
+        "merge_keys": [
+          "signature_hash"
+        ]
+      }
+    },
+    "edge_types": {
+      "calls": {
+        "from": "function",
+        "to": "function",
+        "weight": 0.9
+      },
+      "declares": {
+        "from": "module",
+        "to": "function",
+        "weight": 1.0
+      }
+    },
+    "extraction_rules": {
+      "function_detection": "AST FunctionDef & AsyncFunctionDef",
+      "call_graph": "walk Call nodes; best-effort qualified name"
+    },
+    "temporal": {
+      "track": true,
+      "fields": [
+        "first_seen",
+        "last_modified"
+      ],
+      "update_policy": "touch_last_modified_on_signature_change"
+    },
+    "error_semantics": {
+      "severity_enum": [
+        "fatal",
+        "transient",
+        "validation",
+        "resource"
+      ],
+      "classification_enum": [
+        "user_input",
+        "system_state",
+        "external_dependency",
+        "data_integrity"
+      ],
+      "default_severity": "logic"
+    }
+  },
+  "version": 2,
+  "last_updated": "2025-10-08"
 }

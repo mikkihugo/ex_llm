@@ -1,0 +1,35 @@
+{
+  "framework": "nats",
+  "version": "1.0.0",
+  "patterns": {
+    "subjects": [
+      "ai.provider.claude",
+      "ai.provider.gemini", 
+      "ai.provider.openai",
+      "code.analysis.parse",
+      "code.analysis.embed",
+      "code.analysis.search",
+      "meta.registry.naming",
+      "meta.registry.architecture",
+      "meta.registry.quality"
+    ],
+    "messaging": [
+      "request/response",
+      "pub/sub",
+      "streaming"
+    ],
+    "patterns": [
+      "subject.hierarchy",
+      "wildcard.subjects",
+      "message.routing",
+      "ai.provider.*",
+      "code.analysis.*",
+      "meta.registry.*"
+    ]
+  },
+  "suggestions": {
+    "subject": "{context}.{pattern}",
+    "service": "{context}-{pattern}",
+    "messaging": "{pattern}"
+  }
+}

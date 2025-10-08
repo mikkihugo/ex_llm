@@ -1,30 +1,43 @@
 {
   "name": "Rust Production Quality",
+  "spec_version": "2.0",
+  "capabilities": [
+    "quality",
+    "graph",
+    "rag"
+  ],
   "language": "rust",
   "quality_level": "production",
   "description": "Maximum quality standards for production Rust code",
-
   "requirements": {
     "documentation": {
       "module_docs": {
         "required": true,
         "format": "//! module doc comments",
-        "must_include": ["overview", "examples"]
+        "must_include": [
+          "overview",
+          "examples"
+        ]
       },
       "function_docs": {
-        "required_for": ["all_public_functions"],
+        "required_for": [
+          "all_public_functions"
+        ],
         "format": "/// doc comments",
-        "must_include": ["description", "examples", "panics", "errors"]
+        "must_include": [
+          "description",
+          "examples",
+          "panics",
+          "errors"
+        ]
       }
     },
-
     "type_safety": {
       "required": true,
       "explicit_types": "encouraged",
       "generic_constraints": "explicit",
       "lifetime_annotations": "when_needed"
     },
-
     "error_handling": {
       "style": "Result<T, E>",
       "required_pattern": "Result<T, E>",
@@ -33,7 +46,6 @@
       "custom_error_types": "encouraged",
       "error_propagation": "? operator preferred"
     },
-
     "testing": {
       "required": true,
       "coverage_target": 90,
@@ -45,7 +57,6 @@
       ],
       "test_location": "#[cfg(test)] modules"
     },
-
     "code_style": {
       "naming_convention": "snake_case",
       "max_function_length": 40,
@@ -53,7 +64,6 @@
       "rustfmt": "required",
       "clippy": "all_warnings_addressed"
     },
-
     "safety": {
       "unsafe_blocks": {
         "allowed": false,
@@ -63,7 +73,6 @@
       "memory_safety": "guaranteed",
       "thread_safety": "enforced"
     },
-
     "code_smells": {
       "forbidden": [
         "TODO",
@@ -74,19 +83,14 @@
       ]
     }
   },
-
   "prompts": {
     "code_generation": "Generate production-quality Rust code for: {task}\n\nREQUIREMENTS:\n- Module-level doc comments (//!)\n- Doc comments (///) for all public functions\n- Result<T, E> for error handling\n- No unwrap() or panic!()\n- Comprehensive tests in #[cfg(test)]\n- Pass rustfmt and clippy\n\nOUTPUT CODE ONLY.",
-
     "documentation": "Generate complete documentation for this Rust code:\n\n```rust\n{code}\n```\n\nInclude:\n- //! module overview with examples\n- /// for every public function\n- # Examples, # Panics, # Errors sections\n\nOUTPUT DOCUMENTATION ONLY.",
-
     "tests": "Generate comprehensive Rust tests:\n\n```rust\n{code}\n```\n\nInclude:\n- #[cfg(test)] module\n- Unit tests for all functions\n- Error case tests\n- Doc tests in documentation\n\nOUTPUT TEST CODE ONLY."
   },
-
   "examples": {
     "good_code": "//! JSON parsing with comprehensive error handling\n//!\n//! # Examples\n//!\n//! ```\n//! use json_parser::parse;\n//!\n//! let result = parse(r#\"{\"key\": \"value\"}\"#)?;\n//! assert_eq!(result[\"key\"], \"value\");\n//! ```\n\nuse serde_json;\nuse std::collections::HashMap;\n\n#[derive(Debug, thiserror::Error)]\npub enum ParseError {\n    #[error(\"Invalid JSON: {0}\")]\n    InvalidJson(String),\n    #[error(\"Missing required field: {0}\")]\n    MissingField(String),\n}\n\n/// Parses a JSON string into a HashMap.\n///\n/// # Examples\n///\n/// ```\n/// let json = r#\"{\"name\": \"Alice\"}\"#;\n/// let result = parse(json)?;\n/// assert_eq!(result[\"name\"], \"Alice\");\n/// ```\n///\n/// # Errors\n///\n/// Returns `ParseError::InvalidJson` if the input is not valid JSON.\npub fn parse(json: &str) -> Result<HashMap<String, String>, ParseError> {\n    serde_json::from_str(json)\n        .map_err(|e| ParseError::InvalidJson(e.to_string()))\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn test_valid_json() {\n        let result = parse(r#\"{\"key\": \"value\"}\"#).unwrap();\n        assert_eq!(result[\"key\"], \"value\");\n    }\n\n    #[test]\n    fn test_invalid_json() {\n        let result = parse(\"invalid\");\n        assert!(result.is_err());\n    }\n}"
   },
-
   "quality_checklist": [
     "Has module-level docs (//!)",
     "Has function docs (///) for public API",
@@ -100,7 +104,6 @@
     "No unsafe blocks (or well-justified)",
     "Doc tests in documentation"
   ],
-
   "scoring_weights": {
     "has_module_docs": 1.0,
     "has_function_docs": 1.0,
@@ -110,5 +113,75 @@
     "no_panic": 1.0,
     "rustfmt_clean": 0.8,
     "clippy_clean": 0.9
-  }
+  },
+  "graph_model": {
+    "version": 1,
+    "node_types": {
+      "crate": {
+        "id_format": "rs://{crate_name}",
+        "merge_keys": [
+          "crate_name"
+        ]
+      },
+      "module": {
+        "id_format": "rs://{crate_name}/{module_path}",
+        "merge_keys": [
+          "module_path"
+        ]
+      },
+      "function": {
+        "id_format": "rs://{crate_name}/{module_path}::{fn_name}/{arity}",
+        "merge_keys": [
+          "signature_hash"
+        ]
+      }
+    },
+    "edge_types": {
+      "calls": {
+        "from": "function",
+        "to": "function",
+        "weight": 0.9
+      },
+      "defines": {
+        "from": "module",
+        "to": "function",
+        "weight": 1.0
+      },
+      "contains": {
+        "from": "crate",
+        "to": "module",
+        "weight": 1.0
+      }
+    },
+    "extraction_rules": {
+      "function_detection": "syn parse ItemFn",
+      "call_graph": "analyze syn::ExprCall and method calls"
+    },
+    "temporal": {
+      "track": true,
+      "fields": [
+        "first_seen",
+        "last_modified"
+      ],
+      "update_policy": "touch_last_modified_on_signature_change"
+    },
+    "error_semantics": {
+      "severity_enum": [
+        "fatal",
+        "transient",
+        "validation",
+        "resource",
+        "logic"
+      ],
+      "classification_enum": [
+        "user_input",
+        "system_state",
+        "external_dependency",
+        "data_integrity"
+      ],
+      "default_severity": "logic"
+    }
+  },
+  "version": 2,
+  "last_updated": "2025-10-08"
 }

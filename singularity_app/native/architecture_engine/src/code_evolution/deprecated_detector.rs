@@ -48,7 +48,7 @@ impl DeprecatedDetector {
     }
 
     /// Detect deprecated code
-    pub fn detect_deprecated(&self, code: &str, file_path: &str) -> Vec<DeprecatedCode> {
+    pub fn detect_deprecated(&self, _code: &str, _file_path: &str) -> Vec<DeprecatedCode> {
         // TODO: Implement deprecated code detection
         vec![]
     }
