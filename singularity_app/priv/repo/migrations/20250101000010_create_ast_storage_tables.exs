@@ -15,14 +15,14 @@ defmodule Singularity.Repo.Migrations.CreateAstStorageTables do
       
       # AST Storage
       add :ast_json, :jsonb
-      add :functions, :jsonb, default: []
-      add :classes, :jsonb, default: []
-      add :imports, :jsonb, default: []
-      add :exports, :jsonb, default: []
-      add :symbols, :jsonb, default: []
-      
+      add :functions, :jsonb, default: fragment("'[]'::jsonb")
+      add :classes, :jsonb, default: fragment("'[]'::jsonb")
+      add :imports, :jsonb, default: fragment("'[]'::jsonb")
+      add :exports, :jsonb, default: fragment("'[]'::jsonb")
+      add :symbols, :jsonb, default: fragment("'[]'::jsonb")
+
       # Metadata
-      add :metadata, :jsonb, default: %{}
+      add :metadata, :jsonb, default: fragment("'{}'::jsonb")
       add :parsed_at, :utc_datetime
       timestamps()
     end
@@ -50,7 +50,7 @@ defmodule Singularity.Repo.Migrations.CreateAstStorageTables do
       add :chunk_type, :string # function, class, comment, etc.
       add :start_line, :integer
       add :end_line, :integer
-      add :metadata, :jsonb, default: %{}
+      add :metadata, :jsonb, default: fragment("'{}'::jsonb")
       timestamps()
     end
 
@@ -64,7 +64,7 @@ defmodule Singularity.Repo.Migrations.CreateAstStorageTables do
       add :chunk_id, references(:codebase_chunks, type: :binary_id, on_delete: :delete_all)
       add :embedding, :vector, size: 768
       add :model_name, :string
-      add :metadata, :jsonb, default: %{}
+      add :metadata, :jsonb, default: fragment("'{}'::jsonb")
       timestamps()
     end
 
