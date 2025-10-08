@@ -37,7 +37,7 @@
 use std::{
     collections::HashMap,
     fs,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::Arc,
 };
 
@@ -141,7 +141,7 @@ pub struct TemplateDiagnostic {
 }
 
 /// Provider contract mirroring the dependency parser design.
-trait TemplateProvider: Send + Sync {
+pub trait TemplateProvider: Send + Sync {
     fn name(&self) -> &'static str;
     fn load_manifest(&self) -> Result<Option<TemplateManifest>>;
     fn load_template(&self, entry: &TemplateSummary) -> Result<Option<TemplateDocument>>;
@@ -200,7 +200,7 @@ impl TemplateParser {
             templates.push(document);
         }
 
-        Ok(TemplateCatalog { manifest, templates })
+        Ok(TemplateCatalog { manifest, templates, diagnostics: vec![] })
     }
 
     /// Load templates for a specific language, optionally filtered by quality level.
@@ -468,4 +468,3 @@ mod tests {
     }
 }
 
-pub use self::{TemplateDiagnostic, TemplateDiagnosticKind};

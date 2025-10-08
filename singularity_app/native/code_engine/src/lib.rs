@@ -109,5 +109,13 @@ pub use storage::*;
 // Main analyzer that orchestrates everything
 pub mod analyzer;
 
+// New modular components
+pub mod quality_analyzer;
+pub mod framework_detector;
+pub mod cross_language_analyzer;
+pub mod performance_tracker;
+pub mod metrics_collector;
+pub mod main_analyzer;
+
 // Re-export the main analyzer
 pub use analyzer::*;

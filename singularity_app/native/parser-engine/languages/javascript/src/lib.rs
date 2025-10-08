@@ -14,7 +14,7 @@ impl JavascriptParser {
     pub fn new() -> Result<Self, ParseError> {
         let mut parser = Parser::new();
         parser
-            .set_language(tree_sitter_javascript::language())
+            .set_language(&tree_sitter_javascript::LANGUAGE.into())
             .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
         Ok(Self {
             parser: Mutex::new(parser),
@@ -57,7 +57,7 @@ impl LanguageParser for JavascriptParser {
     }
 
     fn get_functions(&self, ast: &AST) -> Result<Vec<Function>, ParseError> {
-        let language = tree_sitter_javascript::language();
+        let language = &tree_sitter_javascript::LANGUAGE.into();
         let mut cursor = QueryCursor::new();
         let root = ast.root();
 
@@ -157,7 +157,7 @@ impl LanguageParser for JavascriptParser {
 
     fn get_imports(&self, ast: &AST) -> Result<Vec<Import>, ParseError> {
         let query = Query::new(
-            tree_sitter_javascript::language(),
+            &tree_sitter_javascript::LANGUAGE.into(),
             r#"
             (import_statement
                 source: (string) @path) @import
@@ -198,7 +198,7 @@ impl LanguageParser for JavascriptParser {
 
     fn get_comments(&self, ast: &AST) -> Result<Vec<Comment>, ParseError> {
         let query = Query::new(
-            tree_sitter_javascript::language(),
+            &tree_sitter_javascript::LANGUAGE.into(),
             r#"
             (comment) @comment
         "#,

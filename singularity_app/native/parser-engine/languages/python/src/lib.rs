@@ -17,7 +17,7 @@ impl PythonParser {
     pub fn new() -> Result<Self, ParseError> {
         let mut parser = Parser::new();
         parser
-            .set_language(tree_sitter_python::language())
+            .set_language(&tree_sitter_python::LANGUAGE.into())
             .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
         Ok(Self {
             parser: Mutex::new(parser),
@@ -128,7 +128,7 @@ impl LanguageParser for PythonParser {
             let params = node
                 .child_by_field_name("parameters")
                 .and_then(|p| p.utf8_text(ast.source.as_bytes()).ok())
-                .unwrap_or_else(|| "()".to_string());
+                .unwrap_or("()");
 
             let return_type = node
                 .child_by_field_name("return_type")
@@ -147,9 +147,9 @@ impl LanguageParser for PythonParser {
             let signature = Some(build_signature(&name, &params, &return_type));
 
             functions.push(Function {
-                name,
-                parameters: params,
-                return_type,
+                name: name.to_string(),
+                parameters: params.to_string(),
+                return_type: return_type.clone(),
                 start_line: node.start_position().row + 1,
                 end_line: node.end_position().row + 1,
                 body,
@@ -165,7 +165,7 @@ impl LanguageParser for PythonParser {
     }
 
     fn get_imports(&self, ast: &AST) -> Result<Vec<Import>, ParseError> {
-        let language = tree_sitter_python::language();
+        let language = &tree_sitter_python::LANGUAGE.into();
         let query = tree_sitter::Query::new(
             language,
             r#"
@@ -221,7 +221,7 @@ impl LanguageParser for PythonParser {
     }
 
     fn get_comments(&self, ast: &AST) -> Result<Vec<Comment>, ParseError> {
-        let language = tree_sitter_python::language();
+        let language = &tree_sitter_python::LANGUAGE.into();
         let query = tree_sitter::Query::new(language, r#"(comment) @comment"#)
             .map_err(|err| ParseError::QueryError(err.to_string()))?;
 

@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 parser-framework = { path = "../../language_framework" }
-tree-sitter = "0.20.10"
-tree-sitter-python = "0.23.2"
+tree-sitter = "0.23.2"
+tree-sitter-python = "0.25.0"

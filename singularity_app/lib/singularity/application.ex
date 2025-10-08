@@ -78,8 +78,7 @@ defmodule Singularity.Application do
       Singularity.Code.Generators.QualityCodeGenerator,
       # Start the RAG code generator
       Singularity.Code.Generators.RAGCodeGenerator,
-      # Start the polyglot code parser
-      Singularity.Code.Parsers.PolyglotCodeParser,
+      # ParserEngine is a NIF module - no need to start it
       # Start the architecture analyzer
       Singularity.Code.Analyzers.ArchitectureAgent,
       # Start the consolidation engine

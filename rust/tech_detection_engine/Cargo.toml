@@ -39,7 +39,7 @@ glob = { workspace = true }
 regex = { workspace = true }
 
 # Dependency parsing for config file analysis
-dependency-parser = { path = "../dependency-parser" }
+rust-dependency-parser = { path = "../dependency-parser" }
 
 # NATS client for AI provider calls
 async-nats = { workspace = true }

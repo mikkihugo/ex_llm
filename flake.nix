@@ -80,6 +80,10 @@
           cargo-cache         # Manage cargo cache
           bacon               # Background rust code checker
           mdbook              # Rust book generator
+
+          # Tree-sitter parsing tools
+          tree-sitter-grammars.tree-sitter-elixir
+          tree-sitter-grammars.tree-sitter-rust
         ];
 
         # CUDA packages (unfree, only for local dev)

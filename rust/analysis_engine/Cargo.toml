@@ -82,7 +82,7 @@ tantivy = { version = "0.21", optional = true }
 
 # Internal SPARC crates
 linting-engine = { path = "../linting_engine" }
-dependency-parser = { path = "../dependency-parser" }
+rust-dependency-parser = { path = "../dependency-parser" }
 mozilla-code-analysis = { path = "../mozilla-code-analysis" }
 
 # NATS for context queries

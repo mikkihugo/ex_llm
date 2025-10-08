@@ -69,7 +69,7 @@ regex = { workspace = true }
 tracing = { workspace = true }
 
 # Dependency parsing
-dependency-parser = { path = "../dependency-parser" }
+rust-dependency-parser = { path = "../dependency-parser" }
 
 [dev-dependencies]
 tokio-test = "0.4"

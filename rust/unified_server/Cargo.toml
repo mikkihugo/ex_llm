@@ -35,7 +35,7 @@ tokio-util = "0.7"
 walkdir = "2.3"
 
 # Internal libraries
-dependency-parser = { path = "../dependency_parser" }
+rust-dependency-parser = { path = "../dependency_parser", package = "dependency-parser" }
 code_parsing_engine = { path = "../code_parsing_engine" }
 semantic_embedding_engine = { path = "../semantic_embedding_engine" }
 analysis_engine = { path = "../analysis_engine" }

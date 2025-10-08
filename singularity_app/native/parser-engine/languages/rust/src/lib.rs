@@ -4,6 +4,7 @@ use parser_framework::{
     Comment, Function, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
+use std::convert::Into;
 use tree_sitter::{Parser, Query, QueryCursor};
 
 pub struct RustParser {
@@ -14,7 +15,7 @@ impl RustParser {
     pub fn new() -> Result<Self, ParseError> {
         let mut parser = Parser::new();
         parser
-            .set_language(unsafe { tree_sitter_rust::LANGUAGE() })
+            .set_language(&tree_sitter_rust::LANGUAGE.into())
             .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
         Ok(Self {
             parser: Mutex::new(parser),
@@ -53,7 +54,7 @@ impl LanguageParser for RustParser {
 
     fn get_functions(&self, ast: &AST) -> Result<Vec<Function>, ParseError> {
         let query = Query::new(
-            unsafe { tree_sitter_rust::LANGUAGE() },
+            &tree_sitter_rust::LANGUAGE.into(),
             r#"
             (function_item
                 name: (identifier) @function_name
@@ -140,7 +141,7 @@ impl LanguageParser for RustParser {
 
     fn get_imports(&self, ast: &AST) -> Result<Vec<Import>, ParseError> {
         let query = Query::new(
-            unsafe { tree_sitter_rust::LANGUAGE() },
+            &tree_sitter_rust::LANGUAGE.into(),
             r#"
             (use_declaration
                 argument: (_) @import_path) @import
@@ -179,7 +180,7 @@ impl LanguageParser for RustParser {
 
     fn get_comments(&self, ast: &AST) -> Result<Vec<Comment>, ParseError> {
         let query = Query::new(
-            unsafe { tree_sitter_rust::LANGUAGE() },
+            &tree_sitter_rust::LANGUAGE.into(),
             r#"
             (line_comment) @comment
             (block_comment) @comment

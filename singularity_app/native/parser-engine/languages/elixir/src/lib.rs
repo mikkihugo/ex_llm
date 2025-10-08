@@ -16,7 +16,7 @@ impl ElixirParser {
     pub fn new() -> Result<Self, ParseError> {
         let mut parser = Parser::new();
         parser
-            .set_language(unsafe { tree_sitter_elixir::LANGUAGE() })
+            .set_language(&tree_sitter_elixir::LANGUAGE.into())
             .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
         Ok(Self {
             parser: Mutex::new(parser),
@@ -56,7 +56,7 @@ impl LanguageParser for ElixirParser {
 
     fn get_functions(&self, ast: &AST) -> Result<Vec<Function>, ParseError> {
         let query = Query::new(
-            unsafe { tree_sitter_elixir::LANGUAGE() },
+            &tree_sitter_elixir::LANGUAGE.into(),
             r#"
             (call
               target: (identifier) @func_name
@@ -110,7 +110,7 @@ impl LanguageParser for ElixirParser {
 
     fn get_imports(&self, ast: &AST) -> Result<Vec<Import>, ParseError> {
         let query = Query::new(
-            unsafe { tree_sitter_elixir::LANGUAGE() },
+            &tree_sitter_elixir::LANGUAGE.into(),
             r#"
             (alias
               (identifier) @module
@@ -158,7 +158,7 @@ impl LanguageParser for ElixirParser {
 
     fn get_comments(&self, ast: &AST) -> Result<Vec<Comment>, ParseError> {
         let query = Query::new(
-            unsafe { tree_sitter_elixir::LANGUAGE() },
+            &tree_sitter_elixir::LANGUAGE.into(),
             r#"
             (comment) @comment
             "#,

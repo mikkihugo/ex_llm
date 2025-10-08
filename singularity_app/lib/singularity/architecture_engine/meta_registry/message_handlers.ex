@@ -1,12 +1,99 @@
-defmodule Singularity.MetaRegistry.MessageHandlers do
+defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
   @moduledoc """
   NATS message handlers for meta-registry system.
   
   Handles both app-facing requests and internal meta-registry queries.
   """
 
-  alias Singularity.MetaRegistry.QuerySystem
-  alias Singularity.MetaRegistry.NatsSubjects
+  use GenServer
+  require Logger
+  alias Singularity.ArchitectureEngine.MetaRegistry.QuerySystem
+  alias Singularity.ArchitectureEngine.MetaRegistry.NatsSubjects
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @impl true
+  def init(_opts) do
+    # Connect to NATS
+    {:ok, gnat} =
+      Gnat.start_link(%{
+        host: System.get_env("NATS_HOST", "127.0.0.1"),
+        port: String.to_integer(System.get_env("NATS_PORT", "4222"))
+      })
+
+    # Subscribe to app-facing subjects
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.naming_suggestions())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.architecture_patterns())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.quality_checks())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.dependencies_analysis())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.patterns_suggestions())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.templates_suggestions())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.refactoring_suggestions())
+
+    # Subscribe to internal meta-registry subjects
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.meta_registry_naming())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.meta_registry_architecture())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.meta_registry_quality())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.meta_registry_dependencies())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.meta_registry_patterns())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.meta_registry_templates())
+    {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.meta_registry_refactoring())
+
+    Logger.info("Meta-Registry MessageHandlers started and listening on NATS subjects")
+
+    {:ok, %{gnat: gnat}}
+  end
+
+  @impl true
+  def handle_info({:msg, %{topic: topic, body: body, reply_to: reply_to}}, state) do
+    Task.async(fn ->
+      handle_nats_message(topic, body, reply_to, state.gnat)
+    end)
+
+    {:noreply, state}
+  end
+
+  defp handle_nats_message(topic, body, reply_to, gnat) do
+    try do
+      case Jason.decode(body) do
+        {:ok, payload} ->
+          result = route_message(topic, payload)
+          response = Jason.encode!(result)
+          Gnat.pub(gnat, reply_to, response)
+        {:error, _} ->
+          error_response = Jason.encode!(%{error: "Invalid JSON payload"})
+          Gnat.pub(gnat, reply_to, error_response)
+      end
+    rescue
+      error ->
+        Logger.error("Error handling message on #{topic}: #{inspect(error)}")
+        error_response = Jason.encode!(%{error: "Internal server error"})
+        Gnat.pub(gnat, reply_to, error_response)
+    end
+  end
+
+  defp route_message(topic, payload) do
+    case topic do
+      "naming.suggestions" -> handle_naming_request(payload)
+      "architecture.patterns" -> handle_architecture_request(payload)
+      "quality.checks" -> handle_quality_request(payload)
+      "dependencies.analysis" -> handle_dependencies_request(payload)
+      "patterns.suggestions" -> handle_patterns_request(payload)
+      "templates.suggestions" -> handle_templates_request(payload)
+      "refactoring.suggestions" -> handle_refactoring_request(payload)
+      # Internal meta-registry subjects
+      "meta.registry.naming" -> handle_meta_naming_request(payload)
+      "meta.registry.architecture" -> handle_meta_architecture_request(payload)
+      "meta.registry.quality" -> handle_meta_quality_request(payload)
+      "meta.registry.dependencies" -> handle_meta_dependencies_request(payload)
+      "meta.registry.patterns" -> handle_meta_patterns_request(payload)
+      "meta.registry.templates" -> handle_meta_templates_request(payload)
+      "meta.registry.refactoring" -> handle_meta_refactoring_request(payload)
+      _ -> %{error: "Unknown topic: #{topic}"}
+    end
+  end
 
   @doc """
   Handle app-facing naming suggestions request.

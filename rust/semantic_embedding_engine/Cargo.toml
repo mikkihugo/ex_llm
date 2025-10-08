@@ -18,12 +18,12 @@ crate-type = ["cdylib"]
 rustler = "0.34"
 
 # ONNX Runtime for Jina v3 with CUDA support
-ort = { version = "2.0.0-rc.10", features = ["load-dynamic", "cuda"] }
+ort = { version = "2.0.0-rc.10", features = ["load-dynamic"], optional = true }
 
 # Candle for Qodo-Embed-1 with CUDA support
-candle-core = { version = "0.9", features = ["cuda"] }
-candle-nn = { version = "0.9", features = ["cuda"] }
-candle-transformers = { version = "0.9", features = ["cuda"] }
+candle-core = { version = "0.9", optional = true }
+candle-nn = { version = "0.9", optional = true }
+candle-transformers = { version = "0.9", optional = true }
 
 # Additional dependencies for advanced features
 fastrand = "2.0"
@@ -65,6 +65,11 @@ rayon = { workspace = true }
 
 # Async file I/O
 futures-util = "0.3"
+
+[features]
+default = ["cpu"]
+cpu = ["candle-core", "candle-nn", "candle-transformers", "ort"]
+cuda = ["candle-core/cuda", "candle-nn/cuda", "candle-transformers/cuda", "ort/cuda"]
 
 [dev-dependencies]
 criterion = { workspace = true }

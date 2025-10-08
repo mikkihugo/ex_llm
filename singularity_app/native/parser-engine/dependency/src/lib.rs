@@ -295,7 +295,7 @@ impl DependencyParserBuilder {
 }
 
 /// Parser for extracting dependencies from package files.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct DependencyParser {
     providers: Vec<Arc<dyn TemplateProvider>>,
 }

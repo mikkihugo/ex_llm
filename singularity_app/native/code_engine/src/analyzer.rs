@@ -275,13 +275,7 @@ impl CodebaseAnalyzer {
         Ok(parsed_files)
     }
 
-    /// Analyze file using the appropriate language parser
-    async fn analyze_with_language_parser(
-        &self,
-        content: &str,
-        language: universal_parser::ProgrammingLanguage,
-        file_path: &std::path::Path,
-    ) -> Result<universal_parser::AnalysisResult, String> {
+    // Language parsing removed - Elixir handles file parsing
         use universal_parser::ProgrammingLanguage;
 
         match language {

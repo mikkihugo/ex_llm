@@ -32,7 +32,7 @@ impl LanguageParser for TypescriptParser {
     fn parse(&self, content: &str) -> Result<AST, ParseError> {
         let mut parser = self.parser.lock().expect("parser mutex poisoned");
         parser
-            .set_language(unsafe { tree_sitter_typescript::LANGUAGE_TYPESCRIPT() })
+            .set_language(&tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into())
             .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
 
         let mut tree = parser.parse(content, None);
@@ -44,7 +44,7 @@ impl LanguageParser for TypescriptParser {
             && content.contains("<")
         {
             parser
-                .set_language(unsafe { tree_sitter_typescript::LANGUAGE_TSX() })
+                .set_language(&tree_sitter_typescript::LANGUAGE_TSX.into())
                 .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
             tree = parser.parse(content, None);
         }
@@ -70,7 +70,7 @@ impl LanguageParser for TypescriptParser {
     }
 
     fn get_functions(&self, ast: &AST) -> Result<Vec<Function>, ParseError> {
-        let language = unsafe { tree_sitter_typescript::LANGUAGE_TSX() };
+        let language = &tree_sitter_typescript::LANGUAGE_TSX.into();
         let mut cursor = QueryCursor::new();
         let root = ast.root();
 
@@ -229,7 +229,7 @@ impl LanguageParser for TypescriptParser {
 
     fn get_imports(&self, ast: &AST) -> Result<Vec<Import>, ParseError> {
         let query = Query::new(
-            unsafe { tree_sitter_typescript::LANGUAGE_TSX() },
+            &tree_sitter_typescript::LANGUAGE_TSX.into(),
             r#"
             (import_statement
               source: (string) @path) @import
@@ -270,7 +270,7 @@ impl LanguageParser for TypescriptParser {
 
     fn get_comments(&self, ast: &AST) -> Result<Vec<Comment>, ParseError> {
         let query = Query::new(
-            unsafe { tree_sitter_typescript::LANGUAGE_TSX() },
+            &tree_sitter_typescript::LANGUAGE_TSX.into(),
             r#"
             (comment) @comment
         "#,

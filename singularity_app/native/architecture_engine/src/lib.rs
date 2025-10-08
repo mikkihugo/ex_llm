@@ -28,6 +28,9 @@
 pub mod architecture;
 pub mod code_evolution;
 pub mod naming_conventions;
+pub mod naming_core;
+pub mod naming_languages;
+pub mod naming_suggestions;
 pub mod naming_service;
 pub mod patterns;
 pub mod technology_detection;

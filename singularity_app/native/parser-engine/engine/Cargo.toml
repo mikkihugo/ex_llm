@@ -35,7 +35,7 @@ rust_parser = { path = "../languages/rust", optional = true }
 javascript_parser = { path = "../languages/javascript", optional = true }
 typescript_parser = { path = "../languages/typescript", optional = true }
 python_parser = { path = "../languages/python", optional = true }
-template-meta-parser = { path = "../../../../rust/template_meta_parser" }
+template-meta-parser = { path = "../template_meta_parser" }
 
 [features]
 default = [
