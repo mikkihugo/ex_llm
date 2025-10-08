@@ -2,6 +2,9 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+#[cfg(feature = "nif")]
+use rustler::{Encoder, Env, Term};
+
 use crate::{ParseContext, SourceDescriptor};
 
 /// Provides structures for representing parsed documents and their associated metadata.
@@ -40,6 +43,27 @@ impl ParsedDocument {
     }
 }
 
+#[cfg(feature = "nif")]
+impl Encoder for ParsedDocument {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        let map = rustler::types::map::MapIterator::new(env)
+            .ok()
+            .unwrap();
+
+        let mut map = map
+            .put("descriptor", self.descriptor.encode(env))
+            .put("metadata", self.metadata.encode(env))
+            .put("symbols", self.symbols.encode(env))
+            .put("classes", self.classes.encode(env))
+            .put("enums", self.enums.encode(env))
+            .put("docstrings", self.docstrings.encode(env))
+            .put("stats", self.stats.encode(env))
+            .put("diagnostics", self.diagnostics.encode(env));
+
+        map.build()
+    }
+}
+
 /// Additional metadata returned by the parser implementation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParsedDocumentMetadata {
@@ -64,6 +88,22 @@ impl Default for ParsedDocumentMetadata {
     }
 }
 
+#[cfg(feature = "nif")]
+impl Encoder for ParsedDocumentMetadata {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        let map = rustler::types::map::MapIterator::new(env)
+            .ok()
+            .unwrap();
+
+        let mut map = map
+            .put("parser_version", self.parser_version.encode(env))
+            .put("analyzed_at", self.analyzed_at.encode(env))
+            .put("additional", self.additional.encode(env));
+
+        map.build()
+    }
+}
+
 /// Summary statistics produced during parsing.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ParserStats {
@@ -71,6 +111,23 @@ pub struct ParserStats {
     pub total_nodes: usize,
     pub total_tokens: usize,
     pub duration_ms: u64,
+}
+
+#[cfg(feature = "nif")]
+impl Encoder for ParserStats {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        let map = rustler::types::map::MapIterator::new(env)
+            .ok()
+            .unwrap();
+
+        let mut map = map
+            .put("byte_length", self.byte_length.encode(env))
+            .put("total_nodes", self.total_nodes.encode(env))
+            .put("total_tokens", self.total_tokens.encode(env))
+            .put("duration_ms", self.duration_ms.encode(env));
+
+        map.build()
+    }
 }
 
 /// Minimal symbol representation shared across languages.
@@ -90,6 +147,23 @@ impl ParsedSymbol {
             range,
             signature: None,
         }
+    }
+}
+
+#[cfg(feature = "nif")]
+impl Encoder for ParsedSymbol {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        let map = rustler::types::map::MapIterator::new(env)
+            .ok()
+            .unwrap();
+
+        let mut map = map
+            .put("name", self.name.encode(env))
+            .put("kind", self.kind.encode(env))
+            .put("range", self.range.encode(env))
+            .put("signature", self.signature.encode(env));
+
+        map.build()
     }
 }
 
@@ -149,4 +223,89 @@ pub fn placeholder_document(
         "root": context.root().display().to_string(),
     });
     doc
+}
+
+// Encoder implementations for all remaining structs
+#[cfg(feature = "nif")]
+impl Encoder for ParsedClass {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        let map = rustler::types::map::MapIterator::new(env)
+            .ok()
+            .unwrap();
+
+        let mut map = map
+            .put("name", self.name.encode(env))
+            .put("bases", self.bases.encode(env))
+            .put("decorators", self.decorators.encode(env))
+            .put("docstring", self.docstring.encode(env))
+            .put("range", self.range.encode(env));
+
+        map.build()
+    }
+}
+
+#[cfg(feature = "nif")]
+impl Encoder for ParsedEnum {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        let map = rustler::types::map::MapIterator::new(env)
+            .ok()
+            .unwrap();
+
+        let mut map = map
+            .put("name", self.name.encode(env))
+            .put("variants", self.variants.encode(env))
+            .put("decorators", self.decorators.encode(env))
+            .put("docstring", self.docstring.encode(env))
+            .put("range", self.range.encode(env));
+
+        map.build()
+    }
+}
+
+#[cfg(feature = "nif")]
+impl Encoder for ParsedEnumVariant {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        let map = rustler::types::map::MapIterator::new(env)
+            .ok()
+            .unwrap();
+
+        let mut map = map
+            .put("name", self.name.encode(env))
+            .put("value", self.value.encode(env))
+            .put("range", self.range.encode(env));
+
+        map.build()
+    }
+}
+
+#[cfg(feature = "nif")]
+impl Encoder for ParsedDecorator {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        let map = rustler::types::map::MapIterator::new(env)
+            .ok()
+            .unwrap();
+
+        let mut map = map
+            .put("name", self.name.encode(env))
+            .put("arguments", self.arguments.encode(env));
+
+        map.build()
+    }
+}
+
+#[cfg(feature = "nif")]
+impl Encoder for ParsedDocstring {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        let map = rustler::types::map::MapIterator::new(env)
+            .ok()
+            .unwrap();
+
+        let mut map = map
+            .put("owner", self.owner.encode(env))
+            .put("kind", self.kind.encode(env))
+            .put("value", self.value.encode(env))
+            .put("range", self.range.encode(env));
+
+        map.build()
+    }
 }

@@ -14,6 +14,7 @@ members = [
     "singularity_app/native/architecture_engine",
     "singularity_app/native/code_engine",
     "singularity_app/native/embedding_engine",
+    "singularity_app/native/prompt_intelligence",
 ]
 
 [workspace.dependencies]

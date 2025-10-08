@@ -154,6 +154,10 @@ defmodule Singularity.Store do
   - ✅ `:git` - Fully implemented (unified database)
   """
 
+  @templates_table :singularity_store_templates
+  @patterns_table :singularity_store_patterns
+  @git_state_table :singularity_store_git_states
+
   require Logger
   import Ecto.Query
   alias Singularity.Repo
@@ -509,35 +513,57 @@ defmodule Singularity.Store do
   # ============================================================================
 
   @doc """
-  Get technology templates.
+  Get technology templates stored in the in-memory catalogue.
   """
   @spec get_templates(String.t(), String.t()) :: [map()]
   def get_templates(technology, category) do
-    TemplateStore.get_templates(technology, category)
+    ensure_table(@templates_table, :set)
+
+    case :ets.lookup(@templates_table, {technology, category}) do
+      [{_, templates}] -> templates
+      [] -> []
+    end
   end
 
   @doc """
-  Store a technology template.
+  Store a technology template in the in-memory catalogue.
   """
-  @spec store_template(String.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
-  def store_template(technology, category, template) do
-    TemplateStore.store_template(technology, category, template)
+  @spec store_template(String.t(), String.t(), map()) :: {:ok, map()}
+  def store_template(technology, category, template) when is_map(template) do
+    ensure_table(@templates_table, :set)
+
+    key = {technology, category}
+    existing = get_templates(technology, category)
+    :ets.insert(@templates_table, {key, [template | existing]})
+
+    {:ok, template}
   end
 
   @doc """
-  Get framework patterns.
+  Get framework patterns stored in the in-memory catalogue.
   """
   @spec get_patterns(String.t(), String.t()) :: [map()]
   def get_patterns(framework, pattern_type) do
-    PatternStore.get_patterns(framework, pattern_type)
+    ensure_table(@patterns_table, :set)
+
+    case :ets.lookup(@patterns_table, {framework, pattern_type}) do
+      [{_, patterns}] -> patterns
+      [] -> []
+    end
   end
 
   @doc """
-  Store a framework pattern.
+  Store a framework pattern in the in-memory catalogue.
   """
-  @spec store_pattern(String.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
-  def store_pattern(framework, pattern_type, pattern) do
-    PatternStore.store_pattern(framework, pattern_type, pattern)
+  @spec store_pattern(String.t(), String.t(), map()) :: {:ok, map()}
+  def store_pattern(framework, pattern_type, pattern) when is_map(pattern) do
+    ensure_table(@patterns_table, :set)
+
+    key = {framework, pattern_type}
+    existing = get_patterns(framework, pattern_type)
+    :ets.insert(@patterns_table, {key, [pattern | existing]})
+
+    {:ok, pattern}
   end
 
   # ============================================================================
@@ -548,16 +574,23 @@ defmodule Singularity.Store do
   Get git state.
   """
   @spec get_git_state(String.t()) :: {:ok, map()} | {:error, term()}
-  def get_git_state(session_id) do
-    GitStore.get_state(session_id)
+  def get_git_state(session_id) when is_binary(session_id) do
+    ensure_table(@git_state_table, :set)
+
+    case :ets.lookup(@git_state_table, session_id) do
+      [{^session_id, state}] -> {:ok, state}
+      [] -> {:error, :not_found}
+    end
   end
 
   @doc """
   Store git state.
   """
   @spec store_git_state(String.t(), map()) :: :ok | {:error, term()}
-  def store_git_state(session_id, state) do
-    GitStore.store_state(session_id, state)
+  def store_git_state(session_id, state) when is_binary(session_id) and is_map(state) do
+    ensure_table(@git_state_table, :set)
+    :ets.insert(@git_state_table, {session_id, state})
+    :ok
   end
 
   # ============================================================================
@@ -620,54 +653,43 @@ defmodule Singularity.Store do
   end
 
   def stats(:templates) do
-    query = from t in "store_technology_templates", select: count(t.id)
-    templates_count = Repo.one(query) || 0
+    ensure_table(@templates_table, :bag)
 
-    # Count by language
-    lang_query =
-      from t in "store_technology_templates",
-        group_by: t.language,
-        select: {t.language, count(t.id)}
+    entries = :ets.tab2list(@templates_table)
+    templates_count = Enum.reduce(entries, 0, fn {_, templates}, acc -> acc + length(templates) end)
 
-    by_language = Repo.all(lang_query) |> Map.new()
+    by_language =
+      entries
+      |> Enum.flat_map(fn {_, templates} -> templates end)
+      |> Enum.group_by(&Map.get(&1, :language, "unknown"))
+      |> Enum.map(fn {language, templates} -> {language, length(templates)} end)
+      |> Map.new()
 
-    %{
-      templates_count: templates_count,
-      by_language: by_language
-    }
+    %{templates_count: templates_count, by_language: by_language}
   end
 
   def stats(:patterns) do
-    query = from p in "store_framework_patterns", select: count(p.id)
-    patterns_count = Repo.one(query) || 0
+    ensure_table(@patterns_table, :bag)
 
-    # Count by framework
-    fw_query =
-      from p in "store_framework_patterns",
-        group_by: p.framework,
-        select: {p.framework, count(p.id)}
+    entries = :ets.tab2list(@patterns_table)
+    patterns_count = Enum.reduce(entries, 0, fn {_, patterns}, acc -> acc + length(patterns) end)
 
-    by_framework = Repo.all(fw_query) |> Map.new()
+    by_framework =
+      entries
+      |> Enum.flat_map(fn {{framework, _}, patterns} -> Enum.map(patterns, fn pattern -> {framework, pattern} end) end)
+      |> Enum.group_by(fn {framework, _pattern} -> framework end)
+      |> Enum.map(fn {framework, entries_for_framework} -> {framework, length(entries_for_framework)} end)
+      |> Map.new()
 
-    %{
-      patterns_count: patterns_count,
-      by_framework: by_framework
-    }
+    %{patterns_count: patterns_count, by_framework: by_framework}
   end
 
   def stats(:git) do
-    # Git store is ETS-based, count via GitStore module if available
-    sessions_count =
-      try do
-        GitStore.all_sessions() |> length()
-      rescue
-        _ -> 0
-      end
+    ensure_table(@git_state_table, :set)
 
-    %{
-      sessions_count: sessions_count,
-      storage: :ets
-    }
+    sessions_count = :ets.info(@git_state_table, :size) || 0
+
+    %{sessions_count: sessions_count, storage: :ets}
   end
 
   @doc """
@@ -688,42 +710,24 @@ defmodule Singularity.Store do
   end
 
   def clear(:templates) do
-    try do
-      # Clear template store
-      Singularity.Templates.TemplateStore.clear_all()
-      Logger.info("Cleared template store")
-      :ok
-    rescue
-      error ->
-        Logger.error("Failed to clear template store: #{inspect(error)}")
-        {:error, error}
-    end
+    ensure_table(@templates_table, :bag)
+    :ets.delete_all_objects(@templates_table)
+    Logger.info("Cleared template store")
+    :ok
   end
 
   def clear(:patterns) do
-    try do
-      # Clear pattern store
-      Singularity.Patterns.PatternStore.clear_all()
-      Logger.info("Cleared pattern store")
-      :ok
-    rescue
-      error ->
-        Logger.error("Failed to clear pattern store: #{inspect(error)}")
-        {:error, error}
-    end
+    ensure_table(@patterns_table, :bag)
+    :ets.delete_all_objects(@patterns_table)
+    Logger.info("Cleared pattern store")
+    :ok
   end
 
   def clear(:git) do
-    try do
-      # Clear git state store
-      Singularity.Git.GitStateStore.clear_all()
-      Logger.info("Cleared git state store")
-      :ok
-    rescue
-      error ->
-        Logger.error("Failed to clear git state store: #{inspect(error)}")
-        {:error, error}
-    end
+    ensure_table(@git_state_table, :set)
+    :ets.delete_all_objects(@git_state_table)
+    Logger.info("Cleared git state store")
+    :ok
   end
 
   def clear(:cache) do
@@ -777,5 +781,20 @@ defmodule Singularity.Store do
   def clear(type) do
     Logger.warning("Unknown store type for clearing: #{inspect(type)}")
     {:error, :unknown_store_type}
+  end
+
+  # Private helper function to ensure ETS tables exist
+  defp ensure_table(table_name, type) do
+    case :ets.info(table_name) do
+      :undefined ->
+        try do
+          :ets.new(table_name, [type, :named_table, :public, {:read_concurrency, true}, {:write_concurrency, true}])
+        rescue
+          ArgumentError -> :ok
+        end
+
+      _ ->
+        :ok
+    end
   end
 end

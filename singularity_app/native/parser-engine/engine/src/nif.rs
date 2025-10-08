@@ -28,9 +28,8 @@ pub fn parse_file<'a>(env: Env<'a>, path: String) -> NifResult<Term<'a>> {
         .parse_file(&context, &path_buf)
         .map_err(|_| NifError::RaiseAtom("parse_failed"))?;
 
-    let json = serde_json::to_string(&SerializeDocument(&document))
-        .map_err(|_| NifError::RaiseAtom("encode_failed"))?;
-    Ok((ok(), json).encode(env))
+    // Return direct AST struct instead of JSON string
+    Ok((ok(), document).encode(env))
 }
 
 #[rustler::nif(schedule = "DirtyCpu")]
@@ -42,9 +41,8 @@ pub fn parse_tree<'a>(env: Env<'a>, root: String) -> NifResult<Term<'a>> {
         .parse_tree(&context, &root_path, &DiscoveryOptions::default())
         .map_err(|_| NifError::RaiseAtom("parse_failed"))?;
 
-    let json = serde_json::to_string(&SerializeDocuments(&documents))
-        .map_err(|_| NifError::RaiseAtom("encode_failed"))?;
-    Ok((ok(), json).encode(env))
+    // Return direct AST structs instead of JSON string
+    Ok((ok(), documents).encode(env))
 }
 
 fn registry() -> &'static Arc<ParserRegistry> {
@@ -67,20 +65,6 @@ fn parse_context_for_path(path: &Path) -> ParseContext {
     ParseContext::new(root)
 }
 
-struct SerializeDocument<'a>(&'a ParsedDocument);
-
-impl<'a> Serialize for SerializeDocument<'a> {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.0.serialize(serializer)
-    }
-}
-
-struct SerializeDocuments<'a>(&'a [ParsedDocument]);
-
-impl<'a> Serialize for SerializeDocuments<'a> {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.0.serialize(serializer)
-    }
-}
+// Serialization structs removed - now returning direct AST structs
 
 rustler::init!("Elixir.Singularity.ParserEngine.Native");

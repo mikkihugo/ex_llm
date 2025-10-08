@@ -88,6 +88,12 @@ defmodule Singularity.MixProject do
       {:jason, "~> 1.4"},
       {:nimble_options, "~> 1.1"},
 
+      # T5 Training & LLM Integration
+      {:bumblebee, "~> 0.5"},
+      {:nx, "~> 0.6"},
+      {:exla, "~> 0.6"},
+      {:kino, "~> 0.12"},
+
       # Distributed Systems
       {:libcluster, "~> 3.3"},
       {:delta_crdt, "~> 0.6"},

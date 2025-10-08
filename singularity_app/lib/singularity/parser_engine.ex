@@ -1,398 +1,514 @@
 defmodule Singularity.ParserEngine do
   @moduledoc """
-  Parser Engine - Streams parsed AST data directly to PostgreSQL
-  
-  This engine parses source files and directory trees via Rust NIF and streams
-  the parsed AST data directly into the PostgreSQL database for fast querying.
-  
-  ## Usage:
-  
-      # Parse and store single file
-      ParserEngine.parse_and_store_file("src/app.ex", "my_project")
-      
-      # Parse and store entire directory
-      ParserEngine.parse_and_store_tree("src/", "my_project")
+  Parser Engine - Consolidated parsing and database streaming
+
+  Provides a unified interface for parsing code files and streaming AST data
+  directly into PostgreSQL. Replaces the old code_parser NIF with enhanced
+  database integration capabilities.
+
+  ## Features
+
+  - Universal AST parsing for 30+ languages
+  - Direct database streaming (no intermediate files)
+  - AST element extraction (functions, classes, imports, exports)
+  - Language detection and dependency analysis
+  - Batch processing capabilities
+
+  ## Usage
+
+      # Parse and store a single file
+      {:ok, result} = ParserEngine.parse_and_store_file("lib/my_module.ex")
+
+      # Parse and store entire directory tree
+      {:ok, results} = ParserEngine.parse_and_store_tree("lib/")
+
+      # Extract specific AST elements
+      functions = ParserEngine.extract_functions("lib/my_module.ex")
+      classes = ParserEngine.extract_classes("lib/my_module.ex")
+
+  ## Database Integration
+
+  All parsed data is automatically stored in the `code_files` table with:
+  - Raw file content and metadata
+  - Complete AST as JSONB
+  - Extracted elements (functions, classes, imports, exports, symbols)
+  - Language detection and file hashing
+  - Parsing timestamps
+
+  This enables rich querying and analysis across the entire codebase.
   """
 
   require Logger
-  alias Singularity.ParserEngine.Native
+  alias Singularity.Repo
+  alias Singularity.Schemas.CodeFile
 
+  # Public API - Parse and store functions
   @doc """
-  Parse and store a single file directly to database
+  Parse a single file and store the AST data in the database.
+
+  Returns `{:ok, result}` on success or `{:error, reason}` on failure.
   """
-  def parse_and_store_file(file_path, codebase_id) when is_binary(file_path) and is_binary(codebase_id) do
+  def parse_and_store_file(file_path) do
     Logger.info("Parsing and storing file: #{file_path}")
     
-    with {:ok, json} <- call_native(:parse_file, file_path),
-         {:ok, decoded} <- decode_json(json) do
-      document = normalize_document(decoded)
-      Logger.info("Finished parsing file: #{file_path}")
-      {:ok, document}
-    else
-      {:error, reason} ->
-        Logger.error("Failed to parse and store #{file_path}: #{inspect(reason)}")
-        {:error, reason}
+    case File.read(file_path) do
+      {:ok, content} ->
+        case detect_language(file_path) do
+          {:ok, language} ->
+            case parse_file(file_path) do
+              {:ok, ast_data} ->
+                store_document(file_path, language, content, ast_data)
+              {:error, reason} -> {:error, "Failed to parse file: #{reason}"}
+            end
+          {:error, reason} -> {:error, "Failed to detect language: #{reason}"}
+        end
+      {:error, reason} -> {:error, "Failed to read file: #{reason}"}
     end
   end
 
   @doc """
-  Parse and store entire directory tree directly to database
+  Parse an entire directory tree and store all AST data in the database.
+
+  Returns `{:ok, results}` with a list of parsing results.
   """
-  def parse_and_store_tree(root_path, codebase_id) when is_binary(root_path) and is_binary(codebase_id) do
-    Logger.info("Parsing and storing directory: #{root_path}")
+  def parse_and_store_tree(directory_path) do
+    Logger.info("Parsing and storing directory tree: #{directory_path}")
     
-    with {:ok, json} <- call_native(:parse_tree, root_path),
-         {:ok, decoded} <- decode_json(json) do
-      documents = Enum.map(decoded, &normalize_document/1)
-      Logger.info("Finished parsing #{length(documents)} files from #{root_path}")
-      {:ok, documents}
-    else
-      {:error, reason} ->
-        Logger.error("Failed to parse and store directory #{root_path}: #{inspect(reason)}")
-        {:error, reason}
-    end
-  end
-
-  @doc """
-  Parse a single file and return a normalized document map (legacy method)
-  """
-  def parse_file(path) when is_binary(path) do
-    with {:ok, json} <- call_native(:parse_file, path),
-         {:ok, decoded} <- decode_json(json) do
-      {:ok, normalize_document(decoded)}
-    else
-      {:error, _} = error -> error
-      other -> {:error, other}
-    end
-  end
-
-  @doc """
-  Parse a directory tree and return normalized documents for each file.
-  """
-  def parse_tree(root) when is_binary(root) do
-    with {:ok, json} <- call_native(:parse_tree, root),
-         {:ok, decoded} <- decode_json(json) do
-      documents = Enum.map(decoded, &normalize_document/1)
-      {:ok, documents}
-    else
-      {:error, _} = error -> error
-      other -> {:error, other}
-    end
-  end
-
-  @doc """
-  Extract the normalized AST payload (if the capsule emitted one).
-  """
-  def extract_ast(path) do
-    case parse_file(path) do
-      {:ok, %{ast: ast}} -> {:ok, ast}
-      error -> error
-    end
-  end
-
-  @doc """
-  Extract function-like symbols from a single file.
-  """
-  def extract_functions(path) do
-    case parse_file(path) do
-      {:ok, %{functions: functions}} -> {:ok, functions}
-      error -> error
-    end
-  end
-
-  @doc """
-  Extract parsed classes from a single file.
-  """
-  def extract_classes(path) do
-    case parse_file(path) do
-      {:ok, %{classes: classes}} -> {:ok, classes}
-      error -> error
-    end
-  end
-
-  @doc """
-  Extract parsed imports from a single file.
-  """
-  def extract_imports(path) do
-    case parse_file(path) do
-      {:ok, %{imports: imports}} -> {:ok, imports}
-      error -> error
-    end
-  end
-
-  @doc """
-  Extract parsed exports from a single file.
-  """
-  def extract_exports(path) do
-    case parse_file(path) do
-      {:ok, %{exports: exports}} -> {:ok, exports}
-      error -> error
-    end
-  end
-
-  @doc """
-  Detect language for a file using capsule metadata.
-  """
-  def detect_language(path) do
-    case parse_file(path) do
-      {:ok, %{language: language}} -> {:ok, language}
-      error -> error
-    end
-  end
-
-  @doc """
-  Extract dependency-like entries (usually imports) from a file.
-  """
-  def find_dependencies(path) do
-    case parse_file(path) do
-      {:ok, %{imports: imports}} -> {:ok, imports}
-      error -> error
-    end
-  end
-
-  @doc """
-  Parse many files concurrently, short-circuiting on the first error.
-  """
-  def parse_files(paths) when is_list(paths) do
-    paths
-    |> Task.async_stream(&parse_file/1, max_concurrency: 10, timeout: :infinity)
-    |> Enum.reduce_while({:ok, []}, fn
-      {:ok, {:ok, doc}}, {:ok, acc} -> {:cont, {:ok, [doc | acc]}}
-      {:ok, {:error, reason}}, _ -> {:halt, {:error, reason}}
-      {:exit, reason}, _ -> {:halt, {:error, reason}}
-      {:error, reason}, _ -> {:halt, {:error, reason}}
-    end)
-    |> case do
-      {:ok, docs} -> {:ok, Enum.reverse(docs)}
-      error -> error
-    end
-  end
-
-  @doc """
-  Filter a parsed tree by language.
-  """
-  def parse_tree_by_language(root, language) when is_binary(language) do
-    case parse_tree(root) do
-      {:ok, documents} -> {:ok, Enum.filter(documents, &(document_language(&1) == language))}
-      error -> error
-    end
-  end
-
-  @doc """
-  Gather all functions across every file in a directory tree.
-  """
-  def extract_all_functions(root) do
-    case parse_tree(root) do
-      {:ok, documents} ->
-        functions =
-          documents
-          |> Enum.flat_map(fn doc ->
-            Enum.map(doc.functions || [], &Map.put(&1, :file, doc.path))
+    case File.ls(directory_path) do
+      {:ok, files} ->
+        results = 
+          files
+          |> Enum.map(fn file ->
+            full_path = Path.join(directory_path, file)
+            if File.dir?(full_path) do
+              parse_and_store_tree(full_path)
+            else
+              parse_and_store_file(full_path)
+            end
           end)
+          |> List.flatten()
+        
+        {:ok, results}
+      {:error, reason} -> {:error, "Failed to list directory: #{reason}"}
+    end
+  end
 
-        {:ok, functions}
+  # Legacy API - Parse only functions (for backward compatibility)
+  @doc """
+  Parse a single file and return AST data (legacy function).
 
-      error -> error
+  Use `parse_and_store_file/1` for new code that needs database storage.
+  """
+  def parse_file(file_path) do
+    # Call the native NIF directly - no need to read file content
+    # The NIF handles file reading internally
+    case :parser_engine.parse_file(file_path) do
+      {:ok, ast_document} ->
+        # Convert Rust struct to Elixir map for easier handling
+        ast_data = convert_ast_to_map(ast_document)
+        {:ok, ast_data}
+      {:error, reason} -> {:error, reason}
     end
   end
 
   @doc """
-  Gather all classes across every file in a directory tree.
+  Parse an entire directory tree (legacy function).
+
+  Use `parse_and_store_tree/1` for new code that needs database storage.
   """
-  def extract_all_classes(root) do
-    case parse_tree(root) do
-      {:ok, documents} ->
-        classes =
-          documents
-          |> Enum.flat_map(fn doc ->
-            Enum.map(doc.classes || [], &Map.put(&1, :file, doc.path))
+  def parse_tree(directory_path) do
+    # Call the native NIF directly - handles directory traversal internally
+    case :parser_engine.parse_tree(directory_path) do
+      {:ok, ast_documents} ->
+        # Convert Rust structs to Elixir maps
+        ast_data = Enum.map(ast_documents, &convert_ast_to_map/1)
+        {:ok, ast_data}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  # AST element extraction functions
+  @doc """
+  Extract all functions from a file's AST.
+  """
+  def extract_functions(file_path) do
+    case parse_file(file_path) do
+      {:ok, ast_data} -> extract_ast_elements(ast_data, "functions")
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Extract all classes from a file's AST.
+  """
+  def extract_classes(file_path) do
+    case parse_file(file_path) do
+      {:ok, ast_data} -> extract_ast_elements(ast_data, "classes")
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Extract all imports from a file's AST.
+  """
+  def extract_imports(file_path) do
+    case parse_file(file_path) do
+      {:ok, ast_data} -> extract_ast_elements(ast_data, "imports")
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Extract all exports from a file's AST.
+  """
+  def extract_exports(file_path) do
+    case parse_file(file_path) do
+      {:ok, ast_data} -> extract_ast_elements(ast_data, "exports")
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Extract all symbols from a file's AST.
+  """
+  def extract_symbols(file_path) do
+    case parse_file(file_path) do
+      {:ok, ast_data} -> extract_ast_elements(ast_data, "symbols")
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Extract all AST elements from a file.
+  """
+  def extract_ast(file_path) do
+    case parse_file(file_path) do
+      {:ok, ast_data} -> {:ok, ast_data}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  # Language detection
+  @doc """
+  Detect the programming language of a file based on its extension.
+  """
+  def detect_language(file_path) do
+    extension = Path.extname(file_path) |> String.downcase()
+    
+    language = case extension do
+      ".ex" -> "elixir"
+      ".exs" -> "elixir"
+      ".gleam" -> "gleam"
+      ".rs" -> "rust"
+      ".js" -> "javascript"
+      ".ts" -> "typescript"
+      ".tsx" -> "typescript"
+      ".jsx" -> "javascript"
+      ".py" -> "python"
+      ".go" -> "go"
+      ".java" -> "java"
+      ".c" -> "c"
+      ".cpp" -> "cpp"
+      ".h" -> "c"
+      ".hpp" -> "cpp"
+      ".cs" -> "csharp"
+      ".php" -> "php"
+      ".rb" -> "ruby"
+      ".swift" -> "swift"
+      ".kt" -> "kotlin"
+      ".scala" -> "scala"
+      ".clj" -> "clojure"
+      ".hs" -> "haskell"
+      ".ml" -> "ocaml"
+      ".fs" -> "fsharp"
+      ".dart" -> "dart"
+      ".lua" -> "lua"
+      ".r" -> "r"
+      ".m" -> "matlab"
+      ".jl" -> "julia"
+      ".sh" -> "bash"
+      ".zsh" -> "zsh"
+      ".fish" -> "fish"
+      ".ps1" -> "powershell"
+      ".bat" -> "batch"
+      ".cmd" -> "batch"
+      ".sql" -> "sql"
+      ".html" -> "html"
+      ".css" -> "css"
+      ".scss" -> "scss"
+      ".sass" -> "sass"
+      ".less" -> "less"
+      ".xml" -> "xml"
+      ".yaml" -> "yaml"
+      ".yml" -> "yaml"
+      ".json" -> "json"
+      ".toml" -> "toml"
+      ".ini" -> "ini"
+      ".cfg" -> "config"
+      ".conf" -> "config"
+      ".env" -> "env"
+      ".dockerfile" -> "dockerfile"
+      ".md" -> "markdown"
+      ".rst" -> "restructuredtext"
+      ".tex" -> "latex"
+      ".txt" -> "text"
+      _ -> "unknown"
+    end
+
+    if language == "unknown" do
+      {:error, "Unknown file type: #{extension}"}
+    else
+      {:ok, language}
+    end
+  end
+
+  # Dependency analysis
+  @doc """
+  Find dependencies for a file based on its language and content.
+  """
+  def find_dependencies(file_path) do
+    case detect_language(file_path) do
+      {:ok, _language} ->
+        case parse_file(file_path) do
+          {:ok, ast_data} ->
+            dependencies = extract_ast_elements(ast_data, "dependencies") || []
+            {:ok, dependencies}
+          {:error, reason} -> {:error, reason}
+        end
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  # Batch processing functions
+  @doc """
+  Parse multiple files in parallel.
+  """
+  def parse_files(file_paths) do
+    file_paths
+    |> Task.async_stream(&parse_file/1, max_concurrency: 10)
+    |> Enum.map(fn {:ok, result} -> result end)
+  end
+
+  @doc """
+  Parse files by language filter.
+  """
+  def parse_tree_by_language(directory_path, language_filter) do
+    case File.ls(directory_path) do
+      {:ok, files} ->
+        filtered_files = 
+          files
+          |> Enum.filter(fn file ->
+            full_path = Path.join(directory_path, file)
+            case detect_language(full_path) do
+              {:ok, language} -> language == language_filter
+              {:error, _} -> false
+            end
           end)
-
-        {:ok, classes}
-
-      error -> error
+        
+        parse_files(filtered_files)
+      {:error, reason} -> {:error, reason}
     end
   end
 
   @doc """
-  Filter a document's symbols by a given kind (e.g. "function").
+  Extract all functions from multiple files.
   """
-  def symbols_by_kind(%{symbols: symbols}, kind) when is_binary(kind) do
-    Enum.filter(symbols, fn symbol -> match_kind?(symbol[:kind], kind) end)
+  def extract_all_functions(file_paths) do
+    file_paths
+    |> Task.async_stream(&extract_functions/1, max_concurrency: 10)
+    |> Enum.map(fn {:ok, result} -> result end)
   end
 
-  def symbols_by_kind(_, _), do: []
-
-  # --------------------------------------------------------------------------
-  # Normalization helpers
-  # --------------------------------------------------------------------------
-
-  defp call_native(fun, arg) do
-    apply(Native, fun, [arg])
-  rescue
-    error -> {:error, error}
-  catch
-    :exit, reason -> {:error, reason}
+  @doc """
+  Extract all classes from multiple files.
+  """
+  def extract_all_classes(file_paths) do
+    file_paths
+    |> Task.async_stream(&extract_classes/1, max_concurrency: 10)
+    |> Enum.map(fn {:ok, result} -> result end)
   end
 
-  defp decode_json(json) when is_binary(json), do: Jason.decode(json)
-  defp decode_json(other), do: {:error, {:invalid_payload, other}}
-
-  defp normalize_document(%{} = raw) do
-    descriptor = normalize_descriptor(Map.get(raw, "descriptor", %{}))
-    metadata = normalize_metadata(Map.get(raw, "metadata", %{}))
-    symbols = normalize_symbols(Map.get(raw, "symbols", []))
-    classes = normalize_classes(Map.get(raw, "classes", []))
-    enums = normalize_enums(Map.get(raw, "enums", []))
-    docstrings = normalize_docstrings(Map.get(raw, "docstrings", []))
-    stats = normalize_stats(Map.get(raw, "stats", %{}))
-    diagnostics = List.wrap(Map.get(raw, "diagnostics", []))
-    imports = normalize_generic_list(Map.get(raw, "imports", []))
-    exports = normalize_generic_list(Map.get(raw, "exports", []))
-    ast = Map.get(raw, "ast")
-
-    functions =
-      raw
-      |> Map.get("functions")
-      |> normalize_functions()
-      |> default_functions(symbols)
-
+  # Private helper functions
+  defp convert_ast_to_map(ast_document) do
+    # Convert Rust ParsedDocument struct to Elixir map
     %{
-      descriptor: descriptor,
-      metadata: metadata,
-      symbols: symbols,
-      classes: classes,
-      enums: enums,
-      docstrings: docstrings,
-      stats: stats,
-      diagnostics: diagnostics,
-      imports: imports,
-      exports: exports,
-      functions: functions,
-      ast: ast,
-      language: Map.get(raw, "language") || descriptor[:language],
-      path: descriptor[:path]
+      "descriptor" => %{
+        "path" => ast_document.descriptor.path,
+        "kind" => ast_document.descriptor.kind,
+        "language" => ast_document.descriptor.language
+      },
+      "metadata" => %{
+        "parser_version" => ast_document.metadata.parser_version,
+        "analyzed_at" => ast_document.metadata.analyzed_at,
+        "additional" => ast_document.metadata.additional
+      },
+      "symbols" => Enum.map(ast_document.symbols, &convert_symbol_to_map/1),
+      "classes" => Enum.map(ast_document.classes, &convert_class_to_map/1),
+      "enums" => Enum.map(ast_document.enums, &convert_enum_to_map/1),
+      "docstrings" => Enum.map(ast_document.docstrings, &convert_docstring_to_map/1),
+      "stats" => %{
+        "byte_length" => ast_document.stats.byte_length,
+        "total_nodes" => ast_document.stats.total_nodes,
+        "total_tokens" => ast_document.stats.total_tokens,
+        "duration_ms" => ast_document.stats.duration_ms
+      },
+      "diagnostics" => ast_document.diagnostics
     }
   end
 
-  defp normalize_document(other), do: other
-
-  defp normalize_descriptor(map) do
-    map
-    |> take_known(%{path: nil, language: nil, kind: nil, size_bytes: nil, last_modified: nil})
-    |> update_in([:path], &normalize_path/1)
+  defp convert_symbol_to_map(symbol) do
+    %{
+      "name" => symbol.name,
+      "kind" => symbol.kind,
+      "range" => symbol.range,
+      "signature" => symbol.signature
+    }
   end
 
-  defp normalize_metadata(map) do
-    take_known(map, %{parser_version: nil, analyzed_at: nil, additional: %{}})
+  defp convert_class_to_map(class) do
+    %{
+      "name" => class.name,
+      "bases" => class.bases,
+      "decorators" => Enum.map(class.decorators, &convert_decorator_to_map/1),
+      "docstring" => class.docstring,
+      "range" => class.range
+    }
   end
 
-  defp normalize_symbols(list) when is_list(list) do
-    Enum.map(list, fn symbol ->
-      symbol
-      |> take_known(%{name: nil, kind: nil, signature: nil, range: nil, namespace: nil, visibility: nil, language: nil})
-      |> update_in([:range], &normalize_range/1)
+  defp convert_enum_to_map(enum) do
+    %{
+      "name" => enum.name,
+      "variants" => Enum.map(enum.variants, &convert_enum_variant_to_map/1),
+      "decorators" => Enum.map(enum.decorators, &convert_decorator_to_map/1),
+      "docstring" => enum.docstring,
+      "range" => enum.range
+    }
+  end
+
+  defp convert_enum_variant_to_map(variant) do
+    %{
+      "name" => variant.name,
+      "value" => variant.value,
+      "range" => variant.range
+    }
+  end
+
+  defp convert_decorator_to_map(decorator) do
+    %{
+      "name" => decorator.name,
+      "arguments" => decorator.arguments
+    }
+  end
+
+  defp convert_docstring_to_map(docstring) do
+    %{
+      "owner" => docstring.owner,
+      "kind" => docstring.kind,
+      "value" => docstring.value,
+      "range" => docstring.range
+    }
+  end
+
+  defp extract_ast_elements(ast_data, element_type) do
+    case ast_data do
+      %{^element_type => elements} when is_list(elements) -> elements
+      _ -> []
+    end
+  end
+
+  # Database storage functions
+  defp store_document(file_path, language, content, ast_data) do
+    case normalize_document(file_path, language, content, ast_data) do
+      {:ok, document} ->
+        case Repo.insert(document) do
+          {:ok, inserted} -> {:ok, inserted}
+          {:error, changeset} -> {:error, changeset}
+        end
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp normalize_document(file_path, language, content, ast_data) do
+    try do
+      # Extract AST elements from the new structure
+      functions = extract_functions_from_ast(ast_data)
+      classes = extract_classes_from_ast(ast_data)
+      imports = extract_imports_from_ast(ast_data)
+      exports = extract_exports_from_ast(ast_data)
+      symbols = extract_symbols_from_ast(ast_data)
+
+      # Create changeset
+      changeset = CodeFile.changeset(%CodeFile{}, %{
+        file_path: file_path,
+        language: language,
+        content: content,
+        size: byte_size(content),
+        hash: :crypto.hash(:sha256, content) |> Base.encode16(),
+        ast_json: ast_data,
+        functions: functions,
+        classes: classes,
+        imports: imports,
+        exports: exports,
+        symbols: symbols,
+        parsed_at: DateTime.utc_now()
+      })
+
+      {:ok, changeset}
+    rescue
+      error -> {:error, "Failed to normalize document: #{inspect(error)}"}
+    end
+  end
+
+  defp extract_functions_from_ast(ast_data) do
+    ast_data["symbols"]
+    |> Enum.filter(fn symbol -> symbol["kind"] == "function" end)
+    |> Enum.map(fn symbol ->
+      %{
+        "name" => symbol["name"],
+        "signature" => symbol["signature"],
+        "range" => symbol["range"]
+      }
     end)
   end
 
-  defp normalize_symbols(_), do: []
-
-  defp normalize_classes(list) when is_list(list) do
-    Enum.map(list, fn class ->
-      class
-      |> take_known(%{name: nil, bases: [], decorators: [], docstring: nil, range: nil})
-      |> update_in([:decorators], &normalize_decorators/1)
-      |> update_in([:range], &normalize_range/1)
+  defp extract_classes_from_ast(ast_data) do
+    ast_data["classes"]
+    |> Enum.map(fn class ->
+      %{
+        "name" => class["name"],
+        "bases" => class["bases"],
+        "decorators" => class["decorators"],
+        "docstring" => class["docstring"],
+        "range" => class["range"]
+      }
     end)
   end
 
-  defp normalize_classes(_), do: []
-
-  defp normalize_enums(list) when is_list(list) do
-    Enum.map(list, fn enum ->
-      enum
-      |> take_known(%{name: nil, variants: [], decorators: [], docstring: nil, range: nil})
-      |> update_in([:decorators], &normalize_decorators/1)
-      |> update_in([:variants], &normalize_enum_variants/1)
-      |> update_in([:range], &normalize_range/1)
+  defp extract_imports_from_ast(ast_data) do
+    ast_data["symbols"]
+    |> Enum.filter(fn symbol -> symbol["kind"] == "import" end)
+    |> Enum.map(fn symbol ->
+      %{
+        "name" => symbol["name"],
+        "signature" => symbol["signature"],
+        "range" => symbol["range"]
+      }
     end)
   end
 
-  defp normalize_enums(_), do: []
-
-  defp normalize_docstrings(list) when is_list(list) do
-    Enum.map(list, fn docstring ->
-      docstring
-      |> take_known(%{owner: nil, kind: nil, value: nil, range: nil})
-      |> update_in([:range], &normalize_range/1)
+  defp extract_exports_from_ast(ast_data) do
+    ast_data["symbols"]
+    |> Enum.filter(fn symbol -> symbol["kind"] == "export" end)
+    |> Enum.map(fn symbol ->
+      %{
+        "name" => symbol["name"],
+        "signature" => symbol["signature"],
+        "range" => symbol["range"]
+      }
     end)
   end
 
-  defp normalize_docstrings(_), do: []
-
-  defp normalize_stats(map) do
-    take_known(map, %{byte_length: 0, total_nodes: 0, total_tokens: 0, duration_ms: 0})
+  defp extract_symbols_from_ast(ast_data) do
+    ast_data["symbols"]
   end
-
-  defp normalize_enum_variants(list) when is_list(list) do
-    Enum.map(list, fn variant ->
-      variant
-      |> take_known(%{name: nil, value: nil, range: nil})
-      |> update_in([:range], &normalize_range/1)
-    end)
-  end
-
-  defp normalize_enum_variants(_), do: []
-
-  defp normalize_decorators(list) when is_list(list) do
-    Enum.map(list, &take_known(&1, %{name: nil, arguments: []}))
-  end
-
-  defp normalize_decorators(_), do: []
-
-  defp normalize_functions(nil), do: []
-
-  defp normalize_functions(list) when is_list(list) do
-    Enum.map(list, fn function ->
-      function
-      |> take_known(%{name: nil, kind: nil, signature: nil, range: nil, namespace: nil, visibility: nil, language: nil})
-      |> update_in([:range], &normalize_range/1)
-    end)
-  end
-
-  defp normalize_functions(_), do: []
-
-  defp normalize_generic_list(list) when is_list(list), do: list
-  defp normalize_generic_list(_), do: []
-
-  defp take_known(source, template) do
-    Enum.reduce(template, %{}, fn {key, default}, acc ->
-      value = Map.get(source, key) || Map.get(source, Atom.to_string(key)) || default
-      Map.put(acc, key, value)
-    end)
-  end
-
-  defp normalize_range([start_line, end_line]) when is_integer(start_line) and is_integer(end_line),
-    do: {start_line, end_line}
-
-  defp normalize_range(_), do: nil
-
-  defp normalize_path(path) when is_binary(path), do: path
-  defp normalize_path(_), do: nil
-
-  defp default_functions([], symbols), do: derive_functions(symbols)
-  defp default_functions(functions, _symbols), do: functions
-
-  defp derive_functions(symbols) do
-    symbols
-    |> Enum.filter(fn symbol -> match_kind?(symbol[:kind], "function") end)
-    |> Enum.map(&Map.take(&1, [:name, :kind, :signature, :range, :namespace, :visibility, :language]))
-  end
-
-  defp match_kind?(kind, target) when is_binary(kind), do: String.downcase(kind) == String.downcase(target)
-  defp match_kind?(kind, target) when is_atom(kind), do: match_kind?(Atom.to_string(kind), target)
-  defp match_kind?(_, _), do: false
-
-defp document_language(%{language: language}), do: language
-defp document_language(_), do: nil
 end

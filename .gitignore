@@ -124,6 +124,24 @@ Cargo.lock
 **/*.rs.bk
 debug/
 
-.nats/
-.vscode/
+# Compiled NIF binaries - NEVER COMMIT
+singularity_app/priv/native/*.so
+singularity_app/priv/native/*.dylib
+singularity_app/priv/native/*.dll
+
+# Log files
+logs/
+*.log
+
+# Temporary files
+temp_file
+*.tmp
+*.temp
 *.bak
+*.swp
+*.swo
+
+# Cache files
+**/*.cache
+**/*_cache/
+.cache/

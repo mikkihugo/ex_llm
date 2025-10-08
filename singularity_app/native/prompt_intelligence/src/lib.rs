@@ -513,7 +513,17 @@ fn nif_cache_stats() -> Result<NifCacheStats, rustler::Error> {
 }
 
 // Initialize the NIF
-rustler::init!("Elixir.Singularity.PromptEngineNif");
+rustler::init!(
+    "Elixir.Singularity.PromptEngine.Native",
+    [
+        nif_generate_prompt,
+        nif_optimize_prompt,
+        nif_cache_get,
+        nif_cache_put,
+        nif_cache_clear,
+        nif_cache_stats
+    ]
+);
 
 /// Documentation metadata for prompt processing
 #[derive(Debug, Clone, Serialize, Deserialize)]

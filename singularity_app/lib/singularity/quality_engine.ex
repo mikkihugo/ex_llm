@@ -198,7 +198,7 @@ defmodule Singularity.QualityEngine do
     # Use existing quality analysis
     case File.read(target) do
       {:ok, content} ->
-        {:ok, analysis} = analyze_code_quality(content, detect_language_from_path(target))
+        {:ok, _analysis} = analyze_code_quality(content, detect_language_from_path(target))
         {:ok, metrics} = calculate_quality_metrics(content, detect_language_from_path(target))
         
         {:ok, %{

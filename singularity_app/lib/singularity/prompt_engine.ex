@@ -2,8 +2,8 @@ defmodule Singularity.PromptEngine do
   @moduledoc """
   Prompt Engine - AI-powered prompt generation and optimization.
 
-  Native Rust support has been removed from this snapshot; this module now provides a
-  lightweight Elixir implementation with optional NATS fallbacks.
+  Integrates the Rust `prompt_intelligence` NIF when available, falls back to NATS services,
+  and finally to lightweight Elixir templates.
   """
 
   require Logger
@@ -39,11 +39,16 @@ defmodule Singularity.PromptEngine do
   def generate_prompt(context, language, opts \\ []) do
     request = build_request(context, language, opts)
 
-    with {:nats, true} <- {:nats, nats_available?()},
-         {:ok, response} <- nats_generate_prompt(request) do
+    with {:nif, {:ok, response}} <- {:nif, call_nif(fn -> Native.generate_prompt(request) end)} do
       {:ok, response}
     else
-      _ -> {:ok, local_generate_prompt(request)}
+      {:nif, {:error, _}} ->
+        with {:nats, true} <- {:nats, nats_available?()},
+             {:ok, response} <- nats_generate_prompt(request) do
+          {:ok, response}
+        else
+          _ -> {:ok, local_generate_prompt(request)}
+        end
     end
   end
 
@@ -82,11 +87,16 @@ defmodule Singularity.PromptEngine do
       language: Keyword.get(opts, :language)
     }
 
-    with {:nats, true} <- {:nats, nats_available?()},
-         {:ok, response} <- nats_optimize_prompt(request) do
+    with {:nif, {:ok, response}} <- {:nif, call_nif(fn -> Native.optimize_prompt(request) end)} do
       {:ok, response}
     else
-      _ -> {:ok, local_optimize_prompt(request)}
+      {:nif, {:error, _}} ->
+        with {:nats, true} <- {:nats, nats_available?()},
+             {:ok, response} <- nats_optimize_prompt(request) do
+          {:ok, response}
+        else
+          _ -> {:ok, local_optimize_prompt(request)}
+        end
     end
   end
 
@@ -108,22 +118,46 @@ defmodule Singularity.PromptEngine do
   def list_templates, do: {:ok, @default_templates}
 
   @spec cache_get(String.t()) :: prompt_response
-  def cache_get(_key), do: {:error, :cache_disabled}
+  def cache_get(key) do
+    case call_nif(fn -> Native.cache_get(key) end) do
+      {:ok, response} -> {:ok, response}
+      {:error, _} -> {:error, :cache_disabled}
+    end
+  end
 
   @spec cache_put(String.t(), String.t()) :: :ok | {:error, term()}
-  def cache_put(_key, _value), do: :ok
+  def cache_put(key, value) do
+    case call_nif(fn -> Native.cache_put(key, value) end) do
+      {:ok, :ok} -> :ok
+      {:error, reason} -> {:error, reason}
+      _ -> :ok
+    end
+  end
 
   @spec cache_clear() :: :ok | {:error, term()}
-  def cache_clear, do: :ok
+  def cache_clear do
+    case call_nif(fn -> Native.cache_clear() end) do
+      {:ok, :ok} -> :ok
+      {:error, reason} -> {:error, reason}
+      _ -> :ok
+    end
+  end
 
   @spec cache_stats() :: prompt_response
   def cache_stats do
-    {:ok, %{total_entries: 0, hits: 0, misses: 0, hit_rate: 0.0}}
+    case call_nif(fn -> Native.cache_stats() end) do
+      {:ok, stats} -> {:ok, stats}
+      {:error, _} -> {:ok, %{total_entries: 0, hits: 0, misses: 0, hit_rate: 0.0}}
+    end
   end
 
   @spec health_check() :: :ok | {:error, term()}
   def health_check do
-    if nats_available?(), do: :ok, else: :ok
+    cond do
+      nif_loaded?() -> :ok
+      nats_available?() -> :ok
+      true -> {:error, :no_backend_available}
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -190,6 +224,29 @@ defmodule Singularity.PromptEngine do
     _ -> false
   end
 
+  defp nif_loaded? do
+    match?({:ok, _}, call_nif(fn -> Native.cache_stats() end))
+  end
+
+  # ---------------------------------------------------------------------------
+  # NIF helpers
+  # ---------------------------------------------------------------------------
+
+  defp call_nif(fun) when is_function(fun, 0) do
+    fun.()
+    |> normalize_result()
+  rescue
+    _ -> {:error, :nif_not_loaded}
+  catch
+    :exit, _ -> {:error, :nif_not_loaded}
+  end
+
+  defp normalize_result({:ok, %_struct{} = value}), do: {:ok, Map.from_struct(value)}
+  defp normalize_result({:ok, value}), do: {:ok, value}
+  defp normalize_result(:ok), do: {:ok, :ok}
+  defp normalize_result({:error, reason}), do: {:error, reason}
+  defp normalize_result(other), do: {:ok, other}
+
   defp nats_generate_prompt(request) do
     with {:ok, response} <- NatsClient.request("prompt.generate", Jason.encode!(request), timeout: 15_000),
          {:ok, data} <- Jason.decode(response.data) do
@@ -202,5 +259,29 @@ defmodule Singularity.PromptEngine do
          {:ok, data} <- Jason.decode(response.data) do
       {:ok, data}
     end
+  end
+
+  defmodule Native do
+    @moduledoc false
+    use Rustler,
+      otp_app: :singularity,
+      crate: :prompt_intelligence,
+      skip_compilation?: true
+
+    # NIF functions - names must match Rust #[rustler::nif] function names
+    def nif_generate_prompt(_request), do: :erlang.nif_error(:nif_not_loaded)
+    def nif_optimize_prompt(_request), do: :erlang.nif_error(:nif_not_loaded)
+    def nif_cache_get(_key), do: :erlang.nif_error(:nif_not_loaded)
+    def nif_cache_put(_key, _value), do: :erlang.nif_error(:nif_not_loaded)
+    def nif_cache_clear, do: :erlang.nif_error(:nif_not_loaded)
+    def nif_cache_stats, do: :erlang.nif_error(:nif_not_loaded)
+
+    # Convenience wrappers without nif_ prefix
+    def generate_prompt(request), do: nif_generate_prompt(request)
+    def optimize_prompt(request), do: nif_optimize_prompt(request)
+    def cache_get(key), do: nif_cache_get(key)
+    def cache_put(key, value), do: nif_cache_put(key, value)
+    def cache_clear(), do: nif_cache_clear()
+    def cache_stats(), do: nif_cache_stats()
   end
 end

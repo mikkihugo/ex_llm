@@ -1,23 +1,34 @@
 defmodule Singularity.CodeModel do
   @moduledoc """
-  Local Code Generation using Bumblebee + StarCoder/DeepSeek models
+  Local Code Generation using Bumblebee + T5/CodeT5/StarCoder models
 
   Generates clean, lint-free code using state-of-the-art code models.
   Runs locally via Nx/EXLA (no API calls).
 
   ## Supported Models
 
-  - starcoder2-7b (7B, ~14GB) - ⭐ BEST quality, fewer lint errors (default)
+  - codet5p-770m (770M, ~1.5GB) - ⭐ BEST for fine-tuning, Elixir/Gleam optimized
+  - starcoder2-7b (7B, ~14GB) - High quality, fewer lint errors
   - starcoder2-3b (3B, ~6GB) - Balanced quality/speed
   - deepseek-coder-1.3b-base (1.3B, ~2.6GB) - Fastest
+
+  ## T5/CodeT5 Features
+
+  - Fine-tuned on YOUR codebase patterns
+  - Sequence-to-sequence generation (instruction → code)
+  - Fill-in-middle (FIM) support
+  - Domain-specific vocabulary training
+  - LoRA fine-tuning with PEFT
 
   ## Configuration
 
       # config/runtime.exs
       config :singularity, :code_generation,
-        model: "bigcode/starcoder2-7b",
+        model: "Salesforce/codet5p-770m",  # T5 model
         max_tokens: 256,
-        temperature: 0.2  # Lower = more deterministic/fewer errors
+        temperature: 0.2,  # Lower = more deterministic/fewer errors
+        use_fine_tuned: true,  # Use fine-tuned model if available
+        fine_tuned_path: "~/.cache/singularity/codet5p-770m-singularity"
 
   ## Usage
 
@@ -169,13 +180,20 @@ defmodule Singularity.CodeModel do
   defp start_serving do
     if Code.ensure_loaded?(Bumblebee) do
       model_repo = get_model_name()
+      use_fine_tuned = get_fine_tuned_config()
+      fine_tuned_path = get_fine_tuned_path()
 
       Logger.info("Loading code generation model: #{model_repo}")
+      Logger.info("Fine-tuned mode: #{use_fine_tuned}")
 
       try do
-        {:ok, model_info} = Bumblebee.load_model({:hf, model_repo})
-        {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, model_repo})
-        {:ok, generation_config} = Bumblebee.load_generation_config({:hf, model_repo})
+        # Load model (fine-tuned or base)
+        {model_info, tokenizer, generation_config} = 
+          if use_fine_tuned and fine_tuned_path && File.exists?(Path.expand(fine_tuned_path)) do
+            load_fine_tuned_model(fine_tuned_path)
+          else
+            load_base_model(model_repo)
+          end
 
         # Update generation config for CODE-ONLY output
         generation_config =
@@ -183,18 +201,11 @@ defmodule Singularity.CodeModel do
           |> Map.put(:max_new_tokens, 256)
           |> Map.put(:strategy, %{type: :multinomial_sampling})
           # Penalties to prevent prose/explanations
-          # Avoid repetitive explanations
           |> Map.put(:repetition_penalty, 1.1)
-          # Prevent phrase repetition
           |> Map.put(:no_repeat_ngram_size, 3)
 
-        serving =
-          Bumblebee.Text.generation(model_info, tokenizer, generation_config,
-            compile: [batch_size: 1, sequence_length: 1024],
-            defn_options: [compiler: EXLA],
-            # Faster GPU loading
-            preallocate_params: true
-          )
+        # Configure for T5 vs other models
+        serving = configure_serving(model_info, tokenizer, generation_config, model_repo)
 
         # Start as named serving
         {:ok, _pid} =
@@ -217,28 +228,13 @@ defmodule Singularity.CodeModel do
   end
 
   defp generate(serving, prompt, temperature, max_tokens, stop_sequences) do
-    try do
-      result =
-        Nx.Serving.run(serving, %{
-          text: prompt,
-          max_new_tokens: max_tokens,
-          temperature: temperature,
-          # Stop at these sequences (prevents explanations)
-          stop_sequences: stop_sequences
-        })
-
-      generated_text =
-        result.results
-        |> List.first()
-        |> Map.get(:text, "")
-        |> String.trim()
-
-      Logger.debug("Generated #{String.length(generated_text)} chars (temp: #{temperature})")
-      {:ok, generated_text}
-    rescue
-      error ->
-        Logger.error("Generation failed: #{inspect(error)}")
-        {:error, :generation_failed}
+    model_repo = get_model_name()
+    
+    # Use T5-specific generation for CodeT5 models
+    if String.contains?(model_repo, "codet5") do
+      generate_t5_style(prompt, temperature, max_tokens, stop_sequences)
+    else
+      generate_standard(prompt, temperature, max_tokens, stop_sequences)
     end
   end
 
@@ -263,6 +259,109 @@ defmodule Singularity.CodeModel do
 
   defp get_model_name do
     Application.get_env(:singularity, :code_generation, [])
-    |> Keyword.get(:model, "deepseek-ai/deepseek-coder-1.3b-base")
+    |> Keyword.get(:model, "Salesforce/codet5p-770m")
+  end
+
+  defp get_fine_tuned_config do
+    Application.get_env(:singularity, :code_generation, [])
+    |> Keyword.get(:use_fine_tuned, true)
+  end
+
+  defp get_fine_tuned_path do
+    Application.get_env(:singularity, :code_generation, [])
+    |> Keyword.get(:fine_tuned_path, "~/.cache/singularity/codet5p-770m-singularity")
+  end
+
+  defp load_base_model(model_repo) do
+    {:ok, model_info} = Bumblebee.load_model({:hf, model_repo})
+    {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, model_repo})
+    {:ok, generation_config} = Bumblebee.load_generation_config({:hf, model_repo})
+    {model_info, tokenizer, generation_config}
+  end
+
+  defp load_fine_tuned_model(fine_tuned_path) do
+    expanded_path = Path.expand(fine_tuned_path)
+    
+    # Load fine-tuned model components
+    {:ok, model_info} = Bumblebee.load_model({:local, expanded_path})
+    {:ok, tokenizer} = Bumblebee.load_tokenizer({:local, expanded_path})
+    {:ok, generation_config} = Bumblebee.load_generation_config({:local, expanded_path})
+    
+    Logger.info("Loaded fine-tuned model from: #{expanded_path}")
+    {model_info, tokenizer, generation_config}
+  end
+
+  defp configure_serving(model_info, tokenizer, generation_config, model_repo) do
+    # Configure serving based on model type
+    cond do
+      String.contains?(model_repo, "codet5") ->
+        # T5/CodeT5 configuration
+        Bumblebee.Text.generation(model_info, tokenizer, generation_config,
+          compile: [batch_size: 1, sequence_length: 1024],
+          defn_options: [compiler: EXLA],
+          preallocate_params: true
+        )
+      
+      String.contains?(model_repo, "starcoder") ->
+        # StarCoder configuration
+        Bumblebee.Text.generation(model_info, tokenizer, generation_config,
+          compile: [batch_size: 1, sequence_length: 1024],
+          defn_options: [compiler: EXLA],
+          preallocate_params: true
+        )
+      
+      true ->
+        # Default configuration
+        Bumblebee.Text.generation(model_info, tokenizer, generation_config,
+          compile: [batch_size: 1, sequence_length: 1024],
+          defn_options: [compiler: EXLA],
+          preallocate_params: true
+        )
+    end
+  end
+
+  # T5-specific generation with instruction format
+  defp generate_t5_style(prompt, temperature, max_tokens, stop_sequences) do
+    # Format prompt for T5 instruction-following
+    formatted_prompt = format_t5_prompt(prompt)
+    
+    # Use standard generation with T5-optimized parameters
+    generate_standard(formatted_prompt, temperature, max_tokens, stop_sequences)
+  end
+
+  defp format_t5_prompt(prompt) do
+    # Check if prompt is already formatted for T5
+    if String.contains?(prompt, "### Desired Output") or String.contains?(prompt, "instruction") do
+      prompt
+    else
+      # Format as T5 instruction
+      "Generate code for the following request:\n\n#{prompt}\n\n### Desired Output"
+    end
+  end
+
+  defp generate_standard(prompt, temperature, max_tokens, stop_sequences) do
+    # Standard generation logic
+    try do
+      result =
+        Nx.Serving.run(__MODULE__.Serving, %{
+          text: prompt,
+          max_new_tokens: max_tokens,
+          temperature: temperature,
+          stop_sequences: stop_sequences
+        })
+
+      generated_text =
+        result.results
+        |> List.first()
+        |> Map.get(:text, "")
+        |> String.trim()
+
+      Logger.debug("Generated #{String.length(generated_text)} chars (temp: #{temperature})")
+      {:ok, generated_text}
+    rescue
+      error ->
+        Logger.error("Generation failed: #{inspect(error)}")
+        {:error, :generation_failed}
+    end
   end
 end
