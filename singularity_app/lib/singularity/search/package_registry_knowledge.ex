@@ -7,7 +7,16 @@ defmodule Singularity.PackageRegistryKnowledge do
   """
 
   require Logger
+  import Ecto.Query, warn: false
   alias Singularity.NatsClient
+  alias Singularity.Repo
+  alias Singularity.Schemas.{
+    DependencyCatalog,
+    PackageCodeExample,
+    PackageDependency,
+    PackagePromptUsage,
+    PackageUsagePattern
+  }
 
   @doc """
   Search packages across all registries using semantic similarity.
@@ -197,8 +206,212 @@ defmodule Singularity.PackageRegistryKnowledge do
     rescue
       error ->
         Logger.warning("Example retrieval failed: #{inspect(error)}")
-        {:ok, []}
+      {:ok, []}
     end
+  end
+
+  ## ------------------------------------------------------------------
+  ## Persistence API (used by PackageRegistryCollector)
+  ## ------------------------------------------------------------------
+
+  @doc false
+  def upsert_tool(attrs) when is_map(attrs) do
+    changeset = DependencyCatalog.changeset(%DependencyCatalog{}, attrs)
+
+    Repo.insert(
+      changeset,
+      on_conflict: {:replace_all_except, [:id, :inserted_at]},
+      conflict_target: [:package_name, :version, :ecosystem],
+      returning: true
+    )
+  end
+
+  @doc false
+  def upsert_example(attrs) when is_map(attrs) do
+    attrs
+    |> normalize_dependency_fk()
+    |> then(&PackageCodeExample.changeset(%PackageCodeExample{}, &1))
+    |> Repo.insert(on_conflict: :nothing, returning: true)
+  end
+
+  @doc false
+  def upsert_pattern(attrs) when is_map(attrs) do
+    attrs
+    |> normalize_dependency_fk()
+    |> then(&PackageUsagePattern.changeset(%PackageUsagePattern{}, &1))
+    |> Repo.insert(on_conflict: :nothing, returning: true)
+  end
+
+  @doc false
+  def upsert_dependency(attrs) when is_map(attrs) do
+    attrs
+    |> normalize_dependency_fk()
+    |> then(&PackageDependency.changeset(%PackageDependency{}, &1))
+    |> Repo.insert(on_conflict: :nothing, returning: true)
+  end
+
+  @doc """
+  Retrieve prompt templates, snippets, and guidance for the given packages.
+  """
+  def get_prompt_enhancements(packages, opts \\ []) when is_list(packages) do
+    task = Keyword.get(opts, :task)
+
+    enhancements =
+      packages
+      |> Enum.map(&fetch_prompt_enhancement(&1, task))
+      |> Enum.reject(&is_nil/1)
+
+    {:ok, enhancements}
+  end
+
+  @doc """
+  Track whether a generated prompt succeeded in the user workflow.
+  """
+  def track_prompt_usage(package_name, version, prompt_id, opts \\ []) do
+    with %DependencyCatalog{} = dependency <-
+           Repo.get_by(DependencyCatalog,
+             package_name: package_name,
+             version: version
+           ) do
+      attrs = %{
+        dependency_id: dependency.id,
+        prompt_id: prompt_id,
+        task: Keyword.get(opts, :task),
+        package_context: Keyword.get(opts, :package_context, %{}),
+        success: Keyword.get(opts, :success),
+        feedback: Keyword.get(opts, :feedback),
+        usage_metadata: Keyword.get(opts, :metadata, %{}),
+        used_at: Keyword.get(opts, :used_at, DateTime.utc_now())
+      }
+
+      Repo.transaction(fn ->
+        %PackagePromptUsage{}
+        |> PackagePromptUsage.changeset(attrs)
+        |> Repo.insert()
+
+        updated_stats =
+          dependency.prompt_usage_stats
+          |> update_usage_stats(attrs[:success])
+
+        Repo.update_all(
+          from(dc in DependencyCatalog, where: dc.id == ^dependency.id),
+          set: [
+            prompt_usage_stats: updated_stats,
+            updated_at: fragment("timezone('utc', now())")
+          ]
+        )
+      end)
+    else
+      nil -> {:error, :not_found}
+    end
+  end
+
+  ## ------------------------------------------------------------------
+  ## Helpers
+  ## ------------------------------------------------------------------
+
+  defp normalize_dependency_fk(%{tool_id: id} = attrs) do
+    attrs
+    |> Map.put(:dependency_id, id)
+    |> Map.delete(:tool_id)
+  end
+
+  defp normalize_dependency_fk(attrs), do: attrs
+
+  defp fetch_prompt_enhancement(package, task) do
+    name = package[:package_name] || package["package_name"] || package[:name] || package["name"]
+    version = package[:version] || package["version"]
+    ecosystem = package[:ecosystem] || package["ecosystem"]
+
+    dependency =
+      Repo.get_by(DependencyCatalog,
+        package_name: name,
+        version: version,
+        ecosystem: ecosystem
+      ) ||
+        Repo.get_by(DependencyCatalog,
+          package_name: name,
+          version: version
+        )
+
+    with %DependencyCatalog{} = record <- dependency do
+      templates = extract_items(record.prompt_templates)
+      snippets =
+        record.prompt_snippets
+        |> extract_items()
+        |> maybe_filter_snippets(task)
+
+      version_guidance = record.version_guidance || %{}
+      usage_stats = record.prompt_usage_stats || %{}
+
+      %{
+        package_name: record.package_name,
+        version: record.version,
+        ecosystem: record.ecosystem,
+        templates: templates,
+        snippets: snippets,
+        version_guidance: version_guidance,
+        warnings: Map.get(version_guidance, "breaking_changes", []),
+        usage_stats: usage_stats
+      }
+    end
+  end
+
+  defp extract_items(%{} = payload) do
+    payload
+    |> Map.get("items", [])
+  end
+
+  defp extract_items(_), do: []
+
+  defp maybe_filter_snippets(snippets, nil), do: snippets
+
+  defp maybe_filter_snippets(snippets, task) do
+    Enum.filter(snippets, &snippet_matches_task?(&1, task))
+  end
+
+  defp snippet_matches_task?(%{"task" => snippet_task}, task) when is_binary(snippet_task) do
+    String.contains?(String.downcase(snippet_task), String.downcase(task))
+  end
+
+  defp snippet_matches_task?(%{"tasks" => tasks}, task) when is_list(tasks) do
+    downcased = String.downcase(task)
+
+    Enum.any?(tasks, fn value ->
+      value && String.contains?(String.downcase(to_string(value)), downcased)
+    end)
+  end
+
+  defp snippet_matches_task?(%{"tags" => tags}, task) when is_list(tags) do
+    downcased = String.downcase(task)
+
+    Enum.any?(tags, fn value ->
+      value && String.contains?(String.downcase(to_string(value)), downcased)
+    end)
+  end
+
+  defp snippet_matches_task?(_snippet, _task), do: true
+
+  defp update_usage_stats(stats, nil), do: stats || %{}
+
+  defp update_usage_stats(stats, success?) do
+    stats = stats || %{}
+    total_runs = Map.get(stats, "total_runs", 0) + 1
+    success_runs =
+      Map.get(stats, "success_runs", 0) +
+        if(success? in [true, "true", 1], do: 1, else: 0)
+
+    success_rate =
+      if total_runs > 0 do
+        success_runs / total_runs
+      else
+        0.0
+      end
+
+    stats
+    |> Map.put("total_runs", total_runs)
+    |> Map.put("success_runs", success_runs)
+    |> Map.put("success_rate", Float.round(success_rate, 4))
   end
 
   ## Private Functions

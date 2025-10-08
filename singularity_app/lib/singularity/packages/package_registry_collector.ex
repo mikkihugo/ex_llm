@@ -171,6 +171,8 @@ defmodule Singularity.PackageRegistryCollector do
   defp store_fact_data(fact_data, package_name, version, ecosystem) do
     Logger.info("Storing FactData for #{package_name}@#{version}")
 
+    prompt_intelligence = extract_prompt_intelligence(fact_data, package_name, version)
+
     # Generate embeddings
     description = get_in(fact_data, ["description"]) || ""
     {:ok, description_embedding} = Singularity.EmbeddingGenerator.embed(description)
@@ -199,7 +201,11 @@ defmodule Singularity.PackageRegistryCollector do
       last_release_date: parse_datetime(get_in(fact_data, ["last_release_date"])),
       source_url: get_in(fact_data, ["source_url"]),
       collected_at: DateTime.utc_now(),
-      last_updated_at: DateTime.utc_now()
+      last_updated_at: DateTime.utc_now(),
+      prompt_templates: prompt_intelligence.templates_payload,
+      prompt_snippets: prompt_intelligence.snippets_payload,
+      version_guidance: prompt_intelligence.version_guidance,
+      prompt_usage_stats: prompt_intelligence.usage_stats
     }
 
     case PackageRegistryKnowledge.upsert_tool(tool_attrs) do
@@ -221,6 +227,77 @@ defmodule Singularity.PackageRegistryCollector do
         {:error, changeset}
     end
   end
+
+  defp extract_prompt_intelligence(fact_data, package_name, version) do
+    templates_payload =
+      fact_data
+      |> get_in(["prompt_templates"])
+      |> normalize_payload_list("items")
+
+    snippets_payload =
+      fact_data
+      |> get_in(["prompt_snippets"])
+      |> case do
+        nil ->
+          fact_data
+          |> get_in(["snippets"])
+          |> normalize_payload_list("items")
+
+        other ->
+          normalize_payload_list(other, "items")
+      end
+
+    version_guidance =
+      fact_data
+      |> get_in(["version_guidance"])
+      |> case do
+        nil ->
+          %{
+            "package" => package_name,
+            "version" => version,
+            "notes" => get_in(fact_data, ["migration_guides"]) || [],
+            "breaking_changes" => get_in(fact_data, ["breaking_changes"]) || []
+          }
+
+        guidance ->
+          guidance
+      end
+
+    usage_stats =
+      fact_data
+      |> get_in(["usage_stats"])
+      |> case do
+        nil -> %{"success_rate" => 0.0, "total_runs" => 0}
+        stats when is_map(stats) -> stats
+        _ -> %{"success_rate" => 0.0, "total_runs" => 0}
+      end
+
+    %{
+      templates: Map.get(templates_payload, "items", []),
+      snippets: Map.get(snippets_payload, "items", []),
+      templates_payload: templates_payload,
+      snippets_payload: snippets_payload,
+      version_guidance: version_guidance,
+      usage_stats: usage_stats
+    }
+  end
+
+  defp normalize_payload_list(nil, list_key), do: %{list_key => []}
+  defp normalize_payload_list(map, _list_key) when is_map(map), do: map
+
+  defp normalize_payload_list(list, list_key) when is_list(list) do
+    %{list_key => Enum.map(list, &normalize_payload_entry/1)}
+  end
+
+  defp normalize_payload_list(value, list_key) when is_binary(value) do
+    %{list_key => [normalize_payload_entry(value)]}
+  end
+
+  defp normalize_payload_list(_other, _list_key), do: %{}
+
+  defp normalize_payload_entry(%{} = entry), do: entry
+  defp normalize_payload_entry(value) when is_binary(value), do: %{"text" => value}
+  defp normalize_payload_entry(other), do: %{"value" => inspect(other)}
 
   defp store_examples(tool_id, fact_data) do
     snippets = get_in(fact_data, ["snippets"]) || []

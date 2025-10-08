@@ -1,0 +1,71 @@
+{
+  "$schema": "https://singularity.dev/schemas/template/v1",
+  "version": "1.0",
+  "type": "workspace_pattern",
+  "metadata": {
+    "id": "deno-workspace",
+    "name": "Deno Workspace",
+    "description": "Deno monorepo using deno.json workspace configuration",
+    "language": "typescript",
+    "tags": ["workspace", "monorepo", "deno", "typescript"],
+    "author": "singularity",
+    "created": "2025-01-15",
+    "updated": "2025-01-15"
+  },
+  "content": {
+    "detection": {
+      "indicators": [
+        "deno.json with workspaces field",
+        "Multiple deno.json files in subdirectories",
+        "import_map.json files",
+        "deno.lock file"
+      ],
+      "confidence_threshold": 0.8
+    },
+    "structure": {
+      "root_files": ["deno.json", "deno.lock", "import_map.json"],
+      "workspace_members": [
+        "apps/*",
+        "libs/*",
+        "packages/*"
+      ],
+      "common_directories": [
+        "apps/",
+        "libs/",
+        "packages/",
+        "tools/",
+        "docs/"
+      ]
+    },
+    "commands": {
+      "build": ["deno task build", "deno build"],
+      "test": ["deno test", "deno test --workspace"],
+      "lint": ["deno lint", "deno lint --workspace"],
+      "format": ["deno fmt", "deno fmt --workspace"],
+      "run": ["deno run", "deno task start"]
+    },
+    "naming_conventions": {
+      "modules": "kebab-case",
+      "files": "kebab-case",
+      "functions": "camelCase",
+      "classes": "PascalCase",
+      "interfaces": "PascalCase",
+      "types": "PascalCase",
+      "variables": "camelCase",
+      "constants": "UPPER_SNAKE_CASE"
+    },
+    "dependencies": {
+      "workspace_deps": "defined in root deno.json",
+      "member_deps": "referenced in member deno.json files",
+      "import_map": "defined in import_map.json"
+    }
+  },
+  "quality": {
+    "rules": [
+      "must_have_workspace_config",
+      "must_use_import_map",
+      "must_have_consistent_deno_version"
+    ],
+    "score": 0.9
+  }
+}

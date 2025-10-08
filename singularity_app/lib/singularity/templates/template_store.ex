@@ -47,7 +47,7 @@ defmodule Singularity.TemplateStore do
   use GenServer
   require Logger
 
-  alias Singularity.{Repo, EmbeddingEngine}
+  alias Singularity.{Repo, EmbeddingEngine, PackageRegistryKnowledge}
   alias Singularity.Schemas.Template
 
   @templates_dir Path.join([File.cwd!(), "..", "templates_data"])
@@ -212,15 +212,26 @@ defmodule Singularity.TemplateStore do
     WHERE id = $1
     """
 
-    case Repo.query(sql, [template_id]) do
-      {:ok, _} ->
-        Logger.debug("Recorded usage for template: #{template_id}, success: #{success}")
-        :ok
+    result =
+      case Repo.query(sql, [template_id]) do
+        {:ok, _} ->
+          Logger.debug("Recorded usage for template: #{template_id}, success: #{success}")
+          :ok
 
-      {:error, reason} ->
-        Logger.error("Failed to record usage: #{inspect(reason)}")
-        {:error, reason}
+        {:error, reason} ->
+          Logger.error("Failed to record usage: #{inspect(reason)}")
+          {:error, reason}
+      end
+
+    if result == :ok do
+      opts
+      |> Keyword.get(:package_contexts, [])
+      |> Enum.each(fn context ->
+        record_package_prompt_usage(context, template_id, success)
+      end)
     end
+
+    result
   end
 
   @doc """

@@ -8,7 +8,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 // Import all the analysis modules
-use analysis_suite::{
+use code_engine::{
     quality::QualityAnalyzer,
     security::SecurityAnalyzer,
     architecture::ArchitectureAnalyzer,

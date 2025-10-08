@@ -22,7 +22,7 @@ use package_registry_indexer::{
     collector::PackageCollector,
     storage::DependencyCatalogStorage,
 };
-use analysis_suite::{
+use code_engine::{
     analyzer::Analyzer,
     codebase::CodebaseAnalyzer,
     quality::QualityAnalyzer,

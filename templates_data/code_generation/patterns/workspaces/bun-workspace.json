@@ -1,0 +1,68 @@
+{
+  "$schema": "https://singularity.dev/schemas/template/v1",
+  "version": "1.0",
+  "type": "workspace_pattern",
+  "metadata": {
+    "id": "bun-workspace",
+    "name": "Bun Workspace",
+    "description": "Bun monorepo using bun workspaces",
+    "language": "javascript",
+    "tags": ["workspace", "monorepo", "bun", "javascript", "typescript"],
+    "author": "singularity",
+    "created": "2025-01-15",
+    "updated": "2025-01-15"
+  },
+  "content": {
+    "detection": {
+      "indicators": [
+        "bun.lockb file",
+        "package.json with workspaces field",
+        "bunfig.toml configuration",
+        "Multiple package.json files in subdirectories"
+      ],
+      "confidence_threshold": 0.8
+    },
+    "structure": {
+      "root_files": ["package.json", "bun.lockb", "bunfig.toml"],
+      "workspace_members": [
+        "packages/*",
+        "apps/*",
+        "libs/*"
+      ],
+      "common_directories": [
+        "packages/",
+        "apps/",
+        "libs/",
+        "tools/",
+        "docs/"
+      ]
+    },
+    "commands": {
+      "build": ["bun run build", "bun run build --filter"],
+      "test": ["bun test", "bun test --filter"],
+      "lint": ["bun run lint", "bun run lint --filter"],
+      "format": ["bun run format", "bun run format --filter"],
+      "install": ["bun install", "bun install --filter"]
+    },
+    "naming_conventions": {
+      "packages": "kebab-case",
+      "files": "kebab-case",
+      "functions": "camelCase",
+      "classes": "PascalCase",
+      "variables": "camelCase",
+      "constants": "UPPER_SNAKE_CASE"
+    },
+    "dependencies": {
+      "workspace_deps": "defined in root package.json",
+      "member_deps": "referenced in member package.json files"
+    }
+  },
+  "quality": {
+    "rules": [
+      "must_have_workspace_config",
+      "must_use_consistent_versioning",
+      "must_have_shared_dev_dependencies"
+    ],
+    "score": 0.9
+  }
+}

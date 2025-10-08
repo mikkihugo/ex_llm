@@ -1,0 +1,67 @@
+{
+  "$schema": "https://singularity.dev/schemas/template/v1",
+  "version": "1.0",
+  "type": "workspace_pattern",
+  "metadata": {
+    "id": "erlang-rebar-workspace",
+    "name": "Erlang Rebar Workspace",
+    "description": "Erlang monorepo using Rebar3 workspaces",
+    "language": "erlang",
+    "tags": ["workspace", "monorepo", "erlang", "rebar", "otp"],
+    "author": "singularity",
+    "created": "2025-01-15",
+    "updated": "2025-01-15"
+  },
+  "content": {
+    "detection": {
+      "indicators": [
+        "rebar.config with workspace configuration",
+        "Multiple rebar.config files in subdirectories",
+        "apps/ directory with multiple applications",
+        "rebar.lock file"
+      ],
+      "confidence_threshold": 0.8
+    },
+    "structure": {
+      "root_files": ["rebar.config", "rebar.lock"],
+      "workspace_members": [
+        "apps/*"
+      ],
+      "common_directories": [
+        "apps/",
+        "config/",
+        "test/",
+        "priv/",
+        "lib/"
+      ]
+    },
+    "commands": {
+      "build": ["rebar3 compile", "rebar3 compile --force"],
+      "test": ["rebar3 eunit", "rebar3 ct"],
+      "lint": ["rebar3 dialyzer", "rebar3 xref"],
+      "format": ["rebar3 fmt", "rebar3 fmt --check"],
+      "install": ["rebar3 get-deps", "rebar3 compile"]
+    },
+    "naming_conventions": {
+      "modules": "snake_case",
+      "files": "snake_case",
+      "functions": "snake_case",
+      "variables": "snake_case",
+      "atoms": "snake_case",
+      "directories": "snake_case"
+    },
+    "dependencies": {
+      "workspace_deps": "defined in root rebar.config",
+      "member_deps": "referenced in app rebar.config files",
+      "shared_deps": "defined in root rebar.config deps"
+    }
+  },
+  "quality": {
+    "rules": [
+      "must_have_rebar_config",
+      "must_use_consistent_otp_structure",
+      "must_have_shared_dependencies"
+    ],
+    "score": 0.9
+  }
+}

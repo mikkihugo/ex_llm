@@ -1,0 +1,22 @@
+[package]
+name = "dependency-parser"
+version = "1.0.0"
+edition = "2021"
+authors = ["mikkihugo"]
+description = "Universal dependency parser for package files - Library for NIF and Central Service"
+license = "MIT"
+repository = "https://github.com/mikkihugo/claude-code-zen"
+keywords = ["dependencies", "package", "parser", "npm", "cargo", "hex", "library", "nif", "central"]
+categories = ["development-tools", "parsing"]
+readme = "README.md"
+
+[dependencies]
+# Core dependencies
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+toml = { workspace = true }
+regex = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

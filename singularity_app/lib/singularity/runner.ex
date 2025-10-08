@@ -810,8 +810,8 @@ defmodule Singularity.Runner do
 
   # Analysis Stage Functions - Delegate to Existing Systems
   defp run_codebase_discovery(path) do
-    # Delegate to existing Rust analysis-suite via ArchitectureAgent
-    case Singularity.Code.Analyzers.ArchitectureAgent.analyze_codebase(path) do
+    # Delegate to ArchitectureEngine for comprehensive analysis
+    case Singularity.ArchitectureEngine.analyze_codebase(path) do
       {:ok, analysis} -> 
         {:ok, %{
           total_files: analysis.summary.total_files || 0,
@@ -839,7 +839,7 @@ defmodule Singularity.Runner do
 
   defp run_structural_analysis(discovery) do
     # Delegate to existing architecture analysis
-    case Singularity.Code.Analyzers.ArchitectureAgent.analyze_architecture(discovery.path) do
+    case Singularity.ArchitectureEngine.analyze_architecture_patterns(discovery.path) do
       {:ok, architecture} ->
         {:ok, %{
           complexity_score: architecture.complexity_score || calculate_complexity_score(discovery),
@@ -1033,15 +1033,17 @@ defmodule Singularity.Runner do
     end
   end
 
-  # Delegate to existing architecture analyzer for MVC detection
+  # Check for MVC architecture pattern
   defp has_mvc_structure(discovery) do
-    case Singularity.Code.Analyzers.ArchitectureAgent.detect_frameworks(discovery.path) do
-      {:ok, frameworks} ->
-        Enum.any?(frameworks, fn framework ->
-          framework.name in ["Phoenix", "Rails", "Django", "Spring", "Express"] or
-          String.contains?(String.downcase(framework.name), "mvc")
-        end)
-      {:error, _} -> false
+    case Singularity.ArchitectureEngine.analyze_architecture_patterns(discovery.path) do
+      {:ok, architecture} ->
+        # Check if MVC pattern is detected in architecture patterns
+        architecture.patterns && "mvc" in architecture.patterns
+      {:error, _} -> 
+        # Fallback: check for MVC directory structure
+        File.exists?(Path.join(discovery.path, "controllers/")) and 
+        File.exists?(Path.join(discovery.path, "models/")) and
+        File.exists?(Path.join(discovery.path, "views/"))
     end
   end
 end

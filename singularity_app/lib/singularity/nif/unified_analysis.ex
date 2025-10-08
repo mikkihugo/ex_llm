@@ -1,6 +1,6 @@
 defmodule Singularity.UnifiedAnalysis do
   @moduledoc """
-  Unified Analysis Engine - Main analysis engine for Singularity
+  Unified Analysis Engine (RustNif) - Main analysis engine for Singularity
   
   Provides direct access to the unified Rust analysis engine for:
   - Codebase analysis

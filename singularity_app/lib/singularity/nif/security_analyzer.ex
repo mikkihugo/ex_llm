@@ -1,6 +1,6 @@
 defmodule Singularity.SecurityAnalyzer do
   @moduledoc """
-  Security Analyzer - Comprehensive security vulnerability detection
+  Security Analyzer (RustNif) - Comprehensive security vulnerability detection
   
   Scans code for security issues:
   - Vulnerability detection and CVE scanning

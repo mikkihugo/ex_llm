@@ -124,11 +124,12 @@ config :singularity,
 
   # Code generation model configuration
   code_generation: [
-    # 7B params, ~14GB, best quality
-    model: "bigcode/starcoder2-7b",
+    # 770M params, ~1.5GB, fast training, good quality
+    model: "Salesforce/codet5p-770m",
     # Alternative models:
+    # "bigcode/starcoder2-7b" - 7B params, ~14GB, best quality but slow training
+    # "bigcode/starcoder2-3b" - 3B params, ~6GB, balanced
     # "deepseek-ai/deepseek-coder-1.3b-base" - 1.3B params, faster
-    # "bigcode/starcoder2-3b" - 3B params, balanced
     max_tokens: 256,
     # Lower = fewer errors, more deterministic
     temperature: 0.2

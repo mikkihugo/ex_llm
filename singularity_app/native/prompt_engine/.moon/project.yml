@@ -1,0 +1,34 @@
+type: 'library'
+language: 'rust'
+
+project:
+  name: '@singularity/prompt_engine'
+  description: 'Prompt template engine with performance tracking'
+
+tags: ['rust', 'prompts', 'templates', 'llm']
+
+fileGroups:
+  sources:
+    - 'src/**/*'
+    - 'Cargo.toml'
+  tests:
+    - 'tests/**/*'
+
+tasks:
+  build:
+    command: 'cargo build --release'
+    inputs:
+      - '@globs(sources)'
+    outputs:
+      - 'target/release/libprompt_engine.a'
+
+  test:
+    command: 'cargo test'
+    inputs:
+      - '@globs(sources)'
+      - '@globs(tests)'
+
+  clippy:
+    command: 'cargo clippy -- -D warnings'
+    inputs:
+      - '@globs(sources)'

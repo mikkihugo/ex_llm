@@ -1,6 +1,6 @@
 defmodule Singularity.EmbeddingGenerator do
   @moduledoc """
-  Embedding Generator - Generate embeddings for semantic search
+  Embedding Generator (RustNif) - Generate embeddings for semantic search
   
   Creates vector embeddings for:
   - Text content and code snippets

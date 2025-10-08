@@ -1,6 +1,6 @@
 defmodule Singularity.PerformanceAnalyzer do
   @moduledoc """
-  Performance Analyzer - Analyze performance and optimization opportunities
+  Performance Analyzer (RustNif) - Analyze performance and optimization opportunities
   
   Analyzes code performance:
   - Detect performance bottlenecks

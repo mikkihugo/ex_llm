@@ -1,0 +1,41 @@
+[package]
+name = "parser-engine"
+version = "0.1.0"
+edition = "2021"
+authors = ["Singularity Team"]
+description = "Parser registry, discovery, and capsule orchestration layer"
+license = "MIT"
+
+[lib]
+name = "parser_engine"
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+parking_lot = "0.12"
+dashmap = "5"
+ignore = "0.4"
+walkdir = "2"
+globset = "0.4"
+rayon = { version = "1.10", optional = true }
+tracing = "0.1"
+once_cell = "1.19"
+tree-sitter = "0.23.2"
+rustler = { version = "0.34", features = ["derive"], optional = true }
+
+# Language parser crates
+parser-framework = { path = "../language_framework" }
+elixir_parser = { path = "../languages/elixir" }
+gleam_parser = { path = "../languages/gleam" }
+rust_parser = { path = "../languages/rust" }
+javascript_parser = { path = "../languages/javascript" }
+typescript_parser = { path = "../languages/typescript" }
+
+[features]
+default = ["nif"]
+parallel = ["rayon"]
+nif = ["rustler"]

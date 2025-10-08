@@ -1,6 +1,6 @@
 defmodule Singularity.QualityAnalyzer do
   @moduledoc """
-  Code Quality Analyzer - Comprehensive code quality analysis and metrics
+  Code Quality Analyzer (RustNif) - Comprehensive code quality analysis and metrics
   
   Provides detailed code quality analysis:
   - Calculate complexity metrics (cyclomatic, cognitive, etc.)

@@ -29,26 +29,38 @@ rustler = { version = "0.34", optional = true }
 # Server dependencies (only with server feature)
 async-nats = { workspace = true, optional = true }
 
-# Analysis dependencies (always included)
-analysis_suite = { path = "analysis_suite", package = "analysis-suite" }
-tech_detector = { path = "tech_detector", package = "tech-detector" }
-source_code_parser = { path = "source-code-parser", package = "source-code-parser" }
-embedding_engine = { path = "embedding_engine" }
-package_registry_indexer = { path = "package_registry_indexer", package = "package-registry-indexer" }
+# Engine dependencies (NIFs - can be used standalone or as NIFs)
+analysis_engine = { path = "analysis_engine", package = "analysis-engine" }
+tech_detection_engine = { path = "tech_detection_engine", package = "tech-detector" }
+code_parsing_engine = { path = "code_parsing_engine", package = "code-parsing-engine" }
+semantic_embedding_engine = { path = "semantic_embedding_engine", package = "embedding_engine" }
+
+# Suite dependencies (Central server - comprehensive analysis)
+package_analysis_suite = { path = "package_analysis_suite", package = "package-analysis-suite" }
+prompt_analysis_suite = { path = "prompt_analysis_suite", package = "prompt-analysis-suite" }
 
 [workspace]
 members = [
-    "analysis_suite",
-    "tech_detector", 
-    "source-code-parser",
-    "embedding_engine",
-    "package_registry_indexer",
-    "prompt_engine",
+    "analysis_engine",
+    "tech_detection_engine", 
+    "code_parsing_engine",
+    "semantic_embedding_engine",
+    "package_analysis_suite",
+    "prompt_analysis_suite",
     "intelligent_namer",
     "linting_engine",
     "mozilla-code-analysis",
     "dependency-parser",
     "codeintelligence_server",
+    "code_engine",
+    "../singularity_app/native/parser/language_framework",
+    "../singularity_app/native/parser/engine",
+    "../singularity_app/native/parser/dependency",
+    "../singularity_app/native/parser/languages/elixir",
+    "../singularity_app/native/parser/languages/gleam",
+    "../singularity_app/native/parser/languages/rust",
+    "../singularity_app/native/parser/languages/javascript",
+    "../singularity_app/native/parser/languages/typescript",
 ]
 
 [workspace.dependencies]

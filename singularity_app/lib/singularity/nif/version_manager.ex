@@ -1,6 +1,6 @@
 defmodule Singularity.VersionManager do
   @moduledoc """
-  Version Management - Handle semantic versioning and compatibility
+  Version Management (RustNif) - Handle semantic versioning and compatibility
   
   Provides version parsing, range checking, and compatibility analysis:
   - Parse version specifiers (@latest, ^1.2.3, >=1.0.0 <2.0.0)

@@ -47,9 +47,19 @@ defmodule Singularity.AnalysisSuite do
   """
 
   require Logger
+  alias Singularity.PackageRegistryKnowledge
 
   # NIF module - will be loaded from Rust
-  use Rustler, otp_app: :singularity, crate: :analysis_suite
+  @moduledoc """
+  Deprecated compatibility wrapper. Use `Singularity.CodeEngine` instead.
+  """
+
+  defdelegate unified_code_intelligence(request, codebase_path, language), to: Singularity.CodeEngine
+  defdelegate analyze_code(codebase_path, language), to: Singularity.CodeEngine
+  defdelegate find_similar_code(query, language), to: Singularity.CodeEngine
+  defdelegate get_package_recommendations(query, language), to: Singularity.CodeEngine
+  defdelegate generate_code(request, language, similar_code), to: Singularity.CodeEngine
+  defdelegate calculate_quality_metrics(code, language), to: Singularity.CodeEngine
 
   @doc """
   Unified code intelligence - analyze and generate using existing systems
@@ -67,6 +77,10 @@ defmodule Singularity.AnalysisSuite do
     with {:ok, analysis} <- analyze_code(codebase_path, language),
          {:ok, similar_code} <- find_similar_code(request, language),
          {:ok, package_recommendations} <- get_package_recommendations(request, language),
+         {:ok, package_prompt_enhancements} <-
+           PackageRegistryKnowledge.get_prompt_enhancements(package_recommendations,
+             task: request
+           ),
          {:ok, {generated_code, template_used}} <- generate_code(request, language, similar_code),
          {:ok, quality_metrics} <- calculate_quality_metrics(generated_code, language) do
       
@@ -76,6 +90,7 @@ defmodule Singularity.AnalysisSuite do
         generated_code: generated_code,
         similar_code: similar_code,
         package_recommendations: package_recommendations,
+        package_prompt_enhancements: package_prompt_enhancements,
         template_used: template_used,
         quality_metrics: quality_metrics
       }
@@ -178,7 +193,5 @@ defmodule Singularity.AnalysisSuite do
     end
   end
 
-  # NIF function stubs - will be implemented in Rust
-  defp analyze_code_nif(_codebase_path, _language), do: :erlang.nif_error(:nif_not_loaded)
-  defp calculate_quality_metrics_nif(_code, _language), do: :erlang.nif_error(:nif_not_loaded)
+  # Deprecated: no direct NIFs here - delegated to Singularity.CodeEngine
 end

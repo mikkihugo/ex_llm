@@ -1,0 +1,105 @@
+{
+  "$schema": "https://singularity.dev/schemas/template/v1",
+  "version": "1.0",
+  "type": "workspace_pattern",
+  "metadata": {
+    "id": "singularity-moon-workspace",
+    "name": "Singularity Moon Workspace",
+    "description": "Singularity AI development environment using Moon monorepo",
+    "language": "polyglot",
+    "tags": ["workspace", "monorepo", "moon", "nix", "singularity", "ai"],
+    "author": "singularity",
+    "created": "2025-01-15",
+    "updated": "2025-01-15"
+  },
+  "content": {
+    "detection": {
+      "indicators": [
+        "moon.yml configuration file",
+        "justfile with smart-* commands",
+        "flake.nix for Nix development",
+        "pnpm-workspace.yaml for Node.js workspaces",
+        "mix.exs for Elixir umbrella app",
+        "apps/ directory with multiple applications",
+        "libs/ directory with shared libraries"
+      ],
+      "confidence_threshold": 0.9
+    },
+    "structure": {
+      "root_files": ["moon.yml", "justfile", "flake.nix", "pnpm-workspace.yaml"],
+      "workspace_members": [
+        "apps/*",
+        "libs/*",
+        "services/*",
+        "platforms/*"
+      ],
+      "common_directories": [
+        "apps/",
+        "libs/",
+        "services/",
+        "platforms/",
+        "infrastructure/",
+        "docs/",
+        "scripts/",
+        "nix/"
+      ]
+    },
+    "commands": {
+      "dev": ["just dev", "moon run dev"],
+      "build": ["just build", "moon run build"],
+      "test": ["just test", "moon run test"],
+      "lint": ["just smart-lint", "moon run lint"],
+      "format": ["just smart-fmt", "moon run format"],
+      "setup": ["just smart-setup", "moon run setup"],
+      "clean": ["just clean", "moon run clean"]
+    },
+    "naming_conventions": {
+      "apps": "kebab-case",
+      "libs": "kebab-case", 
+      "services": "kebab-case",
+      "platforms": "kebab-case",
+      "files": "kebab-case",
+      "functions": "snake_case",
+      "modules": "PascalCase",
+      "variables": "snake_case"
+    },
+    "dependencies": {
+      "workspace_deps": "defined in root package.json and mix.exs",
+      "member_deps": "referenced in member package.json and mix.exs files",
+      "nix_deps": "defined in flake.nix",
+      "moon_deps": "defined in moon.yml"
+    },
+    "preferences": {
+      "development": {
+        "shell": "nix develop .#dev",
+        "formatter": "mix format && gleam format",
+        "linter": "mix credo --strict",
+        "test_runner": "mix test",
+        "watcher": "watchexec"
+      },
+      "ai_tools": {
+        "llm_providers": ["claude", "gemini", "openai", "copilot"],
+        "code_analysis": "rust analysis-suite",
+        "semantic_search": "pgvector",
+        "messaging": "nats"
+      },
+      "architecture": {
+        "pattern": "microservices",
+        "communication": "nats",
+        "database": "postgresql",
+        "cache": "ets",
+        "storage": "s3"
+      }
+    }
+  },
+  "quality": {
+    "rules": [
+      "must_have_moon_config",
+      "must_have_justfile",
+      "must_have_nix_development",
+      "must_use_smart_commands",
+      "must_have_ai_tools_integration"
+    ],
+    "score": 0.95
+  }
+}

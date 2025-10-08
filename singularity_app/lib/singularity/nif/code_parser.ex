@@ -1,6 +1,6 @@
 defmodule Singularity.CodeParser do
   @moduledoc """
-  Enhanced Code Parser - Multi-language code parsing and analysis
+  Enhanced Code Parser (RustNif) - Multi-language code parsing and analysis
   
   Provides advanced code parsing capabilities:
   - Parse files in 30+ languages

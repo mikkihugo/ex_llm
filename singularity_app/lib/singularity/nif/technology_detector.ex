@@ -1,6 +1,6 @@
 defmodule Singularity.TechnologyDetector do
   @moduledoc """
-  Technology Detector - Detect frameworks, libraries, and tools
+  Technology Detector (RustNif) - Detect frameworks, libraries, and tools
   
   Identifies technology stack:
   - Detect frameworks and libraries

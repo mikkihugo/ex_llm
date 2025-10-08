@@ -42,6 +42,12 @@ defmodule Singularity.Schemas.DependencyCatalog do
     field :github_stars, :integer
     field :last_release_date, :utc_datetime
 
+    # Prompt intelligence
+    field :prompt_templates, :map, default: %{}
+    field :prompt_snippets, :map, default: %{}
+    field :version_guidance, :map, default: %{}
+    field :prompt_usage_stats, :map, default: %{}
+
     # Source tracking
     field :source_url, :string
     field :collected_at, :utc_datetime
@@ -50,6 +56,7 @@ defmodule Singularity.Schemas.DependencyCatalog do
     has_many :examples, Singularity.Schemas.PackageCodeExample, foreign_key: :dependency_id
     has_many :patterns, Singularity.Schemas.PackageUsagePattern, foreign_key: :dependency_id
     has_many :dependencies, Singularity.Schemas.PackageDependency, foreign_key: :dependency_id
+    has_many :prompt_usages, Singularity.Schemas.PackagePromptUsage, foreign_key: :dependency_id
 
     timestamps(type: :utc_datetime)
   end
@@ -75,7 +82,11 @@ defmodule Singularity.Schemas.DependencyCatalog do
       :last_release_date,
       :source_url,
       :collected_at,
-      :last_updated_at
+      :last_updated_at,
+      :prompt_templates,
+      :prompt_snippets,
+      :version_guidance,
+      :prompt_usage_stats
     ])
     |> validate_required([:package_name, :version, :ecosystem])
     |> unique_constraint([:package_name, :version, :ecosystem],

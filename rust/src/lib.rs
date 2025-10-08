@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 // Import all the analysis modules
-use analysis_suite::{
+use code_engine::{
     analyzer::Analyzer,
     codebase::CodebaseAnalyzer,
     quality::QualityAnalyzer,

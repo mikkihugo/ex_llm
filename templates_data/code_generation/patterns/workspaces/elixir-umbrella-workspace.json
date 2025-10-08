@@ -1,0 +1,67 @@
+{
+  "$schema": "https://singularity.dev/schemas/template/v1",
+  "version": "1.0",
+  "type": "workspace_pattern",
+  "metadata": {
+    "id": "elixir-umbrella-workspace",
+    "name": "Elixir Umbrella Workspace",
+    "description": "Elixir monorepo using umbrella applications",
+    "language": "elixir",
+    "tags": ["workspace", "monorepo", "elixir", "umbrella", "otp"],
+    "author": "singularity",
+    "created": "2025-01-15",
+    "updated": "2025-01-15"
+  },
+  "content": {
+    "detection": {
+      "indicators": [
+        "mix.exs with umbrella: true",
+        "apps/ directory with multiple applications",
+        "Multiple mix.exs files in apps/ subdirectories",
+        "config/ directory with shared configuration"
+      ],
+      "confidence_threshold": 0.8
+    },
+    "structure": {
+      "root_files": ["mix.exs", "mix.lock", "config/"],
+      "workspace_members": [
+        "apps/*"
+      ],
+      "common_directories": [
+        "apps/",
+        "config/",
+        "test/",
+        "priv/",
+        "lib/"
+      ]
+    },
+    "commands": {
+      "build": ["mix compile", "mix compile --force"],
+      "test": ["mix test", "mix test --cover"],
+      "lint": ["mix credo", "mix credo --strict"],
+      "format": ["mix format", "mix format --check-formatted"],
+      "install": ["mix deps.get", "mix deps.compile"]
+    },
+    "naming_conventions": {
+      "modules": "PascalCase",
+      "files": "snake_case",
+      "functions": "snake_case",
+      "variables": "snake_case",
+      "atoms": "snake_case",
+      "directories": "snake_case"
+    },
+    "dependencies": {
+      "workspace_deps": "defined in root mix.exs",
+      "member_deps": "referenced in app mix.exs files",
+      "shared_deps": "defined in root mix.exs deps"
+    }
+  },
+  "quality": {
+    "rules": [
+      "must_have_umbrella_config",
+      "must_use_consistent_otp_structure",
+      "must_have_shared_dependencies"
+    ],
+    "score": 0.9
+  }
+}
