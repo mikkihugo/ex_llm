@@ -124,9 +124,10 @@ context:
 
   docs:
     - "NATS_SUBJECTS.md"
-    - "E2E_TEST.md"
-    - "TEST_GUIDE.md"
-    - "CODEBASE_PLAN.md"
+    - "ARCHITECTURE_CLARIFICATION.md"
+    - "LLM_PROVIDER_E2E_TESTING.md"
+    - "KNOWLEDGE_ROUTING_GUIDE.md"
+    - "README.md"
 
 # Common commands
 commands:
