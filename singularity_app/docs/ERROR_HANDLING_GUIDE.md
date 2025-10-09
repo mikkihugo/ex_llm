@@ -498,7 +498,7 @@ def hybrid_search(query, opts \\ []) do
 end
 ```
 
-### SemanticCodeSearch
+### CodeSearch
 
 ```elixir
 def semantic_search(repo, codebase_id, query_vector, limit \\ 10) do

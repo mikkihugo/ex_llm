@@ -77,7 +77,7 @@ defmodule Singularity.Repo.Migrations.CreateGitAndCacheTables do
     create index(:rag_feedback, [:document_id])
 
     # Semantic Cache
-    create table(:semantic_cache, primary_key: false) do
+    create table(:prompt_cache, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :cache_key, :string, null: false
       add :query, :text, null: false
@@ -94,9 +94,9 @@ defmodule Singularity.Repo.Migrations.CreateGitAndCacheTables do
       timestamps()
     end
 
-    create unique_index(:semantic_cache, [:cache_key])
-    create index(:semantic_cache, [:last_accessed])
-    create index(:semantic_cache, [:hit_count])
+    create unique_index(:prompt_cache, [:cache_key])
+    create index(:prompt_cache, [:last_accessed])
+    create index(:prompt_cache, [:hit_count])
 
     # Performance Cache Configuration
     execute """
@@ -105,7 +105,7 @@ defmodule Singularity.Repo.Migrations.CreateGitAndCacheTables do
     BEGIN
       -- Refresh cache statistics for optimization
       ANALYZE rag_documents;
-      ANALYZE semantic_cache;
+      ANALYZE prompt_cache;
     END;
     $$ LANGUAGE plpgsql;
     """

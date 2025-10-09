@@ -23,7 +23,7 @@ Collects and indexes package metadata from npm, cargo, hex, and pypi registries.
 
 This component does **NOT** parse your codebase! That's handled separately:
 
-- **Your Code**: Parsed by `universal_parser`, called from Elixir `SemanticCodeSearch`, stored in PostgreSQL
+- **Your Code**: Parsed by `universal_parser`, called from Elixir `CodeSearch`, stored in PostgreSQL
 - **External Packages**: Parsed by this component, stored in redb (Rust)
 
 ## Data Flow
@@ -35,7 +35,7 @@ External Packages (npm/cargo):
               → redb (Rust embedded DB)
 
 Your Codebase (Singularity):
-  Elixir SemanticCodeSearch → universal_parser
+  Elixir CodeSearch → universal_parser
                             → PostgreSQL (pgvector)
 ```
 

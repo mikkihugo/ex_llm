@@ -412,7 +412,7 @@ defmodule Singularity.CodeSession do
     end
     
     # Query semantic code search for tech patterns in the specific repo
-    case Singularity.Search.SemanticCodeSearch.search("technology stack patterns", %{codebase_id: repo, top_k: 10}) do
+    case Singularity.Search.CodeSearch.search("technology stack patterns", %{codebase_id: repo, top_k: 10}) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_semantic_tech_fact/1)
       _ -> :ok

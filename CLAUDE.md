@@ -377,7 +377,7 @@ All module names must be self-documenting, following Elixir production patterns.
 #### Examples from Production:
 ```elixir
 # Good: Clear purpose and scope
-SemanticCodeSearch           # What: Code, How: Semantic search
+CodeSearch           # What: Code, How: Semantic search
 FrameworkPatternStore        # What: Framework patterns, What it does: Store
 TechnologyTemplateStore      # What: Technology templates, What it does: Store
 PackageRegistryKnowledge     # What: Package registry, Type: Knowledge
@@ -415,7 +415,7 @@ PackageRegistryKnowledge.search("async runtime", ecosystem: :cargo)
 # Storage: PostgreSQL with code text + vector embeddings
 # Purpose: "What did I do before? How did I solve this?"
 
-SemanticCodeSearch.search("async implementation", codebase_id: "my-project")
+CodeSearch.search("async implementation", codebase_id: "my-project")
 # => [%{path: "lib/async_worker.ex", similarity: 0.94}]
 ```
 
@@ -448,7 +448,7 @@ PackageRegistryKnowledge     # Stores package knowledge (query interface)
 #### 2. **Search Modules** (Search Operations)
 ```elixir
 # Pattern: <What>Search or <What>And<What>Search
-SemanticCodeSearch          # Searches code semantically
+CodeSearch          # Searches code semantically
 PackageAndCodebaseSearch    # Searches packages AND codebase
 
 # What they do:
@@ -541,7 +541,7 @@ defmodule Singularity.PackageRegistryKnowledge do
   Provides semantic search for external packages (npm, cargo, hex, pypi)
   using structured metadata collected by Rust tool_doc_index collectors.
 
-  ## Key Differences from RAG (SemanticCodeSearch):
+  ## Key Differences from RAG (CodeSearch):
 
   - **Structured Data**: Queryable with versions, dependencies, quality scores
   - **Curated Knowledge**: Official package information from registries  
@@ -551,7 +551,7 @@ defmodule Singularity.PackageRegistryKnowledge do
   ## Purpose:
   
   Answers "What packages exist? What should I use?"
-  NOT "What did I do before?" (that's SemanticCodeSearch)
+  NOT "What did I do before?" (that's CodeSearch)
   """
 ```
 
@@ -609,7 +609,7 @@ FrameworkPatternStore         # Stores framework patterns
 3. **Why** is it different from similar modules?
 
 **Follow existing patterns:**
-- Look at `SemanticCodeSearch`, `FrameworkPatternStore`, `TechnologyTemplateStore`
+- Look at `CodeSearch`, `FrameworkPatternStore`, `TechnologyTemplateStore`
 - Use compound names: `<What><How>` or `<What><WhatItDoes>`
 - Prefer clarity over brevity
 - Make AI-assisted development easier with self-documenting code!

@@ -7,7 +7,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
     # ============================================================================
     
     # Drop old scattered cache tables
-    drop_if_exists table(:semantic_cache)
+    drop_if_exists table(:prompt_cache)
     drop_if_exists table(:rag_documents) 
     drop_if_exists table(:rag_queries)
     drop_if_exists table(:rag_feedback)

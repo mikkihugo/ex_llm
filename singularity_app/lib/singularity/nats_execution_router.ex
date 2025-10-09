@@ -16,7 +16,7 @@ defmodule Singularity.NatsExecutionRouter do
   require Logger
   alias Singularity.TemplateSparcOrchestrator
   alias Singularity.TemplatePerformanceTracker
-  alias Singularity.LLM.SemanticCache
+  alias Singularity.LLM.Prompt.Cache
   alias Singularity.Agents.CostOptimizedAgent
 
   def start_link(opts \\ []) do
@@ -67,10 +67,10 @@ defmodule Singularity.NatsExecutionRouter do
     try do
       request = Jason.decode!(body)
 
-      # Step 1: Check SemanticCache first
+      # Step 1: Check PromptCache first
       cache_key = generate_cache_key(request["task"])
 
-      case SemanticCache.get(cache_key) do
+      case PromptCache.get(cache_key) do
         {:ok, cached_result} ->
           Logger.info("Cache hit for task: #{String.slice(request["task"], 0..50)}...")
 
@@ -127,7 +127,7 @@ defmodule Singularity.NatsExecutionRouter do
           {method, result_content, cost: cost} = result
 
           # Cache the result
-          SemanticCache.put(cache_key, %{
+          PromptCache.put(cache_key, %{
             content: extract_response_text(result_content),
             template_id: template.id,
             model: method_to_model(method)

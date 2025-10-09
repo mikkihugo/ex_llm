@@ -565,7 +565,7 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_api_examples_from_knowledge_base do
     # Query existing knowledge base for API examples
-    case Singularity.Search.SemanticCodeSearch.search("API examples", %{top_k: 5}) do
+    case Singularity.Search.CodeSearch.search("API examples", %{top_k: 5}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -581,7 +581,7 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_tutorial_examples_from_knowledge_base(topic) do
     # Query existing knowledge base for tutorial examples
-    case Singularity.Search.SemanticCodeSearch.search("tutorial examples #{topic}", %{top_k: 5}) do
+    case Singularity.Search.CodeSearch.search("tutorial examples #{topic}", %{top_k: 5}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -597,7 +597,7 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_reference_examples_from_knowledge_base(reference_type) do
     # Query existing knowledge base for reference examples
-    case Singularity.Search.SemanticCodeSearch.search("reference examples #{reference_type}", %{top_k: 5}) do
+    case Singularity.Search.CodeSearch.search("reference examples #{reference_type}", %{top_k: 5}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -613,7 +613,7 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_guide_examples_from_knowledge_base(guide_type) do
     # Query existing knowledge base for guide examples
-    case Singularity.Search.SemanticCodeSearch.search("guide examples #{guide_type}", %{top_k: 5}) do
+    case Singularity.Search.CodeSearch.search("guide examples #{guide_type}", %{top_k: 5}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -629,7 +629,7 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_architecture_examples_from_knowledge_base(architecture_type) do
     # Query existing knowledge base for architecture examples
-    case Singularity.Search.SemanticCodeSearch.search("architecture examples #{architecture_type}", %{top_k: 5}) do
+    case Singularity.Search.CodeSearch.search("architecture examples #{architecture_type}", %{top_k: 5}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -645,7 +645,7 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_pattern_examples_from_knowledge_base(pattern_type) do
     # Query existing knowledge base for pattern examples
-    case Singularity.Search.SemanticCodeSearch.search("pattern examples #{pattern_type}", %{top_k: 5}) do
+    case Singularity.Search.CodeSearch.search("pattern examples #{pattern_type}", %{top_k: 5}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -661,7 +661,7 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_framework_examples_from_knowledge_base(framework_type) do
     # Query existing knowledge base for framework examples
-    case Singularity.Search.SemanticCodeSearch.search("framework examples #{framework_type}", %{top_k: 5}) do
+    case Singularity.Search.CodeSearch.search("framework examples #{framework_type}", %{top_k: 5}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -677,7 +677,7 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_generic_examples_from_knowledge_base(knowledge_type) do
     # Query existing knowledge base for generic examples
-    case Singularity.Search.SemanticCodeSearch.search("examples #{knowledge_type}", %{top_k: 5}) do
+    case Singularity.Search.CodeSearch.search("examples #{knowledge_type}", %{top_k: 5}) do
       {:ok, results} -> results
       _ -> []
     end

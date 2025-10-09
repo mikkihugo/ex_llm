@@ -43,8 +43,8 @@ I was mixing concerns! Let me separate clearly:
 // prompt_intelligence has its own cache!
 // Location: rust-central/prompt_intelligence/src/lib.rs
 
-static PROMPT_CACHE: Lazy<PromptCache> = Lazy::new(|| {
-    PromptCache::new()
+static PROMPT_CACHE: Lazy<Prompt.Cache> = Lazy::new(|| {
+    Prompt.Cache::new()
 });
 
 #[rustler::nif]

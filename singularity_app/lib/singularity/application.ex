@@ -39,7 +39,7 @@ defmodule Singularity.Application do
       # Start the rule engine
       Singularity.Autonomy.RuleEngine,
       # Start the semantic cache
-      Singularity.LLM.SemanticCache,
+      Singularity.LLM.Prompt.Cache,
       # Start the template performance tracker
       Singularity.TemplatePerformanceTracker,
       # Start the semantic engine (GPU-powered SOTA embeddings)
@@ -55,7 +55,7 @@ defmodule Singularity.Application do
       # Start the framework pattern store
       Singularity.FrameworkPatternStore,
       # Start the semantic code search
-      Singularity.Search.SemanticCodeSearch,
+      Singularity.Search.CodeSearch,
       # Start the package registry knowledge
       Singularity.Search.PackageRegistryKnowledge,
       # Start the package and codebase search
@@ -147,7 +147,7 @@ defmodule Singularity.Application do
       # Start the LLM service
       Singularity.LLM.Service,
       # Start the template aware prompt
-      Singularity.LLM.TemplateAwarePrompt,
+      Singularity.LLM.Prompt.TemplateAware,
       # Start the NATS client
       Singularity.NatsClient,
       # Start the NATS execution router

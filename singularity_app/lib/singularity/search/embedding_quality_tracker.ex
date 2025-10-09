@@ -55,7 +55,7 @@ defmodule Singularity.EmbeddingQualityTracker do
 
   ## Integration Points
 
-  - **Used by**: `SemanticCodeSearch`, `RAGCodeGenerator`, `PatternIndexer`
+  - **Used by**: `CodeSearch`, `RAGCodeGenerator`, `PatternIndexer`
   - **Stores data in**: `rag_performance_stats` table (existing)
   - **Triggers training**: When `training_pairs_count >= 1000`
   - **Fine-tunes**: Jina-embeddings-v2-base-code via Axon/LoRA

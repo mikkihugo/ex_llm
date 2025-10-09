@@ -140,7 +140,7 @@ defmodule Singularity.Agents.CostOptimizedAgent do
 
   defp try_llm_with_cache(task, rule_result, state, correlation_id) do
     # Check semantic similarity cache
-    case check_semantic_cache(task) do
+    case check_prompt_cache(task) do
       :miss ->
         # Cache miss - call LLM (EXPENSIVE)
         call_llm(task, rule_result, state, correlation_id)
@@ -252,7 +252,7 @@ defmodule Singularity.Agents.CostOptimizedAgent do
     end
   end
 
-  defp check_semantic_cache(_task) do
+  defp check_prompt_cache(_task) do
     # TODO: Use pgvector to find similar past LLM calls
     # For now, simple exact match
     :miss

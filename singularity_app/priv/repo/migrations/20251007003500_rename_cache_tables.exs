@@ -17,7 +17,7 @@ defmodule Singularity.Repo.Migrations.RenameCacheTables do
     execute "ALTER TABLE cache_memory RENAME TO agent_memory_cache"
     execute "ALTER TABLE cache_semantic_similarity RENAME TO semantic_similarity_cache"
 
-    # Note: Check if semantic_cache and vector_similarity_cache are duplicates
+    # Note: Check if prompt_cache and vector_similarity_cache are duplicates
     # If so, drop them in a separate migration after data migration
 
     # Update indexes

@@ -40,7 +40,7 @@ defmodule Singularity.DomainVocabularyTrainer do
 
   - Used by: RAGCodeGenerator (semantic code search)
   - Used by: CodeSynthesisPipeline (template-aware generation)
-  - Used by: SemanticCodeSearch (SPARC-aware retrieval)
+  - Used by: CodeSearch (SPARC-aware retrieval)
   - Reads from: technology_patterns table (framework detection patterns)
   """
 

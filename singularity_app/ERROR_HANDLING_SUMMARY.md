@@ -111,7 +111,7 @@ ETS-based error rate monitoring:
 4. Search timeout → Task killed, empty results returned
 5. Partial failure → Continue with successful results
 
-### 3. SemanticCodeSearch (✅ Complete)
+### 3. CodeSearch (✅ Complete)
 
 **File**: `lib/singularity/search/semantic_code_search.ex`
 
@@ -566,7 +566,7 @@ end
 - ✅ Circuit breaker implementation
 - ✅ Error rate tracking
 - ✅ PackageAndCodebaseSearch enhancements
-- ✅ SemanticCodeSearch enhancements
+- ✅ CodeSearch enhancements
 
 **In Progress**:
 - 🔄 EmbeddingGenerator (next)

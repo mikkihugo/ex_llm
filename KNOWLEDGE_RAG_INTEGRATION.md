@@ -97,8 +97,8 @@ defmodule Singularity.Code.Generators.RAGCodeGenerator do
       top_k: 5
     )
     
-    # 2. Search YOUR actual code (SemanticCodeSearch)
-    {:ok, code_examples} = SemanticCodeSearch.search(
+    # 2. Search YOUR actual code (CodeSearch)
+    {:ok, code_examples} = CodeSearch.search(
       request.description,
       language: request.language,
       top_k: 10
@@ -164,7 +164,7 @@ LIMIT 5;
 ### **2. Code Search (YOUR Actual Code)**
 ```elixir
 # Search code YOU wrote
-SemanticCodeSearch.search(
+CodeSearch.search(
   "async worker with error handling",
   language: "elixir"
 )

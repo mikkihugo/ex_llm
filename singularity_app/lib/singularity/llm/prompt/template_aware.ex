@@ -1,4 +1,4 @@
-defmodule Singularity.LLM.TemplateAwarePrompt do
+defmodule Singularity.LLM.Prompt.TemplateAware do
   @moduledoc """
   Integrates template performance DAG with LLM prompting.
 
@@ -17,7 +17,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
   require Logger
 
   alias Singularity.{TechnologyTemplateLoader, RAGCodeGenerator}
-  alias Singularity.LLM.{Service, SemanticCache}
+  alias Singularity.LLM.{Service, PromptCache}
   alias Singularity.PromptEngine
 
   @doc """

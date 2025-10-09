@@ -559,7 +559,7 @@ defmodule Singularity.Runner do
 
   defp execute_semantic_search_task(task) do
     # Execute semantic search with embeddings
-    case Singularity.Search.SemanticCodeSearch.search(
+    case Singularity.Search.CodeSearch.search(
       task.args.query,
       limit: task.args.limit || 10,
       threshold: task.args.threshold || 0.7
@@ -867,7 +867,7 @@ defmodule Singularity.Runner do
 
   defp run_semantic_analysis(structural) do
     # Delegate to existing semantic search
-    case Singularity.Search.SemanticCodeSearch.search("codebase analysis", codebase_id: structural.codebase_id || "default") do
+    case Singularity.Search.CodeSearch.search("codebase analysis", codebase_id: structural.codebase_id || "default") do
       {:ok, results} ->
         {:ok, %{
           semantic_patterns: extract_semantic_patterns_from_results(results),

@@ -8,7 +8,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
 
     # Only alter tables that exist. Check table existence before altering.
     # Tables from schema: code_embeddings, code_locations, rag_documents, rag_queries,
-    # semantic_cache, rules, knowledge_artifacts, technology_patterns
+    # prompt_cache, rules, knowledge_artifacts, technology_patterns
 
     # CODE EMBEDDINGS (1536 dims) - Qodo-Embed-1-1.5B for complex code representation
     execute """
@@ -56,8 +56,8 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     DO $$
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
-                 WHERE table_name='semantic_cache' AND column_name='query_embedding') THEN
-        ALTER TABLE semantic_cache ALTER COLUMN query_embedding TYPE vector(1024);
+                 WHERE table_name='prompt_cache' AND column_name='query_embedding') THEN
+        ALTER TABLE prompt_cache ALTER COLUMN query_embedding TYPE vector(1024);
       END IF;
     END $$;
     """
@@ -200,12 +200,12 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     END $$;
     """
 
-    execute "DROP INDEX IF EXISTS semantic_cache_query_embedding_idx"
+    execute "DROP INDEX IF EXISTS prompt_cache_query_embedding_idx"
     execute """
     DO $$
     BEGIN
-      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='semantic_cache') THEN
-        CREATE INDEX semantic_cache_query_embedding_idx ON semantic_cache
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='prompt_cache') THEN
+        CREATE INDEX prompt_cache_query_embedding_idx ON prompt_cache
         USING ivfflat (query_embedding vector_cosine_ops) WITH (lists = 100);
       END IF;
     END $$;
@@ -251,7 +251,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     execute "ALTER TABLE code_locations ALTER COLUMN embedding TYPE vector(768)"
     execute "ALTER TABLE rag_documents ALTER COLUMN embedding TYPE vector(768)"
     execute "ALTER TABLE rag_queries ALTER COLUMN query_embedding TYPE vector(768)"
-    execute "ALTER TABLE semantic_cache ALTER COLUMN query_embedding TYPE vector(768)"
+    execute "ALTER TABLE prompt_cache ALTER COLUMN query_embedding TYPE vector(768)"
     execute "ALTER TABLE rules ALTER COLUMN embedding TYPE vector(768)"
     execute "ALTER TABLE knowledge_artifacts ALTER COLUMN embedding TYPE vector(768)"
     execute "ALTER TABLE dependency_catalog ALTER COLUMN semantic_embedding TYPE vector(768)"

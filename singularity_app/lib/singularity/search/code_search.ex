@@ -1,6 +1,6 @@
-defmodule Singularity.SemanticCodeSearch do
+defmodule Singularity.CodeSearch do
   @moduledoc """
-  Semantic Code Search - Find code using natural language and embeddings
+  Code Search - Find code using natural language and embeddings
 
   This module provides semantic search capabilities for codebases using pgvector
   embeddings and PostgreSQL. It enables natural language queries like:
@@ -924,11 +924,11 @@ defmodule Singularity.SemanticCodeSearch do
   ## Examples
 
       # With Ecto.Repo (recommended - uses connection pooling)
-      SemanticCodeSearch.semantic_search(Singularity.Repo, "my-codebase", vector, 10)
+      CodeSearch.semantic_search(Singularity.Repo, "my-codebase", vector, 10)
 
       # With raw Postgrex connection (for backwards compatibility)
       {:ok, conn} = Postgrex.start_link(...)
-      SemanticCodeSearch.semantic_search(conn, "my-codebase", vector, 10)
+      CodeSearch.semantic_search(conn, "my-codebase", vector, 10)
   """
   def semantic_search(repo_or_conn, codebase_id, query_vector, limit \\ 10) do
     query = """

@@ -13,7 +13,7 @@ defmodule Singularity.Repo.Migrations.AddMissingVectorIndexes do
   - code_locations.embedding (768-dim) - Symbol location search
   - rag_documents.embedding (768-dim) - RAG document search
   - rag_queries.query_embedding (768-dim) - Query similarity
-  - semantic_cache.query_embedding (768-dim) - Cache lookup by similarity
+  - prompt_cache.query_embedding (768-dim) - Cache lookup by similarity
   """
 
   def up do
@@ -57,10 +57,10 @@ defmodule Singularity.Repo.Migrations.AddMissingVectorIndexes do
     WITH (lists = 100)
     """
 
-    # semantic_cache.query_embedding - For semantic cache lookup
+    # prompt_cache.query_embedding - For semantic cache lookup
     # Created in: 20240101000005_create_git_and_cache_tables.exs
     execute """
-    CREATE INDEX IF NOT EXISTS idx_semantic_cache_query_embedding_vector ON semantic_cache 
+    CREATE INDEX IF NOT EXISTS idx_prompt_cache_query_embedding_vector ON prompt_cache 
     USING ivfflat (query_embedding vector_cosine_ops) 
     WITH (lists = 100)
     """
@@ -68,8 +68,8 @@ defmodule Singularity.Repo.Migrations.AddMissingVectorIndexes do
 
   def down do
     # Drop vector indexes in reverse order
-    drop_if_exists index(:semantic_cache, [:query_embedding],
-      name: :idx_semantic_cache_query_embedding_vector
+    drop_if_exists index(:prompt_cache, [:query_embedding],
+      name: :idx_prompt_cache_query_embedding_vector
     )
 
     drop_if_exists index(:rag_queries, [:query_embedding],

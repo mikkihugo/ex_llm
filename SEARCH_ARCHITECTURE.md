@@ -112,7 +112,7 @@ Present to User (grouped by type, top results first)
 - Similarity scores
 - Usage patterns
 
-**Access:** `SemanticCodeSearch.search/2`
+**Access:** `CodeSearch.search/2`
 
 ### 7. Web Search (Fallback)
 **What:** General web results
@@ -395,7 +395,7 @@ filter: [framework_version: "18"]
 ### Phase 1: Current State ✅
 - [x] npm, cargo, hex collectors
 - [x] PackageRegistryKnowledge (NATS)
-- [x] SemanticCodeSearch (RAG)
+- [x] CodeSearch (RAG)
 - [x] Framework templates
 - [x] Microsnippets
 - [x] Package@version parsing

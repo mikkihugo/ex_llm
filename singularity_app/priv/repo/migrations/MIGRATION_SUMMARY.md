@@ -23,7 +23,7 @@
 - IVFFlat vector indexes for fast cosine similarity search
 - Comprehensive metrics: Halstead, PageRank, complexity, quality, security
 - JSONB fields for flexible semantic features, dependencies, and symbols
-- Matches runtime schema from `SemanticCodeSearch.create_unified_schema/1`
+- Matches runtime schema from `CodeSearch.create_unified_schema/1`
 
 ### 2. `20250101000008_add_missing_vector_indexes.exs` (3.3KB)
 **Purpose**: Add missing IVFFlat vector indexes for existing tables
@@ -267,7 +267,7 @@ Minimum version: pgvector 0.5.0+
 
 | Schema | Table | Status |
 |--------|-------|--------|
-| `SemanticCodeSearch` (runtime) | `codebase_metadata`, `codebase_registry`, `graph_nodes`, `graph_edges`, `graph_types`, `vector_search`, `vector_similarity_cache` | ✅ Migration 7 |
+| `CodeSearch` (runtime) | `codebase_metadata`, `codebase_registry`, `graph_nodes`, `graph_edges`, `graph_types`, `vector_search`, `vector_similarity_cache` | ✅ Migration 7 |
 | `RuleExecution` | `rule_executions` | ✅ Migration 9 |
 | `RuleEvolutionProposal` | `rule_evolution_proposals` | ✅ Migration 9 |
 | `Quality.Run` | `quality_runs` | ✅ Migration 10 |
@@ -285,4 +285,4 @@ Minimum version: pgvector 0.5.0+
 3. Test migrations in development environment
 4. Run migrations in staging/production
 5. Update seeds if needed
-6. Remove runtime table creation from `SemanticCodeSearch` module once migration 7 is applied
+6. Remove runtime table creation from `CodeSearch` module once migration 7 is applied

@@ -48,7 +48,7 @@ let results = detector.detect(package_dir).await?;
 ```
 User: "Analyze my codebase"
   ↓
-SemanticCodeSearch scans files
+CodeSearch scans files
   ↓
 Sees patterns in lib/my_app/
   ↓

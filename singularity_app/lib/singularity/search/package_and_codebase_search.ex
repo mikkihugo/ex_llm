@@ -9,7 +9,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
      - Best practices and patterns
      - Cross-ecosystem equivalents
 
-  2. **RAG (Semantic Code Search)**: Your actual codebase
+  2. **RAG (Code Search)**: Your actual codebase
      - Code you've written
      - Your coding patterns
      - Your implementations
@@ -47,7 +47,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
 
   require Logger
   alias Singularity.PackageRegistryKnowledge
-  alias Singularity.SemanticCodeSearch
+  alias Singularity.CodeSearch
   alias Singularity.EmbeddingGenerator
   alias Singularity.Repo
 
@@ -215,7 +215,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
 
   defp search_your_code(query, codebase_id, limit) when is_binary(query) and is_binary(codebase_id) do
     try do
-      case Singularity.Search.SemanticCodeSearch.search(query, %{
+      case Singularity.CodeSearch.search(query, %{
              codebase_id: codebase_id,
              limit: limit || 10
            }) do

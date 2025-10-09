@@ -217,7 +217,7 @@ Singularity.DependencyMapper.map_dependencies("lib/")
 
 ```elixir
 # Uses existing semantic_code_search.ex
-Singularity.SemanticCodeSearch.search("authentication code")
+Singularity.CodeSearch.search("authentication code")
 
 # Finds similar code using pgvector
 ```

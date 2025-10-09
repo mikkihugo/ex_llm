@@ -1,6 +1,6 @@
-defmodule Singularity.LLM.SemanticCache do
+defmodule Singularity.LLM.Prompt.Cache do
   @moduledoc """
-  Semantic caching for LLM responses using pgvector.
+  Prompt caching for LLM responses using similarity matching.
 
   Instead of exact match caching, finds similar prompts and reuses responses.
 
@@ -51,7 +51,7 @@ defmodule Singularity.LLM.SemanticCache do
         similarity = calculate_similarity(embedding, call.prompt_embedding)
 
         if similarity >= threshold do
-          Logger.info("Semantic cache hit",
+          Logger.info("Prompt cache hit",
             similarity: Float.round(similarity, 3),
             original_prompt: String.slice(call.prompt, 0..100),
             new_prompt: String.slice(prompt, 0..100)
@@ -66,7 +66,7 @@ defmodule Singularity.LLM.SemanticCache do
              tokens_saved: call.tokens_used
            }}
         else
-          Logger.debug("Semantic cache near-miss",
+          Logger.debug("Prompt cache near-miss",
             similarity: Float.round(similarity, 3),
             threshold: threshold
           )
@@ -236,7 +236,7 @@ defmodule Singularity.LLM.SemanticCache do
   """
   def get(cache_key) do
     # Implement key-based caching using ETS
-    case :ets.lookup(:semantic_cache, cache_key) do
+    case :ets.lookup(:prompt_cache, cache_key) do
       [{^cache_key, value, timestamp}] ->
         # Check if cache entry is still valid (24 hours)
         if System.system_time(:second) - timestamp < 86400 do
@@ -244,7 +244,7 @@ defmodule Singularity.LLM.SemanticCache do
           {:ok, value}
         else
           # Expired, remove from cache
-          :ets.delete(:semantic_cache, cache_key)
+          :ets.delete(:prompt_cache, cache_key)
           Logger.debug("Cache expired", key: cache_key)
           {:error, :not_found}
         end
@@ -262,7 +262,7 @@ defmodule Singularity.LLM.SemanticCache do
     # Implement key-based caching using ETS
     timestamp = System.system_time(:second)
 
-    case :ets.insert(:semantic_cache, {cache_key, value, timestamp}) do
+    case :ets.insert(:prompt_cache, {cache_key, value, timestamp}) do
       true ->
         Logger.debug("Cache stored", key: cache_key, value_size: byte_size(inspect(value)))
         :ok

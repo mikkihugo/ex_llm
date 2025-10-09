@@ -5,9 +5,9 @@ defmodule Singularity.Cache do
   ## Problem Solved
 
   Previously had 5+ scattered cache implementations:
-  - `LLM.SemanticCache` (PostgreSQL) - LLM response caching
+  - `LLM.Prompt.Cache` (PostgreSQL) - LLM response caching
   - `Packages.MemoryCache` (ETS) - In-memory caching  
-  - `GlobalSemanticCache` (Rust + redb) - Code embedding caching
+  - `GlobalPromptCache` (Rust + redb) - Code embedding caching
   - `vector_similarity_cache` (PostgreSQL) - Similarity scores
   - `rag_documents` (PostgreSQL) - RAG document caching
 
@@ -67,11 +67,11 @@ defmodule Singularity.Cache do
   ## Migration from Old Modules
 
   ### Before (Scattered)
-      alias Singularity.LLM.SemanticCache
+      alias Singularity.LLM.Prompt.Cache
       alias Singularity.Packages.MemoryCache
-      # Rust GlobalSemanticCache (separate)
+      # Rust GlobalPromptCache (separate)
       
-      SemanticCache.find_similar(prompt)
+      PromptCache.find_similar(prompt)
       MemoryCache.get(key)
 
   ### After (Unified)
@@ -272,7 +272,7 @@ defmodule Singularity.Cache do
     provider = Keyword.get(opts, :provider)
     model = Keyword.get(opts, :model)
 
-    Singularity.LLM.SemanticCache.find_similar(query,
+    Singularity.LLM.Prompt.Cache.find_similar(query,
       threshold: threshold,
       provider: provider,
       model: model
@@ -334,7 +334,7 @@ defmodule Singularity.Cache do
   def clear(:semantic) do
     try do
       # Clear semantic search cache
-      Singularity.Search.SemanticCodeSearch.clear_cache()
+      Singularity.Search.CodeSearch.clear_cache()
       Logger.info("Cleared semantic cache")
       :ok
     rescue
@@ -347,7 +347,7 @@ defmodule Singularity.Cache do
   def clear(:llm) do
     try do
       # Clear LLM response cache
-      Singularity.LLM.SemanticCache.clear_all()
+      Singularity.LLM.Prompt.Cache.clear_all()
       Logger.info("Cleared LLM cache")
       :ok
     rescue

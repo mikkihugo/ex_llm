@@ -18,7 +18,7 @@ defmodule Singularity.EmbeddingGenerator do
   """
 
   require Logger
-  alias Singularity.LLM.SemanticCache
+  alias Singularity.LLM.Prompt.Cache
 
   @type embedding :: Pgvector.t()
 
@@ -35,7 +35,7 @@ defmodule Singularity.EmbeddingGenerator do
   """
   @spec embed(String.t(), keyword()) :: {:ok, embedding()} | {:error, term()}
   def embed(text, _opts \\ []) do
-    case SemanticCache.generate_google_embedding(text) do
+    case PromptCache.generate_google_embedding(text) do
       %Pgvector{} = embedding ->
         Logger.debug("Generated Google AI embedding (768 dims)")
         {:ok, embedding}

@@ -4,13 +4,13 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
 
   Wraps existing powerful analysis capabilities:
   - CodeEngine - NIF-based code analysis and generation
-  - SemanticCodeSearch - Vector-based code search
+  - CodeSearch - Vector-based code search
   - ArchitectureEngine - Naming and architecture patterns
   - TechnologyAgent - Tech stack detection
   """
 
   alias Singularity.Tools.{Catalog, Tool}
-  alias Singularity.{SemanticCodeSearch, TechnologyAgent, CodeEngine}
+  alias Singularity.{CodeSearch, TechnologyAgent, CodeEngine}
   alias Singularity.CodeAnalysis.DependencyMapper
   alias Singularity.Code.Analyzers.MicroserviceAnalyzer
 
@@ -178,7 +178,7 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
     codebase_id = Map.get(args, "codebase_id", "current")
     limit = Map.get(args, "limit", 10)
 
-    case SemanticCodeSearch.semantic_search(Singularity.Repo, codebase_id, query, limit) do
+    case CodeSearch.semantic_search(Singularity.Repo, codebase_id, query, limit) do
       {:ok, results} ->
         formatted_results =
           Enum.map(results, fn result ->

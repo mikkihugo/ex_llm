@@ -1,12 +1,12 @@
-defmodule Singularity.Repo.Migrations.CreateSemanticCodeSearchTables do
+defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
   use Ecto.Migration
 
   @moduledoc """
   Creates unified semantic code search schema tables.
 
-  These tables are used by SemanticCodeSearch module for vector-based code search,
+  These tables are used by CodeSearch module for vector-based code search,
   analysis, and graph relationships. Matches the schema created at runtime in
-  SemanticCodeSearch.create_unified_schema/1.
+  CodeSearch.create_unified_schema/1.
 
   Tables created:
   - codebase_metadata: Main codebase metadata with 50+ columns and vector embeddings

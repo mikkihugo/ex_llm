@@ -87,7 +87,7 @@ summary.files
 |> Enum.take(10)
 
 # Semantic search across persisted embeddings (code_embeddings table)
-{:ok, matches} = Singularity.SemanticCodeSearch.search("Phoenix auth plug", top_k: 5)
+{:ok, matches} = Singularity.CodeSearch.search("Phoenix auth plug", top_k: 5)
 ```
 
 Pair this with the navigation index from `Singularity.CodeLocationIndex` to move

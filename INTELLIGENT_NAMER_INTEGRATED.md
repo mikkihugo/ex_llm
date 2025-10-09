@@ -54,7 +54,7 @@ RAGCodeGenerator.find_best_examples(
 ```elixir
 # code_chunks table contains:
 - file_path: "lib/singularity/semantic_code_search.ex"
-- content: "defmodule Singularity.SemanticCodeSearch..."
+- content: "defmodule Singularity.CodeSearch..."
 - language: "elixir"
 - embedding: [0.23, 0.45, ...] (pgvector)
 
@@ -199,7 +199,7 @@ code_naming_patterns(%{
   patterns_from_codebase: [
     %{pattern: "PascalCase", example: "TechnologyAgent", frequency: 15},
     %{pattern: "PascalCase", example: "CodeStore", frequency: 8},
-    %{pattern: "PascalCase", example: "SemanticCodeSearch", frequency: 5}
+    %{pattern: "PascalCase", example: "CodeSearch", frequency: 5}
   ],
   examples_count: 28  # Found 28 examples in YOUR code!
 }}
