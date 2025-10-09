@@ -80,16 +80,19 @@ defmodule Singularity.MixProject do
       # Vector embeddings for pattern mining
       {:pgvector, "~> 0.2"},
 
-      # Rustler NIF for GPU-accelerated embeddings
+      # Rustler NIFs
       {:rustler, "~> 0.34.0", runtime: false},
-      # Code engine NIF for unified code intelligence (compile: false = won't rebuild every time)
+
+      # All 9 Rust NIFs (compile: false = won't rebuild every time)
+      {:architecture_engine, path: "native/architecture_engine", runtime: false, app: false, compile: false},
       {:code_engine, path: "native/code_engine", runtime: false, app: false, compile: false},
-      # Parser engine NIF for AST parsing and code analysis
-      {:parser_engine, path: "native/parser-engine/engine", runtime: false, app: false, compile: false},
-      # Quality engine NIF for multi-language linting and quality analysis
+      {:framework_engine, path: "native/framework_engine", runtime: false, app: false, compile: false},
+      {:knowledge_engine, path: "native/knowledge_engine", runtime: false, app: false, compile: false},
+      {:package_engine, path: "native/package_engine", runtime: false, app: false, compile: false},
+      {:parser_engine, path: "native/parser_engine", runtime: false, app: false, compile: false},
+      {:prompt_engine, path: "native/prompt_engine", runtime: false, app: false, compile: false},
       {:quality_engine, path: "native/quality_engine", runtime: false, app: false, compile: false},
-      # Prompt engine NIF for DSPy-based prompt optimization and caching
-      {:prompt_intelligence, path: "native/prompt_intelligence", runtime: false, app: false, compile: false},
+      {:semantic_engine, path: "native/semantic_engine", runtime: false, app: false, compile: false},
 
       # Data & Serialization
       {:jason, "~> 1.4"},

@@ -18,7 +18,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # Parsing
-dependency_parser = { path = "../../lib/parser_lib/formats/dependency" }
+dependency_parser = { path = "../../parser/formats/dependency" }
 
 # Core dependencies
 serde = { workspace = true, features = ["derive"] }

@@ -22,6 +22,7 @@ export class CodexLanguageModel implements LanguageModelV2 {
   readonly provider = 'openai.codex' as const;
   readonly modelId: string;
   readonly config: CodexModelConfig;
+  private static codexInstances: Map<string, any> = new Map();
 
   constructor(modelId: string, config: CodexModelConfig = {}) {
     this.modelId = modelId;
@@ -49,6 +50,7 @@ export class CodexLanguageModel implements LanguageModelV2 {
 
       return {
         text: turn.text,
+        content: [{ type: 'text', text: turn.text }],
         finishReason: turn.finishReason,
         usage: this.normalizeUsageFromCodex(turn.usage, messagesForUsage, turn.text),
         toolCalls: turn.toolCalls,
@@ -58,20 +60,27 @@ export class CodexLanguageModel implements LanguageModelV2 {
     }
   }
 
-  private createCodexClient() {
-    return new Codex({
-      config: {
-        model: this.modelId,
-        approval_policy: (this.config.approvalPolicy || 'never') as any,
-        model_reasoning_effort: this.config.reasoningEffort,
-        model_reasoning_summary: this.config.reasoningSummary,
-        mcp_servers: this.config.mcpServers,
-      },
-    });
+  private getOrCreateCodexClient() {
+    const key = `${this.modelId}-${this.config.approvalPolicy || 'never'}`;
+
+    if (!CodexLanguageModel.codexInstances.has(key)) {
+      const codex = new Codex({
+        config: {
+          model: this.modelId,
+          approval_policy: (this.config.approvalPolicy || 'never') as any,
+          model_reasoning_effort: this.config.reasoningEffort,
+          model_reasoning_summary: this.config.reasoningSummary,
+          mcp_servers: this.config.mcpServers,
+        },
+      });
+      CodexLanguageModel.codexInstances.set(key, codex);
+    }
+
+    return CodexLanguageModel.codexInstances.get(key)!;
   }
 
   private async runCodexTurn(prompt: string) {
-    const codex = this.createCodexClient();
+    const codex = this.getOrCreateCodexClient();
     const thread = codex.startThread();
     const turn = await thread.run(prompt);
 

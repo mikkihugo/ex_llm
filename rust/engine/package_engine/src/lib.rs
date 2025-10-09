@@ -50,6 +50,9 @@ use std::sync::Arc;
 use std::time::Duration;
 use thiserror::Error;
 
+// Rustler NIF initialization
+rustler::init!("Elixir.Singularity.PackageEngine");
+
 pub mod package_file_watcher;
 pub mod cache;
 pub mod engine;

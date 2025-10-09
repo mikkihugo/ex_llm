@@ -4,17 +4,28 @@ defmodule Singularity.ParserEngine do
 
   Provides a unified interface for parsing code files and streaming AST data
   directly into PostgreSQL.
+
+  Uses Rust NIF from rust/parser/polyglot/ for high-performance parsing.
   """
+
+  use Rustler,
+    otp_app: :singularity,
+    crate: :parser_engine,
+    skip_compilation?: true
 
   require Logger
 
   alias Singularity.Repo
   alias Singularity.Schemas.CodeFile
 
-  @nif_module :parsing_engine
   @default_codebase_id "default"
   @default_hash_algorithm :sha256
   @default_concurrency 8
+
+  # NIF stubs - replaced by Rust implementation (private)
+  defp parse_file_nif(_file_path), do: :erlang.nif_error(:nif_not_loaded)
+  defp parse_tree_nif(_root_path), do: :erlang.nif_error(:nif_not_loaded)
+  def supported_languages(), do: :erlang.nif_error(:nif_not_loaded)
 
   # Public API ----------------------------------------------------------------
 
@@ -50,22 +61,23 @@ defmodule Singularity.ParserEngine do
   end
 
   @doc """
-  Parse a single file and return the normalized document.
+  Parse a single file and return AST analysis result from Rust NIF.
+
+  Returns AnalysisResult struct with:
+  - file_path, language
+  - metrics (LOC, complexity)
+  - tree_sitter_analysis (AST: functions, classes, imports, exports)
+  - mozilla_metrics (cyclomatic, Halstead, maintainability)
+  - dependency_analysis
   """
   def parse_file(file_path) do
     expanded_path = Path.expand(file_path)
 
-    with :ok <- validate_regular_file(expanded_path),
-         {:ok, content} <- File.read(expanded_path),
-         {:ok, raw_document} <- call_nif(:parse_file, [expanded_path]),
-         ast_map <- convert_ast_to_map(raw_document),
-         language <- resolve_language(expanded_path, ast_map),
-         document <- build_document(expanded_path, language, content, ast_map) do
-      {:ok, document}
-    else
-      {:error, reason} = error ->
+    case parse_file_nif(expanded_path) do
+      {:ok, analysis_result} -> {:ok, analysis_result}
+      {:error, reason} ->
         Logger.error("Failed to parse file #{file_path}: #{inspect(reason)}")
-        error
+        {:error, reason}
     end
   end
 

@@ -54,6 +54,9 @@ const OAUTH_CALLBACK_PORT = parsePort(process.env.OAUTH_CALLBACK_PORT, 1455, 'OA
 const OAUTH_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const TOKEN_EXPIRY_BUFFER_MS = 55 * 60 * 1000; // 55 minutes
 
+// Simple auth token (internal use only, not a security boundary)
+const AUTH_TOKEN = 'singularity-local';
+
 // Initialize AI SDK Provider Registry
 const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
 const registry = createProviderRegistry({
@@ -663,11 +666,12 @@ function buildOpenAIChatResponse(
 
 Bun.serve({
   port: PORT,
+  idleTimeout: 120, // 2 minutes for slow Codex MCP initialization
   async fetch(req) {
     const headers = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Content-Type': 'application/json',
     };
 
@@ -677,6 +681,22 @@ Bun.serve({
 
     const url = new URL(req.url);
 
+    // Log all requests for debugging
+    console.log(`${req.method} ${url.pathname}${url.search}`);
+
+    // Simple auth check for /v1/* endpoints (internal use, not security)
+    if (url.pathname.startsWith('/v1/')) {
+      const authHeader = req.headers.get('Authorization');
+      const token = authHeader?.replace(/^Bearer\s+/i, '');
+
+      if (token !== AUTH_TOKEN) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers }
+        );
+      }
+    }
+
     // GET /v1/models
     if (url.pathname === '/v1/models') {
       if (req.method !== 'GET') {
@@ -685,7 +705,14 @@ Bun.serve({
 
       try {
         await ensureModelCatalogLoaded();
-        const data = (modelCatalogCache || []).map(toOpenAIModel);
+        let data = (modelCatalogCache || []).map(toOpenAIModel);
+
+        // Filter by provider query param
+        const provider = url.searchParams.get('provider');
+        if (provider) {
+          data = data.filter((m: any) => m.provider === provider);
+        }
+
         return new Response(JSON.stringify({ object: 'list', data }), { headers });
       } catch (error: any) {
         console.error('Failed to list models:', error);

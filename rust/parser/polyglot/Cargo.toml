@@ -17,7 +17,7 @@ anyhow = { workspace = true }
 # Universal dependency analysis - stable version
 tokei = { workspace = true }
 # Mozilla/RCA metrics library - ENABLED as standard
-mozilla-code-analysis = { path = "../mozilla-code-analysis" }
+mozilla-code-analysis = { path = "../analyzers/rust_code_analysis" }
 
 # Tree-sitter core and language bindings - using workspace versions
 tree-sitter = { workspace = true }

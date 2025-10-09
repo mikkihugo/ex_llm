@@ -6,8 +6,8 @@ members = [
     "rust/lib/package_lib",
 
     # Parser dependencies (required by package_engine)
-    "rust/lib/parser_lib/core",
-    "rust/lib/parser_lib/formats/dependency",
+    "rust/parser/core",
+    "rust/parser/formats/dependency",
 ]
 
 [workspace.dependencies]
