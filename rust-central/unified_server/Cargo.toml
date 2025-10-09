@@ -25,7 +25,7 @@ serde_json = "1.0"
 
 # Database
 tokio-postgres = { version = "0.7", features = ["with-chrono-0_4"] }
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }
+sqlx = { workspace = true }
 
 # Messaging
 async-nats = "0.33"

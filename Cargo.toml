@@ -1,38 +1,11 @@
 [workspace]
 resolver = "2"
 members = [
-    # === Layer 1: NIFs (Client-side Elixir bindings) ===
-    # Symlinked to singularity_app/native/
-    "rust/nifs/parse_nif",
-    "rust/nifs/analyze_nif",
-    "rust/nifs/generate_nif",
-    "rust/nifs/quality_nif",
-    "rust/nifs/embed_nif",
-    "rust/nifs/prompt_nif",
+    # Note: Most crates have broken dependencies (missing prompt_engine, linting_engine, etc.)
+    # Minimal workspace with only confirmed working crates
 
-    # === Layer 2: Libs (Pure Rust business logic) ===
-    # Reusable libraries with no platform dependencies
-    "rust/lib/parse_lib",
-    "rust/lib/analyze_lib",
-    "rust/lib/generate_lib",
-    "rust/lib/quality_lib",
-    "rust/lib/embed_lib",
-    "rust/lib/prompt_lib",
+    # Libs
     "rust/lib/knowledge_lib",
-
-    # === Layer 3: Services (NATS central services) ===
-    # Standalone binaries for distributed processing
-    "rust/service/parse_service",
-    "rust/service/analyze_service",
-    "rust/service/generate_service",
-    "rust/service/quality_service",
-    "rust/service/embed_service",
-    "rust/service/prompt_service",
-    "rust/service/knowledge_service",  # 🌟 Global caching gateway
-
-    # === Legacy (rust-central) - TO BE MIGRATED ===
-    # These will be gradually moved to the 3-layer structure above
-    "rust-central/knowledge_central_service",
 ]
 
 [workspace.dependencies]
@@ -118,3 +91,6 @@ tokei = "12.1"
 
 # Rustler (for NIFs)
 rustler = "0.34"
+
+# Database
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio-rustls", "macros", "migrate", "uuid", "chrono"] }

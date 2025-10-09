@@ -71,6 +71,7 @@
           cargo-expand        # Macro expansion viewer
           cargo-flamegraph    # Performance profiling
           cargo-outdated      # Check for outdated dependencies
+          cargo-update        # cargo install-update for global crates
           cargo-watch         # File watcher for cargo commands
           cargo-nextest       # Next-generation test runner
           cargo-llvm-cov      # Code coverage with LLVM

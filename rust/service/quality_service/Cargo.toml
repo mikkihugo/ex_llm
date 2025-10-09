@@ -22,7 +22,7 @@ async-nats = { workspace = true }
 prompt-engine = { path = "../prompt_engine" }
 
 # Database
-sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "uuid", "chrono"] }
+sqlx = { workspace = true }
 
 # Configuration
 config = "0.14"

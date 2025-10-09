@@ -25,7 +25,7 @@ rustler = { version = "0.34", optional = true }
 async-nats = { version = "0.33", optional = true }
 
 # Database (PostgreSQL)
-sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "uuid", "chrono"], optional = true }
+sqlx = { workspace = true, optional = true }
 
 [features]
 default = []
