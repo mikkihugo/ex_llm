@@ -69,16 +69,19 @@ defmodule Singularity.Tools.PackageSearch do
       iex> search_packages("react@18", :npm)
       {:ok, %{name: "react", version: "18.2.0", ...}}  # Specific version
   """
-  def search_packages(query, ecosystem \\ :all, limit \\ 10) do
+  def search_packages(query, ecosystem \\ :all, limit \\ 10) when is_binary(query) do
+    # Parse optional ecosystem prefix (e.g., "npm react", "cargo tokio")
+    {parsed_ecosystem, clean_query} = parse_query_prefix(query, ecosystem)
+
     # If query contains @version, fetch specific package
-    if String.contains?(query, "@") do
-      get_package(query, ecosystem)
+    if String.contains?(clean_query, "@") do
+      get_package(clean_query, parsed_ecosystem)
     else
-      Logger.info("🔍 Searching packages: '#{query}' in #{ecosystem} ecosystem")
+      Logger.info("🔍 Searching packages: '#{clean_query}' in #{parsed_ecosystem} ecosystem")
 
       try do
-        case PackageAndCodebaseSearch.hybrid_search(query, %{
-          ecosystem: ecosystem,
+        case PackageAndCodebaseSearch.hybrid_search(clean_query, %{
+          ecosystem: parsed_ecosystem,
           limit: limit
         }) do
           {:ok, results} ->
@@ -94,6 +97,37 @@ defmodule Singularity.Tools.PackageSearch do
           Logger.error("❌ Package search error: #{inspect(error)}")
           {:error, "Package search error: #{inspect(error)}"}
       end
+    end
+  end
+
+  @doc """
+  Parse optional ecosystem prefix from query
+
+  ## Examples
+      iex> parse_query_prefix("npm react", :all)
+      {:npm, "react"}
+
+      iex> parse_query_prefix("cargo tokio@1.35", :all)
+      {:cargo, "tokio@1.35"}
+
+      iex> parse_query_prefix("react", :npm)
+      {:npm, "react"}
+
+      iex> parse_query_prefix("github vercel/next.js", :all)
+      {:github, "vercel/next.js"}
+  """
+  def parse_query_prefix(query, default_ecosystem) when is_binary(query) do
+    ecosystems = ["npm", "cargo", "hex", "pypi", "github"]
+
+    query
+    |> String.trim()
+    |> String.split(" ", parts: 2)
+    |> case do
+      [prefix, rest] when prefix in ecosystems ->
+        {String.to_atom(prefix), rest}
+
+      _ ->
+        {default_ecosystem, query}
     end
   end
 
