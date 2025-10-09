@@ -1,50 +1,21 @@
 {
   "id": "sparc-architecture",
-  "name": "SPARC Architecture Generator",
-  "description": "Designs system architecture based on pseudocode and requirements",
-  "steps": [
-    {
-      "name": "analyze-pseudocode",
-      "operation": {
-        "type": "analyze",
-        "analyze": "code-pattern"
-      }
-    },
-    {
-      "name": "generate-architecture",
-      "operation": {
-        "type": "generate",
-        "generate": "sparc-architecture"
-      }
-    }
-  ],
+  "name": "SPARC Architecture Phase",
+  "description": "Design system architecture and component interactions",
+  "phase": 2,
+  "depends_on": ["sparc-research"],
+  "compose": ["bits/architecture/rest-api.md"],
   "metadata": {
-    "version": "1.0.0",
-    "author": "SPARC Team",
-    "created_at": "2024-01-15T10:00:00Z",
-    "updated_at": "2024-01-15T10:00:00Z",
-    "tags": ["sparc", "architecture", "design", "system"],
-    "performance": {
-      "avg_execution_time_ms": 300.0,
-      "memory_usage_bytes": 6291456,
-      "complexity": 8
-    }
+    "version": "2.0.0",
+    "tags": ["sparc", "architecture", "design"],
+    "complexity": 8
   },
-  "ai_signature": {
-    "name": "sparc_architecture_generator",
-    "inputs": {
-      "pseudocode": "Algorithm pseudocode and logic",
-      "requirements": "System requirements and constraints",
-      "technology_stack": "Preferred technologies and frameworks",
-      "scalability_needs": "Performance and scalability requirements"
-    },
-    "outputs": {
-      "architecture_design": "System architecture and component design",
-      "component_interfaces": "Component interactions and APIs",
-      "technology_recommendations": "Technology stack recommendations",
-      "scalability_plan": "Scalability and performance considerations"
-    },
-    "instruction": "Design comprehensive system architecture with components, interfaces, data flow, technology stack, scalability considerations, and security architecture. Structure the response with ANALYSIS, FILES, and SUMMARY sections."
-  },
-  "template_content": "Design system architecture based on the pseudocode.\n\nFollow the structured response format with FILES section for architecture diagrams and documentation.\n\nPlease provide:\n1. System components and modules\n2. Component interactions and interfaces\n3. Data flow and storage design\n4. Technology stack recommendations\n5. Scalability and performance considerations\n6. Security architecture"
+  "instruction": "Design comprehensive system architecture with components, interfaces, data flow, technology stack, and scalability considerations.",
+  "outputs": [
+    "component_diagram",
+    "interface_definitions",
+    "data_flow_design",
+    "technology_stack",
+    "scalability_plan"
+  ]
 }
