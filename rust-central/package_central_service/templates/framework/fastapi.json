@@ -1,0 +1,20 @@
+{
+  "name": "FastAPI",
+  "category": "framework",
+  "detector_signatures": {
+    "patterns": [
+      "from fastapi import",
+      "FastAPI\\(",
+      "@app\\.get"
+    ],
+    "dependencies": [
+      "fastapi",
+      "uvicorn"
+    ],
+    "file_patterns": [
+      "main.py",
+      "app/main.py",
+      "src/**/fastapi_*.py"
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "id": "summarize-prompt",
+  "name": "Content Summarization Prompt",
+  "description": "Summarizes long content into concise, actionable summaries",
+  "steps": [
+    {
+      "name": "analyze-content",
+      "operation": {
+        "type": "analyze",
+        "analyze": "semantic"
+      }
+    },
+    {
+      "name": "generate-summary",
+      "operation": {
+        "type": "transform",
+        "transform": "normalize"
+      }
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "author": "SPARC Team",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-01-15T10:00:00Z",
+    "tags": ["utility", "summarization", "content", "analysis"],
+    "performance": {
+      "avg_execution_time_ms": 150.0,
+      "memory_usage_bytes": 3145728,
+      "complexity": 4
+    }
+  },
+  "ai_signature": {
+    "name": "content_summarizer",
+    "inputs": {
+      "content": "Content to be summarized",
+      "summary_length": "Desired summary length (short, medium, long)",
+      "focus_areas": "Specific areas to focus on in summary",
+      "audience": "Target audience for the summary"
+    },
+    "outputs": {
+      "summary": "Concise summary of the content",
+      "key_points": "Key points and highlights",
+      "action_items": "Actionable items from the content",
+      "recommendations": "Recommendations based on content"
+    },
+    "instruction": "Create a concise, actionable summary that captures the essential information and provides clear next steps."
+  },
+  "template_content": "Summarize the following content into a concise, actionable summary:\n\n[CONTENT]\n\nPlease provide:\n1. Executive summary (2-3 sentences)\n2. Key points (bullet list)\n3. Action items (if any)\n4. Recommendations (if applicable)\n\nKeep the summary focused and practical."
+}

@@ -1,0 +1,51 @@
+{
+  "name": "TypeScript",
+  "category": "language",
+  "version": "1.0",
+  "detector_signatures": {
+    "config_files": ["tsconfig.json", "package.json"],
+    "file_extensions": [".ts", ".tsx", ".d.ts"],
+    "patterns": [
+      "interface\\s+\\w+",
+      "type\\s+\\w+\\s*=",
+      ":\\s*\\w+\\[\\]",
+      ":\\s*Promise<",
+      ":\\s*string\\s*\\|",
+      ":\\s*number\\s*\\|",
+      "enum\\s+\\w+",
+      "namespace\\s+\\w+"
+    ],
+    "import_patterns": [
+      "import\\s+.*from\\s+['\"]([^'\"]+)['\"]",
+      "import\\s+type\\s+"
+    ],
+    "dependencies": {
+      "file": "package.json",
+      "section": "devDependencies",
+      "common_packages": ["typescript", "@types/node", "@types/react"]
+    }
+  },
+  "framework_hints": {
+    "nestjs": {
+      "patterns": ["@Controller", "@Injectable", "@Module", "@Get", "@Post", "NestFactory"],
+      "config_files": ["nest-cli.json"],
+      "confidence_boost": 0.5
+    },
+    "angular": {
+      "patterns": ["@Component", "@NgModule", "@Injectable", "Angular"],
+      "config_files": ["angular.json"],
+      "confidence_boost": 0.5
+    }
+  },
+  "build_commands": {
+    "install": "npm install",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "check": "tsc --noEmit"
+  },
+  "metadata": {
+    "ecosystem": "npm",
+    "package_manager": "npm",
+    "typical_structure": ["src/", "dist/", "types/", "@types/"]
+  }
+}

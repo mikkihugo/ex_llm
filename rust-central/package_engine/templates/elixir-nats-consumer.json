@@ -1,0 +1,60 @@
+{
+  "id": "elixir-nats-consumer",
+  "name": "Elixir NATS Consumer Generator",
+  "description": "Generates Elixir GenServer NATS consumers with supervision",
+  "steps": [
+    {
+      "name": "sparc-phase-1-research",
+      "operation": {"type": "generate", "generate": "sparc-research"}
+    },
+    {
+      "name": "sparc-phase-2-architecture",
+      "operation": {"type": "generate", "generate": "sparc-architecture"}
+    },
+    {
+      "name": "sparc-phase-5-implementation",
+      "operation": {"type": "generate", "generate": "elixir-nats-consumer"}
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "author": "SPARC Team",
+    "created_at": "2025-10-04T00:00:00Z",
+    "updated_at": "2025-10-04T00:00:00Z",
+    "tags": ["elixir", "nats", "genserver", "event-driven", "otp"],
+    "performance": {
+      "avg_execution_time_ms": 90.0,
+      "memory_usage_bytes": 1835008,
+      "complexity": 5
+    }
+  },
+  "detector_signatures": {
+    "package_files": ["mix.exs"],
+    "dependencies": ["gnat", "jason"],
+    "file_patterns": ["lib/**/consumers/*.ex", "lib/**/nats/*.ex"],
+    "code_patterns": [
+      "use GenServer",
+      "Gnat.",
+      ":gnat",
+      "subscribe"
+    ],
+    "min_confidence": 0.7
+  },
+  "ai_signature": {
+    "name": "elixir_nats_consumer",
+    "inputs": {
+      "subject": "NATS subject pattern",
+      "module_name": "Consumer module name",
+      "message_type": "Message struct/schema",
+      "use_supervision": "Add to supervision tree (default: true)"
+    },
+    "outputs": {
+      "genserver": "GenServer implementation",
+      "message_handlers": "Message processing callbacks",
+      "supervisor": "Supervisor configuration",
+      "tests": "ExUnit tests"
+    },
+    "instruction": "Generate production-ready Elixir NATS consumer with: (1) GenServer for state management, (2) Gnat client integration, (3) Message parsing and validation, (4) Error handling with telemetry, (5) Backpressure handling, (6) Graceful shutdown, (7) Comprehensive tests. Follow OTP principles and Elixir conventions."
+  },
+  "template_content": "defmodule {{ModuleName}}Consumer do\n  @moduledoc \"\"\"\n  NATS consumer for {{subject}} events.\n  \n  ## Architecture\n  - GenServer for state management\n  - Subscribes to: {{subject}}\n  - Handles: {{MessageType}} messages\n  \"\"\"\n  \n  use GenServer\n  require Logger\n  \n  @subject \"{{subject}}\"\n  @queue_group \"{{queue_group}}\"\n  \n  ## Client API\n  \n  @doc \"Start the consumer\"\n  @spec start_link(keyword()) :: GenServer.on_start()\n  def start_link(opts \\\\ []) do\n    GenServer.start_link(__MODULE__, opts, name: __MODULE__)\n  end\n  \n  ## Server Callbacks\n  \n  @impl true\n  def init(opts) do\n    Logger.info(\"Starting {{ModuleName}}Consumer for subject: #{@subject}\")\n    \n    # Connect to NATS\n    {:ok, gnat} = Keyword.get(opts, :gnat_conn, Application.get_env(:{{app_name}}, :gnat_conn))\n    \n    # Subscribe to subject\n    {:ok, subscription} = Gnat.sub(gnat, self(), @subject, queue_group: @queue_group)\n    \n    state = %{\n      gnat: gnat,\n      subscription: subscription,\n      messages_processed: 0\n    }\n    \n    {:ok, state}\n  end\n  \n  @impl true\n  def handle_info({:msg, %{body: body, reply_to: reply_to} = msg}, state) do\n    Logger.debug(\"Received message on #{@subject}: #{inspect(body)}\")\n    \n    # Parse message\n    case Jason.decode(body) do\n      {:ok, payload} ->\n        # Process message\n        case process_message(payload, state) do\n          {:ok, result} ->\n            Logger.info(\"Processed message: #{inspect(result)}\")\n            \n            # Emit telemetry\n            :telemetry.execute(\n              [:{{app_name}}, :nats, :message, :processed],\n              %{count: 1},\n              %{subject: @subject, consumer: __MODULE__}\n            )\n            \n            # Send reply if requested\n            if reply_to do\n              Gnat.pub(state.gnat, reply_to, Jason.encode!(%{status: :ok, result: result}))\n            end\n            \n            {:noreply, %{state | messages_processed: state.messages_processed + 1}}\n          \n          {:error, reason} ->\n            Logger.error(\"Error processing message: #{inspect(reason)}\")\n            \n            :telemetry.execute(\n              [:{{app_name}}, :nats, :message, :failed],\n              %{count: 1},\n              %{subject: @subject, consumer: __MODULE__, reason: reason}\n            )\n            \n            {:noreply, state}\n        end\n      \n      {:error, reason} ->\n        Logger.error(\"Failed to decode message: #{inspect(reason)}\")\n        {:noreply, state}\n    end\n  end\n  \n  @impl true\n  def handle_info(msg, state) do\n    Logger.warn(\"Unexpected message: #{inspect(msg)}\")\n    {:noreply, state}\n  end\n  \n  @impl true\n  def terminate(reason, state) do\n    Logger.info(\"Shutting down {{ModuleName}}Consumer: #{inspect(reason)}\")\n    \n    # Unsubscribe\n    if state.subscription do\n      Gnat.unsub(state.gnat, state.subscription)\n    end\n    \n    :ok\n  end\n  \n  ## Private Functions\n  \n  defp process_message(payload, _state) do\n    # TODO: Implement message processing logic\n    Logger.debug(\"Processing payload: #{inspect(payload)}\")\n    {:ok, payload}\n  end\nend\n\n# test/{{module_name}}_consumer_test.exs\ndefmodule {{ModuleName}}ConsumerTest do\n  use ExUnit.Case, async: false\n  \n  setup do\n    # Start test NATS server\n    {:ok, gnat} = Gnat.start_link(%{})\n    {:ok, consumer} = {{ModuleName}}Consumer.start_link(gnat_conn: gnat)\n    \n    on_exit(fn ->\n      if Process.alive?(consumer), do: GenServer.stop(consumer)\n      if Process.alive?(gnat), do: GenServer.stop(gnat)\n    end)\n    \n    %{gnat: gnat, consumer: consumer}\n  end\n  \n  test \"processes valid message\", %{gnat: gnat} do\n    message = %{id: \"123\", data: \"test\"}\n    \n    Gnat.pub(gnat, \"{{subject}}\", Jason.encode!(message))\n    \n    # Wait for processing\n    Process.sleep(100)\n    \n    # Assert message was processed (check logs or metrics)\n  end\n  \n  test \"handles invalid JSON\", %{gnat: gnat} do\n    Gnat.pub(gnat, \"{{subject}}\", \"invalid json\")\n    \n    Process.sleep(100)\n    \n    # Consumer should still be alive\n    assert Process.alive?(consumer)\n  end\nend\n"
+}

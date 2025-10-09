@@ -1,0 +1,27 @@
+{
+  "id": "python-base",
+  "name": "Python Base Template",
+  "description": "Common Python patterns and best practices",
+  "language": "python",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": ["python", "base", "common"]
+  },
+  "common_patterns": {
+    "imports": "from typing import Optional, List, Dict\nimport logging\nfrom datetime import datetime",
+    "logging": "logger = logging.getLogger(__name__)",
+    "error_handling": "try:\n    # operation\nexcept SpecificError as e:\n    logger.error(f\"Error: {e}\")\n    raise",
+    "type_hints": "def function(param: str, optional: Optional[int] = None) -> Dict[str, Any]:",
+    "docstrings": "\"\"\"Brief description.\n\nArgs:\n    param: Description\n\nReturns:\n    Description\n\nRaises:\n    ErrorType: Description\n\"\"\""
+  },
+  "style_guide": {
+    "formatter": "black",
+    "linter": "ruff",
+    "type_checker": "mypy",
+    "max_line_length": 100
+  },
+  "testing": {
+    "framework": "pytest",
+    "coverage_min": 80
+  }
+}

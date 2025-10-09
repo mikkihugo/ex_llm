@@ -1,0 +1,61 @@
+{
+  "id": "python-fastapi-crud",
+  "name": "FastAPI CRUD Generator",
+  "description": "Complete CRUD operations for FastAPI with Pydantic validation",
+  "extends": "languages/python/_base.json",
+  "compose": [
+    "bits/security/input-validation.md",
+    "bits/performance/async-optimization.md",
+    "bits/testing/pytest-async.md",
+    "bits/architecture/rest-api.md"
+  ],
+  "workflows": [
+    "workflows/sparc/architecture.json",
+    "workflows/sparc/security.json",
+    "workflows/sparc/performance.json",
+    "workflows/sparc/implementation.json"
+  ],
+  "metadata": {
+    "version": "2.0.0",
+    "author": "SPARC Team",
+    "tags": ["python", "fastapi", "crud", "rest-api"],
+    "complexity": 5
+  },
+  "detector_signatures": {
+    "dependencies": ["fastapi", "pydantic", "uvicorn"],
+    "file_patterns": ["main.py", "app.py", "api/**/*.py"],
+    "import_patterns": ["from fastapi import", "FastAPI()"],
+    "min_confidence": 0.7
+  },
+  "template_variables": {
+    "entity_name": {
+      "type": "string",
+      "description": "Entity name in snake_case (e.g., user, product)",
+      "required": true
+    },
+    "use_auth": {
+      "type": "boolean",
+      "description": "Include authentication",
+      "default": false
+    },
+    "use_db": {
+      "type": "boolean",
+      "description": "Include database integration",
+      "default": true
+    }
+  },
+  "generated_files": [
+    {
+      "path": "app/routes/{{entity_name}}.py",
+      "type": "router"
+    },
+    {
+      "path": "app/models/{{entity_name}}.py",
+      "type": "pydantic_models"
+    },
+    {
+      "path": "tests/test_{{entity_name}}.py",
+      "type": "tests"
+    }
+  ]
+}
