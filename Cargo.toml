@@ -1,11 +1,15 @@
 [workspace]
 resolver = "2"
 members = [
-    # Note: Most crates have broken dependencies (missing prompt_engine, linting_engine, etc.)
-    # Minimal workspace with only confirmed working crates
+    # NIFs (Elixir bindings)
+    "rust/nif/analyze_arch_nif",
 
     # Libs
+    "rust/lib/analyze_arch_lib",
     "rust/lib/knowledge_lib",
+
+    # Services
+    "rust/service/analyze_arch_service",
 ]
 
 [workspace.dependencies]
