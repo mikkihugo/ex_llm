@@ -5,7 +5,7 @@
 //! - Transformer interface for semantic understanding (optional)
 //! - Adaptive weighting based on usage patterns
 //!
-//! Copied and adapted from @primecode/neural-ml for standalone operation.
+//! Copied and adapted from neural-ml for standalone operation.
 
 pub mod tfidf;
 pub mod similarity;

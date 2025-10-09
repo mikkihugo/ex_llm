@@ -1,0 +1,69 @@
+{
+  "name": "Web Application Domain Template",
+  "spec_version": "1.0.0",
+  "domain": "web_application",
+  "description": "Web application domain patterns for HTTP, APIs, and web security",
+  "extends": [],
+  "version": "1.0.0",
+  "last_updated": "2025-01-27",
+  "requirements": {
+    "web_patterns": {
+      "http_handling": {
+        "required": true,
+        "patterns": ["request_validation", "response_formatting", "error_handling"]
+      },
+      "api_design": {
+        "required": true,
+        "patterns": ["restful_design", "versioning", "documentation"]
+      },
+      "security": {
+        "required": true,
+        "patterns": ["authentication", "authorization", "input_validation", "cors"]
+      },
+      "performance": {
+        "required": true,
+        "patterns": ["caching", "compression", "rate_limiting"]
+      }
+    },
+    "relationship_annotations": {
+      "patterns": {
+        "web_endpoint": "# @web_endpoint: method /path - HTTP endpoint",
+        "api_version": "# @api_version: v1 - API version",
+        "rate_limit": "# @rate_limit: 100/min - rate limiting",
+        "auth_required": "# @auth_required: true - authentication required",
+        "cors_origin": "# @cors_origin: domain - CORS origin",
+        "cache_ttl": "# @cache_ttl: 300s - cache time to live",
+        "validation": "# @validation: schema - input validation schema"
+      }
+    }
+  },
+  "patterns": {
+    "restful_api": {
+      "intent": "Implement RESTful API endpoints with proper HTTP methods",
+      "pseudocode": "// @web_endpoint: GET /api/v1/users\n// @api_version: v1\n// @auth_required: true\n// @rate_limit: 100/min\nfn get_users() -> Result<Vec<User>, ApiError>",
+      "when_to_use": ["api_endpoints", "resource_management", "crud_operations"]
+    },
+    "web_security": {
+      "intent": "Implement web security patterns and protections",
+      "pseudocode": "// @auth_required: true\n// @validation: user_schema\n// @cors_origin: localhost:3000\nfn secure_endpoint(request: Request) -> Result<Response, SecurityError>",
+      "when_to_use": ["authentication", "authorization", "input_validation", "cors"]
+    },
+    "web_performance": {
+      "intent": "Implement web performance optimizations",
+      "pseudocode": "// @cache_ttl: 300s\n// @rate_limit: 1000/min\nfn cached_endpoint() -> Result<CachedResponse, Error>",
+      "when_to_use": ["caching", "rate_limiting", "performance_optimization"]
+    }
+  },
+  "quality_checklist": [
+    "HTTP methods used correctly",
+    "API versioning implemented",
+    "Authentication and authorization implemented",
+    "Input validation implemented",
+    "CORS configured properly",
+    "Rate limiting implemented",
+    "Caching strategy implemented",
+    "Error handling for web requests implemented",
+    "Web security patterns implemented",
+    "Performance optimizations implemented"
+  ]
+}

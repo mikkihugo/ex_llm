@@ -5,14 +5,25 @@ defmodule Singularity.ArchitectureEngine do
   Combines architecture detection from meta-registry with intelligent naming suggestions.
   This engine runs both as Rust NIF (fast local) and Elixir service (with database access).
 
-  ## Features:
-  - Architecture-aware naming suggestions
-  - Meta-registry integration (technology_detections table)
-  - Context-aware naming (file path, codebase structure)
-  - Multi-language support (Elixir, Rust, TypeScript, Gleam)
-  - Complex naming patterns (monorepos, microservices, messaging)
+  ## Public API Contract
 
-  ## Usage:
+  - suggest_function_names(description, context) :: {:ok, [String.t()]} | {:error, :nif_not_loaded}
+  - suggest_module_names(description, context) :: {:ok, [String.t()]} | {:error, :nif_not_loaded}
+  - suggest_variable_names(description, context) :: {:ok, [String.t()]} | {:error, :nif_not_loaded}
+  - validate_naming_convention(name, element_type) :: {:ok, boolean()} | {:error, :nif_not_loaded}
+  - register_repository(repo_id, repo_path, architecture) :: {:ok, TechnologyDetection.t()} | {:error, Ecto.Changeset.t()}
+  - analyze_codebase(codebase_id, opts) :: {:ok, map()} | {:error, String.t()}
+  - health() :: :ok | {:error, atom()}
+
+  ## Error Matrix
+
+  :nif_not_loaded | NIF functions not available (Rust compilation issue)
+  :nats_unavailable | NATS connection failed
+  :repo_unavailable | Database connection failed
+  :dependencies_unavailable | Both NATS and database unavailable
+  :invalid_codebase | No files found for codebase analysis
+
+  ## Examples
 
       # Basic naming
       ArchitectureEngine.suggest_function_names("calculate total price")
@@ -117,24 +128,72 @@ defmodule Singularity.ArchitectureEngine do
   # ============================================================================
 
   @doc """
-  Suggest function names based on description and context
+  Suggest function names based on description and context.
+
+  ## Parameters
+  - description :: String.t() - Description of the function purpose
+  - context :: String.t() | nil - Optional context for better suggestions
+
+  ## Returns
+  - {:ok, [String.t()]} - List of suggested function names
+  - {:error, :nif_not_loaded} - NIF not available
+
+  ## Examples
+      iex> ArchitectureEngine.suggest_function_names("calculate total price")
+      {:ok, ["calculate_total_price", "compute_total", "calculate_sum"]}
   """
-  def suggest_function_names(_description, _context \\ nil), do: :erlang.nif_error(:nif_not_loaded)
+  @spec suggest_function_names(String.t(), String.t() | nil) :: {:ok, [String.t()]} | {:error, :nif_not_loaded}
+  def suggest_function_names(_description, _context \\ nil) do
+    {:error, :nif_not_loaded}
+  end
 
   @doc """
-  Suggest module names based on description and context
+  Suggest module names based on description and context.
+
+  ## Parameters
+  - description :: String.t() - Description of the module purpose
+  - context :: String.t() | nil - Optional context for better suggestions
+
+  ## Returns
+  - {:ok, [String.t()]} - List of suggested module names
+  - {:error, :nif_not_loaded} - NIF not available
   """
-  def suggest_module_names(_description, _context \\ nil), do: :erlang.nif_error(:nif_not_loaded)
+  @spec suggest_module_names(String.t(), String.t() | nil) :: {:ok, [String.t()]} | {:error, :nif_not_loaded}
+  def suggest_module_names(_description, _context \\ nil) do
+    {:error, :nif_not_loaded}
+  end
 
   @doc """
-  Suggest variable names based on description and context
+  Suggest variable names based on description and context.
+
+  ## Parameters
+  - description :: String.t() - Description of the variable purpose
+  - context :: String.t() | nil - Optional context for better suggestions
+
+  ## Returns
+  - {:ok, [String.t()]} - List of suggested variable names
+  - {:error, :nif_not_loaded} - NIF not available
   """
-  def suggest_variable_names(_description, _context \\ nil), do: :erlang.nif_error(:nif_not_loaded)
+  @spec suggest_variable_names(String.t(), String.t() | nil) :: {:ok, [String.t()]} | {:error, :nif_not_loaded}
+  def suggest_variable_names(_description, _context \\ nil) do
+    {:error, :nif_not_loaded}
+  end
 
   @doc """
-  Validate naming convention
+  Validate naming convention.
+
+  ## Parameters
+  - name :: String.t() - Name to validate
+  - element_type :: String.t() - Type of element (function, module, variable)
+
+  ## Returns
+  - {:ok, boolean()} - true if valid, false if invalid
+  - {:error, :nif_not_loaded} - NIF not available
   """
-  def validate_naming_convention(_name, _element_type), do: :erlang.nif_error(:nif_not_loaded)
+  @spec validate_naming_convention(String.t(), String.t()) :: {:ok, boolean()} | {:error, :nif_not_loaded}
+  def validate_naming_convention(_name, _element_type) do
+    {:error, :nif_not_loaded}
+  end
 
   @doc """
   Suggest monorepo names (HashiCorp, Google, Microsoft, etc.)
@@ -201,8 +260,23 @@ defmodule Singularity.ArchitectureEngine do
   # ============================================================================
 
   @doc """
-  Register a repository in the meta-registry
+  Register a repository in the meta-registry.
+
+  ## Parameters
+  - repo_id :: String.t() - Unique repository identifier
+  - repo_path :: String.t() - File system path to repository
+  - architecture :: String.t() - Detected architecture pattern
+
+  ## Returns
+  - {:ok, TechnologyDetection.t()} - Successfully registered detection
+  - {:error, Ecto.Changeset.t()} - Database validation error
+
+  ## Examples
+      iex> ArchitectureEngine.register_repository("my-repo", "/path/to/repo", "microservices")
+      {:ok, %TechnologyDetection{}}
   """
+  @spec register_repository(String.t(), String.t(), String.t()) :: 
+    {:ok, TechnologyDetection.t()} | {:error, Ecto.Changeset.t()}
   def register_repository(repo_id, repo_path, architecture \\ "generic") do
     # Store in database
     {:ok, detection} = TechnologyDetection.create(Repo, %{

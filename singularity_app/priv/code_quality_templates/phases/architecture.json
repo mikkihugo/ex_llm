@@ -1,0 +1,73 @@
+{
+  "name": "Architecture Phase Template",
+  "spec_version": "1.0.0",
+  "phase": "architecture",
+  "description": "Architecture phase patterns for system design and component relationships",
+  "extends": [],
+  "version": "1.0.0",
+  "last_updated": "2025-01-27",
+  "requirements": {
+    "documentation": {
+      "architecture_sections": [
+        {
+          "id": "system_overview",
+          "required": true,
+          "min_length": 200,
+          "purpose": "High-level system architecture and design overview"
+        },
+        {
+          "id": "component_design",
+          "required": true,
+          "min_length": 150,
+          "purpose": "Detailed component design and responsibilities"
+        },
+        {
+          "id": "interface_specifications",
+          "required": true,
+          "min_length": 100,
+          "purpose": "Component interface specifications and contracts"
+        },
+        {
+          "id": "deployment_architecture",
+          "required": true,
+          "min_length": 100,
+          "purpose": "Deployment and infrastructure architecture"
+        }
+      ]
+    },
+    "relationship_annotations": {
+      "patterns": {
+        "architects": "# @architects: component - component architecture",
+        "integrates": "# @integrates: component1 <-> component2 - integration",
+        "deploys": "# @deploys: component -> environment - deployment",
+        "scales": "# @scales: component - scaling strategy",
+        "monitors": "# @monitors: component - monitoring strategy"
+      }
+    },
+    "architecture_patterns": {
+      "component_architecture": {
+        "intent": "Design system components with clear responsibilities",
+        "pseudocode": "// @architects: component - component name\n// @integrates: component1 <-> component2 - integration\nstruct Component {\n  // Component design\n}",
+        "when_to_use": ["system_design", "component_definition", "responsibility_assignment"]
+      },
+      "integration_design": {
+        "intent": "Design component integrations and interfaces",
+        "pseudocode": "// @integrates: component1 <-> component2 - integration type\nfn integrate_components(comp1: Component1, comp2: Component2) -> Integration",
+        "when_to_use": ["interface_design", "api_design", "service_integration"]
+      },
+      "deployment_architecture": {
+        "intent": "Design deployment and infrastructure architecture",
+        "pseudocode": "// @deploys: component -> environment - deployment target\n// @scales: component - scaling approach\nfn deploy_component(component: Component, env: Environment) -> Deployment",
+        "when_to_use": ["infrastructure_design", "deployment_planning", "scaling_design"]
+      }
+    }
+  },
+  "quality_checklist": [
+    "System overview documented",
+    "Component design specified",
+    "Interface specifications defined",
+    "Deployment architecture planned",
+    "Architecture annotations present",
+    "Architecture phase versioning implemented"
+  ]
+}

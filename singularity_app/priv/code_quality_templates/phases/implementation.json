@@ -1,0 +1,73 @@
+{
+  "name": "Implementation Phase Template",
+  "spec_version": "1.0.0",
+  "phase": "implementation",
+  "description": "Implementation phase patterns for code generation and development",
+  "extends": [],
+  "version": "1.0.0",
+  "last_updated": "2025-01-27",
+  "requirements": {
+    "documentation": {
+      "implementation_sections": [
+        {
+          "id": "code_generation",
+          "required": true,
+          "min_length": 200,
+          "purpose": "Code generation patterns and implementation strategies"
+        },
+        {
+          "id": "testing_strategy",
+          "required": true,
+          "min_length": 150,
+          "purpose": "Testing strategy and quality assurance approach"
+        },
+        {
+          "id": "deployment_strategy",
+          "required": true,
+          "min_length": 100,
+          "purpose": "Deployment and release strategy"
+        },
+        {
+          "id": "maintenance_plan",
+          "required": true,
+          "min_length": 100,
+          "purpose": "Maintenance and evolution plan"
+        }
+      ]
+    },
+    "relationship_annotations": {
+      "patterns": {
+        "implements": "# @implements: specification - specification implementation",
+        "tests": "# @tests: component - testing strategy",
+        "deploys": "# @deploys: component -> environment - deployment",
+        "maintains": "# @maintains: component - maintenance strategy",
+        "evolves": "# @evolves: component - evolution strategy"
+      }
+    },
+    "implementation_patterns": {
+      "code_implementation": {
+        "intent": "Implement code based on specifications and architecture",
+        "pseudocode": "// @implements: specification - spec reference\n// @tests: component - test coverage\nfn implement_feature(spec: Specification) -> Implementation",
+        "when_to_use": ["feature_implementation", "component_development", "api_implementation"]
+      },
+      "testing_implementation": {
+        "intent": "Implement comprehensive testing strategy",
+        "pseudocode": "// @tests: component - test type\nfn test_component(component: Component) -> TestResult",
+        "when_to_use": ["unit_testing", "integration_testing", "end_to_end_testing"]
+      },
+      "deployment_implementation": {
+        "intent": "Implement deployment and release strategy",
+        "pseudocode": "// @deploys: component -> environment - deployment target\n// @maintains: component - maintenance approach\nfn deploy_component(component: Component) -> DeploymentResult",
+        "when_to_use": ["deployment_automation", "release_management", "infrastructure_provisioning"]
+      }
+    }
+  },
+  "quality_checklist": [
+    "Code generation strategy defined",
+    "Testing strategy implemented",
+    "Deployment strategy planned",
+    "Maintenance plan documented",
+    "Implementation annotations present",
+    "Implementation phase versioning implemented"
+  ]
+}

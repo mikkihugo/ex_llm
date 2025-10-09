@@ -1,6 +1,6 @@
 //! Similarity Metrics
 //!
-//! Copied from @primecode/neural-ml/pattern_recognition.rs
+//! Copied from neural-ml/pattern_recognition.rs
 
 use super::EmbeddingError;
 use anyhow::Result;

@@ -1,0 +1,45 @@
+//! # FACT - Fast Augmented Context Tools
+//!
+//! A high-performance context processing engine for Rust.
+//!
+//! ## Features
+//!
+//! - **High Performance**: Optimized data structures and algorithms
+//! - **Intelligent Caching**: Multi-tier caching with LRU eviction
+//! - **Cognitive Templates**: Pre-built templates for common patterns
+//! - **Async Support**: Full async/await support with Tokio
+//! - **Cross-Platform**: Works on Linux, macOS, and Windows
+//!
+//! ## Example
+//!
+//! ```rust
+//! use fact_tools::Fact;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! // Create a new FACT instance
+//! let fact = Fact::new();
+//!
+//! // Process with a template
+//! let result = fact.process(
+//!     "analysis-basic",
+//!     serde_json::json!({
+//!         "data": [1, 2, 3, 4, 5],
+//!         "operation": "sum"
+//!     })
+//! ).await?;
+//!
+//! println!("Result: {}", result);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Native Node.js Module Example
+//!
+//! ```typescript
+//! import { FactNativeModule } from './fact-native-bindings';
+//! const factModule = new FactNativeModule();
+//! const result = await factModule.process('analysis-basic', { data: [1, 2, 3] });
+//! console.log(result);
+//! ```
+
+use parking_lot::RwLock;

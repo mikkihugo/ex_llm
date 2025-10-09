@@ -1,5 +1,5 @@
 [package]
-name = "package"
+name = "package-service"
 version = "1.1.0"
 authors = ["mikkihugo"]
 edition = "2021"
@@ -17,11 +17,11 @@ path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "package"
+name = "package-registry-indexer"
 path = "src/bin/main.rs"
 
 [[bin]]
-name = "package-registry-service"
+name = "package-service"
 path = "src/bin/service.rs"
 
 [dependencies]

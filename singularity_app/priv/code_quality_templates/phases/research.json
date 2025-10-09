@@ -1,0 +1,77 @@
+{
+  "name": "Research Phase Template",
+  "spec_version": "1.0.0",
+  "phase": "research",
+  "description": "Research phase patterns for technology analysis and literature review",
+  "extends": [],
+  "version": "1.0.0",
+  "last_updated": "2025-01-27",
+  "requirements": {
+    "documentation": {
+      "research_sections": [
+        {
+          "id": "literature_review",
+          "required": true,
+          "min_length": 200,
+          "purpose": "Comprehensive review of existing solutions and approaches"
+        },
+        {
+          "id": "technology_analysis",
+          "required": true,
+          "min_length": 150,
+          "purpose": "Analysis of technology options and trade-offs"
+        },
+        {
+          "id": "source_citations",
+          "required": true,
+          "min_sources": 5,
+          "purpose": "Proper citation of research sources and references"
+        },
+        {
+          "id": "research_notes",
+          "required": true,
+          "min_length": 100,
+          "purpose": "Research methodology and findings documentation"
+        }
+      ]
+    },
+    "relationship_annotations": {
+      "patterns": {
+        "researches": "# @researches: topic - research focus area",
+        "cites": "# @cites: source - reference to research source",
+        "analyzes": "# @analyzes: technology - technology analysis",
+        "compares": "# @compares: option1 vs option2 - comparison analysis",
+        "evaluates": "# @evaluates: criteria - evaluation criteria"
+      }
+    },
+    "research_patterns": {
+      "literature_review": {
+        "intent": "Comprehensive review of existing research and solutions",
+        "pseudocode": "// @researches: topic - research focus\n// @cites: source - reference\nfn literature_review(topic: String) -> ResearchReport",
+        "when_to_use": ["technology_selection", "solution_analysis", "best_practices_research"]
+      },
+      "technology_analysis": {
+        "intent": "Analyze technology options and trade-offs",
+        "pseudocode": "// @analyzes: technology - analysis focus\n// @compares: option1 vs option2 - comparison\nfn analyze_technology(options: Vec<Technology>) -> AnalysisReport",
+        "when_to_use": ["technology_evaluation", "architecture_decisions", "tool_selection"]
+      },
+      "research_validation": {
+        "intent": "Validate research findings and conclusions",
+        "pseudocode": "// @evaluates: criteria - evaluation criteria\nfn validate_research(findings: ResearchFindings) -> ValidationResult",
+        "when_to_use": ["research_verification", "hypothesis_testing", "conclusion_validation"]
+      }
+    }
+  },
+  "quality_checklist": [
+    "Literature review completed with 5+ sources",
+    "Technology analysis covers 3+ options",
+    "Source citations properly formatted",
+    "Research methodology documented",
+    "Findings clearly summarized",
+    "Research notes comprehensive",
+    "Technology trade-offs analyzed",
+    "Research validation completed",
+    "Research annotations present",
+    "Research phase versioning implemented"
+  ]
+}
