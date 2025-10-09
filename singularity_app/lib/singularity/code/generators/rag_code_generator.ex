@@ -54,6 +54,8 @@ defmodule Singularity.RAGCodeGenerator do
 
   require Logger
   alias Singularity.{EmbeddingEngine, CodeModel}
+  alias Singularity.Knowledge.ArtifactStore
+  alias Singularity.Code.Quality.TemplateValidator
 
   @type generation_opts :: [
           task: String.t(),
@@ -61,7 +63,10 @@ defmodule Singularity.RAGCodeGenerator do
           repos: [String.t()] | nil,
           top_k: integer(),
           prefer_recent: boolean(),
-          temperature: float()
+          temperature: float(),
+          quality_level: String.t(),
+          validate: boolean(),
+          max_retries: integer()
         ]
 
   @doc """
@@ -76,6 +81,9 @@ defmodule Singularity.RAGCodeGenerator do
   - `:prefer_recent` - Prefer recently modified code (default: false)
   - `:temperature` - Generation temperature (default: 0.05 for strict)
   - `:include_tests` - Include test examples (default: true)
+  - `:quality_level` - Quality level (default: "production") - uses quality templates
+  - `:validate` - Validate generated code against template (default: true)
+  - `:max_retries` - Max validation retries (default: 2)
   """
   @spec generate(generation_opts()) :: {:ok, String.t()} | {:error, term()}
   def generate(opts) do
@@ -86,14 +94,20 @@ defmodule Singularity.RAGCodeGenerator do
     prefer_recent = Keyword.get(opts, :prefer_recent, false)
     temperature = Keyword.get(opts, :temperature, 0.05)
     include_tests = Keyword.get(opts, :include_tests, true)
+    quality_level = Keyword.get(opts, :quality_level, "production")
+    validate = Keyword.get(opts, :validate, true)
+    max_retries = Keyword.get(opts, :max_retries, 2)
 
-    Logger.info("RAG Code Generation: #{task}")
+    Logger.info("RAG Code Generation: #{task} (quality: #{quality_level}, validate: #{validate})")
 
-    with {:ok, examples} <-
-           find_best_examples(task, language, repos, top_k, prefer_recent, include_tests),
-         {:ok, prompt} <- build_rag_prompt(task, examples, language),
-         {:ok, code} <- CodeModel.complete(prompt, temperature: temperature) do
-      Logger.info("✅ Generated #{String.length(code)} chars using #{length(examples)} examples")
+    with {:ok, quality_template} <- load_quality_template(language, quality_level),
+         {:ok, examples} <-
+           find_best_examples(task, language, repos, top_k, prefer_recent, include_tests, quality_template),
+         {:ok, prompt} <- build_rag_prompt(task, examples, language, quality_template),
+         {:ok, code} <- generate_with_validation(
+           prompt, temperature, quality_template, language, validate, max_retries
+         ) do
+      Logger.info("✅ Generated #{String.length(code)} chars using #{length(examples)} examples (template: #{quality_template && quality_template.artifact_id || "none"})")
       {:ok, code}
     else
       {:error, reason} ->
@@ -106,6 +120,8 @@ defmodule Singularity.RAGCodeGenerator do
   Find the BEST code examples from all codebases using semantic search
 
   Returns ranked examples with metadata (quality scores, repo, path, etc.)
+
+  If quality_template is provided, filters examples to match template requirements.
   """
   @spec find_best_examples(
           String.t(),
@@ -113,10 +129,11 @@ defmodule Singularity.RAGCodeGenerator do
           [String.t()] | nil,
           integer(),
           boolean(),
-          boolean()
+          boolean(),
+          map() | nil
         ) ::
           {:ok, [map()]} | {:error, term()}
-  def find_best_examples(task, language, repos, top_k, prefer_recent, include_tests) do
+  def find_best_examples(task, language, repos, top_k, prefer_recent, include_tests, quality_template \\ nil) do
     # 1. Create search query (semantic)
     search_query = build_search_query(task, language)
 
@@ -124,16 +141,19 @@ defmodule Singularity.RAGCodeGenerator do
 
     # 2. Semantic search in PostgreSQL (pgvector)
     with {:ok, embedding} <- EmbeddingEngine.embed(search_query),
-         # Get 2x, then filter
-         {:ok, results} <- semantic_search(embedding, language, repos, top_k * 2) do
+         # Get 3x if using template (more filtering), else 2x
+         multiplier <- if quality_template, do: 3, else: 2,
+         {:ok, results} <- semantic_search(embedding, language, repos, top_k * multiplier) do
       # 3. Rank and filter results
       ranked =
         results
         |> filter_quality(include_tests)
-        |> rank_by_quality(prefer_recent)
+        |> filter_by_template(quality_template)
+        |> rank_by_quality(prefer_recent, quality_template)
         |> Enum.take(top_k)
 
-      Logger.debug("Found #{length(ranked)} high-quality examples")
+      template_name = if quality_template, do: quality_template.artifact_id, else: "none"
+      Logger.debug("Found #{length(ranked)} high-quality examples (template: #{template_name})")
       {:ok, ranked}
     else
       {:error, reason} -> {:error, reason}
@@ -246,7 +266,26 @@ defmodule Singularity.RAGCodeGenerator do
     end)
   end
 
-  defp rank_by_quality(examples, prefer_recent) do
+  defp filter_by_template(examples, nil), do: examples
+  defp filter_by_template(examples, quality_template) do
+    requirements = get_in(quality_template.content, ["requirements"]) || %{}
+
+    examples
+    |> Enum.filter(fn ex ->
+      metadata = ex.metadata || %{}
+
+      # Check if example meets template requirements
+      meets_doc_requirements = check_doc_requirements(ex.content, requirements)
+      meets_spec_requirements = check_spec_requirements(ex.content, requirements)
+      meets_error_requirements = check_error_requirements(ex.content, requirements)
+      meets_test_requirements = check_test_requirements(metadata, requirements)
+
+      meets_doc_requirements and meets_spec_requirements and
+        meets_error_requirements and meets_test_requirements
+    end)
+  end
+
+  defp rank_by_quality(examples, prefer_recent, quality_template \\ nil) do
     examples
     |> Enum.sort_by(fn ex ->
       # Multi-factor ranking score
@@ -266,22 +305,42 @@ defmodule Singularity.RAGCodeGenerator do
       # Code size bonus (prefer substantial code, not snippets)
       size_score = min(100, div(String.length(ex.content), 10))
 
+      # Template compliance bonus (if template provided)
+      template_score = if quality_template do
+        calculate_template_compliance(ex, quality_template) * 500
+      else
+        0
+      end
+
       # Total score
       # Negative for DESC sort
-      -(similarity_score + recency_score + size_score)
+      -(similarity_score + recency_score + size_score + template_score)
     end)
   end
 
-  defp build_rag_prompt(task, examples, language) do
+  defp build_rag_prompt(task, examples, language, quality_template \\ nil) do
     # Build prompt with examples from best codebases
     language_hint = if language, do: language, else: "auto-detect"
+
+    # Build quality requirements section if template provided
+    quality_section = if quality_template do
+      build_quality_requirements_section(quality_template)
+    else
+      ""
+    end
 
     examples_text =
       examples
       |> Enum.with_index(1)
       |> Enum.map(fn {ex, idx} ->
+        compliance = if quality_template do
+          " (compliance: #{round(calculate_template_compliance(ex, quality_template) * 100)}%)"
+        else
+          ""
+        end
+
         """
-        Example #{idx} (from #{ex.repo}/#{Path.basename(ex.path)}, similarity: #{Float.round(ex.similarity, 2)}):
+        Example #{idx} (from #{ex.repo}/#{Path.basename(ex.path)}, similarity: #{Float.round(ex.similarity, 2)}#{compliance}):
         ```#{ex.language}
         #{String.slice(ex.content, 0..500)}
         ```
@@ -292,12 +351,12 @@ defmodule Singularity.RAGCodeGenerator do
     prompt = """
     Task: #{task}
     Language: #{language_hint}
-
+    #{quality_section}
     Here are #{length(examples)} similar, high-quality code examples from your codebases:
 
     #{examples_text}
 
-    Based on these proven patterns, generate code for the task.
+    Based on these proven patterns#{if quality_template, do: " and PRODUCTION QUALITY REQUIREMENTS", else: ""}, generate code for the task.
     OUTPUT CODE ONLY - no explanations, no comments about the examples.
 
     """
@@ -359,5 +418,227 @@ defmodule Singularity.RAGCodeGenerator do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  ## Code Generation with Validation
+
+  defp generate_with_validation(prompt, temperature, quality_template, language, validate, max_retries) do
+    generate_with_validation_loop(prompt, temperature, quality_template, language, validate, max_retries, 0)
+  end
+
+  defp generate_with_validation_loop(prompt, temperature, quality_template, language, validate, max_retries, attempt) do
+    # Generate code
+    case CodeModel.complete(prompt, temperature: temperature) do
+      {:ok, code} ->
+        # Validate if requested and template available
+        if validate && quality_template && language do
+          case TemplateValidator.validate(code, quality_template, language) do
+            {:ok, %{compliant: true, score: score}} ->
+              Logger.info("✅ Validation passed (score: #{Float.round(score, 2)}, attempt: #{attempt + 1})")
+              {:ok, code}
+
+            {:ok, %{compliant: false, violations: violations, score: score}} ->
+              Logger.warn("❌ Validation failed (score: #{Float.round(score, 2)}, attempt: #{attempt + 1})")
+              Logger.warn("Violations: #{inspect(violations)}")
+
+              if attempt < max_retries do
+                Logger.info("🔄 Retrying with stricter prompt (attempt #{attempt + 2}/#{max_retries + 1})")
+
+                # Build stricter prompt with violations feedback
+                stricter_prompt = add_violation_feedback(prompt, violations)
+
+                generate_with_validation_loop(
+                  stricter_prompt,
+                  temperature * 0.8, # Lower temperature for more deterministic output
+                  quality_template,
+                  language,
+                  validate,
+                  max_retries,
+                  attempt + 1
+                )
+              else
+                Logger.error("❌ Max retries reached, returning code anyway")
+                # Return code even if it doesn't validate (with warning in log)
+                {:ok, code}
+              end
+
+            {:error, reason} ->
+              Logger.warn("Validation error (non-fatal): #{inspect(reason)}")
+              {:ok, code} # Return code anyway
+          end
+        else
+          # No validation requested or no template
+          {:ok, code}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp add_violation_feedback(original_prompt, violations) do
+    violations_text = violations
+    |> Enum.map(fn v -> "- #{v}" end)
+    |> Enum.join("\n")
+
+    """
+    #{original_prompt}
+
+    ⚠️ PREVIOUS ATTEMPT FAILED VALIDATION:
+    #{violations_text}
+
+    Please regenerate the code ensuring ALL requirements are met.
+    Pay special attention to the violations listed above.
+    """
+  end
+
+  ## Quality Template Helper Functions
+
+  defp load_quality_template(nil, _quality_level), do: {:ok, nil}
+  defp load_quality_template(language, quality_level) do
+    artifact_id = "#{language}_#{quality_level}"
+
+    case ArtifactStore.get("quality_template", artifact_id) do
+      {:ok, template} ->
+        Logger.debug("Loaded quality template: #{artifact_id}")
+        {:ok, template}
+
+      {:error, _reason} ->
+        # Fallback: try without quality level (just language)
+        case ArtifactStore.get("quality_template", language) do
+          {:ok, template} ->
+            Logger.debug("Loaded fallback quality template: #{language}")
+            {:ok, template}
+
+          {:error, _} ->
+            Logger.warn("No quality template found for #{language}, proceeding without template")
+            {:ok, nil}
+        end
+    end
+  end
+
+  defp build_quality_requirements_section(quality_template) do
+    requirements = get_in(quality_template.content, ["requirements"]) || %{}
+    template_name = quality_template.content["name"] || "Quality Template"
+    quality_level = quality_template.content["quality_level"] || "production"
+
+    req_list = [
+      build_error_handling_req(requirements),
+      build_documentation_req(requirements),
+      build_testing_req(requirements),
+      build_observability_req(requirements)
+    ]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.join("\n")
+
+    """
+    Quality Standard: #{String.upcase(quality_level)} (#{template_name} v#{quality_template.version})
+
+    REQUIREMENTS:
+    #{req_list}
+    """
+  end
+
+  defp build_error_handling_req(requirements) do
+    case get_in(requirements, ["error_handling"]) do
+      %{"required_pattern" => pattern} ->
+        "- Error handling: #{pattern}"
+      _ -> nil
+    end
+  end
+
+  defp build_documentation_req(requirements) do
+    case get_in(requirements, ["documentation"]) do
+      %{} = doc_req ->
+        moduledoc = get_in(doc_req, ["moduledoc", "must_include"]) || []
+        doc = get_in(doc_req, ["doc", "must_include"]) || []
+        parts = (moduledoc ++ doc) |> Enum.uniq() |> Enum.join(", ")
+        if parts != "", do: "- Documentation: Must include #{parts}", else: nil
+      _ -> nil
+    end
+  end
+
+  defp build_testing_req(requirements) do
+    case get_in(requirements, ["testing"]) do
+      %{"coverage_target" => target, "test_types" => types} when is_list(types) ->
+        "- Testing: #{target}% coverage (#{Enum.join(types, ", ")})"
+      %{"coverage_target" => target} ->
+        "- Testing: #{target}% coverage"
+      _ -> nil
+    end
+  end
+
+  defp build_observability_req(requirements) do
+    telemetry = get_in(requirements, ["observability", "telemetry", "required"])
+    logging = get_in(requirements, ["observability", "logging", "use_logger"])
+
+    cond do
+      telemetry && logging -> "- Observability: Telemetry events + structured logging"
+      telemetry -> "- Observability: Telemetry events required"
+      logging -> "- Observability: Structured logging required"
+      true -> nil
+    end
+  end
+
+  defp check_doc_requirements(content, requirements) do
+    doc_req = get_in(requirements, ["documentation"])
+    if doc_req do
+      # Check for @doc and @moduledoc (Elixir)
+      # Or equivalent in other languages
+      String.contains?(content, ["@doc", "@moduledoc", "///", "/**", "#"])
+    else
+      true
+    end
+  end
+
+  defp check_spec_requirements(content, requirements) do
+    type_req = get_in(requirements, ["type_specs"])
+    if type_req && type_req["required"] do
+      # Check for type specs (@spec in Elixir, type hints in Python, etc.)
+      String.contains?(content, ["@spec", ": ", "->", "type"])
+    else
+      true
+    end
+  end
+
+  defp check_error_requirements(content, requirements) do
+    error_req = get_in(requirements, ["error_handling"])
+    if error_req && error_req["required_pattern"] do
+      pattern = error_req["required_pattern"]
+      # Check if content uses the required error pattern
+      String.contains?(content, [pattern, "{:ok,", "{:error,", "Result<", "Option<"])
+    else
+      true
+    end
+  end
+
+  defp check_test_requirements(metadata, requirements) do
+    test_req = get_in(requirements, ["testing"])
+    if test_req && test_req["required"] do
+      # Check if code has associated tests in metadata
+      metadata["has_tests"] == true || metadata["test_coverage"] != nil
+    else
+      true
+    end
+  end
+
+  defp calculate_template_compliance(example, quality_template) do
+    requirements = get_in(quality_template.content, ["requirements"]) || %{}
+    metadata = example.metadata || %{}
+    content = example.content
+
+    checks = [
+      {check_doc_requirements(content, requirements), 0.25},
+      {check_spec_requirements(content, requirements), 0.25},
+      {check_error_requirements(content, requirements), 0.25},
+      {check_test_requirements(metadata, requirements), 0.25}
+    ]
+
+    total_score = checks
+    |> Enum.reduce(0.0, fn {passes, weight}, acc ->
+      if passes, do: acc + weight, else: acc
+    end)
+
+    total_score
   end
 end

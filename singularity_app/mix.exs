@@ -92,7 +92,8 @@ defmodule Singularity.MixProject do
       {:parser_engine, path: "native/parser_engine", runtime: false, app: false, compile: false},
       {:prompt_engine, path: "native/prompt_engine", runtime: false, app: false, compile: false},
       {:quality_engine, path: "native/quality_engine", runtime: false, app: false, compile: false},
-      {:semantic_engine, path: "native/semantic_engine", runtime: false, app: false, compile: false},
+      # Embedding engine (GPU-accelerated with Jina v3 + Qodo-Embed)
+      {:embedding_engine, path: "../rust_global/semantic_embedding_engine", runtime: false, app: false},
 
       # Data & Serialization
       {:jason, "~> 1.4"},

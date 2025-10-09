@@ -1,0 +1,58 @@
+{
+  "$schema": "../UNIFIED_TEMPLATE_SCHEMA.json",
+  "id": "base-elixir-module",
+  "category": "base",
+  "metadata": {
+    "name": "Elixir Module Base",
+    "version": "1.0.0",
+    "description": "Base template for all Elixir modules with documentation",
+    "language": "elixir",
+    "tags": ["base", "elixir", "module"],
+    "created": "2025-01-09"
+  },
+  "content": {
+    "type": "code",
+    "code": "defmodule {{module_name}} do\n  @moduledoc \"\"\"\n  {{description}}\n\n  ## Examples\n\n      iex> {{module_name}}.{{example_function}}()\n      {{example_output}}\n\n  \"\"\"\n\n  {{content}}\nend",
+    "variables": {
+      "module_name": {
+        "type": "string",
+        "description": "Module name (e.g., MyApp.Worker)",
+        "required": true
+      },
+      "description": {
+        "type": "string",
+        "description": "Module description",
+        "required": true
+      },
+      "example_function": {
+        "type": "string",
+        "description": "Example function name for docs",
+        "required": false,
+        "default": "example"
+      },
+      "example_output": {
+        "type": "string",
+        "description": "Example output",
+        "required": false,
+        "default": ":ok"
+      },
+      "content": {
+        "type": "string",
+        "description": "Module content",
+        "required": true
+      }
+    }
+  },
+  "quality_standard": "quality_standards/elixir/production",
+  "examples": [
+    {
+      "description": "Simple module",
+      "variables": {
+        "module_name": "MyApp.Utils",
+        "description": "Utility functions",
+        "content": "def helper, do: :ok"
+      },
+      "output": "defmodule MyApp.Utils do\n  @moduledoc \"\"\"\n  Utility functions\n  ...\n  \"\"\"\n\n  def helper, do: :ok\nend"
+    }
+  ]
+}

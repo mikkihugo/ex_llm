@@ -1,0 +1,134 @@
+{
+  "template_registry": {
+    "version": "1.0.1",
+    "last_updated": "2025-10-09",
+    "templates": {
+      "quality": {
+        "elixir_production": {
+          "path": "code_generation/quality/elixir_production.json",
+          "language": "elixir",
+          "type": "quality",
+          "quality_level": "production",
+          "spec_version": "2.0",
+          "capabilities": ["quality", "graph", "rag"]
+        },
+        "go_production": {
+          "path": "code_generation/quality/go_production.json",
+          "language": "go",
+          "type": "quality",
+          "quality_level": "production",
+          "spec_version": "2.0",
+          "capabilities": ["quality", "graph", "rag"]
+        },
+        "java_production": {
+          "path": "code_generation/quality/java_production.json",
+          "language": "java",
+          "type": "quality",
+          "quality_level": "production",
+          "spec_version": "2.0",
+          "capabilities": ["quality", "graph", "rag"]
+        },
+        "javascript_production": {
+          "path": "code_generation/quality/javascript_production.json",
+          "language": "javascript",
+          "type": "quality",
+          "quality_level": "production",
+          "spec_version": "2.0",
+          "capabilities": ["quality", "graph", "rag"]
+        },
+        "tsx_component_production": {
+          "path": "code_generation/quality/tsx_component_production.json",
+          "language": "tsx",
+          "type": "quality",
+          "quality_level": "production",
+          "spec_version": "2.0",
+          "capabilities": ["quality", "graph", "rag"]
+        },
+        "g16_gleam_production": {
+          "path": "code_generation/quality/g16_gleam_production.json",
+          "language": "gleam",
+          "type": "quality",
+          "quality_level": "production",
+          "spec_version": "2.0",
+          "capabilities": ["quality", "graph", "rag"]
+        }
+      },
+      "phases": {
+        "research": {
+          "path": "phases/research.json",
+          "phase": "research",
+          "type": "phase",
+          "checkpoints": 10,
+          "capabilities": ["research", "literature_review", "technology_analysis"]
+        },
+        "specification": {
+          "path": "phases/specification.json",
+          "phase": "specification",
+          "type": "phase",
+          "checkpoints": 6,
+          "capabilities": ["requirements", "design", "specifications"]
+        },
+        "pseudocode": {
+          "path": "phases/pseudocode.json",
+          "phase": "pseudocode",
+          "type": "phase",
+          "checkpoints": 6,
+          "capabilities": ["algorithms", "logic", "pseudocode"]
+        },
+        "architecture": {
+          "path": "phases/architecture.json",
+          "phase": "architecture",
+          "type": "phase",
+          "checkpoints": 6,
+          "capabilities": ["architecture", "design", "components"]
+        },
+        "implementation": {
+          "path": "phases/implementation.json",
+          "phase": "implementation",
+          "type": "phase",
+          "checkpoints": 6,
+          "capabilities": ["implementation", "testing", "deployment"]
+        }
+      },
+      "domains": {
+        "web_application": {
+          "path": "domains/web_application.json",
+          "domain": "web_application",
+          "type": "domain",
+          "checkpoints": 10,
+          "capabilities": ["http", "api", "security", "performance"]
+        }
+      },
+      "composite": {
+        "elixir_implementation_web_application": {
+          "path": "composite/elixir_implementation_web_application.json",
+          "type": "composite",
+          "extends": ["code_generation/quality/elixir_production.json", "phases/implementation.json", "domains/web_application.json"],
+          "total_checkpoints": 69,
+          "capabilities": ["quality", "graph", "rag", "implementation", "web", "api", "security"]
+        }
+      }
+    },
+    "composition_rules": {
+      "inheritance_order": ["quality", "phase", "domain", "enterprise"],
+      "override_strategy": "last_wins",
+      "merge_strategy": {
+        "quality_checklist": "append",
+        "patterns": "merge",
+        "anti_patterns": "merge",
+        "relationship_annotations": "merge"
+      },
+      "validation_rules": {
+        "required_sections": ["name", "spec_version", "requirements"],
+        "conflict_resolution": "explicit_override_required",
+        "version_compatibility": "semantic_versioning"
+      }
+    },
+    "usage_patterns": {
+      "single_language": "code_generation/quality/{language}_production.json",
+      "language_phase": "compose code_generation/quality/{language}_production.json + phases/{phase}.json",
+      "language_phase_domain": "compose code_generation/quality/{language}_production.json + phases/{phase}.json + domains/{domain}.json",
+      "enterprise": "compose code_generation/quality/{language}_production.json + enterprise/{enterprise}_{language}.json"
+    }
+  }
+}

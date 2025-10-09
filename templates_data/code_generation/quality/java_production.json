@@ -1,0 +1,283 @@
+{
+  "name": "Java Production Quality",
+  "spec_version": "2.0",
+  "capabilities": [
+    "quality",
+    "graph",
+    "rag"
+  ],
+  "language": "java",
+  "quality_level": "production",
+  "description": "Production standards for modern Java (17+) with Spring Boot patterns",
+  "requirements": {
+    "documentation": {
+      "javadoc": {
+        "required": true,
+        "required_for": [
+          "all_public_classes",
+          "all_public_methods"
+        ],
+        "must_include": [
+          "description",
+          "@param",
+          "@return",
+          "@throws",
+          "examples"
+        ]
+      }
+    },
+    "type_safety": {
+      "use_optionals": true,
+      "avoid_null": true,
+      "sealed_classes": "when_appropriate",
+      "records": "for_dtos"
+    },
+    "error_handling": {
+      "style": "exceptions_with_hierarchy",
+      "custom_exceptions": "required",
+      "checked_vs_unchecked": "prefer_unchecked_for_business_logic",
+      "try_with_resources": "for_autocloseable"
+    },
+    "testing": {
+      "required": true,
+      "framework": "JUnit 5",
+      "coverage_target": 85,
+      "test_types": [
+        "unit",
+        "integration",
+        "property_based"
+      ],
+      "mocking": "Mockito"
+    },
+    "code_style": {
+      "naming": "camelCase for methods, PascalCase for classes",
+      "max_method_length": 40,
+      "max_class_length": 500,
+      "immutability": "prefer_final_and_records",
+      "dependency_injection": "constructor_injection"
+    }
+  },
+  "semantic_patterns": {
+    "common_patterns": [
+      {
+        "pattern": "REST Controller",
+        "pseudocode": "@RestController → @Autowired Service → @GetMapping/@PostMapping → ResponseEntity<T> → HTTP response",
+        "relationships": [
+          "Service layer",
+          "DTO validation",
+          "Exception handlers",
+          "Spring Security"
+        ],
+        "keywords": [
+          "controller",
+          "rest",
+          "api",
+          "endpoint",
+          "spring"
+        ]
+      },
+      {
+        "pattern": "Service Layer",
+        "pseudocode": "@Service → @Transactional → Repository calls → business logic → return DTO",
+        "relationships": [
+          "Repository pattern",
+          "Transaction management",
+          "DTOs",
+          "Mapping"
+        ],
+        "keywords": [
+          "service",
+          "business logic",
+          "transaction",
+          "repository"
+        ]
+      },
+      {
+        "pattern": "Repository Pattern",
+        "pseudocode": "interface extends JpaRepository<Entity, ID> → custom queries with @Query → Optional<T> returns",
+        "relationships": [
+          "JPA entities",
+          "Database",
+          "Optional handling",
+          "Specifications"
+        ],
+        "keywords": [
+          "repository",
+          "jpa",
+          "database",
+          "query",
+          "entity"
+        ]
+      },
+      {
+        "pattern": "Event-Driven",
+        "pseudocode": "@EventListener → handle event → async processing → publish new event",
+        "relationships": [
+          "ApplicationEventPublisher",
+          "Async",
+          "Transaction boundaries"
+        ],
+        "keywords": [
+          "event",
+          "listener",
+          "async",
+          "publish",
+          "domain"
+        ]
+      }
+    ],
+    "relationship_vectors": {
+      "spring_mvc": "Controller → Service → Repository → Entity → DB",
+      "dto_pattern": "Entity → Mapper → DTO → JSON response",
+      "dependency_injection": "@Autowired/@Component → Spring container → lifecycle management",
+      "transaction_management": "@Transactional → propagation → isolation → rollback rules",
+      "async_processing": "@Async → CompletableFuture → thread pool → exception handling",
+      "validation": "@Valid → Bean Validation → ConstraintValidator → error messages",
+      "security": "SecurityContext → Authentication → Authorization → @PreAuthorize"
+    },
+    "architectural_hints": {
+      "layered": "Controller → Service → Repository → Entity (strict boundaries)",
+      "hexagonal": "Domain core → Ports (interfaces) → Adapters (implementations)",
+      "cqrs": "Command → CommandHandler → Event → EventHandler → Query → QueryHandler",
+      "event_sourcing": "Command → Aggregate → Events → EventStore → Projections",
+      "microservices": "Service → REST/gRPC → Service discovery → Circuit breaker → Resilience4j",
+      "messaging": "Producer → Kafka/RabbitMQ → Consumer → Dead letter queue"
+    },
+    "distributed_patterns": {
+      "spring_cloud_microservice": {
+        "structure": "@SpringBootApplication → @EnableDiscoveryClient → Feign clients → Eureka → LoadBalanced RestTemplate",
+        "relationships": [
+          "Service registration with Eureka/Consul",
+          "Client-side load balancing",
+          "Circuit breaker with Resilience4j",
+          "Distributed tracing with Sleuth"
+        ],
+        "example_flow": "Service A → Feign client → Eureka lookup → Service B instance → circuit breaker → fallback"
+      },
+      "kafka_event_streaming": {
+        "structure": "@KafkaListener → deserialize → process → @Transactional → commit offset",
+        "relationships": [
+          "Consumer groups for scaling",
+          "Idempotency handling",
+          "Dead letter topics",
+          "Exactly-once semantics"
+        ]
+      },
+      "saga_choreography": {
+        "structure": "Service publishes event → Other services listen → local transaction → publish compensating event on failure",
+        "relationships": [
+          "Event bus (Kafka)",
+          "Eventual consistency",
+          "Compensation logic",
+          "State tracking"
+        ]
+      }
+    },
+    "service_relationships": {
+      "api_gateway_to_services": "API Gateway (Spring Cloud Gateway) → route → backend services → aggregate responses",
+      "service_to_service": "Service A → Feign/RestTemplate → Service B → circuit breaker → fallback",
+      "event_driven_coordination": "Service A → publish event → Kafka → Service B subscribes → process → ack",
+      "distributed_tracing": "Request → trace ID → spans across services → Zipkin/Jaeger → observability"
+    }
+  },
+  "prompts": {
+    "code_generation": "Generate production-quality Java code for: {task}\n\nREQUIREMENTS:\n- JavaDoc for all public classes and methods\n- Use Optional<T> instead of null\n- Custom exception hierarchy\n- JUnit 5 tests with Mockito\n- Follow Spring Boot conventions\n- Constructor injection\n- Records for DTOs\n\nOUTPUT CODE ONLY.",
+    "documentation": "Generate JavaDoc for this Java code:\n\n```java\n{code}\n```\n\nInclude:\n- Class-level JavaDoc with description and examples\n- Method-level JavaDoc with @param, @return, @throws\n\nOUTPUT DOCUMENTATION ONLY.",
+    "tests": "Generate JUnit 5 tests for this code:\n\n```java\n{code}\n```\n\nInclude:\n- Unit tests with Mockito\n- Edge cases\n- Exception handling tests\n- Use @ParameterizedTest for multiple scenarios\n\nOUTPUT TEST CODE ONLY."
+  },
+  "examples": {
+    "good_code": "/**\n * Service for managing user operations.\n *\n * <p>Handles user creation, updates, and retrieval with\n * comprehensive validation and error handling.</p>\n *\n * @since 1.0\n */\n@Service\npublic class UserService {\n    private final UserRepository repository;\n    private final UserMapper mapper;\n\n    /**\n     * Creates a new user service.\n     *\n     * @param repository the user repository\n     * @param mapper the user mapper\n     */\n    public UserService(UserRepository repository, UserMapper mapper) {\n        this.repository = repository;\n        this.mapper = mapper;\n    }\n\n    /**\n     * Finds a user by ID.\n     *\n     * @param id the user ID\n     * @return the user if found\n     * @throws UserNotFoundException if user doesn't exist\n     */\n    @Transactional(readOnly = true)\n    public UserDTO findById(Long id) {\n        return repository.findById(id)\n            .map(mapper::toDTO)\n            .orElseThrow(() -> new UserNotFoundException(id));\n    }\n}",
+    "bad_code": "/**\n * Service for managing user operations.\n *\n * <p>Handles user creation, updates, and retrieval with\n * comprehensive validation and error handling.</p>\n *\n * @since 1.0\n */\n@Service\npublic class UserService {\n    private final UserRepository repository;\n    private final UserMapper mapper;\n\n    /**\n     * Creates a new user service.\n     *\n     * @param repository the user repository\n     * @param mapper the user mapper\n     */\n    public UserService(UserRepository repository, UserMapper mapper) {\n        this.repository = repository;\n        this.mapper = mapper;\n    }\n\n    /**\n     * Finds a user by ID.\n     *\n     * @param id the user ID\n     * @return the user if found\n     * @throws UserNotFoundException if user doesn't exist\n     */\n    public UserDTO findById(Long id) {\n        return repository.findById(id)\n            .map(mapper::toDTO)\n            .orElseThrow(() -> new UserNotFoundException(id));\n    }\n}"
+  },
+  "quality_checklist": [
+    "Has JavaDoc for all public classes and methods",
+    "Uses Optional<T> instead of null returns",
+    "Custom exception hierarchy defined",
+    "JUnit 5 tests with >85% coverage",
+    "Constructor injection (not field injection)",
+    "Immutable DTOs using records",
+    "@Transactional where appropriate",
+    "Proper exception handling",
+    "No code smells (long methods, god classes)"
+  ],
+  "scoring_weights": {
+    "has_javadoc": 1.0,
+    "uses_optional": 0.9,
+    "has_tests": 1.0,
+    "uses_records": 0.7,
+    "constructor_injection": 0.8,
+    "transaction_management": 0.9,
+    "exception_handling": 1.0
+  },
+  "graph_model": {
+    "version": 1,
+    "node_types": {
+      "package": {
+        "id_format": "java://{package_path}",
+        "merge_keys": [
+          "package_path"
+        ]
+      },
+      "class": {
+        "id_format": "java://{package_path}.{class_name}",
+        "merge_keys": [
+          "package_path",
+          "class_name"
+        ]
+      },
+      "method": {
+        "id_format": "java://{package_path}.{class_name}.{method}/{arity}",
+        "merge_keys": [
+          "signature_hash"
+        ]
+      }
+    },
+    "edge_types": {
+      "calls": {
+        "from": "method",
+        "to": "method",
+        "weight": 0.9
+      },
+      "contains": {
+        "from": "package",
+        "to": "class",
+        "weight": 1.0
+      },
+      "defines": {
+        "from": "class",
+        "to": "method",
+        "weight": 1.0
+      }
+    },
+    "extraction_rules": {
+      "method_detection": "parse using Java parser (e.g. Eclipse JDT or tree-sitter)",
+      "call_graph": "walk method invocation expressions"
+    },
+    "temporal": {
+      "track": true,
+      "fields": [
+        "first_seen",
+        "last_modified"
+      ],
+      "update_policy": "touch_last_modified_on_signature_change"
+    },
+    "error_semantics": {
+      "severity_enum": [
+        "fatal",
+        "transient",
+        "validation",
+        "resource",
+        "logic"
+      ],
+      "classification_enum": [
+        "user_input",
+        "system_state",
+        "external_dependency",
+        "data_integrity"
+      ],
+      "default_severity": "logic"
+    }
+  },
+  "version": 2,
+  "last_updated": "2025-10-08"
+}

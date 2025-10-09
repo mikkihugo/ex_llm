@@ -1,0 +1,107 @@
+{
+    "name": "JavaScript Production Quality",
+    "spec_version": "2.0",
+    "capabilities": [
+        "quality",
+        "graph",
+        "rag"
+    ],
+    "language": "javascript",
+    "quality_level": "production",
+    "description": "Production standards for modern JavaScript (ES2022+) with optional type-like validation and strong error discipline.",
+    "requirements": {
+        "documentation": {
+            "jsdoc": {
+                "required": true,
+                "required_for": [
+                    "all_public_functions"
+                ],
+                "must_include": [
+                    "description",
+                    "params",
+                    "returns",
+                    "examples"
+                ]
+            }
+        },
+        "error_handling": {
+            "style": "exceptions_or_result_objects",
+            "recommended_pattern": "return { ok: true, value } / { ok: false, error }",
+            "custom_error_classes": true
+        },
+        "testing": {
+            "required": true,
+            "framework": "vitest or jest",
+            "coverage_target": 80,
+            "test_types": [
+                "unit",
+                "integration"
+            ]
+        },
+        "code_style": {
+            "formatter": "prettier",
+            "linter": "eslint",
+            "prefer_const": true,
+            "no_var": true
+        }
+    },
+    "graph_model": {
+        "version": 1,
+        "node_types": {
+            "module": {
+                "id_format": "js://{path}",
+                "merge_keys": [
+                    "path"
+                ]
+            },
+            "function": {
+                "id_format": "js://{path}#{name}/{arity}",
+                "merge_keys": [
+                    "signature_hash"
+                ]
+            }
+        },
+        "edge_types": {
+            "calls": {
+                "from": "function",
+                "to": "function",
+                "weight": 0.9
+            },
+            "declares": {
+                "from": "module",
+                "to": "function",
+                "weight": 1.0
+            }
+        },
+        "extraction_rules": {
+            "function_detection": "parse via acorn/babel AST",
+            "call_graph": "static import + member expression resolution (best-effort)"
+        },
+        "temporal": {
+            "track": true,
+            "fields": [
+                "first_seen",
+                "last_modified"
+            ],
+            "update_policy": "touch_last_modified_on_signature_change"
+        },
+        "error_semantics": {
+            "severity_enum": [
+                "fatal",
+                "transient",
+                "validation",
+                "resource",
+                "logic"
+            ],
+            "classification_enum": [
+                "user_input",
+                "system_state",
+                "external_dependency",
+                "data_integrity"
+            ],
+            "default_severity": "logic"
+        }
+    },
+    "version": 1,
+    "last_updated": "2025-10-08"
+}

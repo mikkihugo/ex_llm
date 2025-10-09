@@ -1,10 +1,13 @@
 //! Template Loader for Prompt Engine
 //!
 //! Loads templates from tool_doc_index - the single source of truth!
-//! No duplication, just references.
+//! Supports local template variants with DSPy integration.
 
 use anyhow::{Context, Result};
+use nats::{Connection, Message};
 use serde_json::Value;
+use std::collections::HashMap;
+use std::fs;
 use std::path::PathBuf;
 use walkdir::{DirEntry, WalkDir};
 
@@ -12,101 +15,130 @@ use walkdir::{DirEntry, WalkDir};
 pub struct TemplateLoader {
     /// Path to tool_doc_index templates (source of truth)
     tool_doc_path: PathBuf,
+    /// Path to local templates
+    local_template_path: PathBuf,
+    pub prompt_engine: PromptEngine,
 }
 
 impl TemplateLoader {
-    /// Create loader pointing to tool_doc_index
+    /// Create loader pointing to tool_doc_index and local templates
     pub fn new() -> Self {
-        // Always use tool_doc_index as source of truth
         let tool_doc_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .parent()
             .unwrap()
             .join("tool_doc_index")
             .join("templates");
 
-        Self { tool_doc_path }
+        let local_template_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .join("local_templates");
+
+        Self {
+            tool_doc_path,
+            local_template_path,
+            prompt_engine: PromptEngine {}, // Initialize PromptEngine
+        }
     }
 
-    /// Load template from tool_doc_index
+    /// Load template, prioritizing local variants
     pub fn load_template(&self, template_name: &str) -> Result<Value> {
-        let template_path = self.find_template(template_name)?;
+        // Check for local variant first
+        if let Ok(local_template) = self.find_local_template(template_name) {
+            return self.parse_template(&local_template);
+        }
 
-        let content = std::fs::read_to_string(&template_path)
+        // Fallback to global template
+        let global_template = self.find_template(template_name)?;
+        self.parse_template(&global_template)
+    }
+
+    /// Load template, prioritizing local variants with metadata
+    pub fn load_template_with_metadata(
+        &self,
+        template_name: &str,
+    ) -> Result<(Value, Option<LocalTemplateMetadata>)> {
+        // Check for local variant first
+        let local_path = self.local_template_path.join(format!("{}.json", template_name));
+        let meta_path = self.local_template_path.join(format!("{}.meta.json", template_name));
+        if local_path.exists() {
+            let template = self.parse_template(&local_path)?;
+            let metadata = LocalTemplateMetadata::from_file(&meta_path);
+            return Ok((template, metadata));
+        }
+        // Fallback to global template
+        let global_path = self.tool_doc_path.join(format!("{}.json", template_name));
+        let template = self.parse_template(&global_path)?;
+        Ok((template, None))
+    }
+
+    /// Find local template
+    fn find_local_template(&self, template_name: &str) -> Result<PathBuf> {
+        let local_path = self.local_template_path.join(format!("{}.json", template_name));
+        if local_path.exists() {
+            Ok(local_path)
+        } else {
+            anyhow::bail!("Local template not found: {}", template_name)
+        }
+    }
+
+    /// Find global template
+    fn find_template(&self, template_name: &str) -> Result<PathBuf> {
+        let global_path = self.tool_doc_path.join(format!("{}.json", template_name));
+        if global_path.exists() {
+            Ok(global_path)
+        } else {
+            anyhow::bail!("Global template not found: {}", template_name)
+        }
+    }
+
+    /// Parse template file
+    fn parse_template(&self, template_path: &PathBuf) -> Result<Value> {
+        let content = std::fs::read_to_string(template_path)
             .with_context(|| format!("Failed to read template: {:?}", template_path))?;
 
         serde_json::from_str(&content)
-            .with_context(|| format!("Failed to parse template: {}", template_name))
+            .with_context(|| format!("Failed to parse template: {:?}", template_path))
     }
 
-    /// Find template file in tool_doc_index structure
-    fn find_template(&self, name: &str) -> Result<PathBuf> {
-        // Check direct file
-        let direct_path = self.tool_doc_path.join(format!("{}.json", name));
-        if direct_path.exists() {
-            return Ok(direct_path);
-        }
+    /// Load and optimize template using PromptEngine
+    pub fn load_and_optimize_template(&self, template_name: &str) -> Result<serde_json::Value> {
+        let (template, _) = self.load_template_with_metadata(template_name)?;
+        Ok(self.prompt_engine.optimize_prompt(&template))
+    }
 
-        // Check in subdirectories
-        let search_dirs = vec![
-            "ai", "bits", "cloud", "framework", "languages",
-            "messaging", "monitoring", "security", "system", "workflows"
-        ];
+    /// Generate prompt from template using PromptEngine
+    pub fn generate_prompt_from_template(
+        &self,
+        template_name: &str,
+        input: &serde_json::Value,
+    ) -> Result<String> {
+        let optimized = self.load_and_optimize_template(template_name)?;
+        Ok(self.prompt_engine.generate_prompt(&optimized, input))
+    }
+}
 
-        for dir in search_dirs {
-            let subdir_path = self.tool_doc_path.join(dir).join(format!("{}.json", name));
-            if subdir_path.exists() {
-                return Ok(subdir_path);
-            }
+/// Metadata for local template variants
+#[derive(Debug, Clone)]
+pub struct LocalTemplateMetadata {
+    /// Name of the global template this variant is based on
+    pub global_template: String,
+    /// Variant name (if any)
+    pub variant: Option<String>,
+    /// Additional stats (usage, performance, etc.)
+    pub stats: HashMap<String, usize>,
+}
 
-            // Check nested workflows/sparc
-            if dir == "workflows" {
-                let sparc_path = self.tool_doc_path
-                    .join("workflows")
-                    .join("sparc")
-                    .join(format!("{}.json", name));
-                if sparc_path.exists() {
-                    return Ok(sparc_path);
+impl LocalTemplateMetadata {
+    pub fn from_file(meta_path: &PathBuf) -> Option<Self> {
+        if meta_path.exists() {
+            if let Ok(content) = fs::read_to_string(meta_path) {
+                if let Ok(meta) = serde_json::from_str::<LocalTemplateMetadata>(&content) {
+                    return Some(meta);
                 }
             }
         }
-
-        anyhow::bail!("Template not found: {}", name)
-    }
-
-    /// List all available templates
-    pub fn list_templates(&self) -> Result<Vec<String>> {
-        let mut templates = Vec::new();
-
-        // Walk the tool_doc_index template directory
-        for entry in WalkDir::new(&self.tool_doc_path)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|e: &DirEntry| e.path().extension().map_or(false, |ext| ext == "json"))
-        {
-            if let Some(stem) = entry.path().file_stem() { templates.push(stem.to_string_lossy().to_string()); }
-        }
-
-        templates.sort();
-        templates.dedup();
-        Ok(templates)
-    }
-
-    /// Get template path (for DSPy to reference)
-    pub fn get_template_path(&self, template_name: &str) -> Result<PathBuf> {
-        self.find_template(template_name)
-    }
-
-    /// Load template with metadata
-    pub fn load_with_metadata(&self, template_name: &str) -> Result<TemplateWithMeta> {
-        let template = self.load_template(template_name)?;
-        let path = self.find_template(template_name)?;
-
-        Ok(TemplateWithMeta {
-            name: template_name.to_string(),
-            path,
-            content: template,
-            source: "tool_doc_index".to_string(),
-        })
+        None
     }
 }
 
@@ -138,6 +170,68 @@ pub fn ensure_single_source_of_truth() -> Result<()> {
     }
 
     Ok(())
+}
+
+pub struct TemplateCacheController {
+    pub cache: HashMap<String, Value>,
+    pub nats_conn: Option<Connection>,
+}
+
+impl TemplateCacheController {
+    pub fn new(nats_url: Option<&str>) -> Self {
+        let nats_conn = nats_url.map(|url| nats::connect(url).expect("Failed to connect to NATS"));
+        Self {
+            cache: HashMap::new(),
+            nats_conn,
+        }
+    }
+
+    /// Get template from cache or load and cache it
+    pub fn get_or_load_template(&mut self, loader: &TemplateLoader, template_name: &str) -> Result<Value> {
+        if let Some(template) = self.cache.get(template_name) {
+            return Ok(template.clone());
+        }
+        let (template, _) = loader.load_template_with_metadata(template_name)?;
+        self.cache.insert(template_name.to_string(), template.clone());
+        Ok(template)
+    }
+
+    /// Sync template from global knowledge cache via NATS
+    pub fn sync_template_from_global(&mut self, template_name: &str) -> Result<Value> {
+        if let Some(conn) = &self.nats_conn {
+            let subject = format!("knowledge_cache.templates.{}", template_name);
+            let msg = conn.request(&subject, b"{}").expect("NATS request failed");
+            let template: Value = serde_json::from_slice(&msg.data)
+                .with_context(|| format!("Failed to parse NATS template for {}", template_name))?;
+            self.cache.insert(template_name.to_string(), template.clone());
+            Ok(template)
+        } else {
+            anyhow::bail!("NATS connection not available")
+        }
+    }
+
+    /// Invalidate cache for a template
+    pub fn invalidate_template(&mut self, template_name: &str) {
+        self.cache.remove(template_name);
+    }
+}
+
+/// Placeholder for PromptEngine integration
+pub struct PromptEngine {
+    // DSPy optimizer, metrics, etc.
+    // Placeholder for actual DSPy integration
+}
+
+impl PromptEngine {
+    pub fn optimize_prompt(&self, template: &serde_json::Value) -> serde_json::Value {
+        // Call DSPy or other optimization logic here
+        template.clone() // Placeholder
+    }
+    pub fn generate_prompt(&self, template: &serde_json::Value, input: &serde_json::Value) -> String {
+        // Generate prompt text from template and input
+        // Placeholder logic
+        format!("{}", template)
+    }
 }
 
 #[cfg(test)]

@@ -1,0 +1,266 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Unified Technology Detection Template",
+  "description": "Schema combining Netlify framework-info format with LLM-aware enhancements",
+  "type": "object",
+  "required": ["id", "name", "category", "detect"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Unique identifier (e.g., 'nextjs', 'rust', 'postgresql')"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name (e.g., 'Next.js', 'Rust', 'PostgreSQL')"
+    },
+    "version": {
+      "type": "string",
+      "description": "Template schema version (semantic versioning)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "language",
+        "frontend_framework",
+        "backend_framework",
+        "fullstack_framework",
+        "static_site_generator",
+        "build_tool",
+        "database",
+        "messaging",
+        "security",
+        "monitoring",
+        "cloud",
+        "infrastructure"
+      ]
+    },
+    "extends": {
+      "type": "string",
+      "description": "Path to parent template (e.g., 'language/javascript.json')"
+    },
+    "detect": {
+      "type": "object",
+      "description": "Detection signatures - ordered by speed (fast to slow)",
+      "properties": {
+        "configFiles": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Config files that indicate this technology (Level 1 - instant)"
+        },
+        "lockFiles": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Lock files (package-lock.json, Cargo.lock)"
+        },
+        "directoryPatterns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Directory structure patterns (src/, tests/)"
+        },
+        "fileExtensions": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "File extensions (.rs, .py, .jsx)"
+        },
+        "npmDependencies": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "NPM packages in dependencies/devDependencies (Level 2 - fast)"
+        },
+        "excludedNpmDependencies": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Packages that exclude this framework"
+        },
+        "cargoDependencies": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Cargo crates in dependencies"
+        },
+        "pipDependencies": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Python packages in requirements.txt"
+        },
+        "patterns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Regex patterns for code signatures (Level 2 - fast regex)"
+        },
+        "importPatterns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Import/use statement patterns"
+        },
+        "astPatterns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "nodeType": {"type": "string"},
+              "matcher": {"type": "string"}
+            }
+          },
+          "description": "AST node patterns (Level 3 - medium cost)"
+        }
+      }
+    },
+    "dev": {
+      "type": "object",
+      "properties": {
+        "command": {"type": "string"},
+        "port": {"type": "integer"},
+        "pollingStrategies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "build": {
+      "type": "object",
+      "properties": {
+        "command": {"type": "string"},
+        "directory": {"type": "string"}
+      }
+    },
+    "commands": {
+      "type": "object",
+      "description": "Additional commands",
+      "properties": {
+        "install": {"type": "string"},
+        "test": {"type": "string"},
+        "lint": {"type": "string"},
+        "format": {"type": "string"}
+      }
+    },
+    "staticAssetsDirectory": {
+      "type": "string"
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "plugins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "packageName": {"type": "string"},
+          "condition": {"type": "object"}
+        }
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "description": "Confidence scoring weights",
+      "properties": {
+        "baseWeight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Base confidence for this detector"
+        },
+        "boosts": {
+          "type": "object",
+          "description": "Confidence boosts for sub-frameworks",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "patterns": {"type": "array", "items": {"type": "string"}},
+              "boost": {"type": "number"}
+            }
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "ecosystem": {"type": "string"},
+        "packageManager": {"type": "string"},
+        "typicalStructure": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "homepage": {"type": "string", "format": "uri"},
+        "repository": {"type": "string"}
+      }
+    },
+    "llm": {
+      "type": "object",
+      "description": "LLM-aware enhancements (Level 5 - expensive, only when needed)",
+      "properties": {
+        "trigger": {
+          "type": "object",
+          "description": "When to invoke LLM",
+          "properties": {
+            "minConfidence": {"type": "number"},
+            "maxConfidence": {"type": "number"},
+            "conditions": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "prompts": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "description": "Analysis prompts for LLM"
+        },
+        "context": {
+          "type": "object",
+          "properties": {
+            "description": {"type": "string"},
+            "keyFeatures": {"type": "array", "items": {"type": "string"}},
+            "bestPractices": {"type": "array", "items": {"type": "string"}},
+            "commonMistakes": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "snippets": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["description", "code", "patterns"],
+            "properties": {
+              "description": {"type": "string"},
+              "code": {"type": "string"},
+              "patterns": {"type": "array", "items": {"type": "string"}},
+              "language": {"type": "string"},
+              "githubExamples": {
+                "type": "array",
+                "items": {"type": "string", "format": "uri"}
+              },
+              "bestPractice": {"type": "boolean"},
+              "useCase": {"type": "string"}
+            }
+          }
+        },
+        "facts": {
+          "type": "object",
+          "description": "Fact system integration",
+          "properties": {
+            "githubRepos": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Repos to fetch examples from (owner/repo format)"
+            },
+            "documentation": {
+              "type": "array",
+              "items": {"type": "string", "format": "uri"}
+            },
+            "relatedTechnologies": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

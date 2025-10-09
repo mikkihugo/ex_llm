@@ -1,0 +1,186 @@
+{
+  "name": "Elixir Production Quality",
+  "spec_version": "2.0",
+  "capabilities": [
+    "quality",
+    "graph",
+    "rag"
+  ],
+  "language": "elixir",
+  "quality_level": "production",
+  "description": "Production-grade quality standards for Elixir code following community best practices",
+  "requirements": {
+    "documentation": {
+      "moduledoc": {
+        "required": true,
+        "min_length": 100,
+        "must_include": [
+          "overview",
+          "examples",
+          "usage_patterns"
+        ]
+      },
+      "doc": {
+        "required_for": [
+          "all_public_functions",
+          "callbacks"
+        ],
+        "min_length": 50,
+        "must_include": [
+          "description",
+          "examples",
+          "edge_cases"
+        ]
+      },
+      "typedoc": {
+        "required_for": [
+          "public_types"
+        ]
+      }
+    },
+    "type_specs": {
+      "required": true,
+      "required_for": [
+        "all_public_functions",
+        "callbacks",
+        "struct_fields"
+      ],
+      "style": "strict",
+      "dialyzer": {
+        "enabled": true,
+        "warnings_as_errors": true
+      }
+    },
+    "error_handling": {
+      "style": "tagged_tuples",
+      "required_pattern": "{:ok, result} | {:error, reason}",
+      "no_raise_in_public_api": true,
+      "explicit_errors": "required",
+      "error_reasons": {
+        "must_be_typed": true,
+        "must_be_documented": true
+      },
+      "with_statements": {
+        "required_for_error_chains": true,
+        "else_clause_required": true
+      }
+    },
+    "testing": {
+      "required": true,
+      "framework": "ExUnit",
+      "coverage_target": 85,
+      "test_types": [
+        "unit_tests",
+        "integration_tests",
+        "property_tests",
+        "edge_cases",
+        "error_conditions",
+        "concurrency_tests"
+      ],
+      "doctests": {
+        "required": true,
+        "for": "all_public_functions"
+      },
+      "async_tests": {
+        "required_when_possible": true
+      }
+    },
+    "code_style": {
+      "naming_convention": "snake_case",
+      "max_function_length": 30,
+      "pattern_matching": "required",
+      "formatter": {
+        "required": true,
+        "config": ".formatter.exs"
+      },
+      "credo": {
+        "required": true,
+        "strictness": "strict"
+      },
+      "pipe_operator": {
+        "preferred": true,
+        "min_chain_length": 2
+      }
+    },
+    "code_smells": {
+      "forbidden": [
+        "FIXME",
+        "XXX",
+        "HACK",
+        "unused_variables",
+        "unused_functions"
+      ],
+      "warnings": [
+        "TODO"
+      ]
+    },
+    "performance": {
+      "tail_recursion": {
+        "required_for_recursive_functions": true
+      },
+      "lazy_evaluation": {
+        "use_streams_for_large_data": true
+      },
+      "avoid_n_plus_one": true
+    },
+    "observability": {
+      "telemetry": {
+        "required": true,
+        "events_for": [
+          "public_operations",
+          "errors",
+          "performance_metrics"
+        ]
+      },
+      "logging": {
+        "use_logger": true,
+        "structured_logging": true,
+        "log_levels_appropriate": true
+      }
+    },
+    "rag_support": {
+      "semantic_chunking": {
+        "module_level": true,
+        "function_level": true,
+        "include_context": true
+      },
+      "metadata": {
+        "tags": "required",
+        "complexity_score": "auto_calculate",
+        "dependencies": "explicit",
+        "similar_patterns": "link_to_other_modules"
+      },
+      "ai_hints": {
+        "usage_examples": "required_in_moduledoc",
+        "common_mistakes": "document_in_moduledoc",
+        "performance_notes": "include_if_relevant"
+      }
+    }
+  },
+  "prompts": {
+    "code_generation": "Generate PRODUCTION-QUALITY Elixir code for: {task}\n\nREQUIREMENTS:\n- @moduledoc (100+ chars) with overview, examples, usage patterns\n- @doc for ALL public functions (50+ chars) with examples and edge cases\n- @typedoc for public types\n- @spec for ALL public functions, callbacks, and struct fields\n- Dialyzer-compatible types (strict mode)\n- Tagged tuple error handling {:ok, result} | {:error, reason}\n- NO raise in public API\n- with statements for error chains with else clause\n- Telemetry events for operations, errors, metrics\n- Logger with structured logging\n- Pattern matching required\n- Pipe operators for chains (2+ steps)\n- Tail recursion for recursive functions\n- Streams for large data\n- 85%+ test coverage target\n- Doctests for all public functions\n- RAG-optimized: semantic chunks, metadata tags, AI hints in moduledoc\n\nOUTPUT CODE ONLY.",
+    "documentation": "Generate PRODUCTION-GRADE documentation for this Elixir code:\n\n```elixir\n{code}\n```\n\nINCLUDE:\n- @moduledoc: Overview, usage examples, common patterns, performance notes, related modules\n- @doc: Description, parameters, return values, examples, edge cases, errors\n- @typedoc: Type descriptions\n- Doctests for all public functions\n- AI hints: usage examples, common mistakes, performance considerations\n\nOUTPUT DOCUMENTATION ONLY.",
+    "tests": "Generate COMPREHENSIVE ExUnit tests for this code:\n\n```elixir\n{code}\n```\n\nINCLUDE:\n- Unit tests (all public functions)\n- Integration tests\n- Property tests (StreamData)\n- Edge cases\n- Error conditions\n- Concurrency tests (if applicable)\n- Async tests where possible\n- Target 85%+ coverage\n\nOUTPUT TEST MODULE ONLY."
+  },
+  "scoring_weights": {
+    "has_moduledoc": 1.0,
+    "has_function_docs": 1.0,
+    "has_typedocs": 0.9,
+    "has_type_specs": 1.0,
+    "has_dialyzer": 0.9,
+    "has_tests": 1.0,
+    "test_coverage": 0.95,
+    "has_doctests": 0.9,
+    "error_handling": 1.0,
+    "no_raise_in_public": 0.95,
+    "has_telemetry": 0.85,
+    "has_logging": 0.8,
+    "no_code_smells": 1.0,
+    "has_formatter_config": 0.7,
+    "has_credo": 0.8,
+    "uses_pattern_matching": 0.9,
+    "uses_pipes": 0.7,
+    "tail_recursive": 0.85,
+    "rag_metadata": 0.9
+  }
+}

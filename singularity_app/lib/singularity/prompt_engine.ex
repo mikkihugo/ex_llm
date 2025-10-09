@@ -380,4 +380,32 @@ defmodule Singularity.PromptEngine do
     def cache_clear(), do: nif_cache_clear()
     def cache_stats(), do: nif_cache_stats()
   end
+
+  @doc """
+  Loads and optimizes a prompt template using the Rust prompt_engine.
+  """
+  def load_and_optimize_template(template_name) do
+    :prompt_engine.load_and_optimize_template(template_name)
+  end
+
+  @doc """
+  Generates a prompt from a template and input using the Rust prompt_engine.
+  """
+  def generate_prompt(template_name, input) do
+    :prompt_engine.generate_prompt_from_template(template_name, input)
+  end
+
+  @doc """
+  Syncs a template from the global knowledge cache via NATS.
+  """
+  def sync_template_from_global(template_name) do
+    :prompt_engine.sync_template_from_global(template_name)
+  end
+
+  @doc """
+  Invalidates the local cache for a template.
+  """
+  def invalidate_template(template_name) do
+    :prompt_engine.invalidate_template(template_name)
+  end
 end

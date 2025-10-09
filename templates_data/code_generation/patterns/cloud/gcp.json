@@ -1,0 +1,23 @@
+{
+  "name": "Google Cloud Platform",
+  "category": "cloud",
+  "detector_signatures": {
+    "patterns": [
+      "google-cloud",
+      "provider \"google\"",
+      "GCP\\.",
+      "gcloud \\"
+    ],
+    "dependencies": [
+      "google-cloud",
+      "@google-cloud/storage",
+      "google-cloud-storage",
+      "goth"
+    ],
+    "file_patterns": [
+      "infra/gcp/**",
+      "terraform/**/gcp*.tf",
+      "deployment-manager/**/*.yaml"
+    ]
+  }
+}
