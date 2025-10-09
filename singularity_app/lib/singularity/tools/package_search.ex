@@ -11,37 +11,108 @@ defmodule Singularity.Tools.PackageSearch do
   alias Singularity.Search.PackageAndCodebaseSearch
 
   @doc """
-  Search for packages across different ecosystems
-  
+  Get specific package version details
+
   ## Parameters
-  - query: Search query string
+  - package_spec: Package specification in format "name@version" (e.g., "react@18", "tokio@1.35")
+  - ecosystem: Package ecosystem (:npm, :cargo, :hex, :pypi)
+
+  ## Returns
+  Package details with dependencies, examples, and metadata
+
+  ## Examples
+      iex> get_package("react@18", :npm)
+      {:ok, %{name: "react", version: "18.2.0", ...}}
+
+      iex> get_package("tokio@latest", :cargo)
+      {:ok, %{name: "tokio", version: "1.35.1", ...}}
+  """
+  def get_package(package_spec, ecosystem) do
+    {package_name, version} = parse_package_spec(package_spec)
+
+    Logger.info("📦 Fetching #{ecosystem}/#{package_name}@#{version || "latest"}")
+
+    request = %{
+      "package_name" => package_name,
+      "version" => version,
+      "ecosystem" => to_string(ecosystem)
+    }
+
+    subject = "packages.registry.collect.#{ecosystem}"
+
+    case call_nats(subject, request) do
+      {:ok, result} ->
+        Logger.info("✅ Got #{package_name} details")
+        {:ok, result}
+
+      {:error, reason} ->
+        Logger.error("❌ Failed to get #{package_name}: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Search for packages across different ecosystems
+
+  ## Parameters
+  - query: Search query string or "package@version" format
   - ecosystem: Package ecosystem (:npm, :cargo, :hex, :pypi, or :all)
   - limit: Maximum number of results (default: 10)
-  
+
   ## Returns
   List of package search results with metadata
+
+  ## Examples
+      iex> search_packages("react", :npm)
+      {:ok, [%{name: "react", ...}, %{name: "react-dom", ...}]}
+
+      iex> search_packages("react@18", :npm)
+      {:ok, %{name: "react", version: "18.2.0", ...}}  # Specific version
   """
   def search_packages(query, ecosystem \\ :all, limit \\ 10) do
-    Logger.info("🔍 Searching packages: '#{query}' in #{ecosystem} ecosystem")
-    
-    try do
-      case PackageAndCodebaseSearch.hybrid_search(query, %{
-        ecosystem: ecosystem,
-        limit: limit
-      }) do
-        {:ok, results} ->
-          Logger.info("✅ Found #{length(results.packages)} packages")
-          format_results(results)
-        
-        {:error, reason} ->
-          Logger.error("❌ Package search failed: #{inspect(reason)}")
-          {:error, "Package search failed: #{inspect(reason)}"}
+    # If query contains @version, fetch specific package
+    if String.contains?(query, "@") do
+      get_package(query, ecosystem)
+    else
+      Logger.info("🔍 Searching packages: '#{query}' in #{ecosystem} ecosystem")
+
+      try do
+        case PackageAndCodebaseSearch.hybrid_search(query, %{
+          ecosystem: ecosystem,
+          limit: limit
+        }) do
+          {:ok, results} ->
+            Logger.info("✅ Found #{length(results.packages)} packages")
+            format_results(results)
+
+          {:error, reason} ->
+            Logger.error("❌ Package search failed: #{inspect(reason)}")
+            {:error, "Package search failed: #{inspect(reason)}"}
+        end
+      rescue
+        error ->
+          Logger.error("❌ Package search error: #{inspect(error)}")
+          {:error, "Package search error: #{inspect(error)}"}
       end
-    rescue
-      error ->
-        Logger.error("❌ Package search error: #{inspect(error)}")
-        {:error, "Package search error: #{inspect(error)}"}
     end
+  end
+
+  defp parse_package_spec(spec) when is_binary(spec) do
+    case String.split(spec, "@", parts: 2) do
+      [name, version] -> {name, version}
+      [name] -> {name, nil}
+    end
+  end
+
+  defp call_nats(subject, request) do
+    case Singularity.NatsOrchestrator.request(subject, request, timeout: 15_000) do
+      {:ok, response} -> {:ok, response}
+      {:error, reason} -> {:error, reason}
+    end
+  rescue
+    error ->
+      Logger.error("NATS call exception: #{inspect(error)}")
+      {:error, :exception}
   end
 
   @doc """
