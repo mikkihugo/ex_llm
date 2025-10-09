@@ -45,8 +45,8 @@ pub mod prompt_tracking;
 // DSPy learning integration with FACT
 pub mod dspy_learning;
 
-// NATS service (prompt_engine is a service)
-// pub mod nats_service;
+// NATS service - centralized communication hub
+pub mod nats_service;
 
 // Re-export main types
 use std::collections::HashMap;
@@ -126,6 +126,41 @@ pub struct NifCacheStats {
     pub hits: usize,
     pub misses: usize,
     pub hit_rate: f64,
+}
+
+/// Request to call LLM
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "Singularity.PromptEngineNif.LlmRequest"]
+pub struct NifLlmRequest {
+    pub model: String,
+    pub messages: Vec<NifMessage>,
+    pub options: std::collections::HashMap<String, serde_json::Value>,
+}
+
+/// Message for LLM call
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "Singularity.PromptEngineNif.Message"]
+pub struct NifMessage {
+    pub role: String,
+    pub content: String,
+}
+
+/// Response from LLM call
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "Singularity.PromptEngineNif.LlmResponse"]
+pub struct NifLlmResponse {
+    pub text: String,
+    pub model: String,
+    pub usage: Option<NifUsage>,
+}
+
+/// Token usage information
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "Singularity.PromptEngineNif.Usage"]
+pub struct NifUsage {
+    pub prompt_tokens: usize,
+    pub completion_tokens: usize,
+    pub total_tokens: usize,
 }
 
 // TODO: Legacy types - migrate to full DSPy API
@@ -512,12 +547,52 @@ fn nif_cache_stats() -> Result<NifCacheStats, rustler::Error> {
     })
 }
 
+/// NIF function to call LLM through NATS coordination
+#[rustler::nif]
+fn nif_call_llm(request: NifLlmRequest) -> Result<NifLlmResponse, rustler::Error> {
+    // Get the NATS service instance
+    let nats_service = match crate::nats_service::NATS_SERVICE.lock() {
+        Ok(service) => service,
+        Err(_) => return Err(rustler::Error::Term(Box::new("Failed to acquire NATS service lock"))),
+    };
+
+    // Convert NIF request to internal format
+    let messages: Vec<crate::nats_service::Message> = request.messages
+        .into_iter()
+        .map(|msg| crate::nats_service::Message {
+            role: msg.role,
+            content: msg.content,
+        })
+        .collect();
+
+    let options: std::collections::HashMap<String, serde_json::Value> = request.options;
+
+    // Call LLM through NATS
+    match nats_service.call_llm(&request.model, &messages, &options) {
+        Ok(response) => {
+            let usage = response.usage.map(|u| NifUsage {
+                prompt_tokens: u.prompt_tokens,
+                completion_tokens: u.completion_tokens,
+                total_tokens: u.total_tokens,
+            });
+
+            Ok(NifLlmResponse {
+                text: response.text,
+                model: response.model,
+                usage,
+            })
+        }
+        Err(e) => Err(rustler::Error::Term(Box::new(format!("LLM call failed: {}", e)))),
+    }
+}
+
 // Initialize the NIF
 rustler::init!(
     "Elixir.Singularity.PromptEngine.Native",
     [
         nif_generate_prompt,
         nif_optimize_prompt,
+        nif_call_llm,
         nif_cache_get,
         nif_cache_put,
         nif_cache_clear,

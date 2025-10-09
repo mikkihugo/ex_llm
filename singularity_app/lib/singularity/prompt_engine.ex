@@ -145,9 +145,37 @@ defmodule Singularity.PromptEngine do
     )
   end
 
-  @spec optimize_prompt(String.t(), keyword()) :: prompt_response
-  def optimize_prompt(prompt, opts \\ []) do
+  @spec call_llm(String.t() | atom(), [map()], keyword()) :: {:ok, map()} | {:error, term()}
+  def call_llm(model_or_complexity, messages, opts \\ []) do
     request = %{
+      model: model_or_complexity,
+      messages: messages,
+      options: opts
+    }
+
+    with {:nif, {:ok, response}} <- {:nif, call_nif(fn -> Native.call_llm(request) end)} do
+      {:ok, response}
+    else
+      {:nif, {:error, _}} ->
+        # Fallback to external LLM service
+        Singularity.LLM.Service.call(model_or_complexity, messages, opts)
+    end
+  end
+
+  @spec call_llm_with_prompt(String.t() | atom(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
+  def call_llm_with_prompt(model_or_complexity, prompt, opts \\ []) do
+    messages = [%{role: "user", content: prompt}]
+    call_llm(model_or_complexity, messages, opts)
+  end
+
+  @spec call_llm_with_system(String.t() | atom(), String.t(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
+  def call_llm_with_system(model_or_complexity, system_prompt, user_message, opts \\ []) do
+    messages = [
+      %{role: "system", content: system_prompt},
+      %{role: "user", content: user_message}
+    ]
+    call_llm(model_or_complexity, messages, opts)
+  end
       prompt: prompt,
       context: Keyword.get(opts, :context),
       language: Keyword.get(opts, :language)
@@ -337,6 +365,7 @@ defmodule Singularity.PromptEngine do
     # NIF functions - names must match Rust #[rustler::nif] function names
     def nif_generate_prompt(_request), do: :erlang.nif_error(:nif_not_loaded)
     def nif_optimize_prompt(_request), do: :erlang.nif_error(:nif_not_loaded)
+    def nif_call_llm(_request), do: :erlang.nif_error(:nif_not_loaded)
     def nif_cache_get(_key), do: :erlang.nif_error(:nif_not_loaded)
     def nif_cache_put(_key, _value), do: :erlang.nif_error(:nif_not_loaded)
     def nif_cache_clear, do: :erlang.nif_error(:nif_not_loaded)
@@ -345,6 +374,7 @@ defmodule Singularity.PromptEngine do
     # Convenience wrappers without nif_ prefix
     def generate_prompt(request), do: nif_generate_prompt(request)
     def optimize_prompt(request), do: nif_optimize_prompt(request)
+    def call_llm(request), do: nif_call_llm(request)
     def cache_get(key), do: nif_cache_get(key)
     def cache_put(key, value), do: nif_cache_put(key, value)
     def cache_clear(), do: nif_cache_clear()

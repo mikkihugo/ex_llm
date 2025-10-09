@@ -27,6 +27,32 @@ use crate::prompt_bits::{PromptBitAssembler, PromptBitTrigger, PromptBitCategory
 use crate::templates::{TemplateLoader, RegistryTemplate};
 use crate::caching::PromptCache;
 
+/// Message for LLM calls
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Message {
+    pub role: String,
+    pub content: String,
+}
+
+/// Response from LLM call
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LlmResponse {
+    pub text: String,
+    pub model: String,
+    pub usage: Option<Usage>,
+}
+
+/// Token usage information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Usage {
+    pub prompt_tokens: usize,
+    pub completion_tokens: usize,
+    pub total_tokens: usize,
+}
+
+/// Global NATS service instance
+pub static NATS_SERVICE: std::sync::Mutex<Option<PromptEngineNatsService>> = std::sync::Mutex::new(None);
+
 /// Request to generate a prompt
 #[derive(Debug, Deserialize)]
 pub struct GeneratePromptRequest {
@@ -443,5 +469,36 @@ impl PromptEngineNatsService {
         let response = serde_json::json!({"status": "stored"});
         msg.respond(serde_json::to_vec(&response)?).await?;
         Ok(())
+    }
+
+    /// Call LLM through NATS coordination
+    pub fn call_llm(
+        &self,
+        model: &str,
+        messages: &[Message],
+        options: &std::collections::HashMap<String, serde_json::Value>,
+    ) -> Result<LlmResponse> {
+        // For now, delegate to the LLM service via NATS
+        // This will be enhanced to coordinate with knowledge_central_service
+        // for distributed NATS-to-NATS communication
+
+        // Create NATS request
+        let request = serde_json::json!({
+            "model": model,
+            "messages": messages,
+            "options": options
+        });
+
+        // TODO: Implement actual NATS call to LLM service
+        // For now, return a stub response
+        Ok(LlmResponse {
+            text: "LLM response via NATS coordination - TODO: implement actual call".to_string(),
+            model: model.to_string(),
+            usage: Some(Usage {
+                prompt_tokens: 100,
+                completion_tokens: 50,
+                total_tokens: 150,
+            }),
+        })
     }
 }

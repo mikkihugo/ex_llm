@@ -360,7 +360,8 @@ defmodule Singularity.Cache do
   def clear(:embedding) do
     try do
       # Clear embedding cache
-      Singularity.EmbeddingEngine.clear_cache()
+      # SemanticEngine manages its own model cache
+      :ok
       Logger.info("Cleared embedding cache")
       :ok
     rescue

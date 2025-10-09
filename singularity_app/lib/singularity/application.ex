@@ -42,8 +42,8 @@ defmodule Singularity.Application do
       Singularity.LLM.SemanticCache,
       # Start the template performance tracker
       Singularity.TemplatePerformanceTracker,
-      # Start the embedding engine
-      Singularity.EmbeddingEngine,
+      # Start the semantic engine (GPU-powered SOTA embeddings)
+      Singularity.SemanticEngine,
       # Start the quality engine
       Singularity.QualityEngine,
       # Start the source code analyzer
