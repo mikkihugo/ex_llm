@@ -11,9 +11,9 @@ members = [
     "rust/parser/polyglot",
 
     # Services (NATS-based microservices)
-    "rust/service/package_service",
-    "rust/service/code_analysis_service",
-    "rust/service/knowledge_service",
+    "rust/service/package_indexer",
+    "rust/service/intelligence_service",
+    "rust/service/knowledge_cache",
 
     # Core libraries
     "rust/architecture",
