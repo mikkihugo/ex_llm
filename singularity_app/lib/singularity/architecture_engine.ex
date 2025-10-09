@@ -27,7 +27,10 @@ defmodule Singularity.ArchitectureEngine do
       # => Uses detected architecture from technology_detections table
   """
 
-  use Rustler, otp_app: :singularity, crate: :architecture_engine
+  use Rustler,
+    otp_app: :singularity,
+    crate: :architecture_engine,
+    skip_compilation?: true
 
   alias Singularity.{Repo, Schemas.TechnologyDetection, NatsClient}
 
@@ -948,11 +951,10 @@ defmodule Singularity.ArchitectureEngine do
     function_matches = Regex.scan(~r/def\s+([a-zA-Z_][a-zA-Z0-9_]*)/, content)
     snake_case_functions = function_matches
     |> Enum.count(fn [_, name] -> String.match?(name, ~r/^[a-z][a-z0-9_]*$/) end)
-    
-    if length(function_matches) > 0 do
-      snake_case_functions / length(function_matches)
-    else
-      1.0
+
+    case length(function_matches) do
+      0 -> 1.0
+      total -> snake_case_functions / total
     end
   end
 
@@ -961,11 +963,10 @@ defmodule Singularity.ArchitectureEngine do
     function_matches = Regex.scan(~r/fn\s+([a-zA-Z_][a-zA-Z0-9_]*)/, content)
     snake_case_functions = function_matches
     |> Enum.count(fn [_, name] -> String.match?(name, ~r/^[a-z][a-z0-9_]*$/) end)
-    
-    if length(function_matches) > 0 do
-      snake_case_functions / length(function_matches)
-    else
-      1.0
+
+    case length(function_matches) do
+      0 -> 1.0
+      total -> snake_case_functions / total
     end
   end
 
@@ -974,11 +975,10 @@ defmodule Singularity.ArchitectureEngine do
     function_matches = Regex.scan(~r/function\s+([a-zA-Z_][a-zA-Z0-9_]*)/, content)
     camel_case_functions = function_matches
     |> Enum.count(fn [_, name] -> String.match?(name, ~r/^[a-z][a-zA-Z0-9]*$/) end)
-    
-    if length(function_matches) > 0 do
-      camel_case_functions / length(function_matches)
-    else
-      1.0
+
+    case length(function_matches) do
+      0 -> 1.0
+      total -> camel_case_functions / total
     end
   end
 

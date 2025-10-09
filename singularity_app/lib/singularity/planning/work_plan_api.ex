@@ -126,7 +126,7 @@ defmodule Singularity.Planning.WorkPlanAPI do
   end
 
   defp route_message("planning.strategic_theme.create", attrs) do
-    case SafeWorkPlanner.add_strategic_theme(attrs) do
+    case SafeWorkPlanner.add_chunk("Strategic Theme: #{attrs["name"]} - #{attrs["description"]}", type: :strategic_theme) do
       {:ok, id} ->
         %{
           status: "ok",
@@ -157,7 +157,7 @@ defmodule Singularity.Planning.WorkPlanAPI do
         attrs
       end
 
-    case SafeWorkPlanner.add_epic(attrs) do
+    case SafeWorkPlanner.add_chunk("Epic: #{attrs["name"]} - #{attrs["description"]}", type: :epic) do
       {:ok, id} ->
         %{
           status: "ok",
@@ -180,30 +180,7 @@ defmodule Singularity.Planning.WorkPlanAPI do
   end
 
   defp route_message("planning.capability.create", attrs) do
-    case SafeWorkPlanner.add_capability(attrs) do
-      {:ok, id} ->
-        %{
-          status: "ok",
-          id: id,
-          message: "Capability created successfully"
-        }
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        %{
-          status: "error",
-          errors: format_changeset_errors(changeset)
-        }
-
-      {:error, reason} ->
-        %{
-          status: "error",
-          message: inspect(reason)
-        }
-    end
-  end
-
-  defp route_message("planning.feature.create", attrs) do
-    case SafeWorkPlanner.add_feature(attrs) do
+    case SafeWorkPlanner.add_chunk("Capability: #{attrs["name"]} - #{attrs["description"]}", type: :capability) do
       {:ok, id} ->
         %{
           status: "ok",

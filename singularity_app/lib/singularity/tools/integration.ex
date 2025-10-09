@@ -1243,10 +1243,12 @@ defmodule Singularity.Tools.Integration do
 
       # Run validation tests if provided
       validation_result =
-        if length(validation_tests) > 0 do
-          run_deployment_validation_tests(validation_tests, environment)
-        else
-          %{status: "skipped", message: "Validation tests skipped"}
+        case validation_tests do
+          [] ->
+            %{status: "skipped", message: "Validation tests skipped"}
+
+          _ ->
+            run_deployment_validation_tests(validation_tests, environment)
         end
 
       # Enable monitoring if requested

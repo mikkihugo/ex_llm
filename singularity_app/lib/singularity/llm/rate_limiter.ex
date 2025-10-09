@@ -58,7 +58,7 @@ defmodule Singularity.LLM.RateLimiter do
 
   Example:
     RateLimiter.with_limit(fn ->
-      LLM.Provider.call(:claude, opts)
+      LLM.Service.call(:complex, messages, opts)
     end)
   """
   def with_limit(estimated_cost \\ 0.10, fun) when is_function(fun, 0) do

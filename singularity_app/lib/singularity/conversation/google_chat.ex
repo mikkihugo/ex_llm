@@ -70,11 +70,13 @@ defmodule Singularity.Conversation.GoogleChat do
           🚀 Deployed: #{summary.deployments} changes
           📈 Avg Confidence: #{summary.avg_confidence}%
           """),
-          if length(summary.pending_questions || []) > 0 do
-            text_section("""
-            🤔 Waiting on your input:
-            #{Enum.map_join(summary.pending_questions, "\n", &"• #{&1.question}")}
-            """)
+          case summary.pending_questions || [] do
+            [] -> nil
+            questions ->
+              text_section("""
+              🤔 Waiting on your input:
+              #{Enum.map_join(questions, "\n", &"• #{&1.question}")}
+              """)
           end,
           if summary.top_recommendation do
             text_section("💡 Top recommendation: #{summary.top_recommendation}")

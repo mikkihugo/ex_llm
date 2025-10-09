@@ -32,7 +32,6 @@ defmodule Singularity.Tools.Default do
   defp register_defaults(provider) do
     Singularity.Tools.Catalog.add_tools(provider, [shell_tool(), read_file_tool()])
     Singularity.Tools.Quality.register(provider)
-    Singularity.Tools.EmergencyLLM.register(provider)
     Singularity.Tools.CodebaseUnderstanding.register(provider)
     Singularity.Tools.Planning.register(provider)
     Singularity.Tools.Knowledge.register(provider)

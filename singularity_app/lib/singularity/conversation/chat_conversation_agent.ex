@@ -10,7 +10,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   use GenServer
   require Logger
 
-  alias Singularity.Conversation.GoogleChat
+  alias Singularity.Conversation.{GoogleChat, Slack}
 
   @conversation_types [
     :clarification,
@@ -104,8 +104,9 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       status: :pending
     }
 
-    # Send to Google Chat
-    GoogleChat.ask_question(conversation)
+    # Send to configured channel (default: Google Chat)
+    channel = Keyword.get(opts, :channel, get_default_channel())
+    send_to_channel(channel, :ask_question, conversation)
 
     new_state = %{
       state
@@ -131,7 +132,8 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       default_action: Keyword.get(opts, :default, :wait)
     }
 
-    GoogleChat.ask_approval(recommendation)
+    channel = Keyword.get(opts, :channel, get_default_channel())
+    send_to_channel(channel, :ask_approval, recommendation)
 
     # Handle timeout if specified
     case Keyword.get(opts, :timeout) do
@@ -151,9 +153,10 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   end
 
   @impl true
-  def handle_cast({:explain, decision, _opts}, state) do
+  def handle_cast({:explain, decision, opts}, state) do
     # Non-blocking explanation
-    GoogleChat.notify(format_decision(decision))
+    channel = Keyword.get(opts, :channel, get_default_channel())
+    send_to_channel(channel, :notify, format_decision(decision))
 
     {:noreply, %{state | conversation_history: [decision | state.conversation_history]}}
   end
@@ -177,14 +180,16 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   @impl true
   def handle_cast({:daily_summary, summary}, state) do
-    GoogleChat.daily_summary(summary)
+    channel = get_default_channel()
+    send_to_channel(channel, :daily_summary, summary)
     {:noreply, state}
   end
 
   @impl true
   def handle_info(:daily_checkin, state) do
     summary = generate_daily_summary()
-    GoogleChat.daily_summary(summary)
+    channel = get_default_channel()
+    send_to_channel(channel, :daily_summary, summary)
 
     schedule_daily_checkin()
     {:noreply, state}
@@ -370,7 +375,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     end
   end
 
-  defp parse_human_message(message, state) when is_binary(message) do
+  defp parse_human_message(message, _state) when is_binary(message) do
     try do
       # Use LLM for intelligent message parsing
       prompt = """
@@ -573,5 +578,36 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     # For now, we'll just log and return ok.
     Logger.info("Adding suggestion to goal queue: #{feedback.description}")
     {:ok, "goal-#{System.unique_integer([:positive, :monotonic])}"}
+  end
+
+  ## Channel Routing Helpers
+
+  defp get_default_channel do
+    # Configure default channel via environment variable
+    # CHAT_CHANNEL=slack or CHAT_CHANNEL=google_chat
+    case System.get_env("CHAT_CHANNEL") do
+      "slack" -> :slack
+      "google_chat" -> :google_chat
+      _ -> :google_chat  # Default to Google Chat
+    end
+  end
+
+  defp send_to_channel(:slack, :ask_question, data), do: Slack.ask_question(data)
+  defp send_to_channel(:slack, :ask_approval, data), do: Slack.ask_approval(data)
+  defp send_to_channel(:slack, :notify, data), do: Slack.notify(data)
+  defp send_to_channel(:slack, :daily_summary, data), do: Slack.daily_summary(data)
+  defp send_to_channel(:slack, :deployment, data), do: Slack.deployment_notification(data)
+  defp send_to_channel(:slack, :policy_change, data), do: Slack.policy_change(data)
+
+  defp send_to_channel(:google_chat, :ask_question, data), do: GoogleChat.ask_question(data)
+  defp send_to_channel(:google_chat, :ask_approval, data), do: GoogleChat.ask_approval(data)
+  defp send_to_channel(:google_chat, :notify, data), do: GoogleChat.notify(data)
+  defp send_to_channel(:google_chat, :daily_summary, data), do: GoogleChat.daily_summary(data)
+  defp send_to_channel(:google_chat, :deployment, data), do: GoogleChat.deployment_notification(data)
+  defp send_to_channel(:google_chat, :policy_change, data), do: GoogleChat.policy_change(data)
+
+  defp send_to_channel(unknown_channel, action, _data) do
+    Logger.warning("Unknown channel: #{unknown_channel} for action: #{action}")
+    {:error, :unknown_channel}
   end
 end

@@ -14,7 +14,7 @@ defmodule Singularity.MethodologyExecutor do
 
   require Logger
   alias Singularity.{TechnologyTemplateLoader, RAGCodeGenerator, QualityCodeGenerator}
-  alias Singularity.LLM.Provider
+  alias Singularity.LLM.Service
 
   @sparc_phases [
     {:specification, "sparc-specification", "Define requirements and constraints"},
@@ -67,9 +67,10 @@ defmodule Singularity.MethodologyExecutor do
         false
       )
 
-    # Generate specification
+    # Generate specification using NATS (complexity: complex for architecture/planning)
     prompt = build_phase_prompt(template, context, examples)
-    {:ok, spec} = Provider.call(:claude, %{prompt: prompt})
+    {:ok, response} = Service.call_with_prompt(:complex, prompt, task_type: :architect)
+    spec = response.text
 
     context
     |> Map.put(:phases_completed, [:specification | context.phases_completed])
@@ -88,7 +89,9 @@ defmodule Singularity.MethodologyExecutor do
     #{Jason.encode!(template, pretty: true)}
     """
 
-    {:ok, pseudocode} = Provider.call(:claude, %{prompt: prompt})
+    # Generate pseudocode using NATS (complexity: medium for structured planning)
+    {:ok, response} = Service.call_with_prompt(:medium, prompt, task_type: :coder)
+    pseudocode = response.text
 
     context
     |> Map.put(:phases_completed, [:pseudocode | context.phases_completed])
@@ -118,7 +121,9 @@ defmodule Singularity.MethodologyExecutor do
     #{format_examples(patterns)}
     """
 
-    {:ok, architecture} = Provider.call(:claude, %{prompt: prompt})
+    # Generate architecture using NATS (complexity: complex for architecture design)
+    {:ok, response} = Service.call_with_prompt(:complex, prompt, task_type: :architect)
+    architecture = response.text
 
     context
     |> Map.put(:phases_completed, [:architecture | context.phases_completed])
@@ -146,7 +151,9 @@ defmodule Singularity.MethodologyExecutor do
     - Testing
     """
 
-    {:ok, refined} = Provider.call(:claude, %{prompt: prompt})
+    # Generate refined design using NATS (complexity: complex for optimization)
+    {:ok, response} = Service.call_with_prompt(:complex, prompt, task_type: :qa)
+    refined = response.text
 
     context
     |> Map.put(:phases_completed, [:refinement | context.phases_completed])

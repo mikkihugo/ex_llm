@@ -24,7 +24,7 @@ defmodule Singularity.GeneratorEngine.Code do
   end
 
   @spec validate_and_improve(String.t(), String.t()) :: {:ok, map()}
-  def validate_and_improve(code, language) do
+  def validate_and_improve(code, _language) do
     # This would integrate with the code validation and improvement functions
     # For now, return a basic validation
     {:ok,

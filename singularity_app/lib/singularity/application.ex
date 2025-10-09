@@ -186,8 +186,6 @@ defmodule Singularity.Application do
       Singularity.Tools.Basic,
       # Start the default tools
       Singularity.Tools.Default,
-      # Start the emergency LLM
-      Singularity.Tools.EmergencyLLM,
       # Start the enhanced descriptions
       Singularity.Tools.EnhancedDescriptions,
       # Start the quality tools

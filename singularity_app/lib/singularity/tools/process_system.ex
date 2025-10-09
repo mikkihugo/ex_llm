@@ -1275,10 +1275,9 @@ defmodule Singularity.Tools.ProcessSystem do
         end
       end)
 
-    if length(values) > 0 do
-      Enum.sum(values) / length(values)
-    else
-      0
+    case values do
+      [] -> 0
+      values -> Enum.sum(values) / length(values)
     end
   end
 

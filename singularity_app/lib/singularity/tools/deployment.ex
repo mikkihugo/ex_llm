@@ -1813,32 +1813,38 @@ defmodule Singularity.Tools.Deployment do
     # Check for unhealthy applications
     unhealthy_apps = Enum.filter(monitoring_data, &(&1.health_status != "healthy"))
 
-    if length(unhealthy_apps) > 0 do
-      alerts = [
-        %{
-          type: "health",
-          severity: "warning",
-          message: "Unhealthy applications detected",
-          applications: Enum.map(unhealthy_apps, & &1.name)
-        }
-        | alerts
-      ]
-    end
+    alerts =
+      case unhealthy_apps do
+        [] -> alerts
+        apps ->
+          [
+            %{
+              type: "health",
+              severity: "warning",
+              message: "Unhealthy applications detected",
+              applications: Enum.map(apps, & &1.name)
+            }
+            | alerts
+          ]
+      end
 
     # Check for high CPU usage
     high_cpu_apps = Enum.filter(monitoring_data, &(&1.cpu_usage > 80))
 
-    if length(high_cpu_apps) > 0 do
-      alerts = [
-        %{
-          type: "performance",
-          severity: "warning",
-          message: "High CPU usage detected",
-          applications: Enum.map(high_cpu_apps, & &1.name)
-        }
-        | alerts
-      ]
-    end
+    alerts =
+      case high_cpu_apps do
+        [] -> alerts
+        apps ->
+          [
+            %{
+              type: "performance",
+              severity: "warning",
+              message: "High CPU usage detected",
+              applications: Enum.map(apps, & &1.name)
+            }
+            | alerts
+          ]
+      end
 
     alerts
   end

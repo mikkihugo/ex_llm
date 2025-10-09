@@ -12,7 +12,7 @@ defmodule Singularity.Tools.WebSearch do
   For Codex CLI: Ensure it's started with web search enabled via config.
   """
 
-  alias Singularity.LLM.Provider
+  alias Singularity.LLM.Service
   alias Singularity.Tools.Tool
 
   @doc """
@@ -109,19 +109,15 @@ defmodule Singularity.Tools.WebSearch do
     Format as a clear, structured summary.
     """
 
-    # Call LLM with search capability
-    case Provider.call(%{
-           provider: provider,
-           prompt: search_prompt,
+    # Call LLM with search capability via NATS
+    # Use simple complexity for web search tasks
+    case Service.call_with_prompt(:simple, search_prompt,
            max_tokens: 2000,
            temperature: 0.3,
-           correlation_id: context[:correlation_id],
-           # Pass client info through (already in Process dict from interface)
-           client_info: context[:client_info],
-           session_id: context[:session_id]
-         }) do
+           provider: provider
+         ) do
       {:ok, response} ->
-        {:ok, response.content}
+        {:ok, response.text}
 
       {:error, reason} ->
         {:error, "Web search failed: #{inspect(reason)}"}

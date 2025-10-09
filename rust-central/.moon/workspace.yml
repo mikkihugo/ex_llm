@@ -1,0 +1,35 @@
+# rust-central - Independent Rust monorepo for Singularity
+# All Rust code lives here: NIFs, services, analysis tools
+$schema: '../.moon/cache/schemas/workspace.json'
+
+projects:
+  # NIFs (consumed by singularity_app via symlinks)
+  - 'architecture_engine'
+  - 'code_engine'
+  - 'embedding_engine'
+  - 'generator_engine'
+  - 'knowledge_cache_engine'
+  - 'knowledge_central_service'
+  - 'parser_engine'
+  - 'prompt_intelligence'
+  - 'quality_engine'
+  - 'semantic_engine'
+
+  # Standalone analysis tools
+  - 'analysis_engine'
+  - 'analysis_suite'
+  - 'linting_engine'
+  - 'prompt_engine'
+  - 'semantic_embedding_engine'
+  - 'universal_parser'
+  - 'tool_doc_index'
+  - 'package_analysis_suite'
+
+  # Services
+  - 'codeintelligence_server'
+  - 'consolidated_detector'
+  - 'unified_server'
+
+vcs:
+  manager: 'git'
+  defaultBranch: 'master'

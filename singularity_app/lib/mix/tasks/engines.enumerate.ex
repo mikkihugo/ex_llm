@@ -119,13 +119,15 @@ defmodule Mix.Tasks.Engines.Enumerate do
       IO.puts("  Health:      #{health_status}#{IO.ANSI.reset()}")
     end
 
-    if length(engine.capabilities) > 0 do
-      IO.puts("  Capabilities: #{length(engine.capabilities)}")
+    case engine.capabilities do
+      [] -> :ok
+      capabilities ->
+        IO.puts("  Capabilities: #{length(capabilities)}")
 
-      Enum.each(engine.capabilities, fn cap ->
-        status = if cap.available?, do: IO.ANSI.green() <> "✓", else: IO.ANSI.red() <> "✗"
-        IO.puts("    #{status} #{IO.ANSI.reset()}#{cap.label}")
-      end)
+        Enum.each(capabilities, fn cap ->
+          status = if cap.available?, do: IO.ANSI.green() <> "✓", else: IO.ANSI.red() <> "✗"
+          IO.puts("    #{status} #{IO.ANSI.reset()}#{cap.label}")
+        end)
     end
   end
 
@@ -158,8 +160,9 @@ defmodule Mix.Tasks.Engines.Enumerate do
         IO.puts("    ID:          #{cap.id}")
         IO.puts("    Description: #{cap.description}")
 
-        if length(cap.tags) > 0 do
-          IO.puts("    Tags:        #{inspect(cap.tags)}")
+        case cap.tags do
+          [] -> :ok
+          tags -> IO.puts("    Tags:        #{inspect(tags)}")
         end
       end)
     end

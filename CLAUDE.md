@@ -143,8 +143,63 @@ cargo audit
 **AI/LLM Integration**
 - `singularity_app/lib/singularity/llm/`: Provider abstraction for Claude, Gemini, OpenAI, Copilot
 - **Model Selection**: Multi-dimensional capability-based ranking (see [MODEL_CAPABILITY_MATRIX.md](MODEL_CAPABILITY_MATRIX.md))
+- **NATS-based LLM calls**: ALL Elixir code uses NATS (no direct HTTP to LLM APIs)
 - MCP (Model Context Protocol) federation via `hermes_mcp`
 - Jules AI agent integration for specialized tasks
+
+### LLM Usage Guidelines (IMPORTANT!)
+
+**ALL LLM calls in Elixir MUST use `Singularity.LLM.Service` via NATS:**
+
+```elixir
+alias Singularity.LLM.Service
+
+# ✅ CORRECT - Uses NATS with complexity level
+Service.call(:complex, messages, task_type: :architect)
+Service.call_with_prompt(:simple, prompt, task_type: :classifier)
+
+# ❌ WRONG - Direct HTTP calls forbidden
+Provider.call(:claude, %{prompt: prompt})  # Module doesn't exist!
+HTTPoison.post("https://api.anthropic.com/...")  # Never do this!
+```
+
+**Complexity Level Selection:**
+
+- **`:simple`** - Classification, parsing, simple Q&A (< 1000 tokens)
+  - Task types: `:classifier`, `:parser`, `:simple_chat`, `:web_search`
+  - Uses: Gemini Flash, GPT-4o-mini
+  - Cost: ~$0.001 per call
+
+- **`:medium`** - Standard code tasks, decomposition, planning
+  - Task types: `:coder`, `:decomposition`, `:planning`, `:pseudocode`
+  - Uses: Claude Sonnet, GPT-4o
+  - Cost: ~$0.01-0.05 per call
+
+- **`:complex`** - Architecture, refactoring, multi-step reasoning
+  - Task types: `:architect`, `:pattern_analyzer`, `:refactoring`, `:code_analysis`, `:qa`
+  - Uses: Claude Opus, GPT-4-turbo, o1
+  - Cost: ~$0.10-0.50 per call
+
+**Auto-determine complexity:**
+
+```elixir
+complexity = Service.determine_complexity_for_task(:code_generation)  # => :complex
+Service.call(complexity, messages)
+```
+
+**NATS Communication Flow:**
+
+```
+Elixir Code
+    ↓ NATS subject: ai.llm.request
+AI Server (TypeScript)
+    ↓ HTTP
+LLM Provider APIs (Claude, Gemini, etc.)
+    ↓
+AI Server
+    ↓ NATS subject: ai.llm.response
+Elixir Code
+```
 
 **Semantic Code Search**
 - `semantic_code_search.ex`: Main search interface

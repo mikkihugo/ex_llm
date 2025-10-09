@@ -8,7 +8,7 @@ defmodule Singularity.EmbeddingEngine do
   use Rustler,
     otp_app: :singularity,
     crate: :embedding_engine,
-    path: "native/embedding_engine"
+    skip_compilation?: true
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)

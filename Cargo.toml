@@ -1,20 +1,21 @@
 [workspace]
 resolver = "2"
 members = [
-    "singularity_app/native/parser-engine/dependency",
-    "singularity_app/native/parser-engine/engine",
-    "singularity_app/native/parser-engine/language_framework",
-    "singularity_app/native/parser-engine/languages/elixir",
-    "singularity_app/native/parser-engine/languages/gleam",
-    "singularity_app/native/parser-engine/languages/rust",
-    "singularity_app/native/parser-engine/languages/javascript",
-    "singularity_app/native/parser-engine/languages/typescript",
-    "singularity_app/native/parser-engine/languages/python",
-    "singularity_app/native/parser-engine/template_meta_parser",
-    "singularity_app/native/architecture_engine",
-    "singularity_app/native/code_engine",
-    "singularity_app/native/embedding_engine",
-    "singularity_app/native/prompt_intelligence",
+    # All NIFs now live in rust-central/ (accessed via singularity_app/native/* symlinks)
+    "rust-central/parser_engine/dependency",
+    "rust-central/parser_engine/engine",
+    "rust-central/parser_engine/language_framework",
+    "rust-central/parser_engine/languages/elixir",
+    "rust-central/parser_engine/languages/gleam",
+    "rust-central/parser_engine/languages/rust",
+    "rust-central/parser_engine/languages/javascript",
+    "rust-central/parser_engine/languages/typescript",
+    "rust-central/parser_engine/languages/python",
+    "rust-central/parser_engine/template_meta_parser",
+    "rust-central/architecture_engine",
+    "rust-central/code_engine",
+    "rust-central/embedding_engine",
+    "rust-central/prompt_intelligence",
 ]
 
 [workspace.dependencies]

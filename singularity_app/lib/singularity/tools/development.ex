@@ -927,10 +927,12 @@ defmodule Singularity.Tools.Development do
 
       # Send notifications if configured
       notification_result =
-        if length(notifications) > 0 do
-          send_workflow_notifications(workflow_result, notifications)
-        else
-          %{status: "skipped", message: "Workflow notifications skipped"}
+        case notifications do
+          [] ->
+            %{status: "skipped", message: "Workflow notifications skipped"}
+
+          _ ->
+            send_workflow_notifications(workflow_result, notifications)
         end
 
       # Calculate workflow duration
@@ -1132,18 +1134,22 @@ defmodule Singularity.Tools.Development do
 
       # Set breakpoints if provided
       breakpoint_result =
-        if length(breakpoints) > 0 do
-          set_debug_breakpoints(breakpoints, debug_session)
-        else
-          %{status: "skipped", message: "Breakpoints skipped"}
+        case breakpoints do
+          [] ->
+            %{status: "skipped", message: "Breakpoints skipped"}
+
+          _ ->
+            set_debug_breakpoints(breakpoints, debug_session)
         end
 
       # Watch variables if provided
       watch_result =
-        if length(watch_variables) > 0 do
-          watch_debug_variables(watch_variables, debug_session)
-        else
-          %{status: "skipped", message: "Variable watching skipped"}
+        case watch_variables do
+          [] ->
+            %{status: "skipped", message: "Variable watching skipped"}
+
+          _ ->
+            watch_debug_variables(watch_variables, debug_session)
         end
 
       # Perform profiling if requested
@@ -2150,10 +2156,12 @@ defmodule Singularity.Tools.Development do
 
       # Send notifications if configured
       notification_result =
-        if length(notification_channels) > 0 do
-          send_deployment_notifications(deployment_result, notification_channels)
-        else
-          %{status: "skipped", message: "Deployment notifications skipped"}
+        case notification_channels do
+          [] ->
+            %{status: "skipped", message: "Deployment notifications skipped"}
+
+          _ ->
+            send_deployment_notifications(deployment_result, notification_channels)
         end
 
       # Calculate deployment duration

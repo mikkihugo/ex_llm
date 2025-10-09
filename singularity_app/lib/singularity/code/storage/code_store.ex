@@ -1530,50 +1530,45 @@ defmodule Singularity.CodeStore do
     k8s_files = Path.wildcard(Path.join(codebase_path, "**/k8s/**/*.yaml"))
 
     deployment_patterns =
-      if length(k8s_files) > 0 do
-        [:kubernetes | deployment_patterns]
-      else
-        deployment_patterns
+      case k8s_files do
+        [_ | _] -> [:kubernetes | deployment_patterns]
+        [] -> deployment_patterns
       end
 
     # Check for Docker
     docker_files = Path.wildcard(Path.join(codebase_path, "**/Dockerfile"))
 
     deployment_patterns =
-      if length(docker_files) > 0 do
-        [:docker | deployment_patterns]
-      else
-        deployment_patterns
+      case docker_files do
+        [_ | _] -> [:docker | deployment_patterns]
+        [] -> deployment_patterns
       end
 
     # Check for Docker Compose
     compose_files = Path.wildcard(Path.join(codebase_path, "**/docker-compose*.yml"))
 
     deployment_patterns =
-      if length(compose_files) > 0 do
-        [:docker_compose | deployment_patterns]
-      else
-        deployment_patterns
+      case compose_files do
+        [_ | _] -> [:docker_compose | deployment_patterns]
+        [] -> deployment_patterns
       end
 
     # Check for Helm
     helm_files = Path.wildcard(Path.join(codebase_path, "**/Chart.yaml"))
 
     deployment_patterns =
-      if length(helm_files) > 0 do
-        [:helm | deployment_patterns]
-      else
-        deployment_patterns
+      case helm_files do
+        [_ | _] -> [:helm | deployment_patterns]
+        [] -> deployment_patterns
       end
 
     # Check for Fly.io
     fly_files = Path.wildcard(Path.join(codebase_path, "**/fly.toml"))
 
     deployment_patterns =
-      if length(fly_files) > 0 do
-        [:fly_io | deployment_patterns]
-      else
-        deployment_patterns
+      case fly_files do
+        [_ | _] -> [:fly_io | deployment_patterns]
+        [] -> deployment_patterns
       end
 
     %{
@@ -2148,10 +2143,9 @@ defmodule Singularity.CodeStore do
     bpmn_files = Path.wildcard(Path.join(codebase_path, "**/*.bpmn"))
 
     bpmn_patterns =
-      if length(bpmn_files) > 0 do
-        [:bpmn | bpmn_patterns]
-      else
-        bpmn_patterns
+      case bpmn_files do
+        [_ | _] -> [:bpmn | bpmn_patterns]
+        [] -> bpmn_patterns
       end
 
     # Check for workflow engines

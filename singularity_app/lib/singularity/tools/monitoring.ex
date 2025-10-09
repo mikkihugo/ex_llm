@@ -1541,10 +1541,9 @@ defmodule Singularity.Tools.Monitoring do
   defp calculate_average(data, key) do
     values = Enum.map(data, &Map.get(&1, key)) |> Enum.reject(&is_nil/1)
 
-    if length(values) > 0 do
-      Enum.sum(values) / length(values)
-    else
-      0
+    case values do
+      [] -> 0
+      values -> Enum.sum(values) / length(values)
     end
   end
 

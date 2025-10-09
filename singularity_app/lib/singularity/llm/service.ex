@@ -4,6 +4,43 @@ defmodule Singularity.LLM.Service do
 
   This is the ONLY way to call LLM providers in the Elixir app.
   All LLM calls go through NATS to the AI server (TypeScript).
+
+  ## Complexity Level Guidelines
+
+  All LLM calls should specify a complexity level to optimize model selection and cost:
+
+  ### :simple - Classification, parsing, simple Q&A (< 1000 tokens)
+  - **Uses:** Fast models (Gemini Flash, GPT-4o-mini)
+  - **Task types:** :classifier, :parser, :simple_chat, :web_search
+  - **Examples:** Parse user input, classify intent, simple lookups
+  - **Cost:** ~$0.001 per call
+
+  ### :medium - Standard code tasks, decomposition, planning
+  - **Uses:** Balanced models (Claude Sonnet, GPT-4o)
+  - **Task types:** :coder, :decomposition, :planning, :pseudocode
+  - **Examples:** Generate functions, create pseudocode, decompose tasks
+  - **Cost:** ~$0.01-0.05 per call
+
+  ### :complex - Architecture, refactoring, multi-step reasoning
+  - **Uses:** Premium models (Claude Opus, GPT-4-turbo, o1)
+  - **Task types:** :architect, :pattern_analyzer, :refactoring, :code_analysis, :qa
+  - **Examples:** Design architecture, analyze patterns, refactor code
+  - **Cost:** ~$0.10-0.50 per call
+
+  ## Usage Examples
+
+      # Simple classification
+      Service.call(:simple, messages, task_type: :classifier)
+
+      # Medium complexity code generation
+      Service.call(:medium, messages, task_type: :coder)
+
+      # Complex architecture design
+      Service.call(:complex, messages, task_type: :architect, capabilities: [:reasoning, :code])
+
+      # Auto-determine complexity from task type
+      complexity = Service.determine_complexity_for_task(:code_generation)
+      Service.call(complexity, messages)
   """
 
   require Logger
@@ -147,6 +184,68 @@ defmodule Singularity.LLM.Service do
     ]
 
     call(model_or_complexity, messages, opts)
+  end
+
+  @doc """
+  Determine appropriate complexity level based on task characteristics.
+
+  Automatically selects the right complexity level based on task type,
+  optimizing for both cost and quality.
+
+  ## Examples
+
+      iex> Service.determine_complexity_for_task(:architect)
+      :complex
+
+      iex> Service.determine_complexity_for_task(:coder)
+      :medium
+
+      iex> Service.determine_complexity_for_task(:classifier)
+      :simple
+
+      iex> Service.determine_complexity_for_task(:unknown, default_complexity: :medium)
+      :medium
+
+  ## Task Type Mapping
+
+  - **Complex:** :architect, :code_generation, :pattern_analyzer, :refactoring, :code_analysis, :qa
+  - **Medium:** :coder, :decomposition, :planning, :pseudocode, :chat
+  - **Simple:** :classifier, :parser, :simple_chat, :web_search
+  """
+  @spec determine_complexity_for_task(atom(), keyword()) :: :simple | :medium | :complex
+  def determine_complexity_for_task(task_type, opts \\ [])
+
+  def determine_complexity_for_task(task_type, opts) when is_atom(task_type) do
+    case task_type do
+      # Complex tasks - require premium models
+      task when task in [:architect, :code_generation, :pattern_analyzer, :refactoring, :code_analysis, :qa] ->
+        :complex
+
+      # Medium tasks - balanced models
+      task when task in [:coder, :decomposition, :planning, :pseudocode, :chat] ->
+        :medium
+
+      # Simple tasks - fast models
+      task when task in [:classifier, :parser, :simple_chat, :web_search] ->
+        :simple
+
+      # Unknown/default
+      _ ->
+        Keyword.get(opts, :default_complexity, :medium)
+    end
+  end
+
+  def determine_complexity_for_task(task_type, opts) when is_binary(task_type) do
+    task_type
+    |> String.to_atom()
+    |> determine_complexity_for_task(opts)
+  rescue
+    ArgumentError ->
+      Keyword.get(opts, :default_complexity, :medium)
+  end
+
+  def determine_complexity_for_task(_, opts) do
+    Keyword.get(opts, :default_complexity, :medium)
   end
 
   @doc """

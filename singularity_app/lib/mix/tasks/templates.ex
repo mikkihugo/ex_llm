@@ -120,16 +120,18 @@ defmodule Mix.Tasks.Templates.Validate do
 
     Mix.shell().info("✅ Valid: #{length(valid)}")
 
-    if length(invalid) > 0 do
-      Mix.shell().error("❌ Invalid: #{length(invalid)}")
+    case invalid do
+      [] ->
+        Mix.shell().info("All templates are valid!")
 
-      Enum.each(invalid, fn {:error, path, reason} ->
-        Mix.shell().error("  - #{path}: #{reason}")
-      end)
+      invalid ->
+        Mix.shell().error("❌ Invalid: #{length(invalid)}")
 
-      exit({:shutdown, 1})
-    else
-      Mix.shell().info("All templates are valid!")
+        Enum.each(invalid, fn {:error, path, reason} ->
+          Mix.shell().error("  - #{path}: #{reason}")
+        end)
+
+        exit({:shutdown, 1})
     end
   end
 

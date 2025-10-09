@@ -9,6 +9,8 @@ defmodule Singularity.Tools.Knowledge do
   - CodeDeduplicator - Duplicate detection
   """
 
+  require Logger
+
   alias Singularity.Tools.Tool
   alias Singularity.Search.PackageRegistryKnowledge
   alias Singularity.Code.Patterns.PatternMiner

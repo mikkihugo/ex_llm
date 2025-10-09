@@ -17,7 +17,7 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
   require Logger
 
   alias Singularity.{TechnologyTemplateLoader, RAGCodeGenerator}
-  alias Singularity.LLM.{Provider, SemanticCache}
+  alias Singularity.LLM.{Service, SemanticCache}
   alias Singularity.PromptEngine
 
   @doc """
@@ -179,25 +179,26 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
         # Optimize prompt using prompt engine if available
         optimized_prompt = optimize_prompt_if_available(prompt_data.prompt, task, opts)
 
-        # Execute LLM call
-        provider = select_provider_for_template(prompt_data.template)
+        # Execute LLM call via NATS (determine complexity from task)
+        complexity = determine_complexity(task, prompt_data.template)
+        system_prompt = build_system_prompt(prompt_data.template)
 
-        case Provider.call(provider, %{
-               prompt: optimized_prompt,
-               system_prompt: build_system_prompt(prompt_data.template),
+        case Service.call_with_system(complexity, system_prompt, optimized_prompt,
                max_tokens: 4000,
-               temperature: 0.3
-             }) do
+               temperature: 0.3,
+               task_type: task.type
+             ) do
           {:ok, response} ->
             # Track performance
             end_time = System.monotonic_time(:millisecond)
+            content = response.text
 
             metrics = %{
               time_ms: end_time - start_time,
-              quality: estimate_quality(response.content),
+              quality: estimate_quality(content),
               success: true,
-              lines: count_lines(response.content),
-              complexity: estimate_complexity(response.content),
+              lines: count_lines(content),
+              complexity: estimate_complexity(content),
               # Would need test results
               coverage: 0.0,
               feedback: %{},
@@ -212,9 +213,9 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
             )
 
             # Cache the result (using ETS for fast access)
-            Cache.put(:memory, cache_key, response.content, ttl: :timer.hours(1))
+            Cache.put(:memory, cache_key, content, ttl: :timer.hours(1))
 
-            {:ok, response.content, :generated}
+            {:ok, content, :generated}
 
           {:error, reason} ->
             # Record failure
@@ -328,6 +329,20 @@ defmodule Singularity.LLM.TemplateAwarePrompt do
       patterns |> Enum.map(&"- #{&1}") |> Enum.join("\n")
     else
       "- Follow language best practices"
+    end
+  end
+
+  defp determine_complexity(task, template) do
+    # Determine complexity level for NATS routing based on task and template
+    template_complexity = get_in(template, ["metadata", "performance", "complexity"]) || 5
+
+    cond do
+      # Simple: basic tasks, simple templates
+      template_complexity <= 3 and task.type in [:simple, :basic, :prototype] -> :simple
+      # Medium: standard code generation
+      template_complexity <= 7 -> :medium
+      # Complex: architecture, planning, production code
+      true -> :complex
     end
   end
 

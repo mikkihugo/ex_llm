@@ -347,7 +347,7 @@ defmodule Singularity.ServiceConfigSync do
         not has_config_field?(config, field)
       end)
 
-    if length(missing_fields) > 0 do
+    if missing_fields != [] do
       [%{type: :missing_required_fields, fields: missing_fields} | errors]
     else
       errors

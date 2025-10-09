@@ -1368,10 +1368,9 @@ defmodule Singularity.Tools.Performance do
   defp calculate_average(data, key) do
     values = Enum.map(data, &Map.get(&1, key)) |> Enum.reject(&is_nil/1)
 
-    if length(values) > 0 do
-      Enum.sum(values) / length(values)
-    else
-      0
+    case values do
+      [] -> 0
+      values -> Enum.sum(values) / length(values)
     end
   end
 
@@ -1500,17 +1499,19 @@ defmodule Singularity.Tools.Performance do
 
   defp calculate_fragmentation_score(memory_data) do
     # Simple fragmentation calculation
-    if length(memory_data) > 0 do
-      avg_free = calculate_average(memory_data, :free_memory)
-      avg_total = calculate_average(memory_data, :total_memory)
-
-      if avg_total > 0 do
-        (avg_free / avg_total * 100) |> Float.round(2)
-      else
+    case memory_data do
+      [] ->
         0.0
-      end
-    else
-      0.0
+
+      _ ->
+        avg_free = calculate_average(memory_data, :free_memory)
+        avg_total = calculate_average(memory_data, :total_memory)
+
+        if avg_total > 0 do
+          (avg_free / avg_total * 100) |> Float.round(2)
+        else
+          0.0
+        end
     end
   end
 
@@ -1837,11 +1838,11 @@ defmodule Singularity.Tools.Performance do
   end
 
   defp calculate_estimated_improvement(optimizations) do
-    if length(optimizations) > 0 do
-      total_improvement = Enum.sum(Enum.map(optimizations, & &1.expected_improvement))
-      total_improvement / length(optimizations)
-    else
-      0
+    case optimizations do
+      [] -> 0
+      optimizations ->
+        total_improvement = Enum.sum(Enum.map(optimizations, & &1.expected_improvement))
+        total_improvement / length(optimizations)
     end
   end
 
@@ -2020,15 +2021,17 @@ defmodule Singularity.Tools.Performance do
 
   defp analyze_per_core_usage(cpu_data) do
     # Analyze per-core usage if available
-    if length(cpu_data) > 0 and Map.has_key?(hd(cpu_data), :per_core) do
-      %{
-        core_0_avg: calculate_core_average(cpu_data, 0),
-        core_1_avg: calculate_core_average(cpu_data, 1),
-        core_2_avg: calculate_core_average(cpu_data, 2),
-        core_3_avg: calculate_core_average(cpu_data, 3)
-      }
-    else
-      %{}
+    case cpu_data do
+      [first | _] when is_map_key(first, :per_core) ->
+        %{
+          core_0_avg: calculate_core_average(cpu_data, 0),
+          core_1_avg: calculate_core_average(cpu_data, 1),
+          core_2_avg: calculate_core_average(cpu_data, 2),
+          core_3_avg: calculate_core_average(cpu_data, 3)
+        }
+
+      _ ->
+        %{}
     end
   end
 
@@ -2044,10 +2047,9 @@ defmodule Singularity.Tools.Performance do
       end)
       |> Enum.reject(&(&1 == 0))
 
-    if length(core_samples) > 0 do
-      Enum.sum(core_samples) / length(core_samples)
-    else
-      0
+    case core_samples do
+      [] -> 0
+      samples -> Enum.sum(samples) / length(samples)
     end
   end
 

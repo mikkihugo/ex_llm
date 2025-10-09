@@ -1665,10 +1665,9 @@ defmodule Singularity.Tools.Documentation do
         end
       end)
 
-    if length(sizes) > 0 do
-      Enum.sum(sizes) / length(sizes)
-    else
-      0
+    case sizes do
+      [] -> 0
+      sizes -> Enum.sum(sizes) / length(sizes)
     end
   end
 

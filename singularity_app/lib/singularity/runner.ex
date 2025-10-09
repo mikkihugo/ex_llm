@@ -994,7 +994,7 @@ defmodule Singularity.Runner do
   defp extract_recommendations_from_insights(insights) do
     # Extract recommendations from AI insights text
     case Regex.scan(~r/recommend(?:ation)?s?[:\s]+([^\.]+)/i, insights) do
-      matches when length(matches) > 0 ->
+      [_ | _] = matches ->
         matches
         |> Enum.map(fn [_, rec] -> String.trim(rec) end)
         |> Enum.reject(&(&1 == ""))
@@ -1005,7 +1005,7 @@ defmodule Singularity.Runner do
   defp assess_risks_from_insights(insights) do
     # Extract risk assessment from AI insights text
     case Regex.scan(~r/risk(?:s)?[:\s]+([^\.]+)/i, insights) do
-      matches when length(matches) > 0 ->
+      [_ | _] = matches ->
         %{
           identified_risks: matches
           |> Enum.map(fn [_, risk] -> String.trim(risk) end)

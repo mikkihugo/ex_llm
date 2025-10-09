@@ -7,15 +7,22 @@ projects:
   - 'ai-server'
   - 'seed_agent'
   - 'singularity_app'
-  - 'rust'
-  - 'rust/embedding_engine'
-  - 'rust/analysis_suite'
-  - 'rust/universal_parser'
-  - 'rust/tool_doc_index'
-  - 'rust/prompt_engine'
-  - 'rust/linting_engine'
   - 'templates_data'
   # - 'vendor/codex'  # Codex fork for builtin tool filtering (temporarily disabled for compilation)
+
+  # rust-central - Independent Rust monorepo (all NIFs + services + tools)
+  - 'rust-central'
+  - 'rust-central/architecture_engine'
+  - 'rust-central/code_engine'
+  - 'rust-central/embedding_engine'
+  - 'rust-central/parser_engine'
+  - 'rust-central/prompt_intelligence'
+  - 'rust-central/quality_engine'
+  - 'rust-central/analysis_suite'
+  - 'rust-central/linting_engine'
+  - 'rust-central/prompt_engine'
+  - 'rust-central/semantic_embedding_engine'
+  - 'rust-central/tool_doc_index'
 
 # Note: Moon caches task outputs under .moon/cache by default. CI caches this
 # directory (see .github/workflows/ci-elixir.yml) to speed up repeated runs.

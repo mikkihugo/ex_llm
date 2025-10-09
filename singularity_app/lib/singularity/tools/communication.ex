@@ -1998,10 +1998,9 @@ defmodule Singularity.Tools.Communication do
       end)
       |> Enum.reject(&is_nil/1)
 
-    if length(validated_emails) > 0 do
-      {:ok, validated_emails}
-    else
-      {:error, "No valid email addresses provided"}
+    case validated_emails do
+      [] -> {:error, "No valid email addresses provided"}
+      emails -> {:ok, emails}
     end
   end
 
@@ -2073,25 +2072,20 @@ defmodule Singularity.Tools.Communication do
     mentions = []
 
     mentions =
-      if length(mention_users) > 0 do
-        user_mentions = Enum.map(mention_users, &"<@#{&1}>")
-        mentions ++ user_mentions
-      else
-        mentions
+      case mention_users do
+        [] -> mentions
+        users -> mentions ++ Enum.map(users, &"<@#{&1}>")
       end
 
     mentions =
-      if length(mention_channels) > 0 do
-        channel_mentions = Enum.map(mention_channels, &"<##{&1}>")
-        mentions ++ channel_mentions
-      else
-        mentions
+      case mention_channels do
+        [] -> mentions
+        channels -> mentions ++ Enum.map(channels, &"<##{&1}>")
       end
 
-    if length(mentions) > 0 do
-      "#{Enum.join(mentions, " ")} #{formatted_message}"
-    else
-      formatted_message
+    case mentions do
+      [] -> formatted_message
+      mentions -> "#{Enum.join(mentions, " ")} #{formatted_message}"
     end
   end
 

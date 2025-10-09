@@ -21,6 +21,13 @@ defmodule Singularity.MixProject do
       compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       prune_code_paths: false,
+      # Memory limits for compilation
+      erlc_options: [:debug_info, {:i, "include"}],
+      erl_opts: [
+        :debug_info,
+        {:hmax, 268_435_456},  # 2GB max heap per process
+        {:hmaxk, 524_288}      # 4GB system memory limit
+      ],
       aliases: aliases(),
       deps: deps(),
       releases: releases(),
@@ -73,16 +80,16 @@ defmodule Singularity.MixProject do
       # Vector embeddings for pattern mining
       {:pgvector, "~> 0.2"},
 
-      # Rustler NIF for GPU-accelerated embeddings (primary: Rust → fallback: Google AI)
+      # Rustler NIF for GPU-accelerated embeddings
       {:rustler, "~> 0.34.0", runtime: false},
-  # Code engine NIF for unified code intelligence
-  {:code_engine, path: "native/code_engine", runtime: false, app: false, compile: false},
-  # Parser engine NIF for AST parsing and code analysis
-  {:parser_engine, path: "native/parser-engine/engine", runtime: false, app: false, compile: false},
-  # Quality engine NIF for multi-language linting and quality analysis
-  {:quality_engine, path: "native/quality_engine", runtime: false, app: false, compile: false},
-  # Prompt engine NIF for DSPy-based prompt optimization and caching
-  {:prompt_intelligence, path: "native/prompt_intelligence", runtime: false, app: false, compile: false},
+      # Code engine NIF for unified code intelligence (compile: false = won't rebuild every time)
+      {:code_engine, path: "native/code_engine", runtime: false, app: false, compile: false},
+      # Parser engine NIF for AST parsing and code analysis
+      {:parser_engine, path: "native/parser-engine/engine", runtime: false, app: false, compile: false},
+      # Quality engine NIF for multi-language linting and quality analysis
+      {:quality_engine, path: "native/quality_engine", runtime: false, app: false, compile: false},
+      # Prompt engine NIF for DSPy-based prompt optimization and caching
+      {:prompt_intelligence, path: "native/prompt_intelligence", runtime: false, app: false, compile: false},
 
       # Data & Serialization
       {:jason, "~> 1.4"},
@@ -154,8 +161,7 @@ defmodule Singularity.MixProject do
 
   defp aliases do
     [
-      "deps.get": ["deps.get", "gleam.deps.get"],
-      setup: ["deps.get", "gleam.deps.get"],
+      setup: ["deps.get", "gleam.deps.get", "deps.compile"],
       test: ["test"],
       "test.ci": ["test --color --cover"],
       coverage: ["coveralls.html"],

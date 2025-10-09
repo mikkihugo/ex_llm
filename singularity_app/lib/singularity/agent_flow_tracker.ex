@@ -19,6 +19,11 @@ defmodule Singularity.AgentFlowTracker do
     goal: "Generate user authentication module"
   )
 
+    )
+  ```
+
+  require Logger
+
   # Transition states
   AgentFlowTracker.transition_state(session_id, "planning", %{
     htdag_tasks_created: 5

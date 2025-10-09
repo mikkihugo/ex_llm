@@ -54,6 +54,9 @@
           # Rust compilation caching
           sccache
 
+          # Nix binary cache (cachix)
+          cachix
+
           # Rust toolchain (REQUIRED for Rustler NIFs)
           rustc
           cargo
@@ -417,6 +420,16 @@ EOF
             export ELIXIR_ERL_OPTIONS="+fnu"
             export ERL_AFLAGS="-proto_dist inet6_tcp"
             export MIX_ENV=''${MIX_ENV:-dev}
+
+            # === RUST/CARGO CACHING ===
+            export CARGO_HOME="''${HOME}/.cache/singularity/cargo"
+            export SCCACHE_DIR="''${HOME}/.cache/singularity/sccache"
+            export SCCACHE_CACHE_SIZE="10G"
+            export RUSTC_WRAPPER="sccache"
+            export CARGO_TARGET_DIR=".cargo-build"
+            export CARGO_INCREMENTAL="0"  # Disabled for sccache compatibility
+            export CARGO_REGISTRIES_CRATES_IO_PROTOCOL="sparse"
+            mkdir -p "$CARGO_HOME" "$SCCACHE_DIR" 2>/dev/null || true
             export GLEAM_ERLANG_INCLUDE_PATH="${beamPackages.erlang}/lib/erlang/usr/include"
             export MIX_HOME="$PWD/.mix"
             export HEX_HOME="$PWD/.hex"
@@ -602,6 +615,19 @@ EOF
             export HEX_HOME="$PWD/.hex"
             mkdir -p "$MIX_HOME" "$HEX_HOME" "$PWD/bin"
             export PATH=$PWD/bin:$PATH
+
+            # === RUST/CARGO CACHING ===
+            export CARGO_HOME="''${HOME}/.cache/singularity/cargo"
+            export SCCACHE_DIR="''${HOME}/.cache/singularity/sccache"
+            export SCCACHE_CACHE_SIZE="10G"
+            export RUSTC_WRAPPER="sccache"
+            export CARGO_TARGET_DIR=".cargo-build"
+            export CARGO_INCREMENTAL="0"
+            export CARGO_REGISTRIES_CRATES_IO_PROTOCOL="sparse"
+            mkdir -p "$CARGO_HOME" "$SCCACHE_DIR" "$CARGO_HOME/bin" 2>/dev/null || true
+
+            # Add cargo bin to PATH for cargo-binstall, cargo-quickinstall, etc.
+            export PATH="$CARGO_HOME/bin:$PATH"
 
             # CUDA setup for GPU-accelerated development
             export CUDA_HOME="${pkgs.cudaPackages.cudatoolkit}"

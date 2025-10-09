@@ -1,0 +1,40 @@
+# Cargo configuration for Singularity Rust NIFs
+# Optimized for fast compilation with precompiled dependencies
+
+[build]
+# Use all available cores
+jobs = 8
+
+# Use incremental compilation in dev (disabled for sccache in .envrc)
+# incremental = false  # Set via CARGO_INCREMENTAL in .envrc
+
+# Use mold linker (set via RUSTFLAGS in .envrc)
+# rustflags = ["-C", "linker=gcc", "-C", "link-arg=-fuse-ld=mold"]
+
+[profile.dev]
+# Fast compilation, minimal optimization
+opt-level = 0
+debug = true
+split-debuginfo = "unpacked"  # Faster on Linux
+incremental = false  # For sccache
+
+[profile.release]
+# Full optimization for production NIFs
+opt-level = 3
+lto = "thin"  # Thin LTO for faster builds
+codegen-units = 1
+strip = true  # Remove debug symbols
+
+[net]
+# Fast dependency downloads
+git-fetch-with-cli = false
+retry = 3
+
+[registries.crates-io]
+# Use sparse index for faster dependency resolution (set via .envrc)
+protocol = "sparse"
+
+[target.x86_64-unknown-linux-gnu]
+# Use mold linker for fast linking
+linker = "gcc"
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
