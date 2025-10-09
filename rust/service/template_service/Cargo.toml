@@ -1,0 +1,37 @@
+[package]
+name = "template-service"
+version = "0.1.0"
+edition = "2021"
+description = "Central template service for ALL templates (code, prompts, quality, frameworks)"
+license = "MIT"
+
+[[bin]]
+name = "template-service"
+path = "src/main.rs"
+
+[dependencies]
+# Storage
+storage-database = { path = "../../storage/database" }
+storage-cache = { path = "../../storage/cache" }
+
+# Template parsing
+template-definitions = { path = "../../lib/parser/formats/template_definitions" }
+
+# NATS
+async-nats = "0.37"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Async
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+
+# Utils
+anyhow = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }

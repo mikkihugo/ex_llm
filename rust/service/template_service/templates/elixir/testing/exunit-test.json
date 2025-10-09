@@ -1,0 +1,34 @@
+{
+  "name": "elixir-exunit-test",
+  "version": "1.0.0",
+  "language": "elixir",
+  "quality_level": "production",
+  "description": "Production ExUnit test with setup, mocks, and async support",
+  "template": "defmodule {{module_name}}Test do\n  use {{app_name}}.DataCase, async: {{async}}\n\n  alias {{app_name}}.{{context}}\n  alias {{app_name}}.{{context}}.{{schema}}\n\n  import {{app_name}}.Factory\n  import Mox\n\n  setup :verify_on_exit!\n\n  describe \"{{function_name}}/{{arity}}\" do\n    setup do\n      {{resource}} = insert(:{{resource}})\n      %{{{resource}}: {{resource}}}\n    end\n\n    test \"{{success_case}}\", %{{{resource}}: {{resource}}} do\n      assert {:ok, result} = {{context}}.{{function_name}}({{resource}})\n      assert result.{{field}} == {{expected_value}}\n    end\n\n    test \"{{error_case}}\" do\n      assert {:error, changeset} = {{context}}.{{function_name}}(invalid_attrs())\n      assert \"{{error_message}}\" in errors_on(changeset).{{field}}\n    end\n\n    test \"{{edge_case}}\" do\n      # Edge case test\n      assert {{expected_behavior}}\n    end\n  end\n\n  describe \"with mocks\" do\n    test \"{{mock_test_case}}\" do\n      expect({{mock_module}}, :{{mock_function}}, fn _args ->\n        {:ok, %{{schema}}{id: 1}}\n      end)\n\n      assert {:ok, result} = {{context}}.{{function_name}}()\n      assert result.id == 1\n    end\n  end\n\n  defp invalid_attrs do\n    %{{{field}}: nil}\n  end\nend",
+  "property_test_template": "defmodule {{module_name}}PropertyTest do\n  use ExUnit.Case\n  use ExUnitProperties\n\n  alias {{app_name}}.{{module}}\n\n  property \"{{property_description}}\" do\n    check all {{generator}} <- {{generator_spec}} do\n      result = {{module}}.{{function}}({{generator}})\n      assert {{invariant}}\n    end\n  end\nend",
+  "variables": {
+    "module_name": "MyApp.CatalogTest",
+    "app_name": "MyApp",
+    "context": "Catalog",
+    "schema": "Item",
+    "resource": "item",
+    "function_name": "create_item",
+    "arity": "1",
+    "async": "true",
+    "success_case": "creates item with valid attrs",
+    "error_case": "returns error with invalid attrs",
+    "edge_case": "handles empty list",
+    "field": "name",
+    "expected_value": "expected_name",
+    "error_message": "can't be blank",
+    "expected_behavior": "true",
+    "mock_module": "MyApp.ExternalAPIMock",
+    "mock_function": "fetch_data",
+    "mock_test_case": "calls external API correctly"
+  },
+  "dependencies": [
+    "mox ~> 1.1",
+    "stream_data ~> 1.0",
+    "ex_machina ~> 2.7"
+  ]
+}

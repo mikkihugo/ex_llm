@@ -1,0 +1,185 @@
+{
+  "name": "Rust Production Quality Template",
+  "spec_version": "1.0",
+  "capabilities": [
+    "quality",
+    "relationships",
+    "error_handling"
+  ],
+  "language": "rust",
+  "quality_level": "production",
+  "description": "Rust production quality standards for core patterns, error handling, and relationship mapping.",
+  "extends": [],
+  "version": "1.0.0",
+  "last_updated": "2025-01-27",
+  "requirements": {
+    "documentation": {
+      "moduledoc": {
+        "required": true,
+        "min_length": 60,
+        "must_include": [
+          "overview",
+          "examples"
+        ]
+      },
+      "doc": {
+        "required_for": [
+          "all_public_functions"
+        ],
+        "min_length": 30,
+        "must_include": [
+          "description",
+          "parameters",
+          "returns"
+        ]
+      },
+      "structured_sections": [
+        {
+          "id": "overview",
+          "required": true,
+          "min_length": 40,
+          "purpose": "High-level what/why in first 2 sentences"
+        },
+        {
+          "id": "examples",
+          "required": true,
+          "min_examples": 2,
+          "purpose": "Executable examples covering success + error paths"
+        },
+        {
+          "id": "relationships",
+          "required": true,
+          "min_length": 30,
+          "purpose": "Document module relationships and dependencies",
+          "format": "## Relationships\n- **Calls:** module::function - purpose\n- **Depends on:** module - purpose\n- **Used by:** module - purpose"
+        },
+        {
+          "id": "template_version",
+          "required": true,
+          "min_length": 20,
+          "purpose": "Document template version and upgrade path",
+          "format": "## Template Version\n- **Applied:** rust_production v1.0.0\n- **Applied on:** YYYY-MM-DD"
+        }
+      ]
+    },
+    "error_handling": {
+      "style": "result_type",
+      "required_pattern": "Result<T, E>",
+      "no_panic_for_flow": true,
+      "define_error_types": true
+    },
+    "type_specs": {
+      "required": true,
+      "required_for": [
+        "all_functions"
+      ],
+      "clippy": "required"
+    },
+    "testing": {
+      "required": true,
+      "coverage_target": 80,
+      "must_test": [
+        "public_api",
+        "error_paths"
+      ],
+      "types": [
+        "unit",
+        "integration"
+      ]
+    },
+    "code_style": {
+      "naming": "snake_case",
+      "struct_naming": "PascalCase",
+      "max_function_lines": 30,
+      "max_line_length": 100,
+      "prefer_pattern_matching": true
+    },
+    "relationship_annotations": {
+      "required": true,
+      "patterns": {
+        "calls": "// @calls: module::function - purpose",
+        "depends_on": "// @depends_on: module - purpose",
+        "error_flow": "// @error_flow: ErrorType -> description",
+        "evolves": "// @evolves: module::function - Auto-upgrades based on usage patterns",
+        "learns": "// @learns: pattern::type - Learns from successful patterns",
+        "adapts": "// @adapts: environment::change - Adapts to environment changes",
+        "business_rule": "// @business_rule: rule_name::policy - Maps to business rule",
+        "compliance": "// @compliance: standard::required - Compliance requirement",
+        "audit_trail": "// @audit_trail: required::true - Audit trail required",
+        "ai_generated": "// @ai_generated: pattern::type - AI-generated code with confidence score",
+        "ai_validated": "// @ai_validated: human::review - Human-validated AI code",
+        "ai_learned": "// @ai_learned: usage::pattern - Learned from usage patterns"
+      },
+      "placement": "before_function_definition"
+    },
+    "template_versioning": {
+      "required": true,
+      "format": {
+        "header_comment": "// Template: rust_production v1.0.0 | Applied: YYYY-MM-DD",
+        "module_attribute": "// @template_version \"rust_production v1.0.0\""
+      }
+    }
+  },
+  "patterns": {
+    "result_error_handling": {
+      "intent": "Use Result<T, E> for error handling",
+      "pseudocode": "fn function() -> Result<Success, Error> { Ok(value) }",
+      "when_to_use": [
+        "functions_that_can_fail",
+        "io_operations",
+        "parsing_operations"
+      ]
+    },
+    "custom_error_types": {
+      "intent": "Define custom error types for domain errors",
+      "pseudocode": "#[derive(Debug, thiserror::Error)]\nenum MyError { ... }",
+      "when_to_use": [
+        "domain_specific_errors",
+        "error_chaining",
+        "error_context"
+      ]
+    },
+    "option_handling": {
+      "intent": "Use Option<T> for nullable values",
+      "pseudocode": "fn function() -> Option<Value> { Some(value) }",
+      "when_to_use": [
+        "optional_values",
+        "nullable_returns",
+        "safe_unwrapping"
+      ]
+    }
+  },
+  "anti_patterns": {
+    "panic_for_control_flow": {
+      "symptom": "Using panic! for expected errors",
+      "why_bad": "Breaks Result<T, E> conventions",
+      "fix": "Return Result<T, E> or Option<T>"
+    },
+    "unwrap_everywhere": {
+      "symptom": "Using unwrap() in production code",
+      "why_bad": "Can cause panics",
+      "fix": "Use proper error handling with ? operator"
+    },
+    "generic_names": {
+      "symptom": "Structs named Data/Info/Manager",
+      "why_bad": "Non-descriptive, hinders discoverability",
+      "fix": "Rename to domain-specific responsibility"
+    }
+  },
+  "quality_checklist": [
+    "Documentation present with examples",
+    "Result<T, E> used for error handling",
+    "Custom error types defined",
+    "Functions <= 30 LOC",
+    "Meaningful struct & function names",
+    "Option<T> used for nullable values",
+    "No panic! in production code",
+    "Tests cover error paths",
+    "Relationship annotations present",
+    "Template versioning implemented"
+  ],
+  "examples": {
+    "good_code": "// Template: rust_production v1.0.0 | Applied: 2025-01-27\n// @template_version \"rust_production v1.0.0\"\n\nuse thiserror::Error;\n\n/// User service for managing user operations.\n/// \n/// ## Examples\n///     \n///     use user_service::UserService;\n///     \n///     let service = UserService::new();\n///     let user = service.create_user(\"john@example.com\")?;\n///     \n/// ## Relationships\n/// - **Calls:** database::UserRepository::save - User persistence\n/// - **Depends on:** database::UserRepository - Data access\n/// - **Used by:** api::UserController - HTTP endpoints\n/// \n/// ## Template Version\n/// - **Applied:** rust_production v1.0.0\n/// - **Applied on:** 2025-01-27\n#[derive(Debug, Error)]\npub enum UserError {\n    #[error(\"User not found: {id}\")]\n    NotFound { id: String },\n    #[error(\"Invalid email: {email}\")]\n    InvalidEmail { email: String },\n    #[error(\"Database error: {0}\")]\n    Database(#[from] sqlx::Error),\n}\n\npub struct UserService {\n    repository: UserRepository,\n}\n\nimpl UserService {\n    /// Create a new user service.\n    /// \n    /// ## Parameters\n    /// - repository: UserRepository - Data access layer\n    /// \n    /// ## Returns\n    /// - UserService - New service instance\n    pub fn new(repository: UserRepository) -> Self {\n        Self { repository }\n    }\n    \n    // @calls: database::UserRepository::save - User persistence\n    // @calls: validation::validate_email - Email validation\n    // @error_flow: UserError::InvalidEmail -> Invalid email format\n    // @error_flow: UserError::Database -> Database operation failed\n    /// Create a new user.\n    /// \n    /// ## Parameters\n    /// - email: &str - User email address\n    /// \n    /// ## Returns\n    /// - Result<User, UserError> - Created user or error\n    pub fn create_user(&self, email: &str) -> Result<User, UserError> {\n        validation::validate_email(email)?;\n        \n        let user = User {\n            id: uuid::Uuid::new_v4().to_string(),\n            email: email.to_string(),\n        };\n        \n        self.repository.save(&user)?;\n        Ok(user)\n    }\n    \n    // @calls: database::UserRepository::find_by_id - User lookup\n    // @error_flow: UserError::NotFound -> User not found\n    /// Get user by ID.\n    /// \n    /// ## Parameters\n    /// - id: &str - User ID\n    /// \n    /// ## Returns\n    /// - Result<Option<User>, UserError> - User if found, None if not found, or error\n    pub fn get_user(&self, id: &str) -> Result<Option<User>, UserError> {\n        self.repository.find_by_id(id)\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    \n    #[test]\n    fn test_create_user_success() {\n        let repository = MockUserRepository::new();\n        let service = UserService::new(repository);\n        \n        let result = service.create_user(\"test@example.com\");\n        assert!(result.is_ok());\n    }\n    \n    #[test]\n    fn test_create_user_invalid_email() {\n        let repository = MockUserRepository::new();\n        let service = UserService::new(repository);\n        \n        let result = service.create_user(\"invalid-email\");\n        assert!(matches!(result, Err(UserError::InvalidEmail { .. })));\n    }\n}",
+    "bad_code": "// No template versioning\n// No relationship annotations\n// No error handling\n\npub struct UserService;\n\nimpl UserService {\n    pub fn create_user(email: &str) -> User {\n        // Can panic!\n        let user = User::new(email);\n        user.save().unwrap(); // Can panic!\n        user\n    }\n    \n    pub fn get_user(id: &str) -> User {\n        // Can panic!\n        User::find(id).unwrap()\n    }\n}"
+  }
+}

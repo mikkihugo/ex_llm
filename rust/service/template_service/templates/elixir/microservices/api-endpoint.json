@@ -1,0 +1,19 @@
+{
+  "name": "elixir-api-endpoint",
+  "version": "1.0.0",
+  "language": "elixir",
+  "framework": "phoenix",
+  "quality_level": "production",
+  "description": "Production Phoenix API endpoint with validation and error handling",
+  "controller_template": "defmodule {{module_name}}Controller do\n  use {{app_name}}Web, :controller\n  \n  alias {{app_name}}.{{context}}\n  alias {{app_name}}.{{context}}.{{schema}}\n\n  action_fallback {{app_name}}Web.FallbackController\n\n  @doc \"\"\"\n  Lists all {{resource_plural}}.\n  \"\"\"\n  def index(conn, params) do\n    {{resource_plural}} = {{context}}.list_{{resource_plural}}(params)\n    render(conn, :index, {{resource_plural}}: {{resource_plural}})\n  end\n\n  @doc \"\"\"\n  Creates a {{resource}}.\n  \"\"\"\n  def create(conn, %{\"{{resource}}\" => {{resource}}_params}) do\n    with {:ok, %{{schema}}{} = {{resource}}} <- {{context}}.create_{{resource}}({{resource}}_params) do\n      conn\n      |> put_status(:created)\n      |> put_resp_header(\"location\", ~p\"/api/{{resource_plural}}/#{{{resource}}}\")\n      |> render(:show, {{resource}}: {{resource}})\n    end\n  end\n\n  @doc \"\"\"\n  Shows a {{resource}}.\n  \"\"\"\n  def show(conn, %{\"id\" => id}) do\n    {{resource}} = {{context}}.get_{{resource}}!(id)\n    render(conn, :show, {{resource}}: {{resource}})\n  end\n\n  @doc \"\"\"\n  Updates a {{resource}}.\n  \"\"\"\n  def update(conn, %{\"id\" => id, \"{{resource}}\" => {{resource}}_params}) do\n    {{resource}} = {{context}}.get_{{resource}}!(id)\n\n    with {:ok, %{{schema}}{} = {{resource}}} <- {{context}}.update_{{resource}}({{resource}}, {{resource}}_params) do\n      render(conn, :show, {{resource}}: {{resource}})\n    end\n  end\n\n  @doc \"\"\"\n  Deletes a {{resource}}.\n  \"\"\"\n  def delete(conn, %{\"id\" => id}) do\n    {{resource}} = {{context}}.get_{{resource}}!(id)\n\n    with {:ok, %{{schema}}{}} <- {{context}}.delete_{{resource}}({{resource}}) do\n      send_resp(conn, :no_content, \"\")\n    end\n  end\nend",
+  "json_view_template": "defmodule {{module_name}}JSON do\n  alias {{app_name}}.{{context}}.{{schema}}\n\n  @doc \"\"\"\n  Renders a list of {{resource_plural}}.\n  \"\"\"\n  def index(%{{{resource_plural}}: {{resource_plural}}}) do\n    %{data: for({{resource}} <- {{resource_plural}}, do: data({{resource}}))}\n  end\n\n  @doc \"\"\"\n  Renders a single {{resource}}.\n  \"\"\"\n  def show(%{{{resource}}: {{resource}}}) do\n    %{data: data({{resource}})}\n  end\n\n  defp data(%{{schema}}{} = {{resource}}) do\n    %{\n      id: {{resource}}.id,\n      # Add other fields\n    }\n  end\nend",
+  "variables": {
+    "module_name": "MyApp.ItemController",
+    "app_name": "MyApp",
+    "context": "Catalog",
+    "schema": "Item",
+    "resource": "item",
+    "resource_plural": "items"
+  },
+  "routes": "scope \"/api\", {{app_name}}Web do\n  pipe_through :api\n\n  resources \"/{{resource_plural}}\", {{module_name}}Controller, except: [:new, :edit]\nend"
+}

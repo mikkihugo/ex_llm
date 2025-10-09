@@ -1,14 +1,18 @@
 defmodule Singularity.PackageRegistryKnowledge do
   @moduledoc """
-  Stubbed package-registry knowledge base.
+  Package Registry Knowledge - Search packages via NATS
 
-  The original implementation depended on several external services and Rust
-  NIFs that are not included in this repository snapshot. To keep the rest of
-  the application compiling (and to make callers resilient), this module now
-  returns lightweight placeholder data while logging the requests.
+  Communicates with Rust package_lib collectors via NATS to search:
+  - npm (JavaScript/TypeScript)
+  - cargo (Rust)
+  - hex (Elixir/Erlang)
+  - pypi (Python)
 
-  When the full feature set is reinstated, these functions can be swapped back
-  to their real implementations without touching the rest of the code.
+  NATS Subjects:
+  - packages.registry.search - Search all ecosystems
+  - packages.registry.collect.npm - Collect npm package
+  - packages.registry.collect.cargo - Collect cargo package
+  - packages.registry.collect.hex - Collect hex package
   """
 
   require Logger
@@ -16,13 +20,74 @@ defmodule Singularity.PackageRegistryKnowledge do
   @type package_result :: map()
 
   @doc """
-  Perform a package search. Returns an empty list placeholder.
+  Perform a package search via NATS.
+
+  ## Options
+  - `:ecosystem` - Filter by ecosystem (:npm, :cargo, :hex, :pypi, or :all)
+  - `:limit` - Maximum results (default: 10)
   """
   @spec search(String.t(), keyword()) :: {:ok, [package_result()]} | {:error, term()}
   def search(query, opts \\ []) do
-    Logger.debug("[PackageRegistryKnowledge] search/2 placeholder", query: query, opts: opts)
-    {:ok, []}
+    ecosystem = Keyword.get(opts, :ecosystem, :all) |> to_string()
+    limit = Keyword.get(opts, :limit, 10)
+
+    Logger.info("🔍 Searching packages: '#{query}' in #{ecosystem}")
+
+    request = %{
+      "query" => query,
+      "ecosystem" => ecosystem,
+      "limit" => limit
+    }
+
+    case call_nats("packages.registry.search", request) do
+      {:ok, results} when is_list(results) ->
+        parsed = parse_search_results(results)
+        Logger.info("✅ Found #{length(parsed)} packages")
+        {:ok, parsed}
+
+      {:ok, _other} ->
+        Logger.warn("⚠️  Unexpected response format")
+        {:ok, []}
+
+      {:error, :timeout} ->
+        Logger.warn("⏱️  Search timed out")
+        {:ok, []}
+
+      {:error, reason} ->
+        Logger.error("❌ Search failed: #{inspect(reason)}")
+        {:ok, []}  # Graceful degradation
+    end
   end
+
+  defp call_nats(subject, request) do
+    case Singularity.NatsOrchestrator.request(subject, request, timeout: 10_000) do
+      {:ok, response} -> {:ok, response}
+      {:error, reason} -> {:error, reason}
+    end
+  rescue
+    error ->
+      Logger.error("NATS call exception: #{inspect(error)}")
+      {:error, :exception}
+  end
+
+  defp parse_search_results(results) when is_list(results) do
+    Enum.map(results, &parse_package_result/1)
+  end
+
+  defp parse_package_result(result) when is_map(result) do
+    %{
+      package_name: Map.get(result, "package_name"),
+      version: Map.get(result, "version"),
+      description: Map.get(result, "description", ""),
+      downloads: Map.get(result, "downloads", 0),
+      stars: Map.get(result, "stars"),
+      ecosystem: Map.get(result, "ecosystem"),
+      similarity: Map.get(result, "similarity", 0.0),
+      tags: Map.get(result, "tags", [])
+    }
+  end
+
+  defp parse_package_result(_), do: %{}
 
   @doc """
   Search across known architectural patterns.

@@ -1,0 +1,57 @@
+[package]
+name = "parser-nif"
+version = "0.1.0"
+edition = "2021"
+authors = ["Singularity Team"]
+description = "Parser registry, discovery, and capsule orchestration layer"
+license = "MIT"
+
+[lib]
+name = "parser_engine"
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+parking_lot = "0.12"
+dashmap = "5"
+ignore = "0.4"
+walkdir = "2"
+globset = "0.4"
+rayon = { version = "1.10", optional = true }
+tracing = "0.1"
+once_cell = "1.19"
+tree-sitter = "0.23.2"
+rustler = { version = "0.34", features = ["derive"], optional = true }
+
+# Language parser crates
+parser-framework = { path = "../../lib/parser/core" }
+elixir_parser = { path = "../../lib/parser/languages/elixir", optional = true }
+gleam_parser = { path = "../../lib/parser/languages/gleam", optional = true }
+rust_parser = { path = "../../lib/parser/languages/rust", optional = true }
+javascript_parser = { path = "../../lib/parser/languages/javascript", optional = true }
+typescript_parser = { path = "../../lib/parser/languages/typescript", optional = true }
+python_parser = { path = "../../lib/parser/languages/python", optional = true }
+template-meta-parser = { path = "../../lib/parser/template_meta_parser" }
+
+[features]
+default = [
+    "nif",
+    "lang-elixir",
+    "lang-gleam",
+    "lang-rust",
+    "lang-javascript",
+    "lang-typescript",
+    "lang-python",
+]
+parallel = ["rayon"]
+nif = ["rustler"]
+lang-elixir = ["elixir_parser"]
+lang-gleam = ["gleam_parser"]
+lang-rust = ["rust_parser"]
+lang-javascript = ["javascript_parser"]
+lang-typescript = ["typescript_parser"]
+lang-python = ["python_parser"]
