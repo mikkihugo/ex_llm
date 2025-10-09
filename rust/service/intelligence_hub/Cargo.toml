@@ -1,12 +1,12 @@
 [package]
-name = "intelligence_service"
+name = "intelligence_hub"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "Central intelligence service - aggregates code, architectural, and data insights across all Singularity instances via NATS"
+description = "Central intelligence hub - aggregates code, architectural, and data insights from all Singularity instances via NATS"
 
 [[bin]]
-name = "intelligence_service"
+name = "intelligence_hub"
 path = "src/main.rs"
 
 [dependencies]

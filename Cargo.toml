@@ -10,9 +10,9 @@ members = [
     "rust/parser/formats/dependency",
     "rust/parser/polyglot",
 
-    # Services (NATS-based microservices)
-    "rust/service/package_indexer",
-    "rust/service/intelligence_service",
+    # Services (NATS-based central services)
+    "rust/service/package_intelligence",
+    "rust/service/intelligence_hub",
     "rust/service/knowledge_cache",
 
     # Core libraries

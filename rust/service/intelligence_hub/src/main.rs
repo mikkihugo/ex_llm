@@ -1,15 +1,15 @@
-//! Intelligence Service
+//! Intelligence Hub
 //!
-//! Central intelligence layer that aggregates insights across all Singularity instances.
+//! Central hub that aggregates intelligence from all Singularity instances.
 //!
 //! Handles THREE types of intelligence:
 //! 1. **Code Intelligence** - Patterns, quality metrics, best practices
 //! 2. **Architectural Intelligence** - System design, component relationships, architectural patterns
 //! 3. **Data Intelligence** - Database schemas, data flows, data architecture
 //!
-//! Coordinates with local analysis libraries:
-//! - Local: Fast analysis per-instance (code_analysis, architecture libs)
-//! - Central: Pattern learning, global insights, cross-instance intelligence
+//! Architecture:
+//! - Local (per-instance): Fast analysis via code_analysis/architecture libraries
+//! - Central (this hub): Aggregates patterns and insights from ALL instances
 //!
 //! NATS subjects:
 //! - intelligence.code.pattern.learned - Code patterns from instances
@@ -25,7 +25,7 @@ use tracing::{info, error};
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
-    info!("Starting Intelligence Service (code + architecture + data aggregation)");
+    info!("Starting Intelligence Hub (central aggregation from all instances)");
 
     // Connect to NATS
     let nats_url = std::env::var("NATS_URL")
@@ -37,11 +37,11 @@ async fn main() -> Result<()> {
     // Subscribe to intelligence subjects
     subscribe_to_subjects(&client).await?;
 
-    info!("Intelligence Service ready - aggregating code, architecture, and data insights");
+    info!("Intelligence Hub ready - aggregating code, architecture, and data insights");
 
     // Keep service running
     tokio::signal::ctrl_c().await?;
-    info!("Shutting down Intelligence Service");
+    info!("Shutting down Intelligence Hub");
 
     Ok(())
 }
