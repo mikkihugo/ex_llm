@@ -1,5 +1,18 @@
 # GitHub Copilot Setup Instructions
 
+## Project Overview
+
+**Singularity** is an internal AI-powered development environment featuring:
+- **Autonomous agents** for self-improving code workflows
+- **Multi-AI orchestration** (Claude, Gemini, OpenAI, Copilot) via NATS
+- **Semantic code search** with GPU acceleration (RTX 4080)
+- **Living knowledge base** with Git ↔ PostgreSQL synchronization
+- **NATS-first microservices architecture** for inter-service communication
+
+**Development Philosophy**: Internal tooling prioritizing features & learning over production constraints. Maximum experimentation, rapid iteration.
+
+**Key Architectural Principle**: All database access routes through `db_service` via NATS - no direct PostgreSQL connections from services.
+
 ## Project Languages
 
 This is a **polyglot codebase** using:
@@ -379,10 +392,309 @@ code --install-extension mkhl.direnv
 
 This will automatically load the Nix environment in the integrated terminal.
 
+## Development Workflow
+
+### Making Changes
+
+1. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Make changes incrementally**
+   - Write code in small, focused commits
+   - Test each change before moving to the next
+   - Use `just dev` to run all services during development
+
+3. **Run tests frequently**
+   ```bash
+   # Elixir tests (fast feedback)
+   cd singularity_app && mix test
+   
+   # Rust tests (for Rust changes)
+   cd rust/tool_doc_index && cargo test
+   
+   # Full test suite
+   just test
+   ```
+
+4. **Commit with clear messages**
+   ```bash
+   git add -p  # Review changes interactively
+   git commit -m "feat: Add new detection pattern for Vue.js"
+   ```
+
+### Adding New Features
+
+#### Adding a New Technology Detector
+1. Create JSON template in `rust/tool_doc_index/templates/`
+2. Add detection patterns (file extensions, package names, etc.)
+3. Test with `cargo run -- detect /path/to/sample/project`
+4. Add integration test in Elixir
+
+#### Adding a New NATS Subject
+1. Document in `NATS_SUBJECTS.md`
+2. Add handler in appropriate service
+3. Add request/reply or pub/sub pattern
+4. Test with `nats sub "your.subject"`
+
+#### Adding a New LLM Provider
+1. Create provider module in `ai-server/src/providers/`
+2. Implement standard interface (chat, completion)
+3. Add to `ai-server/src/server.ts` routing
+4. Document authentication in `tools/deploy-credentials.md`
+
+## Testing Strategy
+
+### Test Pyramid
+
+```
+        /\
+       /  \    E2E Tests (5-10%)
+      /____\   - Full system integration
+     /      \  Integration Tests (20-30%)
+    /        \ - Service-to-service via NATS
+   /__________\ Unit Tests (60-70%)
+              - Pure functions, modules
+```
+
+### Running Tests
+
+**Unit Tests** (fast, run often):
+```bash
+# Elixir
+cd singularity_app && mix test
+
+# Rust
+cd rust/tool_doc_index && cargo test --lib
+
+# TypeScript
+cd ai-server && bun test
+```
+
+**Integration Tests** (medium speed):
+```bash
+# Requires NATS + PostgreSQL running
+cd singularity_app && mix test --only integration
+
+# Rust integration tests
+cd rust/db_service && cargo test --test integration_test
+```
+
+**E2E Tests** (slow, run before commits):
+```bash
+# Full system test
+just test
+
+# Or run specific E2E test
+elixir test-unified-system.exs
+```
+
+### Writing Good Tests
+
+**Do:**
+- ✅ Test business logic thoroughly
+- ✅ Mock external dependencies (LLM APIs, external services)
+- ✅ Use descriptive test names: `test "detects React from package.json"`
+- ✅ Use factories/fixtures for test data
+- ✅ Clean up resources (database, NATS subscriptions) after tests
+
+**Don't:**
+- ❌ Test implementation details
+- ❌ Make real API calls to LLM providers in tests
+- ❌ Share state between tests
+- ❌ Write tests that depend on execution order
+- ❌ Commit tests that are flaky or slow
+
+### Test Coverage Goals
+
+- **New features**: ≥80% coverage
+- **Bug fixes**: Add regression test
+- **Refactoring**: Maintain or improve coverage
+
+## Common Pitfalls
+
+### NATS Connection Issues
+
+**Problem**: `nats: connection refused`
+```
+Error: Failed to connect to NATS at localhost:4222
+```
+
+**Solution**:
+```bash
+# Check if NATS is running
+pgrep -x nats-server
+
+# If not, start it
+nats-server -js -sd .nats -p 4222
+
+# Or use direnv (auto-starts)
+direnv allow
+```
+
+### PostgreSQL Not Starting
+
+**Problem**: Database connection errors
+```
+Error: could not connect to server: Connection refused
+```
+
+**Solution**:
+```bash
+# Check PostgreSQL status
+pg_ctl status -D .dev-db/pg
+
+# Check logs
+tail -f .dev-db/pg/postgres.log
+
+# Clean restart
+pg_ctl stop -D .dev-db/pg
+rm -rf .dev-db/pg/postmaster.pid
+direnv reload
+```
+
+### Rust Build Failures
+
+**Problem**: `cargo build` fails with linking errors
+
+**Solution**:
+```bash
+# Clear build cache
+rm -rf target/
+cargo clean
+
+# For sccache issues
+sccache --stop-server
+rm -rf ~/.cache/singularity/sccache
+cargo build
+```
+
+### Elixir Dependency Issues
+
+**Problem**: `mix deps.get` fails or deps are outdated
+
+**Solution**:
+```bash
+cd singularity_app
+
+# Clear deps
+rm -rf deps _build
+
+# Fetch fresh
+mix local.hex --force
+mix local.rebar --force
+mix deps.get
+mix deps.compile
+
+# For Gleam deps
+mix gleam.deps.get
+```
+
+### Nix Environment Not Loading
+
+**Problem**: Commands not found after `direnv allow`
+
+**Solution**:
+```bash
+# Reload direnv
+direnv reload
+
+# If still broken, rebuild
+nix flake update
+direnv allow
+
+# Check what's loaded
+which elixir gleam cargo
+```
+
+### NATS Subject Naming
+
+**Problem**: Messages not routing correctly
+
+**Pitfall**: Using wrong subject naming conventions
+```bash
+# ❌ Wrong
+"database-query"
+
+# ✅ Correct
+"db.query"
+```
+
+**Solution**: Always use dot-separated hierarchical names. See `NATS_SUBJECTS.md`.
+
+### Direct Database Access
+
+**Problem**: Trying to connect directly to PostgreSQL from services
+
+**Pitfall**:
+```elixir
+# ❌ Wrong - bypasses db_service
+Repo.query("SELECT * FROM users")
+```
+
+**Solution**: Always use NATS to talk to db_service:
+```elixir
+# ✅ Correct
+NatsConnector.request("db.query", %{sql: "SELECT * FROM users"})
+```
+
+### GPU Memory Issues (WSL2)
+
+**Problem**: CUDA out of memory errors
+
+**Solution**:
+```bash
+# Check GPU memory
+nvidia-smi
+
+# If fragmented, restart WSL
+wsl --shutdown
+wsl
+```
+
+## Code Review Guidelines
+
+### What to Look For
+
+**Architecture**:
+- ✅ Follows NATS-first principle
+- ✅ No direct database access (except db_service)
+- ✅ Services are stateless where possible
+- ✅ Proper error handling and logging
+
+**Code Quality**:
+- ✅ Follows language conventions (see sections above)
+- ✅ Has tests for new functionality
+- ✅ Documentation for public APIs
+- ✅ No hardcoded secrets or credentials
+
+**Performance**:
+- ✅ Efficient database queries (use indexes)
+- ✅ Async operations for I/O
+- ✅ Proper caching strategies
+- ✅ Resource cleanup (connections, subscriptions)
+
+### Approval Criteria
+
+- [ ] All tests pass (`just test`)
+- [ ] Code follows language conventions
+- [ ] Changes are documented
+- [ ] No security issues (secrets, SQL injection, etc.)
+- [ ] Performance impact is acceptable
+
 ## Further Reading
 
-- [Nix Flakes](https://nixos.wiki/wiki/Flakes)
-- [direnv](https://direnv.net/)
-- [NATS Architecture](./NATS_SUBJECTS.md)
-- [Testing Guide](./TEST_GUIDE.md)
-- [E2E Tests](./E2E_TEST.md)
+### Project Documentation
+- [Repository README](../README.md) - Project overview and quick start
+- [NATS Subjects](../NATS_SUBJECTS.md) - Message bus subject conventions
+- [Architecture Clarification](../ARCHITECTURE_CLARIFICATION.md) - System architecture details
+- [Knowledge Routing Guide](../KNOWLEDGE_ROUTING_GUIDE.md) - How data flows through the system
+
+### External Resources
+- [Nix Flakes](https://nixos.wiki/wiki/Flakes) - Reproducible development environments
+- [direnv](https://direnv.net/) - Per-directory environment variables
+- [NATS Documentation](https://docs.nats.io/) - Message bus documentation
+- [Elixir Guides](https://hexdocs.pm/elixir/) - Elixir language reference
+- [Gleam Language](https://gleam.run/) - Gleam documentation
+- [Rust Book](https://doc.rust-lang.org/book/) - The Rust Programming Language
