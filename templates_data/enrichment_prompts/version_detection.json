@@ -1,0 +1,172 @@
+{
+  "$schema": "https://singularity.dev/schemas/enrichment_prompt/v1",
+  "id": "framework-version-detection",
+  "name": "Framework Version Detection",
+  "version": "1.0.0",
+  "category": "architecture_analysis",
+  "description": "Quick LLM prompt for detecting specific framework version from code patterns",
+  "metadata": {
+    "author": "singularity",
+    "created": "2025-01-09",
+    "updated": "2025-01-09",
+    "complexity_level": "simple",
+    "task_type": "classifier"
+  },
+  "system_prompt": {
+    "role": "You are a framework version detection specialist.",
+    "objective": "Analyze code patterns to determine the specific framework version being used.",
+    "output_format": "JSON only with version and confidence.",
+    "constraints": [
+      "Only return version if confident (>= 0.7)",
+      "Return null if version cannot be determined",
+      "Include reasoning for version choice"
+    ]
+  },
+  "prompt_template": "# Framework Version Detection\n\n**Framework:** {{framework_name}}\n**Known Versions:** {{known_versions}}\n\n## Code Patterns Found:\n{{code_patterns}}\n\n## Package Dependencies:\n{{dependencies}}\n\n## Task\n\nDetermine the specific version (or version range) of {{framework_name}} based on the patterns above.\n\n### Version-Specific Indicators\n\n{{version_indicators}}\n\n## Output (JSON only):\n\n```json\n{\n  \"version\": \"string (e.g., '1.7', '2.0', '0.100+') or null\",\n  \"confidence\": 0.0-1.0,\n  \"reasoning\": \"Why this version?\",\n  \"indicators\": [\n    {\"pattern\": \"string\", \"indicates_version\": \"string\"}\n  ],\n  \"ambiguities\": [\"What makes version detection uncertain?\"]\n}\n```",
+  "input_variables": [
+    {
+      "name": "framework_name",
+      "type": "string",
+      "required": true,
+      "example": "Phoenix"
+    },
+    {
+      "name": "known_versions",
+      "type": "array[string]",
+      "description": "Known framework versions from database",
+      "required": true,
+      "example": ["1.6", "1.7", "1.8"]
+    },
+    {
+      "name": "code_patterns",
+      "type": "array[string]",
+      "description": "Code patterns found in the project",
+      "required": true,
+      "example": [
+        "use Phoenix.Controller",
+        "~p\"/users/#{user}\"",
+        "Phoenix.LiveView.JS"
+      ]
+    },
+    {
+      "name": "dependencies",
+      "type": "object",
+      "description": "Package dependencies from manifest",
+      "required": false,
+      "example": {
+        "phoenix": "~> 1.7",
+        "phoenix_live_view": "~> 0.20"
+      }
+    },
+    {
+      "name": "version_indicators",
+      "type": "string",
+      "description": "Version-specific patterns to look for",
+      "required": true,
+      "example": "Phoenix 1.7: verified routes (~p sigil), Phoenix 1.6: Routes helpers"
+    }
+  ],
+  "output_schema": {
+    "type": "object",
+    "required": ["version", "confidence", "reasoning"],
+    "properties": {
+      "version": {"type": ["string", "null"]},
+      "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+      "reasoning": {"type": "string"},
+      "indicators": {"type": "array"},
+      "ambiguities": {"type": "array"}
+    }
+  },
+  "examples": {
+    "phoenix_1.7": {
+      "request": {
+        "framework_name": "Phoenix",
+        "known_versions": ["1.6", "1.7", "1.8"],
+        "code_patterns": [
+          "use Phoenix.Controller",
+          "~p\"/users/#{user}\"",
+          "Phoenix.VerifiedRoutes"
+        ],
+        "dependencies": {
+          "phoenix": "~> 1.7",
+          "phoenix_live_view": "~> 0.20"
+        },
+        "version_indicators": "Phoenix 1.7: ~p sigil (verified routes)\nPhoenix 1.6: Routes.user_path helpers\nPhoenix 1.8: Streams API"
+      },
+      "response": {
+        "version": "1.7",
+        "confidence": 0.95,
+        "reasoning": "Strong indicators of Phoenix 1.7: verified routes with ~p sigil, dependency version ~> 1.7, and absence of 1.8-specific features like streams",
+        "indicators": [
+          {"pattern": "~p\"/users/#{user}\"", "indicates_version": "1.7+"},
+          {"pattern": "{:phoenix, \"~> 1.7\"}", "indicates_version": "1.7"},
+          {"pattern": "Phoenix.LiveView (0.20)", "indicates_version": "1.7-compatible"}
+        ],
+        "ambiguities": []
+      }
+    },
+    "fastapi_pydantic_v2": {
+      "request": {
+        "framework_name": "FastAPI",
+        "known_versions": ["0.95", "0.100", "0.110"],
+        "code_patterns": [
+          "from fastapi import FastAPI",
+          "model_config = ConfigDict(from_attributes=True)",
+          "Field(..., min_length=1)"
+        ],
+        "dependencies": {
+          "fastapi": ">=0.100.0",
+          "pydantic": "^2.0.0"
+        },
+        "version_indicators": "FastAPI 0.100+: Pydantic v2 (model_config)\nFastAPI 0.95: Pydantic v1 (class Config)\nFastAPI 0.110+: New validation features"
+      },
+      "response": {
+        "version": "0.100+",
+        "confidence": 0.92,
+        "reasoning": "Pydantic v2 syntax (model_config = ConfigDict) indicates FastAPI 0.100 or later. Dependency confirms >=0.100.0. No 0.110-specific features detected.",
+        "indicators": [
+          {"pattern": "model_config = ConfigDict", "indicates_version": "0.100+ (Pydantic v2)"},
+          {"pattern": "fastapi = '>=0.100.0'", "indicates_version": "0.100+"}
+        ],
+        "ambiguities": [
+          "Cannot distinguish between 0.100-0.109 without more specific features"
+        ]
+      }
+    },
+    "nextjs_app_router": {
+      "request": {
+        "framework_name": "Next.js",
+        "known_versions": ["12", "13", "14"],
+        "code_patterns": [
+          "'use client'",
+          "async function getData()",
+          "app/page.tsx",
+          "export const metadata"
+        ],
+        "dependencies": {
+          "next": "14.0.4",
+          "react": "^18.2.0"
+        },
+        "version_indicators": "Next.js 13: App Router (app/)\nNext.js 12: Pages Router (pages/)\nNext.js 14: Server Actions stable"
+      },
+      "response": {
+        "version": "14",
+        "confidence": 0.98,
+        "reasoning": "Package.json shows next 14.0.4. App Router patterns ('use client', async getData, app/ directory) confirm 13+. Server-side features stable in 14.",
+        "indicators": [
+          {"pattern": "next: '14.0.4'", "indicates_version": "14"},
+          {"pattern": "app/page.tsx", "indicates_version": "13+ (App Router)"},
+          {"pattern": "'use client'", "indicates_version": "13+ (RSC directives)"}
+        ],
+        "ambiguities": []
+      }
+    }
+  },
+  "usage": {
+    "service": "analyze_arch_service",
+    "trigger": "When framework is known but version is uncertain",
+    "nats_subject": "ai.llm.request",
+    "response_subject": "architecture.version.detected",
+    "storage": "Update framework_versions table"
+  }
+}

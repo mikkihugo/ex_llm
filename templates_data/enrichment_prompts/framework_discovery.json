@@ -1,0 +1,201 @@
+{
+  "$schema": "https://singularity.dev/schemas/enrichment_prompt/v1",
+  "id": "framework-discovery",
+  "name": "Framework Discovery & Enrichment",
+  "version": "1.0.0",
+  "category": "architecture_analysis",
+  "description": "LLM prompt for discovering and enriching unknown framework patterns",
+  "metadata": {
+    "author": "singularity",
+    "created": "2025-01-09",
+    "updated": "2025-01-09",
+    "complexity_level": "complex",
+    "task_type": "architect"
+  },
+  "system_prompt": {
+    "role": "You are a software architecture expert specializing in framework detection and pattern analysis.",
+    "objective": "Analyze code samples and files to identify frameworks, extract detection patterns, and provide structured metadata.",
+    "output_format": "JSON only. No explanations outside the JSON structure.",
+    "constraints": [
+      "Be precise with version detection - only specify version if you're confident",
+      "Detection patterns must be specific enough to avoid false positives",
+      "Confidence scores must be realistic (0.0-1.0)",
+      "Include both positive patterns (what indicates this framework) and negative patterns (what rules it out)"
+    ]
+  },
+  "prompt_template": "# Framework Discovery Task\n\nAnalyze the following code/files to identify the framework being used.\n\n## Context\n**Framework Name (suspected):** {{framework_name}}\n**Files Present:** {{files_list}}\n**Code Samples:**\n{{code_samples}}\n\n## Your Task\n\n1. **Confirm the framework** - Is this really {{framework_name}}? What version?\n2. **Extract detection patterns** - What files, imports, or code patterns uniquely identify this framework?\n3. **Identify dependencies** - What packages does this framework require?\n4. **Provide usage examples** - Show typical patterns for this framework version\n5. **Document best practices** - What are the recommended patterns for this version?\n\n## Output Format (JSON)\n\n```json\n{\n  \"framework\": {\n    \"name\": \"string\",\n    \"version\": \"string or null\",\n    \"category\": \"web|mobile|desktop|cli|library\",\n    \"ecosystem\": \"npm|pypi|cargo|hex|maven\",\n    \"confidence\": 0.95\n  },\n  \"detection\": {\n    \"config_files\": [\n      {\"file\": \"string\", \"weight\": 0.9, \"required\": true}\n    ],\n    \"import_patterns\": [\n      {\"pattern\": \"string (regex)\", \"weight\": 0.8, \"example\": \"string\"}\n    ],\n    \"code_patterns\": [\n      {\"pattern\": \"string (description)\", \"weight\": 0.7, \"example\": \"string\"}\n    ],\n    \"directory_structure\": [\n      {\"path\": \"string\", \"weight\": 0.6, \"optional\": false}\n    ]\n  },\n  \"dependencies\": {\n    \"required\": [\n      {\"name\": \"string\", \"version_constraint\": \"string\", \"ecosystem\": \"string\"}\n    ],\n    \"optional\": [\n      {\"name\": \"string\", \"version_constraint\": \"string\", \"purpose\": \"string\"}\n    ]\n  },\n  \"version_features\": {\n    \"major_version\": \"string\",\n    \"breaking_changes\": [\"string\"],\n    \"new_features\": [\"string\"],\n    \"deprecated_patterns\": [\"string\"]\n  },\n  \"code_snippets\": [\n    {\n      \"name\": \"string\",\n      \"description\": \"string\",\n      \"code\": \"string\",\n      \"file_path\": \"string (typical location)\",\n      \"is_best_practice\": true\n    }\n  ],\n  \"metadata\": {\n    \"homepage\": \"string\",\n    \"documentation\": \"string\",\n    \"repository\": \"string\",\n    \"license\": \"string\"\n  },\n  \"llm_notes\": {\n    \"confidence_reasoning\": \"Why this confidence score?\",\n    \"version_detection_method\": \"How did you determine the version?\",\n    \"ambiguities\": [\"What was unclear or could use human review?\"]\n  }\n}\n```\n\n## Examples of Good Detection Patterns\n\n**Phoenix 1.7:**\n- Config: `mix.exs` with `{:phoenix, \"~> 1.7\"}`\n- Import: `use Phoenix.Controller` or `use Phoenix.LiveView`\n- Code: `~p\"/users/#{user}\"` (verified routes - 1.7+ only)\n- Directory: `lib/my_app_web/` structure\n\n**FastAPI 0.100+:**\n- Config: `pyproject.toml` with `fastapi = \"^0.100\"`\n- Import: `from fastapi import FastAPI`\n- Code: `model_config = ConfigDict(from_attributes=True)` (Pydantic v2)\n- Directory: `app/` with `main.py`\n\n**Next.js 13+:**\n- Config: `next.config.js` or `next.config.ts`\n- Import: `'use client'` or `'use server'` directives\n- Code: `async function getData()` in server components\n- Directory: `app/` (App Router) vs `pages/` (Pages Router)\n\nNow analyze the provided code and output ONLY the JSON structure.",
+  "input_variables": [
+    {
+      "name": "framework_name",
+      "type": "string",
+      "description": "Suspected framework name from initial detection",
+      "required": true,
+      "example": "SvelteKit"
+    },
+    {
+      "name": "files_list",
+      "type": "array[string]",
+      "description": "List of file paths found in the project",
+      "required": true,
+      "example": ["svelte.config.js", "src/routes/+page.svelte", "package.json"]
+    },
+    {
+      "name": "code_samples",
+      "type": "array[object]",
+      "description": "Code snippets with file paths and content",
+      "required": false,
+      "example": [
+        {
+          "file": "svelte.config.js",
+          "content": "import adapter from '@sveltejs/adapter-auto';\nexport default { kit: { adapter: adapter() } };"
+        }
+      ]
+    }
+  ],
+  "output_schema": {
+    "type": "object",
+    "required": ["framework", "detection", "dependencies"],
+    "properties": {
+      "framework": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "version": {"type": ["string", "null"]},
+          "category": {"type": "string", "enum": ["web", "mobile", "desktop", "cli", "library"]},
+          "ecosystem": {"type": "string", "enum": ["npm", "pypi", "cargo", "hex", "maven", "nuget"]},
+          "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+        }
+      },
+      "detection": {
+        "type": "object",
+        "properties": {
+          "config_files": {"type": "array"},
+          "import_patterns": {"type": "array"},
+          "code_patterns": {"type": "array"},
+          "directory_structure": {"type": "array"}
+        }
+      },
+      "dependencies": {
+        "type": "object",
+        "properties": {
+          "required": {"type": "array"},
+          "optional": {"type": "array"}
+        }
+      }
+    }
+  },
+  "examples": {
+    "request": {
+      "framework_name": "SvelteKit",
+      "files_list": [
+        "svelte.config.js",
+        "src/routes/+page.svelte",
+        "src/routes/+layout.svelte",
+        "package.json"
+      ],
+      "code_samples": [
+        {
+          "file": "svelte.config.js",
+          "content": "import adapter from '@sveltejs/adapter-auto';\n\nexport default {\n  kit: {\n    adapter: adapter()\n  }\n};"
+        },
+        {
+          "file": "src/routes/+page.svelte",
+          "content": "<script>\n  export let data;\n</script>\n\n<h1>Welcome to SvelteKit</h1>"
+        },
+        {
+          "file": "package.json",
+          "content": "{\n  \"dependencies\": {\n    \"@sveltejs/kit\": \"^2.0.0\",\n    \"svelte\": \"^4.0.0\"\n  }\n}"
+        }
+      ]
+    },
+    "response": {
+      "framework": {
+        "name": "SvelteKit",
+        "version": "2.0",
+        "category": "web",
+        "ecosystem": "npm",
+        "confidence": 0.98
+      },
+      "detection": {
+        "config_files": [
+          {"file": "svelte.config.js", "weight": 0.95, "required": true},
+          {"file": "package.json", "weight": 0.5, "required": true}
+        ],
+        "import_patterns": [
+          {"pattern": "@sveltejs/kit", "weight": 0.9, "example": "import { page } from '$app/stores';"},
+          {"pattern": "\\$app/(forms|navigation|stores)", "weight": 0.85, "example": "import { goto } from '$app/navigation';"}
+        ],
+        "code_patterns": [
+          {"pattern": "File-based routing with +page.svelte", "weight": 0.9, "example": "src/routes/blog/+page.svelte"},
+          {"pattern": "Server load functions with +page.server.js", "weight": 0.8, "example": "export const load = async () => {...}"},
+          {"pattern": "$: reactive statements", "weight": 0.6, "example": "$: doubled = count * 2;"}
+        ],
+        "directory_structure": [
+          {"path": "src/routes/", "weight": 0.9, "optional": false},
+          {"path": "static/", "weight": 0.4, "optional": true}
+        ]
+      },
+      "dependencies": {
+        "required": [
+          {"name": "@sveltejs/kit", "version_constraint": "^2.0.0", "ecosystem": "npm"},
+          {"name": "svelte", "version_constraint": "^4.0.0", "ecosystem": "npm"}
+        ],
+        "optional": [
+          {"name": "@sveltejs/adapter-auto", "version_constraint": "^3.0.0", "purpose": "Deployment adapter"},
+          {"name": "vite", "version_constraint": "^5.0.0", "purpose": "Build tool"}
+        ]
+      },
+      "version_features": {
+        "major_version": "2.0",
+        "breaking_changes": [
+          "Removed deprecated load function signatures",
+          "Changed default adapter behavior"
+        ],
+        "new_features": [
+          "Improved TypeScript support",
+          "Better error handling in load functions",
+          "Enhanced form actions"
+        ],
+        "deprecated_patterns": [
+          "Old-style endpoints (use +server.js instead)"
+        ]
+      },
+      "code_snippets": [
+        {
+          "name": "page_load_function",
+          "description": "Server-side data loading in SvelteKit 2.0",
+          "code": "// src/routes/blog/+page.server.js\nexport const load = async ({ fetch, params }) => {\n  const posts = await fetch('/api/posts').then(r => r.json());\n  return { posts };\n};",
+          "file_path": "src/routes/[route]/+page.server.js",
+          "is_best_practice": true
+        },
+        {
+          "name": "form_action",
+          "description": "Progressive enhancement with form actions",
+          "code": "// src/routes/login/+page.server.js\nexport const actions = {\n  default: async ({ request, cookies }) => {\n    const data = await request.formData();\n    const email = data.get('email');\n    // Handle login...\n    return { success: true };\n  }\n};",
+          "file_path": "src/routes/[route]/+page.server.js",
+          "is_best_practice": true
+        }
+      ],
+      "metadata": {
+        "homepage": "https://kit.svelte.dev",
+        "documentation": "https://kit.svelte.dev/docs",
+        "repository": "https://github.com/sveltejs/kit",
+        "license": "MIT"
+      },
+      "llm_notes": {
+        "confidence_reasoning": "Very high confidence (0.98) due to presence of svelte.config.js and SvelteKit-specific patterns like +page.svelte routing",
+        "version_detection_method": "Version 2.0 detected from package.json dependency and use of new form actions pattern",
+        "ambiguities": [
+          "Could not determine specific patch version (2.0.x) without package-lock.json"
+        ]
+      }
+    }
+  },
+  "usage": {
+    "service": "analyze_arch_service",
+    "trigger": "When confidence < 0.7 or framework not in database",
+    "nats_subject": "ai.llm.request",
+    "response_subject": "architecture.framework.enriched",
+    "storage": "Save to PostgreSQL frameworks + framework_versions + microsnippets tables"
+  }
+}

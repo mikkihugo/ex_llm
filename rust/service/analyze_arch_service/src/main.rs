@@ -115,24 +115,107 @@ impl AnalyzeArchService {
         &self,
         request: &FrameworkEnrichmentRequest,
     ) -> Result<FrameworkEnrichmentResponse> {
-        // TODO: Implement LLM call via NATS
-        // Subject: ai.llm.request
-        // Prompt: "Analyze this framework: {name}, files: {files}, code: {samples}"
-        // Expected: detection patterns, category, version, confidence
+        info!("Calling LLM for framework enrichment: {}", request.name);
 
-        // Mock for now
-        Ok(FrameworkEnrichmentResponse {
-            name: request.name.clone(),
-            version: None,
-            category: "web".to_string(),
-            detection_patterns: vec![
-                DetectionPattern {
-                    pattern_type: "file".to_string(),
-                    pattern: format!("{}.config.js", request.name.to_lowercase()),
-                    weight: 0.9,
+        // Load enrichment prompt template
+        let prompt_template = self.load_enrichment_prompt()?;
+
+        // Build LLM request
+        let llm_request = self.build_llm_request(&prompt_template, request)?;
+
+        // Send to LLM via NATS (ai.llm.request)
+        let llm_response = self.call_llm_via_nats(llm_request).await?;
+
+        // Parse LLM JSON response into FrameworkEnrichmentResponse
+        let enriched = self.parse_llm_response(&llm_response)?;
+
+        Ok(enriched)
+    }
+
+    /// Load framework discovery prompt template from templates_data/
+    fn load_enrichment_prompt(&self) -> Result<serde_json::Value> {
+        let template_path = "templates_data/enrichment_prompts/framework_discovery.json";
+        let content = std::fs::read_to_string(template_path)?;
+        let template: serde_json::Value = serde_json::from_str(&content)?;
+        Ok(template)
+    }
+
+    /// Build LLM request with filled prompt template
+    fn build_llm_request(
+        &self,
+        template: &serde_json::Value,
+        request: &FrameworkEnrichmentRequest,
+    ) -> Result<serde_json::Value> {
+        let prompt_template = template["prompt_template"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing prompt_template"))?;
+
+        // Fill in variables
+        let filled_prompt = prompt_template
+            .replace("{{framework_name}}", &request.name)
+            .replace("{{files_list}}", &format!("{:?}", request.context_files))
+            .replace(
+                "{{code_samples}}",
+                &request.code_samples
+                    .as_ref()
+                    .map(|samples| samples.join("\n\n"))
+                    .unwrap_or_default()
+            );
+
+        Ok(serde_json::json!({
+            "complexity": "complex",
+            "task_type": "architect",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": template["system_prompt"]["role"].as_str().unwrap_or("")
+                },
+                {
+                    "role": "user",
+                    "content": filled_prompt
                 }
             ],
-            confidence: 0.8,
+            "response_format": {"type": "json"}
+        }))
+    }
+
+    /// Call LLM via NATS ai.llm.request subject
+    async fn call_llm_via_nats(&self, request: serde_json::Value) -> Result<serde_json::Value> {
+        let subject = "ai.llm.request";
+        let payload = serde_json::to_vec(&request)?;
+
+        // Request-reply pattern with timeout
+        let response = self.nats
+            .request(subject, payload.into())
+            .await?;
+
+        let llm_response: serde_json::Value = serde_json::from_slice(&response.payload)?;
+        Ok(llm_response)
+    }
+
+    /// Parse LLM JSON response into structured FrameworkEnrichmentResponse
+    fn parse_llm_response(&self, response: &serde_json::Value) -> Result<FrameworkEnrichmentResponse> {
+        // LLM returns JSON matching our schema
+        let framework = &response["framework"];
+        let detection = &response["detection"];
+
+        let detection_patterns: Vec<DetectionPattern> = detection["config_files"]
+            .as_array()
+            .unwrap_or(&vec![])
+            .iter()
+            .map(|f| DetectionPattern {
+                pattern_type: "file".to_string(),
+                pattern: f["file"].as_str().unwrap_or("").to_string(),
+                weight: f["weight"].as_f64().unwrap_or(0.8) as f32,
+            })
+            .collect();
+
+        Ok(FrameworkEnrichmentResponse {
+            name: framework["name"].as_str().unwrap_or("").to_string(),
+            version: framework["version"].as_str().map(|s| s.to_string()),
+            category: framework["category"].as_str().unwrap_or("web").to_string(),
+            detection_patterns,
+            confidence: framework["confidence"].as_f64().unwrap_or(0.8) as f32,
             newly_discovered: true,
         })
     }
