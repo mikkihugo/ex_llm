@@ -1,12 +1,12 @@
 [package]
-name = "prompt_central_service"
+name = "prompt-service"
 version = "0.1.0"
 edition = "2021"
 description = "Central service for prompt optimization and management via NATS"
 license = "MIT"
 
 [[bin]]
-name = "prompt_central_service"
+name = "prompt-service"
 path = "src/main.rs"
 
 [dependencies]

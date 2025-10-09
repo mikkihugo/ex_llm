@@ -1,5 +1,5 @@
 [package]
-name = "generation-engine"
+name = "generator"
 version = "0.1.0"
 edition = "2021"
 description = "Intelligent naming service for generating meaningful names using AI"

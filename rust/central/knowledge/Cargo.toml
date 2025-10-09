@@ -1,10 +1,10 @@
 [package]
-name = "knowledge_central_service"
+name = "knowledge-service"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "knowledge_central_service"
+name = "knowledge-service"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]

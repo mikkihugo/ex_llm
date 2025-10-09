@@ -1,5 +1,5 @@
 [package]
-name = "semantic-engine"
+name = "semantic-nif"
 version = "0.1.0"
 edition = "2021"
 description = "Semantic engine for generating vector embeddings using Jina v3 and CodeT5 models"

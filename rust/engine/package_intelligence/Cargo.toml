@@ -17,7 +17,7 @@ path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "package-registry-indexer"
+name = "package-nif"
 path = "src/bin/main.rs"
 
 [[bin]]

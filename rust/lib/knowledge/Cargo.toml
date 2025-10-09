@@ -1,5 +1,5 @@
 [package]
-name = "knowledge-engine"
+name = "knowledge"
 version = "0.1.0"
 edition = "2021"
 description = "Knowledge management engine - shared library for central service and local NIF"

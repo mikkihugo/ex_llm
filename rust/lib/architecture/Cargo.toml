@@ -1,5 +1,5 @@
 [package]
-name = "architecture_engine"
+name = "architecture"
 version = "1.0.0"
 authors = ["mikkihugo"]
 edition = "2021"
@@ -12,7 +12,7 @@ keywords = ["architecture", "naming", "patterns", "meta-registry", "standards"]
 categories = ["algorithms", "development-tools"]
 
 [lib]
-name = "architecture_engine"
+name = "architecture"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 

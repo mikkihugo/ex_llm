@@ -1,5 +1,5 @@
 [package]
-name = "code-engine"
+name = "code"
 version = "0.1.0"
 edition = "2021"
 description = "Code analysis engine for metrics, performance, security, and semantic search"

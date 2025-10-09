@@ -1,5 +1,5 @@
 [package]
-name = "rust-dependency-parser"
+name = "parser-dependency"
 version = "0.1.0"
 edition = "2021"
 authors = ["Your Name <your.email@example.com>"]
