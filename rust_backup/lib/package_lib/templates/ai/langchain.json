@@ -1,0 +1,23 @@
+{
+  "name": "LangChain",
+  "category": "ai",
+  "detector_signatures": {
+    "patterns": [
+      "langchain",
+      "LangChain",
+      "from langchain",
+      "use LangChain"
+    ],
+    "dependencies": [
+      "langchain",
+      "langchain-core",
+      "langchain_elixir",
+      "@langchain/core"
+    ],
+    "file_patterns": [
+      "lib/**/langchain/*.ex",
+      "src/**/langchain/*.ts",
+      "src/**/langchain/*.py"
+    ]
+  }
+}

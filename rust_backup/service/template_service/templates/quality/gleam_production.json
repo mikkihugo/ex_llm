@@ -1,0 +1,227 @@
+{
+  "name": "Gleam Production Quality Template",
+  "spec_version": "1.0",
+  "capabilities": [
+    "quality",
+    "relationships",
+    "error_handling",
+    "self_evolving",
+    "business_logic",
+    "ai_assisted"
+  ],
+  "language": "gleam",
+  "quality_level": "production",
+  "description": "Gleam production quality standards for core patterns, error handling, and relationship mapping. Compatible with Mix 1.20+ built-in Gleam support.",
+  "extends": [],
+  "version": "1.0.0",
+  "last_updated": "2025-01-27",
+  "requirements": {
+    "documentation": {
+      "moduledoc": {
+        "required": true,
+        "min_length": 60,
+        "must_include": [
+          "overview",
+          "examples"
+        ]
+      },
+      "doc": {
+        "required_for": [
+          "all_public_functions"
+        ],
+        "min_length": 30,
+        "must_include": [
+          "description",
+          "parameters",
+          "returns"
+        ]
+      },
+      "structured_sections": [
+        {
+          "id": "overview",
+          "required": true,
+          "min_length": 40,
+          "purpose": "High-level what/why in first 2 sentences"
+        },
+        {
+          "id": "examples",
+          "required": true,
+          "min_examples": 2,
+          "purpose": "Executable examples covering success + error paths"
+        },
+        {
+          "id": "relationships",
+          "required": true,
+          "min_length": 30,
+          "purpose": "Document module relationships and dependencies",
+          "format": "## Relationships\n- **Calls:** module.function - purpose\n- **Depends on:** module - purpose\n- **Used by:** module - purpose"
+        },
+        {
+          "id": "template_version",
+          "required": true,
+          "min_length": 20,
+          "purpose": "Document template version and upgrade path",
+          "format": "## Template Version\n- **Applied:** gleam_production_base v1.0.0\n- **Applied on:** YYYY-MM-DD"
+        }
+      ]
+    },
+    "error_handling": {
+      "style": "result_type",
+      "required_pattern": "Result(Value, Error)",
+      "no_panic_for_flow": true,
+      "define_error_types": true
+    },
+    "type_specs": {
+      "required": true,
+      "required_for": [
+        "all_functions"
+      ],
+      "gleam_check": "required"
+    },
+    "testing": {
+      "required": true,
+      "coverage_target": 80,
+      "must_test": [
+        "public_api",
+        "error_paths"
+      ],
+      "types": [
+        "unit",
+        "integration"
+      ]
+    },
+    "code_style": {
+      "naming": "snake_case",
+      "type_naming": "PascalCase",
+      "max_function_lines": 30,
+      "max_line_length": 100,
+      "prefer_pattern_matching": true
+    },
+    "relationship_annotations": {
+      "required": true,
+      "patterns": {
+        "calls": "// @calls: module.function - purpose",
+        "depends_on": "// @depends_on: module - purpose",
+        "error_flow": "// @error_flow: ErrorType -> description",
+        "evolves": "// @evolves: module::function - Auto-upgrades based on usage patterns",
+        "learns": "// @learns: pattern::type - Learns from successful patterns",
+        "adapts": "// @adapts: environment::change - Adapts to environment changes",
+        "business_rule": "// @business_rule: rule_name::policy - Maps to business rule",
+        "compliance": "// @compliance: standard::required - Compliance requirement",
+        "audit_trail": "// @audit_trail: required::true - Audit trail required",
+        "ai_generated": "// @ai_generated: pattern::type - AI-generated code with confidence score",
+        "ai_validated": "// @ai_validated: human::review - Human-validated AI code",
+        "ai_learned": "// @ai_learned: usage::pattern - Learned from usage patterns"
+      },
+      "placement": "before_function_definition"
+    },
+    "template_versioning": {
+      "required": true,
+      "format": {
+        "header_comment": "// Template: gleam_production v1.0.0 | Applied: YYYY-MM-DD",
+        "module_attribute": "// @template_version \"gleam_production v1.0.0\""
+      }
+    }
+  },
+  "patterns": {
+    "result_error_handling": {
+      "intent": "Use Result(Value, Error) for error handling",
+      "pseudocode": "fn function() -> Result(Success, Error) { Ok(value) }",
+      "when_to_use": [
+        "functions_that_can_fail",
+        "io_operations",
+        "parsing_operations"
+      ]
+    },
+    "custom_error_types": {
+      "intent": "Define custom error types for domain errors",
+      "pseudocode": "type MyError {\n  InvalidData(String)\n  NotFound(String)\n  DatabaseError(String)\n}",
+      "when_to_use": [
+        "domain_specific_errors",
+        "error_chaining",
+        "error_context"
+      ]
+    },
+    "option_handling": {
+      "intent": "Use Option(Value) for nullable values",
+      "pseudocode": "fn function() -> Option(Value) { Some(value) }",
+      "when_to_use": [
+        "optional_values",
+        "nullable_returns",
+        "safe_unwrapping"
+      ]
+    },
+    "self_evolving_system": {
+      "intent": "Enable self-evolving system capabilities with automatic adaptation",
+      "pseudocode": "// @evolves: module::function - Auto-upgrades based on usage patterns\n// @learns: pattern::type - Learns from successful patterns\n// @adapts: environment::change - Adapts to environment changes\nfn evolve_based_on_usage(operation: String, success_rate: Float, performance_metrics: PerformanceMetrics) -> Result(Adaptation, Error) {\n  if success_rate > 0.95 && performance_metrics.avg_latency < threshold {\n    Ok(Adaptation(operation, Optimize))\n  } else {\n    Ok(Adaptation(operation, NoChange))\n  }\n}",
+      "when_to_use": [
+        "self_evolving_systems",
+        "adaptive_behavior",
+        "machine_learning_integration",
+        "performance_optimization"
+      ]
+    },
+    "business_logic_mapping": {
+      "intent": "Map code to business rules and compliance requirements",
+      "pseudocode": "// @business_rule: user_creation::policy - Maps to business rule\n// @compliance: sox::required - SOX compliance required\n// @audit_trail: required::true - Audit trail required\nfn create_user_with_business_rules(user_data: UserData) -> Result(User, Error) {\n  with Ok(_) <- validate_business_rules(user_data),\n       Ok(_) <- check_compliance_requirements(Sox),\n       Ok(user) <- create_user(user_data) do\n    \n    audit_trail(UserCreated, user.id, user_data)\n    Ok(user)\n  }\n}",
+      "when_to_use": [
+        "enterprise_systems",
+        "compliance_requirements",
+        "audit_trail_needs",
+        "business_rule_validation"
+      ]
+    },
+    "ai_assisted_patterns": {
+      "intent": "Integrate AI-assisted code generation and validation",
+      "pseudocode": "// @ai_generated: pattern::type - AI-generated code with confidence score\n// @ai_validated: human::review - Human-validated AI code\n// @ai_learned: usage::pattern - Learned from usage patterns\nfn ai_generate_function(description: String, context: Context) -> Result(GeneratedCode, Error) {\n  case ai_code_generator.generate(description, context) {\n    Ok(code, confidence) if confidence > 0.8 ->\n      Ok(code)\n    \n    Ok(code, confidence) if confidence > 0.6 ->\n      Ok(code, RequiresReview)\n    \n    Error(reason) ->\n      Error(reason)\n  }\n}",
+      "when_to_use": [
+        "ai_integrated_systems",
+        "code_generation_automation",
+        "pattern_learning",
+        "intelligent_optimization"
+      ]
+    }
+  },
+  "anti_patterns": {
+    "panic_for_control_flow": {
+      "symptom": "Using panic for expected errors",
+      "why_bad": "Breaks Result(Value, Error) conventions",
+      "fix": "Return Result(Value, Error) or Option(Value)"
+    },
+    "unwrap_everywhere": {
+      "symptom": "Using unwrap() in production code",
+      "why_bad": "Can cause panics",
+      "fix": "Use proper error handling with try"
+    },
+    "generic_names": {
+      "symptom": "Types named Data/Info/Manager",
+      "why_bad": "Non-descriptive, hinders discoverability",
+      "fix": "Rename to domain-specific responsibility"
+    }
+  },
+  "quality_checklist": [
+    "Documentation present with examples",
+    "Result(Value, Error) used for error handling",
+    "Custom error types defined",
+    "Functions <= 30 LOC",
+    "Meaningful type & function names",
+    "Option(Value) used for nullable values",
+    "No panic in production code",
+    "Tests cover error paths",
+    "Relationship annotations present",
+    "Template versioning implemented",
+    "Self-evolving system patterns implemented",
+    "Business logic mapping annotations present",
+    "AI-assisted pattern annotations present",
+    "Evolution tracking implemented",
+    "Business rule compliance tracking",
+    "Audit trail generation implemented",
+    "AI code generation confidence scoring",
+    "Usage pattern learning implemented",
+    "Environment adaptation patterns present"
+  ],
+  "examples": {
+    "good_code": "// Template: gleam_production_base v1.0.0 | Applied: 2025-01-27\n// @template_version \"gleam_production_base v1.0.0\"\n\nimport gleam/result\nimport gleam/option\n\n/// User service for managing user operations.\n/// \n/// ## Examples\n///     \n///     let service = user_service.new(user_repository)\n///     let user = user_service.create_user(service, \"john@example.com\")\n///     \n/// ## Relationships\n/// - **Calls:** user_repository.save - User persistence\n/// - **Depends on:** user_repository - Data access\n/// - **Used by:** user_controller - HTTP endpoints\n/// \n/// ## Template Version\n/// - **Applied:** gleam_production_base v1.0.0\n/// - **Applied on:** 2025-01-27\n\npub type UserError {\n  InvalidEmail(String)\n  NotFound(String)\n  DatabaseError(String)\n}\n\npub type User {\n  User(id: String, email: String, created_at: Int)\n}\n\npub type UserService {\n  UserService(repository: UserRepository)\n}\n\n// @calls: user_repository.save - User persistence\n// @calls: validate_email - Email validation\n// @evolves: user_service::create_user - Auto-upgrades based on usage patterns\n// @business_rule: user_creation::policy - Maps to business rule\n// @ai_generated: user_creation::pattern - AI-generated code with confidence score\n// @error_flow: UserError::InvalidEmail -> Invalid email format\n// @error_flow: UserError::DatabaseError -> Database operation failed\n/// Create a new user.\n/// \n/// ## Parameters\n/// - email: String - User email address\n/// \n/// ## Returns\n/// - Result(User, UserError) - Created user or error\npub fn create_user(service: UserService, email: String) -> Result(User, UserError) {\n  with Ok(_) <- validate_email(email),\n       Ok(user) <- create_user_in_db(service.repository, email) do\n    \n    Ok(user)\n  }\n}\n\n// @calls: user_repository.find_by_id - User lookup\n// @learns: user_lookup::pattern - Learns from successful patterns\n// @compliance: gdpr::required - GDPR compliance required\n// @error_flow: UserError::NotFound -> User not found\n/// Get user by ID.\n/// \n/// ## Parameters\n/// - id: String - User ID\n/// \n/// ## Returns\n/// - Result(Option(User), UserError) - User if found, None if not found, or error\npub fn get_user(service: UserService, id: String) -> Result(Option(User), UserError) {\n  user_repository.find_by_id(service.repository, id)\n}\n\n// @adapts: environment::change - Adapts to environment changes\n// @ai_learned: usage::pattern - Learned from usage patterns\n/// Evolve service based on usage patterns.\n/// \n/// ## Parameters\n/// - operation: String - Operation name\n/// - success_rate: Float - Success rate (0.0 to 1.0)\n/// \n/// ## Returns\n/// - Result(Adaptation, UserError) - Adaptation result\npub fn evolve_based_on_usage(service: UserService, operation: String, success_rate: Float) -> Result(Adaptation, UserError) {\n  if success_rate > 0.95 {\n    Ok(Adaptation(operation, Optimize))\n  } else {\n    Ok(Adaptation(operation, NoChange))\n  }\n}\n\n// Private functions\n\nfn validate_email(email: String) -> Result(Nil, UserError) {\n  case string.contains(email, \"@\") {\n    True -> Ok(Nil)\n    False -> Error(InvalidEmail(email))\n  }\n}\n\nfn create_user_in_db(repository: UserRepository, email: String) -> Result(User, UserError) {\n  let user = User(\n    id: \"user_\" <> string.increment(\"1\"),\n    email: email,\n    created_at: 1640995200\n  )\n  \n  case user_repository.save(repository, user) {\n    Ok(_) -> Ok(user)\n    Error(reason) -> Error(DatabaseError(reason))\n  }\n}\n\n// Test module\n@if(erlang)\nimport gleeunit/should\n\npub fn main() {\n  should.equal(1, 1)\n}",
+    "bad_code": "// No template versioning\n// No relationship annotations\n// No error handling\n\npub type UserService {\n  UserService\n}\n\npub fn create_user(service: UserService, email: String) -> User {\n  // Can panic!\n  let user = User(email)\n  user_repository.save(user)  // Can panic!\n  user\n}\n\npub fn get_user(service: UserService, id: String) -> User {\n  // Can panic!\n  user_repository.find_by_id(id)\n}"
+  }
+}

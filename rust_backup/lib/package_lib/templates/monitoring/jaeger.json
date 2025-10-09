@@ -1,0 +1,20 @@
+{
+  "name": "Jaeger",
+  "category": "monitoring",
+  "detector_signatures": {
+    "patterns": [
+      "jaeger_tracing",
+      "opentelemetry-exporter-jaeger",
+      "JaegerExporter"
+    ],
+    "dependencies": [
+      "opentelemetry_exporter",
+      "opentelemetry-exporter-jaeger",
+      "jaeger-client"
+    ],
+    "file_patterns": [
+      "docker/**/jaeger*.yml",
+      "config/jaeger*.{exs,ex,ts,js}"
+    ]
+  }
+}

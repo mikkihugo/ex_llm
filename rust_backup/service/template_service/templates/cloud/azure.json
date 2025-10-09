@@ -1,0 +1,23 @@
+{
+  "name": "Microsoft Azure",
+  "category": "cloud",
+  "detector_signatures": {
+    "patterns": [
+      "azure\\.",
+      "provider \"azurerm\"",
+      "AzureCliCredential",
+      "@azure/"
+    ],
+    "dependencies": [
+      "azure",
+      "@azure/identity",
+      "azure-storage-blob",
+      "azure-core"
+    ],
+    "file_patterns": [
+      "infra/azure/**",
+      "terraform/**/azure*.tf",
+      "bicep/**/*.bicep"
+    ]
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "name": "Elixir",
+  "category": "language",
+  "version": "1.0",
+  "detector_signatures": {
+    "config_files": ["mix.exs", "mix.lock"],
+    "file_extensions": [".ex", ".exs"],
+    "patterns": [
+      "defmodule\\s+\\w+",
+      "def\\s+\\w+",
+      "defp\\s+\\w+",
+      "use\\s+\\w+",
+      "import\\s+\\w+",
+      "alias\\s+\\w+",
+      "GenServer",
+      "Supervisor"
+    ],
+    "import_patterns": [
+      "use\\s+([A-Z][a-zA-Z0-9_.]*)",
+      "import\\s+([A-Z][a-zA-Z0-9_.]*)",
+      "alias\\s+([A-Z][a-zA-Z0-9_.]*)"
+    ],
+    "dependencies": {
+      "file": "mix.exs",
+      "section": "deps",
+      "common_packages": ["phoenix", "ecto", "plug", "jason"]
+    }
+  },
+  "framework_hints": {
+    "phoenix": {
+      "patterns": ["use\\s+Phoenix", "Phoenix\\.Router", "Phoenix\\.Controller", "Phoenix\\.LiveView"],
+      "config_files": ["config/config.exs", "lib/*_web/"],
+      "confidence_boost": 0.5
+    },
+    "nerves": {
+      "patterns": ["use\\s+Nerves", "Nerves\\."],
+      "confidence_boost": 0.4
+    }
+  },
+  "build_commands": {
+    "install": "mix deps.get",
+    "build": "mix compile",
+    "dev": "mix phx.server",
+    "test": "mix test",
+    "check": "mix format --check-formatted"
+  },
+  "metadata": {
+    "ecosystem": "hex",
+    "package_manager": "mix",
+    "typical_structure": ["lib/", "test/", "config/", "priv/"]
+  },
+  "llm_support": {
+    "analysis_prompts": {
+      "detect_otp_patterns": "Analyze this Elixir codebase and identify OTP patterns (GenServer, Supervisor, GenStage, Broadway)",
+      "detect_phoenix_features": "What Phoenix features are being used? (LiveView, Channels, Presence, PubSub)",
+      "architecture_analysis": "Describe the OTP supervision tree and application architecture"
+    },
+    "prompt_bits": {
+      "context": "Elixir is a functional language built on the Erlang VM (BEAM). Key patterns include OTP behaviors, pattern matching, and supervision trees.",
+      "best_practices": [
+        "Use OTP behaviors (GenServer, Supervisor) for state management",
+        "Leverage pattern matching and guards",
+        "Design fault-tolerant supervision trees",
+        "Use Phoenix contexts for domain boundaries"
+      ],
+      "common_mistakes": [
+        "Not using OTP behaviors",
+        "Blocking the BEAM with synchronous operations",
+        "Ignoring supervision strategies"
+      ]
+    }
+  }
+}

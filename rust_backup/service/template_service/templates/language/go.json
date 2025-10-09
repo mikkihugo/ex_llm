@@ -1,0 +1,53 @@
+{
+  "name": "Go",
+  "category": "language",
+  "version": "1.0",
+  "detector_signatures": {
+    "config_files": ["go.mod", "go.sum"],
+    "file_extensions": [".go"],
+    "patterns": [
+      "package\\s+\\w+",
+      "func\\s+\\w+",
+      "type\\s+\\w+\\s+struct",
+      "type\\s+\\w+\\s+interface",
+      "import\\s+\\(",
+      "var\\s+\\w+",
+      "const\\s+\\w+"
+    ],
+    "import_patterns": [
+      "import\\s+['\"]([^'\"]+)['\"]",
+      "import\\s+\\w+\\s+['\"]([^'\"]+)['\"]"
+    ],
+    "dependencies": {
+      "file": "go.mod",
+      "section": "require",
+      "common_packages": ["github.com/gin-gonic/gin", "github.com/gorilla/mux"]
+    }
+  },
+  "framework_hints": {
+    "gin": {
+      "patterns": ["gin\\.Default", "gin\\.Engine", "github\\.com/gin-gonic/gin"],
+      "confidence_boost": 0.4
+    },
+    "echo": {
+      "patterns": ["echo\\.New", "github\\.com/labstack/echo"],
+      "confidence_boost": 0.4
+    },
+    "fiber": {
+      "patterns": ["fiber\\.New", "github\\.com/gofiber/fiber"],
+      "confidence_boost": 0.4
+    }
+  },
+  "build_commands": {
+    "install": "go mod download",
+    "build": "go build",
+    "dev": "go run .",
+    "test": "go test ./...",
+    "check": "go vet ./..."
+  },
+  "metadata": {
+    "ecosystem": "go",
+    "package_manager": "go mod",
+    "typical_structure": ["cmd/", "internal/", "pkg/", "api/"]
+  }
+}

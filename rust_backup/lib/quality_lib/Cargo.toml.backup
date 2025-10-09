@@ -1,0 +1,42 @@
+[package]
+name = "linting-engine"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["claude-code-zen Team"]
+description = "Multi-language quality gate enforcement with comprehensive linter support"
+repository = "https://github.com/claude-code-zen/zenflow"
+readme = "README.md"
+keywords = ["linting-engine", "sparc", "methodology", "testing", "validation", "linting", "multi-language"]
+categories = ["development-tools", "testing"]
+
+[dependencies]
+# Workspace dependencies
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true, features = ["process", "io-util"] }
+
+# Quality gate dependencies
+regex = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+walkdir = { workspace = true }
+tracing = { workspace = true }
+
+[features]
+default = ["rust-clippy", "javascript-eslint", "typescript-eslint", "python-pylint", "go-golangci", "java-spotbugs", "cpp-clang-tidy", "csharp-sonar", "elixir-credo", "erlang-dialyzer", "gleam-check"]
+rust-clippy = []
+javascript-eslint = []
+typescript-eslint = []
+python-pylint = []
+go-golangci = []
+java-spotbugs = []
+cpp-clang-tidy = []
+csharp-sonar = []
+elixir-credo = []
+erlang-dialyzer = []
+gleam-check = []
+
+[lib]
+name = "linting_engine"
+crate-type = ["rlib"]

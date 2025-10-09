@@ -359,7 +359,7 @@ defmodule Singularity.PromptEngine do
     @moduledoc false
     use Rustler,
       otp_app: :singularity,
-      crate: :prompt_intelligence,
+      crate: :prompt_engine,
       skip_compilation?: true
 
     # NIF functions - names must match Rust #[rustler::nif] function names

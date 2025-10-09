@@ -1,0 +1,49 @@
+{
+  "id": "title-prompt",
+  "name": "Title Generation Prompt",
+  "description": "Generates descriptive titles for content, tasks, or projects",
+  "steps": [
+    {
+      "name": "analyze-content",
+      "operation": {
+        "type": "analyze",
+        "analyze": "semantic"
+      }
+    },
+    {
+      "name": "generate-title",
+      "operation": {
+        "type": "transform",
+        "transform": "normalize"
+      }
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "author": "SPARC Team",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-01-15T10:00:00Z",
+    "tags": ["utility", "title", "naming", "generation"],
+    "performance": {
+      "avg_execution_time_ms": 50.0,
+      "memory_usage_bytes": 1048576,
+      "complexity": 2
+    }
+  },
+  "ai_signature": {
+    "name": "title_generator",
+    "inputs": {
+      "content": "Content to generate title for",
+      "title_style": "Title style (descriptive, concise, technical, creative)",
+      "length_preference": "Preferred title length (short, medium, long)",
+      "context": "Additional context for title generation"
+    },
+    "outputs": {
+      "title": "Generated title",
+      "alternative_titles": "Alternative title options",
+      "title_rationale": "Explanation of title choice"
+    },
+    "instruction": "Generate a clear, descriptive title that accurately represents the content and is appropriate for the intended audience."
+  },
+  "template_content": "Generate a descriptive title for the following content:\n\n[CONTENT]\n\nPlease provide:\n1. Primary title (clear and descriptive)\n2. Alternative titles (2-3 options)\n3. Brief rationale for the chosen title\n\nMake the title concise but informative."
+}

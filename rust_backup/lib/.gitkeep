@@ -1,0 +1,2 @@
+# Pure Rust libraries (business logic)
+# No NIFs, no NATS - just reusable Rust code

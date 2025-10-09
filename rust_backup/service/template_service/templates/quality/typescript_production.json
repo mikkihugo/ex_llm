@@ -1,0 +1,185 @@
+{
+  "name": "TypeScript Production Quality Template",
+  "spec_version": "1.0",
+  "capabilities": [
+    "quality",
+    "relationships",
+    "error_handling"
+  ],
+  "language": "typescript",
+  "quality_level": "production",
+  "description": "TypeScript production quality standards for core patterns, error handling, and relationship mapping.",
+  "extends": [],
+  "version": "1.0.0",
+  "last_updated": "2025-01-27",
+  "requirements": {
+    "documentation": {
+      "moduledoc": {
+        "required": true,
+        "min_length": 60,
+        "must_include": [
+          "overview",
+          "examples"
+        ]
+      },
+      "doc": {
+        "required_for": [
+          "all_public_functions"
+        ],
+        "min_length": 30,
+        "must_include": [
+          "description",
+          "parameters",
+          "returns"
+        ]
+      },
+      "structured_sections": [
+        {
+          "id": "overview",
+          "required": true,
+          "min_length": 40,
+          "purpose": "High-level what/why in first 2 sentences"
+        },
+        {
+          "id": "examples",
+          "required": true,
+          "min_examples": 2,
+          "purpose": "Executable examples covering success + error paths"
+        },
+        {
+          "id": "relationships",
+          "required": true,
+          "min_length": 30,
+          "purpose": "Document module relationships and dependencies",
+          "format": "## Relationships\n- **Calls:** module.function - purpose\n- **Depends on:** module - purpose\n- **Used by:** module - purpose"
+        },
+        {
+          "id": "template_version",
+          "required": true,
+          "min_length": 20,
+          "purpose": "Document template version and upgrade path",
+          "format": "## Template Version\n- **Applied:** typescript_production v1.0.0\n- **Applied on:** YYYY-MM-DD"
+        }
+      ]
+    },
+    "error_handling": {
+      "style": "result_pattern",
+      "required_pattern": "Result<T, E> | { success: boolean, data?: T, error?: E }",
+      "no_throw_for_flow": true,
+      "define_error_types": true
+    },
+    "type_specs": {
+      "required": true,
+      "required_for": [
+        "all_functions"
+      ],
+      "strict_mode": true
+    },
+    "testing": {
+      "required": true,
+      "coverage_target": 80,
+      "must_test": [
+        "public_api",
+        "error_paths"
+      ],
+      "types": [
+        "unit",
+        "integration"
+      ]
+    },
+    "code_style": {
+      "naming": "camelCase",
+      "class_naming": "PascalCase",
+      "max_function_lines": 30,
+      "max_line_length": 120,
+      "prefer_async_await": true
+    },
+    "relationship_annotations": {
+      "required": true,
+      "patterns": {
+        "calls": "// @calls: module.function - purpose",
+        "depends_on": "// @depends_on: module - purpose",
+        "error_flow": "// @error_flow: ErrorType -> description",
+        "evolves": "// @evolves: module::function - Auto-upgrades based on usage patterns",
+        "learns": "// @learns: pattern::type - Learns from successful patterns",
+        "adapts": "// @adapts: environment::change - Adapts to environment changes",
+        "business_rule": "// @business_rule: rule_name::policy - Maps to business rule",
+        "compliance": "// @compliance: standard::required - Compliance requirement",
+        "audit_trail": "// @audit_trail: required::true - Audit trail required",
+        "ai_generated": "// @ai_generated: pattern::type - AI-generated code with confidence score",
+        "ai_validated": "// @ai_validated: human::review - Human-validated AI code",
+        "ai_learned": "// @ai_learned: usage::pattern - Learned from usage patterns"
+      },
+      "placement": "before_function_definition"
+    },
+    "template_versioning": {
+      "required": true,
+      "format": {
+        "header_comment": "// Template: typescript_production v1.0.0 | Applied: YYYY-MM-DD",
+        "module_attribute": "// @template_version \"typescript_production v1.0.0\""
+      }
+    }
+  },
+  "patterns": {
+    "result_error_handling": {
+      "intent": "Use Result pattern for error handling",
+      "pseudocode": "function function(): Result<Success, Error> { return { success: true, data: value } }",
+      "when_to_use": [
+        "functions_that_can_fail",
+        "async_operations",
+        "api_calls"
+      ]
+    },
+    "custom_error_types": {
+      "intent": "Define custom error classes for domain errors",
+      "pseudocode": "class MyError extends Error { constructor(message: string) { super(message) } }",
+      "when_to_use": [
+        "domain_specific_errors",
+        "error_chaining",
+        "error_context"
+      ]
+    },
+    "async_await": {
+      "intent": "Use async/await for asynchronous operations",
+      "pseudocode": "async function function(): Promise<Result<T, E>> { const result = await operation(); return result; }",
+      "when_to_use": [
+        "api_calls",
+        "database_operations",
+        "file_operations"
+      ]
+    }
+  },
+  "anti_patterns": {
+    "throw_for_control_flow": {
+      "symptom": "Using throw for expected errors",
+      "why_bad": "Breaks Result pattern conventions",
+      "fix": "Return Result<T, E> or { success: boolean }"
+    },
+    "any_everywhere": {
+      "symptom": "Using any type in production code",
+      "why_bad": "Defeats TypeScript's type safety",
+      "fix": "Use proper types or unknown"
+    },
+    "generic_names": {
+      "symptom": "Classes named Data/Info/Manager",
+      "why_bad": "Non-descriptive, hinders discoverability",
+      "fix": "Rename to domain-specific responsibility"
+    }
+  },
+  "quality_checklist": [
+    "Documentation present with examples",
+    "Result pattern used for error handling",
+    "Custom error types defined",
+    "Functions <= 30 LOC",
+    "Meaningful class & function names",
+    "Async/await used for async operations",
+    "No throw in production code",
+    "Tests cover error paths",
+    "Relationship annotations present",
+    "Template versioning implemented"
+  ],
+  "examples": {
+    "good_code": "// Template: typescript_production v1.0.0 | Applied: 2025-01-27\n// @template_version \"typescript_production v1.0.0\"\n\n/**\n * User service for managing user operations.\n * \n * ## Examples\n *     \n *     const service = new UserService(userRepository);\n *     const result = await service.createUser('john@example.com');\n *     if (result.success) {\n *       console.log('User created:', result.data);\n *     }\n * \n * ## Relationships\n * - **Calls:** UserRepository.save - User persistence\n * - **Depends on:** UserRepository - Data access\n * - **Used by:** UserController - HTTP endpoints\n * \n * ## Template Version\n * - **Applied:** typescript_production v1.0.0\n * - **Applied on:** 2025-01-27\n */\nexport class UserError extends Error {\n  constructor(\n    message: string,\n    public readonly code: string,\n    public readonly context?: Record<string, unknown>\n  ) {\n    super(message);\n    this.name = 'UserError';\n  }\n}\n\nexport interface User {\n  id: string;\n  email: string;\n  createdAt: Date;\n}\n\nexport interface Result<T, E = Error> {\n  success: boolean;\n  data?: T;\n  error?: E;\n}\n\nexport class UserService {\n  constructor(private readonly userRepository: UserRepository) {}\n  \n  // @calls: UserRepository.save - User persistence\n  // @calls: validateEmail - Email validation\n  // @error_flow: UserError -> Invalid email format\n  // @error_flow: UserError -> Database operation failed\n  /**\n   * Create a new user.\n   * \n   * ## Parameters\n   * - email: string - User email address\n   * \n   * ## Returns\n   * - Promise<Result<User, UserError>> - Created user or error\n   */\n  async createUser(email: string): Promise<Result<User, UserError>> {\n    try {\n      if (!this.validateEmail(email)) {\n        return {\n          success: false,\n          error: new UserError('Invalid email format', 'INVALID_EMAIL', { email })\n        };\n      }\n      \n      const user: User = {\n        id: crypto.randomUUID(),\n        email,\n        createdAt: new Date()\n      };\n      \n      await this.userRepository.save(user);\n      \n      return { success: true, data: user };\n    } catch (error) {\n      return {\n        success: false,\n        error: new UserError('Failed to create user', 'DATABASE_ERROR', { originalError: error })\n      };\n    }\n  }\n  \n  // @calls: UserRepository.findById - User lookup\n  // @error_flow: UserError -> User not found\n  /**\n   * Get user by ID.\n   * \n   * ## Parameters\n   * - id: string - User ID\n   * \n   * ## Returns\n   * - Promise<Result<User | null, UserError>> - User if found, null if not found, or error\n   */\n  async getUser(id: string): Promise<Result<User | null, UserError>> {\n    try {\n      const user = await this.userRepository.findById(id);\n      return { success: true, data: user };\n    } catch (error) {\n      return {\n        success: false,\n        error: new UserError('Failed to get user', 'DATABASE_ERROR', { id, originalError: error })\n      };\n    }\n  }\n  \n  private validateEmail(email: string): boolean {\n    const emailRegex = /^[^\\s]+@[^\\s]+\\.[^\\s]+$/;\n    return emailRegex.test(email);\n  }\n}\n\n// Tests\ndescribe('UserService', () => {\n  let userService: UserService;\n  let mockRepository: jest.Mocked<UserRepository>;\n  \n  beforeEach(() => {\n    mockRepository = {\n      save: jest.fn(),\n      findById: jest.fn()\n    } as jest.Mocked<UserRepository>;\n    userService = new UserService(mockRepository);\n  });\n  \n  test('should create user successfully', async () => {\n    const email = 'test@example.com';\n    mockRepository.save.mockResolvedValue(undefined);\n    \n    const result = await userService.createUser(email);\n    \n    expect(result.success).toBe(true);\n    expect(result.data?.email).toBe(email);\n  });\n  \n  test('should return error for invalid email', async () => {\n    const email = 'invalid-email';\n    \n    const result = await userService.createUser(email);\n    \n    expect(result.success).toBe(false);\n    expect(result.error?.code).toBe('INVALID_EMAIL');\n  });\n});",
+    "bad_code": "// No template versioning\n// No relationship annotations\n// No error handling\n\nclass UserService {\n  async createUser(email: string): Promise<User> {\n    // Can throw!\n    const user = new User(email);\n    await this.repository.save(user); // Can throw!\n    return user;\n  }\n  \n  async getUser(id: string): Promise<User> {\n    // Can throw!\n    return await this.repository.findById(id);\n  }\n}"
+  }
+}

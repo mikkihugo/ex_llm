@@ -38,7 +38,7 @@ defmodule Singularity.KnowledgeIntelligence do
 
   use Rustler,
     otp_app: :singularity,
-    crate: :knowledge_intelligence,
+    crate: :knowledge_engine,
     skip_compilation?: true
 
   # ============================================================================

@@ -1,0 +1,185 @@
+{
+  "name": "Python Production Quality Template",
+  "spec_version": "1.0",
+  "capabilities": [
+    "quality",
+    "relationships",
+    "error_handling"
+  ],
+  "language": "python",
+  "quality_level": "production",
+  "description": "Python production quality standards for core patterns, error handling, and relationship mapping.",
+  "extends": [],
+  "version": "1.0.0",
+  "last_updated": "2025-01-27",
+  "requirements": {
+    "documentation": {
+      "moduledoc": {
+        "required": true,
+        "min_length": 60,
+        "must_include": [
+          "overview",
+          "examples"
+        ]
+      },
+      "doc": {
+        "required_for": [
+          "all_public_functions"
+        ],
+        "min_length": 30,
+        "must_include": [
+          "description",
+          "parameters",
+          "returns"
+        ]
+      },
+      "structured_sections": [
+        {
+          "id": "overview",
+          "required": true,
+          "min_length": 40,
+          "purpose": "High-level what/why in first 2 sentences"
+        },
+        {
+          "id": "examples",
+          "required": true,
+          "min_examples": 2,
+          "purpose": "Executable examples covering success + error paths"
+        },
+        {
+          "id": "relationships",
+          "required": true,
+          "min_length": 30,
+          "purpose": "Document module relationships and dependencies",
+          "format": "## Relationships\n- **Calls:** module.function - purpose\n- **Depends on:** module - purpose\n- **Used by:** module - purpose"
+        },
+        {
+          "id": "template_version",
+          "required": true,
+          "min_length": 20,
+          "purpose": "Document template version and upgrade path",
+          "format": "## Template Version\n- **Applied:** python_production v1.0.0\n- **Applied on:** YYYY-MM-DD"
+        }
+      ]
+    },
+    "error_handling": {
+      "style": "exception_handling",
+      "required_pattern": "try/except with specific exceptions",
+      "no_bare_except": true,
+      "define_custom_exceptions": true
+    },
+    "type_specs": {
+      "required": true,
+      "required_for": [
+        "all_functions"
+      ],
+      "mypy": "required"
+    },
+    "testing": {
+      "required": true,
+      "coverage_target": 80,
+      "must_test": [
+        "public_api",
+        "error_paths"
+      ],
+      "types": [
+        "unit",
+        "integration"
+      ]
+    },
+    "code_style": {
+      "naming": "snake_case",
+      "class_naming": "PascalCase",
+      "max_function_lines": 30,
+      "max_line_length": 120,
+      "prefer_type_hints": true
+    },
+    "relationship_annotations": {
+      "required": true,
+      "patterns": {
+        "calls": "# @calls: module.function - purpose",
+        "depends_on": "# @depends_on: module - purpose",
+        "error_flow": "# @error_flow: ExceptionType -> description",
+        "evolves": "# @evolves: module::function - Auto-upgrades based on usage patterns",
+        "learns": "# @learns: pattern::type - Learns from successful patterns",
+        "adapts": "# @adapts: environment::change - Adapts to environment changes",
+        "business_rule": "# @business_rule: rule_name::policy - Maps to business rule",
+        "compliance": "# @compliance: standard::required - Compliance requirement",
+        "audit_trail": "# @audit_trail: required::true - Audit trail required",
+        "ai_generated": "# @ai_generated: pattern::type - AI-generated code with confidence score",
+        "ai_validated": "# @ai_validated: human::review - Human-validated AI code",
+        "ai_learned": "# @ai_learned: usage::pattern - Learned from usage patterns"
+      },
+      "placement": "before_function_definition"
+    },
+    "template_versioning": {
+      "required": true,
+      "format": {
+        "header_comment": "# Template: python_production v1.0.0 | Applied: YYYY-MM-DD",
+        "module_attribute": "# @template_version \"python_production v1.0.0\""
+      }
+    }
+  },
+  "patterns": {
+    "exception_handling": {
+      "intent": "Use specific exceptions for error handling",
+      "pseudocode": "try:\n    result = operation()\nexcept SpecificError as e:\n    handle_error(e)",
+      "when_to_use": [
+        "functions_that_can_fail",
+        "io_operations",
+        "api_calls"
+      ]
+    },
+    "custom_exceptions": {
+      "intent": "Define custom exception classes for domain errors",
+      "pseudocode": "class MyError(Exception):\n    def __init__(self, message: str, code: str):\n        super().__init__(message)\n        self.code = code",
+      "when_to_use": [
+        "domain_specific_errors",
+        "error_chaining",
+        "error_context"
+      ]
+    },
+    "type_hints": {
+      "intent": "Use type hints for better code clarity",
+      "pseudocode": "def function(param: str) -> Optional[Result]:\n    return result",
+      "when_to_use": [
+        "all_public_functions",
+        "complex_parameters",
+        "return_values"
+      ]
+    }
+  },
+  "anti_patterns": {
+    "bare_except": {
+      "symptom": "Using bare except: clauses",
+      "why_bad": "Catches all exceptions, including system exits",
+      "fix": "Use specific exception types"
+    },
+    "generic_names": {
+      "symptom": "Classes named Data/Info/Manager",
+      "why_bad": "Non-descriptive, hinders discoverability",
+      "fix": "Rename to domain-specific responsibility"
+    },
+    "no_type_hints": {
+      "symptom": "Functions without type hints",
+      "why_bad": "Reduces code clarity and IDE support",
+      "fix": "Add type hints to all public functions"
+    }
+  },
+  "quality_checklist": [
+    "Documentation present with examples",
+    "Specific exceptions used for error handling",
+    "Custom exception classes defined",
+    "Functions <= 30 LOC",
+    "Meaningful class & function names",
+    "Type hints used for all public functions",
+    "No bare except clauses",
+    "Tests cover error paths",
+    "Relationship annotations present",
+    "Template versioning implemented"
+  ],
+  "examples": {
+    "good_code": "# Template: python_production v1.0.0 | Applied: 2025-01-27\n# @template_version \"python_production v1.0.0\"\n\n\"\"\"\nUser service for managing user operations.\n\n## Examples\n    \n    service = UserService(user_repository)\n    result = service.create_user('john@example.com')\n    if result.success:\n        print(f'User created: {result.data}')\n    \n## Relationships\n- **Calls:** user_repository.save - User persistence\n- **Depends on:** user_repository - Data access\n- **Used by:** user_controller - HTTP endpoints\n\n## Template Version\n- **Applied:** python_production v1.0.0\n- **Applied on:** 2025-01-27\n\"\"\"\n\nfrom typing import Optional, NamedTuple\nfrom dataclasses import dataclass\nimport uuid\nfrom datetime import datetime\n\n\nclass UserError(Exception):\n    \"\"\"Custom exception for user-related errors.\"\"\"\n    \n    def __init__(self, message: str, code: str, context: Optional[dict] = None):\n        super().__init__(message)\n        self.code = code\n        self.context = context or {}\n\n\n@dataclass\nclass User:\n    \"\"\"User data model.\"\"\"\n    id: str\n    email: str\n    created_at: datetime\n\n\nclass Result(NamedTuple):\n    \"\"\"Result type for operations that can fail.\"\"\"\n    success: bool\n    data: Optional[User] = None\n    error: Optional[UserError] = None\n\n\nclass UserService:\n    \"\"\"Service for managing user operations.\"\"\"\n    \n    def __init__(self, user_repository):\n        self.user_repository = user_repository\n    \n    # @calls: user_repository.save - User persistence\n    # @calls: validate_email - Email validation\n    # @error_flow: UserError -> Invalid email format\n    # @error_flow: UserError -> Database operation failed\n    def create_user(self, email: str) -> Result:\n        \"\"\"\n        Create a new user.\n        \n        ## Parameters\n        - email: str - User email address\n        \n        ## Returns\n        - Result - Created user or error\n        \"\"\"\n        try:\n            if not self._validate_email(email):\n                return Result(\n                    success=False,\n                    error=UserError(\n                        'Invalid email format',\n                        'INVALID_EMAIL',\n                        {'email': email}\n                    )\n                )\n            \n            user = User(\n                id=str(uuid.uuid4()),\n                email=email,\n                created_at=datetime.utcnow()\n            )\n            \n            self.user_repository.save(user)\n            \n            return Result(success=True, data=user)\n            \n        except Exception as e:\n            return Result(\n                success=False,\n                error=UserError(\n                    'Failed to create user',\n                    'DATABASE_ERROR',\n                    {'original_error': str(e)}\n                )\n            )\n    \n    # @calls: user_repository.find_by_id - User lookup\n    # @error_flow: UserError -> User not found\n    def get_user(self, user_id: str) -> Result:\n        \"\"\"\n        Get user by ID.\n        \n        ## Parameters\n        - user_id: str - User ID\n        \n        ## Returns\n        - Result - User if found, None if not found, or error\n        \"\"\"\n        try:\n            user = self.user_repository.find_by_id(user_id)\n            return Result(success=True, data=user)\n            \n        except Exception as e:\n            return Result(\n                success=False,\n                error=UserError(\n                    'Failed to get user',\n                    'DATABASE_ERROR',\n                    {'user_id': user_id, 'original_error': str(e)}\n                )\n            )\n    \n    def _validate_email(self, email: str) -> bool:\n        \"\"\"Validate email format.\"\"\"\n        import re\n        pattern = r'^[^\\s]+@[^\\s]+\\.[^\\s]+$'\n        return bool(re.match(pattern, email))\n\n\n# Tests\nimport unittest\nfrom unittest.mock import Mock\n\n\nclass TestUserService(unittest.TestCase):\n    \n    def setUp(self):\n        self.mock_repository = Mock()\n        self.service = UserService(self.mock_repository)\n    \n    def test_create_user_success(self):\n        \"\"\"Test successful user creation.\"\"\"\n        email = 'test@example.com'\n        \n        result = self.service.create_user(email)\n        \n        self.assertTrue(result.success)\n        self.assertIsNotNone(result.data)\n        self.assertEqual(result.data.email, email)\n    \n    def test_create_user_invalid_email(self):\n        \"\"\"Test user creation with invalid email.\"\"\"\n        email = 'invalid-email'\n        \n        result = self.service.create_user(email)\n        \n        self.assertFalse(result.success)\n        self.assertIsNotNone(result.error)\n        self.assertEqual(result.error.code, 'INVALID_EMAIL')\n    \n    def test_get_user_success(self):\n        \"\"\"Test successful user retrieval.\"\"\"\n        user_id = 'test-id'\n        expected_user = User(id=user_id, email='test@example.com', created_at=datetime.utcnow())\n        self.mock_repository.find_by_id.return_value = expected_user\n        \n        result = self.service.get_user(user_id)\n        \n        self.assertTrue(result.success)\n        self.assertEqual(result.data, expected_user)\n\n\nif __name__ == '__main__':\n    unittest.main()",
+    "bad_code": "# No template versioning\n# No relationship annotations\n# No error handling\n\nclass UserService:\n    def create_user(self, email):\n        # Can raise!\n        user = User(email)\n        self.repository.save(user)  # Can raise!\n        return user\n    \n    def get_user(self, user_id):\n        # Can raise!\n        return self.repository.find_by_id(user_id)"
+  }
+}

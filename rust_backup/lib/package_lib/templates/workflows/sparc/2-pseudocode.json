@@ -1,0 +1,50 @@
+{
+  "id": "sparc-pseudocode",
+  "name": "SPARC Pseudocode Generator",
+  "description": "Generates detailed pseudocode based on specifications",
+  "steps": [
+    {
+      "name": "analyze-specification",
+      "operation": {
+        "type": "analyze",
+        "analyze": "semantic"
+      }
+    },
+    {
+      "name": "generate-pseudocode",
+      "operation": {
+        "type": "generate",
+        "generate": "sparc-research"
+      }
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "author": "SPARC Team",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-01-15T10:00:00Z",
+    "tags": ["sparc", "pseudocode", "algorithm", "logic"],
+    "performance": {
+      "avg_execution_time_ms": 250.0,
+      "memory_usage_bytes": 5242880,
+      "complexity": 6
+    }
+  },
+  "ai_signature": {
+    "name": "sparc_pseudocode_generator",
+    "inputs": {
+      "specification": "Detailed system specification",
+      "requirements": "Functional and non-functional requirements",
+      "constraints": "Technical and business constraints",
+      "complexity_level": "Desired algorithm complexity level"
+    },
+    "outputs": {
+      "pseudocode": "Detailed algorithm pseudocode",
+      "data_structures": "Required data structures and types",
+      "control_flow": "Control flow logic and decision points",
+      "algorithm_complexity": "Time and space complexity analysis"
+    },
+    "instruction": "Generate comprehensive pseudocode with clear algorithm structure, data structures, control flow logic, and complexity analysis. Structure the response with ANALYSIS, FILES, and SUMMARY sections."
+  },
+  "template_content": "Generate detailed pseudocode based on the specification.\n\nFollow the structured response format with FILES section for any pseudocode files.\n\nPlease provide:\n1. High-level algorithm structure\n2. Data structures needed\n3. Control flow logic\n4. Error handling approach\n5. Performance considerations\n6. Edge cases and validation"
+}

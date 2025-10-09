@@ -1,0 +1,27 @@
+[package]
+name = "analyze-arch-nif"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Architecture analysis NIF - Fast local framework detection for Elixir"
+keywords = ["architecture", "framework-detection", "nif", "elixir", "rustler"]
+
+[lib]
+name = "analyze_arch_nif"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Rustler for Elixir NIFs
+rustler = { workspace = true }
+
+# Architecture analysis library (shared lib)
+architecture = { path = "../../lib/analyze_arch_lib" }
+
+# Common dependencies
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full", "test-util"] }

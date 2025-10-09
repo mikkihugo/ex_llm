@@ -1,0 +1,26 @@
+{
+  "name": "elixir-supervisor",
+  "version": "1.0.0",
+  "language": "elixir",
+  "quality_level": "production",
+  "description": "Production Supervisor with configurable restart strategies",
+  "template": "defmodule {{module_name}} do\n  use Supervisor\n\n  @moduledoc \"\"\"\n  Supervisor for {{description}}.\n  \n  Manages child processes with {{strategy}} restart strategy.\n  Children are started in order and restarted according to the strategy.\n  \"\"\"\n\n  def start_link(init_arg) do\n    Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)\n  end\n\n  @impl true\n  def init(_init_arg) do\n    children = [\n      # Static children\n      {{child_specs}}\n    ]\n\n    Supervisor.init(children, strategy: :{{strategy}})\n  end\n\n  @doc \"\"\"\n  Starts a dynamic child under this supervisor.\n  \"\"\"\n  def start_child(child_spec) do\n    Supervisor.start_child(__MODULE__, child_spec)\n  end\n\n  @doc \"\"\"\n  Terminates a child process.\n  \"\"\"\n  def terminate_child(child_id) do\n    Supervisor.terminate_child(__MODULE__, child_id)\n  end\n\n  @doc \"\"\"\n  Returns count of active children.\n  \"\"\"\n  def count_children do\n    Supervisor.count_children(__MODULE__)\n  end\nend",
+  "strategies": {
+    "one_for_one": "If a child process terminates, only that process is restarted",
+    "one_for_all": "If a child process terminates, all other child processes are terminated and then all are restarted",
+    "rest_for_one": "If a child process terminates, the rest of the children started after it are terminated and restarted"
+  },
+  "child_spec_examples": {
+    "genserver": "{MyApp.Worker, []}",
+    "supervisor": "{MyApp.SubSupervisor, []}",
+    "task_supervisor": "{Task.Supervisor, name: MyApp.TaskSupervisor}",
+    "registry": "{Registry, keys: :unique, name: MyApp.Registry}",
+    "dynamic_supervisor": "{DynamicSupervisor, name: MyApp.DynamicSupervisor, strategy: :one_for_one}"
+  },
+  "variables": {
+    "module_name": "MyApp.Supervisor",
+    "description": "application workers",
+    "strategy": "one_for_one",
+    "child_specs": "{MyApp.Worker, []},\\n      {Task.Supervisor, name: MyApp.TaskSupervisor}"
+  }
+}

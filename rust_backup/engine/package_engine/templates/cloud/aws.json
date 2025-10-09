@@ -1,0 +1,23 @@
+{
+  "name": "Amazon Web Services",
+  "category": "cloud",
+  "detector_signatures": {
+    "patterns": [
+      "aws-sdk",
+      "AWS::",
+      "provider \"aws\"",
+      "ExAws"
+    ],
+    "dependencies": [
+      "aws-sdk",
+      "@aws-sdk/client-s3",
+      "ex_aws",
+      "boto3"
+    ],
+    "file_patterns": [
+      "infra/aws/**",
+      "terraform/**/aws*.tf",
+      "cloudformation/**.yml"
+    ]
+  }
+}

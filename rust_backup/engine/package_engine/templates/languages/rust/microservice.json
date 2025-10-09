@@ -1,0 +1,66 @@
+{
+  "id": "rust-microservice",
+  "name": "Rust Microservice Generator",
+  "description": "Production-ready Rust microservice with Axum",
+  "extends": "languages/rust/_base.json",
+  "compose": [
+    "bits/security/input-validation.md",
+    "bits/performance/async-optimization.md",
+    "bits/architecture/rest-api.md"
+  ],
+  "workflows": [
+    "workflows/sparc/architecture.json",
+    "workflows/sparc/security.json",
+    "workflows/sparc/performance.json",
+    "workflows/sparc/implementation.json"
+  ],
+  "metadata": {
+    "version": "2.0.0",
+    "tags": ["rust", "microservice", "axum", "rest-api"],
+    "complexity": 7
+  },
+  "detector_signatures": {
+    "dependencies": ["axum", "tokio", "tower"],
+    "file_patterns": ["Cargo.toml", "src/main.rs"],
+    "min_confidence": 0.8
+  },
+  "template_variables": {
+    "service_name": {
+      "type": "string",
+      "description": "Service name in snake_case",
+      "required": true
+    },
+    "port": {
+      "type": "number",
+      "description": "HTTP port",
+      "default": 3000
+    },
+    "use_db": {
+      "type": "boolean",
+      "description": "Include database integration (SQLx)",
+      "default": true
+    }
+  },
+  "generated_files": [
+    {
+      "path": "src/main.rs",
+      "type": "entry_point"
+    },
+    {
+      "path": "src/routes/mod.rs",
+      "type": "router"
+    },
+    {
+      "path": "src/handlers/{{service_name}}.rs",
+      "type": "handlers"
+    },
+    {
+      "path": "src/models/{{service_name}}.rs",
+      "type": "models"
+    },
+    {
+      "path": "tests/integration_test.rs",
+      "type": "tests"
+    }
+  ]
+}

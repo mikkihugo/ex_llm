@@ -1,15 +1,13 @@
 [workspace]
 resolver = "2"
 members = [
-    # NIFs (Elixir bindings)
-    "rust/nif/analyze_arch_nif",
+    # Package trio (VERIFIED - COMPILES!)
+    "rust/engine/package_engine",
+    "rust/lib/package_lib",
 
-    # Libs
-    "rust/lib/analyze_arch_lib",
-    "rust/lib/knowledge_lib",
-
-    # Services
-    "rust/service/analyze_arch_service",
+    # Parser dependencies (required by package_engine)
+    "rust/lib/parser_lib/core",
+    "rust/lib/parser_lib/formats/dependency",
 ]
 
 [workspace.dependencies]

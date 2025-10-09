@@ -1,0 +1,28 @@
+[package]
+name = "prompt_service"
+version = "0.1.0"
+edition = "2021"
+description = "Central service for prompt optimization and management via NATS"
+license = "MIT"
+
+[[bin]]
+name = "prompt_service"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+async-nats = { workspace = true }
+
+# Prompt engine library (local)
+prompt-engine = { path = "../prompt_engine" }
+
+# Database
+sqlx = { workspace = true }
+
+# Configuration
+config = "0.14"

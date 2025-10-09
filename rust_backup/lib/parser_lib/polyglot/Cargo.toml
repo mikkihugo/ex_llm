@@ -1,0 +1,84 @@
+[package]
+name = "parser-code"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["claude-code-zen Team"]
+description = "Source code parser for AST analysis, complexity metrics, and language detection using tree-sitter"
+repository = "https://github.com/claude-code-zen/zenflow"
+readme = "README.md"
+keywords = ["parser", "source-code", "ast", "code-analysis", "tree-sitter", "complexity", "metrics"]
+categories = ["development-tools", "parsing"]
+
+[dependencies]
+rustler = "0.34"
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+# Universal dependency analysis - stable version
+tokei = { workspace = true }
+# Mozilla/RCA metrics library - ENABLED as standard
+mozilla-code-analysis = { path = "../mozilla-code-analysis" }
+
+# Tree-sitter core and language bindings - using workspace versions
+tree-sitter = { workspace = true }
+tree-sitter-javascript = { workspace = true }
+tree-sitter-typescript = { workspace = true }
+tree-sitter-python = { workspace = true }
+tree-sitter-rust = { workspace = true }
+tree-sitter-go = { workspace = true }
+tree-sitter-erlang = { workspace = true }
+tree-sitter-elixir = { workspace = true }
+tree-sitter-gleam = { workspace = true }
+tree-sitter-java = { workspace = true }
+tree-sitter-c = { workspace = true }
+tree-sitter-cpp = { workspace = true }
+tree-sitter-c-sharp = { workspace = true }
+tree-sitter-swift = { workspace = true }
+# tree-sitter-kotlin = { workspace = true }  # Temporarily disabled - version conflict
+# Extended language coverage
+tree-sitter-php = { workspace = true }
+tree-sitter-ruby = { workspace = true }
+tree-sitter-lua = { workspace = true }
+tree-sitter-json = { workspace = true }
+tree-sitter-yaml = { workspace = true }
+tree-sitter-bash = { workspace = true }
+tree-sitter-html = { workspace = true }
+tree-sitter-css = { workspace = true }
+
+# Core utilities - using workspace versions
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tokio-retry = "0.3"
+chrono = { workspace = true, features = ["serde"] }
+tempfile = { workspace = true }
+
+# Performance optimizations
+lru = "0.12"
+dashmap = "5.0"
+
+# PageRank for ML central heuristics (merged from parser-coordinator)
+petgraph = { workspace = true }
+
+# Regular expressions for refactoring
+regex = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Dependency parsing
+rust-dependency-parser = { path = "../dependency-parser" }
+
+[dev-dependencies]
+tokio-test = "0.4"
+criterion = "0.5"
+
+[[bench]]
+name = "parser_performance"
+harness = false
+[features]
+default = ["rca"]
+rca = []
+# Mozilla rust-code-analysis metrics - ALWAYS ENABLED

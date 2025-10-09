@@ -1,0 +1,101 @@
+[package]
+name = "code_analysis"
+version = "0.1.0"
+edition = "2021"
+description = "Code analysis engine for metrics, performance, security, and semantic search"
+authors = ["Singularity Team"]
+license = "MIT"
+repository = "https://github.com/singularity/singularity"
+readme = "README.md"
+keywords = ["code-analysis", "naming", "quality", "metrics", "patterns"]
+categories = ["development-tools", "text-processing"]
+
+[lib]
+name = "code_analysis"
+path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]  # Both library and NIF
+
+[dependencies]
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# Graph analysis
+petgraph = { workspace = true }
+
+# Text processing
+regex = { workspace = true }
+
+# Advanced analysis libraries
+walkdir = { workspace = true }
+ignore = { workspace = true }
+glob = { workspace = true }
+toml = { workspace = true }
+
+# UUID generation
+uuid = { workspace = true, features = ["v4", "serde"] }
+
+# Time handling
+chrono = { workspace = true, features = ["serde"] }
+
+# Async runtime
+tokio = { workspace = true, features = ["full"] }
+async-trait = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+
+# Memory stats for performance analysis
+memory-stats = "1.0"
+
+# Logging
+tracing = { workspace = true }
+
+# Array operations for vectors
+ndarray = { workspace = true }
+
+# Serialization
+bincode = { workspace = true }
+
+# Directory utilities
+dirs = { workspace = true }
+
+# Temporary directory for tests
+tempfile = { workspace = true }
+
+# Database
+redb = { workspace = true }
+
+# Hashing
+sha2 = { workspace = true }
+seahash = "4.1"
+
+# NIF support (optional - only when used from Elixir)
+rustler = { version = "0.34", optional = true }
+
+# ML & Embeddings (optional)
+candle-core = { version = "0.7", optional = true }
+candle-nn = { version = "0.7", optional = true }
+candle-transformers = { version = "0.7", optional = true }
+tokenizers = { version = "0.20", optional = true, default-features = false, features = ["onig"] }
+hf-hub = { version = "0.3", optional = true, features = ["tokio"] }
+thiserror = { workspace = true }
+
+# Full-text search
+tantivy = { version = "0.21", optional = true }
+
+# Internal SPARC crates
+quality_lib = { path = "../quality" }
+
+# NATS for context queries
+async-nats = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+
+[features]
+default = []
+nif = ["rustler"]  # Enable NIF support for Elixir integration
+# Semantic embeddings with Candle transformers
+semantic = ["candle-core", "candle-nn", "candle-transformers", "tokenizers", "hf-hub"]
+advanced-search = ["tantivy"]
