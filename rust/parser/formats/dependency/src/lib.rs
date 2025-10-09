@@ -92,7 +92,7 @@ impl DependencyParser {
 
     /// Parse a package file and return structured dependency information
     /// This is the method expected by package_engine
-    pub fn parse_package_file(&self, path: &std::path::Path) -> anyhow::Result<Vec<PackageDependency>> {
+    pub fn parse_package_file(&self, _path: &std::path::Path) -> anyhow::Result<Vec<PackageDependency>> {
         // For now, return empty vec - actual implementation would parse the file
         // TODO: Implement actual parsing logic using tree-sitter
         Ok(vec![])

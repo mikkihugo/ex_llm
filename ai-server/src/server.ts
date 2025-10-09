@@ -265,7 +265,7 @@ function normalizeUsage(
   generatedText?: string,
   usage?: any,
 ): UsageSummary {
-  const promptFromUsage = typeof usage?.promptTokens === 'number' ? usage.promptTokens :
+  const promptFromUsage = typeof usage?.inputTokens === 'number' ? usage.inputTokens :
                           typeof usage?.prompt_tokens === 'number' ? usage.prompt_tokens :
                           typeof usage?.input_tokens === 'number' ? usage.input_tokens : undefined;
   const completionFromUsage = typeof usage?.completionTokens === 'number' ? usage.completionTokens :
@@ -415,8 +415,8 @@ async function streamChatCompletion(
             finish_reason: 'stop',
           }],
           usage: {
-            prompt_tokens: usage.promptTokens,
-            completion_tokens: usage.completionTokens,
+            prompt_tokens: usage.inputTokens || usage.promptTokens || 0,
+            completion_tokens: usage.outputTokens || usage.completionTokens || 0,
             total_tokens: usage.totalTokens,
           },
         })}\n\n`));
@@ -653,8 +653,8 @@ function buildOpenAIChatResponse(
       finish_reason: result.finishReason ?? 'stop',
     }],
     usage: {
-      prompt_tokens: result.usage.promptTokens,
-      completion_tokens: result.usage.completionTokens,
+      prompt_tokens: result.usage.inputTokens || result.usage.promptTokens || 0,
+      completion_tokens: result.usage.outputTokens || 0,
       total_tokens: result.usage.totalTokens,
     },
   };

@@ -39,8 +39,8 @@ describe('E2E: Real Provider Streaming', () => {
 
     // Verify usage reporting
     const usage = await result.usage;
-    expect(usage.promptTokens).toBeGreaterThan(0);
-    expect(usage.completionTokens).toBeGreaterThan(0);
+    expect(usage.inputTokens || 0).toBeGreaterThan(0);
+    expect(usage.outputTokens || 0).toBeGreaterThan(0);
     expect(usage.totalTokens).toBeGreaterThan(0);
   }, 30000); // 30s timeout for network request
 
@@ -58,11 +58,11 @@ describe('E2E: Real Provider Streaming', () => {
     const result = streamText({
       model: gemini('gemini-2.5-flash'),
       prompt: 'Hi',
-      maxTokens: 10,
+      maxOutputTokens: 10,
     });
 
     // Consume stream
-    for await (const chunk of result.textStream) {
+    for await (const _chunk of result.textStream) {
       // Just consume
     }
 
@@ -106,8 +106,8 @@ describe('E2E: OpenAI SSE Format Compatibility', () => {
       object: 'chat.completion.chunk',
       choices: [{ delta: {}, finish_reason: 'stop' }],
       usage: {
-        prompt_tokens: usage.promptTokens,
-        completion_tokens: usage.completionTokens,
+        prompt_tokens: usage.inputTokens || 0,
+        completion_tokens: usage.outputTokens || 0,
         total_tokens: usage.totalTokens,
       },
     });

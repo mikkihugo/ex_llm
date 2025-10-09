@@ -72,11 +72,11 @@ describe('Real Provider Streaming', () => {
 
       // Verify usage (may not be available for all providers)
       const usage = await result.usage;
-      if (usage.promptTokens && usage.completionTokens) {
-        expect(usage.promptTokens).toBeGreaterThan(0);
-        expect(usage.completionTokens).toBeGreaterThan(0);
-        expect(usage.totalTokens).toBe(usage.promptTokens + usage.completionTokens);
-        console.log(`  Usage: ${usage.promptTokens} + ${usage.completionTokens} = ${usage.totalTokens} tokens`);
+      if (usage.inputTokens && usage.outputTokens) {
+        expect(usage.inputTokens).toBeGreaterThan(0);
+        expect(usage.outputTokens).toBeGreaterThan(0);
+        expect(usage.totalTokens).toBe(usage.inputTokens + usage.outputTokens);
+        console.log(`  Usage: ${usage.inputTokens} + ${usage.outputTokens} = ${usage.totalTokens} tokens`);
       } else if (usage.totalTokens) {
         console.log(`  Usage: ${usage.totalTokens} tokens total (no breakdown available)`);
       } else {
@@ -103,12 +103,12 @@ describe('Real Provider Streaming', () => {
         model: registry.languageModel('gemini-code:gemini-2.5-flash'),
         prompt: 'Hi',
         temperature: 0.7,
-        maxTokens: 20,
+        maxOutputTokens: 20,
         maxRetries: 2,
       });
 
       // Consume stream
-      for await (const chunk of result.textStream) {
+      for await (const _chunk of result.textStream) {
         // Just consume
       }
 
@@ -203,16 +203,16 @@ describe('Real Provider Streaming', () => {
           model: registry.languageModel('gemini-code:gemini-2.5-flash'),
           prompt: 'Write a long essay about AI.',
           temperature: 0.7,
-          maxTokens: 10,
+          maxOutputTokens: 10,
           maxRetries: 2,
         });
 
-        const text = await result.text;
+        // const text = await result.text; // Not used
         const usage = await result.usage;
 
-        if (usage.completionTokens) {
-          expect(usage.completionTokens).toBeLessThanOrEqual(15); // Some buffer
-          console.log(`  Generated ${usage.completionTokens} tokens (limit: 10)`);
+        if (usage.outputTokens) {
+          expect(usage.outputTokens).toBeLessThanOrEqual(15); // Some buffer
+          console.log(`  Generated ${usage.outputTokens} tokens (limit: 10)`);
         } else {
           console.warn('  ⏭️  Skipped: No token usage available');
         }
@@ -233,11 +233,11 @@ describe('Real Provider Streaming', () => {
         await result.text;
         const usage = await result.usage;
 
-        if (usage.promptTokens && usage.completionTokens) {
-          expect(usage.promptTokens).toBeGreaterThan(0);
-          expect(usage.completionTokens).toBeGreaterThan(0);
-          expect(usage.totalTokens).toBe(usage.promptTokens + usage.completionTokens);
-          console.log(`  Prompt: ${usage.promptTokens}, Completion: ${usage.completionTokens}, Total: ${usage.totalTokens}`);
+        if (usage.inputTokens && usage.outputTokens) {
+          expect(usage.inputTokens).toBeGreaterThan(0);
+          expect(usage.outputTokens).toBeGreaterThan(0);
+          expect(usage.totalTokens).toBe(usage.inputTokens + usage.outputTokens);
+          console.log(`  Prompt: ${usage.inputTokens}, Completion: ${usage.outputTokens}, Total: ${usage.totalTokens}`);
         } else {
           console.warn('  ⏭️  Skipped: No token usage available');
         }
@@ -300,7 +300,7 @@ describe('Real Provider Streaming', () => {
       let firstChunkTime: number | null = null;
       let chunkCount = 0;
 
-      for await (const chunk of result.textStream) {
+      for await (const _chunk of result.textStream) {
         if (firstChunkTime === null) {
           firstChunkTime = Date.now();
         }

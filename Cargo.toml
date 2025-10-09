@@ -8,6 +8,15 @@ members = [
     # Parser dependencies (required by package_engine)
     "rust/parser/core",
     "rust/parser/formats/dependency",
+    "rust/parser/polyglot",
+
+    # Services (NATS-based microservices)
+    "rust/service/package_service",
+    "rust/service/code_analysis_service",
+    "rust/service/knowledge_service",
+
+    # Core libraries
+    "rust/architecture",
 ]
 
 [workspace.dependencies]
