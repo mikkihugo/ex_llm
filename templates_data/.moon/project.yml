@@ -55,10 +55,11 @@ tasks:
 
 fileGroups:
   sources:
-    - 'quality/**/*.json'
-    - 'frameworks/**/*.json'
-    - 'prompts/**/*.json'
     - 'code_generation/**/*.json'
+    - 'code_snippets/**/*.json'
+    - 'frameworks/**/*.json'
+    - 'prompt_library/**/*.json'
+    - 'workflows/**/*.json'
 
   generated:
     - 'learned/**/*.json'

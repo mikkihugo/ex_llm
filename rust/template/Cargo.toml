@@ -3,8 +3,12 @@ name = "template"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "Template management and rendering library"
+description = "Central template library - ALL templates for parsers, analyzers, prompts, code generation"
 
 [dependencies]
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+once_cell = { workspace = true }
+walkdir = { workspace = true }
+thiserror = { workspace = true }
