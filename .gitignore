@@ -148,3 +148,4 @@ temp_file
 **/*.cache
 **/*_cache/
 .cache/
+rust/quality/src/nif.rs.backup

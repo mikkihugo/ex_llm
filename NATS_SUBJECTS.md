@@ -55,6 +55,31 @@ knowledge.artifacts.update            # Knowledge base updates
 knowledge.artifacts.embed             # Artifact embedding requests
 ```
 
+### Intelligence Hub (Central Communication)
+**Purpose:** All engines send intelligence data to central_cloud for aggregation and storage.
+
+```
+intelligence.hub.*.analysis          # Analysis results from any engine
+intelligence.hub.*.artifact          # Artifacts from any engine
+intelligence.hub.package.index       # Package indexing
+intelligence.hub.package.query       # Package query (request/reply)
+intelligence.hub.knowledge.cache     # Knowledge caching
+intelligence.hub.knowledge.request   # Knowledge retrieval (request/reply)
+intelligence.hub.embeddings          # Vector embeddings storage
+```
+
+**Engine-specific analysis subjects:**
+```
+intelligence.hub.architecture.analysis  # Architecture analysis results
+intelligence.hub.code.analysis         # Code analysis results
+intelligence.hub.embedding.analysis    # Embedding analysis results
+intelligence.hub.generator.analysis    # Code generation results
+intelligence.hub.parser.analysis       # Parsing results
+intelligence.hub.prompt.analysis       # Prompt optimization results
+intelligence.hub.quality.analysis      # Quality analysis results
+intelligence.hub.knowledge.analysis    # Knowledge extraction results
+```
+
 ### Agent Management
 ```
 agents.spawn                # Spawn new agents

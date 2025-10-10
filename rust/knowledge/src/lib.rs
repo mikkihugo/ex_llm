@@ -114,7 +114,7 @@ pub mod nif {
     use rustler::{Encoder, Env, NifResult, NifStruct, Term};
 
     #[derive(Debug, Clone, NifStruct)]
-    #[module = "Singularity.KnowledgeEngine.Asset"]
+    #[module = "Singularity.KnowledgeIntelligence.Asset"]
     pub struct NifAsset {
         pub id: String,
         pub asset_type: String,
@@ -148,7 +148,7 @@ pub mod nif {
     }
 
     #[derive(Debug, Clone, NifStruct)]
-    #[module = "Singularity.KnowledgeEngine.Stats"]
+    #[module = "Singularity.KnowledgeIntelligence.Stats"]
     pub struct NifStats {
         pub total_entries: usize,
         pub patterns: usize,
@@ -194,7 +194,7 @@ pub mod nif {
     }
 
     rustler::init!(
-        "Elixir.Singularity.KnowledgeEngine.Native",
+        "Elixir.Singularity.KnowledgeIntelligence",
         [nif_load_asset, nif_save_asset, nif_get_stats, nif_clear_cache]
     );
 }

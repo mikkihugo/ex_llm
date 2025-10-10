@@ -166,9 +166,6 @@ pub mod refactoring;
 pub use refactoring::*;
 
 #[cfg(feature = "nif")]
-pub mod nif;
-
-#[cfg(feature = "nif")]
 rustler::init!("Elixir.Singularity.QualityEngine", [
     analyze_code_quality,
     run_quality_gates,

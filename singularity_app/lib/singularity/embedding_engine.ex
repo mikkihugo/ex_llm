@@ -4,7 +4,7 @@ defmodule Singularity.EmbeddingEngine do
 
   This module provides a Rust NIF interface to high-performance embedding models:
   - **Jina v3** (jinaai/jina-embeddings-v3) - 1024 dims - General text
-  - **Qodo-Embed-1** (Qodo/qodo-embed-1) - 768 dims - Code-specialized
+  - **Qodo-Embed-1** (Qodo/qodo-embed-1) - 1536 dims - Code-specialized
 
   ## Performance
 
@@ -16,6 +16,8 @@ defmodule Singularity.EmbeddingEngine do
 
   - `:jina_v3` - Best for general text, search, semantic similarity
   - `:qodo_embed` - Best for code, technical documentation
+  - `:code` - Alias for `:qodo_embed`
+  - `:text` - Alias for `:jina_v3`
 
   ## Usage
 
@@ -39,6 +41,13 @@ defmodule Singularity.EmbeddingEngine do
         query_embeddings,
         candidate_embeddings
       )
+
+  ## Note on SemanticEngine
+
+  This module consolidates functionality previously split between
+  `Singularity.EmbeddingEngine` and `Singularity.SemanticEngine`.
+  Use `EmbeddingEngine` for all embedding operations.
+  `SemanticEngine` is maintained as an alias for backward compatibility.
   """
 
   use Rustler,
@@ -47,6 +56,57 @@ defmodule Singularity.EmbeddingEngine do
     path: "../../rust_global/semantic_embedding_engine"
 
   require Logger
+
+  @behaviour Singularity.Engine
+
+  @impl Singularity.Engine
+  def id, do: :embedding
+
+  @impl Singularity.Engine
+  def label, do: "Embedding Engine"
+
+  @impl Singularity.Engine
+  def description,
+    do: "GPU-powered embeddings: Jina v3 (text, 1024D) + Qodo-Embed-1 (code, 1536D)"
+
+  @impl Singularity.Engine
+  def capabilities do
+    [
+      %{
+        id: :text_embeddings,
+        label: "Text Embeddings (Jina v3)",
+        description: "8k context, 1024 dims, general text/docs",
+        available?: nif_loaded?(),
+        tags: [:embeddings, :text, :gpu]
+      },
+      %{
+        id: :code_embeddings,
+        label: "Code Embeddings (Qodo-Embed-1)",
+        description: "32k context, 1536 dims, code-specialized",
+        available?: nif_loaded?(),
+        tags: [:embeddings, :code, :gpu]
+      },
+      %{
+        id: :batch_processing,
+        label: "Batch Processing",
+        description: "10-100x faster than sequential",
+        available?: nif_loaded?(),
+        tags: [:performance, :gpu]
+      },
+      %{
+        id: :similarity_search,
+        label: "Similarity Search",
+        description: "Cosine similarity calculations",
+        available?: nif_loaded?(),
+        tags: [:search, :similarity]
+      }
+    ]
+  end
+
+  @impl Singularity.Engine
+  def health do
+    if nif_loaded?(), do: :ok, else: {:error, :nif_not_loaded}
+  end
 
   @type embedding :: [float()]
   @type model :: :jina_v3 | :qodo_embed
@@ -251,5 +311,16 @@ defmodule Singularity.EmbeddingEngine do
 
   defp model_to_string(:jina_v3), do: "jina_v3"
   defp model_to_string(:qodo_embed), do: "qodo_embed"
+  defp model_to_string(:text), do: "jina_v3"  # Alias
+  defp model_to_string(:code), do: "qodo_embed"  # Alias
   defp model_to_string(model) when is_binary(model), do: model
+
+  defp nif_loaded? do
+    try do
+      embed_single("test", "qodo_embed")
+      true
+    rescue
+      _ -> false
+    end
+  end
 end
