@@ -73,11 +73,16 @@ jobs:
         if: ${{ inputs.cachix_push && secrets.CACHIX_AUTH_TOKEN != '' }}
         run: |
           SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
-          cachix watch-exec mikkihugo -- nix build .#devShells.$SYSTEM.default -L
+          # Use nix build with --out-link to avoid rebuilds
+          nix build .#devShells.$SYSTEM.default --out-link /tmp/devshell-result -L
+          cachix push mikkihugo /tmp/devshell-result
 
       - name: Build and push Nix packages (Cachix)
         if: ${{ inputs.cachix_push && secrets.CACHIX_AUTH_TOKEN != '' }}
         run: |
           SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
-          cachix watch-exec mikkihugo -- nix build .#packages.$SYSTEM.ai-server -L || true
-          cachix watch-exec mikkihugo -- nix build .#packages.$SYSTEM.singularity-integrated -L || true
+          nix build .#packages.$SYSTEM.ai-server --out-link /tmp/ai-server-result -L || true
+          if [ -e /tmp/ai-server-result ]; then cachix push mikkihugo /tmp/ai-server-result; fi
+          
+          nix build .#packages.$SYSTEM.singularity-integrated --out-link /tmp/singularity-result -L || true
+          if [ -e /tmp/singularity-result ]; then cachix push mikkihugo /tmp/singularity-result; fi
