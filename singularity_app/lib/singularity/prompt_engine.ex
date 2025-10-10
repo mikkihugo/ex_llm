@@ -147,19 +147,8 @@ defmodule Singularity.PromptEngine do
 
   @spec call_llm(String.t() | atom(), [map()], keyword()) :: {:ok, map()} | {:error, term()}
   def call_llm(model_or_complexity, messages, opts \\ []) do
-    request = %{
-      model: model_or_complexity,
-      messages: messages,
-      options: opts
-    }
-
-    with {:nif, {:ok, response}} <- {:nif, call_nif(fn -> Native.call_llm(request) end)} do
-      {:ok, response}
-    else
-      {:nif, {:error, _}} ->
-        # Fallback to external LLM service
-        Singularity.LLM.Service.call(model_or_complexity, messages, opts)
-    end
+    # Use centralized LLM service via NATS-based ai-server
+    Singularity.LLM.Service.call(model_or_complexity, messages, opts)
   end
 
   @spec call_llm_with_prompt(String.t() | atom(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}

@@ -465,11 +465,72 @@ defmodule Singularity.GeneratorEngine.Code do
   end
 
   defp generate_with_rust_elixir_t5(prompt, language) do
-    # TODO: Hook up real T5 model generation
-    base_code = """
-    # Generated #{language} code for task:
-    #{prompt}
-    """
+    # Hook up real T5 model generation via NATS
+    case Singularity.NatsClient.request("code.t5.generate", Jason.encode!(%{
+      prompt: prompt,
+      language: language,
+      model: "rust_elixir_t5",
+      max_length: 512,
+      temperature: 0.7
+    }), timeout: 30_000) do
+      {:ok, response} ->
+        case Jason.decode(response.data) do
+          {:ok, %{"generated_code" => code}} ->
+            {:ok, code}
+          {:ok, data} ->
+            # Fallback if response format is different
+            {:ok, Map.get(data, "code", Map.get(data, "text", ""))}
+          {:error, reason} ->
+            Logger.error("Failed to decode T5 response", reason: reason)
+            generate_fallback_code(prompt, language)
+        end
+      
+      {:error, reason} ->
+        Logger.warning("T5 model generation failed, using fallback", reason: reason)
+        generate_fallback_code(prompt, language)
+    end
+  end
+
+  defp generate_fallback_code(prompt, language) do
+    # Fallback code generation when T5 model is unavailable
+    base_code = case language do
+      "elixir" ->
+        """
+        defmodule GeneratedModule do
+          @moduledoc \"\"\"
+          Generated module for: #{prompt}
+          \"\"\"
+          
+          # TODO: Implement the actual functionality
+          def process(input) do
+            # Generated placeholder
+            {:ok, input}
+          end
+        end
+        """
+      
+      "rust" ->
+        """
+        // Generated Rust code for: #{prompt}
+        pub struct GeneratedStruct {
+            // TODO: Add fields
+        }
+        
+        impl GeneratedStruct {
+            pub fn new() -> Self {
+                // TODO: Implement constructor
+                Self {}
+            }
+        }
+        """
+      
+      _ ->
+        """
+        // Generated #{language} code for task:
+        // #{prompt}
+        // TODO: Implement the actual functionality
+        """
+    end
 
     {:ok, base_code}
   end

@@ -99,7 +99,7 @@ pub struct ComplianceAnalyzer {
 
 /// Interface to fact-system for compliance knowledge
 pub struct FactSystemInterface {
-    // PSEUDO CODE: Interface to fact-system for compliance
+    nats_client: NatsClient, // Replace with actual NATS client type
 }
 
 impl ComplianceAnalyzer {
@@ -225,23 +225,20 @@ impl ComplianceAnalyzer {
 }
 
 impl FactSystemInterface {
-    pub fn new() -> Self {
-        Self {}
+    /// Creates a new FactSystemInterface with the given NATS client
+    pub fn new(nats_client: NatsClient) -> Self {
+        Self { nats_client }
     }
-    
-    // PSEUDO CODE: These methods would integrate with the actual fact-system
-    /*
-    pub async fn load_compliance_frameworks(&self) -> Result<Vec<ComplianceFramework>> {
-        // Query fact-system for compliance frameworks
-        // Return OWASP, NIST, SOC2, GDPR, etc.
+
+    /// Queries the fact system for a specific compliance fact
+    pub fn query_compliance_fact(&self, fact_id: &str) -> Result<ComplianceFact, FactSystemError> {
+        // Implement NATS query logic here
+        unimplemented!("Query compliance fact logic")
     }
-    
-    pub async fn get_compliance_requirements(&self, framework: &str) -> Result<Vec<ComplianceRequirement>> {
-        // Query fact-system for specific framework requirements
+
+    /// Updates a compliance fact in the fact system
+    pub fn update_compliance_fact(&self, fact: ComplianceFact) -> Result<(), FactSystemError> {
+        // Implement NATS update logic here
+        unimplemented!("Update compliance fact logic")
     }
-    
-    pub async fn get_compliance_best_practices(&self, requirement: &str) -> Result<Vec<String>> {
-        // Query fact-system for best practices for specific requirement
-    }
-    */
 }

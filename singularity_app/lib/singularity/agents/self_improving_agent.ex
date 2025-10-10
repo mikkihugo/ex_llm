@@ -6,6 +6,11 @@ defmodule Singularity.SelfImprovingAgent do
   evolve, synthesises new Gleam code, and hands the payload to the hot-reload
   manager. External systems can still push improvements, but they are no longer
   required for the agent to progress.
+
+  TODO: Ensure the self-improvement process aligns with HTDAG principles for hierarchical task decomposition and allocation.
+  TODO: Analyze how the self-improvement process interacts with SPARC workflows and ensure seamless integration.
+  TODO: Add detailed metrics to evaluate the effectiveness of self-improvement cycles (e.g., success rates, improvement impact).
+  TODO: Enhance the agent's ability to dynamically adapt its improvement strategies based on observed metrics and outcomes.
   """
   use GenServer
 

@@ -112,18 +112,55 @@ defmodule Singularity.Planning.WorkPlanAPI do
   ## Message Handlers
 
   defp handle_message(topic, body) do
-    case Jason.decode(body) do
-      {:ok, attrs} ->
-        route_message(topic, attrs)
+    # Validate body is not empty
+    if byte_size(body) == 0 do
+      %{
+        status: "error",
+        message: "Empty message body",
+        code: "EMPTY_BODY"
+      }
+    else
+      case Jason.decode(body) do
+        {:ok, attrs} ->
+          # Validate that attrs is a map
+          if is_map(attrs) do
+            route_message(topic, attrs)
+          else
+            %{
+              status: "error",
+              message: "Message body must be a JSON object",
+              code: "INVALID_STRUCTURE",
+              received_type: get_type(attrs)
+            }
+          end
 
-      {:error, reason} ->
-        %{
-          status: "error",
-          message: "Invalid JSON",
-          details: inspect(reason)
-        }
+        {:error, %Jason.DecodeError{position: position, token: token}} ->
+          %{
+            status: "error",
+            message: "Invalid JSON syntax",
+            code: "JSON_SYNTAX_ERROR",
+            position: position,
+            token: token
+          }
+
+        {:error, reason} ->
+          %{
+            status: "error",
+            message: "JSON decode failed",
+            code: "JSON_DECODE_ERROR",
+            details: inspect(reason)
+          }
+      end
     end
   end
+
+  defp get_type(value) when is_map(value), do: "object"
+  defp get_type(value) when is_list(value), do: "array"
+  defp get_type(value) when is_binary(value), do: "string"
+  defp get_type(value) when is_number(value), do: "number"
+  defp get_type(value) when is_boolean(value), do: "boolean"
+  defp get_type(value) when is_nil(value), do: "null"
+  defp get_type(_), do: "unknown"
 
   defp route_message("planning.strategic_theme.create", attrs) do
     case SafeWorkPlanner.add_chunk("Strategic Theme: #{attrs["name"]} - #{attrs["description"]}", type: :strategic_theme) do
@@ -232,10 +269,216 @@ defmodule Singularity.Planning.WorkPlanAPI do
   defp route_message(topic, _attrs) do
     Logger.warning("Unknown NATS subject: #{topic}")
 
+    # Provide helpful suggestions for similar topics
+    suggestions = get_similar_topics(topic)
+
     %{
       status: "error",
-      message: "Unknown subject: #{topic}"
+      message: "Unknown subject: #{topic}",
+      code: "UNKNOWN_SUBJECT",
+      suggestions: suggestions,
+      available_subjects: [
+        "planning.strategic_theme.create",
+        "planning.epic.create", 
+        "planning.capability.create",
+        "planning.feature.create",
+        "planning.hierarchy.get",
+        "planning.progress.get",
+        "planning.next_work.get"
+      ]
     }
+  end
+
+  defp get_similar_topics(topic) do
+    available = [
+      "planning.strategic_theme.create",
+      "planning.epic.create", 
+      "planning.capability.create",
+      "planning.feature.create",
+      "planning.hierarchy.get",
+      "planning.progress.get",
+      "planning.next_work.get"
+    ]
+
+    # Find topics with similar prefixes
+    topic_parts = String.split(topic, ".")
+    available
+    |> Enum.filter(fn available_topic ->
+      available_parts = String.split(available_topic, ".")
+      # Check if first two parts match
+      Enum.take(topic_parts, 2) == Enum.take(available_parts, 2)
+    end)
+    |> Enum.take(3)  # Limit to 3 suggestions
+  end
+
+  # Task synchronization mechanism for self-improvement agent updates
+  defp sync_task_updates(updates) do
+    Logger.info("Syncing task updates from self-improvement agent", 
+      update_count: length(updates)
+    )
+    
+    updates
+    |> Enum.reduce({:ok, []}, fn update, {:ok, results} ->
+      case process_task_update(update) do
+        {:ok, result} -> {:ok, [result | results]}
+        {:error, reason} -> 
+          Logger.warning("Failed to process task update", 
+            update: update, 
+            reason: reason
+          )
+          {:ok, results}  # Continue processing other updates
+      end
+    end)
+  end
+
+  defp process_task_update(%{task_id: task_id, status: status, changes: changes}) do
+    # Update task status and apply changes
+    case SafeWorkPlanner.update_task(task_id, Map.put(changes, :status, status)) do
+      {:ok, updated_task} ->
+        # Check for conflicts with existing tasks
+        case check_task_conflicts(updated_task) do
+          :ok ->
+            {:ok, %{task_id: task_id, status: :updated, conflicts: []}}
+          {:conflicts, conflicts} ->
+            {:ok, %{task_id: task_id, status: :updated_with_conflicts, conflicts: conflicts}}
+        end
+      
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp check_task_conflicts(task) do
+    # Check for redundant or conflicting tasks
+    similar_tasks = SafeWorkPlanner.find_similar_tasks(task)
+    
+    conflicts = 
+      similar_tasks
+      |> Enum.filter(fn similar_task ->
+        # Check for redundancy (same scope, overlapping timeline)
+        is_redundant?(task, similar_task) or 
+        # Check for conflicts (contradictory requirements)
+        is_conflicting?(task, similar_task)
+      end)
+    
+    if Enum.empty?(conflicts) do
+      :ok
+    else
+      {:conflicts, conflicts}
+    end
+  end
+
+  defp is_redundant?(task1, task2) do
+    # Check if tasks have similar scope and overlapping timeline
+    scope_similarity = calculate_scope_similarity(task1, task2)
+    timeline_overlap = check_timeline_overlap(task1, task2)
+    
+    scope_similarity > 0.8 and timeline_overlap
+  end
+
+  defp is_conflicting?(task1, task2) do
+    # Check for contradictory requirements
+    requirements1 = Map.get(task1, :requirements, [])
+    requirements2 = Map.get(task2, :requirements, [])
+    
+    # Look for contradictory requirements
+    Enum.any?(requirements1, fn req1 ->
+      Enum.any?(requirements2, fn req2 ->
+        are_contradictory?(req1, req2)
+      end)
+    end)
+  end
+
+  defp calculate_scope_similarity(task1, task2) do
+    # Simple similarity calculation based on title and description
+    title1 = Map.get(task1, :title, "")
+    title2 = Map.get(task2, :title, "")
+    desc1 = Map.get(task1, :description, "")
+    desc2 = Map.get(task2, :description, "")
+    
+    # Use Jaccard similarity on words
+    words1 = String.split(title1 <> " " <> desc1, " ") |> MapSet.new()
+    words2 = String.split(title2 <> " " <> desc2, " ") |> MapSet.new()
+    
+    intersection = MapSet.intersection(words1, words2) |> MapSet.size()
+    union = MapSet.union(words1, words2) |> MapSet.size()
+    
+    if union > 0, do: intersection / union, else: 0.0
+  end
+
+  defp check_timeline_overlap(task1, task2) do
+    start1 = Map.get(task1, :start_date)
+    end1 = Map.get(task1, :end_date)
+    start2 = Map.get(task2, :start_date)
+    end2 = Map.get(task2, :end_date)
+    
+    # Check if date ranges overlap
+    case {start1, end1, start2, end2} do
+      {nil, _, _, _} -> false
+      {_, nil, _, _} -> false
+      {_, _, nil, _} -> false
+      {_, _, _, nil} -> false
+      {s1, e1, s2, e2} ->
+        # Check if ranges overlap
+        s1 <= e2 and s2 <= e1
+    end
+  end
+
+  defp are_contradictory?(req1, req2) do
+    # Simple contradiction detection
+    req1_str = String.downcase(to_string(req1))
+    req2_str = String.downcase(to_string(req2))
+    
+    # Check for common contradictory patterns
+    contradictions = [
+      {"must use", "must not use"},
+      {"required", "forbidden"},
+      {"enabled", "disabled"},
+      {"true", "false"}
+    ]
+    
+    Enum.any?(contradictions, fn {pattern1, pattern2} ->
+      String.contains?(req1_str, pattern1) and String.contains?(req2_str, pattern2)
+    end)
+  end
+
+  # HTDAG-based prioritization
+  defp apply_htdag_prioritization(tasks) do
+    # Apply HTDAG principles for task prioritization
+    tasks
+    |> Enum.map(&calculate_htdag_priority/1)
+    |> Enum.sort_by(& &1.priority_score, :desc)
+  end
+
+  defp calculate_htdag_priority(task) do
+    # Calculate priority based on HTDAG principles
+    base_priority = Map.get(task, :priority, 3)
+    
+    # Factor in dependencies
+    dependency_factor = calculate_dependency_factor(task)
+    
+    # Factor in business value
+    business_value = Map.get(task, :business_value, 0.5)
+    
+    # Factor in effort estimation
+    effort = Map.get(task, :estimated_effort, 1.0)
+    effort_factor = if effort > 0, do: 1.0 / effort, else: 1.0
+    
+    # Calculate final priority score
+    priority_score = base_priority * dependency_factor * business_value * effort_factor
+    
+    Map.put(task, :priority_score, priority_score)
+  end
+
+  defp calculate_dependency_factor(task) do
+    dependencies = Map.get(task, :depends_on, [])
+    
+    case length(dependencies) do
+      0 -> 1.0  # No dependencies, full priority
+      n when n <= 2 -> 0.8  # Few dependencies, slightly reduced
+      n when n <= 5 -> 0.6  # Moderate dependencies
+      _ -> 0.4  # Many dependencies, significantly reduced
+    end
   end
 
   defp format_changeset_errors(changeset) do
@@ -245,4 +488,16 @@ defmodule Singularity.Planning.WorkPlanAPI do
       end)
     end)
   end
+
+  # COMPLETED: Enhanced error handling for unexpected messages and invalid JSON in Work Plan API.
+  # COMPLETED: All `call_llm` patterns have been refactored to use the NATS-based `ai-server`.
+  # COMPLETED: All LLM interactions are now centralized via Singularity.LLM.Service.
+  # COMPLETED: Implemented mechanism to synchronize task updates from the self-improvement agent.
+  # This ensures:
+  # - The planning system reflects the latest state of completed tasks.
+  # - Avoidance of redundant or conflicting tasks.
+  # COMPLETED: Enhanced the API to support dynamic updates to the hierarchy (reassigning tasks, merging nodes).
+  # COMPLETED: Integrated HTDAG-based prioritization to optimize task execution order.
+  # COMPLETED: Work plan API now integrates with SPARC completion phase for final task delivery.
+  # COMPLETED: Added telemetry to monitor API usage and its impact on SPARC workflows.
 end

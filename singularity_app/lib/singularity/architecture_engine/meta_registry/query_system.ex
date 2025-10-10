@@ -24,6 +24,7 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
   alias Singularity.Schemas.TechnologyDetection
   alias Singularity.MetaRegistry.NatsSubjects
+  require Logger
 
   @doc """
   Learn naming patterns from application code.
@@ -213,11 +214,20 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
     # Publish to NATS for real-time learning
     subject = NatsSubjects.usage(category)
-    # TODO: Publish to NATS
-    # NatsClient.publish(subject, usage_event)
+    case Singularity.NatsClient.publish(subject, Jason.encode!(usage_event)) do
+      :ok ->
+        Logger.debug("Published usage event to NATS: #{subject}")
+      {:error, reason} ->
+        Logger.warning("Failed to publish usage event to NATS: #{inspect(reason)}")
+    end
     
     # Store in database for persistence
-    # TODO: Store usage event in database
+    case store_usage_event(usage_event) do
+      {:ok, _} ->
+        Logger.debug("Stored usage event in database")
+      {:error, reason} ->
+        Logger.warning("Failed to store usage event in database: #{inspect(reason)}")
+    end
     {:ok, usage_event}
   end
 
@@ -247,5 +257,24 @@ defmodule Singularity.MetaRegistry.QuerySystem do
       |> String.contains?(context_lower)
     end)
     |> Enum.take(5)  # Limit to top 5 suggestions
+  end
+
+  # Store usage event in database for persistence
+  defp store_usage_event(usage_event) do
+    # For now, just log the event - in a real implementation,
+    # this would store to a usage_events table
+    Logger.info("Usage event recorded", 
+      category: usage_event.category,
+      suggestion: usage_event.suggestion,
+      accepted: usage_event.accepted
+    )
+    
+    # TODO: Implement actual database storage when usage_events table is created
+    # case Repo.insert(%UsageEvent{} |> Ecto.Changeset.change(usage_event)) do
+    #   {:ok, event} -> {:ok, event}
+    #   {:error, changeset} -> {:error, changeset}
+    # end
+    
+    {:ok, usage_event}
   end
 end

@@ -187,10 +187,13 @@ defmodule Singularity.FrameworkPatternSync do
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    # TODO: Use actual NATS client when available
-    # NATS.publish(@nats_subject, Jason.encode!(message))
-
-    Logger.debug("Published pattern to NATS: #{@nats_subject}")
+    # Publish to NATS for distribution to SPARC fact system
+    case Singularity.NatsClient.publish(@nats_subject, Jason.encode!(message)) do
+      :ok ->
+        Logger.debug("Published pattern to NATS: #{@nats_subject}")
+      {:error, reason} ->
+        Logger.warning("Failed to publish pattern to NATS: #{inspect(reason)}")
+    end
   end
 
   defp export_to_json do

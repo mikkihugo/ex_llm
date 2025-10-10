@@ -6,6 +6,8 @@ defmodule SingularityWeb.HealthRouter do
   """
 
   use Plug.Router
+  require Logger
+  alias Singularity.HITL.ApprovalService
 
   plug :match
   plug Plug.RequestId
@@ -103,12 +105,15 @@ defmodule SingularityWeb.HealthRouter do
     # Check if it's an approval response
     cond do
       String.contains?(text, "approve") ->
-        # TODO: Update approval status in database
-        %{text: "✅ Approval recorded by #{sender}"}
+        # Extract approval ID from message if present
+        approval_id = extract_approval_id_from_text(text)
+        update_approval_status(approval_id, :approve, sender)
 
       String.contains?(text, "reject") ->
-        # TODO: Update rejection status in database
-        %{text: "❌ Rejection recorded by #{sender}"}
+        # Extract approval ID from message if present
+        approval_id = extract_approval_id_from_text(text)
+        reason = extract_rejection_reason_from_text(text)
+        update_approval_status(approval_id, :reject, sender, reason)
 
       true ->
         # Not an approval message, ignore
@@ -119,15 +124,15 @@ defmodule SingularityWeb.HealthRouter do
   defp handle_google_chat_event(%{"type" => "CARD_CLICKED", "action" => action} = _payload) do
     # Handle button clicks from interactive cards
     action_name = Map.get(action, "actionMethodName", "")
+    approval_id = Map.get(action, "approvalId")
 
     case action_name do
       "approve" ->
-        # TODO: Update approval in database
-        %{text: "✅ Approved via button"}
+        update_approval_status(approval_id, :approve, "Google Chat User")
 
       "reject" ->
-        # TODO: Update rejection in database
-        %{text: "❌ Rejected via button"}
+        reason = Map.get(action, "reason", "Rejected via button")
+        update_approval_status(approval_id, :reject, "Google Chat User", reason)
 
       _ ->
         %{text: "Unknown action"}
@@ -137,5 +142,68 @@ defmodule SingularityWeb.HealthRouter do
   defp handle_google_chat_event(_payload) do
     # Unknown event type
     %{text: ""}
+  end
+
+  # Helper functions for approval handling
+
+  defp update_approval_status(nil, _action, _user) do
+    %{text: "❌ No approval ID found in message"}
+  end
+
+  defp update_approval_status(approval_id, :approve, user) do
+    case ApprovalService.approve(approval_id, user) do
+      {:ok, _approval} ->
+        Logger.info("Approval #{approval_id} approved by #{user}")
+        %{text: "✅ Approval recorded by #{user}"}
+      
+      {:error, :not_found} ->
+        Logger.warning("Approval #{approval_id} not found")
+        %{text: "❌ Approval ID not found: #{approval_id}"}
+      
+      {:error, reason} ->
+        Logger.error("Failed to approve #{approval_id}: #{inspect(reason)}")
+        %{text: "❌ Failed to record approval: #{inspect(reason)}"}
+    end
+  end
+
+  defp update_approval_status(approval_id, :reject, user, reason \\ nil) do
+    case ApprovalService.reject(approval_id, user, reason) do
+      {:ok, _approval} ->
+        Logger.info("Approval #{approval_id} rejected by #{user}")
+        %{text: "❌ Rejection recorded by #{user}"}
+      
+      {:error, :not_found} ->
+        Logger.warning("Approval #{approval_id} not found")
+        %{text: "❌ Approval ID not found: #{approval_id}"}
+      
+      {:error, reason} ->
+        Logger.error("Failed to reject #{approval_id}: #{inspect(reason)}")
+        %{text: "❌ Failed to record rejection: #{inspect(reason)}"}
+    end
+  end
+
+  defp extract_approval_id_from_text(text) do
+    # Look for approval ID patterns in the text
+    # This could be a UUID or other identifier
+    case Regex.run(~r/approval[:\s]+([a-f0-9-]{36})/i, text) do
+      [_, id] -> id
+      _ -> 
+        case Regex.run(~r/id[:\s]+([a-f0-9-]{36})/i, text) do
+          [_, id] -> id
+          _ -> nil
+        end
+    end
+  end
+
+  defp extract_rejection_reason_from_text(text) do
+    # Extract reason after "reject" or "reason:"
+    case Regex.run(~r/reject[:\s]+(.+)/i, text) do
+      [_, reason] -> String.trim(reason)
+      _ ->
+        case Regex.run(~r/reason[:\s]+(.+)/i, text) do
+          [_, reason] -> String.trim(reason)
+          _ -> nil
+        end
+    end
   end
 end

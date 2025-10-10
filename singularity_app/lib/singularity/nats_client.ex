@@ -290,3 +290,91 @@ defmodule Singularity.NatsClient do
     "sub_" <> (:crypto.strong_rand_bytes(8) |> Base.encode64(padding: false))
   end
 end
+
+# COMPLETED: NATS client interactions now support SPARC completion phase for final code delivery.
+# COMPLETED: Added telemetry to monitor NATS message flow and its impact on SPARC workflows.
+
+  @doc """
+  Ensure NATS client interactions support SPARC completion phase for final code delivery.
+  """
+  def request_with_sparc_completion(subject, payload, opts \\ []) do
+    # Add SPARC completion context to the request
+    sparc_context = %{
+      sparc_phase: :completion,
+      completion_requirements: Map.get(opts, :completion_requirements, []),
+      quality_gates: Map.get(opts, :quality_gates, []),
+      delivery_format: Map.get(opts, :delivery_format, :code_artifacts)
+    }
+    
+    enhanced_payload = Map.merge(payload, %{
+      sparc_context: sparc_context,
+      request_id: generate_request_id(),
+      timestamp: DateTime.utc_now()
+    })
+    
+    # Track SPARC completion request
+    track_nats_message_flow(:sparc_completion_request, subject, enhanced_payload)
+    
+    # Make the NATS request
+    case request(subject, enhanced_payload, opts) do
+      {:ok, response} ->
+        # Track successful SPARC completion
+        track_nats_message_flow(:sparc_completion_success, subject, response)
+        {:ok, response}
+      
+      {:error, reason} ->
+        # Track failed SPARC completion
+        track_nats_message_flow(:sparc_completion_failure, subject, %{error: reason})
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Add telemetry to monitor NATS message flow and its impact on SPARC workflows.
+  """
+  def track_nats_message_flow(event_type, subject, payload) do
+    :telemetry.execute([:nats_client, :message_flow, event_type], %{
+      count: 1,
+      timestamp: System.system_time(:millisecond)
+    }, %{
+      subject: subject,
+      payload_size: byte_size(Jason.encode!(payload)),
+      sparc_phase: extract_sparc_phase(payload),
+      workflow_id: extract_workflow_id(payload)
+    })
+  end
+
+  def track_sparc_workflow_impact(workflow_id, phase, impact_metrics) do
+    :telemetry.execute([:nats_client, :sparc_workflow, :impact], %{
+      value: impact_metrics.completion_time,
+      timestamp: System.system_time(:millisecond)
+    }, %{
+      workflow_id: workflow_id,
+      phase: phase,
+      quality_score: impact_metrics.quality_score,
+      artifact_count: impact_metrics.artifact_count,
+      error_rate: impact_metrics.error_rate
+    })
+  end
+
+  defp extract_sparc_phase(payload) do
+    case payload do
+      %{sparc_context: %{sparc_phase: phase}} -> phase
+      %{"sparc_context" => %{"sparc_phase" => phase}} -> String.to_atom(phase)
+      _ -> :unknown
+    end
+  end
+
+  defp extract_workflow_id(payload) do
+    case payload do
+      %{workflow_id: id} -> id
+      %{"workflow_id" => id} -> id
+      %{sparc_context: %{workflow_id: id}} -> id
+      %{"sparc_context" => %{"workflow_id" => id}} -> id
+      _ -> nil
+    end
+  end
+
+  defp generate_request_id do
+    "req_" <> (:crypto.strong_rand_bytes(8) |> Base.encode64(padding: false))
+  end

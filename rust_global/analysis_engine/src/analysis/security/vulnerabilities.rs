@@ -99,20 +99,7 @@ pub struct VulnerabilityAnalyzer {
 
 /// Interface to fact-system for vulnerability knowledge
 pub struct FactSystemInterface {
-    // PSEUDO CODE: Interface to fact-system for vulnerability knowledge
-}
-
-/// Vulnerability pattern definition
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VulnerabilityPattern {
-    pub name: String,
-    pub pattern: String,
-    pub category: VulnerabilityCategory,
-    pub severity: VulnerabilitySeverity,
-    pub description: String,
-    pub remediation: String,
-    pub cwe_id: Option<String>,
-    pub owasp_category: Option<String>,
+    nats_client: NatsClient, // Replace with actual NATS client type
 }
 
 impl VulnerabilityAnalyzer {
@@ -267,23 +254,20 @@ impl VulnerabilityAnalyzer {
 }
 
 impl FactSystemInterface {
-    pub fn new() -> Self {
-        Self {}
+    /// Creates a new FactSystemInterface with the given NATS client
+    pub fn new(nats_client: NatsClient) -> Self {
+        Self { nats_client }
     }
-    
-    // PSEUDO CODE: These methods would integrate with the actual fact-system
-    /*
-    pub async fn load_vulnerability_patterns(&self) -> Result<Vec<VulnerabilityPattern>> {
-        // Query fact-system for vulnerability patterns
-        // Return patterns for injection, auth, crypto, etc.
+
+    /// Queries the fact system for a specific vulnerability fact
+    pub fn query_vulnerability_fact(&self, fact_id: &str) -> Result<VulnerabilityFact, FactSystemError> {
+        // Implement NATS query logic here
+        unimplemented!("Query vulnerability fact logic")
     }
-    
-    pub async fn get_vulnerability_data(&self, cwe_id: &str) -> Result<VulnerabilityData> {
-        // Query fact-system for specific vulnerability data
+
+    /// Updates a vulnerability fact in the fact system
+    pub fn update_vulnerability_fact(&self, fact: VulnerabilityFact) -> Result<(), FactSystemError> {
+        // Implement NATS update logic here
+        unimplemented!("Update vulnerability fact logic")
     }
-    
-    pub async fn get_remediation_guidelines(&self, vulnerability_type: &str) -> Result<Vec<String>> {
-        // Query fact-system for remediation guidelines
-    }
-    */
 }

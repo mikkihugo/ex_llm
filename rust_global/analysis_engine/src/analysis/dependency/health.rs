@@ -233,7 +233,26 @@ pub struct DependencyHealthAnalyzer {
 
 /// Interface to fact-system for dependency health knowledge
 pub struct FactSystemInterface {
-    // PSEUDO CODE: Interface to fact-system for dependency health knowledge
+    nats_client: NatsClient, // Replace with actual NATS client type
+}
+
+impl FactSystemInterface {
+    /// Creates a new FactSystemInterface with the given NATS client
+    pub fn new(nats_client: NatsClient) -> Self {
+        Self { nats_client }
+    }
+
+    /// Queries the fact system for a specific dependency health fact
+    pub fn query_dependency_health_fact(&self, fact_id: &str) -> Result<DependencyHealthFact, FactSystemError> {
+        // Implement NATS query logic here
+        unimplemented!("Query dependency health fact logic")
+    }
+
+    /// Updates a dependency health fact in the fact system
+    pub fn update_dependency_health_fact(&self, fact: DependencyHealthFact) -> Result<(), FactSystemError> {
+        // Implement NATS update logic here
+        unimplemented!("Update dependency health fact logic")
+    }
 }
 
 /// Vulnerability database
@@ -589,8 +608,8 @@ impl LicenseDatabase {
 }
 
 impl FactSystemInterface {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(nats_client: NatsClient) -> Self {
+        Self { nats_client }
     }
     
     // PSEUDO CODE: These methods would integrate with the actual fact-system

@@ -156,11 +156,167 @@ defmodule Singularity.CodeDeduplicator do
     :crypto.hash(:sha256, normalized) |> Base.encode16(case: :lower)
   end
 
-  defp hash_ast(code, _language) do
-    # TODO: Parse AST and hash structure
-    # For now, use normalized hash
-    # Real implementation would parse code into AST and hash structure
-    hash_normalized(code)
+  defp hash_ast(code, language) do
+    # Parse AST and hash structure for better duplicate detection
+    case parse_code_to_ast(code, language) do
+      {:ok, ast} ->
+        ast_string = ast_to_string(ast)
+        :crypto.hash(:sha256, ast_string) |> Base.encode16(case: :lower)
+      
+      {:error, _reason} ->
+        # Fallback to normalized hash if AST parsing fails
+        Logger.warning("AST parsing failed, using normalized hash", language: language)
+        hash_normalized(code)
+    end
+  end
+
+  defp parse_code_to_ast(code, language) do
+    case language do
+      "elixir" ->
+        parse_elixir_ast(code)
+      "rust" ->
+        parse_rust_ast(code)
+      "javascript" ->
+        parse_javascript_ast(code)
+      "python" ->
+        parse_python_ast(code)
+      _ ->
+        # For unsupported languages, use normalized hash
+        {:error, :unsupported_language}
+    end
+  end
+
+  defp parse_elixir_ast(code) do
+    # Use Code.string_to_quoted for Elixir AST parsing
+    case Code.string_to_quoted(code) do
+      {:ok, ast} -> {:ok, ast}
+      {:error, _reason} -> {:error, :parse_failed}
+    end
+  end
+
+  defp parse_rust_ast(code) do
+    # For Rust, we would use a Rust parser via NIF or external service
+    # For now, create a simple structure-based representation
+    {:ok, %{
+      type: "rust_file",
+      functions: extract_rust_functions(code),
+      structs: extract_rust_structs(code),
+      impls: extract_rust_impls(code)
+    }}
+  end
+
+  defp parse_javascript_ast(code) do
+    # For JavaScript, we would use a JS parser
+    # For now, create a simple structure-based representation
+    {:ok, %{
+      type: "javascript_file",
+      functions: extract_js_functions(code),
+      classes: extract_js_classes(code),
+      variables: extract_js_variables(code)
+    }}
+  end
+
+  defp parse_python_ast(code) do
+    # For Python, we would use a Python parser
+    # For now, create a simple structure-based representation
+    {:ok, %{
+      type: "python_file",
+      functions: extract_python_functions(code),
+      classes: extract_python_classes(code),
+      imports: extract_python_imports(code)
+    }}
+  end
+
+  defp ast_to_string(ast) when is_list(ast) do
+    ast
+    |> Enum.map(&ast_to_string/1)
+    |> Enum.join("")
+  end
+
+  defp ast_to_string(ast) when is_tuple(ast) do
+    ast
+    |> Tuple.to_list()
+    |> Enum.map(&ast_to_string/1)
+    |> Enum.join("")
+  end
+
+  defp ast_to_string(ast) when is_atom(ast) do
+    Atom.to_string(ast)
+  end
+
+  defp ast_to_string(ast) when is_binary(ast) do
+    ast
+  end
+
+  defp ast_to_string(ast) when is_map(ast) do
+    ast
+    |> Map.keys()
+    |> Enum.sort()
+    |> Enum.map(fn key ->
+      "#{key}:#{ast_to_string(Map.get(ast, key))}"
+    end)
+    |> Enum.join("|")
+  end
+
+  defp ast_to_string(ast) do
+    inspect(ast)
+  end
+
+  # Helper functions for extracting language-specific structures
+  defp extract_rust_functions(code) do
+    # Extract Rust function signatures
+    Regex.scan(~r/fn\s+(\w+)\s*\([^)]*\)\s*->\s*[^{]+/, code)
+    |> Enum.map(fn [_, name] -> name end)
+  end
+
+  defp extract_rust_structs(code) do
+    # Extract Rust struct definitions
+    Regex.scan(~r/struct\s+(\w+)\s*\{[^}]*\}/, code)
+    |> Enum.map(fn [_, name] -> name end)
+  end
+
+  defp extract_rust_impls(code) do
+    # Extract Rust impl blocks
+    Regex.scan(~r/impl\s+(\w+)\s*for\s+(\w+)/, code)
+    |> Enum.map(fn [_, trait, struct] -> "#{trait} for #{struct}" end)
+  end
+
+  defp extract_js_functions(code) do
+    # Extract JavaScript function names
+    Regex.scan(~r/function\s+(\w+)\s*\(/, code)
+    |> Enum.map(fn [_, name] -> name end)
+  end
+
+  defp extract_js_classes(code) do
+    # Extract JavaScript class names
+    Regex.scan(~r/class\s+(\w+)/, code)
+    |> Enum.map(fn [_, name] -> name end)
+  end
+
+  defp extract_js_variables(code) do
+    # Extract JavaScript variable declarations
+    Regex.scan(~r/(?:let|const|var)\s+(\w+)/, code)
+    |> Enum.map(fn [_, name] -> name end)
+  end
+
+  defp extract_python_functions(code) do
+    # Extract Python function names
+    Regex.scan(~r/def\s+(\w+)\s*\(/, code)
+    |> Enum.map(fn [_, name] -> name end)
+  end
+
+  defp extract_python_classes(code) do
+    # Extract Python class names
+    Regex.scan(~r/class\s+(\w+)/, code)
+    |> Enum.map(fn [_, name] -> name end)
+  end
+
+  defp extract_python_imports(code) do
+    # Extract Python imports
+    Regex.scan(~r/(?:from\s+(\w+)\s+)?import\s+(\w+)/, code)
+    |> Enum.map(fn [_, module, name] -> 
+      if module != "", do: "#{module}.#{name}", else: name
+    end)
   end
 
   defp extract_pattern_signature(code, language) do

@@ -162,6 +162,10 @@ defmodule Singularity.Application do
       Singularity.Planning.StoryDecomposer,
       # Start the work plan API
       Singularity.Planning.WorkPlanAPI,
+      # Start the TODO swarm coordinator
+      Singularity.Todos.TodoSwarmCoordinator,
+      # Start the TODO NATS interface
+      Singularity.Todos.TodoNatsInterface,
       # Start the embedding quality tracker
       Singularity.Search.EmbeddingQualityTracker,
       # Start the source code analyzer

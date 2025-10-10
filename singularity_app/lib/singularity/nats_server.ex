@@ -186,13 +186,13 @@ defmodule Singularity.NatsServer do
   end
 
   defp route_to_service(:llm, request, complexity) do
-    # Use LLM service with complexity-aware model selection
+    # Use centralized LLM service with complexity-aware model selection
     messages = request["data"]["messages"] || []
     task_type = request["data"]["task_type"] || "general"
 
-    LLMService.call_llm(
-      messages: messages,
-      complexity: complexity,
+    Singularity.LLM.Service.call(
+      complexity,
+      messages,
       task_type: task_type
     )
   end
@@ -220,12 +220,31 @@ defmodule Singularity.NatsServer do
   end
 
   defp route_to_service(:prompts, request, complexity) do
-    # Use prompt engine
+    # Use prompt engine via NATS
     context = request["data"]["context"] || ""
     language = request["data"]["language"] || "auto"
+    prompt_type = request["data"]["prompt_type"] || "general"
 
-    # TODO: Implement prompt engine NATS call
-    {:ok, %{prompt: "Generated prompt for #{context} in #{language}"}}
+    # Call prompt engine via NATS
+    case Singularity.NatsClient.request("prompt.generate", Jason.encode!(%{
+      context: context,
+      language: language,
+      prompt_type: prompt_type,
+      complexity: complexity
+    }), timeout: 10_000) do
+      {:ok, response} ->
+        case Jason.decode(response.data) do
+          {:ok, data} -> {:ok, data}
+          {:error, reason} -> 
+            Logger.error("Failed to decode prompt response", reason: reason)
+            {:error, :json_decode_error}
+        end
+      
+      {:error, reason} ->
+        Logger.error("Prompt engine NATS call failed", reason: reason)
+        # Fallback to simple prompt generation
+        {:ok, %{prompt: "Generated prompt for #{context} in #{language}"}}
+    end
   end
 
   # Build NATS response format

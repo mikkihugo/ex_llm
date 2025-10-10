@@ -160,13 +160,64 @@ defmodule Singularity.Planning.StoryDecomposer do
   ## Helpers
 
   defp call_llm(prompt, opts) do
-    # Use LLM.Service via NATS (supports all providers)
+    # Delegate to the NATS-based `ai-server` for centralized handling
     model = Keyword.get(opts, :model, "claude-sonnet-4.5")
     messages = [%{role: "user", content: prompt}]
 
     case Service.call(model, messages, opts) do
       {:ok, %{text: text}} -> {:ok, text}
-      error -> error
+      {:error, reason} ->
+        Logger.error("LLM call failed: #{inspect(reason)}")
+        # Add fallback mechanisms for LLM failures
+        case retry_with_fallback(model, messages, opts, 1) do
+          {:ok, %{text: text}} -> {:ok, text}
+          {:error, fallback_reason} ->
+            Logger.error("LLM fallback also failed: #{inspect(fallback_reason)}")
+            {:error, fallback_reason}
+        end
     end
   end
+
+  # Fallback mechanisms for LLM failures with retry logic and alternative providers
+  defp retry_with_fallback(model, messages, opts, attempt) when attempt <= 3 do
+    # Try alternative models based on complexity
+    fallback_model = get_fallback_model(model, attempt)
+    
+    Logger.info("Retrying LLM call with fallback model", 
+      original_model: model,
+      fallback_model: fallback_model,
+      attempt: attempt
+    )
+    
+    case Service.call(fallback_model, messages, opts) do
+      {:ok, response} -> {:ok, response}
+      {:error, _reason} when attempt < 3 ->
+        # Wait before retry (exponential backoff)
+        Process.sleep(1000 * attempt)
+        retry_with_fallback(model, messages, opts, attempt + 1)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp retry_with_fallback(_model, _messages, _opts, _attempt) do
+    {:error, :max_retries_exceeded}
+  end
+
+  defp get_fallback_model(original_model, attempt) do
+    case {original_model, attempt} do
+      {"claude-sonnet-4.5", 1} -> "claude-3-5-sonnet-20241022"
+      {"claude-sonnet-4.5", 2} -> "gemini-2.5-pro"
+      {"claude-sonnet-4.5", 3} -> "gpt-5-codex"
+      {"claude-3-5-sonnet-20241022", 1} -> "claude-sonnet-4.5"
+      {"claude-3-5-sonnet-20241022", 2} -> "gemini-2.5-pro"
+      {"claude-3-5-sonnet-20241022", 3} -> "gpt-5-codex"
+      {"gemini-2.5-pro", 1} -> "claude-sonnet-4.5"
+      {"gemini-2.5-pro", 2} -> "claude-3-5-sonnet-20241022"
+      {"gemini-2.5-pro", 3} -> "gpt-5-codex"
+      _ -> "claude-sonnet-4.5"  # Default fallback
+    end
+  end
+
+  # TODO: Ensure the story decomposition process integrates with the SPARC completion phase for final code generation.
+  # TODO: Add metrics to evaluate the effectiveness of story decomposition in producing actionable tasks.
 end

@@ -476,7 +476,26 @@ pub struct BusinessAnalyzer {
 
 /// Interface to fact-system for business analysis knowledge
 pub struct FactSystemInterface {
-    // PSEUDO CODE: Interface to fact-system for business analysis knowledge
+    nats_client: NatsClient, // Replace with actual NATS client type
+}
+
+impl FactSystemInterface {
+    /// Creates a new FactSystemInterface with the given NATS client
+    pub fn new(nats_client: NatsClient) -> Self {
+        Self { nats_client }
+    }
+
+    /// Queries the fact system for a specific fact
+    pub fn query_fact(&self, fact_id: &str) -> Result<Fact, FactSystemError> {
+        // Implement NATS query logic here
+        unimplemented!("Query fact logic")
+    }
+
+    /// Updates a fact in the fact system
+    pub fn update_fact(&self, fact: Fact) -> Result<(), FactSystemError> {
+        // Implement NATS update logic here
+        unimplemented!("Update fact logic")
+    }
 }
 
 /// Business domain pattern
@@ -791,8 +810,21 @@ impl BusinessAnalyzer {
 }
 
 impl FactSystemInterface {
-    pub fn new() -> Self {
-        Self {}
+    /// Creates a new FactSystemInterface with the given NATS client
+    pub fn new(nats_client: NatsClient) -> Self {
+        Self { nats_client }
+    }
+
+    /// Queries the fact system for a specific fact
+    pub fn query_fact(&self, fact_id: &str) -> Result<Fact, FactSystemError> {
+        // Implement NATS query logic here
+        unimplemented!("Query fact logic")
+    }
+
+    /// Updates a fact in the fact system
+    pub fn update_fact(&self, fact: Fact) -> Result<(), FactSystemError> {
+        // Implement NATS update logic here
+        unimplemented!("Update fact logic")
     }
     
     // PSEUDO CODE: These methods would integrate with the actual fact-system
