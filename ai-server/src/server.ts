@@ -36,6 +36,8 @@ import { ElixirBridge } from './elixir-bridge';
 import { analyzeTaskComplexity, selectCodexModelForCoding } from './task-complexity';
 import { jules, createJulesModel } from './providers/google-ai-jules';
 import { buildModelCatalog, type ProviderWithModels, type ProviderWithMetadata } from './model-registry';
+import { logger } from './logger.js';
+import { metrics } from './metrics.js';
 
 // Load credentials
 const green = '\x1b[32m';
@@ -726,20 +728,43 @@ Bun.serve({
         return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
       }
 
+      const startTime = Date.now();
       try {
         const body = await req.json() as any;
         const { request: chatRequest, model: modelEntry } = await convertOpenAIChatCompletionRequest(body);
 
         // STREAMING: Use new streamChatCompletion()
         if (chatRequest.stream) {
-          return await streamChatCompletion(chatRequest, modelEntry);
+          const response = await streamChatCompletion(chatRequest, modelEntry);
+          const duration = Date.now() - startTime;
+          metrics.recordRequest('chat_completions_stream', duration);
+          metrics.recordModelUsage(chatRequest.provider, chatRequest.model);
+          logger.info(`Chat completion (streaming) completed in ${duration}ms`, {
+            provider: chatRequest.provider,
+            model: chatRequest.model
+          });
+          return response;
         }
 
         // NON-STREAMING: Use new generateChatCompletion()
         const result = await generateChatCompletion(chatRequest);
         const responsePayload = buildOpenAIChatResponse(result, modelEntry);
+        const duration = Date.now() - startTime;
+        
+        // Record metrics
+        metrics.recordRequest('chat_completions', duration);
+        metrics.recordModelUsage(chatRequest.provider, chatRequest.model, result.usage?.totalTokens);
+        logger.info(`Chat completion completed in ${duration}ms`, {
+          provider: chatRequest.provider,
+          model: chatRequest.model,
+          tokens: result.usage?.totalTokens
+        });
+        
         return new Response(JSON.stringify(responsePayload), { headers });
       } catch (error: any) {
+        const duration = Date.now() - startTime;
+        metrics.recordRequest('chat_completions', duration, true);
+        logger.error('Error handling /v1/chat/completions:', error.message);
         console.error('Error handling /v1/chat/completions:', error);
         const clientError =
           error?.message?.startsWith('Unknown model') ||
@@ -817,11 +842,33 @@ Bun.serve({
 
     // GET /health
     if (url.pathname === '/health') {
+      const health = {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        models: {
+          count: MODELS.length,
+          providers: ['gemini-code', 'claude-code', 'openai-codex', 'google-jules', 'github-copilot', 'cursor-agent-cli', 'github-models']
+        },
+        nats: elixirBridge.isConnected() ? 'connected' : 'disconnected',
+        memory: {
+          heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          rss: Math.round(process.memoryUsage().rss / 1024 / 1024)
+        }
+      };
+      
       return new Response(
-        JSON.stringify({
-          status: 'ok',
-          providers: ['gemini-code', 'claude-code', 'openai-codex', 'google-jules', 'github-copilot', 'cursor-agent-cli', 'github-models'],
-        }),
+        JSON.stringify(health, null, 2),
+        { headers }
+      );
+    }
+
+    // GET /metrics - Basic metrics for monitoring
+    if (url.pathname === '/metrics') {
+      const metricsData = metrics.getMetrics();
+      return new Response(
+        JSON.stringify(metricsData, null, 2),
         { headers }
       );
     }
@@ -852,6 +899,7 @@ Bun.serve({
       error: 'Not found',
       endpoints: [
         'GET  /health',
+        'GET  /metrics',
         'GET  /v1/models',
         'POST /v1/chat/completions',
         'GET  /copilot/auth/start',
@@ -866,7 +914,7 @@ Bun.serve({
 });
 
 console.log(`${green}🚀${reset} Server ready at ${bold}http://localhost:${PORT}${reset}`);
-console.log(`${bold}🔗 Endpoints:${reset} /health  /v1/models  /v1/chat/completions`);
+console.log(`${bold}🔗 Endpoints:${reset} /health  /metrics  /v1/models  /v1/chat/completions`);
 console.log(`${bold}✨ Refactored:${reset} Using AI SDK streaming utilities (~100 lines removed)`);
 
 // Start NATS handler for Elixir integration

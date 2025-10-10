@@ -12,13 +12,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **Speed & Security** - Not prioritized (internal use only, no scale requirements)
 
 **What it does:**
-- Autonomous AI agents (Elixir/Gleam/Rust)
-- GPU-accelerated semantic code search (RTX 4080 + pgvector)
-- Living knowledge base (Git ←→ PostgreSQL bidirectional learning)
-- Multi-AI provider orchestration (Claude, Gemini, OpenAI, Copilot)
-- Distributed messaging (NATS with JetStream)
+- **6 Autonomous AI Agents** (Self-Improving, Cost-Optimized, Architecture, Technology, Refactoring, Chat)
+- **8 Rust NIF Engines** via Rustler (Architecture, Code Analysis, Parser, Quality, Knowledge, Embedding, Semantic, Prompt)
+- **3 Central_Cloud Services** (Framework Learning Agent, Package Intelligence, Knowledge Cache)
+- **GPU-Accelerated Search** (RTX 4080 + pgvector for semantic code search)
+- **Living Knowledge Base** (Git ←→ PostgreSQL bidirectional learning)
+- **Multi-AI Orchestration** (Claude, Gemini, OpenAI, Copilot via NATS)
+- **Distributed Messaging** (NATS with JetStream)
 
 **Environment:** All runs in Nix (dev/test/prod) with single shared PostgreSQL database.
+
+## Complete Documentation
+
+**Visual Architecture:** See **SYSTEM_FLOWS.md** - 22 comprehensive Mermaid diagrams covering:
+- Application flows (10 diagrams)
+- Database flows (8 diagrams)
+- Agent flows (4 diagrams)
+
+**Rust Architecture:** See **RUST_ENGINES_INVENTORY.md** - Complete NIF and service inventory:
+- 8 NIF modules (loaded into Singularity via Rustler)
+- 3 Central_cloud services (Framework, Package Intel, Knowledge Cache)
+- NIF function mapping (Elixir → Rust)
+- Reorganization plan with feature preservation
+
+**Agent System:** See **AGENTS.md** - Complete agent documentation:
+- 6 agent types with specialized capabilities
+- Agent lifecycle and supervision
+- Flow tracking and cost optimization
+- 23 comprehensive tests
+
+**Production Ready:** See **PRODUCTION_FIXES_IMPLEMENTED.md**:
+- AI server error handling (NATS safety, timeouts, backpressure)
+- File logging and metrics collection
+- Enhanced health endpoints
 
 ## Technology Stack
 

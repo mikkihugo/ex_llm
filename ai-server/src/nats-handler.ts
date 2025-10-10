@@ -21,6 +21,8 @@ import { selectOpenRouterModel } from './openrouter-selector.js';
 import { MODEL_CAPABILITIES } from './data/model-capabilities-loader.js';
 import { convertOpenAIToolsToAISDK, type OpenAITool } from './tool-converter.js';
 import { analyzeTaskComplexity, type TaskComplexity } from './task-complexity.js';
+import { logger } from './logger.js';
+import { metrics } from './metrics.js';
 
 type TaskType = 'general' | 'architect' | 'coder' | 'qa';
 
@@ -187,6 +189,8 @@ class NATSHandler {
   private nc: NatsConnection | null = null;
   private subscriptions: Subscription[] = [];
   private subscriptionTasks: Promise<void>[] = [];
+  private processingCount: number = 0;
+  private readonly MAX_CONCURRENT = 10;  // Maximum concurrent message processing
 
   async connect() {
     try {
@@ -214,35 +218,82 @@ class NATSHandler {
     this.subscriptions.push(subscription);
 
     const processor = this.handleLLMRequestStream(subscription);
-    this.subscriptionTasks.push(processor);
-
-    processor.catch(error => {
+    
+    // Track task and clean up on error
+    const taskWithCleanup = processor.catch(error => {
       console.error('❌ Unhandled error in LLM request stream:', error);
+      
+      // Remove from tracking
+      const index = this.subscriptionTasks.indexOf(taskWithCleanup);
+      if (index > -1) {
+        this.subscriptionTasks.splice(index, 1);
+      }
+      
+      throw error; // Re-throw to maintain error visibility
     });
+    
+    this.subscriptionTasks.push(taskWithCleanup);
   }
 
   private async handleLLMRequestStream(subscription: Subscription) {
     for await (const msg of subscription) {
-      let request: LLMRequest | null = null;
-      try {
-        request = JSON.parse(msg.data.toString()) as LLMRequest;
-        this.validateRequest(request);
-        console.log('📨 Received LLM request:', request.model);
-
-        const response = await this.processLLMRequest(request);
-        await this.publishResponse(response);
-      } catch (error) {
-        console.error('❌ Error processing LLM request:', error);
-
-        const errorResponse: LLMError = {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          error_code: this.extractErrorCode(error),
-          correlation_id: request?.correlation_id,
-          timestamp: new Date().toISOString()
-        };
-
-        await this.publishError(errorResponse);
+      // Backpressure: Limit concurrent processing
+      if (this.processingCount >= this.MAX_CONCURRENT) {
+        console.warn(`⚠️  Max concurrent processing (${this.MAX_CONCURRENT}) reached - NAK message`);
+        msg.nak(); // Negative acknowledge - requeue message
+        continue;
       }
+
+      // Process message asynchronously with concurrency tracking
+      this.processingCount++;
+      
+      this.handleSingleLLMRequest(msg)
+        .finally(() => {
+          this.processingCount--;
+        });
+    }
+  }
+
+  private async handleSingleLLMRequest(msg: any) {
+    let request: LLMRequest | null = null;
+    const startTime = Date.now();
+    
+    try {
+      request = JSON.parse(msg.data.toString()) as LLMRequest;
+      this.validateRequest(request);
+      logger.info('📨 Received LLM request via NATS', { model: request.model, correlationId: request.correlation_id });
+
+      const response = await this.processLLMRequest(request);
+      await this.publishResponse(response);
+      
+      const duration = Date.now() - startTime;
+      metrics.recordRequest('nats_llm_request', duration);
+      if (response.model) {
+        const [provider, model] = response.model.split(':');
+        metrics.recordModelUsage(provider || 'unknown', model || response.model, response.tokens_used);
+      }
+      logger.info('✅ NATS LLM request completed', { 
+        model: response.model, 
+        duration: `${duration}ms`,
+        correlationId: request.correlation_id 
+      });
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      metrics.recordRequest('nats_llm_request', duration, true);
+      logger.error('❌ Error processing LLM request via NATS', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        correlationId: request?.correlation_id 
+      });
+      console.error('❌ Error processing LLM request:', error);
+
+      const errorResponse: LLMError = {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        error_code: this.extractErrorCode(error),
+        correlation_id: request?.correlation_id,
+        timestamp: new Date().toISOString()
+      };
+
+      await this.publishError(errorResponse);
     }
   }
 
@@ -312,8 +363,31 @@ class NATSHandler {
       aiSDKTools = convertOpenAIToolsToAISDK(tools, async (toolName, args) => {
         // Execute tool by calling Elixir via NATS
         console.log(`🔧 Executing tool: ${toolName}`, args);
-        const result = await this.nc!.request(`tools.execute.${toolName}`, JSON.stringify(args));
-        return JSON.parse(result.data.toString());
+        
+        // Validate NATS connection
+        if (!this.nc) {
+          throw new Error('NATS not connected - cannot execute tool');
+        }
+        
+        try {
+          // Execute with timeout (30 seconds)
+          const result = await this.nc.request(
+            `tools.execute.${toolName}`, 
+            JSON.stringify(args),
+            { timeout: 30000 }
+          );
+          
+          // Parse response with error handling
+          try {
+            return JSON.parse(result.data.toString());
+          } catch (parseError) {
+            console.error(`❌ Failed to parse tool response for ${toolName}:`, parseError);
+            throw new Error(`Invalid JSON response from tool ${toolName}`);
+          }
+        } catch (natsError) {
+          console.error(`❌ NATS request failed for tool ${toolName}:`, natsError);
+          throw natsError;
+        }
       });
     }
 

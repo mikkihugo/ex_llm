@@ -77,6 +77,15 @@ singularity_app/
 
 ## Quick Start (Nix-only)
 
+**📚 Complete Documentation:**
+- **🚀 PROTOTYPE_LAUNCH_QUICKSTART.md** - 30-minute launch guide
+- **📋 PROTOTYPE_LAUNCH_READINESS.md** - Full evaluation (83% complete, ready for launch)
+- **📊 SYSTEM_FLOWS.md** - 22 Mermaid diagrams (application + database + agent flows)
+- **🦀 RUST_ENGINES_INVENTORY.md** - 8 NIFs + 3 services complete inventory
+- **🤖 AGENTS.md** - Agent system documentation (6 agents + supporting systems)
+- **🔧 PRODUCTION_FIXES_IMPLEMENTED.md** - Error handling + monitoring details
+- **🔍 verify-launch.sh** - Automated readiness verification script
+
 ### 1. Enter Nix Shell
 ```bash
 nix develop   # Or: direnv allow

@@ -1,103 +1,289 @@
-# AGENTS.md
+# Agent System Documentation
 
-## Code Refactoring with `awk` - Large File Breakdown Strategy
+Complete documentation for Singularity's autonomous agent system.
 
-This document describes the systematic approach for refactoring large Rust files (1000+ lines) into smaller, maintainable modules while preserving all functionality.
+## Overview
 
-## Problem
+Singularity implements a sophisticated multi-agent system with **6 agent types**, each specialized for different tasks. All agents share common infrastructure for supervision, flow tracking, and cost optimization.
 
-Large files become unmaintainable:
-- `naming_conventions.rs` - 3154 lines
-- `analyzer.rs` - 1900+ lines  
-- `quality_engine/src/lib.rs` - 1000+ lines
+## Agent Types
 
-**Goal**: Break into logical modules without losing any functionality.
+### 1. Self-Improving Agent
+**Purpose:** Autonomous evolution based on performance metrics
 
-## Solution: `awk`-Based Function Extraction
+**Lifecycle States:**
+- `Idle` → `Observing` → `Evaluating` → `Generating` → `Validating` → `Hot Reload` → `Validation Wait`
 
-### 1. Identify Function Patterns
+**Key Features:**
+- Metrics-based decision making
+- Autonomy Decider scoring (success rate, task completion, error rate)
+- Hot reload validation with fallback
+- Flow tracker integration for PostgreSQL audit
 
-Use `awk` with regex patterns to extract related functions:
+**Code:** `lib/singularity/agent.ex`
 
-```bash
-# Extract all suggest_* functions
-awk '/fn suggest_/,/^    }/' large_file.rs > suggest_functions.rs
+### 2. Cost-Optimized Agent  
+**Purpose:** Minimize LLM costs using rules-first strategy
 
-# Extract all generate_* functions  
-awk '/fn generate_/,/^    }/' large_file.rs > generate_functions.rs
+**Decision Flow:**
+1. **Phase 1: Rules** - Check rule engine (Cachex + PostgreSQL) - FREE
+2. **Phase 2: Cache** - Check LLM response cache - FREE  
+3. **Phase 3: LLM** - Fallback to LLM only if needed - $$
 
-# Extract all validate_* functions
-awk '/fn validate_/,/^    }/' large_file.rs > validate_functions.rs
+**Cost Tracking:**
+- Lifetime cost accumulation
+- Per-task cost calculation
+- Cost efficiency metrics
 
-# Extract all to_* functions (conversions)
-awk '/fn to_/,/^    }/' large_file.rs > to_functions.rs
+**Code:** `lib/singularity/agents/cost_optimized_agent.ex`
 
-# Extract all extract_* functions
-awk '/fn extract_/,/^    }/' large_file.rs > extract_functions.rs
+### 3. Architecture Agent
+**Purpose:** System design analysis and recommendations
+
+**Capabilities:**
+- Architecture pattern detection
+- Design quality assessment
+- Naming convention validation
+
+### 4. Technology Agent
+**Purpose:** Tech stack detection and analysis
+
+**Capabilities:**
+- Framework detection (30+ frameworks)
+- Language identification
+- Dependency analysis
+
+### 5. Refactoring Agent
+**Purpose:** Code quality improvements
+
+**Capabilities:**
+- Code smell detection
+- Refactoring suggestions
+- Quality metrics calculation
+
+### 6. Chat Conversation Agent
+**Purpose:** Interactive AI conversations
+
+**Capabilities:**
+- Multi-turn dialogue
+- Context management
+- Tool execution integration
+
+## Supporting Systems
+
+### Autonomy Decider
+**Purpose:** Calculate improvement scores and make evolution decisions
+
+**Metrics:**
+- Success rate (successful tasks / total tasks)
+- Task completion rate  
+- Error rate
+- Response time
+
+**Scoring Algorithm:**
+```elixir
+score = (success_rate * 0.4) + (completion_rate * 0.3) + 
+        (1 - error_rate) * 0.2 + (speed_factor * 0.1)
 ```
 
-### 2. Validate Extraction
+**Code:** `lib/singularity/autonomy/decider.ex`
 
-Check function counts to ensure nothing is lost:
+### Autonomy Limiter
+**Purpose:** Rate limiting and budget control
 
-```bash
-# Count functions in original
-grep -c 'fn ' large_file.rs
+**Limits:**
+- Max improvements per day (configurable)
+- Budget thresholds
+- Concurrent operation limits
 
-# Count functions in extractions
-grep -c 'fn ' *_functions.rs
+**Code:** `lib/singularity/autonomy/limiter.ex`
 
-# Verify totals match
-echo "Original: $(grep -c 'fn ' large_file.rs)"
-echo "Extracted: $(grep -c 'fn ' *_functions.rs)"
+### Rule Engine
+**Purpose:** Fast, free rule-based decisions
+
+**Storage:**
+- L1: Cachex (in-memory)
+- L2: PostgreSQL (persistent)
+
+**Performance:** Sub-millisecond lookups, zero LLM cost
+
+**Code:** `lib/singularity/autonomy/rule_engine.ex`
+
+### Hot Reload Manager
+**Purpose:** Dynamic code compilation and activation
+
+**Process:**
+1. Generate new code
+2. Compile to BEAM
+3. Validate functionality
+4. Activate or rollback
+
+**Safety:** Always maintains rollback capability
+
+**Code:** `lib/singularity/hot_reload.ex`
+
+### Code Store
+**Purpose:** Versioned code storage
+
+**Features:**
+- Version control for generated code
+- Diff tracking
+- Rollback support
+
+### Flow Tracker
+**Purpose:** PostgreSQL-based operation tracking
+
+**Data Tracked:**
+- Agent operations
+- Improvement attempts
+- Performance metrics
+- Error conditions
+
+**Schema:** `executions` table in PostgreSQL
+
+**Code:** `lib/singularity/flow_tracker.ex`
+
+## Agent Supervision
+
+**Supervision Tree:**
+```
+Singularity.Supervisor
+├── Agent Supervisor (one_for_one)
+│   ├── Self-Improving Agent
+│   ├── Cost-Optimized Agent
+│   ├── Architecture Agent
+│   ├── Technology Agent
+│   ├── Refactoring Agent
+│   └── Chat Agent
+├── Autonomy Supervisor
+│   ├── Decider
+│   ├── Limiter
+│   └── Rule Engine
+└── Infrastructure Supervisor
+    ├── Hot Reload Manager
+    ├── Code Store
+    └── Flow Tracker
 ```
 
-### 3. Organize into Logical Modules
+**Restart Strategy:** `one_for_one` - isolated failure recovery
 
-Group related functions into coherent modules:
+## Agent Communication
 
-```bash
-# Naming suggestions (all suggest + generate + extract)
-cat suggest_functions.rs generate_functions.rs extract_functions.rs > naming_suggestions.rs
-
-# Utilities (validate + convert)
-cat validate_functions.rs to_functions.rs > naming_utilities.rs
-
-# Architecture patterns
-cat architecture_functions.rs pattern_functions.rs > architecture_patterns.rs
+### Synchronous (`:call`)
+```elixir
+GenServer.call(agent_pid, {:execute_task, task})
 ```
 
-### 4. Create Module Structure
+### Asynchronous (`:cast`)  
+```elixir
+GenServer.cast(agent_pid, {:record_metric, metric})
+```
 
-Each new module needs:
+### NATS Messaging
+```elixir
+Gnat.request(conn, "agent.execute", payload)
+```
 
-```rust
-//! Module description
-//! 
-//! What this module does and why it exists.
+## Flow Diagrams
 
-use std::collections::HashMap;
-use anyhow::Result;
-use serde::{Deserialize, Serialize};
+See **SYSTEM_FLOWS.md** for comprehensive Mermaid diagrams:
 
-// Import dependencies
-use crate::other_module::{SomeType, OtherType};
+- **Diagram 19:** Agent Architecture Overview
+- **Diagram 20:** Self-Improving Agent Lifecycle
+- **Diagram 21:** Self-Improving Agent Sequence
+- **Diagram 22:** Cost-Optimized Agent Flow
 
-/// Main struct for this module
-pub struct ModuleName {
-    // fields
-}
+## Testing
 
-impl ModuleName {
-    /// Create new instance
-    pub fn new() -> Self {
-        // implementation
-    }
-    
-    // All extracted functions go here
-}
+**Comprehensive test suite:** `test/singularity/agent_flow_test.exs`
 
-impl Default for ModuleName {
+**23 tests covering:**
+- Self-Improving Agent Lifecycle (8 tests)
+- Cost-Optimized Agent Flow (4 tests)  
+- Agent Supervision & Recovery (3 tests)
+- Flow Tracking Integration (2 tests)
+- Agent Communication (3 tests)
+- Error Handling (3 tests)
+
+**Run tests:**
+```bash
+cd singularity_app
+mix test test/singularity/agent_flow_test.exs
+```
+
+## Agent Process Registry
+
+**Registration:**
+```elixir
+{:via, Registry, {Singularity.AgentRegistry, agent_id}}
+```
+
+**Lookup:**
+```elixir
+Registry.lookup(Singularity.AgentRegistry, agent_id)
+```
+
+**Benefits:**
+- Unique agent identification
+- Crash recovery with same ID
+- Process discovery
+
+## Key Metrics
+
+**Self-Improving Agent:**
+- Observation count
+- Evaluation score
+- Improvement queue length
+- Hot reload success rate
+
+**Cost-Optimized Agent:**
+- Rule hit rate (% of requests from rules)
+- Cache hit rate (% of requests from cache)
+- LLM fallback rate
+- Lifetime cost ($)
+- Average cost per task
+
+## Integration Points
+
+**With NATS:**
+- Agent task execution requests
+- Result publishing
+- Event broadcasting
+
+**With PostgreSQL:**
+- Flow tracking (executions table)
+- Rule storage (rules table)
+- LLM response cache (cache_llm_responses)
+- Code embeddings cache (cache_code_embeddings)
+
+**With Rust NIFs:**
+- Code quality analysis (QualityEngine NIF)
+- Architecture validation (ArchitectureEngine NIF)
+- Parsing (ParserEngine NIF)
+
+## Configuration
+
+**Environment Variables:**
+```bash
+IMP_LIMIT_PER_DAY=100              # Max improvements per day
+IMP_VALIDATION_DELAY_MS=30000     # Validation delay before finalizing
+MIN_CONFIDENCE_THRESHOLD=95       # Initial deployment confidence threshold
+```
+
+**Mix Config:**
+```elixir
+config :singularity,
+  agent_supervisor_strategy: :one_for_one,
+  agent_restart_strategy: :permanent,
+  max_improvements_per_day: 100
+```
+
+## See Also
+
+- **SYSTEM_FLOWS.md** - Visual flow diagrams
+- **CLAUDE.md** - Development guide
+- **README.md** - Quick start
+- **RUST_ENGINES_INVENTORY.md** - NIF engines used by agents
     fn default() -> Self {
         Self::new()
     }

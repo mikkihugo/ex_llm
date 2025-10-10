@@ -45,6 +45,10 @@ export class ElixirBridge {
     }
   }
 
+  isConnected(): boolean {
+    return this.connected;
+  }
+
   /**
    * Execute task through unified NATS server
    */
