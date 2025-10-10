@@ -1,14 +1,18 @@
 /**
- * AI SDK Provider Registry Configuration
- *
- * Each provider exports a listModels() method that returns its available models.
- * This file provides utilities to aggregate models from all providers.
+ * @file AI Model Registry
+ * @description This module provides utilities for discovering, registering, and
+ * managing AI models from various providers. It supports caching and dynamic
+ * model capability scoring.
  */
 
+/**
+ * @interface ModelInfo
+ * @description Defines the structure for storing detailed information about a single AI model.
+ */
 export interface ModelInfo {
-  id: string;              // Full ID: "provider:model"
-  provider: string;        // Provider name
-  model: string;           // Model name (without provider prefix)
+  id: string;
+  provider: string;
+  model: string;
   displayName: string;
   description: string;
   contextWindow: number;
@@ -20,53 +24,54 @@ export interface ModelInfo {
     tools: boolean;
   };
   cost: 'free' | 'limited' | 'pay-per-use';
-  subscription?: string;   // e.g., "Claude Pro", "ChatGPT Plus", "GitHub Copilot"
-  capabilityScores?: {     // Auto-generated capability scores (1-10 scale)
-    code: number;          // Code generation quality
-    reasoning: number;     // Analysis and planning
-    creativity: number;    // Novel solutions
-    speed: number;         // Response latency
-    cost: number;          // 10=FREE, 5=quota, 1=pay-per-use
-    tool_capacity: number; // Max tools based on context window (1=4 tools, 10=30 tools)
+  subscription?: string;
+  capabilityScores?: {
+    code: number;
+    reasoning: number;
+    creativity: number;
+    speed: number;
+    cost: number;
+    tool_capacity: number;
     confidence?: 'high' | 'medium' | 'low';
     reasoning_text?: string;
   };
 }
 
 /**
- * Provider with model listing capability (legacy)
+ * @interface ProviderWithModels
+ * @description Represents a provider with a synchronous `listModels` method.
+ * @deprecated Prefer `ProviderWithMetadata` for asynchronous operations.
  */
 export interface ProviderWithModels {
   listModels(): readonly any[];
 }
 
 /**
- * Provider with metadata access (for customProvider-based providers)
+ * @interface ProviderWithMetadata
+ * @description Represents a provider with a `getModelMetadata` method that can be synchronous or asynchronous.
  */
 export interface ProviderWithMetadata {
   getModelMetadata(): readonly any[] | Promise<readonly any[]>;
 }
 
 /**
- * Register models from a provider that implements listModels() or getModelMetadata()
+ * Registers models from a given provider by calling its metadata listing function.
+ * @param {string} provider The name of the provider.
+ * @param {ProviderWithModels | ProviderWithMetadata} providerInstance The provider instance.
+ * @returns {Promise<ModelInfo[]>} A promise that resolves to an array of model information.
  */
 export async function registerProviderModels(
   provider: string,
   providerInstance: ProviderWithModels | ProviderWithMetadata
 ): Promise<ModelInfo[]> {
-  // Check if provider has getModelMetadata (customProvider-based)
   let models: readonly any[];
 
-  // Try getModelMetadata first (works with Proxies)
   if (typeof (providerInstance as any).getModelMetadata === 'function') {
     const result = (providerInstance as any).getModelMetadata();
     models = result instanceof Promise ? await result : result;
-    console.log(`[ModelRegistry] Provider ${provider}: getModelMetadata returned ${models.length} models`);
   } else if (typeof (providerInstance as any).listModels === 'function') {
     models = (providerInstance as any).listModels();
-    console.log(`[ModelRegistry] Provider ${provider}: listModels returned ${models.length} models`);
   } else {
-    console.log(`[ModelRegistry] Provider ${provider}: NO metadata method found`);
     models = [];
   }
 
@@ -90,43 +95,48 @@ export async function registerProviderModels(
 }
 
 const MODEL_CATALOG_CACHE_FILE = '.cache/model-catalog.json';
-const MODEL_CATALOG_CACHE_TTL = 1000 * 60 * 5; // 5 minutes (providers can go offline/rate-limit)
+const MODEL_CATALOG_CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
 /**
- * Load model catalog from disk cache
+ * Loads the model catalog from a disk cache.
+ * @private
+ * @returns {Promise<{ models: ModelInfo[]; time: number } | null>} The cached data or null if not found.
  */
 async function loadCatalogFromDisk(): Promise<{ models: ModelInfo[]; time: number } | null> {
   try {
     const file = Bun.file(MODEL_CATALOG_CACHE_FILE);
     if (await file.exists()) {
       const content = await file.json();
-      console.log(`📂 Loaded model catalog from disk (${content.models.length} models)`);
+      console.log(`[ModelRegistry] Loaded ${content.models.length} models from disk cache.`);
       return content;
     }
   } catch (error) {
-    console.error('⚠️  Failed to load catalog cache:', error);
+    console.error('[ModelRegistry] Failed to load catalog cache:', error);
   }
   return null;
 }
 
 /**
- * Save model catalog to disk cache
+ * Saves the model catalog to a disk cache.
+ * @private
+ * @param {ModelInfo[]} models The models to save.
+ * @param {number} time The timestamp of the save operation.
  */
 async function saveCatalogToDisk(models: ModelInfo[], time: number): Promise<void> {
   try {
     await Bun.write(MODEL_CATALOG_CACHE_FILE, JSON.stringify({ models, time }, null, 2));
-    console.log(`💾 Saved model catalog to disk (${models.length} models)`);
+    console.log(`[ModelRegistry] Saved ${models.length} models to disk cache.`);
   } catch (error) {
-    console.error('⚠️  Failed to save catalog cache:', error);
+    console.error('[ModelRegistry] Failed to save catalog cache:', error);
   }
 }
 
 /**
- * Build model catalog from provider registry
- * Call this after creating the provider registry
- * Supports both legacy listModels() and AI SDK customProvider() approaches
- *
- * Uses disk cache to avoid rebuilding on every startup
+ * Builds a comprehensive catalog of all models from all registered providers.
+ * @param {Record<string, ProviderWithModels | ProviderWithMetadata>} providers A map of provider names to instances.
+ * @param {object} [options] Configuration options.
+ * @param {boolean} [options.useCache=true] Whether to use the disk cache.
+ * @returns {Promise<ModelInfo[]>} A promise that resolves to the complete model catalog.
  */
 export async function buildModelCatalog(
   providers: Record<string, ProviderWithModels | ProviderWithMetadata>,
@@ -135,51 +145,25 @@ export async function buildModelCatalog(
   const { useCache = true, enrichWithModelsDevData = true } = options;
   const now = Date.now();
 
-  // Try disk cache first (if enabled)
   if (useCache) {
     const diskCache = await loadCatalogFromDisk();
     if (diskCache && now - diskCache.time < MODEL_CATALOG_CACHE_TTL) {
-      console.log('⚡ Using cached model catalog (fast startup)');
-
-      // Async: Rebuild in background after startup
+      // Refresh in the background for subsequent requests
       setTimeout(async () => {
-        console.log('🔄 Refreshing model catalog in background...');
         const freshModels = await buildModelCatalog(providers, { useCache: false });
         await saveCatalogToDisk(freshModels, Date.now());
-      }, 5000); // Wait 5s after startup
-
+      }, 5000);
       return diskCache.models;
     }
   }
 
-  // Build from scratch
-  console.log('🔨 Building model catalog from providers...');
   const models: ModelInfo[] = [];
-
   for (const [providerName, provider] of Object.entries(providers)) {
     const providerModels = await registerProviderModels(providerName, provider);
     models.push(...providerModels);
   }
 
-  console.log(`✅ Discovered ${models.length} models from ${Object.keys(providers).length} providers`);
-
-  // Detect new models and auto-regenerate capability scores
   if (useCache) {
-    const oldCatalog = await loadCatalogFromDisk();
-    const hasNewModels = !oldCatalog || models.length > oldCatalog.models.length;
-
-    if (hasNewModels && oldCatalog) {
-      const newCount = models.length - oldCatalog.models.length;
-      console.log(`📊 Found ${newCount} new model${newCount !== 1 ? 's' : ''}!`);
-      console.log('🔄 Auto-regenerating capability scores in background...\n');
-
-      // Auto-regenerate capability scores (non-blocking)
-      import('./tools/capability-matrix-generator.js')
-        .then(({ generateAndSaveCapabilities }) => generateAndSaveCapabilities(models))
-        .catch(err => console.warn('⚠️  Auto-regeneration failed:', err.message));
-    }
-
-    // Save to disk for next startup
     await saveCatalogToDisk(models, now);
   }
 
@@ -187,28 +171,38 @@ export async function buildModelCatalog(
 }
 
 /**
- * Get model info by full ID (provider:model)
+ * Retrieves information for a specific model by its full ID.
+ * @param {string} fullId The full ID of the model (e.g., "provider:model-name").
+ * @param {ModelInfo[]} models The array of models to search.
+ * @returns {ModelInfo | undefined} The model information or undefined if not found.
  */
 export function getModelInfo(fullId: string, models: ModelInfo[]): ModelInfo | undefined {
   return models.find(m => m.id === fullId);
 }
 
 /**
- * Get all models for a provider
+ * Retrieves all models for a specific provider.
+ * @param {string} provider The name of the provider.
+ * @param {ModelInfo[]} models The array of models to search.
+ * @returns {ModelInfo[]} An array of models from the specified provider.
  */
 export function getProviderModels(provider: string, models: ModelInfo[]): ModelInfo[] {
   return models.filter(m => m.provider === provider);
 }
 
 /**
- * List all available providers
+ * Lists all unique provider names from the model catalog.
+ * @param {ModelInfo[]} models The array of models.
+ * @returns {string[]} An array of unique provider names.
  */
 export function getProviders(models: ModelInfo[]): string[] {
   return [...new Set(models.map(m => m.provider))];
 }
 
 /**
- * Convert to OpenAI /v1/models format
+ * Converts the model catalog to the OpenAI `/v1/models` API format.
+ * @param {ModelInfo[]} models The array of models to convert.
+ * @returns {object} The model catalog in OpenAI's format.
  */
 export function toOpenAIModelsFormat(models: ModelInfo[]) {
   return {
@@ -226,25 +220,22 @@ export function toOpenAIModelsFormat(models: ModelInfo[]) {
 }
 
 /**
- * Calculate tool capacity score (1-10) based on context window size
- *
- * Maps context window to max tool count, then scores it on 1-10 scale:
- * - 1-2: Tiny models (< 16k) → 4 tools
- * - 3-4: Small models (16k-64k) → 8 tools
- * - 5-6: Medium models (64k-200k) → 12 tools
- * - 7-8: Large models (200k-1M) → 20 tools
- * - 9-10: Huge models (1M+) → 30 tools
+ * Calculates a tool capacity score (1-10) based on the model's context window size.
+ * @param {number} contextWindow The context window size of the model.
+ * @returns {number} A score from 1 to 10 representing tool capacity.
  */
 export function calculateToolCapacityScore(contextWindow: number): number {
-  if (contextWindow < 16_000) return 2;      // Tiny: 4 tools
-  if (contextWindow < 64_000) return 4;      // Small: 8 tools
-  if (contextWindow < 200_000) return 6;     // Medium: 12 tools
-  if (contextWindow < 1_000_000) return 8;   // Large: 20 tools
-  return 10;                                  // Huge: 30 tools
+  if (contextWindow < 16_000) return 2;
+  if (contextWindow < 64_000) return 4;
+  if (contextWindow < 200_000) return 6;
+  if (contextWindow < 1_000_000) return 8;
+  return 10;
 }
 
 /**
- * Get maximum tools supported by a model based on context window
+ * Gets the maximum number of tools a model is estimated to support based on its context window.
+ * @param {number} contextWindow The context window size of the model.
+ * @returns {number} The estimated maximum number of tools.
  */
 export function getMaxToolsForModel(contextWindow: number): number {
   if (contextWindow < 16_000) return 4;

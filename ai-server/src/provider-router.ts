@@ -1,20 +1,21 @@
 /**
- * Provider Priority Routing with Rate Limit Tiers
- *
- * Routes requests to the best available provider based on:
- * - Subscription limits (unlimited > high > limited)
- * - Current usage/rate limits
- * - Model capabilities (tools, reasoning, vision)
- * - Cost tier (free > limited > pay-per-use)
+ * @file Provider Priority Routing and Rate Limiting
+ * @description This module defines the routing logic for selecting the best available AI provider
+ * based on a tiered system. It considers provider priority, subscription limits, model
+ * capabilities, cost, and rate limit quotas.
  */
 
+/**
+ * @interface ProviderTier
+ * @description Defines the configuration for a single provider tier.
+ */
 export interface ProviderTier {
-  priority: number;           // Lower = higher priority (1 is best)
-  quota: 'unlimited' | number; // Infinity or requests per period
+  priority: number;
+  quota: 'unlimited' | number;
   cost: 'free' | 'limited' | 'pay-per-use';
   subscription?: string;
   rateLimitPeriod?: 'hour' | 'day' | 'week' | 'month';
-  contextWindow?: number;     // Max context window
+  contextWindow?: number;
   capabilities?: {
     tools?: boolean;
     reasoning?: boolean;
@@ -22,50 +23,46 @@ export interface ProviderTier {
   };
 }
 
+/**
+ * @interface ProviderConfig
+ * @description A map of provider names to their tier configurations.
+ */
 export interface ProviderConfig {
   [provider: string]: ProviderTier;
 }
 
 /**
- * Provider Priority Configuration
- * Based on your subscriptions: ChatGPT Pro, Claude Max, Corporate Gemini, Copilot Enterprise
+ * @const {ProviderConfig} PROVIDER_TIERS
+ * @description The main configuration object that defines the priority and limits for each provider.
+ * This configuration is based on typical subscription plans and capabilities.
  */
 export const PROVIDER_TIERS: ProviderConfig = {
-  // ========================================
-  // TIER 1: UNLIMITED - Use as Default
-  // ========================================
-
+  // Tier 1: Unlimited usage, high-performance models. Default choice.
   'openai-codex': {
     priority: 1,
     quota: 'unlimited',
     cost: 'free',
-    subscription: 'ChatGPT 5 Pro ($200/month)',
+    subscription: 'ChatGPT 5 Pro',
     contextWindow: 200000,
     capabilities: { tools: true, reasoning: true, vision: false },
   },
-
   'claude-code': {
     priority: 1,
     quota: 'unlimited',
     cost: 'free',
-    subscription: 'Claude Max ($100-200/month)',
+    subscription: 'Claude Max',
     contextWindow: 200000,
     capabilities: { tools: true, reasoning: true, vision: true },
   },
-
   'gemini-code': {
     priority: 1,
     quota: 'unlimited',
     cost: 'free',
-    subscription: 'Gemini Code Assist (Professional)',
-    contextWindow: 1048576, // 1M tokens
+    subscription: 'Gemini Code Assist',
+    contextWindow: 1048576,
     capabilities: { tools: true, reasoning: false, vision: false },
   },
-
-  // ========================================
-  // TIER 2: HIGH LIMITS - Use Freely
-  // ========================================
-
+  // Tier 2: Unlimited free tiers, great for general use.
   'github-copilot-free': {
     priority: 2,
     quota: 'unlimited',
@@ -73,50 +70,41 @@ export const PROVIDER_TIERS: ProviderConfig = {
     subscription: 'GitHub Copilot Enterprise (free tier)',
     contextWindow: 128000,
     capabilities: { tools: true, reasoning: true, vision: false },
-    // Models: gpt-4.1, gpt-5-mini, grok-code-fast-1
   },
-
-  // ========================================
-  // TIER 3: LIMITED CONTEXT - Use for Experiments
-  // ========================================
-
+  // Tier 3: Limited context or capabilities, best for experimentation.
   'github-models': {
     priority: 3,
     quota: 500,
     rateLimitPeriod: 'day',
     cost: 'free',
     subscription: undefined,
-    contextWindow: 12000, // 8K in + 4K out (SMALL!)
+    contextWindow: 12000,
     capabilities: { tools: true, reasoning: false, vision: true },
-    // 27/49 models support tools - good for A/B testing!
   },
-
-  // ========================================
-  // TIER 4: QUOTA LIMITED - Edge Cases Only
-  // ========================================
-
+  // Tier 4: Quota-limited premium models, for specific or high-stakes tasks.
   'github-copilot-premium': {
     priority: 4,
     quota: 1000,
     rateLimitPeriod: 'month',
-    cost: 'free', // Treat as free within quota to use all 1000/month
+    cost: 'free', // Free within quota
     subscription: 'GitHub Copilot Enterprise (premium quota)',
     contextWindow: 200000,
     capabilities: { tools: true, reasoning: true, vision: true },
-    // Models: Claude Sonnet 4, Claude Opus 4, Gemini 2.5, o3, gpt-5-codex
-    // 1000 free requests/month, then $0.04/request - so use freely within quota!
   },
 };
 
 /**
- * Get provider tier by name
+ * Retrieves the tier configuration for a specific provider.
+ * @param {string} provider The name of the provider.
+ * @returns {ProviderTier | undefined} The provider's tier configuration, or undefined if not found.
  */
 export function getProviderTier(provider: string): ProviderTier | undefined {
   return PROVIDER_TIERS[provider];
 }
 
 /**
- * Get all providers sorted by priority
+ * Gets a list of all providers, sorted by their priority (lowest first).
+ * @returns {string[]} A sorted array of provider names.
  */
 export function getProvidersByPriority(): string[] {
   return Object.entries(PROVIDER_TIERS)
@@ -125,62 +113,47 @@ export function getProvidersByPriority(): string[] {
 }
 
 /**
- * Select best provider for a request based on requirements
+ * @interface SelectionCriteria
+ * @description Defines the criteria for selecting the best provider for a request.
  */
 export interface SelectionCriteria {
   requireTools?: boolean;
   requireReasoning?: boolean;
   requireVision?: boolean;
   contextSize?: number;
-  allowPremium?: boolean; // Allow Tier 4 (quota-limited)?
+  allowPremium?: boolean;
 }
 
+/**
+ * Selects the best provider based on a set of criteria.
+ * @param {SelectionCriteria} [criteria={}] The criteria for selecting a provider.
+ * @returns {string | null} The name of the best provider, or null if no suitable provider is found.
+ */
 export function selectProvider(criteria: SelectionCriteria = {}): string | null {
   const providers = getProvidersByPriority();
-
   for (const provider of providers) {
     const tier = PROVIDER_TIERS[provider];
-
-    // Skip Tier 4 unless explicitly allowed
-    if (tier.priority >= 4 && !criteria.allowPremium) {
-      continue;
-    }
-
-    // Check capabilities
-    if (criteria.requireTools && !tier.capabilities?.tools) {
-      continue;
-    }
-
-    if (criteria.requireReasoning && !tier.capabilities?.reasoning) {
-      continue;
-    }
-
-    if (criteria.requireVision && !tier.capabilities?.vision) {
-      continue;
-    }
-
-    // Check context window
-    if (criteria.contextSize && tier.contextWindow && criteria.contextSize > tier.contextWindow) {
-      continue;
-    }
-
-    // Found a match!
+    if (tier.priority >= 4 && !criteria.allowPremium) continue;
+    if (criteria.requireTools && !tier.capabilities?.tools) continue;
+    if (criteria.requireReasoning && !tier.capabilities?.reasoning) continue;
+    if (criteria.requireVision && !tier.capabilities?.vision) continue;
+    if (criteria.contextSize && tier.contextWindow && criteria.contextSize > tier.contextWindow) continue;
     return provider;
   }
-
   return null;
 }
 
 /**
- * Get recommended provider for A/B testing
- * Use GitHub Models (Tier 3) for experimentation with diverse models
+ * Gets the recommended provider for A/B testing.
+ * @returns {string} The name of the recommended provider.
  */
 export function getABTestingProvider(): string {
   return 'github-models';
 }
 
 /**
- * Usage tracking (in-memory for now)
+ * @interface UsageTracker
+ * @description An in-memory store for tracking provider usage against quotas.
  */
 interface UsageTracker {
   [provider: string]: {
@@ -192,96 +165,70 @@ interface UsageTracker {
 const usage: UsageTracker = {};
 
 /**
- * Check if provider has remaining quota
+ * Checks if a provider has remaining quota for the current period.
+ * @param {string} provider The name of the provider.
+ * @returns {boolean} True if the provider has quota, false otherwise.
  */
 export function hasQuota(provider: string): boolean {
   const tier = PROVIDER_TIERS[provider];
   if (!tier) return false;
-
-  // Unlimited quota
   if (tier.quota === 'unlimited') return true;
 
-  // Check usage
   const now = Date.now();
-  const usage_record = usage[provider];
-
-  if (!usage_record) {
-    return true; // No usage yet
-  }
-
-  // Reset if period expired
-  if (usage_record.resetAt < now) {
-    usage[provider] = { count: 0, resetAt: getResetTime(tier) };
+  const usageRecord = usage[provider];
+  if (!usageRecord || usageRecord.resetAt < now) {
     return true;
   }
-
-  // Check against quota
-  return usage_record.count < tier.quota;
+  return usageRecord.count < tier.quota;
 }
 
 /**
- * Record usage for a provider
+ * Records usage for a specific provider.
+ * @param {string} provider The name of the provider to record usage for.
  */
 export function recordUsage(provider: string): void {
   const tier = PROVIDER_TIERS[provider];
   if (!tier || tier.quota === 'unlimited') return;
 
   const now = Date.now();
-
   if (!usage[provider] || usage[provider].resetAt < now) {
-    usage[provider] = {
-      count: 1,
-      resetAt: getResetTime(tier),
-    };
+    usage[provider] = { count: 1, resetAt: getResetTime(tier) };
   } else {
     usage[provider].count++;
   }
 }
 
 /**
- * Get reset timestamp based on rate limit period
+ * Calculates the next reset time for a provider's quota.
+ * @private
+ * @param {ProviderTier} tier The provider's tier configuration.
+ * @returns {number} The timestamp for the next reset.
  */
 function getResetTime(tier: ProviderTier): number {
-  const now = Date.now();
-
+  const now = new Date();
   switch (tier.rateLimitPeriod) {
-    case 'hour':
-      return now + (60 * 60 * 1000);
-    case 'day':
-      return now + (24 * 60 * 60 * 1000);
-    case 'week':
-      return now + (7 * 24 * 60 * 60 * 1000);
-    case 'month':
-      return now + (30 * 24 * 60 * 60 * 1000);
-    default:
-      return now + (24 * 60 * 60 * 1000); // Default to 1 day
+    case 'hour': return now.setHours(now.getHours() + 1);
+    case 'day': return now.setDate(now.getDate() + 1);
+    case 'week': return now.setDate(now.getDate() + 7);
+    case 'month': return now.setMonth(now.getMonth() + 1);
+    default: return now.setDate(now.getDate() + 1);
   }
 }
 
 /**
- * Get usage statistics for all providers
+ * Gets the current usage statistics for all providers.
+ * @returns {Record<string, { used: number; quota: number | 'unlimited'; remaining: number | 'unlimited' }>} An object containing usage stats.
  */
 export function getUsageStats(): { [provider: string]: { used: number; quota: number | 'unlimited'; remaining: number | 'unlimited' } } {
   const stats: any = {};
-
   for (const [provider, tier] of Object.entries(PROVIDER_TIERS)) {
-    const usage_record = usage[provider];
-
-    if (tier.quota === 'unlimited') {
-      stats[provider] = {
-        used: usage_record?.count || 0,
-        quota: 'unlimited',
-        remaining: 'unlimited',
-      };
-    } else {
-      const used = usage_record?.count || 0;
-      stats[provider] = {
-        used,
-        quota: tier.quota,
-        remaining: Math.max(0, tier.quota - used),
-      };
-    }
+    const used = usage[provider]?.count || 0;
+    const quota = tier.quota;
+    stats[provider] = {
+      used,
+      quota,
+      remaining: quota === 'unlimited' ? 'unlimited' : Math.max(0, quota - used),
+    };
   }
-
   return stats;
 }

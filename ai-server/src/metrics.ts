@@ -1,11 +1,16 @@
 /**
- * Basic Metrics Collection
- * 
- * Tracks request counts, latencies, and errors for monitoring.
+ * @file Basic Metrics Collection
+ * @description This module provides a simple in-memory metrics collector for tracking
+ * key performance indicators (KPIs) of the AI server, such as request counts,
+ * latencies, errors, and model usage.
  */
 
 import { logger } from './logger.js';
 
+/**
+ * @interface MetricData
+ * @description Represents the data collected for a single metric.
+ */
 interface MetricData {
   count: number;
   totalTime?: number;
@@ -13,11 +18,20 @@ interface MetricData {
   lastUpdated: number;
 }
 
+/**
+ * @class MetricsCollector
+ * @description A singleton class for collecting and reporting application metrics.
+ */
 class MetricsCollector {
   private metrics: Map<string, MetricData> = new Map();
   private startTime: number = Date.now();
 
-  // Record a request
+  /**
+   * Records a request and its associated metadata.
+   * @param {string} endpoint The API endpoint that was called.
+   * @param {number} [duration] The duration of the request in milliseconds.
+   * @param {boolean} [error] Whether the request resulted in an error.
+   */
   recordRequest(endpoint: string, duration?: number, error?: boolean): void {
     const key = `request.${endpoint}`;
     const metric = this.metrics.get(key) || { count: 0, totalTime: 0, errors: 0, lastUpdated: Date.now() };
@@ -33,7 +47,7 @@ class MetricsCollector {
     
     this.metrics.set(key, metric);
 
-    // Log metric
+    // Also log to the metrics stream for real-time monitoring
     logger.metric(`${key}.count`, metric.count);
     if (duration !== undefined) {
       logger.metric(`${key}.duration_ms`, duration);
@@ -43,14 +57,21 @@ class MetricsCollector {
     }
   }
 
-  // Record model usage
+  /**
+   * Records the usage of a specific AI model.
+   * @param {string} provider The provider of the model.
+   * @param {string} model The name of the model.
+   * @param {number} [tokens] The number of tokens used in the request.
+   */
   recordModelUsage(provider: string, model: string, tokens?: number): void {
     const key = `model.${provider}.${model}`;
     const metric = this.metrics.get(key) || { count: 0, totalTime: 0, lastUpdated: Date.now() };
     
     metric.count++;
+    // TODO: The `totalTime` property is being reused to store token count.
+    // This is not ideal and should be refactored to use a more appropriate data structure.
     if (tokens !== undefined) {
-      metric.totalTime = (metric.totalTime || 0) + tokens; // Reusing totalTime for token count
+      metric.totalTime = (metric.totalTime || 0) + tokens;
     }
     metric.lastUpdated = Date.now();
     
@@ -62,7 +83,10 @@ class MetricsCollector {
     }
   }
 
-  // Get all metrics
+  /**
+   * Retrieves a summary of all collected metrics.
+   * @returns {Record<string, any>} An object containing the metrics summary.
+   */
   getMetrics(): Record<string, any> {
     const result: Record<string, any> = {
       uptime: Math.floor((Date.now() - this.startTime) / 1000),
@@ -100,11 +124,17 @@ class MetricsCollector {
     return result;
   }
 
-  // Reset metrics
+  /**
+   * Resets all collected metrics.
+   */
   reset(): void {
     this.metrics.clear();
     this.startTime = Date.now();
   }
 }
 
+/**
+ * @const {MetricsCollector} metrics
+ * @description A singleton instance of the MetricsCollector.
+ */
 export const metrics = new MetricsCollector();

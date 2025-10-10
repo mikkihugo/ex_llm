@@ -1,19 +1,21 @@
 /**
- * Enhances capability scores with real data from OpenRouter API
- *
- * Combines:
- * - OpenRouter: Real pricing, speed benchmarks, context length
- * - models.dev: Model comparisons (future)
- * - Heuristics: Fill gaps for models not in external sources
+ * @file OpenRouter Capability Enhancer
+ * @description This module enhances the heuristic-based model capability scores with
+ * real-world data from the OpenRouter API. It fetches pricing, context length, and other
+ * metadata to provide more accurate and data-driven scores.
  */
 
+/**
+ * @interface OpenRouterModel
+ * @description Defines the structure of a model object as returned by the OpenRouter API.
+ */
 export interface OpenRouterModel {
   id: string;
   name: string;
   description: string;
   context_length: number;
   pricing: {
-    prompt: string;    // Cost per 1M tokens
+    prompt: string;
     completion: string;
   };
   top_provider?: {
@@ -21,6 +23,11 @@ export interface OpenRouterModel {
   };
 }
 
+/**
+ * @interface EnhancedCapabilityScore
+ * @description Defines the structure of a capability score that has been enhanced
+ * with data from external sources like OpenRouter.
+ */
 export interface EnhancedCapabilityScore {
   code: number;
   reasoning: number;
@@ -29,163 +36,151 @@ export interface EnhancedCapabilityScore {
   cost: number;
   confidence: 'high' | 'medium' | 'low';
   reasoning_text: string;
-  data_sources: string[];  // Where the data came from
+  data_sources: string[];
 }
 
 /**
- * Fetch all models from OpenRouter API
+ * Fetches all model data from the OpenRouter API.
+ * @returns {Promise<OpenRouterModel[]>} A promise that resolves to an array of OpenRouter models.
  */
 export async function fetchOpenRouterModels(): Promise<OpenRouterModel[]> {
   try {
     const response = await fetch('https://openrouter.ai/api/v1/models');
+    if (!response.ok) {
+      throw new Error(`[OpenRouterEnhancer] API error: ${response.statusText}`);
+    }
     const data = await response.json();
     return data.data || [];
   } catch (error) {
-    console.error('Failed to fetch OpenRouter models:', error);
+    console.error('[OpenRouterEnhancer] Failed to fetch OpenRouter models:', error);
     return [];
   }
 }
 
 /**
- * Convert OpenRouter pricing to cost score (1-10)
+ * Converts OpenRouter pricing information to a cost score on a scale of 1-10.
+ * @private
+ * @param {object} pricing The pricing object from the OpenRouter API.
+ * @returns {number} A cost score from 1 (most expensive) to 10 (free).
  */
 function pricingToCostScore(pricing: { prompt: string; completion: string }): number {
   const promptCost = parseFloat(pricing.prompt);
   const completionCost = parseFloat(pricing.completion);
   const avgCost = (promptCost + completionCost) / 2;
 
-  // Score based on cost per 1M tokens
-  if (avgCost === 0) return 10;           // FREE
-  if (avgCost < 0.000001) return 10;      // Essentially free (<$0.001 per 1M)
-  if (avgCost < 0.00001) return 9;        // Very cheap
-  if (avgCost < 0.0001) return 8;         // Cheap
-  if (avgCost < 0.001) return 7;          // Moderate
-  if (avgCost < 0.01) return 5;           // Expensive
-  if (avgCost < 0.1) return 3;            // Very expensive
-  return 1;                                // Extremely expensive
+  if (avgCost === 0) return 10;
+  if (avgCost < 0.000001) return 10;
+  if (avgCost < 0.00001) return 9;
+  if (avgCost < 0.0001) return 8;
+  if (avgCost < 0.001) return 7;
+  if (avgCost < 0.01) return 5;
+  if (avgCost < 0.1) return 3;
+  return 1;
 }
 
 /**
- * Infer code capability from model description
+ * Infers a code capability score based on the model's name and description.
+ * @private
+ * @param {OpenRouterModel} model The model to score.
+ * @param {number} baseScore The base score to enhance.
+ * @returns {number} The inferred code score.
  */
 function inferCodeScore(model: OpenRouterModel, baseScore: number): number {
   const desc = model.description.toLowerCase();
   const name = model.name.toLowerCase();
-
-  // Strong code indicators
-  if (desc.includes('code') || desc.includes('coding') || desc.includes('programming')) {
+  if (desc.includes('code') || name.includes('codex') || name.includes('codestral')) {
     return Math.min(10, baseScore + 2);
   }
-  if (name.includes('codex') || name.includes('code') || name.includes('codestral')) {
-    return Math.min(10, baseScore + 2);
-  }
-
   return baseScore;
 }
 
 /**
- * Infer reasoning capability from model description
+ * Infers a reasoning capability score based on the model's name and description.
+ * @private
+ * @param {OpenRouterModel} model The model to score.
+ * @param {number} baseScore The base score to enhance.
+ * @returns {number} The inferred reasoning score.
  */
 function inferReasoningScore(model: OpenRouterModel, baseScore: number): number {
   const desc = model.description.toLowerCase();
   const name = model.name.toLowerCase();
-
-  // Strong reasoning indicators
-  if (desc.includes('reasoning') || desc.includes('complex tasks')) {
-    return Math.min(10, baseScore + 2);
-  }
-  if (name.includes('o1') || name.includes('o3') || name.includes('deepseek-r')) {
+  if (desc.includes('reasoning') || name.includes('o1') || name.includes('o3') || name.includes('deepseek-r')) {
     return Math.min(10, baseScore + 2);
   }
   if (desc.includes('step-by-step') || desc.includes('chain of thought')) {
     return Math.min(10, baseScore + 1);
   }
-
   return baseScore;
 }
 
 /**
- * Infer speed from context window and model size
+ * Infers a speed score based on the model's name.
+ * @private
+ * @param {OpenRouterModel} model The model to score.
+ * @returns {number} The inferred speed score.
  */
 function inferSpeedScore(model: OpenRouterModel): number {
   const name = model.name.toLowerCase();
-
-  // Fast model indicators
-  if (name.includes('flash') || name.includes('fast') || name.includes('mini') || name.includes('nano')) {
-    return 10;
-  }
-  if (name.includes('haiku') || name.includes('small')) {
-    return 9;
-  }
-
-  // Large models tend to be slower
-  if (name.includes('405b') || name.includes('70b') || name.includes('large')) {
-    return 5;
-  }
-
-  // Medium by default
+  if (name.includes('flash') || name.includes('fast') || name.includes('mini') || name.includes('nano')) return 10;
+  if (name.includes('haiku') || name.includes('small')) return 9;
+  if (name.includes('405b') || name.includes('70b') || name.includes('large')) return 5;
   return 7;
 }
 
 /**
- * Enhance capability score with OpenRouter data
+ * Enhances a model's base capability score with data from the OpenRouter API.
+ * @param {string} modelId The ID of the model to enhance.
+ * @param {EnhancedCapabilityScore} baseScore The base heuristic score.
+ * @param {OpenRouterModel[]} openrouterModels An array of models from the OpenRouter API.
+ * @returns {EnhancedCapabilityScore} The enhanced capability score.
  */
 export function enhanceWithOpenRouter(
   modelId: string,
   baseScore: EnhancedCapabilityScore,
   openrouterModels: OpenRouterModel[]
 ): EnhancedCapabilityScore {
-  // Try to find matching OpenRouter model
-  const orModel = openrouterModels.find(m =>
-    m.id.toLowerCase().includes(modelId.toLowerCase()) ||
-    modelId.toLowerCase().includes(m.id.toLowerCase())
-  );
+  const orModel = openrouterModels.find(m => m.id.toLowerCase().includes(modelId.toLowerCase()) || modelId.toLowerCase().includes(m.id.toLowerCase()));
 
   if (!orModel) {
-    // No OpenRouter data, use base score
-    return {
-      ...baseScore,
-      data_sources: baseScore.data_sources || ['heuristics']
-    };
+    return { ...baseScore, data_sources: baseScore.data_sources || ['heuristics'] };
   }
 
-  // Enhance with OpenRouter data
   const costScore = pricingToCostScore(orModel.pricing);
   const codeScore = inferCodeScore(orModel, baseScore.code);
   const reasoningScore = inferReasoningScore(orModel, baseScore.reasoning);
   const speedScore = inferSpeedScore(orModel);
 
   return {
+    ...baseScore,
     code: codeScore,
     reasoning: reasoningScore,
-    creativity: baseScore.creativity,  // Keep heuristic for now
     speed: speedScore,
     cost: costScore,
-    confidence: 'high',  // Higher confidence with real data
-    reasoning_text: `OpenRouter data: $${parseFloat(orModel.pricing.prompt).toFixed(6)}/1M tokens prompt, ${orModel.context_length.toLocaleString()} context. ${baseScore.reasoning_text}`,
-    data_sources: ['openrouter', 'heuristics']
+    confidence: 'high',
+    reasoning_text: `OpenRouter data: $${parseFloat(orModel.pricing.prompt).toFixed(6)}/1M tokens, ${orModel.context_length.toLocaleString()} context. ${baseScore.reasoning_text}`,
+    data_sources: ['openrouter', 'heuristics'],
   };
 }
 
 /**
- * Bulk enhance all models with OpenRouter data
+ * Fetches data from OpenRouter and enhances a map of base scores.
+ * @param {Record<string, any>} baseScores A map of model IDs to their base scores.
+ * @returns {Promise<Record<string, EnhancedCapabilityScore>>} A promise that resolves to the map of enhanced scores.
  */
 export async function enhanceAllModelsWithOpenRouter(
   baseScores: Record<string, any>
 ): Promise<Record<string, EnhancedCapabilityScore>> {
-  console.log('📊 Fetching real data from OpenRouter API...\n');
-
+  console.log('[OpenRouterEnhancer] Fetching real data from OpenRouter API...');
   const openrouterModels = await fetchOpenRouterModels();
-  console.log(`✅ Found ${openrouterModels.length} models on OpenRouter\n`);
+  console.log(`[OpenRouterEnhancer] Found ${openrouterModels.length} models on OpenRouter.`);
 
   const enhanced: Record<string, EnhancedCapabilityScore> = {};
-
   for (const [modelId, baseScore] of Object.entries(baseScores)) {
     enhanced[modelId] = enhanceWithOpenRouter(modelId, baseScore as any, openrouterModels);
   }
 
   const enhancedCount = Object.values(enhanced).filter(s => s.data_sources.includes('openrouter')).length;
-  console.log(`✨ Enhanced ${enhancedCount}/${Object.keys(enhanced).length} models with OpenRouter data\n`);
+  console.log(`[OpenRouterEnhancer] Enhanced ${enhancedCount}/${Object.keys(enhanced).length} models with OpenRouter data.`);
 
   return enhanced;
 }

@@ -1,16 +1,16 @@
 /**
- * Cursor Provider Wrapper
- * Re-exports ai-sdk-provider-cursor with model metadata
+ * @file Cursor Provider
+ * @description This module wraps the base Cursor provider to include static model metadata,
+ * making it compatible with the server's model registry system.
  */
 
 import { cursor as baseCursor } from '../../vendor/ai-sdk-provider-cursor/dist/index.js';
 import type { CursorProvider as BaseCursorProvider } from '../../vendor/ai-sdk-provider-cursor/dist/index.js';
 
 /**
- * Model metadata for Cursor provider
- *
- * Models discovered from CLI: cursor-agent --print --model invalid "test" 2>&1
- * Available: auto, cheetah, sonnet-4.5, sonnet-4.5-thinking, gpt-5, opus-4.1, grok
+ * @const {Array<object>} CURSOR_MODELS
+ * @description A static list of models available through the Cursor provider.
+ * This metadata was discovered by running `cursor-agent --print --model invalid "test" 2>&1`.
  */
 export const CURSOR_MODELS = [
   {
@@ -79,20 +79,21 @@ export const CURSOR_MODELS = [
 ] as const;
 
 /**
- * Extended Cursor provider with model listing capability
+ * @interface CursorProvider
+ * @extends BaseCursorProvider
+ * @description Extends the base Cursor provider to include a `listModels` method.
  */
 export interface CursorProvider extends BaseCursorProvider {
   listModels(): typeof CURSOR_MODELS;
 }
 
 /**
- * Cursor provider instance with model listing
+ * @const {CursorProvider} cursor
+ * @description The public instance of the Cursor provider, extended with model listing capabilities.
+ * The default configuration allows read-only tool usage for safety.
  *
- * Default config: read-only tools (file read, search, grep, glob)
- * No write/execute operations allowed for safety.
- *
- * To add MCP servers:
- * ```ts
+ * @example
+ * // To add MCP servers for more tool capabilities:
  * const model = cursor('auto', {
  *   approvalPolicy: 'read-only',
  *   mcpServers: {
@@ -102,7 +103,6 @@ export interface CursorProvider extends BaseCursorProvider {
  *     },
  *   },
  * });
- * ```
  */
 export const cursor = Object.assign(baseCursor, {
   listModels: () => CURSOR_MODELS,

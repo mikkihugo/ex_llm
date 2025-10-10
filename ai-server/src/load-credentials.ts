@@ -1,8 +1,9 @@
 /**
- * Load AI Provider Credentials from Environment Variables
- *
- * This module handles loading and initializing credentials from environment
- * variables for deployment scenarios where credential files aren't available.
+ * @file Credential Loading and Management
+ * @description This module handles the loading and validation of AI provider credentials
+ * from various sources, including environment variables and local configuration files.
+ * It is designed to work in different deployment environments and provides diagnostic
+ * tools to report the status of each provider's credentials.
  */
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
@@ -10,6 +11,15 @@ import { homedir } from 'os';
 import { join } from 'path';
 import { loadCopilotOAuthTokens } from './github-copilot-oauth';
 
+/**
+ * @interface CredentialStats
+ * @description Represents the availability status of credentials for each AI provider.
+ * @property {boolean} geminiADC - True if Google Application Default Credentials are available.
+ * @property {boolean} claude - True if Claude credentials are available.
+ * @property {boolean} cursor - True if Cursor credentials are available.
+ * @property {boolean} github - True if GitHub credentials (for Copilot) are available.
+ * @property {boolean} codex - True if Codex credentials are available.
+ */
 export interface CredentialStats {
   geminiADC: boolean;
   claude: boolean;
@@ -19,7 +29,10 @@ export interface CredentialStats {
 }
 
 /**
- * Load credentials from environment variables and write to appropriate locations
+ * Loads credentials from environment variables and materializes them into the
+ * expected file locations for various AI provider SDKs. This is particularly
+ * useful for containerized or serverless environments.
+ * @returns {CredentialStats} An object indicating which credentials were successfully loaded.
  */
 export function loadCredentialsFromEnv(): CredentialStats {
   const stats: CredentialStats = {

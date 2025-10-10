@@ -1,35 +1,34 @@
 /**
- * GitHub Copilot Provider Wrapper
- * Integrates ai-sdk-provider-copilot with GitHub Copilot OAuth flow
+ * @file GitHub Copilot Provider
+ * @description This module wraps the base `createCopilotProvider` to integrate it
+ * with the application's GitHub Copilot OAuth flow. It provides a unified
+ * interface for listing Copilot models and creating language model instances.
  */
 
 import { createCopilotProvider } from '../../vendor/ai-sdk-provider-copilot/dist/copilot-provider.js';
 import { getCopilotAccessToken } from '../github-copilot-oauth';
 
 /**
- * GitHub Copilot provider instance with OAuth integration
- *
- * Features:
- * - ✅ AI SDK tools support (Elixir executes)
- * - ✅ Streaming support
- * - ✅ Dynamic model loading from GitHub Copilot API
- * - ✅ GitHub Copilot OAuth flow integration
- * - ✅ Automatic token refresh
- * - ✅ Cost tier tagging (free vs limited)
- *
- * Authentication:
- * Uses GitHub Copilot OAuth flow via getCopilotAccessToken()
- * which handles:
- * 1. GitHub OAuth token → Copilot API token exchange
- * 2. Token caching with expiration
- * 3. Automatic refresh
+ * @description The base Copilot provider instance created from the vendored package.
+ * @private
  */
 const baseCopilotProvider = createCopilotProvider();
 
 /**
- * Extended Copilot provider with synchronous listModels method and callable interface
+ * @const {object} copilot
+ * @description An object that serves as the public interface for the GitHub Copilot provider.
+ * It includes a static list of available models and a factory function for creating
+ * language model instances with proper authentication.
+ *
+ * @property {Function} listModels - Returns a static list of available Copilot models,
+ * including their capabilities and cost tiers.
+ * @property {Function} languageModel - A factory function that returns a Copilot language
+ * model instance for a given model ID, configured with the OAuth access token.
  */
 export const copilot = {
+  /**
+   * @returns {Array<object>} A static list of predefined Copilot models.
+   */
   listModels: () => [
     {
       id: 'gpt-4.1',
@@ -77,6 +76,10 @@ export const copilot = {
       subscription: 'GitHub Copilot',
     },
   ],
-  // Make provider callable for AI SDK compatibility
+  /**
+   * Creates a language model instance for a specific Copilot model.
+   * @param {string} modelId The ID of the model to use.
+   * @returns {any} A language model instance configured with the OAuth token handler.
+   */
   languageModel: (modelId: string) => baseCopilotProvider(modelId, { token: getCopilotAccessToken }),
 };

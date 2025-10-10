@@ -1,18 +1,18 @@
 /**
- * OpenRouter Provider
- * Access to 100+ LLM models via unified API
- *
- * ⚠️  IMPORTANT: OpenRouter is PAY-PER-USE (not subscription)
- * Only FREE models are exposed to comply with AI_PROVIDER_POLICY.md
- *
- * Free tier includes: DeepSeek, Qwen, Mistral, Gemma, Llama, etc.
- *
- * Auto-generated model list from OpenRouter API (51 FREE models)
- * Run: bun run scripts/list-openrouter-free.ts
+ * @file OpenRouter Provider
+ * @description This module provides a custom provider for the Vercel AI SDK to interface
+ * with the OpenRouter API. It dynamically fetches and caches a list of free models,
+ * categorizes them, and provides functions for model selection.
+ * @important This provider is configured to only expose FREE models to comply with the
+ * AI_PROVIDER_POLICY.md. OpenRouter itself is a pay-per-use service.
  */
 
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
+/**
+ * @interface ModelMetadata
+ * @description Defines the structure for metadata of a single OpenRouter model.
+ */
 interface ModelMetadata {
   id: string;
   displayName: string;
@@ -30,20 +30,18 @@ interface ModelMetadata {
   category: 'reasoning' | 'code' | 'general' | 'vision' | 'large-context' | 'fast';
 }
 
-/**
- * Fetch ALL FREE models from OpenRouter API dynamically
- *
- * Updates: Hourly cache (OpenRouter updates models frequently)
- * No fallback - throws error if API fails
- */
 let cachedModels: ModelMetadata[] | null = null;
 let lastFetchTime = 0;
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
+/**
+ * Fetches and caches the list of free models from the OpenRouter API.
+ * @private
+ * @returns {Promise<ModelMetadata[]>} A promise that resolves to an array of free models.
+ * @throws {Error} If the API request fails.
+ */
 async function fetchFreeModels(): Promise<ModelMetadata[]> {
   const now = Date.now();
-
-  // Return cached if fresh (< 1 hour old)
   if (cachedModels && (now - lastFetchTime) < CACHE_TTL) {
     return cachedModels;
   }
@@ -55,7 +53,7 @@ async function fetchFreeModels(): Promise<ModelMetadata[]> {
   });
 
   if (!response.ok) {
-    throw new Error(`OpenRouter API error: ${response.statusText}`);
+    throw new Error(`[OpenRouter] API error: ${response.statusText}`);
   }
 
   const data = await response.json() as { data: any[] };
@@ -64,16 +62,23 @@ async function fetchFreeModels(): Promise<ModelMetadata[]> {
     .filter(m => m.pricing.prompt === "0" && m.pricing.completion === "0")
     .map(m => categorizeAndFormat(m));
 
-  // Update cache
   cachedModels = freeModels;
   lastFetchTime = now;
 
-  console.log(`✅ OpenRouter: Loaded ${freeModels.length} FREE models (cached for 1h)`);
-
+  console.log(`[OpenRouter] Loaded ${freeModels.length} FREE models (cached for 1h).`);
   return freeModels;
 }
 
-function categorizeModel(id: string, name: string, description: string = '', modality?: string): ModelMetadata['category'] {
+/**
+ * Categorizes a model based on its ID, name, and description.
+ * @private
+ * @param {string} id The model ID.
+ * @param {string} name The model name.
+ * @param {string} [description=''] The model description.
+ * @param {string} [modality] The model's modality.
+ * @returns {ModelMetadata['category']} The category of the model.
+ */
+function categorizeModel(id: string, name: string, description = '', modality?: string): ModelMetadata['category'] {
   const idLower = id.toLowerCase();
   const nameLower = name.toLowerCase();
   const descLower = description.toLowerCase();
@@ -87,6 +92,12 @@ function categorizeModel(id: string, name: string, description: string = '', mod
   return 'general';
 }
 
+/**
+ * Formats and categorizes a raw model object from the OpenRouter API.
+ * @private
+ * @param {any} model The raw model object.
+ * @returns {ModelMetadata} The formatted model metadata.
+ */
 function categorizeAndFormat(model: any): ModelMetadata {
   const category = categorizeModel(
     model.id,
@@ -115,21 +126,16 @@ function categorizeAndFormat(model: any): ModelMetadata {
   };
 }
 
-
 /**
- * OpenRouter provider instance with metadata
+ * @const {object} openrouter
+ * @description The public instance of the OpenRouter provider, extended with dynamic model listing.
  *
- * Auto-fetches latest FREE models on first use (hourly cache)
- *
- * Usage:
- * ```ts
+ * @example
  * import { openrouter } from './providers/openrouter';
- *
  * const result = await generateText({
  *   model: openrouter('deepseek/deepseek-r1:free'),
  *   messages: [{ role: 'user', content: 'Hello' }]
  * });
- * ```
  */
 export const openrouter = Object.assign(
   createOpenRouter({
@@ -141,21 +147,24 @@ export const openrouter = Object.assign(
 );
 
 /**
- * Get best model by category (uses live API)
+ * Gets the best model for a given category from the live OpenRouter API.
+ * @param {'reasoning' | 'code' | 'general' | 'vision' | 'large-context' | 'fast'} [category='general'] The category to search for.
+ * @returns {Promise<string>} A promise that resolves to the ID of the best model.
+ * @throws {Error} If no models are found for the specified category.
  */
 export async function getBestOpenRouterModel(category: 'reasoning' | 'code' | 'general' | 'vision' | 'large-context' | 'fast' = 'general'): Promise<string> {
   const models = await fetchFreeModels();
   const model = models.find(m => m.category === category);
-
   if (!model) {
-    throw new Error(`No OpenRouter models found for category: ${category}`);
+    throw new Error(`[OpenRouter] No models found for category: ${category}`);
   }
-
   return model.id;
 }
 
 /**
- * Get all models by category
+ * Gets all available models for a given category.
+ * @param {ModelMetadata['category']} category The category to retrieve models for.
+ * @returns {Promise<ModelMetadata[]>} A promise that resolves to an array of models in the category.
  */
 export async function getOpenRouterModelsByCategory(category: ModelMetadata['category']): Promise<ModelMetadata[]> {
   const models = await fetchFreeModels();

@@ -1,15 +1,17 @@
 /**
- * Tool Format Converter
- *
- * Converts tools from OpenAI format (from Elixir) to AI SDK format.
- * AI SDK will automatically handle provider-specific conversion (MCP, Anthropic, etc.)
+ * @file Tool Format Converter
+ * @description This module provides utilities to convert tool definitions from the
+ * OpenAI format (as sent by the Elixir backend) to the Vercel AI SDK format.
+ * The AI SDK then handles the provider-specific conversions (e.g., to MCP, Anthropic, etc.).
  */
 
 import { tool } from 'ai';
 import { z } from 'zod';
 
 /**
- * OpenAI tool format (what Elixir sends)
+ * @interface OpenAITool
+ * @description Represents the structure of a tool in the OpenAI format,
+ * which is the format expected from the Elixir backend.
  */
 export interface OpenAITool {
   type: 'function';
@@ -25,7 +27,10 @@ export interface OpenAITool {
 }
 
 /**
- * Convert OpenAI JSON Schema to Zod schema
+ * Converts a JSON Schema object to a Zod schema.
+ * @private
+ * @param {any} schema The JSON Schema to convert.
+ * @returns {z.ZodTypeAny} The equivalent Zod schema.
  */
 function jsonSchemaToZod(schema: any): z.ZodTypeAny {
   if (schema.type === 'object') {
@@ -67,7 +72,6 @@ function jsonSchemaToZod(schema: any): z.ZodTypeAny {
           zodType = z.any();
       }
 
-      // Make optional if not in required array
       if (!schema.required?.includes(key)) {
         zodType = zodType.optional();
       }
@@ -82,11 +86,10 @@ function jsonSchemaToZod(schema: any): z.ZodTypeAny {
 }
 
 /**
- * Convert OpenAI tools to AI SDK tools
- *
- * @param openaiTools - Tools in OpenAI format from Elixir
- * @param executeHandler - Function to execute tools (calls Elixir via NATS)
- * @returns Tools in AI SDK format
+ * Converts an array of tools from the OpenAI format to the AI SDK format.
+ * @param {OpenAITool[]} openaiTools An array of tools in the OpenAI format.
+ * @param {(toolName: string, args: any) => Promise<any>} executeHandler A function to handle the execution of the tool.
+ * @returns {Record<string, ReturnType<typeof tool>>} A map of tool names to their AI SDK tool definitions.
  */
 export function convertOpenAIToolsToAISDK(
   openaiTools: OpenAITool[],
@@ -96,20 +99,16 @@ export function convertOpenAIToolsToAISDK(
 
   for (const openaiTool of openaiTools) {
     const { name, description, parameters } = openaiTool.function;
-
-    // Convert JSON Schema to Zod
     const zodSchema = jsonSchemaToZod(parameters);
 
-    // Create AI SDK tool
     tools[name] = tool({
-      description: description || `Execute ${name}`,
+      description: description || `Execute the ${name} tool.`,
       parameters: zodSchema,
       execute: async (args) => {
         try {
-          const result = await executeHandler(name, args);
-          return result;
+          return await executeHandler(name, args);
         } catch (error) {
-          console.error(`Tool ${name} execution failed:`, error);
+          console.error(`[ToolConverter] Tool execution failed for "${name}":`, error);
           throw error;
         }
       }
@@ -120,7 +119,8 @@ export function convertOpenAIToolsToAISDK(
 }
 
 /**
- * Example OpenAI tools from Elixir
+ * @const {OpenAITool[]} EXAMPLE_OPENAI_TOOLS
+ * @description An example set of tools in the OpenAI format for testing and demonstration.
  */
 export const EXAMPLE_OPENAI_TOOLS: OpenAITool[] = [
   {

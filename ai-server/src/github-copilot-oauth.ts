@@ -1,3 +1,21 @@
+/**
+ * @file GitHub Copilot OAuth Helper
+ * @description This module handles the OAuth 2.0 device flow for GitHub Copilot,
+ * allowing the AI server to obtain API tokens on behalf of a user. It manages
+ * token storage, refresh logic, and the process of exchanging a GitHub token
+ * for a Copilot-specific API token.
+ */
+
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
+
+// --- Interfaces ---
+
+/**
+ * @interface DeviceCodeResponse
+ * @description Response from the GitHub device code endpoint.
+ */
 interface DeviceCodeResponse {
   device_code: string;
   user_code: string;
@@ -6,6 +24,10 @@ interface DeviceCodeResponse {
   interval: number;
 }
 
+/**
+ * @interface AccessTokenResponse
+ * @description Response from the GitHub access token endpoint.
+ */
 interface AccessTokenResponse {
   access_token?: string;
   refresh_token?: string;
@@ -14,6 +36,10 @@ interface AccessTokenResponse {
   error_description?: string;
 }
 
+/**
+ * @interface CopilotTokenResponse
+ * @description Response from the Copilot internal token endpoint.
+ */
 interface CopilotTokenResponse {
   token: string;
   expires_at: number;
@@ -23,6 +49,10 @@ interface CopilotTokenResponse {
   };
 }
 
+/**
+ * @interface CopilotTokenStore
+ * @description In-memory and on-disk storage for OAuth tokens.
+ */
 interface CopilotTokenStore {
   githubToken: string;
   refreshToken?: string;
@@ -31,20 +61,26 @@ interface CopilotTokenStore {
   expiresAt?: number;
 }
 
-import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
-import { homedir } from 'os';
+// --- Constants ---
 
+/** The client ID for the GitHub OAuth application. */
 const CLIENT_ID = 'Iv1.b507a08c87ecfe98';
+/** The URL for initiating the device code flow. */
 const DEVICE_CODE_URL = 'https://github.com/login/device/code';
+/** The URL for exchanging a device code for an access token. */
 const ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token';
+/** The URL for exchanging a GitHub token for a Copilot API token. */
 const COPILOT_API_KEY_URL = 'https://api.github.com/copilot_internal/v2/token';
+/** The file path for persisting the token store. */
 const TOKEN_STORE_FILE = join(homedir(), '.local', 'share', 'copilot-api', 'tokens.json');
 
 let tokenStore: CopilotTokenStore | null = null;
 
+// --- Token Store Management ---
+
 /**
- * Save token store to disk for persistence
+ * Saves the current token store to a file on disk.
+ * @private
  */
 function saveTokenStore(): void {
   if (!tokenStore) return;
@@ -61,7 +97,8 @@ function saveTokenStore(): void {
 }
 
 /**
- * Load token store from disk
+ * Loads the token store from a file on disk.
+ * @private
  */
 function loadTokenStore(): void {
   try {
@@ -78,6 +115,12 @@ function loadTokenStore(): void {
 // Load tokens on module initialization
 loadTokenStore();
 
+// --- Public API ---
+
+/**
+ * Starts the GitHub Copilot OAuth device flow.
+ * @returns {Promise<object>} An object containing the device code, user code, and verification URI.
+ */
 export async function startCopilotOAuth(): Promise<{
   device_code: string;
   user_code: string;
@@ -112,6 +155,12 @@ export async function startCopilotOAuth(): Promise<{
   };
 }
 
+/**
+ * Completes the GitHub Copilot OAuth device flow by polling for an access token.
+ * @param {string} deviceCode The device code obtained from `startCopilotOAuth`.
+ * @returns {Promise<boolean>} A promise that resolves to `true` if the flow is complete, `false` if pending.
+ * @throws {Error} If the OAuth flow fails.
+ */
 export async function completeCopilotOAuth(deviceCode: string): Promise<boolean> {
   const response = await fetch(ACCESS_TOKEN_URL, {
     method: 'POST',
@@ -152,7 +201,9 @@ export async function completeCopilotOAuth(deviceCode: string): Promise<boolean>
 }
 
 /**
- * Refresh the GitHub OAuth token using the refresh token
+ * Refreshes the GitHub OAuth token using the stored refresh token.
+ * @private
+ * @returns {Promise<boolean>} A promise that resolves to `true` if the token was refreshed successfully.
  */
 async function refreshGitHubToken(): Promise<boolean> {
   if (!tokenStore?.refreshToken) {
@@ -195,12 +246,16 @@ async function refreshGitHubToken(): Promise<boolean> {
   return false;
 }
 
+/**
+ * Retrieves a valid Copilot access token, handling caching and refresh logic.
+ * @returns {Promise<string | null>} A promise that resolves to the Copilot access token, or `null` if unavailable.
+ */
 export async function getCopilotAccessToken(): Promise<string | null> {
   if (!tokenStore) {
     return null;
   }
 
-  // Check if GitHub token needs refresh (expired or about to expire in 5 minutes)
+  // Check if GitHub token needs refresh
   if (tokenStore.githubTokenExpiresAt) {
     const fiveMinutesFromNow = Date.now() + (5 * 60 * 1000);
     if (tokenStore.githubTokenExpiresAt < fiveMinutesFromNow) {
@@ -218,30 +273,25 @@ export async function getCopilotAccessToken(): Promise<string | null> {
     return tokenStore.copilotToken;
   }
 
-  // Get new Copilot API token using GitHub OAuth token
-  // Use exact headers from copilot-api project
+  // Get new Copilot API token
   const response = await fetch(COPILOT_API_KEY_URL, {
     headers: {
-      'content-type': 'application/json',
+      'authorization': `token ${tokenStore.githubToken}`,
       'accept': 'application/json',
-      'authorization': `token ${tokenStore.githubToken}`,  // Note: "token" not "Bearer"
       'editor-version': 'vscode/1.99.3',
       'editor-plugin-version': 'copilot-chat/0.26.7',
       'user-agent': 'GitHubCopilotChat/0.26.7',
-      'x-github-api-version': '2025-04-01',
-      'x-vscode-user-agent-library-version': 'electron-fetch',
     },
   });
 
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`[copilot-oauth] Failed to exchange token: ${response.status} - ${errorText.substring(0, 200)}`);
-    throw new Error(`Failed to get Copilot token: ${response.status} ${response.statusText} - ${errorText}`);
+    throw new Error(`Failed to get Copilot token: ${response.status} ${response.statusText}`);
   }
 
   const tokenData = await response.json() as CopilotTokenResponse;
 
-  // Update token store with new Copilot API token
   tokenStore.copilotToken = tokenData.token;
   tokenStore.expiresAt = tokenData.expires_at * 1000;
   saveTokenStore();
@@ -250,9 +300,12 @@ export async function getCopilotAccessToken(): Promise<string | null> {
   return tokenData.token;
 }
 
+/**
+ * Loads a GitHub token from an environment variable into the token store.
+ * This is used as a fallback if the full OAuth flow is not performed.
+ * @param {string} githubToken A GitHub personal access token.
+ */
 export function loadCopilotOAuthTokens(githubToken: string): void {
-  // Don't override OAuth tokens if we already have them from OAuth flow
-  // OAuth tokens take precedence over env var GITHUB_TOKEN
   if (tokenStore && tokenStore.githubToken) {
     console.log('[copilot-oauth] OAuth token already exists, ignoring GITHUB_TOKEN env var');
     return;
@@ -263,10 +316,18 @@ export function loadCopilotOAuthTokens(githubToken: string): void {
   };
 }
 
+/**
+ * Checks if a token is available in the store.
+ * @returns {boolean} True if a token is available.
+ */
 export function hasCopilotTokens(): boolean {
   return tokenStore !== null;
 }
 
+/**
+ * Retrieves the current token store.
+ * @returns {CopilotTokenStore | null} The current token store, or `null`.
+ */
 export function getCopilotTokenStore(): CopilotTokenStore | null {
   return tokenStore;
 }

@@ -24,7 +24,7 @@
   "dependencies": {
     "@ai-sdk/provider": "^2.0.0",
     "@ai-sdk/provider-utils": "^2.0.0",
-    "codex-js-sdk": "file:../codex-js-sdk"
+    "@openai/codex-sdk": "^0.45.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0"

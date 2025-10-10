@@ -1,13 +1,15 @@
 /**
- * Claude Code Provider Wrapper
- * Re-exports ai-sdk-provider-claude-code with model metadata
+ * @file Claude Code Provider
+ * @description This module wraps the base Claude Code provider to include static
+ * model metadata, making it compatible with the server's model registry system.
  */
 
 import { claudeCode as baseClaudeCode } from 'ai-sdk-provider-claude-code';
 import type { ClaudeCodeProvider as BaseClaudeCodeProvider } from 'ai-sdk-provider-claude-code';
 
 /**
- * Model metadata for Claude Code provider
+ * @const {Array<object>} CLAUDE_CODE_MODELS
+ * @description A static list of available Claude models and their metadata.
  */
 export const CLAUDE_CODE_MODELS = [
   {
@@ -31,14 +33,17 @@ export const CLAUDE_CODE_MODELS = [
 ] as const;
 
 /**
- * Extended Claude Code provider with model listing capability
+ * @interface ClaudeCodeProvider
+ * @extends BaseClaudeCodeProvider
+ * @description Extends the base Claude Code provider to include a `listModels` method.
  */
 export interface ClaudeCodeProvider extends BaseClaudeCodeProvider {
   listModels(): typeof CLAUDE_CODE_MODELS;
 }
 
 /**
- * Claude Code provider instance with model listing
+ * @const {ClaudeCodeProvider} claudeCode
+ * @description The public instance of the Claude Code provider, extended with model listing capabilities.
  */
 export const claudeCode = Object.assign(baseClaudeCode, {
   listModels: () => CLAUDE_CODE_MODELS,

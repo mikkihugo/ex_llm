@@ -1,16 +1,14 @@
 #!/usr/bin/env bun
 
 /**
- * REFACTORED: Unified AI Providers HTTP Server with AI SDK Streaming Utilities
+ * @file Unified AI provider server.
+ * @description This file contains the main server logic for the AI provider gateway.
+ * It uses the Vercel AI SDK to create a unified interface for various AI models,
+ * including those from Google, Anthropic, OpenAI, and GitHub. The server
+ * handles model cataloging, request routing, streaming, and authentication.
  *
- * Key improvements:
- * 1. Uses AI SDK's built-in toDataStreamResponse() instead of manual SSE formatting
- * 2. Simplified streaming logic - ~100 lines removed
- * 3. Better error handling through AI SDK middleware
- * 4. Consistent streaming behavior across all providers
- *
- * Before: ~150 lines of manual SSE formatting (lines 658-1024)
- * After: ~20 lines using AI SDK utilities
+ * @see {@link ./docs/PROVIDER_STRATEGY.md} for an overview of the provider strategy.
+ * @see {@link ./docs/PRODUCTION_READINESS.md} for production readiness details.
  */
 
 import { generateText, streamText, createProviderRegistry } from 'ai';
@@ -21,8 +19,6 @@ import { createServer } from 'http';
 import { randomBytes, createHash } from 'crypto';
 import escapeHtml from 'escape-html';
 import { GoogleAuth } from 'google-auth-library';
-import { CodexSDK } from 'codex-js-sdk';
-import type { CodexResponse, CodexMessageType } from 'codex-js-sdk';
 import { loadCredentialsFromEnv, checkCredentialAvailability, printCredentialStatus } from './load-credentials';
 import { copilot } from './providers/copilot';
 import { githubModels } from './providers/github-models';
@@ -51,12 +47,16 @@ loadCredentialsFromEnv();
 const allStats = checkCredentialAvailability();
 printCredentialStatus(allStats);
 
+/** The port for the main server. */
 const PORT = parsePort(process.env.PORT, 3000, 'PORT');
+/** The port for the OAuth callback server. */
 const OAUTH_CALLBACK_PORT = parsePort(process.env.OAUTH_CALLBACK_PORT, 1455, 'OAUTH_CALLBACK_PORT');
+/** Timeout for OAuth operations in milliseconds. */
 const OAUTH_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+/** Buffer time for token expiry in milliseconds. */
 const TOKEN_EXPIRY_BUFFER_MS = 55 * 60 * 1000; // 55 minutes
 
-// Simple auth token (internal use only, not a security boundary)
+/** A simple, non-secure auth token for internal API access. */
 const AUTH_TOKEN = 'singularity-local';
 
 // Initialize AI SDK Provider Registry
@@ -75,9 +75,17 @@ let MODELS: Awaited<ReturnType<typeof buildModelCatalog>> = [];
 let DYNAMIC_MODEL_CATALOG: ModelCatalogEntry[] = [];
 
 /**
- * Refresh model catalog from all providers
+ * Asynchronously refreshes the model catalog from all registered providers.
+ *
+ * This function clears the existing model catalog and rebuilds it by calling
+ * the `buildModelCatalog` function. It also applies post-processing logic,
+ * such as setting cost tiers for GitHub Copilot models. If the refresh fails,
+ * it logs a warning and continues with the stale catalog to maintain server
+ * availability.
+ *
+ * @returns {Promise<void>} A promise that resolves when the catalog has been refreshed.
  */
-async function refreshModelCatalog() {
+async function refreshModelCatalog(): Promise<void> {
   console.log(`${blue}🔄${reset} Refreshing model catalog...`);
 
   // Ensure GitHub Models are loaded first
@@ -172,35 +180,62 @@ elixirBridge.connect().catch(err => {
 });
 
 // ============================================
-// Types & Utilities (unchanged)
+// Types & Utilities
 // ============================================
 
-function parsePort(value: string | undefined, fallback: number, label: string): number {
+/**
+ * Parses a port number from a string value.
+ *
+ * @param {string | undefined} value The string value to parse.
+ * @param {number} fallback The fallback port to use if parsing fails.
+ * @param {string} label A label for the port being parsed, used in warnings.
+ * @returns {number} The parsed port number or the fallback.
+ */
+function parsePort(value: string | undefined, fallback: number, label:string): number {
   if (!value || value.trim().length === 0) {
     return fallback;
   }
-
   const parsed = Number.parseInt(value, 10);
-
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
     console.warn(`Invalid ${label}="${value}"; falling back to ${fallback}`);
     return fallback;
   }
-
   return parsed;
 }
 
+/**
+ * @interface Message
+ * @description Represents a single message in a chat conversation, following the OpenAI format.
+ * @property {'system' | 'user' | 'assistant'} role The role of the message author.
+ * @property {string} content The content of the message.
+ */
 interface Message {
   role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
+/**
+ * @interface UsageSummary
+ * @description Summarizes token usage for a request.
+ * @property {number} promptTokens The number of tokens in the prompt.
+ * @property {number} completionTokens The number of tokens in the completion.
+ * @property {number} totalTokens The total number of tokens used.
+ */
 interface UsageSummary {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
 }
 
+/**
+ * @interface Tool
+ * @description Defines a tool that the AI model can call, following the OpenAI format.
+ * @property {'function'} type The type of the tool.
+ * @property {object} function The function definition.
+ * @property {string} function.name The name of the function.
+ * @property {string} [function.description] A description of the function.
+ * @property {object} [function.parameters] The parameters for the function.
+ */
 interface Tool {
   type: 'function';
   function: {
@@ -214,6 +249,18 @@ interface Tool {
   };
 }
 
+/**
+ * @interface ChatRequest
+ * @description Represents an internal request for a chat completion.
+ * @property {string} provider The AI provider to use.
+ * @property {string} [model] The specific model to use.
+ * @property {Message[]} messages An array of messages in the conversation.
+ * @property {number} [temperature] The sampling temperature.
+ * @property {number} [maxTokens] The maximum number of tokens to generate.
+ * @property {Tool[]} [tools] An array of tools the model can use.
+ * @property {boolean} [expectJsonObject] Whether to expect a JSON object as a response.
+ * @property {boolean} [stream] Whether to stream the response.
+ */
 interface ChatRequest {
   provider:
     | 'gemini-code-cli'
@@ -235,6 +282,16 @@ interface ChatRequest {
   stream?: boolean;
 }
 
+/**
+ * @interface ProviderResult
+ * @description Represents the result from a provider after a chat completion.
+ * @property {string} text The generated text.
+ * @property {string} finishReason The reason the model stopped generating text.
+ * @property {UsageSummary} usage Token usage information.
+ * @property {string} model The model that was used.
+ *property {ChatRequest['provider']} provider The provider that was used.
+ * @property {object[]} [toolCalls] Any tool calls made by the model.
+ */
 interface ProviderResult {
   text: string;
   finishReason: string;
@@ -251,6 +308,15 @@ interface ProviderResult {
   }>;
 }
 
+/**
+ * Estimates the number of tokens in a given text.
+ *
+ * This function uses a simple heuristic: 1 token is approximately 4 bytes.
+ * It is a rough estimate and may not match the exact token count of a specific model.
+ *
+ * @param {string | null | undefined} text The text to estimate.
+ * @returns {number} The estimated number of tokens.
+ */
 function estimateTokensFromText(text?: string | null): number {
   if (!text) return 0;
   const bytes = Buffer.byteLength(text, 'utf8');
@@ -258,10 +324,29 @@ function estimateTokensFromText(text?: string | null): number {
   return Math.max(1, Math.ceil(bytes / 4));
 }
 
+/**
+ * Estimates the total number of tokens in an array of messages.
+ *
+ * @param {Message[]} messages The messages to estimate.
+ * @returns {number} The estimated total number of tokens.
+ */
 function estimateTokensFromMessages(messages: Message[]): number {
   return messages.reduce((sum, message) => sum + estimateTokensFromText(message.content), 0);
 }
 
+/**
+ * Normalizes the token usage data from different provider formats into a single,
+ * consistent `UsageSummary` object.
+ *
+ * This function handles various keys for input, output, and total tokens that
+ * different providers might return. If the provider does not return usage data,
+ * it falls back to estimating the tokens based on message and response text length.
+ *
+ * @param {Message[]} messages The input messages sent to the provider.
+ * @param {string} [generatedText] The text generated by the provider.
+ * @param {any} [usage] The raw usage data from the provider.
+ * @returns {UsageSummary} A normalized usage summary.
+ */
 function normalizeUsage(
   messages: Message[],
   generatedText?: string,
@@ -300,6 +385,12 @@ function normalizeUsage(
   };
 }
 
+/**
+ * Converts an array of OpenAI-formatted tools to the AI SDK format.
+ *
+ * @param {Tool[]} openaiTools An array of tools in OpenAI's format.
+ * @returns {Record<string, any>} A record of tools compatible with the AI SDK.
+ */
 function convertOpenAIToolsToAISDK(openaiTools: Tool[]) {
   const tools: Record<string, any> = {};
 
@@ -308,7 +399,9 @@ function convertOpenAIToolsToAISDK(openaiTools: Tool[]) {
       description: tool.function.description || '',
       parameters: tool.function.parameters || {},
       execute: async (params: any) => {
-        // TODO: OpenAI tools are stubbed out - implement when needed
+        // TODO: Implement the actual tool execution logic. This is currently a stub.
+        // The logic should handle the execution of the tool and return the result.
+        // This may involve calling external APIs or running local functions.
         console.log(`OpenAI tool '${tool.function.name}' called (stubbed):`, params);
         return { result: `OpenAI tool '${tool.function.name}' is currently stubbed out - functionality not implemented` };
       }
@@ -319,19 +412,19 @@ function convertOpenAIToolsToAISDK(openaiTools: Tool[]) {
 }
 
 // ============================================
-// REFACTORED: Streaming using AI SDK utilities
+// Streaming and Chat Completion
 // ============================================
 
 /**
- * NEW: Converts AI SDK StreamTextResult to OpenAI-compatible SSE stream
+ * Handles streaming chat completions.
  *
- * Before: Manual SSE formatting (~150 lines in createOpenAIStreamFromStreamResult)
- * After: Uses AI SDK's toDataStreamResponse() + custom OpenAI formatting
+ * This function takes a chat request, streams the response from the provider using
+ * the Vercel AI SDK's `streamText` function, and formats the output as an
+ * OpenAI-compatible Server-Sent Events (SSE) stream.
  *
- * Benefits:
- * - Automatic chunk handling
- * - Built-in error recovery
- * - Less code to maintain
+ * @param {ChatRequest} request The chat completion request.
+ * @param {ModelCatalogEntry} modelEntry The model catalog entry for the requested model.
+ * @returns {Promise<Response>} A promise that resolves to a `Response` object containing the SSE stream.
  */
 async function streamChatCompletion(
   request: ChatRequest,
@@ -454,7 +547,14 @@ async function streamChatCompletion(
 }
 
 /**
- * NEW: Non-streaming chat using generateText (unchanged logic, cleaner structure)
+ * Handles non-streaming chat completions.
+ *
+ * This function uses the Vercel AI SDK's `generateText` function to get a
+ * complete response from the provider. It then normalizes the result into
+ * a `ProviderResult` object.
+ *
+ * @param {ChatRequest} request The chat completion request.
+ * @returns {Promise<ProviderResult>} A promise that resolves to the provider's result.
  */
 async function generateChatCompletion(
   request: ChatRequest,
@@ -505,9 +605,23 @@ async function generateChatCompletion(
 }
 
 // ============================================
-// Model Catalog (unchanged from original)
+// Model Catalog
 // ============================================
 
+/**
+ * @interface ModelCatalogEntry
+ * @description Represents a single model in the model catalog.
+ * @property {string} id The unique identifier for the model.
+ * @property {ChatRequest['provider']} provider The provider of the model.
+ * @property {string} [displayName] The display name of the model.
+ * @property {string} [description] A description of the model.
+ * @property {string} [upstreamId] The identifier for the model used by the provider.
+ * @property {string} [ownedBy] The entity that owns the model.
+ * @property {number} [contextWindow] The context window size for the model.
+ * @property {'free' | 'limited' | 'pay-per-use'} [cost] The cost tier of the model.
+ * @property {string} [subscription] The subscription required to use the model.
+ * @property {object} [capabilities] The capabilities of the model.
+ */
 interface ModelCatalogEntry {
   id: string;
   provider: ChatRequest['provider'];
@@ -527,6 +641,10 @@ interface ModelCatalogEntry {
   };
 }
 
+/**
+ * @const {ModelCatalogEntry[]}
+ * @description A default model catalog used as a fallback if dynamic discovery fails.
+ */
 const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
   {
     id: 'claude-sonnet-4.5',
@@ -538,12 +656,19 @@ const DEFAULT_MODEL_CATALOG: ModelCatalogEntry[] = [
     contextWindow: 200000,
     capabilities: { completion: true, streaming: true, reasoning: true, vision: true, tools: true },
   },
-  // ... (rest of catalog unchanged)
 ];
 
 let modelCatalogCache: ModelCatalogEntry[] | null = null;
 let modelIndexCache: Map<string, ModelCatalogEntry> | null = null;
 
+/**
+ * Ensures that the model catalog is loaded into the cache.
+ *
+ * If the cache is empty, this function populates it using the dynamically
+ * discovered models or the default catalog as a fallback.
+ *
+ * @returns {Promise<void>} A promise that resolves when the catalog is loaded.
+ */
 async function ensureModelCatalogLoaded(): Promise<void> {
   if (modelCatalogCache && modelIndexCache) return;
 
@@ -553,6 +678,13 @@ async function ensureModelCatalogLoaded(): Promise<void> {
   modelIndexCache = new Map(modelCatalogCache.map((entry) => [entry.id, entry]));
 }
 
+/**
+ * Resolves a model by its ID from the model catalog.
+ *
+ * @param {string} modelId The ID of the model to resolve.
+ * @returns {Promise<ModelCatalogEntry>} A promise that resolves to the model's catalog entry.
+ * @throws {Error} If the model is not found in the catalog.
+ */
 async function resolveModel(modelId: string): Promise<ModelCatalogEntry> {
   await ensureModelCatalogLoaded();
   const entry = modelIndexCache?.get(modelId);
@@ -562,6 +694,12 @@ async function resolveModel(modelId: string): Promise<ModelCatalogEntry> {
   return entry;
 }
 
+/**
+ * Converts a model catalog entry to the OpenAI model format.
+ *
+ * @param {ModelCatalogEntry} entry The model catalog entry to convert.
+ * @returns {object} The model information in OpenAI's format.
+ */
 function toOpenAIModel(entry: ModelCatalogEntry) {
   return {
     object: 'model',
@@ -583,6 +721,15 @@ function toOpenAIModel(entry: ModelCatalogEntry) {
 // Request/Response Conversion
 // ============================================
 
+/**
+ * Maps an incoming OpenAI-formatted message to the internal `Message` format.
+ *
+ * This function handles messages with string content as well as array content
+ * (e.g., from vision models) by combining array elements into a single string.
+ *
+ * @param {any} message The incoming message object.
+ * @returns {Message} The message in the internal format.
+ */
 function mapOpenAIMessageToInternal(message: any): Message {
   const role = typeof message?.role === 'string' ? message.role : 'user';
   const content = message?.content;
@@ -607,6 +754,13 @@ function mapOpenAIMessageToInternal(message: any): Message {
   return { role, content: '' };
 }
 
+/**
+ * Converts an incoming OpenAI chat completion request to the internal `ChatRequest` format.
+ *
+ * @param {any} body The body of the incoming HTTP request.
+ * @returns {Promise<{ request: ChatRequest; model: ModelCatalogEntry }>} A promise that resolves to the internal chat request and the corresponding model entry.
+ * @throws {Error} If the request body is invalid.
+ */
 async function convertOpenAIChatCompletionRequest(body: any): Promise<{ request: ChatRequest; model: ModelCatalogEntry }> {
   if (!body || typeof body !== 'object') {
     throw new Error('Invalid request payload');
@@ -636,6 +790,13 @@ async function convertOpenAIChatCompletionRequest(body: any): Promise<{ request:
   return { request, model: modelEntry };
 }
 
+/**
+ * Builds an OpenAI-compatible chat completion response from a provider's result.
+ *
+ * @param {ProviderResult} result The result from the provider.
+ * @param {ModelCatalogEntry} modelEntry The model catalog entry for the model used.
+ * @returns {object} The chat completion response in OpenAI's format.
+ */
 function buildOpenAIChatResponse(
   result: ProviderResult,
   modelEntry: ModelCatalogEntry,
