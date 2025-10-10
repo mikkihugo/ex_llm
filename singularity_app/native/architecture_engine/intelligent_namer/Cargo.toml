@@ -1,0 +1,29 @@
+[package]
+name = "intelligent_namer"
+version = "0.1.0"
+edition = "2021"
+description = "Intelligent naming service for generating meaningful names using AI"
+license = "MIT"
+repository = "https://github.com/your-org/singularity"
+keywords = ["naming", "ai", "intelligence", "elixir", "nif"]
+categories = ["development-tools", "machine-learning"]
+readme = "README.md"
+
+[lib]
+name = "intelligent_namer"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.34"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+futures = { workspace = true }
+
+# For future ML integration (optional for now)
+# ndarray = { version = "0.15", optional = true }
+# onnxruntime = { version = "0.0.14", optional = true }
+
+[features]
+default = []
+ml = []  # Future: ML-powered predictions

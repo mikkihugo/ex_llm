@@ -1,0 +1,50 @@
+{
+  "id": "sparc-specification",
+  "name": "SPARC Specification Generator",
+  "description": "Generates detailed SPARC specifications based on requirements",
+  "steps": [
+    {
+      "name": "analyze-requirements",
+      "operation": {
+        "type": "analyze",
+        "analyze": "semantic"
+      }
+    },
+    {
+      "name": "generate-specification",
+      "operation": {
+        "type": "generate",
+        "generate": "sparc-research"
+      }
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "author": "SPARC Team",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-01-15T10:00:00Z",
+    "tags": ["sparc", "specification", "requirements", "analysis"],
+    "performance": {
+      "avg_execution_time_ms": 200.0,
+      "memory_usage_bytes": 4194304,
+      "complexity": 7
+    }
+  },
+  "ai_signature": {
+    "name": "sparc_specification_generator",
+    "inputs": {
+      "requirements": "Project requirements and constraints",
+      "business_domain": "Business domain context",
+      "stakeholders": "Key stakeholders and their needs",
+      "constraints": "Technical and business constraints"
+    },
+    "outputs": {
+      "specification_document": "Detailed SPARC specification",
+      "requirements_analysis": "Requirements breakdown and analysis",
+      "risk_assessment": "Risk identification and mitigation",
+      "success_criteria": "Clear success criteria and metrics"
+    },
+    "instruction": "Generate a comprehensive SPARC specification with clear objectives, functional and non-functional requirements, constraints, success criteria, and risk assessment. Structure the response with ANALYSIS, FILES, and SUMMARY sections."
+  },
+  "template_content": "Generate a detailed SPARC specification based on the provided requirements.\n\nIMPORTANT: Structure your response as:\n=== ANALYSIS ===\n[Analysis of requirements and approach]\n\n=== FILES ===\nFor each file you would create, use this format:\nFILE: path/to/file.ext\nOPERATION: create|update|delete\nREASON: [why this file is needed]\nCONTENT:\n```\n[file content here]\n```\nEND_FILE\n\n=== SUMMARY ===\n[Summary of the specification]\n\nPlease provide:\n1. Clear objectives and scope\n2. Functional requirements\n3. Non-functional requirements\n4. Constraints and assumptions\n5. Success criteria\n6. Risk assessment"
+}

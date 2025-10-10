@@ -53,11 +53,11 @@ defmodule Singularity.Application do
       # Start the technology template store
       Singularity.TechnologyTemplateStore,
       # Start the framework pattern store
-      Singularity.FrameworkPatternStore,
+      Singularity.ArchitectureEngine.FrameworkPatternStore,
       # Start the semantic code search
       Singularity.Search.CodeSearch,
       # Start the package registry knowledge
-      Singularity.Search.PackageRegistryKnowledge,
+      Singularity.ArchitectureEngine.PackageRegistryKnowledge,
       # Start the package and codebase search
       Singularity.Search.PackageAndCodebaseSearch,
       # Start the code store
@@ -153,7 +153,7 @@ defmodule Singularity.Application do
       # Start the NATS execution router
       Singularity.NatsExecutionRouter,
       # Start the package registry collector
-      Singularity.Packages.PackageRegistryCollector,
+      Singularity.ArchitectureEngine.PackageRegistryCollector,
       # Start the HTDAG
       Singularity.Planning.HTDAG,
       # Start the safe work planner

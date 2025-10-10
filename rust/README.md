@@ -1,80 +1,72 @@
-# Singularity Rust NIFs
+# Singularity Global Rust - Central Knowledge Components
 
-This directory contains all Rust Native Implemented Functions (NIFs) for Singularity.
+This directory contains **central knowledge** components that provide shared intelligence across all Singularity instances.
 
-## Active NIFs
+## Central Knowledge Components
 
 ### Core Analysis
-- **architecture/** - Architecture analysis and naming suggestions (6 functions)
-- **code_analysis/** - Code quality and pattern analysis
-- **quality/** - Multi-language quality analysis (13 functions)
-- **parser/** - Polyglot code parsing and AST generation
+- **code_analysis/** - Central code quality and pattern analysis
+- **parser/** - Central polyglot code parsing and AST generation
 
 ### Intelligence & Knowledge
-- **knowledge/** - Knowledge management and artifacts (4 functions)
-- **intelligent_namer/** - Context-aware naming suggestions
-- **prompt/** - Prompt engineering and optimization (production)
-
-### Framework & Package Intelligence (Hybrid Architecture)
-- **framework/** - Framework detection, security validation, deviation checking
-- **package/** - Package intelligence, security scanning, dependency analysis
+- **knowledge/** - Central knowledge management and artifacts
+- **prompt/** - Central prompt engineering and optimization
+- **service/intelligence_hub/** - Central intelligence coordination
+- **service/package_intelligence/** - Central package intelligence
+- **service/knowledge_cache/** - Central knowledge caching
 
 ### Utilities
-- **template/** - Template management library
+- **template/** - Central template management library
 
 ## Architecture
 
-All NIFs follow this pattern:
-1. **Local Execution** - Run in Singularity (local/edge)
-2. **Fast Operations** - Optimized for < 100ms response
-3. **Offline Capable** - Function without network
-4. **Central Integration** - Optional sync to central_cloud via NATS
+**Global Rust (This directory):**
+- **Central Knowledge** - Shared intelligence across all instances
+- **Heavy Processing** - Complex analysis that benefits from centralization
+- **Learning & Training** - Pattern learning and model training
+- **Data Aggregation** - Collecting insights from multiple instances
 
-### Hybrid Intelligence (Framework & Package)
+**Singularity Level (singularity_app/rust_*):**
+- **Engines** - Fast, local execution engines
+- **NIFs** - Native Implemented Functions for Elixir
+- **Real-time Processing** - Sub-100ms response times
+- **Local Caching** - Fast access to frequently used data
 
-Framework and Package engines use hybrid architecture:
+## Data Flow
 
 ```
-Local (Singularity)                Central (Cloud)
-─────────────────                 ───────────────
-Fast detection (<100ms)     ←→    LLM discovery
-Security validation         ←→    Deep enrichment
-Deviation checking          ←→    Package intelligence
-Local caching              ←→    Global learning
+Singularity Instances (Local)
+    ↓ NATS messages
+Global Rust (Central Knowledge)
+    ↓ Heavy processing
+PostgreSQL (Central Database)
+    ↓ Learning & patterns
+NATS (Distributed messaging)
+    ↓ Results
+Singularity Instances (Local)
 ```
 
 ## Development
 
-### Building NIFs
+### Building Central Components
 ```bash
-cd singularity_app
-mix deps.compile --force
+cd rust
+cargo build --release
 ```
 
-### Testing
-```elixir
-# Test NIF loading
-iex> Singularity.ArchitectureEngine.health()
-:ok
+### Testing Central Intelligence
+```bash
+# Test central knowledge hub
+cargo test -p knowledge
 
-# Test framework hybrid intelligence
-iex> FrameworkEngine.detect("/path/to/project")
-{:ok, frameworks}
+# Test package intelligence
+cargo test -p service-package-intelligence
 
-# Test package security
-iex> PackageEngine.check_security("phoenix", "1.7.0")
-{:ok, %{vulnerabilities: []}}
+# Test code analysis
+cargo test -p code_analysis
 ```
-
-### Adding New NIFs
-1. Create crate in `rust/your_nif/`
-2. Add to `singularity_app/native/`
-3. Create Elixir wrapper in `singularity_app/lib/singularity/your_nif.ex`
-4. Update `mix.exs` with Rustler configuration
-5. Integrate with EngineCentralHub for NATS communication
 
 ## See Also
-- `AGENTS.md` - NIF agents documentation
-- `/docs/nifs/` - Detailed NIF documentation
-- `/docs/architecture/` - Architecture guides
-- `../rust_global/README.md` - Global engines
+- `../singularity_app/rust_*/` - Local engines and NIFs
+- `../AGENTS.md` - Agent documentation
+- `../docs/architecture/` - Architecture guides

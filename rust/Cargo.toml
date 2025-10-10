@@ -1,12 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "architecture",
     "code_analysis",
-    "embedding",
-    "framework",
     "knowledge",
-    "package",
     "parser/core",
     "parser/polyglot",
     "parser/formats/dependency",
@@ -18,8 +14,8 @@ members = [
     "parser/languages/typescript",
     "parser/languages/gleam",
     "prompt",
-    "quality",
-    "semantic",
+    "service/intelligence_hub",
+    "service/package_intelligence",
     "template",
 ]
 

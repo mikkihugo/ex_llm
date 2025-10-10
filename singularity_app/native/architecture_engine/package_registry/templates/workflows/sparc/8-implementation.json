@@ -1,0 +1,21 @@
+{
+  "id": "sparc-implementation",
+  "name": "SPARC Implementation Phase",
+  "description": "Code generation and implementation",
+  "phase": 5,
+  "depends_on": ["sparc-architecture", "sparc-security", "sparc-performance"],
+  "compose": ["bits/testing/pytest-async.md"],
+  "metadata": {
+    "version": "2.0.0",
+    "tags": ["sparc", "implementation", "code-generation"],
+    "complexity": 9
+  },
+  "instruction": "Generate production-ready code implementing the designed architecture with security, performance, and testing considerations.",
+  "outputs": [
+    "production_code",
+    "unit_tests",
+    "integration_tests",
+    "documentation",
+    "deployment_instructions"
+  ]
+}
