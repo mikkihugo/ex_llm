@@ -23,11 +23,6 @@ defmodule Singularity.MixProject do
       prune_code_paths: false,
       # Memory limits for compilation
       erlc_options: [:debug_info, {:i, "include"}],
-      erl_opts: [
-        :debug_info,
-        {:hmax, 268_435_456},  # 2GB max heap per process
-        {:hmaxk, 524_288}      # 4GB system memory limit
-      ],
       aliases: aliases(),
       deps: deps(),
       releases: releases(),
