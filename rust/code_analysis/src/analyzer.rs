@@ -355,14 +355,14 @@ impl CodebaseAnalyzer {
       }
       ProgrammingLanguage::JavaScript => {
         // Use JavaScript parser directly
-        match javascript_parser::JavaScriptParser::new() {
+        match javascript_parser::JavascriptParser::new() {
           Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("JavaScript parser error: {}", e)),
           Err(e) => Err(format!("Failed to create JavaScript parser: {}", e)),
         }
       }
       ProgrammingLanguage::TypeScript => {
         // Use TypeScript parser directly
-        match typescript_parser::TypeScriptParser::new() {
+        match typescript_parser::TypescriptParser::new() {
           Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("TypeScript parser error: {}", e)),
           Err(e) => Err(format!("Failed to create TypeScript parser: {}", e)),
         }

@@ -5,7 +5,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use quality::QualityMetrics;
+use quality_lib::QualityMetrics;
 
 /// Perform quality analysis on a codebase using quality module
 ///

@@ -1920,8 +1920,8 @@ impl PythonParserWrapper {
 }
 
 // Add similar wrappers for other languages...
-pub struct JavaScriptParserWrapper { parser: JavaScriptParser, }
-pub struct TypeScriptParserWrapper { parser: TypeScriptParser, }
+pub struct JavascriptParserWrapper { parser: JavascriptParser, }
+pub struct TypescriptParserWrapper { parser: TypescriptParser, }
 pub struct GoParserWrapper { parser: GoParser, }
 pub struct JavaParserWrapper { parser: JavaParser, }
 pub struct CSharpParserWrapper { parser: CSharpParser, }
@@ -1931,7 +1931,7 @@ pub struct ElixirParserWrapper { parser: ElixirParser, }
 pub struct GleamParserWrapper { parser: GleamParser, }
 
 // Implement CodeParser trait for all wrappers...
-impl CodeParser for JavaScriptParserWrapper {
+impl CodeParser for JavascriptParserWrapper {
     fn parse(&self, content: &str) -> Result<AstNode> {
         // Use real JavaScript parser from javascript-parser crate
         let analysis_result = tokio::runtime::Handle::current().block_on(
@@ -1967,10 +1967,10 @@ impl CodeParser for JavaScriptParserWrapper {
     }
 }
 
-impl JavaScriptParserWrapper {
+impl JavascriptParserWrapper {
     pub fn new() -> Self { 
         Self { 
-            parser: JavaScriptParser::new().expect("Failed to create JavaScript parser") 
+            parser: JavascriptParser::new().expect("Failed to create JavaScript parser") 
         } 
     }
     
@@ -2061,8 +2061,8 @@ impl JavaScriptParserWrapper {
 }
 
 // Similar implementations for other wrappers...
-impl TypeScriptParserWrapper {
-    pub fn new() -> Self { Self { parser: TypeScriptParser::new() } }
+impl TypescriptParserWrapper {
+    pub fn new() -> Self { Self { parser: TypescriptParser::new() } }
 }
 
 impl GoParserWrapper {

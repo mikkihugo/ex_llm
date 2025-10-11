@@ -3,7 +3,7 @@
 //! Runs the prompt engine as a standalone NATS service.
 
 use anyhow::Result;
-use prompt_engine::nats_service::PromptEngineNatsService;
+use prompt::nats_service::PromptEngineNatsService;
 use tracing::{info, Level};
 use tracing_subscriber;
 

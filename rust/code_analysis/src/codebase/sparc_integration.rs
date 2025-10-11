@@ -264,7 +264,7 @@ mod tests {
         let result = knowledge.how_to("parse TypeScript").await.unwrap();
 
         // Result contains:
-        // - our_capabilities: TypeScriptParser from our codebase
+        // - our_capabilities: TypescriptParser from our codebase
         // - github_examples: Examples from GitHub
         // - npm_packages: @typescript-eslint/parser, etc.
         // - security_considerations: Known CVEs

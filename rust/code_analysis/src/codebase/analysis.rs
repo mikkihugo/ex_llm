@@ -10,8 +10,8 @@ use sha2::{Sha256, Digest};
 // Universal parser and individual parser imports
 use rust_parser::RustParser;
 use python_parser::PythonParser;
-use javascript_parser::JavaScriptParser;
-use typescript_parser::TypeScriptParser;
+use javascript_parser::JavascriptParser;
+use typescript_parser::TypescriptParser;
 use elixir_parser::ElixirParser;
 use gleam_parser::GleamParser;
 
@@ -323,13 +323,13 @@ impl AnalysisEngine {
         }
       }
       ProgrammingLanguage::JavaScript => {
-        match javascript_parser::JavaScriptParser::new() {
+        match javascript_parser::JavascriptParser::new() {
           Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("JavaScript parser error: {}", e)),
           Err(e) => Err(format!("Failed to create JavaScript parser: {}", e)),
         }
       }
       ProgrammingLanguage::TypeScript => {
-        match typescript_parser::TypeScriptParser::new() {
+        match typescript_parser::TypescriptParser::new() {
           Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("TypeScript parser error: {}", e)),
           Err(e) => Err(format!("Failed to create TypeScript parser: {}", e)),
         }

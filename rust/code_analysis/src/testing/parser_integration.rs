@@ -215,8 +215,8 @@ impl ParserCoverageCollector {
         /*
         // Register all parsers
         self.parsers.insert("rust".to_string(), Box::new(RustParserCoverageProvider::new()));
-        self.parsers.insert("javascript".to_string(), Box::new(JavaScriptParserCoverageProvider::new()));
-        self.parsers.insert("typescript".to_string(), Box::new(TypeScriptParserCoverageProvider::new()));
+        self.parsers.insert("javascript".to_string(), Box::new(JavascriptParserCoverageProvider::new()));
+        self.parsers.insert("typescript".to_string(), Box::new(TypescriptParserCoverageProvider::new()));
         self.parsers.insert("python".to_string(), Box::new(PythonParserCoverageProvider::new()));
         self.parsers.insert("go".to_string(), Box::new(GoParserCoverageProvider::new()));
         self.parsers.insert("java".to_string(), Box::new(JavaParserCoverageProvider::new()));
@@ -435,15 +435,15 @@ impl ParserCoverageProvider for RustParserCoverageProvider {
 }
 
 /// JavaScript parser coverage provider
-pub struct JavaScriptParserCoverageProvider;
+pub struct JavascriptParserCoverageProvider;
 
-impl JavaScriptParserCoverageProvider {
+impl JavascriptParserCoverageProvider {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl ParserCoverageProvider for JavaScriptParserCoverageProvider {
+impl ParserCoverageProvider for JavascriptParserCoverageProvider {
     fn get_parser_name(&self) -> &str {
         "javascript"
     }
