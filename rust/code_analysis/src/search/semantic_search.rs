@@ -1,23 +1,3 @@
-use std::fmt;
-impl fmt::Display for ProgrammingLanguage {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            ProgrammingLanguage::Rust => "rust",
-            ProgrammingLanguage::Python => "python",
-            ProgrammingLanguage::JavaScript => "javascript",
-            ProgrammingLanguage::TypeScript => "typescript",
-            ProgrammingLanguage::Go => "go",
-            ProgrammingLanguage::Java => "java",
-            ProgrammingLanguage::CSharp => "csharp",
-            ProgrammingLanguage::C => "c",
-            ProgrammingLanguage::Cpp => "cpp",
-            ProgrammingLanguage::Erlang => "erlang",
-            ProgrammingLanguage::Elixir => "elixir",
-            ProgrammingLanguage::Gleam => "gleam",
-        };
-        write!(f, "{}", s)
-    }
-}
 // Semantic Code Search with Custom Vectors
 //
 // Production-ready business-aware, architecture-aware, and security-aware code search.
@@ -547,22 +527,7 @@ pub struct AstNode {
     pub end_column: u32,
 }
 
-/// Programming language enum
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ProgrammingLanguage {
-    Rust,
-    Python,
-    JavaScript,
-    TypeScript,
-    Go,
-    Java,
-    CSharp,
-    C,
-    Cpp,
-    Erlang,
-    Elixir,
-    Gleam,
-}
+// ProgrammingLanguage enum is imported from languages module
 
 /// Business pattern matcher
 #[derive(Debug, Clone)]

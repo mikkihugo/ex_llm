@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use crate::package_registry::{PackageRegistryEngine, PackageCollectionRequest, PackageCollectionResult};
 use crate::framework_detection::{FrameworkDetectionEngine, FrameworkDetectionRequest, FrameworkDetectionResult};
+use crate::technology_detection::{TechnologyDetectionRequest, TechnologyDetectionResult};
+use crate::architecture::{ArchitecturalSuggestionRequest, ArchitecturalSuggestion};
 
 mod atoms {
     rustler::atoms! {
@@ -205,6 +207,8 @@ fn detect_framework_from_pattern(pattern: &str, context: &str) -> Option<Framewo
             version: Some("1.7.0".to_string()),
             confidence: 0.95,
             detected_by: "pattern_match".to_string(),
+            evidence: vec!["phoenix framework detected".to_string()],
+            pattern_id: Some("phoenix_pattern_001".to_string()),
         })
     } else if pattern_lower.contains("ecto") || context_lower.contains("ecto") {
         Some(FrameworkDetectionResult {
@@ -212,6 +216,8 @@ fn detect_framework_from_pattern(pattern: &str, context: &str) -> Option<Framewo
             version: Some("3.10.0".to_string()),
             confidence: 0.90,
             detected_by: "pattern_match".to_string(),
+            evidence: vec!["ecto orm detected".to_string()],
+            pattern_id: Some("ecto_pattern_001".to_string()),
         })
     } else if pattern_lower.contains("nats") || context_lower.contains("nats") {
         Some(FrameworkDetectionResult {
@@ -219,6 +225,8 @@ fn detect_framework_from_pattern(pattern: &str, context: &str) -> Option<Framewo
             version: Some("0.1.0".to_string()),
             confidence: 0.88,
             detected_by: "pattern_match".to_string(),
+            evidence: vec!["nats messaging detected".to_string()],
+            pattern_id: Some("nats_pattern_001".to_string()),
         })
     } else if pattern_lower.contains("postgresql") || context_lower.contains("postgresql") {
         Some(FrameworkDetectionResult {
@@ -226,6 +234,8 @@ fn detect_framework_from_pattern(pattern: &str, context: &str) -> Option<Framewo
             version: Some("15.0".to_string()),
             confidence: 0.92,
             detected_by: "pattern_match".to_string(),
+            evidence: vec!["postgresql database detected".to_string()],
+            pattern_id: Some("postgresql_pattern_001".to_string()),
         })
     } else {
         None

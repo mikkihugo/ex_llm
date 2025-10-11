@@ -26,7 +26,8 @@ pub struct PackageInfo {
     pub patterns: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "PackageCollectionRequest"]
 pub struct PackageCollectionRequest {
     pub package_name: String,
     pub version: String,
@@ -35,7 +36,8 @@ pub struct PackageCollectionRequest {
     pub include_stats: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "PackageCollectionResult"]
 pub struct PackageCollectionResult {
     pub package: PackageInfo,
     pub collection_time: f64,

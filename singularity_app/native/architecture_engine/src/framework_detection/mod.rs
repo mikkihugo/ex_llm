@@ -13,7 +13,8 @@ pub mod detector;
 pub mod pattern_learner;
 pub mod confidence_tracker;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "FrameworkDetectionRequest"]
 pub struct FrameworkDetectionRequest {
     pub patterns: Vec<String>,
     pub context: String,
@@ -21,7 +22,8 @@ pub struct FrameworkDetectionRequest {
     pub confidence_threshold: f64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "FrameworkDetectionResult"]
 pub struct FrameworkDetectionResult {
     pub name: String,
     pub version: Option<String>,
