@@ -5,7 +5,7 @@ use parser_framework::{
     LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
-use tree_sitter::{Node, Parser, Query, QueryCursor, Tree};
+use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator, Tree};
 
 pub const VERSION: &str = "python-tree-sitter-0.23";
 
@@ -181,8 +181,8 @@ impl LanguageParser for PythonParser {
         let mut cursor = tree_sitter::QueryCursor::new();
         let mut imports = Vec::new();
 
-        let captures = cursor.captures(&query, ast.root(), ast.source.as_bytes());
-        for (m, _) in captures {
+        let mut captures = cursor.captures(&query, ast.root(), ast.source.as_bytes());
+        while let Some(&(ref m, _)) = captures.next() {
             let mut module = "";
             let mut kind = "import";
             let mut node_ref: Option<Node> = None;
@@ -229,8 +229,8 @@ impl LanguageParser for PythonParser {
         let mut cursor = tree_sitter::QueryCursor::new();
         let mut comments = Vec::new();
 
-        let captures = cursor.captures(&query, ast.root(), ast.source.as_bytes());
-        for (m, _) in captures {
+        let mut captures = cursor.captures(&query, ast.root(), ast.source.as_bytes());
+        while let Some(&(ref m, _)) = captures.next() {
             for capture in m.captures {
                 let text = capture
                     .node

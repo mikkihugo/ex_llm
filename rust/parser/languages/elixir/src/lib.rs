@@ -4,7 +4,7 @@ use parser_framework::{
     Comment, Function, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
-use tree_sitter::{Parser, Query, QueryCursor};
+use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator};
 
 /// Elixir language parser backed by tree-sitter.
 pub struct ElixirParser {
@@ -75,10 +75,10 @@ impl LanguageParser for ElixirParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let captures = cursor.captures(&query, root, ast.source.as_bytes());
+        let mut captures = cursor.captures(&query, root, ast.source.as_bytes());
 
         let mut functions = Vec::new();
-        for (m, _) in captures {
+        while let Some(&(ref m, _)) = captures.next() {
             for capture in m.captures {
                 if capture.index == 1 {
                     let name = capture
@@ -129,10 +129,10 @@ impl LanguageParser for ElixirParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let captures = cursor.captures(&query, root, ast.source.as_bytes());
+        let mut captures = cursor.captures(&query, root, ast.source.as_bytes());
 
         let mut imports = Vec::new();
-        for (m, _) in captures {
+        while let Some(&(ref m, _)) = captures.next() {
             for capture in m.captures {
                 if capture.index == 1 {
                     let path = capture
@@ -167,10 +167,10 @@ impl LanguageParser for ElixirParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let captures = cursor.captures(&query, root, ast.source.as_bytes());
+        let mut captures = cursor.captures(&query, root, ast.source.as_bytes());
 
         let mut comments = Vec::new();
-        for (m, _) in captures {
+        while let Some(&(ref m, _)) = captures.next() {
             for capture in m.captures {
                 if capture.index == 0 {
                     let text = capture

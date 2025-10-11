@@ -74,7 +74,7 @@ impl LanguageParser for JavascriptParser {
         )
         .map_err(|err| ParseError::QueryError(err.to_string()))?;
 
-        for (m, _) in cursor.captures(&fn_query, root, ast.source.as_bytes()).into_iter() {
+        for (m, _) in cursor.captures(&fn_query, root, ast.source.as_bytes()) {
             let mut name = "";
             let mut params = "";
             let mut body = "";
@@ -119,7 +119,7 @@ impl LanguageParser for JavascriptParser {
         )
         .map_err(|err| ParseError::QueryError(err.to_string()))?;
 
-        for (m, _) in cursor.captures(&arrow_query, root, ast.source.as_bytes()).into_iter() {
+        for (m, _) in cursor.captures(&arrow_query, root, ast.source.as_bytes()) {
             let mut name = "";
             let mut params = "";
             let mut body = "";
@@ -170,7 +170,7 @@ impl LanguageParser for JavascriptParser {
         let matches = cursor.matches(&query, root, ast.source.as_bytes());
 
         let mut imports = Vec::new();
-        for (m, _) in matches.into_iter() {
+        for (m, _) in matches {
             let mut path = "";
             let mut node = None;
             for capture in m.captures {
@@ -210,7 +210,7 @@ impl LanguageParser for JavascriptParser {
         let matches = cursor.matches(&query, root, ast.source.as_bytes());
 
         let mut comments = Vec::new();
-        for (m, _) in matches.into_iter() {
+        for (m, _) in matches {
             for capture in m.captures {
                 let text = capture
                     .node
