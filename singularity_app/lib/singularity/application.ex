@@ -156,6 +156,8 @@ defmodule Singularity.Application do
       Singularity.ArchitectureEngine.PackageRegistryCollector,
       # Start the HTDAG
       Singularity.Planning.HTDAG,
+      # Start the HTDAG auto-bootstrap (self-diagnosis and auto-fix)
+      Singularity.Planning.HTDAGAutoBootstrap,
       # Start the safe work planner
       Singularity.Planning.SafeWorkPlanner,
       # Start the story decomposer

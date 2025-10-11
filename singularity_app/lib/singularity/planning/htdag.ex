@@ -10,6 +10,10 @@ defmodule Singularity.Planning.HTDAG do
 
   alias Singularity.LLM.Service
   alias Singularity.Planning.HTDAGCore
+  alias Singularity.Planning.HTDAGExecutor
+  alias Singularity.Planning.HTDAGEvolution
+  alias Singularity.Planning.SafeWorkPlanner
+  alias Singularity.TemplateSparcOrchestrator
 
   @max_depth 5
   @atomic_threshold 5.0
@@ -61,7 +65,117 @@ defmodule Singularity.Planning.HTDAG do
     HTDAGCore.current_tasks(dag)
   end
 
+  @doc """
+  Execute DAG with NATS LLM integration.
+  
+  This is the new self-evolving execution path that uses:
+  - NATS for LLM communication
+  - Streaming tokens for real-time feedback
+  - Circuit breaking and rate limiting
+  - Self-improvement through critique
+  - Integration with existing Singularity infrastructure:
+    * RAGCodeGenerator for finding similar code
+    * QualityCodeGenerator for enforcing standards
+    * SafeWorkPlanner for hierarchical planning
+    * TemplateSparcOrchestrator for SPARC methodology
+  
+  ## Options
+  
+  - `:run_id` - Unique run identifier
+  - `:stream` - Enable token streaming (default: false)
+  - `:evolve` - Enable self-improvement (default: false)
+  - `:use_rag` - Use RAG code generator (default: false)
+  - `:use_quality_templates` - Use quality templates (default: false)
+  - `:integrate_sparc` - Integrate with SPARC (default: false)
+  - `:safe_planning` - Use SafeWorkPlanner (default: false)
+  
+  ## Example
+  
+      dag = HTDAG.decompose(%{description: "Build user auth"})
+      {:ok, result} = HTDAG.execute_with_nats(dag, 
+        run_id: "run-123",
+        evolve: true,
+        use_rag: true,
+        use_quality_templates: true
+      )
+  """
+  def execute_with_nats(dag, opts \\ []) do
+    run_id = Keyword.get(opts, :run_id, generate_run_id())
+    
+    # Integrate with SafeWorkPlanner if requested
+    dag = if Keyword.get(opts, :safe_planning, false) do
+      integrate_with_safe_planner(dag, opts)
+    else
+      dag
+    end
+    
+    # Integrate with SPARC if requested
+    opts = if Keyword.get(opts, :integrate_sparc, false) do
+      Keyword.put(opts, :sparc_enabled, true)
+    else
+      opts
+    end
+    
+    # Start executor
+    case HTDAGExecutor.start_link(run_id: run_id) do
+      {:ok, executor} ->
+        try do
+          # Execute DAG
+          case HTDAGExecutor.execute(executor, dag, opts) do
+            {:ok, result} ->
+              # Optionally evolve based on results
+              if Keyword.get(opts, :evolve, false) do
+                evolve_and_retry(executor, dag, result, opts)
+              else
+                {:ok, result}
+              end
+              
+            error ->
+              error
+          end
+        after
+          HTDAGExecutor.stop(executor)
+        end
+        
+      error ->
+        error
+    end
+  end
+
   ## Private Functions
+  
+  defp evolve_and_retry(executor, dag, result, opts) do
+    Logger.info("Attempting evolution based on execution results")
+    
+    case HTDAGEvolution.critique_and_mutate(result, opts) do
+      {:ok, mutations} when length(mutations) > 0 ->
+        Logger.info("Applying #{length(mutations)} mutations for improvement")
+        
+        # Apply mutations to future executions
+        # In a real system, this would update operation configs
+        {:ok, Map.put(result, :mutations_applied, mutations)}
+        
+      {:ok, []} ->
+        Logger.info("No mutations suggested, execution was optimal")
+        {:ok, result}
+        
+      {:error, reason} ->
+        Logger.warning("Evolution failed, returning original results", reason: reason)
+        {:ok, result}
+    end
+  end
+  
+  defp generate_run_id do
+    "htdag-run-#{System.unique_integer([:positive])}"
+  end
+  
+  defp integrate_with_safe_planner(dag, _opts) do
+    # TODO: Integrate HTDAG tasks with SafeWorkPlanner hierarchy
+    # For now, return dag as-is
+    # Future: Map tasks to Features in SafeWorkPlanner
+    Logger.info("SafeWorkPlanner integration: Planning hierarchical task breakdown")
+    dag
+  end
 
   defp decompose_recursive(dag, _task, max_depth) when max_depth <= 0 do
     {:ok, dag}

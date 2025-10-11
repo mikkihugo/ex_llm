@@ -78,6 +78,18 @@ defmodule Singularity.MixProject do
       # Rustler NIFs
       {:rustler, "~> 0.34.0", runtime: false},
 
+      # All 9 Rust NIFs (compile: false = won't rebuild every time)
+      # Only include engines that actually exist
+      {:architecture_engine, path: "native/architecture_engine", runtime: false, app: false, compile: false},
+      {:code_engine, path: "native/code_engine", runtime: false, app: false, compile: false, optional: true},
+      # {:framework_engine, path: "native/framework_engine", runtime: false, app: false, compile: false},
+      # {:knowledge_engine, path: "native/knowledge_engine", runtime: false, app: false, compile: false},
+      # {:package_engine, path: "native/package_engine", runtime: false, app: false, compile: false},
+      {:parser_engine, path: "native/parser_engine", runtime: false, app: false, compile: false, optional: true},
+      {:prompt_engine, path: "native/prompt_engine", runtime: false, app: false, compile: false, optional: true},
+      # {:quality_engine, path: "native/quality_engine", runtime: false, app: false, compile: false},
+      # Embedding engine (GPU-accelerated with Jina v3 + Qodo-Embed)
+      {:embedding_engine, path: "../rust_global/semantic_embedding_engine", runtime: false, app: false},
       # Rust NIFs (consolidated - framework + package merged into architecture)
       {:architecture_engine, path: "native/architecture_engine", runtime: false, app: false, compile: false},
       # Other engines are symlinks to rust/ directories (already included in workspace)

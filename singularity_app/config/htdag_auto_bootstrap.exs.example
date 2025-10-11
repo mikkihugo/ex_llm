@@ -1,0 +1,42 @@
+# Example Configuration for HTDAG Auto-Bootstrap
+# Add this to your config/config.exs or config/dev.exs
+
+config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+  # Enable automatic self-diagnosis on server startup
+  enabled: true,
+  
+  # Maximum number of fix iterations (prevents infinite loops)
+  max_iterations: 10,
+  
+  # Auto-fix issues on startup (set to false to just learn without fixing)
+  fix_on_startup: true,
+  
+  # Enable runtime tracing to detect broken/slow/dead functions
+  trace_runtime: true,
+  
+  # Duration to trace runtime behavior (in milliseconds)
+  # 60 seconds gives good coverage without slowing startup
+  trace_duration_ms: 60_000,
+  
+  # Log completion summary with metrics
+  notify_on_complete: true,
+  
+  # Run asynchronously (non-blocking startup)
+  # Server starts immediately, bootstrap runs in background
+  run_async: true,
+  
+  # Minimum time between auto-fix runs (in milliseconds)
+  # Prevents too-frequent auto-fixes
+  cooldown_ms: 300_000,  # 5 minutes
+  
+  # Severity threshold for auto-fixing
+  # :high = only fix critical issues
+  # :medium = fix critical + moderate issues (default)
+  # :low = fix everything including docs/style
+  fix_severity: :medium,
+  
+  # Enable integration with existing systems
+  use_rag: true,                 # Learn from existing code patterns
+  use_quality_templates: true,   # Enforce quality standards
+  integrate_sparc: true,         # Use SPARC methodology
+  safe_planning: true            # Hierarchical planning

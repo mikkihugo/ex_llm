@@ -1087,3 +1087,20 @@ import('./nats-handler.js').then(module => {
   console.error(`${red}✗${reset} Failed to start NATS handler:`, error);
   console.error('  Elixir→AI Server integration will not work!');
 });
+
+// Start HTDAG LLM worker for self-evolution
+console.log(`${blue}🧠${reset} Starting HTDAG LLM worker for self-evolution...`);
+import('./htdag-llm-worker.js').then(async module => {
+  const worker = new module.HTDAGLLMWorker();
+  await worker.connect(process.env.NATS_URL || 'nats://localhost:4222');
+  console.log(`${green}✓${reset} HTDAG LLM worker started - listening on llm.req.*`);
+  
+  // Handle shutdown
+  process.on('SIGINT', async () => {
+    console.log('\n🛑 Shutting down HTDAG LLM worker...');
+    await worker.disconnect();
+  });
+}).catch(error => {
+  console.error(`${red}✗${reset} Failed to start HTDAG LLM worker:`, error);
+  console.error('  HTDAG self-evolution will not work!');
+});

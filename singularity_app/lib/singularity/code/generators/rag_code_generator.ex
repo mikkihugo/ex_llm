@@ -641,4 +641,87 @@ defmodule Singularity.RAGCodeGenerator do
 
     total_score
   end
+
+  @doc """
+  Find a similar module in the codebase to use as a template.
+  
+  Searches for modules with similar names or purposes to use as templates
+  for generating new modules.
+  
+  ## Examples
+  
+      iex> RAGCodeGenerator.find_similar_module("Singularity.Code.NewParser")
+      {:ok, "Singularity.Code.ExistingParser"}
+      
+      iex> RAGCodeGenerator.find_similar_module("NonExistent.Module")
+      {:error, :no_similar_module_found}
+  """
+  @spec find_similar_module(String.t()) :: {:ok, String.t()} | {:error, :no_similar_module_found}
+  def find_similar_module(module_name) do
+    # Extract keywords from module name for similarity search
+    parts = String.split(module_name, ".")
+    last_part = List.last(parts) || ""
+    
+    # Get all loaded modules
+    loaded_modules = :code.all_loaded()
+    |> Enum.map(fn {mod, _} -> Atom.to_string(mod) end)
+    |> Enum.filter(&String.starts_with?(&1, "Elixir.Singularity"))
+    
+    # Find modules with similar names
+    similar = loaded_modules
+    |> Enum.map(fn mod ->
+      similarity = calculate_module_similarity(mod, module_name, last_part)
+      {mod, similarity}
+    end)
+    |> Enum.filter(fn {_, sim} -> sim > 0.3 end)
+    |> Enum.sort_by(fn {_, sim} -> -sim end)
+    
+    case similar do
+      [{best_match, _score} | _] ->
+        Logger.info("Found similar module: #{best_match} (similarity score available)")
+        {:ok, best_match}
+      
+      [] ->
+        # Fallback: find module in same namespace
+        namespace = Enum.slice(parts, 0..-2//1) |> Enum.join(".")
+        
+        fallback = loaded_modules
+        |> Enum.find(fn mod -> String.starts_with?(mod, namespace) end)
+        
+        case fallback do
+          nil -> {:error, :no_similar_module_found}
+          mod ->
+            Logger.info("Using fallback module from same namespace: #{mod}")
+            {:ok, mod}
+        end
+    end
+  end
+  
+  defp calculate_module_similarity(candidate, target, target_last_part) do
+    candidate_parts = String.split(candidate, ".")
+    target_parts = String.split(target, ".")
+    candidate_last = List.last(candidate_parts) || ""
+    
+    # Calculate similarity based on:
+    # 1. Common namespace parts
+    # 2. Similar final module name
+    # 3. Levenshtein distance
+    
+    common_namespace = Enum.zip(candidate_parts, target_parts)
+    |> Enum.take_while(fn {a, b} -> a == b end)
+    |> length()
+    
+    namespace_score = common_namespace / max(length(candidate_parts), length(target_parts))
+    
+    # Simple string similarity for last part
+    name_score = if String.contains?(candidate_last, target_last_part) or
+                     String.contains?(target_last_part, candidate_last) do
+      0.8
+    else
+      0.0
+    end
+    
+    # Weighted average
+    0.6 * namespace_score + 0.4 * name_score
+  end
 end

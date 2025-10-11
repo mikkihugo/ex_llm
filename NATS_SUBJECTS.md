@@ -21,6 +21,12 @@ ai.llm.error                # LLM errors from AI Server to Elixir
 ai.llm.stream               # Streaming LLM requests
 ai.tools.execute            # AI tool execution requests
 ai.tools.result             # AI tool execution results
+
+# HTDAG Self-Evolution LLM (NATS-first architecture)
+llm.req.<model_id>          # Model-specific LLM completion requests
+llm.resp.<run_id>.<node_id> # Direct reply subject for LLM responses
+llm.tokens.<run_id>.<node_id> # Token streaming for real-time feedback
+llm.health                  # LLM worker heartbeat and status updates
 ```
 
 ### Framework Detection (Consolidated)
