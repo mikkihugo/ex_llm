@@ -51,7 +51,7 @@ use anyhow::Result;
 use crate::prompt_engine::ProjectTechStackFact;
 use tracing::info;
 
-use crate::storage::CodebaseDatabase;
+use crate::codebase::CodebaseDatabase;
 
 /// Framework detector - delegates to existing framework detection system
 #[derive(Debug, Clone)]

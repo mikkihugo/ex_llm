@@ -6,8 +6,8 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
-use petgraph::{Graph, Directed, NodeIndex, EdgeIndex};
-use petgraph::graph::DiGraph;
+use petgraph::graph::{DiGraph, NodeIndex, EdgeIndex};
+use petgraph::{Graph, Directed};
 
 /// Graph node representing code elements
 #[derive(Debug, Clone, Serialize, Deserialize)]

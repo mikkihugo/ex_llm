@@ -4,5 +4,5 @@
 //! It uses external parser crates as dependencies.
 
 // Re-export external parser types for convenience
-pub use sparc_methodology::*;
+// pub use sparc_methodology::*; // Module does not exist
 pub use parser_code::*;
