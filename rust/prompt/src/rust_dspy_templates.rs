@@ -1,5 +1,5 @@
 //! DSPy-integrated Rust templates for LLM code generation
-//! 
+//!
 //! These templates are specifically designed for DSPy integration with the prompt-engine
 //! and optimized for LLM coders with dynamic context injection.
 
@@ -422,12 +422,15 @@ Generate production-ready Rust tests optimized for LLM coders."#
         performance_profile: &str,
         architecture_pattern: &str,
     ) -> Result<PromptTemplate, String> {
-        let template = self.registry.get("rust_microservice_dspy")
+        let template = self
+            .registry
+            .get("rust_microservice_dspy")
             .ok_or_else(|| "Template not found".to_string())?;
 
         let enhanced_template = PromptTemplate {
             name: format!("rust_microservice_{}", entity_name),
-            template: template.template
+            template: template
+                .template
                 .replace("{business_domain}", business_domain)
                 .replace("{entity_name}", entity_name)
                 .replace("{security_level}", security_level)
@@ -450,12 +453,15 @@ Generate production-ready Rust tests optimized for LLM coders."#
         authentication: &str,
         validation_rules: &str,
     ) -> Result<PromptTemplate, String> {
-        let template = self.registry.get("rust_api_endpoint_dspy")
+        let template = self
+            .registry
+            .get("rust_api_endpoint_dspy")
             .ok_or_else(|| "Template not found".to_string())?;
 
         let enhanced_template = PromptTemplate {
             name: format!("rust_api_endpoint_{}", entity_name),
-            template: template.template
+            template: template
+                .template
                 .replace("{entity_name}", entity_name)
                 .replace("{api_version}", api_version)
                 .replace("{endpoint_type}", endpoint_type)
@@ -478,12 +484,15 @@ Generate production-ready Rust tests optimized for LLM coders."#
         query_patterns: &str,
         transaction_support: &str,
     ) -> Result<PromptTemplate, String> {
-        let template = self.registry.get("rust_repository_dspy")
+        let template = self
+            .registry
+            .get("rust_repository_dspy")
             .ok_or_else(|| "Template not found".to_string())?;
 
         let enhanced_template = PromptTemplate {
             name: format!("rust_repository_{}", entity_name),
-            template: template.template
+            template: template
+                .template
                 .replace("{entity_name}", entity_name)
                 .replace("{database_type}", database_type)
                 .replace("{crud_operations}", crud_operations)
@@ -506,12 +515,15 @@ Generate production-ready Rust tests optimized for LLM coders."#
         mocking_required: &str,
         coverage_target: &str,
     ) -> Result<PromptTemplate, String> {
-        let template = self.registry.get("rust_test_dspy")
+        let template = self
+            .registry
+            .get("rust_test_dspy")
             .ok_or_else(|| "Template not found".to_string())?;
 
         let enhanced_template = PromptTemplate {
             name: format!("rust_tests_{}", entity_name),
-            template: template.template
+            template: template
+                .template
                 .replace("{entity_name}", entity_name)
                 .replace("{test_scenarios}", test_scenarios)
                 .replace("{test_type}", test_type)

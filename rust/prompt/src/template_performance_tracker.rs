@@ -4,10 +4,10 @@
 //! and automatically optimize prompt selection.
 
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use chrono::{DateTime, Utc};
 
 use crate::sparc_templates::SparcTemplateGenerator;
 use crate::PromptTemplate;
@@ -59,9 +59,7 @@ impl TemplatePerformanceTracker {
         let mut candidates: Vec<(&String, f64)> = data
             .iter()
             .filter(|((_, tt, lang), _)| tt == task_type && lang == language)
-            .map(|((template_id, _, _), metrics)| {
-                (template_id, self.calculate_score(metrics))
-            })
+            .map(|((template_id, _, _), metrics)| (template_id, self.calculate_score(metrics)))
             .collect();
 
         // Sort by score descending
@@ -106,10 +104,10 @@ impl TemplatePerformanceTracker {
         // Update with exponential moving average
         metrics.success_rate = (1.0 - self.alpha) * metrics.success_rate
             + self.alpha * (if success { 1.0 } else { 0.0 });
-        metrics.avg_generation_time_ms = (1.0 - self.alpha) * metrics.avg_generation_time_ms
-            + self.alpha * generation_time_ms;
-        metrics.quality_score = (1.0 - self.alpha) * metrics.quality_score
-            + self.alpha * quality_score;
+        metrics.avg_generation_time_ms =
+            (1.0 - self.alpha) * metrics.avg_generation_time_ms + self.alpha * generation_time_ms;
+        metrics.quality_score =
+            (1.0 - self.alpha) * metrics.quality_score + self.alpha * quality_score;
         metrics.usage_count += 1;
         metrics.last_used = Utc::now();
 
@@ -129,7 +127,10 @@ impl TemplatePerformanceTracker {
         template_id: &str,
         task_context: &HashMap<String, String>,
     ) -> Result<String> {
-        let lang = task_context.get("language").cloned().unwrap_or_else(|| "unknown".to_string());
+        let lang = task_context
+            .get("language")
+            .cloned()
+            .unwrap_or_else(|| "unknown".to_string());
         let template = self.load_template(template_id, &lang)?;
         let metrics = self.get_metrics(template_id);
 
@@ -137,7 +138,10 @@ impl TemplatePerformanceTracker {
         let mut enhanced_prompt = format!(
             "# Template: {} (Performance Score: {:.2})\n",
             template.name,
-            metrics.as_ref().map(|m| self.calculate_score(m)).unwrap_or(0.5)
+            metrics
+                .as_ref()
+                .map(|m| self.calculate_score(m))
+                .unwrap_or(0.5)
         );
 
         // Add task context
@@ -188,10 +192,8 @@ impl TemplatePerformanceTracker {
         };
 
         // Get template with performance optimization
-        let template = self.select_best_template(
-            &format!("{}_{}", template_id, task_type),
-            language
-        )?;
+        let template =
+            self.select_best_template(&format!("{}_{}", template_id, task_type), language)?;
 
         // Add SPARC-specific context
         let mut context = HashMap::new();
@@ -252,7 +254,9 @@ impl TemplatePerformanceTracker {
         // Load from SPARC generator or template registry
         Ok(PromptTemplate {
             name: template_id.to_string(),
-            template: self.sparc_generator.get_template(template_id)
+            template: self
+                .sparc_generator
+                .get_template(template_id)
                 .unwrap_or_else(|| format!("Template {} not found", template_id)),
             language: language.to_string(),
             domain: "sparc".to_string(),

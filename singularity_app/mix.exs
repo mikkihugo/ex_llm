@@ -94,7 +94,7 @@ defmodule Singularity.MixProject do
       # {:quality_engine, path: "native/quality_engine", runtime: false, app: false, compile: false},
       # Embedding engine (GPU-accelerated with Jina v3 + Qodo-Embed)
       {:embedding_engine,
-       path: "../rust_global/semantic_embedding_engine",
+       path: "native/embedding_engine",
        runtime: false,
        app: false,
        compile: false},

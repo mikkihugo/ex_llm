@@ -48,8 +48,16 @@ impl TemplateLoader {
 
         // Check in subdirectories
         let search_dirs = vec![
-            "ai", "bits", "cloud", "framework", "languages",
-            "messaging", "monitoring", "security", "system", "workflows"
+            "ai",
+            "bits",
+            "cloud",
+            "framework",
+            "languages",
+            "messaging",
+            "monitoring",
+            "security",
+            "system",
+            "workflows",
         ];
 
         for dir in search_dirs {
@@ -60,7 +68,8 @@ impl TemplateLoader {
 
             // Check nested workflows/sparc
             if dir == "workflows" {
-                let sparc_path = self.tool_doc_path
+                let sparc_path = self
+                    .tool_doc_path
                     .join("workflows")
                     .join("sparc")
                     .join(format!("{}.json", name));
@@ -83,7 +92,9 @@ impl TemplateLoader {
             .filter_map(Result::ok)
             .filter(|e: &DirEntry| e.path().extension().map_or(false, |ext| ext == "json"))
         {
-            if let Some(stem) = entry.path().file_stem() { templates.push(stem.to_string_lossy().to_string()); }
+            if let Some(stem) = entry.path().file_stem() {
+                templates.push(stem.to_string_lossy().to_string());
+            }
         }
 
         templates.sort();

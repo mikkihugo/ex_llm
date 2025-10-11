@@ -11,26 +11,26 @@ use super::database::*;
 
 /// Get all built-in example prompt bits
 pub fn builtin_prompt_bits() -> Vec<StoredPromptBit> {
-  vec![
-    // === TYPESCRIPT + PNPM MONOREPO ===
-    typescript_pnpm_auth(),
-    typescript_pnpm_service(),
-    typescript_pnpm_database(),
-    typescript_pnpm_message_broker(),
-    // === RUST + CARGO WORKSPACE ===
-    rust_cargo_service(),
-    rust_cargo_cli_tool(),
-    rust_cargo_async_task(),
-    // === NODE.JS + EXPRESS ===
-    nodejs_express_api(),
-    nodejs_express_middleware(),
-    // === REACT + NEXT.JS ===
-    nextjs_api_route(),
-    nextjs_page_component(),
-    // === DOCKER + KUBERNETES ===
-    docker_service(),
-    kubernetes_deployment(),
-  ]
+    vec![
+        // === TYPESCRIPT + PNPM MONOREPO ===
+        typescript_pnpm_auth(),
+        typescript_pnpm_service(),
+        typescript_pnpm_database(),
+        typescript_pnpm_message_broker(),
+        // === RUST + CARGO WORKSPACE ===
+        rust_cargo_service(),
+        rust_cargo_cli_tool(),
+        rust_cargo_async_task(),
+        // === NODE.JS + EXPRESS ===
+        nodejs_express_api(),
+        nodejs_express_middleware(),
+        // === REACT + NEXT.JS ===
+        nextjs_api_route(),
+        nextjs_page_component(),
+        // === DOCKER + KUBERNETES ===
+        docker_service(),
+        kubernetes_deployment(),
+    ]
 }
 
 // ============================================================================
@@ -38,11 +38,11 @@ pub fn builtin_prompt_bits() -> Vec<StoredPromptBit> {
 // ============================================================================
 
 fn typescript_pnpm_auth() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "ts-pnpm-auth-001".to_string(),
-    category: PromptBitCategory::BestPractices,
-    trigger: PromptBitTrigger::CodePattern("Authentication".to_string()),
-    content: r#"# Add Authentication Service (TypeScript + pnpm Monorepo)
+    StoredPromptBit {
+        id: "ts-pnpm-auth-001".to_string(),
+        category: PromptBitCategory::BestPractices,
+        trigger: PromptBitTrigger::CodePattern("Authentication".to_string()),
+        content: r#"# Add Authentication Service (TypeScript + pnpm Monorepo)
 
 ## File Locations
 ```
@@ -119,26 +119,26 @@ export class AuthenticationService {
 - Emit events for login/logout for audit logging
 - Use bcrypt with salt rounds >= 10 for password hashing
 "#
-    .to_string(),
-    metadata: PromptBitMetadata {
-      confidence: 0.95,
-      last_updated: Utc::now(),
-      versions: vec!["typescript@5".to_string(), "pnpm@9".to_string()],
-      related_bits: vec!["ts-pnpm-database-001".to_string()],
-    },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.95,
+            last_updated: Utc::now(),
+            versions: vec!["typescript@5".to_string(), "pnpm@9".to_string()],
+            related_bits: vec!["ts-pnpm-database-001".to_string()],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 fn typescript_pnpm_service() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "ts-pnpm-service-001".to_string(),
-    category: PromptBitCategory::Examples,
-    trigger: PromptBitTrigger::CodePattern("AddService".to_string()),
-    content: r#"# Add New Service (TypeScript + pnpm Monorepo)
+    StoredPromptBit {
+        id: "ts-pnpm-service-001".to_string(),
+        category: PromptBitCategory::Examples,
+        trigger: PromptBitTrigger::CodePattern("AddService".to_string()),
+        content: r#"# Add New Service (TypeScript + pnpm Monorepo)
 
 ## File Location
 ```
@@ -198,21 +198,26 @@ import { Logger } from '@yourorg/foundation';
 - ALWAYS export types separately for consumers
 - Use workspace:* protocol for local dependencies
 "#
-    .to_string(),
-    metadata: PromptBitMetadata { confidence: 0.9, last_updated: Utc::now(), versions: vec!["typescript@5".to_string()], related_bits: vec![] },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.9,
+            last_updated: Utc::now(),
+            versions: vec!["typescript@5".to_string()],
+            related_bits: vec![],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 fn typescript_pnpm_database() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "ts-pnpm-database-001".to_string(),
-    category: PromptBitCategory::Integration,
-    trigger: PromptBitTrigger::Infrastructure("PostgreSQL".to_string()),
-    content: r#"# Add PostgreSQL Database (TypeScript + pnpm)
+    StoredPromptBit {
+        id: "ts-pnpm-database-001".to_string(),
+        category: PromptBitCategory::Integration,
+        trigger: PromptBitTrigger::Infrastructure("PostgreSQL".to_string()),
+        content: r#"# Add PostgreSQL Database (TypeScript + pnpm)
 
 ## Dependencies
 ```bash
@@ -271,26 +276,26 @@ DB_PASSWORD=your_password
 - Use parameterized queries to prevent SQL injection
 - Close pool on shutdown: `await pool.end()`
 "#
-    .to_string(),
-    metadata: PromptBitMetadata {
-      confidence: 0.95,
-      last_updated: Utc::now(),
-      versions: vec!["pg@8".to_string()],
-      related_bits: vec!["ts-pnpm-auth-001".to_string()],
-    },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.95,
+            last_updated: Utc::now(),
+            versions: vec!["pg@8".to_string()],
+            related_bits: vec!["ts-pnpm-auth-001".to_string()],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 fn typescript_pnpm_message_broker() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "ts-pnpm-nats-001".to_string(),
-    category: PromptBitCategory::Integration,
-    trigger: PromptBitTrigger::Infrastructure("NATS".to_string()),
-    content: r#"# Add NATS Message Broker (TypeScript + pnpm)
+    StoredPromptBit {
+        id: "ts-pnpm-nats-001".to_string(),
+        category: PromptBitCategory::Integration,
+        trigger: PromptBitTrigger::Infrastructure("NATS".to_string()),
+        content: r#"# Add NATS Message Broker (TypeScript + pnpm)
 
 ## Dependencies
 ```bash
@@ -334,13 +339,18 @@ export class NatsService {
 NATS_URL=nats://localhost:4222
 ```
 "#
-    .to_string(),
-    metadata: PromptBitMetadata { confidence: 0.9, last_updated: Utc::now(), versions: vec!["nats@2".to_string()], related_bits: vec![] },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.9,
+            last_updated: Utc::now(),
+            versions: vec!["nats@2".to_string()],
+            related_bits: vec![],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 // ============================================================================
@@ -348,11 +358,11 @@ NATS_URL=nats://localhost:4222
 // ============================================================================
 
 fn rust_cargo_service() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "rust-cargo-service-001".to_string(),
-    category: PromptBitCategory::Examples,
-    trigger: PromptBitTrigger::Language("Rust".to_string()),
-    content: r#"# Add Rust Service (Cargo Workspace)
+    StoredPromptBit {
+        id: "rust-cargo-service-001".to_string(),
+        category: PromptBitCategory::Examples,
+        trigger: PromptBitTrigger::Language("Rust".to_string()),
+        content: r#"# Add Rust Service (Cargo Workspace)
 
 ## File Location
 ```
@@ -422,21 +432,26 @@ impl YourService {
 - Prefer `async fn` with tokio runtime
 - Use workspace dependencies for consistency
 "#
-    .to_string(),
-    metadata: PromptBitMetadata { confidence: 0.95, last_updated: Utc::now(), versions: vec!["rust@1.75".to_string()], related_bits: vec![] },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.95,
+            last_updated: Utc::now(),
+            versions: vec!["rust@1.75".to_string()],
+            related_bits: vec![],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 fn rust_cargo_cli_tool() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "rust-cargo-cli-001".to_string(),
-    category: PromptBitCategory::Examples,
-    trigger: PromptBitTrigger::CodePattern("CLI Tool".to_string()),
-    content: r#"# Add Rust CLI Tool (Cargo)
+    StoredPromptBit {
+        id: "rust-cargo-cli-001".to_string(),
+        category: PromptBitCategory::Examples,
+        trigger: PromptBitTrigger::CodePattern("CLI Tool".to_string()),
+        content: r#"# Add Rust CLI Tool (Cargo)
 
 ## Dependencies
 ```bash
@@ -490,21 +505,26 @@ async fn main() -> Result<()> {
 - Use tokio for async operations
 - Add `--version` and `--help` (automatic with clap)
 "#
-    .to_string(),
-    metadata: PromptBitMetadata { confidence: 0.9, last_updated: Utc::now(), versions: vec!["clap@4".to_string()], related_bits: vec![] },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.9,
+            last_updated: Utc::now(),
+            versions: vec!["clap@4".to_string()],
+            related_bits: vec![],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 fn rust_cargo_async_task() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "rust-tokio-async-001".to_string(),
-    category: PromptBitCategory::Examples,
-    trigger: PromptBitTrigger::CodePattern("Async Task".to_string()),
-    content: r#"# Rust Async Task CodePattern (Tokio)
+    StoredPromptBit {
+        id: "rust-tokio-async-001".to_string(),
+        category: PromptBitCategory::Examples,
+        trigger: PromptBitTrigger::CodePattern("Async Task".to_string()),
+        content: r#"# Rust Async Task CodePattern (Tokio)
 
 ## Dependencies
 ```bash
@@ -547,18 +567,18 @@ async fn main() {
 - Don't hold locks across await points
 - Use tokio::sync::Mutex instead of std::sync::Mutex
 "#
-    .to_string(),
-    metadata: PromptBitMetadata {
-      confidence: 0.95,
-      last_updated: Utc::now(),
-      versions: vec!["tokio@1".to_string()],
-      related_bits: vec!["rust-cargo-service-001".to_string()],
-    },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.95,
+            last_updated: Utc::now(),
+            versions: vec!["tokio@1".to_string()],
+            related_bits: vec!["rust-cargo-service-001".to_string()],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 // ============================================================================
@@ -566,11 +586,11 @@ async fn main() {
 // ============================================================================
 
 fn nodejs_express_api() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "nodejs-express-api-001".to_string(),
-    category: PromptBitCategory::Examples,
-    trigger: PromptBitTrigger::Framework("Express".to_string()),
-    content: r#"# Express.js API Route (Node.js)
+    StoredPromptBit {
+        id: "nodejs-express-api-001".to_string(),
+        category: PromptBitCategory::Examples,
+        trigger: PromptBitTrigger::Framework("Express".to_string()),
+        content: r#"# Express.js API Route (Node.js)
 
 ## Dependencies
 ```bash
@@ -613,21 +633,26 @@ export default router;
 - Return appropriate status codes (200, 201, 400, 404, 500)
 - Validate input with middleware (e.g., express-validator)
 "#
-    .to_string(),
-    metadata: PromptBitMetadata { confidence: 0.9, last_updated: Utc::now(), versions: vec!["express@4".to_string()], related_bits: vec![] },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.9,
+            last_updated: Utc::now(),
+            versions: vec!["express@4".to_string()],
+            related_bits: vec![],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 fn nodejs_express_middleware() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "nodejs-express-middleware-001".to_string(),
-    category: PromptBitCategory::Examples,
-    trigger: PromptBitTrigger::CodePattern("Middleware".to_string()),
-    content: r#"# Express.js Middleware CodePattern
+    StoredPromptBit {
+        id: "nodejs-express-middleware-001".to_string(),
+        category: PromptBitCategory::Examples,
+        trigger: PromptBitTrigger::CodePattern("Middleware".to_string()),
+        content: r#"# Express.js Middleware CodePattern
 
 ## Example Middleware
 ```typescript
@@ -674,18 +699,18 @@ app.use('/api/protected', authMiddleware);
 - Place error-handling middleware last
 - Use next(error) to pass errors to error handlers
 "#
-    .to_string(),
-    metadata: PromptBitMetadata {
-      confidence: 0.9,
-      last_updated: Utc::now(),
-      versions: vec!["express@4".to_string()],
-      related_bits: vec!["nodejs-express-api-001".to_string()],
-    },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.9,
+            last_updated: Utc::now(),
+            versions: vec!["express@4".to_string()],
+            related_bits: vec!["nodejs-express-api-001".to_string()],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 // ============================================================================
@@ -693,11 +718,11 @@ app.use('/api/protected', authMiddleware);
 // ============================================================================
 
 fn nextjs_api_route() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "nextjs-api-route-001".to_string(),
-    category: PromptBitCategory::Examples,
-    trigger: PromptBitTrigger::Framework("Next.js".to_string()),
-    content: r#"# Next.js API Route (App Router)
+    StoredPromptBit {
+        id: "nextjs-api-route-001".to_string(),
+        category: PromptBitCategory::Examples,
+        trigger: PromptBitTrigger::Framework("Next.js".to_string()),
+        content: r#"# Next.js API Route (App Router)
 
 ## File Location
 ```
@@ -740,21 +765,26 @@ export async function POST(request: NextRequest) {
 - Use NextResponse.json() for responses
 - Handle errors with appropriate status codes
 "#
-    .to_string(),
-    metadata: PromptBitMetadata { confidence: 0.95, last_updated: Utc::now(), versions: vec!["next@14".to_string()], related_bits: vec![] },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.95,
+            last_updated: Utc::now(),
+            versions: vec!["next@14".to_string()],
+            related_bits: vec![],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 fn nextjs_page_component() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "nextjs-page-001".to_string(),
-    category: PromptBitCategory::Examples,
-    trigger: PromptBitTrigger::CodePattern("Next.js Page".to_string()),
-    content: r#"# Next.js Page Component (App Router)
+    StoredPromptBit {
+        id: "nextjs-page-001".to_string(),
+        category: PromptBitCategory::Examples,
+        trigger: PromptBitTrigger::CodePattern("Next.js Page".to_string()),
+        content: r#"# Next.js Page Component (App Router)
 
 ## File Location
 ```
@@ -806,18 +836,18 @@ export default function UsersPage() {
 - Use loading.tsx for loading states
 - Use error.tsx for error boundaries
 "#
-    .to_string(),
-    metadata: PromptBitMetadata {
-      confidence: 0.95,
-      last_updated: Utc::now(),
-      versions: vec!["next@14".to_string(), "react@18".to_string()],
-      related_bits: vec!["nextjs-api-route-001".to_string()],
-    },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.95,
+            last_updated: Utc::now(),
+            versions: vec!["next@14".to_string(), "react@18".to_string()],
+            related_bits: vec!["nextjs-api-route-001".to_string()],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 // ============================================================================
@@ -825,11 +855,11 @@ export default function UsersPage() {
 // ============================================================================
 
 fn docker_service() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "docker-service-001".to_string(),
-    category: PromptBitCategory::Deployment,
-    trigger: PromptBitTrigger::Infrastructure("Docker".to_string()),
-    content: r#"# Dockerfile for Node.js Service
+    StoredPromptBit {
+        id: "docker-service-001".to_string(),
+        category: PromptBitCategory::Deployment,
+        trigger: PromptBitTrigger::Infrastructure("Docker".to_string()),
+        content: r#"# Dockerfile for Node.js Service
 
 ## File: Dockerfile
 ```dockerfile
@@ -875,26 +905,26 @@ docker run -p 3000:3000 your-service:latest
 - Copy only what's needed
 - Use .dockerignore to exclude files
 "#
-    .to_string(),
-    metadata: PromptBitMetadata {
-      confidence: 0.95,
-      last_updated: Utc::now(),
-      versions: vec!["docker@24".to_string()],
-      related_bits: vec!["kubernetes-deployment-001".to_string()],
-    },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.95,
+            last_updated: Utc::now(),
+            versions: vec!["docker@24".to_string()],
+            related_bits: vec!["kubernetes-deployment-001".to_string()],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }
 
 fn kubernetes_deployment() -> StoredPromptBit {
-  StoredPromptBit {
-    id: "kubernetes-deployment-001".to_string(),
-    category: PromptBitCategory::Deployment,
-    trigger: PromptBitTrigger::Infrastructure("Kubernetes".to_string()),
-    content: r#"# Kubernetes Deployment for Service
+    StoredPromptBit {
+        id: "kubernetes-deployment-001".to_string(),
+        category: PromptBitCategory::Deployment,
+        trigger: PromptBitTrigger::Infrastructure("Kubernetes".to_string()),
+        content: r#"# Kubernetes Deployment for Service
 
 ## File: k8s/deployment.yaml
 ```yaml
@@ -963,16 +993,16 @@ kubectl logs -f deployment/your-service
 - Use Secrets for sensitive data
 - Set replica count based on load
 "#
-    .to_string(),
-    metadata: PromptBitMetadata {
-      confidence: 0.9,
-      last_updated: Utc::now(),
-      versions: vec!["kubernetes@1.28".to_string()],
-      related_bits: vec!["docker-service-001".to_string()],
-    },
-    source: PromptBitSource::Builtin,
-    created_at: Utc::now(),
-    usage_count: 0,
-    success_rate: 0.0,
-  }
+        .to_string(),
+        metadata: PromptBitMetadata {
+            confidence: 0.9,
+            last_updated: Utc::now(),
+            versions: vec!["kubernetes@1.28".to_string()],
+            related_bits: vec!["docker-service-001".to_string()],
+        },
+        source: PromptBitSource::Builtin,
+        created_at: Utc::now(),
+        usage_count: 0,
+        success_rate: 0.0,
+    }
 }

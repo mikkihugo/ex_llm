@@ -38,32 +38,34 @@ use anyhow::Result;
 
 /// Initialize the prompt tracking system for prompt-engine using global storage
 pub async fn initialize_prompt_tracking() -> Result<PromptTrackingStorage> {
-  PromptTrackingStorage::new_global()
+    PromptTrackingStorage::new_global()
 }
 
 /// Initialize the prompt tracking system with custom path (for testing/backward compatibility)
-pub async fn initialize_prompt_tracking_custom(storage_path: impl AsRef<std::path::Path>) -> Result<PromptTrackingStorage> {
-  PromptTrackingStorage::new(storage_path)
+pub async fn initialize_prompt_tracking_custom(
+    storage_path: impl AsRef<std::path::Path>,
+) -> Result<PromptTrackingStorage> {
+    PromptTrackingStorage::new(storage_path)
 }
 
 /// Quick helper to store a prompt execution
 pub async fn track_execution(
-  storage: &PromptTrackingStorage,
-  prompt_id: &str,
-  context_hash: &str,
-  success: bool,
-  duration: std::time::Duration,
+    storage: &PromptTrackingStorage,
+    prompt_id: &str,
+    context_hash: &str,
+    success: bool,
+    duration: std::time::Duration,
 ) -> Result<String> {
-  let execution_data = PromptExecutionData::PromptExecution(PromptExecutionFact {
-    prompt_id: prompt_id.to_string(),
-    execution_time_ms: duration.as_millis() as u64,
-    success,
-    confidence_score: if success { 1.0 } else { 0.0 },
-    context_signature: context_hash.to_string(),
-    response_length: 0,
-    timestamp: chrono::Utc::now(),
-    metadata: HashMap::new(),
-  });
+    let execution_data = PromptExecutionData::PromptExecution(PromptExecutionFact {
+        prompt_id: prompt_id.to_string(),
+        execution_time_ms: duration.as_millis() as u64,
+        success,
+        confidence_score: if success { 1.0 } else { 0.0 },
+        context_signature: context_hash.to_string(),
+        response_length: 0,
+        timestamp: chrono::Utc::now(),
+        metadata: HashMap::new(),
+    });
 
-  storage.store(execution_data).await
+    storage.store(execution_data).await
 }

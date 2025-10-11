@@ -10,25 +10,25 @@ use super::{PromptTemplate, RegistryTemplate};
 
 /// SPARC template generator for all SPARC methodology prompts
 pub struct SparcTemplateGenerator {
-  /// Template registry
-  registry: RegistryTemplate,
+    /// Template registry
+    registry: RegistryTemplate,
 }
 
 impl SparcTemplateGenerator {
-  /// Create new SPARC template generator
-  pub fn new() -> Self {
-    let mut registry = RegistryTemplate::new();
+    /// Create new SPARC template generator
+    pub fn new() -> Self {
+        let mut registry = RegistryTemplate::new();
 
-    // Register all SPARC-specific templates
-    Self::register_sparc_templates(&mut registry);
+        // Register all SPARC-specific templates
+        Self::register_sparc_templates(&mut registry);
 
-    Self { registry }
-  }
+        Self { registry }
+    }
 
-  /// Register all SPARC-specific templates
-  fn register_sparc_templates(registry: &mut RegistryTemplate) {
-    // System prompts
-    registry.register(PromptTemplate {
+    /// Register all SPARC-specific templates
+    fn register_sparc_templates(registry: &mut RegistryTemplate) {
+        // System prompts
+        registry.register(PromptTemplate {
       name: "system_prompt".to_string(),
       template: r#"You are Code Mesh, an AI-powered coding assistant built with Rust and native Node.js modules.
 
@@ -96,7 +96,7 @@ Use these tools effectively to provide accurate, helpful assistance while mainta
       quality_score: 0.9,
     });
 
-    registry.register(PromptTemplate {
+        registry.register(PromptTemplate {
       name: "plan_mode_prompt".to_string(),
       template: r#"You are currently in PLAN MODE.
 
@@ -109,9 +109,9 @@ Present your plan to the user for approval before implementation."#
       quality_score: 0.9,
     });
 
-    registry.register(PromptTemplate {
-      name: "beast_mode_prompt".to_string(),
-      template: r#"You are in AUTONOMOUS MODE for complex problem solving.
+        registry.register(PromptTemplate {
+            name: "beast_mode_prompt".to_string(),
+            template: r#"You are in AUTONOMOUS MODE for complex problem solving.
 
 ## Workflow
 1. **Understand**: Thoroughly analyze the problem and requirements
@@ -139,15 +139,15 @@ You have full access to all tools. Use them extensively to:
 - Track progress with todos
 
 Continue working until the task is fully resolved and tested."#
-        .to_string(),
-      language: "system".to_string(),
-      domain: "autonomous_mode".to_string(),
-      quality_score: 0.9,
-    });
+                .to_string(),
+            language: "system".to_string(),
+            domain: "autonomous_mode".to_string(),
+            quality_score: 0.9,
+        });
 
-    registry.register(PromptTemplate {
-      name: "cli_llm_system_prompt".to_string(),
-      template: r#"You are a SPARC methodology assistant operating in READ-ONLY mode.
+        registry.register(PromptTemplate {
+            name: "cli_llm_system_prompt".to_string(),
+            template: r#"You are a SPARC methodology assistant operating in READ-ONLY mode.
 
 CRITICAL RESTRICTIONS:
 - You cannot write, edit, or modify files directly
@@ -175,16 +175,17 @@ END_FILE
 [Summary of your recommendations]
 
 Work systematically through SPARC phases while following this format."#
-        .to_string(),
-      language: "system".to_string(),
-      domain: "cli_mode".to_string(),
-      quality_score: 0.9,
-    });
+                .to_string(),
+            language: "system".to_string(),
+            domain: "cli_mode".to_string(),
+            quality_score: 0.9,
+        });
 
-    // SPARC Phase prompts
-    registry.register(PromptTemplate {
-      name: "sparc_specification".to_string(),
-      template: r#"Generate a detailed SPARC specification based on the provided requirements.
+        // SPARC Phase prompts
+        registry.register(PromptTemplate {
+            name: "sparc_specification".to_string(),
+            template:
+                r#"Generate a detailed SPARC specification based on the provided requirements.
 
 IMPORTANT: Structure your response as:
 === ANALYSIS ===
@@ -211,15 +212,15 @@ Please provide:
 4. Constraints and assumptions
 5. Success criteria
 6. Risk assessment"#
-        .to_string(),
-      language: "sparc".to_string(),
-      domain: "specification_phase".to_string(),
-      quality_score: 0.9,
-    });
+                    .to_string(),
+            language: "sparc".to_string(),
+            domain: "specification_phase".to_string(),
+            quality_score: 0.9,
+        });
 
-    registry.register(PromptTemplate {
-      name: "sparc_pseudocode".to_string(),
-      template: r#"Generate detailed pseudocode based on the specification.
+        registry.register(PromptTemplate {
+            name: "sparc_pseudocode".to_string(),
+            template: r#"Generate detailed pseudocode based on the specification.
 
 Follow the structured response format with FILES section for any pseudocode files.
 
@@ -229,13 +230,13 @@ Please provide:
 3. Control flow logic
 4. Key functions and their purposes
 5. Error handling approach"#
-        .to_string(),
-      language: "sparc".to_string(),
-      domain: "pseudocode_phase".to_string(),
-      quality_score: 0.9,
-    });
+                .to_string(),
+            language: "sparc".to_string(),
+            domain: "pseudocode_phase".to_string(),
+            quality_score: 0.9,
+        });
 
-    registry.register(PromptTemplate {
+        registry.register(PromptTemplate {
       name: "sparc_architecture".to_string(),
       template: r#"Design system architecture based on the pseudocode.
 
@@ -254,9 +255,9 @@ Please provide:
       quality_score: 0.9,
     });
 
-    registry.register(PromptTemplate {
-      name: "sparc_refinement".to_string(),
-      template: r#"Refine the architecture based on feedback and implementation details.
+        registry.register(PromptTemplate {
+            name: "sparc_refinement".to_string(),
+            template: r#"Refine the architecture based on feedback and implementation details.
 
 Follow the structured response format with FILES section for refined designs.
 
@@ -266,15 +267,15 @@ Please provide:
 3. Updated interfaces and APIs
 4. Performance optimizations
 5. Implementation timeline"#
-        .to_string(),
-      language: "sparc".to_string(),
-      domain: "refinement_phase".to_string(),
-      quality_score: 0.9,
-    });
+                .to_string(),
+            language: "sparc".to_string(),
+            domain: "refinement_phase".to_string(),
+            quality_score: 0.9,
+        });
 
-    registry.register(PromptTemplate {
-      name: "sparc_implementation".to_string(),
-      template: r#"Generate production-ready implementation code.
+        registry.register(PromptTemplate {
+            name: "sparc_implementation".to_string(),
+            template: r#"Generate production-ready implementation code.
 
 CRITICAL: Use the structured response format with FILES section. DO NOT write files directly.
 
@@ -284,16 +285,16 @@ Please provide:
 3. Comprehensive comments
 4. Unit tests
 5. Documentation"#
-        .to_string(),
-      language: "sparc".to_string(),
-      domain: "implementation_phase".to_string(),
-      quality_score: 0.9,
-    });
+                .to_string(),
+            language: "sparc".to_string(),
+            domain: "implementation_phase".to_string(),
+            quality_score: 0.9,
+        });
 
-    // Flow coordination prompts
-    registry.register(PromptTemplate {
-      name: "sparc_flow_coordinator".to_string(),
-      template: r#"You are a SPARC Flow Coordinator managing structured phase execution.
+        // Flow coordination prompts
+        registry.register(PromptTemplate {
+            name: "sparc_flow_coordinator".to_string(),
+            template: r#"You are a SPARC Flow Coordinator managing structured phase execution.
 
 RESPONSIBILITIES:
 1. Assess current phase completion status
@@ -317,15 +318,15 @@ Required Specialists: [list of agent types needed]
 Tools Needed: [specific tools for next steps]
 
 Maintain structured, predictable flow while enabling adaptive breakouts when confidence < 60%."#
-        .to_string(),
-      language: "sparc".to_string(),
-      domain: "flow_coordination".to_string(),
-      quality_score: 0.9,
-    });
+                .to_string(),
+            language: "sparc".to_string(),
+            domain: "flow_coordination".to_string(),
+            quality_score: 0.9,
+        });
 
-    registry.register(PromptTemplate {
-      name: "sparc_confidence_assessment".to_string(),
-      template: r#"Assess the confidence and quality of your work output.
+        registry.register(PromptTemplate {
+            name: "sparc_confidence_assessment".to_string(),
+            template: r#"Assess the confidence and quality of your work output.
 
 ASSESSMENT CRITERIA:
 1. Completeness (0-25 points): Are all requirements addressed?
@@ -352,15 +353,15 @@ If confidence < 80%: [specific improvement actions]
 If confidence >= 80%: [ready for next phase]
 
 Provide honest, objective self-assessment."#
-        .to_string(),
-      language: "sparc".to_string(),
-      domain: "confidence_assessment".to_string(),
-      quality_score: 0.9,
-    });
+                .to_string(),
+            language: "sparc".to_string(),
+            domain: "confidence_assessment".to_string(),
+            quality_score: 0.9,
+        });
 
-    registry.register(PromptTemplate {
-      name: "sparc_adaptive_breakout".to_string(),
-      template: r#"Evaluate when to break from standard flow to adaptive coordination.
+        registry.register(PromptTemplate {
+            name: "sparc_adaptive_breakout".to_string(),
+            template: r#"Evaluate when to break from standard flow to adaptive coordination.
 
 ESCALATION TRIGGERS:
 - Confidence < 60% after 2 attempts
@@ -385,14 +386,14 @@ If coordination unavailable: [alternative approach]
 Minimum viable solution: [acceptable baseline]
 
 Enable intelligent escalation while maintaining delivery focus."#
-        .to_string(),
-      language: "sparc".to_string(),
-      domain: "adaptive_breakout".to_string(),
-      quality_score: 0.9,
-    });
+                .to_string(),
+            language: "sparc".to_string(),
+            domain: "adaptive_breakout".to_string(),
+            quality_score: 0.9,
+        });
 
-    // Utility prompts
-    registry.register(PromptTemplate {
+        // Utility prompts
+        registry.register(PromptTemplate {
       name: "summarize_prompt".to_string(),
       template: r#"Create a detailed summary of this conversation focusing on:
 
@@ -409,7 +410,7 @@ Be specific about file names, functions, and technical details that would help s
       quality_score: 0.9,
     });
 
-    registry.register(PromptTemplate {
+        registry.register(PromptTemplate {
       name: "title_prompt".to_string(),
       template: r#"Generate a concise title (50 characters max) for this conversation based on the user's first message.
 
@@ -420,7 +421,7 @@ Focus on the main task or topic. Use no special formatting, quotes, or punctuati
       quality_score: 0.9,
     });
 
-    registry.register(PromptTemplate {
+        registry.register(PromptTemplate {
       name: "initialize_prompt".to_string(),
       template: r#"Analyze this codebase and create an AGENTS.md file with:
 
@@ -436,26 +437,30 @@ Keep the guide concise (~20 lines) and focused on what's most important for deve
       domain: "project_initialization".to_string(),
       quality_score: 0.9,
     });
-  }
+    }
 
-  /// Get SPARC template by name
-  pub fn get_sparc_template(&self, name: &str) -> Option<&PromptTemplate> {
-    self.registry.get(name)
-  }
+    /// Get SPARC template by name
+    pub fn get_sparc_template(&self, name: &str) -> Option<&PromptTemplate> {
+        self.registry.get(name)
+    }
 
-  /// Get all SPARC templates
-  pub fn get_all_sparc_templates(&self) -> Vec<&PromptTemplate> {
-    self.registry.get_all_templates()
-  }
+    /// Get all SPARC templates
+    pub fn get_all_sparc_templates(&self) -> Vec<&PromptTemplate> {
+        self.registry.get_all_templates()
+    }
 
-  /// Get templates by domain
-  pub fn get_templates_by_domain(&self, domain: &str) -> Vec<&PromptTemplate> {
-    self.registry.get_all_templates().into_iter().filter(|t| t.domain == domain).collect()
-  }
+    /// Get templates by domain
+    pub fn get_templates_by_domain(&self, domain: &str) -> Vec<&PromptTemplate> {
+        self.registry
+            .get_all_templates()
+            .into_iter()
+            .filter(|t| t.domain == domain)
+            .collect()
+    }
 }
 
 impl Default for SparcTemplateGenerator {
-  fn default() -> Self {
-    Self::new()
-  }
+    fn default() -> Self {
+        Self::new()
+    }
 }

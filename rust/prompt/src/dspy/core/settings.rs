@@ -14,8 +14,8 @@
 //! @complexity low
 //! @since 1.0.0
 
-use std::sync::{Arc, RwLock};
 use once_cell::sync::Lazy;
+use std::sync::{Arc, RwLock};
 
 use super::LM;
 use crate::dspy::{adapter::Adapter, SparcConfig};
@@ -32,20 +32,23 @@ use crate::dspy::{adapter::Adapter, SparcConfig};
 /// @since 1.0.0
 #[derive(Clone)]
 pub struct Settings {
-  /// The Language Model (LM) instance used by DSPy.
-  pub lm: LM,
-  /// The adapter responsible for formatting prompts and parsing responses for the LM.
-  pub adapter: Arc<dyn Adapter>,
+    /// The Language Model (LM) instance used by DSPy.
+    pub lm: LM,
+    /// The adapter responsible for formatting prompts and parsing responses for the LM.
+    pub adapter: Arc<dyn Adapter>,
 }
 
 impl Default for Settings {
-  fn default() -> Self {
-    // Create a default LM and adapter for settings
-    // SparcConfig replaced with SparcConfig
-    use crate::dspy::adapter::ConversationHistoryAdapter;
+    fn default() -> Self {
+        // Create a default LM and adapter for settings
+        // SparcConfig replaced with SparcConfig
+        use crate::dspy::adapter::ConversationHistoryAdapter;
 
-    Self { lm: LM::new("default".to_string(), SparcConfig::default()), adapter: Arc::new(ConversationHistoryAdapter) }
-  }
+        Self {
+            lm: LM::new("default".to_string(), SparcConfig::default()),
+            adapter: Arc::new(ConversationHistoryAdapter),
+        }
+    }
 }
 
 /// A lazily initialized, globally accessible `RwLock` holding the DSPy settings.
@@ -74,7 +77,13 @@ pub static GLOBAL_SETTINGS: Lazy<RwLock<Option<Settings>>> = Lazy::new(|| RwLock
 /// @complexity low
 /// @since 1.0.0
 pub fn get_lm() -> LM {
-  GLOBAL_SETTINGS.read().expect("Global settings lock poisoned").as_ref().expect("DSPy settings not configured - call configure() first").lm.clone()
+    GLOBAL_SETTINGS
+        .read()
+        .expect("Global settings lock poisoned")
+        .as_ref()
+        .expect("DSPy settings not configured - call configure() first")
+        .lm
+        .clone()
 }
 
 /// Configures the global DSPy settings with a Language Model (LM) and an Adapter.
@@ -92,6 +101,11 @@ pub fn get_lm() -> LM {
 /// @complexity low
 /// @since 1.0.0
 pub fn configure(lm: LM, adapter: impl Adapter + 'static) {
-  let settings = Settings { lm, adapter: Arc::new(adapter) };
-  *GLOBAL_SETTINGS.write().expect("Global settings lock poisoned") = Some(settings);
+    let settings = Settings {
+        lm,
+        adapter: Arc::new(adapter),
+    };
+    *GLOBAL_SETTINGS
+        .write()
+        .expect("Global settings lock poisoned") = Some(settings);
 }

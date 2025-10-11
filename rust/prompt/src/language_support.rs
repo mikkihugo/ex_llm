@@ -9,26 +9,28 @@ use serde::{Deserialize, Serialize};
 
 /// Language prompt generator
 pub struct LanguagePromptGenerator {
-  #[allow(dead_code)]
-  templates: HashMap<String, LanguageTemplates>,
+    #[allow(dead_code)]
+    templates: HashMap<String, LanguageTemplates>,
 }
 
 impl Default for LanguagePromptGenerator {
-  fn default() -> Self {
-    Self::new()
-  }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl LanguagePromptGenerator {
-  pub fn new() -> Self {
-    Self { templates: HashMap::new() }
-  }
+    pub fn new() -> Self {
+        Self {
+            templates: HashMap::new(),
+        }
+    }
 }
 
 /// Language templates
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LanguageTemplates {
-  pub base_template: String,
-  pub optimization_template: String,
-  pub example_template: String,
+    pub base_template: String,
+    pub optimization_template: String,
+    pub example_template: String,
 }

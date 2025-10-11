@@ -26,11 +26,11 @@ pub use sparc_coordinator::*;
 pub use sparc_optimizer::*;
 
 use crate::{
-  dspy::{
-    core::{Module, Optimizable},
-    evaluate::Evaluator,
-  },
-  dspy_data::{Example, Prediction},
+    dspy::{
+        core::{Module, Optimizable},
+        evaluate::Evaluator,
+    },
+    dspy_data::{Example, Prediction},
 };
 
 /// Modern DSPy Optimizer trait matching real framework capabilities
@@ -48,27 +48,31 @@ use crate::{
 /// @complexity high
 /// @since 2.0.0
 pub trait Teleprompter: Send + Sync {
-  /// Compile and optimize a DSPy program (matches real DSPy API)
-  fn compile<M>(&mut self, program: M, trainset: Vec<Example>) -> impl std::future::Future<Output = Result<M>> + Send
-  where
-    M: Module + Clone;
+    /// Compile and optimize a DSPy program (matches real DSPy API)
+    fn compile<M>(
+        &mut self,
+        program: M,
+        trainset: Vec<Example>,
+    ) -> impl std::future::Future<Output = Result<M>> + Send
+    where
+        M: Module + Clone;
 
-  /// Get optimizer name for logging and state management
-  fn name(&self) -> &str;
+    /// Get optimizer name for logging and state management
+    fn name(&self) -> &str;
 
-  /// Serialize optimizer state for resumption
-  fn dump_state(&self) -> Result<serde_json::Value>;
+    /// Serialize optimizer state for resumption
+    fn dump_state(&self) -> Result<serde_json::Value>;
 
-  /// Load optimizer state from previous session
-  fn load_state(&mut self, state: serde_json::Value) -> Result<()>;
+    /// Load optimizer state from previous session
+    fn load_state(&mut self, state: serde_json::Value) -> Result<()>;
 }
 
 /// Legacy optimizer trait for backwards compatibility
 #[allow(async_fn_in_trait)]
 pub trait Optimizer {
-  async fn compile<M>(&self, module: &mut M, trainset: Vec<Example>) -> Result<()>
-  where
-    M: Module + Optimizable + Evaluator;
+    async fn compile<M>(&self, module: &mut M, trainset: Vec<Example>) -> Result<()>
+    where
+        M: Module + Optimizable + Evaluator;
 }
 
 /// Metric function type for evaluating program performance
@@ -77,25 +81,25 @@ pub type MetricFn = Box<dyn Fn(&Example, &Prediction) -> f64 + Send + Sync>;
 /// Optimization configuration matching real DSPy patterns
 #[derive(Debug, Clone)]
 pub struct OptimizationConfig {
-  pub max_bootstrapped_demos: usize,
-  pub max_labeled_demos: usize,
-  pub num_candidate_programs: usize,
-  pub num_threads: usize,
-  pub minibatch_size: usize,
-  pub minibatch_full_eval_steps: usize,
-  pub auto_mode: String, // "light", "medium", "heavy"
+    pub max_bootstrapped_demos: usize,
+    pub max_labeled_demos: usize,
+    pub num_candidate_programs: usize,
+    pub num_threads: usize,
+    pub minibatch_size: usize,
+    pub minibatch_full_eval_steps: usize,
+    pub auto_mode: String, // "light", "medium", "heavy"
 }
 
 impl Default for OptimizationConfig {
-  fn default() -> Self {
-    Self {
-      max_bootstrapped_demos: 4,
-      max_labeled_demos: 4,
-      num_candidate_programs: 10,
-      num_threads: 4,
-      minibatch_size: 40,
-      minibatch_full_eval_steps: 4,
-      auto_mode: "medium".to_string(),
+    fn default() -> Self {
+        Self {
+            max_bootstrapped_demos: 4,
+            max_labeled_demos: 4,
+            num_candidate_programs: 10,
+            num_threads: 4,
+            minibatch_size: 40,
+            minibatch_full_eval_steps: 4,
+            auto_mode: "medium".to_string(),
+        }
     }
-  }
 }

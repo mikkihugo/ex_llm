@@ -833,25 +833,25 @@ macro_rules! signature_impl {
 /// For more complex types, we can expand this with trait implementations.
 pub fn generate_schema<T>() -> serde_json::Value
 where
-  T: 'static,
+    T: 'static,
 {
-  let type_name = std::any::type_name::<T>();
+    let type_name = std::any::type_name::<T>();
 
-  // Handle common types
-  match type_name {
-    "alloc::string::String" | "&str" => json!({"type": "string"}),
-    "i32" | "i64" | "u32" | "u64" => json!({"type": "integer"}),
-    "f32" | "f64" => json!({"type": "number"}),
-    "bool" => json!({"type": "boolean"}),
-    _ if type_name.starts_with("alloc::vec::Vec<") => json!({"type": "array"}),
-    _ if type_name.starts_with("std::collections::HashMap<") => {
-      json!({"type": "object"})
+    // Handle common types
+    match type_name {
+        "alloc::string::String" | "&str" => json!({"type": "string"}),
+        "i32" | "i64" | "u32" | "u64" => json!({"type": "integer"}),
+        "f32" | "f64" => json!({"type": "number"}),
+        "bool" => json!({"type": "boolean"}),
+        _ if type_name.starts_with("alloc::vec::Vec<") => json!({"type": "array"}),
+        _ if type_name.starts_with("std::collections::HashMap<") => {
+            json!({"type": "object"})
+        }
+        _ if type_name.starts_with("core::option::Option<") => {
+            json!({"anyOf": [{"type": "null"}]})
+        }
+        _ => json!({"type": "object", "description": type_name}),
     }
-    _ if type_name.starts_with("core::option::Option<") => {
-      json!({"anyOf": [{"type": "null"}]})
-    }
-    _ => json!({"type": "object", "description": type_name}),
-  }
 }
 
 /// Enhanced signature macro with serde_valid validation support
@@ -936,138 +936,157 @@ macro_rules! validated_signature {
 ///
 /// This is a placeholder for a more comprehensive validation system
 /// that could be expanded to handle range checks, length validation, etc.
-pub fn validate_field_constraint(field_name: &str, value: &serde_json::Value, constraint: &str) -> anyhow::Result<()> {
-  // Simple validation examples
-  if constraint.contains("range") && value.is_number() {
-    // Parse range constraint and validate
-    // Example: "range = 0.0..=1.0"
-    // This is a simplified version - real implementation would parse properly
-  }
+pub fn validate_field_constraint(
+    field_name: &str,
+    value: &serde_json::Value,
+    constraint: &str,
+) -> anyhow::Result<()> {
+    // Simple validation examples
+    if constraint.contains("range") && value.is_number() {
+        // Parse range constraint and validate
+        // Example: "range = 0.0..=1.0"
+        // This is a simplified version - real implementation would parse properly
+    }
 
-  if constraint.contains("min_length") && value.is_string() {
-    // Parse min_length constraint and validate
-    // Example: "min_length = 1"
-  }
+    if constraint.contains("min_length") && value.is_string() {
+        // Parse min_length constraint and validate
+        // Example: "min_length = 1"
+    }
 
-  // For now, just return Ok - real implementation would do actual validation
-  let _ = (field_name, value, constraint);
-  Ok(())
+    // For now, just return Ok - real implementation would do actual validation
+    let _ = (field_name, value, constraint);
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-  use super::*;
-  use crate::dspy::MetaSignature;
+    use super::*;
+    use crate::dspy::MetaSignature;
 
-  #[test]
-  fn test_signature_macro_basic() {
-    // Test that the macro generates working code for DSPy text transformation
-    signature! {
-        TextTransformation {
-            inputs: {
-                source_text: String, "Original text to transform";
-            },
-            outputs: {
-                transformed_text: String, "Text after applying transformation rules";
-            },
-            instruction: "Transform the input text according to the specified transformation rules"
+    #[test]
+    fn test_signature_macro_basic() {
+        // Test that the macro generates working code for DSPy text transformation
+        signature! {
+            TextTransformation {
+                inputs: {
+                    source_text: String, "Original text to transform";
+                },
+                outputs: {
+                    transformed_text: String, "Text after applying transformation rules";
+                },
+                instruction: "Transform the input text according to the specified transformation rules"
+            }
         }
+
+        let sig = TextTransformation::new();
+        assert_eq!(
+            sig.instruction(),
+            "Transform the input text according to the specified transformation rules"
+        );
+        let input_fields = sig.input_fields();
+        let output_fields = sig.output_fields();
+        assert!(input_fields
+            .as_object()
+            .unwrap()
+            .contains_key("source_text"));
+        assert!(output_fields
+            .as_object()
+            .unwrap()
+            .contains_key("transformed_text"));
     }
 
-    let sig = TextTransformation::new();
-    assert_eq!(sig.instruction(), "Transform the input text according to the specified transformation rules");
-    let input_fields = sig.input_fields();
-    let output_fields = sig.output_fields();
-    assert!(input_fields.as_object().unwrap().contains_key("source_text"));
-    assert!(output_fields.as_object().unwrap().contains_key("transformed_text"));
-  }
-
-  #[test]
-  fn test_signature_with_features() {
-    signature! {
-        ChainOfThoughtQA {
-            inputs: {
-                complex_question: String, "Multi-step question requiring reasoning";
-            },
-            outputs: {
-                step_by_step_answer: String, "Detailed answer with reasoning steps";
-            },
-            instruction: "Answer the complex question using step-by-step chain-of-thought reasoning",
-            features: [cot, hint]
+    #[test]
+    fn test_signature_with_features() {
+        signature! {
+            ChainOfThoughtQA {
+                inputs: {
+                    complex_question: String, "Multi-step question requiring reasoning";
+                },
+                outputs: {
+                    step_by_step_answer: String, "Detailed answer with reasoning steps";
+                },
+                instruction: "Answer the complex question using step-by-step chain-of-thought reasoning",
+                features: [cot, hint]
+            }
         }
+
+        let sig = ChainOfThoughtQA::new();
+        let input_fields = sig.input_fields();
+        let output_fields = sig.output_fields();
+
+        // Test basic fields
+        assert!(input_fields
+            .as_object()
+            .unwrap()
+            .contains_key("complex_question"));
+        assert!(output_fields
+            .as_object()
+            .unwrap()
+            .contains_key("step_by_step_answer"));
+
+        // Test DSPy features
+        assert!(input_fields.as_object().unwrap().contains_key("hint")); // hint feature adds input field
+        assert!(output_fields.as_object().unwrap().contains_key("reasoning")); // cot feature adds output field
+
+        // Test enhanced instruction
+        let instruction = sig.instruction();
+        assert!(instruction.contains("step by step"));
+        assert!(instruction.contains("reasoning process"));
     }
 
-    let sig = ChainOfThoughtQA::new();
-    let input_fields = sig.input_fields();
-    let output_fields = sig.output_fields();
-
-    // Test basic fields
-    assert!(input_fields.as_object().unwrap().contains_key("complex_question"));
-    assert!(output_fields.as_object().unwrap().contains_key("step_by_step_answer"));
-
-    // Test DSPy features
-    assert!(input_fields.as_object().unwrap().contains_key("hint")); // hint feature adds input field
-    assert!(output_fields.as_object().unwrap().contains_key("reasoning")); // cot feature adds output field
-
-    // Test enhanced instruction
-    let instruction = sig.instruction();
-    assert!(instruction.contains("step by step"));
-    assert!(instruction.contains("reasoning process"));
-  }
-
-  #[test]
-  fn test_advanced_signature_methods() {
-    signature! {
-        ValidationTestSignature {
-            inputs: {
-                input_data: String, "Test input data";
-            },
-            outputs: {
-                output_result: String, "Test output result";
-            },
-            instruction: "Process the input data",
-            features: [reasoning]
+    #[test]
+    fn test_advanced_signature_methods() {
+        signature! {
+            ValidationTestSignature {
+                inputs: {
+                    input_data: String, "Test input data";
+                },
+                outputs: {
+                    output_result: String, "Test output result";
+                },
+                instruction: "Process the input data",
+                features: [reasoning]
+            }
         }
+
+        let sig = ValidationTestSignature::new();
+
+        // Test field counting
+        assert_eq!(sig.input_fields_len(), 1); // input_data only (no hint feature)
+        assert_eq!(sig.output_fields_len(), 2); // output_result + rationale
+
+        // Test field names
+        let input_names = sig.input_field_names();
+        let output_names = sig.output_field_names();
+        assert!(input_names.contains(&"input_data".to_string()));
+        assert!(output_names.contains(&"output_result".to_string()));
+        assert!(output_names.contains(&"rationale".to_string())); // reasoning feature
+
+        // Test validation
+        let valid_input = serde_json::json!({"input_data": "test"});
+        assert!(sig.validate_inputs(&valid_input).is_ok());
+
+        let invalid_input = serde_json::json!({"wrong_field": "test"});
+        assert!(sig.validate_inputs(&invalid_input).is_err());
+
+        // Test prompt generation
+        let prompt = sig.generate_prompt(&valid_input);
+        println!("Generated prompt: {}", prompt); // Debug output
+        assert!(prompt.contains("Process the input data"));
+        assert!(prompt.contains("input_data"));
+        assert!(prompt.contains("test"));
+        assert!(prompt.contains("output_result:"));
     }
 
-    let sig = ValidationTestSignature::new();
+    #[test]
+    fn test_schema_generation() {
+        let string_schema = generate_schema::<String>();
+        assert_eq!(string_schema["type"], "string");
 
-    // Test field counting
-    assert_eq!(sig.input_fields_len(), 1); // input_data only (no hint feature)
-    assert_eq!(sig.output_fields_len(), 2); // output_result + rationale
+        let number_schema = generate_schema::<f32>();
+        assert_eq!(number_schema["type"], "number");
 
-    // Test field names
-    let input_names = sig.input_field_names();
-    let output_names = sig.output_field_names();
-    assert!(input_names.contains(&"input_data".to_string()));
-    assert!(output_names.contains(&"output_result".to_string()));
-    assert!(output_names.contains(&"rationale".to_string())); // reasoning feature
-
-    // Test validation
-    let valid_input = serde_json::json!({"input_data": "test"});
-    assert!(sig.validate_inputs(&valid_input).is_ok());
-
-    let invalid_input = serde_json::json!({"wrong_field": "test"});
-    assert!(sig.validate_inputs(&invalid_input).is_err());
-
-    // Test prompt generation
-    let prompt = sig.generate_prompt(&valid_input);
-    println!("Generated prompt: {}", prompt); // Debug output
-    assert!(prompt.contains("Process the input data"));
-    assert!(prompt.contains("input_data"));
-    assert!(prompt.contains("test"));
-    assert!(prompt.contains("output_result:"));
-  }
-
-  #[test]
-  fn test_schema_generation() {
-    let string_schema = generate_schema::<String>();
-    assert_eq!(string_schema["type"], "string");
-
-    let number_schema = generate_schema::<f32>();
-    assert_eq!(number_schema["type"], "number");
-
-    let bool_schema = generate_schema::<bool>();
-    assert_eq!(bool_schema["type"], "boolean");
-  }
+        let bool_schema = generate_schema::<bool>();
+        assert_eq!(bool_schema["type"], "boolean");
+    }
 }
