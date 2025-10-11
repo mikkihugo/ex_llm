@@ -77,6 +77,11 @@ pub mod search;   // Semantic search with custom vectors
 // Unified storage system
 pub mod storage;
 
+// Local implementations for external dependencies
+pub mod linting_engine;
+pub mod prompt_engine;
+pub mod sparc_methodology;
+
 // Re-export main types for easy access
 // Domain types (new organization)
 pub use domain::*;

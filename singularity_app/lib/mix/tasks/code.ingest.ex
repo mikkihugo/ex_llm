@@ -287,22 +287,22 @@ defmodule Mix.Tasks.Code.Ingest do
     end
 
     if String.trim(content) == "" do
-      Logger.debug("Skipping empty file: #{file.path}")
+      Logger.debug("Skipping empty file: #{file.path} (codebase: #{codebase_id})")
       {:ok, :skipped}
     else
       # Generate embedding for file content
       case EmbeddingGenerator.embed(content) do
         {:ok, embedding} ->
-          # Store embedding in database
+          # Store embedding in database (with codebase_id check for safety)
           Postgrex.query!(
             conn,
             """
             UPDATE codebase_metadata
-            SET vector_embedding = $2,
+            SET vector_embedding = $3,
                 updated_at = NOW()
-            WHERE id = $1
+            WHERE id = $1 AND codebase_id = $2
             """,
-            [file.id, embedding]
+            [file.id, codebase_id, embedding]
           )
           {:ok, :embedded}
 

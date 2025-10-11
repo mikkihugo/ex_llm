@@ -42,13 +42,53 @@ impl TemplateMetaParser {
         // Create a simple AST for now - TODO: implement proper JSON parsing
         use tree_sitter::Parser;
         let mut parser = Parser::new();
-        let tree = parser.parse(content, None).map_err(|e| parser_framework::ParseError::TreeSitterError(e.to_string()))?;
+        let tree = parser.parse(content, None)
+            .ok_or_else(|| parser_framework::ParseError::TreeSitterError("Failed to parse JSON".to_string()))?;
         Ok(AST::new(tree, content.to_string()))
     }
 
-    pub fn extract_metadata(&self, _source: &str) -> Result<TemplateMetadata> {
-        // TODO: Extract template metadata from parsed AST
-        todo!("Implement metadata extraction")
+    pub fn extract_metadata(&self, source: &str) -> Result<TemplateMetadata> {
+        // Parse JSON and extract metadata
+        let json_value: serde_json::Value = serde_json::from_str(source)
+            .map_err(|e| parser_framework::ParseError::ParseError(format!("JSON parse error: {}", e)))?;
+
+        // Extract metadata from JSON structure
+        let name = json_value
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown")
+            .to_string();
+
+        let version = json_value
+            .get("version")
+            .and_then(|v| v.as_str())
+            .unwrap_or("1.0.0")
+            .to_string();
+
+        let template_type = json_value
+            .get("template_type")
+            .or_else(|| json_value.get("type"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("general")
+            .to_string();
+
+        let language = json_value
+            .get("language")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+
+        let framework = json_value
+            .get("framework")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+
+        Ok(TemplateMetadata {
+            name,
+            version,
+            template_type,
+            language,
+            framework,
+        })
     }
 }
 

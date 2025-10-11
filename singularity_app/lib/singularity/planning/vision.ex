@@ -1,6 +1,25 @@
 defmodule Singularity.Planning.Vision do
   @moduledoc """
-  Vision management for planning and goal setting.
+  Vision management for planning and goal setting with approval tracking.
+
+  Provides centralized vision management for the planning system with
+  approval tracking, version history, and integration with work planning
+  components for goal-oriented development.
+
+  ## Integration Points
+
+  This module integrates with:
+  - PostgreSQL table: `vision_history` (stores vision changes and approvals)
+
+  ## Usage
+
+      # Set system vision
+      :ok = Vision.set_vision("Build AGI-powered autonomous development platform")
+      # => :ok
+
+      # Get current vision
+      vision = Vision.get_vision()
+      # => %{vision: "Build AGI-powered...", approved_by: "system", updated_at: ~U[...]}
   """
 
   use GenServer

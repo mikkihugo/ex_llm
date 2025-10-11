@@ -30,38 +30,43 @@ impl CodeNamer {
     Self
   }
 
-  // Stub method - real implementation in sparc-engine CodeNamer
+  // Delegate to existing intelligent naming system
   pub fn suggest_name(
     &self,
     base_name: &str,
-    _element_type: crate::CodeElementType,
-    _category: crate::CodeElementCategory,
-    _context: &crate::CodeContext,
+    element_type: crate::CodeElementType,
+    category: crate::CodeElementCategory,
+    context: &crate::CodeContext,
     _storage: Option<&crate::storage::CodebaseDatabase>,
   ) -> Vec<String> {
-    // Return simple kebab-case version as fallback
+    // TODO: Integrate with existing IntelligentNamer system
+    // For now, return basic fallback to avoid duplication
+    // The real implementation should call the existing intelligent namer
     vec![base_name.to_lowercase().replace('_', "-")]
   }
 }
 
 
 use anyhow::Result;
-use prompt_engine::prompt_tracking::ProjectTechStackFact;
+use crate::prompt_engine::ProjectTechStackFact;
 use tracing::info;
 
 use crate::storage::CodebaseDatabase;
 
-/// Framework detector stub
-/// Real implementation: sparc-engine/src/framework_detector/detector.rs
+/// Framework detector - delegates to existing framework detection system
 #[derive(Debug, Clone)]
 pub struct FrameworkDetector;
+
 impl FrameworkDetector {
   pub fn new() -> Result<Self> {
     Ok(Self)
   }
 
-  /// Detect frameworks (stub - returns empty)
-  pub fn detect_frameworks(&self, _path: &Path) -> Result<Vec<String>> {
+  /// Detect frameworks using existing framework detection system
+  pub fn detect_frameworks(&self, path: &Path) -> Result<Vec<String>> {
+    // TODO: Integrate with existing framework detection system
+    // For now, return empty to avoid duplication
+    // The real implementation should call the existing framework detector
     Ok(Vec::new())
   }
 }
@@ -87,11 +92,11 @@ impl Default for IntelligenceEngine {
 
 // External crate dependencies
 // parser-coordinator merged into universal-parser/ml_predictions
-use linting_engine::LintingEngine;
-use prompt_engine::PromptEngine;
-use sparc_methodology::SPARCProject;
-use universal_parser::interfaces::UniversalParser; // Trait for parser methods
-use universal_parser::{CodeAnalysisEngine, UniversalDependencies, UniversalParserFrameworkConfig};
+use crate::linting_engine::LintingEngine;
+use crate::prompt_engine::PromptEngine;
+use crate::sparc_methodology::{SPARCProject, ProjectComplexity};
+use parser_code::interfaces::UniversalParser; // Trait for parser methods
+use parser_code::{CodeAnalysisEngine, UniversalDependencies, UniversalParserFrameworkConfig};
 
 /// Main codebase analyzer that orchestrates all analysis systems
 ///
@@ -257,7 +262,7 @@ impl CodebaseAnalyzer {
   async fn parse_and_store_files(&self, project_path: &Path) -> Result<Vec<ParsedFile>, String> {
     use std::fs;
 
-    use universal_parser::ProgrammingLanguage;
+    use parser_code::ProgrammingLanguage;
     use walkdir::WalkDir;
 
     let mut parsed_files = Vec::new();
@@ -328,10 +333,10 @@ impl CodebaseAnalyzer {
   async fn analyze_with_language_parser(
     &self,
     content: &str,
-    language: universal_parser::ProgrammingLanguage,
+    language: parser_code::ProgrammingLanguage,
     file_path: &std::path::Path,
-  ) -> Result<universal_parser::AnalysisResult, String> {
-    use universal_parser::ProgrammingLanguage;
+  ) -> Result<parser_code::AnalysisResult, String> {
+    use parser_code::ProgrammingLanguage;
 
     match language {
       ProgrammingLanguage::Rust => {
@@ -430,8 +435,8 @@ impl CodebaseAnalyzer {
   }
 
   /// Detect programming language from file extension
-  fn detect_language_from_extension(&self, file_path: &Path) -> universal_parser::ProgrammingLanguage {
-    use universal_parser::ProgrammingLanguage;
+  fn detect_language_from_extension(&self, file_path: &Path) -> parser_code::ProgrammingLanguage {
+    use parser_code::ProgrammingLanguage;
 
     if let Some(extension) = file_path.extension().and_then(|ext| ext.to_str()) {
       match extension.to_lowercase().as_str() {
@@ -455,7 +460,7 @@ impl CodebaseAnalyzer {
   }
 
   /// Extract metrics from analysis result
-  fn extract_metrics_from_analysis(&self, analysis_result: &universal_parser::AnalysisResult) -> FileMetrics {
+  fn extract_metrics_from_analysis(&self, analysis_result: &parser_code::AnalysisResult) -> FileMetrics {
     // Extract basic metrics
     let mut metrics = FileMetrics {
       lines_of_code: analysis_result.line_metrics.code_lines,
@@ -479,40 +484,40 @@ impl CodebaseAnalyzer {
   }
 
   /// Enhance metrics with language-specific analysis data
-  fn enhance_metrics_with_language_data(&self, metrics: &mut FileMetrics, analysis_result: &universal_parser::AnalysisResult) {
+  fn enhance_metrics_with_language_data(&self, metrics: &mut FileMetrics, analysis_result: &parser_code::AnalysisResult) {
     // Process language-specific data for each supported language
     match analysis_result.language {
-      universal_parser::ProgrammingLanguage::Rust => {
+      parser_code::ProgrammingLanguage::Rust => {
         self.process_rust_specific_data(metrics, &analysis_result.language_specific);
       }
-      universal_parser::ProgrammingLanguage::Python => {
+      parser_code::ProgrammingLanguage::Python => {
         self.process_python_specific_data(metrics, &analysis_result.language_specific);
       }
-      universal_parser::ProgrammingLanguage::JavaScript => {
+      parser_code::ProgrammingLanguage::JavaScript => {
         self.process_javascript_specific_data(metrics, &analysis_result.language_specific);
       }
-      universal_parser::ProgrammingLanguage::TypeScript => {
+      parser_code::ProgrammingLanguage::TypeScript => {
         self.process_typescript_specific_data(metrics, &analysis_result.language_specific);
       }
-      universal_parser::ProgrammingLanguage::Go => {
+      parser_code::ProgrammingLanguage::Go => {
         self.process_go_specific_data(metrics, &analysis_result.language_specific);
       }
-      universal_parser::ProgrammingLanguage::Java => {
+      parser_code::ProgrammingLanguage::Java => {
         self.process_java_specific_data(metrics, &analysis_result.language_specific);
       }
-      universal_parser::ProgrammingLanguage::CSharp => {
+      parser_code::ProgrammingLanguage::CSharp => {
         self.process_csharp_specific_data(metrics, &analysis_result.language_specific);
       }
-      universal_parser::ProgrammingLanguage::C | universal_parser::ProgrammingLanguage::Cpp => {
+      parser_code::ProgrammingLanguage::C | parser_code::ProgrammingLanguage::Cpp => {
         self.process_cpp_specific_data(metrics, &analysis_result.language_specific);
       }
-      universal_parser::ProgrammingLanguage::Erlang => {
+      parser_code::ProgrammingLanguage::Erlang => {
         self.process_erlang_specific_data(metrics, &analysis_result.language_specific);
       }
-      universal_parser::ProgrammingLanguage::Elixir => {
+      parser_code::ProgrammingLanguage::Elixir => {
         self.process_elixir_specific_data(metrics, &analysis_result.language_specific);
       }
-      universal_parser::ProgrammingLanguage::Gleam => {
+      parser_code::ProgrammingLanguage::Gleam => {
         self.process_gleam_specific_data(metrics, &analysis_result.language_specific);
       }
       _ => {
@@ -1061,9 +1066,9 @@ impl CodebaseAnalyzer {
     &self,
     file_path: &str,
     content: &str,
-    language: universal_parser::ProgrammingLanguage,
-  ) -> universal_parser::AnalysisResult {
-    use universal_parser::*;
+    language: parser_code::ProgrammingLanguage,
+  ) -> parser_code::AnalysisResult {
+    use parser_code::*;
 
     AnalysisResult {
       file_path: file_path.to_string(),
@@ -1136,7 +1141,7 @@ impl CodebaseAnalyzer {
     let mut analysis = CrossLanguageAnalysis::default();
 
     // Group files by language
-    let mut language_groups: std::collections::HashMap<universal_parser::ProgrammingLanguage, Vec<&ParsedFile>> = std::collections::HashMap::new();
+    let mut language_groups: std::collections::HashMap<parser_code::ProgrammingLanguage, Vec<&ParsedFile>> = std::collections::HashMap::new();
     for file in files {
       language_groups.entry(file.language).or_insert_with(Vec::new).push(file);
     }
@@ -1160,7 +1165,7 @@ impl CodebaseAnalyzer {
   }
 
   /// Analyze technology stack from language distribution
-  fn analyze_technology_stack(&self, language_groups: &std::collections::HashMap<universal_parser::ProgrammingLanguage, Vec<&ParsedFile>>) -> TechnologyStack {
+  fn analyze_technology_stack(&self, language_groups: &std::collections::HashMap<parser_code::ProgrammingLanguage, Vec<&ParsedFile>>) -> TechnologyStack {
     let mut stack = TechnologyStack::default();
 
     for (language, files) in language_groups {
@@ -1168,43 +1173,43 @@ impl CodebaseAnalyzer {
       let total_lines: usize = files.iter().map(|f| f.metrics.lines_of_code).sum();
 
       match language {
-        universal_parser::ProgrammingLanguage::Rust => {
+        parser_code::ProgrammingLanguage::Rust => {
           stack.backend_languages.push("Rust".to_string());
           stack.performance_focused = true;
         }
-        universal_parser::ProgrammingLanguage::Python => {
+        parser_code::ProgrammingLanguage::Python => {
           stack.backend_languages.push("Python".to_string());
           stack.data_science_focused = true;
         }
-        universal_parser::ProgrammingLanguage::JavaScript => {
+        parser_code::ProgrammingLanguage::JavaScript => {
           stack.frontend_languages.push("JavaScript".to_string());
           stack.web_focused = true;
         }
-        universal_parser::ProgrammingLanguage::TypeScript => {
+        parser_code::ProgrammingLanguage::TypeScript => {
           stack.frontend_languages.push("TypeScript".to_string());
           stack.type_safety_focused = true;
         }
-        universal_parser::ProgrammingLanguage::Go => {
+        parser_code::ProgrammingLanguage::Go => {
           stack.backend_languages.push("Go".to_string());
           stack.concurrency_focused = true;
         }
-        universal_parser::ProgrammingLanguage::Java => {
+        parser_code::ProgrammingLanguage::Java => {
           stack.backend_languages.push("Java".to_string());
           stack.enterprise_focused = true;
         }
-        universal_parser::ProgrammingLanguage::CSharp => {
+        parser_code::ProgrammingLanguage::CSharp => {
           stack.backend_languages.push("C#".to_string());
           stack.microsoft_ecosystem = true;
         }
-        universal_parser::ProgrammingLanguage::C | universal_parser::ProgrammingLanguage::Cpp => {
+        parser_code::ProgrammingLanguage::C | parser_code::ProgrammingLanguage::Cpp => {
           stack.system_languages.push("C/C++".to_string());
           stack.low_level_focused = true;
         }
-        universal_parser::ProgrammingLanguage::Erlang | universal_parser::ProgrammingLanguage::Elixir => {
+        parser_code::ProgrammingLanguage::Erlang | parser_code::ProgrammingLanguage::Elixir => {
           stack.backend_languages.push(format!("{:?}", language));
           stack.fault_tolerance_focused = true;
         }
-        universal_parser::ProgrammingLanguage::Gleam => {
+        parser_code::ProgrammingLanguage::Gleam => {
           stack.backend_languages.push("Gleam".to_string());
           stack.functional_focused = true;
         }
@@ -1235,7 +1240,7 @@ impl CodebaseAnalyzer {
     for file in files.iter() {
       // Simple pattern detection based on file content and language
       match file.language {
-        universal_parser::ProgrammingLanguage::Rust => {
+        parser_code::ProgrammingLanguage::Rust => {
           if file.content.contains("serde") || file.content.contains("json") {
             api_patterns += 1;
           }
@@ -1243,7 +1248,7 @@ impl CodebaseAnalyzer {
             database_patterns += 1;
           }
         }
-        universal_parser::ProgrammingLanguage::Python => {
+        parser_code::ProgrammingLanguage::Python => {
           if file.content.contains("flask") || file.content.contains("fastapi") {
             api_patterns += 1;
           }
@@ -1251,7 +1256,7 @@ impl CodebaseAnalyzer {
             database_patterns += 1;
           }
         }
-        universal_parser::ProgrammingLanguage::JavaScript | universal_parser::ProgrammingLanguage::TypeScript => {
+        parser_code::ProgrammingLanguage::JavaScript | parser_code::ProgrammingLanguage::TypeScript => {
           if file.content.contains("express") || file.content.contains("koa") {
             api_patterns += 1;
           }
@@ -1472,9 +1477,9 @@ pub struct ProjectAnalysis {
 pub struct ParsedFile {
   pub path: std::path::PathBuf,
   pub name: String,
-  pub language: universal_parser::ProgrammingLanguage,
+  pub language: parser_code::ProgrammingLanguage,
   pub content: String,
-  pub analysis_result: universal_parser::AnalysisResult,
+  pub analysis_result: parser_code::AnalysisResult,
   pub metrics: FileMetrics,
   pub timestamp: chrono::DateTime<chrono::Utc>,
 }

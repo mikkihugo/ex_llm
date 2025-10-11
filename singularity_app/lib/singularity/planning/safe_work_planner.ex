@@ -1,22 +1,51 @@
 defmodule Singularity.Planning.SafeWorkPlanner do
   @moduledoc """
-  SAFe 6.0 Essential Work Planner.
+  SAFe 6.0 Essential Work Planner with intelligent vision chunk processing and WSJF prioritization.
 
-  Hierarchy:
+  Provides comprehensive work planning using SAFe 6.0 methodology with autonomous
+  vision chunk analysis, intelligent classification, and WSJF-based prioritization
+  for strategic themes, epics, capabilities, and features.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.CodeStore` - Vision persistence (CodeStore.save_vision/1, load_vision/0)
+  - `Singularity.Conversation` - Notifications (Conversation.GoogleChat.notify/1)
+  - `Singularity.Autonomy.RuleEngine` - Validation (RuleEngine.validate_epic_wsjf/1, validate_feature_readiness/1)
+  - `Singularity.LLM.Service` - Classification (Service.call/3 for intelligent analysis)
+  - `Singularity.EmbeddingEngine` - Semantic search (EmbeddingEngine.embed/1 for parent finding)
+  - PostgreSQL table: `safe_work_items` (stores work item hierarchy)
+
+  ## Hierarchy
+
     Strategic Themes (3-5 year vision areas)
       └─ Epics (6-12 month initiatives - Business or Enabler)
           └─ Capabilities (3-6 month cross-team features)
               └─ Features (1-3 month team deliverables)
                   └─ HTDAG breakdown → Stories → Tasks
 
-  Supports incremental vision chunk submission that can update any level.
-  Uses WSJF (Weighted Shortest Job First) for prioritization.
+  ## Usage
+
+      # Add vision chunk (auto-classifies level)
+      {:ok, analysis} = SafeWorkPlanner.add_chunk("Build world-class observability platform (3 BLOC)")
+      # => {:ok, %{level: :strategic_theme, name: "Observability Platform", ...}}
+
+      # Get next work item (WSJF prioritized)
+      next_work = SafeWorkPlanner.get_next_work()
+      # => %{id: "feat-abc123", name: "Distributed Tracing", wsjf_score: 8.5}
+
+      # Get full hierarchy
+      hierarchy = SafeWorkPlanner.get_hierarchy()
+      # => [%{theme: %{...}, epics: [%{epic: %{...}, capabilities: [...]}]}]
   """
 
   use GenServer
   require Logger
 
+  # INTEGRATION: Vision persistence and notifications
   alias Singularity.{CodeStore, Conversation}
+
+  # INTEGRATION: Rule validation (WSJF and feature readiness)
   alias Singularity.Autonomy.RuleEngine, as: RuleEngine
 
   defstruct [

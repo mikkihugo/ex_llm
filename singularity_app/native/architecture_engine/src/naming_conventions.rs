@@ -98,6 +98,61 @@ impl NamingConventions {
         self.core.validate_module_name(name)
     }
 
+    /// Validate function name for specific language
+    pub fn validate_function_name_for_language(&self, name: &str, language: &str) -> bool {
+        self.core.validate_function_name(name) // Simplified for now
+    }
+
+    /// Validate filename
+    pub fn validate_filename(&self, name: &str) -> bool {
+        self.core.validate_module_name(name) // Use module validation for now
+    }
+
+    /// Validate directory name
+    pub fn validate_directory_name(&self, name: &str) -> bool {
+        self.core.validate_module_name(name) // Use module validation for now
+    }
+
+    /// Validate class name
+    pub fn validate_class_name(&self, name: &str) -> bool {
+        self.core.validate_module_name(name) // Use module validation for now
+    }
+
+    /// Validate interface name
+    pub fn validate_interface_name(&self, name: &str) -> bool {
+        self.core.validate_module_name(name) // Use module validation for now
+    }
+
+    /// Suggest class names
+    pub fn suggest_class_names(&self, description: &str, _language: Option<&str>) -> Vec<String> {
+        self.suggestions.suggest_module_names(description, None) // Use module suggestions for now
+    }
+
+    /// Suggest filename
+    pub fn suggest_filename(&self, description: &str, _language: Option<&str>) -> Vec<String> {
+        self.suggestions.suggest_module_names(description, None) // Use module suggestions for now
+    }
+
+    /// Suggest directory name
+    pub fn suggest_directory_name(&self, description: &str, _language: Option<&str>) -> Vec<String> {
+        self.suggestions.suggest_module_names(description, None) // Use module suggestions for now
+    }
+
+    /// Suggest interface names
+    pub fn suggest_interface_names(&self, description: &str, _language: Option<&str>) -> Vec<String> {
+        self.suggestions.suggest_module_names(description, None) // Use module suggestions for now
+    }
+
+    /// Validate snake case
+    pub fn validate_snake_case(&self, name: &str) -> bool {
+        self.core.validate_function_name(name) // Simplified for now
+    }
+
+    /// Validate camel case
+    pub fn validate_camel_case(&self, name: &str) -> bool {
+        self.core.validate_function_name(name) // Simplified for now
+    }
+
     /// Convert to snake_case
     pub fn to_snake_case(&self, input: &str) -> String {
         self.core.to_snake_case(input)

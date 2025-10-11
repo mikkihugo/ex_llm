@@ -1,17 +1,22 @@
 defmodule Singularity.Planning.HTDAGTracer do
   @moduledoc """
   Advanced runtime tracing and analysis for detecting if functions work and are connected.
-  
-  Uses multiple techniques to understand code health:
-  - **Call tracing** - Tracks which functions are called at runtime
-  - **Dependency mapping** - Maps actual runtime dependencies vs declared
-  - **Error tracking** - Identifies functions that crash or error
-  - **Dead code detection** - Finds unused functions and modules
-  - **Integration testing** - Validates cross-module communication
-  - **Performance profiling** - Detects slow or blocking functions
-  
+
+  Provides comprehensive code health analysis through multiple detection techniques
+  including call tracing, dependency mapping, error tracking, dead code detection,
+  and performance profiling to identify broken functions and disconnected modules.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.HTDAGLearner` - Learning integration (HTDAGLearner.learn_with_tracing/1)
+  - `:erlang.trace` - Runtime tracing (erlang.trace/3 for function call tracking)
+  - `:telemetry` - Event tracking (telemetry events for execution paths)
+  - `:recon_trace` - Production tracing (recon_trace for safe tracing)
+  - PostgreSQL table: `htdag_trace_results` (stores trace analysis data)
+
   ## Detection Methods
-  
+
   ### 1. Static Analysis
   - Parse AST to find function calls
   - Extract module dependencies
@@ -36,25 +41,23 @@ defmodule Singularity.Planning.HTDAGTracer do
   - Detect orphaned queries (no callers)
   
   ## Usage
-  
+
       # Trace all function calls for 10 seconds
-      HTDAGTracer.trace_runtime(duration_ms: 10_000)
-      
+      {:ok, trace_results} = HTDAGTracer.trace_runtime(duration_ms: 10_000)
+      # => {:ok, %{{MyModule, :my_function, 2} => %{count: 5, avg_time_us: 1000}}}
+
       # Analyze if specific module is connected
       HTDAGTracer.is_connected?(MyModule)
-      
-      # Find all dead code
-      HTDAGTracer.find_dead_code()
-      
-      # Detect broken functions
-      HTDAGTracer.find_broken_functions()
-      
+      # => %{module: MyModule, connected: true, has_callers: true, has_callees: true}
+
       # Full analysis
-      HTDAGTracer.full_analysis()
+      {:ok, analysis} = HTDAGTracer.full_analysis()
+      # => {:ok, %{trace_results: %{...}, dead_code: [...], broken_functions: [...]}}
   """
   
   require Logger
   
+  # INTEGRATION: Learning integration (trace analysis feeds into learning)
   alias Singularity.Planning.HTDAGLearner
   
   defstruct [

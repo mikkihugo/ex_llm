@@ -1,28 +1,39 @@
 defmodule Singularity.Planning.HTDAGEvolution do
   @moduledoc """
-  Self-evolution module for HTDAG using NATS LLM feedback.
-  
-  Enables the HTDAG to improve itself by:
-  - Analyzing execution results
-  - Identifying improvements via LLM critique
-  - Mutating operation parameters
-  - Learning from successful patterns
-  
+  Self-evolution module for HTDAG using NATS LLM feedback and performance analysis.
+
+  Enables autonomous improvement of HTDAG execution by analyzing performance metrics,
+  identifying optimization opportunities through LLM critique, and applying mutations
+  to operation parameters, model selection, and prompt templates.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.LLM.NatsOperation` - LLM operations (NatsOperation.compile/2, run/3)
+  - `:telemetry` - Performance metrics (telemetry events for execution analysis)
+  - PostgreSQL table: `htdag_evolution_logs` (stores mutation history and results)
+
   ## Evolution Types
-  
+
   1. **Model Selection Mutation** - Change model_id based on performance
   2. **Parameter Tuning** - Adjust temperature, max_tokens, etc.
   3. **Prompt Engineering** - Improve prompt templates
   4. **Decomposition Strategy** - Better task breakdown
-  
-  ## Example
-  
+
+  ## Usage
+
       # Evolve based on execution results
-      mutation = HTDAGEvolution.critique_and_mutate(execution_result)
-      improved_dag = HTDAGEvolution.apply_mutation(dag, mutation)
+      {:ok, mutations} = HTDAGEvolution.critique_and_mutate(execution_result)
+      # => {:ok, [%{type: :model_change, target: "task-123", new_value: "claude-sonnet-4.5"}]}
+
+      # Apply mutations to parameters
+      improved_params = HTDAGEvolution.apply_mutations(mutations, original_params)
+      # => %{model_id: "claude-sonnet-4.5", temperature: 0.3, ...}
   """
   
   require Logger
+
+  # INTEGRATION: LLM operations (NATS-based critique and mutation)
   alias Singularity.LLM.NatsOperation
   
   @type mutation :: %{

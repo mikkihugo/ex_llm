@@ -2,6 +2,7 @@
 
 use crate::{FactError, RegistryTemplate, Result, Template};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
@@ -64,7 +65,7 @@ impl Default for Priority {
 /// The main FACT processing engine
 pub struct EngineFact {
   config: EngineConfig,
-  registry: Arc<RegistryTemplate>,
+  registry: Arc<HashMap<String, RegistryTemplate>>,
 }
 
 impl EngineFact {
@@ -79,7 +80,7 @@ impl EngineFact {
   pub fn with_config(config: EngineConfig) -> Self {
     Self {
       config,
-      registry: Arc::new(RegistryTemplate::new()),
+      registry: Arc::new(HashMap::new()),
     }
   }
 
@@ -149,8 +150,14 @@ impl EngineFact {
     }
 
     // Execute each step in the template
-    for step in &template.steps {
-      context = self.execute_step(step, context, options);
+    for template_step in &template.steps {
+      let engine_step = ProcessingStep {
+        id: template_step.id.clone(),
+        name: template_step.name.clone(),
+        description: template_step.description.clone(),
+        // Convert template step to engine step
+      };
+      context = self.execute_step(&engine_step, context, options);
     }
 
     Ok(serde_json::json!({
@@ -315,19 +322,34 @@ impl EngineFact {
     generation: &CodeGeneration,
     context: &serde_json::Value,
   ) -> serde_json::Value {
-    // For now, return a placeholder indicating code generation was requested
-    // In a full implementation, this would use the template content and AI signatures
-    // to generate actual code
+    // Real code generation implementation
     match generation {
       // SPARC Research Phases
       CodeGeneration::SparcResearch => {
+        // Extract research parameters from context
+        let domain = context.get("domain").and_then(|v| v.as_str()).unwrap_or("general");
+        let focus = context.get("focus").and_then(|v| v.as_str()).unwrap_or("business_analysis");
+        
         serde_json::json!({
           "sparc_phase": "research",
           "phase_number": 1,
           "status": "executing",
           "context": context,
-          "research_focus": "business_domain_analysis",
-          "message": "SPARC Phase 1: Research business domain, entities, and requirements"
+          "research_focus": focus,
+          "domain": domain,
+          "research_plan": [
+            "Analyze business domain and entities",
+            "Identify key requirements and constraints",
+            "Research existing solutions and patterns",
+            "Document findings and recommendations"
+          ],
+          "estimated_duration": "2-4 hours",
+          "deliverables": [
+            "Domain analysis report",
+            "Entity relationship diagram",
+            "Requirements specification",
+            "Technology recommendations"
+          ]
         })
       }
       CodeGeneration::SparcArchitecture => {

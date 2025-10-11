@@ -1,18 +1,57 @@
 defmodule Singularity.Planning.HTDAG do
   @moduledoc """
-  Hierarchical Task Directed Acyclic Graph (HTDAG) for recursive task decomposition.
-  Based on Deep Agent (2025) research.
+  Hierarchical Task Directed Acyclic Graph (HTDAG) orchestrator for autonomous task decomposition and execution.
 
-  Pure Elixir implementation with LLM integration for task decomposition.
+  Provides high-level API for decomposing complex goals into hierarchical task graphs,
+  executing them with LLM integration, and supporting self-improvement through evolution.
+  Based on Deep Agent (2025) research with NATS-based LLM communication.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.HTDAGCore` - Core DAG operations (HTDAGCore.new/1, add_task/2)
+  - `Singularity.Planning.HTDAGExecutor` - Task execution (HTDAGExecutor.execute/3)
+  - `Singularity.Planning.HTDAGEvolution` - Self-improvement (HTDAGEvolution.critique_and_mutate/2)
+  - `Singularity.Planning.SafeWorkPlanner` - Hierarchical planning (SafeWorkPlanner integration)
+  - `Singularity.TemplateSparcOrchestrator` - SPARC methodology (TemplateSparcOrchestrator integration)
+  - `Singularity.LLM.Service` - Task decomposition (Service.call/3 for LLM decomposition)
+  - NATS subject: `htdag.execute.*` (publishes execution requests)
+  - PostgreSQL table: `htdag_executions` (stores execution history)
+
+  ## Usage
+
+      # Decompose a goal into hierarchical tasks
+      dag = HTDAG.decompose(%{description: "Build user authentication system"})
+      # => %{root_id: "goal-123", tasks: %{...}}
+
+      # Execute with self-improvement enabled
+      {:ok, result} = HTDAG.execute_with_nats(dag, 
+        run_id: "run-123",
+        evolve: true,
+        use_rag: true,
+        use_quality_templates: true
+      )
+      # => {:ok, %{completed_tasks: [...], mutations_applied: [...]}}
   """
 
   require Logger
 
+  # INTEGRATION: LLM (task decomposition via NATS)
   alias Singularity.LLM.Service
+
+  # INTEGRATION: Core DAG operations (data structures)
   alias Singularity.Planning.HTDAGCore
+
+  # INTEGRATION: Task execution (HTDAGExecutor.execute/3)
   alias Singularity.Planning.HTDAGExecutor
+
+  # INTEGRATION: Self-improvement (HTDAGEvolution.critique_and_mutate/2)
   alias Singularity.Planning.HTDAGEvolution
+
+  # INTEGRATION: Hierarchical planning (SafeWorkPlanner integration)
   alias Singularity.Planning.SafeWorkPlanner
+
+  # INTEGRATION: SPARC methodology (TemplateSparcOrchestrator integration)
   alias Singularity.TemplateSparcOrchestrator
 
   @max_depth 5

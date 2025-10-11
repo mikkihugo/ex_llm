@@ -1,15 +1,41 @@
 defmodule Singularity.Planning.Schemas.Epic do
   @moduledoc """
-  Epic - 6-12 month initiative (Business or Enabler)
+  Epic schema for 6-12 month initiatives with WSJF prioritization and SAFe 6.0 Essential framework alignment.
 
-  Represents large-scale work that delivers significant business value.
-  Uses WSJF (Weighted Shortest Job First) for prioritization.
-  Aligned with SAFe 6.0 Essential framework.
+  Represents large-scale work that delivers significant business value
+  with automatic WSJF (Weighted Shortest Job First) calculation for
+  prioritization and integration with strategic themes and capabilities.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.Schemas.StrategicTheme` - Theme relationships (belongs_to :theme)
+  - `Singularity.Planning.Schemas.Capability` - Capability relationships (has_many :capabilities)
+  - PostgreSQL table: `safe_methodology_epics` (stores epic data)
+
+  ## Usage
+
+      # Create changeset with WSJF calculation
+      changeset = Epic.changeset(%Epic{}, %{
+        name: "Distributed Tracing",
+        description: "Implement distributed tracing across microservices",
+        type: "enabler",
+        business_value: 8,
+        time_criticality: 7,
+        risk_reduction: 6,
+        job_size: 12
+      })
+      # => #Ecto.Changeset<...> with wsjf_score: 1.75
+
+      # Convert to state map
+      state_map = Epic.to_state_map(epic)
+      # => %{id: "123", name: "Distributed Tracing", wsjf_score: 1.75, ...}
   """
 
   use Ecto.Schema
   import Ecto.Changeset
 
+  # INTEGRATION: Schema relationships (theme and capabilities)
   alias Singularity.Planning.Schemas.{StrategicTheme, Capability}
 
   @primary_key {:id, :binary_id, autogenerate: true}

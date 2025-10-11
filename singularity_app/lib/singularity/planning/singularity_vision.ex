@@ -1,21 +1,52 @@
 defmodule Singularity.Planning.SingularityVision do
   @moduledoc """
-  Singularity Vision Management System
+  Singularity Vision Management System with hierarchical planning and WSJF prioritization.
 
-  Hierarchical vision management for autonomous software development.
-  Integrates with AgiPortfolio for enterprise-level planning.
+  Provides comprehensive vision management for autonomous software development
+  with hierarchical planning, WSJF-based prioritization, and integration with
+  AgiPortfolio for enterprise-level planning and HTDAG for task decomposition.
 
-  Vision Hierarchy:
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.AgiPortfolio` - Enterprise planning (AgiPortfolio.set_portfolio_vision/3)
+  - PostgreSQL table: `singularity_vision_hierarchy` (stores vision hierarchy and relationships)
+
+  ## Vision Hierarchy
+
   - Portfolio Vision (Enterprise level)
   - Strategic Themes (3-5 year vision areas)
   - Epics (6-12 month initiatives)
   - Capabilities (3-6 month cross-team features)
   - Features (1-3 month team deliverables)
   - Stories/Tasks (via HTDAG decomposition)
+
+  ## Usage
+
+      # Set portfolio vision
+      {:ok, vision} = SingularityVision.set_portfolio_vision(
+        "Build AGI-powered development platform",
+        2029,
+        [%{metric: "autonomous_features", target: 100.0}],
+        "system"
+      )
+      # => {:ok, %{statement: "Build AGI-powered...", target_year: 2029}}
+
+      # Add strategic theme
+      {:ok, theme} = SingularityVision.add_strategic_theme(
+        "Observability Platform", "Comprehensive monitoring", 3.0, 8, 7, 6
+      )
+      # => {:ok, %{id: "theme-abc123", name: "Observability Platform", ...}}
+
+      # Get next work item (WSJF prioritized)
+      next_work = SingularityVision.get_next_work()
+      # => %{id: "feat-xyz789", name: "Distributed Tracing", ...}
   """
 
   use GenServer
   require Logger
+
+  # INTEGRATION: Enterprise planning (portfolio vision management)
   alias Singularity.Planning.AgiPortfolio
 
   defstruct [

@@ -1,6 +1,18 @@
 defmodule Singularity.Planning.WorkPlanAPI do
   @moduledoc """
-  NATS API for submitting SAFe work items to SafeWorkPlanner
+  NATS API for submitting SAFe work items to SafeWorkPlanner with intelligent task management.
+
+  Provides comprehensive NATS-based API for creating and managing SAFe work items
+  with intelligent task conflict detection, HTDAG-based prioritization, and
+  self-improvement agent synchronization for dynamic work planning.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.SafeWorkPlanner` - Work planning (SafeWorkPlanner.add_chunk/2, get_hierarchy/0)
+  - `Gnat` - NATS messaging (Gnat.sub/3, pub/3 for message handling)
+  - `Jason` - JSON processing (Jason.encode!/1, decode/1 for message parsing)
+  - PostgreSQL table: `work_plan_api_logs` (stores API request/response history)
 
   ## NATS Subjects
 
@@ -25,29 +37,25 @@ defmodule Singularity.Planning.WorkPlanAPI do
   }
   ```
 
-  ## Response Format
+  ## Usage
 
-  Success:
-  ```json
-  {
-    "status": "ok",
-    "id": "feat-xyz789",
-    "message": "Feature created successfully"
-  }
-  ```
+      # Create a feature via NATS
+      Gnat.request(conn, "planning.feature.create", Jason.encode!(%{
+        "name": "User Authentication",
+        "description": "OAuth2-based user authentication",
+        "capability_id": "cap-auth-123"
+      }))
+      # => {:ok, %{"status" => "ok", "id" => "feat-xyz789"}}
 
-  Error:
-  ```json
-  {
-    "status": "error",
-    "errors": {"name": ["can't be blank"]}
-  }
-  ```
+      # Get next work item
+      Gnat.request(conn, "planning.next_work.get", "{}")
+      # => {:ok, %{"status" => "ok", "next_work" => %{...}}}
   """
 
   use GenServer
   require Logger
 
+  # INTEGRATION: Work planning (SAFe methodology)
   alias Singularity.Planning.SafeWorkPlanner
 
   @subjects %{

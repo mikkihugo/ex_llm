@@ -11,27 +11,14 @@ use tracing::{debug, info, warn};
 use crate::{CodeMetrics, MozillaMetrics, TreeSitterAnalysis, DependencyAnalysis};
 // serde imports removed as they're unused
 
-// Tree-sitter language imports - LATEST VERSIONS
+// Tree-sitter language imports - ONLY essential languages Singularity uses
 use tree_sitter_bash;
-use tree_sitter_c;
-use tree_sitter_c_sharp;
-use tree_sitter_cpp;
-use tree_sitter_css;
 use tree_sitter_elixir;
-use tree_sitter_erlang;
 use tree_sitter_gleam;
-use tree_sitter_go;
-use tree_sitter_html;
-use tree_sitter_java;
 use tree_sitter_javascript;
 use tree_sitter_json;
-use tree_sitter_lua;
-// use tree_sitter_kotlin;  // Temporarily disabled - version conflict
-use tree_sitter_php;
 use tree_sitter_python;
-use tree_sitter_ruby;
 use tree_sitter_rust;
-use tree_sitter_swift;
 use tree_sitter_typescript;
 use tree_sitter_yaml;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
@@ -234,11 +221,11 @@ impl UniversalDependencies {
       },
       mozilla_metrics: Some(MozillaMetrics {
         #[cfg(feature = "rca")]
-        cyclomatic_complexity: serde_json::Value::Null,
+        cyclomatic_complexity: "null".to_string(),
         #[cfg(feature = "rca")]
-        halstead_metrics: serde_json::Value::Null,
+        halstead_metrics: "null".to_string(),
         #[cfg(feature = "rca")]
-        maintainability_index: serde_json::Value::Null,
+        maintainability_index: "null".to_string(),
         source_lines_of_code: 0,
         physical_lines_of_code: 0,
         logical_lines_of_code: 0,
@@ -259,7 +246,7 @@ impl UniversalDependencies {
         outdated_dependencies: vec![],
         security_vulnerabilities: vec![],
       }),
-      analysis_timestamp: chrono::Utc::now(),
+      analysis_timestamp: chrono::Utc::now().to_rfc3339(),
     };
 
     // Cache the result for future reuse until file changes
@@ -548,7 +535,7 @@ impl TreeSitterBackend {
         }
       },
       ProgrammingLanguage::Erlang => {
-        if parser.set_language(tree_sitter_erlang::language()).is_ok() {
+        if parser.set_language(&tree_sitter_erlang::LANGUAGE.into()).is_ok() {
           debug!("Successfully set Erlang language for tree-sitter");
         }
       },
@@ -598,7 +585,7 @@ impl TreeSitterBackend {
         }
       },
       ProgrammingLanguage::Lua => {
-        if parser.set_language(tree_sitter_lua::language()).is_ok() {
+        if parser.set_language(&tree_sitter_lua::language()).is_ok() {
           debug!("Successfully set Lua language for tree-sitter");
         }
       },

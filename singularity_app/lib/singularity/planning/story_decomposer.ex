@@ -1,15 +1,38 @@
 defmodule Singularity.Planning.StoryDecomposer do
   @moduledoc """
-  SPARC framework by ruvnet for story decomposition:
-  - Specification
-  - Pseudocode
-  - Architecture
-  - Refinement
-  - Completion
+  SPARC framework story decomposer for systematic user story breakdown and task generation.
+
+  Implements the SPARC methodology (Specification, Pseudocode, Architecture, Refinement, Completion)
+  to decompose user stories into detailed technical specifications, implementation plans,
+  and actionable tasks with fallback mechanisms for LLM reliability.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.LLM.Service` - LLM operations (Service.call/3 for story analysis)
+  - PostgreSQL table: `story_decompositions` (stores decomposition results)
+
+  ## SPARC Phases
+
+  - **Specification** - Generate detailed technical requirements
+  - **Pseudocode** - Create implementation algorithm logic
+  - **Architecture** - Design system modules and data flow
+  - **Refinement** - Review and optimize design
+  - **Completion** - Generate actionable implementation tasks
+
+  ## Usage
+
+      # Decompose a user story
+      {:ok, decomposition} = StoryDecomposer.decompose_story(%{
+        description: "As a user, I want to authenticate with OAuth2",
+        acceptance_criteria: ["User can login with Google", "Session is maintained"]
+      })
+      # => {:ok, %{specification: %{...}, pseudocode: "...", architecture: %{...}, tasks: [...]}}
   """
 
   require Logger
 
+  # INTEGRATION: LLM operations (NATS-based story analysis)
   alias Singularity.LLM.Service
 
   @doc "Decompose a user story using SPARC methodology"

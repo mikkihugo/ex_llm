@@ -1,14 +1,37 @@
 defmodule Singularity.Planning.Schemas.StrategicTheme do
   @moduledoc """
-  Strategic Theme - 3-5 year vision area
+  Strategic Theme schema for 3-5 year vision areas with SAFe 6.0 Essential framework alignment.
 
-  Represents high-level strategic objectives that guide epic planning.
-  Aligned with SAFe 6.0 Essential framework.
+  Represents high-level strategic objectives that guide epic planning and
+  provide long-term vision direction for autonomous software development
+  with BLOC (Business Value, Learning, Operations, Compliance) tracking.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.Schemas.Epic` - Epic relationships (has_many :epics)
+  - PostgreSQL table: `strategic_themes` (stores strategic theme data)
+
+  ## Usage
+
+      # Create changeset
+      changeset = StrategicTheme.changeset(%StrategicTheme{}, %{
+        name: "Observability Platform",
+        description: "Comprehensive monitoring and observability",
+        target_bloc: 3.0,
+        priority: 1
+      })
+      # => #Ecto.Changeset<...>
+
+      # Convert to state map
+      state_map = StrategicTheme.to_state_map(theme)
+      # => %{id: "123", name: "Observability Platform", ...}
   """
 
   use Ecto.Schema
   import Ecto.Changeset
 
+  # INTEGRATION: Epic relationships (has_many association)
   alias Singularity.Planning.Schemas.Epic
 
   @primary_key {:id, :binary_id, autogenerate: true}

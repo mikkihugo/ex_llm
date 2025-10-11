@@ -71,21 +71,35 @@ sha2 = { workspace = true }
 seahash = "4.1"
 
 # NIF support (optional - only when used from Elixir)
-rustler = { version = "0.34", optional = true }
+rustler = { workspace = true, optional = true }
 
 # ML & Embeddings (optional)
-candle-core = { version = "0.7", optional = true }
-candle-nn = { version = "0.7", optional = true }
-candle-transformers = { version = "0.7", optional = true }
-tokenizers = { version = "0.20", optional = true, default-features = false, features = ["onig"] }
-hf-hub = { version = "0.3", optional = true, features = ["tokio"] }
+candle-core = { version = "0.9.1", optional = true }
+candle-nn = { version = "0.9.1", optional = true }
+candle-transformers = { version = "0.9.1", optional = true }
+tokenizers = { version = "0.22.1", optional = true, default-features = false, features = ["onig"] }
+hf-hub = { version = "0.4.3", optional = true, features = ["tokio"] }
 thiserror = { workspace = true }
 
 # Full-text search
-tantivy = { version = "0.21", optional = true }
+tantivy = { version = "0.25.0", optional = true }
 
 # Internal SPARC crates
 quality_lib = { path = "../quality" }
+
+# Parser dependencies
+rust_parser = { path = "../parser/languages/rust" }
+python_parser = { path = "../parser/languages/python" }
+javascript_parser = { path = "../parser/languages/javascript" }
+typescript_parser = { path = "../parser/languages/typescript" }
+elixir_parser = { path = "../parser/languages/elixir" }
+gleam_parser = { path = "../parser/languages/gleam" }
+parser-code = { path = "../parser/polyglot" }
+
+# Missing dependencies (commented out - directories don't exist)
+prompt = { path = "../prompt" }
+# linting_engine = { path = "../linting" }  # Does not exist - quality_lib doesn't have LintingEngine
+# sparc_methodology = { path = "../methodology" }  # Does not exist
 
 # NATS for context queries
 async-nats = { workspace = true }
@@ -94,7 +108,7 @@ async-nats = { workspace = true }
 tokio-test = { workspace = true }
 
 [features]
-default = []
+default = ["nif"]
 nif = ["rustler"]  # Enable NIF support for Elixir integration
 # Semantic embeddings with Candle transformers
 semantic = ["candle-core", "candle-nn", "candle-transformers", "tokenizers", "hf-hub"]

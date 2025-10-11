@@ -117,13 +117,11 @@ defmodule Singularity.Tools.PackageSearch do
       {:github, "vercel/next.js"}
   """
   def parse_query_prefix(query, default_ecosystem) when is_binary(query) do
-    ecosystems = ["npm", "cargo", "hex", "pypi", "github"]
-
     query
     |> String.trim()
     |> String.split(" ", parts: 2)
     |> case do
-      [prefix, rest] when prefix in ecosystems ->
+      [prefix, rest] when prefix in ["npm", "cargo", "hex", "pypi", "github"] ->
         {String.to_atom(prefix), rest}
 
       _ ->

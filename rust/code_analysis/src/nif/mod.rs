@@ -1,36 +1,3 @@
-mod knowledge_cache_service;
-mod knowledge_central_service;
-
-use knowledge_cache_service::KnowledgeCacheService;
-use knowledge_central_service::KnowledgeCentralService;
-
-/// NIF: Load asset from local cache
-#[rustler::nif(schedule = "DirtyCpu")]
-pub fn load_asset_nif(id: String) -> NifResult<Option<String>> {
-    let service = KnowledgeCacheService::new();
-    match service.load_asset(&id) {
-        Some(asset) => Ok(Some(asset.data.clone())),
-        None => Ok(None),
-    }
-}
-
-/// NIF: Query asset from central service
-#[rustler::nif(schedule = "DirtyCpu")]
-pub fn query_asset_nif(id: String) -> NifResult<Option<String>> {
-    let service = KnowledgeCentralService::new();
-    match service.query_asset(&id) {
-        Some(asset) => Ok(Some(asset.data.clone())),
-        None => Ok(None),
-    }
-}
-
-// Initialize the NIF module
-rustler::init!("Elixir.Singularity.AnalysisSuite", [
-    analyze_code_nif,
-    calculate_quality_metrics_nif,
-    load_asset_nif,
-    query_asset_nif
-]);
 //! NIF bindings for Elixir integration
 //!
 //! This module provides NIF-based integration between the Rust analysis-suite and Elixir.
@@ -58,6 +25,16 @@ pub struct QualityMetrics {
     pub lines_of_code: u32,
     pub test_coverage: f64,
     pub documentation_coverage: f64,
+}
+
+/// Asset structure for knowledge base
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Asset {
+    pub id: String,
+    pub name: String,
+    pub content: String,
+    pub metadata: HashMap<String, String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// NIF: Analyze code using existing analysis-suite (pure computation)
@@ -106,8 +83,26 @@ pub fn calculate_quality_metrics_nif(code: Option<String>, language: String) -> 
     Ok(metrics)
 }
 
+/// NIF: Load asset from local cache
+#[rustler::nif(schedule = "DirtyCpu")]
+pub fn load_asset_nif(id: String) -> NifResult<Option<String>> {
+    // Placeholder implementation
+    // TODO: Integrate with actual knowledge cache service
+    Ok(Some("asset_data".to_string()))
+}
+
+/// NIF: Query asset from central service
+#[rustler::nif(schedule = "DirtyCpu")]
+pub fn query_asset_nif(id: String) -> NifResult<Option<String>> {
+    // Placeholder implementation
+    // TODO: Integrate with actual knowledge central service
+    Ok(Some("query_result".to_string()))
+}
+
 // Initialize the NIF module
 rustler::init!("Elixir.Singularity.AnalysisSuite", [
     analyze_code_nif,
-    calculate_quality_metrics_nif
+    calculate_quality_metrics_nif,
+    load_asset_nif,
+    query_asset_nif
 ]);

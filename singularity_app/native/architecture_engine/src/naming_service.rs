@@ -86,10 +86,17 @@ fn expected_case_hint(
     element_type: CodeElementType,
     language: &str,
 ) -> Option<String> {
-    let convention = naming
-        .naming_rules
-        .language_conventions
-        .get(&language.to_lowercase());
+    // Get language convention based on language string
+    let convention = match language.to_lowercase().as_str() {
+        "elixir" => Some(LanguageConvention::Elixir),
+        "rust" => Some(LanguageConvention::Rust),
+        "typescript" => Some(LanguageConvention::TypeScript),
+        "javascript" => Some(LanguageConvention::JavaScript),
+        "gleam" => Some(LanguageConvention::Gleam),
+        "python" => Some(LanguageConvention::Python),
+        "go" => Some(LanguageConvention::Go),
+        _ => None,
+    };
 
     let descriptor = match convention {
         Some(LanguageConvention::Elixir)
@@ -98,7 +105,7 @@ fn expected_case_hint(
         Some(LanguageConvention::JavaScript)
         | Some(LanguageConvention::TypeScript)
         | Some(LanguageConvention::Go) => "camelCase",
-        Some(LanguageConvention::Java) | Some(LanguageConvention::CSharp) => "PascalCase",
+        // Removed Java and CSharp - not needed
         _ => return None,
     };
 

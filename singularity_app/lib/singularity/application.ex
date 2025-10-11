@@ -32,6 +32,8 @@ defmodule Singularity.Application do
       Singularity.Git.GitTreeSyncCoordinator,
       # Start the agent supervisor
       Singularity.AgentSupervisor,
+      # Ensure runtime self-improving agent is available for HTDAG fixes
+      Singularity.Agents.RuntimeBootstrapper,
       # Start the autonomy decider
       Singularity.Autonomy.Decider,
       # Start the autonomy planner

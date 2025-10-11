@@ -73,7 +73,8 @@ impl Default for UniversalParserFrameworkConfig {
 }
 
 /// Comprehensive analysis result with Mozilla metrics
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "ParserCode.AnalysisResult"]
 pub struct AnalysisResult {
     pub file_path: String,
     pub language: String,
@@ -81,11 +82,12 @@ pub struct AnalysisResult {
     pub mozilla_metrics: Option<MozillaMetrics>,
     pub tree_sitter_analysis: Option<TreeSitterAnalysis>,
     pub dependency_analysis: Option<DependencyAnalysis>,
-    pub analysis_timestamp: chrono::DateTime<chrono::Utc>,
+    pub analysis_timestamp: String,  // ISO 8601 timestamp string (Rustler doesn't encode DateTime directly)
 }
 
 /// Code metrics from universal analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "ParserCode.CodeMetrics"]
 pub struct CodeMetrics {
     pub lines_of_code: u64,
     pub lines_of_comments: u64,
@@ -97,14 +99,15 @@ pub struct CodeMetrics {
 }
 
 /// Mozilla code analysis metrics
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "ParserCode.MozillaMetrics"]
 pub struct MozillaMetrics {
     #[cfg(feature = "rca")]
-    pub cyclomatic_complexity: serde_json::Value,
+    pub cyclomatic_complexity: String,  // JSON string (Rustler doesn't encode serde_json::Value)
     #[cfg(feature = "rca")]
-    pub halstead_metrics: serde_json::Value,
+    pub halstead_metrics: String,  // JSON string
     #[cfg(feature = "rca")]
-    pub maintainability_index: serde_json::Value,
+    pub maintainability_index: String,  // JSON string
     pub source_lines_of_code: u64,
     pub physical_lines_of_code: u64,
     pub logical_lines_of_code: u64,
@@ -113,7 +116,8 @@ pub struct MozillaMetrics {
 }
 
 /// Tree-sitter AST analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "ParserCode.TreeSitterAnalysis"]
 pub struct TreeSitterAnalysis {
     pub ast_nodes: u64,
     pub functions: Vec<FunctionInfo>,
@@ -123,7 +127,8 @@ pub struct TreeSitterAnalysis {
 }
 
 /// Function information from AST
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "ParserCode.FunctionInfo"]
 pub struct FunctionInfo {
     pub name: String,
     pub line_start: u32,
@@ -134,7 +139,8 @@ pub struct FunctionInfo {
 }
 
 /// Class information from AST
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "ParserCode.ClassInfo"]
 pub struct ClassInfo {
     pub name: String,
     pub line_start: u32,
@@ -144,7 +150,8 @@ pub struct ClassInfo {
 }
 
 /// Dependency analysis result
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "ParserCode.DependencyAnalysis"]
 pub struct DependencyAnalysis {
     pub dependencies: Vec<String>,
     pub dev_dependencies: Vec<String>,
@@ -225,7 +232,7 @@ impl UniversalParser {
             mozilla_metrics,
             tree_sitter_analysis,
             dependency_analysis,
-            analysis_timestamp: chrono::Utc::now(),
+            analysis_timestamp: chrono::Utc::now().to_rfc3339(),  // Convert to ISO 8601 string
         })
     }
 
@@ -246,62 +253,38 @@ impl UniversalParser {
         Ok(results)
     }
 
-    /// Initialize language parsers
+    /// Initialize language parsers (ONLY essential languages)
     fn initialize_languages(&mut self) -> Result<()> {
-        // Initialize tree-sitter languages
+        // Core languages Singularity actually uses
+        self.language_cache.insert("elixir".to_string(), tree_sitter_elixir::LANGUAGE.into());
+        self.language_cache.insert("gleam".to_string(), tree_sitter_gleam::LANGUAGE.into());
         self.language_cache.insert("rust".to_string(), tree_sitter_rust::LANGUAGE.into());
         self.language_cache.insert("javascript".to_string(), tree_sitter_javascript::LANGUAGE.into());
         self.language_cache.insert("typescript".to_string(), tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into());
         self.language_cache.insert("python".to_string(), tree_sitter_python::LANGUAGE.into());
-        self.language_cache.insert("go".to_string(), tree_sitter_go::LANGUAGE.into());
-        self.language_cache.insert("java".to_string(), tree_sitter_java::LANGUAGE.into());
-        self.language_cache.insert("c".to_string(), tree_sitter_c::LANGUAGE.into());
-        self.language_cache.insert("cpp".to_string(), tree_sitter_cpp::LANGUAGE.into());
-        self.language_cache.insert("c_sharp".to_string(), tree_sitter_c_sharp::LANGUAGE.into());
-        self.language_cache.insert("swift".to_string(), tree_sitter_swift::LANGUAGE.into());
-        self.language_cache.insert("elixir".to_string(), tree_sitter_elixir::LANGUAGE.into());
-        self.language_cache.insert("erlang".to_string(), tree_sitter_erlang::language().into());
-        self.language_cache.insert("gleam".to_string(), tree_sitter_gleam::LANGUAGE.into());
-        self.language_cache.insert("php".to_string(), tree_sitter_php::LANGUAGE_PHP.into());
-        self.language_cache.insert("ruby".to_string(), tree_sitter_ruby::LANGUAGE.into());
-        self.language_cache.insert("lua".to_string(), tree_sitter_lua::language().into());
         self.language_cache.insert("json".to_string(), tree_sitter_json::LANGUAGE.into());
         self.language_cache.insert("yaml".to_string(), tree_sitter_yaml::LANGUAGE.into());
         self.language_cache.insert("bash".to_string(), tree_sitter_bash::LANGUAGE.into());
-        self.language_cache.insert("html".to_string(), tree_sitter_html::LANGUAGE.into());
-        self.language_cache.insert("css".to_string(), tree_sitter_css::LANGUAGE.into());
 
         Ok(())
     }
 
-    /// Detect programming language from file path
+    /// Detect programming language from file path (ONLY essential languages)
     fn detect_language(&self, file_path: &Path) -> Result<String> {
         let extension = file_path.extension()
             .and_then(|ext| ext.to_str())
             .unwrap_or("");
 
         let language = match extension {
+            "ex" | "exs" => "elixir",
+            "gleam" => "gleam",
             "rs" => "rust",
-            "js" => "javascript",
-            "ts" => "typescript",
+            "js" | "cjs" | "mjs" => "javascript",
+            "ts" | "cts" | "mts" => "typescript",
             "py" => "python",
-            "go" => "go",
-            "java" => "java",
-            "c" => "c",
-            "cpp" | "cc" | "cxx" => "cpp",
-            "cs" => "c_sharp",
-            "swift" => "swift",
-            "php" | "phtml" => "php",
-            "rb" => "ruby",
-            "lua" => "lua",
             "json" => "json",
             "yaml" | "yml" => "yaml",
             "sh" | "bash" => "bash",
-            "html" | "htm" => "html",
-            "css" | "scss" | "less" => "css",
-            "ex" | "exs" => "elixir",
-            "erl" => "erlang",
-            "gleam" => "gleam",
             _ => "unknown",
         };
 
@@ -376,9 +359,9 @@ impl UniversalParser {
         let code_lines = total_lines - blank_lines - comment_lines;
         
         let metrics = MozillaMetrics {
-            cyclomatic_complexity: serde_json::Value::Null,
-            halstead_metrics: serde_json::Value::Null,
-            maintainability_index: serde_json::Value::Null,
+            cyclomatic_complexity: "null".to_string(),  // Convert to JSON string
+            halstead_metrics: "null".to_string(),
+            maintainability_index: "null".to_string(),
             source_lines_of_code: code_lines,
             physical_lines_of_code: total_lines,
             logical_lines_of_code: code_lines,
@@ -1056,7 +1039,7 @@ mod tests {
       mozilla_metrics: None,
       tree_sitter_analysis: None,
       dependency_analysis: None,
-      analysis_timestamp: chrono::Utc::now(),
+      analysis_timestamp: chrono::Utc::now().to_rfc3339(),
     };
 
     let serialized = serde_json::to_string(&result).expect("Failed to serialize");

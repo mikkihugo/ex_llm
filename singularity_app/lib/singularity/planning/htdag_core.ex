@@ -1,10 +1,19 @@
 defmodule Singularity.Planning.HTDAGCore do
   @moduledoc """
-  Pure Elixir Hierarchical Task Directed Acyclic Graph (HTDAG).
+  Pure Elixir Hierarchical Task Directed Acyclic Graph (HTDAG) for autonomous task decomposition.
 
-  Migrated from Gleam singularity/htdag.gleam
+  Provides core data structures and algorithms for managing hierarchical task graphs
+  with dependency resolution, status tracking, and complexity-based decomposition.
+  Migrated from Gleam singularity/htdag.gleam based on Deep Agent 2025 research.
 
-  Based on Deep Agent 2025 research for autonomous task decomposition.
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.HTDAGExecutor` - Task execution (HTDAGExecutor.execute_task/2)
+  - `Singularity.Planning.HTDAGLearner` - Learning integration (HTDAGLearner.learn_from_execution/2)
+  - `Singularity.Planning.HTDAGTracer` - Execution tracing (HTDAGTracer.trace_task_start/2)
+  - `Singularity.LLM.Service` - Task decomposition (Service.call/3 for decomposition)
+  - PostgreSQL table: `htdag_executions` (stores task execution history)
 
   ## Task Structure
 
@@ -23,14 +32,16 @@ defmodule Singularity.Planning.HTDAGCore do
   - `code_files` - Related file paths
   - `acceptance_criteria` - Success criteria
 
-  ## Example
+  ## Usage
 
+      # Create new DAG and add tasks
       dag = HTDAGCore.new("root-goal")
       task = HTDAGCore.create_goal_task("Build user auth", 0, nil)
       dag = HTDAGCore.add_task(dag, task)
 
       # Mark as completed
       dag = HTDAGCore.mark_completed(dag, task.id)
+      # => %{root_id: "root-goal", tasks: %{...}, completed_tasks: ["goal-task-123"]}
   """
 
   @type task_type :: :goal | :milestone | :implementation

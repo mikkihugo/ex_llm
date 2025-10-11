@@ -108,9 +108,7 @@ pub trait Optimizable {
   /// @mvp core
   /// @complexity low
   /// @since 1.0.0
-  fn get_signature(&self) -> &dyn MetaSignature {
-    unimplemented!("get_signature must be implemented by the concrete type - this is a trait method requiring implementation by each DSPy module")
-  }
+  fn get_signature(&self) -> &dyn MetaSignature;
 
   /// Returns a mutable `IndexMap` of the module's optimizable sub-parameters.
   ///

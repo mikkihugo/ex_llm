@@ -29,7 +29,7 @@ use regex::Regex;
 use chrono::{DateTime, Utc};
 
 // Use universal parser framework - it handles all language parsers internally
-use universal_parser::{
+use parser_code::{
     UniversalParser, 
     UniversalParserFrameworkConfig,
     dependencies::UniversalDependencies,

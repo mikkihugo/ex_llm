@@ -38,10 +38,12 @@ All Requests → nats.request → Unified NATS Server → Route by complexity/se
 - `detector.analyze` - Framework detection
 - `ai.llm.request` - LLM requests
 
-## Architecture (current)
+## Architecture (Clean & Consolidated)
+
+**Status:** ✅ **DUPLICATES REMOVED** - Clean, consolidated architecture
 
 ```
-Elixir/BEAM
+Elixir/BEAM (Local)
   ├─ Agents (GenServers)
   │   ├─ Singularity.Agent (self-improving loop)
   │   └─ Singularity.Agents.CostOptimizedAgent (rules/cache/LLM)

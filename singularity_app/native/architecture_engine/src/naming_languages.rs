@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use heck::ToSnakeCase;
+use heck::{ToSnakeCase, ToKebabCase};
 
 /// Language-specific naming conventions
 pub struct LanguageNaming {

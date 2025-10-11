@@ -1,8 +1,21 @@
 defmodule Singularity.Planning.AgiPortfolio do
   @moduledoc """
-  Full SAFe 6.0 Portfolio Layer for AGI Enterprise.
+  Full SAFe 6.0 Portfolio Layer for AGI Enterprise with autonomous resource management.
 
-  Manages:
+  Provides comprehensive portfolio management for fully autonomous AI enterprises,
+  managing value streams, resource pools, agent registries, and solution trains
+  with dynamic resource allocation based on KPI performance and business priorities.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.CodeStore` - Vision persistence (CodeStore.save_vision/1, load_vision/0)
+  - `Singularity.Conversation` - Notifications (Conversation.GoogleChat.notify/1)
+  - `Singularity.Planning.SafeWorkPlanner` - Work planning (SafeWorkPlanner integration)
+  - PostgreSQL table: `agi_portfolio_data` (stores portfolio state and history)
+
+  ## Portfolio Components
+
   - Value Streams (business domains like Finance, Sales, R&D)
   - Resource Pools (compute, tokens, API quotas)
   - Agent Registry (millions of AI agents)
@@ -10,13 +23,28 @@ defmodule Singularity.Planning.AgiPortfolio do
   - Portfolio Kanban (epic flow states)
   - Lean Portfolio Management (resource allocation)
 
-  Adapted for fully autonomous AI enterprise (no human workforce).
+  ## Usage
+
+      # Set portfolio vision
+      {:ok, vision} = AgiPortfolio.set_portfolio_vision("Build AGI-powered enterprise")
+      # => {:ok, %{statement: "Build AGI-powered enterprise", target_year: 2029}}
+
+      # Add value stream
+      {:ok, vs} = AgiPortfolio.add_value_stream("R&D", type: :innovation)
+      # => {:ok, %{id: "vs-abc123", name: "R&D", type: :innovation, ...}}
+
+      # Get portfolio health
+      health = AgiPortfolio.get_portfolio_health()
+      # => %{value_streams: %{healthy: 3, at_risk: 1}, agents: %{total: 1000, working: 750}}
   """
 
   use GenServer
   require Logger
 
+  # INTEGRATION: Vision persistence and notifications
   alias Singularity.{CodeStore, Conversation}
+
+  # INTEGRATION: Work planning (SAFe methodology)
   alias Singularity.Planning.SafeWorkPlanner
 
   defstruct [

@@ -1,38 +1,55 @@
 defmodule Singularity.Planning.HTDAGExecutor do
   @moduledoc """
   HTDAG Executor with NATS LLM integration for self-evolving task execution.
-  
-  Executes hierarchical task DAGs with:
-  - LLM-based task decomposition via NATS
-  - Real-time token streaming
-  - Circuit breaking and rate limiting
-  - Telemetry and observability
-  - Self-improvement through execution feedback
-  
+
+  Executes hierarchical task DAGs using NATS-based LLM communication with real-time
+  token streaming, circuit breaking, and self-improvement through execution feedback.
+  Provides telemetry and observability for task execution monitoring.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.HTDAGCore` - DAG operations (HTDAGCore.select_next_task/1, mark_completed/2)
+  - `Singularity.LLM.NatsOperation` - LLM execution (NatsOperation.compile/2, run/3)
+  - `Singularity.RAGCodeGenerator` - Code generation (RAGCodeGenerator.find_similar/2)
+  - `Singularity.QualityCodeGenerator` - Quality enforcement (QualityCodeGenerator.generate/2)
+  - `Singularity.Store` - Knowledge search (Store.search_knowledge/2)
+  - `Singularity.SelfImprovingAgent` - Self-improvement (SelfImprovingAgent.learn_from_execution/2)
+  - NATS subject: `htdag.execute.*` (publishes execution requests)
+  - PostgreSQL table: `htdag_executions` (stores execution history)
+
   ## Execution Flow
-  
+
   1. Select next task from DAG
   2. Compile LLM operation for task
   3. Execute via NATS with streaming
   4. Update DAG with results
   5. Optionally evolve operation based on feedback
-  
-  ## Example
-  
+
+  ## Usage
+
       # Create executor
       {:ok, executor} = HTDAGExecutor.start_link(run_id: "run-123")
       
       # Execute DAG
       dag = HTDAG.decompose(%{description: "Build user auth"})
       {:ok, result} = HTDAGExecutor.execute(executor, dag)
+      # => {:ok, %{completed: 5, failed: 0, results: %{...}}}
   """
   
   use GenServer
   require Logger
   
+  # INTEGRATION: DAG operations (task selection and status updates)
   alias Singularity.Planning.{HTDAG, HTDAGCore}
+
+  # INTEGRATION: LLM execution (NATS-based operations)
   alias Singularity.LLM.NatsOperation
+
+  # INTEGRATION: Code generation and quality enforcement
   alias Singularity.{RAGCodeGenerator, QualityCodeGenerator, Store}
+
+  # INTEGRATION: Self-improvement (learning from execution)
   alias Singularity.SelfImprovingAgent
   
   @type executor_state :: %{

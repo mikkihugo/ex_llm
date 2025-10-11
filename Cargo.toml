@@ -1,10 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    # Central knowledge components (global Rust)
     "rust/code_analysis",
     "rust/knowledge",
-    "rust/knowledge_cache",
     "rust/parser/core",
     "rust/parser/polyglot",
     "rust/parser/formats/dependency",
@@ -15,101 +13,131 @@ members = [
     "rust/parser/languages/javascript",
     "rust/parser/languages/typescript",
     "rust/parser/languages/gleam",
-    "rust/parser/analyzers/rust_code_analysis",
     "rust/prompt",
     "rust/service/intelligence_hub",
     "rust/service/package_intelligence",
     "rust/template",
-    "rust/semantic",
-    "rust/quality",
-    # NIF Engines (consolidated)
     "singularity_app/native/architecture_engine",
-    # Note: Other engines are symlinks to rust/ directories already included above
 ]
 
 [workspace.dependencies]
-# Core utilities
-anyhow = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-tokio = { version = "1.0", features = ["full"] }
-tracing = "0.1"
-tracing-subscriber = "0.3"
-thiserror = "1.0"
-log = "0.4"
+# From rust/Cargo.toml - consolidated workspace dependencies
 
-# NATS messaging
-async-nats = "0.35"
+# Serialization
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+bincode = "2.0.1"
+
+# Error handling
+anyhow = "1.0.100"
+thiserror = "2.0.17"
+
+# Async
+tokio = { version = "1.47.1", features = ["full"] }
 async-trait = "0.1"
+async-nats = "0.44.2"
 
-# Data structures
+# Collections & Concurrency
+ahash = "0.8"
+dashmap = "6.1.0"
+parking_lot = "0.12"
+crossbeam = "0.8"
+rayon = "1.10"
+smallvec = "1.13"
+once_cell = "1.19"
+num_cpus = "1.16"
+
+# Graph & Data Structures
 petgraph = "0.6"
-regex = "1"
-walkdir = "2"
+ndarray = "0.16"
+
+# Text Processing
+regex = "1.0"
+heck = "0.5"
+
+# File Operations
+walkdir = "2.3"
 ignore = "0.4"
 glob = "0.3"
-toml = "0.8"
-uuid = { version = "1.8", features = ["v4", "serde"] }
-chrono = { version = "0.4", features = ["serde"] }
-indexmap = "2"
+tempfile = "3.0"
+dirs = "6.0.0"
 
-# Performance
-cron = "0.12"
-memory-stats = "1.1"
-ndarray = "0.15"
-bincode = "1.3"
-dirs = "5.0"
-tempfile = "3"
-redb = "2.0"
+# Database
+redb = "3.1.0"
+tokio-postgres = "0.7"
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres"] }
+
+# Hashing
 sha2 = "0.10"
-seahash = "4"
-tokio-test = "0.4"
-once_cell = "1.19"
-parking_lot = "0.12"
-rayon = "1"
-ahash = "0.8"
-smallvec = "1"
-num_cpus = "1"
-crossbeam = "0.8"
-dashmap = "5"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# Config
+toml = "0.9.8"
+
+# Logging
+tracing = "0.1.41"
+log = "0.4"
+tracing-subscriber = "0.3"
+
+# HTTP (optional)
+reqwest = { version = "0.12.23", features = ["json"] }
+
+# Parsing
+tree-sitter = "0.25.10"
 futures = "0.3"
+tokei = "12.1"
 
-# Testing & benchmarking
-criterion = "0.5"
-proptest = "1"
-mockall = "0.12"
-
-# HTTP
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
-aho-corasick = "1"
-
-# Tree-sitter parsers
-tree-sitter = "0.20.10"
-tree-sitter-java = "0.23.5"
-tree-sitter-typescript = "0.23.2"
+# Tree-sitter language parsers
 tree-sitter-javascript = "0.25.0"
+tree-sitter-typescript = "0.23.2"
 tree-sitter-python = "0.25.0"
 tree-sitter-rust = "0.24.0"
+tree-sitter-go = "0.25.0"
+tree-sitter-erlang = "0.15.0"
+tree-sitter-elixir = "0.3.4"
+tree-sitter-gleam = "1.0.0"
+tree-sitter-java = "0.23.5"
+tree-sitter-c = "0.24.1"
 tree-sitter-cpp = "0.23.4"
+tree-sitter-c-sharp = "0.23.1"
 tree-sitter-swift = "0.7.1"
 tree-sitter-php = "0.24.2"
 tree-sitter-ruby = "0.23.1"
-tree-sitter-lua = "0.1.0"
+tree-sitter-lua = "0.2.0"
 tree-sitter-json = "0.24.8"
 tree-sitter-yaml = "0.7.1"
 tree-sitter-bash = "0.25.0"
 tree-sitter-html = "0.23.2"
 tree-sitter-css = "0.23.2"
-tree-sitter-c = "0.24.1"
-tree-sitter-c-sharp = "0.23.1"
-tree-sitter-elixir = "0.3.4"
-tree-sitter-erlang = "0.3.0"
-tree-sitter-gleam = "1.0.0"
-tree-sitter-go = "0.25.0"
-tokei = "12.1"
+
+# Scripting languages
+tree-sitter-perl = "0.0.1"
+tree-sitter-powershell = "0.25.9"
+
+# Mobile languages
+tree-sitter-kotlin = "0.3.8"
+tree-sitter-dart = "0.0.4"
+
+# Data languages
+tree-sitter-toml = "0.20.0"
+tree-sitter-xml = "0.7.0"
+tree-sitter-markdown = "0.7.1"
+
+# System languages
+tree-sitter-zig = "1.1.2"
+tree-sitter-nim = "0.0.1"
+tree-sitter-v = "0.0.1"
+
+# Testing
+tokio-test = "0.4"
+mockall = "0.13"
+proptest = "1.5"
+criterion = "0.7.0"
 
 # Rustler (for NIFs)
-rustler = "0.34"
-
-# Database
-sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio-rustls", "macros", "migrate", "uuid", "chrono"] }
+rustler = "0.37.0"

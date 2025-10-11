@@ -13,8 +13,8 @@ pub fn compute_erlang_metrics(
   let branch_kinds = ["if", "case", "receive", "try", "catch", "when", "call", "source_file", "fun_decl"];
   let exit_kinds = ["return", "exit", "throw", "error", "call"];
   let boolean_kinds = ["andalso", "orelse", "and", "or", "!"];
-  let (cyclomatic, cognitive, nesting_depth, exit_points) = 
-    ast_complexity(content, tree_sitter_erlang::language(), &branch_kinds, &exit_kinds, &boolean_kinds);
+  let (cyclomatic, cognitive, nesting_depth, exit_points) =
+    ast_complexity(content, tree_sitter_erlang::LANGUAGE.into(), &branch_kinds, &exit_kinds, &boolean_kinds);
   
   // Ensure at least one exit point (every function has an implicit return)
   let exit_points = exit_points.max(1);

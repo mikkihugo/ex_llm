@@ -58,10 +58,9 @@ pub struct ArchitecturalSuggestion {
 /// All operations integrate with central PostgreSQL database and NATS messaging.
 /// The NIF gets existing info from central systems and asks for new info plus stats.
 #[rustler::nif]
-pub fn architecture_engine_call<'a>(operation: Term<'a>, request: Term<'a>) -> Result<Term<'a>, Error> {
-    let env = request.env();
+pub fn architecture_engine_call<'a>(env: Env<'a>, operation: Term<'a>, request: Term<'a>) -> Result<Term<'a>, Error> {
     
-    match operation.decode::<String>()? {
+    match operation.decode::<String>()?.as_str() {
         "detect_frameworks" => {
             let req: FrameworkDetectionRequest = request.decode()?;
             // This will integrate with central framework pattern database

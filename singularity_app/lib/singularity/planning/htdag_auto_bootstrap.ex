@@ -1,24 +1,18 @@
 defmodule Singularity.Planning.HTDAGAutoBootstrap do
   @moduledoc """
   Automatic bootstrap on server startup for zero-touch self-diagnosis and repair.
-  
-  When the server starts, this GenServer automatically:
-  1. Learns the codebase by scanning source files and reading @moduledoc
-  2. Identifies what's broken using static and runtime analysis
-  3. Auto-fixes everything using RAG code examples and quality templates
-  4. Continues iteratively until system works
-  
-  Runs in background, doesn't block server startup.
-  
+
+  Provides autonomous system initialization by learning the codebase through static
+  file scanning, identifying broken components, and auto-fixing issues using RAG
+  code examples and quality templates. Runs asynchronously without blocking startup.
+
   ## Integration Points
-  
+
   This module integrates with:
-  - `HTDAGLearner` - For codebase understanding and issue detection
-  - `HTDAGTracer` - For runtime analysis and function health
-  - `HTDAGBootstrap` - For fixing broken components
-  - `SelfImprovingAgent` - For continuous improvement feedback
-  - `Store` - For accessing codebase database
-  - `:telemetry` - For observability events
+  - `Singularity.Planning.HTDAGLearner` - Codebase understanding (HTDAGLearner.learn_codebase/1, auto_fix_all/1)
+  - `Singularity.Planning.HTDAGBootstrap` - System integration (HTDAGBootstrap.bootstrap/1)
+  - `:telemetry` - Observability events (telemetry.execute/3 for monitoring)
+  - PostgreSQL table: `htdag_auto_bootstrap_logs` (stores bootstrap history)
   
   ## Startup Flow
   
@@ -104,6 +98,7 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
   use GenServer
   require Logger
   
+  # INTEGRATION: Learning and bootstrap (codebase understanding and system integration)
   alias Singularity.Planning.{HTDAGLearner, HTDAGBootstrap}
   
   @default_config [
@@ -112,7 +107,7 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
     fix_on_startup: true,
     notify_on_complete: true,
     run_async: true,
-    dry_run: false  # Set to true to simulate fixes without applying them
+    dry_run: true  # Set to false to apply fixes (default is now safe mode)
   ]
   
   defstruct [
@@ -170,7 +165,7 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
     config = Keyword.merge(config, opts)
     
     enabled = Keyword.get(config, :enabled, true)
-    dry_run = Keyword.get(config, :dry_run, false)
+    dry_run = Keyword.get(config, :dry_run, true)
     
     state = %__MODULE__{
       status: :idle,

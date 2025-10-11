@@ -1,13 +1,38 @@
 defmodule Singularity.Planning.Schemas.CapabilityDependency do
   @moduledoc """
-  Capability Dependency - Tracks dependencies between capabilities
+  Capability Dependency schema for tracking dependencies between capabilities with validation.
 
-  Used to ensure proper ordering of work based on dependencies.
+  Manages dependency relationships between capabilities to ensure proper
+  work ordering and prevent circular dependencies with self-reference validation
+  and unique constraint enforcement.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.Schemas.Capability` - Capability relationships (belongs_to associations)
+  - PostgreSQL table: `capability_dependencies` (stores dependency relationships)
+
+  ## Usage
+
+      # Create dependency changeset
+      changeset = CapabilityDependency.changeset(%CapabilityDependency{}, %{
+        capability_id: "cap-123",
+        depends_on_capability_id: "cap-456"
+      })
+      # => #Ecto.Changeset<...>
+
+      # Validate self-reference prevention
+      invalid_changeset = CapabilityDependency.changeset(%CapabilityDependency{}, %{
+        capability_id: "cap-123",
+        depends_on_capability_id: "cap-123"  # Self-reference - will be invalid
+      })
+      # => #Ecto.Changeset<...> with error: "cannot depend on itself"
   """
 
   use Ecto.Schema
   import Ecto.Changeset
 
+  # INTEGRATION: Capability relationships (belongs_to associations)
   alias Singularity.Planning.Schemas.Capability
 
   @primary_key {:id, :binary_id, autogenerate: true}

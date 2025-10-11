@@ -1,15 +1,38 @@
 defmodule Singularity.Planning.Schemas.Feature do
   @moduledoc """
-  Feature - 1-3 month team deliverable
+  Feature schema for 1-3 month team deliverables with HTDAG integration and SAFe 6.0 Essential framework alignment.
 
-  Represents work that can be broken down into HTDAG tasks and stories.
-  Features are the primary work items that agents execute.
-  Aligned with SAFe 6.0 Essential framework.
+  Represents work that can be broken down into HTDAG tasks and stories
+  with acceptance criteria tracking and integration with capabilities
+  for autonomous agent execution and work planning.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.Schemas.Capability` - Capability relationships (belongs_to :capability)
+  - HTDAG system - Task decomposition (htdag_id field for HTDAG integration)
+  - PostgreSQL table: `safe_methodology_features` (stores feature data)
+
+  ## Usage
+
+      # Create changeset
+      changeset = Feature.changeset(%Feature{}, %{
+        name: "User Authentication",
+        description: "Implement OAuth2-based user authentication",
+        capability_id: "cap-123",
+        acceptance_criteria: ["User can login with Google", "Session is maintained"]
+      })
+      # => #Ecto.Changeset<...>
+
+      # Convert to state map
+      state_map = Feature.to_state_map(feature)
+      # => %{id: "123", name: "User Authentication", htdag_id: "htdag-456", ...}
   """
 
   use Ecto.Schema
   import Ecto.Changeset
 
+  # INTEGRATION: Capability relationships (belongs_to association)
   alias Singularity.Planning.Schemas.Capability
 
   @primary_key {:id, :binary_id, autogenerate: true}

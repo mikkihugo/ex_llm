@@ -2,48 +2,61 @@
 
 This directory contains deprecated/old Rust code that is no longer actively used.
 
-## Archived (2025-10-09)
+## Archived (2025-10-09) - Initial Cleanup
 
 ### Legacy Servers & Tools
 - **codeintelligence_server** - Old monolithic code intelligence server
-  - Superseded by: Specialized service modules
-  - Reason: Monolithic design, hard to maintain
-
 - **consolidated_detector** - Old consolidated framework detector
-  - Superseded by: `tech_detection_engine`
-  - Reason: Better separation of concerns
-
 - **mozilla-code-analysis** - Mozilla's rust-code-analysis integration
-  - Superseded by: Custom analysis tools
-  - Reason: External dependency, limited customization
-
 - **unified_server** - Old unified server attempt
-  - Superseded by: Service-oriented architecture in `rust/service/`
-  - Reason: Monolithic, hard to scale
-
-- **singularity_app** - Old embedded Elixir app (???)
-  - Superseded by: Main `singularity_app` at root
-  - Reason: Wrong location, duplicate
-
+- **singularity_app** - Old embedded Elixir app (duplicate)
 - **src/** - Old shared source code
-  - Superseded by: Proper crate organization
-  - Reason: Unclear structure, poor organization
+
+## Archived (2025-10-09) - Duplicate Removal
+
+### Duplicate Modules (Now in rust/ or rust/service/)
+
+**analysis_engine**
+- Duplicate of: `rust/code_analysis/` + `rust/service/code_service/`
+- Reason: Heavy code analysis should be local, not global
+- Use instead: Local rust/code_analysis/ for fast analysis
+
+**dependency_parser**
+- Duplicate of: `rust/parser/formats/dependency/`
+- Reason: Dependency parsing is per-project, not global
+- Use instead: Local rust/parser/ for parsing
+
+**intelligent_namer**
+- Duplicate of: `rust/architecture/naming_*` + `rust/service/architecture_service/`
+- Reason: Naming is context-specific, should be local with AI via NATS
+- Use instead: Local rust/architecture/ for naming, call AI via NATS if needed
+
+**semantic_embedding_engine**
+- Duplicate of: `rust/code_analysis/embeddings/` + `rust/service/embedding_service/`
+- Reason: Embeddings should be generated locally, AI models via NATS
+- Use instead: Local rust/code_analysis/embeddings/, call AI via NATS if needed
+
+**tech_detection_engine**
+- Duplicate of: `rust/architecture/technology_detection/` + `rust/service/framework_service/`
+- Reason: Framework detection is per-project, AI fallback via NATS
+- Use instead: Local rust/architecture/technology_detection/, call AI via NATS if needed
 
 ## Active Code (in rust_global/)
 
-- **package_analysis_suite** - External package analysis (npm, cargo, hex)
-- **semantic_embedding_engine** - Embedding generation
-- **tech_detection_engine** - Framework/technology detection
-- **analysis_engine** - Core analysis logic
-- **dependency_parser** - Dependency parsing
-- **intelligent_namer** - Intelligent naming suggestions
+- **package_registry** - External package analysis (npm, cargo, hex, pypi)
+  - This is the ONLY truly global module
+  - Indexes external packages for all Singularity instances
 
-## Why Archive Instead of Delete?
+## Why These Were Duplicates
 
-- Preserve historical code for reference
-- May contain useful algorithms to extract later
-- Easier to restore if needed
-- Git history preservation
+Global should be **lightweight aggregated intelligence**, not heavy processing:
+- ✅ Global: External package metadata, learned patterns, quality benchmarks
+- ❌ Global: Per-project code analysis, parsing, embeddings
+
+Architecture:
+- **Local (rust/)**: Heavy processing, fast local analysis
+- **Services (rust/service/)**: AI coordination via NATS
+- **Global (rust_global/)**: Only external package registry
 
 ## Restoration
 

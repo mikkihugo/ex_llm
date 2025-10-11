@@ -1,38 +1,56 @@
 defmodule Singularity.Planning.HTDAGBootstrap do
   @moduledoc """
-  Bootstrap module that integrates HTDAG NATS-LLM self-evolution with existing
-  Singularity self-improvement infrastructure.
-  
-  This module connects:
-  - HTDAG NATS-LLM executor (new)
-  - SelfImprovingAgent (existing)
-  - SafeWorkPlanner (existing)
-  - TemplateSparcOrchestrator (existing)
-  - RAGCodeGenerator (existing)
-  - QualityCodeGenerator (existing)
-  
+  Bootstrap module that integrates HTDAG NATS-LLM self-evolution with existing Singularity infrastructure.
+
+  Provides comprehensive system integration by connecting HTDAG with existing self-improvement
+  systems including SelfImprovingAgent, SafeWorkPlanner, and code generation tools.
+  Uses simple incremental learning to understand and auto-repair the codebase.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.HTDAG` - DAG operations (HTDAG.decompose/1)
+  - `Singularity.Planning.HTDAGExecutor` - Task execution (HTDAGExecutor.execute/3)
+  - `Singularity.Planning.HTDAGEvolution` - Self-improvement (HTDAGEvolution integration)
+  - `Singularity.Planning.HTDAGLearner` - Learning (HTDAGLearner.learn_codebase/1, auto_fix_all/1)
+  - `Singularity.Store` - Knowledge storage (Store.all_services/0, query_knowledge/1)
+  - `Singularity.SelfImprovingAgent` - Self-improvement (SelfImprovingAgent integration)
+  - `Singularity.RAGCodeGenerator` - Code generation (RAGCodeGenerator integration)
+  - `Singularity.QualityCodeGenerator` - Quality enforcement (QualityCodeGenerator integration)
+  - `Singularity.TemplateSparcOrchestrator` - SPARC methodology (TemplateSparcOrchestrator integration)
+  - `Singularity.Planning.SafeWorkPlanner` - Hierarchical planning (SafeWorkPlanner integration)
+
   ## Bootstrap Process
-  
+
   1. **Codebase Understanding** - Analyze codebase database
   2. **Self-Awareness** - Build knowledge graph of system
   3. **Integration** - Connect HTDAG with existing systems
   4. **Self-Improvement** - Enable autonomous improvements
-  
+
   ## Usage
-  
+
       # Bootstrap the system
       {:ok, state} = HTDAGBootstrap.bootstrap()
-      
+      # => {:ok, %{run_id: "bootstrap-123", learning: %{...}, ready_for_features: true}}
+
       # Get singularity server working
       {:ok, result} = HTDAGBootstrap.fix_singularity_server()
+      # => {:ok, %{fixes_applied: [...], safe_planner_ready: true}}
   """
   
   require Logger
   
+  # INTEGRATION: HTDAG planning and execution
   alias Singularity.Planning.{HTDAG, HTDAGExecutor, HTDAGEvolution, HTDAGLearner}
+
+  # INTEGRATION: Knowledge storage and self-improvement
   alias Singularity.{Store, SelfImprovingAgent}
+
+  # INTEGRATION: Code generation and quality enforcement
   alias Singularity.RAGCodeGenerator
   alias Singularity.QualityCodeGenerator
+
+  # INTEGRATION: SPARC methodology and hierarchical planning
   alias Singularity.TemplateSparcOrchestrator
   alias Singularity.Planning.SafeWorkPlanner
   

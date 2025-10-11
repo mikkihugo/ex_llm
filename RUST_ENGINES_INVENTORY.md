@@ -86,31 +86,31 @@
 
 ---
 
-### 3. `/rust_global` (Global Services - 6 modules) 🟡 **MIXED**
+### 3. `/rust_global` (Global Services - 1 module) ✅ **CLEAN**
 
-**Core Services:**
-- `analysis_engine/` - Global analysis engine
-- `dependency_parser/` - Dependency parsing
-- `intelligent_namer/` - Intelligent naming service
-- `package_analysis_suite/` - Package analysis
-- `semantic_embedding_engine/` - Semantic embeddings
-- `tech_detection_engine/` - Technology detection
+**Active Services:**
+- `package_registry/` - External package analysis (npm, cargo, hex, pypi) ✅ ACTIVE
 
 **Archive:**
+- `_archive/analysis_engine/` - Archived (duplicate of rust/code_analysis)
+- `_archive/dependency_parser/` - Archived (duplicate of rust/parser)
+- `_archive/intelligent_namer/` - Archived (duplicate of singularity_app/native/architecture_engine)
+- `_archive/semantic_embedding_engine/` - Archived (duplicate of rust/embedding)
+- `_archive/tech_detection_engine/` - Archived (duplicate of singularity_app/native/architecture_engine)
 - `_archive/mozilla-code-analysis/` - Archived Mozilla tools
 - `_archive/codeintelligence_server/` - Archived intelligence server
 - `_archive/consolidated_detector/` - Archived detector
 - `_archive/unified_server/` - Archived unified server
 
-**Status:** 🟡 **MIXED** - Some active, some archived, overlap with `/rust`
+**Status:** ✅ **CLEAN** - Only essential global service remains, all duplicates archived
 
 ---
 
-### 4. `/rust_backup` (Backup - Legacy) ❌ **ARCHIVED**
+### 4. `/rust_backup` (Backup - Legacy) ❌ **REMOVED**
 
-**Contents:** Full backup of old Rust structure
+**Contents:** Was full backup of old Rust structure (200+ duplicate files)
 
-**Status:** ❌ **ARCHIVED** - For reference only
+**Status:** ❌ **REMOVED** - Eliminated during duplicate cleanup (2025-01-10)
 
 ---
 

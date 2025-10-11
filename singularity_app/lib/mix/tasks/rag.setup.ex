@@ -162,8 +162,8 @@ defmodule Mix.Tasks.Rag.Setup do
     unless File.exists?(parse_path) do
       Mix.shell().error("Path does not exist: #{parse_path}")
       Mix.shell().error("Skipping codebase parsing")
-      return
-    end
+      :ok
+    else
 
     alias Singularity.ParserEngine
 
@@ -179,6 +179,7 @@ defmodule Mix.Tasks.Rag.Setup do
 
       {:error, reason} ->
         Mix.shell().error("Failed to parse codebase: #{inspect(reason)}")
+    end
     end
   end
 
@@ -196,12 +197,13 @@ defmodule Mix.Tasks.Rag.Setup do
       Mix.shell().error("⚠️  GOOGLE_AI_STUDIO_API_KEY not set")
       Mix.shell().error("Skipping embedding generation")
       Mix.shell().info("Get a free key at: https://makersuite.google.com/app/apikey")
-      return
-    end
+      :ok
+    else
 
     Mix.Task.run("knowledge.embed", ["--type", "quality_template"])
     
     Mix.shell().info("✅ Embeddings generated for quality templates")
+    end
   end
 
   defp run_system_test do

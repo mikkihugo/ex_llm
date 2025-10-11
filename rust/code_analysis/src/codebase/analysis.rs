@@ -304,10 +304,10 @@ impl AnalysisEngine {
   async fn analyze_with_universal_parser(
     &self,
     content: &str,
-    language: universal_parser::ProgrammingLanguage,
+    language: parser_code::ProgrammingLanguage,
     file_path: &str,
-  ) -> Result<universal_parser::AnalysisResult, String> {
-    use universal_parser::ProgrammingLanguage;
+  ) -> Result<parser_code::AnalysisResult, String> {
+    use parser_code::ProgrammingLanguage;
 
     match language {
       ProgrammingLanguage::Rust => {
@@ -383,7 +383,7 @@ impl AnalysisEngine {
   /// Convert universal parser result to CodebaseMetadata
   fn convert_universal_to_metadata(
     &self,
-    universal_result: &universal_parser::AnalysisResult,
+    universal_result: &parser_code::AnalysisResult,
     path: &str,
     content: &str,
   ) -> Result<CodebaseMetadata, String> {
@@ -429,29 +429,29 @@ impl AnalysisEngine {
   fn extract_language_specific_data(
     &self,
     metadata: &mut CodebaseMetadata,
-    universal_result: &universal_parser::AnalysisResult,
+    universal_result: &parser_code::AnalysisResult,
   ) -> Result<(), String> {
     // Process language-specific data for each supported language
     match universal_result.language {
-      universal_parser::ProgrammingLanguage::Rust => {
+      parser_code::ProgrammingLanguage::Rust => {
         self.process_rust_specific_data(metadata, &universal_result.language_specific)?;
       }
-      universal_parser::ProgrammingLanguage::Python => {
+      parser_code::ProgrammingLanguage::Python => {
         self.process_python_specific_data(metadata, &universal_result.language_specific)?;
       }
-      universal_parser::ProgrammingLanguage::JavaScript => {
+      parser_code::ProgrammingLanguage::JavaScript => {
         self.process_javascript_specific_data(metadata, &universal_result.language_specific)?;
       }
-      universal_parser::ProgrammingLanguage::TypeScript => {
+      parser_code::ProgrammingLanguage::TypeScript => {
         self.process_typescript_specific_data(metadata, &universal_result.language_specific)?;
       }
-      universal_parser::ProgrammingLanguage::Go => {
+      parser_code::ProgrammingLanguage::Go => {
         self.process_go_specific_data(metadata, &universal_result.language_specific)?;
       }
-      universal_parser::ProgrammingLanguage::Java => {
+      parser_code::ProgrammingLanguage::Java => {
         self.process_java_specific_data(metadata, &universal_result.language_specific)?;
       }
-      universal_parser::ProgrammingLanguage::CSharp => {
+      parser_code::ProgrammingLanguage::CSharp => {
         self.process_csharp_specific_data(metadata, &universal_result.language_specific)?;
       }
       _ => {
@@ -658,8 +658,8 @@ impl AnalysisEngine {
   }
 
   /// Detect language from file path
-  fn detect_language_from_path(&self, path: &str) -> universal_parser::ProgrammingLanguage {
-    use universal_parser::ProgrammingLanguage;
+  fn detect_language_from_path(&self, path: &str) -> parser_code::ProgrammingLanguage {
+    use parser_code::ProgrammingLanguage;
     
     let extension = std::path::Path::new(path)
       .extension()

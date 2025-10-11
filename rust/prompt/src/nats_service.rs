@@ -21,7 +21,7 @@ use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 use crate::{PromptEngine, OptimizationResult};
-use crate::prompt_bits::{PromptBitAssembler, PromptBitTrigger, PromptBitCategory};
+use crate::prompt_bits::{PromptBitAssembler, database::{PromptBitTrigger, PromptBitCategory}};
 use crate::templates::{TemplateLoader, RegistryTemplate};
 
 /// Request to generate a prompt

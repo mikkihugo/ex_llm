@@ -1,99 +1,119 @@
 defmodule Singularity.Planning.HTDAGLearner do
   @moduledoc """
-  Simple, incremental learning system for HTDAG to understand the codebase.
-  
-  This module provides an easy way for the system to:
-  1. Learn about code components incrementally
-  2. Build a knowledge graph of what exists
-  3. Understand relationships between components
-  4. Identify what needs fixing
-  5. Auto-repair broken integrations
-  
+  Incremental learning system for HTDAG to understand and auto-repair the codebase.
+
+  Provides comprehensive codebase analysis through static file scanning and runtime
+  tracing, building knowledge graphs of module relationships and automatically
+  fixing broken dependencies, missing documentation, and integration issues.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Store` - Knowledge search (Store.search_knowledge/2)
+  - `Singularity.RAGCodeGenerator` - Code generation (RAGCodeGenerator.find_similar_module/1)
+  - `Singularity.QualityCodeGenerator` - Quality enforcement (QualityCodeGenerator.generate/2)
+  - `Singularity.HotReload.ImprovementGateway` - Hot reload (ImprovementGateway.dispatch/2)
+  - `Singularity.Planning.HTDAGTracer` - Runtime tracing (HTDAGTracer.full_analysis/1)
+  - `Singularity.SelfImprovingAgent` - Self-improvement (SelfImprovingAgent integration)
+  - PostgreSQL table: `htdag_learning_results` (stores learning analysis)
+
   ## Learning Approach
-  
-  Instead of complex analysis, this uses a simple pattern:
+
+  Uses a simple pattern combining static and runtime analysis:
   - Scan source files for module documentation
   - Extract component purposes from @moduledoc
   - Build dependency graph from aliases
   - Identify missing connections
   - Auto-generate fixes using RAG + Quality templates
-  
+
   ## Usage
-  
+
       # Learn about the codebase incrementally
       {:ok, knowledge} = HTDAGLearner.learn_codebase()
-      
+      # => {:ok, %{knowledge: %{modules: %{...}}, issues: [...]}}
+
       # Auto-fix everything that's broken
       {:ok, fixes} = HTDAGLearner.auto_fix_all()
+      # => {:ok, %{iterations: 3, fixes: [...]}}
   """
-  
+
   require Logger
-  
-  alias Singularity.{Store, RAGCodeGenerator, QualityCodeGenerator}
+
+  # INTEGRATION: Knowledge search and code generation
+  alias Singularity.{Store, RAGCodeGenerator, QualityCodeGenerator, HotReload.ImprovementGateway}
+
+  # INTEGRATION: HTDAG planning and tracing
   alias Singularity.Planning.{HTDAG, HTDAGBootstrap, HTDAGTracer}
+
+  # INTEGRATION: Self-improvement (learning from execution)
   alias Singularity.SelfImprovingAgent
-  
+
   @doc """
   Learn about the codebase in a simple, incremental way.
-  
+
   Scans source files, extracts documentation, builds knowledge graph.
   """
   def learn_codebase(opts \\ []) do
     Logger.info("Starting simple codebase learning...")
-    
+
     # Step 1: Scan all Elixir source files
     source_files = find_source_files()
-    
+
     Logger.info("Found #{length(source_files)} source files")
-    
+
     # Step 2: Extract knowledge from each file
-    knowledge = Enum.reduce(source_files, %{modules: %{}, dependencies: %{}}, fn file, acc ->
-      case learn_from_file(file) do
-        {:ok, file_knowledge} ->
-          merge_knowledge(acc, file_knowledge)
-        {:error, _reason} ->
-          acc
-      end
-    end)
-    
+    knowledge =
+      Enum.reduce(source_files, %{modules: %{}, dependencies: %{}}, fn file, acc ->
+        case learn_from_file(file) do
+          {:ok, file_knowledge} ->
+            merge_knowledge(acc, file_knowledge)
+
+          {:error, _reason} ->
+            acc
+        end
+      end)
+
     # Step 3: Identify what's missing or broken
     issues = identify_issues(knowledge)
-    
-    Logger.info("Learning complete: #{map_size(knowledge.modules)} modules, #{length(issues)} issues")
-    
-    {:ok, %{
-      knowledge: knowledge,
-      issues: issues,
-      learned_at: DateTime.utc_now()
-    }}
+
+    Logger.info(
+      "Learning complete: #{map_size(knowledge.modules)} modules, #{length(issues)} issues"
+    )
+
+    {:ok,
+     %{
+       knowledge: knowledge,
+       issues: issues,
+       learned_at: DateTime.utc_now()
+     }}
   end
-  
+
   @doc """
   Auto-fix all issues found in the codebase.
-  
+
   Uses self-improving agent to fix:
   - Missing integrations
   - Broken connections
   - Performance issues
   - Errors in code
-  
+
   Continues until everything works or max iterations reached.
   """
   def auto_fix_all(opts \\ []) do
     max_iterations = Keyword.get(opts, :max_iterations, 10)
-    
+
     Logger.info("Starting auto-fix with max #{max_iterations} iterations...")
-    
+
     # Learn first
     {:ok, learning} = learn_codebase()
-    
+
     # Fix iteratively
     fix_iteration(learning, 0, max_iterations, [])
   end
-  
+
   @doc """
   Map all existing systems into HTDAG with inline documentation.
-  
+
   Creates a comprehensive mapping document showing:
   - What each system does
   - How they should work together
@@ -102,10 +122,10 @@ defmodule Singularity.Planning.HTDAGLearner do
   """
   def map_all_systems do
     Logger.info("Mapping all systems into HTDAG...")
-    
+
     # Learn about everything
     {:ok, learning} = learn_codebase()
-    
+
     # Create comprehensive mapping
     mapping = %{
       # Core systems
@@ -114,54 +134,54 @@ defmodule Singularity.Planning.HTDAGLearner do
       sparc: map_sparc_system(learning),
       code_generation: map_code_generation_system(learning),
       storage: map_storage_system(learning),
-      
+
       # Integration points
       integrations: identify_integrations(learning),
-      
+
       # What needs fixing
       fixes_needed: learning.issues,
-      
+
       # Auto-repair plan
       repair_plan: create_repair_plan(learning.issues)
     }
-    
+
     # Save mapping to file for reference
     save_mapping(mapping)
-    
+
     {:ok, mapping}
   end
-  
+
   @doc """
   Learn codebase using BOTH static analysis AND runtime tracing.
-  
+
   This combines:
   - Static file scanning (what's defined)
   - Runtime tracing (what actually runs)
   - Connectivity analysis (what's connected)
   - Error detection (what's broken)
-  
+
   This gives the most complete picture of system health.
   """
   def learn_with_tracing(opts \\ []) do
     Logger.info("Learning codebase with static + runtime analysis...")
-    
+
     # Step 1: Static learning (scan files)
     Logger.info("Phase 1: Static analysis...")
     {:ok, static_knowledge} = learn_codebase(opts)
-    
+
     # Step 2: Runtime tracing (see what actually runs)
     Logger.info("Phase 2: Runtime tracing...")
-    {:ok, trace_analysis} = HTDAGTracer.full_analysis(
-      trace_duration_ms: Keyword.get(opts, :trace_duration_ms, 10_000)
-    )
-    
+
+    {:ok, trace_analysis} =
+      HTDAGTracer.full_analysis(trace_duration_ms: Keyword.get(opts, :trace_duration_ms, 10_000))
+
     # Step 3: Merge insights
     Logger.info("Phase 3: Merging insights...")
     merged = merge_static_and_runtime(static_knowledge, trace_analysis)
-    
+
     # Step 4: Enhanced issue detection
     issues = identify_issues_with_tracing(merged)
-    
+
     result = %{
       modules: merged.modules,
       dependencies: merged.dependencies,
@@ -175,51 +195,59 @@ defmodule Singularity.Planning.HTDAGLearner do
         dead_code_functions: length(trace_analysis.dead_code)
       }
     }
-    
+
     Logger.info("Learning complete with tracing:")
     Logger.info("  Total modules: #{result.stats.total_modules}")
     Logger.info("  Working: #{result.stats.working_modules}")
     Logger.info("  Broken: #{result.stats.broken_modules}")
     Logger.info("  Disconnected: #{result.stats.disconnected_modules}")
     Logger.info("  Dead code: #{result.stats.dead_code_functions}")
-    
+
     {:ok, result}
   end
-  
+
   defp merge_static_and_runtime(static_knowledge, trace_analysis) do
     # Enhance static knowledge with runtime data
-    enhanced_modules = Enum.reduce(static_knowledge.modules, %{}, fn {mod_name, mod_data}, acc ->
-      # Check if module is actually called at runtime
-      is_called = Enum.any?(trace_analysis.trace_results, fn {{mod, _fun, _arity}, _data} ->
-        Atom.to_string(mod) == mod_name
+    enhanced_modules =
+      Enum.reduce(static_knowledge.modules, %{}, fn {mod_name, mod_data}, acc ->
+        # Check if module is actually called at runtime
+        is_called =
+          Enum.any?(trace_analysis.trace_results, fn {{mod, _fun, _arity}, _data} ->
+            Atom.to_string(mod) == mod_name
+          end)
+
+        # Check connectivity
+        connectivity = HTDAGTracer.is_connected?(String.to_atom("Elixir.#{mod_name}"))
+
+        # Check for broken functions in this module
+        broken_in_module =
+          Enum.filter(trace_analysis.broken_functions, fn {mod, _fun, _arity, _reason} ->
+            Atom.to_string(mod) == mod_name
+          end)
+
+        enhanced =
+          Map.merge(mod_data, %{
+            called_at_runtime: is_called,
+            connectivity: connectivity,
+            broken_functions: broken_in_module,
+            is_working: is_called and length(broken_in_module) == 0
+          })
+
+        Map.put(acc, mod_name, enhanced)
       end)
-      
-      # Check connectivity
-      connectivity = HTDAGTracer.is_connected?(String.to_atom("Elixir.#{mod_name}"))
-      
-      # Check for broken functions in this module
-      broken_in_module = Enum.filter(trace_analysis.broken_functions, fn {mod, _fun, _arity, _reason} ->
-        Atom.to_string(mod) == mod_name
-      end)
-      
-      enhanced = Map.merge(mod_data, %{
-        called_at_runtime: is_called,
-        connectivity: connectivity,
-        broken_functions: broken_in_module,
-        is_working: is_called and length(broken_in_module) == 0
-      })
-      
-      Map.put(acc, mod_name, enhanced)
-    end)
-    
+
     working_count = Enum.count(enhanced_modules, fn {_name, data} -> data.is_working end)
-    broken_count = Enum.count(enhanced_modules, fn {_name, data} -> 
-      length(data.broken_functions) > 0
-    end)
-    disconnected_count = Enum.count(enhanced_modules, fn {_name, data} -> 
-      not data.connectivity.connected
-    end)
-    
+
+    broken_count =
+      Enum.count(enhanced_modules, fn {_name, data} ->
+        length(data.broken_functions) > 0
+      end)
+
+    disconnected_count =
+      Enum.count(enhanced_modules, fn {_name, data} ->
+        not data.connectivity.connected
+      end)
+
     %{
       modules: enhanced_modules,
       dependencies: static_knowledge.dependencies,
@@ -228,124 +256,135 @@ defmodule Singularity.Planning.HTDAGLearner do
       disconnected_count: disconnected_count
     }
   end
-  
+
   defp identify_issues_with_tracing(merged_data) do
     issues = []
-    
+
     # Add broken function issues
-    broken_issues = Enum.flat_map(merged_data.modules, fn {mod_name, mod_data} ->
-      Enum.map(mod_data.broken_functions, fn {_mod, fun, arity, reason} ->
-        %{
-          type: :broken_function,
-          severity: :high,
-          module: mod_name,
-          function: "#{fun}/#{arity}",
-          description: "Function crashes: #{reason}",
-          detected_by: :runtime_tracing
-        }
+    broken_issues =
+      Enum.flat_map(merged_data.modules, fn {mod_name, mod_data} ->
+        Enum.map(mod_data.broken_functions, fn {_mod, fun, arity, reason} ->
+          %{
+            type: :broken_function,
+            severity: :high,
+            module: mod_name,
+            function: "#{fun}/#{arity}",
+            description: "Function crashes: #{reason}",
+            detected_by: :runtime_tracing
+          }
+        end)
       end)
-    end)
-    
+
     # Add disconnected module issues
-    disconnected_issues = Enum.reduce(merged_data.modules, [], fn {mod_name, mod_data}, acc ->
-      if not mod_data.connectivity.connected do
-        [%{
-          type: :disconnected_module,
-          severity: :medium,
-          module: mod_name,
-          description: "Module is not connected to system (no callers/callees)",
-          detected_by: :runtime_tracing
-        } | acc]
-      else
-        acc
-      end
-    end)
-    
+    disconnected_issues =
+      Enum.reduce(merged_data.modules, [], fn {mod_name, mod_data}, acc ->
+        if not mod_data.connectivity.connected do
+          [
+            %{
+              type: :disconnected_module,
+              severity: :medium,
+              module: mod_name,
+              description: "Module is not connected to system (no callers/callees)",
+              detected_by: :runtime_tracing
+            }
+            | acc
+          ]
+        else
+          acc
+        end
+      end)
+
     # Add never-called module issues
-    never_called_issues = Enum.reduce(merged_data.modules, [], fn {mod_name, mod_data}, acc ->
-      if not mod_data.called_at_runtime and mod_data.has_docs do
-        [%{
-          type: :never_called,
-          severity: :low,
-          module: mod_name,
-          description: "Module defined but never called at runtime",
-          detected_by: :runtime_tracing
-        } | acc]
-      else
-        acc
-      end
-    end)
-    
+    never_called_issues =
+      Enum.reduce(merged_data.modules, [], fn {mod_name, mod_data}, acc ->
+        if not mod_data.called_at_runtime and mod_data.has_docs do
+          [
+            %{
+              type: :never_called,
+              severity: :low,
+              module: mod_name,
+              description: "Module defined but never called at runtime",
+              detected_by: :runtime_tracing
+            }
+            | acc
+          ]
+        else
+          acc
+        end
+      end)
+
     issues ++ broken_issues ++ disconnected_issues ++ never_called_issues
   end
-  
+
   ## Private Functions
-  
+
   defp find_source_files do
     # Find all Elixir files in singularity_app
     base_path = Path.join([File.cwd!(), "singularity_app", "lib", "singularity"])
-    
+
     if File.exists?(base_path) do
       Path.wildcard("#{base_path}/**/*.ex")
     else
       []
     end
   end
-  
+
   defp learn_from_file(file_path) do
     try do
       # Read file content
       content = File.read!(file_path)
-      
+
       # Extract module name
       module_name = extract_module_name(content)
-      
+
       # Extract documentation
       moduledoc = extract_moduledoc(content)
-      
+
       # Extract dependencies (aliases)
       dependencies = extract_dependencies(content)
-      
+
       # Extract purpose from docs
       purpose = extract_purpose(moduledoc)
-      
-      {:ok, %{
-        module: module_name,
-        file: file_path,
-        purpose: purpose,
-        dependencies: dependencies,
-        has_docs: moduledoc != nil,
-        content_size: byte_size(content)
-      }}
+
+      {:ok,
+       %{
+         module: module_name,
+         file: file_path,
+         purpose: purpose,
+         dependencies: dependencies,
+         has_docs: moduledoc != nil,
+         content_size: byte_size(content)
+       }}
     rescue
       e ->
         Logger.debug("Error learning from #{file_path}: #{inspect(e)}")
         {:error, :parse_error}
     end
   end
-  
+
   defp extract_module_name(content) do
     case Regex.run(~r/defmodule\s+([\w\.]+)/, content) do
       [_, module] -> module
       _ -> "Unknown"
     end
   end
-  
+
   defp extract_moduledoc(content) do
     case Regex.run(~r/@moduledoc\s+"""\s*(.+?)\s*"""/s, content) do
       [_, doc] -> String.trim(doc)
       _ -> nil
     end
   end
-  
+
   defp extract_dependencies(content) do
     # Find all alias statements
     Regex.scan(~r/alias\s+([\w\.]+)/, content)
     |> Enum.map(fn [_, dep] -> dep end)
     |> Enum.uniq()
   end
-  
+
   defp extract_purpose(nil), do: "No documentation"
+
   defp extract_purpose(moduledoc) do
     # Take first sentence as purpose
     moduledoc
@@ -353,250 +392,317 @@ defmodule Singularity.Planning.HTDAGLearner do
     |> List.first()
     |> String.trim()
   end
-  
+
   defp merge_knowledge(acc, file_knowledge) do
     %{
       modules: Map.put(acc.modules, file_knowledge.module, file_knowledge),
       dependencies: Map.put(acc.dependencies, file_knowledge.module, file_knowledge.dependencies)
     }
   end
-  
+
   defp identify_issues(knowledge) do
     issues = []
-    
+
     # Check for modules without documentation
-    undocumented = knowledge.modules
-    |> Enum.filter(fn {_name, info} -> not info.has_docs end)
-    |> Enum.map(fn {name, _info} -> 
-      %{type: :missing_docs, module: name, severity: :low}
-    end)
-    
+    undocumented =
+      knowledge.modules
+      |> Enum.filter(fn {_name, info} -> not info.has_docs end)
+      |> Enum.map(fn {name, _info} ->
+        %{type: :missing_docs, module: name, severity: :low}
+      end)
+
     # Check for broken dependencies
-    broken_deps = knowledge.dependencies
-    |> Enum.flat_map(fn {module, deps} ->
-      Enum.filter(deps, fn dep ->
-        # Check if dependency exists
-        not Map.has_key?(knowledge.modules, dep)
+    broken_deps =
+      knowledge.dependencies
+      |> Enum.flat_map(fn {module, deps} ->
+        Enum.filter(deps, fn dep ->
+          # Check if dependency exists
+          not Map.has_key?(knowledge.modules, dep)
+        end)
+        |> Enum.map(fn dep ->
+          %{type: :broken_dependency, module: module, missing: dep, severity: :high}
+        end)
       end)
-      |> Enum.map(fn dep ->
-        %{type: :broken_dependency, module: module, missing: dep, severity: :high}
-      end)
-    end)
-    
+
     # Check for isolated modules (no dependencies)
-    isolated = knowledge.modules
-    |> Enum.filter(fn {name, _info} ->
-      deps = Map.get(knowledge.dependencies, name, [])
-      length(deps) == 0 and should_have_dependencies?(name)
-    end)
-    |> Enum.map(fn {name, _info} ->
-      %{type: :isolated_module, module: name, severity: :medium}
-    end)
-    
+    isolated =
+      knowledge.modules
+      |> Enum.filter(fn {name, _info} ->
+        deps = Map.get(knowledge.dependencies, name, [])
+        length(deps) == 0 and should_have_dependencies?(name)
+      end)
+      |> Enum.map(fn {name, _info} ->
+        %{type: :isolated_module, module: name, severity: :medium}
+      end)
+
     issues ++ undocumented ++ broken_deps ++ isolated
   end
-  
+
   defp should_have_dependencies?(module_name) do
     # Modules that should have dependencies
     not String.contains?(module_name, ["Repo", "Schema", "Migration"])
   end
-  
-  defp fix_iteration(learning, iteration, max_iterations, fixes_applied) 
+
+  defp fix_iteration(learning, iteration, max_iterations, fixes_applied)
        when iteration >= max_iterations do
     Logger.info("Reached max iterations (#{max_iterations})")
     {:ok, %{iterations: iteration, fixes: fixes_applied, final_state: learning}}
   end
-  
+
   defp fix_iteration(learning, iteration, max_iterations, fixes_applied) do
     Logger.info("Fix iteration #{iteration + 1}/#{max_iterations}")
-    
+
     # Get high priority issues
-    high_priority = Enum.filter(learning.issues, fn issue ->
-      issue.severity == :high
-    end)
-    
+    high_priority =
+      Enum.filter(learning.issues, fn issue ->
+        issue.severity == :high
+      end)
+
     if Enum.empty?(high_priority) do
       Logger.info("No high priority issues remaining")
       {:ok, %{iterations: iteration, fixes: fixes_applied, final_state: learning}}
     else
       # Fix first high priority issue
       issue = List.first(high_priority)
-      
+
       case fix_issue(issue, learning) do
         {:ok, fix} ->
           # The issue is considered fixed for this pass. Remove it to avoid an infinite loop.
           remaining_issues = List.delete(learning.issues, issue)
           new_learning = Map.put(learning, :issues, remaining_issues)
-    
+
           # Continue fixing with the updated list of issues.
           # A full `learn_codebase()` should only happen after actual file modifications.
           fix_iteration(new_learning, iteration + 1, max_iterations, [fix | fixes_applied])
-    
+
         {:error, _reason} ->
           # Skip this issue
           remaining_issues = List.delete(learning.issues, issue)
           new_learning = Map.put(learning, :issues, remaining_issues)
-          fix_iteration(new_learning, iteration + a, max_iterations, fixes_applied)
+          fix_iteration(new_learning, iteration + 1, max_iterations, fixes_applied)
       end
     end
   end
-  
+
   defp fix_issue(issue, learning) do
     Logger.info("Fixing issue: #{issue.type} in #{issue.module}")
-    
+
     case issue.type do
       :broken_dependency ->
         fix_broken_dependency(issue, learning)
-        
+
       :missing_docs ->
         fix_missing_docs(issue, learning)
-        
+
       :isolated_module ->
         fix_isolated_module(issue, learning)
-        
+
       _ ->
         {:error, :unknown_issue_type}
     end
   end
-  
+
   defp fix_broken_dependency(issue, learning) do
-    # Actually generate and apply the fix for broken dependency
     Logger.info("Generating fix for broken dependency: #{issue.missing}")
-    
-    module_info = Map.get(learning.knowledge.modules, issue.module)
-    
-    if not module_info do
-      Logger.error("Module info not found for #{issue.module}")
-      return {:error, :module_not_found}
-    end
-    
-    file_path = module_info.file
-    
-    if not File.exists?(file_path) do
-      Logger.error("File not found: #{file_path}")
-      return {:error, :file_not_found}
-    end
-    
-    # Read current file content
-    content = File.read!(file_path)
-    
-    # Check if missing module exists in the system
-    missing_exists = Map.has_key?(learning.knowledge.modules, issue.missing)
-    
-    new_content = if missing_exists do
-      # Module exists, just add the alias
-      add_alias_to_content(content, issue.missing)
-    else
-      # Module doesn't exist - use RAG to find similar module or template
-      case RAGCodeGenerator.find_similar_module(issue.missing) do
-        {:ok, similar} ->
-          Logger.info("Found similar module: #{similar}, using as template")
-          # Create the missing module based on template
-          create_missing_module(issue.missing, similar, learning)
-          # Also add alias to current file
-          add_alias_to_content(content, issue.missing)
-        
-        {:error, _} ->
-          Logger.warn("No template found for #{issue.missing}, adding TODO comment")
-          add_todo_comment(content, issue.missing)
+
+    with %{file: file_path} <- Map.get(learning.knowledge.modules, issue.module),
+         true <- File.exists?(file_path),
+         {:ok, content} <- File.read(file_path) do
+      {updated_content, action} =
+        if Map.has_key?(learning.knowledge.modules, issue.missing) do
+          {add_alias_to_content(content, issue.missing), "Added alias"}
+        else
+          case RAGCodeGenerator.find_similar_module(issue.missing) do
+            {:ok, similar} ->
+              Logger.info("Found similar module: #{similar}, using as template")
+
+              case create_missing_module(issue.missing, similar, learning) do
+                {:ok, _path} ->
+                  {add_alias_to_content(content, issue.missing), "Created missing module"}
+
+                {:error, reason} ->
+                  Logger.warning("Failed to create module from template; adding TODO comment",
+                    missing: issue.missing,
+                    reason: inspect(reason)
+                  )
+
+                  {add_todo_comment(content, issue.missing), "Added TODO placeholder"}
+              end
+
+            {:error, _} ->
+              Logger.warning("No template found for #{issue.missing}, adding TODO comment")
+              {add_todo_comment(content, issue.missing), "Added TODO placeholder"}
+          end
+        end
+
+      File.write!(file_path, updated_content)
+
+      Logger.info("✓ Fixed broken dependency in #{file_path}")
+
+      dispatch_metadata = %{
+        "reason" => "htdag_auto_fix",
+        "issue_type" => "broken_dependency",
+        "module" => issue.module,
+        "missing_dependency" => issue.missing,
+        "file_path" => file_path,
+        "action" => action
+      }
+
+      payload = %{
+        "code" => updated_content,
+        "metadata" => dispatch_metadata
+      }
+
+      case ImprovementGateway.dispatch(payload, agent_id: "htdag-runtime") do
+        :ok ->
+          Logger.debug("Hot reload dispatched for #{issue.module}", agent_id: "htdag-runtime")
+
+        {:error, reason} ->
+          Logger.warning("Hot reload dispatch skipped",
+            module: issue.module,
+            file: file_path,
+            reason: inspect(reason)
+          )
       end
+
+      fix = %{
+        type: :broken_dependency_fix,
+        module: issue.module,
+        missing: issue.missing,
+        file: file_path,
+        action: action,
+        auto_generated: true,
+        timestamp: DateTime.utc_now()
+      }
+
+      {:ok, fix}
+    else
+      nil ->
+        Logger.error("Module info not found for #{issue.module}")
+        {:error, :module_not_found}
+
+      false ->
+        Logger.error("File not found while fixing dependency", module: issue.module)
+        {:error, :file_not_found}
+
+      {:error, reason} ->
+        Logger.error("Failed to read module while fixing dependency",
+          module: issue.module,
+          reason: inspect(reason)
+        )
+
+        {:error, reason}
     end
-    
-    # Write the fixed content back
-    File.write!(file_path, new_content)
-    
-    Logger.info("✓ Fixed broken dependency in #{file_path}")
-    
-    fix = %{
-      type: :broken_dependency_fix,
-      module: issue.module,
-      missing: issue.missing,
-      file: file_path,
-      action: if(missing_exists, do: "Added alias", else: "Created missing module"),
-      auto_generated: true,
-      timestamp: DateTime.utc_now()
-    }
-    
-    {:ok, fix}
   end
-  
+
   defp add_alias_to_content(content, module_name) do
     # Find the right place to add alias (after defmodule line)
     lines = String.split(content, "\n")
-    
-    {before_defmodule, after_defmodule} = Enum.split_while(lines, fn line ->
-      not String.contains?(line, "defmodule ")
-    end)
-    
+
+    {before_defmodule, after_defmodule} =
+      Enum.split_while(lines, fn line ->
+        not String.contains?(line, "defmodule ")
+      end)
+
     case after_defmodule do
       [defmodule_line | rest] ->
         # Add alias after defmodule
         alias_line = "  alias #{module_name}"
-        
+
         # Check if alias already exists
         if Enum.any?(rest, &String.contains?(&1, "alias #{module_name}")) do
-          content  # Already has alias
+          # Already has alias
+          content
         else
           # Insert alias after defmodule
           new_lines = before_defmodule ++ [defmodule_line, alias_line] ++ rest
           Enum.join(new_lines, "\n")
         end
-      
+
       [] ->
-        content  # No defmodule found, return unchanged
+        # No defmodule found, return unchanged
+        content
     end
   end
-  
+
   defp add_todo_comment(content, missing_module) do
     # Add TODO comment at the top of the file
     todo = """
     # TODO: Missing module #{missing_module} needs to be implemented
     # This dependency was detected but the module doesn't exist yet.
     # Consider implementing it or removing the reference.
-    
+
     """
-    
+
     todo <> content
   end
-  
+
   defp create_missing_module(module_name, template_module, learning) do
     # Create a new file for the missing module based on template
     module_parts = String.split(module_name, ".")
     filename = List.last(module_parts) |> Macro.underscore() |> Kernel.<>(".ex")
-    
+
     # Determine directory path
     base_path = Path.join([File.cwd!(), "singularity_app", "lib"])
     dir_parts = Enum.slice(module_parts, 1..-2) |> Enum.map(&Macro.underscore/1)
     dir_path = Path.join([base_path | dir_parts])
-    
+
     # Create directory if it doesn't exist
     File.mkdir_p!(dir_path)
-    
+
     file_path = Path.join(dir_path, filename)
-    
+
     # Generate module content from template
-    template_content = case Map.get(learning.knowledge.modules, template_module) do
-      %{file: template_file} when template_file != nil ->
-        if File.exists?(template_file) do
-          File.read!(template_file)
-          |> String.replace(template_module, module_name)
-          |> String.replace("# TODO: Auto-generated", "# TODO: Auto-generated from #{template_module}")
-        else
+    template_content =
+      case Map.get(learning.knowledge.modules, template_module) do
+        %{file: template_file} when template_file != nil ->
+          if File.exists?(template_file) do
+            File.read!(template_file)
+            |> String.replace(template_module, module_name)
+            |> String.replace(
+              "# TODO: Auto-generated",
+              "# TODO: Auto-generated from #{template_module}"
+            )
+          else
+            generate_basic_module_template(module_name)
+          end
+
+        _ ->
           generate_basic_module_template(module_name)
-        end
-      
-      _ ->
-        generate_basic_module_template(module_name)
-    end
-    
+      end
+
     # Write the new module
     File.write!(file_path, template_content)
-    
+
     Logger.info("✓ Created new module #{module_name} at #{file_path}")
-    
+
+    payload = %{
+      "code" => template_content,
+      "metadata" => %{
+        "reason" => "htdag_auto_fix",
+        "issue_type" => "missing_module",
+        "module" => module_name,
+        "template_source" => template_module,
+        "file_path" => file_path
+      }
+    }
+
+    case ImprovementGateway.dispatch(payload, agent_id: "htdag-runtime") do
+      :ok ->
+        Logger.debug("Hot reload dispatched for new module #{module_name}",
+          agent_id: "htdag-runtime"
+        )
+
+      {:error, reason} ->
+        Logger.warning("Hot reload dispatch skipped for #{module_name}",
+          file: file_path,
+          reason: inspect(reason)
+        )
+    end
+
     {:ok, file_path}
   end
-  
+
   defp generate_basic_module_template(module_name) do
     """
     defmodule #{module_name} do
@@ -613,46 +719,91 @@ defmodule Singularity.Planning.HTDAGLearner do
       TODO: Implement this module's functionality.
       \"\"\"
       def placeholder do
-        Logger.warn("\#{__MODULE__} is a placeholder - needs implementation")
+        Logger.warning("#{__MODULE__} is a placeholder - needs implementation")
         {:error, :not_implemented}
       end
     end
     """
   end
-  
+
   defp fix_missing_docs(issue, learning) do
     # Generate documentation using LLM
     module_info = Map.get(learning.knowledge.modules, issue.module)
-    
-    if module_info do
-      Logger.info("Would generate docs for: #{issue.module}")
-      
+
+    with %{file: file_path} <- module_info,
+         true <- File.exists?(file_path),
+         {:ok, content} <- File.read(file_path),
+         false <- String.contains?(content, "@moduledoc"),
+         {:ok, updated} <- inject_moduledoc(content, issue.module, module_info) do
+      File.write!(file_path, updated)
+
+      metadata = %{
+        "reason" => "htdag_auto_fix",
+        "issue_type" => "missing_docs",
+        "module" => issue.module,
+        "file_path" => file_path
+      }
+
+      payload = %{
+        "code" => updated,
+        "metadata" => metadata
+      }
+
+      case ImprovementGateway.dispatch(payload, agent_id: "htdag-runtime") do
+        :ok ->
+          Logger.debug("Hot reload dispatched after doc generation",
+            agent_id: "htdag-runtime",
+            module: issue.module
+          )
+
+        {:error, reason} ->
+          Logger.warning("Hot reload dispatch skipped after doc generation",
+            module: issue.module,
+            file: file_path,
+            reason: inspect(reason)
+          )
+      end
+
       fix = %{
         type: :missing_docs_fix,
         module: issue.module,
-        action: "Generate @moduledoc from code analysis",
-        auto_generated: true
+        file: file_path,
+        action: "Generated @moduledoc via HTDAG learner",
+        auto_generated: true,
+        timestamp: DateTime.utc_now()
       }
-      
+
       {:ok, fix}
     else
-      {:error, :module_not_found}
+      {:error, :module_not_found} ->
+        {:error, :module_not_found}
+
+      false ->
+        {:error, :docs_already_present}
+
+      {:error, reason} ->
+        Logger.error("Failed to generate documentation",
+          module: issue.module,
+          reason: inspect(reason)
+        )
+
+        {:error, reason}
     end
   end
-  
+
   defp fix_isolated_module(issue, _learning) do
     Logger.info("Would connect isolated module: #{issue.module}")
-    
+
     fix = %{
       type: :isolated_module_fix,
       module: issue.module,
       action: "Suggest integrations based on module purpose",
       auto_generated: true
     }
-    
+
     {:ok, fix}
   end
-  
+
   defp map_self_improving_system(learning) do
     %{
       module: "Singularity.SelfImprovingAgent",
@@ -673,7 +824,7 @@ defmodule Singularity.Planning.HTDAGLearner do
       """
     }
   end
-  
+
   defp map_safe_planning_system(learning) do
     %{
       module: "Singularity.Planning.SafeWorkPlanner",
@@ -692,7 +843,7 @@ defmodule Singularity.Planning.HTDAGLearner do
       """
     }
   end
-  
+
   defp map_sparc_system(learning) do
     %{
       module: "Singularity.TemplateSparcOrchestrator",
@@ -712,7 +863,7 @@ defmodule Singularity.Planning.HTDAGLearner do
       """
     }
   end
-  
+
   defp map_code_generation_system(learning) do
     %{
       modules: ["RAGCodeGenerator", "QualityCodeGenerator"],
@@ -735,7 +886,7 @@ defmodule Singularity.Planning.HTDAGLearner do
       """
     }
   end
-  
+
   defp map_storage_system(learning) do
     %{
       module: "Singularity.Store",
@@ -751,13 +902,13 @@ defmodule Singularity.Planning.HTDAGLearner do
       how_to_use_it: """
       # Search for examples
       {:ok, examples} = Store.search_knowledge("authentication")
-      
+
       # Store improvements
       {:ok, path} = Store.stage_code(agent_id, version, code)
       """
     }
   end
-  
+
   defp identify_integrations(learning) do
     [
       %{
@@ -786,11 +937,11 @@ defmodule Singularity.Planning.HTDAGLearner do
       }
     ]
   end
-  
+
   defp create_repair_plan(issues) do
     # Group issues by severity
     by_severity = Enum.group_by(issues, & &1.severity)
-    
+
     %{
       phase_1_critical: Map.get(by_severity, :high, []),
       phase_2_important: Map.get(by_severity, :medium, []),
@@ -804,26 +955,77 @@ defmodule Singularity.Planning.HTDAGLearner do
       ]
     }
   end
-  
+
   defp check_module_in_learning(learning, module_name) do
-    found = Enum.find(learning.knowledge.modules, fn {name, _info} ->
-      String.contains?(name, module_name)
-    end)
-    
+    found =
+      Enum.find(learning.knowledge.modules, fn {name, _info} ->
+        String.contains?(name, module_name)
+      end)
+
     if found, do: :available, else: :missing
   end
-  
+
   defp check_integration_exists(learning, module_name) do
     case check_module_in_learning(learning, module_name) do
       :available -> :connected
       :missing -> :not_connected
     end
   end
-  
+
+  defp inject_moduledoc(content, module_name, module_info) do
+    summary = doc_summary(module_info, module_name)
+    doc_block = build_moduledoc_block(summary)
+    regex = ~r/(defmodule\s+#{Regex.escape(module_name)}\s+do\s*\n)/
+
+    case Regex.replace(regex, content, fn match -> match <> doc_block end, global: false) do
+      ^content -> {:error, :defmodule_not_found}
+      replaced -> {:ok, replaced}
+    end
+  end
+
+  defp doc_summary(module_info, module_name) do
+    summary =
+      Map.get(module_info, :purpose) ||
+        Map.get(module_info, "purpose") ||
+        Map.get(module_info, :summary) ||
+        Map.get(module_info, "summary")
+
+    case summary do
+      value when is_binary(value) ->
+        trimmed = String.trim(value)
+        if trimmed == "", do: default_doc(module_name), else: trimmed
+
+      _ ->
+        default_doc(module_name)
+    end
+  end
+
+  defp default_doc(module_name),
+    do: "Auto-generated documentation for #{module_name}. Replace with a detailed description."
+
+  defp build_moduledoc_block(summary) do
+    formatted =
+      summary
+      |> String.split("\n")
+      |> Enum.map(&String.trim/1)
+      |> Enum.map(fn
+        "" -> "  "
+        line -> "  #{line}"
+      end)
+      |> Enum.join("\n")
+
+    """
+      @moduledoc \"\"\"
+      #{formatted}
+      \"\"\"
+
+    """
+  end
+
   defp save_mapping(mapping) do
     # Save to a file for reference
     filename = "HTDAG_SYSTEM_MAPPING.json"
-    
+
     try do
       content = Jason.encode!(mapping, pretty: true)
       File.write!(filename, content)

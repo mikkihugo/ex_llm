@@ -1,15 +1,39 @@
 defmodule Singularity.Planning.Schemas.Capability do
   @moduledoc """
-  Capability - 3-6 month cross-team feature
+  Capability schema for 3-6 month cross-team features with dependency management and SAFe 6.0 Essential framework alignment.
 
-  Represents a set of related features that deliver a cohesive capability.
-  Inherits WSJF score from parent epic.
-  Aligned with SAFe 6.0 Essential framework.
+  Represents a set of related features that deliver a cohesive capability
+  with dependency tracking, WSJF score inheritance from parent epic,
+  and integration with features and other capabilities.
+
+  ## Integration Points
+
+  This module integrates with:
+  - `Singularity.Planning.Schemas.Epic` - Epic relationships (belongs_to :epic)
+  - `Singularity.Planning.Schemas.Feature` - Feature relationships (has_many :features)
+  - `Singularity.Planning.Schemas.CapabilityDependency` - Dependency management (has_many :capability_dependencies)
+  - PostgreSQL table: `agent_capability_registry` (stores capability data)
+
+  ## Usage
+
+      # Create changeset
+      changeset = Capability.changeset(%Capability{}, %{
+        name: "Service Mesh",
+        description: "Implement service mesh for microservice communication",
+        epic_id: "epic-123",
+        status: "backlog"
+      })
+      # => #Ecto.Changeset<...>
+
+      # Convert to state map
+      state_map = Capability.to_state_map(capability)
+      # => %{id: "123", name: "Service Mesh", feature_ids: [...], ...}
   """
 
   use Ecto.Schema
   import Ecto.Changeset
 
+  # INTEGRATION: Schema relationships (epic, features, and dependencies)
   alias Singularity.Planning.Schemas.{Epic, Feature, CapabilityDependency}
 
   @primary_key {:id, :binary_id, autogenerate: true}
