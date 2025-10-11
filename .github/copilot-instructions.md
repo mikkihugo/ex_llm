@@ -89,7 +89,7 @@ nats-server --version && pgrep -x nats-server
 
 ### Tools Available
 
-- **Rust**: Latest stable with cargo, rust-analyzer, cargo-watch, cargo-nextest, etc.
+- **Rust**: Latest stable with cargo, rust-analyzer, and cargo-watch (additional cargo tools can be installed on-demand)
 - **BEAM**: Elixir 1.18-rc + Gleam support, Erlang 28
 - **Database**: PostgreSQL 17 with TimescaleDB, PostGIS, pgvector
 - **Message Bus**: NATS with JetStream

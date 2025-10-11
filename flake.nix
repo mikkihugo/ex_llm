@@ -62,39 +62,12 @@
           cargo
           rustfmt
           clippy
-
-          # Comprehensive Rust development tools
           rust-analyzer       # LSP server for Rust IDE support
-          cargo-audit         # Security vulnerability scanning
-          cargo-deny          # Dependency policy enforcement
-          cargo-edit          # cargo add/rm/upgrade commands
-          cargo-expand        # Macro expansion viewer
-          cargo-flamegraph    # Performance profiling
-          cargo-outdated      # Check for outdated dependencies
-          cargo-update        # cargo install-update for global crates
-          cargo-watch         # File watcher for cargo commands
-          cargo-nextest       # Next-generation test runner
-          cargo-llvm-cov      # Code coverage with LLVM
-          cargo-machete       # Find unused dependencies
-          cargo-readme        # Generate README from doc comments
-          cargo-bloat         # Find what takes up space in binary
-          cargo-license       # License checker
-          cargo-modules       # Visualize crate's module structure
-          cargo-criterion     # Benchmarking harness
-          cargo-cache         # Manage cargo cache
-          cargo-tarpaulin     # Code coverage tool
-          cargo-udeps         # Find unused dependencies
-          cargo-hack          # Test with different feature combinations
-          cargo-all-features  # Test all feature combinations
-          cargo-semver-checks # Check semver compatibility
-          cargo-spellcheck    # Spell check documentation
-          cargo-insta         # Snapshot testing
-          cargo-fuzz          # Fuzz testing
-          cargo-benchcmp      # Benchmark comparison
-          cargo-valgrind      # Valgrind integration
-          cargo-workspaces    # Workspace management
-          bacon               # Background rust code checker
-          mdbook              # Rust book generator
+          cargo-watch         # File watcher for cargo commands (used in justfile)
+          
+          # Note: Additional cargo tools (cargo-nextest, cargo-audit, etc.) can be installed
+          # on-demand via `cargo install` or added here if needed for CI/CD.
+          # They are not included by default to speed up initial setup.
 
           # Tree-sitter parsing tools
           tree-sitter-grammars.tree-sitter-elixir
