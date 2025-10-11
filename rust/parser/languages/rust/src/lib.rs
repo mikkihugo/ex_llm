@@ -5,7 +5,7 @@ use parser_framework::{
 };
 use std::sync::Mutex;
 use std::convert::Into;
-use tree_sitter::{Parser, Query, QueryCursor};
+use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator};
 
 pub struct RustParser {
     parser: Mutex<Parser>,
@@ -68,7 +68,8 @@ impl LanguageParser for RustParser {
         let mut cursor = QueryCursor::new();
         let root = ast.root();
         let mut functions = Vec::new();
-        for (m, _) in cursor.captures(&query, root, ast.source.as_bytes()).into_iter() {
+        let mut captures = cursor.captures(&query, root, ast.source.as_bytes());
+        while let Some(&(ref m, _)) = captures.next() {
             let mut name = None;
             let mut params = None;
             let mut return_type = None;
@@ -149,10 +150,10 @@ impl LanguageParser for RustParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let captures = cursor.captures(&query, root, ast.source.as_bytes());
+        let mut captures = cursor.captures(&query, root, ast.source.as_bytes());
 
         let mut imports = Vec::new();
-        for (m, _) in captures.into_iter() {
+        while let Some(&(ref m, _)) = captures.next() {
             for capture in m.captures {
                 if capture.index == 1 {
                     let path = capture
@@ -188,10 +189,10 @@ impl LanguageParser for RustParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let captures = cursor.captures(&query, root, ast.source.as_bytes());
+        let mut captures = cursor.captures(&query, root, ast.source.as_bytes());
 
         let mut comments = Vec::new();
-        for (m, _) in captures.into_iter() {
+        while let Some(&(ref m, _)) = captures.next() {
             for capture in m.captures {
                 let text = capture
                     .node

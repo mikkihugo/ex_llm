@@ -4,7 +4,7 @@ use parser_framework::{
     Comment, Function, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
-use tree_sitter::{Node, Parser, Query, QueryCursor};
+use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator};
 
 pub struct JavascriptParser {
     parser: Mutex<Parser>,
@@ -74,7 +74,8 @@ impl LanguageParser for JavascriptParser {
         )
         .map_err(|err| ParseError::QueryError(err.to_string()))?;
 
-        for (m, _) in cursor.captures(&fn_query, root, ast.source.as_bytes()) {
+        let mut captures = cursor.captures(&fn_query, root, ast.source.as_bytes());
+        while let Some(&(ref m, _)) = captures.next() {
             let mut name = "";
             let mut params = "";
             let mut body = "";
@@ -119,7 +120,8 @@ impl LanguageParser for JavascriptParser {
         )
         .map_err(|err| ParseError::QueryError(err.to_string()))?;
 
-        for (m, _) in cursor.captures(&arrow_query, root, ast.source.as_bytes()) {
+        let mut captures = cursor.captures(&arrow_query, root, ast.source.as_bytes());
+        while let Some(&(ref m, _)) = captures.next() {
             let mut name = "";
             let mut params = "";
             let mut body = "";
@@ -167,10 +169,10 @@ impl LanguageParser for JavascriptParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let mut matches = cursor.matches(&query, root, ast.source.as_bytes());
 
         let mut imports = Vec::new();
-        for (m, _) in matches {
+        while let Some(m) = matches.next() {
             let mut path = "";
             let mut node = None;
             for capture in m.captures {
@@ -207,10 +209,10 @@ impl LanguageParser for JavascriptParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let mut matches = cursor.matches(&query, root, ast.source.as_bytes());
 
         let mut comments = Vec::new();
-        for (m, _) in matches {
+        while let Some(m) = matches.next() {
             for capture in m.captures {
                 let text = capture
                     .node

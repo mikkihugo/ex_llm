@@ -4,7 +4,7 @@ use parser_framework::{
     Comment, Function, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
-use tree_sitter::{Parser, Query, QueryCursor};
+use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator};
 
 /// Gleam language parser backed by tree-sitter.
 pub struct GleamParser {
@@ -66,10 +66,10 @@ impl LanguageParser for GleamParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let mut matches = cursor.matches(&query, root, ast.source.as_bytes());
 
         let mut functions = Vec::new();
-        for m in matches {
+        while let Some(m) = matches.next() {
             for capture in m.captures {
                 if capture.index == 1 {
                     let name = capture
@@ -112,10 +112,10 @@ impl LanguageParser for GleamParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let mut matches = cursor.matches(&query, root, ast.source.as_bytes());
 
         let mut imports = Vec::new();
-        for m in matches {
+        while let Some(m) = matches.next() {
             for capture in m.captures {
                 if capture.index == 1 {
                     let path = capture
@@ -150,10 +150,10 @@ impl LanguageParser for GleamParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let mut matches = cursor.matches(&query, root, ast.source.as_bytes());
 
         let mut comments = Vec::new();
-        for m in matches {
+        while let Some(m) = matches.next() {
             for capture in m.captures {
                 if capture.index == 0 {
                     let text = capture
