@@ -67,10 +67,8 @@ impl LanguageParser for RustParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let matches = cursor.matches(&query, root, ast.source.as_bytes());
-
         let mut functions = Vec::new();
-        for m in matches {
+        for (m, _) in cursor.captures(&query, root, ast.source.as_bytes()) {
             let mut name = None;
             let mut params = None;
             let mut return_type = None;
@@ -151,10 +149,10 @@ impl LanguageParser for RustParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let captures = cursor.captures(&query, root, ast.source.as_bytes());
 
         let mut imports = Vec::new();
-        for m in matches {
+        for (m, _) in captures {
             for capture in m.captures {
                 if capture.index == 1 {
                     let path = capture
@@ -190,10 +188,10 @@ impl LanguageParser for RustParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let captures = cursor.captures(&query, root, ast.source.as_bytes());
 
         let mut comments = Vec::new();
-        for m in matches {
+        for (m, _) in captures {
             for capture in m.captures {
                 let text = capture
                     .node

@@ -89,7 +89,7 @@ impl LanguageParser for TypescriptParser {
         )
         .map_err(|err| ParseError::QueryError(err.to_string()))?;
 
-        for m in cursor.matches(&fn_query, root, ast.source.as_bytes()) {
+        for (m, _) in cursor.captures(&fn_query, root, ast.source.as_bytes()).into_iter() {
             let mut name = "";
             let mut params = "";
             let mut ret = "any";
@@ -141,7 +141,7 @@ impl LanguageParser for TypescriptParser {
         )
         .map_err(|err| ParseError::QueryError(err.to_string()))?;
 
-        for m in cursor.matches(&arrow_query, root, ast.source.as_bytes()) {
+        for (m, _) in cursor.captures(&arrow_query, root, ast.source.as_bytes()).into_iter() {
             let mut name = "";
             let mut params = "";
             let mut ret = "any";
@@ -189,7 +189,7 @@ impl LanguageParser for TypescriptParser {
         )
         .map_err(|err| ParseError::QueryError(err.to_string()))?;
 
-        for m in cursor.matches(&method_query, root, ast.source.as_bytes()) {
+        for (m, _) in cursor.captures(&method_query, root, ast.source.as_bytes()).into_iter() {
             let mut name = "";
             let mut params = "";
             let mut ret = "any";
@@ -242,7 +242,7 @@ impl LanguageParser for TypescriptParser {
         let matches = cursor.matches(&query, root, ast.source.as_bytes());
 
         let mut imports = Vec::new();
-        for m in matches {
+        for (m, _) in matches.into_iter() {
             let mut path = "";
             let mut node = None;
             for capture in m.captures {
@@ -282,7 +282,7 @@ impl LanguageParser for TypescriptParser {
         let matches = cursor.matches(&query, root, ast.source.as_bytes());
 
         let mut comments = Vec::new();
-        for m in matches {
+        for (m, _) in matches.into_iter() {
             for capture in m.captures {
                 let text = capture
                     .node

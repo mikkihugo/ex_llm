@@ -94,6 +94,7 @@ tokei = "12.1"
 
 # Tree-sitter language parsers (ONLY languages Singularity actually uses)
 tree-sitter-elixir = "0.3.4"         # Main app language
+tree-sitter-erlang = "0.15.0"        # BEAM runtime language
 tree-sitter-gleam = "1.0.0"          # Type-safe BEAM modules
 tree-sitter-rust = "0.24.0"          # NIFs and tools
 tree-sitter-javascript = "0.25.0"    # AI server (Bun)

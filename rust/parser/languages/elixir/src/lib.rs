@@ -75,10 +75,10 @@ impl LanguageParser for ElixirParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let captures = cursor.captures(&query, root, ast.source.as_bytes());
 
         let mut functions = Vec::new();
-        for m in matches {
+        for (m, _) in captures {
             for capture in m.captures {
                 if capture.index == 1 {
                     let name = capture
@@ -129,10 +129,10 @@ impl LanguageParser for ElixirParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let captures = cursor.captures(&query, root, ast.source.as_bytes());
 
         let mut imports = Vec::new();
-        for m in matches {
+        for (m, _) in captures {
             for capture in m.captures {
                 if capture.index == 1 {
                     let path = capture
@@ -167,10 +167,10 @@ impl LanguageParser for ElixirParser {
 
         let mut cursor = QueryCursor::new();
         let root = ast.root();
-        let matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let captures = cursor.captures(&query, root, ast.source.as_bytes());
 
         let mut comments = Vec::new();
-        for m in matches {
+        for (m, _) in captures {
             for capture in m.captures {
                 if capture.index == 0 {
                     let text = capture

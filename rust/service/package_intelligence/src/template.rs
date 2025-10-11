@@ -20,6 +20,16 @@ impl RegistryTemplate {
             version: String::new(),
         }
     }
+
+    /// Convert RegistryTemplate to Template
+    pub fn to_template(&self) -> Template {
+        Template {
+            id: self.id.clone(),
+            name: self.name.clone(),
+            content: self.content.clone(),
+            steps: vec![], // RegistryTemplate doesn't have steps, so empty
+        }
+    }
 }
 
 impl Default for RegistryTemplate {

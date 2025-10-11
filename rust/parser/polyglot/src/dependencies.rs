@@ -14,6 +14,7 @@ use crate::{CodeMetrics, MozillaMetrics, TreeSitterAnalysis, DependencyAnalysis}
 // Tree-sitter language imports - ONLY essential languages Singularity uses
 use tree_sitter_bash;
 use tree_sitter_elixir;
+use tree_sitter_erlang;
 use tree_sitter_gleam;
 use tree_sitter_javascript;
 use tree_sitter_json;
@@ -277,32 +278,28 @@ impl UniversalDependencies {
       parser_name: "Universal Parser Framework".to_string(),
       version: crate::UNIVERSAL_PARSER_VERSION.to_string(),
       supported_languages: vec![
+        ProgrammingLanguage::Elixir,
+        ProgrammingLanguage::Erlang,
+        ProgrammingLanguage::Gleam,
+        ProgrammingLanguage::Rust,
         ProgrammingLanguage::JavaScript,
         ProgrammingLanguage::TypeScript,
         ProgrammingLanguage::Python,
-        ProgrammingLanguage::Rust,
-        ProgrammingLanguage::Go,
-        ProgrammingLanguage::Erlang,
-        ProgrammingLanguage::Elixir,
-        ProgrammingLanguage::Gleam,
-        ProgrammingLanguage::Java,
-        ProgrammingLanguage::C,
-        ProgrammingLanguage::Cpp,
-        ProgrammingLanguage::CSharp,
-        ProgrammingLanguage::Swift,
-        ProgrammingLanguage::Kotlin,
         ProgrammingLanguage::Json,
         ProgrammingLanguage::Yaml,
-        ProgrammingLanguage::Toml,
-        ProgrammingLanguage::Xml,
+        ProgrammingLanguage::Bash,
       ],
       supported_extensions: vec![
-        "js".to_string(), "jsx".to_string(), "ts".to_string(), "tsx".to_string(),
-        "py".to_string(), "rs".to_string(), "go".to_string(), "ex".to_string(),
-        "exs".to_string(), "erl".to_string(), "hrl".to_string(), "gleam".to_string(),
-        "java".to_string(), "c".to_string(), "cpp".to_string(), "cc".to_string(),
-        "cs".to_string(), "swift".to_string(), "kt".to_string(),
-        "json".to_string(), "yaml".to_string(), "yml".to_string(), "toml".to_string(), "xml".to_string(),
+        "ex".to_string(), "exs".to_string(),  // Elixir
+        "erl".to_string(), "hrl".to_string(), // Erlang
+        "gleam".to_string(),                   // Gleam
+        "rs".to_string(),                      // Rust
+        "js".to_string(), "jsx".to_string(), "cjs".to_string(), "mjs".to_string(),  // JavaScript
+        "ts".to_string(), "tsx".to_string(), "cts".to_string(), "mts".to_string(),  // TypeScript
+        "py".to_string(),                      // Python
+        "json".to_string(),                    // JSON
+        "yaml".to_string(), "yml".to_string(), // YAML
+        "sh".to_string(), "bash".to_string(),  // Bash
       ],
       capabilities: ParserCapabilities {
         symbol_extraction: true,
@@ -330,24 +327,16 @@ impl UniversalDependencies {
   /// Get supported languages
   pub fn get_supported_languages(&self) -> Vec<ProgrammingLanguage> {
     vec![
+      ProgrammingLanguage::Elixir,
+      ProgrammingLanguage::Erlang,
+      ProgrammingLanguage::Gleam,
+      ProgrammingLanguage::Rust,
       ProgrammingLanguage::JavaScript,
       ProgrammingLanguage::TypeScript,
       ProgrammingLanguage::Python,
-      ProgrammingLanguage::Rust,
-      ProgrammingLanguage::Go,
-      ProgrammingLanguage::Erlang,
-      ProgrammingLanguage::Elixir,
-      ProgrammingLanguage::Gleam,
-      ProgrammingLanguage::Java,
-      ProgrammingLanguage::C,
-      ProgrammingLanguage::Cpp,
-      ProgrammingLanguage::CSharp,
-      ProgrammingLanguage::Swift,
-      ProgrammingLanguage::Kotlin,
       ProgrammingLanguage::Json,
       ProgrammingLanguage::Yaml,
-      ProgrammingLanguage::Toml,
-      ProgrammingLanguage::Xml,
+      ProgrammingLanguage::Bash,
     ]
   }
 
@@ -544,51 +533,6 @@ impl TreeSitterBackend {
           debug!("Successfully set Gleam language for tree-sitter");
         }
       },
-      ProgrammingLanguage::Go => {
-        if parser.set_language(&tree_sitter_go::LANGUAGE.into()).is_ok() {
-          debug!("Successfully set Go language for tree-sitter");
-        }
-      },
-      ProgrammingLanguage::Java => {
-        if parser.set_language(&tree_sitter_java::LANGUAGE.into()).is_ok() {
-          debug!("Successfully set Java language for tree-sitter");
-        }
-      },
-      ProgrammingLanguage::C => {
-        if parser.set_language(&tree_sitter_c::LANGUAGE.into()).is_ok() {
-          debug!("Successfully set C language for tree-sitter");
-        }
-      },
-      ProgrammingLanguage::Cpp => {
-        if parser.set_language(&tree_sitter_cpp::LANGUAGE.into()).is_ok() {
-          debug!("Successfully set C++ language for tree-sitter");
-        }
-      },
-      ProgrammingLanguage::CSharp => {
-        if parser.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).is_ok() {
-          debug!("Successfully set C# language for tree-sitter");
-        }
-      },
-      ProgrammingLanguage::Swift => {
-        if parser.set_language(&tree_sitter_swift::LANGUAGE.into()).is_ok() {
-          debug!("Successfully set Swift language for tree-sitter");
-        }
-      },
-      ProgrammingLanguage::Php => {
-        if parser.set_language(&tree_sitter_php::LANGUAGE_PHP.into()).is_ok() {
-          debug!("Successfully set PHP language for tree-sitter");
-        }
-      },
-      ProgrammingLanguage::Ruby => {
-        if parser.set_language(&tree_sitter_ruby::LANGUAGE.into()).is_ok() {
-          debug!("Successfully set Ruby language for tree-sitter");
-        }
-      },
-      ProgrammingLanguage::Lua => {
-        if parser.set_language(&tree_sitter_lua::language()).is_ok() {
-          debug!("Successfully set Lua language for tree-sitter");
-        }
-      },
       ProgrammingLanguage::Json => {
         if parser.set_language(&tree_sitter_json::LANGUAGE.into()).is_ok() {
           debug!("Successfully set JSON language for tree-sitter");
@@ -602,16 +546,6 @@ impl TreeSitterBackend {
       ProgrammingLanguage::Bash => {
         if parser.set_language(&tree_sitter_bash::LANGUAGE.into()).is_ok() {
           debug!("Successfully set Bash language for tree-sitter");
-        }
-      },
-      ProgrammingLanguage::Html => {
-        if parser.set_language(&tree_sitter_html::LANGUAGE.into()).is_ok() {
-          debug!("Successfully set HTML language for tree-sitter");
-        }
-      },
-      ProgrammingLanguage::Css => {
-        if parser.set_language(&tree_sitter_css::LANGUAGE.into()).is_ok() {
-          debug!("Successfully set CSS language for tree-sitter");
         }
       },
       // ProgrammingLanguage::Kotlin => {

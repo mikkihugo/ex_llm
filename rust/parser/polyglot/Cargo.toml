@@ -22,6 +22,7 @@ tokei = { workspace = true }
 # Tree-sitter core and language bindings - ONLY essential languages
 tree-sitter = { workspace = true }
 tree-sitter-elixir = { workspace = true }
+tree-sitter-erlang = { workspace = true }
 tree-sitter-gleam = { workspace = true }
 tree-sitter-rust = { workspace = true }
 tree-sitter-javascript = { workspace = true }

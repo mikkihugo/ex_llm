@@ -257,6 +257,7 @@ impl UniversalParser {
     fn initialize_languages(&mut self) -> Result<()> {
         // Core languages Singularity actually uses
         self.language_cache.insert("elixir".to_string(), tree_sitter_elixir::LANGUAGE.into());
+        self.language_cache.insert("erlang".to_string(), tree_sitter_erlang::LANGUAGE.into());
         self.language_cache.insert("gleam".to_string(), tree_sitter_gleam::LANGUAGE.into());
         self.language_cache.insert("rust".to_string(), tree_sitter_rust::LANGUAGE.into());
         self.language_cache.insert("javascript".to_string(), tree_sitter_javascript::LANGUAGE.into());
@@ -277,6 +278,7 @@ impl UniversalParser {
 
         let language = match extension {
             "ex" | "exs" => "elixir",
+            "erl" | "hrl" => "erlang",
             "gleam" => "gleam",
             "rs" => "rust",
             "js" | "cjs" | "mjs" => "javascript",

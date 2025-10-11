@@ -119,7 +119,7 @@ impl EngineFact {
 
     timeout(
       timeout_duration,
-      self.execute_template(&template, context, &options),
+      self.execute_template(&template.to_template(), context, &options),
     )
     .await
     .map_or(Err(FactError::Timeout(timeout_duration)), |result| result)
@@ -152,10 +152,8 @@ impl EngineFact {
     // Execute each step in the template
     for template_step in &template.steps {
       let engine_step = ProcessingStep {
-        id: template_step.id.clone(),
-        name: template_step.name.clone(),
-        description: template_step.description.clone(),
-        // Convert template step to engine step
+        name: "template_step".to_string(), // Default name since template step doesn't have one
+        operation: template_step.operation.clone(),
       };
       context = self.execute_step(&engine_step, context, options);
     }

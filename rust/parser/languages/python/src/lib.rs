@@ -181,7 +181,8 @@ impl LanguageParser for PythonParser {
         let mut cursor = tree_sitter::QueryCursor::new();
         let mut imports = Vec::new();
 
-        for m in cursor.matches(&query, ast.root(), ast.source.as_bytes()) {
+        let captures = cursor.captures(&query, ast.root(), ast.source.as_bytes());
+        for (m, _) in captures {
             let mut module = "";
             let mut kind = "import";
             let mut node_ref: Option<Node> = None;
@@ -228,7 +229,8 @@ impl LanguageParser for PythonParser {
         let mut cursor = tree_sitter::QueryCursor::new();
         let mut comments = Vec::new();
 
-        for m in cursor.matches(&query, ast.root(), ast.source.as_bytes()) {
+        let captures = cursor.captures(&query, ast.root(), ast.source.as_bytes());
+        for (m, _) in captures {
             for capture in m.captures {
                 let text = capture
                     .node
