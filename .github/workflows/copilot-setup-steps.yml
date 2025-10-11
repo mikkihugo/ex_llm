@@ -69,12 +69,6 @@ jobs:
             cargo --version || true
           "
 
-      - name: Warm-up compile (reduce first-run latency)
-        run: |
-          nix develop -c bash -lc '
-            cd singularity_app && mix compile
-          '
-
       - name: Install Elixir dependencies
         run: |
           nix develop .#dev --command bash -c "
@@ -84,6 +78,12 @@ jobs:
             mix deps.get
             mix gleam.deps.get
           "
+
+      - name: Warm-up compile (reduce first-run latency)
+        run: |
+          nix develop -c bash -lc '
+            cd singularity_app && mix compile
+          '
 
       - name: Install JavaScript dependencies
         run: |
