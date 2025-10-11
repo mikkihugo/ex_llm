@@ -261,20 +261,31 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
   # Store usage event in database for persistence
   defp store_usage_event(usage_event) do
-    # For now, just log the event - in a real implementation,
-    # this would store to a usage_events table
+    # Log the event
     Logger.info("Usage event recorded", 
       category: usage_event.category,
       suggestion: usage_event.suggestion,
       accepted: usage_event.accepted
     )
     
-    # TODO: Implement actual database storage when usage_events table is created
-    # case Repo.insert(%UsageEvent{} |> Ecto.Changeset.change(usage_event)) do
-    #   {:ok, event} -> {:ok, event}
-    #   {:error, changeset} -> {:error, changeset}
-    # end
+    # Store to usage_events table
+    usage_event_attrs = %{
+      codebase_id: usage_event.codebase_id,
+      category: usage_event.category,
+      suggestion: usage_event.suggestion,
+      accepted: usage_event.accepted,
+      context: usage_event.context || %{},
+      confidence: usage_event.confidence || 0.5
+    }
     
-    {:ok, usage_event}
+    case Singularity.Schemas.UsageEvent.create(usage_event_attrs) do
+      {:ok, changeset} -> 
+        # Insert into database
+        case Singularity.Repo.insert(changeset) do
+          {:ok, event} -> {:ok, event}
+          {:error, changeset} -> {:error, changeset}
+        end
+      {:error, changeset} -> {:error, changeset}
+    end
   end
 end

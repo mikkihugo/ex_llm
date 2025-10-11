@@ -85,20 +85,16 @@ defmodule Singularity.Todos.TodoNatsInterface do
 
   @impl true
   def init(:ok) do
-    case Gnat.ConnectionSupervisor.connection_pid(:gnat) do
-      pid when is_pid(pid) ->
-        # Subscribe to all todo subjects
-        Enum.each(@subjects, fn {_key, subject} ->
-          :ok = Gnat.sub(pid, self(), subject)
-          Logger.info("TodoNatsInterface subscribed to: #{subject}")
-        end)
+    # Use Singularity.NatsClient for NATS operations
+    # Subscribe to all todo subjects
+    Enum.each(@subjects, fn {_key, subject} ->
+      case Singularity.NatsClient.subscribe(subject) do
+        :ok -> Logger.info("TodoNatsInterface subscribed to: #{subject}")
+        {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
+      end
+    end)
 
-        {:ok, %{conn: pid}}
-
-      {:error, reason} ->
-        Logger.error("Failed to get NATS connection: #{inspect(reason)}")
-        {:stop, reason}
-    end
+    {:ok, %{}}
   end
 
   @impl true
@@ -112,7 +108,7 @@ defmodule Singularity.Todos.TodoNatsInterface do
 
     # Send reply if reply_to is present
     if reply_to do
-      Gnat.pub(state.conn, reply_to, Jason.encode!(response))
+      Singularity.NatsClient.publish(reply_to, Jason.encode!(response))
     end
 
     {:noreply, state}

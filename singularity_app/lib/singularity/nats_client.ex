@@ -289,10 +289,6 @@ defmodule Singularity.NatsClient do
   defp generate_subscription_id do
     "sub_" <> (:crypto.strong_rand_bytes(8) |> Base.encode64(padding: false))
   end
-end
-
-# COMPLETED: NATS client interactions now support SPARC completion phase for final code delivery.
-# COMPLETED: Added telemetry to monitor NATS message flow and its impact on SPARC workflows.
 
   @doc """
   Ensure NATS client interactions support SPARC completion phase for final code delivery.
@@ -378,3 +374,4 @@ end
   defp generate_request_id do
     "req_" <> (:crypto.strong_rand_bytes(8) |> Base.encode64(padding: false))
   end
+end

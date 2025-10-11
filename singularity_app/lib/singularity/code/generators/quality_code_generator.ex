@@ -233,28 +233,19 @@ defmodule Singularity.QualityCodeGenerator do
   @spec load_template(String.t(), quality_level(), String.t() | nil) ::
           {:ok, map()} | {:error, term()}
   def load_template(language, quality, custom_path \\ nil) do
-    path = custom_path || build_template_path(language, quality)
-
-    case File.read(path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, template} ->
-            Logger.debug("Loaded quality template: #{path}")
-            {:ok, template}
-
-          {:error, reason} ->
-            Logger.error("Failed to parse template: #{inspect(reason)}")
-            {:error, :invalid_template}
-        end
-
-      {:error, :enoent} ->
-        Logger.warning("Template not found: #{path}, using defaults")
-        {:ok, default_template(language, quality)}
-
+    # Use dynamic template discovery - tries multiple patterns and semantic search
+    case Singularity.Knowledge.TemplateService.find_quality_template(language, quality) do
+      {:ok, template} ->
+        Logger.debug("Loaded quality template via dynamic discovery: #{language}_#{quality}")
+        {:ok, template}
+      
       {:error, reason} ->
-        {:error, reason}
+        Logger.warning("Quality template not found via discovery: #{language}_#{quality}, reason: #{reason}")
+        # Fallback to default template
+        {:ok, default_template(language, quality)}
     end
   end
+
 
   ## Private Functions
 

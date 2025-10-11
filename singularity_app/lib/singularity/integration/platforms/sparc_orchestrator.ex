@@ -163,8 +163,8 @@ defmodule Singularity.SPARC.Orchestrator do
         pos when is_integer(pos) ->
           # Insert at specific position
           coord_list = Map.to_list(state.coordinators)
-          {before, after} = Enum.split(coord_list, pos)
-          new_list = before ++ [{phase_name, coordinator_module}] ++ after
+          {before, after_coords} = Enum.split(coord_list, pos)
+          new_list = before ++ [{phase_name, coordinator_module}] ++ after_coords
           Map.new(new_list)
       end
     
@@ -361,11 +361,14 @@ defmodule Singularity.SPARC.Orchestrator do
   # Validate quality metrics
   defp validate_quality_metrics(output) do
     metadata = output["metadata"] || %{}
-    
+
     # Check for quality indicators
     quality_score = Map.get(metadata, "quality_score", 0)
     confidence = Map.get(metadata, "confidence", 0)
-    
+
+    # Check for reasonable output size (not too small, not too large)
+    output_size = byte_size(Jason.encode!(output))
+
     cond do
       quality_score < 0.5 ->
         {:error, "Quality score too low: #{quality_score}"}
@@ -373,8 +376,6 @@ defmodule Singularity.SPARC.Orchestrator do
       confidence < 0.3 ->
         {:error, "Confidence level too low: #{confidence}"}
 
-      # Check for reasonable output size (not too small, not too large)
-      output_size = byte_size(Jason.encode!(output))
       output_size < 100 ->
         {:error, "Output too small, likely incomplete"}
 

@@ -165,6 +165,10 @@ defmodule Singularity.PromptEngine do
     ]
     call_llm(model_or_complexity, messages, opts)
   end
+
+  @spec optimize_prompt(String.t(), keyword()) :: {:ok, map()} | {:error, term()}
+  def optimize_prompt(prompt, opts \\ []) do
+    request = %{
       prompt: prompt,
       context: Keyword.get(opts, :context),
       language: Keyword.get(opts, :language)
@@ -299,7 +303,8 @@ defmodule Singularity.PromptEngine do
   # ---------------------------------------------------------------------------
 
   defp nats_available? do
-    case NatsClient.request("prompt.template.list", "", timeout: 5_000) do
+    # Use the centralized template service instead of direct NATS calls
+    case Singularity.Knowledge.TemplateService.search_patterns(["prompt"]) do
       {:ok, _} -> true
       {:error, _} -> false
     end
@@ -380,7 +385,7 @@ defmodule Singularity.PromptEngine do
   @doc """
   Generates a prompt from a template and input using the Rust prompt_engine.
   """
-  def generate_prompt(template_name, input) do
+  def generate_prompt_from_template(template_name, input) do
     :prompt_engine.generate_prompt_from_template(template_name, input)
   end
 

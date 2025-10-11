@@ -1,3 +1,0 @@
-    pub fn suggest_function_names(&self, description: &str, context: Option<&str>) -> Vec<String> {
-        self.generate_suggestions(description, RenameElementType::Function, context)
-    }

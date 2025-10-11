@@ -44,7 +44,34 @@ defmodule Singularity.ArchitectureEngine do
     context = Keyword.get(opts, :context, "")
     detection_methods = Keyword.get(opts, :detection_methods, [:config_files, :code_patterns, :ast_analysis])
     confidence_threshold = Keyword.get(opts, :confidence_threshold, 0.7)
+    use_central = Keyword.get(opts, :use_central, true)
     
+    # If using central, get patterns from central template service via NATS
+    if use_central do
+      case get_central_patterns(detection_methods) do
+        {:ok, central_patterns} ->
+          # Use central patterns for detection
+          detect_with_patterns(patterns, central_patterns, context, confidence_threshold)
+        {:error, reason} ->
+          Logger.warning("Failed to get central patterns, using local detection: #{reason}")
+          detect_local(patterns, context, detection_methods, confidence_threshold)
+      end
+    else
+      detect_local(patterns, context, detection_methods, confidence_threshold)
+    end
+  end
+  
+  # Get patterns from central template service
+  defp get_central_patterns(detection_methods) do
+    # Use the centralized template service instead of direct NATS calls
+    case Singularity.Knowledge.TemplateService.search_patterns(detection_methods) do
+      {:ok, patterns} -> {:ok, patterns}
+      {:error, reason} -> {:error, "Template service failed: #{reason}"}
+    end
+  end
+  
+  # Detect frameworks using provided patterns
+  defp detect_with_patterns(patterns, central_patterns, context, confidence_threshold) do
     request = %{
       patterns: patterns,
       context: context,
@@ -166,57 +193,18 @@ defmodule Singularity.ArchitectureEngine do
 
   defp call_nif(function, operation, request) do
     # Call the Rust NIF function
-    # This will be implemented once the NIF is properly wired up
-    # For now, use mock implementation to prevent errors
-    
     case function do
       :architecture_engine_call ->
-        # TODO: Replace with actual NIF call
-        # apply(__MODULE__, :architecture_engine_call, [operation, request])
-        mock_nif_call(operation, request)
-      
+        # Use the real Rust NIF implementation
+        architecture_engine_call(operation, request)
+
       _ ->
         {:error, "Unknown NIF function: #{function}"}
     end
   end
 
-  defp mock_nif_call(operation, request) do
-    # Mock NIF call - replace with actual NIF once wired up
-    case operation do
-      "detect_frameworks" ->
-        mock_framework_detection(request)
-      
-      "detect_technologies" ->
-        mock_technology_detection(request)
-      
-      "get_architectural_suggestions" ->
-        mock_architectural_suggestions(request)
-      
-      "collect_package" ->
-        {:ok, %{
-          package: %{
-            name: request.package_name,
-            version: request.version,
-            ecosystem: request.ecosystem,
-            description: "Mock package description",
-            github_stars: 1000,
-            downloads: 50000
-          },
-          collection_time: 0.5,
-          patterns_found: 0,
-          stats_updated: true
-        }}
-      
-      "get_package_stats" ->
-        {:ok, %{usage_count: 100, success_rate: 0.95, last_used: "2024-01-01"}}
-      
-      "get_framework_stats" ->
-        {:ok, %{detection_count: 500, success_rate: 0.90, pattern_count: 25}}
-      
-      _ ->
-        {:error, "Unknown operation: #{operation}"}
-    end
-  end
+  # NIF functions (these will be implemented by Rustler)
+  defp architecture_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
 
   defp mock_framework_detection(request) do
     # Mock framework detection based on patterns

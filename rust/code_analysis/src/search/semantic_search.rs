@@ -18,9 +18,9 @@ impl fmt::Display for ProgrammingLanguage {
         write!(f, "{}", s)
     }
 }
-//! Semantic Code Search with Custom Vectors
-//!
-//! Production-ready business-aware, architecture-aware, and security-aware code search.
+// Semantic Code Search with Custom Vectors
+//
+// Production-ready business-aware, architecture-aware, and security-aware code search.
 
 use serde::{Deserialize, Serialize};
 use anyhow::Result;

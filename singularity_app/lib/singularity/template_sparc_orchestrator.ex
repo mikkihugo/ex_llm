@@ -18,6 +18,7 @@ defmodule Singularity.TemplateSparcOrchestrator do
 
   alias Singularity.Planning.HTDAG
   alias Singularity.MethodologyExecutor
+  alias Singularity.Knowledge.TemplateService
 
   defstruct [
     :template_dag,

@@ -690,21 +690,19 @@ defmodule Singularity.Runner do
 
   defp connect_to_nats do
     try do
-      Gnat.start_link(%{
-        host: System.get_env("NATS_HOST", "127.0.0.1"),
-        port: String.to_integer(System.get_env("NATS_PORT", "4222"))
-      })
+      # Use Singularity.NatsClient instead of direct Gnat connection
+      :ok
     rescue
       error ->
         {:error, error}
     end
   end
 
-  defp publish_nats_event(gnat, event_type, payload) when is_pid(gnat) do
+  defp publish_nats_event(_gnat, event_type, payload) do
     try do
       subject = "singularity.runner.#{event_type}"
       message = Jason.encode!(payload)
-      Gnat.pub(gnat, subject, message)
+      Singularity.NatsClient.publish(subject, message)
       :ok
     rescue
       error ->

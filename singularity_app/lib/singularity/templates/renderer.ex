@@ -14,10 +14,10 @@ defmodule Singularity.Templates.Renderer do
   - Error handling with context
   """
 
-  alias Singularity.Knowledge.LocalTemplateCache
+  alias Singularity.Knowledge.TemplateService
   require Logger
 
-  @type variables :: %{String.t() | atom() => any()}
+  @type variables :: %{(String.t() | atom()) => any()}
   @type render_opts :: [
     validate: boolean(),
     quality_check: boolean(),
@@ -108,7 +108,7 @@ defmodule Singularity.Templates.Renderer do
   ## Template Loading & Composition
 
   defp load_template(template_id, opts) do
-    case LocalTemplateCache.get_template(template_id) do
+    case TemplateService.get_template("template", template_id) do
       {:ok, template} ->
         {:ok, template}
 
@@ -136,7 +136,7 @@ defmodule Singularity.Templates.Renderer do
   end
 
   defp load_base_template(%{"extends" => base_id}) when is_binary(base_id) do
-    case LocalTemplateCache.get_template(base_id) do
+    case TemplateService.get_template("template", base_id) do
       {:ok, base} -> extract_content(base)
       error -> error
     end
@@ -145,7 +145,7 @@ defmodule Singularity.Templates.Renderer do
 
   defp load_composed_bits(%{"compose" => bit_ids}, variables) when is_list(bit_ids) do
     bits = Enum.map(bit_ids, fn bit_id ->
-      case LocalTemplateCache.get_template(bit_id) do
+      case TemplateService.get_template("template", bit_id) do
         {:ok, bit} ->
           case extract_content(bit) do
             {:ok, code} -> replace_variables(code, variables)
@@ -295,7 +295,7 @@ defmodule Singularity.Templates.Renderer do
 
   defp load_snippet_bits(bit_ids, variables) when is_list(bit_ids) do
     bits = Enum.map(bit_ids, fn bit_id ->
-      case LocalTemplateCache.get_template(bit_id) do
+      case TemplateService.get_template("template", bit_id) do
         {:ok, bit} ->
           case extract_content(bit) do
             {:ok, code} -> replace_variables(code, variables)

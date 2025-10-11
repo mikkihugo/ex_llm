@@ -1,22 +1,30 @@
 [workspace]
 resolver = "2"
 members = [
-    # Package trio (VERIFIED - COMPILES!)
-    "rust/engine/package_engine",
-    "rust/lib/package_lib",
-
-    # Parser dependencies (required by package_engine)
+    # Central knowledge components (global Rust)
+    "rust/code_analysis",
+    "rust/knowledge",
+    "rust/knowledge_cache",
     "rust/parser/core",
-    "rust/parser/formats/dependency",
     "rust/parser/polyglot",
-
-    # Services (NATS-based central services)
-    "rust/service/package_intelligence",
+    "rust/parser/formats/dependency",
+    "rust/parser/formats/template_definitions",
+    "rust/parser/languages/rust",
+    "rust/parser/languages/elixir",
+    "rust/parser/languages/python",
+    "rust/parser/languages/javascript",
+    "rust/parser/languages/typescript",
+    "rust/parser/languages/gleam",
+    "rust/parser/analyzers/rust_code_analysis",
+    "rust/prompt",
     "rust/service/intelligence_hub",
-    "rust/service/knowledge_cache",
-
-    # Core libraries
-    "rust/architecture",
+    "rust/service/package_intelligence",
+    "rust/template",
+    "rust/semantic",
+    "rust/quality",
+    # NIF Engines (consolidated)
+    "singularity_app/native/architecture_engine",
+    # Note: Other engines are symlinks to rust/ directories already included above
 ]
 
 [workspace.dependencies]

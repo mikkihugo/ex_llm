@@ -140,9 +140,8 @@ defmodule Singularity.RAGCodeGenerator do
     Logger.debug("Searching for similar code: #{search_query}")
 
     # 2. Semantic search in PostgreSQL (pgvector)
+    multiplier = if quality_template, do: 3, else: 2
     with {:ok, embedding} <- EmbeddingEngine.embed(search_query),
-         # Get 3x if using template (more filtering), else 2x
-         multiplier <- if quality_template, do: 3, else: 2,
          {:ok, results} <- semantic_search(embedding, language, repos, top_k * multiplier) do
       # 3. Rank and filter results
       ranked =
@@ -498,14 +497,15 @@ defmodule Singularity.RAGCodeGenerator do
   defp load_quality_template(language, quality_level) do
     artifact_id = "#{language}_#{quality_level}"
 
-    case ArtifactStore.get("quality_template", artifact_id) do
+    # Use centralized template service instead of direct ArtifactStore calls
+    case Singularity.Knowledge.TemplateService.get_template("quality_template", artifact_id) do
       {:ok, template} ->
         Logger.debug("Loaded quality template: #{artifact_id}")
         {:ok, template}
 
       {:error, _reason} ->
         # Fallback: try without quality level (just language)
-        case ArtifactStore.get("quality_template", language) do
+        case Singularity.Knowledge.TemplateService.get_template("quality_template", language) do
           {:ok, template} ->
             Logger.debug("Loaded fallback quality template: #{language}")
             {:ok, template}
@@ -514,7 +514,7 @@ defmodule Singularity.RAGCodeGenerator do
             Logger.warn("No quality template found for #{language}, proceeding without template")
             {:ok, nil}
         end
-    end
+      end
   end
 
   defp build_quality_requirements_section(quality_template) do

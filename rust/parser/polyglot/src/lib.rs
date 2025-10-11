@@ -365,7 +365,7 @@ impl UniversalParser {
             return Ok(cached.clone());
         }
 
-        // Use mozilla-code-analysis for comprehensive metrics
+        // Use code_analysis for comprehensive metrics
         // Note: Checker is not publicly exported, using simplified approach
         
         // Simple line counting for now - can be enhanced later

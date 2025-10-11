@@ -4,7 +4,7 @@
 //! Elixir layer handles NATS communication to central architecture service.
 
 use crate::architecture::patterns::{ComponentPattern, RelationshipPattern};
-use crate::naming_conventions::RecommendationPriority;
+use crate::architecture::patterns::RecommendationPriority;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 

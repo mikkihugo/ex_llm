@@ -80,6 +80,32 @@ defmodule Singularity.TemplateStore do
   end
 
   @doc """
+  Store a template locally with embeddings.
+  """
+  @spec store(String.t(), map()) :: :ok | {:error, term()}
+  def store(template_id, template_data) do
+    # Generate embedding for semantic search
+    case EmbeddingEngine.embed(template_data["content"] || template_data["description"] || "", model: :qodo_embed) do
+      {:ok, embedding} ->
+        template = %Template{
+          id: template_id,
+          version: template_data["version"] || "1.0.0",
+          type: template_data["type"] || "code_pattern",
+          metadata: template_data["metadata"] || %{},
+          content: template_data["content"] || template_data,
+          embedding: embedding
+        }
+        
+        case Repo.insert_or_update(template) do
+          {:ok, _} -> :ok
+          {:error, changeset} -> {:error, changeset}
+        end
+      
+      {:error, reason} -> {:error, "Failed to generate embedding: #{reason}"}
+    end
+  end
+
+  @doc """
   Search templates semantically using Qodo-Embed-1.
 
   ## Options

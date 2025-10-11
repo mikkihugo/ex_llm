@@ -38,56 +38,58 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   end
 
   defp generate_prompt_with_engine(task, language, opts) do
-    # 1. Try to use prompt engine for context-aware generation
+    # 1. Use centralized template service for template selection
     case detect_context_type(task) do
       {:framework, framework, category} ->
-        case PromptEngine.generate_framework_prompt(task.description, framework, category, language) do
-          {:ok, %{prompt: prompt, confidence: confidence, template_used: template_used}} ->
-            Logger.info("Generated prompt using prompt engine", 
+        case get_template_for_framework(framework, category, language) do
+          {:ok, template} ->
+            prompt = build_prompt_from_template(template, task.description, language)
+            Logger.info("Generated prompt using centralized template service", 
               framework: framework, 
               category: category, 
-              confidence: confidence
+              template_id: template.id
             )
             
             %{
               prompt: prompt,
-              template_id: template_used,
-              template: %{name: template_used, framework: framework, category: category},
+              template_id: template.id,
+              template: %{name: template.name, framework: framework, category: category},
               examples_count: 0,
               metadata: %{
                 task_type: task.type,
                 language: language,
                 timestamp: DateTime.utc_now(),
-                generated_by: :prompt_engine,
-                confidence: confidence
+                generated_by: :template_service,
+                confidence: 0.9
               }
             }
           
           {:error, reason} ->
-            Logger.warning("Prompt engine failed, falling back to legacy", reason: reason)
+            Logger.warning("Template service failed, falling back to legacy", reason: reason)
             generate_prompt_legacy(task, language, opts)
         end
       
       {:language, lang, category} ->
-        case PromptEngine.generate_language_prompt(task.description, lang, category) do
-          {:ok, %{prompt: prompt, confidence: confidence, template_used: template_used}} ->
-            Logger.info("Generated prompt using prompt engine", 
+        case get_template_for_language(lang, category) do
+          {:ok, template} ->
+            prompt = build_prompt_from_template(template, task.description, language)
+            Logger.info("Generated prompt using centralized template service", 
               language: lang, 
               category: category, 
-              confidence: confidence
+              template_id: template.id
             )
             
             %{
               prompt: prompt,
-              template_id: template_used,
-              template: %{name: template_used, language: lang, category: category},
+              template_id: template.id,
+              template: %{name: template.name, language: lang, category: category},
               examples_count: 0,
               metadata: %{
                 task_type: task.type,
                 language: language,
                 timestamp: DateTime.utc_now(),
-                generated_by: :prompt_engine,
-                confidence: confidence
+                generated_by: :template_service,
+                confidence: 0.8
               }
             }
           
@@ -534,5 +536,50 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
     else
       prompt
     end
+  end
+
+  # Helper functions using centralized template service
+
+  @doc """
+  Get template for framework and category using centralized template service.
+  """
+  defp get_template_for_framework(framework, category, language) do
+    # Use dynamic template discovery for framework templates
+    case Singularity.Knowledge.TemplateService.find_framework_template(language, framework) do
+      {:ok, template} -> {:ok, template}
+      {:error, _} ->
+        # Try with category as use case
+        Singularity.Knowledge.TemplateService.find_template("framework", language, category)
+    end
+  end
+
+  @doc """
+  Get template for language and category using centralized template service.
+  """
+  defp get_template_for_language(language, category) do
+    # Use dynamic template discovery for language templates
+    case Singularity.Knowledge.TemplateService.find_template("language", language, category) do
+      {:ok, template} -> {:ok, template}
+      {:error, _} ->
+        # Fallback to general language template
+        Singularity.Knowledge.TemplateService.find_template("language", language, "general")
+    end
+  end
+
+  @doc """
+  Build prompt from template using the template content.
+  """
+  defp build_prompt_from_template(template, task_description, language) do
+    # Extract prompt template from the template content
+    prompt_template = get_in(template, ["content", "prompt"]) || 
+                     get_in(template, ["prompt"]) || 
+                     template["content"] || 
+                     "Generate #{language} code for: {{task}}"
+    
+    # Replace placeholders
+    prompt_template
+    |> String.replace("{{task}}", task_description)
+    |> String.replace("{{language}}", language)
+    |> String.replace("{{description}}", task_description)
   end
 end

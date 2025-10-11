@@ -1,5 +1,5 @@
 [package]
-name = "architecture_engine"
+name = "code_engine"
 version = "1.0.0"
 authors = ["mikkihugo"]
 edition = "2021"
@@ -12,7 +12,7 @@ keywords = ["architecture", "naming", "patterns", "framework-detection", "packag
 categories = ["algorithms", "development-tools"]
 
 [lib]
-name = "architecture_engine"
+name = "code_engine"
 path = "src/lib.rs"
 crate-type = ["rlib", "cdylib"]  # Both library and NIF
 
@@ -54,7 +54,7 @@ name = "ai_analysis_test"
 path = "examples/ai_analysis_test.rs"
 
 [features]
-default = []
+default = ["nif"]
 nif = ["rustler"]  # Enable NIF support for Elixir integration
 
 # Speed up dev builds

@@ -1,5 +1,6 @@
-[workspace]
-resolver = "2"
+# This workspace is now part of the root workspace
+# [workspace]
+# resolver = "2"
 members = [
     "code_analysis",
     "knowledge",

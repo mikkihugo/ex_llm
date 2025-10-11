@@ -81,8 +81,23 @@ impl Default for NamingCore {
 pub enum CodeElementCategory {
     Naming,
     Structure,
-    Quality,
-    Performance,
+}
+
+/// Code element types for naming
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum CodeElementType {
+    Function,
+    Variable,
+    Module,
+    Class,
+    Struct,
+    Enum,
+    Trait,
+    Interface,
+    Constant,
+    Field,
+    Method,
+    Property,
 }
 
 /// Search result for naming suggestions

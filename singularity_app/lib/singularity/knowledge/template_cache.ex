@@ -68,9 +68,16 @@ defmodule Singularity.Knowledge.TemplateCache do
     # Connect to NATS
     gnat_name = Singularity.NatsOrchestrator.gnat_name()
 
-    # Subscribe to template updates
-    {:ok, _sub} = Gnat.sub(gnat_name, self(), "template.updated.>")
-    {:ok, _sub} = Gnat.sub(gnat_name, self(), "template.invalidate.>")
+    # Subscribe to template updates using Singularity.NatsClient
+    Enum.each([
+      "template.updated.>",
+      "template.invalidate.>"
+    ], fn subject ->
+      case Singularity.NatsClient.subscribe(subject) do
+        :ok -> Logger.info("TemplateCache subscribed to: #{subject}")
+        {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
+      end
+    end)
 
     Logger.info("Template cache started (ETS only)")
 
@@ -116,7 +123,7 @@ defmodule Singularity.Knowledge.TemplateCache do
     :ets.delete(@table, key)
 
     # Broadcast to other nodes
-    Gnat.pub(state.gnat, "template.invalidate.#{artifact_type}.#{artifact_id}", "")
+    Singularity.NatsClient.publish("template.invalidate.#{artifact_type}.#{artifact_id}", "")
 
     Logger.debug("Invalidated: #{key}")
     {:noreply, state}

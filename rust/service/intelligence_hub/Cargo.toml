@@ -19,6 +19,6 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 # Analysis libraries
-polyglot = { path = "../../parser/polyglot" }
+parser-code = { path = "../../parser/polyglot" }
 code_analysis = { path = "../../code_analysis" }
-architecture = { path = "../../architecture" }
+# architecture_engine = { path = "../../../singularity_app/native/architecture_engine" }

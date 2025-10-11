@@ -188,7 +188,7 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
     }
 
     # Publish to NATS for distribution to SPARC fact system
-    case Singularity.NatsClient.publish(@nats_subject, Jason.encode!(message)) do
+    case Singularity.NatsClient.publish(@nats_subject, Jason.encode!(_message)) do
       :ok ->
         Logger.debug("Published pattern to NATS: #{@nats_subject}")
       {:error, reason} ->

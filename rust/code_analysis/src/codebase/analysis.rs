@@ -8,16 +8,10 @@ use anyhow::Result;
 use sha2::{Sha256, Digest};
 
 // Universal parser and individual parser imports
-use universal_parser::{AnalysisResult as UniversalAnalysisResult, ProgrammingLanguage};
-use rust_parser::{RustParser, RustSpecificAnalysis};
-use python_parser::{PythonParser, PythonAnalysisResult};
-use javascript_parser::{JavaScriptParser, JavaScriptSpecificAnalysis};
+use rust_parser::RustParser;
+use python_parser::PythonParser;
+use javascript_parser::JavaScriptParser;
 use typescript_parser::TypeScriptParser;
-use go_parser::{GoParser, GoSpecificAnalysis};
-use java_parser::{JavaParser, JavaSpecificAnalysis};
-use csharp_parser::{CSharpParser, CSharpSpecificAnalysis};
-use c_cpp_parser::CCppParser;
-use erlang_parser::ErlangParser;
 use elixir_parser::ElixirParser;
 use gleam_parser::GleamParser;
 

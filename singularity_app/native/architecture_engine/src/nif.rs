@@ -20,21 +20,7 @@ mod atoms {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FrameworkDetectionRequest {
-    pub patterns: Vec<String>,
-    pub context: String,
-    pub detection_methods: Vec<String>,
-    pub confidence_threshold: f64,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FrameworkDetectionResult {
-    pub name: String,
-    pub version: Option<String>,
-    pub confidence: f64,
-    pub detected_by: String,
-}
+// Using imported structs from framework_detection module
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TechnologyDetectionRequest {
@@ -72,7 +58,7 @@ pub struct ArchitecturalSuggestion {
 /// All operations integrate with central PostgreSQL database and NATS messaging.
 /// The NIF gets existing info from central systems and asks for new info plus stats.
 #[rustler::nif]
-pub fn architecture_engine_call(operation: Term, request: Term) -> Result<Term, Error> {
+pub fn architecture_engine_call<'a>(operation: Term<'a>, request: Term<'a>) -> Result<Term<'a>, Error> {
     let env = request.env();
     
     match operation.decode::<String>()? {

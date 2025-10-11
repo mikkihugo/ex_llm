@@ -95,7 +95,8 @@ tar = { version = "0.4", optional = true }
 # Removed to break cyclic dependency. Integration should be done via NATS messaging instead.
 # prompt-engine = { workspace = true, optional = true }
 
-
+# Parser dependencies
+dependency_parser = { path = "../../parser/formats/dependency" }
 
 [dev-dependencies]
 criterion = { workspace = true, features = ["html_reports"] }

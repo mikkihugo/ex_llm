@@ -25,30 +25,30 @@ defmodule Singularity.NatsExecutionRouter do
 
   @impl true
   def init(_opts) do
-    # Connect to NATS
-    {:ok, gnat} =
-      Gnat.start_link(%{
-        host: System.get_env("NATS_HOST", "127.0.0.1"),
-        port: String.to_integer(System.get_env("NATS_PORT", "4222"))
-      })
-
+    # Use Singularity.NatsClient for NATS operations
     # Subscribe to execution requests
-    {:ok, _sid} = Gnat.sub(gnat, self(), "execution.request")
+    case Singularity.NatsClient.subscribe("execution.request") do
+      :ok -> Logger.info("NatsExecutionRouter subscribed to: execution.request")
+      {:error, reason} -> Logger.error("Failed to subscribe to execution.request: #{reason}")
+    end
 
     # Subscribe to template recommendation requests
-    {:ok, _sid} = Gnat.sub(gnat, self(), "template.recommend")
+    case Singularity.NatsClient.subscribe("template.recommend") do
+      :ok -> Logger.info("NatsExecutionRouter subscribed to: template.recommend")
+      {:error, reason} -> Logger.error("Failed to subscribe to template.recommend: #{reason}")
+    end
 
     Logger.info(
       "NatsOrchestrator started and listening on execution.request and template.recommend"
     )
 
-    {:ok, %{gnat: gnat}}
+    {:ok, %{}}
   end
 
   @impl true
   def handle_info({:msg, %{topic: "execution.request", body: body, reply_to: reply_to}}, state) do
     Task.async(fn ->
-      handle_execution_request(body, reply_to, state.gnat)
+      handle_execution_request(body, reply_to)
     end)
 
     {:noreply, state}
@@ -57,13 +57,13 @@ defmodule Singularity.NatsExecutionRouter do
   @impl true
   def handle_info({:msg, %{topic: "template.recommend", body: body, reply_to: reply_to}}, state) do
     Task.async(fn ->
-      handle_template_recommendation(body, reply_to, state.gnat)
+      handle_template_recommendation(body, reply_to)
     end)
 
     {:noreply, state}
   end
 
-  defp handle_execution_request(body, reply_to, gnat) do
+  defp handle_execution_request(body, reply_to) do
     try do
       request = Jason.decode!(body)
 
@@ -86,7 +86,7 @@ defmodule Singularity.NatsExecutionRouter do
             }
           }
 
-          Gnat.pub(gnat, reply_to, Jason.encode!(response))
+          Singularity.NatsClient.publish(reply_to, Jason.encode!(response))
 
         {:error, :not_found} ->
           # Step 2: No cache, proceed with orchestration
@@ -146,7 +146,7 @@ defmodule Singularity.NatsExecutionRouter do
             }
           }
 
-          Gnat.pub(gnat, reply_to, Jason.encode!(response))
+          Singularity.NatsClient.publish(reply_to, Jason.encode!(response))
       end
     rescue
       error ->
@@ -157,11 +157,11 @@ defmodule Singularity.NatsExecutionRouter do
           message: Exception.message(error)
         }
 
-        Gnat.pub(gnat, reply_to, Jason.encode!(error_response))
+        Singularity.NatsClient.publish(reply_to, Jason.encode!(error_response))
     end
   end
 
-  defp handle_template_recommendation(body, reply_to, gnat) do
+  defp handle_template_recommendation(body, reply_to) do
     try do
       request = Jason.decode!(body)
 
@@ -174,12 +174,12 @@ defmodule Singularity.NatsExecutionRouter do
 
       response = %{template_id: template.id}
 
-      Gnat.pub(gnat, reply_to, Jason.encode!(response))
+      Singularity.NatsClient.publish(reply_to, Jason.encode!(response))
     rescue
       error ->
         Logger.error("Error handling template recommendation: #{inspect(error)}")
 
-        Gnat.pub(gnat, reply_to, Jason.encode!(%{template_id: "default-template"}))
+        Singularity.NatsClient.publish(reply_to, Jason.encode!(%{template_id: "default-template"}))
     end
   end
 

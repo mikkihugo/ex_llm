@@ -58,4 +58,4 @@ default = []
 ml-analysis = ["candle-core", "candle-nn"]
 with-package-indexer = []
 
-[workspace]
+# Workspace definition removed - now part of root workspace

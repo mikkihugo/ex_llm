@@ -382,4 +382,60 @@ defmodule Singularity.Autonomy.RuleEngine do
   defp add_performance_recommendations(recommendations, _rule_results), do: recommendations
   defp add_security_recommendations(recommendations, _rule_results), do: recommendations
   defp extract_constraints_from_result(_result), do: []
+
+  # Base execute_rules function
+  defp execute_rules(rules, context) do
+    # Real implementation - execute each rule using RuleEngineCore
+    start_time = System.monotonic_time(:millisecond)
+
+    results =
+      rules
+      |> Enum.map(fn rule ->
+        rule_start = System.monotonic_time(:millisecond)
+
+        try do
+          # Execute rule using RuleEngineCore
+          result = RuleEngineCore.execute_rule(rule, context)
+
+          execution_time = System.monotonic_time(:millisecond) - rule_start
+
+          # Enhance result with execution metadata
+          enhanced_result = Map.merge(result, %{
+            execution_time_ms: execution_time,
+            executed_at: DateTime.utc_now(),
+            context_fingerprint: RuleEngineCore.context_fingerprint(context)
+          })
+
+          {rule.id, enhanced_result}
+        rescue
+          error ->
+            Logger.error("Rule execution failed",
+              rule_id: rule.id,
+              error: inspect(error),
+              context: context
+            )
+
+            # Return error result
+            {rule.id, %{
+              rule_id: rule.id,
+              confidence: 0.0,
+              decision: {:escalated, "Rule execution failed: #{inspect(error)}"},
+              reasoning: "Execution error: #{inspect(error)}",
+              execution_time_ms: System.monotonic_time(:millisecond) - rule_start,
+              cached: false,
+              error: true
+            }}
+        end
+      end)
+      |> Enum.into(%{})
+
+    total_execution_time = System.monotonic_time(:millisecond) - start_time
+
+    Logger.debug("Executed #{length(rules)} rules",
+      execution_time_ms: total_execution_time,
+      rules_count: length(rules)
+    )
+
+    {:ok, results}
+  end
 end

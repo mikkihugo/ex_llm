@@ -16,6 +16,9 @@ defmodule Singularity.QualityEngine do
     crate: :quality_engine,
     skip_compilation?: true
 
+  require Logger
+  alias Singularity.NatsClient
+
   @behaviour Singularity.Engine
 
   @impl Singularity.Engine
@@ -88,6 +91,68 @@ defmodule Singularity.QualityEngine do
       true
     rescue
       _ -> false
+    end
+  end
+
+  # Central Cloud Integration via Singularity.NatsClient
+
+  @doc """
+  Query central quality service for quality rules and patterns.
+  """
+  def query_central_quality_rules(language, quality_level) do
+    request = %{
+      action: "get_quality_rules",
+      language: language,
+      quality_level: quality_level,
+      include_patterns: true
+    }
+    
+    case NatsClient.request("central.quality.rules", Jason.encode!(request), timeout: 5000) do
+      {:ok, response} ->
+        case Jason.decode(response.data) do
+          {:ok, data} -> {:ok, data["rules"] || []}
+          {:error, reason} -> {:error, "Failed to decode central response: #{reason}"}
+        end
+      {:error, reason} ->
+        {:error, "NATS request failed: #{reason}"}
+    end
+  end
+
+  @doc """
+  Send quality analysis results to central for learning and analytics.
+  """
+  def send_quality_analytics(results) do
+    request = %{
+      action: "record_analysis",
+      results: results,
+      timestamp: DateTime.utc_now()
+    }
+    
+    case NatsClient.publish("central.quality.analytics", Jason.encode!(request)) do
+      :ok -> :ok
+      {:error, reason} -> {:error, "Failed to send quality analytics: #{reason}"}
+    end
+  end
+
+  @doc """
+  Get quality recommendations from central based on code patterns.
+  """
+  def get_quality_recommendations(code_snippet, language) do
+    request = %{
+      action: "get_recommendations",
+      code_snippet: code_snippet,
+      language: language,
+      include_examples: true
+    }
+    
+    case NatsClient.request("central.quality.recommendations", Jason.encode!(request), timeout: 3000) do
+      {:ok, response} ->
+        case Jason.decode(response.data) do
+          {:ok, data} -> {:ok, data["recommendations"] || []}
+          {:error, reason} -> {:error, "Failed to decode central response: #{reason}"}
+        end
+      {:error, reason} ->
+        {:error, "NATS request failed: #{reason}"}
     end
   end
 end

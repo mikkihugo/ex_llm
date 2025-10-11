@@ -13,33 +13,18 @@ defmodule Singularity.TechnologyTemplateLoader do
   require Logger
 
   alias Singularity.PlatformIntegration.NatsConnector
-  alias Singularity.TechnologyTemplateStore
+  alias Singularity.TemplateStore
 
   @doc "Return decoded template map (or nil if missing)"
   def template(identifier, opts \\ []) do
-    case fetch_from_nats(identifier, opts) do
+    # Use dynamic template discovery - tries multiple patterns and semantic search
+    case Singularity.Knowledge.TemplateService.find_technology_template(identifier) do
       {:ok, template} ->
         template
 
-      _ ->
-        case TechnologyTemplateStore.get(identifier) do
-          %{} = template ->
-            template
-
-          _ ->
-            relative = to_relative_path(identifier)
-
-            opts
-            |> directories()
-            |> Enum.find_value(fn dir ->
-              path = Path.join(dir, relative)
-
-              case load_json(path) do
-                %{} = template -> persist_template(identifier, template, :filesystem, opts)
-                _ -> nil
-              end
-            end)
-        end
+      {:error, reason} ->
+        Logger.warning("Technology template not found: #{identifier}, reason: #{reason}")
+        nil
     end
   end
 

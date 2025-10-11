@@ -27,8 +27,7 @@ defmodule Singularity.TemplateMatcher do
   """
 
   alias Singularity.CodePatternExtractor
-
-  @templates_dir "priv/code_quality_templates"
+  alias Singularity.Knowledge.TemplateService
 
   @doc """
   Find the best matching template for a user request.
@@ -36,12 +35,9 @@ defmodule Singularity.TemplateMatcher do
   def find_template(user_request, language \\ :elixir) do
     user_tokens = CodePatternExtractor.extract_from_text(user_request)
 
-    template_file = template_file_for_language(language)
-    template_path = Path.join(:code.priv_dir(:singularity), template_file)
-
-    case File.read(template_path) do
-      {:ok, content} ->
-        template = Jason.decode!(content)
+    # Use dynamic template discovery - tries multiple patterns and semantic search
+    case TemplateService.find_quality_template("#{language}", "production") do
+      {:ok, template} ->
         patterns = extract_patterns(template)
 
         matches = CodePatternExtractor.find_matching_patterns(user_tokens, patterns)
@@ -55,6 +51,7 @@ defmodule Singularity.TemplateMatcher do
         end
 
       {:error, reason} ->
+        Logger.warning("Template not found via dynamic discovery: #{language}_production, reason: #{reason}")
         {:error, {:template_load_failed, reason}}
     end
   end

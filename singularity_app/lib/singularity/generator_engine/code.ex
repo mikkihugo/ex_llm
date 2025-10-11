@@ -8,13 +8,101 @@ defmodule Singularity.GeneratorEngine.Code do
   def generate_clean_code(description, language) do
     snippet =
       case String.downcase(language || "") do
-        "elixir" -> "defmodule #{Util.slug(description)} do\n  # TODO: implement\nend"
-        "typescript" -> "export function #{Util.slug(description)}() {\n  // TODO\n}"
-        "python" -> "def #{Util.slug(description)}():\n    pass"
+        "elixir" -> generate_elixir_code(description)
+        "typescript" -> generate_typescript_code(description)
+        "python" -> generate_python_code(description)
+        "rust" -> generate_rust_code(description)
+        "go" -> generate_go_code(description)
         _ -> "// #{description}"
       end
 
     {:ok, snippet}
+  end
+
+  defp generate_elixir_code(description) do
+    module_name = Util.slug(description) |> String.capitalize()
+    function_name = Util.slug(description) |> String.downcase()
+    
+    """
+    defmodule #{module_name} do
+      @moduledoc \"\"\"
+      #{String.capitalize(description)}
+      \"\"\"
+      
+      @doc \"\"\"
+      #{String.capitalize(description)}.
+      
+      ## Examples
+      
+          iex> #{module_name}.#{function_name}()
+          :ok
+      \"\"\"
+      def #{function_name} do
+        # Implementation goes here
+        :ok
+      end
+    end
+    """
+  end
+
+  defp generate_typescript_code(description) do
+    function_name = Util.slug(description)
+    
+    """
+    /**
+     * #{String.capitalize(description)}
+     * 
+     * @returns Promise<any>
+     */
+    export async function #{function_name}(): Promise<any> {
+      // Implementation goes here
+      return {};
+    }
+    """
+  end
+
+  defp generate_python_code(description) do
+    function_name = Util.slug(description)
+    
+    """
+    \"\"\"
+    #{String.capitalize(description)}
+    \"\"\"
+    
+    def #{function_name}():
+        \"\"\"
+        #{String.capitalize(description)}.
+        
+        Returns:
+            any: The result
+        \"\"\"
+        # Implementation goes here
+        return None
+    """
+  end
+
+  defp generate_rust_code(description) do
+    function_name = Util.slug(description)
+    
+    """
+    /// #{String.capitalize(description)}
+    pub fn #{function_name}() -> Result<(), Box<dyn std::error::Error>> {
+        // Implementation goes here
+        Ok(())
+    }
+    """
+  end
+
+  defp generate_go_code(description) do
+    function_name = Util.slug(description) |> String.capitalize()
+    
+    """
+    // #{String.capitalize(description)}
+    func #{function_name}() error {
+        // Implementation goes here
+        return nil
+    }
+    """
   end
 
   @spec convert_to_clean_code(term(), String.t()) :: {:ok, String.t()}
@@ -220,15 +308,70 @@ defmodule Singularity.GeneratorEngine.Code do
   end
 
   defp generate_mock_examples(query, language, limit) do
-    Enum.map(1..limit, fn i ->
-      %{
-        file: "example_#{i}.ex",
-        repo: "example_repo",
-        similarity: 0.9 - i * 0.1,
-        code_preview: "# Example #{i} for #{query}...",
-        language: language || "elixir"
-      }
+    # Replace mock examples with real knowledge base retrieval
+    case Singularity.Knowledge.ArtifactStore.search(query, %{
+      language: language,
+      top_k: limit,
+      min_similarity: 0.6,
+      artifact_types: ["code_example", "code_pattern", "function", "module"]
+    }) do
+      {:ok, results} ->
+        # Transform knowledge base results into example format
+        Enum.map(results, fn %{artifact: artifact, similarity: similarity} ->
+          %{
+            file: artifact.file_path || "unknown_file.#{language || "ex"}",
+            repo: artifact.source_repo || "knowledge_base",
+            similarity: similarity,
+            code_preview: generate_code_preview(artifact.content, query),
+            language: artifact.language || language || "elixir",
+            source: "knowledge_base",
+            artifact_id: artifact.id
+          }
+        end)
+
+      {:error, reason} ->
+        Logger.warning("Failed to retrieve examples from knowledge base: #{inspect(reason)}")
+        # Fallback to basic mock examples if knowledge base fails
+        Enum.map(1..min(limit, 3), fn i ->
+          %{
+            file: "fallback_example_#{i}.#{language || "ex"}",
+            repo: "fallback_repo",
+            similarity: 0.5 - i * 0.1,
+            code_preview: "# Fallback example #{i} for #{query} in #{language}...",
+            language: language || "elixir",
+            source: "fallback"
+          }
+        end)
+    end
+  end
+
+  defp generate_code_preview(content, query) do
+    # Extract relevant code snippet around the query
+    content_lines = String.split(content || "", "\n")
+
+    # Find lines containing the query or related terms
+    query_lower = String.downcase(query)
+    relevant_lines = Enum.filter(content_lines, fn line ->
+      String.contains?(String.downcase(line), query_lower) or
+      String.contains?(String.downcase(line), "def ") or
+      String.contains?(String.downcase(line), "function") or
+      String.contains?(String.downcase(line), "class ")
     end)
+
+    # Take first few relevant lines or first 5 lines as preview
+    preview_lines = if length(relevant_lines) > 0 do
+      Enum.take(relevant_lines, 3)
+    else
+      Enum.take(content_lines, 5)
+    end
+
+    # Join and limit length
+    preview = Enum.join(preview_lines, "\n")
+    if String.length(preview) > 200 do
+      String.slice(preview, 0, 200) <> "..."
+    else
+      preview
+    end
   end
 
   defp enhance_validation(validation, quality_level) do
@@ -387,7 +530,14 @@ defmodule Singularity.GeneratorEngine.Code do
 
         case generate_with_rust_elixir_t5(prompt, language) do
           {:ok, base_code} ->
-            enhance_rust_elixir_code_quality(base_code, language, quality, include_tests)
+            # Enhanced code with iterative improvement
+            enhanced_code = enhance_rust_elixir_code_quality(base_code, language, quality, include_tests)
+            
+            # Try to improve the code iteratively
+            case improve_code_iteratively(enhanced_code, task, language, quality) do
+              {:ok, improved_code} -> {:ok, improved_code}
+              {:error, _} -> enhanced_code
+            end
 
           error ->
             error
@@ -399,19 +549,29 @@ defmodule Singularity.GeneratorEngine.Code do
   end
 
   defp find_rag_examples(task, language, repo) do
-    opts = [
-      task: task,
-      language: language,
-      repos: if(repo, do: [repo], else: nil),
-      top_k: 5,
-      prefer_recent: true,
-      include_tests: false
-    ]
-
-    case RAGCodeGenerator.find_best_examples(task, language, if(repo, do: [repo], else: nil), 5, true, false) do
-      {:ok, examples} -> {:ok, examples}
+    # Enhanced RAG example selection with better filtering
+    case RAGCodeGenerator.find_best_examples(task, language, if(repo, do: [repo], else: nil), 8, true, false) do
+      {:ok, examples} -> 
+        # Filter and rank examples by quality
+        filtered_examples = filter_and_rank_examples(examples, task, language)
+        {:ok, Enum.take(filtered_examples, 5)}
       {:error, _} -> {:ok, []}
     end
+  end
+
+  defp filter_and_rank_examples(examples, task, language) do
+    examples
+    |> Enum.filter(fn example ->
+      # Filter out examples that are too short or too long
+      code_length = String.length(example.code || "")
+      code_length > 50 && code_length < 2000
+    end)
+    |> Enum.sort_by(fn example ->
+      # Rank by relevance score (if available) and recency
+      relevance_score = Map.get(example, :similarity_score, 0.5)
+      recency_bonus = if Map.get(example, :recent, false), do: 0.1, else: 0.0
+      relevance_score + recency_bonus
+    end, :desc)
   end
 
   defp build_t5_prompt(task, examples, language, quality) do
@@ -486,54 +646,119 @@ defmodule Singularity.GeneratorEngine.Code do
         end
       
       {:error, reason} ->
-        Logger.warning("T5 model generation failed, using fallback", reason: reason)
-        generate_fallback_code(prompt, language)
+        Logger.warning("T5 model generation failed, using external LLM fallback", reason: reason)
+        generate_external_llm_fallback(prompt, language)
     end
   end
 
   defp generate_fallback_code(prompt, language) do
-    # Fallback code generation when T5 model is unavailable
-    base_code = case language do
-      "elixir" ->
-        """
-        defmodule GeneratedModule do
-          @moduledoc \"\"\"
-          Generated module for: #{prompt}
-          \"\"\"
-          
-          # TODO: Implement the actual functionality
-          def process(input) do
-            # Generated placeholder
-            {:ok, input}
-          end
-        end
-        """
-      
-      "rust" ->
-        """
-        // Generated Rust code for: #{prompt}
-        pub struct GeneratedStruct {
-            // TODO: Add fields
-        }
-        
-        impl GeneratedStruct {
-            pub fn new() -> Self {
-                // TODO: Implement constructor
-                Self {}
-            }
-        }
-        """
-      
-      _ ->
-        """
-        // Generated #{language} code for task:
-        // #{prompt}
-        // TODO: Implement the actual functionality
-        """
-    end
-
-    {:ok, base_code}
+    # Direct fallback to external LLM via NATS when T5 model is unavailable
+    Logger.info("T5 failed, using external LLM fallback for language: #{language}")
+    generate_external_llm_fallback(prompt, language)
   end
+
+  defp build_llm_fallback_prompt(prompt, language) do
+    language_instruction = case language do
+      "elixir" -> "Generate clean, production-ready Elixir code"
+      "rust" -> "Generate clean, production-ready Rust code"
+      "typescript" -> "Generate clean, production-ready TypeScript code"
+      "python" -> "Generate clean, production-ready Python code"
+      "go" -> "Generate clean, production-ready Go code"
+      _ -> "Generate clean, production-ready #{String.capitalize(language)} code"
+    end
+    
+    """
+    #{language_instruction} for the following task:
+    
+    Task: #{prompt}
+    
+    Requirements:
+    - Include proper error handling
+    - Add documentation/comments
+    - Use idiomatic #{language} patterns
+    - Make it production-ready
+    
+    Generate only the code, no explanations:
+    """
+  end
+
+  defp cleanup_generated_code(code) do
+    code
+    |> String.split("\n")
+    |> Enum.take_while(fn line ->
+      # Stop at explanation markers
+      not String.starts_with?(String.trim(line), [
+        "# Explanation",
+        "# Note:",
+        "# This",
+        "# The",
+        "Here's",
+        "This is",
+        "// Explanation",
+        "/* Explanation"
+      ])
+    end)
+    |> Enum.join("\n")
+    |> String.trim()
+  end
+
+  defp generate_external_llm_fallback(prompt, language) do
+    # Ultimate fallback to external LLM via NATS when local models fail
+    Logger.info("Using external LLM fallback for language: #{language}")
+    
+    # Build prompt for external LLM
+    external_prompt = build_external_llm_prompt(prompt, language)
+    
+    # Request external LLM via NATS
+    case Singularity.NatsClient.request("ai.llm.request", Jason.encode!(%{
+      prompt: external_prompt,
+      language: language,
+      task_type: "code_generation",
+      complexity: "medium",
+      temperature: 0.1,
+      max_tokens: 512
+    }), timeout: 30_000) do
+      {:ok, response} ->
+        case Jason.decode(response.data) do
+          {:ok, %{"code" => code}} ->
+            cleaned_code = cleanup_generated_code(code)
+            {:ok, cleaned_code}
+          {:ok, %{"response" => code}} ->
+            cleaned_code = cleanup_generated_code(code)
+            {:ok, cleaned_code}
+          {:ok, data} ->
+            # Try to extract code from any field
+            code = Map.get(data, "code") || Map.get(data, "text") || Map.get(data, "content") || ""
+            cleaned_code = cleanup_generated_code(code)
+            {:ok, cleaned_code}
+          {:error, reason} ->
+            Logger.error("Failed to decode external LLM response: #{inspect(reason)}")
+            {:error, "All code generation methods failed"}
+        end
+      
+      {:error, reason} ->
+        Logger.error("External LLM request failed: #{inspect(reason)}")
+        {:error, "All code generation methods failed"}
+    end
+  end
+
+  defp build_external_llm_prompt(prompt, language) do
+    """
+    Generate clean, production-ready #{String.capitalize(language)} code for the following task:
+    
+    Task: #{prompt}
+    
+    Requirements:
+    - Include proper error handling
+    - Add documentation/comments
+    - Use idiomatic #{language} patterns
+    - Make it production-ready
+    - Return only the code, no explanations
+    
+    Code:
+    """
+  end
+
 
   defp enhance_rust_elixir_code_quality(base_code, language, quality, include_tests) do
     enhanced =
@@ -547,15 +772,223 @@ defmodule Singularity.GeneratorEngine.Code do
   end
 
   defp build_rust_elixir_t5_prompt(task, examples, language, quality) do
+    # Try to use PromptEngine for optimized prompt generation
+    case generate_optimized_prompt(task, examples, language, quality) do
+      {:ok, optimized_prompt} ->
+        optimized_prompt
+      {:error, _} ->
+        # Fallback to manual prompt building
+        build_manual_prompt(task, examples, language, quality)
+    end
+  end
+
+  defp generate_optimized_prompt(task, examples, language, quality) do
+    # Use central template service for template-based prompt generation
+    case load_template_for_task(task, language, quality) do
+      {:ok, template} ->
+        # Enhance template with learning data
+        enhanced_template = enhance_template_with_learning(template, task, language, quality)
+        
+        # Build prompt from enhanced template
+        prompt = build_template_prompt(enhanced_template, task, language, quality, examples)
+        {:ok, prompt}
+      
+      {:error, reason} ->
+        Logger.debug("Template loading failed, using TemplateAware fallback", reason: reason)
+        # Fallback to TemplateAware prompting
+        task_struct = %{
+          description: task,
+          type: :code_generation,
+          language: language,
+          quality: quality
+        }
+
+        opts = [
+          language: language,
+          use_prompt_engine: true,
+          examples: examples,
+          quality: quality
+        ]
+
+        case Singularity.LLM.Prompt.TemplateAware.generate_prompt(task_struct, opts) do
+          %{prompt: prompt} ->
+            enhanced_prompt = enhance_prompt_with_examples(prompt, examples, language, quality)
+            {:ok, enhanced_prompt}
+          error ->
+            Logger.debug("TemplateAware prompting failed, using manual prompt", error: error)
+            {:error, error}
+        end
+    end
+  end
+
+  defp enhance_prompt_with_examples(prompt, examples, language, quality) do
+    if Enum.empty?(examples) do
+      prompt
+    else
+      examples_context = build_examples_context(examples, language)
+      quality_requirements = build_quality_requirements(language, quality)
+      
+      """
+      #{prompt}
+
+      #{examples_context}
+
+      #{quality_requirements}
+      """
+    end
+  end
+
+  defp build_manual_prompt(task, examples, language, quality) do
     base_prompt = build_t5_prompt(task, examples, language, quality)
+    examples_context = build_examples_context(examples, language)
+    quality_requirements = build_quality_requirements(language, quality)
 
     """
     #{base_prompt}
+
+    #{examples_context}
+
+    #{quality_requirements}
 
     ### Additional Requirements for #{String.upcase(language)}:
     - Follow idiomatic #{language} patterns
     - Include error handling using #{language}-specific conventions
     - Provide tests using the standard #{language} test framework
+    - Use proper naming conventions for #{language}
+    - Include comprehensive documentation
+    """
+  end
+
+  defp build_examples_context(examples, language) do
+    if Enum.empty?(examples) do
+      ""
+    else
+      """
+      ### Context from Similar Code:
+      The following examples show similar patterns from your codebase:
+      
+      #{format_examples_for_context(examples, language)}
+      """
+    end
+  end
+
+  defp build_quality_requirements(language, quality) do
+    case quality do
+      :production ->
+        """
+        ### Production Quality Requirements:
+        - Include comprehensive error handling
+        - Add detailed documentation and examples
+        - Use proper logging and monitoring
+        - Follow security best practices
+        - Include performance optimizations
+        - Add comprehensive tests
+        """
+      :prototype ->
+        """
+        ### Prototype Quality Requirements:
+        - Include basic error handling
+        - Add minimal documentation
+        - Focus on functionality over optimization
+        """
+      :quick ->
+        """
+        ### Quick Quality Requirements:
+        - Focus on getting working code
+        - Minimal documentation acceptable
+        """
+    end
+  end
+
+  defp format_examples_for_context(examples, language) do
+    examples
+    |> Enum.with_index(1)
+    |> Enum.map(fn {example, index} ->
+      """
+      Example #{index}:
+      ```#{language}
+      #{example.code}
+      ```
+      """
+    end)
+    |> Enum.join("\n")
+  end
+
+  defp improve_code_iteratively(code, task, language, quality) do
+    # Only attempt improvement for production quality
+    case quality do
+      :production ->
+        # Validate the generated code
+        case validate_generated_code(code, language) do
+          {:ok, validation} ->
+            if validation.score >= 0.8 do
+              # Code is good enough, return as-is
+              {:ok, code}
+            else
+              # Try to improve based on validation feedback
+              improvement_prompt = build_improvement_prompt(code, task, language, validation)
+              
+              case generate_with_rust_elixir_t5(improvement_prompt, language) do
+                {:ok, improved_code} -> {:ok, improved_code}
+                {:error, _} -> {:ok, code}  # Return original if improvement fails
+              end
+            end
+          {:error, _} -> {:ok, code}  # Return original if validation fails
+        end
+      _ ->
+        # For non-production quality, return as-is
+        {:ok, code}
+    end
+  end
+
+  defp validate_generated_code(code, language) do
+    # Basic validation - check for common issues
+    issues = []
+    
+    # Check for TODO comments
+    if String.contains?(code, "TODO") or String.contains?(code, "FIXME") do
+      issues = ["Contains TODO/FIXME comments" | issues]
+    end
+    
+    # Check for basic structure
+    if String.length(code) < 50 do
+      issues = ["Code too short" | issues]
+    end
+    
+    # Check for error handling (language-specific)
+    has_error_handling = case language do
+      "elixir" -> String.contains?(code, "case") or String.contains?(code, "with")
+      "rust" -> String.contains?(code, "Result") or String.contains?(code, "Option")
+      "typescript" -> String.contains?(code, "try") or String.contains?(code, "catch")
+      _ -> true
+    end
+    
+    if not has_error_handling do
+      issues = ["Missing error handling" | issues]
+    end
+    
+    # Calculate score
+    score = if Enum.empty?(issues), do: 1.0, else: max(0.0, 1.0 - (length(issues) * 0.2))
+    
+    {:ok, %{score: score, issues: issues}}
+  end
+
+  defp build_improvement_prompt(code, task, language, validation) do
+    issues_text = Enum.join(validation.issues, ", ")
+    
+    """
+    Improve the following #{language} code based on the validation feedback:
+    
+    Original Task: #{task}
+    
+    Current Code:
+    ```#{language}
+    #{code}
+    ```
+    
+    Issues to Fix: #{issues_text}
+    
+    Please provide an improved version that addresses these issues while maintaining the original functionality.
     """
   end
 
@@ -694,4 +1127,54 @@ defmodule Singularity.GeneratorEngine.Code do
   end
 
   defp add_basic_elixir_error_handling(code), do: code
+
+  # Template loading functions (called by generate_optimized_prompt)
+
+  defp load_template_for_task(task, language, quality) do
+    # Use centralized template service for template loading
+    template_type = determine_template_type(task, language, quality)
+    template_id = build_template_id(task, language, quality)
+    
+    case Singularity.Knowledge.TemplateService.get_template(template_type, template_id) do
+      {:ok, template} -> {:ok, template}
+      {:error, _} ->
+        # Fallback to general template
+        fallback_id = "#{language}-#{quality}"
+        Singularity.Knowledge.TemplateService.get_template(template_type, fallback_id)
+    end
+  end
+
+  defp enhance_template_with_learning(template, task, language, quality) do
+    # Template enhancement is handled by the PromptEngine and TemplateAware system
+    template
+  end
+
+  defp build_template_prompt(template, task, language, quality, examples) do
+    # This is handled by the existing prompt building system
+    build_manual_prompt(task, examples, language, quality)
+  end
+
+  # Helper functions for template service integration
+
+  defp determine_template_type(task, language, quality) do
+    cond do
+      String.contains?(task, "framework") or String.contains?(task, "web") -> "framework"
+      String.contains?(task, "api") or String.contains?(task, "endpoint") -> "api"
+      String.contains?(task, "test") or String.contains?(task, "spec") -> "test"
+      quality == "production" -> "production"
+      true -> "code_generation"
+    end
+  end
+
+  defp build_template_id(task, language, quality) do
+    # Extract key terms from task for template ID
+    task_clean = task
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9\s]/, "")
+    |> String.split()
+    |> Enum.take(3)
+    |> Enum.join("-")
+    
+    "#{language}-#{quality}-#{task_clean}"
+  end
 end

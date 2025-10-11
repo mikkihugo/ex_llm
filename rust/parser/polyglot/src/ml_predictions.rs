@@ -162,7 +162,7 @@ impl CodeAnalysisEngine {
       code_analysis: serde_json::json!({
         "status": "analyzed",
         "path": path,
-        "analyzer": "mozilla-code-analysis",
+        "analyzer": "code_analysis",
         "metrics_count": metrics_count
       }),
       security_scan: serde_json::json!({"status": "scanned"}),

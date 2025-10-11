@@ -1,4 +1,6 @@
-use crate::naming_conventions::{CodeElementType, LanguageConvention, NamingConventions};
+use crate::naming_conventions::NamingConventions;
+use crate::naming_core::CodeElementType;
+use crate::naming_languages::LanguageConvention;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

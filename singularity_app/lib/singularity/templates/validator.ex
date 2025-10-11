@@ -10,7 +10,7 @@ defmodule Singularity.Templates.Validator do
   - Code syntax (if possible)
   """
 
-  alias Singularity.Knowledge.LocalTemplateCache
+  alias Singularity.Knowledge.TemplateService
 
   @required_fields ["id", "category", "metadata", "content"]
   @valid_categories ["base", "bit", "code_generation", "code_snippet", "framework", "prompt", "quality_standard", "workflow"]
@@ -134,17 +134,16 @@ defmodule Singularity.Templates.Validator do
   end
 
   defp check_extends_reference(errors, %{"extends" => base_id}) when is_binary(base_id) do
-    case LocalTemplateCache.get_template(base_id) do
+    case TemplateService.get_template("template", base_id) do
       {:ok, _} -> errors
-      {:error, :not_found} -> [{:extends_not_found, base_id} | errors]
-      _ -> errors
+      {:error, _} -> [{:extends_not_found, base_id} | errors]
     end
   end
   defp check_extends_reference(errors, _), do: errors
 
   defp check_compose_references(errors, %{"compose" => bit_ids}) when is_list(bit_ids) do
     missing = Enum.filter(bit_ids, fn bit_id ->
-      case LocalTemplateCache.get_template(bit_id) do
+      case TemplateService.get_template("template", bit_id) do
         {:ok, _} -> false
         _ -> true
       end
