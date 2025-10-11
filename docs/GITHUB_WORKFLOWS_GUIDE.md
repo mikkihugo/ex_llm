@@ -196,7 +196,7 @@ This repository has 7 GitHub Actions workflows:
 ### 6. claude-pr-fix.yml
 **Purpose:** Auto-fix PRs using Claude Code  
 **Triggers:** Issue comment containing "@claude-fix"  
-**Status:** ⚠️ Experimental  
+**Status:** ✅ Fixed (was broken)
 **Secrets:** CLAUDE_CODE_OAUTH_TOKEN, GITHUB_TOKEN
 
 **Steps:**
@@ -204,9 +204,22 @@ This repository has 7 GitHub Actions workflows:
 2. Checkout PR branch
 3. Install Bun
 4. Get PR diff and comment instructions
-5. Run Claude Code to generate fixes
-6. Apply fixes (parse JSON output)
+5. Run Claude Code to generate fixes (with proper JSON handling)
+6. Apply fixes (parse JSON output with error handling)
 7. Commit and push (if --auto-apply flag used)
+
+**Previous Issues:**
+- ❌ JSON parsing was broken (tried to parse natural language as JSON)
+- ❌ No error handling for invalid Claude responses
+- ❌ Used wrong credentials file format
+
+**Fixes Applied:**
+- ✅ Fixed Claude credentials file format (`~/.claude/.credentials.json`)
+- ✅ Added proper JSON extraction and validation
+- ✅ Handle markdown code blocks in Claude's response
+- ✅ Added error handling and graceful degradation
+- ✅ Fixed heredoc variable substitution
+- ✅ Better logging for debugging
 
 **Warnings:**
 - Experimental feature, use with caution
