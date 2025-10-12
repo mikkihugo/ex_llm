@@ -13,7 +13,7 @@ defmodule Singularity.RustAnalyzer do
   use Rustler,
     otp_app: :singularity,
     crate: :code_analysis,
-    skip_compilation?: false
+    skip_compilation?: true  # TEMPORARY: Skip until code_analysis compilation is fixed
 
   # NIF functions (provided by rust/code_analysis when compiled)
   def analyze_control_flow(_file_path), do: :erlang.nif_error(:nif_not_loaded)

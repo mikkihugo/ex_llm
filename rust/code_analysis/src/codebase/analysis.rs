@@ -334,36 +334,15 @@ impl AnalysisEngine {
           Err(e) => Err(format!("Failed to create TypeScript parser: {}", e)),
         }
       }
-      ProgrammingLanguage::Go => {
-        match go_parser::GoParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("Go parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create Go parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::Java => {
-        match java_parser::JavaParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("Java parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create Java parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::CSharp => {
-        match csharp_parser::CSharpParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("C# parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create C# parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::C | ProgrammingLanguage::Cpp => {
-        match c_cpp_parser::CCppParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("C/C++ parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create C/C++ parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::Erlang => {
-        match erlang_parser::ErlangParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("Erlang parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create Erlang parser: {}", e)),
-        }
-      }
+      // Unsupported languages - no dedicated parsers available
+      // ProgrammingLanguage::Go |
+      // ProgrammingLanguage::Java |
+      // ProgrammingLanguage::CSharp |
+      // ProgrammingLanguage::C |
+      // ProgrammingLanguage::Cpp |
+      // ProgrammingLanguage::Erlang => {
+      //   // No dedicated parsers - return error or use fallback
+      // }
       ProgrammingLanguage::Elixir => {
         match elixir_parser::ElixirParser::new() {
           Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("Elixir parser error: {}", e)),

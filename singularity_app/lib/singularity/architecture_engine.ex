@@ -19,10 +19,10 @@ defmodule Singularity.ArchitectureEngine do
   - Knowledge aggregation
   """
 
-  use Rustler, 
+  use Rustler,
     otp_app: :singularity,
     crate: :architecture_engine,
-    skip_compilation?: false
+    skip_compilation?: true  # TEMPORARY: Skip until NIF loading issues resolved
 
   require Logger
 
@@ -70,12 +70,33 @@ defmodule Singularity.ArchitectureEngine do
     end
   end
   
-  # Detect frameworks using provided patterns
-  defp detect_with_patterns(patterns, central_patterns, context, confidence_threshold) do
+  # Detect frameworks locally without central patterns
+  defp detect_local(patterns, context, detection_methods, confidence_threshold) do
     request = %{
       patterns: patterns,
       context: context,
       detection_methods: Enum.map(detection_methods, &to_string/1),
+      confidence_threshold: confidence_threshold
+    }
+
+    Logger.info("🔍 Detecting frameworks (local)", patterns_count: length(patterns), context: context)
+
+    case call_nif(:architecture_engine_call, "detect_frameworks", request) do
+      {:ok, results} ->
+        Logger.info("✅ Detected #{length(results)} frameworks")
+        {:ok, results}
+
+      {:error, reason} ->
+        Logger.error("❌ Framework detection failed", reason: reason)
+        {:error, reason}
+    end
+  end
+
+  # Detect frameworks using provided patterns
+  defp detect_with_patterns(patterns, _central_patterns, context, confidence_threshold) do
+    request = %{
+      patterns: patterns,
+      context: context,
       confidence_threshold: confidence_threshold
     }
     

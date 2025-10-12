@@ -367,48 +367,16 @@ impl CodebaseAnalyzer {
           Err(e) => Err(format!("Failed to create TypeScript parser: {}", e)),
         }
       }
-      ProgrammingLanguage::Go => {
-        // Use Go parser directly
-        match go_parser::GoParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("Go parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create Go parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::Java => {
-        // Use Java parser directly
-        match java_parser::JavaParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("Java parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create Java parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::CSharp => {
-        // Use C# parser directly
-        match csharp_parser::CSharpParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("C# parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create C# parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::C => {
-        // Use C/C++ parser directly
-        match c_cpp_parser::CCppParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("C/C++ parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create C/C++ parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::Cpp => {
-        // Use C/C++ parser directly
-        match c_cpp_parser::CCppParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("C/C++ parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create C/C++ parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::Erlang => {
-        // Use Erlang parser directly
-        match erlang_parser::ErlangParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("Erlang parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create Erlang parser: {}", e)),
-        }
-      }
+      // Unsupported languages - fall through to universal parser
+      // We only have parsers for: Rust, Python, JS, TS, Elixir, Gleam, JSON, YAML, Bash
+      // ProgrammingLanguage::Go |
+      // ProgrammingLanguage::Java |
+      // ProgrammingLanguage::CSharp |
+      // ProgrammingLanguage::C |
+      // ProgrammingLanguage::Cpp |
+      // ProgrammingLanguage::Erlang => {
+      //   // No dedicated parsers for these - use universal parser fallback
+      // }
       ProgrammingLanguage::Elixir => {
         // Use Elixir parser directly
         match elixir_parser::ElixirParser::new() {
@@ -444,12 +412,13 @@ impl CodebaseAnalyzer {
         "py" | "pyi" | "pyc" => ProgrammingLanguage::Python,
         "js" | "mjs" => ProgrammingLanguage::JavaScript,
         "ts" | "tsx" => ProgrammingLanguage::TypeScript,
-        "go" => ProgrammingLanguage::Go,
-        "java" => ProgrammingLanguage::Java,
-        "cs" => ProgrammingLanguage::CSharp,
-        "c" | "h" => ProgrammingLanguage::C,
-        "cpp" | "cc" | "cxx" | "hpp" | "hxx" => ProgrammingLanguage::Cpp,
-        "erl" | "hrl" => ProgrammingLanguage::Erlang,
+        // Unsupported languages - no dedicated parsers
+        // "go" => ProgrammingLanguage::Go,
+        // "java" => ProgrammingLanguage::Java,
+        // "cs" => ProgrammingLanguage::CSharp,
+        // "c" | "h" => ProgrammingLanguage::C,
+        // "cpp" | "cc" | "cxx" | "hpp" | "hxx" => ProgrammingLanguage::Cpp,
+        // "erl" | "hrl" => ProgrammingLanguage::Erlang,
         "ex" | "exs" => ProgrammingLanguage::Elixir,
         "gleam" => ProgrammingLanguage::Gleam,
         _ => ProgrammingLanguage::Unknown,

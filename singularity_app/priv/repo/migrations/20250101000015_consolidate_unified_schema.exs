@@ -6,11 +6,11 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
     # UNIFIED CACHE SCHEMA
     # ============================================================================
     
-    # Drop old scattered cache tables
+    # Drop old scattered cache tables (drop dependent tables first)
     drop_if_exists table(:prompt_cache)
-    drop_if_exists table(:rag_documents) 
+    drop_if_exists table(:rag_feedback)  # Drop this before rag_documents (has FK constraint)
     drop_if_exists table(:rag_queries)
-    drop_if_exists table(:rag_feedback)
+    drop_if_exists table(:rag_documents)
     drop_if_exists table(:vector_similarity_cache)
 
     # Create unified cache schema
@@ -66,7 +66,10 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
     # UNIFIED STORE SCHEMA
     # ============================================================================
 
-    # Drop old scattered store tables
+    # Drop old scattered store tables (drop dependent tables first)
+    drop_if_exists table(:tool_examples)  # FK to tools
+    drop_if_exists table(:tool_patterns)  # FK to tools
+    drop_if_exists table(:tool_dependencies)  # FK to tools
     drop_if_exists table(:tools)
     drop_if_exists table(:tool_knowledge)
     drop_if_exists table(:technology_knowledge)

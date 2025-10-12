@@ -4,6 +4,7 @@ defmodule Singularity.CentralSchemas.Package do
   """
   use Ecto.Schema
   import Ecto.Changeset
+  alias Pgvector.Ecto.Vector
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -26,8 +27,8 @@ defmodule Singularity.CentralSchemas.Package do
     field :detected_framework, :map, default: %{}
     
     # Vector embeddings for semantic search
-    field :semantic_embedding, :vector, size: 384
-    field :code_embedding, :vector, size: 384
+    field :semantic_embedding, Vector
+    field :code_embedding, Vector
     
     # Usage and learning data
     field :usage_stats, :map, default: %{}

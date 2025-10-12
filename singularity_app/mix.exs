@@ -82,9 +82,10 @@ defmodule Singularity.MixProject do
       # Only include engines that actually exist
       {:architecture_engine,
        path: "native/architecture_engine", runtime: false, app: false, compile: false},
-      {:code_analysis,
-       path: "native/code_analysis", runtime: false, app: false, compile: false, optional: true},
-      # {:framework_engine, path: "native/framework_engine", runtime: false, app: false, compile: false},
+      # TEMPORARY: Disabled code_analysis due to compilation errors
+      # {:code_analysis,
+      #  path: "native/code_analysis", runtime: false, app: false, compile: false, optional: true},
+      # {:framework_engine, path: "native/architecture_engine", runtime: false, app: false, compile: false},
       # {:knowledge_engine, path: "native/knowledge_engine", runtime: false, app: false, compile: false},
       # {:package_engine, path: "native/package_engine", runtime: false, app: false, compile: false},
       {:parser_engine,
