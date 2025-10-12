@@ -30,14 +30,13 @@
 ┌─────────────────────────────────────────────────────────────┐
 │  Central_Cloud (Elixir/BEAM) - 3 Services                   │
 │  1. Framework Learning Agent (Elixir GenServer)             │
-│  2. Package Intelligence Service (Rust via NATS)            │
-│  3. Knowledge Cache Service (Rust/NATS - code knowledge)    │
+│  2. Intelligence Hub (Elixir GenServer - 381 lines)         │
+│  3. Template Service (Elixir - template context injection)  │
 └─────────────────────────────────────────────────────────────┘
                            ↕ NATS
 ┌─────────────────────────────────────────────────────────────┐
 │  Rust Services (Standalone)                                 │
-│  - package_intelligence (bin/service.rs)                    │
-│  - intelligence_hub (main.rs)                               │
+│  - package_intelligence (rust/service/package_intelligence) │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -70,8 +69,8 @@
 - `service/package_intelligence/` - Package intelligence service with NATS support
   - `src/bin/main.rs` - Main binary
   - `src/bin/service.rs` - NATS service binary
-- `service/intelligence_hub/` - Intelligence aggregation service
-  - `src/main.rs` - Main binary
+- `service/intelligence_hub/` - ⚠️ **DEPRECATED** (replaced by Elixir `central_cloud/lib/central_cloud/intelligence_hub.ex`)
+  - Not in workspace, not compiled
 
 **Status:** ✅ **ACTIVE** - Main production engines, both NIFs and services
 
@@ -130,10 +129,11 @@
    - Technology detection
    - Links to `rust/service/package_intelligence`
 
-3. **Intelligence Hub Service** (Rust Binary via NATS)
-   - Intelligence aggregation
-   - Coordinates multiple analysis engines
-   - Links to `rust/service/intelligence_hub`
+3. **Intelligence Hub Service** (Elixir GenServer)
+   - Intelligence aggregation (code/architecture/data patterns)
+   - NATS subscription handler (6 subjects)
+   - Implemented in `central_cloud/lib/central_cloud/intelligence_hub.ex` (381 lines)
+   - ⚠️ Rust stub at `rust/service/intelligence_hub` is DEPRECATED
 
 **Infrastructure:**
 - NATS client for communication

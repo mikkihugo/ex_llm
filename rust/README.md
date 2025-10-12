@@ -11,9 +11,8 @@ This directory contains **central knowledge** components that provide shared int
 ### Intelligence & Knowledge
 - **knowledge/** - Central knowledge management and artifacts
 - **prompt/** - Central prompt engineering and optimization
-- **service/intelligence_hub/** - Central intelligence coordination
-- **service/package_intelligence/** - Central package intelligence
-- **service/knowledge_cache/** - Central knowledge caching
+- **service/package_intelligence/** - Central package intelligence (NATS service)
+- **service/intelligence_hub/** - ⚠️ **DEPRECATED** (replaced by Elixir `central_cloud/lib/central_cloud/intelligence_hub.ex`)
 
 ### Utilities
 - **template/** - Central template management library
