@@ -13,9 +13,13 @@ on:
         required: false
         default: 'ci'
         type: string
+    secrets:
+      CACHIX_AUTH_TOKEN:
+        description: 'Cachix authentication token'
+        required: false
 
 jobs:
-  setup:
+  nix-setup:
     runs-on: ubuntu-latest
     steps:
       - name: Runner debug info
@@ -71,7 +75,7 @@ jobs:
             ${{ inputs.cache_key_prefix }}-${{ runner.os }}-
 
       - name: Build and push dev shell (Cachix)
-        if: ${{ inputs.cachix_push && secrets.CACHIX_AUTH_TOKEN != '' }}
+        if: inputs.cachix_push == true
         run: |
           SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
           # Use nix build with --out-link to avoid rebuilds
@@ -79,7 +83,7 @@ jobs:
           cachix push mikkihugo /tmp/devshell-result
 
       - name: Build and push Nix packages (Cachix)
-        if: ${{ inputs.cachix_push && secrets.CACHIX_AUTH_TOKEN != '' }}
+        if: inputs.cachix_push == true
         run: |
           SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
           nix build .#packages.$SYSTEM.ai-server --out-link /tmp/ai-server-result -L || true

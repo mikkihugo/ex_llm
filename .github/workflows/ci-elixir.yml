@@ -9,7 +9,8 @@ on:
 jobs:
   nix-setup:
     uses: ./.github/workflows/nix-setup.yml
-    secrets: inherit
+    secrets:
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
     with:
       cachix_push: true
       cache_key_prefix: 'ci-otp28-elixir1184'
