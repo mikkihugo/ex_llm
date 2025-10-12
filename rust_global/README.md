@@ -1,15 +1,21 @@
 # Global Rust Engines
 
+⚠️ **DEPRECATION NOTICE** ⚠️
+
+**semantic_embedding_engine** has been **migrated to rust-central/embedding_engine** (2025-10-12)
+
+See [EMBEDDING_ENGINE_MIGRATION.md](../EMBEDDING_ENGINE_MIGRATION.md) for full details.
+
+---
+
 This directory contains global infrastructure engines used across the Singularity ecosystem.
 
 ## Active Engines
 
 ### Core Infrastructure
-- **semantic_embedding_engine/** - GPU-accelerated vector embeddings (qodo_embed, jina_v3)
-- **tech_detection_engine/** - Technology and framework detection
-- **package_analysis_suite/** - Comprehensive package analysis
-- **dependency_parser/** - Dependency tree parsing and analysis
-- **analysis_engine/** - General-purpose analysis engine
+- **semantic_embedding_engine/** - ⚠️ **DEPRECATED** (use rust-central/embedding_engine instead)
+- **package_registry/** - External package registries (npm, cargo, hex, pypi) ✅ ACTIVE
+- **_archive/** - Archived/deprecated engines
 
 ## Architecture
 

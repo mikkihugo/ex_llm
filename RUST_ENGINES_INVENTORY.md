@@ -95,7 +95,7 @@
 - `_archive/analysis_engine/` - Archived (duplicate of rust/code_analysis)
 - `_archive/dependency_parser/` - Archived (duplicate of rust/parser)
 - `_archive/intelligent_namer/` - Archived (duplicate of singularity_app/native/architecture_engine)
-- `_archive/semantic_embedding_engine/` - Archived (duplicate of rust/embedding)
+- `_archive/semantic_embedding_engine/` - **WILL BE ARCHIVED** (migrated to rust-central/embedding_engine)
 - `_archive/tech_detection_engine/` - Archived (duplicate of singularity_app/native/architecture_engine)
 - `_archive/mozilla-code-analysis/` - Archived Mozilla tools
 - `_archive/codeintelligence_server/` - Archived intelligence server
@@ -197,7 +197,7 @@
 | Engine | Location | Features | Status |
 |--------|----------|----------|--------|
 | Embedding | `/rust/embedding/` | Vector embeddings | ✅ Active |
-| Semantic Embedding | `/rust_global/semantic_embedding_engine/` | Advanced embeddings | ✅ Active |
+| Semantic Embedding | `/rust-central/embedding_engine/` | Advanced embeddings (GPU: Jina v3 + Qodo-Embed-1) | ✅ Active |
 | Prompt Engineering | `/rust/prompt/` | Prompt templates | ✅ Active |
 | Prompt V2 | `/rustv2/prompt/` | Next-gen prompts | 🟡 Dev |
 
@@ -368,7 +368,7 @@ cp -r rust_global/package_analysis_suite/* rustv2/packages/suite/
 
 # AI engines (already have prompt/)
 cp -r rust/embedding/* rustv2/ai/embeddings/
-cp -r rust_global/semantic_embedding_engine/* rustv2/ai/semantic/
+cp -r rust-central/embedding_engine/* rustv2/ai/semantic/
 
 # Services
 cp -r rust/service/intelligence_hub/* rustv2/services/intelligence_hub/

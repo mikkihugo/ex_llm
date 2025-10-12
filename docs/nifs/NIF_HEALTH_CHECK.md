@@ -263,7 +263,7 @@ end
 {:parser_engine, path: "native/parser_engine", ...},              # ✅
 {:prompt_engine, path: "native/prompt_engine", ...},              # ✅
 {:quality_engine, path: "native/quality_engine", ...},            # ✅
-{:embedding_engine, path: "../rust_global/semantic_embedding_engine", ...},  # ✅
+{:embedding_engine, path: "native/embedding_engine", ...},  # ✅ (symlink → rust-central/embedding_engine)
 ```
 
 ### Native Symlinks (All Valid)
