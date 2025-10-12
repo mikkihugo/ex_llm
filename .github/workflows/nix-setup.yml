@@ -17,9 +17,6 @@ on:
       CACHIX_AUTH_TOKEN:
         description: 'Cachix authentication token'
         required: true
-      CACHIX_SIGNING_KEY:
-        description: 'Cachix signing key for private cache pushes'
-        required: false
 
 jobs:
   nix-setup:
@@ -49,7 +46,6 @@ jobs:
         with:
           name: mikkihugo
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          signingKey: ${{ secrets.CACHIX_SIGNING_KEY }}
 
       - name: Nix/Cachix diagnostics
         run: |
