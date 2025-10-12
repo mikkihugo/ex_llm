@@ -17,18 +17,11 @@ defmodule Singularity.EmbeddingModelLoader do
       default_model: "sentence-transformers/all-MiniLM-L6-v2",
       model_cache: %{}
     }
-    
-    # Load default model
-    case load_model(state.default_model) do
-      {:ok, model_info} ->
-        new_state = put_in(state.models[state.default_model], model_info)
-        Logger.info("Loaded default embedding model: #{state.default_model}")
-        {:ok, new_state}
-      
-      {:error, reason} ->
-        Logger.error("Failed to load default model: #{inspect(reason)}")
-        {:ok, state}
-    end
+
+    # Don't load model during init to avoid self-call
+    # Model will be loaded on first use
+    Logger.info("EmbeddingModelLoader initialized - models will be loaded on demand")
+    {:ok, state}
   end
 
   @doc """
@@ -110,19 +103,34 @@ defmodule Singularity.EmbeddingModelLoader do
 
   defp load_model_from_huggingface(model_name) do
     try do
-      # Simulate HuggingFace model loading
-      # In a real implementation, this would use HuggingFace Transformers
-      model_info = %{
+      Logger.info("Loading HuggingFace model: #{model_name}")
+
+      # Load the model and tokenizer from HuggingFace
+      {:ok, model_info} = Bumblebee.load_model({:hf, model_name})
+      {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, model_name})
+
+      # Create a feature extraction serving for sentence embeddings
+      # Sentence transformers use mean pooling of token embeddings
+      serving = Bumblebee.Text.text_embedding(model_info, tokenizer,
+        compile: [batch_size: 1],
+        defn_options: [compiler: EXLA]
+      )
+
+      model_data = %{
         name: model_name,
+        model: model_info,
+        tokenizer: tokenizer,
+        serving: serving,
         dimension: get_model_dimension(model_name),
         max_length: 512,
         loaded_at: DateTime.utc_now(),
         status: :loaded
       }
-      
-      {:ok, model_info}
+
+      {:ok, model_data}
     rescue
       error ->
+        Logger.error("Failed to load HuggingFace model #{model_name}: #{inspect(error)}")
         {:error, error}
     end
   end
@@ -137,25 +145,43 @@ defmodule Singularity.EmbeddingModelLoader do
     end
   end
 
-  defp generate_embedding(model_info, text) do
+  defp generate_embedding(model_data, text) do
     try do
-      # Simulate embedding generation
-      # In a real implementation, this would use the loaded model
-      dimension = model_info.dimension
-      
-      # Generate a mock embedding vector
-      embedding = 
-        for _i <- 1..dimension do
-          :rand.uniform() * 2 - 1  # Random value between -1 and 1
-        end
-      
-      # Normalize the vector
-      magnitude = :math.sqrt(Enum.sum(Enum.map(embedding, &(&1 * &1))))
-      normalized_embedding = Enum.map(embedding, &(&1 / magnitude))
-      
+      Logger.debug("Generating embedding for text (#{String.length(text)} chars)")
+
+      # Use the serving to generate embeddings
+      # Nx.Serving.run returns a tensor with shape {batch_size, seq_length, hidden_size}
+      # For sentence transformers, we need to apply mean pooling and normalize
+      %{serving: serving} = model_data
+
+      result = Nx.Serving.run(serving, text)
+
+      # Extract the embeddings tensor
+      # Result should be a map with :embeddings key for sentence transformers
+      embeddings = case result do
+        %{embeddings: embeddings} -> embeddings
+        tensor when is_struct(tensor, Nx.Tensor) -> tensor
+        _ -> raise "Unexpected result format from model: #{inspect(result)}"
+      end
+
+      # Apply mean pooling across sequence dimension (dim 1)
+      # Shape should be {1, seq_len, hidden_size} -> {1, hidden_size}
+      pooled = Nx.mean(embeddings, axes: [1])
+
+      # Remove batch dimension to get {hidden_size}
+      embedding = Nx.squeeze(pooled)
+
+      # Convert to list and normalize
+      embedding_list = Nx.to_list(embedding)
+
+      # L2 normalize the embedding vector
+      magnitude = :math.sqrt(Enum.sum(Enum.map(embedding_list, &(&1 * &1))))
+      normalized_embedding = Enum.map(embedding_list, &(&1 / magnitude))
+
       {:ok, normalized_embedding}
     rescue
       error ->
+        Logger.error("Embedding generation failed: #{inspect(error)}")
         {:error, error}
     end
   end

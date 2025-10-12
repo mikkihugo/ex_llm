@@ -1,0 +1,172 @@
+{
+  "$schema": "../UNIFIED_TEMPLATE_SCHEMA.json",
+  "id": "base-elixir-module",
+  "category": "base",
+  "metadata": {
+    "name": "Elixir Module Base (Production)",
+    "version": "2.1.0",
+    "description": "Production-ready base template for Elixir modules with comprehensive documentation, error handling, and integration examples - Now uses Solid (Handlebars)",
+    "language": "elixir",
+    "tags": ["base", "elixir", "module", "production", "documentation", "error-handling", "handlebars"],
+    "created": "2025-01-09",
+    "updated": "2025-10-12",
+    "compliance": ["production-standards", "error-matrix", "integration-examples", "edge-cases"],
+    "template_file": "elixir-module.hbs"
+  },
+  "variables": {
+    "module_name": {
+      "type": "string",
+      "description": "Module name (e.g., MyApp.Worker)",
+      "required": true
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief module description",
+      "required": true
+    },
+    "overview": {
+      "type": "string",
+      "description": "High-level overview answering what/why/how",
+      "required": true,
+      "default": "Provides core functionality for [domain]. This module exists to [purpose] rather than [alternatives] because [reason]. Key capabilities include [list 2-3 main features]."
+    },
+    "api_functions": {
+      "type": "array",
+      "description": "List of public API functions",
+      "required": true,
+      "items": {
+        "name": "string",
+        "args": "string",
+        "return_type": "string",
+        "purpose": "string"
+      },
+      "default": [
+        {
+          "name": "function_name",
+          "args": "args",
+          "return_type": "return_type",
+          "purpose": "Short purpose description"
+        }
+      ]
+    },
+    "error_types": {
+      "type": "array",
+      "description": "All possible error atoms with meanings",
+      "required": true,
+      "items": {
+        "atom": "string",
+        "description": "string"
+      },
+      "default": [
+        {"atom": "invalid_input", "description": "When input validation fails"},
+        {"atom": "not_found", "description": "When requested resource doesn't exist"},
+        {"atom": "timeout", "description": "When operation exceeds time limits"},
+        {"atom": "unauthorized", "description": "When access is denied"}
+      ]
+    },
+    "performance_notes": {
+      "type": "string",
+      "description": "Big-O complexity and performance characteristics",
+      "required": false,
+      "default": "- **Time Complexity:** O(1) for lookups, O(n) for processing\n- **Space Complexity:** O(n) where n is [data size]\n- **Memory Usage:** [expected memory patterns]"
+    },
+    "concurrency_notes": {
+      "type": "string",
+      "description": "Thread safety and process boundaries",
+      "required": false,
+      "default": "- **Thread Safe:** Yes/No - [explanation]\n- **GenServer State:** [state management approach]\n- **Shared State:** [how shared state is handled]"
+    },
+    "security_notes": {
+      "type": "string",
+      "description": "Input validation and security considerations",
+      "required": false,
+      "default": "- **Input Validation:** [validation approach]\n- **Sanitization:** [data sanitization methods]\n- **Privilege Requirements:** [required permissions]"
+    },
+    "examples": {
+      "type": "array",
+      "description": "Comprehensive examples covering success/error/edge cases",
+      "required": true,
+      "items": {
+        "comment": "string",
+        "code": "string"
+      },
+      "default": [
+        {
+          "comment": "Success case",
+          "code": "{:ok, result} = {{module_name}}.function_name(valid_input)\n# => {:ok, expected_result}"
+        },
+        {
+          "comment": "Error case",
+          "code": "{:error, :invalid_input} = {{module_name}}.function_name(invalid_input)"
+        }
+      ]
+    },
+    "relationships": {
+      "type": "object",
+      "description": "Module relationships and integration points",
+      "required": false,
+      "properties": {
+        "calls": "array",
+        "called_by": "array",
+        "depends_on": "array",
+        "integrates_with": "array"
+      },
+      "default": {
+        "calls": [
+          {"module": "OtherModule", "function": "function", "arity": 2, "purpose": "Data processing"}
+        ],
+        "called_by": [
+          {"module": "WebController", "purpose": "HTTP request handling"}
+        ],
+        "depends_on": [
+          {"name": "PostgreSQL", "purpose": "Data persistence"}
+        ],
+        "integrates_with": [
+          {"name": "CacheService", "purpose": "Performance optimization"}
+        ]
+      }
+    },
+    "template_id": {
+      "type": "string",
+      "description": "Template identifier",
+      "required": false,
+      "default": "base-elixir-module"
+    },
+    "template_version": {
+      "type": "string",
+      "description": "Template version",
+      "required": false,
+      "default": "2.1.0"
+    },
+    "applied_date": {
+      "type": "string",
+      "description": "Date template was applied",
+      "required": false,
+      "default": "2025-10-12"
+    },
+    "use_genserver": {
+      "type": "boolean",
+      "description": "Whether to include GenServer boilerplate",
+      "required": false,
+      "default": false
+    },
+    "imports": {
+      "type": "array",
+      "description": "List of imports",
+      "required": false,
+      "default": []
+    },
+    "aliases": {
+      "type": "array",
+      "description": "List of aliases",
+      "required": false,
+      "default": []
+    },
+    "content": {
+      "type": "string",
+      "description": "Module implementation content",
+      "required": true
+    }
+  },
+  "quality_standard": "quality_standards/elixir/production"
+}

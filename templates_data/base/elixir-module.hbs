@@ -1,0 +1,13 @@
+defmodule {{module_name}} do
+  {{> base/moduledoc_production}}
+
+  {{#if use_genserver}}
+  {{> otp/genserver_skeleton}}
+  {{/if}}
+
+  {{content}}
+
+  {{#if include_telemetry}}
+  {{> base/telemetry}}
+  {{/if}}
+end

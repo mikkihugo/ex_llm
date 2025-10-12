@@ -1,0 +1,47 @@
+## Error Handling
+
+{{#if use_with_pattern}}
+# Use with pattern for error chains
+with {:ok, step1} <- first_operation(input),
+     {:ok, step2} <- second_operation(step1),
+     {:ok, step3} <- third_operation(step2) do
+  {:ok, step3}
+else
+  {:error, :invalid_input} = error ->
+    Logger.error("Invalid input provided")
+    error
+
+  {:error, :not_found} = error ->
+    Logger.error("Resource not found")
+    error
+
+  {:error, reason} = error ->
+    Logger.error("Operation failed: #{inspect(reason)}")
+    error
+end
+{{/if}}
+
+{{#if use_case_pattern}}
+# Use case pattern for simple error handling
+case operation(input) do
+  {:ok, result} ->
+    process_result(result)
+
+  {:error, :invalid_input} ->
+    {:error, :validation_failed}
+
+  {:error, reason} ->
+    Logger.error("Operation failed: #{inspect(reason)}")
+    {:error, :internal_error}
+end
+{{/if}}
+
+{{#if define_error_types}}
+# Define error type for better error handling
+@type error_reason ::
+  {{#each error_types}}
+  :{{this}}{{#unless @last}} |{{/unless}}
+  {{/each}}
+
+@type result :: {:ok, term()} | {:error, error_reason()}
+{{/if}}

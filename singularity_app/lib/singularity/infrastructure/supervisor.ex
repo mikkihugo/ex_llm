@@ -1,11 +1,16 @@
 defmodule Singularity.Infrastructure.Supervisor do
   @moduledoc """
-  Supervisor for Singularity error handling infrastructure.
+  Supervisor for Singularity infrastructure components.
 
-  Manages:
+  Manages core infrastructure services that must start early and are required
+  by many other components.
+
+  ## Managed Processes
+
   - Circuit breaker registry and dynamic supervisor
   - Error rate tracker GenServer
-  - Other infrastructure components
+  - Startup warmup GenServer (system initialization)
+  - Embedding model loader GenServer (ML model loading)
 
   This supervisor is started as part of the main application supervision tree.
   """
@@ -30,7 +35,13 @@ defmodule Singularity.Infrastructure.Supervisor do
        strategy: :one_for_one, name: Singularity.Infrastructure.CircuitBreakerSupervisor},
 
       # Error rate tracker (ETS-based)
-      Singularity.Infrastructure.ErrorRateTracker
+      Singularity.Infrastructure.ErrorRateTracker,
+
+      # Startup warmup (system initialization and health checks)
+      Singularity.StartupWarmup,
+
+      # Embedding model loader (ML model initialization)
+      Singularity.EmbeddingModelLoader
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

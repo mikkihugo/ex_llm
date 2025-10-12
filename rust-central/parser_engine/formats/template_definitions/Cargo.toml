@@ -1,0 +1,23 @@
+[package]
+name = "template_meta_parser"
+version = "0.1.0"
+edition = "2021"
+authors = ["Singularity Team"]
+description = "Tree-sitter based parser for template metadata and quality standards"
+license = "MIT"
+
+[lib]
+name = "template_meta_parser"
+crate-type = ["rlib"]
+
+[dependencies]
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tree-sitter = { workspace = true }
+tree-sitter-json = { workspace = true }
+parser-framework = { path = "../../core" }
+
+[dev-dependencies]
+tempfile = "3"

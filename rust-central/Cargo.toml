@@ -1,0 +1,107 @@
+[workspace]
+resolver = "2"
+
+members = [
+    # Singularity NIFs (loaded by Singularity Elixir app)
+    "architecture_engine",
+    "code_engine",
+    "embedding_engine",
+    "parser_engine",
+    "prompt_engine",          # V1 (rustv2/prompt is V2)
+    "quality_engine",
+    "knowledge_engine",
+    "parser_engine/polyglot",
+    "parser_engine/core",
+    "parser_engine/languages/*",
+
+    # Central Cloud Service (standalone binary via NATS)
+    "package_intelligence",
+]
+
+[workspace.dependencies]
+# NIF dependencies
+rustler = "0.34"
+
+# Core dependencies
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+anyhow = "1.0"
+thiserror = "1.0"
+
+# NATS (for Central Cloud services)
+async-nats = "0.33"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+log = "0.4"
+
+# Common utilities
+parking_lot = "0.12"
+ahash = "0.8"
+walkdir = "2.3"
+glob = "0.3"
+regex = "1.0"
+heck = "0.5"
+
+# Performance
+dashmap = "6.0"
+crossbeam = "0.8"
+rayon = "1.8"
+smallvec = "1.11"
+num_cpus = "1.16"
+
+# Data structures
+ndarray = "0.16"
+petgraph = "0.6"
+
+# Async utilities
+async-trait = "0.1"
+futures-util = "0.3"
+
+# Serialization
+toml = "0.8"
+
+# Database (for services)
+tokio-postgres = { version = "0.7", features = ["with-chrono-0_4"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# CLI
+clap = { version = "4.4", features = ["derive", "cargo", "env", "unicode"] }
+
+# Directories
+dirs = "5.0"
+
+# HTTP (optional for services)
+reqwest = { version = "0.12", features = ["json"] }
+
+# Compression (optional for services)
+flate2 = "1.0"
+tar = "0.4"
+
+# Testing
+criterion = "0.5"
+proptest = "1.4"
+tempfile = "3.0"
+mockall = "0.12"
+
+# XML parsing (for package registries)
+quick-xml = "0.31"
+
+[profile.dev]
+opt-level = 0
+incremental = true
+codegen-units = 256
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true

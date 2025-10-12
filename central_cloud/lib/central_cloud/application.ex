@@ -15,13 +15,15 @@ defmodule CentralCloud.Application do
     children = [
       # Database
       CentralCloud.Repo,
-      
+
       # NATS client
       CentralCloud.NatsClient,
-      
+
       # Global services
+      CentralCloud.KnowledgeCache,             # NEW: ETS-based cache
       CentralCloud.TemplateService,
       CentralCloud.FrameworkLearningAgent,
+      CentralCloud.IntelligenceHub,            # NEW: Replaces Rust service
       CentralCloud.IntelligenceHubSubscriber,
     ]
 

@@ -336,13 +336,68 @@ defmodule Singularity.Agents.CostOptimizedAgent do
     end
   end
 
-  defp get_template_for_task(_task) do
-    # TODO: Load templates from database
-    nil
+  defp get_template_for_task(task) do
+    # Use TemplateService with convention-based discovery
+    # This tries multiple naming patterns and falls back to semantic search
+    case Singularity.Knowledge.TemplateService.find_template(
+           "code_template",
+           task.language || "elixir",
+           task.type || "default"
+         ) do
+      {:ok, template} -> template
+      {:error, _reason} -> nil
+    end
   end
 
   defp fill_template(template, task) do
-    template
+    # Build variables from task
+    variables = %{
+      "task_name" => task.name,
+      "task_description" => task.description,
+      "module_name" => extract_module_name(task),
+      "description" => task.description,
+      "acceptance_criteria" => task.acceptance_criteria || [],
+      "language" => task.language
+    }
+
+    # Use NEW context-aware rendering with Package Intelligence
+    case Singularity.Knowledge.TemplateService.render_with_context(
+           template.artifact_id || template["id"],
+           variables,
+           framework: task.framework,
+           language: task.language,
+           quality_level: "production",
+           include_framework_hints: true,
+           validate: false
+         ) do
+      {:ok, rendered} ->
+        rendered
+
+      {:error, reason} ->
+        Logger.warning("Context-aware rendering failed, falling back to simple replacement",
+          template_id: template.artifact_id || template["id"],
+          reason: reason
+        )
+
+        # Fallback to simple replacement
+        simple_fill(template, task)
+    end
+  end
+
+  defp extract_module_name(task) do
+    # Try to infer module name from task name
+    # E.g., "user_service" -> "UserService"
+    task.name
+    |> String.split(["_", "-", " "])
+    |> Enum.map(&String.capitalize/1)
+    |> Enum.join()
+  end
+
+  defp simple_fill(template, task) do
+    # Simple fallback for JSON templates
+    content = template.content_raw || template["content"]["code"] || ""
+
+    content
     |> String.replace("{{TASK_NAME}}", task.name)
     |> String.replace("{{TASK_DESCRIPTION}}", task.description)
   end

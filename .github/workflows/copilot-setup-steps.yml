@@ -44,18 +44,18 @@ jobs:
         with:
           name: mikkihugo
 
-      - name: Restore Mix/Hex, Moon, and Bun caches
+      - name: Restore all build artifacts (Mix, Cargo, Moon, Bun)
         uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
         with:
           path: |
-            singularity_app/.mix
-            singularity_app/.hex
-            singularity_app/deps
-            singularity_app/_build
+            **/.mix
+            **/.hex
+            **/deps
+            **/_build
             .cargo-build
             .moon/cache
-            ai-server/node_modules
-          key: copilot-otp28-elixir1184-${{ runner.os }}-${{ hashFiles('singularity_app/mix.lock') }}-${{ hashFiles('**/moon.yml') }}-${{ hashFiles('ai-server/bun.lock*') }}
+            **/node_modules
+          key: copilot-otp28-elixir1184-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('**/moon.yml') }}-${{ hashFiles('**/bun.lock*') }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             copilot-otp28-elixir1184-${{ runner.os }}-
 

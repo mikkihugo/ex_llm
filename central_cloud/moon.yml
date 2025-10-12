@@ -1,0 +1,65 @@
+$schema: '../.moon/cache/schemas/project.json'
+
+language: 'elixir'
+type: 'application'
+
+tasks:
+  deps.get:
+    command: 'nix develop ..#dev --command bash -c "cd central_cloud && mix deps.get"'
+    inputs:
+      - 'mix.exs'
+      - 'mix.lock'
+    outputs:
+      - 'deps/'
+
+  deps.compile:
+    command: 'nix develop ..#dev --command bash -c "cd central_cloud && mix deps.compile"'
+    deps:
+      - 'deps.get'
+    inputs:
+      - 'deps/**'
+    outputs:
+      - '.mix/**'
+
+  compile:
+    command: 'nix develop ..#dev --command bash -c "cd central_cloud && mix compile"'
+    deps:
+      - 'deps.compile'
+    inputs:
+      - 'lib/**'
+      - 'config/**'
+      - 'priv/**'
+    outputs:
+      - '_build/'
+
+  test:
+    command: 'nix develop ..#dev --command bash -c "cd central_cloud && mix test"'
+    deps:
+      - 'compile'
+    inputs:
+      - 'test/**'
+      - 'lib/**'
+
+  credo:
+    command: 'nix develop ..#dev --command bash -c "cd central_cloud && mix credo --strict"'
+    deps:
+      - 'compile'
+    inputs:
+      - 'lib/**'
+      - 'test/**'
+
+  format:
+    command: 'nix develop ..#dev --command bash -c "cd central_cloud && mix format"'
+    inputs:
+      - 'lib/**'
+      - 'test/**'
+      - 'config/**'
+    outputs:
+      - 'lib/**'
+      - 'test/**'
+      - 'config/**'
+
+  check:
+    deps:
+      - 'test'
+      - 'credo'

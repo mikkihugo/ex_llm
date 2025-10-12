@@ -12,9 +12,9 @@ defmodule Singularity.Tools.Knowledge do
   require Logger
 
   alias Singularity.Tools.Tool
-  alias Singularity.Search.PackageRegistryKnowledge
+  alias Singularity.ArchitectureEngine.PackageRegistryKnowledge
   alias Singularity.Code.Patterns.PatternMiner
-  alias Singularity.Detection.FrameworkPatternStore
+  alias Singularity.ArchitectureEngine.FrameworkPatternStore
   alias Singularity.Code.Quality.CodeDeduplicator
 
   @doc "Register knowledge tools with the shared registry."
@@ -259,12 +259,13 @@ defmodule Singularity.Tools.Knowledge do
     pattern_type = Map.get(args, "pattern_type", "semantic")
     limit = Map.get(args, "limit", 5)
 
-    case PatternMiner.search_semantic_patterns(query,
+    case PatternMiner.retrieve_patterns_for_task(%{
+           description: query,
            language: language,
            type: pattern_type,
            limit: limit
-         ) do
-      {:ok, patterns} ->
+         }) do
+      patterns when is_list(patterns) ->
         {:ok,
          %{
            query: query,
@@ -274,8 +275,8 @@ defmodule Singularity.Tools.Knowledge do
            count: length(patterns)
          }}
 
-      {:error, reason} ->
-        {:error, "Pattern search failed: #{inspect(reason)}"}
+      _ ->
+        {:error, "No patterns found for query: #{query}"}
     end
   end
 
@@ -330,20 +331,20 @@ defmodule Singularity.Tools.Knowledge do
     end
   end
 
-  def knowledge_duplicates(%{"codebase_path" => path} = args, _ctx) do
+  def knowledge_duplicates(%{"code" => code} = args, _ctx) do
     similarity_threshold = Map.get(args, "similarity_threshold", 0.8)
     language = Map.get(args, "language")
     limit = Map.get(args, "limit", 10)
 
-    case CodeDeduplicator.find_duplicates(path,
-           similarity_threshold: similarity_threshold,
+    case CodeDeduplicator.find_similar(code,
+           threshold: similarity_threshold,
            language: language,
            limit: limit
          ) do
       {:ok, duplicates} ->
         {:ok,
          %{
-           codebase_path: path,
+           code: code,
            similarity_threshold: similarity_threshold,
            language: language,
            duplicates: duplicates,
@@ -557,23 +558,21 @@ defmodule Singularity.Tools.Knowledge do
   # Helper functions for knowledge base queries
   defp get_api_patterns_from_knowledge_base do
     # Query existing knowledge base for API patterns
-    case Singularity.Code.Patterns.FrameworkPatternStore.search("API patterns", %{top_k: 10}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("API patterns", %{top_k: 10}) do
       {:ok, results} -> results
       _ -> []
     end
   end
 
   defp get_api_examples_from_knowledge_base do
-    # Query existing knowledge base for API examples
-    case Singularity.Search.CodeSearch.search("API examples", %{top_k: 5}) do
-      {:ok, results} -> results
-      _ -> []
-    end
+    # TODO: Implement semantic search for API examples
+    # For now, return empty list as stub implementation
+    []
   end
 
   defp get_tutorial_patterns_from_knowledge_base(topic) do
     # Query existing knowledge base for tutorial patterns
-    case Singularity.Code.Patterns.FrameworkPatternStore.search("tutorial patterns #{topic}", %{top_k: 8}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("tutorial patterns #{topic}", %{top_k: 8}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -581,15 +580,13 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_tutorial_examples_from_knowledge_base(topic) do
     # Query existing knowledge base for tutorial examples
-    case Singularity.Search.CodeSearch.search("tutorial examples #{topic}", %{top_k: 5}) do
-      {:ok, results} -> results
-      _ -> []
-    end
+    # Stub implementation - CodeSearch not fully implemented yet
+    {:ok, []}
   end
 
   defp get_reference_patterns_from_knowledge_base(reference_type) do
     # Query existing knowledge base for reference patterns
-    case Singularity.Code.Patterns.FrameworkPatternStore.search("reference patterns #{reference_type}", %{top_k: 8}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("reference patterns #{reference_type}", %{top_k: 8}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -597,15 +594,13 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_reference_examples_from_knowledge_base(reference_type) do
     # Query existing knowledge base for reference examples
-    case Singularity.Search.CodeSearch.search("reference examples #{reference_type}", %{top_k: 5}) do
-      {:ok, results} -> results
-      _ -> []
-    end
+    # Stub implementation - CodeSearch not fully implemented yet
+    {:ok, []}
   end
 
   defp get_guide_patterns_from_knowledge_base(guide_type) do
     # Query existing knowledge base for guide patterns
-    case Singularity.Code.Patterns.FrameworkPatternStore.search("guide patterns #{guide_type}", %{top_k: 8}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("guide patterns #{guide_type}", %{top_k: 8}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -613,15 +608,13 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_guide_examples_from_knowledge_base(guide_type) do
     # Query existing knowledge base for guide examples
-    case Singularity.Search.CodeSearch.search("guide examples #{guide_type}", %{top_k: 5}) do
-      {:ok, results} -> results
-      _ -> []
-    end
+    # Stub implementation - CodeSearch not fully implemented yet
+    {:ok, []}
   end
 
   defp get_architecture_patterns_from_knowledge_base(architecture_type) do
     # Query existing knowledge base for architecture patterns
-    case Singularity.Code.Patterns.FrameworkPatternStore.search("architecture patterns #{architecture_type}", %{top_k: 8}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("architecture patterns #{architecture_type}", %{top_k: 8}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -629,15 +622,13 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_architecture_examples_from_knowledge_base(architecture_type) do
     # Query existing knowledge base for architecture examples
-    case Singularity.Search.CodeSearch.search("architecture examples #{architecture_type}", %{top_k: 5}) do
-      {:ok, results} -> results
-      _ -> []
-    end
+    # Stub implementation - CodeSearch not fully implemented yet
+    {:ok, []}
   end
 
   defp get_patterns_from_knowledge_base(pattern_type) do
     # Query existing knowledge base for patterns
-    case Singularity.Code.Patterns.FrameworkPatternStore.search("patterns #{pattern_type}", %{top_k: 10}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("patterns #{pattern_type}", %{top_k: 10}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -645,15 +636,13 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_pattern_examples_from_knowledge_base(pattern_type) do
     # Query existing knowledge base for pattern examples
-    case Singularity.Search.CodeSearch.search("pattern examples #{pattern_type}", %{top_k: 5}) do
-      {:ok, results} -> results
-      _ -> []
-    end
+    # Stub implementation - CodeSearch not fully implemented yet
+    {:ok, []}
   end
 
   defp get_frameworks_from_knowledge_base(framework_type) do
     # Query existing knowledge base for frameworks
-    case Singularity.Code.Patterns.FrameworkPatternStore.search("frameworks #{framework_type}", %{top_k: 10}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("frameworks #{framework_type}", %{top_k: 10}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -661,15 +650,13 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_framework_examples_from_knowledge_base(framework_type) do
     # Query existing knowledge base for framework examples
-    case Singularity.Search.CodeSearch.search("framework examples #{framework_type}", %{top_k: 5}) do
-      {:ok, results} -> results
-      _ -> []
-    end
+    # Stub implementation - CodeSearch not fully implemented yet
+    {:ok, []}
   end
 
   defp get_generic_patterns_from_knowledge_base(knowledge_type) do
     # Query existing knowledge base for generic patterns
-    case Singularity.Code.Patterns.FrameworkPatternStore.search("patterns #{knowledge_type}", %{top_k: 8}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("patterns #{knowledge_type}", %{top_k: 8}) do
       {:ok, results} -> results
       _ -> []
     end
@@ -677,10 +664,8 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_generic_examples_from_knowledge_base(knowledge_type) do
     # Query existing knowledge base for generic examples
-    case Singularity.Search.CodeSearch.search("examples #{knowledge_type}", %{top_k: 5}) do
-      {:ok, results} -> results
-      _ -> []
-    end
+    # Stub implementation - CodeSearch not fully implemented yet
+    {:ok, []}
   end
 
   # Documentation generation functions
@@ -843,35 +828,35 @@ defmodule Singularity.Tools.Knowledge do
   end
 
   # HTML generation functions (simplified)
-  defp generate_html_api_doc(patterns, examples) do
+  defp generate_html_api_doc(_patterns, _examples) do
     "<html><body><h1>API Documentation</h1><p>Generated from knowledge base</p></body></html>"
   end
 
-  defp generate_html_tutorial_doc(topic, patterns, examples) do
+  defp generate_html_tutorial_doc(topic, _patterns, _examples) do
     "<html><body><h1>Tutorial: #{topic}</h1><p>Generated from knowledge base</p></body></html>"
   end
 
-  defp generate_html_reference_doc(reference_type, patterns, examples) do
+  defp generate_html_reference_doc(reference_type, _patterns, _examples) do
     "<html><body><h1>Reference: #{reference_type}</h1><p>Generated from knowledge base</p></body></html>"
   end
 
-  defp generate_html_guide_doc(guide_type, patterns, examples) do
+  defp generate_html_guide_doc(guide_type, _patterns, _examples) do
     "<html><body><h1>Guide: #{guide_type}</h1><p>Generated from knowledge base</p></body></html>"
   end
 
-  defp generate_html_architecture_doc(architecture_type, patterns, examples) do
+  defp generate_html_architecture_doc(architecture_type, _patterns, _examples) do
     "<html><body><h1>Architecture: #{architecture_type}</h1><p>Generated from knowledge base</p></body></html>"
   end
 
-  defp generate_html_patterns_doc(pattern_type, patterns, examples) do
+  defp generate_html_patterns_doc(pattern_type, _patterns, _examples) do
     "<html><body><h1>Patterns: #{pattern_type}</h1><p>Generated from knowledge base</p></body></html>"
   end
 
-  defp generate_html_frameworks_doc(framework_type, frameworks, examples) do
+  defp generate_html_frameworks_doc(framework_type, _frameworks, _examples) do
     "<html><body><h1>Frameworks: #{framework_type}</h1><p>Generated from knowledge base</p></body></html>"
   end
 
-  defp generate_html_generic_doc(knowledge_type, patterns, examples) do
+  defp generate_html_generic_doc(knowledge_type, _patterns, _examples) do
     "<html><body><h1>#{String.capitalize(knowledge_type)} Documentation</h1><p>Generated from knowledge base</p></body></html>"
   end
 

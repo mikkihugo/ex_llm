@@ -691,7 +691,7 @@ defmodule Singularity.Runner do
   defp connect_to_nats do
     try do
       # Use Singularity.NatsClient instead of direct Gnat connection
-      :ok
+      {:ok, nil}  # NATS connection handled by application startup
     rescue
       error ->
         {:error, error}

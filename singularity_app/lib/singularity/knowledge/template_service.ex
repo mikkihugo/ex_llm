@@ -67,7 +67,7 @@ defmodule Singularity.Knowledge.TemplateService do
       "template.search.>"
     ], fn subject ->
       case Singularity.NatsClient.subscribe(subject) do
-        :ok -> Logger.info("TemplateService subscribed to: #{subject}")
+        {:ok, _subscription_id} -> Logger.info("TemplateService subscribed to: #{subject}")
         {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
       end
     end)
@@ -189,6 +189,132 @@ defmodule Singularity.Knowledge.TemplateService do
   defp send_error(_gnat, nil, _message), do: :ok
 
   # Public API for other modules to use instead of direct NATS calls
+
+  @doc """
+  Render a template with automatic Package Intelligence context injection.
+
+  This is the RECOMMENDED way to render templates - automatically injects:
+  - Framework best practices (from frameworks/*.json)
+  - Quality requirements (from quality/*.json)
+  - Prompt bits (from prompt_library/*.json)
+  - Package recommendations (from package registry)
+
+  ## Options
+  - `:framework` - Framework name (auto-detected if not provided)
+  - `:quality_level` - production|standard|prototype (default: production)
+  - `:include_hints` - Include LLM hints (default: false)
+  - `:validate` - Validate required variables (default: true)
+
+  ## Examples
+
+      iex> render_with_context("phoenix-liveview", %{
+        module_name: "MyAppWeb.Dashboard",
+        description: "Real-time dashboard"
+      }, framework: "phoenix", quality_level: "production")
+      {:ok, code_with_phoenix_best_practices}
+  """
+  @spec render_with_context(String.t(), map(), keyword()) :: {:ok, String.t()} | {:error, term()}
+  def render_with_context(template_id, user_variables, opts \\ []) do
+    # 1. Query Package Intelligence for enriched context
+    case query_package_intelligence(user_variables, opts) do
+      {:ok, intelligence} ->
+        # 2. Merge user variables with intelligence context
+        enriched_variables = compose_context(user_variables, intelligence, opts)
+
+        # 3. Render with enriched context
+        render_template_with_solid(template_id, enriched_variables, opts)
+
+      {:error, reason} ->
+        # If intelligence query fails, render with user variables only
+        Logger.warning("Package Intelligence query failed, rendering without context",
+          reason: reason
+        )
+
+        render_template_with_solid(template_id, user_variables, opts)
+    end
+  end
+
+  @doc """
+  Render a template using Solid (Handlebars) with full support for conditionals, loops, and partials.
+
+  This is the base rendering function. For context-aware rendering with framework/quality
+  injection, use `render_with_context/3` instead.
+
+  ## Options
+  - `:validate` - Validate required variables (default: true)
+  - `:quality_check` - Run quality checks on output (default: false)
+  - `:cache` - Cache rendered output (default: true)
+
+  ## Examples
+
+      iex> render_template_with_solid("elixir-module", %{
+        module_name: "MyApp.Worker",
+        description: "Background worker",
+        api_functions: [
+          %{name: "start_link", args: "opts", return_type: "GenServer.on_start()"}
+        ]
+      })
+      {:ok, "defmodule MyApp.Worker do\\n  @moduledoc..."}
+
+      iex> render_template_with_solid("phoenix-api", %{resource: "User"}, validate: true)
+      {:ok, rendered_code}
+  """
+  @spec render_template_with_solid(String.t(), map(), keyword()) :: {:ok, String.t()} | {:error, term()}
+  def render_template_with_solid(template_id, variables, opts \\ []) do
+    # Delegate to Renderer for actual rendering logic
+    case Singularity.Templates.Renderer.render(template_id, variables, opts) do
+      {:ok, rendered} ->
+        # Track successful render for learning
+        track_template_usage(template_id, :success)
+        {:ok, rendered}
+
+      {:error, reason} = error ->
+        # Track failure for learning
+        track_template_usage(template_id, :failure)
+        Logger.error("Template render failed",
+          template_id: template_id,
+          reason: inspect(reason),
+          variables: Map.keys(variables)
+        )
+        error
+    end
+  end
+
+  @doc """
+  Render template using Solid mode explicitly (no fallback to JSON).
+
+  Use this when you need to ensure Handlebars features are available.
+  """
+  @spec render_with_solid_only(String.t(), map(), keyword()) :: {:ok, String.t()} | {:error, term()}
+  def render_with_solid_only(template_id, variables, opts \\ []) do
+    case Singularity.Templates.Renderer.render_with_solid(template_id, variables, opts) do
+      {:ok, rendered} ->
+        track_template_usage(template_id, :success)
+        {:ok, rendered}
+
+      {:error, reason} = error ->
+        track_template_usage(template_id, :failure)
+        error
+    end
+  end
+
+  @doc """
+  Render template using legacy JSON mode explicitly (no Solid features).
+
+  Use this for backward compatibility or when Handlebars features aren't needed.
+  """
+  @spec render_with_json_only(String.t(), map(), keyword()) :: {:ok, String.t()} | {:error, term()}
+  def render_with_json_only(template_id, variables, opts \\ []) do
+    case Singularity.Templates.Renderer.render_legacy(template_id, variables, opts) do
+      {:ok, rendered} ->
+        track_template_usage(template_id, :success)
+        {:ok, rendered}
+
+      {:error, reason} = error ->
+        track_template_usage(template_id, :failure)
+        error
+    end
+  end
 
   @doc """
   Search for patterns by detection methods.
@@ -483,5 +609,138 @@ defmodule Singularity.Knowledge.TemplateService do
       %{duration_us: duration},
       %{status: status, artifact_type: artifact_type}
     )
+  end
+
+  @doc """
+  Track template usage for learning loop.
+
+  This feeds into the Central Cloud IntelligenceHub to:
+  - Calculate success rates
+  - Identify high-quality templates for promotion
+  - Auto-export learned patterns to Git
+
+  Publishes to NATS subject: `template.usage.{template_id}`
+  """
+  defp track_template_usage(template_id, status) when status in [:success, :failure] do
+    usage_event = %{
+      template_id: template_id,
+      status: status,
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+      instance_id: node() |> Atom.to_string()
+    }
+
+    # Publish to NATS for Central Cloud aggregation
+    case Singularity.NatsClient.publish(
+           "template.usage.#{template_id}",
+           Jason.encode!(usage_event)
+         ) do
+      :ok ->
+        Logger.debug("Tracked template usage",
+          template_id: template_id,
+          status: status
+        )
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("Failed to track template usage",
+          template_id: template_id,
+          status: status,
+          reason: reason
+        )
+        # Don't fail the render operation if tracking fails
+        :ok
+    end
+  end
+
+  # ===========================
+  # Package Intelligence Integration
+  # ===========================
+
+  defp query_package_intelligence(user_variables, opts) do
+    # Build query for Package Intelligence
+    query = %{
+      "description" => user_variables["description"] || "",
+      "language" => opts[:language] || user_variables["language"] || "elixir",
+      "framework" => opts[:framework],
+      "quality_level" => opts[:quality_level] || "production",
+      "task_type" => opts[:task_type] || "code_generation"
+    }
+
+    # Query via NATS with timeout
+    case Singularity.NatsClient.request(
+           "intelligence.query",
+           Jason.encode!(query),
+           timeout: 2000
+         ) do
+      {:ok, response} ->
+        case Jason.decode(response.data) do
+          {:ok, intelligence} ->
+            Logger.debug("Package Intelligence query successful",
+              framework: get_in(intelligence, ["framework", "name"])
+            )
+
+            {:ok, intelligence}
+
+          {:error, reason} ->
+            {:error, {:decode_error, reason}}
+        end
+
+      {:error, reason} ->
+        {:error, {:nats_error, reason}}
+    end
+  end
+
+  defp compose_context(user_vars, intelligence, opts) do
+    user_vars
+    |> inject_framework_context(intelligence, opts)
+    |> inject_quality_requirements(intelligence, opts)
+    |> inject_prompt_bits(intelligence, opts)
+  end
+
+  defp inject_framework_context(vars, intelligence, opts) do
+    if opts[:include_framework_hints] != false do
+      framework = intelligence["framework"] || %{}
+
+      Map.merge(vars, %{
+        "framework_name" => framework["name"],
+        "framework_hints" => framework,
+        "best_practices" => framework["best_practices"] || [],
+        "common_mistakes" => framework["common_mistakes"] || [],
+        "code_snippets" => framework["code_snippets"] || %{},
+        "prompt_context" => framework["prompt_context"]
+      })
+    else
+      vars
+    end
+  end
+
+  defp inject_quality_requirements(vars, intelligence, opts) do
+    if opts[:include_quality_hints] != false do
+      quality = intelligence["quality"] || %{}
+
+      Map.merge(vars, %{
+        "quality_level" => quality["quality_level"],
+        "quality_requirements" => quality["requirements"] || %{},
+        "generation_prompts" => quality["prompts"] || %{},
+        "scoring_weights" => quality["scoring_weights"] || %{}
+      })
+    else
+      vars
+    end
+  end
+
+  defp inject_prompt_bits(vars, intelligence, opts) do
+    if opts[:include_hints] == true do
+      framework = intelligence["framework"] || %{}
+      prompts = intelligence["prompts"] || %{}
+
+      Map.merge(vars, %{
+        "llm_context" => framework["prompt_context"],
+        "system_prompt" => prompts["system_prompt"],
+        "generation_hints" => prompts["generation_hints"] || []
+      })
+    else
+      vars
+    end
   end
 end

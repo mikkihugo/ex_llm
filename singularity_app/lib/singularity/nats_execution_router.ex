@@ -28,13 +28,13 @@ defmodule Singularity.NatsExecutionRouter do
     # Use Singularity.NatsClient for NATS operations
     # Subscribe to execution requests
     case Singularity.NatsClient.subscribe("execution.request") do
-      :ok -> Logger.info("NatsExecutionRouter subscribed to: execution.request")
+      {:ok, _subscription_id} -> Logger.info("NatsExecutionRouter subscribed to: execution.request")
       {:error, reason} -> Logger.error("Failed to subscribe to execution.request: #{reason}")
     end
 
     # Subscribe to template recommendation requests
     case Singularity.NatsClient.subscribe("template.recommend") do
-      :ok -> Logger.info("NatsExecutionRouter subscribed to: template.recommend")
+      {:ok, _subscription_id} -> Logger.info("NatsExecutionRouter subscribed to: template.recommend")
       {:error, reason} -> Logger.error("Failed to subscribe to template.recommend: #{reason}")
     end
 

@@ -78,20 +78,16 @@ defmodule Singularity.Planning.WorkPlanAPI do
 
   @impl true
   def init(:ok) do
-    case Gnat.ConnectionSupervisor.connection_pid(:gnat) do
-      pid when is_pid(pid) ->
-        # Subscribe to all planning subjects
-        Enum.each(@subjects, fn {_key, subject} ->
-          :ok = Gnat.sub(pid, self(), subject)
-          Logger.info("WorkPlanAPI subscribed to NATS subject: #{subject}")
-        end)
+    # Start our own NATS connection
+    {:ok, gnat} = Gnat.start_link(%{host: "localhost", port: 4222})
 
-        {:ok, %{conn: pid}}
+    # Subscribe to all planning subjects
+    Enum.each(@subjects, fn {_key, subject} ->
+      {:ok, _sid} = Gnat.sub(gnat, self(), subject)
+      Logger.info("WorkPlanAPI subscribed to NATS subject: #{subject}")
+    end)
 
-      {:error, reason} ->
-        Logger.error("Failed to get NATS connection: #{inspect(reason)}")
-        {:stop, reason}
-    end
+    {:ok, %{gnat: gnat}}
   end
 
   @impl true
@@ -106,7 +102,7 @@ defmodule Singularity.Planning.WorkPlanAPI do
 
     # Send reply if reply_to is present
     if reply_to do
-      Gnat.pub(state.conn, reply_to, Jason.encode!(response))
+      Gnat.pub(state.gnat, reply_to, Jason.encode!(response))
     end
 
     {:noreply, state}

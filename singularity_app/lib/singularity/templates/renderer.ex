@@ -2,20 +2,29 @@ defmodule Singularity.Templates.Renderer do
   @moduledoc """
   Production-ready template renderer with composition, validation, and extensibility.
 
+  Supports TWO rendering modes:
+  1. **Legacy JSON mode**: Simple {{variable}} replacement (backward compatible)
+  2. **Solid mode**: Full Handlebars syntax with conditionals, loops, partials
+
   Features:
   - Template composition (extends, compose bits)
   - Variable replacement with validation
   - Multi-file snippet rendering
   - Quality standard enforcement
   - Template inheritance
-  - Conditional rendering
-  - Loops/iteration
+  - Conditional rendering (Solid only)
+  - Loops/iteration (Solid only)
   - Template caching
   - Error handling with context
+  - Custom helpers (Solid only)
   """
 
   alias Singularity.Knowledge.TemplateService
+  alias Singularity.Templates.SolidHelpers
   require Logger
+
+  @templates_data_dir Application.compile_env(:singularity, :templates_data_dir, "templates_data")
+  @priv_templates_dir "priv/templates"
 
   @type variables :: %{(String.t() | atom()) => any()}
   @type render_opts :: [
@@ -47,6 +56,44 @@ defmodule Singularity.Templates.Renderer do
   """
   @spec render(String.t(), variables(), render_opts()) :: {:ok, String.t()} | {:error, term()}
   def render(template_id, variables \\ %{}, opts \\ []) do
+    opts = Keyword.merge([validate: true, quality_check: false, cache: true], opts)
+
+    # Auto-detect format: Check for .hbs file first, fallback to JSON
+    case determine_render_mode(template_id) do
+      :solid ->
+        render_with_solid(template_id, variables, opts)
+
+      :legacy ->
+        render_legacy(template_id, variables, opts)
+    end
+  end
+
+  @doc """
+  Render template using Solid (Handlebars) engine.
+
+  Supports full Handlebars syntax: conditionals, loops, partials, custom helpers.
+  """
+  def render_with_solid(template_id, variables \\ %{}, opts \\ []) do
+    opts = Keyword.merge([validate: true, quality_check: false, cache: true], opts)
+
+    with {:ok, hbs_content} <- load_handlebars_template(template_id),
+         {:ok, metadata} <- load_template_metadata(template_id),
+         {:ok, validated_vars} <- validate_variables_from_metadata(metadata, variables, opts),
+         {:ok, solid_template} <- parse_solid_template(hbs_content, template_id),
+         {:ok, rendered} <- render_solid(solid_template, validated_vars),
+         {:ok, checked} <- maybe_quality_check(rendered, metadata, opts) do
+      {:ok, checked}
+    else
+      {:error, reason} = error ->
+        Logger.error("Solid template render failed: #{template_id} - #{inspect(reason)}")
+        error
+    end
+  end
+
+  @doc """
+  Legacy render using JSON templates (backward compatible).
+  """
+  def render_legacy(template_id, variables \\ %{}, opts \\ []) do
     opts = Keyword.merge([validate: true, quality_check: false, cache: true], opts)
 
     with {:ok, template} <- load_template(template_id, opts),
@@ -102,6 +149,151 @@ defmodule Singularity.Templates.Renderer do
     with {:ok, template} <- load_template(template_id, []),
          {:ok, var_info} <- analyze_variables(template, variables) do
       {:ok, var_info}
+    end
+  end
+
+  ## Solid (Handlebars) Rendering
+
+  defp determine_render_mode(template_id) do
+    # Check if .hbs file exists in templates_data/ or priv/templates/
+    hbs_paths = [
+      Path.join([@templates_data_dir, "**", "#{template_id}.hbs"]),
+      Path.join([@priv_templates_dir, "**", "#{template_id}.hbs"])
+    ]
+
+    found = Enum.any?(hbs_paths, fn pattern ->
+      case Path.wildcard(pattern) do
+        [] -> false
+        _ -> true
+      end
+    end)
+
+    if found, do: :solid, else: :legacy
+  end
+
+  defp load_handlebars_template(template_id) do
+    # Search for .hbs file in multiple locations
+    search_paths = [
+      # 1. Try priv/templates/ (compiled templates)
+      Path.join([@priv_templates_dir, "code_generation", "#{template_id}.hbs"]),
+      Path.join([@priv_templates_dir, "#{template_id}.hbs"]),
+      # 2. Try templates_data/ (source templates)
+      Path.join([@templates_data_dir, "base", "#{template_id}.hbs"]),
+      Path.join([@templates_data_dir, "code_generation", "patterns", "**", "#{template_id}.hbs"])
+    ]
+
+    # Find first existing file
+    found_path =
+      search_paths
+      |> Enum.flat_map(fn pattern -> Path.wildcard(pattern) end)
+      |> Enum.find(&File.exists?/1)
+
+    case found_path do
+      nil ->
+        {:error, {:template_not_found, template_id}}
+
+      path ->
+        case File.read(path) do
+          {:ok, content} ->
+            Logger.debug("Loaded Handlebars template: #{path}")
+            {:ok, content}
+
+          {:error, reason} ->
+            {:error, {:file_read_error, reason}}
+        end
+    end
+  end
+
+  defp load_template_metadata(template_id) do
+    # Look for -meta.json or .json file
+    search_paths = [
+      Path.join([@templates_data_dir, "base", "#{template_id}-meta.json"]),
+      Path.join([@templates_data_dir, "base", "#{template_id}.json"]),
+      Path.join([@templates_data_dir, "code_generation", "patterns", "**", "#{template_id}.json"])
+    ]
+
+    found_path =
+      search_paths
+      |> Enum.flat_map(fn pattern -> Path.wildcard(pattern) end)
+      |> Enum.find(&File.exists?/1)
+
+    case found_path do
+      nil ->
+        # No metadata file - use defaults
+        {:ok, %{"variables" => %{}}}
+
+      path ->
+        case File.read(path) do
+          {:ok, json} ->
+            case Jason.decode(json) do
+              {:ok, metadata} ->
+                {:ok, metadata}
+
+              {:error, reason} ->
+                {:error, {:json_decode_error, reason}}
+            end
+
+          {:error, reason} ->
+            {:error, {:file_read_error, reason}}
+        end
+    end
+  end
+
+  defp validate_variables_from_metadata(metadata, variables, opts) do
+    if Keyword.get(opts, :validate, true) do
+      var_defs = metadata["variables"] || %{}
+      normalized = normalize_variables(variables)
+
+      missing =
+        Enum.filter(var_defs, fn {key, def_map} ->
+          Map.get(def_map, "required", false) && !Map.has_key?(normalized, key)
+        end)
+        |> Enum.map(fn {key, _} -> key end)
+
+      if Enum.empty?(missing) do
+        # Add defaults
+        with_defaults =
+          Enum.reduce(var_defs, normalized, fn {key, def_map}, acc ->
+            if !Map.has_key?(acc, key) && Map.has_key?(def_map, "default") do
+              Map.put(acc, key, def_map["default"])
+            else
+              acc
+            end
+          end)
+
+        {:ok, with_defaults}
+      else
+        {:error, {:missing_required_variables, missing}}
+      end
+    else
+      {:ok, normalize_variables(variables)}
+    end
+  end
+
+  defp parse_solid_template(hbs_content, _template_id) do
+    case Solid.parse(hbs_content) do
+      {:ok, template} ->
+        {:ok, template}
+
+      {:error, errors} when is_list(errors) ->
+        Logger.error("Solid parse errors: #{inspect(errors)}")
+        {:error, {:parse_errors, errors}}
+
+      {:error, reason} ->
+        {:error, {:parse_error, reason}}
+    end
+  end
+
+  defp render_solid(solid_template, variables) do
+    # Ensure helpers are registered
+    SolidHelpers.register_all()
+
+    case Solid.render(solid_template, variables) do
+      {:ok, rendered} ->
+        {:ok, IO.iodata_to_binary(rendered)}
+
+      {:error, reason} ->
+        {:error, {:render_error, reason}}
     end
   end
 

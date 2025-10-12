@@ -1,0 +1,51 @@
+use {{app_name}}Web, :live_view
+
+@impl true
+def mount(params, session, socket) do
+  {{#if subscribe_on_connect}}
+  if connected?(socket) do
+    # Subscribe to PubSub topics when WebSocket connects
+    {{#each subscriptions}}
+    {{app_name}}Web.Endpoint.subscribe("{{this}}")
+    {{/each}}
+  end
+  {{/if}}
+
+  socket = socket
+    {{#each assigns}}
+    |> assign(:{{name}}, {{default}})
+    {{/each}}
+
+  {:ok, socket}
+end
+
+@impl true
+def render(assigns) do
+  ~H"""
+  <div>
+    {{render_content}}
+  </div>
+  """
+end
+
+@impl true
+def handle_event("{{event_name}}", params, socket) do
+  # Handle user events
+  {:noreply, socket}
+end
+
+{{#if handle_info}}
+@impl true
+def handle_info(%{event: event, payload: payload}, socket) do
+  # Handle PubSub broadcasts
+  {:noreply, socket}
+end
+{{/if}}
+
+{{#if handle_params}}
+@impl true
+def handle_params(params, _uri, socket) do
+  # Handle URL parameter changes
+  {:noreply, socket}
+end
+{{/if}}

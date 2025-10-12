@@ -1118,7 +1118,7 @@ defmodule Singularity.Tools.Documentation do
     end
   end
 
-  defp format_markdown_docs(content, language) do
+  defp format_markdown_docs(content, _language) do
     Enum.map(content, fn item ->
       case item do
         %{name: name, type: type, description: desc, examples: examples, types: types} ->
@@ -1149,7 +1149,7 @@ defmodule Singularity.Tools.Documentation do
     "<html><body>" <> format_markdown_docs(content, language) <> "</body></html>"
   end
 
-  defp format_rst_docs(content, language) do
+  defp format_rst_docs(content, _language) do
     # RST formatting
     Enum.map(content, fn item ->
       case item do
@@ -1170,7 +1170,7 @@ defmodule Singularity.Tools.Documentation do
     |> Enum.join("\n\n")
   end
 
-  defp format_text_docs(content, language) do
+  defp format_text_docs(content, _language) do
     Enum.map(content, fn item ->
       case item do
         %{name: name, type: type, description: desc} ->
@@ -1278,7 +1278,7 @@ defmodule Singularity.Tools.Documentation do
     end
   end
 
-  defp analyze_elixir_missing_docs(content, file, include_private, min_complexity) do
+  defp analyze_elixir_missing_docs(content, file, _include_private, min_complexity) do
     # Find functions without @doc
     function_regex = ~r/def\s+([a-z_][a-z0-9_]*)\s*(?:\([^)]*\))?\s*(?:when\s+[^do]+)?\s*do/
     doc_regex = ~r/@doc\s+["']/

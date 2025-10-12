@@ -1,0 +1,79 @@
+@moduledoc """
+{{description}}
+
+## Overview
+
+{{overview}}
+
+{{#if framework_name}}
+## {{framework_name}} Best Practices
+
+{{#if best_practices}}
+{{#each best_practices}}
+- {{this}}
+{{/each}}
+{{/if}}
+
+{{#if common_mistakes}}
+## Common Mistakes to Avoid
+
+{{#each common_mistakes}}
+- ⚠️ {{this}}
+{{/each}}
+{{/if}}
+{{/if}}
+
+{{#if quality_requirements}}
+## Quality Standards ({{quality_level}})
+
+{{#if quality_requirements.documentation.moduledoc.required}}
+✅ @moduledoc (min {{quality_requirements.documentation.moduledoc.min_length}} chars)
+{{/if}}
+{{#if quality_requirements.type_specs.required}}
+✅ @spec for all public functions
+{{/if}}
+{{#if quality_requirements.testing}}
+✅ {{quality_requirements.testing.coverage_target}}% test coverage target
+{{/if}}
+{{/if}}
+
+## Public API Contract
+
+{{api_contract}}
+
+## Error Matrix
+
+{{error_matrix}}
+
+## Performance Notes
+
+{{performance_notes}}
+
+{{#if concurrency_notes}}
+## Concurrency Semantics
+
+{{concurrency_notes}}
+{{/if}}
+
+{{#if security_notes}}
+## Security Considerations
+
+{{security_notes}}
+{{/if}}
+
+## Examples
+
+{{examples}}
+
+{{#if relationships}}
+## Relationships
+
+{{relationships}}
+{{/if}}
+
+{{#if template_version}}
+## Template Version
+
+{{template_version}}
+{{/if}}
+"""

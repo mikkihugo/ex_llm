@@ -106,6 +106,8 @@ defmodule Singularity.MixProject do
       # Data & Serialization
       {:jason, "~> 1.4"},
       {:nimble_options, "~> 1.1"},
+      # Handlebars-like templating
+      {:solid, "~> 0.14"},
 
       # T5 Training & LLM Integration
       {:bumblebee, "~> 0.5"},

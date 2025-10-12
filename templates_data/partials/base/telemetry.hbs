@@ -1,0 +1,41 @@
+## Telemetry & Observability
+
+defp emit_telemetry(event, measurements \\ %{}, metadata \\ %{}) do
+  :telemetry.execute(
+    [:{{app_name}}, :{{module_type}} | event],
+    measurements,
+    metadata
+  )
+end
+
+{{#if include_timing}}
+defp emit_timing(operation, start_time, metadata \\ %{}) do
+  duration = System.monotonic_time(:millisecond) - start_time
+
+  emit_telemetry(
+    [operation, :duration],
+    %{duration_ms: duration},
+    metadata
+  )
+end
+{{/if}}
+
+{{#if include_counter}}
+defp increment_counter(event, metadata \\ %{}) do
+  emit_telemetry(
+    [event, :count],
+    %{count: 1},
+    metadata
+  )
+end
+{{/if}}
+
+{{#if include_error_tracking}}
+defp track_error(operation, error, metadata \\ %{}) do
+  emit_telemetry(
+    [operation, :error],
+    %{},
+    Map.merge(metadata, %{error: inspect(error)})
+  )
+end
+{{/if}}

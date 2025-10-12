@@ -20,12 +20,8 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.Supervisor do
     Logger.info("Starting Architecture Engine Meta-Registry Supervisor...")
 
     children = [
-      # Start the framework registry
-      {Singularity.ArchitectureEngine.MetaRegistry.FrameworkRegistry, []},
       # Start the message handlers
-      {Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers, []},
-      # Start the query system
-      {Singularity.ArchitectureEngine.MetaRegistry.QuerySystem, []}
+      {Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers, []}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

@@ -33,6 +33,16 @@ defmodule Singularity.Nats.EngineDiscoveryHandler do
     end
   end
 
+  @doc """
+  Subscribe to engine discovery subjects using NatsClient (for use by NatsServer).
+  """
+  def subscribe() do
+    # TODO: Implement subscription using NatsClient
+    # For now, just log that we're subscribing
+    Logger.info("[EngineDiscovery] Engine discovery subscription initialized (NatsClient integration pending)")
+    :ok
+  end
+
   defp subscribe_to(conn, subject, handler) do
     case Gnat.sub(conn, self(), subject) do
       {:ok, _sub} ->

@@ -781,3 +781,174 @@ mix knowledge.migrate         # Import JSONs
 - ❌ Production constraints (no SLAs, no multi-tenant)
 
 **Example:** Store everything (raw + parsed + embeddings + usage + search history) for maximum learning and debugging - storage is cheap, insights are valuable!
+
+## OTP Supervision Patterns (Internal Tooling)
+
+### Layered Supervision Architecture
+
+Singularity uses a **layered supervision tree** with nested supervisors for better organization, fault isolation, and self-documenting architecture.
+
+### Supervision Layers
+
+The application supervision tree is organized into 6 layers:
+
+```elixir
+# singularity_app/lib/singularity/application.ex
+
+children = [
+  # Layer 1: Foundation - Database and metrics MUST start first
+  Singularity.Repo,
+  Singularity.Telemetry,
+
+  # Layer 2: Infrastructure - Core services required by application layer
+  Singularity.Infrastructure.Supervisor,  # CircuitBreaker, ErrorRateTracker, StartupWarmup, EmbeddingModelLoader
+  Singularity.NATS.Supervisor,           # NatsServer, NatsClient, NatsExecutionRouter
+
+  # Layer 3: Domain Services - Business logic and domain-specific functionality
+  Singularity.LLM.Supervisor,            # LLM.RateLimiter
+  Singularity.Knowledge.Supervisor,       # TemplateService, TemplatePerformanceTracker, CodeStore
+  Singularity.Planning.Supervisor,        # HTDAGAutoBootstrap, SafeWorkPlanner, WorkPlanAPI
+  Singularity.SPARC.Supervisor,          # SPARC.Orchestrator, TemplateSparcOrchestrator
+  Singularity.Todos.Supervisor,          # TodoSwarmCoordinator
+
+  # Layer 4: Agents & Execution - Dynamic agent management and task execution
+  Singularity.Agents.Supervisor,          # RuntimeBootstrapper, AgentSupervisor (DynamicSupervisor)
+  Singularity.ApplicationSupervisor,     # Control, Runner
+
+  # Layer 5: Singletons - Standalone services that don't fit in other categories
+  Singularity.Autonomy.RuleEngine,
+
+  # Layer 6: Existing Domain Supervisors - Domain-specific supervision trees
+  Singularity.ArchitectureEngine.MetaRegistry.Supervisor,
+  Singularity.Git.Supervisor
+]
+```
+
+**Key Principles:**
+- Each layer depends on previous layers being started successfully
+- Nested supervisors group related processes for better fault isolation
+- Clear naming convention: `Domain.Supervisor` manages all `Domain.*` processes
+
+### Creating New Supervisors
+
+Use the template: [base/elixir-supervisor-nested.json](templates_data/base/elixir-supervisor-nested.json)
+
+**Example:** Creating a new domain supervisor
+
+```elixir
+defmodule Singularity.MyDomain.Supervisor do
+  @moduledoc """
+  MyDomain Supervisor - Manages my domain infrastructure.
+
+  ## Managed Processes
+
+  - `Singularity.MyDomain.Service1` - GenServer managing X
+  - `Singularity.MyDomain.Service2` - GenServer managing Y
+
+  ## Restart Strategy
+
+  Uses `:one_for_one` because each child is independent.
+
+  ## Dependencies
+
+  Depends on:
+  - Repo - For database access
+  - NATS.Supervisor - For messaging
+  """
+
+  use Supervisor
+  require Logger
+
+  def start_link(opts \\ []) do
+    Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @impl true
+  def init(_opts) do
+    Logger.info("Starting MyDomain Supervisor...")
+
+    children = [
+      Singularity.MyDomain.Service1,
+      Singularity.MyDomain.Service2
+    ]
+
+    Supervisor.init(children, strategy: :one_for_one)
+  end
+end
+```
+
+### Restart Strategies
+
+**`:one_for_one`** - Most common for internal tooling
+- Each child restarts independently
+- Use when children don't depend on each other
+
+**`:rest_for_one`** - For ordered dependencies
+- If a child crashes, restart it and all children started after it
+- Use for NATS.Supervisor (Server → Client → Router)
+
+**`:one_for_all`** - Rare, for tightly coupled systems
+- If any child crashes, restart all children
+- Use sparingly - usually indicates poor architecture
+
+### Benefits of Nested Supervision
+
+1. **Self-Documenting** - Supervisor names/docs explain what they manage
+2. **Fault Isolation** - Failures contained within domain boundaries
+3. **Easy Debugging** - Crash logs show which domain failed
+4. **Fast Iteration** - Add/remove/reorganize domains easily
+5. **Learning** - Captures OTP patterns for reuse across projects
+
+### Guidelines
+
+**DO:**
+- Create nested supervisors for logical domains (NATS, LLM, Knowledge, etc.)
+- Document managed processes in `@moduledoc`
+- Explain restart strategy and why it was chosen
+- List dependencies (what must start before this supervisor)
+
+**DON'T:**
+- Add plain modules (non-processes) to supervision tree
+- Create supervisors with only 1 child (unless wrapping DynamicSupervisor)
+- Mix unrelated processes in same supervisor
+- Use `:one_for_all` unless absolutely necessary
+
+### Verifying Process Types
+
+Before adding to supervision tree, check if module is a process:
+
+```bash
+# Check if module uses GenServer/Supervisor/Agent
+grep "use GenServer\|use Supervisor\|use Agent" lib/path/to/module.ex
+
+# ✅ Has "use GenServer" → Add to supervision tree
+# ❌ No "use" declaration → Plain module, don't supervise
+```
+
+**Example:**
+- `LLM.Service` - Plain module (no supervision needed)
+- `LLM.RateLimiter` - GenServer (needs supervision)
+
+### Follow central_cloud Pattern
+
+The `central_cloud` application demonstrates clean supervision for internal tooling:
+
+```elixir
+# central_cloud/lib/central_cloud/application.ex
+children = [
+  CentralCloud.Repo,                    # Database
+  CentralCloud.NatsClient,              # Messaging
+  CentralCloud.KnowledgeCache,          # Cache
+  CentralCloud.TemplateService,         # Domain services
+  CentralCloud.FrameworkLearningAgent,
+  CentralCloud.IntelligenceHub,
+  CentralCloud.IntelligenceHubSubscriber,
+]
+```
+
+**Why this works:**
+- Only 8 children (manageable)
+- Clear dependency order (Repo → NATS → Services)
+- No duplicates
+- All children are actual processes
+- Self-documenting

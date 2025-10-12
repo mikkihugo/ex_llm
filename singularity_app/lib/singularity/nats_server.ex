@@ -71,7 +71,7 @@ defmodule Singularity.NatsServer do
       "nats.request.complex"
     ], fn subject ->
       case Singularity.NatsClient.subscribe(subject) do
-        :ok -> Logger.info("NatsServer subscribed to: #{subject}")
+        {:ok, _subscription_id} -> Logger.info("NatsServer subscribed to: #{subject}")
         {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
       end
     end)
