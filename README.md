@@ -334,3 +334,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Uses Tree-sitter for universal parsing
 - PostgreSQL with pgvector for embeddings
 - NATS for distributed messaging
+# Test commit to trigger CI workflow
