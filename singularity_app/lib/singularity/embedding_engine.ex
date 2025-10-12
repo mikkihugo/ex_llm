@@ -52,8 +52,7 @@ defmodule Singularity.EmbeddingEngine do
 
   use Rustler,
     otp_app: :singularity,
-    crate: :semantic_embedding_engine,
-    path: "../../rust_global/semantic_embedding_engine"
+    crate: :embedding_engine
 
   require Logger
   alias Singularity.NatsClient
