@@ -12,16 +12,8 @@ on:
       - .github/workflows/copilot-setup-steps.yml
 
 jobs:
-  nix-setup:
-    uses: ./.github/workflows/nix-setup.yml
-    secrets: inherit
-    with:
-      cachix_push: false
-      cache_key_prefix: 'copilot-otp28-elixir1184'
-
   # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
   copilot-setup-steps:
-    needs: nix-setup
     runs-on: ubuntu-latest
     permissions:
       contents: read
