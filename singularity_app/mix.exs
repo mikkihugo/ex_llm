@@ -99,9 +99,7 @@ defmodule Singularity.MixProject do
        runtime: false,
        app: false,
        compile: false},
-      # Other engines are symlinks to rust/ directories (already included in workspace)
-      # Embedding engine (GPU-accelerated with Jina v3 + Qodo-Embed) - DISABLED FOR NOW
-      # {:embedding_engine, path: "../rust_global/semantic_embedding_engine", runtime: false, app: false},
+      # Other engines are symlinks to rust/ or rust-central/ directories (already included in workspace)
 
       # Data & Serialization
       {:jason, "~> 1.4"},

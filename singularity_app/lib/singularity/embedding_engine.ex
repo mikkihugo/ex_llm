@@ -50,11 +50,10 @@ defmodule Singularity.EmbeddingEngine do
   `SemanticEngine` is maintained as an alias for backward compatibility.
   """
 
-  # Temporarily disabled NIF compilation - TODO: Fix rust_global path issues
   use Rustler,
     otp_app: :singularity,
-    crate: :embedding_engine,
-    path: "../rust_global/semantic_embedding_engine"
+    crate: :semantic_embedding_engine,
+    path: "../../rust_global/semantic_embedding_engine"
 
   require Logger
   alias Singularity.NatsClient
@@ -114,16 +113,16 @@ defmodule Singularity.EmbeddingEngine do
   @type model :: :jina_v3 | :qodo_embed
   @type opts :: [model: model()]
 
-  ## NIF Functions
+  ## NIF Stubs
 
   @doc false
-  def embed_batch(_texts, _model_type), do: :erlang.nif_error(:nif_not_loaded)
+  def embed_batch(texts, model_type), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc false
-  def embed_single(_text, _model_type), do: :erlang.nif_error(:nif_not_loaded)
+  def embed_single(text, model_type), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc false
-  def preload_models(_model_types), do: :erlang.nif_error(:nif_not_loaded)
+  def preload_models(model_types), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc false
   def cosine_similarity_batch(_query_embeddings, _candidate_embeddings),
@@ -326,7 +325,7 @@ defmodule Singularity.EmbeddingEngine do
     end
   end
 
-  ## Mock Implementations (temporary until NIF path issues are resolved)
+  ## Mock Implementations (used as fallback when NIF not loaded)
 
   defp mock_embed_single(text, model_type) do
     # Mock embedding generation - return fixed-size vector based on model
@@ -356,8 +355,8 @@ defmodule Singularity.EmbeddingEngine do
   end
 
   defp mock_preload_models(model_types) do
-    # Mock model preloading
-    "Mock preloaded models: #{Enum.join(model_types, ", ")}"
+    # Mock model preloading - return success tuple
+    {:ok, "Mock preloaded models: #{Enum.join(model_types, ", ")}"}
   end
 
   # Central Cloud Integration via NATS
