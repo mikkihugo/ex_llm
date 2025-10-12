@@ -62,7 +62,17 @@ defmodule Singularity.NatsServer do
 
   @impl true
   def init(_opts) do
-    # Use Singularity.NatsClient for NATS operations
+    Logger.info("NATS Server initializing...")
+
+    # Defer subscription to handle_continue to ensure NatsClient is ready
+    {:ok, %{}, {:continue, :subscribe}}
+  end
+
+  @impl true
+  def handle_continue(:subscribe, state) do
+    # Small delay to ensure NatsClient connection is established
+    Process.sleep(100)
+
     # Subscribe to NATS request subjects
     Enum.each([
       "nats.request",
@@ -82,7 +92,7 @@ defmodule Singularity.NatsServer do
 
     Logger.info("🚀 NATS Server started - Single entry point for all services")
 
-    {:ok, %{}}
+    {:noreply, state}
   end
 
   @impl true

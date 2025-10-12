@@ -35,8 +35,8 @@ defmodule Singularity.Application do
       Singularity.Telemetry,
 
       # Layer 2: Infrastructure - Core services required by application layer
-      # Manages: CircuitBreaker, ErrorRateTracker, StartupWarmup, EmbeddingModelLoader
-      Singularity.Infrastructure.Supervisor,
+      # Moved to ApplicationSupervisor to avoid duplicate startup
+      # Singularity.Infrastructure.Supervisor,
       # Manages: NatsServer, NatsClient, NatsExecutionRouter
       Singularity.NATS.Supervisor,
 
@@ -63,7 +63,10 @@ defmodule Singularity.Application do
 
       # Layer 6: Existing Domain Supervisors - Domain-specific supervision trees
       Singularity.ArchitectureEngine.MetaRegistry.Supervisor,
-      Singularity.Git.Supervisor
+      Singularity.Git.Supervisor,
+
+      # Layer 7: Startup Tasks - One-time tasks that run and exit
+      Singularity.Engine.NifStatus
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

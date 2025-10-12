@@ -2,20 +2,20 @@ defmodule Singularity.RustAnalyzer do
   @moduledoc """
   Rust NIF analyzer for code analysis.
 
-  This module loads the code_analysis NIF which provides:
+  This module loads the code_engine NIF which provides:
   - Control flow analysis
   - Dependency graphs
   - Quality metrics
 
-  The actual NIF is defined in rust/code_analysis/src/nif_bindings.rs
+  The actual NIF is defined in rust/code_engine/src/lib.rs
   """
 
   use Rustler,
     otp_app: :singularity,
-    crate: :code_analysis,
-    skip_compilation?: true  # TEMPORARY: Skip until code_analysis compilation is fixed
+    crate: :code_engine,
+    skip_compilation?: false
 
-  # NIF functions (provided by rust/code_analysis when compiled)
+  # NIF functions (provided by rust/code_engine when compiled)
   def analyze_control_flow(_file_path), do: :erlang.nif_error(:nif_not_loaded)
 end
 

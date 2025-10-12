@@ -2,13 +2,14 @@ defmodule CentralCloud.TemplateService do
   @moduledoc """
   Global Template Service for Central Cloud
   
-  This is the Elixir wrapper that uses the Rust global template service.
-  It provides templates to all Singularity instances via NATS.
+  This service now runs fully in Elixir and manages the global template store
+  directly. If the optional Rust template engine is running, we integrate over
+  NATS, but no native layer is required for day-to-day operations.
   
   ## Architecture
   
   ```
-  Local Instances → NATS → Central Cloud → Rust Template Service → PostgreSQL
+  Local Instances → NATS → Central Cloud (Elixir) → PostgreSQL
   ```
   
   ## Features

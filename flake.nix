@@ -422,6 +422,11 @@ EOF
             export XLA_FLAGS="--xla_gpu_cuda_data_dir=$CUDA_HOME"
             export EXLA_TARGET="cuda"
 
+            # OpenSSL for Rust NIF compilation and runtime
+            export OPENSSL_DIR="${pkgs.openssl.dev}"
+            export OPENSSL_ROOT_DIR="${pkgs.openssl.dev}"
+            export LD_LIBRARY_PATH="${pkgs.openssl.out}/lib:$LD_LIBRARY_PATH"
+
             # WSL2: Add Windows NVIDIA drivers to PATH (if available)
             if [ -d /usr/lib/wsl/lib ]; then
               export PATH="/usr/lib/wsl/lib:$PATH"
@@ -609,6 +614,9 @@ EOF
             export PATH="${pkgs.cudaPackages.cudatoolkit}/bin:$PATH"
             export LD_LIBRARY_PATH="${pkgs.cudaPackages.cudatoolkit}/lib:$LD_LIBRARY_PATH"
 
+            # OpenSSL for Rust NIF compilation and runtime
+            export LD_LIBRARY_PATH="${pkgs.openssl}/lib:$LD_LIBRARY_PATH"
+
             # Ensure just is available
             export PATH="${pkgs.just}/bin:$PATH"
             echo "DEBUG: Added just to PATH: ${pkgs.just}/bin"
@@ -664,6 +672,9 @@ EOF
             export CUDNN_HOME=${pkgs.cudaPackages.cudnn}
             export LD_LIBRARY_PATH=${pkgs.cudaPackages.cudatoolkit}/lib:${pkgs.cudaPackages.cudnn}/lib:''${LD_LIBRARY_PATH:-}
             mkdir -p "$HF_HOME"
+
+            # OpenSSL for any Rust dependencies
+            export LD_LIBRARY_PATH="${pkgs.openssl}/lib:$LD_LIBRARY_PATH"
             echo "🤖 LLM training shell ready"
             echo "  Python: $(python3 --version)"
             echo "  PyTorch CUDA build: $(python3 -c \"import torch; print(torch.version.cuda if torch.cuda.is_available() else 'cpu')\" 2>/dev/null || echo 'not found')"

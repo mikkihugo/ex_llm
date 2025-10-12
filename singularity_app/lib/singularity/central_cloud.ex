@@ -1,9 +1,11 @@
 defmodule Singularity.CentralCloud do
   @moduledoc """
-  Central Cloud Integration - Interface to global Rust components
+  Central Cloud Integration - BEAM-first global intelligence
   
-  This module provides the Elixir interface to the global Rust central knowledge components.
-  It handles heavy processing, pattern learning, and knowledge aggregation.
+  This module talks to the Elixir-based central cloud services that aggregate
+  knowledge across instances. Those services can still enlist Rust engines over
+  NATS when a workload demands it, but the coordination layer now lives entirely
+  on the BEAM.
   
   ## Central Cloud Operations
   - Heavy code analysis and pattern learning
@@ -19,7 +21,8 @@ defmodule Singularity.CentralCloud do
   @doc """
   Analyze codebase with central cloud processing.
   
-  This delegates heavy analysis to the global Rust components.
+  This delegates heavy analysis to the central cloud services, which may call
+  into optional Rust engines if they are running.
   """
   @spec analyze_codebase(map(), keyword()) :: {:ok, map()} | {:error, term()}
   def analyze_codebase(codebase_info, opts \\ []) do

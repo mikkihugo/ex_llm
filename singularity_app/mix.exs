@@ -81,24 +81,18 @@ defmodule Singularity.MixProject do
       # All 9 Rust NIFs (compile: false = won't rebuild every time)
       # Only include engines that actually exist
       {:architecture_engine,
-       path: "native/architecture_engine", runtime: false, app: false, compile: false},
-      # TEMPORARY: Disabled code_analysis due to compilation errors
-      # {:code_analysis,
-      #  path: "native/code_analysis", runtime: false, app: false, compile: false, optional: true},
-      # {:framework_engine, path: "native/architecture_engine", runtime: false, app: false, compile: false},
-      # {:knowledge_engine, path: "native/knowledge_engine", runtime: false, app: false, compile: false},
-      # {:package_engine, path: "native/package_engine", runtime: false, app: false, compile: false},
-      {:parser_engine,
-       path: "native/parser_engine", runtime: false, app: false, compile: false, optional: true},
-      {:prompt_engine,
-       path: "native/prompt_engine", runtime: false, app: false, compile: false, optional: true},
-      # {:quality_engine, path: "native/quality_engine", runtime: false, app: false, compile: false},
-      # Embedding engine (GPU-accelerated with Jina v3 + Qodo-Embed)
+       path: "../rust/architecture_engine", runtime: false, app: false, compile: false},
+      {:code_engine,
+       path: "../rust/code_engine", runtime: false, app: false, compile: false},
       {:embedding_engine,
-       path: "native/embedding_engine",
-       runtime: false,
-       app: false,
-       compile: false},
+       path: "../rust/embedding_engine", runtime: false, app: false, compile: false},
+      # knowledge_engine consolidated into architecture_engine
+      {:parser_engine,
+       path: "../rust/parser_engine", runtime: false, app: false, compile: false, optional: true},
+      {:prompt_engine,
+       path: "../rust/prompt_engine", runtime: false, app: false, compile: false, optional: true},
+      {:quality_engine,
+       path: "../rust/quality_engine", runtime: false, app: false, compile: false},
       # Other engines are symlinks to rust/ or rust-central/ directories (already included in workspace)
 
       # Data & Serialization

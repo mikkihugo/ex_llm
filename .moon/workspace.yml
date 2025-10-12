@@ -11,20 +11,19 @@ projects:
   - 'templates_data'
   # - 'vendor/codex'  # Codex fork for builtin tool filtering (temporarily disabled for compilation)
 
-  # rust-central - Rust workspace (NIFs + services)
-  - 'rust-central'
+  # Rust workspace (all Rust engines consolidated)
+  - 'rust'
 
-  # Singularity NIFs (7 total)
-  - 'rust-central/architecture_engine'
-  - 'rust-central/code_engine'
-  - 'rust-central/embedding_engine'
-  - 'rust-central/parser_engine'
-  - 'rust-central/prompt_engine'
-  - 'rust-central/quality_engine'
-  - 'rust-central/knowledge_engine'
+  # Singularity NIFs (6 engines - knowledge_engine removed, was just a stub)
+  - 'rust/architecture_engine'
+  - 'rust/code_engine'
+  - 'rust/embedding_engine'
+  - 'rust/parser_engine'
+  - 'rust/prompt_engine'
+  - 'rust/quality_engine'
 
-  # Central Cloud Service (1 total - rest moved to Elixir)
-  - 'rust-central/package_intelligence'
+  # Rust Services
+  - 'rust/service/package_intelligence'
 
 # Note: Moon caches task outputs under .moon/cache by default. CI caches this
 # directory (see .github/workflows/ci-elixir.yml) to speed up repeated runs.

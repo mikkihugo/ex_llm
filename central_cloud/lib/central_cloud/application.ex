@@ -3,7 +3,8 @@ defmodule CentralCloud.Application do
   Central Cloud Application
   
   The global Elixir service that coordinates all Singularity instances.
-  Uses Rust services for heavy processing and provides global intelligence.
+  Central Cloud now runs primarily on BEAM processes, with optional Rust
+  engines accessed over NATS only when needed for heavy workloads.
   """
 
   use Application

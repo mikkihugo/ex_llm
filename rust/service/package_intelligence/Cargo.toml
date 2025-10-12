@@ -1,5 +1,5 @@
 [package]
-name = "package_service"
+name = "package_intelligence_service"
 version = "1.1.0"
 authors = ["mikkihugo"]
 edition = "2021"
@@ -12,7 +12,7 @@ keywords = ["packages", "registry", "search", "semantic", "index"]
 categories = ["algorithms", "development-tools", "command-line-utilities"]
 
 [lib]
-name = "package_service"
+name = "package_intelligence_service"
 path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
@@ -21,7 +21,7 @@ name = "package-registry-indexer"
 path = "src/bin/main.rs"
 
 [[bin]]
-name = "package_service"
+name = "package_intelligence_service"
 path = "src/bin/service.rs"
 
 [dependencies]
@@ -96,7 +96,7 @@ tar = { version = "0.4", optional = true }
 # prompt-engine = { workspace = true, optional = true }
 
 # Parser dependencies
-dependency_parser = { path = "../../parser/formats/dependency" }
+dependency_parser = { path = "../../parser_engine/formats/dependency" }
 
 [dev-dependencies]
 criterion = { workspace = true, features = ["html_reports"] }

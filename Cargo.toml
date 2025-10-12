@@ -1,23 +1,23 @@
 [workspace]
 resolver = "2"
 members = [
-    "rust/code_analysis",
-    "rust/knowledge",
-    "rust/parser/core",
-    "rust/parser/polyglot",
-    "rust/parser/formats/dependency",
-    "rust/parser/formats/template_definitions",
-    "rust/parser/languages/rust",
-    "rust/parser/languages/elixir",
-    "rust/parser/languages/python",
-    "rust/parser/languages/javascript",
-    "rust/parser/languages/typescript",
-    "rust/parser/languages/gleam",
-    "rust/prompt",
+    "rust/code_engine",
+    "rust/quality_engine",
+    "rust/parser_engine/core",
+    "rust/parser_engine/polyglot",
+    "rust/parser_engine/formats/dependency",
+    "rust/parser_engine/formats/template_definitions",
+    "rust/parser_engine/languages/rust",
+    "rust/parser_engine/languages/elixir",
+    "rust/parser_engine/languages/python",
+    "rust/parser_engine/languages/javascript",
+    "rust/parser_engine/languages/typescript",
+    "rust/parser_engine/languages/gleam",
+    "rust/prompt_engine",
     "rust/service/package_intelligence",
     "rust/template",
-    "rust-central/embedding_engine",
-    "singularity_app/native/architecture_engine",
+    "rust/embedding_engine",
+    "rust/architecture_engine",
 ]
 
 [workspace.dependencies]

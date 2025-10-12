@@ -22,7 +22,7 @@ defmodule Singularity.ArchitectureEngine do
   use Rustler,
     otp_app: :singularity,
     crate: :architecture_engine,
-    skip_compilation?: true  # TEMPORARY: Skip until NIF loading issues resolved
+    skip_compilation?: false
 
   require Logger
 

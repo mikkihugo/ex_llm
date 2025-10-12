@@ -37,9 +37,9 @@ defmodule Singularity.NATS.Supervisor do
     Logger.info("Starting NATS Supervisor...")
 
     children = [
-      # Order matters! Server must start before Client, Client before Router
-      Singularity.NatsServer,
+      # Order matters! Client must start before Server (Server subscribes to Client)
       Singularity.NatsClient,
+      Singularity.NatsServer,
       Singularity.NatsExecutionRouter
     ]
 

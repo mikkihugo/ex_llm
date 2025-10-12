@@ -11,7 +11,7 @@ defmodule Singularity.ParserEngine do
   use Rustler,
     otp_app: :singularity,
     crate: :parser_engine,
-    skip_compilation?: true
+    skip_compilation?: false
 
   require Logger
   alias Singularity.NatsClient

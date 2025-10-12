@@ -12,7 +12,14 @@
     "editor.inlineSuggest.enabled": true,
     "editor.acceptSuggestionOnEnter": "on",
     "github.copilot.inlineSuggest.enable": true,
-    "editor.inlineSuggest.showPreview": true
+    "editor.inlineSuggest.showPreview": true,
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.profiles.linux": {
+        "bash": {
+            "path": "/bin/bash",
+            "args": ["--login"]
+        }
+    }
 }
 
 

@@ -2,7 +2,7 @@ defmodule Singularity.QualityEngine do
   @moduledoc """
   Quality engine with multi-language linting and quality analysis.
 
-  This module wraps the Rust NIF from rust-central/quality_engine which provides:
+  This module wraps the Rust NIF from rust/quality_engine which provides:
   - Code quality analysis
   - Quality gate enforcement
   - AI pattern detection
@@ -14,7 +14,7 @@ defmodule Singularity.QualityEngine do
   use Rustler,
     otp_app: :singularity,
     crate: :quality_engine,
-    skip_compilation?: true
+    skip_compilation?: false
 
   require Logger
   alias Singularity.NatsClient

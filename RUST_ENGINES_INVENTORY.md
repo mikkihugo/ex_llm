@@ -23,7 +23,7 @@
 │  │  - knowledge_engine    → rust/knowledge           │     │
 │  │  - embedding_engine    → rust/embedding           │     │
 │  │  - semantic_engine     → rust/semantic            │     │
-│  │  - prompt_engine       → rustv2/prompt            │     │
+│  │  - prompt_engine       → rust/prompt_engine       │ ✅ │
 │  └────────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────┘
                            ↕ NATS
@@ -55,7 +55,7 @@
 - `package/` - Package analysis (library)
 - `prompt/` - Prompt engineering (library, superseded by rustv2)
 - `quality/` → `quality_engine` NIF - Code quality checks
-- `semantic/` - Semantic analysis (library)
+- `semantic/` - ❌ **DELETED** (2025-10-12) - replaced by `rust_global/semantic_embedding_engine`
 - `template/` - Template management (library)
 
 **Parser Suite (NIF):**
@@ -69,19 +69,18 @@
 - `service/package_intelligence/` - Package intelligence service with NATS support
   - `src/bin/main.rs` - Main binary
   - `src/bin/service.rs` - NATS service binary
-- `service/intelligence_hub/` - ⚠️ **DEPRECATED** (replaced by Elixir `central_cloud/lib/central_cloud/intelligence_hub.ex`)
+- `service/intelligence_hub/` - ❌ **DELETED** (2025-10-12) - replaced by Elixir `central_cloud/lib/central_cloud/intelligence_hub.ex`
   - Not in workspace, not compiled
 
 **Status:** ✅ **ACTIVE** - Main production engines, both NIFs and services
 
 ---
 
-### 2. `/rustv2` (New Prompt Engine - 1 module) 🟡 **IN DEVELOPMENT**
+### 2. `/rustv2` (Removed - Was experimental prompt engine) ❌ **DELETED**
 
-**Contents:**
-- `prompt/` → `prompt_engine` NIF - Next-generation prompt engineering
-
-**Status:** 🟡 **IN DEVELOPMENT** - User mentioned this as new base for reorganization
+**Status:** ❌ **REMOVED** - Experimental `rustv2/prompt/` deleted 2025-10-12
+**Reason:** Never reached production, replaced by enhanced `rust/prompt_engine/`
+**Impact:** Cleaner codebase, no version confusion
 
 ---
 
@@ -133,7 +132,7 @@
    - Intelligence aggregation (code/architecture/data patterns)
    - NATS subscription handler (6 subjects)
    - Implemented in `central_cloud/lib/central_cloud/intelligence_hub.ex` (381 lines)
-   - ⚠️ Rust stub at `rust/service/intelligence_hub` is DEPRECATED
+   - ❌ Rust stub at `rust/service/intelligence_hub` was DELETED (2025-10-12)
 
 **Infrastructure:**
 - NATS client for communication
@@ -172,7 +171,7 @@
 |--------|----------|------|----------|--------|
 | Code Analysis | `/rust/code_analysis/` | NIF | Quality checks, metrics, linting | ✅ Active |
 | Architecture | `/rust/architecture/` | NIF | System design, patterns, naming suggestions | ✅ Active |
-| Semantic Analysis | `/rust/semantic/` | Semantic understanding | ✅ Active |
+| Semantic Analysis | `/rust_global/semantic_embedding_engine/` | Semantic understanding | ✅ Active |
 | Global Analysis | `/rust_global/analysis_engine/` | Cross-project analysis | ✅ Active |
 
 **Recommendation:** Keep both, different scope levels
@@ -198,10 +197,9 @@
 |--------|----------|----------|--------|
 | Embedding | `/rust/embedding/` | Vector embeddings | ✅ Active |
 | Semantic Embedding | `/rust-central/embedding_engine/` | Advanced embeddings (GPU: Jina v3 + Qodo-Embed-1) | ✅ Active |
-| Prompt Engineering | `/rust/prompt/` | Prompt templates | ✅ Active |
-| Prompt V2 | `/rustv2/prompt/` | Next-gen prompts | 🟡 Dev |
+| Prompt Engineering | `/rust/prompt_engine/` | DSPy optimization + Central Intelligence Hub integration | ✅ Active |
 
-**Recommendation:** Migrate to `rustv2/prompt/`, keep embeddings separate
+**Recommendation:** Use enhanced `rust/prompt_engine/` with central integration, embeddings separate
 
 ---
 

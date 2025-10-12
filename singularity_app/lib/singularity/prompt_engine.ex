@@ -354,7 +354,7 @@ defmodule Singularity.PromptEngine do
     use Rustler,
       otp_app: :singularity,
       crate: :prompt_engine,
-      skip_compilation?: true
+      skip_compilation?: false
 
     # NIF functions - names must match Rust #[rustler::nif] function names
     def nif_generate_prompt(_request), do: :erlang.nif_error(:nif_not_loaded)

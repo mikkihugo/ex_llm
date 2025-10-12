@@ -36,12 +36,12 @@
   - Replacement: `rust_global/semantic_embedding_engine`
   - Safe to remove: No Elixir wiring
 
-- [ ] **Remove rustv2/prompt/** after deprecation period (30 days)
-  - Status: Marked DEPRECATED on 2025-10-10
-  - Reason: Experimental rewrite never reached production
-  - Replacement: `rust/prompt` (production engine)
-  - Size: 739 lines (vs 5,659 in production)
+- [x] **Remove rustv2/prompt/** - COMPLETED (removed early per user request)
+  - Status: Completely removed (2025-10-12)
+  - Reason: Experimental rewrite never reached production, 739 lines vs 5,659 in production
+  - Impact: Cleaner codebase, no confusion between versions
   - Safe to remove: Not wired to anything
+  - Note: Originally planned for 30 days after deprecation (2025-10-10), but user requested immediate deletion
 
 ### ✅ COMPLETED - Archive/Remove rust_backup/
 
@@ -60,6 +60,18 @@
   - Date: 2025-10-10
   - Reason: Experimental, never production-ready, 739 lines vs 5,659 in rust/prompt
   - Action: Remove after 30 days
+
+- [x] **Deprecated rustv2/prompt/**
+  - Date: 2025-10-10
+  - Reason: Experimental, never production-ready, 739 lines vs 5,659 in rust/prompt
+  - Action: Remove after 30 days
+
+- [x] **Extended rust/prompt_engine with Central Intelligence Hub integration**
+  - Date: 2025-10-12
+  - Enhancement: Added intelligence.hub.prompt.analysis and intelligence.hub.prompt.artifact publishing
+  - Features: Sends prompt generation/optimization analysis and artifacts to central
+  - Impact: Enables centralized learning and monitoring of prompt engine performance
+  - Status: Fully implemented and compiling
 
 - [x] **Documented framework architecture**
   - Created: FRAMEWORK_ARCHITECTURE.md

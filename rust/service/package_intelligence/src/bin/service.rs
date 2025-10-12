@@ -1,7 +1,7 @@
 //! Package Registry Service - NATS service for package search
 
 use anyhow::Result;
-use package_service::nats_service::PackageRegistryNatsService;
+use package_intelligence_service::nats_service::PackageRegistryNatsService;
 use tracing::{info, error};
 use tracing_subscriber::EnvFilter;
 
