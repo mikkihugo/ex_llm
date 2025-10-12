@@ -16,7 +16,7 @@ on:
     secrets:
       CACHIX_AUTH_TOKEN:
         description: 'Cachix authentication token'
-        required: false
+        required: true
 
 jobs:
   nix-setup:
@@ -75,15 +75,17 @@ jobs:
             ${{ inputs.cache_key_prefix }}-${{ runner.os }}-
 
       - name: Build and push dev shell (Cachix)
-        if: inputs.cachix_push == true
+        if: ${{ inputs.cachix_push && env.CACHIX_AUTH_TOKEN != '' }}
         run: |
           SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
           # Use nix build with --out-link to avoid rebuilds
           nix build .#devShells.$SYSTEM.default --out-link /tmp/devshell-result -L
           cachix push mikkihugo /tmp/devshell-result
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Build and push Nix packages (Cachix)
-        if: inputs.cachix_push == true
+        if: ${{ inputs.cachix_push && env.CACHIX_AUTH_TOKEN != '' }}
         run: |
           SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
           nix build .#packages.$SYSTEM.ai-server --out-link /tmp/ai-server-result -L || true
@@ -91,3 +93,5 @@ jobs:
           
           nix build .#packages.$SYSTEM.singularity-integrated --out-link /tmp/singularity-result -L || true
           if [ -e /tmp/singularity-result ]; then cachix push mikkihugo /tmp/singularity-result; fi
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
