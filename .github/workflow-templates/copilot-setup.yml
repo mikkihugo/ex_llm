@@ -12,8 +12,16 @@ on:
       - .github/workflows/copilot-setup-steps.yml
 
 jobs:
+  nix-setup:
+    uses: ./.github/workflow-templates/nix-setup.yml
+    secrets: inherit
+    with:
+      cachix_push: false
+      cache_key_prefix: 'copilot-otp28-elixir1184'
+
   # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
   copilot-setup-steps:
+    needs: nix-setup
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -83,7 +91,7 @@ jobs:
 
       - name: Build Nix packages (optional)
         run: |
-          SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
+          SYSTEM=$(nix eval --raw --impure --expr 'builtins.currentSystem')
           nix build .#packages.$SYSTEM.ai-server --out-link /tmp/ai-server-result -L || echo "ai-server package build skipped"
 
       - name: Install JavaScript dependencies

@@ -1,0 +1,6 @@
+{
+  "name": "Copilot Environment Warmup",
+  "description": "Setup workflow that installs Nix, restores caches, warms a Mix compile, and verifies toolchain so GitHub Copilot can run commands quickly.",
+  "iconName": "zap",
+  "filePath": ".github/workflow-templates/copilot-setup.yml"
+}
