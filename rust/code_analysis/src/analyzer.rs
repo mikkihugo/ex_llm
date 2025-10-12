@@ -367,21 +367,53 @@ impl CodebaseAnalyzer {
           Err(e) => Err(format!("Failed to create TypeScript parser: {}", e)),
         }
       }
-      // Unsupported languages - fall through to universal parser
-      // We only have parsers for: Rust, Python, JS, TS, Elixir, Gleam, JSON, YAML, Bash
-      // ProgrammingLanguage::Go |
-      // ProgrammingLanguage::Java |
-      // ProgrammingLanguage::CSharp |
-      // ProgrammingLanguage::C |
-      // ProgrammingLanguage::Cpp |
-      // ProgrammingLanguage::Erlang => {
-      //   // No dedicated parsers for these - use universal parser fallback
-      // }
+      ProgrammingLanguage::Go => {
+        // Use Go parser directly
+        match go_parser::GoParser::new() {
+          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("Go parser error: {}", e)),
+          Err(e) => Err(format!("Failed to create Go parser: {}", e)),
+        }
+      }
+      ProgrammingLanguage::Java => {
+        // Use Java parser directly
+        match java_parser::JavaParser::new() {
+          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("Java parser error: {}", e)),
+          Err(e) => Err(format!("Failed to create Java parser: {}", e)),
+        }
+      }
+      ProgrammingLanguage::CSharp => {
+        // Use C# parser directly
+        match csharp_parser::CSharpParser::new() {
+          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("C# parser error: {}", e)),
+          Err(e) => Err(format!("Failed to create C# parser: {}", e)),
+        }
+      }
+      ProgrammingLanguage::C => {
+        // Use C parser directly
+        match c_parser::CParser::new() {
+          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("C parser error: {}", e)),
+          Err(e) => Err(format!("Failed to create C parser: {}", e)),
+        }
+      }
+      ProgrammingLanguage::Cpp => {
+        // Use C++ parser directly
+        match cpp_parser::CppParser::new() {
+          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("C++ parser error: {}", e)),
+          Err(e) => Err(format!("Failed to create C++ parser: {}", e)),
+        }
+      }
       ProgrammingLanguage::Elixir => {
         // Use Elixir parser directly
         match elixir_parser::ElixirParser::new() {
           Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("Elixir parser error: {}", e)),
           Err(e) => Err(format!("Failed to create Elixir parser: {}", e)),
+        }
+      }
+      ProgrammingLanguage::Erlang => {
+        // Use Erlang parser directly
+        match erlang_parser::ErlangParser::new() {
+          Ok(parser) => parser.analyze_content(content, file_path.to_str().unwrap_or("unknown")).await.map_err(|e| format!("Erlang parser error: {}", e)),
+          Err(e) => Err(format!("Failed to create Erlang parser: {}", e)),
         }
       }
       ProgrammingLanguage::Gleam => {
@@ -412,14 +444,13 @@ impl CodebaseAnalyzer {
         "py" | "pyi" | "pyc" => ProgrammingLanguage::Python,
         "js" | "mjs" => ProgrammingLanguage::JavaScript,
         "ts" | "tsx" => ProgrammingLanguage::TypeScript,
-        // Unsupported languages - no dedicated parsers
-        // "go" => ProgrammingLanguage::Go,
-        // "java" => ProgrammingLanguage::Java,
-        // "cs" => ProgrammingLanguage::CSharp,
-        // "c" | "h" => ProgrammingLanguage::C,
-        // "cpp" | "cc" | "cxx" | "hpp" | "hxx" => ProgrammingLanguage::Cpp,
-        // "erl" | "hrl" => ProgrammingLanguage::Erlang,
+        "go" => ProgrammingLanguage::Go,
+        "java" => ProgrammingLanguage::Java,
+        "cs" => ProgrammingLanguage::CSharp,
+        "c" | "h" => ProgrammingLanguage::C,
+        "cpp" | "cc" | "cxx" | "hpp" | "hxx" => ProgrammingLanguage::Cpp,
         "ex" | "exs" => ProgrammingLanguage::Elixir,
+        "erl" | "hrl" => ProgrammingLanguage::Erlang,
         "gleam" => ProgrammingLanguage::Gleam,
         _ => ProgrammingLanguage::Unknown,
       }
@@ -741,70 +772,23 @@ impl CodebaseAnalyzer {
   /// Process Erlang-specific analysis data
   fn process_erlang_specific_data(&self, metrics: &mut FileMetrics, language_data: &std::collections::HashMap<String, serde_json::Value>) {
     if let Some(erlang_data) = language_data.get("erlang") {
-      // Try to parse as ErlangAnalysisResult
-      if let Ok(erlang_analysis) = serde_json::from_value::<erlang_parser::ErlangAnalysisResult>(erlang_data.clone()) {
-        // Process OTP behaviors
-        if !erlang_analysis.otp_analysis.detected_behaviors.is_empty() {
-          let behavior_count = erlang_analysis.otp_analysis.detected_behaviors.len();
-          metrics.cognitive_complexity += behavior_count as f64 * 2.0; // OTP behaviors are complex
-
-          // GenServer adds significant complexity
-          if erlang_analysis.otp_analysis.detected_behaviors.contains(&"gen_server".to_string()) {
-            metrics.cyclomatic_complexity += 3.0;
-          }
-
-          // Supervisor adds architectural complexity
-          if erlang_analysis.otp_analysis.detected_behaviors.contains(&"supervisor".to_string()) {
-            metrics.cognitive_complexity += 2.5;
-          }
+      // Erlang parser available - process OTP behaviors, message passing, etc.
+      // Fallback to simple processing if detailed analysis is not available
+      if let Some(processes) = erlang_data.get("processes") {
+        if let Some(count) = processes.as_u64() {
+          metrics.cognitive_complexity += count as f64 * 1.2;
         }
+      }
 
-        // Process concurrency patterns
-        if !erlang_analysis.concurrency_analysis.process_patterns.is_empty() {
-          let process_count = erlang_analysis.concurrency_analysis.process_patterns.len();
-          metrics.cognitive_complexity += process_count as f64 * 1.5; // Process spawning is complex
+      if let Some(message_passing) = erlang_data.get("message_passing") {
+        if let Some(count) = message_passing.as_u64() {
+          metrics.cyclomatic_complexity += count as f64 * 1.0;
         }
+      }
 
-        if !erlang_analysis.concurrency_analysis.message_patterns.is_empty() {
-          let message_count = erlang_analysis.concurrency_analysis.message_patterns.len();
-          metrics.cyclomatic_complexity += message_count as f64 * 1.2; // Message passing adds complexity
-        }
-
-        // Process fault tolerance
-        if erlang_analysis.fault_tolerance.fault_tolerance_score > 80.0 {
-          metrics.maintainability_index += 5.0; // High fault tolerance improves maintainability
-        } else if erlang_analysis.fault_tolerance.fault_tolerance_score < 40.0 {
-          metrics.technical_debt_ratio += 0.2; // Low fault tolerance increases technical debt
-        }
-
-        // Process performance issues
-        if !erlang_analysis.performance_metrics.performance_issues.is_empty() {
-          let issue_count = erlang_analysis.performance_metrics.performance_issues.len();
-          metrics.technical_debt_ratio += issue_count as f64 * 0.1;
-        }
-
-        // Process functional patterns
-        if erlang_analysis.functional_analysis.immutability_score > 90.0 {
-          metrics.maintainability_index += 3.0; // High immutability improves maintainability
-        }
-
-        // Telecom patterns add complexity
-        if !erlang_analysis.telecom_analysis.telecom_features.is_empty() {
-          let telecom_count = erlang_analysis.telecom_analysis.telecom_features.len();
-          metrics.cognitive_complexity += telecom_count as f64 * 2.0; // Telecom is inherently complex
-        }
-      } else {
-        // Fallback to simple processing if parsing fails
-        if let Some(processes) = erlang_data.get("processes") {
-          if let Some(count) = processes.as_u64() {
-            metrics.cognitive_complexity += count as f64 * 1.2;
-          }
-        }
-
-        if let Some(message_passing) = erlang_data.get("message_passing") {
-          if let Some(count) = message_passing.as_u64() {
-            metrics.cyclomatic_complexity += count as f64 * 1.0;
-          }
+      if let Some(otp_behaviors) = erlang_data.get("otp_behaviors") {
+        if let Some(count) = otp_behaviors.as_u64() {
+          metrics.cognitive_complexity += count as f64 * 2.0; // OTP behaviors are complex
         }
       }
     }

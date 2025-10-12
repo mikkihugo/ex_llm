@@ -87,16 +87,22 @@ tantivy = { version = "0.25.0", optional = true }
 # Internal SPARC crates
 quality_lib = { path = "../quality" }
 
-# Parser dependencies - all 9 working parsers
+# Parser dependencies - all 15 working parsers
 rust_parser = { path = "../parser/languages/rust" }
 python_parser = { path = "../parser/languages/python" }
 javascript_parser = { path = "../parser/languages/javascript" }
 typescript_parser = { path = "../parser/languages/typescript" }
 elixir_parser = { path = "../parser/languages/elixir" }
+erlang_parser = { path = "../parser/languages/erlang" }
 gleam_parser = { path = "../parser/languages/gleam" }
 json_parser = { path = "../parser/languages/json" }
 yaml_parser = { path = "../parser/languages/yaml" }
 bash_parser = { path = "../parser/languages/bash" }
+go_parser = { path = "../parser/languages/go" }
+java_parser = { path = "../parser/languages/java" }
+csharp_parser = { path = "../parser/languages/csharp" }
+c_parser = { path = "../parser/languages/c" }
+cpp_parser = { path = "../parser/languages/cpp" }
 parser-code = { path = "../parser/polyglot" }
 
 # Missing dependencies (commented out - directories don't exist)

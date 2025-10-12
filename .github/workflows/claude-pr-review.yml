@@ -28,7 +28,7 @@ jobs:
             accept-flake-config = true
 
       - name: Use Cachix (pull)
-        uses: cachix/cachix-action@ad2ddac53f961de1989924296a1f236fcfbaa4fc # v15
+        uses: cachix/cachix-action@master
         with:
           name: mikkihugo
 

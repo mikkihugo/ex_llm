@@ -9,10 +9,19 @@ members = [
     "parser/formats/template_definitions",
     "parser/languages/rust",
     "parser/languages/elixir",
+    "parser/languages/erlang",
     "parser/languages/python",
     "parser/languages/javascript",
     "parser/languages/typescript",
     "parser/languages/gleam",
+    "parser/languages/json",
+    "parser/languages/yaml",
+    "parser/languages/bash",
+    "parser/languages/go",
+    "parser/languages/java",
+    "parser/languages/csharp",
+    "parser/languages/c",
+    "parser/languages/cpp",
     "prompt",
     "service/intelligence_hub",
     "service/package_intelligence",
@@ -92,7 +101,7 @@ tree-sitter = "0.25.10"  # Latest - matches what language parsers need
 futures = "0.3"
 tokei = "12.1"
 
-# Tree-sitter language parsers (ONLY languages Singularity actually uses)
+# Tree-sitter language parsers
 tree-sitter-elixir = "0.3.4"         # Main app language
 tree-sitter-erlang = "0.15.0"        # BEAM runtime language
 tree-sitter-gleam = "1.0.0"          # Type-safe BEAM modules
@@ -103,6 +112,11 @@ tree-sitter-python = "0.25.0"        # Scripts (if any)
 tree-sitter-json = "0.24.8"          # Config files
 tree-sitter-yaml = "0.7.2"           # Config files
 tree-sitter-bash = "0.25.0"          # Shell scripts
+tree-sitter-go = "0.23"              # Go language
+tree-sitter-java = "0.23"            # Java language
+tree-sitter-c-sharp = "0.23"         # C# language
+tree-sitter-c = "0.23"               # C language
+tree-sitter-cpp = "0.23"             # C++ language
 
 # Testing
 tokio-test = "0.4"
