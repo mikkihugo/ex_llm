@@ -122,6 +122,7 @@ erl_crash.dump
 target/
 # Ignore Cargo.lock for libraries, but commit for applications (services)
 Cargo.lock
+!rust/Cargo.lock
 !rust/service/*/Cargo.lock
 !rust-central/*/Cargo.lock
 **/*.rs.bk
