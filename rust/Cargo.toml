@@ -112,10 +112,10 @@ tree-sitter-python = "0.25.0"        # Scripts (if any)
 tree-sitter-json = "0.24.8"          # Config files
 tree-sitter-yaml = "0.7.2"           # Config files
 tree-sitter-bash = "0.25.0"          # Shell scripts
-tree-sitter-go = "0.23"              # Go language
+tree-sitter-go = "0.25"              # Go language
 tree-sitter-java = "0.23"            # Java language
 tree-sitter-c-sharp = "0.23"         # C# language
-tree-sitter-c = "0.23"               # C language
+tree-sitter-c = "0.24"               # C language
 tree-sitter-cpp = "0.23"             # C++ language
 
 # Testing
