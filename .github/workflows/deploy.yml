@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Maximize disk space for Nix
+        uses: wimpysworld/nothing-but-nix@main
+
       - name: Install Nix
         uses: cachix/install-nix-action@a809471b5c7c913aa67bec8f459a11a0decc3fce # v31
         with:

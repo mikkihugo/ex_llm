@@ -1,7 +1,7 @@
 # GitHub Actions Workflow Audit
 
-**Last Updated:** 2025-10-11  
-**Status:** ✅ All Critical Issues Fixed
+**Last Updated:** 2025-10-12  
+**Status:** ✅ All Critical Issues Fixed + Disk Space Optimized
 
 ## Summary of Workflows
 
@@ -41,6 +41,17 @@ This repository has 7 GitHub Actions workflows:
 **Issue:** Using old action versions (checkout@v3, install-nix-action@v22)  
 **Impact:** Missing security fixes and new features  
 **Fix:** Updated to latest versions matching other workflows
+
+#### 5. ✅ Disk Space Issues (All Nix Workflows)
+**Issue:** GitHub Actions runners provide only ~20GB of free disk space, insufficient for large Nix builds  
+**Impact:** Workflows could fail with "no space left on device" errors during Nix builds  
+**Fix:** Integrated "Nothing But Nix" action to reclaim 65-130GB of disk space  
+**Details:** Added `wimpysworld/nothing-but-nix@main` action before Nix installation in all workflows that use Nix
+
+#### 6. ✅ Incorrect Workflow Calls (copilot-setup-steps.yml, fly-oci-deploy.yml)
+**Issue:** Trying to use reusable workflow `nix-setup.yml` as a step instead of a job  
+**Impact:** Workflows would fail because workflows can only be called as jobs, not steps  
+**Fix:** Replaced workflow calls with inline Nix setup steps including Nothing But Nix action
 
 ## Secrets Required
 
@@ -121,16 +132,18 @@ This repository has 7 GitHub Actions workflows:
 - `cache_key_prefix` (string) - Prefix for cache keys
 
 **Steps:**
-1. Debug runner info
-2. Install Nix with flakes
-3. Use Cachix (pull; push if token available)
-4. Run diagnostics
-5. Show toolchain versions
-6. Cache Mix/Hex, Moon, Bun
-7. Build and push dev shell (if enabled)
-8. Build and push Nix packages (if enabled)
+1. Checkout code
+2. **Maximize disk space for Nix (Nothing But Nix action)**
+3. Install Nix with flakes
+4. Use Cachix (pull; push if token available)
+5. Run diagnostics
+6. Show toolchain versions
+7. Cache Mix/Hex, Moon, Bun
+8. Build and push dev shell (if enabled)
+9. Build and push Nix packages (if enabled)
 
 **Recommendations:**
+- ✅ Nothing But Nix action reclaims 65-130GB for Nix store
 - Consider adding timeouts to build steps
 - Monitor cache hit rates
 
@@ -271,16 +284,16 @@ ci-elixir.yml
   └── calls: nix-setup.yml (with cachix_push=true)
 
 copilot-setup-steps.yml
-  └── calls: nix-setup.yml (with cachix_push=false)
+  └── inline Nix setup (includes Nothing But Nix)
 
 claude-pr-review.yml
-  └── inline Nix setup (no longer calls nix-setup.yml)
+  └── inline Nix setup (includes Nothing But Nix)
 
 deploy.yml
-  └── standalone (uses Nix but not nix-setup.yml)
+  └── standalone (includes Nothing But Nix)
 
 fly-oci-deploy.yml
-  └── standalone (uses Nix but not nix-setup.yml)
+  └── inline Nix setup (includes Nothing But Nix)
 
 claude-pr-fix.yml
   └── standalone (uses Bun, no Nix)
@@ -291,6 +304,7 @@ claude-pr-fix.yml
 | Action | Version | SHA/Tag | Notes |
 |--------|---------|---------|-------|
 | actions/checkout | v4.2.2 | 11bd71901bbe5b1630ceea73d27597364c9af683 | Latest stable |
+| wimpysworld/nothing-but-nix | main | - | Reclaims 65-130GB disk space |
 | cachix/install-nix-action | v31 | a809471b5c7c913aa67bec8f459a11a0decc3fce | Latest |
 | cachix/cachix-action | v15 | ad2ddac53f961de1989924296a1f236fcfbaa4fc | Latest |
 | actions/cache | v4.2.2 | d4323d4df104b026a6aa633fdb11d772146be0bf | Latest |
@@ -329,6 +343,40 @@ ci-otp28-elixir1184-Linux-abc123-def456-ghi789
 - ci-elixir: `ci-otp28-elixir1184`
 - copilot-setup-steps: `copilot-otp28-elixir1184`
 - nix-setup: configurable via `cache_key_prefix` input
+
+## Disk Space Optimization
+
+### Nothing But Nix Action
+
+All workflows that use Nix now include the "Nothing But Nix" action to maximize available disk space for the Nix store.
+
+**Problem:** GitHub Actions runners provide only ~20GB of free disk space, which is often insufficient for large Nix builds.
+
+**Solution:** The `wimpysworld/nothing-but-nix@main` action reclaims 65-130GB of disk space by:
+- Removing unnecessary pre-installed software (Docker images, SDKs, etc.)
+- Creating a large /nix volume from available space
+- Dynamically expanding the volume during workflow execution
+
+**Impact:**
+- ✅ Prevents "no space left on device" errors during Nix builds
+- ✅ Allows building large Nix packages without running out of space
+- ✅ Improves CI reliability for complex NixOS configurations
+
+**Usage in workflows:**
+```yaml
+- name: Maximize disk space for Nix
+  uses: wimpysworld/nothing-but-nix@main
+
+- name: Install Nix
+  uses: cachix/install-nix-action@v31
+```
+
+**Applied to:**
+- ✅ nix-setup.yml (reusable workflow)
+- ✅ copilot-setup-steps.yml
+- ✅ deploy.yml
+- ✅ fly-oci-deploy.yml
+- ✅ claude-pr-review.yml
 
 ## Security Considerations
 
