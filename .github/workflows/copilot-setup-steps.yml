@@ -49,6 +49,7 @@ jobs:
             singularity_app/.hex
             singularity_app/deps
             singularity_app/_build
+            .cargo-build
             .moon/cache
             ai-server/node_modules
           key: copilot-otp28-elixir1184-${{ runner.os }}-${{ hashFiles('singularity_app/mix.lock') }}-${{ hashFiles('**/moon.yml') }}-${{ hashFiles('ai-server/bun.lock*') }}
@@ -84,6 +85,11 @@ jobs:
           nix develop -c bash -lc '
             cd singularity_app && mix compile
           '
+
+      - name: Build Nix packages (optional)
+        run: |
+          SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
+          nix build .#packages.$SYSTEM.ai-server --out-link /tmp/ai-server-result -L || echo "ai-server package build skipped"
 
       - name: Install JavaScript dependencies
         run: |

@@ -40,6 +40,7 @@ jobs:
             singularity_app/.hex
             singularity_app/deps
             singularity_app/_build
+            .cargo-build
             .moon/cache
           key: ci-otp28-elixir1184-${{ runner.os }}-${{ hashFiles('singularity_app/mix.lock') }}-${{ hashFiles('**/moon.yml') }}
           restore-keys: |
@@ -56,6 +57,11 @@ jobs:
           nix develop -c bash -lc '
             cd singularity_app && mix compile
           '
+
+      - name: Build Nix packages (Rust/BEAM)
+        run: |
+          SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
+          nix build .#packages.$SYSTEM.ai-server --out-link /tmp/ai-server-result -L || echo "ai-server package build skipped"
 
       - name: Format & Lint
         run: |

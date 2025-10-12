@@ -63,6 +63,7 @@ jobs:
             singularity_app/.hex
             singularity_app/deps
             singularity_app/_build
+            .cargo-build
             .moon/cache
             ai-server/node_modules
           key: ${{ inputs.cache_key_prefix }}-${{ runner.os }}-${{ hashFiles('singularity_app/mix.lock') }}-${{ hashFiles('**/moon.yml') }}-${{ hashFiles('ai-server/bun.lock*') }}
