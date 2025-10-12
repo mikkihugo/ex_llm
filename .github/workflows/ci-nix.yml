@@ -8,7 +8,7 @@ on:
 
 jobs:
   nix-setup:
-    uses: ./.github/workflow-templates/nix-setup.yml
+    uses: ./.github/workflows/nix-setup.yml
     secrets:
       CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
       CACHIX_SIGNING_KEY: ${{ secrets.CACHIX_SIGNING_KEY }}

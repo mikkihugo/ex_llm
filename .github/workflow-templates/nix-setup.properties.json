@@ -1,6 +1,0 @@
-{
-  "name": "Nix + Cachix Setup",
-  "description": "Reusable workflow that installs Nix, configures Cachix, restores shared caches (Mix/Rust), and optionally builds flake packages for the binary cache.",
-  "iconName": "nix-snowflake",
-  "filePath": ".github/workflow-templates/nix-setup.yml"
-}
