@@ -78,7 +78,7 @@ jobs:
             ${{ inputs.cache_key_prefix }}-${{ runner.os }}-
 
       - name: Build and push dev shell (Cachix)
-        if: ${{ inputs.cachix_push }}
+        if: false  # Temporarily disabled for testing
         run: |
           SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
           # Use nix build with --out-link to avoid rebuilds
@@ -88,7 +88,7 @@ jobs:
           CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Build and push Nix packages (Cachix)
-        if: ${{ inputs.cachix_push }}
+        if: false  # Temporarily disabled for testing
         run: |
           SYSTEM=$(nix eval --raw --expr builtins.currentSystem)
           nix build .#packages.$SYSTEM.ai-server --out-link /tmp/ai-server-result -L || true
