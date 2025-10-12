@@ -23,8 +23,7 @@ defmodule CentralCloud.Application do
       CentralCloud.KnowledgeCache,             # NEW: ETS-based cache
       CentralCloud.TemplateService,
       CentralCloud.FrameworkLearningAgent,
-      CentralCloud.IntelligenceHub,            # NEW: Replaces Rust service
-      CentralCloud.IntelligenceHubSubscriber,
+      CentralCloud.IntelligenceHub,            # NEW: Replaces Rust service (handles own subscriptions)
     ]
 
     opts = [strategy: :one_for_one, name: CentralCloud.Supervisor]

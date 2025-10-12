@@ -11,6 +11,8 @@ defmodule CentralCloud.NatsClient do
   use GenServer
   require Logger
 
+  alias Gnat
+
   @nats_url System.get_env("NATS_URL", "nats://localhost:4222")
   @reconnect_interval :timer.seconds(5)
 
@@ -76,6 +78,13 @@ defmodule CentralCloud.NatsClient do
     GenServer.call(__MODULE__, :connected?)
   end
 
+  @doc """
+  Subscribe to a NATS subject with a callback function.
+  """
+  def subscribe(subject, callback) do
+    GenServer.cast(__MODULE__, {:subscribe, subject, callback})
+  end
+
   # ===========================
   # GenServer Callbacks
   # ===========================
@@ -87,7 +96,7 @@ defmodule CentralCloud.NatsClient do
     # Connect asynchronously
     send(self(), :connect)
 
-    {:ok, %{conn: nil, kv_buckets: %{}}}
+    {:ok, %{conn: nil, kv_buckets: %{}, subscriptions: []}}
   end
 
   @impl true
@@ -95,7 +104,12 @@ defmodule CentralCloud.NatsClient do
     case connect_to_nats() do
       {:ok, conn} ->
         Logger.info("✅ Connected to NATS at #{@nats_url}")
-        {:noreply, %{state | conn: conn}}
+
+        # Re-subscribe to all subjects after reconnection
+        new_state = %{state | conn: conn}
+        resubscribe_all(new_state)
+
+        {:noreply, new_state}
 
       {:error, reason} ->
         Logger.warning("Failed to connect to NATS: #{inspect(reason)}, retrying...")
@@ -114,7 +128,7 @@ defmodule CentralCloud.NatsClient do
     encoded_payload = Jason.encode!(payload)
 
     result =
-      case :nats_request(conn, subject, encoded_payload, timeout) do
+      case nats_request(conn, subject, encoded_payload, timeout) do
         {:ok, response} ->
           case Jason.decode(response) do
             {:ok, decoded} -> {:ok, decoded}
@@ -169,7 +183,47 @@ defmodule CentralCloud.NatsClient do
   @impl true
   def handle_cast({:publish, subject, payload}, %{conn: conn} = state) do
     encoded_payload = Jason.encode!(payload)
-    :nats_publish(conn, subject, encoded_payload)
+    nats_publish(conn, subject, encoded_payload)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:subscribe, subject, callback}, %{conn: nil, subscriptions: subs} = state) do
+    # Not connected yet, store subscription for later
+    {:noreply, %{state | subscriptions: [{subject, callback} | subs]}}
+  end
+
+  @impl true
+  def handle_cast({:subscribe, subject, callback}, %{conn: conn, subscriptions: subs} = state) do
+    # Connected, subscribe immediately
+    case Gnat.sub(conn, self(), subject) do
+      {:ok, _sid} ->
+        Logger.info("✅ Subscribed to #{subject}")
+        {:noreply, %{state | subscriptions: [{subject, callback} | subs]}}
+
+      {:error, reason} ->
+        Logger.error("Failed to subscribe to #{subject}: #{inspect(reason)}")
+        {:noreply, state}
+    end
+  end
+
+  @impl true
+  def handle_info({:msg, %{topic: topic, body: body, reply_to: reply_to}}, state) do
+    Logger.info("📨 NatsClient received message on #{topic}")
+
+    # Find callback for this topic
+    case Enum.find(state.subscriptions, fn {subject, _} -> subject == topic end) do
+      {_, callback} ->
+        # Call the callback with a message struct
+        msg = %{subject: topic, payload: body, reply_to: reply_to}
+        Logger.debug("Invoking callback for #{topic}")
+        callback.(msg)
+        Logger.debug("Callback completed for #{topic}")
+
+      nil ->
+        Logger.warning("Received message for unhandled topic: #{topic}")
+    end
+
     {:noreply, state}
   end
 
@@ -178,15 +232,20 @@ defmodule CentralCloud.NatsClient do
   # ===========================
 
   defp connect_to_nats do
-    # TODO: Implement actual async_nats connection
-    # For now, return placeholder
-    #
-    # In real implementation:
-    # {:ok, conn} = :async_nats.connect(@nats_url)
-    # {:ok, conn}
+    # Parse NATS URL to get host and port
+    uri = URI.parse(@nats_url)
+    host = String.to_charlist(uri.host || "localhost")
+    port = uri.port || 4222
 
-    Logger.info("NATS connection placeholder - implement async_nats NIFx")
-    {:ok, :placeholder_connection}
+    # Use gnat to connect
+    case Gnat.start_link(%{host: host, port: port}) do
+      {:ok, conn} ->
+        Logger.info("Connected to NATS at #{uri.host}:#{port}")
+        {:ok, conn}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp ensure_kv_bucket(bucket, %{kv_buckets: buckets} = state) do
@@ -242,26 +301,42 @@ defmodule CentralCloud.NatsClient do
     :ok
   end
 
-  defp :nats_request(conn, subject, payload, timeout) do
-    # TODO: Implement actual NATS request
-    #
-    # In real implementation:
-    # case :async_nats.request(conn, subject, payload, timeout) do
-    #   {:ok, response} -> {:ok, response.body}
-    #   error -> error
-    # end
+  defp nats_request(conn, subject, payload, timeout) do
+    # Use gnat request/reply
+    case Gnat.request(conn, subject, payload, receive_timeout: timeout) do
+      {:ok, %{body: body}} ->
+        {:ok, body}
 
-    Logger.debug("NATS REQUEST #{subject}")
-    {:error, :not_implemented}
+      {:error, :timeout} ->
+        {:error, :timeout}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
-  defp :nats_publish(conn, subject, payload) do
-    # TODO: Implement actual NATS publish
-    #
-    # In real implementation:
-    # :async_nats.publish(conn, subject, payload)
+  defp nats_publish(conn, subject, payload) do
+    # Use gnat publish
+    case Gnat.pub(conn, subject, payload) do
+      :ok ->
+        :ok
 
-    Logger.debug("NATS PUBLISH #{subject}")
-    :ok
+      {:error, reason} ->
+        Logger.warning("Failed to publish to #{subject}: #{inspect(reason)}")
+        :ok
+    end
+  end
+
+  defp resubscribe_all(%{conn: conn, subscriptions: subs}) do
+    # Re-subscribe to all stored subscriptions
+    Enum.each(subs, fn {subject, _callback} ->
+      case Gnat.sub(conn, self(), subject) do
+        {:ok, _sid} ->
+          Logger.info("✅ Re-subscribed to #{subject}")
+
+        {:error, reason} ->
+          Logger.error("Failed to re-subscribe to #{subject}: #{inspect(reason)}")
+      end
+    end)
   end
 end

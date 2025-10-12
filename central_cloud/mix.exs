@@ -24,7 +24,7 @@ defmodule CentralCloud.MixProject do
       {:postgrex, "~> 0.17"},
       {:pgvector, "~> 0.2"},
       {:jason, "~> 1.4"},
-      {:async_nats, "~> 0.33"}
+      {:gnat, "~> 1.8"}
     ]
   end
 end

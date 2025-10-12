@@ -1,0 +1,82 @@
+[package]
+name = "embedding_engine"
+version = "0.1.0"
+edition = "2021"
+description = "Embedding engine for generating vector embeddings using Jina v3 and CodeT5 models"
+license = "MIT"
+repository = "https://github.com/your-org/singularity"
+keywords = ["embeddings", "vectors", "ai", "jina", "codet5", "elixir", "nif"]
+categories = ["development-tools", "machine-learning"]
+readme = "README.md"
+
+[lib]
+name = "embedding_engine"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Rustler for Elixir NIFs
+rustler = "0.34"
+
+# ONNX Runtime for Jina v3 with CUDA support
+# ort = { version = "2.0.0-rc.10", features = ["load-dynamic"], optional = true }
+
+# Candle for Qodo-Embed-1 with CUDA support
+candle-core = { version = "0.9", optional = true }
+candle-nn = { version = "0.9", optional = true }
+candle-transformers = { version = "0.9", optional = true }
+
+# Additional dependencies for advanced features
+fastrand = "2.0"
+tracing-subscriber = "0.3"
+
+# Tokenizers (HuggingFace compatible)
+tokenizers = { version = "0.20", features = ["http"] }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Array operations
+ndarray = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# HTTP client for downloading models
+reqwest = { version = "0.12", features = ["json", "stream"] }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+
+# Progress tracking
+indicatif = "0.17"
+
+# File system operations
+dirs = { workspace = true }
+
+# Concurrent processing
+rayon = { workspace = true }
+
+# CPU detection
+num_cpus = { workspace = true }
+
+# Async file I/O
+futures-util = "0.3"
+
+[features]
+default = ["cpu"]
+cpu = ["candle-core", "candle-nn", "candle-transformers"]
+cuda = ["candle-core/cuda", "candle-nn/cuda", "candle-transformers/cuda"]
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "embedding_benchmark"
+harness = false

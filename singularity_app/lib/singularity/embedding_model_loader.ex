@@ -1,10 +1,15 @@
 defmodule Singularity.EmbeddingModelLoader do
   @moduledoc """
-  Embedding model loader for HuggingFace models.
-  Supports loading and managing embedding models for semantic search.
+  Embedding model loader using high-performance Rust NIF backend.
+
+  Delegates to Singularity.EmbeddingEngine for GPU-accelerated embeddings:
+  - Jina v3 (text, 1024D) - General text/docs
+  - Qodo-Embed-1 (code, 1536D) - Code-specialized, SOTA performance
   """
   use GenServer
   require Logger
+
+  alias Singularity.EmbeddingEngine
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -14,13 +19,19 @@ defmodule Singularity.EmbeddingModelLoader do
   def init(_opts) do
     state = %{
       models: %{},
-      default_model: "sentence-transformers/all-MiniLM-L6-v2",
+      default_model: "qodo_embed",  # Use code-specialized model as default
       model_cache: %{}
     }
 
-    # Don't load model during init to avoid self-call
-    # Model will be loaded on first use
-    Logger.info("EmbeddingModelLoader initialized - models will be loaded on demand")
+    # Preload models on startup for better performance
+    case EmbeddingEngine.preload_models([:jina_v3, :qodo_embed]) do
+      {:ok, result} ->
+        Logger.info("Preloaded embedding models: #{result}")
+      {:error, reason} ->
+        Logger.warning("Failed to preload models: #{inspect(reason)}")
+    end
+
+    Logger.info("EmbeddingModelLoader initialized with Rust NIF backend")
     {:ok, state}
   end
 
@@ -54,21 +65,17 @@ defmodule Singularity.EmbeddingModelLoader do
 
   @impl true
   def handle_call({:load_model, model_name}, _from, state) do
-    case Map.get(state.models, model_name) do
-      nil ->
-        case load_model_from_huggingface(model_name) do
-          {:ok, model_info} ->
-            new_state = put_in(state.models[model_name], model_info)
-            Logger.info("Loaded model: #{model_name}")
-            {:reply, {:ok, model_info}, new_state}
-          
-          {:error, reason} ->
-            Logger.error("Failed to load model #{model_name}: #{inspect(reason)}")
-            {:reply, {:error, reason}, state}
-        end
-      
-      model_info ->
-        {:reply, {:ok, model_info}, state}
+    # Models are loaded on-demand by the Rust EmbeddingEngine
+    # Just validate the model name and return mock model info
+    case validate_model_name(model_name) do
+      {:ok, model_info} ->
+        new_state = put_in(state.models[model_name], model_info)
+        Logger.info("Registered model: #{model_name}")
+        {:reply, {:ok, model_info}, new_state}
+
+      {:error, reason} ->
+        Logger.error("Invalid model #{model_name}: #{inspect(reason)}")
+        {:reply, {:error, reason}, state}
     end
   end
 
@@ -88,12 +95,12 @@ defmodule Singularity.EmbeddingModelLoader do
     case Map.get(state.models, model_name) do
       nil ->
         {:reply, {:error, :model_not_found}, state}
-      
-      model_info ->
-        case generate_embedding(model_info, text) do
+
+      _model_info ->
+        case EmbeddingEngine.embed(text, model: String.to_atom(model_name)) do
           {:ok, embedding} ->
             {:reply, {:ok, embedding}, state}
-          
+
           {:error, reason} ->
             Logger.error("Embedding generation failed: #{inspect(reason)}")
             {:reply, {:error, reason}, state}
@@ -101,88 +108,42 @@ defmodule Singularity.EmbeddingModelLoader do
     end
   end
 
-  defp load_model_from_huggingface(model_name) do
-    try do
-      Logger.info("Loading HuggingFace model: #{model_name}")
+  defp validate_model_name(model_name) do
+    # Validate model name and return model info
+    case model_name do
+      "jina_v3" ->
+        {:ok, %{
+          name: "jina_v3",
+          type: :text,
+          dimension: 1024,
+          max_context: 8192,
+          description: "Jina v3 - General text embeddings",
+          loaded_at: DateTime.utc_now(),
+          status: :available
+        }}
 
-      # Load the model and tokenizer from HuggingFace
-      {:ok, model_info} = Bumblebee.load_model({:hf, model_name})
-      {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, model_name})
+      "qodo_embed" ->
+        {:ok, %{
+          name: "qodo_embed",
+          type: :code,
+          dimension: 1536,
+          max_context: 32768,
+          description: "Qodo-Embed-1 - Code-specialized embeddings (SOTA)",
+          loaded_at: DateTime.utc_now(),
+          status: :available
+        }}
 
-      # Create a feature extraction serving for sentence embeddings
-      # Sentence transformers use mean pooling of token embeddings
-      serving = Bumblebee.Text.text_embedding(model_info, tokenizer,
-        compile: [batch_size: 1],
-        defn_options: [compiler: EXLA]
-      )
-
-      model_data = %{
-        name: model_name,
-        model: model_info,
-        tokenizer: tokenizer,
-        serving: serving,
-        dimension: get_model_dimension(model_name),
-        max_length: 512,
-        loaded_at: DateTime.utc_now(),
-        status: :loaded
-      }
-
-      {:ok, model_data}
-    rescue
-      error ->
-        Logger.error("Failed to load HuggingFace model #{model_name}: #{inspect(error)}")
-        {:error, error}
+      _ ->
+        {:error, "Unsupported model: #{model_name}. Use 'jina_v3' or 'qodo_embed'"}
     end
   end
 
   defp get_model_dimension(model_name) do
     # Return dimension based on model name
     case model_name do
-      "sentence-transformers/all-MiniLM-L6-v2" -> 384
-      "sentence-transformers/all-mpnet-base-v2" -> 768
-      "sentence-transformers/all-distilroberta-v1" -> 768
-      _ -> 384  # Default dimension
-    end
-  end
-
-  defp generate_embedding(model_data, text) do
-    try do
-      Logger.debug("Generating embedding for text (#{String.length(text)} chars)")
-
-      # Use the serving to generate embeddings
-      # Nx.Serving.run returns a tensor with shape {batch_size, seq_length, hidden_size}
-      # For sentence transformers, we need to apply mean pooling and normalize
-      %{serving: serving} = model_data
-
-      result = Nx.Serving.run(serving, text)
-
-      # Extract the embeddings tensor
-      # Result should be a map with :embeddings key for sentence transformers
-      embeddings = case result do
-        %{embeddings: embeddings} -> embeddings
-        tensor when is_struct(tensor, Nx.Tensor) -> tensor
-        _ -> raise "Unexpected result format from model: #{inspect(result)}"
-      end
-
-      # Apply mean pooling across sequence dimension (dim 1)
-      # Shape should be {1, seq_len, hidden_size} -> {1, hidden_size}
-      pooled = Nx.mean(embeddings, axes: [1])
-
-      # Remove batch dimension to get {hidden_size}
-      embedding = Nx.squeeze(pooled)
-
-      # Convert to list and normalize
-      embedding_list = Nx.to_list(embedding)
-
-      # L2 normalize the embedding vector
-      magnitude = :math.sqrt(Enum.sum(Enum.map(embedding_list, &(&1 * &1))))
-      normalized_embedding = Enum.map(embedding_list, &(&1 / magnitude))
-
-      {:ok, normalized_embedding}
-    rescue
-      error ->
-        Logger.error("Embedding generation failed: #{inspect(error)}")
-        {:error, error}
+      "jina_v3" -> 1024
+      "qodo_embed" -> 1536
+      _ -> 1536  # Default to code model
     end
   end
 end

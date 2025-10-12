@@ -21,6 +21,7 @@ defmodule CentralCloud.TemplateService do
 
   use GenServer
   require Logger
+  import Ecto.Query
 
   alias CentralCloud.{Repo, NatsClient}
   alias CentralCloud.Schemas.PromptTemplate

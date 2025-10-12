@@ -199,8 +199,8 @@ defmodule CentralCloud.KnowledgeCache do
   end
 
   defp count_by_type(type) do
-    pattern = {{:_, %{asset_type: ^type}}, [], [true]}
-    :ets.select_count(@cache_table, [pattern])
+    # Build pattern dynamically to match asset_type
+    :ets.select_count(@cache_table, [{{:_, %{asset_type: :"$1"}}, [{:==, :"$1", type}], [true]}])
   rescue
     _ -> 0
   end

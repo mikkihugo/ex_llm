@@ -51,10 +51,10 @@ defmodule Singularity.EmbeddingEngine do
   """
 
   # Temporarily disabled NIF compilation - TODO: Fix rust_global path issues
-  # use Rustler,
-  #   otp_app: :singularity,
-  #   crate: :embedding_engine,
-  #   path: "../../rust_global/semantic_embedding_engine"
+  use Rustler,
+    otp_app: :singularity,
+    crate: :embedding_engine,
+    path: "../rust_global/semantic_embedding_engine"
 
   require Logger
   alias Singularity.NatsClient
@@ -114,16 +114,16 @@ defmodule Singularity.EmbeddingEngine do
   @type model :: :jina_v3 | :qodo_embed
   @type opts :: [model: model()]
 
-  ## NIF Stubs (temporarily mocked - TODO: Fix rust_global path issues)
+  ## NIF Functions
 
   @doc false
-  def embed_batch(texts, model_type), do: mock_embed_batch(texts, model_type)
+  def embed_batch(_texts, _model_type), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc false
-  def embed_single(text, model_type), do: mock_embed_single(text, model_type)
+  def embed_single(_text, _model_type), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc false
-  def preload_models(model_types), do: mock_preload_models(model_types)
+  def preload_models(_model_types), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc false
   def cosine_similarity_batch(_query_embeddings, _candidate_embeddings),

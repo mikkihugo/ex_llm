@@ -17,6 +17,7 @@ members = [
     "rust/service/intelligence_hub",
     "rust/service/package_intelligence",
     "rust/template",
+    "rust_global/semantic_embedding_engine",
     "singularity_app/native/architecture_engine",
 ]
 
