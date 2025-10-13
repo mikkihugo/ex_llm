@@ -94,6 +94,8 @@ prompt:section("REQUIREMENTS (From template: " .. template_name .. ")", [[
   * Errors
   * Examples
 
+- IMPORTANT: Use regular comments (# ...) for private functions (defp), NOT @doc (causes warnings)
+
 ### Type Specs (REQUIRED)
 - @spec for EVERY function
 - @type for custom types
