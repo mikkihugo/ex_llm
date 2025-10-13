@@ -38,36 +38,38 @@ defmodule Singularity.Repo.Migrations.AddDependencyCatalogPerformanceIndexes2025
       name: :idx_dependency_catalog_popular_downloads
     )
 
-    # === DEPENDENCY_CATALOG_EXAMPLES TABLE INDEXES ===
-    
-    # Composite index for search_examples/2 function (dependency_id + language)
-    create index(:dependency_catalog_examples, [:dependency_id, :language],
-      name: :idx_dependency_catalog_examples_language
-    )
-    
-    # Composite index for get_examples/2 function (dependency_id + example_order)
-    create index(:dependency_catalog_examples, [:dependency_id, :example_order],
-      name: :idx_dependency_catalog_examples_order
-    )
+    # === OPTIONAL CHILD TABLES (only if they exist) ===
+    # Note: dependency_catalog_examples, _patterns, _deps tables don't exist yet
+    # They may be created in future. Using PL/pgSQL to conditionally create indexes.
 
-    # === DEPENDENCY_CATALOG_PATTERNS TABLE INDEXES ===
-    
-    # Composite index for search_patterns/2 function (dependency_id + pattern_type)
-    create index(:dependency_catalog_patterns, [:dependency_id, :pattern_type],
-      name: :idx_dependency_catalog_patterns_type
-    )
+    execute """
+    DO $$
+    BEGIN
+      -- Create indexes for dependency_catalog_examples if table exists
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'dependency_catalog_examples') THEN
+        CREATE INDEX IF NOT EXISTS idx_dependency_catalog_examples_language
+        ON dependency_catalog_examples (dependency_id, language);
 
-    # === DEPENDENCY_CATALOG_DEPS TABLE INDEXES ===
-    
-    # Composite index for get_dependencies/2 function (dependency_id + dependency_type)
-    create index(:dependency_catalog_deps, [:dependency_id, :dependency_type],
-      name: :idx_dependency_catalog_deps_type
-    )
-    
-    # Composite index for dependency name lookups
-    create index(:dependency_catalog_deps, [:dependency_name, :dependency_type],
-      name: :idx_dependency_catalog_deps_name_type
-    )
+        CREATE INDEX IF NOT EXISTS idx_dependency_catalog_examples_order
+        ON dependency_catalog_examples (dependency_id, example_order);
+      END IF;
+
+      -- Create indexes for dependency_catalog_patterns if table exists
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'dependency_catalog_patterns') THEN
+        CREATE INDEX IF NOT EXISTS idx_dependency_catalog_patterns_type
+        ON dependency_catalog_patterns (dependency_id, pattern_type);
+      END IF;
+
+      -- Create indexes for dependency_catalog_deps if table exists
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'dependency_catalog_deps') THEN
+        CREATE INDEX IF NOT EXISTS idx_dependency_catalog_deps_type
+        ON dependency_catalog_deps (dependency_id, dependency_type);
+
+        CREATE INDEX IF NOT EXISTS idx_dependency_catalog_deps_name_type
+        ON dependency_catalog_deps (dependency_name, dependency_type);
+      END IF;
+    END $$;
+    """
 
     # === VECTOR INDEXES (if missing) ===
     
@@ -129,23 +131,14 @@ defmodule Singularity.Repo.Migrations.AddDependencyCatalogPerformanceIndexes2025
       name: :idx_dependency_catalog_popular_downloads
     )
 
-    drop index(:dependency_catalog_examples, [:dependency_id, :language],
-      name: :idx_dependency_catalog_examples_language
-    )
-    drop index(:dependency_catalog_examples, [:dependency_id, :example_order],
-      name: :idx_dependency_catalog_examples_order
-    )
-
-    drop index(:dependency_catalog_patterns, [:dependency_id, :pattern_type],
-      name: :idx_dependency_catalog_patterns_type
-    )
-
-    drop index(:dependency_catalog_deps, [:dependency_id, :dependency_type],
-      name: :idx_dependency_catalog_deps_type
-    )
-    drop index(:dependency_catalog_deps, [:dependency_name, :dependency_type],
-      name: :idx_dependency_catalog_deps_name_type
-    )
+    # Drop indexes for optional child tables (if they exist)
+    execute """
+    DROP INDEX IF EXISTS idx_dependency_catalog_examples_language;
+    DROP INDEX IF EXISTS idx_dependency_catalog_examples_order;
+    DROP INDEX IF EXISTS idx_dependency_catalog_patterns_type;
+    DROP INDEX IF EXISTS idx_dependency_catalog_deps_type;
+    DROP INDEX IF EXISTS idx_dependency_catalog_deps_name_type;
+    """
 
     # Drop vector indexes if they exist
     execute """
