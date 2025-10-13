@@ -16,11 +16,11 @@ defmodule Singularity.Repo.Migrations.CreatePostgresqlCacheTables do
     )
     """
 
-    # Index for expiration cleanup (partial index for performance)
+    # Index for expiration cleanup (index all rows for efficient cleanup queries)
+    # Note: Can't use WHERE expires_at > NOW() because NOW() is not IMMUTABLE
     execute """
     CREATE INDEX idx_package_cache_expires
     ON package_cache(expires_at)
-    WHERE expires_at > NOW()
     """
 
     # Index for most accessed items
@@ -86,7 +86,7 @@ defmodule Singularity.Repo.Migrations.CreatePostgresqlCacheTables do
       github_stars,
       download_count,
       tags,
-      semantic_embedding
+      embedding
     FROM dependency_catalog
     WHERE
       github_stars > 1000
@@ -113,7 +113,7 @@ defmodule Singularity.Repo.Migrations.CreatePostgresqlCacheTables do
     # Vector similarity index (if using pgvector)
     execute """
     CREATE INDEX idx_hot_packages_embedding
-    ON hot_packages USING ivfflat (semantic_embedding vector_cosine_ops)
+    ON hot_packages USING ivfflat (embedding vector_cosine_ops)
     WITH (lists = 100)
     """
 
