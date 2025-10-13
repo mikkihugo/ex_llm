@@ -10,25 +10,16 @@ defmodule Singularity.Schemas.CodeFile do
   @foreign_key_type :binary_id
 
   schema "code_files" do
-    field :codebase_id, :string
+    field :project_name, :string  # Database column name (not codebase_id)
     field :file_path, :string
     field :language, :string
     field :content, :string
-    field :file_size, :integer
+    field :size_bytes, :integer  # Database column name (not file_size)
     field :line_count, :integer
     field :hash, :string
-    
-    # AST Storage
-    field :ast_json, :map
-    field :functions, {:array, :map}, default: []
-    field :classes, {:array, :map}, default: []
-    field :imports, {:array, :map}, default: []
-    field :exports, {:array, :map}, default: []
-    field :symbols, {:array, :map}, default: []
-    
-    # Metadata
+
+    # Metadata (stores functions, imports, exports, etc.)
     field :metadata, :map, default: %{}
-    field :parsed_at, :utc_datetime
 
     timestamps()
   end
@@ -37,10 +28,9 @@ defmodule Singularity.Schemas.CodeFile do
   def changeset(code_file, attrs) do
     code_file
     |> cast(attrs, [
-      :codebase_id, :file_path, :language, :content, :file_size, :line_count, :hash,
-      :ast_json, :functions, :classes, :imports, :exports, :symbols, :metadata, :parsed_at
+      :project_name, :file_path, :language, :content, :size_bytes, :line_count, :hash, :metadata
     ])
-    |> validate_required([:codebase_id, :file_path])
-    |> unique_constraint([:codebase_id, :file_path])
+    |> validate_required([:project_name, :file_path])
+    |> unique_constraint([:project_name, :file_path])
   end
 end

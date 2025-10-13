@@ -454,14 +454,14 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
     alias Singularity.{Repo, Schemas.CodeFile}
     import Ecto.Query
 
-    Logger.info("Persisting #{length(learning.modules)} modules to database...")
+    Logger.info("Persisting #{length(Map.get(learning, :knowledge, %{}) |> Map.get(:modules, %{}) |> Map.values())} modules to database...")
 
     codebase_id = "singularity"
     persisted_count = 0
 
     # Persist each learned module
     results =
-      learning.modules
+      Map.get(learning, :knowledge, %{}) |> Map.get(:modules, %{}) |> Map.values()
       |> Task.async_stream(
         fn module ->
           persist_module_to_db(codebase_id, module)
@@ -476,7 +476,7 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
       _ -> false
     end)
 
-    Logger.info("✓ Persisted #{success_count}/#{length(learning.modules)} modules to database")
+    Logger.info("✓ Persisted #{success_count}/#{length(Map.get(learning, :knowledge, %{}) |> Map.get(:modules, %{}) |> Map.values())} modules to database")
     {:ok, success_count}
   rescue
     error ->
@@ -487,45 +487,48 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
   defp persist_module_to_db(codebase_id, module) do
     alias Singularity.{Repo, Schemas.CodeFile}
 
-    file_path = module.file_path
+    file_path = Map.get(module, :file)
 
-    # Read file content
-    content =
-      case File.read(file_path) do
-        {:ok, data} -> data
-        {:error, _} -> ""
-      end
+    # Read file content directly (no parser needed for now)
+    case File.read(file_path) do
+      {:ok, content} when byte_size(content) > 0 ->
+        # Build attributes from learned module data + file content
+        attrs = %{
+          project_name: codebase_id,  # Database uses project_name!
+          file_path: file_path,
+          language: detect_language(file_path),
+          content: content,
+          size_bytes: byte_size(content),  # Database uses size_bytes!
+          line_count: String.split(content, "\n") |> length(),
+          hash: :crypto.hash(:md5, content) |> Base.encode16(),
+          metadata: %{
+            module_name: Map.get(module, :module_name),
+            has_moduledoc: Map.get(module, :has_moduledoc, false),
+            functions: extract_functions(module),
+            imports: extract_imports(module),
+            issues: Map.get(module, :issues, []),
+            learned_at: DateTime.utc_now()
+          }
+        }
 
-    if content == "" do
-      {:ok, :skipped}
-    else
-      # Build attributes from learned module data
-      attrs = %{
-        codebase_id: codebase_id,
-        file_path: file_path,
-        language: detect_language(file_path),
-        content: content,
-        file_size: byte_size(content),
-        line_count: String.split(content, "\n") |> length(),
-        hash: :crypto.hash(:md5, content) |> Base.encode16(),
-        functions: extract_functions(module),
-        imports: extract_imports(module),
-        exports: extract_exports(module),
-        metadata: build_metadata(module),
-        parsed_at: DateTime.utc_now()
-      }
+        # Upsert (update if exists, insert if new)
+        case Repo.insert(
+          CodeFile.changeset(%CodeFile{}, attrs),
+          on_conflict: {:replace_all_except, [:id, :inserted_at]},
+          conflict_target: [:project_name, :file_path]
+        ) do
+          {:ok, _} -> {:ok, :persisted}
+          {:error, changeset} ->
+            Logger.warning("Failed to persist #{file_path}: #{inspect(changeset.errors)}")
+            {:error, changeset}
+        end
 
-      # Upsert (update if exists, insert if new)
-      case Repo.insert(
-        CodeFile.changeset(%CodeFile{}, attrs),
-        on_conflict: {:replace_all_except, [:id, :inserted_at]},
-        conflict_target: [:codebase_id, :file_path]
-      ) do
-        {:ok, _} -> {:ok, :persisted}
-        {:error, changeset} ->
-          Logger.warning("Failed to persist #{file_path}: #{inspect(changeset.errors)}")
-          {:error, changeset}
-      end
+      {:ok, _empty} ->
+        {:ok, :skipped_empty}
+
+      {:error, reason} ->
+        Logger.debug("Could not read #{file_path}: #{inspect(reason)}")
+        {:error, reason}
     end
   end
 
@@ -558,7 +561,7 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
 
   defp extract_imports(module) do
     Map.get(module, :dependencies, [])
-    |> Enum.map(&to_string/1)
+    |> Enum.map(fn dep -> %{name: to_string(dep)} end)
   end
 
   defp extract_exports(module) do
