@@ -72,42 +72,39 @@ defmodule Singularity.Repo.Migrations.AddDependencyCatalogPerformanceIndexes2025
     """
 
     # === VECTOR INDEXES (if missing) ===
-    
-    # Check if vector indexes exist, create if missing
+    # Note: Main embedding index already exists (dependency_catalog_embedding_idx)
+    # Only create indexes for child tables if they exist
+
     execute """
     DO $$
     BEGIN
-      -- Semantic embedding index for main search
-      IF NOT EXISTS (
-        SELECT 1 FROM pg_indexes 
-        WHERE indexname = 'dependency_catalog_semantic_embedding_idx'
-      ) THEN
-        CREATE INDEX dependency_catalog_semantic_embedding_idx 
-        ON dependency_catalog 
-        USING ivfflat (semantic_embedding vector_cosine_ops)
-        WITH (lists = 100);
+      -- Main table embedding index (already exists as dependency_catalog_embedding_idx)
+      -- Skip to avoid duplicate
+
+      -- Code embedding index for examples (only if table exists)
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'dependency_catalog_examples') THEN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_indexes
+          WHERE indexname = 'dependency_catalog_examples_code_embedding_idx'
+        ) THEN
+          CREATE INDEX dependency_catalog_examples_code_embedding_idx
+          ON dependency_catalog_examples
+          USING ivfflat (code_embedding vector_cosine_ops)
+          WITH (lists = 100);
+        END IF;
       END IF;
-      
-      -- Code embedding index for examples
-      IF NOT EXISTS (
-        SELECT 1 FROM pg_indexes 
-        WHERE indexname = 'dependency_catalog_examples_code_embedding_idx'
-      ) THEN
-        CREATE INDEX dependency_catalog_examples_code_embedding_idx 
-        ON dependency_catalog_examples 
-        USING ivfflat (code_embedding vector_cosine_ops)
-        WITH (lists = 100);
-      END IF;
-      
-      -- Pattern embedding index for patterns
-      IF NOT EXISTS (
-        SELECT 1 FROM pg_indexes 
-        WHERE indexname = 'dependency_catalog_patterns_pattern_embedding_idx'
-      ) THEN
-        CREATE INDEX dependency_catalog_patterns_pattern_embedding_idx 
-        ON dependency_catalog_patterns 
-        USING ivfflat (pattern_embedding vector_cosine_ops)
-        WITH (lists = 100);
+
+      -- Pattern embedding index for patterns (only if table exists)
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'dependency_catalog_patterns') THEN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_indexes
+          WHERE indexname = 'dependency_catalog_patterns_pattern_embedding_idx'
+        ) THEN
+          CREATE INDEX dependency_catalog_patterns_pattern_embedding_idx
+          ON dependency_catalog_patterns
+          USING ivfflat (pattern_embedding vector_cosine_ops)
+          WITH (lists = 100);
+        END IF;
       END IF;
     END $$;
     """
@@ -140,9 +137,8 @@ defmodule Singularity.Repo.Migrations.AddDependencyCatalogPerformanceIndexes2025
     DROP INDEX IF EXISTS idx_dependency_catalog_deps_name_type;
     """
 
-    # Drop vector indexes if they exist
+    # Drop vector indexes if they exist (don't drop main embedding index - it's needed)
     execute """
-    DROP INDEX IF EXISTS dependency_catalog_semantic_embedding_idx;
     DROP INDEX IF EXISTS dependency_catalog_examples_code_embedding_idx;
     DROP INDEX IF EXISTS dependency_catalog_patterns_pattern_embedding_idx;
     """
