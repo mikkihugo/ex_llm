@@ -100,6 +100,7 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
   
   # INTEGRATION: Learning and bootstrap (codebase understanding and system integration)
   alias Singularity.Planning.{HTDAGLearner, HTDAGBootstrap}
+  alias Singularity.CodeIngestionService
   
   @default_config [
     enabled: true,
@@ -282,10 +283,10 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
       {:ok, learning} ->
         issues_count = length(learning.issues)
         Logger.info("Learning complete: #{issues_count} issues found")
-        
+
         # TELEMETRY: Learning completed
         :telemetry.execute([:htdag, :learn, :complete], %{issues_found: issues_count}, %{})
-        
+
         # TELEMETRY: Issues identified
         :telemetry.execute([:htdag, :identify_issues, :complete], %{
           total_issues: issues_count,
@@ -293,7 +294,11 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
           medium_severity: count_by_severity(learning.issues, :medium),
           low_severity: count_by_severity(learning.issues, :low)
         }, %{})
-        
+
+        # PERSISTENCE: Store learned modules in database for semantic search
+        Logger.info("Phase 1.5: Persisting learned codebase to database...")
+        persist_learned_codebase(learning)
+
         new_state = %{new_state | learning_result: learning}
         
         # Phase 2: Auto-fix if enabled
@@ -408,7 +413,7 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
   end
   
   defp calculate_duration(state) do
-    if state.started_at and state.completed_at do
+    if state.started_at && state.completed_at do
       DateTime.diff(state.completed_at, state.started_at, :second)
     else
       0
@@ -440,5 +445,136 @@ defmodule Singularity.Planning.HTDAGAutoBootstrap do
     Logger.info("System is ready for operation!")
     Logger.info("=" <> String.duplicate("=", 70))
     Logger.info("")
+  end
+
+  defp persist_learned_codebase(learning) do
+    # Persist HTDAG's learned modules directly to database
+    # This is the UNIFIED ingestion path - no fragmentation!
+
+    alias Singularity.{Repo, Schemas.CodeFile}
+    import Ecto.Query
+
+    Logger.info("Persisting #{length(learning.modules)} modules to database...")
+
+    codebase_id = "singularity"
+    persisted_count = 0
+
+    # Persist each learned module
+    results =
+      learning.modules
+      |> Task.async_stream(
+        fn module ->
+          persist_module_to_db(codebase_id, module)
+        end,
+        max_concurrency: 10,
+        timeout: :infinity
+      )
+      |> Enum.to_list()
+
+    success_count = Enum.count(results, fn
+      {:ok, {:ok, _}} -> true
+      _ -> false
+    end)
+
+    Logger.info("✓ Persisted #{success_count}/#{length(learning.modules)} modules to database")
+    {:ok, success_count}
+  rescue
+    error ->
+      Logger.warning("Error persisting codebase: #{inspect(error)}")
+      {:error, error}
+  end
+
+  defp persist_module_to_db(codebase_id, module) do
+    alias Singularity.{Repo, Schemas.CodeFile}
+
+    file_path = module.file_path
+
+    # Read file content
+    content =
+      case File.read(file_path) do
+        {:ok, data} -> data
+        {:error, _} -> ""
+      end
+
+    if content == "" do
+      {:ok, :skipped}
+    else
+      # Build attributes from learned module data
+      attrs = %{
+        codebase_id: codebase_id,
+        file_path: file_path,
+        language: detect_language(file_path),
+        content: content,
+        file_size: byte_size(content),
+        line_count: String.split(content, "\n") |> length(),
+        hash: :crypto.hash(:md5, content) |> Base.encode16(),
+        functions: extract_functions(module),
+        imports: extract_imports(module),
+        exports: extract_exports(module),
+        metadata: build_metadata(module),
+        parsed_at: DateTime.utc_now()
+      }
+
+      # Upsert (update if exists, insert if new)
+      case Repo.insert(
+        CodeFile.changeset(%CodeFile{}, attrs),
+        on_conflict: {:replace_all_except, [:id, :inserted_at]},
+        conflict_target: [:codebase_id, :file_path]
+      ) do
+        {:ok, _} -> {:ok, :persisted}
+        {:error, changeset} ->
+          Logger.warning("Failed to persist #{file_path}: #{inspect(changeset.errors)}")
+          {:error, changeset}
+      end
+    end
+  end
+
+  defp detect_language(file_path) do
+    case Path.extname(file_path) do
+      ".ex" -> "elixir"
+      ".exs" -> "elixir"
+      ".gleam" -> "gleam"
+      ".rs" -> "rust"
+      ".ts" -> "typescript"
+      ".js" -> "javascript"
+      ".py" -> "python"
+      ".go" -> "go"
+      _ -> "unknown"
+    end
+  end
+
+  defp extract_functions(module) do
+    # Extract function names from module data
+    Map.get(module, :functions, [])
+    |> Enum.map(fn func ->
+      case func do
+        %{name: name, arity: arity} -> %{name: name, arity: arity}
+        name when is_binary(name) -> %{name: name}
+        _ -> nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp extract_imports(module) do
+    Map.get(module, :dependencies, [])
+    |> Enum.map(&to_string/1)
+  end
+
+  defp extract_exports(module) do
+    # In Elixir, public functions are exports
+    Map.get(module, :functions, [])
+    |> Enum.filter(fn func ->
+      !String.starts_with?(to_string(Map.get(func, :name, "")), "_")
+    end)
+    |> Enum.map(&Map.get(&1, :name))
+  end
+
+  defp build_metadata(module) do
+    %{
+      module_name: Map.get(module, :module_name),
+      has_moduledoc: Map.get(module, :has_moduledoc, false),
+      issues: Map.get(module, :issues, [])
+    }
   end
 end
