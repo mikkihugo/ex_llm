@@ -99,9 +99,7 @@ defmodule Singularity.Planning.Schemas.Epic do
     |> calculate_wsjf()
   end
 
-  @doc """
-  Calculates WSJF score: (Business Value + Time Criticality + Risk Reduction) / Job Size
-  """
+  # Calculates WSJF score: (Business Value + Time Criticality + Risk Reduction) / Job Size
   defp calculate_wsjf(changeset) do
     bv = get_field(changeset, :business_value) || 5
     tc = get_field(changeset, :time_criticality) || 5
