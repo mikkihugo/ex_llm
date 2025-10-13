@@ -643,6 +643,8 @@ EOF
             export HEX_HOME="$PWD/.hex"
             mkdir -p "$MIX_HOME" "$HEX_HOME" "$PWD/bin"
             export PATH=$PWD/bin:$PATH
+            export PATH="$HOME/.local/bin:$PATH"
+            export PATH="$HOME/.bun/bin:$PATH"
 
             # === RUST/CARGO CACHING ===
             export CARGO_HOME="''${HOME}/.cache/singularity/cargo"
@@ -675,6 +677,25 @@ EOF
             # Ensure just is available
             export PATH="${pkgs.just}/bin:$PATH"
             echo "DEBUG: Added just to PATH: ${pkgs.just}/bin"
+
+            if ! command -v codex >/dev/null 2>&1; then
+              echo "[setup] Installing Codex CLI (bun global @openai/codex)..."
+              if ! ${pkgs.bun}/bin/bun install --global @openai/codex >/dev/null 2>&1; then
+                echo "[warn] Failed to install Codex CLI automatically. Install manually with: bun install --global @openai/codex"
+              fi
+            fi
+
+            if ! command -v cursor-agent >/dev/null 2>&1; then
+              echo "[setup] Installing Cursor Agent CLI..."
+              # Install to HOME/.local/bin (in PATH via line 646)
+              export CURSOR_INSTALL_DIR="$HOME/.local/bin"
+              mkdir -p "$CURSOR_INSTALL_DIR" 2>/dev/null || true
+              if ${pkgs.curl}/bin/curl https://cursor.com/install -fsSL | ${pkgs.bash}/bin/bash -s -- "$CURSOR_INSTALL_DIR" 2>&1; then
+                echo "[OK] cursor-agent installed to $CURSOR_INSTALL_DIR"
+              else
+                echo "[warn] Failed to install cursor-agent. Install manually: curl https://cursor.com/install -fsSL | bash"
+              fi
+            fi
 
             echo "🚀 Singularity Development Environment"
             echo "  MIX_ENV=dev"
