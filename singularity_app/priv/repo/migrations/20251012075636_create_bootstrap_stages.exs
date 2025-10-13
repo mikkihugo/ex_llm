@@ -22,8 +22,8 @@ defmodule Singularity.Repo.Migrations.CreateBootstrapStages do
       gen_random_uuid(),
       1,
       NOW(),
-      '{}',
-      '[{"stage": 1, "started_at": "' || NOW()::text || '", "reason": "initial"}]',
+      '{}'::jsonb,
+      ('[{"stage": 1, "started_at": "' || NOW()::text || '", "reason": "initial"}]')::jsonb,
       NOW(),
       NOW()
     )
