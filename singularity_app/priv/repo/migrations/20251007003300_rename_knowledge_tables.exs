@@ -13,14 +13,10 @@ defmodule Singularity.Repo.Migrations.RenameKnowledgeTables do
     # (Git ↔ DB bidirectional learning - human-curated templates/patterns/prompts)
     execute "ALTER TABLE knowledge_artifacts RENAME TO curated_knowledge_artifacts"
 
-    # technology_knowledge → detected_technology_knowledge
-    # (Auto-detected from codebase scanning)
-    execute "ALTER TABLE technology_knowledge RENAME TO detected_technology_knowledge"
+    # technology_knowledge was dropped in migration 20250101000015 (consolidated schema)
+    # No need to rename - table doesn't exist
 
-    # tool_knowledge was already renamed to package_registry_knowledge in Phase 1
-    # (See migration 20251007003000)
-
-    # Update indexes
+    # Update indexes for knowledge_artifacts only
     execute """
     ALTER INDEX IF EXISTS knowledge_artifacts_pkey
     RENAME TO curated_knowledge_artifacts_pkey
@@ -30,15 +26,15 @@ defmodule Singularity.Repo.Migrations.RenameKnowledgeTables do
     RENAME TO curated_knowledge_artifacts_unique_idx
     """
     execute """
-    ALTER INDEX IF EXISTS technology_knowledge_pkey
-    RENAME TO detected_technology_knowledge_pkey
+    ALTER INDEX IF EXISTS knowledge_artifacts_type_lang_idx
+    RENAME TO curated_knowledge_artifacts_type_lang_idx
     """
   end
 
   def down do
     execute """
-    ALTER INDEX IF EXISTS detected_technology_knowledge_pkey
-    RENAME TO technology_knowledge_pkey
+    ALTER INDEX IF EXISTS curated_knowledge_artifacts_type_lang_idx
+    RENAME TO knowledge_artifacts_type_lang_idx
     """
     execute """
     ALTER INDEX IF EXISTS curated_knowledge_artifacts_unique_idx
@@ -49,7 +45,6 @@ defmodule Singularity.Repo.Migrations.RenameKnowledgeTables do
     RENAME TO knowledge_artifacts_pkey
     """
 
-    execute "ALTER TABLE detected_technology_knowledge RENAME TO technology_knowledge"
     execute "ALTER TABLE curated_knowledge_artifacts RENAME TO knowledge_artifacts"
   end
 end
