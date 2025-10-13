@@ -16,7 +16,7 @@ defmodule Singularity.Repo.Migrations.CreateTemplatesTable do
         default: ~s({"count": 0, "success_rate": 0.0, "last_used": null})
 
       # Qodo-Embed-1 vector (1536 dimensions)
-      add :embedding, :vector, dimensions: 1536
+      add :embedding, :vector, size: 1536
 
       timestamps(type: :timestamptz)
     end
