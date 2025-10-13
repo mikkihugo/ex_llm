@@ -1,6 +1,6 @@
 {
   "name": "Elixir Production Quality",
-  "spec_version": "2.1",
+  "spec_version": "2.1.1",
   "capabilities": [
     "quality",
     "graph",
@@ -13,6 +13,14 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for Elixir code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.1.1": {
+      "date": "2025-01-13",
+      "changes": [
+        "Added explicit rule: Use comments (# ...) for private functions, NOT @doc",
+        "Added rationale: @doc on defp/defmacrop causes compilation warnings",
+        "Updated code_generation prompt with IMPORTANT note about private function docs"
+      ]
+    },
     "2.1": {
       "date": "2025-01-12",
       "changes": [
@@ -116,7 +124,11 @@
           "description",
           "examples",
           "edge_cases"
-        ]
+        ],
+        "private_functions": {
+          "use_comments_not_doc": true,
+          "rationale": "@doc attributes are discarded for defp/defmacrop and cause compilation warnings"
+        }
       },
       "typedoc": {
         "required_for": [
@@ -254,7 +266,7 @@
     }
   },
   "prompts": {
-    "code_generation": "Generate PRODUCTION-QUALITY Elixir code for: {task}\n\nREQUIREMENTS:\n- @moduledoc (100+ chars) with overview, examples, usage patterns\n- @doc for ALL public functions (50+ chars) with examples and edge cases\n- @typedoc for public types\n- @spec for ALL public functions, callbacks, and struct fields\n- Dialyzer-compatible types (strict mode)\n- Tagged tuple error handling {:ok, result} | {:error, reason}\n- NO raise in public API\n- with statements for error chains with else clause\n- Telemetry events for operations, errors, metrics\n- Logger with structured logging\n- Pattern matching required\n- Pipe operators for chains (2+ steps)\n- Tail recursion for recursive functions\n- Streams for large data\n- 85%+ test coverage target\n- Doctests for all public functions\n- RAG-optimized: semantic chunks, metadata tags, AI hints in moduledoc\n\nOUTPUT CODE ONLY.",
+    "code_generation": "Generate PRODUCTION-QUALITY Elixir code for: {task}\n\nREQUIREMENTS:\n- @moduledoc (100+ chars) with overview, examples, usage patterns\n- @doc for ALL public functions (50+ chars) with examples and edge cases\n- IMPORTANT: Use regular comments (# ...) for private functions, NOT @doc (causes warnings)\n- @typedoc for public types\n- @spec for ALL public functions, callbacks, and struct fields\n- Dialyzer-compatible types (strict mode)\n- Tagged tuple error handling {:ok, result} | {:error, reason}\n- NO raise in public API\n- with statements for error chains with else clause\n- Telemetry events for operations, errors, metrics\n- Logger with structured logging\n- Pattern matching required\n- Pipe operators for chains (2+ steps)\n- Tail recursion for recursive functions\n- Streams for large data\n- 85%+ test coverage target\n- Doctests for all public functions\n- RAG-optimized: semantic chunks, metadata tags, AI hints in moduledoc\n\nOUTPUT CODE ONLY.",
     "documentation": "Generate PRODUCTION-GRADE documentation for this Elixir code:\n\n```elixir\n{code}\n```\n\nINCLUDE @moduledoc with HUMAN CONTENT FIRST, then AI metadata:\n\n1. HUMAN CONTENT (top ~80 lines):\n   - Title: # ModuleName - Brief description\n   - Purpose: **What this module does** (bold, clear)\n   - Quick Start: Copy-paste examples showing common usage\n   - Public API: Bullet list of main functions\n   - Key Features: What makes this module valuable\n   - Complexity/Decision Guide: When to use what (if applicable)\n   - Error Handling: Common errors and solutions\n   - Examples: Real usage patterns with expected output\n\n2. SEPARATOR:\n   ---\n   ## AI Navigation Metadata\n   Brief explanation: \"The sections below provide structured metadata for AI assistants...\"\n\n3. AI METADATA (below separator):\n   - Module Identity (JSON): module, purpose, role, layer, alternatives, disambiguation\n   - Architecture Diagram (Mermaid): graph/sequence showing call flow\n   - Decision Tree (Mermaid): when/how to use different functions (if complex)\n   - Call Graph (YAML): calls_out, called_by, depends_on, supervision\n   - Data Flow (Mermaid sequence): if orchestrating components\n   - Anti-Patterns: what NOT to create, what NOT to call directly\n   - Search Keywords: 10+ keywords for vector search\n\nALSO INCLUDE:\n- @doc: Description, parameters, return values, examples, edge cases, errors\n- @typedoc: Type descriptions\n- Doctests for all public functions\n\nKEY: Human content at TOP (fast scanning), AI metadata BELOW (clear separation).\n\nOUTPUT DOCUMENTATION ONLY.",
     "tests": "Generate COMPREHENSIVE ExUnit tests for this code:\n\n```elixir\n{code}\n```\n\nINCLUDE:\n- Unit tests (all public functions)\n- Integration tests\n- Property tests (StreamData)\n- Edge cases\n- Error conditions\n- Concurrency tests (if applicable)\n- Async tests where possible\n- Target 85%+ coverage\n\nOUTPUT TEST MODULE ONLY."
   },

@@ -1,6 +1,6 @@
 {
   "name": "Rust Production Quality",
-  "spec_version": "2.1",
+  "spec_version": "2.1.1",
   "capabilities": [
     "quality",
     "graph",
@@ -14,6 +14,14 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for Rust code (NIFs, libraries, services) with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.1.1": {
+      "date": "2025-01-13",
+      "changes": [
+        "Added explicit rule: Use // for private items, /// only for pub items",
+        "Added rationale: /// generates public API docs, use regular // comments for private code",
+        "Aligned version with Elixir template (both now 2.1.1)"
+      ]
+    },
     "2.1": {
       "date": "2025-01-13",
       "changes": [
@@ -103,7 +111,11 @@
           "returns",
           "examples",
           "errors"
-        ]
+        ],
+        "private_functions": {
+          "use_regular_comments": true,
+          "rationale": "Use // for private items, /// only for pub items (appears in generated docs)"
+        }
       },
       "struct_doc": {
         "required_for": [
