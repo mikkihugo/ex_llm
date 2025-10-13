@@ -191,8 +191,8 @@ defmodule Singularity.Repo.Migrations.CreateAgentFlowTrackingTables do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
 
       # Who?
-      add :from_session_id, references(:agent_execution_sessions, type: :uuid, on_delete: :cascade)
-      add :to_session_id, references(:agent_execution_sessions, type: :uuid, on_delete: :cascade)
+      add :from_session_id, references(:agent_execution_sessions, type: :uuid, on_delete: :delete_all)
+      add :to_session_id, references(:agent_execution_sessions, type: :uuid, on_delete: :delete_all)
       add :from_agent_id, :text, null: false
       add :to_agent_id, :text, null: false
 
