@@ -23,12 +23,17 @@ defmodule Singularity.EmbeddingModelLoader do
       model_cache: %{}
     }
 
-    # Preload models on startup for better performance
-    case EmbeddingEngine.preload_models([:jina_v3, :qodo_embed]) do
-      {:ok, result} ->
-        Logger.info("Preloaded embedding models: #{result}")
-      {:error, reason} ->
-        Logger.warning("Failed to preload models: #{inspect(reason)}")
+    # Preload models on startup for better performance (skip if NIF not loaded)
+    try do
+      case EmbeddingEngine.preload_models([:jina_v3, :qodo_embed]) do
+        {:ok, result} ->
+          Logger.info("Preloaded embedding models: #{result}")
+        {:error, reason} ->
+          Logger.warning("Failed to preload models (will load on-demand): #{inspect(reason)}")
+      end
+    rescue
+      error ->
+        Logger.warning("EmbeddingEngine NIF not loaded yet (models will load on-demand): #{inspect(error)}")
     end
 
     Logger.info("EmbeddingModelLoader initialized with Rust NIF backend")
