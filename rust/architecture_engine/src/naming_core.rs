@@ -4,7 +4,6 @@
 //! Pure analysis - no I/O operations.
 
 use std::collections::HashMap;
-use anyhow::Result;
 use heck::{ToKebabCase, ToSnakeCase};
 use serde::{Deserialize, Serialize};
 
@@ -67,6 +66,45 @@ impl NamingCore {
     /// Set confidence threshold
     pub fn set_confidence_threshold(&mut self, threshold: f64) {
         self.confidence_threshold = threshold;
+    }
+
+    /// Add naming pattern for category
+    pub fn add_pattern(&mut self, category: CodeElementCategory, pattern: String) {
+        self.patterns.entry(category).or_insert_with(Vec::new).push(pattern);
+    }
+
+    /// Get patterns for category
+    pub fn get_patterns(&self, category: &CodeElementCategory) -> Option<&Vec<String>> {
+        self.patterns.get(category)
+    }
+
+    /// Add description for pattern
+    pub fn add_description(&mut self, pattern: String, description: String) {
+        self.descriptions.insert(pattern, description);
+    }
+
+    /// Get description for pattern
+    pub fn get_description(&self, pattern: &str) -> Option<&String> {
+        self.descriptions.get(pattern)
+    }
+
+    /// Index a name for search
+    pub fn index_name(&mut self, name: String, result: SearchResult) {
+        self.search_index.entry(name).or_insert_with(Vec::new).push(result);
+    }
+
+    /// Search indexed names
+    pub fn search_names(&self, query: &str) -> Vec<&SearchResult> {
+        self.search_index
+            .iter()
+            .filter(|(name, _)| name.contains(query))
+            .flat_map(|(_, results)| results.iter())
+            .collect()
+    }
+
+    /// Get confidence threshold
+    pub fn get_confidence_threshold(&self) -> f64 {
+        self.confidence_threshold
     }
 }
 

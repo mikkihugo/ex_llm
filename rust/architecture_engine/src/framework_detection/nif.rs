@@ -1,6 +1,6 @@
 //! Framework Engine NIF
 
-rustler::init!("Elixir.Singularity.FrameworkEngine");
+// rustler::init!("Elixir.Singularity.FrameworkEngine");
 
 #[rustler::nif]
 fn placeholder() -> String {

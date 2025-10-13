@@ -1,8 +1,6 @@
 //! Parsing Module for Codebase Analysis
 //!
-//! This module provides parsing capabilities for different programming languages.
-//! It uses external parser crates as dependencies.
+//! Re-exports parser_code types for use within code_engine.
+//! parser-code is also available as a standalone NIF via ParserEngine module.
 
-// Re-export external parser types for convenience
-// pub use sparc_methodology::*; // Module does not exist
 pub use parser_code::*;

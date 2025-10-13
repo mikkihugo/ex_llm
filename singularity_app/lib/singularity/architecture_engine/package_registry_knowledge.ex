@@ -46,11 +46,11 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
         {:ok, parsed}
 
       {:ok, _other} ->
-        Logger.warn("⚠️  Unexpected response format")
+        Logger.warning("⚠️  Unexpected response format")
         {:ok, []}
 
       {:error, :timeout} ->
-        Logger.warn("⏱️  Search timed out")
+        Logger.warning("⏱️  Search timed out")
         {:ok, []}
 
       {:error, reason} ->

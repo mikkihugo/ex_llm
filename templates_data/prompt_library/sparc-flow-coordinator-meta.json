@@ -1,0 +1,31 @@
+{
+  "id": "sparc-flow-coordinator",
+  "name": "SPARC Flow Coordinator",
+  "description": "SPARC coordination template for managing structured phase execution and flow decisions",
+  "category": "sparc",
+  "language": "sparc",
+  "tags": ["sparc", "coordination", "flow-management", "phase-control"],
+  "version": "1.0.0",
+  "author": "SPARC Team",
+  "created_at": "2024-01-15T10:00:00Z",
+  "updated_at": "2024-01-15T10:00:00Z",
+  "performance": {
+    "avg_execution_time_ms": 2000.0,
+    "complexity": 6
+  },
+  "ai_signature": {
+    "name": "sparc_flow_coordinator",
+    "inputs": {
+      "current_phase": "Current SPARC phase being executed",
+      "current_step": "Current step within the phase",
+      "outputs": "Outputs from the current step",
+      "quality_metrics": "Quality assessment metrics"
+    },
+    "outputs": {
+      "phase_status": "Phase completion status and confidence",
+      "flow_decision": "Next action (CONTINUE/BRANCH/ESCALATE/COMPLETE)",
+      "coordination_needs": "Required specialists and tools",
+      "reasoning": "Reasoning for flow decisions"
+    }
+  }
+}

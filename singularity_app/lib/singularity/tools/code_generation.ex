@@ -18,7 +18,7 @@ defmodule Singularity.Tools.CodeGeneration do
   """
 
   alias Singularity.Tools.{Tool, Catalog}
-  alias Singularity.{MethodologyExecutor, RAGCodeGenerator, QualityCodeGenerator}
+  alias Singularity.{MethodologyExecutor, RAGCodeGenerator, QualityCodeGenerator, AdaptiveCodeGenerator}
 
   @doc "Register code generation tools with the shared registry."
   def register(provider) do
@@ -298,24 +298,19 @@ defmodule Singularity.Tools.CodeGeneration do
 
   def code_generate(%{"task" => task} = args, _ctx) do
     language = Map.get(args, "language", "elixir")
-    repo = Map.get(args, "repo")
     quality = Map.get(args, "quality", "production") |> String.to_atom()
     include_tests = Map.get(args, "include_tests", quality == :production)
 
-    opts = [
-      language: language,
-      repo: repo,
-      quality: quality,
-      include_tests: include_tests
-    ]
-
-    case MethodologyExecutor.execute(task, opts) do
+    # Use adaptive generation (T5 local or LLM API)
+    case AdaptiveCodeGenerator.generate(task, language: language, quality: quality) do
       {:ok, code} ->
+        method = if AdaptiveCodeGenerator.t5_available?(), do: "T5-small (local)", else: "LLM API"
+
         {:ok,
          %{
            task: task,
            language: language,
-           method: "SPARC + RAG (5-phase)",
+           method: method,
            code: code,
            quality: quality,
            lines: count_lines(code),

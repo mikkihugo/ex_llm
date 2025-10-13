@@ -3,23 +3,20 @@
 //! **Global Cross-Project Prompt Execution Tracking**
 //!
 //! Provides intelligent storage and retrieval of prompt execution data
-//! using redb for performance-critical data and JSON for git-trackable prompt definitions.
+//! using NATS for communication with the Elixir storage service.
 //!
-//! ## Storage Separation
+//! ## Storage Architecture
 //!
 //! - **prompt_tracking** (this module): Global cross-project prompt execution tracking
-//!   - Location: `~/.cache/sparc-engine/global/prompt_tracking.redb`
-//!   - Stores: Prompt executions, feedback, evolutions, A/B tests
+//!   - Communication: NATS subjects (`prompt.tracking.store`, `prompt.tracking.query`)
+//!   - Storage: PostgreSQL via Elixir service
+//!   - Stores: Prompt executions, feedback, evolutions, A/B tests, learned patterns
 //!
-//! - **analysis-suite::CodeStorage**: Per-project code analysis
-//!   - Location: `~/.cache/sparc-engine/<project-id>/code_storage.redb`
+//! - **code_engine::CodeStorage**: Per-project code analysis
+//!   - Location: Per-project storage
 //!   - Stores: Parsed code, metrics, dependencies, VectorDAG
 //!
-//! - **fact-system** (external): GitHub code snippet downloads
-//!   - Location: `~/.primecode/facts/`
-//!   - Stores: GitHub snippets, documentation, examples
-//!
-//! This separation prevents duplication and keeps concerns focused.
+//! This separation keeps prompt execution tracking focused on learning and optimization.
 
 pub mod storage;
 pub mod storage_impl;
@@ -28,24 +25,24 @@ pub mod types;
 pub use storage::PromptTrackingStorage;
 pub use types::*;
 
-// Backward compatibility aliases
-pub type FactStorage = PromptTrackingStorage;
-// Framework detection is now handled by the unified detector in sparc-engine
-
 use std::collections::HashMap;
 
 use anyhow::Result;
 
 /// Initialize the prompt tracking system for prompt-engine using global storage
 pub async fn initialize_prompt_tracking() -> Result<PromptTrackingStorage> {
-    PromptTrackingStorage::new_global()
+    PromptTrackingStorage::new_global().await
 }
 
 /// Initialize the prompt tracking system with custom path (for testing/backward compatibility)
 pub async fn initialize_prompt_tracking_custom(
     storage_path: impl AsRef<std::path::Path>,
 ) -> Result<PromptTrackingStorage> {
-    PromptTrackingStorage::new(storage_path)
+    // For backward compatibility, we ignore the custom path and use global storage
+    // The path parameter is kept for API compatibility but not currently used
+    // since storage is handled via NATS to the Elixir service
+    let _path = storage_path.as_ref();
+    PromptTrackingStorage::new_global().await
 }
 
 /// Quick helper to store a prompt execution
@@ -56,7 +53,7 @@ pub async fn track_execution(
     success: bool,
     duration: std::time::Duration,
 ) -> Result<String> {
-    let execution_data = PromptExecutionData::PromptExecution(PromptExecutionFact {
+    let execution_data = PromptExecutionData::PromptExecution(PromptExecutionEntry {
         prompt_id: prompt_id.to_string(),
         execution_time_ms: duration.as_millis() as u64,
         success,

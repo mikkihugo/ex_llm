@@ -240,11 +240,11 @@ impl FileDAG {
       file_path: file_path.clone(),
       metadata: HashMap::new(),
     };
-    
+
     self.graph.add_node(file_node);
-    
+
     // Add dependencies
-    for dep in dependencies {
+    for dep in &dependencies {
       let dep_node = GraphNode {
         id: dep.clone(),
         node_type: "file".to_string(),
@@ -252,9 +252,9 @@ impl FileDAG {
         file_path: dep.clone(),
         metadata: HashMap::new(),
       };
-      
+
       self.graph.add_node(dep_node);
-      
+
       // Add dependency edge
       let dep_edge = GraphEdge {
         from: file_path.clone(),
@@ -263,10 +263,10 @@ impl FileDAG {
         weight: 1.0,
         metadata: HashMap::new(),
       };
-      
+
       self.graph.add_edge(dep_edge);
     }
-    
+
     // Update file relationships
     self.file_relationships.insert(file_path, dependencies);
   }

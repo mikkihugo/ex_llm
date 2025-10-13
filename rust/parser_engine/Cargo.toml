@@ -1,0 +1,85 @@
+[package]
+name = "parser-code"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["claude-code-zen Team"]
+description = "Source code parser for AST analysis, complexity metrics, and language detection using tree-sitter"
+repository = "https://github.com/claude-code-zen/zenflow"
+readme = "README.md"
+keywords = ["parser", "source-code", "ast", "code-analysis", "tree-sitter", "complexity", "metrics"]
+categories = ["development-tools", "parsing"]
+
+[lib]
+name = "parser_code"
+path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]  # Both library (for code_engine) AND NIF (for ParserEngine)
+
+[dependencies]
+# Rustler for NIF - explicit version (not workspace)
+rustler = "0.34"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Universal dependency analysis - stable version
+tokei = "12.1"
+
+# Tree-sitter core and language bindings - ONLY essential languages
+tree-sitter = "0.25.10"
+tree-sitter-elixir = "0.3.4"
+tree-sitter-erlang = "0.15.0"
+tree-sitter-gleam = "1.0.0"
+tree-sitter-rust = "0.24.0"
+tree-sitter-javascript = "0.25.0"
+tree-sitter-typescript = "0.23.2"
+tree-sitter-python = "0.25.0"
+tree-sitter-json = "0.24.8"
+tree-sitter-yaml = "0.7.2"
+tree-sitter-bash = "0.25.0"
+tree-sitter-go = "0.25"
+tree-sitter-java = "0.23"
+tree-sitter-c-sharp = "0.23"
+tree-sitter-c = "0.24"
+tree-sitter-cpp = "0.23"
+
+# Core utilities - explicit versions (not workspace)
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"  # For dependency parsing (Cargo.toml, pyproject.toml, etc.)
+async-trait = "0.1"
+futures = "0.3"
+tokio = { version = "1.0", features = ["full"] }
+tokio-retry = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+tempfile = "3.0"
+
+# Performance optimizations
+lru = "0.12"
+dashmap = "5.0"
+
+# PageRank for ML central heuristics (merged from parser-coordinator)
+petgraph = "0.6"
+
+# Regular expressions for refactoring
+regex = "1.0"
+
+# Logging
+tracing = "0.1"
+
+# Dependency parsing - DISABLED: path dependency causes Rustler issues
+# dependency_parser = { path = "../formats/dependency" }
+
+[dev-dependencies]
+tokio-test = "0.4"
+criterion = "0.5"
+
+[[bench]]
+name = "parser_performance"
+harness = false
+
+[features]
+default = ["rca", "nif"]  # Enable NIF by default for ParserEngine standalone use
+nif = []  # Enable NIF exports - rustler::init! block
+rca = []  # Mozilla rust-code-analysis metrics - ALWAYS ENABLED

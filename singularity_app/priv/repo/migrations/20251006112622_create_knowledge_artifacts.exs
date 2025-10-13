@@ -33,15 +33,23 @@ defmodule Singularity.Repo.Migrations.CreateKnowledgeArtifacts do
     ADD COLUMN language TEXT GENERATED ALWAYS AS (content->>'language') STORED
     """)
 
+    # Create function to extract tags from JSONB
+    execute("""
+    CREATE OR REPLACE FUNCTION extract_tags_from_jsonb(content JSONB)
+    RETURNS TEXT[] AS $$
+    BEGIN
+      IF jsonb_typeof(content->'tags') = 'array' THEN
+        RETURN ARRAY(SELECT jsonb_array_elements_text(content->'tags'));
+      ELSE
+        RETURN ARRAY[]::TEXT[];
+      END IF;
+    END;
+    $$ LANGUAGE plpgsql IMMUTABLE
+    """)
+
     execute("""
     ALTER TABLE knowledge_artifacts
-    ADD COLUMN tags TEXT[] GENERATED ALWAYS AS (
-      CASE
-        WHEN jsonb_typeof(content->'tags') = 'array'
-        THEN ARRAY(SELECT jsonb_array_elements_text(content->'tags'))
-        ELSE ARRAY[]::TEXT[]
-      END
-    ) STORED
+    ADD COLUMN tags TEXT[] GENERATED ALWAYS AS (extract_tags_from_jsonb(content)) STORED
     """)
 
     # Consistency check: ensure raw and parsed match
@@ -104,6 +112,7 @@ defmodule Singularity.Repo.Migrations.CreateKnowledgeArtifacts do
   def down do
     execute("DROP TRIGGER IF EXISTS knowledge_artifacts_updated_at_trigger ON knowledge_artifacts")
     execute("DROP FUNCTION IF EXISTS update_knowledge_artifacts_updated_at()")
+    execute("DROP FUNCTION IF EXISTS extract_tags_from_jsonb(JSONB)")
     drop table(:knowledge_artifacts)
   end
 end

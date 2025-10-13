@@ -14,6 +14,7 @@ defmodule Singularity.QualityEngine do
   use Rustler,
     otp_app: :singularity,
     crate: :quality_engine,
+    path: "../rust/quality_engine",
     skip_compilation?: false
 
   require Logger

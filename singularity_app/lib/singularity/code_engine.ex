@@ -13,10 +13,13 @@ defmodule Singularity.RustAnalyzer do
   use Rustler,
     otp_app: :singularity,
     crate: :code_engine,
+    path: "../rust/code_engine",
     skip_compilation?: false
 
   # NIF functions (provided by rust/code_engine when compiled)
   def analyze_control_flow(_file_path), do: :erlang.nif_error(:nif_not_loaded)
+  def parse_file_nif(_file_path), do: :erlang.nif_error(:nif_not_loaded)
+  def supported_languages_nif(), do: :erlang.nif_error(:nif_not_loaded)
 end
 
 defmodule Singularity.CodeEngine do
@@ -63,6 +66,37 @@ defmodule Singularity.CodeEngine do
     RustAnalyzer.analyze_control_flow(file_path)
   end
 
+  @doc """
+  Parse a file using tree-sitter (via parser-code library).
+
+  Returns structured AST data, symbols, imports, and exports.
+
+  ## Examples
+
+      iex> CodeEngine.parse_file("lib/my_module.ex")
+      {:ok, %ParsedFile{language: "Elixir", symbols: [...], ...}}
+  """
+  def parse_file(file_path) do
+    case RustAnalyzer.parse_file_nif(file_path) do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, reason}
+      result when is_map(result) -> {:ok, result}
+      error -> {:error, error}
+    end
+  end
+
+  @doc """
+  Get list of all supported programming languages.
+
+  ## Examples
+
+      iex> CodeEngine.supported_languages()
+      ["Rust", "Python", "JavaScript", "TypeScript", "Elixir", ...]
+  """
+  def supported_languages do
+    RustAnalyzer.supported_languages_nif()
+  end
+
   # Helper to check if NIF loaded
   defp nif_loaded? do
     try do
@@ -96,4 +130,9 @@ end
 defmodule Singularity.RustAnalyzer.UnreachableCode do
   @moduledoc "Unreachable code information"
   defstruct [:node_id, :line_number, :reason]
+end
+
+defmodule Singularity.CodeEngine.ParsedFile do
+  @moduledoc "Parsed file result from tree-sitter parsing"
+  defstruct [:file_path, :language, :ast_json, :symbols, :imports, :exports]
 end

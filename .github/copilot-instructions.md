@@ -11,14 +11,14 @@
 
 **Development Philosophy**: Internal tooling prioritizing features & learning over production constraints. Maximum experimentation, rapid iteration.
 
-**Key Architectural Principle**: All database access routes through `db_service` via NATS - no direct PostgreSQL connections from services.
+**Key Architectural Principle**: NATS-first microservices with direct PostgreSQL access via Ecto (Elixir) or async-postgres (Rust services).
 
 ## Project Languages
 
 This is a **polyglot codebase** using:
 - **Elixir** (primary) - Main application in `singularity_app/`
 - **Gleam** - BEAM-native functional language, compiles with Elixir
-- **Rust** - High-performance tools in `rust/` (tool_doc_index, db_service)
+- **Rust** - High-performance NIFs and services in `rust/` (architecture_engine, code_engine, parser_engine, etc.)
 - **TypeScript** - AI server in `ai-server/`
 
 This repository uses **Nix** + **direnv** for reproducible development environments.
@@ -155,9 +155,13 @@ pub fn process_data(input: String) -> Result(String, String) {
 ### Rust Code (`rust/`)
 
 **File locations**:
-- `rust/tool_doc_index/` - Technology detection
-- `rust/db_service/` - Database gateway (archived)
-- `rust/prompt_engine/` - ML-based prompt optimization
+- `rust/architecture_engine/` - Architecture analysis and intelligent naming
+- `rust/code_engine/` - Code quality analysis and metrics
+- `rust/parser_engine/` - Multi-language parsing (30+ languages)
+- `rust/embedding_engine/` - GPU-accelerated embeddings (Jina v3, Qodo)
+- `rust/prompt_engine/` - DSPy prompt optimization
+- `rust/quality_engine/` - Quality checks and standards
+- `rust/architecture_engine/package_registry/` - External package analysis (npm, cargo, hex, pypi)
 
 **Conventions**:
 - Use `snake_case` for files and functions
@@ -257,13 +261,13 @@ bun run src/server.ts
 ### Run Rust Tools
 
 ```bash
-# Technology detector
-cd rust/tool_doc_index
-cargo run -- detect /path/to/project
+# Package registry analysis
+cd rust/architecture_engine/package_registry
+cargo run -- analyze /path/to/project
 
-# Database service (NATS → PostgreSQL gateway)
-cd rust/db_service
-cargo run
+# Run all Rust tests
+cd rust
+cargo test
 ```
 
 ### Run Tests
@@ -273,8 +277,7 @@ cargo run
 cd singularity_app && mix test
 
 # Rust tests
-cd rust/tool_doc_index && cargo test
-cd rust/db_service && cargo test
+cd rust && cargo test
 ```
 
 ### Task Runner (Justfile)
@@ -353,26 +356,33 @@ This is a **NATS-first microservices architecture**:
    ┌───┴──────────────────────┐
    │                          │
    ▼                          ▼
-┌──────────┐         ┌──────────────┐
-│ db_service│         │  ai-server   │
-│ (Rust)    │         │  (Bun/TS)    │
-│ PostgreSQL│         │  Claude API  │
-└──────────┘         └──────────────┘
-   ▲                          ▲
-   │                          │
-   └──────────┬───────────────┘
-              │
-     ┌────────┴─────────┐
-     │                  │
-┌────────────┐  ┌──────────────┐
-│ tool_doc_  │  │ singularity_ │
-│ index      │  │ app          │
-│ (Rust)     │  │ (Elixir)     │
-│ Detection  │  │ Orchestrator │
-└────────────┘  └──────────────┘
+┌──────────────┐     ┌──────────────┐
+│  ai-server   │     │ central_cloud│
+│  (Bun/TS)    │     │  (Elixir)    │
+│  LLM APIs    │     │  3 Services  │
+└──────────────┘     └──────┬───────┘
+                            │
+              ┌─────────────┴─────────────┐
+              │                           │
+              ▼                           ▼
+       ┌──────────────┐          ┌──────────────┐
+       │ singularity_ │          │  PostgreSQL  │
+       │ app          │          │  (Direct)    │
+       │ (Elixir)     │          │  + pgvector  │
+       │ 6 Rust NIFs  │          └──────────────┘
+       └──────────────┘
 ```
 
-**Key Principle**: All database access goes through `db_service` via NATS. No direct PostgreSQL connections.
+**Key Principles**:
+- **NATS-first**: Services communicate via NATS message bus
+- **Direct DB Access**: Each service connects to PostgreSQL directly (Ecto for Elixir, async-postgres for Rust)
+- **6 Rust NIFs**: Loaded into Singularity BEAM VM for high-performance operations
+  1. parser_engine - Multi-language parsing (30+ languages)
+  2. code_engine - Code quality analysis
+  3. architecture_engine - Architecture analysis + intelligent naming
+  4. quality_engine - Quality checks and standards
+  5. embedding_engine - GPU-accelerated embeddings (Jina v3, Qodo)
+  6. prompt_engine - DSPy prompt optimization + ML training
 
 ## Nix Benefits
 
@@ -382,9 +392,9 @@ This is a **NATS-first microservices architecture**:
 ✅ **Declarative**: All dependencies in `flake.nix`
 ✅ **Automated**: PostgreSQL + NATS start automatically
 
-## VS Code / Cursor Integration
+## VSCode / Cursor Integration
 
-If using VS Code/Cursor, ensure direnv VSCode extension is installed:
+If using VSCode/Cursor, ensure direnv VSCode extension is installed:
 
 ```bash
 code --install-extension mkhl.direnv
@@ -427,9 +437,9 @@ This will automatically load the Nix environment in the integrated terminal.
 ### Adding New Features
 
 #### Adding a New Technology Detector
-1. Create JSON template in `rust/tool_doc_index/templates/`
+1. Create JSON template in `rust/architecture_engine/package_registry/templates/`
 2. Add detection patterns (file extensions, package names, etc.)
-3. Test with `cargo run -- detect /path/to/sample/project`
+3. Test with `cargo run -- analyze /path/to/sample/project`
 4. Add integration test in Elixir
 
 #### Adding a New NATS Subject
@@ -466,7 +476,7 @@ This will automatically load the Nix environment in the integrated terminal.
 cd singularity_app && mix test
 
 # Rust
-cd rust/tool_doc_index && cargo test --lib
+cd rust && cargo test --lib
 
 # TypeScript
 cd ai-server && bun test
@@ -478,7 +488,7 @@ cd ai-server && bun test
 cd singularity_app && mix test --only integration
 
 # Rust integration tests
-cd rust/db_service && cargo test --test integration_test
+cd rust && cargo test --test '*'
 ```
 
 **E2E Tests** (slow, run before commits):
@@ -623,21 +633,22 @@ which elixir gleam cargo
 
 **Solution**: Always use dot-separated hierarchical names. See `NATS_SUBJECTS.md`.
 
-### Direct Database Access
+### Database Access Patterns
 
-**Problem**: Trying to connect directly to PostgreSQL from services
+**Best Practice**: Use Ecto for database access in Elixir services
 
-**Pitfall**:
+**Correct approach**:
 ```elixir
-# ❌ Wrong - bypasses db_service
-Repo.query("SELECT * FROM users")
+# ✅ Use Ecto queries
+Repo.all(User)
+Repo.get(User, id)
+
+# ✅ Or Ecto.Query
+import Ecto.Query
+from(u in User, where: u.active == true) |> Repo.all()
 ```
 
-**Solution**: Always use NATS to talk to db_service:
-```elixir
-# ✅ Correct
-NatsConnector.request("db.query", %{sql: "SELECT * FROM users"})
-```
+**For Rust services**: Use async-postgres or SQLx with connection pooling
 
 ### GPU Memory Issues (WSL2)
 
@@ -658,8 +669,8 @@ wsl
 ### What to Look For
 
 **Architecture**:
-- ✅ Follows NATS-first principle
-- ✅ No direct database access (except db_service)
+- ✅ Follows NATS-first principle for service communication
+- ✅ Uses Ecto/async-postgres for database access
 - ✅ Services are stateless where possible
 - ✅ Proper error handling and logging
 

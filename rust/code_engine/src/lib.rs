@@ -62,57 +62,65 @@
 
 // Core modules - reorganized for domain-driven design
 pub mod domain;   // Domain types (symbols, files, metrics, relationships)
-pub mod graph;    // Graph algorithms and structures
+// pub mod graph;    // DISABLED: Has many database/storage dependencies
 pub mod vectors;  // Vector embeddings and operations
-pub mod embeddings; // NEW: Hybrid TF-IDF + Transformer code embeddings
-pub mod analysis; // Analysis logic and algorithms
+// pub mod embeddings; // DISABLED: Requires external embedding services (handled by Elixir)
+// pub mod analysis; // DISABLED: Has complex integration dependencies
 pub mod api;      // API types
 pub mod parsing;  // Code parsing
 // paths module removed - NIF doesn't need file paths
-pub mod repository; // Repository analysis
+// pub mod repository; // DISABLED: Has detection dependencies
 pub mod types;    // Legacy types (being migrated)
 pub mod codebase; // NEW: Single source of truth for all code metadata
-pub mod search;   // Semantic search with custom vectors
+// pub mod search;   // DISABLED: Semantic search requires database (handled by Elixir)
 
 // Unified storage system
 // storage module removed - NIF doesn't need persistent storage
+// Legacy compatibility: map old storage path to new codebase::storage
+pub use codebase::storage as storage;
 
 // Re-export main types for easy access
 // Domain types (new organization)
 pub use domain::*;
-pub use graph::*;
+// pub use graph::*;  // DISABLED - module disabled
 pub use vectors::*;
 
 // NEW: Codebase types (single source of truth)
 pub use codebase::*;
 
 // NEW: Search types (semantic search with custom vectors)
-pub use search::*;
+// pub use search::*;  // DISABLED - search handled by Elixir
 
 // Legacy re-exports for backward compatibility
 pub use types::*;  // Export types first (these are the canonical definitions)
 
 // Re-export analyzer types
-pub use analyzer::{
-  ArchitecturalCodePattern, ComplexityDistribution, CrossLanguageAnalysis, FileMetrics, IntegrationCodePattern, ParsedFile, QualityConsistency, QualityGate,
-  QualityGateResults, TechnologyStack,
-};
+// DISABLED: analyzer module disabled due to external dependencies
+// pub use analyzer::{
+//   ArchitecturalCodePattern, ComplexityDistribution, CrossLanguageAnalysis, FileMetrics, IntegrationCodePattern, ParsedFile, QualityConsistency, QualityGate,
+//   QualityGateResults, TechnologyStack,
+// };
 
 // Re-export analysis types (code analysis only)
-pub use analysis::{
-  performance, semantic, multilang, dependency, metrics, security,
-};
+// DISABLED: analysis module disabled
+// pub use analysis::{
+//   performance, semantic, multilang, dependency, metrics, security,
+// };
 
 pub use parsing::*;
-pub use repository::{RepoAnalyzer, RepositoryAnalysis};
+// pub use repository::{RepoAnalyzer, RepositoryAnalysis};  // DISABLED - module disabled
 // Storage removed - NIF receives data from Elixir
 
 // Main analyzer that orchestrates everything
-pub mod analyzer;
+// pub mod analyzer;  // DISABLED: Has too many external dependencies (prompt_engine, linting_engine, sparc_methodology)
 
 // Re-export the main analyzer
-pub use analyzer::*;
+// pub use analyzer::*;  // DISABLED - see above
 
 // NIF bindings (feature-gated for Elixir integration)
 #[cfg(feature = "nif")]
 pub mod nif;
+
+// nif_bindings DISABLED - has dependencies on disabled modules (graph, analysis)
+// #[cfg(feature = "nif")]
+// pub mod nif_bindings;

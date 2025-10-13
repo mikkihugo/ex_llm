@@ -29,7 +29,7 @@ impl Default for CodebaseConfig {
   }
 }
 
-// AnalysisConfig moved to universal-parser - use UniversalParserFrameworkConfig instead
+// AnalysisConfig moved to universal-parser - use PolyglotCodeParserFrameworkConfig instead
 
 /// Vector analysis configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]

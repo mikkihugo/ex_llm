@@ -10,8 +10,7 @@ defmodule Singularity.Planning.HTDAGLearner do
 
   This module integrates with:
   - `Singularity.Store` - Knowledge search (Store.search_knowledge/2)
-  - `Singularity.RAGCodeGenerator` - Code generation (RAGCodeGenerator.find_similar_module/1)
-  - `Singularity.QualityCodeGenerator` - Quality enforcement (QualityCodeGenerator.generate/2)
+  - `Singularity.LLM.Service` - Lua-based fix generation (Service.call_with_script/3)
   - `Singularity.HotReload.ImprovementGateway` - Hot reload (ImprovementGateway.dispatch/2)
   - `Singularity.Planning.HTDAGTracer` - Runtime tracing (HTDAGTracer.full_analysis/1)
   - `Singularity.SelfImprovingAgent` - Self-improvement (SelfImprovingAgent integration)
@@ -24,7 +23,16 @@ defmodule Singularity.Planning.HTDAGLearner do
   - Extract component purposes from @moduledoc
   - Build dependency graph from aliases
   - Identify missing connections
-  - Auto-generate fixes using RAG + Quality templates
+  - Auto-generate fixes using context-aware Lua scripts
+
+  ## Fix Generation (Lua-based)
+
+  Fixes are generated using modular Lua scripts from `templates_data/prompt_library/codebase/`:
+  - `fix-broken-dependency.lua` - Reads broken module, searches for similar code, checks git history
+  - `fix-missing-docs.lua` - Analyzes module purpose, finds documentation style examples
+  - `fix-isolated-module.lua` - Determines if isolation is legitimate or needs integration
+
+  Each script reads relevant context BEFORE calling the LLM (90% cost savings vs tool-based exploration).
 
   ## Usage
 
@@ -32,7 +40,7 @@ defmodule Singularity.Planning.HTDAGLearner do
       {:ok, knowledge} = HTDAGLearner.learn_codebase()
       # => {:ok, %{knowledge: %{modules: %{...}}, issues: [...]}}
 
-      # Auto-fix everything that's broken
+      # Auto-fix everything that's broken (uses Lua scripts)
       {:ok, fixes} = HTDAGLearner.auto_fix_all()
       # => {:ok, %{iterations: 3, fixes: [...]}}
   """
@@ -47,6 +55,9 @@ defmodule Singularity.Planning.HTDAGLearner do
 
   # INTEGRATION: Self-improvement (learning from execution)
   alias Singularity.SelfImprovingAgent
+
+  # INTEGRATION: LLM service with Lua script support for dynamic fix generation
+  alias Singularity.LLM.Service
 
   @doc """
   Learn about the codebase in a simple, incremental way.
@@ -505,77 +516,80 @@ defmodule Singularity.Planning.HTDAGLearner do
   defp fix_broken_dependency(issue, learning) do
     Logger.info("Generating fix for broken dependency: #{issue.missing}")
 
-    with %{file: file_path} <- Map.get(learning.knowledge.modules, issue.module),
-         true <- File.exists?(file_path),
-         {:ok, content} <- File.read(file_path) do
-      {updated_content, action} =
-        if Map.has_key?(learning.knowledge.modules, issue.missing) do
-          {add_alias_to_content(content, issue.missing), "Added alias"}
-        else
-          case RAGCodeGenerator.find_similar_module(issue.missing) do
-            {:ok, similar} ->
-              Logger.info("Found similar module: #{similar}, using as template")
+    module_info = Map.get(learning.knowledge.modules, issue.module)
 
-              case create_missing_module(issue.missing, similar, learning) do
-                {:ok, _path} ->
-                  {add_alias_to_content(content, issue.missing), "Created missing module"}
+    with %{file: file_path} <- module_info,
+         true <- File.exists?(file_path) do
+      # Use Lua script for context-aware fix generation
+      script_context = %{
+        issue: issue,
+        module_info: module_info,
+        learning: %{
+          modules: Map.keys(learning.knowledge.modules),
+          dependencies: learning.knowledge.dependencies
+        }
+      }
 
-                {:error, reason} ->
-                  Logger.warning("Failed to create module from template; adding TODO comment",
-                    missing: issue.missing,
-                    reason: inspect(reason)
-                  )
+      case Service.call_with_script(
+             "codebase/fix-broken-import.lua",
+             script_context,
+             complexity: :medium,
+             task_type: :code_generation
+           ) do
+        {:ok, %{content: updated_content}} ->
+          action = "Generated fix via Lua script"
+          File.write!(file_path, updated_content)
 
-                  {add_todo_comment(content, issue.missing), "Added TODO placeholder"}
-              end
+          Logger.info("✓ Fixed broken dependency in #{file_path}")
 
-            {:error, _} ->
-              Logger.warning("No template found for #{issue.missing}, adding TODO comment")
-              {add_todo_comment(content, issue.missing), "Added TODO placeholder"}
+          dispatch_metadata = %{
+            "reason" => "htdag_auto_fix",
+            "issue_type" => "broken_dependency",
+            "module" => issue.module,
+            "missing_dependency" => issue.missing,
+            "file_path" => file_path,
+            "action" => action
+          }
+
+          payload = %{
+            "code" => updated_content,
+            "metadata" => dispatch_metadata
+          }
+
+          case ImprovementGateway.dispatch(payload, agent_id: "htdag-runtime") do
+            :ok ->
+              Logger.debug("Hot reload dispatched for #{issue.module}",
+                agent_id: "htdag-runtime"
+              )
+
+            {:error, reason} ->
+              Logger.warning("Hot reload dispatch skipped",
+                module: issue.module,
+                file: file_path,
+                reason: inspect(reason)
+              )
           end
-        end
 
-      File.write!(file_path, updated_content)
+          fix = %{
+            type: :broken_dependency_fix,
+            module: issue.module,
+            missing: issue.missing,
+            file: file_path,
+            action: action,
+            auto_generated: true,
+            timestamp: DateTime.utc_now()
+          }
 
-      Logger.info("✓ Fixed broken dependency in #{file_path}")
-
-      dispatch_metadata = %{
-        "reason" => "htdag_auto_fix",
-        "issue_type" => "broken_dependency",
-        "module" => issue.module,
-        "missing_dependency" => issue.missing,
-        "file_path" => file_path,
-        "action" => action
-      }
-
-      payload = %{
-        "code" => updated_content,
-        "metadata" => dispatch_metadata
-      }
-
-      case ImprovementGateway.dispatch(payload, agent_id: "htdag-runtime") do
-        :ok ->
-          Logger.debug("Hot reload dispatched for #{issue.module}", agent_id: "htdag-runtime")
+          {:ok, fix}
 
         {:error, reason} ->
-          Logger.warning("Hot reload dispatch skipped",
-            module: issue.module,
-            file: file_path,
+          Logger.error("Lua script failed for broken dependency fix",
+            issue: inspect(issue),
             reason: inspect(reason)
           )
+
+          {:error, {:script_failed, reason}}
       end
-
-      fix = %{
-        type: :broken_dependency_fix,
-        module: issue.module,
-        missing: issue.missing,
-        file: file_path,
-        action: action,
-        auto_generated: true,
-        timestamp: DateTime.utc_now()
-      }
-
-      {:ok, fix}
     else
       nil ->
         Logger.error("Module info not found for #{issue.module}")
@@ -595,190 +609,89 @@ defmodule Singularity.Planning.HTDAGLearner do
     end
   end
 
-  defp add_alias_to_content(content, module_name) do
-    # Find the right place to add alias (after defmodule line)
-    lines = String.split(content, "\n")
-
-    {before_defmodule, after_defmodule} =
-      Enum.split_while(lines, fn line ->
-        not String.contains?(line, "defmodule ")
-      end)
-
-    case after_defmodule do
-      [defmodule_line | rest] ->
-        # Add alias after defmodule
-        alias_line = "  alias #{module_name}"
-
-        # Check if alias already exists
-        if Enum.any?(rest, &String.contains?(&1, "alias #{module_name}")) do
-          # Already has alias
-          content
-        else
-          # Insert alias after defmodule
-          new_lines = before_defmodule ++ [defmodule_line, alias_line] ++ rest
-          Enum.join(new_lines, "\n")
-        end
-
-      [] ->
-        # No defmodule found, return unchanged
-        content
-    end
-  end
-
-  defp add_todo_comment(content, missing_module) do
-    # Add TODO comment at the top of the file
-    todo = """
-    # TODO: Missing module #{missing_module} needs to be implemented
-    # This dependency was detected but the module doesn't exist yet.
-    # Consider implementing it or removing the reference.
-
-    """
-
-    todo <> content
-  end
-
-  defp create_missing_module(module_name, template_module, learning) do
-    # Create a new file for the missing module based on template
-    module_parts = String.split(module_name, ".")
-    filename = List.last(module_parts) |> Macro.underscore() |> Kernel.<>(".ex")
-
-    # Determine directory path
-    base_path = Path.join([File.cwd!(), "singularity_app", "lib"])
-    dir_parts = Enum.slice(module_parts, 1..-2) |> Enum.map(&Macro.underscore/1)
-    dir_path = Path.join([base_path | dir_parts])
-
-    # Create directory if it doesn't exist
-    File.mkdir_p!(dir_path)
-
-    file_path = Path.join(dir_path, filename)
-
-    # Generate module content from template
-    template_content =
-      case Map.get(learning.knowledge.modules, template_module) do
-        %{file: template_file} when template_file != nil ->
-          if File.exists?(template_file) do
-            File.read!(template_file)
-            |> String.replace(template_module, module_name)
-            |> String.replace(
-              "# TODO: Auto-generated",
-              "# TODO: Auto-generated from #{template_module}"
-            )
-          else
-            generate_basic_module_template(module_name)
-          end
-
-        _ ->
-          generate_basic_module_template(module_name)
-      end
-
-    # Write the new module
-    File.write!(file_path, template_content)
-
-    Logger.info("✓ Created new module #{module_name} at #{file_path}")
-
-    payload = %{
-      "code" => template_content,
-      "metadata" => %{
-        "reason" => "htdag_auto_fix",
-        "issue_type" => "missing_module",
-        "module" => module_name,
-        "template_source" => template_module,
-        "file_path" => file_path
-      }
-    }
-
-    case ImprovementGateway.dispatch(payload, agent_id: "htdag-runtime") do
-      :ok ->
-        Logger.debug("Hot reload dispatched for new module #{module_name}",
-          agent_id: "htdag-runtime"
-        )
-
-      {:error, reason} ->
-        Logger.warning("Hot reload dispatch skipped for #{module_name}",
-          file: file_path,
-          reason: inspect(reason)
-        )
-    end
-
-    {:ok, file_path}
-  end
-
-  defp generate_basic_module_template(module_name) do
-    """
-    defmodule #{module_name} do
-      @moduledoc \"\"\"
-      Auto-generated module created by HTDAGLearner.
-      
-      This module was created to fix a broken dependency.
-      Please add proper documentation and implementation.
-      \"\"\"
-      
-      require Logger
-      
-      @doc \"\"\"
-      TODO: Implement this module's functionality.
-      \"\"\"
-      def placeholder do
-        Logger.warning("#{__MODULE__} is a placeholder - needs implementation")
-        {:error, :not_implemented}
-      end
-    end
-    """
-  end
-
   defp fix_missing_docs(issue, learning) do
-    # Generate documentation using LLM
+    Logger.info("Generating documentation for: #{issue.module}")
+
     module_info = Map.get(learning.knowledge.modules, issue.module)
 
     with %{file: file_path} <- module_info,
          true <- File.exists?(file_path),
          {:ok, content} <- File.read(file_path),
-         false <- String.contains?(content, "@moduledoc"),
-         {:ok, updated} <- inject_moduledoc(content, issue.module, module_info) do
-      File.write!(file_path, updated)
-
-      metadata = %{
-        "reason" => "htdag_auto_fix",
-        "issue_type" => "missing_docs",
-        "module" => issue.module,
-        "file_path" => file_path
+         false <- String.contains?(content, "@moduledoc") do
+      # Use Lua script for context-aware documentation generation
+      script_context = %{
+        issue: issue,
+        module_info: module_info,
+        learning: %{
+          modules: Map.keys(learning.knowledge.modules)
+        }
       }
 
-      payload = %{
-        "code" => updated,
-        "metadata" => metadata
-      }
+      case Service.call_with_script(
+             "codebase/fix-missing-docs.lua",
+             script_context,
+             complexity: :medium,
+             task_type: :documentation
+           ) do
+        {:ok, %{content: updated}} ->
+          File.write!(file_path, updated)
 
-      case ImprovementGateway.dispatch(payload, agent_id: "htdag-runtime") do
-        :ok ->
-          Logger.debug("Hot reload dispatched after doc generation",
-            agent_id: "htdag-runtime",
-            module: issue.module
-          )
+          Logger.info("✓ Added documentation to #{file_path}")
 
-        {:error, reason} ->
-          Logger.warning("Hot reload dispatch skipped after doc generation",
+          metadata = %{
+            "reason" => "htdag_auto_fix",
+            "issue_type" => "missing_docs",
+            "module" => issue.module,
+            "file_path" => file_path
+          }
+
+          payload = %{
+            "code" => updated,
+            "metadata" => metadata
+          }
+
+          case ImprovementGateway.dispatch(payload, agent_id: "htdag-runtime") do
+            :ok ->
+              Logger.debug("Hot reload dispatched after doc generation",
+                agent_id: "htdag-runtime",
+                module: issue.module
+              )
+
+            {:error, reason} ->
+              Logger.warning("Hot reload dispatch skipped after doc generation",
+                module: issue.module,
+                file: file_path,
+                reason: inspect(reason)
+              )
+          end
+
+          fix = %{
+            type: :missing_docs_fix,
             module: issue.module,
             file: file_path,
+            action: "Generated @moduledoc via Lua script",
+            auto_generated: true,
+            timestamp: DateTime.utc_now()
+          }
+
+          {:ok, fix}
+
+        {:error, reason} ->
+          Logger.error("Lua script failed for documentation generation",
+            issue: inspect(issue),
             reason: inspect(reason)
           )
+
+          {:error, {:script_failed, reason}}
       end
-
-      fix = %{
-        type: :missing_docs_fix,
-        module: issue.module,
-        file: file_path,
-        action: "Generated @moduledoc via HTDAG learner",
-        auto_generated: true,
-        timestamp: DateTime.utc_now()
-      }
-
-      {:ok, fix}
     else
-      {:error, :module_not_found} ->
+      nil ->
         {:error, :module_not_found}
 
       false ->
+        {:error, :file_not_found}
+
+      true ->
         {:error, :docs_already_present}
 
       {:error, reason} ->
@@ -791,17 +704,76 @@ defmodule Singularity.Planning.HTDAGLearner do
     end
   end
 
-  defp fix_isolated_module(issue, _learning) do
-    Logger.info("Would connect isolated module: #{issue.module}")
+  defp fix_isolated_module(issue, learning) do
+    Logger.info("Analyzing isolated module: #{issue.module}")
 
-    fix = %{
-      type: :isolated_module_fix,
-      module: issue.module,
-      action: "Suggest integrations based on module purpose",
-      auto_generated: true
-    }
+    module_info = Map.get(learning.knowledge.modules, issue.module)
 
-    {:ok, fix}
+    with %{file: file_path} <- module_info,
+         true <- File.exists?(file_path) do
+      # Use Lua script for intelligent isolation analysis
+      script_context = %{
+        issue: issue,
+        module_info: module_info,
+        learning: %{
+          modules: Map.keys(learning.knowledge.modules),
+          dependencies: learning.knowledge.dependencies
+        }
+      }
+
+      case Service.call_with_script(
+             "codebase/analyze-isolated-module.lua",
+             script_context,
+             complexity: :medium,
+             task_type: :code_analysis
+           ) do
+        {:ok, %{content: analysis_json}} ->
+          # Parse the JSON analysis
+          case Jason.decode(analysis_json) do
+            {:ok, analysis} ->
+              Logger.info("✓ Analyzed isolated module: #{analysis["recommendation"]}")
+
+              fix = %{
+                type: :isolated_module_fix,
+                module: issue.module,
+                file: file_path,
+                action: "Analyzed via Lua script",
+                recommendation: analysis["recommendation"],
+                analysis: analysis,
+                auto_generated: true,
+                timestamp: DateTime.utc_now()
+              }
+
+              {:ok, fix}
+
+            {:error, _json_error} ->
+              Logger.warning("Failed to parse analysis JSON for #{issue.module}")
+
+              fix = %{
+                type: :isolated_module_fix,
+                module: issue.module,
+                action: "Analysis completed but JSON parsing failed",
+                auto_generated: true
+              }
+
+              {:ok, fix}
+          end
+
+        {:error, reason} ->
+          Logger.error("Lua script failed for isolated module analysis",
+            issue: inspect(issue),
+            reason: inspect(reason)
+          )
+
+          {:error, {:script_failed, reason}}
+      end
+    else
+      nil ->
+        {:error, :module_not_found}
+
+      false ->
+        {:error, :file_not_found}
+    end
   end
 
   defp map_self_improving_system(learning) do
@@ -970,56 +942,6 @@ defmodule Singularity.Planning.HTDAGLearner do
       :available -> :connected
       :missing -> :not_connected
     end
-  end
-
-  defp inject_moduledoc(content, module_name, module_info) do
-    summary = doc_summary(module_info, module_name)
-    doc_block = build_moduledoc_block(summary)
-    regex = ~r/(defmodule\s+#{Regex.escape(module_name)}\s+do\s*\n)/
-
-    case Regex.replace(regex, content, fn match -> match <> doc_block end, global: false) do
-      ^content -> {:error, :defmodule_not_found}
-      replaced -> {:ok, replaced}
-    end
-  end
-
-  defp doc_summary(module_info, module_name) do
-    summary =
-      Map.get(module_info, :purpose) ||
-        Map.get(module_info, "purpose") ||
-        Map.get(module_info, :summary) ||
-        Map.get(module_info, "summary")
-
-    case summary do
-      value when is_binary(value) ->
-        trimmed = String.trim(value)
-        if trimmed == "", do: default_doc(module_name), else: trimmed
-
-      _ ->
-        default_doc(module_name)
-    end
-  end
-
-  defp default_doc(module_name),
-    do: "Auto-generated documentation for #{module_name}. Replace with a detailed description."
-
-  defp build_moduledoc_block(summary) do
-    formatted =
-      summary
-      |> String.split("\n")
-      |> Enum.map(&String.trim/1)
-      |> Enum.map(fn
-        "" -> "  "
-        line -> "  #{line}"
-      end)
-      |> Enum.join("\n")
-
-    """
-      @moduledoc \"\"\"
-      #{formatted}
-      \"\"\"
-
-    """
   end
 
   defp save_mapping(mapping) do

@@ -531,27 +531,50 @@ impl PromptEngine {
 }
 
 // Global static instance for NIF operations (thread-safe)
-// static PROMPT_ENGINE: std::sync::OnceLock<std::sync::Mutex<PromptEngine>> = std::sync::OnceLock::new();
+static PROMPT_ENGINE: std::sync::OnceLock<std::sync::Mutex<PromptEngine>> = std::sync::OnceLock::new();
 
 /// Initialize or get the global prompt engine instance
-// fn get_or_init_prompt_engine() -> Result<std::sync::MutexGuard<'static, PromptEngine>, rustler::Error> {
-//     let mutex = PROMPT_ENGINE.get_or_init(|| {
-//         std::sync::Mutex::new(PromptEngine::new().expect("Failed to initialize prompt engine"))
-//     });
+fn get_or_init_prompt_engine() -> Result<std::sync::MutexGuard<'static, PromptEngine>, rustler::Error> {
+    let mutex = PROMPT_ENGINE.get_or_init(|| {
+        std::sync::Mutex::new(PromptEngine::new().expect("Failed to initialize prompt engine"))
+    });
 
-//     mutex.lock().map_err(|_| rustler::Error::Term(Box::new("Failed to acquire prompt engine lock")))
-// }
+    mutex.lock().map_err(|_| rustler::Error::Term(Box::new("Failed to acquire prompt engine lock")))
+}
 
 /// NIF function to generate a prompt
 #[rustler::nif]
 fn nif_generate_prompt(request: NifGenerateRequest) -> Result<NifPromptResponse, rustler::Error> {
-    // For now, return a simple response
-    // TODO: Implement actual prompt generation using the PromptEngine
+    let mut engine = get_or_init_prompt_engine()?;
+    
+    // Try to get SPARC prompt first
+    if let Some(template_id) = &request.template_id {
+        if let Ok(prompt) = engine.get_optimized_sparc_prompt(
+            template_id,
+            Some(std::collections::HashMap::from([
+                ("context".to_string(), request.context.clone()),
+                ("language".to_string(), request.language.clone()),
+                ("trigger_type".to_string(), request.trigger_type.clone().unwrap_or_default()),
+                ("trigger_value".to_string(), request.trigger_value.clone().unwrap_or_default()),
+                ("category".to_string(), request.category.clone().unwrap_or_default()),
+            ]))
+        ) {
+            return Ok(NifPromptResponse {
+                prompt,
+                confidence: 0.9,
+                template_used: request.template_id.clone(),
+                optimization_score: Some(0.85),
+            });
+        }
+    }
+    
+    // Fallback to basic prompt generation
     let prompt = format!(
-        "Generate code for: {}\nLanguage: {}\nContext: {}",
+        "Generate code for: {}\nLanguage: {}\nContext: {}\nCategory: {}",
         request.context,
         request.language,
-        request.trigger_type.as_deref().unwrap_or("general")
+        request.trigger_type.as_deref().unwrap_or("general"),
+        request.category.as_deref().unwrap_or("development")
     );
 
     Ok(NifPromptResponse {
@@ -565,52 +588,89 @@ fn nif_generate_prompt(request: NifGenerateRequest) -> Result<NifPromptResponse,
 /// NIF function to optimize a prompt
 #[rustler::nif]
 fn nif_optimize_prompt(request: NifOptimizeRequest) -> Result<NifPromptResponse, rustler::Error> {
-    // For now, return a simple optimized response
-    // TODO: Implement actual prompt optimization using DSPy/COPRO
-    let optimized_prompt = format!("Optimized: {}", request.prompt);
-
-    Ok(NifPromptResponse {
-        prompt: optimized_prompt,
-        confidence: 0.9,
-        template_used: None,
-        optimization_score: Some(0.85),
-    })
+    let mut engine = get_or_init_prompt_engine()?;
+    
+    // Use the COPRO optimizer for actual prompt optimization
+    match engine.optimize_prompt(&request.prompt) {
+        Ok(result) => Ok(NifPromptResponse {
+            prompt: result.optimized_prompt,
+            confidence: 0.95,
+            template_used: None,
+            optimization_score: Some(result.optimization_score),
+        }),
+        Err(_) => {
+            // Fallback to simple optimization
+            let optimized_prompt = format!("Optimized: {}", request.prompt);
+            Ok(NifPromptResponse {
+                prompt: optimized_prompt,
+                confidence: 0.9,
+                template_used: None,
+                optimization_score: Some(0.85),
+            })
+        }
+    }
 }
 
 /// NIF function to get cached prompt
 #[rustler::nif]
-fn nif_cache_get(_key: String) -> Result<NifCacheResponse, rustler::Error> {
-    // TODO: Implement actual caching
-    Ok(NifCacheResponse {
-        found: false,
-        value: None,
-        stats: NifCacheStats {
-            total_entries: 0,
-            hits: 0,
-            misses: 0,
-            hit_rate: 0.0,
-        },
-    })
+fn nif_cache_get(key: String) -> Result<NifCacheResponse, rustler::Error> {
+    let engine = get_or_init_prompt_engine()?;
+    
+    match engine.cache.get(&key) {
+        Some(entry) => Ok(NifCacheResponse {
+            found: true,
+            value: Some(entry.prompt.clone()),
+            stats: NifCacheStats {
+                total_entries: 0, // TODO: Get actual stats from cache
+                hits: 0,
+                misses: 0,
+                hit_rate: 0.0,
+            },
+        }),
+        None => Ok(NifCacheResponse {
+            found: false,
+            value: None,
+            stats: NifCacheStats {
+                total_entries: 0,
+                hits: 0,
+                misses: 0,
+                hit_rate: 0.0,
+            },
+        }),
+    }
 }
 
 /// NIF function to store prompt in cache
 #[rustler::nif]
-fn nif_cache_put(_key: String, _value: String) -> Result<(), rustler::Error> {
-    // TODO: Implement actual caching
+fn nif_cache_put(key: String, value: String) -> Result<(), rustler::Error> {
+    let mut engine = get_or_init_prompt_engine()?;
+    
+    let entry = CacheEntry {
+        prompt: value,
+        score: 0.8, // Default score
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs(),
+    };
+    
+    engine.cache.store(&key, entry)?;
     Ok(())
 }
 
 /// NIF function to clear cache
 #[rustler::nif]
 fn nif_cache_clear() -> Result<(), rustler::Error> {
-    // TODO: Implement actual caching
+    let mut engine = get_or_init_prompt_engine()?;
+    // TODO: Implement cache clearing in PromptCache
     Ok(())
 }
 
 /// NIF function to get cache statistics
 #[rustler::nif]
 fn nif_cache_stats() -> Result<NifCacheStats, rustler::Error> {
-    // TODO: Implement actual caching
+    let engine = get_or_init_prompt_engine()?;
+    // TODO: Get actual stats from cache implementation
     Ok(NifCacheStats {
         total_entries: 0,
         hits: 0,

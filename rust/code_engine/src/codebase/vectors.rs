@@ -163,20 +163,23 @@ pub struct VectorStoreStats {
 }
 
 /// Vectorizer for creating vectors from code
+///
+/// Provides TF-IDF based vectorization as a fast CPU fallback when embedding_engine
+/// (GPU-accelerated transformer models) is not available or for quick local operations.
 #[derive(Debug, Clone)]
 pub struct CodeVectorizer {
   /// Vector dimensions
   pub dimensions: usize,
   /// Model type/name
   pub model_type: String,
-  /// Vocabulary for TF-IDF
+  /// Vocabulary for TF-IDF mapping (word -> index)
   vocabulary: Vec<String>,
-  /// IDF scores
+  /// IDF (Inverse Document Frequency) scores for each vocabulary term
   idf_scores: Vec<f32>,
 }
 
 impl CodeVectorizer {
-  /// Create a new vectorizer
+  /// Create a new vectorizer with vocabulary
   pub fn new(dimensions: usize, model_type: String) -> Self {
     Self {
       dimensions,
@@ -186,12 +189,81 @@ impl CodeVectorizer {
     }
   }
 
+  /// Build vocabulary and IDF scores from a corpus of documents
+  ///
+  /// This should be called during training/initialization with a representative
+  /// corpus of code snippets. The vocabulary and IDF scores will be used for
+  /// all subsequent vectorization operations.
+  pub fn build_vocabulary(&mut self, documents: &[String]) {
+    use std::collections::HashMap;
+
+    if documents.is_empty() {
+      return;
+    }
+
+    // Count document frequency for each term
+    let mut term_document_count: HashMap<String, usize> = HashMap::new();
+    let mut all_terms = std::collections::HashSet::new();
+
+    for doc in documents {
+      let terms: std::collections::HashSet<String> = doc
+        .split_whitespace()
+        .filter(|word| word.len() > 2) // Filter short words
+        .map(|word| word.to_lowercase())
+        .collect();
+
+      for term in terms {
+        all_terms.insert(term.clone());
+        *term_document_count.entry(term).or_insert(0) += 1;
+      }
+    }
+
+    // Build vocabulary (most frequent terms up to dimensions limit)
+    let mut term_freq: Vec<(String, usize)> = term_document_count.into_iter().collect();
+    term_freq.sort_by(|a, b| b.1.cmp(&a.1)); // Sort by frequency descending
+
+    // Take top dimensions terms as vocabulary
+    self.vocabulary = term_freq
+      .into_iter()
+      .take(self.dimensions)
+      .map(|(term, _)| term)
+      .collect();
+
+    // Calculate IDF scores: log(total_docs / doc_freq)
+    let total_docs = documents.len() as f32;
+    self.idf_scores = Vec::new();
+
+    for term in &self.vocabulary {
+      let doc_freq = documents.iter()
+        .filter(|doc| doc.to_lowercase().contains(term))
+        .count() as f32;
+
+      let idf = (total_docs / (1.0 + doc_freq)).ln() + 1.0; // +1 smoothing
+      self.idf_scores.push(idf);
+    }
+  }
+
+  /// Get the vocabulary size
+  pub fn vocabulary_size(&self) -> usize {
+    self.vocabulary.len()
+  }
+
+  /// Check if vocabulary is built
+  pub fn has_vocabulary(&self) -> bool {
+    !self.vocabulary.is_empty() && self.vocabulary.len() == self.idf_scores.len()
+  }
+
   /// Create a vector from code content
+  ///
+  /// If vocabulary is built, uses proper TF-IDF weighting.
+  /// Otherwise, falls back to hash-based vectorization.
   pub fn vectorize(&self, code_content: &str, code_type: &str) -> Result<CodeVector> {
-    // For now, create a simple hash-based vector
-    // In a real implementation, this would use proper embeddings
-    let vector = self.create_simple_vector(code_content);
-    
+    let vector = if self.has_vocabulary() {
+      self.create_tfidf_vector(code_content)
+    } else {
+      self.create_simple_vector(code_content)
+    };
+
     Ok(CodeVector::new(
       format!("{}:{}", code_type, self.hash_content(code_content)),
       vector,
@@ -200,7 +272,45 @@ impl CodeVectorizer {
     ))
   }
 
-  /// Create a semantic vector from content using TF-IDF-like approach
+  /// Create a TF-IDF weighted vector using built vocabulary
+  fn create_tfidf_vector(&self, content: &str) -> Vec<f32> {
+    let mut vector = vec![0.0; self.vocabulary.len()];
+
+    // Tokenize content
+    let words: Vec<String> = content
+      .split_whitespace()
+      .filter(|word| word.len() > 2)
+      .map(|word| word.to_lowercase())
+      .collect();
+
+    // Calculate term frequencies
+    let mut term_freq = std::collections::HashMap::new();
+    for word in &words {
+      *term_freq.entry(word.clone()).or_insert(0) += 1;
+    }
+
+    // Apply TF-IDF weighting
+    for (term, tf) in term_freq {
+      if let Some(vocab_idx) = self.vocabulary.iter().position(|v| v == &term) {
+        let idf = self.idf_scores[vocab_idx];
+        // TF-IDF: (term_freq / total_terms) * IDF
+        let tf_normalized = tf as f32 / words.len() as f32;
+        vector[vocab_idx] = tf_normalized * idf;
+      }
+    }
+
+    // Normalize vector
+    let magnitude: f32 = vector.iter().map(|x| x * x).sum::<f32>().sqrt();
+    if magnitude > 0.0 {
+      for v in &mut vector {
+        *v /= magnitude;
+      }
+    }
+
+    vector
+  }
+
+  /// Create a semantic vector from content using hash-based approach (fallback)
   fn create_simple_vector(&self, content: &str) -> Vec<f32> {
     let mut vector = vec![0.0; self.dimensions];
     

@@ -30,7 +30,7 @@ pub enum CodeElementType {
 }
 
 // Rustler NIF initialization
-rustler::init!("Elixir.Singularity.IntelligentNamerNif");
+// rustler::init!("Elixir.Singularity.IntelligentNamerNif");
 
 /// NIF-compatible suggestion structure
 #[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]

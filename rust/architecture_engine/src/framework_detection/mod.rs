@@ -13,17 +13,28 @@ pub mod detector;
 pub mod pattern_learner;
 pub mod confidence_tracker;
 
-pub use detector::*;
-pub use pattern_learner::*;
-pub use confidence_tracker::*;
 
 #[derive(Debug, Serialize, Deserialize, rustler::NifStruct)]
 #[module = "FrameworkDetectionRequest"]
 pub struct FrameworkDetectionRequest {
-    pub patterns: Vec<String>,
+    pub code_patterns: Vec<String>,
+    pub known_frameworks: Vec<KnownFramework>,
     pub context: String,
-    pub detection_methods: Vec<String>,
     pub confidence_threshold: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "KnownFramework"]
+pub struct KnownFramework {
+    pub framework_name: String,
+    pub framework_type: String,
+    pub version_pattern: String,
+    pub file_patterns: Vec<String>,
+    pub directory_patterns: Vec<String>,
+    pub config_files: Vec<String>,
+    pub confidence_weight: f64,
+    pub success_rate: f64,
+    pub detection_count: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, rustler::NifStruct)]
@@ -50,6 +61,11 @@ pub struct FrameworkPattern {
 }
 
 /// Main framework detection interface
+///
+/// NOTE: This async API is currently UNUSED. The NIF uses the synchronous
+/// `detect_frameworks_with_central_integration` function in nif.rs instead.
+///
+/// TODO: Either remove this or update to match new FrameworkDetectionRequest struct
 pub struct FrameworkDetectionEngine {
     // Connection to central database
     // Pattern cache
@@ -62,23 +78,26 @@ impl FrameworkDetectionEngine {
             // Initialize connections
         }
     }
-    
+
     /// Detect frameworks using central pattern database
+    ///
+    /// DEPRECATED: NIF uses synchronous function in nif.rs instead
+    #[allow(dead_code)]
     pub async fn detect_frameworks(&self, request: FrameworkDetectionRequest) -> Result<Vec<FrameworkDetectionResult>, String> {
         let mut results = Vec::new();
-        
+
         // 1. Query central database for existing patterns
         let patterns = self.load_framework_patterns().await?;
-        
+
         // 2. Apply detection methods (config files, code patterns, AST, etc.)
-        for pattern in &request.patterns {
-            if let Some(framework) = self.analyze_pattern(pattern, &patterns, &request.context).await? {
+        for code_pattern in &request.code_patterns {
+            if let Some(framework) = self.analyze_pattern(code_pattern, &patterns, &request.context).await? {
                 if framework.confidence >= request.confidence_threshold {
                     results.push(framework);
                 }
             }
         }
-        
+
         // 3. Sort by confidence and return top results
         results.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
         Ok(results)

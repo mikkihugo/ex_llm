@@ -285,8 +285,15 @@ impl SparcTemplateGenerator {
         }
         #[cfg(not(feature = "with-package-indexer"))]
         {
-            // Fallback: return None when package indexer is not available
-            None
+            // Fallback: return a basic template based on template_id when package indexer is not available
+            match template_id {
+                "sparc_specification" => Some("# SPARC Specification Template\n\n## Requirements\n- [ ] Functional requirements\n- [ ] Non-functional requirements\n- [ ] Constraints\n\n## Analysis\n- [ ] Domain analysis\n- [ ] Risk assessment\n- [ ] Success criteria".to_string()),
+                "sparc_pseudocode" => Some("# SPARC Pseudocode Template\n\n## Algorithm Overview\n[High-level algorithm description]\n\n## Step-by-step Logic\n1. [Step 1]\n2. [Step 2]\n3. [Step 3]\n\n## Edge Cases\n- [Edge case 1]\n- [Edge case 2]".to_string()),
+                "sparc_architecture" => Some("# SPARC Architecture Template\n\n## System Components\n- [ ] Component 1\n- [ ] Component 2\n- [ ] Component 3\n\n## Data Flow\n[Describe data flow between components]\n\n## Technology Stack\n- [ ] Language: \n- [ ] Framework: \n- [ ] Database: ".to_string()),
+                "sparc_refinement" => Some("# SPARC Refinement Template\n\n## Code Structure\n[Describe the code organization]\n\n## Implementation Details\n- [ ] Function 1\n- [ ] Function 2\n- [ ] Error handling\n\n## Testing Strategy\n- [ ] Unit tests\n- [ ] Integration tests".to_string()),
+                "sparc_completion" => Some("# SPARC Completion Template\n\n## Final Implementation\n[Complete code implementation]\n\n## Documentation\n- [ ] Code comments\n- [ ] README updates\n- [ ] API documentation\n\n## Deployment\n- [ ] Deployment steps\n- [ ] Configuration\n- [ ] Monitoring".to_string()),
+                _ => Some(format!("# Generic SPARC Template\n\nTemplate ID: {}\n\n## Overview\n[Template content for {} phase]\n\n## Implementation\n[Implementation details here]", template_id, template_id)),
+            }
         }
     }
 }

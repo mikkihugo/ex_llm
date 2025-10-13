@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     dspy_learning::{ConfidencePredictor, ExecutionResult, PromptFeatures},
-    prompt_tracking::{FactQuery, FactStorage, FeedbackType, PromptFactType, PromptFeedbackFact},
+    prompt_tracking::{PromptTrackingQuery, PromptTrackingStorage, FeedbackType, PromptExecutionData, PromptFeedbackEntry},
 };
 
 /// Confidence adjustment result
@@ -23,13 +23,13 @@ pub struct ConfidenceAdjustment {
 
 /// Confidence scorer using neural ML and DSPy evaluation
 pub struct ConfidenceScorer {
-    fact_store: FactStorage,
+    fact_store: PromptTrackingStorage,
     /// Neural network predictor for confidence (optional, requires ml-analysis feature)
     neural_predictor: Option<ConfidencePredictor>,
 }
 
 impl ConfidenceScorer {
-    pub fn new(fact_store: FactStorage) -> Self {
+    pub fn new(fact_store: PromptTrackingStorage) -> Self {
         // Initialize neural predictor if ml-analysis feature is enabled
         let neural_predictor = ConfidencePredictor::new().ok();
 
@@ -106,7 +106,7 @@ impl ConfidenceScorer {
         // Get historical executions
         let executions = self
             .fact_store
-            .query(FactQuery::PromptExecutions(prompt_id.to_string()))
+            .query(PromptTrackingQuery::PromptExecutions(prompt_id.to_string()))
             .await?;
 
         let mut success_count = 0;
@@ -114,7 +114,7 @@ impl ConfidenceScorer {
         let error_count = current_execution.error_messages.len();
 
         for fact in &executions {
-            if let PromptFactType::PromptExecution(exec) = fact {
+            if let PromptExecutionData::PromptExecution(exec) = fact {
                 if exec.success {
                     success_count += 1;
                 }
@@ -180,8 +180,8 @@ impl ConfidenceScorer {
         prompt_id: &str,
         adjustment: ConfidenceAdjustment,
     ) -> Result<()> {
-        // Store as feedback FACT
-        let feedback = PromptFeedbackFact {
+        // Store as feedback entry
+        let feedback = PromptFeedbackEntry {
             prompt_id: prompt_id.to_string(),
             feedback_type: if adjustment.new_confidence > adjustment.old_confidence {
                 FeedbackType::Quality
@@ -196,7 +196,7 @@ impl ConfidenceScorer {
         };
 
         self.fact_store
-            .store(PromptFactType::PromptFeedback(feedback))
+            .store(PromptExecutionData::PromptFeedback(feedback))
             .await?;
 
         tracing::info!(
@@ -215,7 +215,7 @@ impl ConfidenceScorer {
         // Query recent executions
         let executions = self
             .fact_store
-            .query(FactQuery::PromptExecutions(prompt_id.to_string()))
+            .query(PromptTrackingQuery::PromptExecutions(prompt_id.to_string()))
             .await?;
 
         if executions.is_empty() {
@@ -227,7 +227,7 @@ impl ConfidenceScorer {
         let mut total_weight = 0.0;
 
         for (i, fact) in executions.iter().rev().take(10).enumerate() {
-            if let PromptFactType::PromptExecution(exec) = fact {
+            if let PromptExecutionData::PromptExecution(exec) = fact {
                 // Recent executions have higher weight
                 let weight = 1.0 / (i as f64 + 1.0);
                 total_confidence += exec.confidence_score * weight;
@@ -299,7 +299,7 @@ impl ConfidenceScorer {
         // Get recent feedback
         let recent_feedback = self
             .fact_store
-            .query(FactQuery::RecentFeedback(
+            .query(PromptTrackingQuery::RecentFeedback(
                 std::time::Duration::from_secs(7 * 24 * 3600), // Last week
             ))
             .await?;
@@ -307,7 +307,7 @@ impl ConfidenceScorer {
         let negative_feedback_count = recent_feedback
             .iter()
             .filter(|f| {
-                if let PromptFactType::PromptFeedback(feedback) = f {
+                if let PromptExecutionData::PromptFeedback(feedback) = f {
                     feedback.prompt_id == prompt_id
                         && matches!(feedback.feedback_type, FeedbackType::Performance)
                 } else {

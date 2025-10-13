@@ -1,0 +1,269 @@
+{
+  "name": "Rust Production Quality",
+  "spec_version": "2.1",
+  "capabilities": [
+    "quality",
+    "graph",
+    "rag",
+    "ai_navigation",
+    "graph_db",
+    "vector_db",
+    "nif_safety"
+  ],
+  "language": "rust",
+  "quality_level": "production",
+  "description": "Production-grade quality standards for Rust code (NIFs, libraries, services) with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
+  "changelog": {
+    "2.1": {
+      "date": "2025-01-13",
+      "changes": [
+        "Initial Rust production template aligned with Elixir v2.1",
+        "Added module_identity JSON for vector DB disambiguation",
+        "Added architecture_diagram (Mermaid) for visual understanding",
+        "Added call_graph (YAML) for graph DB indexing",
+        "Added anti_patterns for duplicate prevention",
+        "Added search_keywords for vector search optimization",
+        "Added NIF-specific safety rules (no I/O, no panics, BEAM scheduler safety)",
+        "Enhanced scoring_weights for AI-optimized metadata"
+      ]
+    }
+  },
+  "requirements": {
+    "documentation": {
+      "module_doc": {
+        "required": true,
+        "min_length": 100,
+        "must_include": [
+          "overview",
+          "examples",
+          "usage_patterns",
+          "module_identity_json",
+          "architecture_diagram",
+          "call_graph_metadata",
+          "anti_patterns"
+        ],
+        "ai_navigation": {
+          "module_identity": {
+            "format": "json",
+            "required_fields": [
+              "module",
+              "purpose",
+              "layer",
+              "nif_functions",
+              "related_modules",
+              "io_model"
+            ],
+            "description": "JSON block for vector DB disambiguation and graph DB indexing"
+          },
+          "architecture_diagram": {
+            "format": "mermaid",
+            "types": [
+              "graph",
+              "sequence",
+              "flowchart"
+            ],
+            "description": "Visual architecture for AI understanding of call flow and data flow"
+          },
+          "call_graph": {
+            "format": "yaml",
+            "required_fields": [
+              "nif_exports",
+              "calls",
+              "called_by",
+              "structs"
+            ],
+            "description": "Machine-readable call graph for graph DB indexing (Neo4j, etc.)"
+          },
+          "anti_patterns": {
+            "format": "markdown",
+            "must_include": [
+              "what_not_to_create",
+              "io_prohibition_for_nifs",
+              "duplicate_prevention",
+              "panic_prohibition"
+            ],
+            "description": "Explicit anti-patterns to prevent AI from creating duplicates or unsafe code"
+          },
+          "search_keywords": {
+            "format": "text",
+            "min_keywords": 10,
+            "description": "Comma-separated keywords for vector DB semantic search optimization"
+          }
+        }
+      },
+      "function_doc": {
+        "required_for": [
+          "all_public_functions",
+          "nif_exports"
+        ],
+        "min_length": 50,
+        "must_include": [
+          "description",
+          "arguments",
+          "returns",
+          "examples",
+          "errors"
+        ]
+      },
+      "struct_doc": {
+        "required_for": [
+          "public_structs",
+          "nif_structs"
+        ],
+        "must_include": [
+          "purpose",
+          "field_descriptions",
+          "elixir_mapping"
+        ]
+      }
+    },
+    "error_handling": {
+      "nif_functions": {
+        "return_type": "Result<T, E>",
+        "never_panic": true,
+        "error_type": "String or custom enum",
+        "propagation": "use ? operator"
+      },
+      "library_functions": {
+        "prefer_result": true,
+        "document_errors": true
+      }
+    },
+    "nif_safety": {
+      "no_io_operations": {
+        "required": true,
+        "prohibited": [
+          "file_io",
+          "network_io",
+          "database_io",
+          "blocking_operations"
+        ],
+        "rationale": "I/O blocks BEAM scheduler - Elixir handles all I/O"
+      },
+      "no_panics": {
+        "required": true,
+        "use_result": true,
+        "rationale": "Panics crash BEAM VM"
+      },
+      "performance": {
+        "target_latency": "<10ms per call",
+        "ideal_latency": "<1ms per call",
+        "rationale": "Long-running NIFs block BEAM scheduler"
+      },
+      "memory": {
+        "avoid_large_allocations": true,
+        "use_streaming": "for large data",
+        "rationale": "Large allocations can cause scheduler delays"
+      }
+    },
+    "testing": {
+      "required": true,
+      "framework": "built-in Rust tests",
+      "test_types": [
+        "unit_tests",
+        "integration_tests",
+        "property_tests",
+        "edge_cases",
+        "error_conditions"
+      ],
+      "coverage_target": 80,
+      "doc_tests": {
+        "required": true,
+        "for": "all_public_functions"
+      }
+    },
+    "code_style": {
+      "naming_convention": "snake_case (functions/variables), CamelCase (types)",
+      "max_function_length": 50,
+      "formatter": {
+        "required": true,
+        "tool": "rustfmt"
+      },
+      "linter": {
+        "required": true,
+        "tool": "clippy",
+        "warnings_as_errors": true
+      }
+    },
+    "code_smells": {
+      "forbidden": [
+        "unwrap() in production",
+        "expect() without good reason",
+        "panic!() in NIFs",
+        "unused_variables",
+        "unused_functions",
+        "dead_code"
+      ],
+      "warnings": [
+        "TODO",
+        "FIXME"
+      ]
+    },
+    "dependencies": {
+      "minimize": true,
+      "audit": {
+        "required": true,
+        "tool": "cargo-audit"
+      },
+      "update_regularly": true
+    },
+    "rag_support": {
+      "semantic_chunking": {
+        "module_level": true,
+        "function_level": true,
+        "include_context": true
+      },
+      "metadata": {
+        "tags": "required",
+        "complexity_score": "auto_calculate",
+        "dependencies": "explicit",
+        "similar_patterns": "link_to_other_modules"
+      },
+      "ai_hints": {
+        "usage_examples": "required_in_module_doc",
+        "common_mistakes": "document_in_module_doc",
+        "nif_safety_notes": "include_for_nifs"
+      },
+      "graph_db_optimization": {
+        "call_graph_yaml": "required_for_nifs",
+        "relationship_metadata": "explicit",
+        "dependency_tree": "machine_readable"
+      },
+      "vector_db_optimization": {
+        "search_keywords": "required",
+        "purpose_statement": "clear_and_unique",
+        "disambiguation_vs_similar": "explicit"
+      }
+    }
+  },
+  "prompts": {
+    "code_generation": "Generate PRODUCTION-QUALITY Rust code for: {task}\n\nREQUIREMENTS:\n- Module doc comment (//!) with overview, examples, usage patterns\n- Function docs (///) for ALL public functions with examples and edge cases\n- Struct docs for public structs with field descriptions\n- Result<T, E> for ALL fallible functions\n- NEVER panic in NIFs - always return Result\n- NO I/O in NIFs (file, network, database)\n- Keep NIF latency <10ms (ideal <1ms)\n- rustfmt formatted code\n- clippy clean (no warnings)\n- #[derive(Debug)] for all structs\n- Tests for all public functions\n- Doc tests with examples\n- RAG-optimized: semantic chunks, metadata tags, AI hints in module doc\n\nOUTPUT CODE ONLY.",
+    "documentation": "Generate PRODUCTION-GRADE documentation for this Rust code:\n\n```rust\n{code}\n```\n\nINCLUDE module doc with HUMAN CONTENT FIRST, then AI metadata:\n\n1. HUMAN CONTENT (top section):\n   - Title: Module name - Brief description\n   - Purpose: What this module does (clear)\n   - Quick Start: Copy-paste examples showing common usage\n   - Public API: Bullet list of main functions\n   - NIF Safety: If NIF, explain I/O model and safety guarantees\n   - Error Handling: Common errors and solutions\n   - Examples: Real usage patterns with expected output\n\n2. SEPARATOR:\n   ---\n   ## AI Navigation Metadata\n   Brief explanation: \"The sections below provide structured metadata for AI assistants...\"\n\n3. AI METADATA (below separator):\n   - Module Identity (JSON): module, purpose, layer, nif_functions, related_modules, io_model\n   - Architecture Diagram (Mermaid): graph/sequence showing call flow\n   - Call Graph (YAML): nif_exports, calls, called_by, structs\n   - Anti-Patterns: what NOT to create, IO prohibition for NIFs, no panics\n   - Search Keywords: 10+ keywords for vector search\n\nALSO INCLUDE:\n- Function docs: Description, arguments, returns, examples, errors\n- Struct docs: Purpose, field descriptions, Elixir mapping (for NifStruct)\n- Doc tests for all public functions\n\nKEY: Human content at TOP (fast scanning), AI metadata BELOW (clear separation).\n\nOUTPUT DOCUMENTATION ONLY.",
+    "tests": "Generate COMPREHENSIVE Rust tests for this code:\n\n```rust\n{code}\n```\n\nINCLUDE:\n- Unit tests (all public functions)\n- Integration tests\n- Edge cases\n- Error conditions\n- Property tests (if applicable)\n- Doc tests\n- Target 80%+ coverage\n\nOUTPUT TEST MODULE ONLY."
+  },
+  "scoring_weights": {
+    "has_module_doc": 1.0,
+    "has_function_docs": 1.0,
+    "has_struct_docs": 0.9,
+    "has_tests": 1.0,
+    "test_coverage": 0.9,
+    "has_doc_tests": 0.9,
+    "error_handling": 1.0,
+    "no_unwrap_in_production": 0.95,
+    "no_panic_in_nifs": 1.0,
+    "no_io_in_nifs": 1.0,
+    "nif_latency": 0.9,
+    "has_rustfmt": 0.8,
+    "has_clippy": 0.9,
+    "no_code_smells": 1.0,
+    "has_cargo_audit": 0.8,
+    "rag_metadata": 0.9,
+    "has_module_identity_json": 0.95,
+    "has_architecture_diagram": 0.9,
+    "has_call_graph_yaml": 0.9,
+    "has_anti_patterns": 0.85,
+    "has_search_keywords": 0.8,
+    "graph_db_ready": 0.9,
+    "vector_db_optimized": 0.9
+  }
+}

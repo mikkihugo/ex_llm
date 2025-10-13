@@ -15,6 +15,11 @@ defmodule Singularity.Todos.TodoWorkerAgent do
 
   spawn → execute → complete/fail → terminate
 
+  ## Template Integration
+
+  Uses Handlebars template for task execution:
+  - `todos/execute-task.hbs` - Task execution prompt with context
+
   ## Usage
 
   Workers are typically spawned by TodoSwarmCoordinator:
@@ -233,36 +238,43 @@ defmodule Singularity.Todos.TodoWorkerAgent do
   end
 
   defp build_task_prompt(todo) do
-    context_str =
-      if map_size(todo.context) > 0 do
-        "\n\n**Context:**\n#{Jason.encode!(todo.context, pretty: true)}"
-      else
-        ""
-      end
+    # Use template for task execution prompt
+    variables = %{
+      "title" => todo.title,
+      "description" => todo.description,
+      "context" => if(map_size(todo.context) > 0, do: true, else: false),
+      "context_json" => Jason.encode!(todo.context, pretty: true),
+      "tags" => if(length(todo.tags) > 0, do: true, else: false),
+      "tags_list" => Enum.join(todo.tags, ", "),
+      "priority_label" => priority_label(todo.priority),
+      "complexity" => todo.complexity
+    }
 
-    tags_str =
-      if length(todo.tags) > 0 do
-        "\n\n**Tags:** #{Enum.join(todo.tags, ", ")}"
-      else
-        ""
-      end
+    case Singularity.Knowledge.TemplateService.render_template(
+           "todos/execute-task.hbs",
+           variables
+         ) do
+      {:ok, rendered} ->
+        rendered
 
-    """
-    # Task: #{todo.title}
+      {:error, reason} ->
+        Logger.warning("Template rendering failed, using fallback",
+          template: "todos/execute-task.hbs",
+          reason: reason
+        )
 
-    #{todo.description || "No description provided"}#{context_str}#{tags_str}
+        # Fallback to inline prompt
+        """
+        # Task: #{todo.title}
 
-    **Priority:** #{priority_label(todo.priority)}
-    **Complexity:** #{todo.complexity}
+        #{todo.description || "No description provided"}
 
-    Please complete this task and provide:
-    1. A summary of what you did
-    2. Any relevant code, commands, or outputs
-    3. Any issues encountered
-    4. Next steps or recommendations (if applicable)
+        **Priority:** #{priority_label(todo.priority)}
+        **Complexity:** #{todo.complexity}
 
-    Be concise but thorough. Focus on actionable results.
-    """
+        Please complete this task.
+        """
+    end
   end
 
   defp map_complexity("simple"), do: :simple

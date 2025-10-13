@@ -47,7 +47,7 @@ pub struct UnreachableCodeInfo {
 /// This is a pure computation NIF - NO I/O!
 /// Returns results to Elixir, which stores in PostgreSQL
 #[rustler::nif]
-fn analyze_control_flow(file_path: String) -> Result<ControlFlowResult, String> {
+pub fn analyze_control_flow(file_path: String) -> Result<ControlFlowResult, String> {
     // For now, create a simple graph to demonstrate
     // In production, this would parse the file and build a real CFG
 
@@ -180,5 +180,5 @@ fn convert_analysis_to_result(analysis: ControlFlowAnalysis) -> ControlFlowResul
     }
 }
 
-/// Initialize Rustler module
-rustler::init!("Elixir.Singularity.RustAnalyzer", [analyze_control_flow]);
+// NOTE: rustler::init! moved to src/nif/mod.rs to avoid duplicate nif_init symbol
+// This file only exports the NIF function - initialization happens in nif/mod.rs

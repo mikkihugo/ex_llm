@@ -53,6 +53,14 @@ litellm/
 /singularity_app/deps/
 /singularity_app/priv/plts/
 
+# AI Models (auto-downloaded from HuggingFace, too large for Git)
+/singularity_app/priv/models/all-minilm-l6-v2/
+/singularity_app/priv/models/jina-v3-onnx/
+/singularity_app/priv/models/qodo-embed-1.5b/
+/singularity_app/priv/models/t5-small-onnx/
+# Keep .gitkeep to track models/ directory
+!/singularity_app/priv/models/.gitkeep
+
 # Erlang/Elixir artifacts
 *.crash.dump
 erl_crash.dump

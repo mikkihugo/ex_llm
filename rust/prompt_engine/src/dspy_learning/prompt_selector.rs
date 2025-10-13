@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     dspy_learning::PromptEmbedder,
     prompt_bits::database::StoredPromptBit as PromptBit,
-    prompt_tracking::{ContextSignatureFact, FactQuery, FactStorage, PromptFactType},
+    prompt_tracking::{ContextSignatureEntry, PromptTrackingQuery, PromptTrackingStorage, PromptExecutionData},
 };
 
 /// Selected prompt with confidence and reasoning
@@ -44,14 +44,14 @@ pub struct Task {
 
 /// DSPy-powered prompt selector with neural embeddings
 pub struct PromptSelector {
-    fact_store: FactStorage,
+    fact_store: PromptTrackingStorage,
     /// Prompt embedder for similarity matching (optional, requires ml-analysis feature)
     embedder: Option<PromptEmbedder>,
 }
 
 impl PromptSelector {
     /// Create new prompt selector with optional neural embeddings
-    pub fn new(fact_store: FactStorage) -> Self {
+    pub fn new(fact_store: PromptTrackingStorage) -> Self {
         // Initialize embedder with 128-dimensional embeddings
         let embedder = Some(PromptEmbedder::new(128));
 
@@ -74,7 +74,7 @@ impl PromptSelector {
         // 2. Query similar successful executions
         let similar_executions = self
             .fact_store
-            .query(FactQuery::Similar(signature.clone()))
+            .query(PromptTrackingQuery::Similar(signature.clone()))
             .await?;
 
         // 3. Score each candidate based on historical performance
@@ -120,7 +120,7 @@ impl PromptSelector {
                 similar_executions: similar_executions
                     .iter()
                     .filter_map(|f| {
-                        if let PromptFactType::PromptExecution(exec) = f {
+                        if let PromptExecutionData::PromptExecution(exec) = f {
                             Some(exec.prompt_id.clone())
                         } else {
                             None
@@ -139,7 +139,7 @@ impl PromptSelector {
         &self,
         task: &Task,
         context: &RepositoryContext,
-    ) -> Result<ContextSignatureFact> {
+    ) -> Result<ContextSignatureEntry> {
         // Create feature vector for ML matching
         let _feature_vector = [
             // Encode task features
@@ -159,7 +159,7 @@ impl PromptSelector {
             context.languages.join(",")
         );
 
-        Ok(ContextSignatureFact {
+        Ok(ContextSignatureEntry {
             signature_hash: fingerprint,
             project_tech_stack: [
                 context.languages.clone(),
@@ -178,8 +178,8 @@ impl PromptSelector {
     async fn score_candidate(
         &self,
         candidate: &PromptBit,
-        signature: &ContextSignatureFact,
-        similar_executions: &[PromptFactType],
+        signature: &ContextSignatureEntry,
+        similar_executions: &[PromptExecutionData],
     ) -> Result<ScoredPrompt> {
         let mut score = ScoredPrompt {
             prompt_id: candidate.id.clone(),
@@ -193,7 +193,7 @@ impl PromptSelector {
         let mut count = 0.0;
 
         for fact in similar_executions {
-            if let PromptFactType::PromptExecution(exec) = fact {
+            if let PromptExecutionData::PromptExecution(exec) = fact {
                 if exec.prompt_id == candidate.id {
                     total_success += if exec.success { 1.0 } else { 0.0 };
                     count += 1.0;
@@ -267,7 +267,7 @@ impl PromptSelector {
         task: &Task,
         context: &RepositoryContext,
         selected: &PromptBit,
-        similar_executions: &[PromptFactType],
+        similar_executions: &[PromptExecutionData],
     ) -> Result<String> {
         // Use Chain of Thought to generate reasoning
         let mut reasoning = format!(
@@ -279,7 +279,7 @@ impl PromptSelector {
         let exec_count = similar_executions
             .iter()
             .filter(|f| {
-                if let PromptFactType::PromptExecution(exec) = f {
+                if let PromptExecutionData::PromptExecution(exec) = f {
                     exec.prompt_id == selected.id
                 } else {
                     false

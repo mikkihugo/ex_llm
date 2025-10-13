@@ -5,6 +5,14 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   Primary interface: Google Chat (mobile & desktop friendly)
   No code analysis - just business decisions
+
+  ## Template Integration
+
+  Uses Handlebars templates for chat and parsing:
+  - `conversation/chat-response.hbs` - Generate chat responses
+  - `conversation/parse-message.hbs` - Parse human messages (intent extraction)
+
+  All prompts externalized to templates for maintainability.
   """
 
   use GenServer
@@ -333,35 +341,23 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   defp handle_chat(user_id, message_text, channel, state) do
     try do
-      # Use LLM for chat response
-      prompt = """
-      You are an AI assistant helping with code development tasks.
-      
-      User message: #{message_text}
-      
-      Context:
-      - User ID: #{user_id}
-      - Channel: #{channel}
-      - Current state: #{inspect(state)}
-      
-      Provide a helpful response that:
-      1. Acknowledges the user's message
-      2. Offers relevant assistance
-      3. Asks clarifying questions if needed
-      4. Suggests next steps
-      
-      Keep responses concise and actionable.
-      """
-      
-      case Singularity.LLM.Service.call(:complex, [%{role: "user", content: prompt}],
-             task_type: "chat",
-             capabilities: [:communication, :reasoning]
-           ) do
+      # Use template for chat response
+      conversation_history = format_conversation_history(state.conversation_history)
+
+      case Singularity.LLM.Service.call_with_template(
+        "conversation/chat-response.hbs",
+        %{
+          conversation_history: conversation_history,
+          user_message: message_text
+        },
+        complexity: :simple,
+        task_type: :simple_chat
+      ) do
         {:ok, %{text: response}} ->
           GoogleChat.notify("💬 #{response}")
           Logger.info("Chat response sent to user #{user_id}")
           {:noreply, state}
-        
+
         {:error, reason} ->
           Logger.error("LLM chat failed: #{inspect(reason)}")
           GoogleChat.notify("❌ Sorry, I'm having trouble responding right now.")
@@ -377,40 +373,25 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   defp parse_human_message(message, _state) when is_binary(message) do
     try do
-      # Use LLM for intelligent message parsing
-      prompt = """
-      Parse this human message and categorize it:
-      
-      Message: "#{message}"
-      
-      Categories:
-      - :chat - General conversation
-      - :command - Direct command/instruction
-      - :feedback - Positive or negative feedback
-      - :question - Technical question
-      - :request - Feature or help request
-      - :bug_report - Bug report or issue
-      - :suggestion - Improvement suggestion
-      
-      Return JSON: {"category": "category_name", "confidence": 0.0-1.0, "details": "explanation"}
-      """
-      
-      case Singularity.LLM.Service.call(:simple, [%{role: "user", content: prompt}],
-             task_type: "parser",
-             capabilities: [:analysis]
-           ) do
+      # Use template for intelligent message parsing
+      case Singularity.LLM.Service.call_with_template(
+        "conversation/parse-message.hbs",
+        %{message: message},
+        complexity: :simple,
+        task_type: :parser
+      ) do
         {:ok, %{text: response}} ->
           case Jason.decode(response) do
-            {:ok, %{"category" => category, "confidence" => confidence, "details" => details}} ->
-              parsed_category = String.to_atom(category)
-              Logger.info("Parsed message as #{category} (confidence: #{confidence})")
-              {parsed_category, %{confidence: confidence, details: details, original: message}}
-            
+            {:ok, %{"intent" => intent, "confidence" => confidence}} ->
+              parsed_intent = String.to_atom(intent)
+              Logger.info("Parsed message as #{intent} (confidence: #{confidence})")
+              {parsed_intent, %{confidence: confidence, original: message}}
+
             {:error, _} ->
               Logger.warning("Failed to parse LLM response: #{response}")
               {:chat, %{confidence: 0.5, details: "Fallback parsing", original: message}}
           end
-        
+
         {:error, reason} ->
           Logger.error("LLM parsing failed: #{inspect(reason)}")
           {:chat, %{confidence: 0.3, details: "LLM parsing failed", original: message}}
@@ -578,6 +559,18 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     # For now, we'll just log and return ok.
     Logger.info("Adding suggestion to goal queue: #{feedback.description}")
     {:ok, "goal-#{System.unique_integer([:positive, :monotonic])}"}
+  end
+
+  defp format_conversation_history(history) do
+    history
+    |> Enum.take(5)  # Last 5 conversations
+    |> Enum.map(fn {conversation, answer} ->
+      """
+      Q: #{conversation.question || inspect(conversation)}
+      A: #{inspect(answer)}
+      """
+    end)
+    |> Enum.join("\n")
   end
 
   ## Channel Routing Helpers

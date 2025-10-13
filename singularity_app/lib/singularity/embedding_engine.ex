@@ -111,7 +111,7 @@ defmodule Singularity.EmbeddingEngine do
   end
 
   @type embedding :: [float()]
-  @type model :: :jina_v3 | :qodo_embed
+  @type model :: :jina_v3 | :qodo_embed | :minilm
   @type opts :: [model: model()]
 
   ## NIF Stubs
@@ -286,35 +286,69 @@ defmodule Singularity.EmbeddingEngine do
 
       EmbeddingEngine.dimensions(:jina_v3)    # => 1024
       EmbeddingEngine.dimensions(:qodo_embed) # => 1536
+      EmbeddingEngine.dimensions(:minilm)     # => 384
   """
   @spec dimensions(model()) :: pos_integer()
   def dimensions(:jina_v3), do: 1024
   def dimensions(:qodo_embed), do: 1536
+  def dimensions(:minilm), do: 384
 
   @doc """
   Get recommended model for content type.
 
+  **Adaptive Selection Strategy:**
+  - GPU available → Use Qodo-Embed (best quality, 70.06 CoIR score)
+  - CPU only → Use MiniLM (fast, good enough, ~55-60 score)
+
   ## Examples
 
-      EmbeddingEngine.recommended_model(:code)    # => :qodo_embed
-      EmbeddingEngine.recommended_model(:text)    # => :jina_v3
-      EmbeddingEngine.recommended_model(:search)  # => :jina_v3
+      EmbeddingEngine.recommended_model(:code)    # => :qodo_embed (GPU) or :minilm (CPU)
+      EmbeddingEngine.recommended_model(:text)    # => :jina_v3 (GPU) or :minilm (CPU)
+      EmbeddingEngine.recommended_model(:search)  # => :jina_v3 (GPU) or :minilm (CPU)
   """
   @spec recommended_model(atom()) :: model()
-  def recommended_model(:code), do: :qodo_embed
-  def recommended_model(:technical), do: :qodo_embed
-  def recommended_model(:documentation), do: :qodo_embed
-  def recommended_model(:text), do: :jina_v3
-  def recommended_model(:search), do: :jina_v3
-  def recommended_model(:general), do: :jina_v3
-  def recommended_model(_), do: :qodo_embed
+  def recommended_model(content_type) do
+    if gpu_available?() do
+      # GPU available: Use high-quality models
+      case content_type do
+        :code -> :qodo_embed  # 70.06 CoIR score - BEST for code!
+        :technical -> :qodo_embed
+        :documentation -> :qodo_embed
+        :text -> :jina_v3
+        :search -> :jina_v3
+        :general -> :jina_v3
+        _ -> :qodo_embed
+      end
+    else
+      # CPU only: Use MiniLM (fast, 22MB, works everywhere)
+      :minilm
+    end
+  end
+
+  @doc """
+  Check if GPU is available for embedding models.
+
+  Returns `true` if CUDA/GPU detected, `false` for CPU-only.
+  """
+  @spec gpu_available?() :: boolean()
+  def gpu_available? do
+    # Check if CUDA is available via Candle
+    # TODO: Implement NIF call to check candle_core::utils::cuda_is_available()
+    # For now, assume GPU is available if running on known GPU system
+    System.get_env("CUDA_VISIBLE_DEVICES") != nil ||
+      File.exists?("/dev/nvidia0") ||
+      File.exists?("/proc/driver/nvidia/version")
+  end
 
   ## Private Helpers
 
   defp model_to_string(:jina_v3), do: "jina_v3"
   defp model_to_string(:qodo_embed), do: "qodo_embed"
+  defp model_to_string(:minilm), do: "minilm"
   defp model_to_string(:text), do: "jina_v3"  # Alias
   defp model_to_string(:code), do: "qodo_embed"  # Alias
+  defp model_to_string(:cpu), do: "minilm"  # Alias for CPU-optimized
+  defp model_to_string(:fast), do: "minilm"  # Alias for fast/lightweight
   defp model_to_string(model) when is_binary(model), do: model
 
   defp nif_loaded? do

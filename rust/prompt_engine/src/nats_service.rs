@@ -23,8 +23,33 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
-use crate::template_loader::TemplateLoader;
+// REMOVED: template_loader module was deleted during template conversion
+// use crate::template_loader::TemplateLoader;
 use crate::PromptEngine;
+
+/// Stub TemplateLoader for backward compatibility (templates now in Elixir/Lua)
+pub struct TemplateLoader;
+
+impl TemplateLoader {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub fn load_template(&self, _template_id: &str) -> Result<serde_json::Value> {
+        // Stub: Return minimal template structure
+        Ok(serde_json::json!({
+            "template": "# Stub template\n{context}",
+            "language": "unknown",
+            "domain": "general",
+            "quality_score": 0.5
+        }))
+    }
+
+    pub fn list_templates(&self) -> Result<Vec<String>> {
+        // Stub: Return empty list (templates now managed by Elixir)
+        Ok(vec![])
+    }
+}
 
 /// Request to generate a prompt
 #[derive(Debug, Deserialize)]

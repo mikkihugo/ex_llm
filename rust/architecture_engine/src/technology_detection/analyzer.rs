@@ -68,7 +68,15 @@ impl FrameworkAnalyzer {
 
         // Analyze provided file contents
         for (file_path, content) in file_contents {
-            let detection = self.registry.detect_frameworks(content, file_path)?;
+            let mut detection = self.registry.detect_frameworks(content, file_path)?;
+
+            // Filter by min_confidence from config
+            detection.frameworks.retain(|f| {
+                detection.confidence_scores.get(&f.name)
+                    .map(|&score| score >= self.config.min_confidence)
+                    .unwrap_or(true)
+            });
+
             all_detections.push(detection);
         }
 
@@ -232,6 +240,16 @@ impl FrameworkAnalyzer {
         return recommendations;
         */
         Ok(Vec::new())
+    }
+
+    /// Get analysis configuration
+    pub fn get_config(&self) -> &AnalysisConfig {
+        &self.config
+    }
+
+    /// Update configuration
+    pub fn set_config(&mut self, config: AnalysisConfig) {
+        self.config = config;
     }
 }
 

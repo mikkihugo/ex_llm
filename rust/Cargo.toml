@@ -5,7 +5,7 @@ members = [
     "embedding_engine",
     "quality_engine",
     "parser_engine/core",
-    "parser_engine/polyglot",
+    # "parser_engine/polyglot",  # Excluded: Built separately as NIF by Rustler (causes workspace conflicts)
     "parser_engine/formats/dependency",
     "parser_engine/formats/template_definitions",
     "parser_engine/languages/rust",

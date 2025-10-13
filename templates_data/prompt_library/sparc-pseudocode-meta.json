@@ -1,0 +1,30 @@
+{
+  "id": "sparc-pseudocode",
+  "name": "SPARC Pseudocode Phase",
+  "description": "SPARC Phase 2: Generate detailed pseudocode based on specification",
+  "category": "sparc",
+  "language": "sparc",
+  "tags": ["sparc", "pseudocode", "phase2", "algorithm"],
+  "version": "1.0.0",
+  "author": "SPARC Team",
+  "created_at": "2024-01-15T10:00:00Z",
+  "updated_at": "2024-01-15T10:00:00Z",
+  "performance": {
+    "avg_execution_time_ms": 4000.0,
+    "complexity": 6
+  },
+  "ai_signature": {
+    "name": "sparc_pseudocode_generator",
+    "inputs": {
+      "specification": "Specification from Phase 1",
+      "context": "Project context"
+    },
+    "outputs": {
+      "algorithm_structure": "High-level algorithm structure",
+      "data_structures": "Data structures needed",
+      "control_flow": "Control flow logic",
+      "key_functions": "Key functions and purposes",
+      "error_handling": "Error handling approach"
+    }
+  }
+}

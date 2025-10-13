@@ -86,7 +86,8 @@ tantivy = { version = "0.25.0", optional = true }
 # Internal SPARC crates
 quality = { path = "../quality_engine", package = "quality_engine" }
 
-# Parser dependencies - all 15 working parsers
+# Parser dependencies - code_engine uses parser-code as library
+# parser-code is ALSO available as standalone ParserEngine NIF (separate Elixir module)
 rust_parser = { path = "../parser_engine/languages/rust" }
 python_parser = { path = "../parser_engine/languages/python" }
 javascript_parser = { path = "../parser_engine/languages/javascript" }
@@ -102,7 +103,7 @@ java_parser = { path = "../parser_engine/languages/java" }
 csharp_parser = { path = "../parser_engine/languages/csharp" }
 c_parser = { path = "../parser_engine/languages/c" }
 cpp_parser = { path = "../parser_engine/languages/cpp" }
-parser-code = { path = "../parser_engine/polyglot" }
+parser-code = { path = "../parser_engine", default-features = false, features = ["rca"] }  # Disable "nif" feature to avoid duplicate rustler::init!
 
 # Missing dependencies (commented out - directories don't exist)
 prompt = { path = "../prompt_engine", package = "prompt_engine" }

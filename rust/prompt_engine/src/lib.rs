@@ -12,29 +12,37 @@
 //! The prompt-engine crate is organized into the following modules:
 //!
 //! - dspy/              # Full DSPy implementation (core, predictors, optimizers)
-//! - templates/         # Prompt templates and registry
-//! - optimization/      # Core optimization algorithms
-//! - teleprompters/     # DSPy teleprompter implementations
-//! - copro/            # COPRO collaborative optimization
+//! - templates/         # Generic template types (data from central_cloud)
+//! - sparc_templates/   # Local SPARC methodology prompts (fallback)
 //! - assembly/          # Automatic prompt assembly
 //! - caching/           # Prompt caching and retrieval
 //! - metrics/           # Performance metrics
+//! - prompt_tracking/   # Execution tracking for ML learning
+//! - dspy_learning/     # Continuous learning from execution history
+//!
+//! ## Template Strategy
+//!
+//! - **Primary**: Fetch from central_cloud via NATS (global, shared)
+//! - **Fallback**: Local SPARC templates for offline operation
+//! - **Domain templates**: In architecture_engine, NOT here
 
 // Core DSPy implementation
 pub mod dspy;
 pub mod dspy_data;
 pub mod token_usage;
 
+// Generic infrastructure
 pub mod assembly;
 pub mod caching;
 pub mod language_support;
 pub mod metrics;
-pub mod microservice_templates;
-pub mod rust_dspy_templates;
-pub mod sparc_templates;
-pub mod template_loader;
-pub mod template_performance_tracker;
-pub mod templates;
+pub mod templates;  // Generic types only - data comes from central_cloud
+
+// Local fallback templates (methodology-specific, not domain-specific)
+pub mod sparc_templates;  // SPARC methodology prompts - kept for offline operation
+
+// ML/Performance infrastructure
+pub mod template_performance_tracker;  // Tracks performance for ML learning
 
 // Context-aware prompt generation
 pub mod prompt_bits;
@@ -42,7 +50,7 @@ pub mod prompt_bits;
 // Prompt execution tracking and learning
 pub mod prompt_tracking;
 
-// DSPy learning integration with FACT
+// DSPy learning integration
 pub mod dspy_learning;
 
 // NATS service (prompt_engine is a service)
@@ -57,15 +65,11 @@ pub use caching::{CacheEntry, CacheStats, PromptCache};
 // COPRO optimizer now available via dspy::optimizer::copro module
 pub use language_support::{LanguagePromptGenerator, LanguageTemplates};
 pub use metrics::{OptimizationMetrics, PerformanceTracker, PromptMetrics};
-pub use microservice_templates::{
-    ArchitectureType, MicroserviceCodePattern, MicroserviceContext, MicroserviceTemplateGenerator,
-};
 // Re-export prompt bits
 pub use prompt_bits::{PromptBitAssembler, PromptFeedback, PromptFeedbackCollector};
 use serde::{Deserialize, Serialize};
 // Optimization and teleprompters now available via dspy module
 pub use sparc_templates::SparcTemplateGenerator;
-pub use template_loader::TemplateLoader;
 pub use templates::{PromptTemplate, RegistryTemplate};
 
 // Import COPRO types for internal use
@@ -96,7 +100,6 @@ pub struct OptimizationResult {
 /// - Collaborative optimization with COPRO
 /// - Performance tracking and caching
 /// - Language-specific prompt generation
-/// - Microservice-aware prompt generation
 ///
 /// @category prompt-engine
 /// @safe program
@@ -119,8 +122,6 @@ pub struct PromptEngine {
     /// Language-specific prompt generator
     #[allow(dead_code)]
     language_generator: LanguagePromptGenerator,
-    /// Microservice template generator
-    microservice_generator: MicroserviceTemplateGenerator,
     /// SPARC template generator
     sparc_generator: SparcTemplateGenerator,
 }
@@ -134,7 +135,6 @@ impl PromptEngine {
         let cache = PromptCache::new();
         let performance_tracker = PerformanceTracker::new();
         let language_generator = LanguagePromptGenerator::new();
-        let microservice_generator = MicroserviceTemplateGenerator::new();
         let sparc_generator = SparcTemplateGenerator::new();
 
         Ok(Self {
@@ -144,7 +144,6 @@ impl PromptEngine {
             cache,
             performance_tracker,
             language_generator,
-            microservice_generator,
             sparc_generator,
         })
     }
@@ -269,7 +268,7 @@ impl PromptEngine {
                     optimization_score: 0.5,
                     improvement_summary: "Template optimization applied".to_string(),
                 });
-                
+
                 OptimizedTemplate {
                     original: template.clone(),
                     optimized: optimization_result.optimized_prompt,
@@ -297,53 +296,6 @@ impl PromptEngine {
         }
 
         Ok(())
-    }
-
-    /// Generate microservice-aware prompt template
-    pub fn generate_microservice_prompt(
-        &mut self,
-        context: MicroserviceContext,
-        file_path: &str,
-        content: &str,
-        language: &str,
-    ) -> Result<PromptTemplate, String> {
-        self.microservice_generator
-            .generate_microservice_prompt(context, file_path, content, language)
-    }
-
-    /// Process microservice code and generate optimized prompts
-    /// TODO: Integrate with COPRO optimizer properly
-    pub fn process_microservice_code(
-        &mut self,
-        file_path: &str,
-        content: &str,
-        language: &str,
-        detected_context: MicroserviceContext,
-    ) -> Result<ProcessedMicroserviceCode, String> {
-        let start_time = std::time::Instant::now();
-
-        // Generate microservice-aware prompt template
-        let microservice_template = self.generate_microservice_prompt(
-            detected_context.clone(),
-            file_path,
-            content,
-            language,
-        )?;
-
-        // TODO: Use COPRO optimizer once API is finalized
-        // For now, return unoptimized template
-        let optimized_template = microservice_template.clone();
-
-        // Track performance
-        let processing_time = start_time.elapsed().as_millis() as u64;
-        self.performance_tracker.record_processing(processing_time);
-
-        Ok(ProcessedMicroserviceCode {
-            original_template: microservice_template,
-            optimized_template,
-            microservice_context: detected_context,
-            processing_time_ms: processing_time,
-        })
     }
 
     /// Get SPARC prompt template
@@ -476,19 +428,6 @@ pub struct OptimizedTemplate {
     pub optimization_score: f64,
     pub improvement_summary: String,
 }
-
-/// Processed microservice code with optimization results
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProcessedMicroserviceCode {
-    pub original_template: PromptTemplate,
-    pub optimized_template: PromptTemplate,
-    pub microservice_context: MicroserviceContext,
-    pub processing_time_ms: u64,
-}
-
-// PromptTemplate is defined in templates module
-
-// These types are now imported from their respective modules
 
 impl PromptEngine {
     /// Calculate optimization score between original and optimized prompt

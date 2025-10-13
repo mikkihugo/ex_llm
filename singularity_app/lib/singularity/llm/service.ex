@@ -1,13 +1,316 @@
-# Template: elixir_production_v2 v2.0.0 | Applied: 2025-01-27 | Upgrade: v2.0.0 -> v2.1.0
+# Template: elixir_production_v2 v2.1.0 | Applied: 2025-01-12 | Upgrade: v2.1.0 -> v2.2.0
 defmodule Singularity.LLM.Service do
-  @template_version "elixir_production_v2 v2.0.0"
-  
-  @moduledoc """
-  LLM Service - High-performance AI provider orchestration via NATS.
+  @template_version "elixir_production_v2 v2.1.0"
 
-  This is the ONLY way to call LLM providers in the Elixir app.
+  @moduledoc """
+  # LLM Service - High-performance AI provider orchestration via NATS
+
+  **This is the ONLY way to call LLM providers in the Elixir app.**
+
   All LLM calls go through NATS to the AI server (TypeScript) with intelligent
   model selection, cost optimization, and SLO monitoring.
+
+  ## Quick Start
+
+  ```elixir
+  # Simple call (auto-selects fast/cheap model)
+  Service.call(:simple, [%{role: "user", content: "Classify this"}])
+
+  # Complex call (auto-selects powerful model)
+  Service.call(:complex, [%{role: "user", content: "Design a microservice"}])
+
+  # With task hint for better model selection
+  Service.call(:complex, messages, task_type: :architect)
+
+  # Convenience wrappers
+  Service.call_with_prompt(:medium, "Your question here")
+  Service.call_with_system(:complex, "You are an architect", "Design X")
+  ```
+
+  ## Public API
+
+  - `call(model_or_complexity, messages, opts)` - Main entry point
+  - `call_with_prompt(complexity, prompt, opts)` - Simple string prompt
+  - `call_with_system(complexity, system, user, opts)` - With system prompt
+  - `call_with_script(script_path, context, opts)` - Dynamic Lua scripts
+  - `determine_complexity_for_task(task_type)` - Auto-select complexity
+
+  ## Key Features
+
+  - **Cost Optimization:** 40-60% savings through intelligent model selection
+  - **SLO Monitoring:** < 2s target, tracks breaches automatically
+  - **Telemetry:** Full observability with correlation IDs
+  - **Error Handling:** Structured errors with specific reasons
+  - **Concurrency:** Stateless, fully concurrent
+
+  ## Complexity Levels
+
+  - `:simple` - Fast/cheap models (Gemini Flash) for classification, parsing
+  - `:medium` - Balanced models (Claude Sonnet) for coding, planning
+  - `:complex` - Powerful models (Claude Opus, GPT-4) for architecture, refactoring
+
+  ## Error Handling
+
+  All functions return `{:ok, result} | {:error, reason}`:
+  - `:nats_error` - NATS communication failed
+  - `:timeout` - Request exceeded 30s
+  - `:invalid_arguments` - Bad input
+  - `:model_unavailable` - Model not available
+
+  ## Examples
+
+  ```elixir
+  # Simple classification
+  {:ok, response} = Service.call(:simple, [
+    %{role: "user", content: "Is this spam?"}
+  ])
+  # => %{text: "Not spam", model: "gemini-1.5-flash", cost_cents: 1}
+
+  # Complex architecture
+  {:ok, response} = Service.call(:complex, [
+    %{role: "system", content: "You are a system architect"},
+    %{role: "user", content: "Design a distributed chat system"}
+  ], task_type: :architect)
+  # => %{text: "Architecture...", model: "claude-sonnet-4.5", cost_cents: 50}
+
+  # Auto-determine complexity
+  complexity = Service.determine_complexity_for_task(:architect)  # => :complex
+  Service.call(complexity, messages)
+  ```
+
+  ---
+
+  ## AI Navigation Metadata
+
+  The sections below provide structured metadata for AI assistants, graph databases (Neo4j),
+  and vector databases (pgvector) to enable intelligent code navigation at billion-line scale.
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.LLM.Service",
+    "purpose": "ONLY way to call LLM providers in Elixir - all AI requests MUST use this",
+    "role": "service",
+    "layer": "domain_services",
+    "alternatives": {
+      "LLM.Provider": "Low-level provider abstraction - DO NOT use directly (internal only)",
+      "NatsClient": "Generic NATS client - use for non-LLM NATS calls",
+      "AI Server": "TypeScript server - called via NATS (not directly)"
+    },
+    "disambiguation": {
+      "vs_provider": "Service = High-level, intelligent routing. Provider = Low-level, internal",
+      "vs_nats_client": "Service = LLM-specific with cost optimization. NatsClient = Generic messaging"
+    },
+    "replaces": [],
+    "replaced_by": null
+  }
+  ```
+
+  ## Architecture
+
+  ```mermaid
+  graph TB
+      Agent[Agent/ArchitectureEngine/SPARC]
+      Service[LLM.Service]
+      NATS[NatsClient]
+      AI[AI Server TypeScript]
+      Claude[Claude API]
+      Gemini[Gemini API]
+      OpenAI[OpenAI API]
+
+      Agent -->|1. call/3| Service
+      Service -->|2. build_request| Service
+      Service -->|3. NATS request| NATS
+      NATS -->|4. ai.llm.request| AI
+      AI -->|5. HTTP| Claude
+      AI -->|5. HTTP| Gemini
+      AI -->|5. HTTP| OpenAI
+      AI -->|6. response| NATS
+      NATS -->|7. data| Service
+      Service -->|8. track_slo_metric| Service
+      Service -->|9. ok/error| Agent
+
+      style Service fill:#90EE90
+      style Agent fill:#87CEEB
+      style AI fill:#FFB6C1
+  ```
+
+  ## Decision Tree
+
+  ```mermaid
+  graph TD
+      Start[Need LLM call?]
+      Start -->|Yes| InElixir{In Elixir code?}
+
+      InElixir -->|Yes| UseService[Use LLM.Service]
+      InElixir -->|No| UseAIServer[Use AI Server directly]
+
+      UseService --> KnowModel{Know specific model?}
+      KnowModel -->|Yes| SpecificModel[call 'claude-sonnet-4.5', messages]
+      KnowModel -->|No| Complexity{Know complexity?}
+
+      Complexity -->|Yes| UseComplexity[call :simple/:medium/:complex, messages]
+      Complexity -->|No| AutoDetect[determine_complexity_for_task :architect]
+
+      AutoDetect --> UseComplexity
+
+      UseComplexity --> TaskType{Need task hints?}
+      TaskType -->|Yes| WithOpts[call :complex, messages, task_type: :architect]
+      TaskType -->|No| SimpleCall[call :complex, messages]
+
+      style UseService fill:#90EE90
+      style SpecificModel fill:#FFD700
+      style UseComplexity fill:#FFD700
+      style WithOpts fill:#FFD700
+  ```
+
+  ## Call Graph (Machine-Readable)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.NatsClient
+      function: request/3
+      purpose: NATS communication to AI server
+      critical: true
+
+    - module: Singularity.PromptEngine
+      function: optimize_prompt/2
+      purpose: Prompt optimization before LLM call
+      critical: false
+
+    - module: Singularity.LuaRunner
+      function: execute/2
+      purpose: Dynamic prompt building from Lua scripts
+      critical: false
+
+    - module: Logger
+      functions: [info/2, error/2, warn/2, debug/2]
+      purpose: Structured logging with correlation IDs
+      critical: false
+
+    - module: :telemetry
+      function: execute/2
+      purpose: Metrics collection and SLO tracking
+      critical: false
+
+  called_by:
+    - module: Singularity.Agent
+      purpose: Agent AI operations
+      frequency: high
+
+    - module: Singularity.ArchitectureEngine
+      purpose: Architecture analysis and design
+      frequency: high
+
+    - module: Singularity.SPARC.Orchestrator
+      purpose: SPARC workflow execution
+      frequency: high
+
+    - module: Singularity.RefactoringAgent
+      purpose: Code refactoring operations
+      frequency: medium
+
+    - module: Singularity.QualityCodeGenerator
+      purpose: Quality-assured code generation
+      frequency: medium
+
+  depends_on:
+    - Singularity.NatsClient (MUST be started and connected)
+    - AI Server (TypeScript) (MUST be running on NATS)
+    - Singularity.PromptEngine (optional - graceful degradation)
+    - Singularity.LuaRunner (optional - only for Lua scripts)
+
+  supervision:
+    supervised: false
+    reason: "Stateless service module - no process to supervise. All state in NATS/AI Server."
+  ```
+
+  ## Data Flow
+
+  ```mermaid
+  sequenceDiagram
+      participant Agent
+      participant Service
+      participant NATS
+      participant AI Server
+      participant Claude
+
+      Agent->>Service: call(:complex, messages, task_type: :architect)
+      Service->>Service: generate_correlation_id()
+      Service->>Service: build_request(messages, opts)
+      Service-->>Agent: Telemetry: [:llm_service, :call, :start]
+
+      Service->>NATS: request("ai.llm.request", json, timeout: 30s)
+      NATS->>AI Server: Publish to subject
+
+      AI Server->>AI Server: Select model (Claude Sonnet 4.5)
+      AI Server->>Claude: HTTP POST /v1/messages
+      Claude-->>AI Server: HTTP 200 + response
+
+      AI Server-->>NATS: Publish response
+      NATS-->>Service: {:ok, response}
+
+      Service->>Service: track_slo_metric(:llm_call, duration, true)
+      alt SLO breach (> 2000ms)
+          Service->>Service: log_slo_breach(:llm_call, duration, 2000)
+      end
+
+      Service-->>Agent: Telemetry: [:llm_service, :call, :stop]
+      Service-->>Agent: {:ok, llm_response()}
+  ```
+
+  ## Anti-Patterns (DO NOT DO THESE!)
+
+  ### ❌ DO NOT create "LLM.Client" or "LLM.Gateway" or "LLM.Caller"
+  **Why:** This module already does that! Creating duplicates causes confusion and maintenance burden.
+  **Use instead:** `LLM.Service.call/3`
+
+  ### ❌ DO NOT call providers directly
+  ```elixir
+  # ❌ WRONG - Bypasses NATS, cost tracking, SLO monitoring
+  Provider.claude_request(%{prompt: "..."})
+  HTTPoison.post("https://api.anthropic.com/...", ...)
+
+  # ✅ CORRECT - Goes through NATS with full observability
+  Service.call(:complex, [%{role: "user", content: "..."}])
+  ```
+
+  ### ❌ DO NOT create complexity-specific wrappers
+  ```elixir
+  # ❌ WRONG - Unnecessary abstraction layer
+  defmodule LLM.SimpleCall do
+    def call(prompt), do: Service.call(:simple, [%{role: "user", content: prompt}])
+  end
+
+  # ✅ CORRECT - Use Service directly with complexity
+  Service.call(:simple, [%{role: "user", content: prompt}])
+  ```
+
+  ### ❌ DO NOT bypass model selection
+  ```elixir
+  # ❌ WRONG - Hardcodes model, loses flexibility
+  Service.call("claude-sonnet-4.5", messages)
+
+  # ✅ CORRECT - Let AI server choose based on complexity/task
+  Service.call(:complex, messages, task_type: :architect)
+  ```
+
+  ### ❌ DO NOT create custom NATS subjects for LLM calls
+  ```elixir
+  # ❌ WRONG - Custom subject bypasses routing
+  NatsClient.request("my.custom.llm.call", data)
+
+  # ✅ CORRECT - Use Service which handles subject routing
+  Service.call(:medium, messages)
+  ```
+
+  ## Search Keywords (Vector DB Optimization)
+
+  llm service, ai call, claude call, gemini call, openai call, model selection,
+  complexity routing, nats llm, llm orchestration, cost optimization, slo monitoring,
+  prompt optimization, llm gateway, ai provider, intelligent routing, task-based selection,
+  llm abstraction, elixir llm, ai integration, llm nats, provider orchestration
 
   ## Public API Contract
 
@@ -87,6 +390,7 @@ defmodule Singularity.LLM.Service do
   require Logger
   alias Singularity.NatsClient
   alias Singularity.PromptEngine
+  alias Singularity.LuaRunner
 
   @capability_aliases %{
     "code" => "code",
@@ -302,7 +606,7 @@ defmodule Singularity.LLM.Service do
       # With specific model
       iex> Singularity.LLM.Service.call_with_system("claude-sonnet-4.5", "You are a helpful assistant", "Hello")
       {:ok, %{text: "Hello! How can I help you?", model: "claude-sonnet-4.5"}}
-      
+
       # With complexity level
       iex> Singularity.LLM.Service.call_with_system(:complex, "You are a helpful assistant", "Hello")
       {:ok, %{text: "Hello! How can I help you?", model: "claude-3-5-sonnet-20241022"}}
@@ -316,6 +620,54 @@ defmodule Singularity.LLM.Service do
     ]
 
     call(model_or_complexity, messages, opts)
+  end
+
+  @doc """
+  Call LLM with Lua script for dynamic prompt building.
+
+  Executes Lua script to build prompts with file reading, git integration,
+  sub-prompts, and dynamic context assembly before calling LLM.
+
+  ## Examples
+
+      # With Lua script path
+      iex> Service.call_with_script("sparc-specification.lua", %{
+        requirements: "Build distributed chat system",
+        project_root: "/app"
+      })
+      {:ok, %{text: "...", model: "claude-sonnet-4.5", script: "sparc-specification.lua"}}
+
+      # With complexity override
+      iex> Service.call_with_script("architecture-analysis.lua", context, complexity: :complex)
+      {:ok, %{text: "...", model: "claude-3-5-sonnet-20241022"}}
+  """
+  @spec call_with_script(String.t(), map(), keyword()) :: {:ok, llm_response()} | {:error, term()}
+  def call_with_script(script_path, context, opts \\ []) do
+    # 1. Load Lua script from templates_data
+    full_path = Path.join(["templates_data", "prompt_library", script_path])
+
+    with {:ok, lua_code} <- File.read(full_path),
+         {:ok, messages} <- LuaRunner.execute(lua_code, context) do
+      # 2. Call LLM with assembled messages
+      complexity = Keyword.get(opts, :complexity, :complex)
+
+      case call(complexity, messages, opts) do
+        {:ok, response} ->
+          # 3. Add script metadata to response
+          {:ok, Map.put(response, :script, script_path)}
+
+        error ->
+          error
+      end
+    else
+      {:error, :enoent} ->
+        Logger.error("Lua script not found: #{full_path}")
+        {:error, {:script_not_found, script_path}}
+
+      {:error, reason} ->
+        Logger.error("Lua script execution failed: #{inspect(reason)}")
+        {:error, {:script_error, reason}}
+    end
   end
 
   @doc """

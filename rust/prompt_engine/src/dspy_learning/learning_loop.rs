@@ -10,8 +10,8 @@ use crate::{
     dspy::optimizer::{SPARCCoordinator, COPRO},
     dspy_learning::{ConfidenceScorer, ExecutionTracker},
     prompt_tracking::{
-        ABTestResultFact, EvolutionType, FactQuery, FactStorage, PromptEvolutionFact,
-        PromptFactType, TestVariant,
+        ABTestResultEntry, EvolutionType, PromptTrackingQuery, PromptTrackingStorage, PromptEvolutionEntry,
+        PromptExecutionData, TestVariant,
     },
 };
 
@@ -61,7 +61,7 @@ impl Default for LearningConfig {
 
 /// Continuous learning loop
 pub struct ContinuousLearningLoop {
-    fact_store: FactStorage,
+    fact_store: PromptTrackingStorage,
     execution_tracker: ExecutionTracker,
     confidence_scorer: ConfidenceScorer,
     copro_optimizer: COPRO,
@@ -70,7 +70,7 @@ pub struct ContinuousLearningLoop {
 }
 
 impl ContinuousLearningLoop {
-    pub fn new(fact_store: FactStorage, config: LearningConfig) -> Self {
+    pub fn new(fact_store: PromptTrackingStorage, config: LearningConfig) -> Self {
         Self {
             fact_store: fact_store.clone(),
             execution_tracker: ExecutionTracker::new(fact_store.clone()),
@@ -91,7 +91,7 @@ impl ContinuousLearningLoop {
     pub async fn get_performance_report(&self, prompt_id: &str) -> Result<String> {
         let executions = self
             .fact_store
-            .query(FactQuery::PromptExecutions(prompt_id.to_string()))
+            .query(PromptTrackingQuery::PromptExecutions(prompt_id.to_string()))
             .await?;
         let metrics = self.calculate_performance_metrics(&executions);
 
@@ -197,8 +197,8 @@ impl ContinuousLearningLoop {
 
                 // Store the optimized prompt using available method
                 self.fact_store
-                    .store(crate::prompt_tracking::PromptFactType::PromptExecution(
-                        crate::prompt_tracking::PromptExecutionFact {
+                    .store(crate::prompt_tracking::PromptExecutionData::PromptExecution(
+                        crate::prompt_tracking::PromptExecutionEntry {
                             prompt_id: prompt_id.clone(),
                             execution_time_ms: 100,
                             success: true,
@@ -245,7 +245,7 @@ impl ContinuousLearningLoop {
         // Get all prompts with recent executions
         let recent_executions = self
             .fact_store
-            .query(FactQuery::RecentFeedback(
+            .query(PromptTrackingQuery::RecentFeedback(
                 Duration::from_secs(7 * 24 * 3600), // Last week
             ))
             .await?;
@@ -255,7 +255,7 @@ impl ContinuousLearningLoop {
             std::collections::HashMap::new();
 
         for fact in recent_executions {
-            if let PromptFactType::PromptExecution(exec) = fact {
+            if let PromptExecutionData::PromptExecution(exec) = fact {
                 let stats = prompt_stats.entry(exec.prompt_id.clone()).or_default();
 
                 stats.execution_count += 1;
@@ -286,7 +286,7 @@ impl ContinuousLearningLoop {
         // 1. Get execution history
         let executions = self
             .fact_store
-            .query(FactQuery::PromptExecutions(prompt_id.to_string()))
+            .query(PromptTrackingQuery::PromptExecutions(prompt_id.to_string()))
             .await?;
 
         // 2. Calculate baseline performance metrics
@@ -304,7 +304,7 @@ impl ContinuousLearningLoop {
         // 6. Get evolved prompt executions (if any exist)
         let evolved_executions = self
             .fact_store
-            .query(FactQuery::PromptExecutions(evolved_prompt_id.clone()))
+            .query(PromptTrackingQuery::PromptExecutions(evolved_prompt_id.clone()))
             .await
             .unwrap_or_default();
 
@@ -329,7 +329,7 @@ impl ContinuousLearningLoop {
         );
         metadata.insert("optimization_method".to_string(), "COPRO".to_string());
 
-        let evolution_fact = PromptEvolutionFact {
+        let evolution_fact = PromptEvolutionEntry {
             original_prompt_id: prompt_id.to_string(),
             evolved_prompt_id: evolved_prompt_id.clone(),
             evolution_type: EvolutionType::Optimization,
@@ -339,7 +339,7 @@ impl ContinuousLearningLoop {
         };
 
         self.fact_store
-            .store(PromptFactType::PromptEvolution(evolution_fact))
+            .store(PromptExecutionData::PromptEvolution(evolution_fact))
             .await?;
 
         tracing::info!(
@@ -356,24 +356,24 @@ impl ContinuousLearningLoop {
         // Get recent evolutions
         let evolutions = self
             .fact_store
-            .query(FactQuery::EvolutionHistory(
+            .query(PromptTrackingQuery::EvolutionHistory(
                 String::new(), // All evolutions
             ))
             .await?;
 
         for fact in evolutions {
-            if let PromptFactType::PromptEvolution(evolution) = fact {
+            if let PromptExecutionData::PromptEvolution(evolution) = fact {
                 // Check if we have enough samples for both variants
                 let a_executions = self
                     .fact_store
-                    .query(FactQuery::PromptExecutions(
+                    .query(PromptTrackingQuery::PromptExecutions(
                         evolution.original_prompt_id.clone(),
                     ))
                     .await?;
 
                 let b_executions = self
                     .fact_store
-                    .query(FactQuery::PromptExecutions(
+                    .query(PromptTrackingQuery::PromptExecutions(
                         evolution.evolved_prompt_id.clone(),
                     ))
                     .await?;
@@ -397,14 +397,14 @@ impl ContinuousLearningLoop {
                     // Calculate actual test duration from timestamps
                     let test_duration = if let (Some(first_a), Some(first_b)) = (
                         a_executions.first().and_then(|f| {
-                            if let PromptFactType::PromptExecution(e) = f {
+                            if let PromptExecutionData::PromptExecution(e) = f {
                                 Some(e.timestamp)
                             } else {
                                 None
                             }
                         }),
                         b_executions.first().and_then(|f| {
-                            if let PromptFactType::PromptExecution(e) = f {
+                            if let PromptExecutionData::PromptExecution(e) = f {
                                 Some(e.timestamp)
                             } else {
                                 None
@@ -428,7 +428,7 @@ impl ContinuousLearningLoop {
                     );
 
                     // Store A/B test result
-                    let ab_test = ABTestResultFact {
+                    let ab_test = ABTestResultEntry {
                         test_id: format!(
                             "ab_test_{}_{}",
                             evolution.original_prompt_id,
@@ -459,7 +459,7 @@ impl ContinuousLearningLoop {
                     );
 
                     self.fact_store
-                        .store(PromptFactType::ABTestResult(ab_test))
+                        .store(PromptExecutionData::ABTestResult(ab_test))
                         .await?;
                 }
             }
@@ -469,12 +469,12 @@ impl ContinuousLearningLoop {
     }
 
     /// Calculate success rate from executions
-    fn calculate_success_rate(&self, executions: &[PromptFactType]) -> f64 {
+    fn calculate_success_rate(&self, executions: &[PromptExecutionData]) -> f64 {
         let mut total = 0.0;
         let mut count = 0.0;
 
         for fact in executions {
-            if let PromptFactType::PromptExecution(exec) = fact {
+            if let PromptExecutionData::PromptExecution(exec) = fact {
                 total += if exec.success { 1.0 } else { 0.0 };
                 count += 1.0;
             }
@@ -500,7 +500,7 @@ impl ContinuousLearningLoop {
     /// Calculate performance metrics from execution history
     pub fn calculate_performance_metrics(
         &self,
-        executions: &[PromptFactType],
+        executions: &[PromptExecutionData],
     ) -> PerformanceMetrics {
         let mut total_success = 0.0;
         let mut total_confidence = 0.0;
@@ -508,7 +508,7 @@ impl ContinuousLearningLoop {
         let mut count = 0.0;
 
         for fact in executions {
-            if let PromptFactType::PromptExecution(exec) = fact {
+            if let PromptExecutionData::PromptExecution(exec) = fact {
                 total_success += if exec.success { 1.0 } else { 0.0 };
                 total_confidence += exec.confidence_score;
                 total_execution_time += exec.execution_time_ms;
@@ -581,7 +581,7 @@ impl ContinuousLearningLoop {
         // Query old executions
         let all_executions = self
             .fact_store
-            .query(FactQuery::RecentFeedback(
+            .query(PromptTrackingQuery::RecentFeedback(
                 Duration::from_secs(365 * 24 * 3600), // Query all from past year
             ))
             .await?;
@@ -590,7 +590,7 @@ impl ContinuousLearningLoop {
 
         // Identify executions older than retention period
         for fact in all_executions {
-            if let PromptFactType::PromptExecution(exec) = &fact {
+            if let PromptExecutionData::PromptExecution(exec) = &fact {
                 if exec.timestamp < cutoff_date {
                     // In production, implement fact deletion
                     // self.fact_store.delete(fact_id).await?;

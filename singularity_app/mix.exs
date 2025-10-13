@@ -98,8 +98,10 @@ defmodule Singularity.MixProject do
       # Data & Serialization
       {:jason, "~> 1.4"},
       {:nimble_options, "~> 1.1"},
-      # Handlebars-like templating
+      # Templating engines
       {:solid, "~> 0.14"},
+      # Lua on BEAM for dynamic prompt scripts
+      {:luerl, "~> 1.2"},
 
       # T5 Training & LLM Integration
       {:bumblebee, "~> 0.5"},

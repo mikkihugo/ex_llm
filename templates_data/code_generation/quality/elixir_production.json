@@ -1,14 +1,38 @@
 {
   "name": "Elixir Production Quality",
-  "spec_version": "2.0",
+  "spec_version": "2.1",
   "capabilities": [
     "quality",
     "graph",
-    "rag"
+    "rag",
+    "ai_navigation",
+    "graph_db",
+    "vector_db"
   ],
   "language": "elixir",
   "quality_level": "production",
-  "description": "Production-grade quality standards for Elixir code following community best practices",
+  "description": "Production-grade quality standards for Elixir code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
+  "changelog": {
+    "2.1": {
+      "date": "2025-01-12",
+      "changes": [
+        "Added module_identity JSON for vector DB disambiguation",
+        "Added architecture_diagram (Mermaid) for visual understanding",
+        "Added decision_tree (Mermaid) for usage patterns",
+        "Added call_graph (YAML) for graph DB indexing",
+        "Added data_flow (Mermaid sequence) for orchestration",
+        "Added anti_patterns for duplicate prevention",
+        "Added search_keywords for vector search optimization",
+        "Enhanced scoring_weights for AI-optimized metadata"
+      ]
+    },
+    "2.0": {
+      "date": "2025-01-10",
+      "changes": [
+        "Initial production template with RAG support"
+      ]
+    }
+  },
   "requirements": {
     "documentation": {
       "moduledoc": {
@@ -17,8 +41,70 @@
         "must_include": [
           "overview",
           "examples",
-          "usage_patterns"
-        ]
+          "usage_patterns",
+          "module_identity_json",
+          "architecture_diagram",
+          "call_graph_metadata",
+          "anti_patterns"
+        ],
+        "ai_navigation": {
+          "module_identity": {
+            "format": "json",
+            "required_fields": [
+              "module",
+              "purpose",
+              "role",
+              "layer",
+              "alternatives",
+              "disambiguation"
+            ],
+            "description": "JSON block for vector DB disambiguation and graph DB indexing"
+          },
+          "architecture_diagram": {
+            "format": "mermaid",
+            "types": [
+              "graph",
+              "sequence",
+              "flowchart"
+            ],
+            "description": "Visual architecture for AI understanding of call flow and data flow"
+          },
+          "decision_tree": {
+            "format": "mermaid",
+            "when": "module has multiple usage patterns",
+            "description": "Mermaid flowchart showing when/how to use different functions"
+          },
+          "call_graph": {
+            "format": "yaml",
+            "required_fields": [
+              "calls_out",
+              "called_by",
+              "depends_on",
+              "supervision"
+            ],
+            "description": "Machine-readable call graph for graph DB indexing (Neo4j, etc.)"
+          },
+          "data_flow": {
+            "format": "mermaid",
+            "type": "sequence",
+            "when": "module orchestrates multiple components",
+            "description": "Sequence diagram showing data flow through system"
+          },
+          "anti_patterns": {
+            "format": "markdown",
+            "must_include": [
+              "what_not_to_create",
+              "what_not_to_call_directly",
+              "duplicate_prevention"
+            ],
+            "description": "Explicit anti-patterns to prevent AI from creating duplicates"
+          },
+          "search_keywords": {
+            "format": "text",
+            "min_keywords": 10,
+            "description": "Comma-separated keywords for vector DB semantic search optimization"
+          }
+        }
       },
       "doc": {
         "required_for": [
@@ -154,12 +240,22 @@
         "usage_examples": "required_in_moduledoc",
         "common_mistakes": "document_in_moduledoc",
         "performance_notes": "include_if_relevant"
+      },
+      "graph_db_optimization": {
+        "call_graph_yaml": "required_for_services",
+        "relationship_metadata": "explicit",
+        "dependency_tree": "machine_readable"
+      },
+      "vector_db_optimization": {
+        "search_keywords": "required",
+        "purpose_statement": "clear_and_unique",
+        "disambiguation_vs_similar": "explicit"
       }
     }
   },
   "prompts": {
     "code_generation": "Generate PRODUCTION-QUALITY Elixir code for: {task}\n\nREQUIREMENTS:\n- @moduledoc (100+ chars) with overview, examples, usage patterns\n- @doc for ALL public functions (50+ chars) with examples and edge cases\n- @typedoc for public types\n- @spec for ALL public functions, callbacks, and struct fields\n- Dialyzer-compatible types (strict mode)\n- Tagged tuple error handling {:ok, result} | {:error, reason}\n- NO raise in public API\n- with statements for error chains with else clause\n- Telemetry events for operations, errors, metrics\n- Logger with structured logging\n- Pattern matching required\n- Pipe operators for chains (2+ steps)\n- Tail recursion for recursive functions\n- Streams for large data\n- 85%+ test coverage target\n- Doctests for all public functions\n- RAG-optimized: semantic chunks, metadata tags, AI hints in moduledoc\n\nOUTPUT CODE ONLY.",
-    "documentation": "Generate PRODUCTION-GRADE documentation for this Elixir code:\n\n```elixir\n{code}\n```\n\nINCLUDE:\n- @moduledoc: Overview, usage examples, common patterns, performance notes, related modules\n- @doc: Description, parameters, return values, examples, edge cases, errors\n- @typedoc: Type descriptions\n- Doctests for all public functions\n- AI hints: usage examples, common mistakes, performance considerations\n\nOUTPUT DOCUMENTATION ONLY.",
+    "documentation": "Generate PRODUCTION-GRADE documentation for this Elixir code:\n\n```elixir\n{code}\n```\n\nINCLUDE @moduledoc with HUMAN CONTENT FIRST, then AI metadata:\n\n1. HUMAN CONTENT (top ~80 lines):\n   - Title: # ModuleName - Brief description\n   - Purpose: **What this module does** (bold, clear)\n   - Quick Start: Copy-paste examples showing common usage\n   - Public API: Bullet list of main functions\n   - Key Features: What makes this module valuable\n   - Complexity/Decision Guide: When to use what (if applicable)\n   - Error Handling: Common errors and solutions\n   - Examples: Real usage patterns with expected output\n\n2. SEPARATOR:\n   ---\n   ## AI Navigation Metadata\n   Brief explanation: \"The sections below provide structured metadata for AI assistants...\"\n\n3. AI METADATA (below separator):\n   - Module Identity (JSON): module, purpose, role, layer, alternatives, disambiguation\n   - Architecture Diagram (Mermaid): graph/sequence showing call flow\n   - Decision Tree (Mermaid): when/how to use different functions (if complex)\n   - Call Graph (YAML): calls_out, called_by, depends_on, supervision\n   - Data Flow (Mermaid sequence): if orchestrating components\n   - Anti-Patterns: what NOT to create, what NOT to call directly\n   - Search Keywords: 10+ keywords for vector search\n\nALSO INCLUDE:\n- @doc: Description, parameters, return values, examples, edge cases, errors\n- @typedoc: Type descriptions\n- Doctests for all public functions\n\nKEY: Human content at TOP (fast scanning), AI metadata BELOW (clear separation).\n\nOUTPUT DOCUMENTATION ONLY.",
     "tests": "Generate COMPREHENSIVE ExUnit tests for this code:\n\n```elixir\n{code}\n```\n\nINCLUDE:\n- Unit tests (all public functions)\n- Integration tests\n- Property tests (StreamData)\n- Edge cases\n- Error conditions\n- Concurrency tests (if applicable)\n- Async tests where possible\n- Target 85%+ coverage\n\nOUTPUT TEST MODULE ONLY."
   },
   "scoring_weights": {
@@ -181,6 +277,13 @@
     "uses_pattern_matching": 0.9,
     "uses_pipes": 0.7,
     "tail_recursive": 0.85,
-    "rag_metadata": 0.9
+    "rag_metadata": 0.9,
+    "has_module_identity_json": 0.95,
+    "has_architecture_diagram": 0.9,
+    "has_call_graph_yaml": 0.9,
+    "has_anti_patterns": 0.85,
+    "has_search_keywords": 0.8,
+    "graph_db_ready": 0.9,
+    "vector_db_optimized": 0.9
   }
 }

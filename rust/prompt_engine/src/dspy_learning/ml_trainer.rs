@@ -8,18 +8,18 @@ use anyhow::Result;
 use crate::dspy_learning::ConfidencePredictor;
 use crate::{
     dspy_learning::{PromptFeatures, TrainingConfig, TrainingMetrics},
-    prompt_tracking::{FactQuery, FactStorage, PromptFactType},
+    prompt_tracking::{PromptTrackingQuery, PromptTrackingStorage, PromptExecutionData},
 };
 
 /// ML training orchestrator that pulls data from FACT storage
 pub struct MLTrainer {
-    fact_store: FactStorage,
+    fact_store: PromptTrackingStorage,
     model_save_path: PathBuf,
 }
 
 impl MLTrainer {
     /// Create new ML trainer
-    pub fn new(fact_store: FactStorage, model_save_path: PathBuf) -> Self {
+    pub fn new(fact_store: PromptTrackingStorage, model_save_path: PathBuf) -> Self {
         Self {
             fact_store,
             model_save_path,
@@ -72,7 +72,7 @@ impl MLTrainer {
         // Query all prompt executions from FACT storage
         let all_executions = self
             .fact_store
-            .query(FactQuery::RecentFeedback(
+            .query(PromptTrackingQuery::RecentFeedback(
                 std::time::Duration::from_secs(365 * 24 * 3600), // Last year
             ))
             .await?;
@@ -84,7 +84,7 @@ impl MLTrainer {
         let mut prompt_executions: HashMap<String, Vec<_>> = HashMap::new();
 
         for fact in all_executions {
-            if let PromptFactType::PromptExecution(exec) = fact {
+            if let PromptExecutionData::PromptExecution(exec) = fact {
                 prompt_executions
                     .entry(exec.prompt_id.clone())
                     .or_insert_with(Vec::new)
@@ -173,7 +173,7 @@ impl MLTrainer {
     /// Calculate complexity score for executions
     fn calculate_complexity(
         &self,
-        executions: &[crate::prompt_tracking::PromptExecutionFact],
+        executions: &[crate::prompt_tracking::PromptExecutionEntry],
     ) -> f64 {
         if executions.is_empty() {
             return 0.5;
@@ -193,7 +193,7 @@ impl MLTrainer {
     }
 
     /// Calculate recency score (newer = higher score)
-    fn calculate_recency(&self, executions: &[crate::prompt_tracking::PromptExecutionFact]) -> f64 {
+    fn calculate_recency(&self, executions: &[crate::prompt_tracking::PromptExecutionEntry]) -> f64 {
         if executions.is_empty() {
             return 0.5;
         }
@@ -213,7 +213,7 @@ impl MLTrainer {
     pub async fn suggest_training_config(&self) -> Result<TrainingConfig> {
         let all_executions = self
             .fact_store
-            .query(FactQuery::RecentFeedback(std::time::Duration::from_secs(
+            .query(PromptTrackingQuery::RecentFeedback(std::time::Duration::from_secs(
                 365 * 24 * 3600,
             )))
             .await?;
@@ -259,7 +259,7 @@ impl MLTrainer {
     pub async fn should_retrain(&self) -> Result<bool> {
         let recent_executions = self
             .fact_store
-            .query(FactQuery::RecentFeedback(
+            .query(PromptTrackingQuery::RecentFeedback(
                 std::time::Duration::from_secs(7 * 24 * 3600), // Last week
             ))
             .await?;
@@ -282,7 +282,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_ml_trainer_creation() {
-        let fact_store = FactStorage::new("test_path").unwrap();
+        let fact_store = PromptTrackingStorage::new("test_path").unwrap();
         let model_path = PathBuf::from("test_model");
         let trainer = MLTrainer::new(fact_store, model_path);
 

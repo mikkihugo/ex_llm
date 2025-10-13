@@ -112,7 +112,7 @@ pub struct UniversalAnalysisResult {
 
 #[async_trait]
 /// Universal parser trait for language-agnostic code analysis
-pub trait UniversalParser: Send + Sync {
+pub trait PolyglotCodeParser: Send + Sync {
   type Config: Clone + Send + Sync;
   type LanguageSpecific: Clone + Send + Sync + Serialize;
 
@@ -1133,7 +1133,7 @@ impl RustParser {
 }
 
 #[async_trait]
-impl UniversalParser for RustParser {
+impl PolyglotCodeParser for RustParser {
   type Config = HashMap<String, serde_json::Value>;
   type LanguageSpecific = serde_json::Value;
 

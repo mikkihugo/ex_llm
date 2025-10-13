@@ -22,6 +22,9 @@ static JINA_V3_MODEL: Lazy<ModelCache> =
 static QODO_EMBED_MODEL: Lazy<ModelCache> =
     Lazy::new(|| Arc::new(RwLock::new(None)));
 
+static MINILM_L6_V2_MODEL: Lazy<ModelCache> =
+    Lazy::new(|| Arc::new(RwLock::new(None)));
+
 rustler::init!("Elixir.Singularity.EmbeddingEngine");
 
 /// Generate embeddings for a batch of texts (GPU-accelerated)
@@ -131,8 +134,9 @@ fn cosine_similarity_batch(
 /// Helper: Parse model type string
 fn parse_model_type(s: &str) -> Result<ModelType, RustlerError> {
     match s.to_lowercase().as_str() {
-        "jina_v3" | "jina-v3" | "text" => Ok(ModelType::JinaV3),
+        "jina_v3" | "jina-v3" | "jina" | "text" => Ok(ModelType::JinaV3),
         "qodo_embed" | "qodo-embed" | "qodo" | "code" => Ok(ModelType::QodoEmbed),
+        "minilm" | "minilm_l6_v2" | "all-minilm-l6-v2" | "cpu" | "fast" => Ok(ModelType::MiniLML6V2),
         _ => Err(RustlerError::Term(Box::new(format!("Unknown model type: {}", s))))
     }
 }
@@ -142,6 +146,7 @@ fn get_or_load_model(model_type: ModelType) -> Result<ModelCache, RustlerError> 
     let cache = match model_type {
         ModelType::JinaV3 => JINA_V3_MODEL.clone(),
         ModelType::QodoEmbed => QODO_EMBED_MODEL.clone(),
+        ModelType::MiniLML6V2 => MINILM_L6_V2_MODEL.clone(),
     };
 
     // Check if already loaded
@@ -250,8 +255,9 @@ fn ensure_models_downloaded(model_types: Vec<String>) -> NifResult<String> {
                 let config = match model_type {
                     ModelType::JinaV3 => ModelConfig::jina_v3(),
                     ModelType::QodoEmbed => ModelConfig::qodo_embed(),
+                    ModelType::MiniLML6V2 => ModelConfig::minilm_l6_v2(),
                 };
-                
+
                 match ensure_model_downloaded_sync(&config) {
                     Ok(path) => {
                         downloaded.push(format!("{:?} -> {}", model_type, path.display()));
@@ -405,6 +411,7 @@ fn cleanup_cache(model_types: Vec<String>) -> NifResult<String> {
                 let cache = match model_type {
                     ModelType::JinaV3 => JINA_V3_MODEL.clone(),
                     ModelType::QodoEmbed => QODO_EMBED_MODEL.clone(),
+                    ModelType::MiniLML6V2 => MINILM_L6_V2_MODEL.clone(),
                 };
                 
                 let mut write_lock = cache.write();

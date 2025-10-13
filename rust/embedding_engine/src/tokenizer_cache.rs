@@ -14,11 +14,15 @@ static JINA_V3_TOKENIZER: Lazy<Arc<RwLock<Option<Tokenizer>>>> =
 static QODO_EMBED_TOKENIZER: Lazy<Arc<RwLock<Option<Tokenizer>>>> =
     Lazy::new(|| Arc::new(RwLock::new(None)));
 
+static MINILM_L6_V2_TOKENIZER: Lazy<Arc<RwLock<Option<Tokenizer>>>> =
+    Lazy::new(|| Arc::new(RwLock::new(None)));
+
 /// Get or load tokenizer for model type
 pub fn get_tokenizer(model_type: ModelType) -> Result<Tokenizer> {
     let cache = match model_type {
         ModelType::JinaV3 => &JINA_V3_TOKENIZER,
         ModelType::QodoEmbed => &QODO_EMBED_TOKENIZER,
+        ModelType::MiniLML6V2 => &MINILM_L6_V2_TOKENIZER,
     };
 
     // Check cache
@@ -64,6 +68,13 @@ fn load_tokenizer(model_type: ModelType) -> Result<Tokenizer> {
                 )?;
                 Ok::<PathBuf, anyhow::Error>(model_dir.join("tokenizer.json"))
             })?
+        }
+        ModelType::MiniLML6V2 => {
+            // Download all-MiniLM-L6-v2 model (includes tokenizer)
+            let model_dir = crate::downloader::ensure_model_downloaded_sync(
+                &crate::downloader::ModelConfig::minilm_l6_v2()
+            )?;
+            model_dir.join("tokenizer.json")
         }
     };
 

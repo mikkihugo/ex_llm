@@ -5,7 +5,7 @@ use std::{collections::HashMap, time::Duration};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::prompt_tracking::{FactQuery, FactStorage, PromptExecutionFact, PromptFactType};
+use crate::prompt_tracking::{PromptTrackingQuery, PromptTrackingStorage, PromptExecutionEntry, PromptExecutionData};
 
 /// Execution result for tracking
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,12 +66,12 @@ impl MetricsCollector {
 
 /// Execution tracker for learning system
 pub struct ExecutionTracker {
-    fact_store: FactStorage,
+    fact_store: PromptTrackingStorage,
     metrics_collector: MetricsCollector,
 }
 
 impl ExecutionTracker {
-    pub fn new(fact_store: FactStorage) -> Self {
+    pub fn new(fact_store: PromptTrackingStorage) -> Self {
         Self {
             fact_store,
             metrics_collector: MetricsCollector::new(),
@@ -83,8 +83,8 @@ impl ExecutionTracker {
         // Calculate context hash
         let context_hash = self.hash_context(&execution.context);
 
-        // Create execution FACT
-        let fact = PromptExecutionFact {
+        // Create execution entry
+        let fact = PromptExecutionEntry {
             prompt_id: execution.prompt_id.clone(),
             execution_time_ms: execution.duration.as_millis() as u64,
             success: execution.success_score > 0.5,
@@ -95,10 +95,10 @@ impl ExecutionTracker {
             metadata: HashMap::new(),
         };
 
-        // Store FACT
+        // Store execution data
         let fact_id = self
             .fact_store
-            .store(PromptFactType::PromptExecution(fact))
+            .store(PromptExecutionData::PromptExecution(fact))
             .await?;
 
         // Update metrics
@@ -169,8 +169,8 @@ impl ExecutionTracker {
             self.hash_context(&execution.context),
         );
 
-        // Store as execution fact with training flag
-        let training_fact = PromptExecutionFact {
+        // Store as execution entry with training flag
+        let training_fact = PromptExecutionEntry {
             prompt_id: format!("training_{}", execution.prompt_id),
             execution_time_ms: execution.duration.as_millis() as u64,
             success: execution.success_score > 0.5,
@@ -182,7 +182,7 @@ impl ExecutionTracker {
         };
 
         self.fact_store
-            .store(PromptFactType::PromptExecution(training_fact))
+            .store(PromptExecutionData::PromptExecution(training_fact))
             .await?;
 
         tracing::info!(
@@ -204,7 +204,7 @@ impl ExecutionTracker {
     pub async fn get_performance_summary(&self, prompt_id: &str) -> Result<PerformanceSummary> {
         let executions = self
             .fact_store
-            .query(FactQuery::PromptExecutions(prompt_id.to_string()))
+            .query(PromptTrackingQuery::PromptExecutions(prompt_id.to_string()))
             .await?;
 
         let mut total_success = 0.0;
@@ -212,7 +212,7 @@ impl ExecutionTracker {
         let mut modification_count = 0;
 
         for fact in &executions {
-            if let PromptFactType::PromptExecution(exec) = fact {
+            if let PromptExecutionData::PromptExecution(exec) = fact {
                 total_success += if exec.success { 1.0 } else { 0.0 };
                 total_time += Duration::from_millis(exec.execution_time_ms);
                 modification_count += exec.metadata.len(); // Use metadata length as proxy
@@ -244,7 +244,7 @@ impl ExecutionTracker {
     }
 
     /// Calculate confidence trend over time
-    fn calculate_confidence_trend(&self, executions: &[PromptFactType]) -> ConfidenceTrend {
+    fn calculate_confidence_trend(&self, executions: &[PromptExecutionData]) -> ConfidenceTrend {
         if executions.is_empty() {
             return ConfidenceTrend::Stable;
         }
@@ -253,7 +253,7 @@ impl ExecutionTracker {
         let mut sorted_execs: Vec<_> = executions
             .iter()
             .filter_map(|f| {
-                if let PromptFactType::PromptExecution(exec) = f {
+                if let PromptExecutionData::PromptExecution(exec) = f {
                     Some(exec)
                 } else {
                     None

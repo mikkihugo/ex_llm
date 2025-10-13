@@ -1,0 +1,13 @@
+# Models directory for AI models (embeddings + code generation)
+# Models are auto-downloaded from HuggingFace on first use:
+#
+# EMBEDDINGS:
+# - all-minilm-l6-v2/    (~22MB, CPU-optimized, sentence-transformers)
+# - jina-v3-onnx/        (~500MB, GPU-optimized, text embeddings)
+# - qodo-embed-1.5b/     (~1.5GB, GPU-optimized, code embeddings - BEST!)
+#
+# CODE GENERATION:
+# - t5-small-onnx/       (~360MB, CPU/GPU, code generation)
+#
+# These models are NOT committed to Git (too large).
+# See rust/embedding_engine/src/downloader.rs for download logic.

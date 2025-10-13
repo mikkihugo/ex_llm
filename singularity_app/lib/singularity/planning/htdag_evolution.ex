@@ -1,17 +1,25 @@
 defmodule Singularity.Planning.HTDAGEvolution do
   @moduledoc """
-  Self-evolution module for HTDAG using NATS LLM feedback and performance analysis.
+  Self-evolution module for HTDAG using context-aware Lua scripts for critique and optimization.
 
   Enables autonomous improvement of HTDAG execution by analyzing performance metrics,
-  identifying optimization opportunities through LLM critique, and applying mutations
-  to operation parameters, model selection, and prompt templates.
+  searching git history for successful patterns, and applying mutations to operation
+  parameters, model selection, and prompt templates.
 
   ## Integration Points
 
   This module integrates with:
-  - `Singularity.LLM.NatsOperation` - LLM operations (NatsOperation.compile/2, run/3)
+  - `Singularity.LLM.Service` - Lua-based critique (Service.call_with_script/3)
   - `:telemetry` - Performance metrics (telemetry events for execution analysis)
   - PostgreSQL table: `htdag_evolution_logs` (stores mutation history and results)
+
+  ## Lua-Based Critique
+
+  Uses `templates_data/prompt_library/execution/critique-htdag-run.lua` which:
+  - Analyzes execution metrics (completed, failed, tokens, latency)
+  - Searches git history for successful HTDAG patterns
+  - Checks recent model configuration changes
+  - Proposes mutations based on cost/quality tradeoffs
 
   ## Evolution Types
 
@@ -22,7 +30,7 @@ defmodule Singularity.Planning.HTDAGEvolution do
 
   ## Usage
 
-      # Evolve based on execution results
+      # Evolve based on execution results (uses Lua script)
       {:ok, mutations} = HTDAGEvolution.critique_and_mutate(execution_result)
       # => {:ok, [%{type: :model_change, target: "task-123", new_value: "claude-sonnet-4.5"}]}
 
@@ -35,6 +43,9 @@ defmodule Singularity.Planning.HTDAGEvolution do
 
   # INTEGRATION: LLM operations (NATS-based critique and mutation)
   alias Singularity.LLM.NatsOperation
+
+  # INTEGRATION: LLM service with Lua script support for context-aware critique
+  alias Singularity.LLM.Service
   
   @type mutation :: %{
           type: :model_change | :param_change | :prompt_change,
@@ -46,46 +57,38 @@ defmodule Singularity.Planning.HTDAGEvolution do
         }
   
   @doc """
-  Critique execution results and propose mutations via LLM.
-  
-  Sends execution metrics to LLM for analysis and gets improvement suggestions.
+  Critique execution results and propose mutations via LLM using context-aware Lua script.
+
+  Analyzes execution metrics, searches git history for successful patterns, and suggests improvements.
   """
   @spec critique_and_mutate(map(), keyword()) :: {:ok, [mutation()]} | {:error, term()}
   def critique_and_mutate(execution_result, opts \\ []) do
     run_id = Keyword.get(opts, :run_id, generate_run_id())
-    
-    # Build critique prompt
-    critique_prompt = build_critique_prompt(execution_result)
-    
-    # Call LLM via NATS for critique
-    params = %{
-      model_id: "claude-sonnet-4.5",
-      prompt_template: critique_prompt,
-      temperature: 0.3,  # Lower temperature for analytical tasks
-      max_tokens: 2000,
-      stream: false,
-      timeout_ms: 30_000
+
+    # Enrich execution result with calculated metrics
+    enriched_result =
+      execution_result
+      |> Map.put(:total_tokens, calculate_total_tokens(execution_result))
+      |> Map.put(:avg_latency, calculate_avg_latency(execution_result))
+
+    # Use Lua script for context-aware critique
+    script_context = %{
+      execution_result: enriched_result,
+      run_id: run_id
     }
-    
-    ctx = %{
-      run_id: run_id,
-      node_id: "critique-#{System.unique_integer([:positive])}",
-      span_ctx: %{operation: "critique_and_mutate"}
-    }
-    
-    case NatsOperation.compile(params, ctx) do
-      {:ok, compiled} ->
-        case NatsOperation.run(compiled, %{}, ctx) do
-          {:ok, result} ->
-            # Parse mutations from LLM response
-            parse_mutations(result.text)
-            
-          {:error, reason} ->
-            Logger.error("Critique failed", reason: reason)
-            {:error, reason}
-        end
-        
+
+    case Service.call_with_script(
+           "execution/critique-htdag-run.lua",
+           script_context,
+           complexity: :medium,
+           task_type: :architect
+         ) do
+      {:ok, %{content: json_response}} ->
+        # Parse mutations from JSON response
+        parse_mutations(json_response)
+
       {:error, reason} ->
+        Logger.error("Lua script critique failed", reason: inspect(reason))
         {:error, reason}
     end
   end
@@ -122,52 +125,7 @@ defmodule Singularity.Planning.HTDAGEvolution do
   end
   
   ## Private Functions
-  
-  defp build_critique_prompt(execution_result) do
-    completed = Map.get(execution_result, :completed, 0)
-    failed = Map.get(execution_result, :failed, 0)
-    total_tokens = calculate_total_tokens(execution_result)
-    avg_latency = calculate_avg_latency(execution_result)
-    
-    """
-    Analyze this HTDAG execution and suggest improvements:
-    
-    ## Execution Metrics
-    - Completed tasks: #{completed}
-    - Failed tasks: #{failed}
-    - Total tokens used: #{total_tokens}
-    - Average latency: #{avg_latency}ms
-    
-    ## Task Results
-    #{format_task_results(execution_result)}
-    
-    ## Analysis Required
-    
-    Identify opportunities to improve:
-    1. Model selection (switch between claude-sonnet-4.5, gemini-2.5-pro, gemini-1.5-flash)
-    2. Generation parameters (temperature, max_tokens)
-    3. Prompt template quality
-    4. Task decomposition strategy
-    
-    Provide response in JSON format:
-    ```json
-    {
-      "mutations": [
-        {
-          "type": "model_change",
-          "target": "task-123",
-          "old_value": "gemini-1.5-flash",
-          "new_value": "claude-sonnet-4.5",
-          "reason": "Task complexity requires better reasoning",
-          "confidence": 0.85
-        }
-      ],
-      "insights": "Overall analysis of execution quality..."
-    }
-    ```
-    """
-  end
-  
+
   defp parse_mutations(llm_response) do
     # Extract JSON from response
     case extract_json(llm_response) do

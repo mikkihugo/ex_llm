@@ -16,9 +16,20 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
   ## Integration Points
 
   - `templates_data/quality_standards/elixir/production.json` - Quality template
+  - `templates_data/prompt_library/quality/generate-production-code.lua` - Code generation (Lua)
+  - `templates_data/prompt_library/quality/extract-patterns.lua` - Pattern extraction (Lua)
   - `Singularity.CodeStore` - Code chunk storage with embeddings
   - `Singularity.Knowledge.ArtifactStore` - Template retrieval
+  - `Singularity.LLM.Service` - LLM operations via NATS
   - Rust `code_analysis` NIF - AST parsing and duplication detection
+
+  ## Lua Scripts
+
+  This module uses context-aware Lua scripts for prompt generation:
+
+  - **generate-production-code.lua** - Reads quality template, searches for similar code,
+    builds comprehensive prompt with all requirements
+  - **extract-patterns.lua** - Analyzes high-quality code to extract reusable patterns
 
   ## Usage
 
@@ -222,11 +233,12 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
   """
   def extract_patterns(code, metadata) do
     if metadata.quality_score >= 0.95 do
-      # Use LLM to identify reusable patterns
-      prompt = build_pattern_extraction_prompt(code, metadata)
-
-      case Service.call(:medium, [%{role: "user", content: prompt}],
-        task_type: "pattern_analyzer"
+      # Use Lua script for pattern extraction
+      case Service.call_with_script(
+        "quality/extract-patterns.lua",
+        %{code: code, metadata: metadata},
+        complexity: :medium,
+        task_type: :pattern_analyzer
       ) do
         {:ok, %{text: response}} ->
           patterns = parse_patterns_response(response)
@@ -244,21 +256,18 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
   ## Private Functions
 
   defp generate_new_code(description, quality_level, relationships, similar_code) do
-    template = load_production_template()
-
-    # Build comprehensive prompt
-    prompt = build_code_generation_prompt(%{
-      description: description,
-      template: template,
-      quality_level: quality_level,
-      relationships: relationships,
-      similar_code: similar_code,
-      requirements: extract_requirements(template)
-    })
-
-    case Service.call(:complex, [%{role: "user", content: prompt}],
-      task_type: "coder",
-      capabilities: [:code, :reasoning]
+    # Use Lua script for context-aware prompt generation
+    case Service.call_with_script(
+      "quality/generate-production-code.lua",
+      %{
+        description: description,
+        quality_level: to_string(quality_level),
+        relationships: relationships,
+        similar_code: similar_code,
+        template_path: @production_template_path
+      },
+      complexity: :complex,
+      task_type: :coder
     ) do
       {:ok, %{text: code}} ->
         # Validate generated code
@@ -275,6 +284,7 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
         else
           # Try to fix non-compliant code
           Logger.warn("Generated code not compliant, attempting fixes...")
+          template = load_production_template()
           fix_code_quality(code, validation, template)
         end
 
@@ -284,183 +294,9 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
     end
   end
 
-  defp load_production_template do
-    case File.read(@production_template_path) do
-      {:ok, json} ->
-        Jason.decode!(json)
-
-      {:error, _} ->
-        Logger.error("Failed to load production template, using defaults")
-        %{}  # Fallback to defaults
-    end
-  end
-
-  defp build_code_generation_prompt(context) do
-    """
-    Generate PRODUCTION-QUALITY Elixir code for: #{context.description}
-
-    ## CRITICAL: NO HUMAN REVIEW
-    This code will be deployed autonomously WITHOUT human review.
-    Quality must be PERFECT on first generation.
-
-    ## AVOID DUPLICATION
-    #{format_similar_code(context.similar_code)}
-
-    ## REQUIREMENTS (From template #{context.template["name"]})
-
-    ### Documentation (REQUIRED)
-    - @moduledoc with ALL sections:
-      * Overview (what/why)
-      * Public API Contract (function signatures)
-      * Error Matrix (all {:error, reason} atoms)
-      * Performance Notes (Big-O, memory)
-      * Concurrency Semantics (thread safety)
-      * Security Considerations (validation, sanitization)
-      * Examples (3+ with success/error/edge cases)
-      * Relationship Metadata (calls/called_by/depends_on)
-      * Template Version
-
-    - @doc for EVERY public function:
-      * Description
-      * Parameters
-      * Returns
-      * Errors
-      * Examples
-
-    ### Type Specs (REQUIRED)
-    - @spec for EVERY function
-    - @type for custom types
-    - Dialyzer-compliant
-
-    ### Error Handling (REQUIRED)
-    - Use {:ok, value} | {:error, reason} pattern
-    - NO raise for control flow
-    - Define ALL error atoms in Error Matrix
-    - Include context in error tuples
-
-    ### OTP Patterns (REQUIRED IF STATEFUL)
-    - GenServer: init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2
-    - Supervision: proper child_spec/1
-    - Hot code swapping: implement code_change/3 with state migration
-
-    ### Performance (REQUIRED)
-    - Document Big-O complexity
-    - Use ETS for caching if needed
-    - Streams for large datasets
-    - Memory-conscious data structures
-
-    ### Observability (REQUIRED)
-    - Telemetry events: [:module, :function, :start/:stop/:exception]
-    - Structured logging with correlation IDs
-    - SLO monitoring (P50/P95/P99 latency)
-    - Health checks (liveness/readiness)
-
-    ### Security (REQUIRED)
-    - Validate ALL external inputs
-    - Sanitize user content
-    - Rate limiting where appropriate
-    - Privilege separation
-
-    ### Testing (REQUIRED - Include in module)
-    - Document test coverage target: 95%
-    - List scenarios to test:
-      * Happy paths
-      * Error paths (all error atoms)
-      * Edge cases (nil/empty/boundaries)
-      * Concurrency scenarios
-
-    ### Resilience (REQUIRED FOR EXTERNAL DEPS)
-    - Circuit breakers for external services
-    - Retry with exponential backoff
-    - Graceful degradation
-    - Timeout handling
-
-    ### Code Style (REQUIRED)
-    - Functions <= 25 lines
-    - Max module <= 400 lines
-    - Max line length: 120 chars
-    - NO TODO/FIXME/HACK/XXX
-    - Meaningful names (no Utils/Helper/Misc)
-
-    ### Relationship Annotations (REQUIRED)
-    #{format_relationship_requirements(context.relationships)}
-
-    ## RELATIONSHIPS WITH EXISTING MODULES
-    #{format_relationships(context.relationships)}
-
-    ## SIMILAR CODE FOR REFERENCE (DO NOT DUPLICATE)
-    #{format_similar_code_details(context.similar_code)}
-
-    ## OUTPUT FORMAT
-    Return ONLY the complete Elixir module code.
-    No markdown, no explanations, JUST CODE.
-
-    The code will be directly written to a file and must compile immediately.
-    """
-  end
-
-  defp format_similar_code([]), do: "No similar code found - creating from scratch."
-  defp format_similar_code(similar) when is_list(similar) do
-    """
-    Found #{length(similar)} similar implementations:
-    #{Enum.map_join(similar, "\\n", fn s ->
-      "- #{s.file} (similarity: #{s.similarity}) - #{s.module}"
-    end)}
-
-    Learn from these but DO NOT duplicate. Extract patterns and adapt.
-    """
-  end
-  defp format_similar_code(single) when is_map(single) do
-    format_similar_code([single])
-  end
-
-  defp format_similar_code_details([]), do: ""
-  defp format_similar_code_details(similar) when is_list(similar) do
-    Enum.map_join(similar, "\\n\\n", fn s ->
-      """
-      ### #{s.module} (#{s.file})
-      Similarity: #{s.similarity}
-
-      Patterns to learn:
-      #{extract_patterns_from_code(s.code_snippet)}
-      """
-    end)
-  end
-
-  defp format_relationships(%{} = rels) when map_size(rels) == 0, do: "No specific relationships defined."
-  defp format_relationships(rels) do
-    """
-    This module MUST document relationships:
-    #{if rels[:calls], do: "- @calls: #{Enum.join(rels.calls, ", ")}", else: ""}
-    #{if rels[:called_by], do: "- @called_by: #{Enum.join(rels.called_by, ", ")}", else: ""}
-    #{if rels[:integrates_with], do: "- @integrates_with: #{Enum.join(rels.integrates_with, ", ")}", else: ""}
-    """
-  end
-
-  defp format_relationship_requirements(_rels) do
-    """
-    Add these annotations in @moduledoc Relationships section:
-    - # @calls: module.function/arity - purpose
-    - # @called_by: module.function/arity - purpose
-    - # @depends_on: module - purpose
-    - # @integrates_with: service - purpose
-    """
-  end
-
-  defp extract_requirements(template) do
-    template["requirements"] || %{}
-  end
-
-  defp extract_patterns_from_code(code) do
-    # Simple pattern extraction (could be enhanced with AST analysis)
-    cond do
-      String.contains?(code, "use GenServer") -> "- GenServer pattern with state management"
-      String.contains?(code, ":ets.new") -> "- ETS-based caching"
-      String.contains?(code, "Task.async") -> "- Concurrent task execution"
-      String.contains?(code, "Supervisor") -> "- Supervision tree pattern"
-      true -> "- Standard Elixir module"
-    end
-  end
+  # NOTE: Prompt generation moved to Lua scripts:
+  # - quality/generate-production-code.lua
+  # - quality/extract-patterns.lua
 
   defp enrich_with_relationships(result) do
     # Add relationship metadata to search results
@@ -585,36 +421,19 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
   end
 
   defp extract_reused_patterns(_code, []), do: []
-  defp extract_reused_patterns(code, similar) do
+  defp extract_reused_patterns(_code, _similar) do
     # Analyze which patterns from similar code were reused
     []  # Placeholder
   end
 
-  defp build_pattern_extraction_prompt(code, metadata) do
-    """
-    Analyze this high-quality Elixir code (quality score: #{metadata.quality_score}) and extract reusable patterns.
-
-    Code:
-    ```elixir
-    #{code}
-    ```
-
-    Identify:
-    1. Design patterns used (GenServer, Supervisor, Circuit Breaker, etc.)
-    2. When this pattern should be used
-    3. Key characteristics
-    4. Template/skeleton for reuse
-
-    Return JSON array of patterns:
-    [
-      {
-        "pattern_type": "genserver_with_cache",
-        "confidence": 0.95,
-        "when_to_use": ["stateful caching", "TTL expiry"],
-        "skeleton": "defmodule ... use GenServer ..."
-      }
-    ]
-    """
+  defp load_production_template do
+    case File.read(@production_template_path) do
+      {:ok, content} ->
+        Jason.decode!(content)
+      {:error, _} ->
+        Logger.warning("Could not load production template, using defaults")
+        %{"name" => "production", "scoring_weights" => %{}}
+    end
   end
 
   defp parse_patterns_response(response) do

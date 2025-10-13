@@ -116,7 +116,7 @@ pub fn search_by_type(asset_type: &str) -> Vec<KnowledgeAsset> {
 #[cfg(feature = "nif")]
 pub mod nif {
     use super::*;
-    use rustler::{Encoder, Env, NifResult, NifStruct, Term};
+    use rustler::{NifResult, NifStruct};
 
     #[derive(Debug, Clone, NifStruct)]
     #[module = "Singularity.KnowledgeIntelligence.Asset"]
@@ -198,10 +198,11 @@ pub mod nif {
         Ok(clear_cache())
     }
 
-    rustler::init!(
-        "Elixir.Singularity.KnowledgeIntelligence",
-        [nif_load_asset, nif_save_asset, nif_get_stats, nif_clear_cache]
-    );
+    // Note: rustler::init! moved to lib.rs to avoid multiple NIF init conflicts
+    // rustler::init!(
+    //     "Elixir.Singularity.KnowledgeIntelligence",
+    //     [nif_load_asset, nif_save_asset, nif_get_stats, nif_clear_cache]
+    // );
 }
 
 // ============================================================================

@@ -395,6 +395,46 @@ See [INTERFACE_ARCHITECTURE.md](../../INTERFACE_ARCHITECTURE.md) for full detail
 4. **Semantic search for navigation** - Use embedding service to find similar code
 5. **Gleam for type-safe logic** - Critical algorithms benefit from Gleam's type system
 6. **Interface abstraction** - Tools are interface-agnostic, use Protocol for execution
+
+## AI-Optimized Documentation (v2.1)
+
+**All production Elixir modules MUST include AI navigation metadata** for billion-line codebase navigation and duplicate prevention.
+
+**Template:** `templates_data/code_generation/quality/elixir_production.json` v2.1
+**Quick Reference:** `templates_data/code_generation/examples/AI_METADATA_QUICK_REFERENCE.md`
+**Full Guide:** `OPTIMAL_AI_DOCUMENTATION_PATTERN.md`
+**Example:** `templates_data/code_generation/examples/elixir_ai_optimized_example.ex`
+
+### Required AI Metadata (in @moduledoc)
+
+1. **Module Identity (JSON)** - Vector DB disambiguation, graph DB indexing
+2. **Architecture Diagram (Mermaid)** - Visual call flow understanding
+3. **Call Graph (YAML)** - Machine-readable for Neo4j/graph DB auto-indexing
+4. **Anti-Patterns** - Explicit duplicate prevention ("DO NOT create X")
+5. **Search Keywords** - Vector search optimization (10+ keywords)
+
+### Optional AI Metadata
+
+6. **Decision Tree (Mermaid)** - When module has multiple usage patterns
+7. **Data Flow (Mermaid sequence)** - When orchestrating multiple components
+
+### Why This Matters
+
+At billion-line scale, AI assistants (Claude, Copilot, Cursor) and databases (Neo4j, pgvector) need structured metadata to:
+
+- **Disambiguate** similar modules ("Use Service, not Provider")
+- **Prevent duplicates** ("Don't create Gateway - Service exists!")
+- **Navigate relationships** (graph DB: "What calls this?")
+- **Optimize search** (vector DB: better semantic relevance)
+
+### Time Investment
+
+- **Minimum viable:** Module Identity + Call Graph + Anti-Patterns = **15 min**
+- **Full optimization:** All 7 sections = **30 min**
+- **Priority:** Service/Orchestrator/Infrastructure modules first
+
+See quick reference for copy-paste templates!
+
 ## Code Naming Conventions & Architecture Patterns
 
 ### Self-Documenting Names

@@ -34,10 +34,9 @@ impl CodeNamer {
   pub fn suggest_name(
     &self,
     base_name: &str,
-    element_type: crate::CodeElementType,
-    category: crate::CodeElementCategory,
-    context: &crate::CodeContext,
-    _storage: Option<&crate::storage::CodebaseDatabase>,
+    _element_type: crate::CodeElementType,
+    _category: crate::CodeElementCategory,
+    _context: &crate::CodeContext,
   ) -> Vec<String> {
     // TODO: Integrate with existing IntelligentNamer system
     // For now, return basic fallback to avoid duplication
@@ -48,10 +47,11 @@ impl CodeNamer {
 
 
 use anyhow::Result;
-use crate::prompt_engine::ProjectTechStackFact;
+// use crate::prompt_engine::ProjectTechStackFact;  // DISABLED: prompt_engine in separate crate
 use tracing::info;
 
-use crate::codebase::CodebaseDatabase;
+// NOTE: CodebaseDatabase removed - all storage now in Elixir (PostgreSQL)
+// use crate::codebase::CodebaseDatabase;
 
 /// Framework detector - delegates to existing framework detection system
 #[derive(Debug, Clone)]
@@ -92,19 +92,19 @@ impl Default for IntelligenceEngine {
 
 // External crate dependencies
 // parser-coordinator merged into universal-parser/ml_predictions
-use crate::linting_engine::LintingEngine;
-use crate::prompt_engine::PromptEngine;
-use crate::sparc_methodology::{SPARCProject, ProjectComplexity};
-use parser_code::interfaces::UniversalParser; // Trait for parser methods
-use parser_code::{CodeAnalysisEngine, UniversalDependencies, UniversalParserFrameworkConfig};
+// DISABLED: These are separate crates, not part of code_engine
+// use crate::linting_engine::LintingEngine;
+// use crate::prompt_engine::PromptEngine;
+// use crate::sparc_methodology::{SPARCProject, ProjectComplexity};
+use parser_code::interfaces::PolyglotCodeParser; // Trait for parser methods
+use parser_code::{CodeAnalysisEngine, UniversalDependencies, PolyglotCodeParserFrameworkConfig};
 
 /// Main codebase analyzer that orchestrates all analysis systems
 ///
 /// **Pure Analysis Library** - No cross-project caching, no sessions, no engine state
 /// Those belong in sparc-engine orchestration layer
 pub struct CodebaseAnalyzer {
-  /// Storage layer for data (optional, requires async initialization)
-  pub storage: Option<CodebaseDatabase>,
+  // NOTE: storage removed - all data stored in Elixir (PostgreSQL), Rust does pure computation
   // TODO: Remove global_cache - belongs in sparc-engine, not pure analysis
   // /// Global cache manager
   // pub global_cache: GlobalCacheCoordinator,
@@ -140,7 +140,7 @@ impl CodebaseAnalyzer {
     // Data is passed in via NIF parameters
 
     Ok(Self {
-      storage: None,  // No storage - pure computation
+      // No storage - pure computation, data passed via parameters
       performance_tracker: PerformanceTracker::new(),
       namer: CodeNamer::new(),
       metrics_collector: crate::analysis::metrics::MetricsCollector::new(),
@@ -152,7 +152,7 @@ impl CodebaseAnalyzer {
       code_analysis_engine: CodeAnalysisEngine::new(),
       linting_engine: LintingEngine::new(),
       universal_parser: UniversalDependencies::new()
-        .unwrap_or_else(|_| UniversalDependencies::new_with_config(UniversalParserFrameworkConfig::default()).unwrap()),
+        .unwrap_or_else(|_| UniversalDependencies::new_with_config(PolyglotCodeParserFrameworkConfig::default()).unwrap()),
       sparc_methodology: SPARCProject::new(
         "default_project".to_string(),
         "Default Project".to_string(),
@@ -184,9 +184,9 @@ impl CodebaseAnalyzer {
   }
 
   /// Detect frameworks in the project using NPM-based detection
-  pub async fn detect_frameworks(&self, _project_path: &Path) -> Result<Vec<ProjectTechStackFact>, String> {
+  pub async fn detect_frameworks(&self, _project_path: &Path) -> Result<Vec<String>, String> {
     // detect_frameworks is synchronous, not async
-    // Return empty vec for now since detector stub returns Vec<String>, not Vec<ProjectTechStackFact>
+    // Return empty vec for now since detector stub returns Vec<String>
     Ok(Vec::new())
   }
 
@@ -199,7 +199,7 @@ impl CodebaseAnalyzer {
 
   /// Get intelligent naming suggestions
   pub fn get_naming_suggestions(&self, base_name: &str, element_type: CodeElementType, category: CodeElementCategory, context: &CodeContext) -> Vec<String> {
-    self.namer.suggest_name(base_name, element_type, category, context, self.storage.as_ref())
+    self.namer.suggest_name(base_name, element_type, category, context)
   }
 
   /// Get performance report
@@ -1414,7 +1414,7 @@ impl CodebaseAnalyzer {
 pub struct ProjectAnalysis {
   pub files: Vec<ParsedFile>,
   pub naming: NamingAnalysis,
-  pub framework_detection: Option<Vec<ProjectTechStackFact>>,
+  pub framework_detection: Option<Vec<String>>,
 }
 
 /// Represents a parsed file with analysis results

@@ -122,7 +122,7 @@ impl CodeTokenizer {
   fn tokenize_code(&self, language: &str, content: &str) -> Result<Vec<DataToken>> {
     // ALL parsers now use universal-parser trait for consistency
     match language {
-      // All parsers use UniversalParser trait
+      // All parsers use PolyglotCodeParser trait
       "rust" => self.tokenize_rust(content),               // syn-based + universal trait
       "typescript" => self.tokenize_typescript(content),   // oxc-based + universal trait
       "javascript" => self.tokenize_javascript(content),   // oxc-based + universal trait
@@ -142,28 +142,28 @@ impl CodeTokenizer {
   }
 
   fn tokenize_rust(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use rust-parser crate (syn-based + UniversalParser trait) for proper Rust tokenization
+    // TODO: Use rust-parser crate (syn-based + PolyglotCodeParser trait) for proper Rust tokenization
     // For now, use improved text-based tokenization
     self.tokenize_generic(content)
   }
 
   fn tokenize_python(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use python-parser crate (UniversalParser trait) for proper Python tokenization
+    // TODO: Use python-parser crate (PolyglotCodeParser trait) for proper Python tokenization
     self.tokenize_generic(content)
   }
 
   fn tokenize_typescript(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use typescript-parser crate (oxc-based + UniversalParser trait) for proper TypeScript tokenization
+    // TODO: Use typescript-parser crate (oxc-based + PolyglotCodeParser trait) for proper TypeScript tokenization
     self.tokenize_generic(content)
   }
 
   fn tokenize_javascript(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use javascript-parser crate (oxc-based + UniversalParser trait) for proper JavaScript tokenization
+    // TODO: Use javascript-parser crate (oxc-based + PolyglotCodeParser trait) for proper JavaScript tokenization
     self.tokenize_generic(content)
   }
 
   fn tokenize_java(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use java-parser crate (UniversalParser trait) for proper Java tokenization
+    // TODO: Use java-parser crate (PolyglotCodeParser trait) for proper Java tokenization
     self.tokenize_generic(content)
   }
 

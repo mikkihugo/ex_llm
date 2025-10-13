@@ -14,29 +14,29 @@
 
 pub mod metadata;
 pub mod storage;  // Pure computation - no I/O
-pub mod analysis;
-pub mod parsers;
+// pub mod analysis;  // DISABLED: Contains CodebaseDatabase - refactor to use data from Elixir
+// pub mod parsers;  // DISABLED: Uses CodeMetadata type that's only relevant when storing
 pub mod vectors;
-pub mod vector_adapter;  // NEW: Bridge between parser output and vector storage
+// pub mod vector_adapter;  // DISABLED: Bridge only needed when writing to database
 pub mod graphs;
-pub mod config;
-pub mod parser_registry;
-pub mod semantic_cache;  // Pure computation - no I/O
+// pub mod config;  // DISABLED: Uses AnalysisConfig which depends on disabled analysis module
+// pub mod parser_registry;  // DISABLED: Uses ParserCapabilities for parser management
+// pub mod semantic_cache;  // DISABLED: Cache only needed when using database
 pub mod capability;  // NEW: SAFe 6.0 aligned capability model
-pub mod capability_storage;  // NEW: Capability persistence layer
-pub mod sparc_integration;  // NEW: SPARC dual-source knowledge query
+// pub mod capability_storage;  // DISABLED: Database operations now in Elixir (PostgreSQL)
+// pub mod sparc_integration;  // DISABLED: Check if has database dependencies
 
 // Re-export main types for easy access
 pub use metadata::*;
 pub use storage::*;
-pub use analysis::*;
-pub use parsers::*;
+// pub use analysis::*;  // DISABLED - see above
+// pub use parsers::*;  // DISABLED
 pub use vectors::*;
-pub use vector_adapter::*;  // NEW: VectorAdapter for parser→vector conversion
+// pub use vector_adapter::*;  // DISABLED
 pub use graphs::*;
-pub use config::*;
-pub use parser_registry::*;
-pub use semantic_cache::*;
+// pub use config::*;  // DISABLED
+// pub use parser_registry::*;  // DISABLED
+// pub use semantic_cache::*;  // DISABLED
 pub use capability::*;  // NEW: CodeCapability, CapabilityKind, etc.
-pub use capability_storage::*;  // NEW: CapabilityStorage, CapabilityStats
-pub use sparc_integration::*;  // NEW: SparcKnowledge, HowToResult, UnderstandingResult
+// pub use capability_storage::*;  // DISABLED - see above
+// pub use sparc_integration::*;  // DISABLED - see above

@@ -61,6 +61,14 @@ knowledge.artifacts.update            # Knowledge base updates
 knowledge.artifacts.embed             # Artifact embedding requests
 ```
 
+### Prompt Tracking Storage (NIF-based)
+```
+prompt.tracking.store                 # Store prompt execution data
+prompt.tracking.store.result          # Store operation results
+prompt.tracking.query                 # Query prompt tracking data
+prompt.tracking.query.result          # Query operation results
+```
+
 ### Intelligence Hub (Central Communication)
 **Purpose:** All engines send intelligence data to central_cloud for aggregation and storage.
 
@@ -256,6 +264,60 @@ planning.task.delete               # Delete task
   "result": {...},
   "success": true,
   "correlation_id": "tool_456"
+}
+```
+
+### Prompt Tracking Storage Request/Response
+```json
+// prompt.tracking.store
+{
+  "data": {
+    "type": "execution",
+    "execution": {
+      "id": "exec_123",
+      "prompt_id": "prompt_456",
+      "input": "user input",
+      "output": "AI response",
+      "execution_time_ms": 1500,
+      "success": true,
+      "metadata": {"model": "claude-3"}
+    }
+  },
+  "correlation_id": "store_789"
+}
+
+// prompt.tracking.store.result
+{
+  "fact_id": "fact_123",
+  "success": true,
+  "correlation_id": "store_789"
+}
+
+// prompt.tracking.query
+{
+  "query": {
+    "type": "by_prompt_id",
+    "prompt_id": "prompt_456"
+  },
+  "limit": 10,
+  "correlation_id": "query_101"
+}
+
+// prompt.tracking.query.result
+{
+  "results": [
+    {
+      "type": "execution",
+      "data": {
+        "id": "exec_123",
+        "prompt_id": "prompt_456",
+        "execution_time_ms": 1500,
+        "success": true
+      }
+    }
+  ],
+  "total_count": 1,
+  "correlation_id": "query_101"
 }
 ```
 

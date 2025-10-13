@@ -24,20 +24,19 @@ pub use prompt_selector::{PromptSelector, RepositoryContext, SelectedPrompt, Tas
 
 use crate::{
     dspy::optimizer::{SparcOptimizer, COPRO},
-    prompt_tracking::{FactStorage, PromptTrackingStorage},
+    prompt_tracking::PromptTrackingStorage,
 };
 
 /// Initialize the DSPy learning system with FACT storage and configuration
 pub async fn initialize_learning_system(
-    storage_path: impl AsRef<std::path::Path>,
+    _storage_path: impl AsRef<std::path::Path>,
     config: Option<LearningConfig>,
 ) -> Result<LearningSystem> {
-    let storage_path = storage_path.as_ref();
-    let fact_store = PromptTrackingStorage::new(storage_path)?;
+    let fact_store = PromptTrackingStorage::new()?;
     let config = config.unwrap_or_default();
 
     // Determine model save path (sibling to storage)
-    let model_save_path = if let Some(parent) = storage_path.parent() {
+    let model_save_path = if let Some(parent) = _storage_path.as_ref().parent() {
         parent
             .join("ml_models")
             .join("confidence_predictor.safetensors")
@@ -76,7 +75,7 @@ pub async fn initialize_learning_system_default(
 
 /// Complete learning system integrating DSPy with FACT
 pub struct LearningSystem {
-    pub fact_store: FactStorage,
+    pub fact_store: PromptTrackingStorage,
     pub prompt_selector: PromptSelector,
     pub execution_tracker: ExecutionTracker,
     pub confidence_scorer: ConfidenceScorer,
@@ -119,7 +118,7 @@ impl LearningSystem {
         // 1. Get execution history for training data
         let executions = self
             .fact_store
-            .query(crate::prompt_tracking::FactQuery::PromptExecutions(
+            .query(crate::prompt_tracking::PromptTrackingQuery::PromptExecutions(
                 prompt_id.to_string(),
             ))
             .await?;
@@ -137,7 +136,7 @@ impl LearningSystem {
         let mut total_confidence = 0.0;
 
         for fact in &executions {
-            if let crate::prompt_tracking::PromptFactType::PromptExecution(exec) = fact {
+            if let crate::prompt_tracking::PromptExecutionData::PromptExecution(exec) = fact {
                 if exec.success {
                     success_count += 1;
                 }
@@ -171,7 +170,7 @@ impl LearningSystem {
         ]);
 
         // 4. Store optimization request for async processing
-        let evolution_fact = crate::prompt_tracking::PromptEvolutionFact {
+        let evolution_fact = crate::prompt_tracking::PromptEvolutionEntry {
             original_prompt_id: prompt_id.to_string(),
             evolved_prompt_id: format!("{}_optimizing", prompt_id),
             evolution_type: crate::prompt_tracking::EvolutionType::Optimization,
@@ -181,7 +180,7 @@ impl LearningSystem {
         };
 
         self.fact_store
-            .store(crate::prompt_tracking::PromptFactType::PromptEvolution(
+            .store(crate::prompt_tracking::PromptExecutionData::PromptEvolution(
                 evolution_fact,
             ))
             .await?;

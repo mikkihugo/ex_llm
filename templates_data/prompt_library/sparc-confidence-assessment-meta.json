@@ -1,0 +1,35 @@
+{
+  "id": "sparc-confidence-assessment",
+  "name": "SPARC Confidence Assessment",
+  "description": "SPARC quality assessment template for evaluating work output confidence",
+  "category": "sparc",
+  "language": "sparc",
+  "tags": ["sparc", "quality-assessment", "confidence-scoring", "self-evaluation"],
+  "version": "1.0.0",
+  "author": "SPARC Team",
+  "created_at": "2024-01-15T10:00:00Z",
+  "updated_at": "2024-01-15T10:00:00Z",
+  "performance": {
+    "avg_execution_time_ms": 3000.0,
+    "complexity": 7
+  },
+  "ai_signature": {
+    "name": "sparc_confidence_assessor",
+    "inputs": {
+      "work_output": "Work output to assess",
+      "requirements": "Original requirements",
+      "phase": "Current SPARC phase"
+    },
+    "outputs": {
+      "confidence_score": "Overall confidence score (0-100)",
+      "completeness_score": "Completeness assessment (0-25)",
+      "quality_score": "Quality assessment (0-25)",
+      "clarity_score": "Clarity assessment (0-25)",
+      "feasibility_score": "Feasibility assessment (0-25)",
+      "strengths": "What works well",
+      "gaps": "What needs improvement",
+      "recommendation": "PROCEED/REFINE/RESTART",
+      "next_steps": "Specific improvement actions if needed"
+    }
+  }
+}

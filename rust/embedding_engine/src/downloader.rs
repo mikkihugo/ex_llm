@@ -9,6 +9,8 @@ use futures_util::StreamExt;
 /// HuggingFace model repository URLs
 const JINA_V3_REPO: &str = "jinaai/jina-embeddings-v3";
 const QODO_EMBED_REPO: &str = "Qodo/Qodo-Embed-1-1.5B";
+const MINILM_L6_V2_REPO: &str = "sentence-transformers/all-MiniLM-L6-v2";
+const T5_SMALL_ONNX_REPO: &str = "optimum/t5-small";
 
 /// Model file configuration
 pub struct ModelConfig {
@@ -41,6 +43,36 @@ impl ModelConfig {
                 "special_tokens_map.json",
             ],
             local_dir: "qodo-embed-1.5b",
+        }
+    }
+
+    pub fn minilm_l6_v2() -> Self {
+        Self {
+            repo: MINILM_L6_V2_REPO,
+            files: vec![
+                "onnx/model.onnx",
+                "tokenizer.json",
+                "config.json",
+                "tokenizer_config.json",
+                "special_tokens_map.json",
+                "vocab.txt",
+            ],
+            local_dir: "all-minilm-l6-v2",
+        }
+    }
+
+    pub fn t5_small() -> Self {
+        Self {
+            repo: T5_SMALL_ONNX_REPO,
+            files: vec![
+                "encoder_model.onnx",           // ~120MB - Encoder
+                "decoder_model.onnx",           // ~120MB - Decoder
+                "decoder_with_past_model.onnx", // ~120MB - Optimized decoder with KV cache
+                "tokenizer.json",
+                "config.json",
+                "generation_config.json",
+            ],
+            local_dir: "t5-small-onnx",
         }
     }
 }

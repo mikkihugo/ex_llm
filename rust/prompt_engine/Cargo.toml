@@ -57,5 +57,6 @@ path = "src/bin/prompt_analysis_service.rs"
 default = []
 ml-analysis = ["candle-core", "candle-nn"]
 with-package-indexer = []
+nif = []
 
 # Workspace definition removed - now part of root workspace

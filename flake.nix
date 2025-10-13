@@ -22,6 +22,14 @@
           inherit system;
           config.allowUnfree = true;
         };
+        lib = nixpkgs.lib;
+        isLinux = pkgs.stdenv.isLinux;
+        hasCuda = isLinux;
+        cudaToolkitPath = if hasCuda then "${pkgs.cudaPackages.cudatoolkit}" else "";
+        cudaToolkitLibPath = if hasCuda then "${pkgs.cudaPackages.cudatoolkit}/lib" else "";
+        cudaBinPath = if hasCuda then "${pkgs.cudaPackages.cudatoolkit}/bin" else "";
+        cudaCudnnPath = if hasCuda then "${pkgs.cudaPackages.cudnn}" else "";
+        cudaCudnnLibPath = if hasCuda then "${pkgs.cudaPackages.cudnn}/lib" else "";
         # Use stable OTP 28 toolchain from nixpkgs
         beamPackages = pkgs.beam.packages.erlang_28;
 
@@ -30,7 +38,7 @@
           git
           gh
           curl
-          openssl
+          # openssl  # Removed - set via environment variables instead
           pkg-config
           direnv
           gnused
@@ -75,10 +83,17 @@
         ];
 
         # CUDA packages (unfree, only for local dev)
-        cudaTools = with pkgs; [
-          cudaPackages.cudatoolkit
-          cudaPackages.cudnn
-        ];
+        cudaTools =
+          if hasCuda then
+            let
+              cudaPkgs = pkgs.cudaPackages;
+            in
+            [
+              cudaPkgs.cudatoolkit
+              cudaPkgs.cudnn
+            ]
+          else
+            [];
 
         # All tools including CUDA
         commonTools = baseTools ++ cudaTools;
@@ -93,54 +108,81 @@
           pkgs.gleam
         ];
 
-        pythonTrainingEnv = pkgs.python311.withPackages (ps: with ps; [
-          ps.pip
-          ps.setuptools
-          ps.wheel
-          ps.numpy
-          ps.scipy
-          ps.pandas
-          ps.torch
-          ps.torchvision
-          ps.torchaudio
-          ps.tokenizers
-          ps.safetensors
-          ps.transformers
-          ps.datasets
-          ps.accelerate
-          ps.peft
-          ps.evaluate
-          ps.tqdm
-          ps.regex
-          ps.huggingface-hub
-          ps.jinja2
-          ps.protobuf
-        ]);
+        pythonTrainingEnv = pkgs.python311.withPackages (ps:
+          let
+            optionalPackages = paths:
+              lib.concatMap (path:
+                if lib.hasAttrByPath path ps then
+                  [ lib.getAttrFromPath path ps ]
+                else
+                  []
+              ) paths;
+          in
+          optionalPackages [
+            [ "pip" ]
+            [ "setuptools" ]
+            [ "wheel" ]
+            [ "numpy" ]
+            [ "scipy" ]
+            [ "pandas" ]
+            [ "tokenizers" ]
+            [ "safetensors" ]
+            [ "transformers" ]
+            [ "datasets" ]
+            [ "accelerate" ]
+            [ "peft" ]
+            [ "evaluate" ]
+            [ "tqdm" ]
+            [ "regex" ]
+            [ "huggingface-hub" ]
+            [ "jinja2" ]
+            [ "protobuf" ]
+          ] ++ optionalPackages (
+            if lib.hasAttrByPath [ "torchaudio" ] ps || lib.hasAttrByPath [ "torch" ] ps then
+              [
+                [ "torch" ]
+                [ "torchvision" ]
+                [ "torchaudio" ]
+              ]
+            else
+              []
+          )
+        );
 
-        postgresqlWithExtensions = pkgs.postgresql_17.withPackages (ps: [
-          ps.timescaledb
-          ps.postgis
-          ps.pgrouting
-          ps.pgtap
-          ps.pg_cron
-          ps.pgvector        # Vector similarity search (Jina v3, Qodo-Embed-1)
-        ]);
+        postgresqlExtensionNames = [
+          "timescaledb"
+          "postgis"
+          "pgrouting"
+          "pgtap"
+          "pg_cron"
+          "pgvector"        # Vector similarity search (Jina v3, Qodo-Embed-1)
+        ];
+
+        postgresqlWithExtensions = pkgs.postgresql_17.withPackages (ps:
+          let
+            available =
+              lib.filter (name: lib.hasAttr name ps) postgresqlExtensionNames;
+          in
+          map (name: lib.getAttr name ps) available
+        );
 
         dataServices = [
           postgresqlWithExtensions
         ];
 
-        webAndCli = with pkgs; [
-          # No nodejs - bun is enough
-          flyctl
-          bun
-          nats-server  # NATS with JetStream for distributed facts
-
-          # Container tools (rootless development)
-          podman
-          buildah
-          skopeo
-        ];
+        webAndCli = with pkgs;
+          [
+            # No nodejs - bun is enough
+            flyctl
+            bun
+            nats-server  # NATS with JetStream for distributed facts
+          ]
+          ++ lib.optionals isLinux [
+            # Container tools (rootless development)
+            podman
+            buildah
+            skopeo
+          ];
 
         qaTools = with pkgs; [
           semgrep
@@ -415,31 +457,35 @@ EOF
             # Don't override PATH - let Nix handle it via buildInputs
             # export PATH=$PWD/bin:$PATH
 
-            # CUDA/GPU environment for EXLA (RTX 4080)
-            export CUDA_HOME="${pkgs.cudaPackages.cudatoolkit}"
-            export CUDNN_HOME="${pkgs.cudaPackages.cudnn}"
-            export LD_LIBRARY_PATH="${pkgs.cudaPackages.cudatoolkit}/lib:${pkgs.cudaPackages.cudnn}/lib:''${LD_LIBRARY_PATH:-}"
-            export XLA_FLAGS="--xla_gpu_cuda_data_dir=$CUDA_HOME"
-            export EXLA_TARGET="cuda"
-
             # OpenSSL for Rust NIF compilation and runtime
-            export OPENSSL_DIR="${pkgs.openssl.dev}"
-            export OPENSSL_ROOT_DIR="${pkgs.openssl.dev}"
-            export LD_LIBRARY_PATH="${pkgs.openssl.out}/lib:$LD_LIBRARY_PATH"
+            export OPENSSL_DIR="${pkgs.openssl.out}"
+            export OPENSSL_LIB_DIR="${pkgs.openssl.out}/lib"
+            export OPENSSL_INCLUDE_DIR="${pkgs.openssl.dev}/include"
+            export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig:$PKG_CONFIG_PATH"
+            export LD_LIBRARY_PATH="${pkgs.openssl.out}/lib:${pkgs.zlib.out}/lib:$LD_LIBRARY_PATH"
 
-            # WSL2: Add Windows NVIDIA drivers to PATH (if available)
-            if [ -d /usr/lib/wsl/lib ]; then
-              export PATH="/usr/lib/wsl/lib:$PATH"
-              export LD_LIBRARY_PATH="/usr/lib/wsl/lib:$LD_LIBRARY_PATH"
-            fi
+            if [ -n "${cudaToolkitPath}" ]; then
+              # CUDA/GPU environment for EXLA (RTX 4080)
+              export CUDA_HOME="${cudaToolkitPath}"
+              export CUDNN_HOME="${cudaCudnnPath}"
+              export LD_LIBRARY_PATH="${cudaToolkitLibPath}:${cudaCudnnLibPath}:''${LD_LIBRARY_PATH:-}"
+              export XLA_FLAGS="--xla_gpu_cuda_data_dir=$CUDA_HOME"
+              export EXLA_TARGET="cuda"
 
-            # Verify CUDA is available (WSL2 gets GPU access from Windows host)
-            if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
-              echo "🎮 GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader,nounits 2>/dev/null || echo 'NVIDIA GPU available')"
-              echo "   CUDA: $(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9.]+' || nvidia-smi | grep -oP 'CUDA Version: \K[0-9.]+')"
-            else
-              echo "⚠️  GPU: NVIDIA driver not available (install Windows NVIDIA drivers for WSL2)"
-              echo "   CUDA: $(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9.]+' || echo 'not found')"
+              # WSL2: Add Windows NVIDIA drivers to PATH (if available)
+              if [ -d /usr/lib/wsl/lib ]; then
+                export PATH="/usr/lib/wsl/lib:$PATH"
+                export LD_LIBRARY_PATH="/usr/lib/wsl/lib:$LD_LIBRARY_PATH"
+              fi
+
+              # Verify CUDA is available (WSL2 gets GPU access from Windows host)
+              if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
+                echo "🎮 GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader,nounits 2>/dev/null || echo 'NVIDIA GPU available')"
+                echo "   CUDA: $(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9.]+' || nvidia-smi | grep -oP 'CUDA Version: \K[0-9.]+')"
+              else
+                echo "⚠️  GPU: NVIDIA driver not available (install Windows NVIDIA drivers for WSL2)"
+                echo "   CUDA: $(nvcc --version 2>/dev/null | grep -oP 'release \K[0-9.]+' || echo 'not found')"
+              fi
             fi
 
             # NATS JetStream setup
@@ -558,17 +604,20 @@ EOF
 
         devShells.fly = pkgs.mkShell {
           name = "singularity-fly";
-          buildInputs = [
-            pkgs.flyctl
-            pkgs.just
-            pkgs.git
-            pkgs.curl
-            pkgs.openssl
-            pkgs.jq
-            pkgs.podman
-            pkgs.skopeo
-            pkgs.buildah
-          ];
+          buildInputs =
+            [
+              pkgs.flyctl
+              pkgs.just
+              pkgs.git
+              pkgs.curl
+              pkgs.openssl
+              pkgs.jq
+            ]
+            ++ lib.optionals isLinux [
+              pkgs.podman
+              pkgs.skopeo
+              pkgs.buildah
+            ];
           shellHook = ''
             export LC_ALL=C.UTF-8
             export LANG=C.UTF-8
@@ -608,14 +657,20 @@ EOF
             # Add cargo bin to PATH for cargo-binstall, cargo-quickinstall, etc.
             export PATH="$CARGO_HOME/bin:$PATH"
 
-            # CUDA setup for GPU-accelerated development
-            export CUDA_HOME="${pkgs.cudaPackages.cudatoolkit}"
-            export CUDA_PATH="${pkgs.cudaPackages.cudatoolkit}"
-            export PATH="${pkgs.cudaPackages.cudatoolkit}/bin:$PATH"
-            export LD_LIBRARY_PATH="${pkgs.cudaPackages.cudatoolkit}/lib:$LD_LIBRARY_PATH"
+            if [ -n "${cudaToolkitPath}" ]; then
+              # CUDA setup for GPU-accelerated development
+              export CUDA_HOME="${cudaToolkitPath}"
+              export CUDA_PATH="${cudaToolkitPath}"
+              export PATH="${cudaBinPath}:$PATH"
+              export LD_LIBRARY_PATH="${cudaToolkitLibPath}:''${LD_LIBRARY_PATH:-}"
+            fi
 
             # OpenSSL for Rust NIF compilation and runtime
-            export LD_LIBRARY_PATH="${pkgs.openssl}/lib:$LD_LIBRARY_PATH"
+            export OPENSSL_DIR="${pkgs.openssl.out}"
+            export OPENSSL_LIB_DIR="${pkgs.openssl.out}/lib"
+            export OPENSSL_INCLUDE_DIR="${pkgs.openssl.dev}/include"
+            export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig:$PKG_CONFIG_PATH"
+            export LD_LIBRARY_PATH="${pkgs.openssl.out}/lib:${pkgs.zlib.out}/lib:$LD_LIBRARY_PATH"
 
             # Ensure just is available
             export PATH="${pkgs.just}/bin:$PATH"
@@ -668,13 +723,20 @@ EOF
             export HF_HOME="$PWD/.cache/huggingface"
             export TRANSFORMERS_CACHE="$PWD/.cache/huggingface"
             export HF_DATASETS_CACHE="$PWD/.cache/huggingface"
-            export CUDA_HOME=${pkgs.cudaPackages.cudatoolkit}
-            export CUDNN_HOME=${pkgs.cudaPackages.cudnn}
-            export LD_LIBRARY_PATH=${pkgs.cudaPackages.cudatoolkit}/lib:${pkgs.cudaPackages.cudnn}/lib:''${LD_LIBRARY_PATH:-}
+            if [ -n "${cudaToolkitPath}" ]; then
+              export CUDA_HOME="${cudaToolkitPath}"
+              export CUDNN_HOME="${cudaCudnnPath}"
+              export LD_LIBRARY_PATH="${cudaToolkitLibPath}:${cudaCudnnLibPath}:''${LD_LIBRARY_PATH:-}"
+            fi
             mkdir -p "$HF_HOME"
 
             # OpenSSL for any Rust dependencies
-            export LD_LIBRARY_PATH="${pkgs.openssl}/lib:$LD_LIBRARY_PATH"
+            export OPENSSL_DIR="${pkgs.openssl.out}"
+            export OPENSSL_LIB_DIR="${pkgs.openssl.out}/lib"
+            export OPENSSL_INCLUDE_DIR="${pkgs.openssl.dev}/include"
+            export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig:$PKG_CONFIG_PATH"
+            export LD_LIBRARY_PATH="${pkgs.openssl.out}/lib:${pkgs.zlib.out}/lib:$LD_LIBRARY_PATH"
+
             echo "🤖 LLM training shell ready"
             echo "  Python: $(python3 --version)"
             echo "  PyTorch CUDA build: $(python3 -c \"import torch; print(torch.version.cuda if torch.cuda.is_available() else 'cpu')\" 2>/dev/null || echo 'not found')"

@@ -10,8 +10,8 @@ use chrono::{DateTime, Utc};
 
 // Use universal parser framework - it handles all language parsers internally
 use parser_code::{
-    UniversalParser, 
-    UniversalParserFrameworkConfig,
+    PolyglotCodeParser, 
+    PolyglotCodeParserFrameworkConfig,
     dependencies::UniversalDependencies,
     languages::ProgrammingLanguage,
     AnalysisResult,
@@ -436,7 +436,7 @@ pub struct SemanticSearchEngine {
     architecture_analyzer: ArchitectureAnalyzer,
     security_analyzer: SecurityAnalyzer,
     code_documents: HashMap<String, CodeDocument>,
-    universal_parser: UniversalParser,
+    universal_parser: PolyglotCodeParser,
 }
 
 /// Trait for code parsers
@@ -568,8 +568,8 @@ pub struct CompliancePattern {
 impl SemanticSearchEngine {
     pub fn new() -> Result<Self> {
         // Initialize universal parser framework with all language plugins
-        let config = UniversalParserFrameworkConfig::default();
-        let universal_parser = UniversalParser::new_with_config(config)?;
+        let config = PolyglotCodeParserFrameworkConfig::default();
+        let universal_parser = PolyglotCodeParser::new_with_config(config)?;
         
         Ok(Self {
             pattern_registry: PatternRegistry::new(),

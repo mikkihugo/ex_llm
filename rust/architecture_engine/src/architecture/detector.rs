@@ -283,9 +283,7 @@ impl ArchitecturePatternRegistry {
     }
 
     /// Analyze code for architectural patterns and violations (pure analysis)
-    pub fn analyze(&self, _content: &str, _file_path: &str) -> Result<ArchitectureAnalysis> {
-        // PSEUDO CODE:
-        /*
+    pub fn analyze(&self, content: &str, file_path: &str) -> Result<ArchitectureAnalysis> {
         let mut patterns = Vec::new();
         let mut principles = Vec::new();
         let mut violations = Vec::new();
@@ -314,6 +312,10 @@ impl ArchitecturePatternRegistry {
         // Generate recommendations using implemented method
         let recommendations = self.generate_recommendations(&patterns, &principles, &violations);
 
+        // Calculate metadata before moving vectors
+        let patterns_count = patterns.len();
+        let violations_count = violations.len();
+
         Ok(ArchitectureAnalysis {
             patterns,
             principles,
@@ -323,25 +325,8 @@ impl ArchitecturePatternRegistry {
             metadata: ArchitectureMetadata {
                 analysis_time: chrono::Utc::now(),
                 files_analyzed: 1,
-                patterns_detected: patterns.len(),
-                violations_found: violations.len(),
-                detector_version: "1.0.0".to_string(),
-                fact_system_version: self.fact_system_client.get_version(),
-            },
-        })
-        */
-
-        Ok(ArchitectureAnalysis {
-            patterns: Vec::new(),
-            principles: Vec::new(),
-            violations: Vec::new(),
-            architecture_score: 1.0,
-            recommendations: Vec::new(),
-            metadata: ArchitectureMetadata {
-                analysis_time: chrono::Utc::now(),
-                files_analyzed: 1,
-                patterns_detected: 0,
-                violations_found: 0,
+                patterns_detected: patterns_count,
+                violations_found: violations_count,
                 detector_version: "1.0.0".to_string(),
                 fact_system_version: "1.0.0".to_string(),
             },

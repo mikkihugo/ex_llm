@@ -347,40 +347,13 @@ defmodule Singularity.Learning.PatternMiner do
 
   defp extract_design_patterns(file) do
     try do
-      # Use LLM to identify patterns from code
-      prompt = """
-      Analyze this code file and identify design patterns, architectural patterns, and code structures:
-
-      File: #{file.path}
-      Content:
-      #{file.content}
-
-      Identify:
-      1. Design patterns (Singleton, Factory, Observer, etc.)
-      2. Architectural patterns (MVC, Repository, Service Layer, etc.)
-      3. Code structures (Error handling, Validation, Logging, etc.)
-      4. Quality indicators (Testability, Maintainability, Performance)
-
-      Return JSON format:
-      {
-        "patterns": [
-          {
-            "name": "pattern_name",
-            "type": "design|architectural|structural",
-            "confidence": 0.0-1.0,
-            "description": "explanation",
-            "location": "specific code section"
-          }
-        ],
-        "quality_score": 0.0-1.0,
-        "summary": "overall assessment"
-      }
-      """
-
-      case Singularity.LLM.Service.call(:complex, [%{role: "user", content: prompt}],
-             task_type: "pattern_analyzer",
-             capabilities: [:analysis, :reasoning]
-           ) do
+      # Use Lua script for pattern extraction
+      case Singularity.LLM.Service.call_with_script(
+        "patterns/extract-design-patterns.lua",
+        %{file: file},
+        complexity: :complex,
+        task_type: :pattern_analyzer
+      ) do
         {:ok, %{text: response}} ->
           case Jason.decode(response) do
             {:ok, %{"patterns" => patterns, "quality_score" => quality_score, "summary" => summary}} ->

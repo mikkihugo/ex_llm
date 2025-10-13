@@ -12,8 +12,6 @@
 //! via NATS and direct database access.
 
 use rustler::{Encoder, Env, NifMap, NifResult, Term};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::path::Path;
 
 // Include all the existing modules
@@ -32,7 +30,6 @@ pub mod knowledge;
 // Include the moved components
 pub mod package_registry;
 pub mod framework_detection;
-// framework_detection and intelligent_namer are now modules within this crate
 
 // Include the NIF module
 #[cfg(feature = "nif")]

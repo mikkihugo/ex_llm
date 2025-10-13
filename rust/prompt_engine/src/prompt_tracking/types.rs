@@ -9,47 +9,43 @@ use serde::{Deserialize, Serialize};
 ///
 /// **Storage Scope**: Global cross-project prompt execution tracking only
 ///
-/// For per-project code data (parsed code, metrics), use `CodeStorage` from analysis-suite instead.
-/// For GitHub code snippets, use external `fact-system` package instead.
+/// For per-project code data (parsed code, metrics), use `code_engine::CodeStorage` instead.
 /// This keeps prompt tracking focused on execution data and learning.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PromptExecutionData {
     /// Code index information (high-level metadata)
-    CodeIndex(CodeIndexFact),
+    CodeIndex(CodeIndexEntry),
 
     /// All frameworks and languages detected in a project
-    ProjectTechStack(ProjectTechStackFact),
+    ProjectTechStack(ProjectTechStackEntry),
 
     /// Single framework or library detected
-    DetectedFramework(DetectedFrameworkFact),
+    DetectedFramework(DetectedFrameworkEntry),
 
     /// Coding patterns learned from multiple projects
-    LearnedCodePattern(LearnedCodePatternFact),
+    LearnedCodePattern(LearnedCodePatternEntry),
 
     /// Prompt execution history (performance tracking)
-    PromptExecution(PromptExecutionFact),
+    PromptExecution(PromptExecutionEntry),
 
     /// User feedback on prompts (quality improvement)
-    PromptFeedback(PromptFeedbackFact),
+    PromptFeedback(PromptFeedbackEntry),
 
     /// Context signature for matching (similarity search)
-    ContextSignature(ContextSignatureFact),
+    ContextSignature(ContextSignatureEntry),
 
     /// Prompt evolution tracking (A/B testing, optimization)
-    PromptEvolution(PromptEvolutionFact),
+    PromptEvolution(PromptEvolutionEntry),
 
     /// A/B test results (experimentation data)
-    ABTestResult(ABTestResultFact),
-    // REMOVED: ParsedCode - use analysis-suite::CodeStorage instead (per-project)
-    // REMOVED: CodeMetrics - use analysis-suite::CodeStorage instead (per-project)
+    ABTestResult(ABTestResultEntry),
+    // REMOVED: ParsedCode - use code_engine::CodeStorage instead (per-project)
+    // REMOVED: CodeMetrics - use code_engine::CodeStorage instead (per-project)
 }
 
-/// Alias for backward compatibility
-pub type PromptFactType = PromptExecutionData;
-
-/// Code index fact
+/// Code index entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CodeIndexFact {
+pub struct CodeIndexEntry {
     pub file_path: String,
     pub language: String,
     pub module_type: String,
@@ -61,7 +57,7 @@ pub struct CodeIndexFact {
 
 /// All frameworks and languages detected in a project
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProjectTechStackFact {
+pub struct ProjectTechStackEntry {
     pub technology: String,
     pub version: String,
     pub category: TechCategory,
@@ -73,7 +69,7 @@ pub struct ProjectTechStackFact {
 
 /// Single framework or library detected
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DetectedFrameworkFact {
+pub struct DetectedFrameworkEntry {
     pub technology: String,
     pub version: String,
     pub category: TechCategory,
@@ -99,7 +95,7 @@ pub enum TechCategory {
 
 /// Coding patterns learned from multiple projects
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LearnedCodePatternFact {
+pub struct LearnedCodePatternEntry {
     pub pattern_type: String,
     pub pattern_name: String,
     pub confidence: f64,
@@ -110,9 +106,9 @@ pub struct LearnedCodePatternFact {
     pub description: String,
 }
 
-/// Prompt execution fact
+/// Prompt execution entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PromptExecutionFact {
+pub struct PromptExecutionEntry {
     pub prompt_id: String,
     pub execution_time_ms: u64,
     pub success: bool,
@@ -123,9 +119,9 @@ pub struct PromptExecutionFact {
     pub metadata: HashMap<String, String>,
 }
 
-/// Prompt feedback fact
+/// Prompt feedback entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PromptFeedbackFact {
+pub struct PromptFeedbackEntry {
     pub prompt_id: String,
     pub feedback_type: FeedbackType,
     pub rating: f64,
@@ -146,9 +142,9 @@ pub enum FeedbackType {
     Other,
 }
 
-/// Context signature fact
+/// Context signature entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ContextSignatureFact {
+pub struct ContextSignatureEntry {
     pub signature_hash: String,
     pub project_tech_stack: Vec<String>,
     pub project_type: String,
@@ -157,9 +153,9 @@ pub struct ContextSignatureFact {
     pub metadata: HashMap<String, String>,
 }
 
-/// Prompt evolution fact
+/// Prompt evolution entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PromptEvolutionFact {
+pub struct PromptEvolutionEntry {
     pub original_prompt_id: String,
     pub evolved_prompt_id: String,
     pub evolution_type: EvolutionType,
@@ -179,9 +175,9 @@ pub enum EvolutionType {
     Other,
 }
 
-/// A/B test result fact
+/// A/B test result entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ABTestResultFact {
+pub struct ABTestResultEntry {
     pub test_id: String,
     pub variant_a_prompt_id: String,
     pub variant_b_prompt_id: String,
@@ -201,11 +197,11 @@ pub enum TestVariant {
     Tie,
 }
 
-/// Query types for fact storage
+/// Query types for prompt tracking storage
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum FactQuery {
+pub enum PromptTrackingQuery {
     ById(String),
-    Similar(ContextSignatureFact),
+    Similar(ContextSignatureEntry),
     ByTechStack(Vec<String>),
     PromptExecutions(String),
     RecentFeedback(Duration),
@@ -213,16 +209,16 @@ pub enum FactQuery {
     HighPerformance(f64),
 }
 
-/// Fact result wrapper
+/// Prompt tracking result wrapper
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FactResult<T> {
+pub struct PromptTrackingResult<T> {
     pub data: T,
-    pub metadata: FactMetadata,
+    pub metadata: PromptTrackingMetadata,
 }
 
-/// Fact metadata
+/// Prompt tracking metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FactMetadata {
+pub struct PromptTrackingMetadata {
     pub id: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -240,3 +236,43 @@ pub struct ImprovementMetrics {
     pub measurement_period: Duration,
     pub sample_size: usize,
 }
+
+// ============================================================================
+// Backward Compatibility Aliases (deprecated - use new names above)
+// ============================================================================
+
+/// @deprecated Use `CodeIndexEntry` instead
+pub type CodeIndexFact = CodeIndexEntry;
+
+/// @deprecated Use `ProjectTechStackEntry` instead
+pub type ProjectTechStackFact = ProjectTechStackEntry;
+
+/// @deprecated Use `DetectedFrameworkEntry` instead
+pub type DetectedFrameworkFact = DetectedFrameworkEntry;
+
+/// @deprecated Use `LearnedCodePatternEntry` instead
+pub type LearnedCodePatternFact = LearnedCodePatternEntry;
+
+/// @deprecated Use `PromptExecutionEntry` instead
+pub type PromptExecutionFact = PromptExecutionEntry;
+
+/// @deprecated Use `PromptFeedbackEntry` instead
+pub type PromptFeedbackFact = PromptFeedbackEntry;
+
+/// @deprecated Use `ContextSignatureEntry` instead
+pub type ContextSignatureFact = ContextSignatureEntry;
+
+/// @deprecated Use `PromptEvolutionEntry` instead
+pub type PromptEvolutionFact = PromptEvolutionEntry;
+
+/// @deprecated Use `ABTestResultEntry` instead
+pub type ABTestResultFact = ABTestResultEntry;
+
+/// @deprecated Use `PromptTrackingQuery` instead
+pub type FactQuery = PromptTrackingQuery;
+
+/// @deprecated Use `PromptTrackingResult` instead
+pub type FactResult<T> = PromptTrackingResult<T>;
+
+/// @deprecated Use `PromptTrackingMetadata` instead
+pub type FactMetadata = PromptTrackingMetadata;
