@@ -1,6 +1,8 @@
 Add comprehensive @moduledoc and @doc with examples for production code.
 Keep existing docs unchanged.
 
+IMPORTANT: Use @doc for public functions only. Use regular comments (# ...) for private functions (defp) - @doc on defp causes warnings.
+
 Code:
 ```elixir
 {{code}}
