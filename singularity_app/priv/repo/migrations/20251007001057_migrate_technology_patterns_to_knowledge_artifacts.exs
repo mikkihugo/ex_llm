@@ -5,15 +5,14 @@ defmodule Singularity.Repo.Migrations.MigrateTechnologyPatternsToKnowledgeArtifa
 
   def up do
     # Migrate existing technology_patterns to knowledge_artifacts
+    # Note: usage_count/success_rate stored in content JSONB, not as columns
     execute """
-    INSERT INTO knowledge_artifacts 
-      (id, artifact_type, artifact_id, language, content_raw, content, embedding, 
-       usage_count, success_rate, tags, metadata, inserted_at, updated_at)
-    SELECT 
+    INSERT INTO knowledge_artifacts
+      (id, artifact_type, artifact_id, content_raw, content, embedding, inserted_at, updated_at)
+    SELECT
       gen_random_uuid(),
       'technology_pattern' AS artifact_type,
       LOWER(REGEXP_REPLACE(name, '[^a-zA-Z0-9]+', '_', 'g')) AS artifact_id,
-      COALESCE(language, 'unknown') AS language,
       -- Build raw JSON from technology_pattern fields
       jsonb_build_object(
         'name', name,
@@ -27,7 +26,9 @@ defmodule Singularity.Repo.Migrations.MigrateTechnologyPatternsToKnowledgeArtifa
         'test_command', test_command,
         'install_command', install_command,
         'detection_count', detection_count,
-        'last_detected_at', last_detected_at
+        'last_detected_at', last_detected_at,
+        'success_rate', COALESCE(success_rate, 0.0),
+        'tags', ARRAY[]::text[]
       )::text AS content_raw,
       -- Same JSON as JSONB
       jsonb_build_object(
@@ -42,50 +43,53 @@ defmodule Singularity.Repo.Migrations.MigrateTechnologyPatternsToKnowledgeArtifa
         'test_command', test_command,
         'install_command', install_command,
         'detection_count', detection_count,
-        'last_detected_at', last_detected_at
+        'last_detected_at', last_detected_at,
+        'success_rate', COALESCE(success_rate, 0.0),
+        'tags', ARRAY[]::text[]
       ) AS content,
       pattern_embedding AS embedding,
-      detection_count AS usage_count,
-      COALESCE(success_rate, 0.0) AS success_rate,
-      ARRAY[]::text[] AS tags,
-      jsonb_build_object('migrated_from', 'technology_patterns') AS metadata,
       COALESCE(inserted_at, NOW()) AS inserted_at,
       COALESCE(updated_at, NOW()) AS updated_at
     FROM technology_patterns
     WHERE NOT EXISTS (
-      SELECT 1 FROM knowledge_artifacts ka 
-      WHERE ka.artifact_type = 'technology_pattern' 
+      SELECT 1 FROM knowledge_artifacts ka
+      WHERE ka.artifact_type = 'technology_pattern'
         AND ka.content->>'name' = technology_patterns.name
     );
     """
 
     # Migrate existing technology_templates to knowledge_artifacts
+    # Note: Merge metadata into content JSONB
     execute """
-    INSERT INTO knowledge_artifacts 
-      (id, artifact_type, artifact_id, language, content_raw, content, embedding,
-       usage_count, tags, metadata, inserted_at, updated_at)
-    SELECT 
+    INSERT INTO knowledge_artifacts
+      (id, artifact_type, artifact_id, content_raw, content, embedding, inserted_at, updated_at)
+    SELECT
       gen_random_uuid(),
       'code_template_framework' AS artifact_type,
       LOWER(REGEXP_REPLACE(name, '[^a-zA-Z0-9]+', '_', 'g')) AS artifact_id,
-      COALESCE(language, 'unknown') AS language,
-      -- Build raw JSON
-      template_content::text AS content_raw,
-      template_content AS content,
-      NULL AS embedding,
-      0 AS usage_count,
-      ARRAY[]::text[] AS tags,
-      jsonb_build_object(
+      -- Build raw JSON merging template_content with metadata
+      (template_content || jsonb_build_object(
         'migrated_from', 'technology_templates',
         'category', category,
-        'version', version
-      ) AS metadata,
+        'version', version,
+        'language', COALESCE(language, 'unknown'),
+        'tags', ARRAY[]::text[]
+      ))::text AS content_raw,
+      -- Same JSON as JSONB
+      template_content || jsonb_build_object(
+        'migrated_from', 'technology_templates',
+        'category', category,
+        'version', version,
+        'language', COALESCE(language, 'unknown'),
+        'tags', ARRAY[]::text[]
+      ) AS content,
+      NULL AS embedding,
       COALESCE(inserted_at, NOW()) AS inserted_at,
       COALESCE(updated_at, NOW()) AS updated_at
     FROM technology_templates
     WHERE NOT EXISTS (
-      SELECT 1 FROM knowledge_artifacts ka 
-      WHERE ka.artifact_type = 'code_template_framework' 
+      SELECT 1 FROM knowledge_artifacts ka
+      WHERE ka.artifact_type = 'code_template_framework'
         AND ka.content->>'name' = technology_templates.name
     );
     """
