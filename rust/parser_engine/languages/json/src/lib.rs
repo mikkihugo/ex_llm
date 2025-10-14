@@ -1,7 +1,7 @@
 //! JSON parser implemented with tree-sitter and the parser-framework traits.
 
-use parser_framework::{
-    Comment, Function, Import, LanguageMetrics, LanguageParser, ParseError, AST,
+use parser_core::{
+    Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
 use tree_sitter::Parser;
@@ -43,15 +43,17 @@ impl LanguageParser for JsonParser {
     fn get_metrics(&self, ast: &AST) -> Result<LanguageMetrics, ParseError> {
         // JSON doesn't have traditional code metrics, but we can count objects/arrays
         Ok(LanguageMetrics {
-            lines_of_code: ast.source.lines().count(),
-            functions_count: 0,
-            imports_count: 0,
-            comments_count: 0,
-            ..LanguageMetrics::default()
+            lines_of_code: ast.content.lines().count() as u64,
+            lines_of_comments: 0, // JSON doesn't have comments
+            blank_lines: 0, // TODO: implement blank line counting
+            total_lines: ast.content.lines().count() as u64,
+            functions: 0, // JSON doesn't have functions
+            classes: 0, // JSON doesn't have classes
+            complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
 
-    fn get_functions(&self, _ast: &AST) -> Result<Vec<Function>, ParseError> {
+    fn get_functions(&self, _ast: &AST) -> Result<Vec<FunctionInfo>, ParseError> {
         // JSON has no functions
         Ok(Vec::new())
     }

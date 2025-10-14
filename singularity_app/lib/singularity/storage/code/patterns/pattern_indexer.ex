@@ -321,13 +321,14 @@ defmodule Singularity.PatternIndexer do
     FROM codebase_chunks
     WHERE language = $1
     AND (
-      #{Enum.map_join(1..min(length(keywords), 5), " OR ", fn i -> "content ILIKE $#{i + 1}" end)}
+      content ILIKE ANY(ARRAY[#{Enum.map_join(1..min(length(keywords), 5), ", ", fn i -> "$#{i + 1}" end)}])
     )
+    ORDER BY similarity(content, $#{min(length(keywords), 5) + 2}) DESC
     LIMIT 5
     """
 
     search_patterns = Enum.take(keywords, 5) |> Enum.map(&"%#{&1}%")
-    params = [language | search_patterns]
+    params = [language | search_patterns] ++ [keyword_query]
 
     case Repo.query(query, params) do
       {:ok, %{rows: rows}} ->

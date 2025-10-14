@@ -93,7 +93,7 @@ defmodule Singularity.MixProject do
       {:parser_engine,
        path: "../rust/parser_engine", runtime: false, app: false, compile: false, optional: true},
       {:prompt_engine,
-       path: "../rust/prompt_engine", runtime: false, app: false, compile: false},
+       path: "../rust/prompt_engine", runtime: false, app: false, compile: false, optional: true},
       {:quality_engine,
        path: "../rust/quality_engine", runtime: false, app: false, compile: false},
       # Other engines are symlinks to rust/ or rust-central/ directories (already included in workspace)

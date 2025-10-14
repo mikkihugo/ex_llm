@@ -318,6 +318,20 @@ defmodule Singularity.Tools.ToolSelector do
   end
 
   @doc """
+  Execute a tool with the given arguments.
+  """
+  def execute_tool(tool_name, args) do
+    case get_tool_guidance(tool_name) do
+      %{module: module, function: function} ->
+        # Execute the tool via the appropriate module
+        apply(module, function, [args])
+      
+      _ ->
+        {:error, "Tool not found: #{tool_name}"}
+    end
+  end
+
+  @doc """
   Get tool selection guidance for a specific scenario.
   """
   def get_selection_guidance(scenario) do

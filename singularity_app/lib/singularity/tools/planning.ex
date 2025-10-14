@@ -9,6 +9,7 @@ defmodule Singularity.Tools.Planning do
   - SPARC.Orchestrator - Task orchestration
   """
 
+  require Logger
   alias Singularity.Tools.Tool
   alias Singularity.Execution.Planning.{SafeWorkPlanner, HTDAGCore}
   alias Singularity.Execution.Autonomy.Planner

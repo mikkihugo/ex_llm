@@ -9,7 +9,7 @@ use regex::Regex;
 use chrono::{DateTime, Utc};
 
 // Use universal parser framework - it handles all language parsers internally
-use parser_code::{
+use parser_core::{
     PolyglotCodeParser, 
     PolyglotCodeParserFrameworkConfig,
     dependencies::UniversalDependencies,

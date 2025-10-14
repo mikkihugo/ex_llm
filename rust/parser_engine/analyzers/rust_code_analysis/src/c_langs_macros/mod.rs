@@ -38,7 +38,7 @@ mod tests {
   }
 
   #[test]
-  // FIXME: Ignoring this test temporarily due to a parse error (see issue: https://github.com/mozilla/rust-code-analysis/issues/1142),
+  // FIXME: Ignoring this test temporarily due to a parse error (see issue: https://github.com/singularity/rust-code-analysis/issues/1142),
   // in order to allow CI to pass until the issue is resolved.
   #[ignore]
   fn test_fn_id_strings() {

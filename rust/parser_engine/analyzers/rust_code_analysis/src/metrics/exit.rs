@@ -167,7 +167,7 @@ impl Exit for JavaCode {
   }
 }
 
-implement_metric_trait!(Exit, KotlinCode, PreprocCode, CcommentCode);
+implement_metric_trait!(Exit, KotlinCode, PreprocCode, CcommentCode, ElixirCode, ErlangCode, GleamCode, LuaCode);
 
 #[cfg(test)]
 mod tests {

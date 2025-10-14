@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 tree-sitter = { workspace = true }
 tree-sitter-gleam = { workspace = true }
-parser-framework = { path = "../../core" }
+parser_core = { path = "../../core" }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

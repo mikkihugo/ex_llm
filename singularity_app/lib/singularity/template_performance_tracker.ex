@@ -22,7 +22,6 @@ defmodule Singularity.TemplatePerformanceTracker do
 
   use GenServer
   require Logger
-
   alias Singularity.Execution.Planning.{HTDAG, HTDAGCore}
   alias Singularity.CodeStore
 

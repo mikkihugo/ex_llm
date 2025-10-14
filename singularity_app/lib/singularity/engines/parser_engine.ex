@@ -24,6 +24,7 @@ defmodule Singularity.ParserEngine do
 
   require Logger
   alias Singularity.NatsClient
+  alias Singularity.BeamAnalysisEngine
 
   alias Singularity.Repo
   alias Singularity.Schemas.CodeFile
@@ -250,6 +251,17 @@ defmodule Singularity.ParserEngine do
       timeout: :infinity
     )
     |> Enum.map(&unwrap_stream_result/1)
+  end
+
+  @doc """
+  Perform comprehensive BEAM analysis for BEAM languages.
+  """
+  def analyze_beam_code(language, code, file_path) do
+    if BeamAnalysisEngine.beam_language?(language) do
+      BeamAnalysisEngine.analyze_beam_code(language, code, file_path)
+    else
+      {:error, "Not a BEAM language: #{language}"}
+    end
   end
 
   @doc """

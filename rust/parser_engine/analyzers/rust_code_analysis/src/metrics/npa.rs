@@ -250,7 +250,7 @@ impl Npa for JavaCode {
   }
 }
 
-implement_metric_trait!(Npa, PythonCode, MozjsCode, JavascriptCode, TypescriptCode, TsxCode, RustCode, CppCode, PreprocCode, CcommentCode, KotlinCode);
+implement_metric_trait!(Npa, ElixirCode, ErlangCode, GleamCode, LuaCode, PythonCode, MozjsCode, JavascriptCode, TypescriptCode, TsxCode, RustCode, CppCode, PreprocCode, CcommentCode, KotlinCode);
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,7 @@
 //! Python parser implemented with tree-sitter and the parser-framework traits.
 
-use parser_framework::{
-    Class, Comment, Decorator, Enum, EnumVariant, Function, Import, LanguageMetrics,
+use parser_core::{
+    Class, Comment, Decorator, Enum, EnumVariant, FunctionInfo, Import, LanguageMetrics,
     LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
@@ -31,22 +31,22 @@ impl PythonParser {
 
     fn build_class_info(&self, ast: &AST) -> Vec<ClassInfo> {
         let mut infos = Vec::new();
-        visit_nodes(ast.root(), "class_definition", &mut |node| {
+        visit_nodes(ast.tree.root_node(), "class_definition", &mut |node| {
             let name = node
                 .child_by_field_name("name")
-                .and_then(|n| n.utf8_text(ast.source.as_bytes()).ok())
+                .and_then(|n| n.utf8_text(ast.content.as_bytes()).ok())
                 .unwrap_or_default()
                 .to_string();
 
-            let bases = extract_bases(node, &ast.source);
-            let decorators = collect_python_decorators(node, &ast.source);
+            let bases = extract_bases(node, &ast.content);
+            let decorators = collect_python_decorators(node, &ast.content);
             let body_node = node.child_by_field_name("body");
             let body = body_node
-                .map(|b| slice_text(b, &ast.source))
+                .map(|b| slice_text(b, &ast.content))
                 .unwrap_or_default();
-            let docstring = body_node.and_then(|b| extract_docstring_from_block(b, &ast.source));
+            let docstring = body_node.and_then(|b| extract_docstring_from_block(b, &ast.content));
             let variants = body_node
-                .map(|b| collect_enum_variants(b, &ast.source))
+                .map(|b| collect_enum_variants(b, &ast.content))
                 .unwrap_or_default();
             let is_enum = bases.iter().any(|base| {
                 base.rsplit('.')
@@ -57,12 +57,10 @@ impl PythonParser {
 
             let class = Class {
                 name: name.clone(),
-                bases: bases.clone(),
-                decorators: decorators.clone(),
-                docstring: docstring.clone(),
-                start_line: node.start_position().row + 1,
-                end_line: node.end_position().row + 1,
-                body,
+                line_start: (node.start_position().row + 1) as u32,
+                line_end: (node.end_position().row + 1) as u32,
+                methods: Vec::new(), // TODO: implement method extraction
+                fields: Vec::new(), // TODO: implement field extraction
             };
 
             infos.push(ClassInfo {
@@ -96,68 +94,56 @@ impl LanguageParser for PythonParser {
         let imports = self.get_imports(ast)?;
         let comments = self.get_comments(ast)?;
         let class_infos = self.build_class_info(ast);
-        let enums = self.get_enums(ast)?;
-
-        let docstring_count = functions.iter().filter(|f| f.docstring.is_some()).count()
-            + class_infos
-                .iter()
-                .filter(|info| info.class.docstring.is_some())
-                .count();
 
         Ok(LanguageMetrics {
-            lines_of_code: ast.source.lines().count(),
-            functions_count: functions.len(),
-            imports_count: imports.len(),
-            comments_count: comments.len(),
-            classes_count: class_infos.len(),
-            enums_count: enums.len(),
-            docstrings_count: docstring_count,
+            lines_of_code: ast.content.lines().count() as u64,
+            lines_of_comments: comments.len() as u64,
+            blank_lines: 0, // TODO: implement blank line counting
+            total_lines: ast.content.lines().count() as u64,
+            functions: functions.len() as u64,
+            classes: class_infos.len() as u64,
+            complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
 
-    fn get_functions(&self, ast: &AST) -> Result<Vec<Function>, ParseError> {
+    fn get_functions(&self, ast: &AST) -> Result<Vec<FunctionInfo>, ParseError> {
         let mut functions = Vec::new();
 
-        visit_nodes(ast.root(), "function_definition", &mut |node| {
+        visit_nodes(ast.tree.root_node(), "function_definition", &mut |node| {
             let name = node
                 .child_by_field_name("name")
-                .and_then(|n| n.utf8_text(ast.source.as_bytes()).ok())
+                .and_then(|n| n.utf8_text(ast.content.as_bytes()).ok())
                 .unwrap_or_default()
                 .to_string();
 
             let params = node
                 .child_by_field_name("parameters")
-                .and_then(|p| p.utf8_text(ast.source.as_bytes()).ok())
+                .and_then(|p| p.utf8_text(ast.content.as_bytes()).ok())
                 .unwrap_or("()");
 
             let return_type = node
                 .child_by_field_name("return_type")
-                .and_then(|r| r.utf8_text(ast.source.as_bytes()).ok())
+                .and_then(|r| r.utf8_text(ast.content.as_bytes()).ok())
                 .unwrap_or_default()
                 .to_string();
 
             let body_node = node.child_by_field_name("body");
             let body = body_node
-                .map(|b| slice_text(b, &ast.source))
+                .map(|b| slice_text(b, &ast.content))
                 .unwrap_or_default();
-            let docstring = body_node.and_then(|b| extract_docstring_from_block(b, &ast.source));
-            let decorators = collect_python_decorators(node, &ast.source);
-            let is_async = is_async_function(node, &ast.source);
+            let docstring = body_node.and_then(|b| extract_docstring_from_block(b, &ast.content));
+            let decorators = collect_python_decorators(node, &ast.content);
+            let is_async = is_async_function(node, &ast.content);
             let is_generator = is_generator_body(&body);
             let signature = Some(build_signature(&name, &params, &return_type));
 
-            functions.push(Function {
+            functions.push(FunctionInfo {
                 name: name.to_string(),
-                parameters: params.to_string(),
-                return_type: return_type.clone(),
-                start_line: node.start_position().row + 1,
-                end_line: node.end_position().row + 1,
-                body,
-                signature,
-                docstring,
-                decorators,
-                is_async,
-                is_generator,
+                parameters: params.split(',').map(|s| s.trim().to_string()).collect(),
+                return_type: Some(return_type.clone()),
+                line_start: (node.start_position().row + 1) as u32,
+                line_end: (node.end_position().row + 1) as u32,
+                complexity: 0,
             });
         });
 
@@ -176,12 +162,12 @@ impl LanguageParser for PythonParser {
                 module_name: (dotted_name)? @module) @from_import
         "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = tree_sitter::QueryCursor::new();
         let mut imports = Vec::new();
 
-        let mut captures = cursor.captures(&query, ast.root(), ast.source.as_bytes());
+        let mut captures = cursor.captures(&query, ast.tree.root_node(), ast.content.as_bytes());
         while let Some(&(ref m, _)) = captures.next() {
             let mut module = "";
             let mut kind = "import";
@@ -192,7 +178,7 @@ impl LanguageParser for PythonParser {
                     0 | 2 => {
                         module = capture
                             .node
-                            .utf8_text(ast.source.as_bytes())
+                            .utf8_text(ast.content.as_bytes())
                             .unwrap_or_default();
                     }
                     1 => {
@@ -209,11 +195,9 @@ impl LanguageParser for PythonParser {
 
             if let Some(node) = node_ref {
                 imports.push(Import {
-                    path: module.to_string(),
-                    kind: kind.to_string(),
-                    start_line: node.start_position().row + 1,
-                    end_line: node.end_position().row + 1,
-                    alias: None,
+                    module: module.to_string(),
+                    items: Vec::new(),
+                    line: (node.start_position().row + 1) as u32,
                 });
             }
         }
@@ -224,25 +208,24 @@ impl LanguageParser for PythonParser {
     fn get_comments(&self, ast: &AST) -> Result<Vec<Comment>, ParseError> {
         let language = &tree_sitter_python::LANGUAGE.into();
         let query = tree_sitter::Query::new(language, r#"(comment) @comment"#)
-            .map_err(|err| ParseError::QueryError(err.to_string()))?;
+            .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = tree_sitter::QueryCursor::new();
         let mut comments = Vec::new();
 
-        let mut captures = cursor.captures(&query, ast.root(), ast.source.as_bytes());
+        let mut captures = cursor.captures(&query, ast.tree.root_node(), ast.content.as_bytes());
         while let Some(&(ref m, _)) = captures.next() {
             for capture in m.captures {
                 let text = capture
                     .node
-                    .utf8_text(ast.source.as_bytes())
+                    .utf8_text(ast.content.as_bytes())
                     .unwrap_or_default();
                 let start = capture.node.start_position().row + 1;
                 let end = capture.node.end_position().row + 1;
                 comments.push(Comment {
-                    text: text.to_string(),
-                    kind: "line".to_string(),
-                    start_line: start,
-                    end_line: end,
+                    content: text.to_string(),
+                    line: start as u32,
+                    column: 0, // TODO: implement column counting
                 });
             }
         }
@@ -250,36 +233,6 @@ impl LanguageParser for PythonParser {
         Ok(comments)
     }
 
-    fn get_classes(&self, ast: &AST) -> Result<Vec<Class>, ParseError> {
-        Ok(self
-            .build_class_info(ast)
-            .into_iter()
-            .map(|info| info.class)
-            .collect())
-    }
-
-    fn get_enums(&self, ast: &AST) -> Result<Vec<Enum>, ParseError> {
-        let infos = self.build_class_info(ast);
-        let mut enums = Vec::new();
-        for info in infos {
-            if info.is_enum {
-                let ClassInfo {
-                    class,
-                    enum_variants,
-                    is_enum: _,
-                } = info;
-                enums.push(Enum {
-                    name: class.name,
-                    variants: enum_variants,
-                    decorators: class.decorators,
-                    docstring: class.docstring,
-                    start_line: class.start_line,
-                    end_line: class.end_line,
-                });
-            }
-        }
-        Ok(enums)
-    }
 
     fn get_language(&self) -> &str {
         "python"
@@ -390,7 +343,7 @@ fn collect_python_decorators(node: Node<'_>, source: &str) -> Vec<Decorator> {
                     if let Ok(text) = child.utf8_text(source.as_bytes()) {
                         let text = text.trim().trim_start_matches('@');
                         let (name, arguments) = parse_decorator_text(text);
-                        decorators.push(Decorator { name, arguments });
+                        decorators.push(Decorator { name, line: 0, arguments });
                     }
                 }
             }
@@ -504,8 +457,7 @@ fn collect_enum_variants(body: Node<'_>, source: &str) -> Vec<EnumVariant> {
                         variants.push(EnumVariant {
                             name,
                             value,
-                            start_line: assignment.start_position().row + 1,
-                            end_line: assignment.end_position().row + 1,
+                            line: (assignment.start_position().row + 1) as u32,
                         });
                     }
                 }

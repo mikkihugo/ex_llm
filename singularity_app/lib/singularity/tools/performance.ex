@@ -14,6 +14,7 @@ defmodule Singularity.Tools.Performance do
   Essential for maintaining optimal system performance and scalability.
   """
 
+  require Logger
   alias Singularity.Tools.{Tool, Catalog}
 
   def register(provider) do

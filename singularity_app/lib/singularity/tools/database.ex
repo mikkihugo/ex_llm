@@ -12,6 +12,7 @@ defmodule Singularity.Tools.Database do
   All operations are read-only by default, with explicit confirmation for destructive operations.
   """
 
+  require Logger
   alias Singularity.Tools.{Tool, Catalog}
 
   def register(provider) do

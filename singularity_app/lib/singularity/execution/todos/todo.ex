@@ -82,6 +82,29 @@ defmodule Singularity.Execution.Todos.Todo do
   end
 
   @doc """
+  Changeset for updating a todo.
+  """
+  def changeset(todo, attrs) do
+    todo
+    |> cast(attrs, [
+      :title,
+      :description,
+      :priority,
+      :complexity,
+      :parent_todo_id,
+      :depends_on_ids,
+      :tags,
+      :context,
+      :estimated_duration_seconds,
+      :max_retries
+    ])
+    |> validate_inclusion(:priority, 1..5)
+    |> validate_inclusion(:complexity, @valid_complexities)
+    |> validate_length(:title, min: 1, max: 500)
+    |> validate_length(:description, max: 5000)
+  end
+
+  @doc """
   Changeset for updating todo status.
   """
   def status_changeset(todo, attrs) do

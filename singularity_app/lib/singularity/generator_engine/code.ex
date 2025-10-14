@@ -1,6 +1,7 @@
 defmodule Singularity.GeneratorEngine.Code do
   @moduledoc false
 
+  require Logger
   alias Singularity.GeneratorEngine.Util
   alias Singularity.RAGCodeGenerator
 

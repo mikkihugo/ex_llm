@@ -17,7 +17,7 @@ mk_langs!(
   // 6) tree-sitter function to call to get a Language
   // 7) file extensions
   // 8) emacs modes
-  // Mozilla JS removed - using standard JavaScript parser
+  // Singularity JS removed - using standard JavaScript parser
   // (
   //     Mozjs,
   //     "The `Mozjs` language is variant of the `JavaScript` language",
@@ -54,12 +54,19 @@ mk_langs!(
   ),
   (Python, "The `Python` language", "python", PythonCode, PythonParser, tree_sitter_python, [py], ["python"]),
   (Tsx, "The `Tsx` language incorporates the `JSX` syntax inside `TypeScript`", "typescript", TsxCode, TsxParser, tree_sitter_tsx, [tsx], []),
-  (Typescript, "The `TypeScript` language", "typescript", TypescriptCode, TypescriptParser, tree_sitter_typescript, [ts, jsw, jsmw], ["typescript"]) /* Mozilla custom parsers removed - using standard tree-sitter parsers only
+  (Typescript, "The `TypeScript` language", "typescript", TypescriptCode, TypescriptParser, tree_sitter_typescript, [ts, jsw, jsmw], ["typescript"]),
+  // BEAM languages - Full RCA metrics support enabled!
+  (Elixir, "The `Elixir` language", "elixir", ElixirCode, ElixirParser, tree_sitter_elixir, [ex, exs], ["elixir"]),
+  (Erlang, "The `Erlang` language", "erlang", ErlangCode, ErlangParser, tree_sitter_erlang, [erl, hrl], ["erlang"]),
+  (Gleam, "The `Gleam` language", "gleam", GleamCode, GleamParser, tree_sitter_gleam, [gleam], ["gleam"]),
+  // Lua - Scripting language
+  (Lua, "The `Lua` language", "lua", LuaCode, LuaParser, tree_sitter_lua, [lua], ["lua"])
+  /* Singularity custom parsers removed - using standard tree-sitter parsers only
                                                                                                                                                       * - Ccomment: Use standard C/C++ parser for comment analysis
                                                                                                                                                       * - Preproc: Use standard C/C++ parser for macro analysis */
 );
 
-// Compatibility structs for Mozilla custom parsers - functionality delegated to standard parsers
+// Compatibility structs for Singularity custom parsers - functionality delegated to standard parsers
 pub struct MozjsCode;
 pub struct PreprocCode;
 pub struct CcommentCode;

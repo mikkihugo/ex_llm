@@ -171,7 +171,7 @@ impl CodeAnalysisEngine {
       context: serde_json::json!({
         "analyzer_version": "1.0.0",
         "timestamp": chrono::Utc::now(),
-        "mozilla_analysis": true
+        "singularity_analysis": true
       }),
     })
   }

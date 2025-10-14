@@ -116,8 +116,10 @@
 //! operation routing, NIF interface, Rust native functions, Elixir NIF wrapper
 
 use rustler::{Encoder, Env, Error, Term};
-use crate::package_registry::{PackageCollectionRequest, PackageCollectionResult};
-use crate::framework_detection::{FrameworkDetectionRequest, FrameworkDetectionResult};
+// TODO: Define PackageCollectionRequest, PackageCollectionResult, PackageInfo types when implementing package collection
+// use package::{PackageCollectionRequest, PackageCollectionResult};
+// TODO: Use simplified Framework type from framework_detection module
+// use crate::framework_detection::{FrameworkDetectionRequest, FrameworkDetectionResult};
 use crate::technology_detection::{TechnologyDetectionRequest, TechnologyDetectionResult};
 use crate::architecture::{ArchitecturalSuggestionRequest, ArchitecturalSuggestion};
 
@@ -140,12 +142,13 @@ mod atoms {
 pub fn architecture_engine_call<'a>(env: Env<'a>, operation: Term<'a>, request: Term<'a>) -> Result<Term<'a>, Error> {
     
     match operation.decode::<String>()?.as_str() {
-        "detect_frameworks" => {
-            let req: FrameworkDetectionRequest = request.decode()?;
-            // This will integrate with central framework pattern database
-            let results = detect_frameworks_with_central_integration(req);
-            Ok((atoms::ok(), results).encode(env))
-        }
+        // TODO: Implement when framework detection types are updated
+        // "detect_frameworks" => {
+        //     let req: FrameworkDetectionRequest = request.decode()?;
+        //     // This will integrate with central framework pattern database
+        //     let results = detect_frameworks_with_central_integration(req);
+        //     Ok((atoms::ok(), results).encode(env))
+        // }
         
         "detect_technologies" => {
             let req: TechnologyDetectionRequest = request.decode()?;
@@ -161,12 +164,13 @@ pub fn architecture_engine_call<'a>(env: Env<'a>, operation: Term<'a>, request: 
             Ok((atoms::ok(), results).encode(env))
         }
         
-        "collect_package" => {
-            let req: PackageCollectionRequest = request.decode()?;
-            // This will integrate with central package registry
-            let results = collect_package_with_central_integration(req);
-            Ok((atoms::ok(), results).encode(env))
-        }
+        // TODO: Implement when PackageCollectionRequest/Result types are defined
+        // "collect_package" => {
+        //     let req: PackageCollectionRequest = request.decode()?;
+        //     // This will integrate with central package registry
+        //     let results = collect_package_with_central_integration(req);
+        //     Ok((atoms::ok(), results).encode(env))
+        // }
         
         "get_package_stats" => {
             let package_name: String = request.decode()?;
@@ -190,79 +194,83 @@ pub fn architecture_engine_call<'a>(env: Env<'a>, operation: Term<'a>, request: 
 
 /// Central integration functions (pure computation, data from Elixir)
 
-/// Detect frameworks with central database integration (REAL implementation)
-///
-/// This function receives:
-/// - code_patterns: Actual code patterns from the codebase
-/// - known_frameworks: Framework patterns fetched from PostgreSQL by Elixir
-///
-/// Pure computation - no I/O, just pattern matching
-fn detect_frameworks_with_central_integration(request: FrameworkDetectionRequest) -> Vec<FrameworkDetectionResult> {
-    let mut results = Vec::new();
-
-    // Match each code pattern against known frameworks from database
-    for code_pattern in &request.code_patterns {
-        let code_lower = code_pattern.to_lowercase();
-
-        for known_fw in &request.known_frameworks {
-            // Check if code matches any of the framework's patterns
-            let mut confidence = 0.0;
-            let mut evidence = Vec::new();
-
-            // Check file patterns
-            for file_pattern in &known_fw.file_patterns {
-                if code_lower.contains(&file_pattern.to_lowercase()) {
-                    confidence += 0.3;
-                    evidence.push(format!("file pattern: {}", file_pattern));
-                }
-            }
-
-            // Check directory patterns
-            for dir_pattern in &known_fw.directory_patterns {
-                if code_lower.contains(&dir_pattern.to_lowercase()) {
-                    confidence += 0.3;
-                    evidence.push(format!("directory pattern: {}", dir_pattern));
-                }
-            }
-
-            // Check config files
-            for config_file in &known_fw.config_files {
-                if code_lower.contains(&config_file.to_lowercase()) {
-                    confidence += 0.2;
-                    evidence.push(format!("config file: {}", config_file));
-                }
-            }
-
-            // Check framework name directly in code
-            if code_lower.contains(&known_fw.framework_name.to_lowercase()) {
-                confidence += 0.4;
-                evidence.push(format!("framework name in code: {}", known_fw.framework_name));
-            }
-
-            // Apply database confidence weight and success rate
-            if confidence > 0.0 {
-                confidence = (confidence * known_fw.confidence_weight * known_fw.success_rate).min(1.0);
-
-                if confidence >= request.confidence_threshold && !evidence.is_empty() {
-                    results.push(FrameworkDetectionResult {
-                        name: known_fw.framework_name.clone(),
-                        version: Some(known_fw.version_pattern.clone()),
-                        confidence,
-                        detected_by: "pattern_match_db".to_string(),
-                        evidence,
-                        pattern_id: Some(format!("{}_{}", known_fw.framework_name, known_fw.framework_type)),
-                    });
-                }
-            }
-        }
-    }
-
-    // Remove duplicates and sort by confidence
-    results.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
-    results.dedup_by(|a, b| a.name == b.name);
-
-    results
-}
+// TODO: Reimplement when framework detection types are updated
+// This function used old complex types (FrameworkDetectionRequest, FrameworkDetectionResult)
+// that were removed during simplification to match package_detection pattern
+//
+// /// Detect frameworks with central database integration (REAL implementation)
+// ///
+// /// This function receives:
+// /// - code_patterns: Actual code patterns from the codebase
+// /// - known_frameworks: Framework patterns fetched from PostgreSQL by Elixir
+// ///
+// /// Pure computation - no I/O, just pattern matching
+// fn detect_frameworks_with_central_integration(request: FrameworkDetectionRequest) -> Vec<FrameworkDetectionResult> {
+//     let mut results = Vec::new();
+//
+//     // Match each code pattern against known frameworks from database
+//     for code_pattern in &request.code_patterns {
+//         let code_lower = code_pattern.to_lowercase();
+//
+//         for known_fw in &request.known_frameworks {
+//             // Check if code matches any of the framework's patterns
+//             let mut confidence = 0.0;
+//             let mut evidence = Vec::new();
+//
+//             // Check file patterns
+//             for file_pattern in &known_fw.file_patterns {
+//                 if code_lower.contains(&file_pattern.to_lowercase()) {
+//                     confidence += 0.3;
+//                     evidence.push(format!("file pattern: {}", file_pattern));
+//                 }
+//             }
+//
+//             // Check directory patterns
+//             for dir_pattern in &known_fw.directory_patterns {
+//                 if code_lower.contains(&dir_pattern.to_lowercase()) {
+//                     confidence += 0.3;
+//                     evidence.push(format!("directory pattern: {}", dir_pattern));
+//                 }
+//             }
+//
+//             // Check config files
+//             for config_file in &known_fw.config_files {
+//                 if code_lower.contains(&config_file.to_lowercase()) {
+//                     confidence += 0.2;
+//                     evidence.push(format!("config file: {}", config_file));
+//                 }
+//             }
+//
+//             // Check framework name directly in code
+//             if code_lower.contains(&known_fw.framework_name.to_lowercase()) {
+//                 confidence += 0.4;
+//                 evidence.push(format!("framework name in code: {}", known_fw.framework_name));
+//             }
+//
+//             // Apply database confidence weight and success rate
+//             if confidence > 0.0 {
+//                 confidence = (confidence * known_fw.confidence_weight * known_fw.success_rate).min(1.0);
+//
+//                 if confidence >= request.confidence_threshold && !evidence.is_empty() {
+//                     results.push(FrameworkDetectionResult {
+//                         name: known_fw.framework_name.clone(),
+//                         version: Some(known_fw.version_pattern.clone()),
+//                         confidence,
+//                         detected_by: "pattern_match_db".to_string(),
+//                         evidence,
+//                         pattern_id: Some(format!("{}_{}", known_fw.framework_name, known_fw.framework_type)),
+//                     });
+//                 }
+//             }
+//         }
+//     }
+//
+//     // Remove duplicates and sort by confidence
+//     results.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
+//     results.dedup_by(|a, b| a.name == b.name);
+//
+//     results
+// }
 
 /// Detect technologies with central database integration (REAL implementation)
 ///
@@ -458,41 +466,42 @@ fn get_architectural_suggestions_with_central_integration(request: Architectural
     suggestions
 }
 
-/// Collect package with central package intelligence integration
-///
-/// NOTE: This delegates to central_cloud's PackageIntelligence service.
-/// Local architecture_engine does NOT perform package collection.
-///
-/// This function receives package metadata that was already collected
-/// by central_cloud and may extract additional patterns from it.
-fn collect_package_with_central_integration(request: PackageCollectionRequest) -> PackageCollectionResult {
-    // Package collection happens in central_cloud's PackageIntelligence service
-    // This function only processes already-collected data
-
-    // TODO: When Elixir calls this, it should:
-    // 1. Request package from central_cloud via NATS (nats.packages.collect)
-    // 2. Receive collected package metadata
-    // 3. Pass metadata to this Rust function for pattern extraction
-    // 4. Return results to Elixir for storage
-
-    // For now, return minimal result indicating external collection needed
-    PackageCollectionResult {
-        package: crate::package_registry::PackageInfo {
-            name: request.package_name.clone(),
-            version: request.version.clone(),
-            ecosystem: request.ecosystem.clone(),
-            description: Some(format!("Package {} requires collection via central_cloud", request.package_name)),
-            github_stars: None,
-            downloads: None,
-            last_updated: None,
-            dependencies: vec![],
-            patterns: vec![],
-        },
-        collection_time: 0.0,
-        patterns_found: 0,
-        stats_updated: false,
-    }
-}
+// TODO: Implement when PackageCollectionRequest/Result/Info types are defined
+// /// Collect package with central package intelligence integration
+// ///
+// /// NOTE: This delegates to central_cloud's PackageIntelligence service.
+// /// Local architecture_engine does NOT perform package collection.
+// ///
+// /// This function receives package metadata that was already collected
+// /// by central_cloud and may extract additional patterns from it.
+// fn collect_package_with_central_integration(request: PackageCollectionRequest) -> PackageCollectionResult {
+//     // Package collection happens in central_cloud's PackageIntelligence service
+//     // This function only processes already-collected data
+//
+//     // TODO: When Elixir calls this, it should:
+//     // 1. Request package from central_cloud via NATS (nats.packages.collect)
+//     // 2. Receive collected package metadata
+//     // 3. Pass metadata to this Rust function for pattern extraction
+//     // 4. Return results to Elixir for storage
+//
+//     // For now, return minimal result indicating external collection needed
+//     PackageCollectionResult {
+//         package: package::PackageInfo {
+//             name: request.package_name.clone(),
+//             version: request.version.clone(),
+//             ecosystem: request.ecosystem.clone(),
+//             description: Some(format!("Package {} requires collection via central_cloud", request.package_name)),
+//             github_stars: None,
+//             downloads: None,
+//             last_updated: None,
+//             dependencies: vec![],
+//             patterns: vec![],
+//         },
+//         collection_time: 0.0,
+//         patterns_found: 0,
+//         stats_updated: false,
+//     }
+// }
 
 /// Get package statistics from local database (NOT central collection)
 ///

@@ -1,0 +1,8 @@
+[package]
+name = "parser_engine_dockerfile"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tree-sitter = "0.20.10"
+tree-sitter-dockerfile = "0.2.0"

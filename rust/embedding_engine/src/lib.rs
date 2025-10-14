@@ -30,7 +30,7 @@ rustler::init!("Elixir.Singularity.EmbeddingEngine");
 /// Generate embeddings for a batch of texts (GPU-accelerated)
 /// Uses DirtyCpu scheduler to avoid blocking BEAM
 #[rustler::nif(schedule = "DirtyCpu")]
-fn embed_batch(texts: Vec<String>, model_type: String) -> NifResult<Vec<Vec<f32>>> {
+fn nif_embed_batch(texts: Vec<String>, model_type: String) -> NifResult<Vec<Vec<f32>>> {
     let model_type = parse_model_type(&model_type)?;
 
     // Preprocess texts with tokenizer (optional enhancement)
@@ -68,7 +68,7 @@ fn embed_batch(texts: Vec<String>, model_type: String) -> NifResult<Vec<Vec<f32>
 
 /// Generate embedding for a single text (convenience wrapper)
 #[rustler::nif(schedule = "DirtyCpu")]
-fn embed_single(text: String, model_type: String) -> NifResult<Vec<f32>> {
+fn nif_embed_single(text: String, model_type: String) -> NifResult<Vec<f32>> {
     let model_type_parsed = parse_model_type(&model_type)?;
     let model = get_or_load_model(model_type_parsed)?;
     
@@ -85,7 +85,7 @@ fn embed_single(text: String, model_type: String) -> NifResult<Vec<f32>> {
 
 /// Preload models on startup to avoid cold start latency
 #[rustler::nif(schedule = "DirtyCpu")]
-fn preload_models(model_types: Vec<String>) -> NifResult<String> {
+fn nif_preload_models(model_types: Vec<String>) -> NifResult<String> {
     let mut loaded = Vec::new();
 
     for model_str in model_types {
@@ -112,7 +112,7 @@ fn preload_models(model_types: Vec<String>) -> NifResult<String> {
 
 /// Calculate cosine similarity for batches of vectors (SIMD-optimized)
 #[rustler::nif(schedule = "DirtyCpu")]
-fn cosine_similarity_batch(
+fn nif_cosine_similarity_batch(
     query_embeddings: Vec<Vec<f32>>,
     candidate_embeddings: Vec<Vec<f32>>
 ) -> NifResult<Vec<Vec<f32>>> {
@@ -279,7 +279,7 @@ fn ensure_models_downloaded(model_types: Vec<String>) -> NifResult<String> {
 
 /// Get model information (dimensions, type, etc.)
 #[rustler::nif(schedule = "DirtyCpu")]
-fn get_model_info(model_type: String) -> NifResult<String> {
+fn nif_get_model_info(model_type: String) -> NifResult<String> {
     let model_type = parse_model_type(&model_type)?;
     let model = get_or_load_model(model_type)?;
     
@@ -807,7 +807,7 @@ fn optimize_embeddings(
 
 /// Compare embeddings across different models
 #[rustler::nif(schedule = "DirtyCpu")]
-fn cross_model_comparison(
+fn nif_cross_model_comparison(
     texts: Vec<String>,
     model_types: Vec<String>,
 ) -> NifResult<String> {
@@ -849,13 +849,15 @@ fn embedding_fusion(
     let mut all_embeddings = Vec::new();
     
     // Generate embeddings for each model
-    for model_type_str in model_types {
-        match call_embed_batch(texts.clone(), model_type_str) {
+    for model_type_str in &model_types {
+        match call_embed_batch(texts.clone(), model_type_str.clone()) {
             Ok(embeddings) => {
+                info!("Fusion: Successfully generated {} embeddings from model {}", embeddings.len(), model_type_str);
                 all_embeddings.push(embeddings);
             }
-            Err(_) => {
-                // Skip failed models
+            Err(e) => {
+                // Log failure but continue with other models
+                error!("Fusion: Failed to generate embeddings from model {}: {:?}", model_type_str, e);
                 continue;
             }
         }

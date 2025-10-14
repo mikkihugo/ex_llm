@@ -230,7 +230,7 @@ impl NArgs for CppCode {
   }
 }
 
-implement_metric_trait!([NArgs], PythonCode, MozjsCode, JavascriptCode, TypescriptCode, TsxCode, RustCode, PreprocCode, CcommentCode, JavaCode, KotlinCode);
+implement_metric_trait!([NArgs], ElixirCode, ErlangCode, GleamCode, LuaCode, PythonCode, MozjsCode, JavascriptCode, TypescriptCode, TsxCode, RustCode, PreprocCode, CcommentCode, JavaCode, KotlinCode);
 
 #[cfg(test)]
 mod tests {

@@ -10,7 +10,6 @@ use futures_util::StreamExt;
 const JINA_V3_REPO: &str = "jinaai/jina-embeddings-v3";
 const QODO_EMBED_REPO: &str = "Qodo/Qodo-Embed-1-1.5B";
 const MINILM_L6_V2_REPO: &str = "sentence-transformers/all-MiniLM-L6-v2";
-const T5_SMALL_ONNX_REPO: &str = "optimum/t5-small";
 
 /// Model file configuration
 pub struct ModelConfig {
@@ -36,7 +35,9 @@ impl ModelConfig {
         Self {
             repo: QODO_EMBED_REPO,
             files: vec![
-                "model.safetensors",
+                "model-00001-of-00002.safetensors",
+                "model-00002-of-00002.safetensors",
+                "model.safetensors.index.json",
                 "tokenizer.json",
                 "config.json",
                 "tokenizer_config.json",
@@ -58,21 +59,6 @@ impl ModelConfig {
                 "vocab.txt",
             ],
             local_dir: "all-minilm-l6-v2",
-        }
-    }
-
-    pub fn t5_small() -> Self {
-        Self {
-            repo: T5_SMALL_ONNX_REPO,
-            files: vec![
-                "encoder_model.onnx",           // ~120MB - Encoder
-                "decoder_model.onnx",           // ~120MB - Decoder
-                "decoder_with_past_model.onnx", // ~120MB - Optimized decoder with KV cache
-                "tokenizer.json",
-                "config.json",
-                "generation_config.json",
-            ],
-            local_dir: "t5-small-onnx",
         }
     }
 }

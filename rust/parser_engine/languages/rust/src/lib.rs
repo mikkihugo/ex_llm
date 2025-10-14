@@ -1,7 +1,10 @@
 //! Rust parser backed by tree-sitter for use with the parser framework.
 
-use parser_framework::{
-    Comment, Function, Import, LanguageMetrics, LanguageParser, ParseError, AST,
+use parser_core::{
+    Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
+    comprehensive_analysis::{
+        ComprehensiveAnalyzer, ComprehensiveAnalysisConfig, ComprehensiveAnalysisResult,
+    },
 };
 use std::sync::Mutex;
 use std::convert::Into;
@@ -44,15 +47,17 @@ impl LanguageParser for RustParser {
         let comments = self.get_comments(ast)?;
 
         Ok(LanguageMetrics {
-            lines_of_code: ast.source.lines().count(),
-            functions_count: functions.len(),
-            imports_count: imports.len(),
-            comments_count: comments.len(),
-            ..LanguageMetrics::default()
+            lines_of_code: ast.content.lines().count() as u64,
+            lines_of_comments: comments.len() as u64,
+            blank_lines: 0, // TODO: implement blank line counting
+            total_lines: ast.content.lines().count() as u64,
+            functions: functions.len() as u64,
+            classes: 0, // Rust doesn't have classes (uses structs/impls)
+            complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
 
-    fn get_functions(&self, ast: &AST) -> Result<Vec<Function>, ParseError> {
+    fn get_functions(&self, ast: &AST) -> Result<Vec<FunctionInfo>, ParseError> {
         let query = Query::new(
             &tree_sitter_rust::LANGUAGE.into(),
             r#"
@@ -63,12 +68,12 @@ impl LanguageParser for RustParser {
                 body: (block) @body) @function
         "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = QueryCursor::new();
-        let root = ast.root();
+        let root = ast.tree.root_node();
         let mut functions = Vec::new();
-        let mut captures = cursor.captures(&query, root, ast.source.as_bytes());
+        let mut captures = cursor.captures(&query, root, ast.content.as_bytes());
         while let Some(&(ref m, _)) = captures.next() {
             let mut name = None;
             let mut params = None;
@@ -86,7 +91,7 @@ impl LanguageParser for RustParser {
                         name = Some(
                             capture
                                 .node
-                                .utf8_text(ast.source.as_bytes())
+                                .utf8_text(ast.content.as_bytes())
                                 .unwrap_or_default(),
                         )
                     }
@@ -94,7 +99,7 @@ impl LanguageParser for RustParser {
                         params = Some(
                             capture
                                 .node
-                                .utf8_text(ast.source.as_bytes())
+                                .utf8_text(ast.content.as_bytes())
                                 .unwrap_or_default(),
                         )
                     }
@@ -102,7 +107,7 @@ impl LanguageParser for RustParser {
                         return_type = Some(
                             capture
                                 .node
-                                .utf8_text(ast.source.as_bytes())
+                                .utf8_text(ast.content.as_bytes())
                                 .unwrap_or_default(),
                         )
                     }
@@ -115,22 +120,17 @@ impl LanguageParser for RustParser {
                 let start = fn_node.start_position().row + 1;
                 let end = fn_node.end_position().row + 1;
                 let body = body_range
-                    .and_then(|range| ast.source.get(range.clone()))
+                    .and_then(|range| ast.content.get(range.clone()))
                     .unwrap_or_default()
                     .to_owned();
 
-                functions.push(Function {
+                functions.push(FunctionInfo {
                     name: name.to_owned(),
-                    parameters: params.unwrap_or("").to_owned(),
-                    return_type: return_type.unwrap_or("()").to_owned(),
-                    start_line: start,
-                    end_line: end,
-                    body,
-                    signature: None,
-                    docstring: None,
-                    decorators: Vec::new(),
-                    is_async: false,
-                    is_generator: false,
+                    parameters: params.unwrap_or("").split(',').map(|s| s.trim().to_owned()).collect(),
+                    return_type: Some(return_type.unwrap_or("()").to_owned()),
+                    line_start: start as u32,
+                    line_end: end as u32,
+                    complexity: 1, // TODO: implement complexity calculation
                 });
             }
         }
@@ -146,11 +146,11 @@ impl LanguageParser for RustParser {
                 argument: (_) @import_path) @import
         "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = QueryCursor::new();
-        let root = ast.root();
-        let mut captures = cursor.captures(&query, root, ast.source.as_bytes());
+        let root = ast.tree.root_node();
+        let mut captures = cursor.captures(&query, root, ast.content.as_bytes());
 
         let mut imports = Vec::new();
         while let Some(&(ref m, _)) = captures.next() {
@@ -158,17 +158,15 @@ impl LanguageParser for RustParser {
                 if capture.index == 1 {
                     let path = capture
                         .node
-                        .utf8_text(ast.source.as_bytes())
+                        .utf8_text(ast.content.as_bytes())
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
                     let end = capture.node.end_position().row + 1;
                     imports.push(Import {
-                        path,
-                        kind: "use".into(),
-                        start_line: start,
-                        end_line: end,
-                        alias: None,
+                        module: path,
+                        items: Vec::new(),
+                        line: start as u32,
                     });
                 }
             }
@@ -185,18 +183,18 @@ impl LanguageParser for RustParser {
             (block_comment) @comment
         "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = QueryCursor::new();
-        let root = ast.root();
-        let mut captures = cursor.captures(&query, root, ast.source.as_bytes());
+        let root = ast.tree.root_node();
+        let mut captures = cursor.captures(&query, root, ast.content.as_bytes());
 
         let mut comments = Vec::new();
         while let Some(&(ref m, _)) = captures.next() {
             for capture in m.captures {
                 let text = capture
                     .node
-                    .utf8_text(ast.source.as_bytes())
+                    .utf8_text(ast.content.as_bytes())
                     .unwrap_or_default()
                     .to_owned();
                 let start = capture.node.start_position().row + 1;
@@ -207,10 +205,9 @@ impl LanguageParser for RustParser {
                     "line"
                 };
                 comments.push(Comment {
-                    text,
-                    kind: kind.into(),
-                    start_line: start,
-                    end_line: end,
+                    content: text,
+                    line: start as u32,
+                    column: (capture.node.start_position().column + 1) as u32,
                 });
             }
         }

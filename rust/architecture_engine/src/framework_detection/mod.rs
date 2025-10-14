@@ -1,235 +1,162 @@
-//! Framework Detection Integration
-//! 
-//! Integrates with the central framework pattern system to:
-//! - Detect frameworks in codebases
-//! - Learn new framework patterns
-//! - Update pattern confidence scores
-//! - Provide framework-specific suggestions
+//! Framework Detection - Detects frameworks in codebase
+//!
+//! Detects frameworks by file patterns and signatures:
+//! - Next.js (next.config.js)
+//! - React (package.json with react)
+//! - Vue (package.json with vue)
+//! - Phoenix (mix.exs with phoenix)
+//! - Django (manage.py, settings.py)
+//! - Rails (Gemfile with rails)
+//! - Spring Boot (pom.xml with spring-boot)
+//! - Express (package.json with express)
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
-pub mod detector;
-pub mod pattern_learner;
-pub mod confidence_tracker;
-
-
-#[derive(Debug, Serialize, Deserialize, rustler::NifStruct)]
-#[module = "FrameworkDetectionRequest"]
-pub struct FrameworkDetectionRequest {
-    pub code_patterns: Vec<String>,
-    pub known_frameworks: Vec<KnownFramework>,
-    pub context: String,
-    pub confidence_threshold: f64,
-}
-
-#[derive(Debug, Serialize, Deserialize, rustler::NifStruct)]
-#[module = "KnownFramework"]
-pub struct KnownFramework {
-    pub framework_name: String,
-    pub framework_type: String,
-    pub version_pattern: String,
-    pub file_patterns: Vec<String>,
-    pub directory_patterns: Vec<String>,
-    pub config_files: Vec<String>,
-    pub confidence_weight: f64,
-    pub success_rate: f64,
-    pub detection_count: i32,
-}
-
-#[derive(Debug, Serialize, Deserialize, rustler::NifStruct)]
-#[module = "FrameworkDetectionResult"]
-pub struct FrameworkDetectionResult {
+/// Framework detection result
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Framework {
     pub name: String,
     pub version: Option<String>,
     pub confidence: f64,
-    pub detected_by: String,
-    pub evidence: Vec<String>,
-    pub pattern_id: Option<String>,
+    pub evidence: Vec<PathBuf>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FrameworkPattern {
-    pub id: String,
-    pub framework_name: String,
-    pub pattern_type: String,
-    pub pattern_data: String,
-    pub confidence_weight: f64,
-    pub success_count: u32,
-    pub failure_count: u32,
-    pub last_used: Option<String>,
-}
-
-/// Main framework detection interface
-///
-/// NOTE: This async API is currently UNUSED. The NIF uses the synchronous
-/// `detect_frameworks_with_central_integration` function in nif.rs instead.
-///
-/// TODO: Either remove this or update to match new FrameworkDetectionRequest struct
-pub struct FrameworkDetectionEngine {
-    // Connection to central database
-    // Pattern cache
-    // Statistics tracker
-}
-
-impl FrameworkDetectionEngine {
-    pub fn new() -> Self {
+impl Framework {
+    pub fn new(name: impl Into<String>, evidence: Vec<PathBuf>) -> Self {
         Self {
-            // Initialize connections
+            name: name.into(),
+            version: None,
+            confidence: 0.9,
+            evidence,
         }
     }
+}
 
-    /// Detect frameworks using central pattern database
-    ///
-    /// DEPRECATED: NIF uses synchronous function in nif.rs instead
-    #[allow(dead_code)]
-    pub async fn detect_frameworks(&self, request: FrameworkDetectionRequest) -> Result<Vec<FrameworkDetectionResult>, String> {
-        let mut results = Vec::new();
+/// Detect frameworks in a directory
+pub fn detect_frameworks(root: &Path) -> Vec<Framework> {
+    let mut frameworks = Vec::new();
 
-        // 1. Query central database for existing patterns
-        let patterns = self.load_framework_patterns().await?;
-
-        // 2. Apply detection methods (config files, code patterns, AST, etc.)
-        for code_pattern in &request.code_patterns {
-            if let Some(framework) = self.analyze_pattern(code_pattern, &patterns, &request.context).await? {
-                if framework.confidence >= request.confidence_threshold {
-                    results.push(framework);
-                }
+    // Check for package.json first (covers many JS/TS frameworks)
+    if let Some(package_json) = find_file(root, "package.json") {
+        // Read package.json to detect React, Vue, Next.js, etc.
+        if let Ok(content) = std::fs::read_to_string(&package_json) {
+            if content.contains("\"next\"") || content.contains("\"@next/") {
+                frameworks.push(Framework::new("Next.js", vec![package_json.clone()]));
+            }
+            if content.contains("\"react\"") || content.contains("\"@react/") {
+                frameworks.push(Framework::new("React", vec![package_json.clone()]));
+            }
+            if content.contains("\"vue\"") || content.contains("\"@vue/") {
+                frameworks.push(Framework::new("Vue", vec![package_json.clone()]));
+            }
+            if content.contains("\"express\"") {
+                frameworks.push(Framework::new("Express", vec![package_json.clone()]));
             }
         }
+    }
 
-        // 3. Sort by confidence and return top results
-        results.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
-        Ok(results)
-    }
-    
-    /// Load framework patterns from central database via NATS
-    async fn load_framework_patterns(&self) -> Result<Vec<FrameworkPattern>, String> {
-        // This will be called from Elixir, which will use Singularity.NatsClient
-        // to request patterns from central.template.get subject
-        // The Elixir side handles the NATS communication
-        
-        // For now, return hardcoded patterns for basic functionality
-        // TODO: Implement actual integration with Elixir NATS client
-        Ok(vec![
-            FrameworkPattern {
-                id: "react-1".to_string(),
-                framework_name: "React".to_string(),
-                pattern_type: "import".to_string(),
-                pattern_data: "import.*from.*react".to_string(),
-                confidence_weight: 0.9,
-                success_count: 100,
-                failure_count: 5,
-                last_used: Some("2024-01-01".to_string()),
-            },
-            FrameworkPattern {
-                id: "vue-1".to_string(),
-                framework_name: "Vue".to_string(),
-                pattern_type: "import".to_string(),
-                pattern_data: "import.*from.*vue".to_string(),
-                confidence_weight: 0.9,
-                success_count: 80,
-                failure_count: 3,
-                last_used: Some("2024-01-01".to_string()),
-            },
-            FrameworkPattern {
-                id: "phoenix-1".to_string(),
-                framework_name: "Phoenix".to_string(),
-                pattern_type: "config".to_string(),
-                pattern_data: "use Phoenix".to_string(),
-                confidence_weight: 0.95,
-                success_count: 50,
-                failure_count: 1,
-                last_used: Some("2024-01-01".to_string()),
-            },
-        ])
-    }
-    
-    /// Analyze a pattern against known framework patterns
-    async fn analyze_pattern(&self, pattern: &str, known_patterns: &[FrameworkPattern], context: &str) -> Result<Option<FrameworkDetectionResult>, String> {
-        for known_pattern in known_patterns {
-            if self.matches_pattern(pattern, &known_pattern.pattern_data) {
-                let confidence = self.calculate_confidence(pattern, known_pattern, context);
-                
-                return Ok(Some(FrameworkDetectionResult {
-                    name: known_pattern.framework_name.clone(),
-                    version: self.extract_version(pattern, context),
-                    confidence,
-                    detected_by: known_pattern.pattern_type.clone(),
-                    evidence: vec![pattern.to_string()],
-                    pattern_id: Some(known_pattern.id.clone()),
-                }));
+    // Check for mix.exs (Elixir/Phoenix)
+    if let Some(mix_exs) = find_file(root, "mix.exs") {
+        if let Ok(content) = std::fs::read_to_string(&mix_exs) {
+            if content.contains(":phoenix") {
+                frameworks.push(Framework::new("Phoenix", vec![mix_exs]));
             }
         }
-        Ok(None)
     }
-    
-    /// Check if pattern matches framework pattern
-    fn matches_pattern(&self, pattern: &str, framework_pattern: &str) -> bool {
-        // Simple regex-like matching for now
-        // TODO: Implement proper regex matching
-        pattern.contains(framework_pattern) || framework_pattern.contains(pattern)
-    }
-    
-    /// Calculate confidence score based on pattern match and context
-    fn calculate_confidence(&self, pattern: &str, known_pattern: &FrameworkPattern, context: &str) -> f64 {
-        let base_confidence = known_pattern.confidence_weight;
-        let success_rate = known_pattern.success_count as f64 / (known_pattern.success_count + known_pattern.failure_count) as f64;
-        
-        // Boost confidence if context contains framework-specific keywords
-        let context_boost = if context.to_lowercase().contains(&known_pattern.framework_name.to_lowercase()) {
-            0.1
-        } else {
-            0.0
-        };
-        
-        (base_confidence * success_rate + context_boost).min(1.0)
-    }
-    
-    /// Extract version from pattern or context
-    fn extract_version(&self, pattern: &str, context: &str) -> Option<String> {
-        // Simple version extraction - look for common version patterns
-        let version_patterns = [
-            r"(\d+\.\d+\.\d+)",
-            r"(\d+\.\d+)",
-            r"v(\d+\.\d+\.\d+)",
-        ];
-        
-        for version_pattern in &version_patterns {
-            if let Some(captures) = regex::Regex::new(version_pattern).ok()
-                .and_then(|re| re.captures(pattern)) {
-                return captures.get(1).map(|m| m.as_str().to_string());
+
+    // Check for Cargo.toml (Rust)
+    if let Some(cargo_toml) = find_file(root, "Cargo.toml") {
+        if let Ok(content) = std::fs::read_to_string(&cargo_toml) {
+            if content.contains("actix-web") {
+                frameworks.push(Framework::new("Actix", vec![cargo_toml.clone()]));
+            }
+            if content.contains("rocket") {
+                frameworks.push(Framework::new("Rocket", vec![cargo_toml.clone()]));
+            }
+            if content.contains("axum") {
+                frameworks.push(Framework::new("Axum", vec![cargo_toml]));
             }
         }
-        
-        None
     }
-    
-    /// Learn new framework patterns and update existing ones
-    pub async fn learn_pattern(&self, detection_result: &FrameworkDetectionResult) -> Result<String, String> {
-        // 1. Check if pattern already exists in central database
-        // 2. If new, create new pattern entry
-        // 3. If existing, update confidence and usage stats
-        // 4. Store in central database
-        // 5. Return pattern ID
-        
-        todo!("Implement pattern learning with central integration")
+
+    // Check for Django (Python)
+    if find_file(root, "manage.py").is_some() {
+        let evidence = find_files(root, "settings.py");
+        if !evidence.is_empty() {
+            frameworks.push(Framework::new("Django", evidence));
+        }
     }
-    
-    /// Get framework statistics from central database
-    pub async fn get_framework_stats(&self, framework_name: &str) -> Result<HashMap<String, serde_json::Value>, String> {
-        // Query central database for framework statistics
-        // Return detection counts, success rates, usage patterns, etc.
-        
-        todo!("Implement framework statistics retrieval")
+
+    // Check for Rails (Ruby)
+    if let Some(gemfile) = find_file(root, "Gemfile") {
+        if let Ok(content) = std::fs::read_to_string(&gemfile) {
+            if content.contains("rails") {
+                frameworks.push(Framework::new("Rails", vec![gemfile]));
+            }
+        }
     }
-    
-    /// Update pattern confidence based on usage feedback
-    pub async fn update_pattern_confidence(&self, pattern_id: &str, success: bool) -> Result<(), String> {
-        // Update pattern success/failure counts
-        // Recalculate confidence weight
-        // Store updated pattern in central database
-        
-        todo!("Implement pattern confidence updates")
+
+    // Check for Spring Boot (Java)
+    if let Some(pom_xml) = find_file(root, "pom.xml") {
+        if let Ok(content) = std::fs::read_to_string(&pom_xml) {
+            if content.contains("spring-boot") {
+                frameworks.push(Framework::new("Spring Boot", vec![pom_xml]));
+            }
+        }
     }
+
+    frameworks
+}
+
+/// Find first occurrence of a file
+fn find_file(root: &Path, filename: &str) -> Option<PathBuf> {
+    WalkDir::new(root)
+        .follow_links(false)
+        .max_depth(5) // Limit depth for performance
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .find(|e| {
+            e.path().is_file()
+                && e.path()
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .map(|n| n == filename)
+                    .unwrap_or(false)
+        })
+        .map(|e| e.path().to_path_buf())
+}
+
+/// Find all occurrences of a file
+fn find_files(root: &Path, filename: &str) -> Vec<PathBuf> {
+    WalkDir::new(root)
+        .follow_links(false)
+        .max_depth(5)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            e.path().is_file()
+                && e.path()
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .map(|n| n == filename)
+                    .unwrap_or(false)
+        })
+        .map(|e| e.path().to_path_buf())
+        .collect()
+}
+
+/// Get framework statistics (name, count)
+pub fn framework_stats(root: &Path) -> Vec<(String, usize)> {
+    let frameworks = detect_frameworks(root);
+    let mut stats: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+    for fw in frameworks {
+        *stats.entry(fw.name).or_insert(0) += 1;
+    }
+
+    let mut result: Vec<_> = stats.into_iter().collect();
+    result.sort_by(|a, b| b.1.cmp(&a.1));
+    result
 }

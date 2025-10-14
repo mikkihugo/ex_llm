@@ -5,9 +5,15 @@ members = [
     "embedding_engine",
     "quality_engine",
     "parser_engine/core",
+    "parser_engine",  # NIF wrapper - uses parser_core (no conflicts!)
     # "parser_engine/polyglot",  # Excluded: Built separately as NIF by Rustler (causes workspace conflicts)
-    "parser_engine/formats/dependency",
-    "parser_engine/formats/template_definitions",
+    # Working standalone parsers (no parser_core dependency)
+    "parser_engine/languages/markdown",
+    "parser_engine/languages/lua",
+    "parser_engine/languages/sql",
+    "parser_engine/languages/dockerfile",
+    "parser_engine/languages/toml",
+    # All language parsers enabled
     "parser_engine/languages/rust",
     "parser_engine/languages/elixir",
     "parser_engine/languages/erlang",
@@ -23,6 +29,10 @@ members = [
     "parser_engine/languages/csharp",
     "parser_engine/languages/c",
     "parser_engine/languages/cpp",
+    # Format parsers
+    "parser_engine/formats/dependency",
+    "parser_engine/formats/template_definitions",
+    "parser_engine/analyzers/rust_code_analysis",  # Mozilla rust-code-analysis (complexity metrics)
     "prompt_engine",
     "architecture_engine",
     "service/package_intelligence",
@@ -101,6 +111,7 @@ reqwest = { version = "0.12", features = ["json"] }
 tree-sitter = "0.25.10"  # Latest - matches what language parsers need
 futures = "0.3"
 tokei = "12.1"
+ast-grep-core = "0.39"    # Structural search, linting, code transformation (latest version)
 
 # Tree-sitter language parsers
 tree-sitter-elixir = "0.3.4"         # Main app language
@@ -115,9 +126,14 @@ tree-sitter-yaml = "0.7.2"           # Config files
 tree-sitter-bash = "0.25.0"          # Shell scripts
 tree-sitter-go = "0.25"              # Go language
 tree-sitter-java = "0.23"            # Java language
-tree-sitter-c-sharp = "0.23"         # C# language
+tree-sitter-c-sharp = "0.23.1"       # C# language
 tree-sitter-c = "0.24"               # C language
 tree-sitter-cpp = "0.23"             # C++ language
+tree-sitter-md = { git = "https://github.com/mikkihugo/tree-sitter-markdown", branch = "update-tree-sitter-0.25", features = ["parser"] }  # Markdown documentation (fork with tree-sitter 0.25)
+tree-sitter-lua = "0.2.0"            # Lua scripting
+tree-sitter-sql = "0.0.2"            # SQL database queries
+tree-sitter-dockerfile = "0.2.0"     # Docker containerization
+tree-sitter-toml = "0.20.0"          # Configuration files
 
 # Testing
 tokio-test = "0.4"

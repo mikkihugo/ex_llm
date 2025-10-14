@@ -16,13 +16,13 @@ You can do that:
 through **HTTPS**
 
 ```
-git clone -j8 https://github.com/mozilla/rust-code-analysis.git
+git clone -j8 https://github.com/singularity/rust-code-analysis.git
 ```
 
 or through **SSH**
 
 ```
-git clone -j8 git@github.com:mozilla/rust-code-analysis.git
+git clone -j8 git@github.com:singularity/rust-code-analysis.git
 ```
 
 ## Building

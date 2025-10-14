@@ -8,7 +8,7 @@ use std::{collections::HashMap, fmt::Debug, sync::Arc, time::Instant};
 use anyhow::Result;
 use dashmap::DashMap;
 use tracing::{debug, info, warn};
-use crate::{CodeMetrics, MozillaMetrics, TreeSitterAnalysis, DependencyAnalysis};
+use crate::{CodeMetrics, SingularityMetrics, TreeSitterAnalysis, DependencyAnalysis};
 // serde imports removed as they're unused
 
 // Tree-sitter language imports - ONLY essential languages Singularity uses
@@ -220,7 +220,7 @@ impl UniversalDependencies {
         classes: 0,
         complexity_score: 0.0,
       },
-      mozilla_metrics: Some(MozillaMetrics {
+      singularity_metrics: Some(SingularityMetrics {
         #[cfg(feature = "rca")]
         cyclomatic_complexity: "null".to_string(),
         #[cfg(feature = "rca")]

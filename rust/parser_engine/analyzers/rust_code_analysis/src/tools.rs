@@ -274,7 +274,7 @@ pub(crate) fn get_paths_dist(path1: &Path, path2: &Path) -> Option<usize> {
 }
 
 pub(crate) fn guess_file<S: ::std::hash::BuildHasher>(current_path: &Path, include_path: &str, all_files: &HashMap<String, Vec<PathBuf>, S>) -> Vec<PathBuf> {
-  let include_path = if let Some(end) = include_path.strip_prefix("mozilla/") { end } else { include_path };
+  let include_path = if let Some(end) = include_path.strip_prefix("singularity/") { end } else { include_path };
   let include_path = normalize_path(include_path);
   if let Some(possibilities) = all_files.get(include_path.file_name().unwrap().to_str().unwrap()) {
     if possibilities.len() == 1 {

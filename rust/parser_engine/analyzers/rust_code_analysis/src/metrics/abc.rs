@@ -335,7 +335,7 @@ fn java_count_unary_conditions(list_node: &Node, conditions: &mut f64) {
   }
 }
 
-implement_metric_trait!(Abc, PythonCode, MozjsCode, JavascriptCode, TypescriptCode, TsxCode, RustCode, CppCode, PreprocCode, CcommentCode, KotlinCode);
+implement_metric_trait!(Abc, PythonCode, MozjsCode, JavascriptCode, TypescriptCode, TsxCode, RustCode, CppCode, PreprocCode, CcommentCode, KotlinCode, ElixirCode, ErlangCode, GleamCode, LuaCode);
 
 // Fitzpatrick, Jerry (1997). "Applying the ABC metric to C, C++ and Java". C++ Report.
 // Source: https://www.softwarerenovation.com/Articles.aspx

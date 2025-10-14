@@ -20,7 +20,7 @@ regex = "1"
 tree-sitter = { workspace = true }
 tree-sitter-json = { workspace = true }
 # tree-sitter-toml = "0.20"  # Removed - not used, was pulling in tree-sitter 0.20.x
-parser-framework = { path = "../../core" }
+parser_core = { path = "../../core" }
 
 [dev-dependencies]
 tempfile = "3"

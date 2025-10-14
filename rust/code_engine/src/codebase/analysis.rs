@@ -296,7 +296,7 @@ impl AnalysisEngine {
     language: parser_code::ProgrammingLanguage,
     file_path: &str,
   ) -> Result<parser_code::AnalysisResult, String> {
-    use parser_code::ProgrammingLanguage;
+    use parser_core::ProgrammingLanguage;
 
     match language {
       ProgrammingLanguage::Rust => {
@@ -627,7 +627,7 @@ impl AnalysisEngine {
 
   /// Detect language from file path
   fn detect_language_from_path(&self, path: &str) -> parser_code::ProgrammingLanguage {
-    use parser_code::ProgrammingLanguage;
+    use parser_core::ProgrammingLanguage;
     
     let extension = std::path::Path::new(path)
       .extension()

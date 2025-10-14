@@ -170,29 +170,6 @@ defmodule Singularity.TemplateMatcher do
 
   defp normalize_pattern(_), do: nil
 
-  defp extract_keywords(pattern) do
-    # Keywords can be explicit or derived from name/description
-    explicit = pattern["keywords"] || []
-
-    name_tokens =
-      if pattern["name"] do
-        CodePatternExtractor.extract_from_text(pattern["name"])
-      else
-        []
-      end
-
-    desc_tokens =
-      if pattern["description"] do
-        pattern["description"]
-        |> CodePatternExtractor.extract_from_text()
-        |> Enum.take(5)
-      else
-        []
-      end
-
-    (explicit ++ name_tokens ++ desc_tokens)
-    |> Enum.uniq()
-  end
 
   defp build_response(match, template, user_tokens) do
     pattern = match.pattern

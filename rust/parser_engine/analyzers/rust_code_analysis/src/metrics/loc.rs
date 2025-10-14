@@ -792,7 +792,7 @@ impl Loc for JavaCode {
   }
 }
 
-implement_metric_trait!(Loc, PreprocCode, CcommentCode, KotlinCode);
+implement_metric_trait!(Loc, PreprocCode, CcommentCode, KotlinCode, ElixirCode, ErlangCode, GleamCode, LuaCode);
 
 #[cfg(test)]
 mod tests {
@@ -2550,7 +2550,7 @@ mod tests {
 
   #[test]
   fn cpp_namespace_loc() {
-    check_metrics::<CppParser>("namespace mozilla::dom::quota {} // namespace mozilla::dom::quota", "foo.cpp", |metric| {
+    check_metrics::<CppParser>("namespace singularity::dom::quota {} // namespace singularity::dom::quota", "foo.cpp", |metric| {
       // Spaces: 2
       insta::assert_json_snapshot!(
           metric.loc,

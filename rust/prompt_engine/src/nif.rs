@@ -115,40 +115,6 @@ pub struct NifCacheStats {
     pub hit_rate: f64,
 }
 
-/// Request to call LLM
-#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
-#[module = "Singularity.PromptEngineNif.LlmRequest"]
-pub struct NifLlmRequest {
-    pub model: String,
-    pub messages: Vec<NifMessage>,
-    pub options: String,  // JSON string instead of HashMap
-}
-
-/// Message for LLM call
-#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
-#[module = "Singularity.PromptEngineNif.Message"]
-pub struct NifMessage {
-    pub role: String,
-    pub content: String,
-}
-
-/// Response from LLM call
-#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
-#[module = "Singularity.PromptEngineNif.LlmResponse"]
-pub struct NifLlmResponse {
-    pub text: String,
-    pub model: String,
-    pub usage: Option<NifUsage>,
-}
-
-/// Token usage information
-#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
-#[module = "Singularity.PromptEngineNif.Usage"]
-pub struct NifUsage {
-    pub prompt_tokens: usize,
-    pub completion_tokens: usize,
-    pub total_tokens: usize,
-}
 
 // TODO: Legacy types - migrate to full DSPy API
 /// Legacy optimization context (to be migrated to DSPy)
@@ -615,23 +581,12 @@ fn nif_cache_stats() -> Result<NifCacheStats, rustler::Error> {
     })
 }
 
-/// NIF function to call LLM through NATS coordination
-#[rustler::nif]
-fn nif_call_llm(_request: NifLlmRequest) -> Result<NifLlmResponse, rustler::Error> {
-    // TODO: Implement NATS LLM coordination
-    // For now, return error - LLM calls should go through Elixir NATS client
-    Err(rustler::Error::Term(Box::new(
-        "NATS LLM coordination not implemented - use Elixir NATS client instead",
-    )))
-}
-
 // Initialize the NIF
 rustler::init!(
     "Elixir.Singularity.PromptEngine.Native",
     [
         nif_generate_prompt,
         nif_optimize_prompt,
-        nif_call_llm,
         nif_cache_get,
         nif_cache_put,
         nif_cache_clear,

@@ -233,6 +233,22 @@ defmodule Singularity.QualityCodeGenerator do
   @spec load_template(String.t(), quality_level(), String.t() | nil) ::
           {:ok, map()} | {:error, term()}
   def load_template(language, quality, custom_path \\ nil) do
+    # If custom_path is provided, try to load from that path first
+    if custom_path do
+      case load_template_from_path(custom_path) do
+        {:ok, template} ->
+          Logger.debug("Loaded quality template from custom path: #{custom_path}")
+          {:ok, template}
+        {:error, _} ->
+          Logger.warning("Failed to load template from custom path: #{custom_path}, falling back to discovery")
+          load_template_via_discovery(language, quality)
+      end
+    else
+      load_template_via_discovery(language, quality)
+    end
+  end
+
+  defp load_template_via_discovery(language, quality) do
     # Use dynamic template discovery - tries multiple patterns and semantic search
     case Singularity.Knowledge.TemplateService.find_quality_template(language, quality) do
       {:ok, template} ->
@@ -249,10 +265,17 @@ defmodule Singularity.QualityCodeGenerator do
 
   ## Private Functions
 
-  defp build_template_path(language, quality) do
-    filename = "#{language}_#{quality}.json"
-    Path.join([@templates_dir, filename])
+  defp load_template_from_path(custom_path) do
+    case File.read(custom_path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, template} -> {:ok, template}
+          {:error, reason} -> {:error, "Invalid JSON in custom template: #{reason}"}
+        end
+      {:error, reason} -> {:error, "Failed to read custom template: #{reason}"}
+    end
   end
+
 
   defp default_template(language, quality) do
     %{
@@ -847,13 +870,6 @@ defmodule Singularity.QualityCodeGenerator do
     String.replace(prompt_template, "{task}", task)
   end
 
-  defp build_doc_prompt_from_template(code, template) do
-    prompt_template =
-      get_in(template, ["prompts", "documentation"]) ||
-        "Generate documentation for:\n\n{code}\n\nOUTPUT DOCS ONLY."
-
-    String.replace(prompt_template, "{code}", code)
-  end
 
   defp quality_examples_count(:production), do: 10
   defp quality_examples_count(:standard), do: 5

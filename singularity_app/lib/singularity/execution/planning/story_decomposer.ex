@@ -57,11 +57,15 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
 
   # S - Specification
   defp generate_specification(story, opts) do
+    # Extract options with defaults
+    complexity = Keyword.get(opts, :complexity, :medium)
+    language = Keyword.get(opts, :language, "any")
+    
     # Use Lua script for SPARC specification phase
     case Service.call_with_script(
       "sparc/decompose-specification.lua",
-      %{story: story},
-      complexity: :medium,
+      %{story: story, language: language},
+      complexity: complexity,
       task_type: :planning
     ) do
       {:ok, %{text: text}} -> {:ok, text}
@@ -72,11 +76,13 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   end
 
   # P - Pseudocode
-  defp generate_pseudocode(spec, _opts) do
+  defp generate_pseudocode(spec, opts) do
+    complexity = Keyword.get(opts, :complexity, :medium)
+    
     case Service.call_with_script(
       "sparc/decompose-pseudocode.lua",
       %{specification: spec},
-      complexity: :medium,
+      complexity: complexity,
       task_type: :planning
     ) do
       {:ok, %{text: text}} -> {:ok, text}
@@ -85,11 +91,13 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   end
 
   # A - Architecture
-  defp design_architecture(pseudocode, _opts) do
+  defp design_architecture(pseudocode, opts) do
+    complexity = Keyword.get(opts, :complexity, :medium)
+    
     case Service.call_with_script(
       "sparc/decompose-architecture.lua",
       %{pseudocode: pseudocode},
-      complexity: :medium,
+      complexity: complexity,
       task_type: :architect
     ) do
       {:ok, %{text: text}} -> {:ok, text}
@@ -98,11 +106,13 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   end
 
   # R - Refinement
-  defp refine_design(architecture, _opts) do
+  defp refine_design(architecture, opts) do
+    complexity = Keyword.get(opts, :complexity, :medium)
+    
     case Service.call_with_script(
       "sparc/decompose-refinement.lua",
       %{architecture: architecture},
-      complexity: :medium,
+      complexity: complexity,
       task_type: :architect
     ) do
       {:ok, %{text: text}} -> {:ok, text}
@@ -111,11 +121,13 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   end
 
   # C - Completion Tasks
-  defp generate_completion_tasks(refinement, _opts) do
+  defp generate_completion_tasks(refinement, opts) do
+    complexity = Keyword.get(opts, :complexity, :medium)
+    
     case Service.call_with_script(
       "sparc/decompose-tasks.lua",
       %{refinement: refinement},
-      complexity: :medium,
+      complexity: complexity,
       task_type: :planning
     ) do
       {:ok, %{text: text}} -> {:ok, text}

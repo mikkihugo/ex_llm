@@ -158,6 +158,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
+ "dashmap 6.1.0",
  "glob",
  "heck",
  "log",
@@ -180,6 +181,18 @@ name = "arrayvec"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
+
+[[package]]
+name = "ast-grep-core"
+version = "0.39.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b31073b40200acc5458bee60d5d24d90a355e7e0cf10a9f5e5cdaa057aad8db5"
+dependencies = [
+ "bit-set 0.8.0",
+ "regex",
+ "thiserror 2.0.17",
+ "tree-sitter 0.25.10",
+]
 
 [[package]]
 name = "async-nats"
@@ -315,14 +328,14 @@ name = "bash_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-bash",
 ]
 
@@ -487,14 +500,14 @@ name = "c_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-c",
 ]
 
@@ -732,35 +745,22 @@ dependencies = [
  "anyhow",
  "async-nats",
  "async-trait",
- "bash_parser",
  "bincode",
- "c_parser",
  "candle-core",
  "candle-nn",
  "candle-transformers",
  "chrono",
- "cpp_parser",
- "csharp_parser",
  "dirs 5.0.1",
- "elixir_parser",
- "erlang_parser",
- "gleam_parser",
  "glob",
- "go_parser",
  "hf-hub 0.4.3",
  "ignore",
- "java_parser",
- "javascript_parser",
- "json_parser",
  "memory-stats",
  "ndarray",
- "parser-code",
+ "parser_core",
  "petgraph",
  "prompt_engine",
- "python_parser",
  "quality_engine",
  "regex",
- "rust_parser",
  "rustler",
  "seahash",
  "serde",
@@ -774,10 +774,8 @@ dependencies = [
  "tokio-test",
  "toml 0.8.23",
  "tracing",
- "typescript_parser",
  "uuid",
  "walkdir",
- "yaml_parser",
 ]
 
 [[package]]
@@ -841,14 +839,14 @@ name = "cpp_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-cpp",
 ]
 
@@ -983,14 +981,14 @@ name = "csharp_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-c-sharp",
 ]
 
@@ -1134,6 +1132,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "6.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5041cc499144891f3790297212f32a74fb938e5136a14943f338ef9e0ae276cf"
+dependencies = [
+ "cfg-if",
+ "crossbeam-utils",
+ "hashbrown 0.14.5",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core 0.9.12",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1144,14 +1156,14 @@ name = "dependency_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "regex",
  "serde",
  "serde_json",
  "tempfile",
  "thiserror 1.0.69",
  "toml 0.8.23",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-json",
 ]
 
@@ -1223,6 +1235,12 @@ name = "deunicode"
 version = "1.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abd57806937c9cc163efc8ea3910e00a62e2aeb0b8119f1793a978088f8f6b04"
+
+[[package]]
+name = "diff"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56254986775e3233ffa9c4d7d3faaf6d36a2c09d30b20687e9f88bc8bafc16c8"
 
 [[package]]
 name = "digest"
@@ -1379,14 +1397,14 @@ name = "elixir_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-elixir",
 ]
 
@@ -1479,14 +1497,14 @@ name = "erlang_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-erlang",
 ]
 
@@ -2011,14 +2029,14 @@ name = "gleam_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-gleam",
 ]
 
@@ -2057,14 +2075,14 @@ name = "go_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-go",
 ]
 
@@ -2683,6 +2701,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "insta"
+version = "1.43.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46fdb647ebde000f43b5b53f773c30cf9b0cb4300453208713fa38b2c70935a0"
+dependencies = [
+ "console",
+ "once_cell",
+ "pest",
+ "pest_derive",
+ "serde",
+ "similar",
+]
+
+[[package]]
 name = "instant"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2791,14 +2823,14 @@ name = "java_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-java",
 ]
 
@@ -2807,14 +2839,14 @@ name = "javascript_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-javascript",
 ]
 
@@ -2843,14 +2875,14 @@ name = "json_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-json",
 ]
 
@@ -3291,6 +3323,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
 
 [[package]]
+name = "num-derive"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed3955f1a9c7c0c15e092f9c887db08b1fc683305fdf6eb6684f22555355e202"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "num-format"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3652,6 +3695,7 @@ dependencies = [
  "dashmap 5.5.3",
  "futures",
  "lru",
+ "parser_core",
  "petgraph",
  "regex",
  "rustler",
@@ -3665,7 +3709,7 @@ dependencies = [
  "tokio-test",
  "toml 0.8.23",
  "tracing",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-bash",
  "tree-sitter-c",
  "tree-sitter-c-sharp",
@@ -3677,6 +3721,8 @@ dependencies = [
  "tree-sitter-java",
  "tree-sitter-javascript",
  "tree-sitter-json",
+ "tree-sitter-lua",
+ "tree-sitter-md",
  "tree-sitter-python",
  "tree-sitter-rust",
  "tree-sitter-typescript",
@@ -3684,16 +3730,82 @@ dependencies = [
 ]
 
 [[package]]
-name = "parser-framework"
+name = "parser_core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "ast-grep-core",
+ "async-trait",
  "chrono",
+ "dashmap 5.5.3",
+ "futures",
+ "lru",
+ "petgraph",
+ "regex",
  "serde",
  "serde_json",
+ "singularity-code-analysis",
+ "tempfile",
  "thiserror 1.0.69",
- "tree-sitter",
- "uuid",
+ "tokio",
+ "tokio-test",
+ "tracing",
+ "tree-sitter 0.25.10",
+ "tree-sitter-bash",
+ "tree-sitter-c",
+ "tree-sitter-cpp",
+ "tree-sitter-elixir",
+ "tree-sitter-erlang",
+ "tree-sitter-gleam",
+ "tree-sitter-go",
+ "tree-sitter-java",
+ "tree-sitter-javascript",
+ "tree-sitter-json",
+ "tree-sitter-lua",
+ "tree-sitter-python",
+ "tree-sitter-rust",
+ "tree-sitter-typescript",
+ "tree-sitter-yaml",
+]
+
+[[package]]
+name = "parser_engine_dockerfile"
+version = "0.1.0"
+dependencies = [
+ "tree-sitter 0.20.10",
+ "tree-sitter-dockerfile",
+]
+
+[[package]]
+name = "parser_engine_lua"
+version = "0.1.0"
+dependencies = [
+ "tree-sitter 0.25.10",
+ "tree-sitter-lua",
+]
+
+[[package]]
+name = "parser_engine_markdown"
+version = "0.1.0"
+dependencies = [
+ "tree-sitter 0.25.10",
+ "tree-sitter-md",
+]
+
+[[package]]
+name = "parser_engine_sql"
+version = "0.1.0"
+dependencies = [
+ "tree-sitter 0.19.5",
+ "tree-sitter-sql",
+]
+
+[[package]]
+name = "parser_engine_toml"
+version = "0.1.0"
+dependencies = [
+ "tree-sitter 0.20.10",
+ "tree-sitter-toml",
 ]
 
 [[package]]
@@ -4009,6 +4121,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pretty_assertions"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ae130e2f271fbc2ac3a40fb1d07180839cdbbe443c7a27e1e3c13c5cac0116d"
+dependencies = [
+ "diff",
+ "yansi",
+]
+
+[[package]]
 name = "prettyplease"
 version = "0.2.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4117,10 +4239,10 @@ name = "python_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "serde",
  "serde_json",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-python",
 ]
 
@@ -4510,14 +4632,14 @@ name = "rust_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-rust",
 ]
 
@@ -5001,6 +5123,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d66dc143e6b11c1eddc06d5c423cfc97062865baf299914ab64caa38182078fe"
 
 [[package]]
+name = "similar"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbbb5d9659141646ae647b42fe094daf6c6192d1620870b449d9557f748b2daa"
+
+[[package]]
 name = "simple_asn1"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5010,6 +5138,37 @@ dependencies = [
  "num-traits",
  "thiserror 2.0.17",
  "time",
+]
+
+[[package]]
+name = "singularity-code-analysis"
+version = "0.1.0"
+dependencies = [
+ "aho-corasick 1.1.3",
+ "crossbeam",
+ "globset",
+ "insta",
+ "num",
+ "num-derive",
+ "num-format",
+ "num-traits",
+ "petgraph",
+ "pretty_assertions",
+ "regex",
+ "serde",
+ "termcolor",
+ "tree-sitter 0.25.10",
+ "tree-sitter-cpp",
+ "tree-sitter-elixir",
+ "tree-sitter-erlang",
+ "tree-sitter-gleam",
+ "tree-sitter-java",
+ "tree-sitter-javascript",
+ "tree-sitter-lua",
+ "tree-sitter-python",
+ "tree-sitter-rust",
+ "tree-sitter-typescript",
+ "walkdir",
 ]
 
 [[package]]
@@ -5464,12 +5623,12 @@ name = "template_meta_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "serde",
  "serde_json",
  "tempfile",
  "thiserror 1.0.69",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-json",
 ]
 
@@ -6123,6 +6282,26 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter"
+version = "0.19.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad726ec26496bf4c083fff0f43d4eb3a2ad1bba305323af5ff91383c0b6ecac0"
+dependencies = [
+ "cc",
+ "regex",
+]
+
+[[package]]
+name = "tree-sitter"
+version = "0.20.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e747b1f9b7b931ed39a548c1fae149101497de3c1fc8d9e18c62c1a66c683d3d"
+dependencies = [
+ "cc",
+ "regex",
+]
+
+[[package]]
+name = "tree-sitter"
 version = "0.25.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78f873475d258561b06f1c595d93308a7ed124d9977cb26b148c2084a4a3cc87"
@@ -6173,6 +6352,16 @@ checksum = "df2196ea9d47b4ab4a31b9297eaa5a5d19a0b121dceb9f118f6790ad0ab94743"
 dependencies = [
  "cc",
  "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-dockerfile"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba46310efcac616744ca79aa4b0e228202e388913ebcd4a1ba107072f7f4432a"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.10",
 ]
 
 [[package]]
@@ -6252,6 +6441,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4013970217383f67b18aef68f6fb2e8d409bc5755227092d32efb0422ba24b8"
 
 [[package]]
+name = "tree-sitter-lua"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cdb9adf0965fec58e7660cbb3a059dbb12ebeec9459e6dcbae3db004739641e"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-md"
+version = "0.5.1"
+source = "git+https://github.com/mikkihugo/tree-sitter-markdown?branch=update-tree-sitter-0.25#580fe05ed9f179ffc65102632360a2f1bf8baed5"
+dependencies = [
+ "cc",
+ "tree-sitter 0.25.10",
+ "tree-sitter-language",
+]
+
+[[package]]
 name = "tree-sitter-python"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6269,6 +6478,26 @@ checksum = "4b9b18034c684a2420722be8b2a91c9c44f2546b631c039edf575ccba8c61be1"
 dependencies = [
  "cc",
  "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-sql"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04e4fb372576528153a04f47ff3ca2d2b535b756ec1890c42ddd5713a66cc82e"
+dependencies = [
+ "cc",
+ "tree-sitter 0.19.5",
+]
+
+[[package]]
+name = "tree-sitter-toml"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca517f578a98b23d20780247cc2688407fa81effad5b627a5a364ec3339b53e8"
+dependencies = [
+ "cc",
+ "tree-sitter 0.20.10",
 ]
 
 [[package]]
@@ -6308,14 +6537,14 @@ name = "typescript_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-typescript",
 ]
 
@@ -7182,16 +7411,22 @@ name = "yaml_parser"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "parser-framework",
+ "parser_core",
  "rustler",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
+ "tree-sitter 0.25.10",
  "tree-sitter-yaml",
 ]
+
+[[package]]
+name = "yansi"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
 
 [[package]]
 name = "yoke"

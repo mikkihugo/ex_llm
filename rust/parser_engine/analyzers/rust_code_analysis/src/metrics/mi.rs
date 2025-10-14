@@ -96,7 +96,11 @@ implement_metric_trait!(
   PreprocCode,
   CcommentCode,
   JavaCode,
-  KotlinCode
+  KotlinCode,
+  ElixirCode,
+  ErlangCode,
+  GleamCode,
+  LuaCode
 );
 
 #[cfg(test)]

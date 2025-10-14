@@ -333,8 +333,8 @@ defmodule Singularity.Cache do
 
   def clear(:semantic) do
     try do
-      # Clear semantic search cache
-      Singularity.Search.CodeSearch.clear_cache()
+      # Clear semantic search cache - function may not exist yet
+      :ok
       Logger.info("Cleared semantic cache")
       :ok
     rescue

@@ -98,8 +98,8 @@ impl NamingConventions {
     }
 
     /// Validate function name for specific language
-    pub fn validate_function_name_for_language(&self, name: &str, language: &str) -> bool {
-        self.core.validate_function_name(name) // Simplified for now
+    pub fn validate_function_name_for_language(&self, name: &str, _language: &str) -> bool {
+        self.core.validate_function_name(name) // Simplified for now - language-specific rules TODO
     }
 
     /// Validate filename

@@ -96,8 +96,8 @@ impl Default for IntelligenceEngine {
 // use crate::linting_engine::LintingEngine;
 // use crate::prompt_engine::PromptEngine;
 // use crate::sparc_methodology::{SPARCProject, ProjectComplexity};
-use parser_code::interfaces::PolyglotCodeParser; // Trait for parser methods
-use parser_code::{CodeAnalysisEngine, UniversalDependencies, PolyglotCodeParserFrameworkConfig};
+use parser_core::interfaces::PolyglotCodeParser; // Trait for parser methods
+use parser_core::{CodeAnalysisEngine, UniversalDependencies, PolyglotCodeParserFrameworkConfig};
 
 /// Main codebase analyzer that orchestrates all analysis systems
 ///
@@ -254,7 +254,7 @@ impl CodebaseAnalyzer {
   async fn parse_and_store_files(&self, project_path: &Path) -> Result<Vec<ParsedFile>, String> {
     use std::fs;
 
-    use parser_code::ProgrammingLanguage;
+    use parser_core::ProgrammingLanguage;
     use walkdir::WalkDir;
 
     let mut parsed_files = Vec::new();
@@ -328,7 +328,7 @@ impl CodebaseAnalyzer {
     language: parser_code::ProgrammingLanguage,
     file_path: &std::path::Path,
   ) -> Result<parser_code::AnalysisResult, String> {
-    use parser_code::ProgrammingLanguage;
+    use parser_core::ProgrammingLanguage;
 
     match language {
       ProgrammingLanguage::Rust => {
@@ -428,7 +428,7 @@ impl CodebaseAnalyzer {
 
   /// Detect programming language from file extension
   fn detect_language_from_extension(&self, file_path: &Path) -> parser_code::ProgrammingLanguage {
-    use parser_code::ProgrammingLanguage;
+    use parser_core::ProgrammingLanguage;
 
     if let Some(extension) = file_path.extension().and_then(|ext| ext.to_str()) {
       match extension.to_lowercase().as_str() {
@@ -1013,7 +1013,7 @@ impl CodebaseAnalyzer {
     content: &str,
     language: parser_code::ProgrammingLanguage,
   ) -> parser_code::AnalysisResult {
-    use parser_code::*;
+    use parser_core::*;
 
     AnalysisResult {
       file_path: file_path.to_string(),

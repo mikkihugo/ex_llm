@@ -1,5 +1,5 @@
 use anyhow::Result;
-use parser_framework::{SpecializedParser, ParseError};
+use parser_core::{SpecializedParser, ParseError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -17,14 +17,6 @@ impl SpecializedParser for DependencyParser {
             "content_length": content.len(),
             "note": "Dependency parsing requires tree-sitter integration"
         }))
-    }
-
-    fn get_type(&self) -> &str {
-        "dependency"
-    }
-
-    fn get_extensions(&self) -> Vec<&str> {
-        vec!["package.json", "Cargo.toml", "mix.exs", "pyproject.toml", "go.mod"]
     }
 }
 

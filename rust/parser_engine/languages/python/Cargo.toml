@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-parser-framework = { path = "../../core" }
+parser_core = { path = "../../core" }
 tree-sitter = { workspace = true }
 tree-sitter-python = { workspace = true }
 anyhow = "1"

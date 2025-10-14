@@ -12,7 +12,7 @@ categories = ["development-tools", "ai"]
 [lib]
 name = "prompt_engine"
 path = "src/lib.rs"
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 rustler = { version = "0.34", optional = true }
@@ -54,10 +54,6 @@ tracing-subscriber = "0.3"
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
-
-[[bin]]
-name = "prompt_analysis_service"
-path = "src/bin/prompt_analysis_service.rs"
 
 [features]
 default = ["nif"]

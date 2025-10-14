@@ -1,10 +1,9 @@
 use anyhow::Result;
-use std::path::PathBuf;
 use tracing::info;
 use candle_core::{Device, Tensor};
 use candle_nn::VarBuilder;
-use candle_transformers::models::qwen2::Config as Qwen2Config;
-use std::sync::Arc;
+use candle_transformers::models::qwen2::{Config as Qwen2Config, Model as Qwen2Model};
+use std::sync::Mutex;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ModelType {
@@ -73,19 +72,24 @@ fn load_qodo_embed() -> Result<Box<dyn EmbeddingModel>> {
         Device::Cpu
     };
 
-    // Load safetensors weights
-    let weights_path = model_dir.join("model.safetensors");
-    let vb = unsafe { VarBuilder::from_mmaped_safetensors(&[weights_path], candle_core::DType::F32, &device)? };
+    // Load sharded safetensors weights
+    let shard_paths = vec![
+        model_dir.join("model-00001-of-00002.safetensors"),
+        model_dir.join("model-00002-of-00002.safetensors"),
+    ];
+    let vb = unsafe { VarBuilder::from_mmaped_safetensors(&shard_paths, candle_core::DType::F32, &device)? };
 
     // Load Qwen2 config
     let config_path = model_dir.join("config.json");
     let config: Qwen2Config = serde_json::from_reader(std::fs::File::open(config_path)?)?;
 
+    // Initialize Qwen2 model from VarBuilder
+    let model = Qwen2Model::new(&config, vb)?;
+
     info!("Qodo-Embed loaded successfully (Qwen2-1.5B base, 1536-dim)");
 
     Ok(Box::new(QodoEmbedModel {
-        config,
-        vb,
+        model: Mutex::new(model),
         device,
     }))
 }
@@ -121,44 +125,54 @@ impl EmbeddingModel for JinaV3Model {
 
 /// Qodo-Embed-1 Candle model wrapper (Qwen2-based)
 struct QodoEmbedModel {
-    config: Qwen2Config,
-    vb: VarBuilder<'static>,
+    model: Mutex<Qwen2Model>,
     device: Device,
 }
 
 impl EmbeddingModel for QodoEmbedModel {
     fn embed_batch(&self, texts: &[String]) -> Result<Vec<Vec<f32>>> {
-        // TODO: Implement full Qwen2 forward pass for embeddings
-        // For now, return mock implementation showing the structure
-        // Real implementation would:
-        // 1. Tokenize texts using sentence-transformers tokenizer
-        // 2. Run through Qwen2 encoder layers
-        // 3. Mean pool the last hidden states
-        // 4. Normalize to unit vectors
-
         info!("Qodo-Embed: Generating embeddings for {} texts", texts.len());
 
-        // Placeholder: Return deterministic embeddings based on config
-        let embeddings: Vec<Vec<f32>> = texts.iter()
-            .enumerate()
-            .map(|(idx, text)| {
-                let mut embedding = vec![0.0; 1536];
+        // Get tokenizer for Qodo-Embed (Qwen2-based)
+        let tokenizer = crate::tokenizer_cache::get_tokenizer(ModelType::QodoEmbed)?;
 
-                // Use text content hash for deterministic mock
-                let text_hash = text.bytes().fold(0u64, |acc, b| {
-                    acc.wrapping_mul(31).wrapping_add(b as u64)
-                });
+        let mut all_embeddings = Vec::new();
 
-                for (i, val) in embedding.iter_mut().enumerate() {
-                    let seed = text_hash.wrapping_add((i * 13 + idx * 7) as u64);
-                    *val = ((seed % 1000) as f32 / 1000.0) - 0.5;
-                }
+        // Process each text
+        for text in texts {
+            // 1. Tokenize
+            let encoding = tokenizer.encode(text.as_str(), true)
+                .map_err(|e| anyhow::anyhow!("Tokenization failed: {}", e))?;
+            let tokens = encoding.get_ids();
 
-                normalize_vector(&embedding)
-            })
-            .collect();
+            // Convert tokens to tensor
+            let input_ids = Tensor::new(tokens, &self.device)?
+                .unsqueeze(0)?; // Add batch dimension
 
-        Ok(embeddings)
+            // 2. Run through Qwen2 model (no attention mask, start position = 0)
+            let mut model = self.model.lock()
+                .map_err(|e| anyhow::anyhow!("Failed to lock model: {}", e))?;
+            let outputs = model.forward(&input_ids, 0, None)?;
+
+            // 3. Mean pooling: average across sequence length dimension
+            // outputs shape: [batch=1, seq_len, hidden_size=1536]
+            let seq_len = outputs.dim(1)?;
+            let pooled = (outputs.sum(1)? / (seq_len as f64))?;
+
+            // Remove batch dimension and convert to Vec<f32>
+            let pooled_vec = pooled.squeeze(0)?.to_vec1::<f32>()?;
+
+            // 4. Normalize to unit vector
+            let normalized = normalize_vector(&pooled_vec);
+
+            all_embeddings.push(normalized);
+        }
+
+        info!("Qodo-Embed: Generated {} embeddings of dimension {}",
+              all_embeddings.len(),
+              all_embeddings.first().map(|e| e.len()).unwrap_or(0));
+
+        Ok(all_embeddings)
     }
 
     fn model_type(&self) -> ModelType {
@@ -170,18 +184,6 @@ impl EmbeddingModel for QodoEmbedModel {
     }
 }
 
-/// Helper: Get model path (local or download)
-fn get_model_path(model_name: &str) -> Result<PathBuf> {
-    let base_path = PathBuf::from("priv/models");
-    let model_path = base_path.join(model_name);
-
-    if model_path.exists() {
-        Ok(model_path)
-    } else {
-        // Try to download from HuggingFace (future: implement auto-download)
-        anyhow::bail!("Model not found: {:?}. Please download manually.", model_path)
-    }
-}
 
 /// all-MiniLM-L6-v2 CPU-optimized model loader
 ///

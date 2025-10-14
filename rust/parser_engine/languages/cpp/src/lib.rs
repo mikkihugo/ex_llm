@@ -1,7 +1,7 @@
 //! C++ parser implemented with tree-sitter.
 
-use parser_framework::{
-    Comment, Function, Import, LanguageMetrics, LanguageParser, ParseError, AST,
+use parser_core::{
+    Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
 use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator};
@@ -44,15 +44,18 @@ impl LanguageParser for CppParser {
         let comments = self.get_comments(ast)?;
 
         Ok(LanguageMetrics {
-            lines_of_code: ast.source.lines().count(),
-            functions_count: functions.len(),
-            imports_count: imports.len(),
-            comments_count: comments.len(),
+            lines_of_code: ast.content.lines().count() as u64,
+            lines_of_comments: comments.len() as u64,
+            blank_lines: 0, // TODO: implement blank line counting
+            total_lines: ast.content.lines().count() as u64,
+            functions: functions.len() as u64,
+            classes: 0, // C++ has classes but not parsed here
+            complexity_score: 0.0, // TODO: implement complexity calculation
             ..LanguageMetrics::default()
         })
     }
 
-    fn get_functions(&self, ast: &AST) -> Result<Vec<Function>, ParseError> {
+    fn get_functions(&self, ast: &AST) -> Result<Vec<FunctionInfo>, ParseError> {
         let query = Query::new(
             &tree_sitter_cpp::LANGUAGE.into(),
             r#"
@@ -63,11 +66,11 @@ impl LanguageParser for CppParser {
             ) @function
             "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = QueryCursor::new();
-        let root = ast.root();
-        let mut matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let root = ast.tree.root_node();
+        let mut matches = cursor.matches(&query, root, ast.content.as_bytes());
 
         let mut functions = Vec::new();
         while let Some(m) = matches.next() {
@@ -75,23 +78,18 @@ impl LanguageParser for CppParser {
                 if capture.index == 1 {
                     let name = capture
                         .node
-                        .utf8_text(ast.source.as_bytes())
+                        .utf8_text(ast.content.as_bytes())
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
                     let end = capture.node.end_position().row + 1;
-                    functions.push(Function {
+                    functions.push(FunctionInfo {
                         name,
-                        parameters: String::new(),
-                        return_type: String::new(),
-                        start_line: start,
-                        end_line: end,
-                        body: String::new(),
-                        signature: None,
-                        docstring: None,
-                        decorators: Vec::new(),
-                        is_async: false,
-                        is_generator: false,
+                        parameters: Vec::new(),
+                        return_type: None,
+                        line_start: start as u32,
+                        line_end: end as u32,
+                        complexity: 1, // TODO: implement complexity calculation
                     });
                 }
             }
@@ -109,11 +107,11 @@ impl LanguageParser for CppParser {
             ) @import
             "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = QueryCursor::new();
-        let root = ast.root();
-        let mut matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let root = ast.tree.root_node();
+        let mut matches = cursor.matches(&query, root, ast.content.as_bytes());
 
         let mut imports = Vec::new();
         while let Some(m) = matches.next() {
@@ -121,17 +119,15 @@ impl LanguageParser for CppParser {
                 if capture.index == 1 {
                     let path = capture
                         .node
-                        .utf8_text(ast.source.as_bytes())
+                        .utf8_text(ast.content.as_bytes())
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
                     let end = capture.node.end_position().row + 1;
                     imports.push(Import {
-                        path,
-                        kind: "include".into(),
-                        start_line: start,
-                        end_line: end,
-                        alias: None,
+                        module: path,
+                        items: Vec::new(),
+                        line: start as u32,
                     });
                 }
             }
@@ -147,11 +143,11 @@ impl LanguageParser for CppParser {
             (comment) @comment
             "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = QueryCursor::new();
-        let root = ast.root();
-        let mut matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let root = ast.tree.root_node();
+        let mut matches = cursor.matches(&query, root, ast.content.as_bytes());
 
         let mut comments = Vec::new();
         while let Some(m) = matches.next() {
@@ -159,16 +155,15 @@ impl LanguageParser for CppParser {
                 if capture.index == 0 {
                     let text = capture
                         .node
-                        .utf8_text(ast.source.as_bytes())
+                        .utf8_text(ast.content.as_bytes())
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
                     let end = capture.node.end_position().row + 1;
                     comments.push(Comment {
-                        text,
-                        kind: "line".into(),
-                        start_line: start,
-                        end_line: end,
+                        content: text,
+                        line: start as u32,
+                        column: (capture.node.start_position().column + 1) as u32,
                     });
                 }
             }

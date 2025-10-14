@@ -54,7 +54,8 @@ defmodule Singularity.EmbeddingEngine do
     otp_app: :singularity,
     crate: :embedding_engine,
     path: "../rust/embedding_engine",
-    skip_compilation?: false
+    skip_compilation?: false,
+    mode: :release
 
   require Logger
   alias Singularity.NatsClient
@@ -114,71 +115,31 @@ defmodule Singularity.EmbeddingEngine do
   @type model :: :jina_v3 | :qodo_embed | :minilm
   @type opts :: [model: model()]
 
-  ## NIF Stubs
+  ## NIF Functions (imported from Rust via Rustler)
+  # These match the functions exported in rust/embedding_engine/src/lib.rs rustler::init!
+  # Rustler automatically loads these from the compiled Rust library
 
-  @doc false
-  def embed_batch(texts, model_type), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def embed_single(text, model_type), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def preload_models(model_types), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def cosine_similarity_batch(_query_embeddings, _candidate_embeddings),
-    do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def cross_model_comparison(_texts, _model_types), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def get_model_info(_model_type), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def validate_model(_model_type), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def get_model_stats(_model_type), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def cleanup_cache(_model_types), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def batch_tokenize(_texts, _model_type), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def batch_detokenize(_token_ids, _model_type), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def tokenize_texts(_texts, _model_type), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def detokenize_texts(_token_ids, _model_type), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def ensure_models_downloaded(_model_types), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def advanced_similarity_search(_query_embeddings, _candidate_embeddings, _options), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def embedding_clustering(_embeddings, _options, _params), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def semantic_search(_query, _embeddings, _options), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def batch_process_documents(_documents, _model_type, _batch_size, _chunk_size), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def get_embedding_quality_metrics(_embeddings), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def optimize_embeddings(_embeddings, _options, _params), do: :erlang.nif_error(:nif_not_loaded)
-
-  @doc false
-  def embedding_fusion(_texts, _model_types, _fusion_method), do: :erlang.nif_error(:nif_not_loaded)
+  defp nif_embed_batch(_texts, _model_type), do: :erlang.nif_error(:nif_not_loaded)
+  defp nif_embed_single(_text, _model_type), do: :erlang.nif_error(:nif_not_loaded)
+  defp nif_preload_models(_model_types), do: :erlang.nif_error(:nif_not_loaded)
+  defp nif_cosine_similarity_batch(_query_embeddings, _candidate_embeddings), do: :erlang.nif_error(:nif_not_loaded)
+  defp nif_get_model_info(_model_type), do: :erlang.nif_error(:nif_not_loaded)
+  defp nif_cross_model_comparison(_texts, _model_types), do: :erlang.nif_error(:nif_not_loaded)
+  defp embedding_fusion(_texts, _model_types, _fusion_method), do: :erlang.nif_error(:nif_not_loaded)
+  defp batch_tokenize(_texts, _model_type), do: :erlang.nif_error(:nif_not_loaded)
+  defp batch_detokenize(_token_ids, _model_type), do: :erlang.nif_error(:nif_not_loaded)
+  defp ensure_models_downloaded(_model_types), do: :erlang.nif_error(:nif_not_loaded)
+  defp validate_model(_model_type), do: :erlang.nif_error(:nif_not_loaded)
+  defp get_model_stats(_model_type), do: :erlang.nif_error(:nif_not_loaded)
+  defp cleanup_cache(_model_types), do: :erlang.nif_error(:nif_not_loaded)
+  defp tokenize_texts(_texts, _model_type), do: :erlang.nif_error(:nif_not_loaded)
+  defp detokenize_texts(_token_ids, _model_type), do: :erlang.nif_error(:nif_not_loaded)
+  defp advanced_similarity_search(_query_text, _candidate_texts, _model_type, _top_k, _similarity_threshold), do: :erlang.nif_error(:nif_not_loaded)
+  defp embedding_clustering(_embeddings, _num_clusters, _max_iterations), do: :erlang.nif_error(:nif_not_loaded)
+  defp semantic_search(_query, _documents, _model_type, _expand_query, _rerank_top_k), do: :erlang.nif_error(:nif_not_loaded)
+  defp batch_process_documents(_documents, _model_type, _batch_size, _chunk_size), do: :erlang.nif_error(:nif_not_loaded)
+  defp get_embedding_quality_metrics(_embeddings), do: :erlang.nif_error(:nif_not_loaded)
+  defp optimize_embeddings(_embeddings, _normalize, _target_dimensions), do: :erlang.nif_error(:nif_not_loaded)
 
   ## Public API
 
@@ -199,7 +160,7 @@ defmodule Singularity.EmbeddingEngine do
     model = Keyword.get(opts, :model, :qodo_embed)
     model_str = model_to_string(model)
 
-    case embed_single(text, model_str) do
+    case nif_embed_single(text, model_str) do
       result when is_list(result) ->
         Logger.debug("Generated embedding with #{model}: #{length(result)} dims")
         {:ok, result}
@@ -234,7 +195,7 @@ defmodule Singularity.EmbeddingEngine do
     model = Keyword.get(opts, :model, :qodo_embed)
     model_str = model_to_string(model)
 
-    case embed_batch(texts, model_str) do
+    case nif_embed_batch(texts, model_str) do
       result when is_list(result) ->
         Logger.debug("Generated #{length(result)} embeddings with #{model}")
         {:ok, result}
@@ -266,7 +227,7 @@ defmodule Singularity.EmbeddingEngine do
   def preload_models(models) when is_list(models) do
     model_strings = Enum.map(models, &model_to_string/1)
 
-    case preload_models(model_strings) do
+    case nif_preload_models(model_strings) do
       result when is_binary(result) ->
         Logger.info("Preloaded embedding models: #{result}")
         {:ok, result}
@@ -302,7 +263,7 @@ defmodule Singularity.EmbeddingEngine do
           {:ok, [[float()]]} | {:error, term()}
   def cosine_similarity_batch(query_embeddings, candidate_embeddings)
       when is_list(query_embeddings) and is_list(candidate_embeddings) do
-    case cosine_similarity_batch(query_embeddings, candidate_embeddings) do
+    case nif_cosine_similarity_batch(query_embeddings, candidate_embeddings) do
       result when is_list(result) ->
         {:ok, result}
 
@@ -404,7 +365,7 @@ defmodule Singularity.EmbeddingEngine do
 
   defp nif_loaded? do
     try do
-      embed_single("test", "qodo_embed")
+      nif_embed_single("test", "qodo_embed")
       true
     rescue
       _ -> false

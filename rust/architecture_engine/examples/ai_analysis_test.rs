@@ -3,7 +3,7 @@
 //! This example demonstrates how to use the AI analysis feature
 //! for detecting unknown frameworks when other methods fail.
 
-use tech_detector::TechDetector;
+use architecture_engine::tech_detector::TechDetector;
 use tracing::{info, warn};
 
 #[tokio::main]

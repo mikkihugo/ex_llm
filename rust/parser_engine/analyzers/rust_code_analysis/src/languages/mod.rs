@@ -32,3 +32,15 @@ pub use language_typescript::*;
 
 pub mod language_preproc;
 pub use language_preproc::*;
+
+pub mod language_elixir;
+pub use language_elixir::*;
+
+pub mod language_erlang;
+pub use language_erlang::*;
+
+pub mod language_gleam;
+pub use language_gleam::*;
+
+pub mod language_lua;
+pub use language_lua::*;

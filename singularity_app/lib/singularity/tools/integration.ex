@@ -15,6 +15,7 @@ defmodule Singularity.Tools.Integration do
   Essential for autonomous system integration and API management operations.
   """
 
+  require Logger
   alias Singularity.Tools.{Tool, Catalog}
 
   def register(provider) do

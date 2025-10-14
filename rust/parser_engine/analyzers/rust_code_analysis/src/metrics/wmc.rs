@@ -135,7 +135,7 @@ impl Wmc for JavaCode {
   }
 }
 
-implement_metric_trait!(Wmc, PythonCode, MozjsCode, JavascriptCode, TypescriptCode, TsxCode, RustCode, CppCode, PreprocCode, CcommentCode, KotlinCode);
+implement_metric_trait!(Wmc, ElixirCode, ErlangCode, GleamCode, LuaCode, PythonCode, MozjsCode, JavascriptCode, TypescriptCode, TsxCode, RustCode, CppCode, PreprocCode, CcommentCode, KotlinCode);
 
 #[cfg(test)]
 mod tests {

@@ -71,7 +71,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   """
   def update(todo, attrs) do
     todo
-    |> Todo.create_changeset(attrs)
+    |> Todo.changeset(attrs)
     |> Repo.update()
   end
 
@@ -188,7 +188,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   - `:min_similarity` - Minimum similarity score (0.0-1.0, default: 0.7)
   """
   def search(query, opts \\ []) do
-    with {:ok, embedding} <- EmbeddingGenerator.generate_embedding(query) do
+    with {:ok, embedding} <- EmbeddingGenerator.embed(query) do
       limit = Keyword.get(opts, :limit, 10)
       min_similarity = Keyword.get(opts, :min_similarity, 0.7)
 
@@ -386,7 +386,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   defp maybe_generate_embedding(todo) do
     text = "#{todo.title} #{todo.description || ""}"
 
-    case EmbeddingGenerator.generate_embedding(text) do
+    case EmbeddingGenerator.embed(text) do
       {:ok, embedding} ->
         todo
         |> Ecto.Changeset.change(embedding: embedding)

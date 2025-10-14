@@ -10,7 +10,7 @@ defmodule Singularity.Tools.Quality do
 
   @doc "Register quality-related tools with the shared registry."
   def register(provider) do
-    Singularity.Tools.Singularity.Tools.Catalog.add_tools(provider, [
+    Singularity.Tools.Catalog.add_tools(provider, [
       sobelow_tool(),
       mix_audit_tool()
     ])

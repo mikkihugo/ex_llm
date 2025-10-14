@@ -1,5 +1,5 @@
 use anyhow::Result;
-use parser_framework::{LanguageParser, AST, ASTNode};
+use parser_core::{LanguageParser, AST, ASTNode, LanguageMetrics, Function, Import, Comment, ParseError};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -14,43 +14,43 @@ impl LanguageParser for TemplateMetaParser {
         vec!["json"]
     }
 
-    fn parse(&self, content: &str) -> Result<AST, parser_framework::ParseError> {
+    fn parse(&self, content: &str) -> Result<AST, ParseError> {
         // Parse JSON template metadata using tree-sitter
         self.parse_template_json(content)
     }
 
-    fn get_metrics(&self, _ast: &AST) -> Result<parser_framework::LanguageMetrics, parser_framework::ParseError> {
-        Ok(parser_framework::LanguageMetrics::default())
+    fn get_metrics(&self, _ast: &AST) -> Result<LanguageMetrics, ParseError> {
+        Ok(LanguageMetrics::default())
     }
 
-    fn get_functions(&self, _ast: &AST) -> Result<Vec<parser_framework::Function>, parser_framework::ParseError> {
+    fn get_functions(&self, _ast: &AST) -> Result<Vec<Function>, ParseError> {
         Ok(Vec::new())
     }
 
-    fn get_imports(&self, _ast: &AST) -> Result<Vec<parser_framework::Import>, parser_framework::ParseError> {
+    fn get_imports(&self, _ast: &AST) -> Result<Vec<Import>, ParseError> {
         Ok(Vec::new())
     }
 
-    fn get_comments(&self, _ast: &AST) -> Result<Vec<parser_framework::Comment>, parser_framework::ParseError> {
+    fn get_comments(&self, _ast: &AST) -> Result<Vec<Comment>, ParseError> {
         Ok(Vec::new())
     }
 }
 
 impl TemplateMetaParser {
-    fn parse_template_json(&self, content: &str) -> Result<AST, parser_framework::ParseError> {
+    fn parse_template_json(&self, content: &str) -> Result<AST, parser_core::ParseError> {
         // TODO: Implement tree-sitter JSON parsing for template metadata
         // Create a simple AST for now - TODO: implement proper JSON parsing
         use tree_sitter::Parser;
         let mut parser = Parser::new();
         let tree = parser.parse(content, None)
-            .ok_or_else(|| parser_framework::ParseError::TreeSitterError("Failed to parse JSON".to_string()))?;
+            .ok_or_else(|| parser_core::ParseError::TreeSitterError("Failed to parse JSON".to_string()))?;
         Ok(AST::new(tree, content.to_string()))
     }
 
     pub fn extract_metadata(&self, source: &str) -> Result<TemplateMetadata> {
         // Parse JSON and extract metadata
         let json_value: serde_json::Value = serde_json::from_str(source)
-            .map_err(|e| parser_framework::ParseError::ParseError(format!("JSON parse error: {}", e)))?;
+            .map_err(|e| parser_core::ParseError::ParseError(format!("JSON parse error: {}", e)))?;
 
         // Extract metadata from JSON structure
         let name = json_value

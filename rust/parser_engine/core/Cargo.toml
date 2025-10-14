@@ -1,19 +1,76 @@
 [package]
-name = "parser-framework"
+name = "parser_core"
 version = "0.1.0"
 edition = "2021"
-description = "Core framework for language-specific parsers"
+license = "MIT OR Apache-2.0"
+authors = ["claude-code-zen Team"]
+description = "Core parser types and traits - shared by parser_engine NIF and code_engine NIF"
+repository = "https://github.com/claude-code-zen/zenflow"
+readme = "README.md"
+keywords = ["parser", "source-code", "ast", "code-analysis", "tree-sitter"]
+categories = ["development-tools", "parsing"]
+
+[lib]
+name = "parser_core"
+path = "src/lib.rs"
+crate-type = ["rlib"]  # Library only - NO NIF, NO rustler
 
 [dependencies]
-# Core dependencies
-anyhow = "1"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-thiserror = "1"
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
 
-# Tree-sitter core (no language bindings)
-tree-sitter = { workspace = true }
+# Serialization (for types used across NIFs)
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
-# Common types
-uuid = { version = "1", features = ["v4", "serde"] }
+# Tree-sitter core only (individual parsers provide their own language bindings)
+tree-sitter = "0.25.10"
+
+# AST-Grep for structural search, linting, and code transformation
+ast-grep-core = { workspace = true }
+
+# Core utilities
+async-trait = "0.1"
+futures = "0.3"
+tokio = { version = "1.0", features = ["full"] }
 chrono = { version = "0.4", features = ["serde"] }
+
+# Performance
+lru = "0.12"
+dashmap = "5.0"
+
+# Graph analysis
+petgraph = "0.6"
+
+# Regular expressions
+regex = "1.0"
+
+# Logging
+tracing = "0.1"
+
+# Temporary files (only for RCA analysis which requires file paths)
+tempfile = "3.0"
+
+# Singularity rust-code-analysis for comprehensive complexity metrics
+singularity-code-analysis = { path = "../analyzers/rust_code_analysis" }
+
+# Tree-sitter language grammars (for ast-grep)
+tree-sitter-javascript = { workspace = true }
+tree-sitter-typescript = { workspace = true }
+tree-sitter-python = { workspace = true }
+tree-sitter-rust = { workspace = true }
+tree-sitter-elixir = { workspace = true }
+tree-sitter-erlang = { workspace = true }
+tree-sitter-gleam = { workspace = true }
+tree-sitter-go = { workspace = true }
+tree-sitter-java = { workspace = true }
+tree-sitter-c = { workspace = true }
+tree-sitter-cpp = { workspace = true }
+tree-sitter-bash = { workspace = true }
+tree-sitter-json = { workspace = true }
+tree-sitter-yaml = { workspace = true }
+tree-sitter-lua = { workspace = true }
+
+[dev-dependencies]
+tokio-test = "0.4"

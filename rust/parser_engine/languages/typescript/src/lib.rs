@@ -1,7 +1,7 @@
 //! TypeScript / TSX parser backed by tree-sitter.
 
-use parser_framework::{
-    Comment, Function, Import, LanguageMetrics, LanguageParser, ParseError, AST,
+use parser_core::{
+    Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
 use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator};
@@ -61,18 +61,20 @@ impl LanguageParser for TypescriptParser {
         let comments = self.get_comments(ast)?;
 
         Ok(LanguageMetrics {
-            lines_of_code: ast.source.lines().count(),
-            functions_count: functions.len(),
-            imports_count: imports.len(),
-            comments_count: comments.len(),
-            ..LanguageMetrics::default()
+            lines_of_code: ast.content.lines().count() as u64,
+            lines_of_comments: comments.len() as u64,
+            blank_lines: 0, // TODO: implement blank line counting
+            total_lines: ast.content.lines().count() as u64,
+            functions: functions.len() as u64,
+            classes: 0, // TODO: implement class counting
+            complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
 
-    fn get_functions(&self, ast: &AST) -> Result<Vec<Function>, ParseError> {
+    fn get_functions(&self, ast: &AST) -> Result<Vec<FunctionInfo>, ParseError> {
         let language = &tree_sitter_typescript::LANGUAGE_TSX.into();
         let mut cursor = QueryCursor::new();
-        let root = ast.root();
+        let root = ast.tree.root_node();
 
         let mut functions = Vec::new();
 
@@ -87,9 +89,9 @@ impl LanguageParser for TypescriptParser {
               body: (statement_block) @body)
         "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
-        let mut captures = cursor.captures(&fn_query, root, ast.source.as_bytes());
+        let mut captures = cursor.captures(&fn_query, root, ast.content.as_bytes());
         while let Some(&(ref m, _)) = captures.next() {
             let mut name = "";
             let mut params = "";
@@ -102,27 +104,22 @@ impl LanguageParser for TypescriptParser {
                     0 => {
                         fn_node = Some(capture.node);
                     }
-                    1 => name = Self::extract_text(capture.node, &ast.source),
-                    2 => params = Self::extract_text(capture.node, &ast.source),
-                    3 => ret = Self::extract_text(capture.node, &ast.source),
-                    4 => body = Self::extract_text(capture.node, &ast.source),
+                    1 => name = Self::extract_text(capture.node, &ast.content),
+                    2 => params = Self::extract_text(capture.node, &ast.content),
+                    3 => ret = Self::extract_text(capture.node, &ast.content),
+                    4 => body = Self::extract_text(capture.node, &ast.content),
                     _ => {}
                 }
             }
 
             if let Some(node) = fn_node {
-                functions.push(Function {
+                functions.push(FunctionInfo {
                     name: name.to_owned(),
-                    parameters: params.to_owned(),
-                    return_type: ret.to_owned(),
-                    start_line: node.start_position().row + 1,
-                    end_line: node.end_position().row + 1,
-                    body: body.to_owned(),
-                    signature: None,
-                    docstring: None,
-                    decorators: Vec::new(),
-                    is_async: false,
-                    is_generator: false,
+                    parameters: params.split(',').map(|s| s.trim().to_string()).collect(),
+                    return_type: Some(ret.to_owned()),
+                    line_start: (node.start_position().row + 1) as u32,
+                    line_end: (node.end_position().row + 1) as u32,
+                    complexity: 0,
                 });
             }
         }
@@ -140,9 +137,9 @@ impl LanguageParser for TypescriptParser {
                   body: (_) @body))) @arrow_decl
         "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
-        let mut captures = cursor.captures(&arrow_query, root, ast.source.as_bytes());
+        let mut captures = cursor.captures(&arrow_query, root, ast.content.as_bytes());
         while let Some((m, _)) = captures.next() {
             let mut name = "";
             let mut params = "";
@@ -153,27 +150,22 @@ impl LanguageParser for TypescriptParser {
             for capture in m.captures {
                 match capture.index {
                     0 => arrow_node = Some(capture.node),
-                    1 => name = Self::extract_text(capture.node, &ast.source),
-                    2 => params = Self::extract_text(capture.node, &ast.source),
-                    3 => ret = Self::extract_text(capture.node, &ast.source),
-                    4 => body = Self::extract_text(capture.node, &ast.source),
+                    1 => name = Self::extract_text(capture.node, &ast.content),
+                    2 => params = Self::extract_text(capture.node, &ast.content),
+                    3 => ret = Self::extract_text(capture.node, &ast.content),
+                    4 => body = Self::extract_text(capture.node, &ast.content),
                     _ => {}
                 }
             }
 
             if let Some(node) = arrow_node {
-                functions.push(Function {
+                functions.push(FunctionInfo {
                     name: name.to_owned(),
-                    parameters: params.to_owned(),
-                    return_type: ret.to_owned(),
-                    start_line: node.start_position().row + 1,
-                    end_line: node.end_position().row + 1,
-                    body: body.to_owned(),
-                    signature: None,
-                    docstring: None,
-                    decorators: Vec::new(),
-                    is_async: false,
-                    is_generator: false,
+                    parameters: params.split(',').map(|s| s.trim().to_string()).collect(),
+                    return_type: Some(ret.to_owned()),
+                    line_start: (node.start_position().row + 1) as u32,
+                    line_end: (node.end_position().row + 1) as u32,
+                    complexity: 0,
                 });
             }
         }
@@ -189,9 +181,9 @@ impl LanguageParser for TypescriptParser {
                 body: (statement_block) @body) @method
         "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
-        let mut captures = cursor.captures(&method_query, root, ast.source.as_bytes());
+        let mut captures = cursor.captures(&method_query, root, ast.content.as_bytes());
         while let Some((m, _)) = captures.next() {
             let mut name = "";
             let mut params = "";
@@ -202,27 +194,22 @@ impl LanguageParser for TypescriptParser {
             for capture in m.captures {
                 match capture.index {
                     0 => method_node = Some(capture.node),
-                    1 => name = Self::extract_text(capture.node, &ast.source),
-                    2 => params = Self::extract_text(capture.node, &ast.source),
-                    3 => ret = Self::extract_text(capture.node, &ast.source),
-                    4 => body = Self::extract_text(capture.node, &ast.source),
+                    1 => name = Self::extract_text(capture.node, &ast.content),
+                    2 => params = Self::extract_text(capture.node, &ast.content),
+                    3 => ret = Self::extract_text(capture.node, &ast.content),
+                    4 => body = Self::extract_text(capture.node, &ast.content),
                     _ => {}
                 }
             }
 
             if let Some(node) = method_node {
-                functions.push(Function {
+                functions.push(FunctionInfo {
                     name: name.to_owned(),
-                    parameters: params.to_owned(),
-                    return_type: ret.to_owned(),
-                    start_line: node.start_position().row + 1,
-                    end_line: node.end_position().row + 1,
-                    body: body.to_owned(),
-                    signature: None,
-                    docstring: None,
-                    decorators: Vec::new(),
-                    is_async: false,
-                    is_generator: false,
+                    parameters: params.split(',').map(|s| s.trim().to_string()).collect(),
+                    return_type: Some(ret.to_owned()),
+                    line_start: (node.start_position().row + 1) as u32,
+                    line_end: (node.end_position().row + 1) as u32,
+                    complexity: 0,
                 });
             }
         }
@@ -238,11 +225,11 @@ impl LanguageParser for TypescriptParser {
               source: (string) @path) @import
         "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = QueryCursor::new();
-        let root = ast.root();
-        let mut matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let root = ast.tree.root_node();
+        let mut matches = cursor.matches(&query, root, ast.content.as_bytes());
 
         let mut imports = Vec::new();
         while let Some(m) = matches.next() {
@@ -252,18 +239,16 @@ impl LanguageParser for TypescriptParser {
                 if capture.index == 0 {
                     node = Some(capture.node);
                 } else if capture.index == 1 {
-                    path = Self::extract_text(capture.node, &ast.source);
+                    path = Self::extract_text(capture.node, &ast.content);
                 }
             }
 
             if let Some(node) = node {
                 let clean_path = path.trim_matches(|c| c == '"' || c == '\'').to_owned();
                 imports.push(Import {
-                    path: clean_path,
-                    kind: "import".into(),
-                    start_line: node.start_position().row + 1,
-                    end_line: node.end_position().row + 1,
-                    alias: None,
+                    module: clean_path,
+                    items: Vec::new(),
+                    line: (node.start_position().row + 1) as u32,
                 });
             }
         }
@@ -278,18 +263,18 @@ impl LanguageParser for TypescriptParser {
             (comment) @comment
         "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = QueryCursor::new();
-        let root = ast.root();
-        let mut matches = cursor.matches(&query, root, ast.source.as_bytes());
+        let root = ast.tree.root_node();
+        let mut matches = cursor.matches(&query, root, ast.content.as_bytes());
 
         let mut comments = Vec::new();
         while let Some(m) = matches.next() {
             for capture in m.captures {
                 let text = capture
                     .node
-                    .utf8_text(ast.source.as_bytes())
+                    .utf8_text(ast.content.as_bytes())
                     .unwrap_or_default()
                     .to_owned();
                 let start = capture.node.start_position().row + 1;
@@ -300,10 +285,9 @@ impl LanguageParser for TypescriptParser {
                     "line"
                 };
                 comments.push(Comment {
-                    text,
-                    kind: kind.into(),
-                    start_line: start,
-                    end_line: end,
+                    content: text,
+                    line: start as u32,
+                    column: 0, // TODO: implement column counting
                 });
             }
         }
@@ -335,7 +319,7 @@ mod tests {
             .expect("metrics extraction for tsx");
 
         assert!(
-            metrics.functions_count >= 1,
+            metrics.functions.len() >= 1,
             "expected at least one function in TSX source"
         );
     }

@@ -1,10 +1,10 @@
 # rust-code-analysis
 
 [![Crates.io](https://img.shields.io/crates/v/rust-code-analysis.svg)](https://crates.io/crates/rust-code-analysis)
-[![Task Status](https://community-tc.services.mozilla.com/api/github/v1/repository/mozilla/rust-code-analysis/master/badge.svg)](https://community-tc.services.mozilla.com/api/github/v1/repository/mozilla/rust-code-analysis/master/latest)
-[![codecov](https://codecov.io/gh/mozilla/rust-code-analysis/branch/master/graph/badge.svg)](https://codecov.io/gh/mozilla/rust-code-analysis)
-<a href="https://chat.mozilla.org/#/room/#rust-code-analysis:mozilla.org" target="_blank">
-   <img src="https://img.shields.io/badge/chat%20on%20[m]-%23rust--code--analysis%3Amozilla.org-blue">
+[![Task Status](https://community-tc.services.singularity.com/api/github/v1/repository/singularity/rust-code-analysis/master/badge.svg)](https://community-tc.services.singularity.com/api/github/v1/repository/singularity/rust-code-analysis/master/latest)
+[![codecov](https://codecov.io/gh/singularity/rust-code-analysis/branch/master/graph/badge.svg)](https://codecov.io/gh/singularity/rust-code-analysis)
+<a href="https://chat.singularity.org/#/room/#rust-code-analysis:singularity.org" target="_blank">
+   <img src="https://img.shields.io/badge/chat%20on%20[m]-%23rust--code--analysis%3Asingularity.org-blue">
 </a>
 
 **rust-code-analysis** is a Rust library to analyze and extract information
@@ -29,10 +29,10 @@ In addition, we provide a **rust-code-analysis-web** tool to use the library thr
 
 **rust-code-analysis** supports many types of programming languages and
 computes a great variety of metrics. You can find up to date documentation at
-<a href="https://mozilla.github.io/rust-code-analysis/index.html" target="_blank">Documentation</a>.
+<a href="https://singularity.github.io/rust-code-analysis/index.html" target="_blank">Documentation</a>.
 
 On the
-<a href="https://mozilla.github.io/rust-code-analysis/commands/index.html" target="_blank">
+<a href="https://singularity.github.io/rust-code-analysis/commands/index.html" target="_blank">
     Commands
 </a> page, there is a list of commands that can be run to get information
 about metrics, nodes, and other general data provided by this software.
@@ -83,14 +83,14 @@ Will run the tests, generate the new snapshot references and let you review them
 
 ### Updating grammars
 Have a look at
-<a href="https://mozilla.github.io/rust-code-analysis/developers/update-grammars.html" target="_blank">Update grammars guide</a>
+<a href="https://singularity.github.io/rust-code-analysis/developers/update-grammars.html" target="_blank">Update grammars guide</a>
 to learn how to update languages grammars.
 
 # Contributing
 
 If you want to contribute to the development of this software, have a look at the
 guidelines contained in our
-<a href="https://mozilla.github.io/rust-code-analysis/developers/index.html" target="_blank">Developers Guide</a>.
+<a href="https://singularity.github.io/rust-code-analysis/developers/index.html" target="_blank">Developers Guide</a>.
 
 
 # How to cite rust-code-analysis
@@ -114,8 +114,8 @@ guidelines contained in our
 
 # Licenses
 
-- Mozilla-defined grammars are released under the MIT license.
+- Singularity-defined grammars are released under the MIT license.
 
 - **rust-code-analysis**, **rust-code-analysis-cli** and **rust-code-analysis-web**
 are released under the
-<a href="https://www.mozilla.org/MPL/2.0/" target="_blank">Mozilla Public License v2.0</a>.
+<a href="https://www.singularity.org/MPL/2.0/" target="_blank">Singularity Public License v2.0</a>.

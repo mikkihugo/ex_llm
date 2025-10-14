@@ -1,6 +1,6 @@
 use crate::{
-  metrics::halstead::HalsteadType, spaces::SpaceKind, traits::Search, CcommentCode, Cpp, CppCode, Java, JavaCode, Javascript, JavascriptCode, KotlinCode,
-  Mozjs, MozjsCode, Node, PreprocCode, Python, PythonCode, Rust, RustCode, Tsx, TsxCode, Typescript, TypescriptCode,
+  metrics::halstead::HalsteadType, spaces::SpaceKind, traits::Search, CcommentCode, Cpp, CppCode, ElixirCode, ErlangCode, GleamCode, Java, JavaCode, Javascript, JavascriptCode, KotlinCode,
+  Lua, LuaCode, Mozjs, MozjsCode, Node, PreprocCode, Python, PythonCode, Rust, RustCode, Tsx, TsxCode, Typescript, TypescriptCode,
 };
 
 macro_rules! get_operator {
@@ -87,7 +87,7 @@ impl Getter for PythonCode {
   }
 }
 
-// Mozilla custom parsers - delegate to standard parsers for compatibility
+// Singularity custom parsers - delegate to standard parsers for compatibility
 impl Getter for MozjsCode {
   fn get_space_kind(node: &Node) -> SpaceKind {
     JavascriptCode::get_space_kind(node)
@@ -457,7 +457,7 @@ impl Getter for CppCode {
   get_operator!(Cpp);
 }
 
-// Mozilla custom parsers - delegate to standard C/C++ parser for compatibility
+// Singularity custom parsers - delegate to standard C/C++ parser for compatibility
 impl Getter for PreprocCode {
   fn get_space_kind(node: &Node) -> SpaceKind {
     CppCode::get_space_kind(node)
@@ -559,3 +559,11 @@ impl Getter for JavaCode {
 }
 
 impl Getter for KotlinCode {}
+
+// BEAM languages - Elixir, Erlang, Gleam (minimal implementations)
+impl Getter for ElixirCode {}
+impl Getter for ErlangCode {}
+impl Getter for GleamCode {}
+
+// Lua (minimal implementation)
+impl Getter for LuaCode {}

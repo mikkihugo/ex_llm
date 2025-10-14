@@ -45,7 +45,7 @@ where
   }
 }
 
-// Mozilla custom parsers - delegate to standard parsers for compatibility
+// Singularity custom parsers - delegate to standard parsers for compatibility
 impl Alterator for PreprocCode {
   fn alterate(node: &Node, code: &[u8], span: bool, children: Vec<AstNode>) -> AstNode {
     CppCode::alterate(node, code, span, children)
@@ -83,7 +83,7 @@ impl Alterator for PythonCode {}
 impl Alterator for JavaCode {}
 impl Alterator for KotlinCode {}
 
-// Mozilla custom MozjsCode parser - delegate to standard JavascriptCode parser
+// Singularity custom MozjsCode parser - delegate to standard JavascriptCode parser
 impl Alterator for MozjsCode {
   fn alterate(node: &Node, code: &[u8], span: bool, children: Vec<AstNode>) -> AstNode {
     JavascriptCode::alterate(node, code, span, children)
@@ -130,6 +130,55 @@ impl Alterator for RustCode {
   fn alterate(node: &Node, code: &[u8], span: bool, children: Vec<AstNode>) -> AstNode {
     match Rust::from(node.kind_id()) {
       Rust::StringLiteral | Rust::CharLiteral => {
+        let (text, span) = Self::get_text_span(node, code, span, true);
+        AstNode::new(node.kind(), text, span, Vec::new())
+      }
+      _ => Self::get_default(node, code, span, children),
+    }
+  }
+}
+
+// BEAM languages - Elixir, Erlang, Gleam (minimal implementations)
+impl Alterator for ElixirCode {
+  fn alterate(node: &Node, code: &[u8], span: bool, children: Vec<AstNode>) -> AstNode {
+    match Elixir::from(node.kind_id()) {
+      Elixir::String => {
+        let (text, span) = Self::get_text_span(node, code, span, true);
+        AstNode::new(node.kind(), text, span, Vec::new())
+      }
+      _ => Self::get_default(node, code, span, children),
+    }
+  }
+}
+
+impl Alterator for ErlangCode {
+  fn alterate(node: &Node, code: &[u8], span: bool, children: Vec<AstNode>) -> AstNode {
+    match Erlang::from(node.kind_id()) {
+      Erlang::Atom | Erlang::Char => {
+        let (text, span) = Self::get_text_span(node, code, span, true);
+        AstNode::new(node.kind(), text, span, Vec::new())
+      }
+      _ => Self::get_default(node, code, span, children),
+    }
+  }
+}
+
+impl Alterator for GleamCode {
+  fn alterate(node: &Node, code: &[u8], span: bool, children: Vec<AstNode>) -> AstNode {
+    match Gleam::from(node.kind_id()) {
+      Gleam::String => {
+        let (text, span) = Self::get_text_span(node, code, span, true);
+        AstNode::new(node.kind(), text, span, Vec::new())
+      }
+      _ => Self::get_default(node, code, span, children),
+    }
+  }
+}
+
+impl Alterator for LuaCode {
+  fn alterate(node: &Node, code: &[u8], span: bool, children: Vec<AstNode>) -> AstNode {
+    match Lua::from(node.kind_id()) {
+      Lua::String => {
         let (text, span) = Self::get_text_span(node, code, span, true);
         AstNode::new(node.kind(), text, span, Vec::new())
       }

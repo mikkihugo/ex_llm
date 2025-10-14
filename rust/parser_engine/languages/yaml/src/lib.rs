@@ -1,7 +1,7 @@
 //! YAML parser implemented with tree-sitter and the parser-framework traits.
 
-use parser_framework::{
-    Comment, Function, Import, LanguageMetrics, LanguageParser, ParseError, AST,
+use parser_core::{
+    Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
 use tree_sitter::Parser;
@@ -44,15 +44,17 @@ impl LanguageParser for YamlParser {
         let comments = self.get_comments(ast)?;
 
         Ok(LanguageMetrics {
-            lines_of_code: ast.source.lines().count(),
-            functions_count: 0,
-            imports_count: 0,
-            comments_count: comments.len(),
-            ..LanguageMetrics::default()
+            lines_of_code: ast.content.lines().count() as u64,
+            lines_of_comments: comments.len() as u64,
+            blank_lines: 0, // TODO: implement blank line counting
+            total_lines: ast.content.lines().count() as u64,
+            functions: 0, // YAML doesn't have functions
+            classes: 0, // YAML doesn't have classes
+            complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
 
-    fn get_functions(&self, _ast: &AST) -> Result<Vec<Function>, ParseError> {
+    fn get_functions(&self, _ast: &AST) -> Result<Vec<FunctionInfo>, ParseError> {
         // YAML has no functions
         Ok(Vec::new())
     }
@@ -71,11 +73,11 @@ impl LanguageParser for YamlParser {
             (comment) @comment
             "#,
         )
-        .map_err(|err| ParseError::QueryError(err.to_string()))?;
+        .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = QueryCursor::new();
-        let root = ast.root();
-        let mut captures = cursor.captures(&query, root, ast.source.as_bytes());
+        let root = ast.tree.root_node();
+        let mut captures = cursor.captures(&query, root, ast.content.as_bytes());
 
         let mut comments = Vec::new();
         while let Some(&(ref m, _)) = captures.next() {
@@ -83,16 +85,15 @@ impl LanguageParser for YamlParser {
                 if capture.index == 0 {
                     let text = capture
                         .node
-                        .utf8_text(ast.source.as_bytes())
+                        .utf8_text(ast.content.as_bytes())
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
                     let end = capture.node.end_position().row + 1;
                     comments.push(Comment {
-                        text,
-                        kind: "line".into(),
-                        start_line: start,
-                        end_line: end,
+                        content: text,
+                        line: start as u32,
+                        column: (capture.node.start_position().column + 1) as u32,
                     });
                 }
             }

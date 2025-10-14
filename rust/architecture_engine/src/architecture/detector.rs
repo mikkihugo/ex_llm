@@ -424,6 +424,7 @@ impl ArchitecturePatternRegistry {
     }
 
     /// Detect component pattern in content
+    #[allow(dead_code)] // Reserved for future architecture analysis features
     fn detect_component_pattern(&self, content: &str, component: &ComponentPattern) -> bool {
         // Simple pattern matching for component detection
         content.contains(&component.name)
@@ -435,6 +436,7 @@ impl ArchitecturePatternRegistry {
     }
 
     /// Detect relationship pattern in content
+    #[allow(dead_code)] // Reserved for future architecture analysis features
     fn detect_relationship_pattern(
         &self,
         content: &str,
@@ -586,6 +588,7 @@ impl ArchitecturePatternRegistry {
     }
 
     /// Assess recommendation impact
+    #[allow(dead_code)] // Reserved for future architecture analysis features
     fn assess_recommendation_impact(&self, violation: &ArchitectureViolation) -> String {
         match violation.severity {
             ViolationSeverity::Critical => "Critical impact on system architecture".to_string(),

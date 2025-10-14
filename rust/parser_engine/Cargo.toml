@@ -13,10 +13,13 @@ categories = ["development-tools", "parsing"]
 [lib]
 name = "parser_code"
 path = "src/lib.rs"
-crate-type = ["rlib", "cdylib"]  # Both library (for code_engine) AND NIF (for ParserEngine)
+crate-type = ["cdylib"]  # NIF library - separate from code_engine NIF
 
 [dependencies]
-# Rustler for NIF - explicit version (not workspace)
+# Core parser library (shared types, no NIF)
+parser_core = { path = "./core" }
+
+# Rustler for NIF
 rustler = "0.34"
 
 # Error handling
@@ -43,6 +46,8 @@ tree-sitter-java = "0.23"
 tree-sitter-c-sharp = "0.23"
 tree-sitter-c = "0.24"
 tree-sitter-cpp = "0.23"
+tree-sitter-md = { git = "https://github.com/mikkihugo/tree-sitter-markdown", branch = "update-tree-sitter-0.25", features = ["parser"] }
+tree-sitter-lua = "0.2.0"
 
 # Core utilities - explicit versions (not workspace)
 serde = { version = "1.0", features = ["derive"] }
@@ -80,6 +85,5 @@ name = "parser_performance"
 harness = false
 
 [features]
-default = ["rca", "nif"]  # Enable NIF by default for ParserEngine standalone use
-nif = []  # Enable NIF exports - rustler::init! block
-rca = []  # Mozilla rust-code-analysis metrics - ALWAYS ENABLED
+default = ["rca"]  # RCA metrics enabled by default
+rca = []  # Mozilla rust-code-analysis metrics

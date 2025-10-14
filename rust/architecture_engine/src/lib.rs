@@ -11,8 +11,8 @@
 //! All components are integrated and communicate with the central Elixir system
 //! via NATS and direct database access.
 
-use rustler::{Encoder, Env, NifMap, NifResult, Term};
-use std::path::Path;
+// Rustler imports only needed for NIFs
+// Removed unused: Encoder, Env, NifMap, NifResult, Term, Path
 
 // Include all the existing modules
 pub mod architecture;
@@ -26,10 +26,11 @@ pub mod naming_utilities;
 pub mod patterns;
 pub mod technology_detection;
 pub mod knowledge;
-
-// Include the moved components
-pub mod package_registry;
 pub mod framework_detection;
+
+// Package intelligence integration (detection + cache only - Elixir handles NATS proxy)
+pub mod package_detection;
+pub mod package_cache;
 
 // Include the NIF module
 #[cfg(feature = "nif")]
@@ -41,12 +42,7 @@ mod atoms {
     }
 }
 
-#[derive(NifMap)]
-struct FrameworkDetection {
-    name: String,
-    confidence: f64,
-    evidence: Vec<String>,
-}
+// Removed: FrameworkDetection struct - use framework_detection::Framework instead
 
 fn slugify(input: &str) -> String {
     input
@@ -218,53 +214,8 @@ fn validate_naming_convention(name: String, element_type: String) -> bool {
     }
 }
 
-#[rustler::nif]
-fn detect_frameworks<'a>(env: Env<'a>, codebase_path: String) -> NifResult<Term<'a>> {
-    let root = Path::new(&codebase_path);
-    let mut frameworks: Vec<FrameworkDetection> = Vec::new();
-
-    if root.join("mix.exs").exists() {
-        frameworks.push(FrameworkDetection {
-            name: "elixir".to_string(),
-            confidence: 0.9,
-            evidence: vec!["mix.exs file found".to_string()],
-        });
-
-        if root.join("lib").join("web").exists() {
-            frameworks.push(FrameworkDetection {
-                name: "phoenix".to_string(),
-                confidence: 0.95,
-                evidence: vec!["lib/web directory".to_string(), "mix.exs".to_string()],
-            });
-        }
-
-        if root.join("lib").join("repo.ex").exists() {
-            frameworks.push(FrameworkDetection {
-                name: "ecto".to_string(),
-                confidence: 0.9,
-                evidence: vec!["lib/repo.ex file".to_string(), "mix.exs".to_string()],
-            });
-        }
-    }
-
-    if root.join("package.json").exists() {
-        frameworks.push(FrameworkDetection {
-            name: "nodejs".to_string(),
-            confidence: 0.9,
-            evidence: vec!["package.json file found".to_string()],
-        });
-    }
-
-    if root.join("Cargo.toml").exists() {
-        frameworks.push(FrameworkDetection {
-            name: "rust".to_string(),
-            confidence: 0.9,
-            evidence: vec!["Cargo.toml file found".to_string()],
-        });
-    }
-
-    Ok((atoms::ok(), frameworks).encode(env))
-}
+// Removed: Simple stub detect_frameworks - use framework_detection module instead
+// The proper implementation is in src/framework_detection/mod.rs
 
 rustler::init!(
     "Elixir.Singularity.ArchitectureEngine",
@@ -285,6 +236,6 @@ rustler::init!(
         suggest_nats_subject,
         suggest_kafka_topic,
         suggest_names_for_architecture,
-        detect_frameworks,
+        // detect_frameworks removed - use framework_detection module instead
     ]
 );

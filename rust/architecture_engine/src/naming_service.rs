@@ -96,7 +96,7 @@ fn suggestions_for(
 }
 
 fn expected_case_hint(
-    naming: &NamingConventions,
+    _naming: &NamingConventions,
     element_type: CodeElementType,
     language: &str,
 ) -> Option<String> {

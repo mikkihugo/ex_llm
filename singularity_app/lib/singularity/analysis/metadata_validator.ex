@@ -360,37 +360,110 @@ defmodule Singularity.Analysis.MetadataValidator do
   end
 
   defp validate_moduledoc(moduledoc) do
-    checks = %{
-      human_content: has_human_content?(moduledoc),
-      separator: has_separator?(moduledoc),
-      module_identity: has_module_identity?(moduledoc),
-      architecture_diagram: has_architecture_diagram?(moduledoc),
-      call_graph: has_call_graph?(moduledoc),
-      anti_patterns: has_anti_patterns?(moduledoc),
-      search_keywords: has_search_keywords?(moduledoc)
+    # Check for v2.2.0 AI metadata structure
+    has_human_content = has_human_content?(moduledoc)
+    has_separator = has_separator?(moduledoc)
+    has_module_identity = has_module_identity?(moduledoc)
+    has_architecture_diagram = has_architecture_diagram?(moduledoc)
+    has_call_graph = has_call_graph?(moduledoc)
+    has_anti_patterns = has_anti_patterns?(moduledoc)
+    has_search_keywords = has_search_keywords?(moduledoc)
+
+    has_map = %{
+      human_content: has_human_content,
+      separator: has_separator,
+      module_identity: has_module_identity,
+      architecture_diagram: has_architecture_diagram,
+      call_graph: has_call_graph,
+      anti_patterns: has_anti_patterns,
+      search_keywords: has_search_keywords
     }
 
-    missing = checks |> Enum.reject(fn {_k, v} -> v end) |> Enum.map(fn {k, _v} -> k end)
+    missing = Enum.filter([
+      :human_content,
+      :separator,
+      :module_identity,
+      :architecture_diagram,
+      :call_graph,
+      :anti_patterns,
+      :search_keywords
+    ], fn key -> !Map.get(has_map, key) end)
 
-    score = Enum.count(checks, fn {_k, v} -> v end) / map_size(checks)
-
-    level =
-      cond do
-        score == 1.0 -> :complete
-        score >= 0.5 -> :partial
-        score > 0 -> :legacy
-        true -> :missing
-      end
-
-    recommendations = build_recommendations(missing)
+    score = calculate_score(has_map)
+    level = determine_level(score, has_map)
+    recommendations = generate_recommendations(missing)
 
     %{
       level: level,
-      score: Float.round(score, 2),
-      has: checks,
+      score: score,
+      has: has_map,
       missing: missing,
       recommendations: recommendations
     }
+  end
+
+  defp has_human_content?(moduledoc) do
+    # Check for human-readable content (not just AI metadata)
+    moduledoc
+    |> String.split("---")
+    |> List.first()
+    |> String.trim()
+    |> String.length() > 100
+  end
+
+  defp has_separator?(moduledoc) do
+    String.contains?(moduledoc, "---") and 
+    String.contains?(moduledoc, "AI Navigation Metadata")
+  end
+
+  defp has_module_identity?(moduledoc) do
+    String.contains?(moduledoc, "Module Identity") and
+    String.contains?(moduledoc, "{")
+  end
+
+  defp has_architecture_diagram?(moduledoc) do
+    String.contains?(moduledoc, "Architecture Diagram") and
+    String.contains?(moduledoc, "```mermaid")
+  end
+
+  defp has_call_graph?(moduledoc) do
+    String.contains?(moduledoc, "Call Graph") and
+    String.contains?(moduledoc, "```yaml")
+  end
+
+  defp has_anti_patterns?(moduledoc) do
+    String.contains?(moduledoc, "Anti-Patterns")
+  end
+
+  defp has_search_keywords?(moduledoc) do
+    String.contains?(moduledoc, "Search Keywords")
+  end
+
+  defp calculate_score(has_map) do
+    total = map_size(has_map)
+    true_count = Enum.count(has_map, fn {_k, v} -> v end)
+    true_count / total
+  end
+
+  defp determine_level(score, has_map) do
+    cond do
+      score == 1.0 -> :complete
+      score >= 0.5 and has_map.human_content -> :partial
+      has_map.human_content -> :legacy
+      true -> :missing
+    end
+  end
+
+  defp generate_recommendations(missing) do
+    Enum.map(missing, fn
+      :human_content -> "Add human-readable content (overview, examples, API docs)"
+      :separator -> "Add separator (---) and 'AI Navigation Metadata' heading"
+      :module_identity -> "Add Module Identity JSON block"
+      :architecture_diagram -> "Add Architecture Diagram (Mermaid)"
+      :call_graph -> "Add Call Graph (YAML)"
+      :anti_patterns -> "Add Anti-Patterns section"
+      :search_keywords -> "Add Search Keywords (comma-separated)"
+    end)
   end
 
   defp has_human_content?(moduledoc) do
