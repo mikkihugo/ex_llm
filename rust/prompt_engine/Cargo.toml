@@ -9,7 +9,13 @@ readme = "README.md"
 keywords = ["ai", "prompt", "optimization", "sparc", "engine"]
 categories = ["development-tools", "ai"]
 
+[lib]
+name = "prompt_engine"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
+rustler = { version = "0.34", optional = true }
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -54,9 +60,9 @@ name = "prompt_analysis_service"
 path = "src/bin/prompt_analysis_service.rs"
 
 [features]
-default = []
+default = ["nif"]
 ml-analysis = ["candle-core", "candle-nn"]
 with-package-indexer = []
-nif = []
+nif = ["rustler"]
 
 # Workspace definition removed - now part of root workspace

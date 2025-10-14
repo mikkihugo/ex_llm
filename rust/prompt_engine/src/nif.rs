@@ -20,33 +20,21 @@
 //! - caching/           # Prompt caching and retrieval
 //! - metrics/           # Performance metrics
 
-// Core DSPy implementation
-pub mod dspy;
-pub mod dspy_data;
-pub mod token_usage;
-
-pub mod assembly;
-pub mod caching;
-pub mod language_support;
-pub mod metrics;
-pub mod microservice_templates;
-pub mod rust_dspy_templates;
-pub mod sparc_templates;
-pub mod template_loader;
-pub mod template_performance_tracker;
-pub mod templates;
-
-// Context-aware prompt generation
-pub mod prompt_bits;
-
-// Prompt execution tracking and learning
-pub mod prompt_tracking;
-
-// DSPy learning integration with FACT
-pub mod dspy_learning;
-
-// NATS service - centralized communication hub
-pub mod nats_service;
+// Import modules from lib.rs
+use crate::dspy;
+use crate::dspy_data;
+use crate::token_usage;
+use crate::assembly;
+use crate::caching;
+use crate::language_support;
+use crate::metrics;
+use crate::sparc_templates;
+use crate::template_performance_tracker;
+use crate::templates;
+use crate::prompt_bits;
+use crate::prompt_tracking;
+use crate::dspy_learning;
+use crate::nats_service;
 
 // Re-export main types
 use std::collections::HashMap;
@@ -57,15 +45,12 @@ pub use caching::{CacheEntry, CacheStats, PromptCache};
 // COPRO optimizer now available via dspy::optimizer::copro module
 pub use language_support::{LanguagePromptGenerator, LanguageTemplates};
 pub use metrics::{OptimizationMetrics, PerformanceTracker, PromptMetrics};
-pub use microservice_templates::{
-    ArchitectureType, MicroserviceCodePattern, MicroserviceContext, MicroserviceTemplateGenerator,
-};
 // Re-export prompt bits
 pub use prompt_bits::{PromptBitAssembler, PromptFeedback, PromptFeedbackCollector};
 use serde::{Deserialize, Serialize};
 // Optimization and teleprompters now available via dspy module
 pub use sparc_templates::SparcTemplateGenerator;
-pub use templates::{PromptTemplate, RegistryTemplate, TemplateLoader};
+pub use templates::{PromptTemplate, RegistryTemplate};
 
 // Import COPRO types for internal use
 use crate::dspy::optimizer::copro::Candidate;
@@ -136,7 +121,7 @@ pub struct NifCacheStats {
 pub struct NifLlmRequest {
     pub model: String,
     pub messages: Vec<NifMessage>,
-    pub options: std::collections::HashMap<String, serde_json::Value>,
+    pub options: String,  // JSON string instead of HashMap
 }
 
 /// Message for LLM call
@@ -213,8 +198,6 @@ pub struct PromptEngine {
     /// Language-specific prompt generator
     #[allow(dead_code)]
     language_generator: LanguagePromptGenerator,
-    /// Microservice template generator
-    microservice_generator: MicroserviceTemplateGenerator,
     /// SPARC template generator
     sparc_generator: SparcTemplateGenerator,
 }
@@ -228,7 +211,6 @@ impl PromptEngine {
         let cache = PromptCache::new();
         let performance_tracker = PerformanceTracker::new();
         let language_generator = LanguagePromptGenerator::new();
-        let microservice_generator = MicroserviceTemplateGenerator::new();
         let sparc_generator = SparcTemplateGenerator::new();
 
         Ok(Self {
@@ -238,7 +220,6 @@ impl PromptEngine {
             cache,
             performance_tracker,
             language_generator,
-            microservice_generator,
             sparc_generator,
         })
     }
@@ -387,57 +368,11 @@ impl PromptEngine {
                     .as_secs(),
             };
 
-            self.cache.store(&template.original.name, entry)?;
+            self.cache.store(&template.original.name, entry)
+                .map_err(|e| anyhow::anyhow!("Cache store error: {}", e))?;
         }
 
         Ok(())
-    }
-
-    /// Generate microservice-aware prompt template
-    pub fn generate_microservice_prompt(
-        &mut self,
-        context: MicroserviceContext,
-        file_path: &str,
-        content: &str,
-        language: &str,
-    ) -> Result<PromptTemplate, String> {
-        self.microservice_generator
-            .generate_microservice_prompt(context, file_path, content, language)
-    }
-
-    /// Process microservice code and generate optimized prompts
-    /// TODO: Integrate with COPRO optimizer properly
-    pub fn process_microservice_code(
-        &mut self,
-        file_path: &str,
-        content: &str,
-        language: &str,
-        detected_context: MicroserviceContext,
-    ) -> Result<ProcessedMicroserviceCode, String> {
-        let start_time = std::time::Instant::now();
-
-        // Generate microservice-aware prompt template
-        let microservice_template = self.generate_microservice_prompt(
-            detected_context.clone(),
-            file_path,
-            content,
-            language,
-        )?;
-
-        // TODO: Use COPRO optimizer once API is finalized
-        // For now, return unoptimized template
-        let optimized_template = microservice_template.clone();
-
-        // Track performance
-        let processing_time = start_time.elapsed().as_millis() as u64;
-        self.performance_tracker.record_processing(processing_time);
-
-        Ok(ProcessedMicroserviceCode {
-            original_template: microservice_template,
-            optimized_template,
-            microservice_context: detected_context,
-            processing_time_ms: processing_time,
-        })
     }
 
     /// Get SPARC prompt template
@@ -653,8 +588,9 @@ fn nif_cache_put(key: String, value: String) -> Result<(), rustler::Error> {
             .unwrap_or_default()
             .as_secs(),
     };
-    
-    engine.cache.store(&key, entry)?;
+
+    engine.cache.store(&key, entry)
+        .map_err(|e| rustler::Error::Term(Box::new(format!("Cache store error: {}", e))))?;
     Ok(())
 }
 
@@ -681,49 +617,12 @@ fn nif_cache_stats() -> Result<NifCacheStats, rustler::Error> {
 
 /// NIF function to call LLM through NATS coordination
 #[rustler::nif]
-fn nif_call_llm(request: NifLlmRequest) -> Result<NifLlmResponse, rustler::Error> {
-    // Get the NATS service instance
-    let nats_service = match crate::nats_service::NATS_SERVICE.lock() {
-        Ok(service) => service,
-        Err(_) => {
-            return Err(rustler::Error::Term(Box::new(
-                "Failed to acquire NATS service lock",
-            )))
-        }
-    };
-
-    // Convert NIF request to internal format
-    let messages: Vec<crate::nats_service::Message> = request
-        .messages
-        .into_iter()
-        .map(|msg| crate::nats_service::Message {
-            role: msg.role,
-            content: msg.content,
-        })
-        .collect();
-
-    let options: std::collections::HashMap<String, serde_json::Value> = request.options;
-
-    // Call LLM through NATS
-    match nats_service.call_llm(&request.model, &messages, &options) {
-        Ok(response) => {
-            let usage = response.usage.map(|u| NifUsage {
-                prompt_tokens: u.prompt_tokens,
-                completion_tokens: u.completion_tokens,
-                total_tokens: u.total_tokens,
-            });
-
-            Ok(NifLlmResponse {
-                text: response.text,
-                model: response.model,
-                usage,
-            })
-        }
-        Err(e) => Err(rustler::Error::Term(Box::new(format!(
-            "LLM call failed: {}",
-            e
-        )))),
-    }
+fn nif_call_llm(_request: NifLlmRequest) -> Result<NifLlmResponse, rustler::Error> {
+    // TODO: Implement NATS LLM coordination
+    // For now, return error - LLM calls should go through Elixir NATS client
+    Err(rustler::Error::Term(Box::new(
+        "NATS LLM coordination not implemented - use Elixir NATS client instead",
+    )))
 }
 
 // Initialize the NIF
@@ -779,15 +678,6 @@ pub struct OptimizedTemplate {
     pub optimized: String,
     pub optimization_score: f64,
     pub improvement_summary: String,
-}
-
-/// Processed microservice code with optimization results
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProcessedMicroserviceCode {
-    pub original_template: PromptTemplate,
-    pub optimized_template: PromptTemplate,
-    pub microservice_context: MicroserviceContext,
-    pub processing_time_ms: u64,
 }
 
 // PromptTemplate is defined in templates module

@@ -1,10 +1,33 @@
-Add comprehensive documentation comments with examples and safety notes.
+Add comprehensive documentation with HUMAN CONTENT FIRST, then AI metadata.
+
+STRUCTURE:
+
+1. HUMAN CONTENT (Top ~80 lines - for humans):
+   - Module-level doc comment (//! or ///) with overview and purpose
+   - Quick start examples
+   - Public API list
+   - Common errors and solutions
+   - Real usage examples
+
+2. SEPARATOR in module docs:
+   ---
+   ## AI Navigation Metadata
+   *The sections below provide structured metadata for AI assistants, graph databases (Neo4j), and vector databases (pgvector).*
+
+3. AI METADATA (Below separator in module docs):
+   - Module Identity (JSON in code comment)
+   - Architecture Diagram (Mermaid)
+   - Call Graph (YAML)
+   - Anti-Patterns
+   - Search Keywords
 
 IMPORTANT: Use /// for pub items only. Use regular // comments for private items - /// generates public API docs.
+
+Keep existing docs unchanged.
 
 Code:
 ```rust
 {{code}}
 ```
 
-OUTPUT CODE WITH DOCS:
+OUTPUT CODE WITH DOCS (full code, not just docs):

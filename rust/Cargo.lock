@@ -4054,6 +4054,7 @@ dependencies = [
  "num_cpus",
  "once_cell",
  "reqwest 0.11.27",
+ "rustler",
  "serde",
  "serde_json",
  "tempfile",

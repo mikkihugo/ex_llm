@@ -330,13 +330,107 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
   ## Private Functions
 
   defp find_source_files do
-    # Find all Elixir files in singularity_app
-    base_path = Path.join([File.cwd!(), "lib", "singularity"])
-
-    if File.exists?(base_path) do
-      Path.wildcard("#{base_path}/**/*.ex")
-    else
-      []
+    # Find all source files in the entire project root
+    # This includes: singularity_app/, rust/, ai-server/, central_cloud/, etc.
+    project_root = File.cwd!()
+    
+    # Define source file patterns for different languages
+    source_patterns = [
+      # Elixir files
+      "#{project_root}/**/*.ex",
+      # Rust files  
+      "#{project_root}/**/*.rs",
+      # TypeScript/JavaScript files
+      "#{project_root}/**/*.ts",
+      "#{project_root}/**/*.tsx", 
+      "#{project_root}/**/*.js",
+      "#{project_root}/**/*.jsx",
+      # Python files
+      "#{project_root}/**/*.py",
+      # Go files
+      "#{project_root}/**/*.go",
+      # Nix files
+      "#{project_root}/**/*.nix",
+      # Shell scripts
+      "#{project_root}/**/*.sh",
+      # Configuration files
+      "#{project_root}/**/*.toml",
+      "#{project_root}/**/*.json",
+      "#{project_root}/**/*.yaml",
+      "#{project_root}/**/*.yml",
+      # Documentation
+      "#{project_root}/**/*.md"
+    ]
+    
+    # Find all matching files
+    source_patterns
+    |> Enum.flat_map(&Path.wildcard/1)
+    |> Enum.filter(&File.regular?/1)
+    |> Enum.reject(&ignore_file?/1)
+  end
+  
+  # Ignore common non-source files and directories
+  defp ignore_file?(file_path) do
+    ignore_patterns = [
+      # Build artifacts
+      "/_build/",
+      "/deps/",
+      "/node_modules/",
+      "/target/",
+      "/.git/",
+      "/.nix/",
+      # Logs and temporary files
+      ".log",
+      ".tmp",
+      ".pid",
+      # OS files
+      ".DS_Store",
+      "Thumbs.db",
+      # Large binary files
+      ".png",
+      ".jpg", 
+      ".jpeg",
+      ".gif",
+      ".ico",
+      ".pdf",
+      ".zip",
+      ".tar.gz"
+    ]
+    
+    Enum.any?(ignore_patterns, fn pattern ->
+      String.contains?(file_path, pattern)
+    end)
+  end
+  
+  # Detect programming language from file extension
+  defp detect_language(file_path) do
+    cond do
+      String.ends_with?(file_path, [".ex", ".exs"]) -> "elixir"
+      String.ends_with?(file_path, ".rs") -> "rust"
+      String.ends_with?(file_path, [".ts", ".tsx"]) -> "typescript"
+      String.ends_with?(file_path, [".js", ".jsx"]) -> "javascript"
+      String.ends_with?(file_path, ".py") -> "python"
+      String.ends_with?(file_path, ".go") -> "go"
+      String.ends_with?(file_path, ".nix") -> "nix"
+      String.ends_with?(file_path, ".sh") -> "shell"
+      String.ends_with?(file_path, [".toml", ".json", ".yaml", ".yml"]) -> "config"
+      String.ends_with?(file_path, ".md") -> "markdown"
+      true -> "unknown"
+    end
+  end
+  
+  # Detect file type/category
+  defp detect_file_type(file_path) do
+    cond do
+      String.contains?(file_path, "/singularity_app/") -> :elixir_app
+      String.contains?(file_path, "/rust/") -> :rust_component
+      String.contains?(file_path, "/ai-server/") -> :typescript_service
+      String.contains?(file_path, "/central_cloud/") -> :elixir_service
+      String.contains?(file_path, "/templates_data/") -> :templates
+      String.contains?(file_path, "/scripts/") -> :scripts
+      String.ends_with?(file_path, "flake.nix") -> :nix_config
+      String.ends_with?(file_path, ".md") -> :documentation
+      true -> :source_file
     end
   end
 
@@ -344,15 +438,20 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
     try do
       # Read file content
       content = File.read!(file_path)
+      
+      # Determine file type and language
+      language = detect_language(file_path)
+      file_type = detect_file_type(file_path)
 
-      # Extract module name
-      module_name = extract_module_name(content)
+      # Extract module name (different logic for different languages)
+      module_name = extract_module_name(file_path, content, language)
 
-      # Extract documentation
-      moduledoc = extract_moduledoc(content)
+      # Extract documentation (language-specific)
+      documentation = extract_documentation(content, language)
+      moduledoc = extract_moduledoc(content, language)
 
-      # Extract dependencies (aliases)
-      dependencies = extract_dependencies(content)
+      # Extract dependencies (language-specific)
+      dependencies = extract_dependencies(content, language)
 
       # Extract purpose from docs
       purpose = extract_purpose(moduledoc)
@@ -361,9 +460,11 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
        %{
          module: module_name,
          file: file_path,
+         language: language,
+         file_type: file_type,
          purpose: purpose,
          dependencies: dependencies,
-         has_docs: moduledoc != nil,
+         has_docs: moduledoc != nil and moduledoc != "",
          content_size: byte_size(content)
        }}
     rescue
@@ -373,25 +474,99 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
     end
   end
 
-  defp extract_module_name(content) do
-    case Regex.run(~r/defmodule\s+([\w\.]+)/, content) do
-      [_, module] -> module
-      _ -> "Unknown"
+
+  # Language-specific module name extraction
+  defp extract_module_name(file_path, content, language) do
+    case language do
+      "elixir" ->
+        # Try to extract module name from defmodule
+        case Regex.run(~r/defmodule\s+([A-Za-z0-9_.]+)/, content) do
+          [_, module_name] -> module_name
+          _ -> "Unknown"
+        end
+      
+      "rust" ->
+        # Try to extract module name from mod declaration
+        case Regex.run(~r/mod\s+([a-z_][a-z0-9_]*)/, content) do
+          [_, module_name] -> String.capitalize(module_name)
+          _ -> Path.basename(file_path, ".rs") |> String.capitalize()
+        end
+      
+      "typescript" ->
+        # Use file path as module name
+        file_path
+        |> String.replace(File.cwd!() <> "/", "")
+        |> String.replace("/", ".")
+        |> String.replace(~r/\.[^.]*$/, "")
+      
+      _ ->
+        # For other languages, use file path
+        file_path
+        |> String.replace(File.cwd!() <> "/", "")
+        |> String.replace("/", ".")
+        |> String.replace(~r/\.[^.]*$/, "")
     end
   end
 
-  defp extract_moduledoc(content) do
-    case Regex.run(~r/@moduledoc\s+"""\s*(.+?)\s*"""/s, content) do
-      [_, doc] -> String.trim(doc)
-      _ -> nil
+  # Language-specific documentation extraction
+  defp extract_documentation(content, language) do
+    case language do
+      "elixir" ->
+        # Try to extract @moduledoc
+        case Regex.run(~r/@moduledoc\s+[""](.*?)[""]/s, content) do
+          [_, moduledoc] -> moduledoc
+          _ -> ""
+        end
+      
+      "rust" ->
+        # Try to extract doc comments
+        case Regex.run(~r/\/\/!?\s*(.*?)(?=\n\s*\/\/!?|\n\s*[^\/]|$)/s, content) do
+          [_, doc] -> doc
+          _ -> ""
+        end
+      
+      "typescript" ->
+        # Try to extract JSDoc comments
+        case Regex.run(~r/\*\*([^*]|\*(?!\/))*\*\/\s*export/, content) do
+          [doc] -> doc
+          _ -> ""
+        end
+      
+      "markdown" ->
+        # For markdown files, use the first heading
+        case Regex.run(~r/^#\s+(.+)$/m, content) do
+          [_, title] -> title
+          _ -> ""
+        end
+      
+      _ -> ""
     end
   end
 
-  defp extract_dependencies(content) do
-    # Find all alias statements
-    Regex.scan(~r/alias\s+([\w\.]+)/, content)
-    |> Enum.map(fn [_, dep] -> dep end)
-    |> Enum.uniq()
+  defp extract_moduledoc(content, language) do
+    extract_documentation(content, language)
+  end
+
+  # Language-specific dependency extraction
+  defp extract_dependencies(content, language) do
+    case language do
+      "elixir" ->
+        # Extract aliases (dependencies)
+        Regex.scan(~r/alias\s+([A-Za-z0-9_.]+)/, content)
+        |> Enum.map(fn [_, alias_name] -> alias_name end)
+      
+      "rust" ->
+        # Extract use statements
+        Regex.scan(~r/use\s+([a-z0-9_::]+)/, content)
+        |> Enum.map(fn [_, use_name] -> use_name end)
+      
+      "typescript" ->
+        # Extract import statements
+        Regex.scan(~r/import.*from\s+['"]([^'"]+)['"]/, content)
+        |> Enum.map(fn [_, import_name] -> import_name end)
+      
+      _ -> []
+    end
   end
 
   defp extract_purpose(nil), do: "No documentation"

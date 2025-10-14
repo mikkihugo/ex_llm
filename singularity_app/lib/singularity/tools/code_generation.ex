@@ -1,24 +1,112 @@
 defmodule Singularity.Tools.CodeGeneration do
   @moduledoc """
-  Code generation tools using SPARC methodology + RAG.
+  Code Generation Tools - SPARC + RAG for autonomous code generation
 
-  Enables agents to write code autonomously using:
-  - SPARC Methodology (5-phase: Spec → Pseudocode → Arch → Refine → Complete)
-  - RAG (Retrieval-Augmented Generation from YOUR codebases)
-  - Combined approach (default: SPARC + RAG for best quality)
+  **PURPOSE**: Enable agents to write production-quality code using SPARC methodology
+  combined with RAG (Retrieval-Augmented Generation) from your codebases.
 
-  ## Tools
+  ## Module Identity (JSON)
+
+  ```json
+  {
+    "module_name": "Singularity.Tools.CodeGeneration",
+    "purpose": "Autonomous code generation with quality assurance",
+    "type": "Tool Registry + Implementation",
+    "operates_on": "Code generation tasks (any language)",
+    "storage": "PostgreSQL (via RAGCodeGenerator)",
+    "dependencies": ["CodeGenerator", "RAGCodeGenerator", "QualityCodeGenerator", "MethodologyExecutor"]
+  }
+  ```
+
+  ## Architecture Diagram (Mermaid)
+
+  ```mermaid
+  graph TD
+      A[Agent Request] --> B{Tool Type?}
+      B -->|code_generate| C[CodeGenerator.generate]
+      B -->|code_generate_quick| D[RAGCodeGenerator]
+      B -->|code_find_examples| E[RAGCodeGenerator.find_best_examples]
+      B -->|code_validate| F[QualityCodeGenerator.validate_code]
+      B -->|code_refine| G[Refinement Loop]
+      B -->|code_iterate| H[Iterative Quality Loop]
+
+      C --> I{T5 Available?}
+      I -->|Yes| J[T5 Local]
+      I -->|No| K[LLM API]
+      J --> L[Production Code]
+      K --> L
+
+      D --> M[Vector Search]
+      M --> N[Pattern-based Code]
+
+      G --> F
+      F --> |Score < Threshold| G
+      F --> |Score >= Threshold| O[Quality Code]
+
+      H --> C
+      C --> F
+      F --> |Iterate| H
+  ```
+
+  ## Call Graph (YAML)
+
+  ```yaml
+  CodeGeneration:
+    calls:
+      - CodeGenerator.generate/2              # Adaptive T5/LLM generation
+      - CodeGenerator.t5_available?/0         # Check T5 model
+      - RAGCodeGenerator.generate/1           # Pattern-based generation
+      - RAGCodeGenerator.find_best_examples/6 # Semantic code search
+      - QualityCodeGenerator.validate_code/3  # Quality validation
+      - MethodologyExecutor.execute/2         # SPARC methodology
+    called_by:
+      - Singularity.Tools.Catalog             # Tool registry
+      - Agents (via tool execution)           # Agent-driven code generation
+    registers:
+      - code_generate                         # Full SPARC + RAG
+      - code_generate_quick                   # RAG only (fast)
+      - code_find_examples                    # Search examples
+      - code_validate                         # Validate quality
+      - code_refine                           # Fix issues
+      - code_iterate                          # Loop until quality met
+  ```
+
+  ## Anti-Patterns
+
+  **DO NOT create these duplicates:**
+  - ❌ `CodeGenerationService` - Use this module (tools pattern)
+  - ❌ `AutoCodeGenerator` - CodeGenerator handles adaptive logic
+  - ❌ `SPARCCodeGen` - SPARC is integrated here
+  - ❌ `RAGGenerator` - RAGCodeGenerator is separate (use it directly)
+
+  **Use this module when:**
+  - ✅ Agents need to generate code via tools
+  - ✅ Need quality-assured code generation
+  - ✅ Want SPARC methodology integrated
+
+  **Use directly (bypass tools) when:**
+  - ✅ Internal code generation (not agent-driven)
+  - ✅ Batch processing
+  - ✅ Custom workflows
+
+  ## Search Keywords
+
+  code-generation, sparc-methodology, rag, quality-assurance, autonomous-coding,
+  tool-registry, agent-tools, llm-code-generation, t5-local, pattern-based,
+  iterative-refinement, production-quality, elixir-rust-typescript-python
+
+  ## Tools Provided
 
   - `code_generate` - Generate code using SPARC + RAG (production quality)
   - `code_generate_quick` - Generate code using RAG only (fast, pattern-based)
   - `code_find_examples` - Find similar code examples for reference
   - `code_validate` - Validate generated code quality
-  - `code_refine` - Refine code based on validation feedback (NEW!)
-  - `code_iterate` - Iteratively improve until quality threshold met (NEW!)
+  - `code_refine` - Refine code based on validation feedback
+  - `code_iterate` - Iteratively improve until quality threshold met
   """
 
   alias Singularity.Tools.{Tool, Catalog}
-  alias Singularity.{MethodologyExecutor, RAGCodeGenerator, QualityCodeGenerator, AdaptiveCodeGenerator}
+  alias Singularity.{MethodologyExecutor, RAGCodeGenerator, QualityCodeGenerator, CodeGenerator}
 
   @doc "Register code generation tools with the shared registry."
   def register(provider) do
@@ -302,9 +390,9 @@ defmodule Singularity.Tools.CodeGeneration do
     include_tests = Map.get(args, "include_tests", quality == :production)
 
     # Use adaptive generation (T5 local or LLM API)
-    case AdaptiveCodeGenerator.generate(task, language: language, quality: quality) do
+    case CodeGenerator.generate(task, language: language, quality: quality) do
       {:ok, code} ->
-        method = if AdaptiveCodeGenerator.t5_available?(), do: "T5-small (local)", else: "LLM API"
+        method = if CodeGenerator.t5_available?(), do: "T5-small (local)", else: "LLM API"
 
         {:ok,
          %{

@@ -1,23 +1,100 @@
 {
   "name": "Go Production Quality",
-  "spec_version": "2.0",
+  "spec_version": "2.2.0",
   "capabilities": [
     "quality",
     "graph",
-    "rag"
+    "rag",
+    "ai_navigation",
+    "graph_db",
+    "vector_db"
   ],
   "language": "go",
   "quality_level": "production",
-  "description": "Production standards for Go code following official style guide",
+  "description": "Production-grade quality standards for Go code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
+  "changelog": {
+    "2.2.0": {
+      "date": "2025-01-14",
+      "changes": [
+        "Added human-first documentation structure (human content top, AI metadata below separator)",
+        "Added module_identity JSON for vector DB disambiguation",
+        "Added architecture_diagram (Mermaid) for visual understanding",
+        "Added call_graph (YAML) for graph DB indexing",
+        "Added anti_patterns for duplicate prevention",
+        "Added search_keywords for vector search optimization",
+        "Enhanced prompts with documentation structure guidance",
+        "Added scoring weights for AI-optimized metadata and documentation structure"
+      ]
+    },
+    "2.0": {
+      "date": "2025-01-08",
+      "changes": [
+        "Initial production template following Go official style guide"
+      ]
+    }
+  },
   "requirements": {
     "documentation": {
       "package_docs": {
         "required": true,
         "format": "// Package comment",
+        "min_length": 100,
         "must_include": [
           "overview",
-          "examples"
-        ]
+          "examples",
+          "usage_patterns",
+          "human_content_first",
+          "module_identity_json",
+          "architecture_diagram",
+          "call_graph_metadata",
+          "anti_patterns"
+        ],
+        "ai_navigation": {
+          "module_identity": {
+            "format": "json",
+            "required_fields": [
+              "package",
+              "purpose",
+              "layer",
+              "go_patterns",
+              "related_packages",
+              "alternatives",
+              "disambiguation"
+            ],
+            "description": "JSON block for vector DB disambiguation and graph DB indexing (Go-specific)"
+          },
+          "architecture_diagram": {
+            "format": "mermaid",
+            "types": [
+              "graph",
+              "sequence",
+              "flowchart"
+            ],
+            "description": "Visual architecture for AI understanding of call flow and data flow"
+          },
+          "call_graph": {
+            "format": "yaml",
+            "required_fields": [
+              "calls_out",
+              "called_by",
+              "depends_on"
+            ],
+            "description": "Machine-readable call graph for graph DB indexing (Neo4j, etc.)"
+          },
+          "anti_patterns": {
+            "format": "markdown",
+            "sections": [
+              "duplicate_modules",
+              "usage_mistakes"
+            ],
+            "description": "Explicit duplicate prevention and usage warnings"
+          },
+          "search_keywords": {
+            "format": "comma_separated",
+            "min_count": 5,
+            "description": "Keywords for vector search optimization (10+ recommended)"
+          }
+        }
       },
       "function_docs": {
         "required_for": [
@@ -54,10 +131,27 @@
     }
   },
   "prompts": {
-    "code_generation": "Generate production-quality Go code for: {task}\n\nREQUIREMENTS:\n- Package documentation comment\n- Function comments for exported functions\n- Explicit error handling, return (result, error)\n- No panic() in library code\n- Table-driven tests\n- Pass gofmt and golint\n\nOUTPUT CODE ONLY."
+    "code_generation": "Generate production-quality Go code for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines):\n- Package comment: // Package name provides clear description\n- Purpose: What this package does (bold, clear)\n- Quick Start: Copy-paste example showing common usage\n- Exported API: List of exported functions/types\n- Error Handling: Common errors and how to handle them\n- Examples: Real usage patterns with expected output\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n// The sections below provide structured metadata for AI assistants,\n// graph databases (Neo4j), and vector databases (pgvector).\n\nAI METADATA (Below separator):\n- Module Identity (JSON comment block)\n- Architecture Diagram (Mermaid in comment)\n- Call Graph (YAML in comment)\n- Anti-Patterns (Markdown in comment)\n- Search Keywords (comma-separated in comment)\n\n2. CODE QUALITY:\n- Explicit error handling: return (result, error)\n- No panic() in library code\n- Table-driven tests\n- Pass gofmt and golint\n\n3. AI NAVIGATION (in package comment):\n\nModule Identity (JSON):\n```json\n{\n  \"package\": \"package_name\",\n  \"purpose\": \"Clear unique purpose statement\",\n  \"layer\": \"handler|service|repository|domain\",\n  \"go_patterns\": [\"http.Handler\", \"context.Context usage\"],\n  \"related_packages\": [\"net/http\", \"database/sql\"],\n  \"alternatives\": {\n    \"SimilarPkg1\": \"Why use this instead\",\n    \"SimilarPkg2\": \"Why use this instead\"\n  },\n  \"disambiguation\": {\n    \"vs_similar1\": \"Key differences\",\n    \"vs_similar2\": \"Key differences\"\n  }\n}\n```\n\nArchitecture (Mermaid):\n```mermaid\ngraph TB\n    Caller --> ThisPackage\n    ThisPackage --> Dep1\n    ThisPackage --> Dep2\n```\n\nCall Graph (YAML):\n```yaml\ncalls_out:\n  - package: net/http\n    functions: [Get, Post]\n    purpose: HTTP client\n    critical: true\n\ncalled_by:\n  - package: main\n    purpose: Application entry\n    frequency: high\n\ndepends_on:\n  - net/http (standard library)\n  - context (standard library)\n```\n\nAnti-Patterns:\n❌ DO NOT create duplicate \"pkg_wrapper\" - use this package directly\n❌ DO NOT ignore errors - always check error returns\n\nSearch Keywords:\ngo-handler, http-server, context-usage, error-handling, production-ready\n\nOUTPUT CODE ONLY (with enhanced documentation)."
+  },
+  "scoring_weights": {
+    "has_package_docs": 1.0,
+    "has_function_docs": 1.0,
+    "has_tests": 1.0,
+    "error_handling": 1.0,
+    "gofmt_compliant": 1.0,
+    "has_module_identity_json": 0.95,
+    "has_architecture_diagram": 0.9,
+    "has_call_graph_yaml": 0.9,
+    "has_anti_patterns": 0.85,
+    "has_search_keywords": 0.8,
+    "human_content_first": 0.9,
+    "clear_separation": 0.85,
+    "ai_metadata_explained": 0.8,
+    "graph_db_ready": 0.9,
+    "vector_db_optimized": 0.9
   },
   "graph_model": {
-    "version": 1,
+    "version": 2,
     "node_types": {
       "package": {
         "id_format": "go://{module_path}",
@@ -86,7 +180,8 @@
     },
     "extraction_rules": {
       "function_detection": "go/ast FuncDecl",
-      "call_graph": "walk CallExpr; resolve selector expr best-effort"
+      "call_graph": "walk CallExpr; resolve selector expr best-effort",
+      "ai_metadata_extraction": "parse JSON/YAML/Mermaid from package comments"
     },
     "temporal": {
       "track": true,
@@ -113,6 +208,5 @@
       "default_severity": "logic"
     }
   },
-  "version": 2,
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-01-14"
 }

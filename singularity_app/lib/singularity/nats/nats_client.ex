@@ -183,12 +183,12 @@ defmodule Singularity.NatsClient do
         {:ok, message} ->
           Logger.debug("Received response from #{subject}", %{
             subject: subject,
-            reply_subject: message.subject
+            reply_subject: message.topic
           })
 
           response = %{
-            data: message.data,
-            subject: message.subject,
+            data: message.body,
+            subject: message.topic,
             headers: %{}
           }
 

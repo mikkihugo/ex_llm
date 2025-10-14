@@ -1,6 +1,26 @@
 defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
   @moduledoc """
-  Automatic bootstrap on server startup for zero-touch self-diagnosis and repair.
+  Self Code Ingestion & Auto-Bootstrap - Learn Singularity's OWN codebase on startup
+
+  **PURPOSE**: Automatically learn and persist Singularity's own code on EVERY startup
+
+  **RUNS**: Automatically, asynchronously, non-blocking
+
+  **STORES**: 251+ Elixir modules in `code_files` table with full AST
+
+  ## What vs When to Use
+
+  - **HTDAGAutoBootstrap** (THIS): Singularity's own code - automatic on startup
+  - **CodeIngestionService**: External projects (Rails, Phoenix, etc.) - manual API calls
+  - **mix code.ingest**: Semantic search only - different table (`codebase_metadata`)
+
+  ## What It Does:
+
+  1. **Learn**: Scans all `.ex` files in `singularity_app/lib/`
+  2. **Parse**: Uses CodeEngine NIF (Rust + tree-sitter) for full AST
+  3. **Persist**: Stores in PostgreSQL `code_files` table
+  4. **Diagnose**: Identifies issues (broken deps, missing docs, etc.)
+  5. **Auto-fix**: Fixes high-priority issues using RAG + quality templates
 
   Provides autonomous system initialization by learning the codebase through static
   file scanning, identifying broken components, and auto-fixing issues using RAG
@@ -99,8 +119,7 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
   require Logger
   
   # INTEGRATION: Learning and bootstrap (codebase understanding and system integration)
-  alias Singularity.Execution.Planning.{HTDAGLearner, HTDAGBootstrap}
-  alias Singularity.CodeIngestionService
+  alias Singularity.Execution.Planning.HTDAGLearner
   
   @default_config [
     enabled: true,
@@ -452,19 +471,17 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
     # This is the UNIFIED ingestion path - no fragmentation!
 
     alias Singularity.{Repo, Schemas.CodeFile}
-    import Ecto.Query
 
     Logger.info("Persisting #{length(Map.get(learning, :knowledge, %{}) |> Map.get(:modules, %{}) |> Map.values())} modules to database...")
 
     codebase_id = "singularity"
-    persisted_count = 0
 
     # Persist each learned module
     results =
       Map.get(learning, :knowledge, %{}) |> Map.get(:modules, %{}) |> Map.values()
       |> Task.async_stream(
         fn module ->
-          persist_module_to_db(codebase_id, module)
+          persist_module_to_db(module, codebase_id)
         end,
         max_concurrency: 10,
         timeout: :infinity
@@ -477,6 +494,13 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
     end)
 
     Logger.info("✓ Persisted #{success_count}/#{length(Map.get(learning, :knowledge, %{}) |> Map.get(:modules, %{}) |> Map.values())} modules to database")
+
+    # Report v2.2.0 metadata validation statistics
+    report_validation_statistics(codebase_id)
+
+    # Auto-populate graphs after successful ingestion
+    auto_populate_graphs(codebase_id)
+
     {:ok, success_count}
   rescue
     error ->
@@ -484,76 +508,167 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
       {:error, error}
   end
 
-  defp persist_module_to_db(codebase_id, module) do
-    alias Singularity.{Repo, Schemas.CodeFile, CodeEngine}
+  defp auto_populate_graphs(codebase_id) do
+    Logger.info("Auto-populating code graphs...")
 
-    file_path = Map.get(module, :file)
+    # Run asynchronously to not block startup
+    Task.start(fn ->
+      case Singularity.Graph.GraphPopulator.populate_all(codebase_id) do
+        {:ok, stats} ->
+          Logger.info(
+            "✓ Graph auto-population complete: #{stats.nodes} nodes, #{stats.edges} edges"
+          )
+
+        {:error, reason} ->
+          Logger.warning("Graph auto-population failed (non-critical): #{inspect(reason)}")
+      end
+    end)
+  end
+
+  defp report_validation_statistics(codebase_id) do
+    alias Singularity.Analysis.MetadataValidator
+
+    Logger.info("Analyzing v2.2.0 metadata completeness...")
+
+    # Run validation report
+    case MetadataValidator.validate_codebase(codebase_id) do
+      %{total_files: total, complete: complete, partial: partial, missing: missing} = report ->
+        Logger.info("")
+        Logger.info("=" <> String.duplicate("=", 50))
+        Logger.info("v2.2.0 AI Metadata Validation Report")
+        Logger.info("=" <> String.duplicate("=", 50))
+        Logger.info("  Total Files:    #{total}")
+        Logger.info("  ✓ Complete:     #{complete} (#{report.complete_pct}%)")
+        Logger.info("  ⚠ Partial:      #{partial} (#{report.partial_pct}%)")
+        Logger.info("  ✗ Missing:      #{missing} (#{report.missing_pct}%)")
+        Logger.info("=" <> String.duplicate("=", 50))
+        Logger.info("")
+
+        # Log recommendations for incomplete files
+        if partial > 0 or missing > 0 do
+          Logger.info("Files needing attention:")
+
+          report.by_file
+          |> Enum.filter(fn {_path, v} -> v.level != :complete end)
+          |> Enum.take(5)
+          |> Enum.each(fn {path, validation} ->
+            Logger.info("  #{path}")
+            Logger.info("    Level: #{validation.level}, Score: #{validation.score}")
+
+            if length(validation.recommendations) > 0 do
+              Logger.info("    Recommendations:")
+
+              validation.recommendations
+              |> Enum.take(3)
+              |> Enum.each(fn rec ->
+                Logger.info("      - #{rec}")
+              end)
+            end
+          end)
+
+          Logger.info("")
+          Logger.info("Run `mix metadata.validate` for full report")
+          Logger.info("Run `MetadataValidator.fix_incomplete_metadata/1` to auto-generate")
+          Logger.info("")
+        end
+
+      error ->
+        Logger.warning("Could not generate validation report: #{inspect(error)}")
+    end
+  rescue
+    error ->
+      Logger.warning("Error generating validation statistics: #{inspect(error)}")
+  end
+
+  @doc """
+  Persist a module to the database.
+
+  **Public API** - Can be called by CodeFileWatcher for real-time re-ingestion.
+
+  Extracts:
+  - Full AST from CodeEngine NIF
+  - Enhanced metadata (dependencies, call graph, type info, documentation)
+  - HTDAG learning data (module name, issues, etc.)
+
+  Uses UPSERT so it's safe to call multiple times for the same file.
+  """
+  def persist_module_to_db(module, codebase_id) do
+    alias Singularity.{Repo, Schemas.CodeFile, CodeEngine}
+    alias Singularity.Analysis.{AstExtractor, MetadataValidator}
+
+    file_path = Map.get(module, :file_path) || Map.get(module, :file)
 
     # Read file content
-    with {:ok, content} when byte_size(content) > 0 <- File.read(file_path),
-         # Parse file using CodeEngine NIF (tree-sitter parsing)
-         {:ok, parsed} <- CodeEngine.parse_file(file_path) do
+    case File.read(file_path) do
+      {:ok, content} when byte_size(content) > 0 ->
+        # Validate v2.2.0 metadata completeness
+        validation = MetadataValidator.validate_file(file_path, content)
 
-      # Build attributes from file content + NIF parse results + HTDAG learning
-      attrs = %{
-        project_name: codebase_id,  # Database uses project_name!
-        file_path: file_path,
-        language: parsed.language,  # From NIF (more accurate than extension-based)
-        content: content,
-        size_bytes: byte_size(content),  # Database uses size_bytes!
-        line_count: String.split(content, "\n") |> length(),
-        hash: :crypto.hash(:md5, content) |> Base.encode16(),
-        metadata: %{
-          # From HTDAG learning
-          module_name: Map.get(module, :module_name),
-          has_moduledoc: Map.get(module, :has_moduledoc, false),
-          issues: Map.get(module, :issues, []),
-          learned_at: DateTime.utc_now(),
+        # Parse file using CodeEngine NIF (tree-sitter parsing)
+        # NOTE: NIF returns struct directly, NOT wrapped in {:ok, ...}
+        parsed = CodeEngine.parse_file(file_path)
 
-          # From CodeEngine NIF (tree-sitter parsing)
-          ast_json: parsed.ast_json,
-          symbols: parsed.symbols,
-          imports: parsed.imports,
-          exports: parsed.exports,
+        # Extract enhanced metadata from AST
+        enhanced_metadata = AstExtractor.extract_metadata(parsed.ast_json, file_path)
 
-          # From HTDAG learning (functions with arity)
-          functions_htdag: extract_functions(module)
+        # Build attributes from file content + NIF parse results + HTDAG learning + enhanced metadata
+        attrs = %{
+          project_name: codebase_id,
+          # Database uses project_name!
+          file_path: file_path,
+          # From NIF (more accurate than extension-based)
+          language: parsed.language,
+          content: content,
+          # Database uses size_bytes!
+          size_bytes: byte_size(content),
+          line_count: String.split(content, "\n") |> length(),
+          hash: :crypto.hash(:md5, content) |> Base.encode16(),
+          metadata: %{
+            # From HTDAG learning
+            module_name: Map.get(module, :module_name),
+            has_moduledoc: Map.get(module, :has_moduledoc, false),
+            issues: Map.get(module, :issues, []),
+            learned_at: DateTime.utc_now(),
+
+            # From CodeEngine NIF (tree-sitter parsing)
+            ast_json: parsed.ast_json,
+            symbols: parsed.symbols,
+            imports: parsed.imports,
+            exports: parsed.exports,
+
+            # From HTDAG learning (functions with arity)
+            functions_htdag: extract_functions(module),
+
+            # ✅ Enhanced metadata from AstExtractor
+            dependencies: enhanced_metadata[:dependencies] || %{},
+            call_graph: enhanced_metadata[:call_graph] || %{},
+            type_info: enhanced_metadata[:type_info] || %{},
+            documentation: enhanced_metadata[:documentation] || %{},
+
+            # ✅ v2.2.0 metadata validation
+            v2_2_validation: validation
+          }
         }
-      }
 
-      # Upsert (update if exists, insert if new)
-      case Repo.insert(
-        CodeFile.changeset(%CodeFile{}, attrs),
-        on_conflict: {:replace_all_except, [:id, :inserted_at]},
-        conflict_target: [:project_name, :file_path]
-      ) do
-        {:ok, _} -> {:ok, :persisted}
-        {:error, changeset} ->
-          Logger.warning("Failed to persist #{file_path}: #{inspect(changeset.errors)}")
-          {:error, changeset}
-      end
+        # Upsert (update if exists, insert if new)
+        case Repo.insert(
+               CodeFile.changeset(%CodeFile{}, attrs),
+               on_conflict: {:replace_all_except, [:id, :inserted_at]},
+               conflict_target: [:project_name, :file_path]
+             ) do
+          {:ok, _} -> {:ok, :persisted}
 
-    else
+          {:error, changeset} ->
+            Logger.warning("Failed to persist #{file_path}: #{inspect(changeset.errors)}")
+            {:error, changeset}
+        end
+
       {:ok, _empty} ->
         {:ok, :skipped_empty}
 
       {:error, reason} ->
         Logger.debug("Could not process #{file_path}: #{inspect(reason)}")
         {:error, reason}
-    end
-  end
-
-  defp detect_language(file_path) do
-    case Path.extname(file_path) do
-      ".ex" -> "elixir"
-      ".exs" -> "elixir"
-      ".gleam" -> "gleam"
-      ".rs" -> "rust"
-      ".ts" -> "typescript"
-      ".js" -> "javascript"
-      ".py" -> "python"
-      ".go" -> "go"
-      _ -> "unknown"
     end
   end
 
@@ -568,27 +683,5 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
       end
     end)
     |> Enum.reject(&is_nil/1)
-  end
-
-  defp extract_imports(module) do
-    Map.get(module, :dependencies, [])
-    |> Enum.map(fn dep -> %{name: to_string(dep)} end)
-  end
-
-  defp extract_exports(module) do
-    # In Elixir, public functions are exports
-    Map.get(module, :functions, [])
-    |> Enum.filter(fn func ->
-      !String.starts_with?(to_string(Map.get(func, :name, "")), "_")
-    end)
-    |> Enum.map(&Map.get(&1, :name))
-  end
-
-  defp build_metadata(module) do
-    %{
-      module_name: Map.get(module, :module_name),
-      has_moduledoc: Map.get(module, :has_moduledoc, false),
-      issues: Map.get(module, :issues, [])
-    }
   end
 end

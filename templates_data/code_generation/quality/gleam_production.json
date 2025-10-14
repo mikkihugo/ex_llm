@@ -1,0 +1,219 @@
+{
+    "name": "Gleam Production Quality",
+    "spec_version": "2.2.0",
+    "capabilities": [
+        "quality",
+        "graph",
+        "rag",
+        "ai_navigation",
+        "graph_db",
+        "vector_db"
+    ],
+    "language": "gleam",
+    "quality_level": "production",
+    "description": "Production-grade quality standards for Gleam code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
+    "changelog": {
+        "2.2.0": {
+            "date": "2025-01-14",
+            "changes": [
+                "Created complete production template for Gleam (was incomplete)",
+                "Added human-first documentation structure (human content top, AI metadata below separator)",
+                "Added module_identity JSON for vector DB disambiguation",
+                "Added architecture_diagram (Mermaid) for visual understanding",
+                "Added call_graph (YAML) for graph DB indexing",
+                "Added anti_patterns for duplicate prevention",
+                "Added search_keywords for vector search optimization",
+                "Added complete requirements, prompts, and scoring weights",
+                "Added Gleam-specific best practices (Result types, custom types, pipe operators)"
+            ]
+        },
+        "2.0": {
+            "date": "2025-01-08",
+            "changes": [
+                "Initial incomplete template (only graph_model)"
+            ]
+        }
+    },
+    "requirements": {
+        "documentation": {
+            "module_docs": {
+                "required": true,
+                "format": "/// Module documentation comment",
+                "min_length": 100,
+                "must_include": [
+                    "overview",
+                    "examples",
+                    "usage_patterns",
+                    "human_content_first",
+                    "module_identity_json",
+                    "architecture_diagram",
+                    "call_graph_metadata",
+                    "anti_patterns"
+                ],
+                "ai_navigation": {
+                    "module_identity": {
+                        "format": "json",
+                        "required_fields": [
+                            "module",
+                            "purpose",
+                            "layer",
+                            "gleam_patterns",
+                            "related_modules",
+                            "alternatives",
+                            "disambiguation"
+                        ],
+                        "description": "JSON block for vector DB disambiguation and graph DB indexing (Gleam-specific)"
+                    },
+                    "architecture_diagram": {
+                        "format": "mermaid",
+                        "types": [
+                            "graph",
+                            "sequence",
+                            "flowchart"
+                        ],
+                        "description": "Visual architecture for AI understanding of call flow and data flow"
+                    },
+                    "call_graph": {
+                        "format": "yaml",
+                        "required_fields": [
+                            "calls_out",
+                            "called_by",
+                            "depends_on"
+                        ],
+                        "description": "Machine-readable call graph for graph DB indexing (Neo4j, etc.)"
+                    },
+                    "anti_patterns": {
+                        "format": "markdown",
+                        "sections": [
+                            "duplicate_modules",
+                            "usage_mistakes",
+                            "gleam_antipatterns"
+                        ],
+                        "description": "Explicit duplicate prevention and Gleam best practices"
+                    },
+                    "search_keywords": {
+                        "format": "comma_separated",
+                        "min_count": 5,
+                        "description": "Keywords for vector search optimization (10+ recommended)"
+                    }
+                }
+            },
+            "function_docs": {
+                "required_for": [
+                    "all_public_functions"
+                ],
+                "format": "/// Function documentation comment",
+                "must_include": [
+                    "description",
+                    "examples"
+                ]
+            }
+        },
+        "type_safety": {
+            "use_custom_types": true,
+            "prefer_result_over_panic": true,
+            "explicit_error_types": true
+        },
+        "error_handling": {
+            "style": "result_type",
+            "pattern": "Result(value, error)",
+            "no_panic": true,
+            "custom_error_types": true
+        },
+        "testing": {
+            "required": true,
+            "framework": "gleam_test",
+            "coverage_target": 80,
+            "test_types": [
+                "unit",
+                "property_based"
+            ]
+        },
+        "code_style": {
+            "formatter": "gleam format",
+            "naming": "snake_case for functions, PascalCase for types",
+            "prefer_pipe": true,
+            "immutability": "required"
+        }
+    },
+    "prompts": {
+        "code_generation": "Generate production-quality Gleam code for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines):\n//// Module Name - Brief description\n///\n/// **Purpose:** What this module does (clear statement)\n///\n/// ## Quick Start\n/// ```gleam\n/// import my_module\n///\n/// pub fn main() {\n///   let result = my_module.my_function(\"example\")\n///   io.println(result)\n/// }\n/// ```\n///\n/// ## Public API\n/// - `my_function(String) -> Result(String, Error)` - Does something useful\n/// - `another_function(Int, Int) -> Int` - Combines inputs\n///\n/// ## Error Handling\n/// - Returns `Error(InvalidInput)` for invalid data\n/// - Uses Result type, never panics\n///\n/// ## Examples\n/// ```gleam\n/// // Success case\n/// let result = my_function(\"valid\")\n/// // result: Ok(\"processed\")\n///\n/// // Error case\n/// let result = my_function(\"\")\n/// // result: Error(InvalidInput)\n/// ```\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n/// The sections below provide structured metadata for AI assistants,\n/// graph databases (Neo4j), and vector databases (pgvector).\n\nAI METADATA (Below separator):\n- Module Identity (JSON in code comment)\n- Architecture Diagram (Mermaid)\n- Call Graph (YAML)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- Module docs for all public modules\n- Function docs for all public functions\n- Result type for errors (never panic/assert)\n- Custom types for domain modeling\n- gleam test tests\n- gleam format compliant\n- Use pipe operator |> for chaining\n\n3. AI NAVIGATION (in module docs):\n\nModule Identity (JSON):\n```json\n{\n  \"module\": \"my_module\",\n  \"purpose\": \"Clear unique purpose statement\",\n  \"layer\": \"api|service|domain|util\",\n  \"gleam_patterns\": [\"Result types\", \"custom types\", \"pipe operator\"],\n  \"related_modules\": [\"gleam/io\", \"gleam/result\", \"gleam/option\"],\n  \"alternatives\": {\n    \"OldModule\": \"Legacy - use this module instead\",\n    \"SimilarModule\": \"Different use case - see disambiguation\"\n  },\n  \"disambiguation\": {\n    \"vs_OldModule\": \"This = Result types. OldModule = panics on error\",\n    \"vs_SimilarModule\": \"This = synchronous. SimilarModule = async\"\n  }\n}\n```\n\nArchitecture (Mermaid):\n```mermaid\ngraph TB\n    Main[main] --> MyModule[my_module]\n    MyModule --> Result[gleam/result]\n    MyModule --> IO[gleam/io]\n```\n\nCall Graph (YAML):\n```yaml\ncalls_out:\n  - module: gleam/result\n    functions: [map, try]\n    purpose: Error handling\n    critical: true\n\ncalled_by:\n  - module: main\n    purpose: Application entry\n    frequency: high\n\ndepends_on:\n  - gleam_stdlib (required)\n```\n\nAnti-Patterns:\n❌ DO NOT use panic() or assert - use Result type\n❌ DO NOT create 'my_module_wrapper' - use this module directly\n❌ DO NOT avoid custom types - domain model with types\n\nSearch Keywords:\ngleam-module, result-types, type-safety, functional-programming, production-ready\n\nOUTPUT CODE ONLY (with enhanced documentation)."
+    },
+    "scoring_weights": {
+        "has_module_docs": 1.0,
+        "has_function_docs": 1.0,
+        "has_tests": 1.0,
+        "uses_result_type": 1.0,
+        "no_panic": 1.0,
+        "gleam_format_compliant": 1.0,
+        "has_module_identity_json": 0.95,
+        "has_architecture_diagram": 0.9,
+        "has_call_graph_yaml": 0.9,
+        "has_anti_patterns": 0.85,
+        "has_search_keywords": 0.8,
+        "human_content_first": 0.9,
+        "clear_separation": 0.85,
+        "ai_metadata_explained": 0.8,
+        "graph_db_ready": 0.9,
+        "vector_db_optimized": 0.9
+    },
+    "graph_model": {
+        "version": 2,
+        "node_types": {
+            "module": {
+                "id_format": "gleam://{module_path}",
+                "merge_keys": [
+                    "module_path"
+                ]
+            },
+            "function": {
+                "id_format": "gleam://{module_path}.{function}/{arity}",
+                "merge_keys": [
+                    "signature_hash"
+                ]
+            }
+        },
+        "edge_types": {
+            "calls": {
+                "from": "function",
+                "to": "function",
+                "weight": 0.85
+            },
+            "declares": {
+                "from": "module",
+                "to": "function",
+                "weight": 1.0
+            }
+        },
+        "extraction_rules": {
+            "function_detection": "parse function declarations in Gleam AST",
+            "call_graph": "track call expressions; best-effort resolution",
+            "ai_metadata_extraction": "parse JSON/YAML/Mermaid from module docs"
+        },
+        "temporal": {
+            "track": true,
+            "fields": [
+                "first_seen",
+                "last_modified"
+            ],
+            "update_policy": "touch_last_modified_on_signature_change"
+        },
+        "error_semantics": {
+            "severity_enum": [
+                "fatal",
+                "transient",
+                "validation",
+                "resource",
+                "logic"
+            ],
+            "classification_enum": [
+                "user_input",
+                "system_state",
+                "external_dependency",
+                "data_integrity"
+            ],
+            "default_severity": "logic"
+        }
+    },
+    "last_updated": "2025-01-14"
+}

@@ -1,3 +1,141 @@
+Compiling 4 files (.ex)
+     warning: variable "lib_dir" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 110 │         %{lib_dir: lib_dir, project_root: project_root} = state
+     │                    ~~~~~~~
+     │
+     └─ lib/singularity/execution/planning/code_file_watcher.ex:110:20: Singularity.Execution.Planning.CodeFileWatcher.handle_info/2
+
+     warning: variable "project_root" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 148 │   defp reingest_file(file_path, project_root) do
+     │                                 ~~~~~~~~~~~~
+     │
+     └─ lib/singularity/execution/planning/code_file_watcher.ex:148:33: Singularity.Execution.Planning.CodeFileWatcher.reingest_file/2
+
+     warning: defp reingest_file/2 is private, @doc attribute is always discarded for private functions/macros/types
+     │
+ 140 │   @doc """
+     │   ~~~~~~~~
+     │
+     └─ lib/singularity/execution/planning/code_file_watcher.ex:140: Singularity.Execution.Planning.CodeFileWatcher.reingest_file/2
+
+     warning: defp extract_module_name/1 is private, @doc attribute is always discarded for private functions/macros/types
+     │
+ 163 │   @doc """
+     │   ~~~~~~~~
+     │
+     └─ lib/singularity/execution/planning/code_file_watcher.ex:163: Singularity.Execution.Planning.CodeFileWatcher.extract_module_name/1
+
+     warning: variable "metadata" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 134 │     metadata =
+     │     ~~~~~~~~
+     │
+     └─ lib/singularity/code_ingestion_service.ex:134:5: Singularity.CodeIngestionService.store_file_analysis/4
+
+     warning: variable "persisted_count" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 480 │     persisted_count = 0
+     │     ~
+     │
+     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:480:5: Singularity.Execution.Planning.HTDAGAutoBootstrap.persist_learned_codebase/1
+
+     warning: function extract_imports/1 is unused
+     │
+ 594 │   defp extract_imports(module) do
+     │        ~
+     │
+     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:594:8: Singularity.Execution.Planning.HTDAGAutoBootstrap (module)
+
+     warning: function extract_exports/1 is unused
+     │
+ 599 │   defp extract_exports(module) do
+     │        ~
+     │
+     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:599:8: Singularity.Execution.Planning.HTDAGAutoBootstrap (module)
+
+     warning: function detect_language/1 is unused
+     │
+ 567 │   defp detect_language(file_path) do
+     │        ~
+     │
+     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:567:8: Singularity.Execution.Planning.HTDAGAutoBootstrap (module)
+
+     warning: function build_metadata/1 is unused
+     │
+ 608 │   defp build_metadata(module) do
+     │        ~
+     │
+     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:608:8: Singularity.Execution.Planning.HTDAGAutoBootstrap (module)
+
+     warning: unused alias CodeIngestionService
+     │
+ 123 │   alias Singularity.CodeIngestionService
+     │   ~
+     │
+     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:123:3
+
+     warning: unused alias HTDAGBootstrap
+     │
+ 122 │   alias Singularity.Execution.Planning.{HTDAGLearner, HTDAGBootstrap}
+     │   ~
+     │
+     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:122:3
+
+     warning: unused import Ecto.Query
+     │
+ 475 │     import Ecto.Query
+     │     ~
+     │
+     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:475:5
+
+     warning: Singularity.Execution.Planning.HTDAGAutoBootstrap.persist_module_to_db/2 is undefined or private
+     │
+ 160 │     HTDAGAutoBootstrap.persist_module_to_db(module, "singularity")
+     │                        ~
+     │
+     └─ lib/singularity/execution/planning/code_file_watcher.ex:160:24: Singularity.Execution.Planning.CodeFileWatcher.reingest_file/2
+
+     warning: the following clause will never match:
+
+         {:error, reason}
+
+     because it attempts to match on the result of:
+
+         Singularity.Execution.Planning.HTDAGLearner.learn_codebase()
+
+     which has type:
+
+         dynamic(
+           {:ok,
+            %{
+              issues: list(term(), term()),
+              knowledge: term(),
+              learned_at: %DateTime{
+                calendar: term(),
+                day: term(),
+                hour: term(),
+                microsecond: term(),
+                minute: term(),
+                month: term(),
+                second: term(),
+                std_offset: term(),
+                time_zone: term(),
+                utc_offset: term(),
+                year: term(),
+                zone_abbr: term()
+              }
+            }}
+         )
+
+     typing violation found at:
+     │
+ 394 │       {:error, reason} ->
+     │       ~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:394: Singularity.Execution.Planning.HTDAGAutoBootstrap.perform_bootstrap/1
+
     warning: Singularity.Tools.Singularity.Tools.Catalog.add_tools/2 is undefined (module Singularity.Tools.Singularity.Tools.Catalog is not available or is yet to be defined)
     │
  13 │     Singularity.Tools.Singularity.Tools.Catalog.add_tools(provider, [
@@ -4252,16 +4390,37 @@ warning: struct :timeout is undefined (module :timeout is not available or is ye
       │
       └─ lib/singularity/tools/deployment.ex:1606:22: Singularity.Tools.Deployment.format_configuration_output/2
 
+     warning: variable "dag" is unused (there is a variable with the same name in the context, use the pin operator (^) to match on it or prefix this variable with underscore if it is not meant to be used)
+     │
+ 259 │         dag = HTDAGCore.mark_in_progress(dag, task.id)
+     │         ~
+     │
+     └─ lib/singularity/execution/planning/htdag_executor.ex:259:9: Singularity.Execution.Planning.HTDAGExecutor.decompose_and_recurse/4
+
      warning: variable "opts" is unused (if the variable is not meant to be used, prefix it with an underscore)
      │
- 314 │   defp build_task_prompt_with_rag(task, opts) do
-     │                                         ~~~~
+ 275 │   defp execute_atomic_task(task, strategy, state, opts) do
+     │                                                   ~~~~
      │
-     └─ lib/singularity/execution/planning/htdag_executor.ex:314:41: Singularity.Execution.Planning.HTDAGExecutor.build_task_prompt_with_rag/2
+     └─ lib/singularity/execution/planning/htdag_executor.ex:275:51: Singularity.Execution.Planning.HTDAGExecutor.execute_atomic_task/4
+
+     warning: variable "previous_results" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 347 │   defp execute_phase(phase, agents, task, _state, previous_results) do
+     │                                                   ~~~~~~~~~~~~~~~~
+     │
+     └─ lib/singularity/execution/planning/htdag_executor.ex:347:51: Singularity.Execution.Planning.HTDAGExecutor.execute_phase/5
+
+     warning: variable "task" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 347 │   defp execute_phase(phase, agents, task, _state, previous_results) do
+     │                                     ~~~~
+     │
+     └─ lib/singularity/execution/planning/htdag_executor.ex:347:37: Singularity.Execution.Planning.HTDAGExecutor.execute_phase/5
 
     warning: unused alias HTDAG
     │
- 44 │   alias Singularity.Execution.Planning.{HTDAG, HTDAGCore}
+ 44 │   alias Singularity.Execution.Planning.{HTDAG, HTDAGCore, HTDAGStrategyLoader, HTDAGLuaExecutor}
     │   ~
     │
     └─ lib/singularity/execution/planning/htdag_executor.ex:44:3
@@ -4286,6 +4445,13 @@ warning: struct :timeout is undefined (module :timeout is not available or is ye
     │   ~
     │
     └─ lib/singularity/execution/planning/htdag_executor.ex:53:3
+
+    warning: unused alias Store
+    │
+ 50 │   alias Singularity.{RAGCodeGenerator, QualityCodeGenerator, Store}
+    │   ~
+    │
+    └─ lib/singularity/execution/planning/htdag_executor.ex:50:3
 
      warning: variable "language" is unused (if the variable is not meant to be used, prefix it with an underscore)
      │
@@ -6304,101 +6470,6 @@ warning: struct :timeout is undefined (module :timeout is not available or is ye
      │
      └─ lib/singularity/engines/prompt_engine.ex:404:20: Singularity.PromptEngine.invalidate_template/1
 
-     warning: variable "persisted_count" is unused (if the variable is not meant to be used, prefix it with an underscore)
-     │
- 460 │     persisted_count = 0
-     │     ~
-     │
-     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:460:5: Singularity.Execution.Planning.HTDAGAutoBootstrap.persist_learned_codebase/1
-
-     warning: function extract_imports/1 is unused
-     │
- 573 │   defp extract_imports(module) do
-     │        ~
-     │
-     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:573:8: Singularity.Execution.Planning.HTDAGAutoBootstrap (module)
-
-     warning: function extract_exports/1 is unused
-     │
- 578 │   defp extract_exports(module) do
-     │        ~
-     │
-     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:578:8: Singularity.Execution.Planning.HTDAGAutoBootstrap (module)
-
-     warning: function detect_language/1 is unused
-     │
- 546 │   defp detect_language(file_path) do
-     │        ~
-     │
-     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:546:8: Singularity.Execution.Planning.HTDAGAutoBootstrap (module)
-
-     warning: function build_metadata/1 is unused
-     │
- 587 │   defp build_metadata(module) do
-     │        ~
-     │
-     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:587:8: Singularity.Execution.Planning.HTDAGAutoBootstrap (module)
-
-     warning: unused alias CodeIngestionService
-     │
- 103 │   alias Singularity.CodeIngestionService
-     │   ~
-     │
-     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:103:3
-
-     warning: unused alias HTDAGBootstrap
-     │
- 102 │   alias Singularity.Execution.Planning.{HTDAGLearner, HTDAGBootstrap}
-     │   ~
-     │
-     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:102:3
-
-     warning: unused import Ecto.Query
-     │
- 455 │     import Ecto.Query
-     │     ~
-     │
-     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:455:5
-
-     warning: the following clause will never match:
-
-         {:error, reason}
-
-     because it attempts to match on the result of:
-
-         Singularity.Execution.Planning.HTDAGLearner.learn_codebase()
-
-     which has type:
-
-         dynamic(
-           {:ok,
-            %{
-              issues: list(term(), term()),
-              knowledge: term(),
-              learned_at: %DateTime{
-                calendar: term(),
-                day: term(),
-                hour: term(),
-                microsecond: term(),
-                minute: term(),
-                month: term(),
-                second: term(),
-                std_offset: term(),
-                time_zone: term(),
-                utc_offset: term(),
-                year: term(),
-                zone_abbr: term()
-              }
-            }}
-         )
-
-     typing violation found at:
-     │
- 374 │       {:error, reason} ->
-     │       ~~~~~~~~~~~~~~~~~~~
-     │
-     └─ lib/singularity/execution/planning/htdag_auto_bootstrap.ex:374: Singularity.Execution.Planning.HTDAGAutoBootstrap.perform_bootstrap/1
-
     warning: unused alias NatsSubjects
     │
  26 │   alias Singularity.MetaRegistry.NatsSubjects
@@ -7473,46 +7544,47 @@ warning: struct :timeout is undefined (module :timeout is not available or is ye
      │
      └─ lib/singularity/architecture_engine/framework_pattern_sync.ex:191:70: Singularity.ArchitectureEngine.FrameworkPatternSync.publish_to_nats/1
 
+Generated singularity app
 
-03:18:26.633 [notice]     :alarm_handler: {:set, {{:disk_almost_full, ~c"/usr/lib/wsl/drivers"}, []}}
+09:29:09.558 [notice]     :alarm_handler: {:set, {{:disk_almost_full, ~c"/usr/lib/wsl/drivers"}, []}}
 
-03:18:26.645 [notice]     :alarm_handler: {:set, {{:disk_almost_full, ~c"/snap/snapd/25202"}, []}}
+09:29:09.568 [notice]     :alarm_handler: {:set, {{:disk_almost_full, ~c"/snap/snapd/25202"}, []}}
 
-03:18:26.645 [notice]     :alarm_handler: {:set, {{:disk_almost_full, ~c"/snap/core22/2133"}, []}}
+09:29:09.568 [notice]     :alarm_handler: {:set, {{:disk_almost_full, ~c"/snap/core22/2133"}, []}}
 
-03:18:26.645 [notice]     :alarm_handler: {:set, {{:disk_almost_full, ~c"/snap/google-cloud-cli/389"}, []}}
+09:29:09.568 [notice]     :alarm_handler: {:set, {{:disk_almost_full, ~c"/snap/google-cloud-cli/389"}, []}}
 
-03:18:26.645 [notice]     :alarm_handler: {:set, {{:disk_almost_full, ~c"/snap/google-cloud-cli/387"}, []}}
+09:29:09.569 [notice]     :alarm_handler: {:set, {{:disk_almost_full, ~c"/snap/google-cloud-cli/387"}, []}}
 
-03:18:27.438 [info] Running Singularity.Web.Endpoint with Bandit 1.8.0 at 0.0.0.0:4000 (http)
+09:29:09.945 [info] Running Singularity.Web.Endpoint with Bandit 1.8.0 at 0.0.0.0:4000 (http)
 
-03:18:27.439 [info] Starting NATS Supervisor...
+09:29:09.946 [info] Starting NATS Supervisor...
 
-03:18:27.445 [info] Connecting to NATS at nats://localhost:4222
+09:29:09.953 [info] Connecting to NATS at nats://localhost:4222
 
-03:18:27.445 [info] NATS Server initializing...
+09:29:09.953 [info] NATS Server initializing...
 
-03:18:27.464 [info] Connected to NATS successfully
+09:29:09.970 [info] Connected to NATS successfully
 
-03:18:27.464 [info] NatsExecutionRouter subscribed to: execution.request
+09:29:09.971 [info] NatsExecutionRouter subscribed to: execution.request
 
-03:18:27.464 [info] NatsExecutionRouter subscribed to: template.recommend
+09:29:09.971 [info] NatsExecutionRouter subscribed to: template.recommend
 
-03:18:27.465 [info] NatsOrchestrator started and listening on execution.request and template.recommend
+09:29:09.971 [info] NatsOrchestrator started and listening on execution.request and template.recommend
 
-03:18:27.465 [info] Starting LLM Supervisor...
+09:29:09.971 [info] Starting LLM Supervisor...
 
-03:18:27.467 [info] Starting Knowledge Supervisor...
+09:29:09.973 [info] Starting Knowledge Supervisor...
 
-03:18:27.476 [info] TemplateService subscribed to: template.get.>
+09:29:09.983 [info] TemplateService subscribed to: template.get.>
 
-03:18:27.477 [info] TemplateService subscribed to: template.search.>
+09:29:09.983 [info] TemplateService subscribed to: template.search.>
 
-03:18:27.477 [info] Template NATS service started
+09:29:09.983 [info] Template NATS service started
 
-03:18:27.477 [info]   Listening on: template.get.*, template.search.*
+09:29:09.983 [info]   Listening on: template.get.*, template.search.*
 
-03:18:27.490 [debug] QUERY ERROR db=1.5ms queue=5.4ms idle=41.3ms
+09:29:09.996 [debug] QUERY ERROR db=1.3ms queue=4.3ms idle=40.3ms
   SELECT 
     template_id,
     execution_count,
@@ -7526,249 +7598,98 @@ warning: struct :timeout is undefined (module :timeout is not available or is ye
   LIMIT 1000
  []
 
-03:18:27.496 [warning] Failed to load historical data: %Postgrex.Error{message: nil, postgres: %{code: :undefined_table, line: "1452", message: "relation \"template_performance_history\" does not exist", position: "138", file: "parse_relation.c", unknown: "ERROR", severity: "ERROR", pg_code: "42P01", routine: "parserOpenTable"}, connection_id: 184059, query: "  SELECT \n    template_id,\n    execution_count,\n    success_rate,\n    avg_execution_time_ms,\n    last_executed_at,\n    created_at\n  FROM template_performance_history \n  WHERE created_at >= NOW() - INTERVAL '30 days'\n  ORDER BY created_at DESC\n  LIMIT 1000\n"}
+09:29:10.001 [warning] Failed to load historical data: %Postgrex.Error{message: nil, postgres: %{code: :undefined_table, line: "1452", message: "relation \"template_performance_history\" does not exist", position: "138", file: "parse_relation.c", unknown: "ERROR", severity: "ERROR", pg_code: "42P01", routine: "parserOpenTable"}, connection_id: 308344, query: "  SELECT \n    template_id,\n    execution_count,\n    success_rate,\n    avg_execution_time_ms,\n    last_executed_at,\n    created_at\n  FROM template_performance_history \n  WHERE created_at >= NOW() - INTERVAL '30 days'\n  ORDER BY created_at DESC\n  LIMIT 1000\n"}
 
-03:18:27.496 [info] Starting with empty performance data
+09:29:10.001 [info] Starting with empty performance data
 
-03:18:27.496 [info] Template Performance DAG initialized
+09:29:10.001 [info] Template Performance DAG initialized
 
-03:18:27.496 [info] Starting Planning Supervisor...
+09:29:10.001 [info] Starting Planning Supervisor...
 
-03:18:27.504 [info] HTDAG Auto-Bootstrap: Running in DRY-RUN mode (no actual fixes will be applied)
+09:29:10.006 [info] HTDAG Auto-Bootstrap: Running in DRY-RUN mode (no actual fixes will be applied)
 
-03:18:27.504 [info] HTDAG Auto-Bootstrap: Starting automatic self-diagnosis and repair...
+09:29:10.006 [info] HTDAG Auto-Bootstrap: Starting automatic self-diagnosis and repair...
 
-03:18:27.504 [info] =======================================================================
+09:29:10.006 [info] =======================================================================
 
-03:18:27.504 [info] HTDAG AUTO-BOOTSTRAP: Self-Diagnosis Starting
+09:29:10.006 [info] HTDAG AUTO-BOOTSTRAP: Self-Diagnosis Starting
 
-03:18:27.504 [info] =======================================================================
+09:29:10.006 [info] =======================================================================
 
-03:18:27.504 [info] Phase 1: Learning codebase...
+09:29:10.006 [info] Phase 1: Learning codebase...
 
-03:18:27.508 [info] Starting simple codebase learning...
+09:29:10.009 [info] WorkPlanAPI subscribed to NATS subject: planning.capability.create
 
-03:18:27.508 [info] WorkPlanAPI subscribed to NATS subject: planning.capability.create
+09:29:10.009 [info] WorkPlanAPI subscribed to NATS subject: planning.epic.create
 
-03:18:27.508 [info] WorkPlanAPI subscribed to NATS subject: planning.epic.create
+09:29:10.009 [info] Starting simple codebase learning...
 
-03:18:27.508 [info] WorkPlanAPI subscribed to NATS subject: planning.feature.create
+09:29:10.009 [info] WorkPlanAPI subscribed to NATS subject: planning.feature.create
 
-03:18:27.509 [info] WorkPlanAPI subscribed to NATS subject: planning.hierarchy.get
+09:29:10.009 [info] WorkPlanAPI subscribed to NATS subject: planning.hierarchy.get
 
-03:18:27.509 [info] WorkPlanAPI subscribed to NATS subject: planning.next_work.get
+09:29:10.009 [info] WorkPlanAPI subscribed to NATS subject: planning.next_work.get
 
-03:18:27.509 [info] WorkPlanAPI subscribed to NATS subject: planning.progress.get
+09:29:10.010 [info] WorkPlanAPI subscribed to NATS subject: planning.progress.get
 
-03:18:27.509 [info] WorkPlanAPI subscribed to NATS subject: planning.strategic_theme.create
+09:29:10.010 [info] WorkPlanAPI subscribed to NATS subject: planning.strategic_theme.create
 
-03:18:27.509 [info] Starting SPARC Supervisor...
+09:29:10.010 [info] Starting SPARC Supervisor...
 
-03:18:27.512 [info] DAG Orchestrator initialized - connecting two DAGs
+09:29:10.012 [info] DAG Orchestrator initialized - connecting two DAGs
 
-03:18:27.512 [info] Starting Todos Supervisor...
+09:29:10.012 [info] Starting Todos Supervisor...
 
-03:18:27.515 [info] TodoSwarmCoordinator started
+09:29:10.014 [info] TodoSwarmCoordinator started
 
-03:18:27.516 [info] Starting Agents Supervisor...
+09:29:10.014 [info] Starting Agents Supervisor...
 
-03:18:27.519 [info] Found 289 source files
+09:29:10.022 [error] Failed to start runtime self-improving agent
 
-03:18:27.524 [error] Failed to start runtime self-improving agent
+09:29:10.022 [warning] Retrying runtime self-improving agent start
 
-03:18:27.524 [warning] Retrying runtime self-improving agent start
+09:29:10.023 [info] Control system started
 
-03:18:27.532 [notice] Application singularity exited: Singularity.Application.start(:normal, []) returned an error: shutdown: failed to start child: Singularity.ApplicationSupervisor
-    ** (EXIT) an exception was raised:
-        ** (ArgumentError) The module Singularity.Engines.ArchitectureEngine.MetaRegistry.Supervisor was given as a child to a supervisor but it does not exist
-            (elixir 1.18.4) lib/supervisor.ex:797: Supervisor.init_child/1
-            (elixir 1.18.4) lib/enum.ex:1714: Enum."-map/2-lists^map/1-1-"/2
-            (elixir 1.18.4) lib/enum.ex:1714: Enum."-map/2-lists^map/1-1-"/2
-            (elixir 1.18.4) lib/supervisor.ex:783: Supervisor.init/2
-            (stdlib 7.1) supervisor.erl:912: :supervisor.init/1
-            (stdlib 7.1) gen_server.erl:2276: :gen_server.init_it/2
-            (stdlib 7.1) gen_server.erl:2236: :gen_server.init_it/6
-            (stdlib 7.1) proc_lib.erl:333: :proc_lib.init_p_do_apply/3
+09:29:10.024 [info] Found 291 source files
 
-03:18:27.532 [notice] Application flow exited: :stopped
+09:29:10.024 [info] Starting Singularity Infrastructure Supervisor
 
-03:18:27.535 [notice] Application broadway exited: :stopped
+09:29:10.030 [info] Error rate tracker initialized
 
-03:18:27.536 [notice] Application cachex exited: :stopped
+09:29:10.036 [warning] The on_load function for module Elixir.Singularity.EmbeddingEngine returned:
+{:error,
+ {:bad_lib,
+  ~c"Function not found 'Elixir.Singularity.EmbeddingEngine':embedding_fusion/3"}}
 
-03:18:27.536 [notice] Application sleeplocks exited: :stopped
 
-03:18:27.536 [notice] Application jumper exited: :stopped
+09:29:10.039 [warning] EmbeddingEngine NIF not loaded yet (models will load on-demand): %UndefinedFunctionError{module: Singularity.EmbeddingEngine, function: :preload_models, arity: 1, reason: nil, message: nil}
 
-03:18:27.536 [notice] Application eternal exited: :stopped
+09:29:10.039 [info] EmbeddingModelLoader initialized with Rust NIF backend
 
-03:18:27.536 [notice] Application unsafe exited: :stopped
+09:29:10.039 [debug] Git coordinator disabled
 
-03:18:27.536 [notice] Application quantum exited: :stopped
+09:29:10.039 [info] Starting CodeFileWatcher...
 
-03:18:27.536 [notice] Application telemetry_registry exited: :stopped
+09:29:10.053 [info] NatsServer subscribed to: nats.request
 
-03:18:27.536 [notice] Application gen_stage exited: :stopped
+09:29:10.053 [info] NatsServer subscribed to: nats.request.simple
 
-03:18:27.536 [notice] Application crontab exited: :stopped
+09:29:10.053 [info] NatsServer subscribed to: nats.request.medium
 
-03:18:27.538 [notice] Application phoenix_live_dashboard exited: :stopped
+09:29:10.053 [info] NatsServer subscribed to: nats.request.complex
 
-03:18:27.539 [notice] Application telemetry_poller exited: :stopped
+09:29:10.056 [info] [EngineDiscovery] Engine discovery subscription initialized (NatsClient integration pending)
 
-03:18:27.539 [notice] Application telemetry_metrics exited: :stopped
+09:29:10.056 [info] 🚀 NATS Server started - Single entry point for all services
 
-03:18:27.539 [notice] Application gnat exited: :stopped
+09:29:10.068 [info] Learning complete: 288 modules, 201 issues
 
-03:18:27.539 [notice] Application nkeys exited: :stopped
+09:29:10.068 [info] Learning complete: 201 issues found
 
-03:18:27.540 [notice] Application kcl exited: :stopped
+09:29:10.068 [info] Phase 1.5: Persisting learned codebase to database...
 
-03:18:27.540 [notice] Application poly1305 exited: :stopped
+09:29:10.068 [info] Persisting 288 modules to database...
 
-03:18:27.540 [notice] Application equivalex exited: :stopped
-
-03:18:27.540 [notice] Application chacha20 exited: :stopped
-
-03:18:27.540 [notice] Application salsa20 exited: :stopped
-
-03:18:27.540 [notice] Application curve25519 exited: :stopped
-
-03:18:27.540 [notice] Application ed25519 exited: :stopped
-
-03:18:27.540 [notice] Application connection exited: :stopped
-
-03:18:27.540 [notice] Application cowlib exited: :stopped
-
-03:18:27.540 [notice] Application delta_crdt exited: :stopped
-
-03:18:27.540 [notice] Application merkle_map exited: :stopped
-
-03:18:27.540 [notice] Application libcluster exited: :stopped
-
-03:18:27.542 [notice] Application exla exited: :stopped
-
-03:18:27.542 [notice] Application bumblebee exited: :stopped
-
-03:18:27.542 [notice] Application nx_signal exited: :stopped
-
-03:18:27.542 [notice] Application progress_bar exited: :stopped
-
-03:18:27.542 [notice] Application unzip exited: :stopped
-
-03:18:27.542 [notice] Application safetensors exited: :stopped
-
-03:18:27.542 [notice] Application unpickler exited: :stopped
-
-03:18:27.542 [notice] Application nx_image exited: :stopped
-
-03:18:27.542 [notice] Application tokenizers exited: :stopped
-
-03:18:27.542 [notice] Application rustler_precompiled exited: :stopped
-
-03:18:27.542 [notice] Application rustler exited: :stopped
-
-03:18:27.542 [notice] Application axon exited: :stopped
-
-03:18:27.542 [notice] Application polaris exited: :stopped
-
-03:18:27.544 [notice] Application kino exited: :stopped
-
-03:18:27.545 [notice] Application fss exited: :stopped
-
-03:18:27.545 [notice] Application lua exited: :stopped
-
-03:18:27.547 [notice] Application luerl exited: :stopped
-
-03:18:27.547 [notice] Application solid exited: :stopped
-
-03:18:27.547 [notice] Application nimble_parsec exited: :stopped
-
-03:18:27.547 [notice] Application pgvector exited: :stopped
-
-03:18:27.549 [notice] Application nx exited: :stopped
-
-03:18:27.549 [notice] Application complex exited: :stopped
-
-03:18:27.552 [notice] Application ecto_sql exited: :stopped
-
-03:18:27.554 [notice] Application postgrex exited: :stopped
-
-03:18:27.554 [notice] Application table exited: :stopped
-
-03:18:27.564 [notice] Application db_connection exited: :stopped
-
-03:18:27.566 [notice] Application ecto exited: :stopped
-
-03:18:27.567 [notice] Application req exited: :stopped
-
-03:18:27.567 [notice] Application finch exited: :stopped
-
-03:18:27.567 [notice] Application nimble_options exited: :stopped
-
-03:18:27.569 [notice] Application nimble_pool exited: :stopped
-
-03:18:27.570 [notice] Application mint exited: :stopped
-
-03:18:27.571 [notice] Application phoenix_live_view exited: :stopped
-
-03:18:27.572 [notice] Application phoenix exited: :stopped
-
-03:18:27.572 [notice] Application jason exited: :stopped
-
-03:18:27.572 [notice] Application decimal exited: :stopped
-
-03:18:27.573 [notice] Application castore exited: :stopped
-
-03:18:27.573 [notice] Application websock_adapter exited: :stopped
-
-03:18:27.574 [notice] Application bandit exited: :stopped
-
-03:18:27.574 [notice] Application hpax exited: :stopped
-
-03:18:27.574 [notice] Application thousand_island exited: :stopped
-
-03:18:27.574 [notice] Application websock exited: :stopped
-
-03:18:27.574 [notice] Application phoenix_template exited: :stopped
-
-03:18:27.574 [notice] Application phoenix_html exited: :stopped
-
-03:18:27.575 [notice] Application phoenix_pubsub exited: :stopped
-
-03:18:27.577 [notice] Application plug exited: :stopped
-
-03:18:27.578 [notice] Application telemetry exited: :stopped
-
-03:18:27.579 [notice] Application plug_crypto exited: :stopped
-
-03:18:27.579 [notice] Application mime exited: :stopped
-
-03:18:27.579 [notice] Application eex exited: :stopped
-
-03:18:27.579 [notice]     :alarm_handler: {:clear, {:disk_almost_full, ~c"/snap/snapd/25202"}}
-
-03:18:27.579 [notice]     :alarm_handler: {:clear, {:disk_almost_full, ~c"/snap/core22/2133"}}
-
-03:18:27.580 [notice]     :alarm_handler: {:clear, {:disk_almost_full, ~c"/snap/google-cloud-cli/389"}}
-
-03:18:27.580 [notice]     :alarm_handler: {:clear, {:disk_almost_full, ~c"/usr/lib/wsl/drivers"}}
-
-03:18:27.580 [notice]     :alarm_handler: {:clear, {:disk_almost_full, ~c"/snap/google-cloud-cli/387"}}
-
-03:18:27.581 [notice] Application os_mon exited: :stopped
-
-03:18:27.582 [notice] Application sasl exited: :stopped
-
-03:18:27.583 [notice] Application runtime_tools exited: :stopped
-** (Mix) Could not start application singularity: Singularity.Application.start(:normal, []) returned an error: shutdown: failed to start child: Singularity.ApplicationSupervisor
-    ** (EXIT) an exception was raised:
-        ** (ArgumentError) The module Singularity.Engines.ArchitectureEngine.MetaRegistry.Supervisor was given as a child to a supervisor but it does not exist
-            (elixir 1.18.4) lib/supervisor.ex:797: Supervisor.init_child/1
-            (elixir 1.18.4) lib/enum.ex:1714: Enum."-map/2-lists^map/1-1-"/2
-            (elixir 1.18.4) lib/enum.ex:1714: Enum."-map/2-lists^map/1-1-"/2
-            (elixir 1.18.4) lib/supervisor.ex:783: Supervisor.init/2
-            (stdlib 7.1) supervisor.erl:912: :supervisor.init/1
-            (stdlib 7.1) gen_server.erl:2276: :gen_server.init_it/2
-            (stdlib 7.1) gen_server.erl:2236: :gen_server.init_it/6
-            (stdlib 7.1) proc_lib.erl:333: :proc_lib.init_p_do_apply/3
+09:29:10.071 [info] CodeFileWatcher monitoring: /home/mhugo/code/singularity/singularity_app/lib
+[os_mon] memory supervisor port (memsup): Erlang has closed
+[os_mon] cpu supervisor port (cpu_sup): Erlang has closed

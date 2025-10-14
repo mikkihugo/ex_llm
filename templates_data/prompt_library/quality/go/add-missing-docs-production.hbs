@@ -1,7 +1,27 @@
-Add comprehensive documentation comments with examples and error handling for production Go code.
-Keep existing docs unchanged.
+Add comprehensive documentation with HUMAN CONTENT FIRST, then AI metadata.
 
-IMPORTANT: Use // comments for all documentation. Go doc comments start with the name of the thing being described.
+STRUCTURE:
+
+1. HUMAN CONTENT (Top ~80 lines - for humans):
+   - Package comment with overview and purpose
+   - Quick start examples
+   - Exported API list
+   - Common errors and solutions
+   - Real usage examples
+
+2. SEPARATOR in package comment:
+   ---
+   ## AI Navigation Metadata
+   The sections below provide structured metadata for AI assistants, graph databases (Neo4j), and vector databases (pgvector).
+
+3. AI METADATA (Below separator in package comment):
+   - Module Identity (JSON in code comment)
+   - Architecture Diagram (Mermaid)
+   - Call Graph (YAML)
+   - Anti-Patterns
+   - Search Keywords
+
+Keep existing docs unchanged.
 
 Code:
 ```go

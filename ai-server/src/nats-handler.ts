@@ -94,23 +94,23 @@ type ProviderKey = 'claude' | 'gemini' | 'codex' | 'copilot' | 'github' | 'jules
 const MODEL_SELECTION_MATRIX: Record<TaskType, Record<TaskComplexity, Array<{ provider: ProviderKey; model: string }>>> = {
   general: {
     simple: [{ provider: 'gemini', model: 'gemini-2.5-flash' }, { provider: 'copilot', model: 'gpt-5-mini' }, { provider: 'copilot', model: 'grok-code-fast-1' }, { provider: 'codex', model: 'o3-mini-codex' }, { provider: 'cursor', model: 'auto' }],
-    medium: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'claude', model: 'claude-3-5-sonnet-20241022' }, { provider: 'gemini', model: 'gemini-2.5-pro' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'auto' }],
-    complex: [{ provider: 'claude', model: 'claude-sonnet-4.5' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'claude', model: 'opus-4.1' }, { provider: 'copilot', model: 'gpt-4o' }, { provider: 'gemini', model: 'gemini-2.5-pro' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'cheetah' }]
+    medium: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'claude', model: 'sonnet' }, { provider: 'gemini', model: 'gemini-2.5-pro' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'auto' }],
+    complex: [{ provider: 'claude', model: 'sonnet' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'claude', model: 'opus' }, { provider: 'copilot', model: 'gpt-4o' }, { provider: 'gemini', model: 'gemini-2.5-pro' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'cheetah' }]
   },
   architect: {
-    simple: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'claude', model: 'claude-3-5-sonnet-20241022' }, { provider: 'openrouter', model: 'auto' }, { provider: 'gemini', model: 'gemini-2.5-flash' }, { provider: 'cursor', model: 'auto' }],
-    medium: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'claude', model: 'claude-3-5-sonnet-20241022' }, { provider: 'openrouter', model: 'auto' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'gemini', model: 'gemini-2.5-pro' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'auto' }],
-    complex: [{ provider: 'claude', model: 'claude-sonnet-4.5' }, { provider: 'openrouter', model: 'auto' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'claude', model: 'opus-4.1' }, { provider: 'copilot', model: 'gpt-4o' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'cheetah' }]
+    simple: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'claude', model: 'sonnet' }, { provider: 'openrouter', model: 'auto' }, { provider: 'gemini', model: 'gemini-2.5-flash' }, { provider: 'cursor', model: 'auto' }],
+    medium: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'claude', model: 'sonnet' }, { provider: 'openrouter', model: 'auto' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'gemini', model: 'gemini-2.5-pro' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'auto' }],
+    complex: [{ provider: 'claude', model: 'opus' }, { provider: 'openrouter', model: 'auto' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'claude', model: 'sonnet' }, { provider: 'copilot', model: 'gpt-4o' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'cheetah' }]
   },
   coder: {
     simple: [{ provider: 'copilot', model: 'gpt-5-mini' }, { provider: 'copilot', model: 'grok-code-fast-1' }, { provider: 'openrouter', model: 'auto' }, { provider: 'gemini', model: 'gemini-2.5-flash' }, { provider: 'codex', model: 'o3-mini-codex' }, { provider: 'cursor', model: 'auto' }],
-    medium: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'openrouter', model: 'auto' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'claude', model: 'claude-3-5-sonnet-20241022' }, { provider: 'cursor', model: 'auto' }],
-    complex: [{ provider: 'codex', model: 'gpt-5-codex' }, { provider: 'claude', model: 'claude-sonnet-4.5' }, { provider: 'copilot', model: 'gpt-4o' }, { provider: 'openrouter', model: 'auto' }, { provider: 'claude', model: 'opus-4.1' }, { provider: 'cursor', model: 'cheetah' }]
+    medium: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'openrouter', model: 'auto' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'claude', model: 'sonnet' }, { provider: 'cursor', model: 'auto' }],
+    complex: [{ provider: 'codex', model: 'gpt-5-codex' }, { provider: 'claude', model: 'opus' }, { provider: 'copilot', model: 'gpt-4o' }, { provider: 'openrouter', model: 'auto' }, { provider: 'claude', model: 'sonnet' }, { provider: 'cursor', model: 'cheetah' }]
   },
   qa: {
-    simple: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'gemini', model: 'gemini-2.5-flash' }, { provider: 'claude', model: 'claude-3-5-sonnet-20241022' }, { provider: 'cursor', model: 'auto' }],
-    medium: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'claude', model: 'claude-3-5-sonnet-20241022' }, { provider: 'gemini', model: 'gemini-2.5-pro' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'auto' }],
-    complex: [{ provider: 'claude', model: 'claude-3-5-sonnet-20241022' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'copilot', model: 'gpt-4o' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'cheetah' }]
+    simple: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'gemini', model: 'gemini-2.5-flash' }, { provider: 'claude', model: 'sonnet' }, { provider: 'cursor', model: 'auto' }],
+    medium: [{ provider: 'copilot', model: 'gpt-4o' }, { provider: 'claude', model: 'sonnet' }, { provider: 'gemini', model: 'gemini-2.5-pro' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'auto' }],
+    complex: [{ provider: 'claude', model: 'sonnet' }, { provider: 'codex', model: 'gpt-5-codex' }, { provider: 'copilot', model: 'gpt-4o' }, { provider: 'claude', model: 'opus' }, { provider: 'copilot', model: 'gpt-4.1' }, { provider: 'cursor', model: 'cheetah' }]
   }
 };
 
@@ -205,7 +205,14 @@ class NATSHandler {
       this.validateRequest(request);
       logger.info('[NATS] Received LLM request', { model: request.model, correlationId: request.correlation_id });
       const response = await this.processLLMRequest(request);
-      await this.publishResponse(response);
+      
+      // Use NATS request/reply pattern - send response back to the reply subject
+      if (msg.reply) {
+        await this.publishResponseToReply(msg.reply, response);
+      } else {
+        await this.publishResponse(response);
+      }
+      
       const duration = Date.now() - startTime;
       metrics.recordRequest('nats_llm_request', duration);
       if (response.model) {
@@ -223,7 +230,13 @@ class NATSHandler {
         correlation_id: request?.correlation_id,
         timestamp: new Date().toISOString()
       };
-      await this.publishError(errorResponse);
+      
+      // Use NATS request/reply pattern for errors too
+      if (msg.reply) {
+        await this.publishErrorToReply(msg.reply, errorResponse);
+      } else {
+        await this.publishError(errorResponse);
+      }
     }
   }
 
@@ -428,13 +441,14 @@ class NATSHandler {
   }
 
   private calculateClaudeCost(tokens: number, model: string): number {
-    const pricing = { 'claude-3-5-sonnet-20241022': 3.0 };
-    const rate = pricing[model as keyof typeof pricing] || 3.0;
+    // Claude subscription models (free via Claude Pro/Max)
+    const pricing = { 'sonnet': 0, 'opus': 0 };
+    const rate = pricing[model as keyof typeof pricing] || 0; // Default to free (subscription)
     return Math.round((tokens / 1_000_000) * rate * 100);
   }
 
   private calculateGeminiCost(tokens: number, model: string): number {
-    const pricing = { 'gemini-1.5-flash': 0.075, 'gemini-2.5-pro': 1.25 };
+    const pricing = { 'gemini-2.5-flash': 0.075, 'gemini-2.5-pro': 1.25 };
     const rate = pricing[model as keyof typeof pricing] || 1.25;
     return Math.round((tokens / 1_000_000) * rate * 100);
   }
@@ -453,10 +467,22 @@ class NATSHandler {
     logger.info('[NATS] Published LLM response', { model: response.model, correlationId: response.correlation_id });
   }
 
+  private async publishResponseToReply(replySubject: string, response: LLMResponse) {
+    if (!this.nc) throw new Error('NATS not connected');
+    this.nc.publish(replySubject, JSON.stringify(response));
+    logger.info('[NATS] Published LLM response to reply subject', { model: response.model, correlationId: response.correlation_id, replySubject });
+  }
+
   private async publishError(error: LLMError) {
     if (!this.nc) throw new Error('NATS not connected');
     this.nc.publish('ai.llm.error', JSON.stringify(error));
     logger.error('[NATS] Published LLM error', { errorCode: error.error_code, correlationId: error.correlation_id });
+  }
+
+  private async publishErrorToReply(replySubject: string, error: LLMError) {
+    if (!this.nc) throw new Error('NATS not connected');
+    this.nc.publish(replySubject, JSON.stringify(error));
+    logger.error('[NATS] Published LLM error to reply subject', { errorCode: error.error_code, correlationId: error.correlation_id, replySubject });
   }
 
   async close() {

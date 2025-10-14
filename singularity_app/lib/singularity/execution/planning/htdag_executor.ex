@@ -41,7 +41,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
   require Logger
   
   # INTEGRATION: DAG operations (task selection and status updates)
-  alias Singularity.Execution.Planning.{HTDAG, HTDAGCore}
+  alias Singularity.Execution.Planning.{HTDAG, HTDAGCore, HTDAGStrategyLoader, HTDAGLuaExecutor}
 
   # INTEGRATION: LLM execution (NATS-based operations)
   alias Singularity.LLM.NatsOperation
@@ -51,6 +51,9 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
 
   # INTEGRATION: Self-improvement (learning from execution)
   alias Singularity.SelfImprovingAgent
+
+  # INTEGRATION: Agent spawning from Lua configurations
+  alias Singularity.Agents.AgentSpawner
   
   @type executor_state :: %{
           run_id: String.t(),
@@ -192,15 +195,192 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
   end
   
   defp execute_task(task, state, opts) do
-    Logger.info("Executing task",
+    Logger.info("Executing task via Lua strategy",
       run_id: state.run_id,
       task_id: task.id,
       description: task.description
     )
-    
-    # Build operation parameters based on task
-    op_params = build_operation_params(task, opts)
-    
+
+    # Get Lua strategy for this task
+    case HTDAGStrategyLoader.get_strategy_for_task(task.description) do
+      {:ok, strategy} ->
+        # Check if task should be decomposed
+        if should_decompose?(task) do
+          decompose_and_recurse(task, strategy, state, opts)
+        else
+          execute_atomic_task(task, strategy, state, opts)
+        end
+
+      {:error, :no_strategy_found} ->
+        Logger.warning("No Lua strategy found, falling back to default execution",
+          task_id: task.id,
+          description: task.description
+        )
+
+        # Fallback to legacy execution
+        execute_with_default_strategy(task, state, opts)
+    end
+  end
+  
+  # ============================================================================
+  # LUA-POWERED TASK EXECUTION
+  # ============================================================================
+
+  defp should_decompose?(task) do
+    # Complex tasks get decomposed via Lua
+    (task.estimated_complexity || 5.0) >= 5.0 and
+      task.task_type != :implementation
+  end
+
+  defp decompose_and_recurse(task, strategy, state, opts) do
+    Logger.info("Decomposing task via Lua",
+      task_id: task.id,
+      strategy: strategy.name
+    )
+
+    # Execute Lua decomposition
+    case HTDAGLuaExecutor.decompose_task(strategy, task, state) do
+      {:ok, []} ->
+        # No decomposition needed, execute atomically
+        execute_atomic_task(task, strategy, state, opts)
+
+      {:ok, subtasks} ->
+        Logger.info("Decomposed into #{length(subtasks)} subtasks",
+          task_id: task.id,
+          subtask_count: length(subtasks)
+        )
+
+        # Add subtasks to DAG
+        dag = Enum.reduce(subtasks, state.dag, fn subtask, acc_dag ->
+          HTDAGCore.add_task(acc_dag, subtask)
+        end)
+
+        # Mark parent task as in progress
+        dag = HTDAGCore.mark_in_progress(dag, task.id)
+
+        # Return success - DAG loop will handle subtask execution
+        {:ok, %{decomposed: true, subtask_count: length(subtasks)}}
+
+      {:error, reason} ->
+        Logger.error("Lua decomposition failed",
+          task_id: task.id,
+          strategy: strategy.name,
+          reason: inspect(reason)
+        )
+
+        {:error, {:decomposition_failed, reason}}
+    end
+  end
+
+  defp execute_atomic_task(task, strategy, state, opts) do
+    Logger.info("Executing atomic task via Lua agent spawning",
+      task_id: task.id,
+      strategy: strategy.name
+    )
+
+    # 1. Spawn agents via Lua
+    case HTDAGLuaExecutor.spawn_agents(strategy, task, state) do
+      {:ok, spawn_config} ->
+        Logger.debug("Lua agent spawning complete",
+          task_id: task.id,
+          agent_count: length(spawn_config["agents"] || [])
+        )
+
+        # 2. Spawn actual agents
+        agents = Enum.map(spawn_config["agents"] || [], fn agent_config ->
+          AgentSpawner.spawn(agent_config)
+        end)
+
+        # 3. Get orchestration plan via Lua
+        case HTDAGLuaExecutor.orchestrate_execution(strategy, task, agents, []) do
+          {:ok, orchestration} ->
+            # 4. Execute orchestration plan
+            results = execute_orchestration(orchestration, agents, task, state)
+
+            # 5. Check completion via Lua
+            case HTDAGLuaExecutor.check_completion(strategy, task, results) do
+              {:ok, %{"status" => "completed"} = completion} ->
+                Logger.info("Task completed via Lua validation",
+                  task_id: task.id,
+                  confidence: completion["confidence"]
+                )
+
+                {:ok, completion}
+
+              {:ok, %{"status" => "needs_rework"} = completion} ->
+                Logger.warning("Task needs rework per Lua validation",
+                  task_id: task.id,
+                  reasoning: completion["reasoning"]
+                )
+
+                {:error, {:needs_rework, completion["reasoning"]}}
+
+              {:error, reason} ->
+                {:error, {:completion_check_failed, reason}}
+            end
+
+          {:error, reason} ->
+            {:error, {:orchestration_failed, reason}}
+        end
+
+      {:error, reason} ->
+        Logger.error("Lua agent spawning failed",
+          task_id: task.id,
+          strategy: strategy.name,
+          reason: inspect(reason)
+        )
+
+        {:error, {:agent_spawning_failed, reason}}
+    end
+  end
+
+  defp execute_orchestration(orchestration, agents, task, state) do
+    # Execute phases from orchestration plan
+    execution_plan = orchestration["execution_plan"] || []
+
+    Enum.reduce(execution_plan, %{}, fn phase, acc_results ->
+      phase_results = execute_phase(phase, agents, task, state, acc_results)
+      Map.merge(acc_results, phase_results)
+    end)
+  end
+
+  defp execute_phase(phase, agents, task, _state, previous_results) do
+    # Execute assignments in this phase
+    assignments = phase["assignments"] || []
+
+    phase_results =
+      assignments
+      |> Enum.map(fn assignment ->
+        agent = Enum.find(agents, &(&1.id == assignment["agent_id"]))
+
+        if agent do
+          # Agent executes its assigned subtasks
+          subtask_ids = assignment["subtask_ids"] || []
+
+          results = Enum.map(subtask_ids, fn subtask_id ->
+            # For now, return placeholder results
+            # In full implementation, this would call Agent.execute_task/3
+            %{subtask_id: subtask_id, status: "completed", output: "Task completed"}
+          end)
+
+          {assignment["agent_id"], results}
+        else
+          {assignment["agent_id"], []}
+        end
+      end)
+      |> Enum.into(%{})
+
+    phase_results
+  end
+
+  defp execute_with_default_strategy(task, state, opts) do
+    Logger.info("Using default execution strategy (legacy)",
+      task_id: task.id
+    )
+
+    # Legacy fallback: use hardcoded model selection and prompt building
+    op_params = build_legacy_operation_params(task, opts)
+
     # Build execution context
     ctx = %{
       run_id: state.run_id,
@@ -211,152 +391,81 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
         depth: task.depth
       }
     }
-    
-    # Compile operation
+
+    # Compile and execute operation
     case NatsOperation.compile(op_params, ctx) do
       {:ok, compiled} ->
-        # Get inputs from dependencies
         inputs = collect_task_inputs(task, state.results)
-        
-        # Execute with timeout
         timeout_ms = compiled.timeout_ms
-        
-        task_result = 
+
+        task_result =
           Task.async(fn ->
             NatsOperation.run(compiled, inputs, ctx)
           end)
           |> Task.await(timeout_ms + 1000)
-        
+
         case task_result do
           {:ok, result} ->
-            Logger.info("Task completed successfully",
-              run_id: state.run_id,
+            Logger.info("Task completed successfully (legacy)",
               task_id: task.id,
-              tokens_used: result.usage["total_tokens"]
+              tokens_used: Map.get(result, :usage, %{}) |> Map.get("total_tokens")
             )
-            
+
             {:ok, result}
-            
+
           {:error, reason} ->
-            Logger.error("Task execution failed",
-              run_id: state.run_id,
+            Logger.error("Task execution failed (legacy)",
               task_id: task.id,
               reason: reason
             )
-            
+
             {:error, reason}
         end
-        
+
       {:error, reason} ->
-        Logger.error("Failed to compile operation",
-          run_id: state.run_id,
+        Logger.error("Failed to compile operation (legacy)",
           task_id: task.id,
           reason: reason
         )
-        
+
         {:error, {:compile_failed, reason}}
     end
   end
-  
-  defp build_operation_params(task, opts) do
-    # Determine model based on task complexity
-    model_id = select_model_for_task(task)
-    
-    # Build prompt template with RAG context if enabled
-    prompt_template = if Keyword.get(opts, :use_rag, false) do
-      build_task_prompt_with_rag(task, opts)
-    else
-      build_task_prompt(task)
+
+  # ============================================================================
+  # LEGACY EXECUTION (Fallback when no Lua strategy found)
+  # ============================================================================
+
+  defp build_legacy_operation_params(task, opts) do
+    # Determine model based on task complexity (LEGACY)
+    model_id = case task.estimated_complexity do
+      complexity when complexity >= 8.0 -> "claude-sonnet-4.5"
+      complexity when complexity >= 5.0 -> "gemini-2.5-pro"
+      _ -> "gemini-1.5-flash"
     end
-    
+
+    # Build simple prompt (LEGACY)
+    prompt_template = """
+    Complete the following task:
+
+    Task: #{task.description}
+    Type: #{task.task_type}
+    Complexity: #{task.estimated_complexity}
+
+    Acceptance Criteria:
+    #{Enum.map_join(task.acceptance_criteria || [], "\n", fn criterion -> "- #{criterion}" end)}
+
+    Provide a detailed solution that meets all acceptance criteria.
+    """
+
     %{
       model_id: model_id,
       prompt_template: prompt_template,
       temperature: Keyword.get(opts, :temperature, 0.7),
       max_tokens: Keyword.get(opts, :max_tokens, 4000),
       stream: Keyword.get(opts, :stream, false),
-      timeout_ms: Keyword.get(opts, :timeout_ms, 30_000),
-      # Integration flags
-      use_rag: Keyword.get(opts, :use_rag, false),
-      use_quality_templates: Keyword.get(opts, :use_quality_templates, false)
+      timeout_ms: Keyword.get(opts, :timeout_ms, 30_000)
     }
-  end
-  
-  defp select_model_for_task(task) do
-    # Select model based on task complexity and type
-    cond do
-      task.estimated_complexity >= 8.0 ->
-        "claude-sonnet-4.5"
-        
-      task.estimated_complexity >= 5.0 ->
-        "gemini-2.5-pro"
-        
-      true ->
-        "gemini-1.5-flash"
-    end
-  end
-  
-  defp build_task_prompt(task) do
-    """
-    Complete the following task:
-    
-    Task: #{task.description}
-    Type: #{task.task_type}
-    Complexity: #{task.estimated_complexity}
-    
-    Acceptance Criteria:
-    #{Enum.map_join(task.acceptance_criteria, "\n", fn criterion -> "- #{criterion}" end)}
-    
-    Provide a detailed solution that meets all acceptance criteria.
-    """
-  end
-  
-  defp build_task_prompt_with_rag(task, opts) do
-    # Use RAG to find similar code examples
-    similar_code = find_similar_code_examples(task)
-    
-    base_prompt = build_task_prompt(task)
-    
-    if similar_code != [] do
-      """
-      #{base_prompt}
-      
-      ## Similar Code Examples from Codebase
-      
-      #{format_rag_examples(similar_code)}
-      
-      Use these proven patterns from the codebase as reference.
-      Follow the same coding style and quality standards.
-      """
-    else
-      base_prompt
-    end
-  end
-  
-  defp find_similar_code_examples(task) do
-    # Search codebase for similar patterns
-    try do
-      # Use Store to search knowledge base
-      case Store.search_knowledge(task.description, limit: 3) do
-        {:ok, results} -> results
-        _ -> []
-      end
-    rescue
-      _ -> []
-    end
-  end
-  
-  defp format_rag_examples(examples) do
-    examples
-    |> Enum.with_index(1)
-    |> Enum.map_join("\n\n", fn {example, idx} ->
-      """
-      Example #{idx}:
-      ```
-      #{Map.get(example, :content, Map.get(example, "content", ""))}
-      ```
-      """
-    end)
   end
   
   defp collect_task_inputs(task, results) do

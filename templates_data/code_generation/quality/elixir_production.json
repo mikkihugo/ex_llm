@@ -1,6 +1,6 @@
 {
   "name": "Elixir Production Quality",
-  "spec_version": "2.1.1",
+  "spec_version": "2.2.0",
   "capabilities": [
     "quality",
     "graph",
@@ -13,6 +13,14 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for Elixir code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.2.0": {
+      "date": "2025-01-14",
+      "changes": [
+        "Enhanced documentation prompt with explicit human-first structure guidance",
+        "Added 3 new scoring weights: human_content_first, clear_separation, ai_metadata_explained",
+        "Clarified separation between human content (top) and AI metadata (below separator)"
+      ]
+    },
     "2.1.1": {
       "date": "2025-01-13",
       "changes": [
@@ -295,6 +303,9 @@
     "has_call_graph_yaml": 0.9,
     "has_anti_patterns": 0.85,
     "has_search_keywords": 0.8,
+    "human_content_first": 0.9,
+    "clear_separation": 0.85,
+    "ai_metadata_explained": 0.8,
     "graph_db_ready": 0.9,
     "vector_db_optimized": 0.9
   }

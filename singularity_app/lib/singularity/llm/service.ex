@@ -299,7 +299,7 @@ defmodule Singularity.LLM.Service do
   ### ❌ DO NOT create custom NATS subjects for LLM calls
   ```elixir
   # ❌ WRONG - Custom subject bypasses routing
-  NatsClient.request("my.custom.llm.call", data)
+  Singularity.NatsClient.request("my.custom.llm.call", data)
 
   # ✅ CORRECT - Use Service which handles subject routing
   Service.call(:medium, messages)
@@ -823,16 +823,14 @@ defmodule Singularity.LLM.Service do
       subject: subject
     })
 
-    case NatsClient.request(subject, Jason.encode!(request), timeout: timeout) do
+    case Singularity.NatsClient.request(subject, Jason.encode!(request), timeout: timeout) do
       {:ok, response} ->
+        IO.inspect(response.data, label: "NATS Response Data")
+        IO.inspect(response.subject, label: "NATS Response Subject")
+
         case Jason.decode(response.data) do
           {:ok, data} ->
-            Logger.debug("LLM response received", %{
-              provider: Map.get(request, :provider),
-              requested_model: requested_model,
-              selected_model: Map.get(data, "model"),
-              complexity: Map.get(request, :complexity)
-            })
+            IO.inspect(data, label: "Decoded LLM Response")
 
             {:ok, data}
 

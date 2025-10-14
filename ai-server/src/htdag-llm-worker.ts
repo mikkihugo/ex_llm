@@ -99,12 +99,13 @@ class HTDAGLLMWorker {
    */
   private async subscribeToModels() {
     if (!this.nc) throw new Error('Not connected to NATS');
-    
+
     const models = [
-      'claude-sonnet-4.5',
-      'claude-3-5-sonnet-20241022',
+      'sonnet',
+      'opus',
       'gemini-2.5-pro',
-      'gemini-1.5-flash',
+      'gemini-2.5-flash',
+      'gpt-4o',
       'gpt-5-codex',
       'o3-mini-codex',
       'auto', // Auto-selection based on complexity
@@ -303,11 +304,11 @@ class HTDAGLLMWorker {
     } else if (modelId === 'auto') {
       // Default to fast model
       const gemini = createGeminiProvider({ authType: 'oauth-personal' });
-      return { provider: gemini, modelName: 'gemini-1.5-flash' };
+      return { provider: gemini, modelName: 'gemini-2.5-flash' };
     } else {
       // Fallback to Gemini
       const gemini = createGeminiProvider({ authType: 'oauth-personal' });
-      return { provider: gemini, modelName: 'gemini-1.5-flash' };
+      return { provider: gemini, modelName: 'gemini-2.5-flash' };
     }
   }
   
@@ -324,9 +325,11 @@ class HTDAGLLMWorker {
           timestamp: new Date().toISOString(),
           status: 'healthy',
           models: [
-            'claude-sonnet-4.5',
+            'sonnet',
+            'opus',
+            'gpt-4o',
             'gemini-2.5-pro',
-            'gemini-1.5-flash',
+            'gemini-2.5-flash',
             'auto',
           ],
         };

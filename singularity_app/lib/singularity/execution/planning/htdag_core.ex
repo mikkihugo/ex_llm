@@ -113,6 +113,23 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
   end
 
   @doc """
+  Mark task as in progress.
+  """
+  @spec mark_in_progress(htdag(), String.t()) :: htdag()
+  def mark_in_progress(dag, task_id) do
+    case Map.get(dag.tasks, task_id) do
+      nil ->
+        dag
+
+      task ->
+        updated_task = %{task | status: :active}
+        tasks = Map.put(dag.tasks, task_id, updated_task)
+
+        %{dag | tasks: tasks}
+    end
+  end
+
+  @doc """
   Mark task as completed.
   """
   @spec mark_completed(htdag(), String.t()) :: htdag()

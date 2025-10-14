@@ -169,7 +169,7 @@ defmodule Singularity.EmbeddingEngine do
   def semantic_search(_query, _embeddings, _options), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc false
-  def batch_process_documents(_documents, _options), do: :erlang.nif_error(:nif_not_loaded)
+  def batch_process_documents(_documents, _model_type, _batch_size, _chunk_size), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc false
   def get_embedding_quality_metrics(_embeddings), do: :erlang.nif_error(:nif_not_loaded)
@@ -178,7 +178,7 @@ defmodule Singularity.EmbeddingEngine do
   def optimize_embeddings(_embeddings, _options, _params), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc false
-  def embedding_fusion(_embeddings_list, _weights), do: :erlang.nif_error(:nif_not_loaded)
+  def embedding_fusion(_texts, _model_types, _fusion_method), do: :erlang.nif_error(:nif_not_loaded)
 
   ## Public API
 
@@ -493,7 +493,7 @@ defmodule Singularity.EmbeddingEngine do
       text_type: text_type,
       performance_requirements: performance_requirements
     }
-    
+
     case NatsClient.request("central.embedding.recommendations", Jason.encode!(request), timeout: 3000) do
       {:ok, response} ->
         case Jason.decode(response.data) do
@@ -503,5 +503,54 @@ defmodule Singularity.EmbeddingEngine do
       {:error, reason} ->
         {:error, "NATS request failed: #{reason}"}
     end
+  end
+
+  @doc """
+  Fuse embeddings from multiple models for improved quality.
+
+  Combines embeddings from different models (e.g., Jina v3 + Qodo-Embed)
+  to leverage their complementary strengths.
+
+  ## Fusion Methods
+
+  - `:concatenate` - Concatenate all model embeddings (e.g., 1024 + 1536 = 2560 dims)
+  - `:average` - Element-wise average (requires same dimensions)
+  - `:max` - Element-wise maximum (requires same dimensions)
+
+  ## Examples
+
+      # Concatenate Jina v3 (text) + Qodo-Embed (code) for hybrid search
+      {:ok, fused} = EmbeddingEngine.fuse_embeddings(
+        ["async worker pattern"],
+        [:jina_v3, :qodo_embed],
+        :concatenate
+      )
+      # => 2560-dimensional embedding (1024 + 1536)
+
+      # Average multiple models for consensus
+      {:ok, fused} = EmbeddingEngine.fuse_embeddings(
+        ["search query"],
+        [:jina_v3, :minilm],
+        :average
+      )
+  """
+  @spec fuse_embeddings([String.t()], [model()], atom()) :: {:ok, [embedding()]} | {:error, term()}
+  def fuse_embeddings(texts, models, fusion_method \\ :concatenate) when is_list(texts) and is_list(models) do
+    model_strings = Enum.map(models, &model_to_string/1)
+    fusion_method_str = Atom.to_string(fusion_method)
+
+    case embedding_fusion(texts, model_strings, fusion_method_str) do
+      result when is_list(result) ->
+        Logger.debug("Fused embeddings from #{length(models)} models: #{fusion_method}")
+        {:ok, result}
+
+      {:error, reason} = error ->
+        Logger.error("Embedding fusion failed: #{inspect(reason)}")
+        error
+    end
+  rescue
+    error ->
+      Logger.error("Embedding fusion error: #{inspect(error)}")
+      {:error, error}
   end
 end

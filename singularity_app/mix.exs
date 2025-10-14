@@ -93,7 +93,7 @@ defmodule Singularity.MixProject do
       {:parser_engine,
        path: "../rust/parser_engine", runtime: false, app: false, compile: false, optional: true},
       {:prompt_engine,
-       path: "../rust/prompt_engine", runtime: false, app: false, compile: false, optional: true},
+       path: "../rust/prompt_engine", runtime: false, app: false, compile: false},
       {:quality_engine,
        path: "../rust/quality_engine", runtime: false, app: false, compile: false},
       # Other engines are symlinks to rust/ or rust-central/ directories (already included in workspace)
@@ -118,6 +118,9 @@ defmodule Singularity.MixProject do
       {:delta_crdt, "~> 0.6"},
       # NATS messaging
       {:gnat, "~> 1.8"},
+
+      # File watching for real-time code ingestion
+      {:file_system, "~> 1.0"},
 
       # Monitoring & Telemetry
       {:telemetry, "~> 1.2"},

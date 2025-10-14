@@ -60,7 +60,7 @@ if psql -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
 fi
 
 # Create database if needed
-if [ -z "$DB_EXISTS" ]; then
+if [ -z "${DB_EXISTS:-}" ]; then
     echo -e "${GREEN}Creating database '$DB_NAME'...${NC}"
     createdb "$DB_NAME" -O "$DB_USER"
     echo -e "${GREEN}✅ Database created${NC}"
@@ -80,15 +80,39 @@ CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
 -- PostGIS (geospatial, if needed)
 CREATE EXTENSION IF NOT EXISTS postgis;
 
+-- Apache AGE (graph database with Cypher queries)
+CREATE EXTENSION IF NOT EXISTS age;
+
+-- PgRouting (graph routing algorithms)
+CREATE EXTENSION IF NOT EXISTS pgrouting;
+
+-- PgTAP (PostgreSQL testing)
+CREATE EXTENSION IF NOT EXISTS pgtap;
+
+-- PgCron (scheduled tasks)
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- Postgres FDW (Foreign Data Wrapper)
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+
 -- UUID generation
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Full-text search (pg_trgm for similarity)
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- Additional useful extensions
+CREATE EXTENSION IF NOT EXISTS btree_gin;
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+CREATE EXTENSION IF NOT EXISTS hstore;
+CREATE EXTENSION IF NOT EXISTS ltree;
+CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
 SELECT 'Extension installed: ' || extname
 FROM pg_extension
-WHERE extname IN ('vector', 'timescaledb', 'postgis', 'uuid-ossp', 'pg_trgm');
+WHERE extname IN ('vector', 'timescaledb', 'postgis', 'age', 'pgrouting', 'pgtap', 'pg_cron', 'postgres_fdw', 'uuid-ossp', 'pg_trgm', 'btree_gin', 'btree_gist', 'pg_stat_statements', 'hstore', 'ltree', 'fuzzystrmatch', 'unaccent');
 SQL
 
 echo -e "${GREEN}✅ Extensions installed${NC}"

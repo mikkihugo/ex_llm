@@ -41,20 +41,26 @@ export class NatsService {
 
     const jsm = await this.nc!.jetstreamManager();
 
+    // NOTE: AI_EVENTS stream disabled because it was intercepting request/reply messages
+    // The stream captured all 'ai.>' subjects including 'ai.llm.request', causing
+    // Gnat.request() to receive JetStream ACKs instead of actual LLM responses.
+    // If you need event streaming in the future, use a more specific subject pattern
+    // that doesn't overlap with request/reply subjects (e.g., 'ai.events.>' instead of 'ai.>')
+
     // AI Events stream for general AI-related events.
-    try {
-      await jsm.streams.add({
-        name: 'AI_EVENTS',
-        subjects: ['ai.>', 'llm.>', 'agent.>'],
-        retention: RetentionPolicy.Limits,
-        max_age: 3_600_000_000_000, // 1 hour
-        storage: StorageType.Memory,
-      });
-    } catch (err: any) {
-      if (!err.message?.includes('stream name already in use')) {
-        console.error('[NATS] Failed to create AI_EVENTS stream:', err);
-      }
-    }
+    // try {
+    //   await jsm.streams.add({
+    //     name: 'AI_EVENTS',
+    //     subjects: ['ai.>', 'llm.>', 'agent.>'],
+    //     retention: RetentionPolicy.Limits,
+    //     max_age: 3_600_000_000_000, // 1 hour
+    //     storage: StorageType.Memory,
+    //   });
+    // } catch (err: any) {
+    //   if (!err.message?.includes('stream name already in use')) {
+    //     console.error('[NATS] Failed to create AI_EVENTS stream:', err);
+    //   }
+    // }
   }
 
   /**

@@ -56,6 +56,7 @@
           just
           nil
           nixfmt-rfc-style
+          lsof  # For port detection
 
           # Fast linker (mold) for Rust compilation
           mold
@@ -152,15 +153,21 @@
         );
 
         postgresqlExtensionNames = [
-          "timescaledb"
-          "postgis"
-          "pgrouting"
-          "pgtap"
-          "pg_cron"
+          "timescaledb"     # Time-series data (metrics, usage tracking)
+          "postgis"         # Geospatial (optional)
+          "pgrouting"       # Graph routing algorithms
+          "pgtap"           # PostgreSQL testing
+          "pg_cron"         # Scheduled tasks
           "pgvector"        # Vector similarity search (Jina v3, Qodo-Embed-1)
+          "age"             # Apache AGE - Graph database with Cypher queries
+          "pg_trgm"         # Trigram similarity (fuzzy text search)
+          "btree_gin"       # Better GIN indexes (JSONB + other columns)
+          "btree_gist"      # Better GiST indexes
+          "pg_stat_statements"  # Query performance tracking
+          "postgres_fdw"    # Foreign Data Wrapper (connect to central_services DB)
         ];
 
-        postgresqlWithExtensions = pkgs.postgresql_17.withPackages (ps:
+        postgresqlWithExtensions = pkgs.postgresql_16.withPackages (ps:
           let
             available =
               lib.filter (name: lib.hasAttr name ps) postgresqlExtensionNames;
@@ -490,15 +497,76 @@ EOF
               fi
             fi
 
-            # NATS JetStream setup
+            # NATS setup - Two servers for different use cases
             export NATS_URL="nats://localhost:4222"
-            if ! pgrep -x "nats-server" > /dev/null; then
-              echo "📡 Starting NATS with JetStream..."
-              nats-server -js -sd "$PWD/.nats" -p 4222 > "$PWD/.nats/nats-server.log" 2>&1 &
-              sleep 1
-              echo "   NATS running on nats://localhost:4222 (logs: .nats/nats-server.log)"
+            export NATS_JETSTREAM_URL="nats://localhost:4223"
+            export NATS_PID_FILE="$PWD/.nats/nats-server.pid"
+            export NATS_JETSTREAM_PID_FILE="$PWD/.nats/nats-jetstream.pid"
+            mkdir -p "$PWD/.nats"
+
+            # Start simple NATS for LLM requests (port 4222)
+            if [ -f "$NATS_PID_FILE" ] && kill -0 "$(cat "$NATS_PID_FILE")" 2>/dev/null; then
+              echo "📡 NATS (LLM) already running on nats://localhost:4222 (PID: $(cat "$NATS_PID_FILE"))"
             else
-              echo "📡 NATS already running on nats://localhost:4222"
+              echo "📡 Starting NATS (LLM requests) on port 4222..."
+              rm -f "$NATS_PID_FILE"
+              nats-server -p 4222 > "$PWD/.nats/nats-server.log" 2>&1 &
+              NATS_PID=$!
+              echo $NATS_PID > "$NATS_PID_FILE"
+              sleep 1
+              if kill -0 $NATS_PID 2>/dev/null; then
+                echo "   ✅ NATS (LLM) running on nats://localhost:4222 (PID: $NATS_PID)"
+              else
+                echo "   ❌ Failed to start NATS (LLM) server"
+                rm -f "$NATS_PID_FILE"
+              fi
+            fi
+
+            # Start NATS with JetStream for other services (port 4223)
+            if [ -f "$NATS_JETSTREAM_PID_FILE" ] && kill -0 "$(cat "$NATS_JETSTREAM_PID_FILE")" 2>/dev/null; then
+              echo "📡 NATS JetStream already running on nats://localhost:4223 (PID: $(cat "$NATS_JETSTREAM_PID_FILE"))"
+            else
+              echo "📡 Starting NATS JetStream on port 4223..."
+              rm -f "$NATS_JETSTREAM_PID_FILE"
+              nats-server -js -sd "$PWD/.nats/jetstream" -p 4223 > "$PWD/.nats/nats-jetstream.log" 2>&1 &
+              NATS_JS_PID=$!
+              echo $NATS_JS_PID > "$NATS_JETSTREAM_PID_FILE"
+              sleep 1
+              if kill -0 $NATS_JS_PID 2>/dev/null; then
+                echo "   ✅ NATS JetStream running on nats://localhost:4223 (PID: $NATS_JS_PID)"
+              else
+                echo "   ❌ Failed to start NATS JetStream server"
+                rm -f "$NATS_JETSTREAM_PID_FILE"
+              fi
+            fi
+
+            # AI Server setup (TypeScript/Bun)
+            export AI_SERVER_PID_FILE="$PWD/ai-server/.ai-server.pid"
+            mkdir -p "$PWD/ai-server/logs"
+
+            if [ -f "$AI_SERVER_PID_FILE" ] && kill -0 "$(cat "$AI_SERVER_PID_FILE")" 2>/dev/null; then
+              echo "🤖 AI Server already running (PID: $(cat "$AI_SERVER_PID_FILE"))"
+            else
+              if [ -d "$PWD/ai-server" ]; then
+                echo "🤖 Starting AI Server..."
+                # Clean up any stale PID file
+                rm -f "$AI_SERVER_PID_FILE"
+                # Start AI Server
+                (
+                  cd ai-server
+                  bun run start > logs/ai-server.log 2>&1 &
+                  AI_SERVER_PID=$!
+                  echo $AI_SERVER_PID > .ai-server.pid
+                  cd ..
+                )
+                sleep 2
+                if [ -f "$AI_SERVER_PID_FILE" ] && kill -0 "$(cat "$AI_SERVER_PID_FILE")" 2>/dev/null; then
+                  echo "   ✅ AI Server running (PID: $(cat "$AI_SERVER_PID_FILE"), logs: ai-server/logs/ai-server.log)"
+                else
+                  echo "   ❌ Failed to start AI Server (check logs: ai-server/logs/ai-server.log)"
+                  rm -f "$AI_SERVER_PID_FILE"
+                fi
+              fi
             fi
 
             # Auto-start Singularity Phoenix server
@@ -567,11 +635,26 @@ EOF
             export DEV_PGROOT="$PWD/.dev-db"
             export PGDATA="$DEV_PGROOT/pg"
             export PGHOST="localhost"
+            export PG_PID_FILE="$DEV_PGROOT/postgres.pid"
+            
+            # Find available port starting from 5432
+            find_available_port() {
+              local port=5432
+              while [ $port -le 65535 ]; do
+                if ! lsof -i :$port >/dev/null 2>&1; then
+                  echo $port
+                  return
+                fi
+                port=$((port + 1))
+              done
+              echo "5432"  # fallback
+            }
+            
             if ! printenv PGPORT >/dev/null 2>&1 || [ -z "$PGPORT" ]; then
               if printenv DEV_PGPORT >/dev/null 2>&1 && [ -n "$DEV_PGPORT" ]; then
                 export PGPORT="$DEV_PGPORT"
               else
-                export PGPORT="5432"
+                export PGPORT=$(find_available_port)
               fi
             fi
             if ! printenv _DEV_SHELL_PG_STARTED >/dev/null 2>&1 || [ -z "$_DEV_SHELL_PG_STARTED" ]; then
@@ -579,6 +662,7 @@ EOF
             fi
 
             if [ ! -d "$PGDATA" ]; then
+              echo "🗄️  Initializing PostgreSQL database..."
               mkdir -p "$DEV_PGROOT"
               ${postgresqlWithExtensions}/bin/initdb --no-locale --encoding=UTF8 -D "$PGDATA" >/dev/null
               cat > "$PGDATA/pg_hba.conf" <<'EOF'
@@ -590,17 +674,28 @@ EOF
 listen_addresses = 'localhost'
 port = $PGPORT
 unix_socket_directories = '$PGDATA'
+log_destination = 'stderr'
+logging_collector = off
 EOF
+              echo "   ✅ PostgreSQL initialized on port $PGPORT"
             fi
 
-            if ! ${postgresqlWithExtensions}/bin/pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then
+            if [ -f "$PG_PID_FILE" ] && kill -0 "$(cat "$PG_PID_FILE")" 2>/dev/null; then
+              echo "🗄️  PostgreSQL already running on port $PGPORT (PID: $(cat "$PG_PID_FILE"))"
+            elif ! ${postgresqlWithExtensions}/bin/pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then
+              echo "🚀 Starting PostgreSQL on port $PGPORT..."
               ${postgresqlWithExtensions}/bin/pg_ctl -D "$PGDATA" -l "$PGDATA/postgres.log" -o "-p $PGPORT" start >/dev/null
-              export _DEV_SHELL_PG_STARTED=1
-              echo "🚀 Started Postgres on port $PGPORT (data: $PGDATA)"
+              if [ $? -eq 0 ]; then
+                echo $! > "$PG_PID_FILE" 2>/dev/null || true
+                export _DEV_SHELL_PG_STARTED=1
+                echo "   ✅ PostgreSQL started on port $PGPORT (data: $PGDATA)"
+              else
+                echo "   ❌ Failed to start PostgreSQL (check logs: $PGDATA/postgres.log)"
+              fi
             fi
 
             if ! printenv _DEV_SHELL_PG_TRAP >/dev/null 2>&1 || [ -z "$_DEV_SHELL_PG_TRAP" ]; then
-              trap 'if [ "$_DEV_SHELL_PG_STARTED" = "1" ]; then ${postgresqlWithExtensions}/bin/pg_ctl -D "$PGDATA" -m fast stop >/dev/null 2>&1 || true; fi' EXIT
+              trap 'if [ "$_DEV_SHELL_PG_STARTED" = "1" ]; then echo "🛑 Stopping PostgreSQL..."; ${postgresqlWithExtensions}/bin/pg_ctl -D "$PGDATA" -m fast stop >/dev/null 2>&1 || true; rm -f "$PG_PID_FILE"; fi' EXIT
               export _DEV_SHELL_PG_TRAP=1
             fi
 

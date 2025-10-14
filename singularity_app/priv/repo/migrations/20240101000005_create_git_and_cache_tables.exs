@@ -111,13 +111,15 @@ defmodule Singularity.Repo.Migrations.CreateGitAndCacheTables do
     """
 
     # Create hypertable for time-series data if TimescaleDB is available
+    # Note: Hypertables require partitioning column in primary key
+    # Skipping for now - can be added later with composite keys if needed
     execute """
     DO $$
     BEGIN
-      IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
-        PERFORM create_hypertable('rag_queries', 'inserted_at', if_not_exists => TRUE);
-        PERFORM create_hypertable('llm_calls', 'inserted_at', if_not_exists => TRUE);
-      END IF;
+      -- TimescaleDB hypertables disabled (requires composite primary key)
+      -- Can enable with: ALTER TABLE rag_queries DROP CONSTRAINT rag_queries_pkey;
+      -- Then: SELECT create_hypertable('rag_queries', 'inserted_at');
+      NULL;
     END $$;
     """
   end

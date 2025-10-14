@@ -30,10 +30,13 @@ defmodule Singularity.ApplicationSupervisor do
       Singularity.Infrastructure.Supervisor,
 
       # Architecture engine
-      Singularity.Engines.ArchitectureEngine.MetaRegistry.Supervisor,
+      # Singularity.Engines.ArchitectureEngine.MetaRegistry.Supervisor,  # Module does not exist
 
       # Git integration
       Singularity.Git.Supervisor,
+
+      # Real-time code ingestion (file watching)
+      Singularity.Execution.Planning.CodeFileWatcher,
 
       # NIF-based services (when available)
       # Note: These may fail to load if NIF libraries are missing

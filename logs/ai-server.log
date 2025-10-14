@@ -73,9 +73,358 @@ Subscribed to HTDAG LLM subject {
 ✅ Connected to NATS for Elixir bridge
 📊 Provider returned 49 models
 ✅ GitHub Models catalog loaded: 49 models
-[ModelRegistry] Loaded 8 models from disk cache.
+[ModelRegistry] Loaded 61 models from disk cache.
 [ModelRegistry] Saved 61 models to disk cache.
 [34m✨[0m AI SDK Provider Registry updated
    Providers: gemini-code, openai-codex, google-jules, github-copilot, github-models
    Models: 61 total
    Copilot: 5 models (3 free, 2 limited)
+[34m🔄[0m Refreshing model catalog...
+[ModelRegistry] Loaded 61 models from disk cache.
+[ModelRegistry] Saved 61 models to disk cache.
+[34m✨[0m AI SDK Provider Registry updated
+   Providers: gemini-code, openai-codex, google-jules, github-copilot, github-models
+   Models: 61 total
+   Copilot: 5 models (3 free, 2 limited)
+[34m🔄[0m Refreshing model catalog...
+[ModelRegistry] Loaded 61 models from disk cache.
+[ModelRegistry] Saved 61 models to disk cache.
+[34m✨[0m AI SDK Provider Registry updated
+   Providers: gemini-code, openai-codex, google-jules, github-copilot, github-models
+   Models: 61 total
+   Copilot: 5 models (3 free, 2 limited)
+[34m🔄[0m Refreshing model catalog...
+[ModelRegistry] Loaded 61 models from disk cache.
+[ModelRegistry] Saved 61 models to disk cache.
+[34m✨[0m AI SDK Provider Registry updated
+   Providers: gemini-code, openai-codex, google-jules, github-copilot, github-models
+   Models: 61 total
+   Copilot: 5 models (3 free, 2 limited)
+
+================================================================================
+AI Server Started: 2025-10-14T13:09:32.064Z
+================================================================================
+[2025-10-14T13:09:32.147Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-14T13:09:32.148Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-sonnet-4.5"}
+[2025-10-14T13:09:32.149Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-3-5-sonnet-20241022"}
+[2025-10-14T13:09:32.149Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-14T13:09:32.149Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-1.5-flash"}
+[2025-10-14T13:09:32.149Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-14T13:09:32.149Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-14T13:09:32.149Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+
+================================================================================
+AI Server Started: 2025-10-14T13:16:17.300Z
+================================================================================
+
+AI Server Shutdown: 2025-10-14T13:16:36.540Z
+================================================================================
+
+
+================================================================================
+AI Server Started: 2025-10-14T13:16:42.811Z
+================================================================================
+[2025-10-14T13:16:42.880Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-14T13:16:42.881Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-sonnet-4.5"}
+[2025-10-14T13:16:42.881Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-3-5-sonnet-20241022"}
+[2025-10-14T13:16:42.881Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-14T13:16:42.881Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-1.5-flash"}
+[2025-10-14T13:16:42.881Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-14T13:16:42.881Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-14T13:16:42.881Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+[2025-10-14T13:16:53.335Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:16:53.335Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:17:07.106Z] [INFO] [NATS] Published LLM response {"model":"copilot:gpt-4o"}
+[2025-10-14T13:17:07.106Z] [METRIC] request.nats_llm_request.count=1
+[2025-10-14T13:17:07.106Z] [METRIC] request.nats_llm_request.duration_ms=13774
+[2025-10-14T13:17:07.106Z] [METRIC] model.copilot.gpt-4o.count=1
+[2025-10-14T13:17:07.106Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"13774ms"}
+[2025-10-14T13:17:31.816Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:17:31.816Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:17:46.232Z] [INFO] [NATS] Published LLM response {"model":"copilot:gpt-4o"}
+[2025-10-14T13:17:46.232Z] [METRIC] request.nats_llm_request.count=2
+[2025-10-14T13:17:46.232Z] [METRIC] request.nats_llm_request.duration_ms=14417
+[2025-10-14T13:17:46.233Z] [METRIC] model.copilot.gpt-4o.count=2
+[2025-10-14T13:17:46.233Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"14417ms"}
+
+AI Server Shutdown: 2025-10-14T13:18:07.239Z
+================================================================================
+
+
+================================================================================
+AI Server Started: 2025-10-14T13:18:12.116Z
+================================================================================
+[2025-10-14T13:18:12.195Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-14T13:18:12.195Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-sonnet-4.5"}
+[2025-10-14T13:18:12.195Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-3-5-sonnet-20241022"}
+[2025-10-14T13:18:12.195Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-14T13:18:12.196Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-1.5-flash"}
+[2025-10-14T13:18:12.196Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-14T13:18:12.196Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-14T13:18:12.196Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+[2025-10-14T13:19:00.882Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:19:00.882Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:19:19.126Z] [INFO] [NATS] Published LLM response to reply subject {"model":"copilot:gpt-4o","replySubject":"_INBOX.Cr3LhFJoLcB/8PGc.OlyRzNNGeZbjjM/I"}
+[2025-10-14T13:19:19.126Z] [METRIC] request.nats_llm_request.count=1
+[2025-10-14T13:19:19.126Z] [METRIC] request.nats_llm_request.duration_ms=18244
+[2025-10-14T13:19:19.126Z] [METRIC] model.copilot.gpt-4o.count=1
+[2025-10-14T13:19:19.126Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"18244ms"}
+[2025-10-14T13:20:30.987Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:20:30.988Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:20:41.831Z] [INFO] [NATS] Published LLM response to reply subject {"model":"copilot:gpt-4o","replySubject":"_INBOX.cYPsw1xhe9DYEfVd.hvFlt2DKnExvmBB2"}
+[2025-10-14T13:20:41.832Z] [METRIC] request.nats_llm_request.count=2
+[2025-10-14T13:20:41.832Z] [METRIC] request.nats_llm_request.duration_ms=10845
+[2025-10-14T13:20:41.832Z] [METRIC] model.copilot.gpt-4o.count=2
+[2025-10-14T13:20:41.832Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"10845ms"}
+[2025-10-14T13:22:36.972Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:22:36.972Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:22:45.231Z] [INFO] [NATS] Published LLM response to reply subject {"model":"copilot:gpt-4o","replySubject":"_INBOX.xINPPRhbpsYBwqku.MRDQBoHKJTte37sW"}
+[2025-10-14T13:22:45.232Z] [METRIC] request.nats_llm_request.count=3
+[2025-10-14T13:22:45.232Z] [METRIC] request.nats_llm_request.duration_ms=8260
+[2025-10-14T13:22:45.232Z] [METRIC] model.copilot.gpt-4o.count=3
+[2025-10-14T13:22:45.232Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"8260ms"}
+[2025-10-14T13:22:47.018Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:22:47.018Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:22:53.962Z] [INFO] [NATS] Published LLM response to reply subject {"model":"copilot:gpt-4o","replySubject":"_INBOX.lqQS7KVw6tPmbPn4./Subqd1+LUVfkahY"}
+[2025-10-14T13:22:53.963Z] [METRIC] request.nats_llm_request.count=4
+[2025-10-14T13:22:53.963Z] [METRIC] request.nats_llm_request.duration_ms=6945
+[2025-10-14T13:22:53.963Z] [METRIC] model.copilot.gpt-4o.count=4
+[2025-10-14T13:22:53.963Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"6945ms"}
+[2025-10-14T13:23:04.220Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:23:04.220Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:23:11.933Z] [INFO] [NATS] Published LLM response to reply subject {"model":"copilot:gpt-4o","replySubject":"_INBOX.0OssT2UCqb0pljBa.X+yoGd7yqxJ2JV2x"}
+[2025-10-14T13:23:11.934Z] [METRIC] request.nats_llm_request.count=5
+[2025-10-14T13:23:11.934Z] [METRIC] request.nats_llm_request.duration_ms=7714
+[2025-10-14T13:23:11.934Z] [METRIC] model.copilot.gpt-4o.count=5
+[2025-10-14T13:23:11.934Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"7714ms"}
+
+================================================================================
+AI Server Started: 2025-10-14T13:24:06.180Z
+================================================================================
+
+AI Server Shutdown: 2025-10-14T13:24:14.179Z
+================================================================================
+
+
+================================================================================
+AI Server Started: 2025-10-14T13:24:17.169Z
+================================================================================
+[2025-10-14T13:24:17.241Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-14T13:24:17.242Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-sonnet-4.5"}
+[2025-10-14T13:24:17.242Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-3-5-sonnet-20241022"}
+[2025-10-14T13:24:17.242Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-14T13:24:17.242Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-1.5-flash"}
+[2025-10-14T13:24:17.242Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-14T13:24:17.242Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-14T13:24:17.242Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+[2025-10-14T13:24:31.588Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:24:31.589Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:24:38.933Z] [INFO] [NATS] Published LLM response to reply subject {"model":"copilot:gpt-4o","replySubject":"_INBOX.DGC+6Y5HUCNfhR0J.VOXBr1GLzXcoq5IH"}
+[2025-10-14T13:24:38.933Z] [METRIC] request.nats_llm_request.count=1
+[2025-10-14T13:24:38.933Z] [METRIC] request.nats_llm_request.duration_ms=7345
+[2025-10-14T13:24:38.933Z] [METRIC] model.copilot.gpt-4o.count=1
+[2025-10-14T13:24:38.933Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"7345ms"}
+[2025-10-14T13:24:49.789Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:24:49.789Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:24:51.547Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:24:51.548Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:24:56.867Z] [INFO] [NATS] Published LLM response to reply subject {"model":"copilot:gpt-4o","replySubject":"_INBOX.7v+Iltnb2RuZDzZd.HAscejE4IrKow3aX"}
+[2025-10-14T13:24:56.867Z] [METRIC] request.nats_llm_request.count=2
+[2025-10-14T13:24:56.869Z] [METRIC] request.nats_llm_request.duration_ms=7078
+[2025-10-14T13:24:56.869Z] [METRIC] model.copilot.gpt-4o.count=2
+[2025-10-14T13:24:56.869Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"7078ms"}
+[2025-10-14T13:25:08.883Z] [INFO] [NATS] Published LLM response to reply subject {"model":"copilot:gpt-4o","replySubject":"_INBOX.GkBtnqm9/AAXMVNV.fMp1Pw7eh3Eaa0ut"}
+[2025-10-14T13:25:08.883Z] [METRIC] request.nats_llm_request.count=3
+[2025-10-14T13:25:08.883Z] [METRIC] request.nats_llm_request.duration_ms=17336
+[2025-10-14T13:25:08.883Z] [METRIC] model.copilot.gpt-4o.count=3
+[2025-10-14T13:25:08.883Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"17336ms"}
+[2025-10-14T13:26:22.408Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:26:22.408Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:26:35.003Z] [INFO] [NATS] Published LLM response to reply subject {"model":"copilot:gpt-4o","replySubject":"_INBOX.OsRF1LkzzkGUMTXG.93PomBkzeCxjQBVp"}
+[2025-10-14T13:26:35.003Z] [METRIC] request.nats_llm_request.count=4
+[2025-10-14T13:26:35.004Z] [METRIC] request.nats_llm_request.duration_ms=12596
+[2025-10-14T13:26:35.004Z] [METRIC] model.copilot.gpt-4o.count=4
+[2025-10-14T13:26:35.004Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"12596ms"}
+
+================================================================================
+AI Server Started: 2025-10-14T13:28:11.582Z
+================================================================================
+[2025-10-14T13:28:11.656Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-14T13:28:11.656Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-sonnet-4.5"}
+[2025-10-14T13:28:11.657Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-3-5-sonnet-20241022"}
+[2025-10-14T13:28:11.657Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-14T13:28:11.657Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-1.5-flash"}
+[2025-10-14T13:28:11.657Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-14T13:28:11.657Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-14T13:28:11.657Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+
+================================================================================
+AI Server Started: 2025-10-14T13:28:35.829Z
+================================================================================
+
+================================================================================
+AI Server Started: 2025-10-14T13:28:46.649Z
+================================================================================
+[2025-10-14T13:28:46.734Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-14T13:28:46.734Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-sonnet-4.5"}
+[2025-10-14T13:28:46.735Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-3-5-sonnet-20241022"}
+[2025-10-14T13:28:46.735Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-14T13:28:46.735Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-1.5-flash"}
+[2025-10-14T13:28:46.735Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-14T13:28:46.735Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-14T13:28:46.735Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+
+================================================================================
+AI Server Started: 2025-10-14T13:28:50.121Z
+================================================================================
+
+AI Server Shutdown: 2025-10-14T13:28:53.512Z
+================================================================================
+
+
+================================================================================
+AI Server Started: 2025-10-14T13:31:48.734Z
+================================================================================
+[2025-10-14T13:31:48.811Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-14T13:31:48.811Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-sonnet-4.5"}
+[2025-10-14T13:31:48.811Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.claude-3-5-sonnet-20241022"}
+[2025-10-14T13:31:48.812Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-14T13:31:48.812Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-flash"}
+[2025-10-14T13:31:48.812Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-14T13:31:48.812Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-14T13:31:48.812Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+
+AI Server Shutdown: 2025-10-14T13:33:43.579Z
+================================================================================
+
+
+================================================================================
+AI Server Started: 2025-10-14T13:33:47.052Z
+================================================================================
+[2025-10-14T13:33:47.122Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-14T13:33:47.122Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.sonnet"}
+[2025-10-14T13:33:47.122Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.opus"}
+[2025-10-14T13:33:47.122Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-14T13:33:47.122Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-flash"}
+[2025-10-14T13:33:47.123Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-4o"}
+[2025-10-14T13:33:47.123Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-14T13:33:47.123Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-14T13:33:47.123Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+[2025-10-14T13:34:36.793Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:34:36.793Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:34:38.405Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.PtoicapExJPXSfFT.jHloFko6LbaumNRz"}
+[2025-10-14T13:34:38.406Z] [METRIC] request.nats_llm_request.count=1
+[2025-10-14T13:34:38.406Z] [METRIC] request.nats_llm_request.duration_ms=1613
+[2025-10-14T13:34:38.406Z] [METRIC] model.gemini.gemini-2.5-flash.count=1
+[2025-10-14T13:34:38.406Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=18
+[2025-10-14T13:34:38.406Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"1613ms"}
+[2025-10-14T13:35:23.914Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:35:23.915Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:35:25.117Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.NP867WpB53TCGypb.G3kJDjOcKJL8XMRL"}
+[2025-10-14T13:35:25.117Z] [METRIC] request.nats_llm_request.count=2
+[2025-10-14T13:35:25.117Z] [METRIC] request.nats_llm_request.duration_ms=1203
+[2025-10-14T13:35:25.117Z] [METRIC] model.gemini.gemini-2.5-flash.count=2
+[2025-10-14T13:35:25.118Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=17
+[2025-10-14T13:35:25.118Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"1203ms"}
+[2025-10-14T13:39:20.108Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:39:20.108Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:39:21.230Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.bFvNEaEwr4cQAsmI.FTZ+jt9p+bCAEC0X"}
+[2025-10-14T13:39:21.230Z] [METRIC] request.nats_llm_request.count=3
+[2025-10-14T13:39:21.230Z] [METRIC] request.nats_llm_request.duration_ms=1122
+[2025-10-14T13:39:21.231Z] [METRIC] model.gemini.gemini-2.5-flash.count=3
+[2025-10-14T13:39:21.231Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=14
+[2025-10-14T13:39:21.231Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"1122ms"}
+[2025-10-14T13:39:54.000Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:39:54.001Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:39:55.121Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.DIzGbS6M5MTpmgTi.6TMXYh6GwJ5FzFzB"}
+[2025-10-14T13:39:55.121Z] [METRIC] request.nats_llm_request.count=4
+[2025-10-14T13:39:55.121Z] [METRIC] request.nats_llm_request.duration_ms=1121
+[2025-10-14T13:39:55.121Z] [METRIC] model.gemini.gemini-2.5-flash.count=4
+[2025-10-14T13:39:55.121Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=14
+[2025-10-14T13:39:55.121Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"1121ms"}
+[2025-10-14T13:39:55.411Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:39:55.411Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:39:56.714Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.Bfzx6H/rA7oPzHWX.0W9apxHeeZsdvWqw"}
+[2025-10-14T13:39:56.714Z] [METRIC] request.nats_llm_request.count=5
+[2025-10-14T13:39:56.714Z] [METRIC] request.nats_llm_request.duration_ms=1303
+[2025-10-14T13:39:56.714Z] [METRIC] model.gemini.gemini-2.5-flash.count=5
+[2025-10-14T13:39:56.714Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=14
+[2025-10-14T13:39:56.714Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"1303ms"}
+[2025-10-14T13:40:18.070Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:40:18.070Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:40:20.840Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.pG+VTsBZFzqqdTgs.LssK0kd4mEy5TPwj"}
+[2025-10-14T13:40:20.841Z] [METRIC] request.nats_llm_request.count=6
+[2025-10-14T13:40:20.841Z] [METRIC] request.nats_llm_request.duration_ms=2771
+[2025-10-14T13:40:20.841Z] [METRIC] model.gemini.gemini-2.5-flash.count=6
+[2025-10-14T13:40:20.841Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=14
+[2025-10-14T13:40:20.841Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"2771ms"}
+[2025-10-14T13:40:37.119Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:40:37.119Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:40:38.326Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.rbSbPyy9q8rw3b2G.kxp2HnfdxPQ0DvHe"}
+[2025-10-14T13:40:38.326Z] [METRIC] request.nats_llm_request.count=7
+[2025-10-14T13:40:38.326Z] [METRIC] request.nats_llm_request.duration_ms=1207
+[2025-10-14T13:40:38.327Z] [METRIC] model.gemini.gemini-2.5-flash.count=7
+[2025-10-14T13:40:38.327Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=14
+[2025-10-14T13:40:38.327Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"1207ms"}
+[2025-10-14T13:40:47.095Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:40:47.095Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:40:48.471Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.hc57DRacCT5+wCAe.2iGHcjZg9PTpEuLI"}
+[2025-10-14T13:40:48.471Z] [METRIC] request.nats_llm_request.count=8
+[2025-10-14T13:40:48.471Z] [METRIC] request.nats_llm_request.duration_ms=1376
+[2025-10-14T13:40:48.471Z] [METRIC] model.gemini.gemini-2.5-flash.count=8
+[2025-10-14T13:40:48.471Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=14
+[2025-10-14T13:40:48.471Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"1376ms"}
+[2025-10-14T13:42:09.844Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:42:09.844Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:42:10.866Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.g3fP22mGwtm4GZUB.whFFsznN5SqS5UE7"}
+[2025-10-14T13:42:10.866Z] [METRIC] request.nats_llm_request.count=9
+[2025-10-14T13:42:10.866Z] [METRIC] request.nats_llm_request.duration_ms=1022
+[2025-10-14T13:42:10.866Z] [METRIC] model.gemini.gemini-2.5-flash.count=9
+[2025-10-14T13:42:10.866Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=14
+[2025-10-14T13:42:10.866Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"1022ms"}
+[2025-10-14T13:43:15.568Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:43:15.568Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:43:16.636Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.YE9RGVUMTB8MOW0VQ11QHZ.YE9RGVUMTB8MOW0VQ11QFZ"}
+[2025-10-14T13:43:16.636Z] [METRIC] request.nats_llm_request.count=10
+[2025-10-14T13:43:16.636Z] [METRIC] request.nats_llm_request.duration_ms=1068
+[2025-10-14T13:43:16.636Z] [METRIC] model.gemini.gemini-2.5-flash.count=10
+[2025-10-14T13:43:16.636Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=4
+[2025-10-14T13:43:16.636Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"1068ms"}
+[2025-10-14T13:43:43.953Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:43:43.953Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:43:45.079Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.VB8T1C4VK9M7P5S1AK9UWM.VB8T1C4VK9M7P5S1AK9UTN"}
+[2025-10-14T13:43:45.079Z] [METRIC] request.nats_llm_request.count=11
+[2025-10-14T13:43:45.081Z] [METRIC] request.nats_llm_request.duration_ms=1126
+[2025-10-14T13:43:45.081Z] [METRIC] model.gemini.gemini-2.5-flash.count=11
+[2025-10-14T13:43:45.082Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=4
+[2025-10-14T13:43:45.082Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"1126ms"}
+[2025-10-14T13:44:13.241Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:44:13.241Z] [INFO] [NATS] Model selection {"selectedModel":"gemini-2.5-flash","provider":"gemini","complexity":"simple"}
+[2025-10-14T13:44:14.280Z] [INFO] [NATS] Published LLM response to reply subject {"model":"gemini:gemini-2.5-flash","replySubject":"_INBOX.D6CX1J9XDVU5PHLGWOBGM8.D6CX1J9XDVU5PHLGWOBGIN"}
+[2025-10-14T13:44:14.280Z] [METRIC] request.nats_llm_request.count=12
+[2025-10-14T13:44:14.280Z] [METRIC] request.nats_llm_request.duration_ms=1039
+[2025-10-14T13:44:14.280Z] [METRIC] model.gemini.gemini-2.5-flash.count=12
+[2025-10-14T13:44:14.280Z] [METRIC] model.gemini.gemini-2.5-flash.tokens=4
+[2025-10-14T13:44:14.280Z] [INFO] [NATS] LLM request completed {"model":"gemini:gemini-2.5-flash","duration":"1039ms"}
+[2025-10-14T13:44:14.784Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:44:14.784Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:44:25.286Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:44:25.286Z] [INFO] [NATS] Model selection {"selectedModel":"gpt-4o","provider":"copilot","complexity":"medium"}
+[2025-10-14T13:44:26.108Z] [INFO] [NATS] Published LLM response to reply subject {"model":"copilot:gpt-4o","replySubject":"_INBOX.D6CX1J9XDVU5PHLGWOBGM8.D6CX1J9XDVU5PHLGWOBGTE"}
+[2025-10-14T13:44:26.108Z] [METRIC] request.nats_llm_request.count=13
+[2025-10-14T13:44:26.108Z] [METRIC] request.nats_llm_request.duration_ms=822
+[2025-10-14T13:44:26.108Z] [METRIC] model.copilot.gpt-4o.count=1
+[2025-10-14T13:44:26.108Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"822ms"}
+[2025-10-14T13:44:26.611Z] [INFO] [NATS] Received LLM request {}
+[2025-10-14T13:44:26.611Z] [INFO] [NATS] Model selection {"selectedModel":"opus","provider":"claude","complexity":"complex"}
+[2025-10-14T13:44:32.448Z] [INFO] [NATS] Published LLM response to reply subject {"model":"claude:opus","replySubject":"_INBOX.D6CX1J9XDVU5PHLGWOBGM8.D6CX1J9XDVU5PHLGWOBGWZ"}
+[2025-10-14T13:44:32.448Z] [METRIC] request.nats_llm_request.count=14
+[2025-10-14T13:44:32.448Z] [METRIC] request.nats_llm_request.duration_ms=5837
+[2025-10-14T13:44:32.448Z] [METRIC] model.claude.opus.count=1
+[2025-10-14T13:44:32.448Z] [METRIC] model.claude.opus.tokens=11705
+[2025-10-14T13:44:32.448Z] [INFO] [NATS] LLM request completed {"model":"claude:opus","duration":"5837ms"}
+[2025-10-14T13:44:45.291Z] [INFO] [NATS] Published LLM response to reply subject {"model":"copilot:gpt-4o","replySubject":"_INBOX.D6CX1J9XDVU5PHLGWOBGM8.D6CX1J9XDVU5PHLGWOBGPT"}
+[2025-10-14T13:44:45.291Z] [METRIC] request.nats_llm_request.count=15
+[2025-10-14T13:44:45.291Z] [METRIC] request.nats_llm_request.duration_ms=30507
+[2025-10-14T13:44:45.291Z] [METRIC] model.copilot.gpt-4o.count=2
+[2025-10-14T13:44:45.291Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"30507ms"}

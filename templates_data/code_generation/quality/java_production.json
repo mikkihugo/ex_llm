@@ -1,14 +1,38 @@
 {
   "name": "Java Production Quality",
-  "spec_version": "2.0",
+  "spec_version": "2.2.0",
   "capabilities": [
     "quality",
     "graph",
-    "rag"
+    "rag",
+    "ai_navigation",
+    "graph_db",
+    "vector_db"
   ],
   "language": "java",
   "quality_level": "production",
-  "description": "Production standards for modern Java (17+) with Spring Boot patterns",
+  "description": "Production-grade quality standards for modern Java (17+) with Spring Boot patterns, AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
+  "changelog": {
+    "2.2.0": {
+      "date": "2025-01-14",
+      "changes": [
+        "Added human-first documentation structure (human content top, AI metadata below separator)",
+        "Added module_identity JSON for vector DB disambiguation",
+        "Added architecture_diagram (Mermaid) for visual understanding",
+        "Added call_graph (YAML) for graph DB indexing",
+        "Added anti_patterns for duplicate prevention",
+        "Added search_keywords for vector search optimization",
+        "Enhanced prompts with documentation structure guidance",
+        "Added scoring weights for AI-optimized metadata and documentation structure"
+      ]
+    },
+    "2.0": {
+      "date": "2025-01-08",
+      "changes": [
+        "Initial production template for modern Java (17+) with Spring Boot patterns"
+      ]
+    }
+  },
   "requirements": {
     "documentation": {
       "javadoc": {
@@ -17,13 +41,67 @@
           "all_public_classes",
           "all_public_methods"
         ],
+        "min_length": 100,
         "must_include": [
           "description",
           "@param",
           "@return",
           "@throws",
-          "examples"
-        ]
+          "examples",
+          "human_content_first",
+          "module_identity_json",
+          "architecture_diagram",
+          "call_graph_metadata",
+          "anti_patterns"
+        ],
+        "ai_navigation": {
+          "module_identity": {
+            "format": "json",
+            "required_fields": [
+              "class",
+              "purpose",
+              "layer",
+              "spring_annotations",
+              "related_classes",
+              "alternatives",
+              "disambiguation"
+            ],
+            "description": "JSON block for vector DB disambiguation and graph DB indexing (Java/Spring-specific)"
+          },
+          "architecture_diagram": {
+            "format": "mermaid",
+            "types": [
+              "graph",
+              "sequence",
+              "flowchart"
+            ],
+            "description": "Visual architecture for AI understanding of call flow and data flow"
+          },
+          "call_graph": {
+            "format": "yaml",
+            "required_fields": [
+              "calls_out",
+              "called_by",
+              "depends_on",
+              "injection"
+            ],
+            "description": "Machine-readable call graph for graph DB indexing (Neo4j, etc.)"
+          },
+          "anti_patterns": {
+            "format": "markdown",
+            "sections": [
+              "duplicate_classes",
+              "usage_mistakes",
+              "spring_boot_antipatterns"
+            ],
+            "description": "Explicit duplicate prevention and Spring Boot best practices"
+          },
+          "search_keywords": {
+            "format": "comma_separated",
+            "min_count": 5,
+            "description": "Keywords for vector search optimization (10+ recommended)"
+          }
+        }
       }
     },
     "type_safety": {
@@ -181,13 +259,13 @@
     }
   },
   "prompts": {
-    "code_generation": "Generate production-quality Java code for: {task}\n\nREQUIREMENTS:\n- JavaDoc for all public classes and methods\n- Use Optional<T> instead of null\n- Custom exception hierarchy\n- JUnit 5 tests with Mockito\n- Follow Spring Boot conventions\n- Constructor injection\n- Records for DTOs\n\nOUTPUT CODE ONLY.",
-    "documentation": "Generate JavaDoc for this Java code:\n\n```java\n{code}\n```\n\nInclude:\n- Class-level JavaDoc with description and examples\n- Method-level JavaDoc with @param, @return, @throws\n\nOUTPUT DOCUMENTATION ONLY.",
+    "code_generation": "Generate production-quality Java code for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines in JavaDoc):\n/**\n * Class Name - Brief description\n *\n * <p><b>Purpose:</b> What this class does (clear statement)</p>\n *\n * <h2>Quick Start</h2>\n * <pre>{@code\n * // Copy-paste example\n * MyService service = new MyService(repository);\n * UserDTO user = service.findById(1L);\n * }</pre>\n *\n * <h2>Public API</h2>\n * <ul>\n *   <li>findById(Long) - Find user by ID</li>\n *   <li>create(UserDTO) - Create new user</li>\n * </ul>\n *\n * <h2>Error Handling</h2>\n * <ul>\n *   <li>UserNotFoundException - When user not found</li>\n *   <li>ValidationException - Invalid input data</li>\n * </ul>\n */\n\nSEPARATOR:\n---\n<h2>AI Navigation Metadata</h2>\n<p><i>The sections below provide structured metadata for AI assistants,\ngraph databases (Neo4j), and vector databases (pgvector).</i></p>\n\nAI METADATA (Below separator in JavaDoc):\n- Module Identity (JSON in {@code} block)\n- Architecture Diagram (Mermaid as text)\n- Call Graph (YAML as text)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- JavaDoc for all public classes and methods\n- Use Optional<T> instead of null\n- Custom exception hierarchy\n- JUnit 5 tests with Mockito\n- Follow Spring Boot conventions\n- Constructor injection\n- Records for DTOs\n\n3. AI NAVIGATION (in class JavaDoc):\n\nModule Identity (JSON):\n<pre>{@code\n{\n  \"class\": \"com.example.UserService\",\n  \"purpose\": \"User management service with validation\",\n  \"layer\": \"service\",\n  \"spring_annotations\": [\"@Service\", \"@Transactional\"],\n  \"related_classes\": [\"UserRepository\", \"UserDTO\", \"UserMapper\"],\n  \"alternatives\": {\n    \"UserManager\": \"Legacy - use UserService instead\"\n  },\n  \"disambiguation\": {\n    \"vs_UserManager\": \"UserService = Spring-managed, validated. UserManager = legacy\"\n  }\n}\n}</pre>\n\nArchitecture (Mermaid):\n<pre>\ngraph TB\n    Controller[UserController] --> Service[UserService]\n    Service --> Repository[UserRepository]\n    Service --> Mapper[UserMapper]\n    Repository --> Entity[UserEntity]\n</pre>\n\nCall Graph (YAML):\n<pre>\ncalls_out:\n  - class: UserRepository\n    methods: [findById, save]\n    purpose: Database operations\n    critical: true\n\ncalled_by:\n  - class: UserController\n    purpose: REST API endpoint\n    frequency: high\n\ndepends_on:\n  - UserRepository (required)\n  - UserMapper (required)\n\ninjection:\n  type: constructor\n  dependencies: [UserRepository, UserMapper]\n</pre>\n\nAnti-Patterns:\n❌ DO NOT create UserManager - UserService exists!\n❌ DO NOT use field injection (@Autowired on fields) - use constructor injection\n❌ DO NOT return null - use Optional&lt;T&gt;\n\nSearch Keywords:\nspring-service, user-management, jpa-repository, transaction-management, dto-mapping\n\nOUTPUT CODE ONLY (with enhanced JavaDoc).",
+    "documentation": "Generate JavaDoc for this Java code:\n\n```java\n{code}\n```\n\nInclude:\n\nHUMAN CONTENT (top):\n- Class-level JavaDoc with description, purpose, quick start, API list, error handling\n- Method-level JavaDoc with @param, @return, @throws\n\nSEPARATOR:\n---\n<h2>AI Navigation Metadata</h2>\n\nAI METADATA (below):\n- Module Identity (JSON)\n- Architecture Diagram (Mermaid)\n- Call Graph (YAML)\n- Anti-Patterns\n- Search Keywords\n\nOUTPUT DOCUMENTATION ONLY.",
     "tests": "Generate JUnit 5 tests for this code:\n\n```java\n{code}\n```\n\nInclude:\n- Unit tests with Mockito\n- Edge cases\n- Exception handling tests\n- Use @ParameterizedTest for multiple scenarios\n\nOUTPUT TEST CODE ONLY."
   },
   "examples": {
     "good_code": "/**\n * Service for managing user operations.\n *\n * <p>Handles user creation, updates, and retrieval with\n * comprehensive validation and error handling.</p>\n *\n * @since 1.0\n */\n@Service\npublic class UserService {\n    private final UserRepository repository;\n    private final UserMapper mapper;\n\n    /**\n     * Creates a new user service.\n     *\n     * @param repository the user repository\n     * @param mapper the user mapper\n     */\n    public UserService(UserRepository repository, UserMapper mapper) {\n        this.repository = repository;\n        this.mapper = mapper;\n    }\n\n    /**\n     * Finds a user by ID.\n     *\n     * @param id the user ID\n     * @return the user if found\n     * @throws UserNotFoundException if user doesn't exist\n     */\n    @Transactional(readOnly = true)\n    public UserDTO findById(Long id) {\n        return repository.findById(id)\n            .map(mapper::toDTO)\n            .orElseThrow(() -> new UserNotFoundException(id));\n    }\n}",
-    "bad_code": "/**\n * Service for managing user operations.\n *\n * <p>Handles user creation, updates, and retrieval with\n * comprehensive validation and error handling.</p>\n *\n * @since 1.0\n */\n@Service\npublic class UserService {\n    private final UserRepository repository;\n    private final UserMapper mapper;\n\n    /**\n     * Creates a new user service.\n     *\n     * @param repository the user repository\n     * @param mapper the user mapper\n     */\n    public UserService(UserRepository repository, UserMapper mapper) {\n        this.repository = repository;\n        this.mapper = mapper;\n    }\n\n    /**\n     * Finds a user by ID.\n     *\n     * @param id the user ID\n     * @return the user if found\n     * @throws UserNotFoundException if user doesn't exist\n     */\n    public UserDTO findById(Long id) {\n        return repository.findById(id)\n            .map(mapper::toDTO)\n            .orElseThrow(() -> new UserNotFoundException(id));\n    }\n}"
+    "bad_code": "// No JavaDoc\n@Service\npublic class UserService {\n    @Autowired  // Field injection - bad!\n    private UserRepository repository;\n\n    // No JavaDoc, returns null - bad!\n    public UserDTO findById(Long id) {\n        UserEntity entity = repository.findById(id).orElse(null);\n        return entity != null ? mapper.toDTO(entity) : null;  // Null return!\n    }\n}"
   },
   "quality_checklist": [
     "Has JavaDoc for all public classes and methods",
@@ -198,7 +276,9 @@
     "Immutable DTOs using records",
     "@Transactional where appropriate",
     "Proper exception handling",
-    "No code smells (long methods, god classes)"
+    "No code smells (long methods, god classes)",
+    "AI navigation metadata present (JSON/YAML/Mermaid)",
+    "Human content first, AI metadata below separator"
   ],
   "scoring_weights": {
     "has_javadoc": 1.0,
@@ -207,10 +287,20 @@
     "uses_records": 0.7,
     "constructor_injection": 0.8,
     "transaction_management": 0.9,
-    "exception_handling": 1.0
+    "exception_handling": 1.0,
+    "has_module_identity_json": 0.95,
+    "has_architecture_diagram": 0.9,
+    "has_call_graph_yaml": 0.9,
+    "has_anti_patterns": 0.85,
+    "has_search_keywords": 0.8,
+    "human_content_first": 0.9,
+    "clear_separation": 0.85,
+    "ai_metadata_explained": 0.8,
+    "graph_db_ready": 0.9,
+    "vector_db_optimized": 0.9
   },
   "graph_model": {
-    "version": 1,
+    "version": 2,
     "node_types": {
       "package": {
         "id_format": "java://{package_path}",
@@ -251,7 +341,8 @@
     },
     "extraction_rules": {
       "method_detection": "parse using Java parser (e.g. Eclipse JDT or tree-sitter)",
-      "call_graph": "walk method invocation expressions"
+      "call_graph": "walk method invocation expressions",
+      "ai_metadata_extraction": "parse JSON/YAML/Mermaid from JavaDoc comments"
     },
     "temporal": {
       "track": true,
@@ -278,6 +369,5 @@
       "default_severity": "logic"
     }
   },
-  "version": 2,
-  "last_updated": "2025-10-08"
+  "last_updated": "2025-01-14"
 }

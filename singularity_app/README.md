@@ -13,6 +13,98 @@ Singularity is an Elixir 1.20 + Gleam runtime for building self-improving agents
 - **Persistent code store** – Writes artifacts to `/data/code` (volume in Fly, PVC in Kubernetes).
 - **Quality toolchain** – Credo, Dialyzer, ExCoveralls, Semgrep, ESLint, TypeScript tooling for CI-ready checks.
 
+## Search Architecture
+
+Singularity uses a **three-tier hybrid search system** combining keyword, semantic, and fuzzy search:
+
+### 1. Rust Embedding Engine (Primary) - GPU-Accelerated
+
+**Three embedding models loaded as Rust NIFs:**
+- **Jina v3** (1024D) - General text, semantic search
+- **Qodo Embed** (1536D) - Code-specialized embeddings (70.06 CoIR score)
+- **MiniLM-L6-v2** (384D) - Fast CPU fallback
+
+**Performance:**
+- ~1000 embeddings/sec on GPU (RTX 4080)
+- ~100 embeddings/sec on CPU
+- Models cached on first use, lazy-loaded
+
+### 2. PostgreSQL Full-Text Search + pgvector
+
+**Three search modes:**
+
+```elixir
+# 1. Keyword Search (PostgreSQL FTS) - Fast exact/phrase matches
+{:ok, results} = HybridCodeSearch.search("async worker", mode: :keyword)
+
+# 2. Semantic Search (pgvector) - Conceptual similarity
+{:ok, results} = HybridCodeSearch.search("background job", mode: :semantic)
+
+# 3. Hybrid Search (Combined) - Best of both worlds
+{:ok, results} = HybridCodeSearch.search(
+  "async worker",
+  mode: :hybrid,
+  weights: %{keyword: 0.4, semantic: 0.6}
+)
+
+# 4. Fuzzy Search (pg_trgm) - Typo-tolerant
+{:ok, results} = HybridCodeSearch.fuzzy_search("asynch wrker", threshold: 0.3)
+```
+
+**PostgreSQL Extensions Enabled:**
+- `pgvector` - Vector similarity search (cosine distance)
+- `pg_trgm` - Trigram similarity for fuzzy/typo-tolerant search
+- Native FTS - Full-text search with `tsvector` + GIN indexes
+
+**Hybrid Scoring Formula:**
+```sql
+score = ts_rank(search_vector, query) * 0.4 +   -- Keyword relevance
+        (1 - embedding_distance) * 0.6           -- Semantic similarity
+```
+
+### 3. Unified Embedding Service
+
+**Auto-selects best strategy:**
+1. **Rust NIF** (if available) → Fast, GPU-accelerated
+2. **Google AI** (fallback) → Cloud-based, FREE (1500 req/day)
+3. **Bumblebee** (custom) → Any Hugging Face model, experiments
+
+```elixir
+# Auto-select best available
+{:ok, embedding} = UnifiedEmbeddingService.embed("some code")
+
+# Force specific strategy
+{:ok, embedding} = UnifiedEmbeddingService.embed(
+  "async pattern",
+  strategy: :rust,
+  model: :qodo_embed
+)
+```
+
+### When to Use Each Search Mode
+
+| Mode | Best For | Speed | Use Case |
+|------|----------|-------|----------|
+| **Keyword** | Exact matches, function names | ~1-5ms | "GenServer.handle_call" |
+| **Semantic** | Concepts, similar ideas | ~20-50ms | "background job processing" |
+| **Hybrid** | General queries | ~20-100ms | "async worker pattern" |
+| **Fuzzy** | Typos, partial matches | ~10-50ms | "asynch wrker" (typos!) |
+
+### Search Implementation
+
+**Modules:**
+- `Singularity.Search.HybridCodeSearch` - Main search interface
+- `Singularity.Search.UnifiedEmbeddingService` - Embedding strategy selector
+- `Singularity.EmbeddingEngine` - Rust NIF for GPU embeddings
+- `Singularity.EmbeddingGenerator` - Google AI fallback
+
+**Database Tables:**
+- `code_chunks` - Parsed code with embeddings + FTS vectors
+- `knowledge_artifacts` - Templates/patterns with embeddings + FTS
+
+**Migrations:**
+- `20251014133000_add_fulltext_search_indexes.exs` - FTS + trigram indexes
+
 ## Prerequisites
 
 ### Nix + direnv (recommended)
