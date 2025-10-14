@@ -1,11 +1,67 @@
 /**
  * @file Google Gemini Provider
- * @description This module wraps the base Gemini provider to include static model metadata
- * and set a default Google Cloud Project ID if one is not already configured.
+ * @description Using third-party ai-sdk-provider-gemini-cli package for Gemini Code Assist
  */
 
+// @ts-ignore - Third-party package has type issues but works at runtime
 import { createGeminiProvider as baseCreateGeminiProvider } from 'ai-sdk-provider-gemini-cli';
-import type { GeminiProvider as BaseGeminiProvider, GeminiProviderOptions } from 'ai-sdk-provider-gemini-cli';
+
+// Define proper auth types to match third-party library expectations
+interface GeminiApiKeyAuth {
+  authType: 'api-key';
+  apiKey: string;
+}
+
+interface VertexAIAuth {
+  authType: 'vertex-ai';
+  vertexAI: {
+    projectId: string;
+    location: string;
+    apiKey?: string;
+  };
+}
+
+interface OAuthAuth {
+  authType: 'oauth';
+  oauth: {
+    clientId: string;
+    clientSecret: string;
+    redirectUri?: string;
+  };
+}
+
+interface OAuthPersonalAuth {
+  authType: 'oauth-personal';
+  oauth?: {
+    clientId: string;
+    clientSecret: string;
+    redirectUri?: string;
+  };
+}
+
+interface GoogleAuthLibraryAuth {
+  authType: 'google-auth-library';
+  googleAuth: {
+    keyFilename?: string;
+    credentials?: any;
+  };
+}
+
+interface BaseProviderOptions {
+  proxy?: string;
+}
+
+type GeminiProviderOptions =
+  | (GeminiApiKeyAuth & BaseProviderOptions)
+  | (VertexAIAuth & BaseProviderOptions)
+  | (OAuthAuth & BaseProviderOptions)
+  | (OAuthPersonalAuth & BaseProviderOptions)
+  | (GoogleAuthLibraryAuth & BaseProviderOptions);
+
+interface BaseGeminiProvider {
+  (modelId: string): any;
+  languageModel?: (modelId: string) => any;
+}
 
 export type { GeminiProviderOptions };
 
@@ -46,7 +102,7 @@ export interface GeminiProvider extends BaseGeminiProvider {
  * @param {GeminiProviderOptions} [options] Configuration options for the Gemini provider.
  * @returns {GeminiProvider} A configured Gemini provider instance.
  */
-export function createGeminiProvider(options?: GeminiProviderOptions): GeminiProvider {
+export function createGeminiProvider(options?: any): GeminiProvider {
   // TODO: The personal OAuth flow for Gemini is not yet implemented.
   // This will likely involve a similar process to the GitHub Copilot OAuth flow.
   // For now, the provider defaults to using an API key.
@@ -62,3 +118,10 @@ export function createGeminiProvider(options?: GeminiProviderOptions): GeminiPro
     listModels: () => GEMINI_CODE_MODELS,
   }) as GeminiProvider;
 }
+
+/**
+ * @const {object} geminiCode
+ * @description The singleton instance of the Gemini provider with default configuration.
+ * NOTE: Currently using third-party gemini-cli package, not official AI SDK
+ */
+export const geminiCode = createGeminiProvider();

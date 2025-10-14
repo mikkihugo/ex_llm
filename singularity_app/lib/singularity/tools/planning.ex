@@ -6,13 +6,13 @@ defmodule Singularity.Tools.Planning do
   - SafeWorkPlanner - SAFe 6.0 portfolio management
   - HTDAG - Hierarchical task decomposition
   - Planner - SPARC methodology
-  - TemplateSparcOrchestrator - Task orchestration
+  - SPARC.Orchestrator - Task orchestration
   """
 
   alias Singularity.Tools.Tool
-  alias Singularity.Planning.{SafeWorkPlanner, HTDAGCore}
-  alias Singularity.Autonomy.Planner
-  alias Singularity.Agents.TemplateSparcOrchestrator
+  alias Singularity.Execution.Planning.{SafeWorkPlanner, HTDAGCore}
+  alias Singularity.Execution.Autonomy.Planner
+  alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
 
   @doc "Register planning tools with the shared registry."
   def register(provider) do
@@ -285,7 +285,7 @@ defmodule Singularity.Tools.Planning do
     agent_id = Map.get(args, "agent_id")
     priority = Map.get(args, "priority", "medium")
 
-    case TemplateSparcOrchestrator.execute(%{id: task_id, description: task_id},
+    case SparcOrchestrator.execute(%{id: task_id, description: task_id},
            agent_id: agent_id,
            priority: priority
          ) do
@@ -547,7 +547,7 @@ defmodule Singularity.Tools.Planning do
     sparc_context = prepare_sparc_context(task)
     
     # Execute through SPARC orchestrator
-    case Singularity.SPARC.Orchestrator.execute_phase(:completion, task.description, sparc_context) do
+    case Singularity.Execution.SPARC.Orchestrator.execute_phase(:completion, task.description, sparc_context) do
       {:ok, completion_result} ->
         # Process completion result and update task
         process_sparc_completion_result(task, completion_result)

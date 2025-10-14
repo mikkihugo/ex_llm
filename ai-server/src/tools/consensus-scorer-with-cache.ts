@@ -8,8 +8,7 @@
 import { generateText } from 'ai';
 import { createGeminiProvider } from '../providers/gemini-code.js';
 import { claudeCode } from 'ai-sdk-provider-claude-code';
-import { codex } from 'ai-sdk-provider-codex';
-import { copilot } from '../providers/copilot.js';
+import { codex } from '../providers/codex.js';
 import { cursor } from '../providers/cursor.js';
 import { openrouter } from '../providers/openrouter.js';
 
@@ -73,8 +72,7 @@ export type RotationStrategy = 'weekly' | 'random' | 'round-robin' | 'diversity'
  * @returns {typeof FREE_SCORER_POOL} An array of three selected scorer models.
  */
 export function selectScorers(
-  strategy: RotationStrategy = 'diversity',
-  previousScorers?: string[]
+  strategy: RotationStrategy = 'diversity'
 ): typeof FREE_SCORER_POOL {
   const now = new Date();
   switch (strategy) {
@@ -247,12 +245,17 @@ async function callScorer(scorer: typeof FREE_SCORER_POOL[0], prompt: string): P
   try {
     let result;
     switch (scorer.provider) {
-      case 'gemini': result = await generateText({ model: geminiCode.languageModel(scorer.id), messages: [{ role: 'user', content: prompt }], maxTokens: 2000, temperature: 0.3 }); break;
-      case 'cursor': result = await generateText({ model: cursor.languageModel(scorer.id, { approvalPolicy: 'read-only' }), messages: [{ role: 'user', content: prompt }], maxTokens: 2000, temperature: 0.3 }); break;
-      case 'copilot': result = await generateText({ model: copilot(scorer.id), messages: [{ role: 'user', content: prompt }], maxTokens: 2000, temperature: 0.3 }); break;
-      case 'claude': result = await generateText({ model: claudeCode.languageModel(scorer.id), messages: [{ role: 'user', content: prompt }], maxTokens: 2000, temperature: 0.3 }); break;
-      case 'codex': result = await generateText({ model: codex.languageModel(scorer.id), messages: [{ role: 'user', content: prompt }], maxTokens: 2000, temperature: 0.3 }); break;
-      case 'openrouter': result = await generateText({ model: openrouter.languageModel(scorer.id), messages: [{ role: 'user', content: prompt }], maxTokens: 2000, temperature: 0.3 }); break;
+      case 'gemini': {
+        const model = geminiCode.languageModel?.(scorer.id) || geminiCode(scorer.id);
+        if (!model) throw new Error(`Gemini model ${scorer.id} not found`);
+        result = await generateText({ model, messages: [{ role: 'user', content: prompt }], temperature: 0.3 });
+        break;
+      }
+      case 'cursor': result = await generateText({ model: cursor.languageModel(scorer.id), messages: [{ role: 'user', content: prompt }], temperature: 0.3 }); break;
+      case 'copilot': throw new Error('Copilot provider not compatible with AI SDK v5'); // result = await generateText({ model: copilot.languageModel(scorer.id), messages: [{ role: 'user', content: prompt }], temperature: 0.3 }); break;
+      case 'claude': result = await generateText({ model: claudeCode.languageModel(scorer.id), messages: [{ role: 'user', content: prompt }], temperature: 0.3 }); break;
+      case 'codex': result = await generateText({ model: codex.languageModel(scorer.id), messages: [{ role: 'user', content: prompt }], temperature: 0.3 }); break;
+      case 'openrouter': result = await generateText({ model: openrouter.languageModel(scorer.id), messages: [{ role: 'user', content: prompt }], temperature: 0.3 }); break;
       default: throw new Error(`Unknown provider: ${scorer.provider}`);
     }
     return parseScoreResponse(result.text);

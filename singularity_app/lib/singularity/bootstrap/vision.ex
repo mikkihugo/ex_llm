@@ -16,8 +16,8 @@ defmodule Singularity.Bootstrap.Vision do
   ## Integration Points
 
   - `Singularity.Bootstrap.StageManager` - Current stage tracking
-  - `Singularity.Planning.SingularityVision` - Hierarchical planning system
-  - `Singularity.Planning.HTDAGAutoBootstrap` - Executes vision-driven tasks
+  - `Singularity.Execution.Planning.SafeWorkPlanner` - SAFe hierarchical planning system
+  - `Singularity.Execution.Planning.HTDAGAutoBootstrap` - Executes vision-driven tasks
 
   ## Usage
 
@@ -34,7 +34,7 @@ defmodule Singularity.Bootstrap.Vision do
   """
 
   require Logger
-  alias Singularity.Planning.SingularityVision
+  alias Singularity.Execution.Planning.SafeWorkPlanner
   alias Singularity.Bootstrap.StageManager
 
   @portfolio_vision %{
@@ -466,7 +466,7 @@ defmodule Singularity.Bootstrap.Vision do
   end
 
   @doc """
-  Initialize the full bootstrap vision in SingularityVision.
+  Initialize the full bootstrap vision in SafeWorkPlanner.
 
   Creates strategic themes, epics, capabilities, and features for all 4 stages.
   This gives Singularity a complete roadmap for self-development.
@@ -474,13 +474,9 @@ defmodule Singularity.Bootstrap.Vision do
   def initialize_bootstrap_vision! do
     Logger.info("Initializing Bootstrap Vision in planning system...")
 
-    # Set portfolio vision
-    {:ok, _} = SingularityVision.set_portfolio_vision(
-      @portfolio_vision.statement,
-      @portfolio_vision.target_year,
-      @portfolio_vision.success_metrics,
-      "bootstrap_system"
-    )
+    # Note: SafeWorkPlanner manages work items via add_chunk/2
+    # Portfolio vision can be set via a high-level chunk
+    SafeWorkPlanner.add_chunk(@portfolio_vision.statement)
 
     # Create strategic theme for each stage
     Enum.each(@stage_visions, fn {stage_num, vision} ->
@@ -520,69 +516,43 @@ defmodule Singularity.Bootstrap.Vision do
   ## Private Functions
 
   defp create_stage_theme(stage_num, vision) do
-    # Create theme
-    {:ok, theme} = SingularityVision.add_strategic_theme(
-      vision.name,
-      "Bootstrap Stage #{stage_num}: #{hd(vision.goals)}",
-      vision.duration_days / 365.0,  # Convert to BLOC
-      8,  # business_value
-      stage_num * 2,  # time_criticality (higher for later stages)
-      10 - stage_num  # risk_reduction (higher for earlier stages)
-    )
+    # Add stage vision as a chunk to SafeWorkPlanner
+    # SafeWorkPlanner will classify and create appropriate work items
+    stage_description = """
+    Bootstrap Stage #{stage_num}: #{vision.name}
 
-    # Create epic for each capability
-    Enum.each(vision.capabilities_to_develop, fn capability ->
-      create_capability_epic(theme.id, stage_num, capability, vision.features)
+    Goals:
+    #{Enum.map_join(vision.goals, "\n", fn goal -> "- #{goal}" end)}
+
+    Duration: #{vision.duration_days} days
+
+    Capabilities to develop:
+    #{Enum.map_join(vision.capabilities_to_develop, "\n", fn cap -> "- #{cap.name}: #{cap.description}" end)}
+    """
+
+    SafeWorkPlanner.add_chunk(stage_description)
+
+    # Add each feature as a separate work item
+    Enum.each(vision.features, fn feature ->
+      create_feature_chunk(feature)
     end)
   end
 
-  defp create_capability_epic(theme_id, stage_num, capability, all_features) do
-    {:ok, epic} = SingularityVision.add_epic(
-      capability.name,
-      capability.description,
-      :enabler,  # Bootstrap is enabler work
-      theme_id,
-      7,  # business_value
-      stage_num * 2,  # time_criticality
-      10 - stage_num,  # risk_reduction
-      length(capability.success_criteria)  # estimated job size
-    )
+  defp create_feature_chunk(feature_def) do
+    feature_description = """
+    #{feature_def.name}
 
-    # Add related features
-    all_features
-    |> Enum.filter(&feature_related_to_capability?(&1, capability))
-    |> Enum.each(fn feature ->
-      create_feature(epic.id, feature)
-    end)
-  end
+    #{feature_def.description}
 
-  defp create_feature(epic_id, feature_def) do
-    {:ok, cap} = SingularityVision.add_capability(
-      feature_def.name,
-      feature_def.description,
-      epic_id
-    )
+    Acceptance Criteria:
+    #{Enum.map_join(feature_def.acceptance_criteria, "\n", fn criteria -> "- #{criteria}" end)}
+    """
 
-    SingularityVision.add_feature(
-      feature_def.name,
-      feature_def.description,
-      cap.id,
-      feature_def.acceptance_criteria
-    )
-  end
-
-  defp feature_related_to_capability?(feature, capability) do
-    # Simple heuristic: feature name contains capability keywords
-    feature_words = feature.name |> String.downcase() |> String.split()
-    cap_words = capability.name |> String.downcase() |> String.split()
-
-    Enum.any?(cap_words, fn cap_word ->
-      Enum.any?(feature_words, &String.contains?(&1, cap_word))
-    end)
+    SafeWorkPlanner.add_chunk(feature_description)
   end
 
   defp feature_completed?(_feature_name) do
-    # Would query SingularityVision for feature status
+    # Would query SafeWorkPlanner for feature status
     # For now, assume not completed
     false
   end

@@ -8,7 +8,6 @@
     "ai:dev": "cd ai-server && bun run dev"
   },
   "dependencies": {
-    "codex-js-sdk": "file:ai-server/vendor/codex-js-sdk"
   },
   "overrides": {
     "@openai/codex": "0.44.0"

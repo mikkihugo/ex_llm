@@ -3,7 +3,6 @@
  * Uses AI SDK's customProvider() with dynamic model loading
  */
 
-import { createOpenAI } from '@ai-sdk/openai';
 import { customProvider } from 'ai';
 import type { Provider } from 'ai';
 
@@ -12,7 +11,10 @@ export interface GitHubModelsConfig {
   baseURL?: string;
 }
 
-export interface GitHubModelsProvider extends Provider {
+export interface GitHubModelsProvider {
+  languageModel(modelId: string): any;  // V2 language model
+  textEmbeddingModel?(modelId: string): any;  // Optional embedding model
+  imageModel?(modelId: string): any;  // Optional image model
   refreshModels(): Promise<void>;  // Async - fetches and updates provider
   getModelMetadata(): any[];  // Get raw model metadata
 }
@@ -45,16 +47,6 @@ export function createGitHubModelsProvider(config: GitHubModelsConfig = {}): Git
 
     return envToken;
   };
-
-  const tokenValue = typeof config.token === 'string'
-    ? config.token
-    : process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '';
-
-  // Base OpenAI provider for GitHub Models endpoint
-  const baseOpenAI = createOpenAI({
-    apiKey: tokenValue,
-    baseURL: config.baseURL ?? 'https://models.github.ai',
-  });
 
   // Model cache
   let cachedModels: any[] = [];
@@ -106,14 +98,23 @@ export function createGitHubModelsProvider(config: GitHubModelsConfig = {}): Git
         maxOutput = model.limits?.max_output_tokens || 4000;
       }
 
+      // Determine model type based on capabilities and tier
+      let modelType: 'chat' | 'embedding' | 'unknown' = 'unknown';
+      if (tier === 'embeddings' || model.id.includes('embedding') || model.id.includes('embed')) {
+        modelType = 'embedding';
+      } else if (model.capabilities?.includes?.('text-generation') || model.capabilities?.includes?.('chat') || tier !== 'embeddings') {
+        modelType = 'chat';
+      }
+
       return {
         id: model.id,
         displayName: model.friendly_name || model.id,
-        description: `${model.friendly_name || model.id} via GitHub Models (${Math.floor(maxInput / 1000)}K input, ${Math.floor(maxOutput / 1000)}K output)`,
+        description: `${model.friendly_name || model.id} via GitHub Models (${modelType === 'embedding' ? 'Embedding' : Math.floor(maxInput / 1000)}K input${modelType === 'chat' ? `, ${Math.floor(maxOutput / 1000)}K output` : ''})`,
         contextWindow: maxInput + maxOutput,
+        type: modelType,
         capabilities: {
-          completion: true,
-          streaming: true,
+          completion: modelType === 'chat',
+          streaming: modelType === 'chat',
           reasoning: false,
           vision: model.supported_input_modalities?.includes?.('image') ?? false,
           tools: model.capabilities?.includes?.('tool-calling') ?? false,
@@ -139,22 +140,218 @@ export function createGitHubModelsProvider(config: GitHubModelsConfig = {}): Git
     const languageModels: Record<string, any> = {};
 
     for (const model of models) {
-      // Use model.id as the key (e.g., "openai/gpt-4.1")
-      languageModels[model.id] = baseOpenAI(model.id);
+      // Create a proper V2 language model implementation
+      languageModels[model.id] = {
+        specificationVersion: 'v2' as const,
+        provider: 'openai.chat' as const,
+        modelId: model.id,
+        defaultObjectGenerationMode: 'json' as const,
+        supportedUrls: [],
+        doGenerate: async (options: any) => {
+          const token = await getToken();
+
+          // Check if this is an embedding model (different endpoint)
+          if (model.id.includes('text-embedding') || model.id.includes('embed')) {
+            // Use embeddings endpoint for embedding models
+            const response = await fetch(`${config.baseURL ?? 'https://models.github.ai'}/inference/embeddings`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                input: options.prompt?.[0]?.content || options.prompt,
+                model: model.id,
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error(`GitHub Models API error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json() as {
+              data: Array<{ embedding: number[] }>;
+              usage?: { prompt_tokens?: number; total_tokens?: number };
+              model?: string;
+            };
+
+            return {
+              text: JSON.stringify(data.data[0]?.embedding || []),
+              usage: {
+                promptTokens: data.usage?.prompt_tokens || 0,
+                completionTokens: 0,
+                totalTokens: data.usage?.total_tokens || 0,
+              },
+              finishReason: 'stop',
+              response: {
+                id: `embed_${Date.now()}`,
+                timestamp: new Date(),
+                modelId: model.id,
+              },
+            };
+          }
+
+          // Regular chat completion models
+          // Check if this is a newer OpenAI model that uses max_completion_tokens
+          const isNewerOpenAIModel = model.id.startsWith('openai/') && (
+            model.id.includes('gpt-5') ||
+            model.id.includes('o1') ||
+            model.id.includes('o3') ||
+            model.id.includes('o4')
+          );
+
+          const requestBody: any = {
+            model: model.id,
+            messages: options.prompt,
+            stream: false,
+          };
+
+          // Use appropriate token limit parameter
+          if (isNewerOpenAIModel) {
+            requestBody.max_completion_tokens = options.maxTokens || 1000;
+          } else {
+            requestBody.max_tokens = options.maxTokens || 1000;
+          }
+
+          // Add temperature if provided
+          if (options.temperature !== undefined) {
+            requestBody.temperature = options.temperature;
+          }
+
+          // Make direct API call to GitHub Models
+          const response = await fetch(`${config.baseURL ?? 'https://models.github.ai'}/inference/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+          if (!response.ok) {
+            throw new Error(`GitHub Models API error: ${response.status} ${response.statusText}`);
+          }
+
+          const data = await response.json() as {
+            choices: Array<{ message?: { content?: string }; finish_reason?: string }>;
+            usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+            id?: string;
+          };
+
+          return {
+            text: data.choices[0]?.message?.content || '',
+            usage: {
+              promptTokens: data.usage?.prompt_tokens || 0,
+              completionTokens: data.usage?.completion_tokens || 0,
+              totalTokens: data.usage?.total_tokens || 0,
+            },
+            finishReason: data.choices[0]?.finish_reason || 'stop',
+            response: {
+              id: data.id,
+              timestamp: new Date(),
+              modelId: model.id,
+            },
+          };
+        },
+        doStream: async (options: any) => {
+          const token = await getToken();
+
+          // Make direct API call to GitHub Models for streaming
+          const response = await fetch(`${config.baseURL ?? 'https://models.github.ai'}/inference/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              model: model.id,
+              messages: options.prompt,
+              max_tokens: options.maxTokens,
+              temperature: options.temperature,
+              stream: true,
+              ...options,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`GitHub Models API error: ${response.status} ${response.statusText}`);
+          }
+
+          // Return a streaming response
+          return {
+            [Symbol.asyncIterator]: async function* () {
+              const reader = response.body?.getReader();
+              if (!reader) throw new Error('No response body');
+
+              const decoder = new TextDecoder();
+              let buffer = '';
+
+              try {
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+
+                  buffer += decoder.decode(value, { stream: true });
+                  const lines = buffer.split('\n');
+                  buffer = lines.pop() || '';
+
+                  for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                      const data = line.slice(6);
+                      if (data === '[DONE]') continue;
+
+                      try {
+                        const parsed = JSON.parse(data);
+                        const delta = parsed.choices?.[0]?.delta?.content;
+                        if (delta) {
+                          yield {
+                            type: 'text-delta' as const,
+                            textDelta: delta,
+                          };
+                        }
+                      } catch (e) {
+                        // Ignore parse errors
+                      }
+                    }
+                  }
+                }
+              } finally {
+                reader.releaseLock();
+              }
+
+              yield {
+                type: 'finish' as const,
+                finishReason: 'stop' as const,
+                usage: {
+                  promptTokens: 0,
+                  completionTokens: 0,
+                  totalTokens: 0,
+                },
+              };
+            },
+          };
+        },
+      };
     }
 
     // Create custom provider with all models
-    return customProvider({
+    const provider = customProvider({
       languageModels,
-      fallbackProvider: baseOpenAI,
     });
+
+    // Add languageModel method for compatibility
+    (provider as any).languageModel = (modelId: string) => {
+      return languageModels[modelId] || languageModels['openai/gpt-4o-mini']; // fallback
+    };
+
+    return provider;
   }
 
   // Build initial provider with empty models (will be refreshed)
   currentProvider = buildProvider([]);
 
   // Wrapper that delegates to current provider
-  const providerWrapper = new Proxy({} as Provider, {
+  const providerWrapper = new Proxy({} as any, {
     get(target, prop) {
       if (prop === 'refreshModels') {
         return async () => {

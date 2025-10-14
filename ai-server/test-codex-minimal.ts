@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { generateText } from 'ai';
-import { codex } from 'ai-sdk-provider-codex';
+import { codex } from './src/providers/codex.js';
 
 async function test() {
   console.log('Testing Codex GPT-5...\n');

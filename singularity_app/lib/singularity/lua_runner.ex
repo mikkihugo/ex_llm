@@ -1,35 +1,87 @@
 defmodule Singularity.LuaRunner do
   @moduledoc """
-  Execute Lua prompt scripts with sandboxing and API injection.
+  Lua script executor using ergonomic Lua wrapper over Luerl.
 
-  Provides Lua scripts with safe APIs for:
-  - File reading (workspace.read_file, workspace.file_exists)
-  - Git operations (git.log, git.diff)
-  - Sub-prompts (llm.call_simple, llm.call_complex)
-  - Prompt building (Prompt.new(), section(), instruction())
+  Execute Lua scripts with sandboxed APIs for file reading, git operations,
+  LLM sub-prompts, and prompt building.
+
+  Uses the `lua` package (v0.3.0) which provides an ergonomic interface over
+  raw luerl. When luerl 2.0 releases, these features will merge directly into luerl.
+
+  ## Use Cases
+
+  **Prompt Building** (original):
+  - Dynamic prompt assembly
+  - Context-aware template generation
+
+  **Rule Engine** (NEW - hot-reload business logic!):
+  - Store business rules in database as Lua scripts
+  - Update rules without recompiling Elixir
+  - Confidence-based autonomous decisions
+
+  ## Usage
+
+  ### Prompt Building
+
+      lua_code = ~LUA[
+        local prompt = Prompt.new()
+        local readme = workspace.read_file("README.md")
+        prompt:section("Context", readme)
+        return prompt
+      ]
+
+      {:ok, messages} = LuaRunner.execute(lua_code, %{project_root: "/"})
+
+  ### Rule Engine
+
+      lua_rule = ~LUA[
+        function validate_epic(context)
+          local wsjf = context.metrics.wsjf_score or 0
+          local business_value = context.metrics.business_value or 0
+
+          if wsjf > 50 and business_value > 70 then
+            return {
+              decision = "autonomous",
+              confidence = 0.95,
+              reasoning = "High WSJF and business value"
+            }
+          else
+            return {
+              decision = "escalated",
+              confidence = 0.5,
+              reasoning = "Low WSJF, human decision required"
+            }
+          end
+        end
+
+        return validate_epic(context)
+      ]
+
+      {:ok, result} = LuaRunner.execute_rule(lua_rule, %{metrics: %{wsjf_score: 60}})
+      # => %{"decision" => "autonomous", "confidence" => 0.95, ...}
+
+  ## Features
+
+  - Compile-time syntax checking with ~LUA sigil
+  - Better error messages
+  - Cleaner API using `deflua` macro
+  - Automatic type conversions
+  - Sandboxed execution
+  - Hot-reload from database
 
   ## Security
 
-  - Sandboxed execution (Luerl sandbox)
-  - No file writes from Lua
+  - Sandboxed execution
+  - No file writes
   - No arbitrary system commands
-  - Resource limits (max execution time, memory)
+  - Scoped to project_root
 
-  ## Examples
-
-      iex> lua_code = \"\"\"
-      ...> local prompt = Prompt.new()
-      ...> prompt:section("README", workspace.read_file("README.md"))
-      ...> return prompt
-      ...> \"\"\"
-      iex> LuaRunner.execute(lua_code, %{project_root: "/app"})
-      {:ok, [%{role: "user", content: "=== README ===\\n..."}]}
+  See `Singularity.LuaAPI` for available APIs.
   """
 
   require Logger
 
   @type context :: %{required(:project_root) => String.t(), optional(atom()) => any()}
-
   @type message :: %{role: String.t(), content: String.t()}
 
   @doc """
@@ -38,34 +90,44 @@ defmodule Singularity.LuaRunner do
   ## Parameters
 
   - `lua_script` - Lua code as string
-  - `context` - Context map with project_root and optional vars
+  - `context` - Context map with `:project_root` and optional vars
 
   ## Returns
 
   - `{:ok, messages}` - List of LLM message maps
   - `{:error, reason}` - Execution error
+
+  ## Examples
+
+      iex> lua = ~S[
+      ...>   local prompt = Prompt.new()
+      ...>   prompt:section("Task", "Build feature")
+      ...>   return prompt
+      ...> ]
+      iex> LuaRunner.execute(lua, %{project_root: "."})
+      {:ok, [%{role: "user", content: "=== Task ===\\nBuild feature"}]}
   """
   @spec execute(String.t(), context()) :: {:ok, [message()]} | {:error, term()}
   def execute(lua_script, context) do
     try do
-      # 1. Initialize sandboxed Lua state
-      state = :luerl.init()
+      project_root = Map.get(context, :project_root, File.cwd!())
 
-      # 2. Inject APIs (workspace, git, llm, Prompt)
-      state = inject_apis(state, context)
+      # 1. Create Lua state with APIs and inject context
+      lua =
+        Lua.new()
+        # Store context in Lua global _CONTEXT table
+        |> Lua.set!([:_CONTEXT], %{"project_root" => project_root})
+        |> Lua.load_api(Singularity.LuaAPI)
+        |> Lua.load_api(Singularity.LuaAPI.Git)
+        |> Lua.load_api(Singularity.LuaAPI.LLM)
+        |> Lua.load_api(Singularity.LuaAPI.Prompt)
 
-      # 3. Execute script
-      case :luerl.do(lua_script, state) do
-        {[result], _new_state} when is_map(result) ->
-          # 4. Convert Lua result to Elixir messages
-          {:ok, lua_result_to_messages(result)}
+      # 2. Execute script
+      {result, _new_state} = Lua.eval!(lua, lua_script)
 
-        {[result], _new_state} ->
-          {:error, {:invalid_return, "Expected Prompt table, got: #{inspect(result)}"}}
-
-        {:error, reason, _state} ->
-          {:error, {:lua_error, reason}}
-      end
+      # 3. Convert result to messages
+      messages = lua_result_to_messages(result)
+      {:ok, messages}
     rescue
       error ->
         Logger.error("Lua execution failed: #{inspect(error)}")
@@ -74,236 +136,13 @@ defmodule Singularity.LuaRunner do
   end
 
   # ============================================================================
-  # API INJECTION
-  # ============================================================================
-
-  defp inject_apis(state, context) do
-    state
-    |> inject_workspace_api(context)
-    |> inject_git_api(context)
-    |> inject_llm_api()
-    |> inject_prompt_builder()
-  end
-
-  # ----------------------------------------------------------------------------
-  # Workspace API
-  # ----------------------------------------------------------------------------
-
-  defp inject_workspace_api(state, context) do
-    project_root = Map.get(context, :project_root, File.cwd!())
-
-    # workspace.read_file(path) -> string | nil
-    state =
-      :luerl.set_table(
-        state,
-        ["workspace", "read_file"],
-        fn [path], st ->
-          full_path = Path.join(project_root, to_string(path))
-
-          case File.read(full_path) do
-            {:ok, content} -> {[content], st}
-            {:error, reason} ->
-              Logger.warning("Lua workspace.read_file failed: #{full_path} - #{inspect(reason)}")
-              {[nil], st}
-          end
-        end
-      )
-
-    # workspace.file_exists(path) -> boolean
-    state =
-      :luerl.set_table(
-        state,
-        ["workspace", "file_exists"],
-        fn [path], st ->
-          full_path = Path.join(project_root, to_string(path))
-          {[File.exists?(full_path)], st}
-        end
-      )
-
-    # workspace.glob(pattern) -> array of paths
-    state =
-      :luerl.set_table(
-        state,
-        ["workspace", "glob"],
-        fn [pattern], st ->
-          full_pattern = Path.join(project_root, to_string(pattern))
-          files = Path.wildcard(full_pattern)
-          # Convert to relative paths
-          relative_files =
-            Enum.map(files, fn file ->
-              Path.relative_to(file, project_root)
-            end)
-
-          {[relative_files], st}
-        end
-      )
-
-    state
-  end
-
-  # ----------------------------------------------------------------------------
-  # Git API
-  # ----------------------------------------------------------------------------
-
-  defp inject_git_api(state, context) do
-    project_root = Map.get(context, :project_root, File.cwd!())
-
-    # git.log(opts) -> array of commit messages
-    state =
-      :luerl.set_table(
-        state,
-        ["git", "log"],
-        fn [opts], st ->
-          max_count = get_lua_table_value(opts, "max_count", 10)
-
-          case System.cmd("git", ["log", "--oneline", "-n", "#{max_count}"], cd: project_root) do
-            {output, 0} ->
-              commits =
-                output
-                |> String.split("\n", trim: true)
-
-              {[commits], st}
-
-            {_output, _exit_code} ->
-              {[[]], st}
-          end
-        end
-      )
-
-    # git.diff(opts) -> string
-    state =
-      :luerl.set_table(
-        state,
-        ["git", "diff"],
-        fn [_opts], st ->
-          case System.cmd("git", ["diff", "--stat"], cd: project_root) do
-            {output, 0} -> {[output], st}
-            {_output, _exit_code} -> {[""], st}
-          end
-        end
-      )
-
-    state
-  end
-
-  # ----------------------------------------------------------------------------
-  # LLM API (Sub-prompts)
-  # ----------------------------------------------------------------------------
-
-  defp inject_llm_api(state) do
-    # llm.call_simple(opts) -> string
-    state =
-      :luerl.set_table(
-        state,
-        ["llm", "call_simple"],
-        fn [opts], st ->
-          prompt = get_lua_table_value(opts, "prompt", "")
-
-          case Singularity.LLM.Service.call(:simple, [
-                 %{role: "user", content: prompt}
-               ]) do
-            {:ok, %{text: response}} -> {[response], st}
-            {:error, reason} ->
-              Logger.error("Lua llm.call_simple failed: #{inspect(reason)}")
-              {[""], st}
-          end
-        end
-      )
-
-    # llm.call_complex(opts) -> string
-    state =
-      :luerl.set_table(
-        state,
-        ["llm", "call_complex"],
-        fn [opts], st ->
-          prompt = get_lua_table_value(opts, "prompt", "")
-
-          case Singularity.LLM.Service.call(:complex, [
-                 %{role: "user", content: prompt}
-               ]) do
-            {:ok, %{text: response}} -> {[response], st}
-            {:error, reason} ->
-              Logger.error("Lua llm.call_complex failed: #{inspect(reason)}")
-              {[""], st}
-          end
-        end
-      )
-
-    state
-  end
-
-  # ----------------------------------------------------------------------------
-  # Prompt Builder API
-  # ----------------------------------------------------------------------------
-
-  defp inject_prompt_builder(state) do
-    # Prompt.new() -> table
-    state =
-      :luerl.set_table(
-        state,
-        ["Prompt", "new"],
-        fn [], st ->
-          # Return Lua table with metatable for method calls
-          prompt_table = %{"sections" => [], "instructions" => []}
-          {[prompt_table], st}
-        end
-      )
-
-    # prompt:section(name, content) -> prompt
-    state =
-      :luerl.set_table(
-        state,
-        ["Prompt", "section"],
-        fn [prompt, name, content], st ->
-          updated =
-            Map.update!(prompt, "sections", fn sections ->
-              sections ++ [%{"name" => to_string(name), "content" => to_string(content)}]
-            end)
-
-          {[updated], st}
-        end
-      )
-
-    # prompt:instruction(text) -> prompt
-    state =
-      :luerl.set_table(
-        state,
-        ["Prompt", "instruction"],
-        fn [prompt, text], st ->
-          updated =
-            Map.update!(prompt, "instructions", fn instructions ->
-              instructions ++ [to_string(text)]
-            end)
-
-          {[updated], st}
-        end
-      )
-
-    # prompt:bullet(text) -> prompt
-    state =
-      :luerl.set_table(
-        state,
-        ["Prompt", "bullet"],
-        fn [prompt, text], st ->
-          updated =
-            Map.update!(prompt, "instructions", fn instructions ->
-              instructions ++ ["- " <> to_string(text)]
-            end)
-
-          {[updated], st}
-        end
-      )
-
-    state
-  end
-
-  # ============================================================================
   # CONVERSION
   # ============================================================================
 
-  defp lua_result_to_messages(lua_result) when is_map(lua_result) do
-    sections = Map.get(lua_result, "sections", [])
-    instructions = Map.get(lua_result, "instructions", [])
+  @doc false
+  def lua_result_to_messages([result]) when is_map(result) do
+    sections = Map.get(result, "sections", [])
+    instructions = Map.get(result, "instructions", [])
 
     # Build content from sections
     section_content =
@@ -322,15 +161,81 @@ defmodule Singularity.LuaRunner do
     [%{role: "user", content: full_content}]
   end
 
-  defp lua_result_to_messages(_), do: []
+  def lua_result_to_messages(_), do: []
 
   # ============================================================================
-  # HELPERS
+  # RULE ENGINE EXECUTION
   # ============================================================================
 
-  defp get_lua_table_value(table, key, default) when is_map(table) do
-    Map.get(table, to_string(key), default)
+  @doc """
+  Execute Lua rule and return decision result.
+
+  Lua script must return a table with:
+  - `decision`: "autonomous" | "collaborative" | "escalated"
+  - `confidence`: 0.0-1.0
+  - `reasoning`: Human-readable explanation
+
+  ## Parameters
+
+  - `lua_script` - Lua code as string
+  - `context` - Rule execution context (epic metrics, feature data, etc.)
+
+  ## Returns
+
+  - `{:ok, result}` - Map with decision, confidence, reasoning
+  - `{:error, reason}` - Execution error
+
+  ## Examples
+
+      iex> lua = ~S[
+      ...>   local wsjf = context.metrics.wsjf_score or 0
+      ...>   if wsjf > 50 then
+      ...>     return {decision = "autonomous", confidence = 0.95, reasoning = "High WSJF"}
+      ...>   else
+      ...>     return {decision = "escalated", confidence = 0.5, reasoning = "Low WSJF"}
+      ...>   end
+      ...> ]
+      iex> LuaRunner.execute_rule(lua, %{metrics: %{wsjf_score: 60}})
+      {:ok, %{"decision" => "autonomous", "confidence" => 0.95, "reasoning" => "High WSJF"}}
+  """
+  @spec execute_rule(String.t(), map()) :: {:ok, map()} | {:error, term()}
+  def execute_rule(lua_script, context) do
+    try do
+      # 1. Create Lua state and inject context
+      lua =
+        Lua.new()
+        # Inject entire context as global `context` variable
+        |> Lua.set!([:context], elixir_to_lua_map(context))
+
+      # 2. Execute script
+      {result, _new_state} = Lua.eval!(lua, lua_script)
+
+      # 3. Extract decision result
+      case result do
+        [lua_table] when is_map(lua_table) ->
+          {:ok, lua_table}
+
+        other ->
+          Logger.warning("Lua rule returned unexpected result: #{inspect(other)}")
+          {:error, {:invalid_result, other}}
+      end
+    rescue
+      error ->
+        Logger.error("Lua rule execution failed: #{inspect(error)}")
+        {:error, {:execution_error, error}}
+    end
   end
 
-  defp get_lua_table_value(_table, _key, default), do: default
+  # Convert Elixir map to Lua-compatible nested structure
+  defp elixir_to_lua_map(map) when is_map(map) do
+    Map.new(map, fn {key, value} ->
+      lua_key = if is_atom(key), do: Atom.to_string(key), else: key
+      lua_value = elixir_to_lua_value(value)
+      {lua_key, lua_value}
+    end)
+  end
+
+  defp elixir_to_lua_value(map) when is_map(map), do: elixir_to_lua_map(map)
+  defp elixir_to_lua_value(list) when is_list(list), do: Enum.map(list, &elixir_to_lua_value/1)
+  defp elixir_to_lua_value(value), do: value
 end

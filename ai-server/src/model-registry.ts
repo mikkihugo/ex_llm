@@ -142,7 +142,7 @@ export async function buildModelCatalog(
   providers: Record<string, ProviderWithModels | ProviderWithMetadata>,
   options: { useCache?: boolean; enrichWithModelsDevData?: boolean } = {}
 ): Promise<ModelInfo[]> {
-  const { useCache = true, enrichWithModelsDevData = true } = options;
+  const { useCache = true } = options;
   const now = Date.now();
 
   if (useCache) {

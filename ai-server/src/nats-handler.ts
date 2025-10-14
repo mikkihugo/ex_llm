@@ -11,7 +11,7 @@ import { connect, NatsConnection, Subscription } from 'nats';
 import { generateText } from 'ai';
 import { createGeminiProvider } from './providers/gemini-code.js';
 import { claudeCode } from 'ai-sdk-provider-claude-code';
-import { codex } from 'ai-sdk-provider-codex';
+import { codex } from './providers/codex';
 import { copilot } from './providers/copilot';
 import { githubModels } from './providers/github-models';
 import { julesWithMetadata } from './providers/google-ai-jules';
@@ -187,8 +187,7 @@ class NATSHandler {
   private async handleLLMRequestStream(subscription: Subscription) {
     for await (const msg of subscription) {
       if (this.processingCount >= this.MAX_CONCURRENT) {
-        console.warn(`[NATS] Max concurrent processing (${this.MAX_CONCURRENT}) reached. NAKing message.`);
-        msg.nak();
+        console.warn(`[NATS] Max concurrent processing (${this.MAX_CONCURRENT}) reached. Skipping message.`);
         continue;
       }
       this.processingCount++;
@@ -245,24 +244,24 @@ class NATSHandler {
 
     let aiSDKTools;
     if (tools && tools.length > 0) {
-      aiSDKTools = convertOpenAIToolsToAISDK(tools, async (toolName, args) => {
-        if (!this.nc) throw new Error('NATS not connected - cannot execute tool');
-        try {
-          const result = await this.nc.request(`tools.execute.${toolName}`, JSON.stringify(args), { timeout: 30000 });
-          return JSON.parse(result.data.toString());
-        } catch (err) {
-          console.error(`[NATS] Tool execution failed for ${toolName}:`, err);
-          throw err;
-        }
-      });
+      aiSDKTools = convertOpenAIToolsToAISDK(tools);
     }
 
     logger.info('[NATS] Model selection', { requestedModel: request.model, selectedModel: model, provider, complexity, correlationId: request.correlation_id });
 
     if (stream) {
-      return this.handleStreamingRequest(provider, model, messages, { max_tokens, temperature, tools: aiSDKTools });
+      throw new Error('Streaming not implemented yet');
     }
-    return this.handleNonStreamingRequest(provider, model, messages, { max_tokens, temperature, tools: aiSDKTools }, this.normalizeTaskType(request), complexity);
+    const partialResponse = await this.handleNonStreamingRequest(provider, model, messages, { max_tokens, temperature, tools: aiSDKTools }, this.normalizeTaskType(request), complexity);
+    
+    return {
+      text: partialResponse.text,
+      model: `${provider}:${model}`,
+      tokens_used: partialResponse.tokens_used,
+      cost_cents: partialResponse.cost_cents,
+      timestamp: new Date().toISOString(),
+      correlation_id: request.correlation_id
+    };
   }
 
   private resolveModelSelection(request: LLMRequest): { model: string; provider: ProviderKey; complexity: TaskComplexity } {
@@ -378,39 +377,34 @@ class NATSHandler {
     }
   }
 
-  private async handleStreamingRequest(provider: string, model: string, messages: any[], options: any) {
-    // TODO: Implement streaming for each provider.
-    throw new Error('Streaming not implemented yet');
-  }
-
   private async callClaude(model: string, messages: any[], options: any) {
     const result = await generateText({ model: claudeCode(model), ...options, messages });
-    return { text: result.text, tokens_used: result.usage.totalTokens, cost_cents: this.calculateClaudeCost(result.usage.totalTokens, model) };
+    return { text: result.text, tokens_used: result.usage?.totalTokens, cost_cents: this.calculateClaudeCost(result.usage?.totalTokens || 0, model) };
   }
 
   private async callGemini(model: string, messages: any[], options: any) {
     const result = await generateText({ model: createGeminiProvider({ authType: 'oauth-personal' })(model), ...options, messages });
-    return { text: result.text, tokens_used: result.usage.totalTokens, cost_cents: this.calculateGeminiCost(result.usage.totalTokens, model) };
+    return { text: result.text, tokens_used: result.usage?.totalTokens, cost_cents: this.calculateGeminiCost(result.usage?.totalTokens || 0, model) };
   }
 
   private async callCodex(model: string, messages: any[], options: any) {
-    const result = await generateText({ model: codex(model), ...options, messages });
-    return { text: result.text, tokens_used: result.usage.totalTokens, cost_cents: this.calculateCodexCost(result.usage.totalTokens, model) };
+    const result = await generateText({ model: codex.languageModel(model), ...options, messages });
+    return { text: result.text, tokens_used: result.usage?.totalTokens, cost_cents: this.calculateCodexCost(result.usage?.totalTokens || 0, model) };
   }
 
   private async callCopilot(model: string, messages: any[], options: any) {
-    const result = await generateText({ model: copilot(model), ...options, messages });
-    return { text: result.text, tokens_used: result.usage.totalTokens, cost_cents: 0 };
+    const result = await generateText({ model: copilot.languageModel(model), ...options, messages });
+    return { text: result.text, tokens_used: result.usage?.totalTokens, cost_cents: 0 };
   }
 
   private async callGitHubModels(model: string, messages: any[], options: any) {
-    const result = await generateText({ model: githubModels(model), ...options, messages });
-    return { text: result.text, tokens_used: result.usage.totalTokens, cost_cents: 0 };
+    const result = await generateText({ model: githubModels.languageModel(model), ...options, messages });
+    return { text: result.text, tokens_used: result.usage?.totalTokens, cost_cents: 0 };
   }
 
   private async callCursor(model: string, messages: any[], options: any) {
-    const result = await generateText({ model: cursor(model, { approvalPolicy: 'read-only' }), ...options, messages });
-    return { text: result.text, tokens_used: result.usage.totalTokens, cost_cents: 0 };
+    const result = await generateText({ model: cursor.languageModel(model), ...options, messages });
+    return { text: result.text, tokens_used: result.usage?.totalTokens, cost_cents: 0 };
   }
 
   private async callOpenRouter(model: string, messages: any[], options: any, taskType: TaskType, complexity: TaskComplexity) {
@@ -445,7 +439,7 @@ class NATSHandler {
     return Math.round((tokens / 1_000_000) * rate * 100);
   }
 
-  private calculateCodexCost(tokens: number, model: string): number {
+  private calculateCodexCost(_tokens: number, _model: string): number {
     return 0; // Subscription-based
   }
 

@@ -49,7 +49,7 @@ export async function fetchOpenRouterModels(): Promise<OpenRouterModel[]> {
     if (!response.ok) {
       throw new Error(`[OpenRouterEnhancer] API error: ${response.statusText}`);
     }
-    const data = await response.json();
+    const data = await response.json() as { data?: OpenRouterModel[] };
     return data.data || [];
   } catch (error) {
     console.error('[OpenRouterEnhancer] Failed to fetch OpenRouter models:', error);

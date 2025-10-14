@@ -6,6 +6,6 @@ defmodule CentralCloud.Repo do
   This is completely separate from Singularity's Ecto setup.
   """
   use Ecto.Repo,
-    otp_app: :central_services,
+    otp_app: :central_cloud,
     adapter: Ecto.Adapters.Postgres
 end

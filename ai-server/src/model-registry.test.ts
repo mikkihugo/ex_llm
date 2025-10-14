@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll } from 'bun:test';
-import { codex } from 'ai-sdk-provider-codex';
+import { codex } from './providers/codex';
 import { copilot } from './providers/copilot';
 import { githubModels } from './providers/github-models';
 import { claudeCode } from './providers/claude-code';
@@ -14,7 +14,6 @@ import {
   getProviders,
   toOpenAIModelsFormat,
   type ModelInfo,
-  type ProviderWithModels,
   type ProviderWithMetadata,
 } from './model-registry';
 
@@ -235,7 +234,7 @@ describe('Model Registry', () => {
     });
 
     test('subscription models are identified', () => {
-      const subscriptionModels = models.filter(m => m.cost === 'subscription');
+      const subscriptionModels = models.filter(m => m.subscription);
       console.log(`  Subscription models: ${subscriptionModels.length}`);
       if (subscriptionModels.length > 0) {
         console.log(`    - ${subscriptionModels.map(m => `${m.id} (${m.subscription || 'unknown'})`).join('\n    - ')}`);
@@ -257,7 +256,7 @@ describe('Model Registry', () => {
 
       expect(registered.length).toBe(2); // sonnet, opus
       expect(registered[0].provider).toBe('claude-code');
-      expect(registered[0].cost).toBe('subscription');
+      expect(registered[0].cost).toBe('pay-per-use');
       expect(registered.some(m => m.model === 'sonnet')).toBe(true);
       expect(registered.some(m => m.model === 'opus')).toBe(true);
     });
@@ -305,7 +304,7 @@ describe('Model Registry', () => {
       expect(registered.some(m => m.model === 'sonnet-4')).toBe(true);
       // Cursor has mix of free (auto) and subscription (premium models)
       expect(registered.some(m => m.cost === 'free')).toBe(true);
-      expect(registered.some(m => m.cost === 'subscription')).toBe(true);
+      expect(registered.some(m => m.subscription)).toBe(true);
     });
 
     test('registers models from google-jules (experimental agent)', async () => {

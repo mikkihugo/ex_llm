@@ -287,7 +287,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           "▶️ Autonomous actions resumed"
 
         :set_vision ->
-          Singularity.Planning.Vision.set_vision(command.vision_text, approved_by: user_id)
+          Singularity.Execution.Planning.Vision.set_vision(command.vision_text, approved_by: user_id)
           "✅ Vision updated"
 
         _ ->

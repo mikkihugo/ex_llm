@@ -129,13 +129,13 @@ export async function fetchModelsDevData(): Promise<ModelsDev> {
       throw new Error(`Failed to fetch from models.dev: ${response.status}`);
     }
 
-    const data = await response.json();
-    cachedData = { providers: data };
+    const data = await response.json() as ModelsDev;
+    cachedData = data;
     cacheTime = now;
 
     await saveToDisk(cachedData, cacheTime);
 
-    console.log(`[ModelsRegistry] Fetched metadata for ${Object.keys(data).length} providers.`);
+    console.log(`[ModelsRegistry] Fetched metadata for ${Object.keys(data.providers).length} providers.`);
     return cachedData;
   } catch (error) {
     console.error('[ModelsRegistry] Failed to fetch models.dev data:', error);

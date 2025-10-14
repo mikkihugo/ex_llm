@@ -1,7 +1,7 @@
 # Example Configuration for HTDAG Auto-Bootstrap
 # Add this to your config/config.exs or config/dev.exs
 
-config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+config :singularity, Singularity.Execution.Planning.HTDAGAutoBootstrap,
   # Enable automatic self-diagnosis on server startup
   enabled: true,
   

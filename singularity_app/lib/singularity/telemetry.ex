@@ -19,8 +19,47 @@ defmodule Singularity.Telemetry do
 
   def metrics do
     [
+      # VM Metrics
       last_value("vm.memory.total", unit: :byte),
       last_value("vm.total_run_queue_lengths.total"),
+
+      # LLM Metrics
+      counter("singularity.llm.request.count", tags: [:complexity, :task_type, :model]),
+      counter("singularity.llm.request.cost_usd",
+        event_name: [:singularity, :llm, :request, :stop],
+        measurement: :cost_usd,
+        tags: [:complexity, :task_type, :model]
+      ),
+      summary("singularity.llm.request.duration",
+        event_name: [:singularity, :llm, :request, :stop],
+        measurement: :duration,
+        tags: [:complexity, :task_type, :model],
+        unit: {:native, :millisecond}
+      ),
+      counter("singularity.llm.cache.hit", tags: [:type]),
+      counter("singularity.llm.cache.miss", tags: [:type]),
+
+      # Agent Metrics
+      counter("singularity.agent.spawn.count", tags: [:agent_type]),
+      counter("singularity.agent.task.count", tags: [:agent_type, :status]),
+      summary("singularity.agent.task.duration",
+        event_name: [:singularity, :agent, :task, :stop],
+        measurement: :duration,
+        tags: [:agent_type, :status],
+        unit: {:native, :millisecond}
+      ),
+      last_value("singularity.agent.active.count", tags: [:agent_type]),
+
+      # NATS Metrics
+      counter("singularity.nats.message.count", tags: [:subject, :direction]),
+      summary("singularity.nats.message.size",
+        event_name: [:singularity, :nats, :message, :stop],
+        measurement: :size_bytes,
+        tags: [:subject, :direction],
+        unit: :byte
+      ),
+
+      # Existing metrics
       summary("singularity.hot_reload.duration", unit: {:native, :millisecond}),
       summary("singularity.code_generator.generate.duration",
         event_name: [:singularity, :code_generator, :generate, :stop],
@@ -91,5 +130,94 @@ defmodule Singularity.Telemetry do
       end
 
     %{memory: memory, run_queue: run_queue}
+  end
+
+  @doc """
+  Get current metrics for external consumption (health checks, dashboard).
+
+  Returns a map with:
+  - VM stats (memory, processes, schedulers)
+  - Agent stats (active count, total spawned)
+  - LLM stats (total requests, cost, cache hit rate)
+  - NATS stats (message throughput)
+  """
+  @spec get_metrics() :: map()
+  def get_metrics do
+    %{
+      vm: vm_metrics(),
+      agents: agent_metrics(),
+      llm: llm_metrics(),
+      nats: nats_metrics(),
+      timestamp: DateTime.utc_now()
+    }
+  end
+
+  defp vm_metrics do
+    memory = :erlang.memory()
+
+    %{
+      memory_total_mb: div(memory[:total], 1_024 * 1_024),
+      memory_processes_mb: div(memory[:processes], 1_024 * 1_024),
+      memory_ets_mb: div(memory[:ets], 1_024 * 1_024),
+      process_count: :erlang.system_info(:process_count),
+      scheduler_count: :erlang.system_info(:schedulers_online),
+      uptime_seconds: :erlang.statistics(:wall_clock) |> elem(0) |> div(1000)
+    }
+  end
+
+  defp agent_metrics do
+    # Count active agents from DynamicSupervisor
+    active_count =
+      case Process.whereis(Singularity.Agents.AgentSupervisor) do
+        nil ->
+          0
+
+        pid ->
+          pid
+          |> DynamicSupervisor.count_children()
+          |> Map.get(:active, 0)
+      end
+
+    %{
+      active_count: active_count,
+      total_spawned: get_counter_value([:singularity, :agent, :spawn, :count])
+    }
+  end
+
+  defp llm_metrics do
+    total_requests = get_counter_value([:singularity, :llm, :request, :count])
+    cache_hits = get_counter_value([:singularity, :llm, :cache, :hit])
+    cache_misses = get_counter_value([:singularity, :llm, :cache, :miss])
+
+    cache_hit_rate =
+      if cache_hits + cache_misses > 0 do
+        Float.round(cache_hits / (cache_hits + cache_misses), 2)
+      else
+        0.0
+      end
+
+    %{
+      total_requests: total_requests,
+      cache_hit_rate: cache_hit_rate,
+      cache_hits: cache_hits,
+      cache_misses: cache_misses,
+      total_cost_usd: get_counter_value([:singularity, :llm, :request, :cost_usd])
+    }
+  end
+
+  defp nats_metrics do
+    %{
+      messages_sent: get_counter_value([:singularity, :nats, :message, :count], %{direction: :send}),
+      messages_received:
+        get_counter_value([:singularity, :nats, :message, :count], %{direction: :receive})
+    }
+  end
+
+  # Helper to get counter values from telemetry
+  # Note: This is a simplified version - in production you'd use a proper metrics store
+  defp get_counter_value(_event_name, _tags \\ %{}) do
+    # TODO: Integrate with proper metrics backend (StatsD, Prometheus, etc.)
+    # For now, return 0 as placeholder
+    0
   end
 end

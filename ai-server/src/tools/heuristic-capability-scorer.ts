@@ -26,8 +26,6 @@ interface ModelCapabilityScore {
  */
 export function scoreModelByHeuristics(model: any): ModelCapabilityScore {
   const id = model.id.toLowerCase();
-  const name = (model.displayName || model.id).toLowerCase();
-  const description = (model.description || '').toLowerCase();
   const cost = model.cost || 'unknown';
 
   let code = 7;

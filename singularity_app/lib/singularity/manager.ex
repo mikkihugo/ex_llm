@@ -10,7 +10,7 @@ defmodule Singularity.Manager do
   """
   def queue_depth do
     # Get queue depth from the execution coordinator
-    case Process.whereis(Singularity.TemplateSparcOrchestrator) do
+    case Process.whereis(Singularity.Execution.SPARC.Orchestrator) do
       nil ->
         0
 

@@ -183,7 +183,7 @@ export function selectOptimalModel(
     }
   }
   if (options?.maxCost) {
-    availableModels = availableModels.filter(m => m.costPerMillion <= options.maxCost * 1_000_000);
+    availableModels = availableModels.filter(m => m.costPerMillion <= (options.maxCost || 0) * 1_000_000);
   }
   if (options?.requiresSpeed) {
     availableModels.sort((a, b) => {

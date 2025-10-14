@@ -10,7 +10,7 @@
  * import { generateText } from 'ai';
  *
  * const result = await generateText({
- *   model: githubModels('openai/gpt-4.1'),
+ *   model: githubModels.languageModel('openai/gpt-4o'),
  *   prompt: 'Explain quantum computing',
  * });
  * ```

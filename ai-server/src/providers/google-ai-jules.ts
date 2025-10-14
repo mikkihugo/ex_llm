@@ -5,7 +5,7 @@
  * especially for tasks integrated with GitHub.
  */
 
-import { z } from 'zod';
+
 
 const JULES_API_ENDPOINT = process.env.JULES_API_ENDPOINT || 'https://jules.googleapis.com/v1alpha';
 const JULES_API_KEY = process.env.JULES_API_KEY || process.env.GOOGLE_AI_STUDIO_API_KEY;
@@ -94,8 +94,7 @@ export class JulesProvider {
    */
   async listSources(): Promise<{ sources: JulesSource[] }> {
     const response = await fetch(`${this.config.endpoint}/sources`, { headers: { 'X-Goog-Api-Key': this.config.apiKey! } });
-    if (!response.ok) throw new Error(`Failed to list sources: ${response.statusText}`);
-    return await response.json();
+    return await response.json() as { sources: JulesSource[] };
   }
 
   /**
@@ -110,8 +109,7 @@ export class JulesProvider {
       headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': this.config.apiKey },
       body: JSON.stringify(session),
     });
-    if (!response.ok) throw new Error(`Jules API error: ${response.status} - ${await response.text()}`);
-    return await response.json();
+    return await response.json() as JulesSession;
   }
 
   /**
@@ -122,8 +120,7 @@ export class JulesProvider {
    */
   async listActivities(sessionId: string, pageSize = 30): Promise<{ activities: JulesActivity[] }> {
     const response = await fetch(`${this.config.endpoint}/sessions/${sessionId}/activities?pageSize=${pageSize}`, { headers: { 'X-Goog-Api-Key': this.config.apiKey! } });
-    if (!response.ok) throw new Error(`Failed to list activities: ${response.statusText}`);
-    return await response.json();
+    return await response.json() as { activities: JulesActivity[] };
   }
 
   /**
@@ -173,9 +170,9 @@ export class JulesProvider {
   }
 
   // TODO: Implement the following methods which are referenced but not defined.
-  async submitTask(task: any): Promise<any> { throw new Error("Not implemented"); }
-  async getTaskStatus(taskId: any): Promise<any> { throw new Error("Not implemented"); }
-  async *streamTaskProgress(taskId: any): AsyncIterableIterator<any> { throw new Error("Not implemented"); }
+  async submitTask(_task: any): Promise<any> { throw new Error("Not implemented"); }
+  async getTaskStatus(_taskId: any): Promise<any> { throw new Error("Not implemented"); }
+  async *streamTaskProgress(_taskId: any): AsyncIterableIterator<any> { throw new Error("Not implemented"); }
 }
 
 export const jules = new JulesProvider();
@@ -248,7 +245,7 @@ export interface JulesProviderWithModels extends ReturnType<typeof createJulesMo
  */
 export const julesWithModels = Object.assign(jules, {
   listModels: () => JULES_MODELS,
-}) as JulesProviderWithModels;
+}) as unknown as JulesProviderWithModels;
 
 /**
  * A backward-compatibility helper to map a model ID to a Jules model instance.

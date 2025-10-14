@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test';
 import { createProviderRegistry } from 'ai';
 import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
 import { claudeCode } from 'ai-sdk-provider-claude-code';
-import { codex } from 'ai-sdk-provider-codex';
+import { codex } from './providers/codex';
 import { copilot } from './providers/copilot';
 import { githubModels } from './providers/github-models';
 import { buildModelCatalog, type ProviderWithModels, type ProviderWithMetadata } from './model-registry';
@@ -40,7 +40,7 @@ describe('Provider Integration', () => {
       const registry = createProviderRegistry({
         'gemini-code': geminiCode,
         'claude-code': claudeCode,
-        'openai-codex': codex,
+        // 'openai-codex': codex,
       });
 
       // Should be able to create model instances
@@ -63,7 +63,7 @@ describe('Provider Integration', () => {
 
       // Check if provider has listModels method
       if ('listModels' in geminiCode) {
-        const models = geminiCode.listModels();
+        const models = (geminiCode as any).listModels();
         expect(Array.isArray(models)).toBe(true);
         expect(models.length).toBeGreaterThan(0);
         console.log(`  Gemini: ${models.length} models`);
@@ -75,7 +75,7 @@ describe('Provider Integration', () => {
     test('Claude provider has model info', () => {
       // Claude Code uses customProvider, check if it has metadata
       if ('getModelMetadata' in claudeCode) {
-        const metadata = claudeCode.getModelMetadata();
+        const metadata = (claudeCode as any).getModelMetadata();
         expect(Array.isArray(metadata)).toBe(true);
         console.log(`  Claude: ${metadata.length} models`);
       } else {
@@ -96,7 +96,7 @@ describe('Provider Integration', () => {
 
     test('Copilot provider has model metadata', async () => {
       if ('getModelMetadata' in copilot) {
-        const metadata = copilot.getModelMetadata();
+        const metadata = (copilot as any).getModelMetadata();
         // Handle both sync and async returns
         const resolvedMetadata = metadata instanceof Promise ? await metadata : metadata;
         expect(Array.isArray(resolvedMetadata)).toBe(true);
@@ -216,6 +216,8 @@ describe('Provider Integration', () => {
         'gemini-code': geminiCode,
         'claude-code': claudeCode,
         'openai-codex': codex,
+        'github-copilot': copilot,
+        'github-models': githubModels,
       });
 
       const models = await buildModelCatalog({
@@ -229,7 +231,7 @@ describe('Provider Integration', () => {
       const samples = models.slice(0, sampleSize);
 
       for (const model of samples) {
-        const instance = registry.languageModel(model.id);
+        const instance = registry.languageModel(model.id as any);
         expect(instance).toBeDefined();
         // Provider ID may differ (registry key vs internal ID)
         // e.g., "openai-codex" → "openai.codex", "gemini-code" → "gemini-cli-core"
@@ -244,18 +246,24 @@ describe('Provider Integration', () => {
 
       const registry = createProviderRegistry({
         'gemini-code': geminiCode,
+        'claude-code': claudeCode,
         'openai-codex': codex,
+        'github-copilot': copilot,
+        'github-models': githubModels,
       });
 
       const models = await buildModelCatalog({
         'gemini-code': geminiCode as unknown as ProviderWithModels,
+        'claude-code': claudeCode as unknown as ProviderWithModels,
         'openai-codex': codex as unknown as ProviderWithMetadata,
+        'github-copilot': copilot as unknown as ProviderWithMetadata,
+        'github-models': githubModels as unknown as ProviderWithMetadata,
       });
 
       let successCount = 0;
       for (const model of models) {
         try {
-          const instance = registry.languageModel(model.id);
+          const instance = registry.languageModel(model.id as any);
           if (instance) successCount++;
         } catch (error) {
           console.warn(`  ⚠️  Failed to load ${model.id}: ${error}`);

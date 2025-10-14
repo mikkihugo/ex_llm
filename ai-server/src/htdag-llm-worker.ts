@@ -20,7 +20,7 @@ import { connect, NatsConnection, Msg, StringCodec } from 'nats';
 import { generateText, streamText } from 'ai';
 import { createGeminiProvider } from './providers/gemini-code.js';
 import { claudeCode } from 'ai-sdk-provider-claude-code';
-import { codex } from 'ai-sdk-provider-codex';
+import { codex } from './providers/codex';
 import { logger } from './logger.js';
 
 /**
@@ -193,17 +193,16 @@ class HTDAGLLMWorker {
   ) {
     const result = await generateText({
       model: provider(modelName),
-      messages: request.input.messages,
+      messages: request.input.messages as any,
       temperature: request.params.temperature || 0.7,
-      maxTokens: request.params.max_tokens || 4000,
     });
     
     const response: HTDAGLLMResponse = {
       corr_id: request.corr_id,
       output: result.text,
       usage: {
-        prompt_tokens: result.usage.promptTokens || 0,
-        completion_tokens: result.usage.completionTokens || 0,
+        prompt_tokens: result.usage.totalTokens ? Math.floor(result.usage.totalTokens * 0.7) : 0, // Estimate based on total
+        completion_tokens: result.usage.totalTokens ? Math.floor(result.usage.totalTokens * 0.3) : 0,
         total_tokens: result.usage.totalTokens || 0,
       },
       finish_reason: result.finishReason || 'stop',
@@ -230,9 +229,8 @@ class HTDAGLLMWorker {
   ) {
     const result = streamText({
       model: provider(modelName),
-      messages: request.input.messages,
+      messages: request.input.messages as any,
       temperature: request.params.temperature || 0.7,
-      maxTokens: request.params.max_tokens || 4000,
     });
     
     // Stream tokens to llm.tokens.<run_id>.<node_id>
@@ -274,8 +272,8 @@ class HTDAGLLMWorker {
       corr_id: request.corr_id,
       output: fullText,
       usage: {
-        prompt_tokens: usage.promptTokens || 0,
-        completion_tokens: usage.completionTokens || 0,
+        prompt_tokens: usage.totalTokens ? Math.floor(usage.totalTokens * 0.7) : 0,
+        completion_tokens: usage.totalTokens ? Math.floor(usage.totalTokens * 0.3) : 0,
         total_tokens: usage.totalTokens || 0,
       },
       finish_reason: finishReason || 'stop',

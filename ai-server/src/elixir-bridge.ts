@@ -10,7 +10,7 @@
  * AI Server → ElixirBridge → NATS → ExecutionCoordinator → TemplateOptimizer → Agents → LLM
  */
 
-import { analyzeTaskComplexity, selectOptimalModel, selectCodexModelForCoding } from './task-complexity';
+import { analyzeTaskComplexity } from './task-complexity';
 import { nats } from './nats';
 
 /**
@@ -161,39 +161,7 @@ export class ElixirBridge {
     }
   }
 
-  /**
-   * @deprecated This method uses an older NATS topic and will be removed. Use executeViaUnifiedNats instead.
-   * @private
-   * @param {ExecutionRequest} request The execution request.
-   * @returns {Promise<ExecutionResponse>} A promise that resolves with the execution response.
-   */
-  private async executeViaNats(request: ExecutionRequest): Promise<ExecutionResponse> {
-    // TODO: Remove this deprecated method once all services are migrated to the unified NATS topic.
-    const payload = {
-      task: request.task,
-      language: request.language || 'auto',
-      complexity: request.complexity,
-      context: request.context || {}
-    };
 
-    try {
-      const response = await this.nc.request(
-        'execution.request',
-        new TextEncoder().encode(JSON.stringify(payload)),
-        { timeout: 30000 }
-      );
-
-      if (!response) {
-        throw new Error('No response from NATS');
-      }
-
-      const result = JSON.parse(new TextDecoder().decode(response.data));
-      return result;
-    } catch (error) {
-      console.error('NATS execution failed:', error);
-      throw error;
-    }
-  }
 
   /**
    * Sends a task execution request via HTTP as a fallback.
@@ -217,7 +185,7 @@ export class ElixirBridge {
       throw new Error(`HTTP execution failed: ${response.statusText}`);
     }
 
-    return await response.json();
+    return await response.json() as ExecutionResponse;
   }
 
   /**

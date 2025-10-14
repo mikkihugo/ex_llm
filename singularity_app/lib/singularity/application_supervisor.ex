@@ -30,7 +30,7 @@ defmodule Singularity.ApplicationSupervisor do
       Singularity.Infrastructure.Supervisor,
 
       # Architecture engine
-      Singularity.ArchitectureEngine.MetaRegistry.Supervisor,
+      Singularity.Engines.ArchitectureEngine.MetaRegistry.Supervisor,
 
       # Git integration
       Singularity.Git.Supervisor,

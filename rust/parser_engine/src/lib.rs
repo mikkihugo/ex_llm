@@ -984,37 +984,47 @@ pub struct MaintainabilityMetrics {
 // ============================================================================
 // NIF Functions - Expose parser to Elixir
 // ============================================================================
+// ONLY compile these functions when "nif" feature is enabled (for standalone ParserEngine)
+// When used as library by code_engine, these are disabled to avoid symbol conflicts
 
-/// Parse a single file and return AST + metrics
-#[rustler::nif(schedule = "DirtyCpu")]
-fn parse_file_nif(file_path: String) -> Result<AnalysisResult, String> {
-    let path = Path::new(&file_path);
-    let mut parser = PolyglotCodeParser::new()
-        .map_err(|e| format!("Failed to initialize parser: {}", e))?;
+#[cfg(feature = "nif")]
+mod nif_functions {
+    use super::*;
 
-    parser.analyze_file(path)
-        .map_err(|e| format!("Failed to parse file: {}", e))
+    /// Parse a single file and return AST + metrics
+    #[rustler::nif(schedule = "DirtyCpu")]
+    pub fn parse_file_nif(file_path: String) -> Result<AnalysisResult, String> {
+        let path = Path::new(&file_path);
+        let mut parser = PolyglotCodeParser::new()
+            .map_err(|e| format!("Failed to initialize parser: {}", e))?;
+
+        parser.analyze_file(path)
+            .map_err(|e| format!("Failed to parse file: {}", e))
+    }
+
+    /// Parse directory tree
+    #[rustler::nif(schedule = "DirtyCpu")]
+    pub fn parse_tree_nif(root_path: String) -> Result<String, String> {
+        // TODO: Implement tree parsing
+        Ok(format!(r#"{{"root": "{}", "files": []}}"#, root_path))
+    }
+
+    /// Get supported languages
+    #[rustler::nif]
+    pub fn supported_languages() -> Vec<String> {
+        vec![
+            "rust".to_string(),
+            "javascript".to_string(),
+            "typescript".to_string(),
+            "python".to_string(),
+            "elixir".to_string(),
+            "go".to_string(),
+        ]
+    }
 }
 
-/// Parse directory tree
-#[rustler::nif(schedule = "DirtyCpu")]
-fn parse_tree_nif(root_path: String) -> Result<String, String> {
-    // TODO: Implement tree parsing
-    Ok(format!(r#"{{"root": "{}", "files": []}}"#, root_path))
-}
-
-/// Get supported languages
-#[rustler::nif]
-fn supported_languages() -> Vec<String> {
-    vec![
-        "rust".to_string(),
-        "javascript".to_string(),
-        "typescript".to_string(),
-        "python".to_string(),
-        "elixir".to_string(),
-        "go".to_string(),
-    ]
-}
+#[cfg(feature = "nif")]
+use nif_functions::*;
 
 #[cfg(test)]
 mod tests {

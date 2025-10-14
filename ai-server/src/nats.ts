@@ -5,7 +5,7 @@
  * various topics related to AI, LLM, agents, and tools.
  */
 
-import { connect, type NatsConnection, type JetStreamClient, StringCodec } from 'nats';
+import { connect, type NatsConnection, type JetStreamClient, StringCodec, RetentionPolicy, StorageType } from 'nats';
 
 const sc = StringCodec();
 
@@ -46,9 +46,9 @@ export class NatsService {
       await jsm.streams.add({
         name: 'AI_EVENTS',
         subjects: ['ai.>', 'llm.>', 'agent.>'],
-        retention: 'limits',
+        retention: RetentionPolicy.Limits,
         max_age: 3_600_000_000_000, // 1 hour
-        storage: 'memory',
+        storage: StorageType.Memory,
       });
     } catch (err: any) {
       if (!err.message?.includes('stream name already in use')) {

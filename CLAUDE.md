@@ -80,8 +80,8 @@ nix develop
 # Or with direnv (recommended)
 direnv allow
 
-# 2. Setup database (ONE shared database for dev/test/prod)
-./scripts/setup-database.sh  # Creates 'singularity' DB with extensions
+# 2. Setup databases
+./scripts/setup-database.sh  # Creates 'singularity' DB (main) and 'central_services' DB (central_cloud)
 
 # 3. Install dependencies
 cd singularity_app
@@ -92,10 +92,14 @@ mix knowledge.migrate        # Imports templates_data/**/*.json
 moon run templates_data:embed-all  # Generates embeddings
 ```
 
-**Note:** Uses **single shared database** (`singularity`) for all environments.
-- Dev: Direct access
-- Test: Sandboxed transactions (Ecto.Sandbox)
-- Prod: Same DB (internal tooling, no separation needed)
+**Note:** Uses **TWO databases**:
+1. **`singularity`** - Main application (singularity_app) - shared across dev/test/prod
+   - Dev: Direct access
+   - Test: Sandboxed transactions (Ecto.Sandbox)
+   - Prod: Same DB (internal tooling, no separation needed)
+2. **`central_services`** - Central_cloud application - separate, independent database
+   - Used by: Framework Learning Agent, Package Intelligence, Knowledge Cache
+   - Completely separate from singularity_app database
 
 ### Running the Application
 ```bash
@@ -788,25 +792,38 @@ moon run templates_data:embed-all      # Generate embeddings
 moon run templates_data:stats          # Usage statistics
 ```
 
-### Database (Internal Tooling - Simplified)
+### Database (Internal Tooling - Two Separate DBs)
 
-**Single shared database:** `singularity`
+**Two independent databases:**
+
+#### 1. `singularity` - Main Application Database
+Used by: `singularity_app`
 
 - **Dev:** Direct access
 - **Test:** Sandboxed (Ecto.Adapters.SQL.Sandbox)
 - **Prod:** Same DB (internal tooling, no isolation needed)
 
-**Why?**
+**Why single DB for singularity_app?**
 - Internal use only (no multi-tenancy)
 - Learning across environments (dev experiments → test validation)
 - Simpler (one connection, one place for knowledge)
-- Nix-friendly (single PostgreSQL service)
+
+#### 2. `central_services` - Central_Cloud Database
+Used by: `central_cloud` application
+
+- **Independent:** Completely separate from singularity_app
+- **Purpose:** Package Intelligence, Framework Learning, Knowledge Cache
+- **Why separate?**
+  - Different deployment model (can run standalone)
+  - Different data model (external package metadata)
+  - Service isolation
 
 **Setup:**
 ```bash
 nix develop
-./scripts/setup-database.sh  # Creates 'singularity' DB
-mix knowledge.migrate         # Import JSONs
+./scripts/setup-database.sh  # Creates BOTH 'singularity' AND 'central_services' DBs
+cd singularity_app && mix knowledge.migrate  # Import JSONs to singularity DB
+cd ../central_cloud && mix ecto.create && mix ecto.migrate  # Setup central_cloud DB
 ```
 
 ### Priority: Features over Speed/Security

@@ -1,4 +1,10 @@
 [copilot-oauth] Loaded token store from disk
+✅ GitHub token set for GitHub Models
+🔍 Checking base provider methods...
+Available methods: []
+refreshModels available: function
+getModelMetadata available: function
+🔄 Loading GitHub Models catalog...
 [34m🔐[0m Loading AI provider credentials...
 [copilot-oauth] OAuth token already exists, ignoring GITHUB_TOKEN env var
 
@@ -31,23 +37,45 @@
 
 [34m🔄[0m Refreshing model catalog...
 [32m🚀[0m Server ready at [1mhttp://localhost:3000[0m
-[1m🔗 Endpoints:[0m /health  /v1/models  /v1/chat/completions
+[1m🔗 Endpoints:[0m /health  /metrics  /v1/models  /v1/chat/completions
 [1m✨ Refactored:[0m Using AI SDK streaming utilities (~100 lines removed)
-📡 Connected to NATS JetStream
+[34m📡[0m Starting NATS handler for Elixir integration...
+[34m🧠[0m Starting HTDAG LLM worker for self-evolution...
+[32m✓[0m NATS handler started - listening on ai.llm.request
+[NATS] Connected to NATS JetStream
+HTDAG LLM Worker connected to NATS {
+  url: "nats://localhost:4222",
+}
+Subscribed to HTDAG LLM subject {
+  subject: "llm.req.claude-sonnet-4.5",
+}
+Subscribed to HTDAG LLM subject {
+  subject: "llm.req.claude-3-5-sonnet-20241022",
+}
+Subscribed to HTDAG LLM subject {
+  subject: "llm.req.gemini-2.5-pro",
+}
+Subscribed to HTDAG LLM subject {
+  subject: "llm.req.gemini-1.5-flash",
+}
+Subscribed to HTDAG LLM subject {
+  subject: "llm.req.gpt-5-codex",
+}
+Subscribed to HTDAG LLM subject {
+  subject: "llm.req.o3-mini-codex",
+}
+Subscribed to HTDAG LLM subject {
+  subject: "llm.req.auto",
+}
+[32m✓[0m HTDAG LLM worker started - listening on llm.req.*
+[NATS] Connected to NATS
+[NATS] NATS Handler started successfully.
 ✅ Connected to NATS for Elixir bridge
-📂 Loaded model catalog from disk (73 models)
-⚡ Using cached model catalog (fast startup)
+📊 Provider returned 49 models
+✅ GitHub Models catalog loaded: 49 models
+[ModelRegistry] Loaded 8 models from disk cache.
+[ModelRegistry] Saved 61 models to disk cache.
 [34m✨[0m AI SDK Provider Registry updated
    Providers: gemini-code, openai-codex, google-jules, github-copilot, github-models
-   Models: 73 total
-   Copilot: 18 models (3 free, 15 limited)
-🔄 Refreshing model catalog in background...
-🔨 Building model catalog from providers...
-[ModelRegistry] Provider gemini-code: listModels returned 2 models
-[ModelRegistry] Provider claude-code: NO metadata method found
-[ModelRegistry] Provider openai-codex: getModelMetadata returned 3 models
-[ModelRegistry] Provider google-jules: listModels returned 1 models
-[ModelRegistry] Provider github-copilot: getModelMetadata returned 18 models
-[ModelRegistry] Provider github-models: getModelMetadata returned 49 models
-✅ Discovered 73 models from 6 providers
-💾 Saved model catalog to disk (73 models)
+   Models: 61 total
+   Copilot: 5 models (3 free, 2 limited)

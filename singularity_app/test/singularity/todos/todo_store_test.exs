@@ -1,7 +1,7 @@
-defmodule Singularity.Todos.TodoStoreTest do
+defmodule Singularity.Execution.Todos.TodoStoreTest do
   use Singularity.DataCase, async: true
 
-  alias Singularity.Todos.{TodoStore, Todo}
+  alias Singularity.Execution.Todos.{TodoStore, Todo}
 
   describe "create/1" do
     test "creates a todo with valid attributes" do

@@ -16,7 +16,7 @@ defmodule Singularity.Tools.Todos do
 
   @behaviour Singularity.Tools.Behaviour
 
-  alias Singularity.Todos.{TodoStore, TodoSwarmCoordinator}
+  alias Singularity.Execution.Todos.{TodoStore, TodoSwarmCoordinator}
 
   require Logger
 

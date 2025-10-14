@@ -92,26 +92,17 @@ function jsonSchemaToZod(schema: any): z.ZodTypeAny {
  * @returns {Record<string, ReturnType<typeof tool>>} A map of tool names to their AI SDK tool definitions.
  */
 export function convertOpenAIToolsToAISDK(
-  openaiTools: OpenAITool[],
-  executeHandler: (toolName: string, args: any) => Promise<any>
+  openaiTools: OpenAITool[]
 ) {
   const tools: Record<string, ReturnType<typeof tool>> = {};
 
   for (const openaiTool of openaiTools) {
-    const { name, description, parameters } = openaiTool.function;
+    const { name, parameters } = openaiTool.function;
     const zodSchema = jsonSchemaToZod(parameters);
 
     tools[name] = tool({
-      description: description || `Execute the ${name} tool.`,
-      parameters: zodSchema,
-      execute: async (args) => {
-        try {
-          return await executeHandler(name, args);
-        } catch (error) {
-          console.error(`[ToolConverter] Tool execution failed for "${name}":`, error);
-          throw error;
-        }
-      }
+      description: `Execute the ${name} tool.`,
+      inputSchema: zodSchema as any
     });
   }
 

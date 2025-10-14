@@ -22,6 +22,39 @@ NC='\033[0m'
 
 echo -e "${GREEN}🚀 Starting Singularity System...${NC}"
 
+# Check for existing processes and warn
+echo -e "\n${YELLOW}Checking for existing processes...${NC}"
+existing_processes=()
+
+if pgrep -f "nats-server" > /dev/null; then
+    existing_processes+=("NATS Server")
+fi
+
+if pgrep -f "postgres" > /dev/null; then
+    existing_processes+=("PostgreSQL")
+fi
+
+if pgrep -f "elixir.*singularity" > /dev/null || pgrep -f "beam.*singularity" > /dev/null; then
+    existing_processes+=("Elixir Application")
+fi
+
+if pgrep -f "bun.*server" > /dev/null; then
+    existing_processes+=("AI Server")
+fi
+
+if pgrep -f "elixir.*central_cloud" > /dev/null || pgrep -f "beam.*central_cloud" > /dev/null; then
+    existing_processes+=("Central Cloud")
+fi
+
+if [ ${#existing_processes[@]} -gt 0 ]; then
+    echo -e "${YELLOW}⚠️  Found existing processes:${NC}"
+    for process in "${existing_processes[@]}"; do
+        echo "  - $process"
+    done
+    echo -e "${YELLOW}The script will attempt to use existing processes or start new ones as needed.${NC}"
+    echo ""
+fi
+
 # 1. Check and start NATS
 echo -e "\n${YELLOW}[1/4] Checking NATS...${NC}"
 if pgrep -x "nats-server" > /dev/null; then
@@ -39,20 +72,62 @@ else
 fi
 
 # 2. Check PostgreSQL
-echo -e "\n${YELLOW}[2/4] Checking PostgreSQL...${NC}"
-if pg_isready -q; then
+echo -e "\n${YELLOW}[2/5] Checking PostgreSQL...${NC}"
+if pg_isready -h localhost -p 5432 -q; then
     echo "✅ PostgreSQL is running"
 else
     echo -e "${RED}❌ PostgreSQL is not running. Please start it:${NC}"
     echo "  sudo systemctl start postgresql"
     echo "  or: brew services start postgresql"
+    echo "  or: ./scripts/setup-database.sh"
     exit 1
 fi
 
-# 3. Start Elixir Application
-echo -e "\n${YELLOW}[3/4] Starting Elixir Application...${NC}"
-if pgrep -f "beam.*singularity" > /dev/null; then
-    echo "✅ Elixir app already running"
+# 3. Start Central Cloud
+echo -e "\n${YELLOW}[3/5] Starting Central Cloud...${NC}"
+
+# Check for existing Central Cloud processes
+if pgrep -f "elixir.*central_cloud" > /dev/null || pgrep -f "beam.*central_cloud" > /dev/null; then
+    echo "✅ Central Cloud already running"
+else
+    cd central_cloud
+
+    # Install dependencies if needed
+    if [ ! -d "deps" ]; then
+        echo "Installing Central Cloud dependencies..."
+        mix deps.get
+    fi
+
+    # Compile if needed
+    if [ ! -d "_build" ]; then
+        echo "Compiling Central Cloud application..."
+        mix compile
+    fi
+
+    # Start the application
+    echo "Starting Central Cloud application..."
+    MIX_ENV=dev elixir --name central_cloud@127.0.0.1 --cookie singularity-secret -S mix run > ../logs/central_cloud.log 2>&1 &
+    sleep 3
+
+    if pgrep -f "elixir.*central_cloud" > /dev/null; then
+        echo "✅ Central Cloud started"
+    else
+        echo -e "${YELLOW}⚠️  Central Cloud may have failed to start${NC}"
+        echo "Check logs/central_cloud.log for details"
+    fi
+    cd ..
+fi
+
+# 4. Start Elixir Application
+echo -e "\n${YELLOW}[4/5] Starting Elixir Application...${NC}"
+
+# Check for existing Elixir processes
+if pgrep -f "elixir.*singularity" > /dev/null || pgrep -f "beam.*singularity" > /dev/null; then
+    echo -e "${RED}❌ Elixir app is already running!${NC}"
+    echo -e "${YELLOW}Please stop existing processes first:${NC}"
+    echo "  ./stop-all.sh"
+    echo "  or: pkill -f 'elixir.*singularity'"
+    exit 1
 else
     cd singularity_app
 
@@ -70,11 +145,11 @@ else
 
     # Start the application
     echo "Starting Elixir application..."
-    MIX_ENV=dev elixir --name singularity@127.0.0.1 --cookie singularity-secret -S mix phx.server > ../logs/elixir.log 2>&1 &
+    MIX_ENV=dev elixir --name singularity@127.0.0.1 --cookie singularity-secret -S mix run > ../logs/elixir.log 2>&1 &
     sleep 5
 
     if pgrep -f "beam.*singularity" > /dev/null; then
-        echo "✅ Elixir app started on port 4000"
+        echo "✅ Elixir app started"
     else
         echo -e "${YELLOW}⚠️  Elixir app may have failed to start${NC}"
         echo "Check logs/elixir.log for details"
@@ -82,10 +157,20 @@ else
     cd ..
 fi
 
-# 4. Start AI Server (TypeScript)
-echo -e "\n${YELLOW}[4/4] Starting AI Server...${NC}"
-if lsof -i:3000 > /dev/null 2>&1; then
-    echo "✅ AI Server already running on port 3000"
+# 5. Start AI Server (TypeScript)
+echo -e "\n${YELLOW}[5/5] Starting AI Server...${NC}"
+
+# Check for existing AI Server processes
+if pgrep -f "bun.*server" > /dev/null || lsof -i:3000 > /dev/null 2>&1; then
+    if lsof -i:3000 > /dev/null 2>&1; then
+        echo "✅ AI Server already running on port 3000"
+    else
+        echo -e "${RED}❌ AI Server process found but not listening on port 3000!${NC}"
+        echo -e "${YELLOW}Please stop existing processes first:${NC}"
+        echo "  ./stop-all.sh"
+        echo "  or: pkill -f 'bun.*server'"
+        exit 1
+    fi
 else
     cd ai-server
 
@@ -121,7 +206,9 @@ echo -e "${GREEN}═════════════════════
 # Check each service
 services=(
     "nats-server:4222:NATS"
-    "beam:4000:Elixir App"
+    "postgres:N/A:PostgreSQL"
+    "elixir.*central_cloud:N/A:Central Cloud"
+    "beam.*singularity:N/A:Elixir App"
     "bun:3000:AI Server"
 )
 

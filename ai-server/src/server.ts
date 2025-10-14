@@ -11,25 +11,15 @@
  * @see {@link ./docs/PRODUCTION_READINESS.md} for production readiness details.
  */
 
-import { generateText, streamText, createProviderRegistry } from 'ai';
-import { createGeminiProvider } from './providers/gemini-code.js';
+import { generateText, streamText } from 'ai';
+import { createGeminiProvider } from './providers/gemini-code';
 import { claudeCode } from 'ai-sdk-provider-claude-code';
-import { codex } from 'ai-sdk-provider-codex';
-import { createServer } from 'http';
-import { randomBytes, createHash } from 'crypto';
-import escapeHtml from 'escape-html';
-import { GoogleAuth } from 'google-auth-library';
+import { codex } from './providers/codex';
+
 import { loadCredentialsFromEnv, checkCredentialAvailability, printCredentialStatus } from './load-credentials';
 import { copilot } from './providers/copilot';
 import { githubModels } from './providers/github-models';
-import { startCopilotOAuth, completeCopilotOAuth, hasCopilotTokens, getCopilotTokenStore } from './github-copilot-oauth';
-import { writeFileSync, mkdirSync } from 'fs';
-import { homedir } from 'os';
-import { join, dirname } from 'path';
-import { z } from 'zod';
-import { jsonrepair } from 'jsonrepair';
 import { ElixirBridge } from './elixir-bridge';
-import { analyzeTaskComplexity, selectCodexModelForCoding } from './task-complexity';
 import { jules, createJulesModel } from './providers/google-ai-jules';
 import { buildModelCatalog, type ProviderWithModels, type ProviderWithMetadata } from './model-registry';
 import { logger } from './logger.js';
@@ -49,26 +39,133 @@ printCredentialStatus(allStats);
 
 /** The port for the main server. */
 const PORT = parsePort(process.env.PORT, 3000, 'PORT');
-/** The port for the OAuth callback server. */
-const OAUTH_CALLBACK_PORT = parsePort(process.env.OAUTH_CALLBACK_PORT, 1455, 'OAUTH_CALLBACK_PORT');
-/** Timeout for OAuth operations in milliseconds. */
-const OAUTH_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-/** Buffer time for token expiry in milliseconds. */
-const TOKEN_EXPIRY_BUFFER_MS = 55 * 60 * 1000; // 55 minutes
 
 /** A simple, non-secure auth token for internal API access. */
 const AUTH_TOKEN = 'singularity-local';
 
-// Initialize AI SDK Provider Registry
+// Initialize AI SDK Providers
 const geminiCode = createGeminiProvider({ authType: 'oauth-personal' });
-const registry = createProviderRegistry({
+
+// Provider mapping for easy access
+const providers = {
   'gemini-code': geminiCode,
   'claude-code': claudeCode,
   'openai-codex': codex,
-  'google-jules': jules,
   'github-copilot': copilot,
   'github-models': githubModels,
-});
+};
+
+// Helper function to get language model from provider
+function getLanguageModel(providerName: string, modelId: string) {
+  const provider = providers[providerName as keyof typeof providers];
+  if (!provider) {
+    throw new Error(`Provider ${providerName} not found`);
+  }
+
+  // Handle different provider types
+  if (typeof provider.languageModel === 'function') {
+    return provider.languageModel(modelId);
+  }
+
+  throw new Error(`Provider ${providerName} does not support languageModel`);
+}
+
+// Helper function to handle Jules streaming
+async function handleJulesStreaming(
+  request: ChatRequest,
+  modelEntry: ModelCatalogEntry,
+): Promise<Response> {
+  const encoder = new TextEncoder();
+  const id = `chatcmpl-${crypto.randomUUID()}`;
+  const created = Math.floor(Date.now() / 1000);
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        // Create Jules model and start streaming
+        const model = createJulesModel();
+        const streamResult = await model.doStream({
+          messages: request.messages,
+          temperature: request.temperature ?? 0.7,
+        });
+
+        // Send role chunk first
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          id,
+          object: 'chat.completion.chunk',
+          created,
+          model: modelEntry.id,
+          choices: [{
+            index: 0,
+            delta: { role: 'assistant' },
+            finish_reason: null,
+          }],
+        })}\n\n`));
+
+        // Stream the content
+        for await (const chunk of streamResult.stream()) {
+          if (chunk.type === 'text') {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              id,
+              object: 'chat.completion.chunk',
+              created,
+              model: modelEntry.id,
+              choices: [{
+                index: 0,
+                delta: { content: chunk.text },
+                finish_reason: null,
+              }],
+            })}\n\n`));
+          }
+        }
+
+        // Send final chunk
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          id,
+          object: 'chat.completion.chunk',
+          created,
+          model: modelEntry.id,
+          choices: [{
+            index: 0,
+            delta: {},
+            finish_reason: 'stop',
+          }],
+        })}\n\n`));
+
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      } catch (error) {
+        logger.error('Jules streaming error:', error);
+        controller.error(error);
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
+}
+
+// Helper function to handle Jules generation
+async function handleJulesGeneration(request: ChatRequest): Promise<any> {
+  const model = createJulesModel();
+  const result = await model.doGenerate({
+    messages: request.messages,
+    temperature: request.temperature ?? 0.7,
+  });
+
+  return {
+    text: result.text,
+    usage: result.usage,
+    finishReason: result.finishReason,
+    toolCalls: [],
+    metadata: result.metadata,
+  };
+}
 
 // Build model catalog (dynamic with hourly refresh)
 let MODELS: Awaited<ReturnType<typeof buildModelCatalog>> = [];
@@ -443,20 +540,24 @@ async function streamChatCompletion(
   };
 
   const provider = providerMap[request.provider] || request.provider;
-  const modelId = `${provider}:${request.model}`;
-  const model = registry.languageModel(modelId);
+
+  // Handle Jules separately since it doesn't use AI SDK
+  if (provider === 'google-jules') {
+    return await handleJulesStreaming(request, modelEntry);
+  }
+
+  const model = getLanguageModel(provider, request.model || '');
 
   // Convert tools
   const tools = request.tools ? convertOpenAIToolsToAISDK(request.tools) : undefined;
 
   // Start streaming
   const result = streamText({
-    model,
+    model: model as any,
     messages: request.messages,
     temperature: request.temperature ?? 0.7,
     maxRetries: 2,
     tools,
-    maxSteps: tools ? 1 : undefined,
   });
 
   // Convert to OpenAI SSE format
@@ -510,8 +611,8 @@ async function streamChatCompletion(
             finish_reason: 'stop',
           }],
           usage: {
-            prompt_tokens: usage.inputTokens || usage.promptTokens || 0,
-            completion_tokens: usage.outputTokens || usage.completionTokens || 0,
+            prompt_tokens: usage.totalTokens || 0,
+            completion_tokens: 0,
             total_tokens: usage.totalTokens,
           },
         })}\n\n`));
@@ -571,18 +672,22 @@ async function generateChatCompletion(
   };
 
   const provider = providerMap[request.provider] || request.provider;
-  const modelId = `${provider}:${request.model}`;
-  const model = registry.languageModel(modelId);
+
+  // Handle Jules separately since it doesn't use AI SDK
+  if (provider === 'google-jules') {
+    return await handleJulesGeneration(request);
+  }
+
+  const model = getLanguageModel(provider, request.model || '');
 
   const tools = request.tools ? convertOpenAIToolsToAISDK(request.tools) : undefined;
 
   const result = await generateText({
-    model,
+    model: model as any,
     messages: request.messages,
     temperature: request.temperature ?? 0.7,
     maxRetries: 2,
     tools,
-    maxSteps: tools ? 1 : undefined,
   });
 
   const toolCalls = result.toolCalls?.map((tc: any) => ({
@@ -598,7 +703,7 @@ async function generateChatCompletion(
     text: result.text,
     finishReason: result.finishReason,
     usage: normalizeUsage(request.messages, result.text, result.usage),
-    model: request.model || modelId,
+    model: request.model || 'unknown',
     provider: request.provider,
     toolCalls,
   };
@@ -816,8 +921,8 @@ function buildOpenAIChatResponse(
       finish_reason: result.finishReason ?? 'stop',
     }],
     usage: {
-      prompt_tokens: result.usage.inputTokens || result.usage.promptTokens || 0,
-      completion_tokens: result.usage.outputTokens || 0,
+      prompt_tokens: result.usage.totalTokens || 0,
+      completion_tokens: 0,
       total_tokens: result.usage.totalTokens,
     },
   };
@@ -899,7 +1004,9 @@ Bun.serve({
           const response = await streamChatCompletion(chatRequest, modelEntry);
           const duration = Date.now() - startTime;
           metrics.recordRequest('chat_completions_stream', duration);
-          metrics.recordModelUsage(chatRequest.provider, chatRequest.model);
+          if (chatRequest.provider && chatRequest.model) {
+            metrics.recordModelUsage(chatRequest.provider, chatRequest.model);
+          }
           logger.info(`Chat completion (streaming) completed in ${duration}ms`, {
             provider: chatRequest.provider,
             model: chatRequest.model
@@ -914,7 +1021,9 @@ Bun.serve({
         
         // Record metrics
         metrics.recordRequest('chat_completions', duration);
-        metrics.recordModelUsage(chatRequest.provider, chatRequest.model, result.usage?.totalTokens);
+        if (chatRequest.provider && chatRequest.model) {
+          metrics.recordModelUsage(chatRequest.provider, chatRequest.model, result.usage?.totalTokens);
+        }
         logger.info(`Chat completion completed in ${duration}ms`, {
           provider: chatRequest.provider,
           model: chatRequest.model,

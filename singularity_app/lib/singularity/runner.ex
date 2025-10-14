@@ -690,7 +690,7 @@ defmodule Singularity.Runner do
 
   defp connect_to_nats do
     try do
-      # Use Singularity.NatsClient instead of direct Gnat connection
+      # Use Singularity.NATS.Client instead of direct Gnat connection
       {:ok, nil}  # NATS connection handled by application startup
     rescue
       error ->
@@ -702,7 +702,7 @@ defmodule Singularity.Runner do
     try do
       subject = "singularity.runner.#{event_type}"
       message = Jason.encode!(payload)
-      Singularity.NatsClient.publish(subject, message)
+      Singularity.NATS.Client.publish(subject, message)
       :ok
     rescue
       error ->
@@ -810,7 +810,7 @@ defmodule Singularity.Runner do
   # Analysis Stage Functions - Delegate to Existing Systems
   defp run_codebase_discovery(path) do
     # Delegate to ArchitectureEngine for comprehensive analysis
-    case Singularity.ArchitectureEngine.analyze_codebase(path) do
+    case Singularity.Engines.ArchitectureEngine.analyze_codebase(path) do
       {:ok, analysis} -> 
         {:ok, %{
           total_files: analysis.summary.total_files || 0,
@@ -838,7 +838,7 @@ defmodule Singularity.Runner do
 
   defp run_structural_analysis(discovery) do
     # Delegate to existing architecture analysis
-    case Singularity.ArchitectureEngine.analyze_architecture_patterns(discovery.path) do
+    case Singularity.Engines.ArchitectureEngine.analyze_architecture_patterns(discovery.path) do
       {:ok, architecture} ->
         {:ok, %{
           complexity_score: architecture.complexity_score || calculate_complexity_score(discovery),
@@ -1033,7 +1033,7 @@ defmodule Singularity.Runner do
 
   # Check for MVC architecture pattern
   defp has_mvc_structure(discovery) do
-    case Singularity.ArchitectureEngine.analyze_architecture_patterns(discovery.path) do
+    case Singularity.Engines.ArchitectureEngine.analyze_architecture_patterns(discovery.path) do
       {:ok, architecture} ->
         # Check if MVC pattern is detected in architecture patterns
         architecture.patterns && "mvc" in architecture.patterns

@@ -7,7 +7,6 @@
 
 import { jules } from '../providers/google-ai-jules';
 import * as fs from 'fs/promises';
-import * as path from 'path';
 
 /**
  * @interface ComplexTodo

@@ -2,7 +2,7 @@
 # SAFe 6.0 Essential Portfolio Backlog
 
 alias Singularity.Repo
-alias Singularity.Planning.Schemas.{StrategicTheme, Epic, Capability, Feature, CapabilityDependency}
+alias Singularity.Execution.Planning.Schemas.{StrategicTheme, Epic, Capability, Feature, CapabilityDependency}
 
 # Clear existing data
 Repo.delete_all(Feature)

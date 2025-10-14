@@ -10,12 +10,11 @@
 
 import { describe, test, expect, beforeAll, afterAll, mock } from 'bun:test';
 import { connect, NatsConnection } from 'nats';
-import { generateText } from 'ai';
 import { NATSHandler } from '../nats-handler';
 
 // Mock AI SDK for testing
 mock.module('ai', () => ({
-  generateText: async ({ model, messages, maxTokens }: any) => ({
+  generateText: async ({ model, messages }: any) => ({
     text: `Mock response for ${model}: ${messages[0].content}`,
     usage: {
       promptTokens: 10,
@@ -24,7 +23,7 @@ mock.module('ai', () => ({
     },
     finishReason: 'stop'
   }),
-  streamText: async ({ model, messages }: any) => ({
+  streamText: async ({ model }: any) => ({
     textStream: async function* () {
       yield `Mock stream for ${model}`;
     }
@@ -207,7 +206,7 @@ describe('NATS Handler - LLM Request Processing', () => {
 
     const error = await errorPromise;
 
-    expect(error.error).toContain('validation' || 'required' || 'missing');
+    expect(['validation', 'required', 'missing'].some(keyword => error.error.includes(keyword))).toBe(true);
     expect(error.error_code).toBe('VALIDATION_ERROR');
 
     errorSub.unsubscribe();

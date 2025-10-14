@@ -34,6 +34,9 @@ defmodule Singularity.Application do
       Singularity.Repo,
       Singularity.Telemetry,
 
+      # HTTP endpoint for dashboard and health checks
+      {Bandit, plug: Singularity.Web.Endpoint, port: 4000},
+
       # Layer 2: Infrastructure - Core services required by application layer
       # Moved to ApplicationSupervisor to avoid duplicate startup
       # Singularity.Infrastructure.Supervisor,
@@ -46,11 +49,11 @@ defmodule Singularity.Application do
       # Manages: TemplateService, TemplatePerformanceTracker, CodeStore
       Singularity.Knowledge.Supervisor,
       # Manages: HTDAGAutoBootstrap, SafeWorkPlanner, WorkPlanAPI
-      Singularity.Planning.Supervisor,
+      Singularity.Execution.Planning.Supervisor,
       # Manages: SPARC.Orchestrator, TemplateSparcOrchestrator
-      Singularity.SPARC.Supervisor,
+      Singularity.Execution.SPARC.Supervisor,
       # Manages: TodoSwarmCoordinator
-      Singularity.Todos.Supervisor,
+      Singularity.Execution.Todos.Supervisor,
 
       # Layer 4: Agents & Execution - Dynamic agent management and task execution
       # Manages: RuntimeBootstrapper, AgentSupervisor (DynamicSupervisor)
@@ -59,11 +62,10 @@ defmodule Singularity.Application do
       Singularity.ApplicationSupervisor,
 
       # Layer 5: Singletons - Standalone services that don't fit in other categories
-      Singularity.Autonomy.RuleEngine,
+      Singularity.Execution.Autonomy.RuleEngine,
 
       # Layer 6: Existing Domain Supervisors - Domain-specific supervision trees
-      Singularity.ArchitectureEngine.MetaRegistry.Supervisor,
-      Singularity.Git.Supervisor,
+      # Git.Supervisor moved to ApplicationSupervisor to avoid duplication
 
       # Layer 7: Startup Tasks - One-time tasks that run and exit
       Singularity.Engine.NifStatus

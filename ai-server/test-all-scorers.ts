@@ -7,7 +7,7 @@
 import { generateText } from 'ai';
 import { createGeminiProvider } from './src/providers/gemini-code.js';
 import { claudeCode } from 'ai-sdk-provider-claude-code';
-import { codex } from 'ai-sdk-provider-codex';
+import { codex } from './src/providers/codex.js';
 import { copilot } from './src/providers/copilot.js';
 import { cursor } from './src/providers/cursor.js';
 

@@ -13,7 +13,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
   import ExUnit.CaptureLog
 
   alias Singularity.Agents.CostOptimizedAgent
-  alias Singularity.Planning.Task
+  alias Singularity.Execution.Planning.Task
 
   @moduletag :agent_integration
 

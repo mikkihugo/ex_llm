@@ -50,6 +50,7 @@
           jq
           bat
           htop
+          tree
           watchexec
           entr
           just
@@ -72,7 +73,7 @@
           clippy
           rust-analyzer       # LSP server for Rust IDE support
           cargo-watch         # File watcher for cargo commands (used in justfile)
-          
+
           # Note: Additional cargo tools (cargo-nextest, cargo-audit, etc.) can be installed
           # on-demand via `cargo install` or added here if needed for CI/CD.
           # They are not included by default to speed up initial setup.
@@ -80,6 +81,7 @@
           # Tree-sitter parsing tools
           tree-sitter-grammars.tree-sitter-elixir
           tree-sitter-grammars.tree-sitter-rust
+          tree-sitter-grammars.tree-sitter-gleam
         ];
 
         # CUDA packages (unfree, only for local dev)
@@ -492,9 +494,38 @@ EOF
             export NATS_URL="nats://localhost:4222"
             if ! pgrep -x "nats-server" > /dev/null; then
               echo "📡 Starting NATS with JetStream..."
-              nats-server -js -sd "$PWD/.nats" -p 4222 > /dev/null 2>&1 &
+              nats-server -js -sd "$PWD/.nats" -p 4222 > "$PWD/.nats/nats-server.log" 2>&1 &
               sleep 1
-              echo "   NATS running on nats://localhost:4222"
+              echo "   NATS running on nats://localhost:4222 (logs: .nats/nats-server.log)"
+            else
+              echo "📡 NATS already running on nats://localhost:4222"
+            fi
+
+            # Auto-start Singularity Phoenix server
+            if [ -d "singularity_app" ] && [ ! -f "$PWD/.singularity-server.pid" ]; then
+              echo "🚀 Starting Singularity Phoenix server..."
+              (
+                cd singularity_app
+                # Install deps if needed
+                if [ ! -d "deps" ]; then
+                  echo "   Installing dependencies..."
+                  mix deps.get > /dev/null 2>&1
+                fi
+                # Start server in background
+                mix phx.server > "$PWD/../.singularity-server.log" 2>&1 &
+                SERVER_PID=$!
+                echo $SERVER_PID > "$PWD/../.singularity-server.pid"
+                echo "   Phoenix server starting on http://localhost:4000 (logs: .singularity-server.log)"
+                echo "   PID: $SERVER_PID (stop with: kill \$(cat .singularity-server.pid))"
+              ) &
+            elif [ -f "$PWD/.singularity-server.pid" ]; then
+              SERVER_PID=$(cat "$PWD/.singularity-server.pid")
+              if kill -0 "$SERVER_PID" 2>/dev/null; then
+                echo "🚀 Singularity Phoenix server already running (PID: $SERVER_PID)"
+              else
+                rm "$PWD/.singularity-server.pid"
+                echo "   Previous server process died, restart shell to launch again"
+              fi
             fi
 
             if ! command -v claude >/dev/null 2>&1; then

@@ -71,7 +71,7 @@ defmodule Singularity.Bootstrap.StageManager do
 
   ## Integration Points
 
-  - `Singularity.Planning.HTDAGAutoBootstrap` - Respects stage boundaries
+  - `Singularity.Execution.Planning.HTDAGAutoBootstrap` - Respects stage boundaries
   - `Singularity.Agent` - Scope limited by current stage
   - `Singularity.CodeStore` - Enforces codebase type restrictions
   """

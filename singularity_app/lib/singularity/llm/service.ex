@@ -169,12 +169,12 @@ defmodule Singularity.LLM.Service do
 
   ```yaml
   calls_out:
-    - module: Singularity.NatsClient
+    - module: Singularity.NATS.Client
       function: request/3
       purpose: NATS communication to AI server
       critical: true
 
-    - module: Singularity.PromptEngine
+    - module: Singularity.Engines.PromptEngine
       function: optimize_prompt/2
       purpose: Prompt optimization before LLM call
       critical: false
@@ -199,11 +199,11 @@ defmodule Singularity.LLM.Service do
       purpose: Agent AI operations
       frequency: high
 
-    - module: Singularity.ArchitectureEngine
+    - module: Singularity.Engines.ArchitectureEngine
       purpose: Architecture analysis and design
       frequency: high
 
-    - module: Singularity.SPARC.Orchestrator
+    - module: Singularity.Execution.SPARC.Orchestrator
       purpose: SPARC workflow execution
       frequency: high
 
@@ -216,9 +216,9 @@ defmodule Singularity.LLM.Service do
       frequency: medium
 
   depends_on:
-    - Singularity.NatsClient (MUST be started and connected)
+    - Singularity.NATS.Client (MUST be started and connected)
     - AI Server (TypeScript) (MUST be running on NATS)
-    - Singularity.PromptEngine (optional - graceful degradation)
+    - Singularity.Engines.PromptEngine (optional - graceful degradation)
     - Singularity.LuaRunner (optional - only for Lua scripts)
 
   supervision:
@@ -355,13 +355,13 @@ defmodule Singularity.LLM.Service do
 
   ## Relationships
 
-  - **Calls:** Singularity.NatsClient.request/3 - NATS communication
-  - **Calls:** Singularity.PromptEngine.optimize_prompt/2 - Prompt optimization
+  - **Calls:** Singularity.NATS.Client.request/3 - NATS communication
+  - **Calls:** Singularity.Engines.PromptEngine.optimize_prompt/2 - Prompt optimization
   - **Calls:** Logger.info/2, Logger.error/2 - Structured logging
   - **Calls:** :telemetry.execute/2 - Metrics collection
-  - **Called by:** Singularity.Agent, Singularity.ArchitectureEngine - AI operations
-  - **Depends on:** Singularity.NatsClient - Message transport
-  - **Depends on:** Singularity.PromptEngine - Prompt optimization
+  - **Called by:** Singularity.Agent, Singularity.Engines.ArchitectureEngine - AI operations
+  - **Depends on:** Singularity.NATS.Client - Message transport
+  - **Depends on:** Singularity.Engines.PromptEngine - Prompt optimization
   - **Used by:** All AI-powered features in the system
   - **Integrates with:** AI Server (TypeScript) - LLM provider orchestration
   - **Integrates with:** NATS - Message queuing and routing
@@ -388,8 +388,8 @@ defmodule Singularity.LLM.Service do
   """
 
   require Logger
-  alias Singularity.NatsClient
-  alias Singularity.PromptEngine
+  alias Singularity.NATS.Client
+  alias Singularity.Engines.PromptEngine
   alias Singularity.LuaRunner
 
   @capability_aliases %{
@@ -804,7 +804,7 @@ defmodule Singularity.LLM.Service do
     |> maybe_put_capabilities(capabilities)
   end
 
-  # @calls: Singularity.NatsClient.request/3 - NATS communication
+  # @calls: Singularity.NATS.Client.request/3 - NATS communication
   # @calls: Jason.encode!/1 - Request serialization
   # @calls: Jason.decode/1 - Response deserialization
   # @error_flow: :nats_error -> NATS communication failed

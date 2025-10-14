@@ -127,7 +127,7 @@ Health and metrics endpoints:
 
 Autonomous coordination:
 - Every agent owns a background loop that calls
-  `Singularity.Autonomy.Decider.decide/1` each tick (default 5 s). When the
+  `Singularity.Execution.Autonomy.Decider.decide/1` each tick (default 5 s). When the
   observed score drops or stagnation exceeds the configured threshold, the
   agent asks the planner to synthesise a new Elixir module and hands it to the
   hot-reload manager.

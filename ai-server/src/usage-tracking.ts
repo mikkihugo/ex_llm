@@ -90,7 +90,7 @@ export interface UsageTracker {
  * @todo Implement the PostgreSQL queries for all methods.
  */
 export class PostgresUsageTracker implements UsageTracker {
-  constructor(private connectionString: string) {}
+  constructor() {}
 
   async recordUsage(event: UsageEvent): Promise<void> {
     // TODO: Implement PostgreSQL INSERT statement.
@@ -172,7 +172,7 @@ export class InMemoryUsageTracker implements UsageTracker {
         byModel.get(key)!.push(event);
       }
     }
-    const stats = await Promise.all(Array.from(byModel.entries()).map(async ([key, events]) => {
+    const stats = await Promise.all(Array.from(byModel.entries()).map(async ([key]) => {
       const [provider, modelId] = key.split(':');
       return this.getStats(provider, modelId, startDate, endDate);
     }));
@@ -220,7 +220,7 @@ let globalTracker: UsageTracker | null = null;
  * @returns {UsageTracker} The initialized usage tracker instance.
  */
 export function initializeUsageTracker(connectionString?: string): UsageTracker {
-  globalTracker = connectionString ? new PostgresUsageTracker(connectionString) : new InMemoryUsageTracker();
+  globalTracker = connectionString ? new PostgresUsageTracker() : new InMemoryUsageTracker();
   return globalTracker;
 }
 
@@ -266,12 +266,11 @@ export async function trackModelUsage(
     ...options,
     provider: modelInfo.provider,
     modelId: modelInfo.id,
-    // @ts-ignore
-    modelVersion: modelInfo.version,
+    complexity: options.complexity || 'medium',
     totalTokens: options.promptTokens + options.completionTokens,
     tokensPerSecond: options.timeToFirstToken ? options.completionTokens / (options.durationMs / 1000) : undefined,
     costTier: modelInfo.cost,
-    estimatedCost: calculateCost(modelInfo, options.promptTokens, options.completionTokens),
+    estimatedCost: calculateCost(modelInfo),
     hadTools: options.hadTools ?? false,
     hadVision: options.hadVision ?? false,
     hadReasoning: options.hadReasoning ?? false,
@@ -291,9 +290,7 @@ export async function trackModelUsage(
  * @returns {number | undefined} The estimated cost, or undefined if pricing data is unavailable.
  */
 function calculateCost(
-  model: ModelInfo,
-  promptTokens: number,
-  completionTokens: number
+  model: ModelInfo
 ): number | undefined {
   if (model.cost === 'free') {
     return 0;

@@ -62,7 +62,10 @@ defmodule Singularity.MixProject do
 
   defp deps do
     [
-      # Minimal HTTP for health/metrics only
+      # Web interface (Phoenix LiveDashboard)
+      {:phoenix, "~> 1.7"},
+      {:phoenix_live_view, "~> 0.20"},
+      {:phoenix_html, "~> 4.0"},
       {:bandit, "~> 1.5"},
       {:plug, "~> 1.15"},
       {:finch, "~> 0.17"},
@@ -100,8 +103,9 @@ defmodule Singularity.MixProject do
       {:nimble_options, "~> 1.1"},
       # Templating engines
       {:solid, "~> 0.14"},
-      # Lua on BEAM for dynamic prompt scripts
-      {:luerl, "~> 1.2"},
+      # Lua on BEAM for dynamic prompt scripts (ergonomic luerl wrapper)
+      # When luerl 2.0 releases, this will be merged into luerl directly
+      {:lua, "~> 0.3.0"},
 
       # T5 Training & LLM Integration
       {:bumblebee, "~> 0.5"},
@@ -119,6 +123,7 @@ defmodule Singularity.MixProject do
       {:telemetry, "~> 1.2"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.1"},
+      {:phoenix_live_dashboard, "~> 0.8"},
 
       # SAFe Coordination
       # Job scheduler for PI Planning, System Demos

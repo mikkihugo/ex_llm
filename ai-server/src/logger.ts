@@ -7,7 +7,7 @@
  */
 
 import { writeFileSync, appendFileSync, existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
+import { join } from 'path';
 
 const LOG_DIR = join(process.cwd(), '..', 'logs');
 const LOG_FILE = join(LOG_DIR, 'ai-server.log');

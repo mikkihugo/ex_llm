@@ -9,8 +9,8 @@ defmodule Singularity.Repo.Migrations.CreateAutonomyTables do
   - rule_evolution_proposals: Consensus-based rule improvement proposals
 
   Related schemas:
-  - Singularity.Autonomy.RuleExecution
-  - Singularity.Autonomy.RuleEvolutionProposal
+  - Singularity.Execution.Autonomy.RuleExecution
+  - Singularity.Execution.Autonomy.RuleEvolutionProposal
   """
 
   def up do

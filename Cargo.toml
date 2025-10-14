@@ -4,7 +4,6 @@ members = [
     "rust/code_engine",
     "rust/quality_engine",
     "rust/parser_engine/core",
-    "rust/parser_engine/polyglot",
     "rust/parser_engine/formats/dependency",
     "rust/parser_engine/formats/template_definitions",
     "rust/parser_engine/languages/rust",

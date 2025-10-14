@@ -53,8 +53,8 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     # Geographic data (if needed for package sources)
     execute "CREATE EXTENSION IF NOT EXISTS postgis"
     
-    # Job scheduling (replaces cron)
-    execute "CREATE EXTENSION IF NOT EXISTS pg_cron"
+    # Job scheduling (replaces cron) - disabled for now
+    # execute "CREATE EXTENSION IF NOT EXISTS pg_cron"
     
     # Testing framework
     execute "CREATE EXTENSION IF NOT EXISTS pgtap"
@@ -165,6 +165,10 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
       add :test_coverage, :float
       add :created_at, :utc_datetime, default: fragment("NOW()")
     end
+    
+    # Drop existing primary key and add composite primary key for TimescaleDB
+    execute "ALTER TABLE analysis_results DROP CONSTRAINT analysis_results_pkey"
+    execute "ALTER TABLE analysis_results ADD PRIMARY KEY (id, created_at)"
 
     # Convert to timescaledb hypertable for time-series analytics
     execute "SELECT create_hypertable('analysis_results', 'created_at')"
@@ -241,6 +245,10 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
       add :metadata, :hstore, default: ""
       add :created_at, :utc_datetime, default: fragment("NOW()")
     end
+    
+    # Drop existing primary key and add composite primary key for TimescaleDB
+    execute "ALTER TABLE usage_analytics DROP CONSTRAINT usage_analytics_pkey"
+    execute "ALTER TABLE usage_analytics ADD PRIMARY KEY (id, created_at)"
 
     # Convert to timescaledb hypertable
     execute "SELECT create_hypertable('usage_analytics', 'created_at')"
@@ -259,6 +267,10 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
       add :session_id, :string
       add :created_at, :utc_datetime, default: fragment("NOW()")
     end
+    
+    # Drop existing primary key and add composite primary key for TimescaleDB
+    execute "ALTER TABLE search_queries DROP CONSTRAINT search_queries_pkey"
+    execute "ALTER TABLE search_queries ADD PRIMARY KEY (id, created_at)"
 
     # Convert to timescaledb hypertable
     execute "SELECT create_hypertable('search_queries', 'created_at')"
@@ -278,10 +290,8 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     create index(:packages, [:license_info], using: :gin)
     
     # Vector similarity indexes
-    create index(:packages, [:semantic_embedding], using: :ivfflat, 
-                 with: "vector_cosine_ops", options: "lists = 100")
-    create index(:packages, [:code_embedding], using: :ivfflat, 
-                 with: "vector_cosine_ops", options: "lists = 100")
+    execute "CREATE INDEX IF NOT EXISTS packages_semantic_embedding_idx ON packages USING ivfflat (semantic_embedding vector_cosine_ops) WITH (lists = 100)"
+    execute "CREATE INDEX IF NOT EXISTS packages_code_embedding_idx ON packages USING ivfflat (code_embedding vector_cosine_ops) WITH (lists = 100)"
     
     # Graph relationship indexes (ltree)
     create index(:packages, [:dependency_path], using: :gist)
@@ -293,22 +303,16 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     create index(:code_snippets, [:language])
     create index(:code_snippets, [:is_exported])
     create index(:code_snippets, [:analysis_metadata], using: :gin)
-    create index(:code_snippets, [:semantic_embedding], using: :ivfflat, 
-                 with: "vector_cosine_ops", options: "lists = 100")
-    create index(:code_snippets, [:code_embedding], using: :ivfflat, 
-                 with: "vector_cosine_ops", options: "lists = 100")
+    execute "CREATE INDEX IF NOT EXISTS code_snippets_semantic_embedding_idx ON code_snippets USING ivfflat (semantic_embedding vector_cosine_ops) WITH (lists = 100)"
+    execute "CREATE INDEX IF NOT EXISTS code_snippets_code_embedding_idx ON code_snippets USING ivfflat (code_embedding vector_cosine_ops) WITH (lists = 100)"
     
     # Full-text search indexes
-    create index(:code_snippets, [:code], using: :gin, 
-                 with: "to_tsvector('english', code)")
-    create index(:packages, [:description], using: :gin, 
-                 with: "to_tsvector('english', description)")
+    execute "CREATE INDEX IF NOT EXISTS code_snippets_code_fts_idx ON code_snippets USING gin (to_tsvector('english', code))"
+    execute "CREATE INDEX IF NOT EXISTS packages_description_fts_idx ON packages USING gin (to_tsvector('english', description))"
     
     # Fuzzy text search indexes (pg_trgm)
-    create index(:packages, [:name], using: :gin, 
-                 with: "gin_trgm_ops")
-    create index(:packages, [:description], using: :gin, 
-                 with: "gin_trgm_ops")
+    execute "CREATE INDEX IF NOT EXISTS packages_name_trgm_idx ON packages USING gin (name gin_trgm_ops)"
+    execute "CREATE INDEX IF NOT EXISTS packages_description_trgm_idx ON packages USING gin (description gin_trgm_ops)"
     
     # Security advisory indexes
     create index(:security_advisories, [:package_id])
@@ -322,26 +326,25 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     create index(:analysis_results, [:package_id])
     create index(:analysis_results, [:analysis_type])
     create index(:analysis_results, [:score])
-    create index(:analysis_results, [:created_at DESC])
+    execute "CREATE INDEX IF NOT EXISTS analysis_results_created_at_idx ON analysis_results (created_at DESC)"
     
     # Cache indexes
     create index(:pg_cache, [:expires_at])
-    create index(:pg_cache, [:accessed_at DESC])
+    execute "CREATE INDEX IF NOT EXISTS pg_cache_accessed_at_idx ON pg_cache (accessed_at DESC)"
     create index(:pg_cache, [:cache_metadata], using: :gin)
     
     # Usage analytics indexes (timescaledb)
     create index(:usage_analytics, [:package_id])
     create index(:usage_analytics, [:event_type])
-    create index(:usage_analytics, [:created_at DESC])
+    execute "CREATE INDEX IF NOT EXISTS usage_analytics_created_at_idx ON usage_analytics (created_at DESC)"
     create index(:usage_analytics, [:user_id])
     create index(:usage_analytics, [:metadata], using: :gin)
     
     # Search query indexes (timescaledb)
     create index(:search_queries, [:query_type])
-    create index(:search_queries, [:created_at DESC])
+    execute "CREATE INDEX IF NOT EXISTS search_queries_created_at_idx ON search_queries (created_at DESC)"
     create index(:search_queries, [:user_id])
-    create index(:search_queries, [:query_text], using: :gin, 
-                 with: "to_tsvector('english', query_text)")
+    execute "CREATE INDEX IF NOT EXISTS search_queries_query_text_fts_idx ON search_queries USING gin (to_tsvector('english', query_text))"
     
     # Example and template indexes
     create index(:package_examples, [:package_id])
@@ -513,14 +516,14 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     # SCHEDULED JOBS - REPLACES CRON
     # ============================================================================
     
-    -- Clean up expired cache entries every hour
-    execute "SELECT cron.schedule('cache-cleanup', '0 * * * *', 'SELECT cache_cleanup();')"
+    # Clean up expired cache entries every hour - disabled for now
+    # execute "SELECT cron.schedule('cache-cleanup', '0 * * * *', 'SELECT cache_cleanup();')"
     
-    -- Update package statistics daily
-    execute "SELECT cron.schedule('package-stats', '0 2 * * *', 'SELECT update_package_statistics();')"
+    # Update package statistics daily - disabled for now
+    # execute "SELECT cron.schedule('package-stats', '0 2 * * *', 'SELECT update_package_statistics();')"
     
-    -- Prewarm frequently accessed tables
-    execute "SELECT cron.schedule('prewarm-tables', '0 3 * * *', 'SELECT pg_prewarm(''packages''); SELECT pg_prewarm(''code_snippets'');')"
+    # Prewarm frequently accessed tables - disabled for now
+    # execute "SELECT cron.schedule('prewarm-tables', '0 3 * * *', 'SELECT pg_prewarm(''packages''); SELECT pg_prewarm(''code_snippets'');')"
 
     # ============================================================================
     # MONITORING VIEWS
@@ -578,10 +581,10 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
   end
 
   def down do
-    # Drop scheduled jobs
-    execute "SELECT cron.unschedule('cache-cleanup')"
-    execute "SELECT cron.unschedule('package-stats')"
-    execute "SELECT cron.unschedule('prewarm-tables')"
+    # Drop scheduled jobs - disabled for now
+    # execute "SELECT cron.unschedule('cache-cleanup')"
+    # execute "SELECT cron.unschedule('package-stats')"
+    # execute "SELECT cron.unschedule('prewarm-tables')"
     
     # Drop views
     execute "DROP VIEW IF EXISTS package_analytics"

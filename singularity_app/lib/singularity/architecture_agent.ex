@@ -4,7 +4,7 @@ defmodule Singularity.ArchitectureAgent do
   in `Singularity.ArchitectureEngine.Agent`.
   """
 
-  alias Singularity.ArchitectureEngine.Agent, as: EngineAgent
+  alias Singularity.Engines.ArchitectureEngine.Agent, as: EngineAgent
   require Logger
 
   @deprecated "Use Singularity.ArchitectureEngine.Agent.analyze_codebase/2 instead"
