@@ -1,0 +1,154 @@
+name: Copilot Setup Steps
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    # Configure PostgreSQL service for Phoenix app
+    services:
+      postgres:
+        image: postgres:17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Setup Elixir and Erlang using the community action
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: '28.0'
+          elixir-version: '1.18.0'
+          gleam-version: '1.6.2'
+
+      # Setup Rust toolchain
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      # Setup Bun for TypeScript/ai-server
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Cache Elixir dependencies
+      - name: Cache Elixir deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            singularity_app/deps
+            singularity_app/_build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      # Cache central_cloud dependencies
+      - name: Cache central_cloud deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            central_cloud/deps
+            central_cloud/_build
+          key: >-
+            ${{ runner.os }}-central-cloud-mix-${{
+              hashFiles('central_cloud/mix.lock')
+            }}
+          restore-keys: |
+            ${{ runner.os }}-central-cloud-mix-
+
+      # Cache Rust dependencies
+      - name: Cache Rust deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            rust/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # Cache Bun dependencies
+      - name: Cache Bun deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            ai-server/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('ai-server/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      # Install Elixir dependencies
+      - name: Install Elixir dependencies
+        working-directory: singularity_app
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+
+      # Install central_cloud dependencies
+      - name: Install central_cloud dependencies
+        working-directory: central_cloud
+        run: mix deps.get
+
+      # Install Bun dependencies
+      - name: Install Bun dependencies
+        working-directory: ai-server
+        run: bun install
+
+      # Compile Elixir application
+      - name: Compile Elixir app
+        working-directory: singularity_app
+        run: mix compile
+        env:
+          MIX_ENV: test
+
+      # Compile Rust projects
+      - name: Build Rust projects
+        working-directory: rust
+        run: cargo build --release
+
+      # Setup database
+      - name: Setup database
+        working-directory: singularity_app
+        run: |
+          mix ecto.create
+          mix ecto.migrate
+        env:
+          MIX_ENV: test
+          DATABASE_URL: >-
+            postgres://postgres:postgres@localhost:5432/singularity_test
+
+      # Run Elixir tests
+      - name: Run Elixir tests
+        working-directory: singularity_app
+        run: mix test
+        env:
+          MIX_ENV: test
+          DATABASE_URL: >-
+            postgres://postgres:postgres@localhost:5432/singularity_test
+
+      # Run Rust tests
+      - name: Run Rust tests
+        working-directory: rust
+        run: cargo test --release
