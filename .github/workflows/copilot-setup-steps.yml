@@ -53,8 +53,8 @@ jobs:
         id: cache-elixir
         with:
           path: |
-            _build
-            deps
+            singularity_app/_build
+            singularity_app/deps
             ~/.hex
             ~/.cache/rebar3
           key: ${{ runner.os }}-elixir-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-${{ hashFiles('**/mix.lock') }}
@@ -66,11 +66,13 @@ jobs:
         run: |
           mix local.rebar --force
           mix local.hex --force
+        working-directory: singularity_app
 
       - name: Get and compile Mix deps
         run: |
           mix deps.get --only prod || mix deps.get
           mix deps.compile
+        working-directory: singularity_app
 
       # --------------------------
       # Rust caching
