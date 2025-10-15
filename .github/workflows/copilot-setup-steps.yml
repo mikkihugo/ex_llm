@@ -25,17 +25,22 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v5
+        
       - name: Set up Elixir/Erlang/Gleam/Rebar3
         uses: erlef/setup-beam@v1
         with:
-          otp-version: '28'
-          elixir-version: 'latest'
-          gleam-version: 'latest'
-          rebar3-version: 'latest'
+          otp-version: '>28'
+          elixir-version: '>0'
+          gleam-version: '>0'
+          rebar3-version: '>0'
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
+ 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
