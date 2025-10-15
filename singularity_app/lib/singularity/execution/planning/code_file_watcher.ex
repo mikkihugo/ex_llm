@@ -283,17 +283,8 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   end
 
   defp do_reingest(file_path, _project_root) do
-    # Create a minimal module structure (HTDAGAutoBootstrap expects this format)
-    module = %{
-      file_path: file_path,
-      module_name: extract_module_name(file_path),
-      has_moduledoc: true,
-      issues: []
-    }
-
-    # Use HTDAGAutoBootstrap's persistence logic
-    # NOTE: This function is public in HTDAGAutoBootstrap
-    HTDAGAutoBootstrap.persist_module_to_db(module, "singularity")
+    # Use unified ingestion service - parses ONCE, populates BOTH tables
+    Singularity.Code.UnifiedIngestionService.ingest_file(file_path, codebase_id: "singularity")
   end
 
   # Check if a file is a source file we want to monitor

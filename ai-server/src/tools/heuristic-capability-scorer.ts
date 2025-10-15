@@ -67,9 +67,18 @@ export function scoreModelByHeuristics(model: any): ModelCapabilityScore {
       reasoningText = 'Gemini Flash: Fastest, FREE unlimited';
     }
   } else if (id.includes('gpt')) {
-    if (id.includes('gpt-5') && !id.includes('mini')) {
-      code = 9; reasoning = 8; creativity = 7; speed = 7; confidence = 'medium';
-      reasoningText = 'GPT-5: Expected strong code quality';
+    if (id.includes('gpt-5') && !id.includes('mini') && !id.includes('codex')) {
+      code = 9; reasoning = 9; creativity = 8; speed = 7; confidence = 'high';
+      reasoningText = 'GPT-5: Strong all-around, via ChatGPT Plus/Pro';
+    } else if (id.includes('gpt-5-codex') || id.includes('gpt5-codex')) {
+      code = 10; reasoning = 8; creativity = 6; speed = 8; confidence = 'high';
+      reasoningText = 'GPT-5 Codex: Top-tier code generation via Copilot';
+    } else if (id.includes('gpt-5-mini') || id.includes('gpt5-mini')) {
+      code = 7; reasoning = 7; creativity = 6; speed = 9; confidence = 'high';
+      reasoningText = 'GPT-5 Mini: Fast, FREE via Copilot (264K context)';
+    } else if (id.includes('gpt-4.1') || id.includes('gpt4.1')) {
+      code = 8; reasoning = 8; creativity = 7; speed = 8; confidence = 'high';
+      reasoningText = 'GPT-4.1: Improved GPT-4, FREE via Copilot (128K context)';
     } else if (id.includes('gpt-4o')) {
       code = 8; reasoning = 8; creativity = 7; speed = 8; confidence = 'high';
       reasoningText = 'GPT-4o: Well-balanced, FREE via Copilot';
@@ -81,8 +90,16 @@ export function scoreModelByHeuristics(model: any): ModelCapabilityScore {
       reasoningText = 'Mini/Nano model: Fast, basic capability';
     }
   } else if (id.includes('o1') || id.includes('o3') || id.includes('o4')) {
-    code = 8; reasoning = 9; creativity = 6; speed = 6; confidence = 'medium';
-    reasoningText = 'O-series: Strong reasoning models';
+    if (id.includes('o3-mini') || id.includes('o4-mini')) {
+      code = 7; reasoning = 8; creativity = 6; speed = 7; confidence = 'high';
+      reasoningText = 'O-mini: Efficient reasoning model via Copilot';
+    } else if (id.includes('o3') || id.includes('o4')) {
+      code = 8; reasoning = 10; creativity = 6; speed = 5; confidence = 'high';
+      reasoningText = 'O3/O4: Top-tier reasoning, slower via Copilot';
+    } else {
+      code = 8; reasoning = 9; creativity = 6; speed = 6; confidence = 'medium';
+      reasoningText = 'O-series: Strong reasoning models';
+    }
   } else if (id.includes('grok')) {
     if (id.includes('fast') || id.includes('code-fast')) {
       code = 8; reasoning = 7; creativity = 6; speed = 9; confidence = 'medium';

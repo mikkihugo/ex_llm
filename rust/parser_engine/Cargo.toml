@@ -13,7 +13,7 @@ categories = ["development-tools", "parsing"]
 [lib]
 name = "parser_code"
 path = "src/lib.rs"
-crate-type = ["rlib", "cdylib"]  # Both library and NIF (like code_engine)
+crate-type = ["cdylib"]  # Pure NIF - parser_core provides the rlib
 
 [dependencies]
 # Core parser library (shared types, no NIF)

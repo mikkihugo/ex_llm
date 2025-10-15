@@ -120,20 +120,17 @@ defmodule Mix.Tasks.Code.Ingest do
       total_files = length(files)
       Mix.shell().info("Found #{total_files} files to parse")
 
+      # Use unified ingestion service - parses once, populates both tables
       parse_results =
-        ParserEngine.parse_and_store_tree(
+        Singularity.Code.UnifiedIngestionService.ingest_tree(
           codebase_path,
           codebase_id: codebase_id,
           max_concurrency: 8
         )
 
       case parse_results do
-        {:ok, results} ->
-          success_count = Enum.count(results, fn
-            {:ok, _} -> true
-            _ -> false
-          end)
-          Mix.shell().info("✓ Parsed #{success_count}/#{total_files} files")
+        {:ok, %{success: success_count, failed: failed_count}} ->
+          Mix.shell().info("✓ Parsed #{success_count}/#{total_files} files (#{failed_count} failed)")
 
         {:error, reason} ->
           Mix.shell().error("Failed to parse files: #{inspect(reason)}")

@@ -43,15 +43,20 @@ impl LanguageParser for GoParser {
         let imports = self.get_imports(ast)?;
         let comments = self.get_comments(ast)?;
 
+        // Use RCA for real complexity and accurate LOC metrics
+        let (complexity_score, _sloc, ploc, cloc, blank_lines) =
+            parser_core::calculate_rca_complexity(&ast.content, "go")
+                .unwrap_or((1.0, ast.content.lines().count() as u64, ast.content.lines().count() as u64, comments.len() as u64, 0));
+
         Ok(LanguageMetrics {
-            lines_of_code: ast.content.lines().count() as u64,
-            lines_of_comments: comments.len() as u64,
-            blank_lines: 0, // TODO: implement blank line counting
+            lines_of_code: ploc.saturating_sub(blank_lines + cloc),
+            lines_of_comments: cloc,
+            blank_lines,
             total_lines: ast.content.lines().count() as u64,
             functions: functions.len() as u64,
             classes: 0, // Go doesn't have classes
             imports: imports.len() as u64,
-            complexity_score: 0.0, // TODO: implement complexity calculation
+            complexity_score, // Real cyclomatic complexity from RCA!
         })
     }
 
@@ -85,13 +90,13 @@ impl LanguageParser for GoParser {
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
-                    let end = capture.node.end_position().row + 1;
+                    let _end = capture.node.end_position().row + 1;
                     functions.push(FunctionInfo {
                         name,
                         parameters: Vec::new(),
                         return_type: None,
                         line_start: start as u32,
-                        line_end: end as u32,
+                        line_end: _end as u32,
                         complexity: 1, // TODO: implement complexity calculation
                         decorators: Vec::new(),
                         docstring: None,

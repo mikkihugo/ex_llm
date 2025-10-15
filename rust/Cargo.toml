@@ -5,14 +5,14 @@ members = [
     "embedding_engine",
     "quality_engine",
     "parser_engine/core",
-    "parser_engine",  # NIF wrapper - uses parser_core (no conflicts!)
+    "parser_engine",  # NIF wrapper - Rustler builds this separately
     # "parser_engine/polyglot",  # Excluded: Built separately as NIF by Rustler (causes workspace conflicts)
     # Working standalone parsers (no parser_core dependency)
-    "parser_engine/languages/markdown",
+    # "parser_engine/languages/markdown",  # TODO: Update for tree-sitter 0.25 API (QueryMatches iterator changes)
     "parser_engine/languages/lua",
-    "parser_engine/languages/sql",
-    "parser_engine/languages/dockerfile",
-    "parser_engine/languages/toml",
+    # "parser_engine/languages/sql",       # TODO: Update for tree-sitter 0.25 API (uses tree-sitter-sequel now)
+    # "parser_engine/languages/dockerfile", # TODO: Update for tree-sitter 0.25 API (uses tree-sitter-dockerfile-updated now)
+    # "parser_engine/languages/toml",      # TODO: Update for tree-sitter 0.25 API (uses tree-sitter-toml-ng now)
     # All language parsers enabled
     "parser_engine/languages/rust",
     "parser_engine/languages/elixir",
@@ -131,10 +131,10 @@ tree-sitter-c-sharp = "0.23.1"       # C# language
 tree-sitter-c = "0.24"               # C language
 tree-sitter-cpp = "0.23"             # C++ language
 tree-sitter-md = { git = "https://github.com/mikkihugo/tree-sitter-markdown", branch = "update-tree-sitter-0.25", features = ["parser"] }  # Markdown documentation (fork with tree-sitter 0.25)
-tree-sitter-lua = "0.2.0"            # Lua scripting
-tree-sitter-sql = "0.0.2"            # SQL database queries
-tree-sitter-dockerfile = "0.2.0"     # Docker containerization
-tree-sitter-toml = "0.20.0"          # Configuration files
+tree-sitter-lua = "0.2.0"                    # Lua scripting
+tree-sitter-sequel = "0.3.11"                # SQL database queries (updated for tree-sitter 0.25)
+tree-sitter-dockerfile-updated = "0.2.0"     # Docker containerization (updated for tree-sitter 0.25)
+tree-sitter-toml-ng = "0.7.0"                # Configuration files (updated for tree-sitter 0.25)
 
 # Testing
 tokio-test = "0.4"

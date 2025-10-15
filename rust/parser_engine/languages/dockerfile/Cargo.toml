@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 tree-sitter = { workspace = true }
-tree-sitter-dockerfile = "0.2.0"
+tree-sitter-dockerfile-updated = { workspace = true }  # Updated for tree-sitter 0.25
 parser_core = { path = "../../core" }

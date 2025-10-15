@@ -51,15 +51,20 @@ impl LanguageParser for ElixirParser {
         let imports = self.get_imports(ast)?;
         let comments = self.get_comments(ast)?;
 
+        // Use RCA for real complexity and accurate LOC metrics
+        let (complexity_score, _sloc, ploc, cloc, blank_lines) =
+            parser_core::calculate_rca_complexity(&ast.content, "elixir")
+                .unwrap_or((1.0, ast.content.lines().count() as u64, ast.content.lines().count() as u64, comments.len() as u64, 0));
+
         Ok(LanguageMetrics {
-            lines_of_code: ast.content.lines().count() as u64,
-            lines_of_comments: comments.len() as u64,
-            blank_lines: 0, // TODO: implement blank line counting
+            lines_of_code: ploc.saturating_sub(blank_lines + cloc),
+            lines_of_comments: cloc,
+            blank_lines,
             total_lines: ast.content.lines().count() as u64,
             functions: functions.len() as u64,
             classes: 0, // Elixir doesn't have classes
-            complexity_score: 0.0, // TODO: implement complexity calculation
-            ..LanguageMetrics::default()
+            complexity_score, // Real cyclomatic complexity from RCA!
+            imports: imports.len() as u64
         })
     }
 
@@ -96,13 +101,13 @@ impl LanguageParser for ElixirParser {
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
-                    let end = capture.node.end_position().row + 1;
+                    let _end = capture.node.end_position().row + 1;
                     functions.push(FunctionInfo {
                         name,
                         parameters: Vec::new(),
                         return_type: None,
                         line_start: start as u32,
-                        line_end: end as u32,
+                        line_end: _end as u32,
                         complexity: 1, // TODO: implement complexity calculation
                         decorators: Vec::new(),
                         docstring: None,
@@ -151,7 +156,7 @@ impl LanguageParser for ElixirParser {
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
-                    let end = capture.node.end_position().row + 1;
+                    let _end = capture.node.end_position().row + 1;
                     imports.push(Import {
                         module: path,
                         items: Vec::new(),
@@ -187,7 +192,7 @@ impl LanguageParser for ElixirParser {
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
-                    let end = capture.node.end_position().row + 1;
+                    let _end = capture.node.end_position().row + 1;
                     comments.push(Comment {
                         content: text,
                         line: start as u32,
@@ -437,25 +442,25 @@ impl ElixirParser {
     }
 
     /// Analyze process spawning patterns
-    fn analyze_process_spawning(&self, ast: &AST) -> Result<ProcessSpawningAnalysis, ParseError> {
+    fn analyze_process_spawning(&self, _ast: &AST) -> Result<ProcessSpawningAnalysis, ParseError> {
         // TODO: Implement comprehensive process spawning analysis
         Ok(ProcessSpawningAnalysis::default())
     }
 
     /// Analyze message passing patterns
-    fn analyze_message_passing(&self, ast: &AST) -> Result<MessagePassingAnalysis, ParseError> {
+    fn analyze_message_passing(&self, _ast: &AST) -> Result<MessagePassingAnalysis, ParseError> {
         // TODO: Implement comprehensive message passing analysis
         Ok(MessagePassingAnalysis::default())
     }
 
     /// Analyze concurrency patterns
-    fn analyze_concurrency_patterns(&self, ast: &AST) -> Result<ConcurrencyPatterns, ParseError> {
+    fn analyze_concurrency_patterns(&self, _ast: &AST) -> Result<ConcurrencyPatterns, ParseError> {
         // TODO: Implement comprehensive concurrency pattern analysis
         Ok(ConcurrencyPatterns::default())
     }
 
     /// Analyze fault tolerance patterns
-    fn analyze_fault_tolerance(&self, ast: &AST) -> Result<FaultToleranceAnalysis, ParseError> {
+    fn analyze_fault_tolerance(&self, _ast: &AST) -> Result<FaultToleranceAnalysis, ParseError> {
         // TODO: Implement comprehensive fault tolerance analysis
         Ok(FaultToleranceAnalysis::default())
     }
@@ -463,7 +468,7 @@ impl ElixirParser {
     /// Calculate BEAM-specific metrics
     fn calculate_beam_metrics(
         &self,
-        ast: &AST,
+        _ast: &AST,
         otp_patterns: &OtpPatterns,
         actor_analysis: &ActorAnalysis,
     ) -> Result<BeamMetrics, ParseError> {
@@ -506,7 +511,7 @@ impl ElixirParser {
     }
 
     /// Analyze Phoenix framework usage
-    fn analyze_phoenix_usage(&self, ast: &AST) -> Result<PhoenixUsage, ParseError> {
+    fn analyze_phoenix_usage(&self, _ast: &AST) -> Result<PhoenixUsage, ParseError> {
         // TODO: Implement Phoenix usage analysis
         Ok(PhoenixUsage {
             controllers: Vec::new(),
@@ -518,7 +523,7 @@ impl ElixirParser {
     }
 
     /// Analyze Ecto usage
-    fn analyze_ecto_usage(&self, ast: &AST) -> Result<EctoUsage, ParseError> {
+    fn analyze_ecto_usage(&self, _ast: &AST) -> Result<EctoUsage, ParseError> {
         // TODO: Implement Ecto usage analysis
         Ok(EctoUsage {
             schemas: Vec::new(),
@@ -528,7 +533,7 @@ impl ElixirParser {
     }
 
     /// Analyze LiveView usage
-    fn analyze_liveview_usage(&self, ast: &AST) -> Result<LiveViewUsage, ParseError> {
+    fn analyze_liveview_usage(&self, _ast: &AST) -> Result<LiveViewUsage, ParseError> {
         // TODO: Implement LiveView usage analysis
         Ok(LiveViewUsage {
             live_views: Vec::new(),
@@ -537,7 +542,7 @@ impl ElixirParser {
     }
 
     /// Analyze Nerves usage
-    fn analyze_nerves_usage(&self, ast: &AST) -> Result<NervesUsage, ParseError> {
+    fn analyze_nerves_usage(&self, _ast: &AST) -> Result<NervesUsage, ParseError> {
         // TODO: Implement Nerves usage analysis
         Ok(NervesUsage {
             target: None,
@@ -547,7 +552,7 @@ impl ElixirParser {
     }
 
     /// Analyze Broadway usage
-    fn analyze_broadway_usage(&self, ast: &AST) -> Result<BroadwayUsage, ParseError> {
+    fn analyze_broadway_usage(&self, _ast: &AST) -> Result<BroadwayUsage, ParseError> {
         // TODO: Implement Broadway usage analysis
         Ok(BroadwayUsage {
             producers: Vec::new(),

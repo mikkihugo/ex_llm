@@ -40,7 +40,9 @@ defmodule Singularity.NATS.Supervisor do
       # Order matters! Client must start before Server (Server subscribes to Client)
       Singularity.NatsClient,
       Singularity.NatsServer,
-      Singularity.NatsExecutionRouter
+      Singularity.NatsExecutionRouter,
+      # Database-first tool executor
+      Singularity.Tools.DatabaseToolsExecutor
     ]
 
     Supervisor.init(children, strategy: :rest_for_one)

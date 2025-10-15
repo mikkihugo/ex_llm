@@ -13,7 +13,7 @@ pub struct SqlParser {
 impl SqlParser {
     /// Create a new SQL parser
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let language = tree_sitter_sql::language();
+        let language = tree_sitter_sequel::LANGUAGE.into();
         let mut parser = Parser::new();
         parser.set_language(language)?;
         
@@ -756,15 +756,20 @@ impl LanguageParser for SqlParser {
             statement_count += 1;
         }
         
+        // Use RCA for real complexity and accurate LOC metrics
+        let (complexity_score, _sloc, ploc, cloc, blank_lines_rca) =
+            parser_core::calculate_rca_complexity(content, "sql")
+                .unwrap_or((statement_count as f64, code_lines as u64, total_lines as u64, comment_lines as u64, blank_lines as u64));
+
         Ok(LanguageMetrics {
             total_lines: total_lines as u64,
-            blank_lines: blank_lines as u64,
-            lines_of_comments: comment_lines as u64,
-            lines_of_code: code_lines as u64,
+            blank_lines: blank_lines_rca,
+            lines_of_comments: cloc,
+            lines_of_code: ploc.saturating_sub(blank_lines_rca + cloc),
             functions: statement_count as u64,
             classes: 0, // SQL doesn't have classes
             imports: 0, // SQL doesn't have imports
-            complexity_score: statement_count as f64,
+            complexity_score, // Real cyclomatic complexity from RCA!
         })
     }
 

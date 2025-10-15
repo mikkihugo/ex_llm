@@ -39,12 +39,12 @@ impl PythonParser {
                 .to_string();
 
             let bases = extract_bases(node, &ast.content);
-            let decorators = collect_python_decorators(node, &ast.content);
+            let _decorators = collect_python_decorators(node, &ast.content);
             let body_node = node.child_by_field_name("body");
-            let body = body_node
+            let _body = body_node
                 .map(|b| slice_text(b, &ast.content))
                 .unwrap_or_default();
-            let docstring = body_node.and_then(|b| extract_docstring_from_block(b, &ast.content));
+            let _docstring = body_node.and_then(|b| extract_docstring_from_block(b, &ast.content));
             let variants = body_node
                 .map(|b| collect_enum_variants(b, &ast.content))
                 .unwrap_or_default();
@@ -95,15 +95,20 @@ impl LanguageParser for PythonParser {
         let comments = self.get_comments(ast)?;
         let class_infos = self.build_class_info(ast);
 
+        // Use RCA for real complexity and accurate LOC metrics
+        let (complexity_score, _sloc, ploc, cloc, blank_lines) =
+            parser_core::calculate_rca_complexity(&ast.content, "python")
+                .unwrap_or((1.0, ast.content.lines().count() as u64, ast.content.lines().count() as u64, comments.len() as u64, 0));
+
         Ok(LanguageMetrics {
-            lines_of_code: ast.content.lines().count() as u64,
-            lines_of_comments: comments.len() as u64,
-            blank_lines: 0, // TODO: implement blank line counting
+            lines_of_code: ploc.saturating_sub(blank_lines + cloc), // Physical - (blank + comments)
+            lines_of_comments: cloc,
+            blank_lines,
             total_lines: ast.content.lines().count() as u64,
             functions: functions.len() as u64,
             classes: class_infos.len() as u64,
             imports: imports.len() as u64,
-            complexity_score: 0.0, // TODO: implement complexity calculation
+            complexity_score, // Real cyclomatic complexity from RCA!
         })
     }
 

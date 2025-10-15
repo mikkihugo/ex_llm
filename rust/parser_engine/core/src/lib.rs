@@ -722,6 +722,133 @@ pub mod beam_analysis;               // BEAM languages (Elixir, Erlang, Gleam)
 pub mod rust_analysis;               // Rust language analysis
 pub mod lua_runtime_analysis;        // Lua runtime analysis
 
+/// Extract cyclomatic complexity and LOC metrics from RCA for a given language
+///
+/// This helper function provides a simple interface to rust-code-analysis (RCA)
+/// for use by language-specific parsers. It returns real complexity metrics
+/// instead of static/hardcoded values.
+///
+/// ## Supported Languages
+/// - Rust, Python, JavaScript, TypeScript, Java, C/C++, Elixir, Erlang, Gleam, Lua
+///
+/// ## Returns
+/// - `complexity_score`: Average cyclomatic complexity across all functions
+/// - `sloc`: Source lines of code (logical lines)
+/// - `ploc`: Physical lines of code
+/// - `cloc`: Comment lines of code
+/// - `blank`: Blank lines
+///
+/// ## Example
+/// ```ignore
+/// use parser_core::calculate_rca_complexity;
+///
+/// let content = "fn main() { if true { } }";
+/// let (complexity, sloc, ploc, cloc, blank) =
+///     calculate_rca_complexity(content, "rust").unwrap();
+/// assert!(complexity > 1.0); // Has if statement, so > 1
+/// ```
+pub fn calculate_rca_complexity(
+    content: &str,
+    language: &str,
+) -> Result<(f64, u64, u64, u64, u64), ParseError> {
+    use rca::{ParserTrait, metrics};
+    use std::path::Path;
+
+    let code_bytes = content.as_bytes().to_vec();
+    let dummy_path = Path::new("dummy");
+
+    // Match language and create appropriate RCA parser
+    let func_space = match language.to_lowercase().as_str() {
+        "rust" | "rs" => {
+            let parser = rca::RustParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "python" | "py" => {
+            let parser = rca::PythonParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "javascript" | "js" => {
+            let parser = rca::JavascriptParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "typescript" | "ts" => {
+            let parser = rca::TypescriptParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "java" => {
+            let parser = rca::JavaParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "cpp" | "c++" | "cxx" => {
+            let parser = rca::CppParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "c" => {
+            let parser = rca::CppParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "elixir" | "ex" => {
+            let parser = rca::ElixirParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "erlang" | "erl" => {
+            let parser = rca::ErlangParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "gleam" => {
+            let parser = rca::GleamParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "lua" => {
+            let parser = rca::LuaParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "bash" | "sh" => {
+            // Bash - use C++ parser as approximation (similar control flow)
+            let parser = rca::CppParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "go" => {
+            // Go - use C++ parser as approximation (C-family syntax)
+            let parser = rca::CppParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        "sql" => {
+            // SQL - use C++ parser as approximation (has control flow)
+            let parser = rca::CppParser::new(code_bytes, dummy_path, None);
+            metrics(&parser, dummy_path)
+        }
+        _ => {
+            // Unsupported language - return default values
+            return Ok((1.0,
+                       content.lines().count() as u64,
+                       content.lines().count() as u64,
+                       0,
+                       0));
+        }
+    };
+
+    if let Some(func_space) = func_space {
+        let m = &func_space.metrics;
+
+        // Extract metrics from RCA
+        let complexity = m.cyclomatic.cyclomatic_average();
+        let sloc = m.loc.sloc() as u64;
+        let ploc = m.loc.ploc() as u64;
+        let cloc = m.loc.cloc() as u64;
+        let blank = m.loc.blank() as u64;
+
+        Ok((complexity, sloc, ploc, cloc, blank))
+    } else {
+        // Failed to parse - return reasonable defaults
+        Ok((1.0,
+            content.lines().count() as u64,
+            content.lines().count() as u64,
+            0,
+            0))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

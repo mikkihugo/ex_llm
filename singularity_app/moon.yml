@@ -26,6 +26,13 @@ tasks:
     inputs:
       - 'src/**/*.gleam'
 
+  rust.build:
+    command: 'nix develop ..#dev --command bash -c "cd ../rust && cargo build --release -p code_engine -p parser-code -p embedding_engine -p architecture_engine -p quality_engine -p prompt_engine"'
+    # Note: Rustler auto-builds NIFs during mix compile
+    # This task is for explicit NIF rebuilds when Rust code changes
+    outputs:
+      - 'priv/native/*.so'
+
   deps.get:
     command: 'nix develop ..#dev --command just deps-get'
     inputs:
@@ -47,6 +54,7 @@ tasks:
     command: 'nix develop ..#dev --command just compile'
     deps:
       - 'deps.compile'
+      - 'rust.build'  # Rustler auto-builds NIFs during mix compile, but explicit for caching
     inputs:
       - 'lib/**'
       - 'config/**'

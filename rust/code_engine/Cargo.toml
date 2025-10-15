@@ -13,7 +13,7 @@ categories = ["development-tools", "text-processing"]
 [lib]
 name = "code_engine"
 path = "src/lib.rs"
-crate-type = ["rlib", "cdylib"]  # Both library and NIF
+crate-type = ["cdylib"]  # Pure NIF - other crates use parser_core for parsing
 
 [dependencies]
 # Serialization

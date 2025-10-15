@@ -191,7 +191,7 @@ dependencies = [
  "bit-set 0.8.0",
  "regex",
  "thiserror 2.0.17",
- "tree-sitter 0.25.10",
+ "tree-sitter",
 ]
 
 [[package]]
@@ -335,7 +335,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-bash",
 ]
 
@@ -507,7 +507,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-c",
 ]
 
@@ -846,7 +846,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-cpp",
 ]
 
@@ -988,7 +988,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-c-sharp",
 ]
 
@@ -1163,7 +1163,7 @@ dependencies = [
  "tempfile",
  "thiserror 1.0.69",
  "toml 0.8.23",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-json",
 ]
 
@@ -1404,7 +1404,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-elixir",
 ]
 
@@ -1504,7 +1504,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-erlang",
 ]
 
@@ -2036,7 +2036,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-gleam",
 ]
 
@@ -2082,7 +2082,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-go",
 ]
 
@@ -2830,7 +2830,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-java",
 ]
 
@@ -2846,7 +2846,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-javascript",
 ]
 
@@ -2882,7 +2882,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-json",
 ]
 
@@ -3723,7 +3723,7 @@ dependencies = [
  "tokio-test",
  "toml 0.8.23",
  "tracing",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "typescript_parser",
  "yaml_parser",
 ]
@@ -3750,11 +3750,11 @@ dependencies = [
  "tokio",
  "tokio-test",
  "tracing",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-bash",
  "tree-sitter-c",
  "tree-sitter-cpp",
- "tree-sitter-dockerfile",
+ "tree-sitter-dockerfile-updated",
  "tree-sitter-elixir",
  "tree-sitter-erlang",
  "tree-sitter-gleam",
@@ -3767,54 +3767,18 @@ dependencies = [
  "tree-sitter-md",
  "tree-sitter-python",
  "tree-sitter-rust",
- "tree-sitter-sql",
- "tree-sitter-toml",
+ "tree-sitter-sequel",
+ "tree-sitter-toml-ng",
  "tree-sitter-typescript",
  "tree-sitter-yaml",
-]
-
-[[package]]
-name = "parser_engine_dockerfile"
-version = "0.1.0"
-dependencies = [
- "parser_core",
- "tree-sitter 0.25.10",
- "tree-sitter-dockerfile",
 ]
 
 [[package]]
 name = "parser_engine_lua"
 version = "0.1.0"
 dependencies = [
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-lua",
-]
-
-[[package]]
-name = "parser_engine_markdown"
-version = "0.1.0"
-dependencies = [
- "parser_core",
- "tree-sitter 0.25.10",
- "tree-sitter-md",
-]
-
-[[package]]
-name = "parser_engine_sql"
-version = "0.1.0"
-dependencies = [
- "parser_core",
- "tree-sitter 0.25.10",
- "tree-sitter-sql",
-]
-
-[[package]]
-name = "parser_engine_toml"
-version = "0.1.0"
-dependencies = [
- "parser_core",
- "tree-sitter 0.25.10",
- "tree-sitter-toml",
 ]
 
 [[package]]
@@ -4251,7 +4215,7 @@ dependencies = [
  "parser_core",
  "serde",
  "serde_json",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-python",
 ]
 
@@ -4648,7 +4612,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-rust",
 ]
 
@@ -5166,7 +5130,7 @@ dependencies = [
  "regex",
  "serde",
  "termcolor",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-cpp",
  "tree-sitter-elixir",
  "tree-sitter-erlang",
@@ -5637,7 +5601,7 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror 1.0.69",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-json",
 ]
 
@@ -6291,26 +6255,6 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter"
-version = "0.19.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad726ec26496bf4c083fff0f43d4eb3a2ad1bba305323af5ff91383c0b6ecac0"
-dependencies = [
- "cc",
- "regex",
-]
-
-[[package]]
-name = "tree-sitter"
-version = "0.20.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e747b1f9b7b931ed39a548c1fae149101497de3c1fc8d9e18c62c1a66c683d3d"
-dependencies = [
- "cc",
- "regex",
-]
-
-[[package]]
-name = "tree-sitter"
 version = "0.25.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78f873475d258561b06f1c595d93308a7ed124d9977cb26b148c2084a4a3cc87"
@@ -6364,13 +6308,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "tree-sitter-dockerfile"
+name = "tree-sitter-dockerfile-updated"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba46310efcac616744ca79aa4b0e228202e388913ebcd4a1ba107072f7f4432a"
+checksum = "5e61eb704364be179ab9be89e2891c8e77c0041eca5891a5c04164a21f6df7a0"
 dependencies = [
  "cc",
- "tree-sitter 0.20.10",
+ "tree-sitter",
 ]
 
 [[package]]
@@ -6465,7 +6409,7 @@ version = "0.5.1"
 source = "git+https://github.com/mikkihugo/tree-sitter-markdown?branch=update-tree-sitter-0.25#580fe05ed9f179ffc65102632360a2f1bf8baed5"
 dependencies = [
  "cc",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-language",
 ]
 
@@ -6490,23 +6434,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "tree-sitter-sql"
-version = "0.0.2"
+name = "tree-sitter-sequel"
+version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04e4fb372576528153a04f47ff3ca2d2b535b756ec1890c42ddd5713a66cc82e"
+checksum = "9d198ad3c319c02e43c21efa1ec796b837afcb96ffaef1a40c1978fbdcec7d17"
 dependencies = [
  "cc",
- "tree-sitter 0.19.5",
+ "tree-sitter-language",
 ]
 
 [[package]]
-name = "tree-sitter-toml"
-version = "0.20.0"
+name = "tree-sitter-toml-ng"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca517f578a98b23d20780247cc2688407fa81effad5b627a5a364ec3339b53e8"
+checksum = "e9adc2c898ae49730e857d75be403da3f92bb81d8e37a2f918a08dd10de5ebb1"
 dependencies = [
  "cc",
- "tree-sitter 0.20.10",
+ "tree-sitter-language",
 ]
 
 [[package]]
@@ -6553,7 +6497,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-typescript",
 ]
 
@@ -7427,7 +7371,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.25.10",
+ "tree-sitter",
  "tree-sitter-yaml",
 ]
 

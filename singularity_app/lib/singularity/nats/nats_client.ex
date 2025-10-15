@@ -209,25 +209,54 @@ defmodule Singularity.NatsClient do
   end
 
   @impl true
-  def handle_call({:subscribe, subject_pattern, opts}, _from, state) do
+  def handle_call({:subscribe, _subject_pattern, _opts}, _from, %{connection: nil} = state) do
+    Logger.warning("NATS not connected, cannot subscribe")
+    {:reply, {:error, :not_connected}, state}
+  end
+
+  @impl true
+  def handle_call({:subscribe, subject_pattern, opts}, {from_pid, _}, state) do
     subscription_id = generate_subscription_id()
 
-    new_subscriptions =
-      Map.put(state.subscriptions, subscription_id, %{
-        subject_pattern: subject_pattern,
-        opts: opts,
-        created_at: System.monotonic_time(:millisecond)
-      })
+    # Actually subscribe to NATS via Gnat
+    case Gnat.sub(state.connection, from_pid, subject_pattern) do
+      {:ok, gnat_sid} ->
+        Logger.debug("Subscribed to #{subject_pattern} (Gnat SID: #{gnat_sid})")
 
-    new_state = %{state | subscriptions: new_subscriptions}
-    {:reply, {:ok, subscription_id}, new_state}
+        new_subscriptions =
+          Map.put(state.subscriptions, subscription_id, %{
+            subject_pattern: subject_pattern,
+            gnat_sid: gnat_sid,
+            subscriber_pid: from_pid,
+            opts: opts,
+            created_at: System.monotonic_time(:millisecond)
+          })
+
+        new_state = %{state | subscriptions: new_subscriptions}
+        {:reply, {:ok, subscription_id}, new_state}
+
+      {:error, reason} ->
+        Logger.error("Failed to subscribe to #{subject_pattern}: #{inspect(reason)}")
+        {:reply, {:error, reason}, state}
+    end
   end
 
   @impl true
   def handle_call({:unsubscribe, subscription_id}, _from, state) do
-    new_subscriptions = Map.delete(state.subscriptions, subscription_id)
-    new_state = %{state | subscriptions: new_subscriptions}
-    {:reply, :ok, new_state}
+    case Map.get(state.subscriptions, subscription_id) do
+      nil ->
+        {:reply, {:error, :not_found}, state}
+
+      subscription ->
+        # Unsubscribe from Gnat
+        if state.connection do
+          Gnat.unsub(state.connection, subscription.gnat_sid)
+        end
+
+        new_subscriptions = Map.delete(state.subscriptions, subscription_id)
+        new_state = %{state | subscriptions: new_subscriptions}
+        {:reply, :ok, new_state}
+    end
   end
 
   @impl true

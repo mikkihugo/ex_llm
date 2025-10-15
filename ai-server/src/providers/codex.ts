@@ -9,43 +9,28 @@ import { customProvider } from 'ai';
 
 /**
  * Model metadata for OpenAI Codex provider
+ *
+ * Both models support tools, but default to pure chat (no file access).
+ * Tool capabilities are opt-in via sandboxMode parameter at call time.
  */
 export const CODEX_MODELS = [
   {
     id: 'gpt-5',
     displayName: 'GPT-5',
-    description: 'GPT-5 via Codex SDK (pure text generation, no tools/commands/editing)',
+    description: 'GPT-5 via Codex SDK (default: pure chat, opt-in to tools)',
     contextWindow: 200000,
-    capabilities: { completion: true, streaming: true, reasoning: true, vision: false, tools: false, read: true, webSearch: true },
+    capabilities: { completion: true, streaming: true, reasoning: true, vision: false, tools: true, read: true, webSearch: true },
     cost: 'subscription',
-    subscription: 'OpenAI Codex',
+    subscription: 'ChatGPT Plus/Pro',
   },
   {
     id: 'gpt-5-codex',
     displayName: 'GPT-5 Codex',
-    description: 'GPT-5 Codex via Codex SDK with full agent capabilities (commands & file editing)',
+    description: 'GPT-5 Codex via Codex SDK - code-specialized (default: pure chat, opt-in to tools)',
     contextWindow: 200000,
     capabilities: { completion: true, streaming: true, reasoning: true, vision: false, tools: true, read: true, webSearch: true },
     cost: 'subscription',
-    subscription: 'OpenAI Codex',
-  },
-  {
-    id: 'codex-agent',
-    displayName: 'Codex Agent',
-    description: 'OpenAI Codex agent with command execution and file editing capabilities',
-    contextWindow: 128000,
-    capabilities: { completion: true, streaming: true, reasoning: true, vision: false, tools: true, read: true, webSearch: true },
-    cost: 'subscription',
-    subscription: 'OpenAI Codex',
-  },
-  {
-    id: 'codex-agent-safe',
-    displayName: 'Codex Agent (Safe Mode)',
-    description: 'Codex agent with read-only sandbox mode (can read files, no commands/editing)',
-    contextWindow: 128000,
-    capabilities: { completion: true, streaming: true, reasoning: true, vision: false, tools: false, read: true, webSearch: true },
-    cost: 'subscription',
-    subscription: 'OpenAI Codex',
+    subscription: 'ChatGPT Plus/Pro',
   },
 ];
 
@@ -72,10 +57,12 @@ function createCodexProvider() {
       doGenerate: async (options: any) => {
         try {
           // Start a new thread for each request
+          // Default: no sandboxMode (pure chat, no file access)
+          // Can be overridden via options.sandboxMode
+          const sandboxMode = options.sandboxMode || undefined; // undefined = no sandbox = pure chat
+
           const thread = codexClient.startThread({
-            // Use read-only mode for models with read capability, workspace-write for models with tools
-            sandboxMode: (model.capabilities as any).read ? 'read-only' : 
-                        model.capabilities.tools ? 'workspace-write' : 'read-only',
+            sandboxMode,
           });
 
           // Extract text from prompt
@@ -113,10 +100,12 @@ function createCodexProvider() {
       doStream: async function* (options: any) {
         try {
           // Start a new thread for each request
+          // Default: no sandboxMode (pure chat, no file access)
+          // Can be overridden via options.sandboxMode
+          const sandboxMode = options.sandboxMode || undefined; // undefined = no sandbox = pure chat
+
           const thread = codexClient.startThread({
-            // Use read-only mode for models with read capability, workspace-write for models with tools
-            sandboxMode: (model.capabilities as any).read ? 'read-only' : 
-                        model.capabilities.tools ? 'workspace-write' : 'read-only',
+            sandboxMode,
           });
 
           // Extract text from prompt

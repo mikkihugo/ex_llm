@@ -1,4 +1,4 @@
-defmodule Singularity.MetaRegistry.FrameworkLearning do
+defmodule Singularity.MetaRegistry.SingularityLearning do
   @moduledoc """
   Meta-registry for learning from framework-specific patterns.
   

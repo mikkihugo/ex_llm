@@ -59,6 +59,16 @@ defmodule Singularity.Telemetry do
         unit: :byte
       ),
 
+      # Tool Execution Metrics
+      counter("singularity.tool.execution.count", tags: [:tool, :codebase_id, :result]),
+      summary("singularity.tool.execution.duration",
+        event_name: [:singularity, :tool, :execution, :stop],
+        measurement: :duration_ms,
+        tags: [:tool, :codebase_id, :result],
+        unit: :millisecond
+      ),
+      counter("singularity.tool.error.count", tags: [:tool, :error_type]),
+
       # Existing metrics
       summary("singularity.hot_reload.duration", unit: {:native, :millisecond}),
       summary("singularity.code_generator.generate.duration",
@@ -148,6 +158,7 @@ defmodule Singularity.Telemetry do
       agents: agent_metrics(),
       llm: llm_metrics(),
       nats: nats_metrics(),
+      tools: tool_metrics(),
       timestamp: DateTime.utc_now()
     }
   end
@@ -210,6 +221,74 @@ defmodule Singularity.Telemetry do
       messages_sent: get_counter_value([:singularity, :nats, :message, :count], %{direction: :send}),
       messages_received:
         get_counter_value([:singularity, :nats, :message, :count], %{direction: :receive})
+    }
+  end
+
+  @doc """
+  Log tool execution for auditing and metrics.
+
+  Records:
+  - Tool execution count and result (success/error)
+  - Execution duration
+  - Codebase accessed
+  - Error types for failed executions
+
+  ## Examples
+
+      Telemetry.log_tool_execution(%{
+        subject: "tools.code.get",
+        codebase_id: "singularity",
+        result: :success,
+        duration_ms: 45
+      })
+  """
+  @spec log_tool_execution(map()) :: :ok
+  def log_tool_execution(%{subject: subject, codebase_id: codebase_id, result: result, duration_ms: duration_ms} = params) do
+    # Extract tool name from subject (e.g., "tools.code.get" -> "code.get")
+    tool = subject |> String.split(".") |> Enum.drop(1) |> Enum.join(".")
+
+    # Emit telemetry events
+    :telemetry.execute(
+      [:singularity, :tool, :execution, :count],
+      %{count: 1},
+      %{tool: tool, codebase_id: codebase_id, result: result}
+    )
+
+    :telemetry.execute(
+      [:singularity, :tool, :execution, :stop],
+      %{duration_ms: duration_ms},
+      %{tool: tool, codebase_id: codebase_id, result: result}
+    )
+
+    # Log errors separately for better tracking
+    if result == :error do
+      error_type = Map.get(params, :error_type, "unknown")
+
+      :telemetry.execute(
+        [:singularity, :tool, :error, :count],
+        %{count: 1},
+        %{tool: tool, error_type: error_type}
+      )
+    end
+
+    :ok
+  end
+
+  defp tool_metrics do
+    total_executions = get_counter_value([:singularity, :tool, :execution, :count])
+    total_errors = get_counter_value([:singularity, :tool, :error, :count])
+
+    success_rate =
+      if total_executions > 0 do
+        Float.round((total_executions - total_errors) / total_executions, 2)
+      else
+        0.0
+      end
+
+    %{
+      total_executions: total_executions,
+      total_errors: total_errors,
+      success_rate: success_rate
     }
   end
 

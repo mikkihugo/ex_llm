@@ -39,6 +39,15 @@ defmodule Singularity.ParserEngine do
 
   @doc """
   Parse a single file and persist the result to the database.
+
+  Alias for `parse_and_store_file/2` for backward compatibility.
+  """
+  def parse_and_store_single_file(file_path, opts \\ []) do
+    parse_and_store_file(file_path, opts)
+  end
+
+  @doc """
+  Parse a single file and persist the result to the database.
   """
   def parse_and_store_file(file_path, opts \\ []) do
     opts = normalize_options(opts)

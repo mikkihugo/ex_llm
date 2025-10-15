@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 tree-sitter = { workspace = true }
-tree-sitter-sql = "0.0.2"
+tree-sitter-sequel = { workspace = true }  # Updated for tree-sitter 0.25
 parser_core = { path = "../../core" }

@@ -5,6 +5,8 @@
  * model capability scoring.
  */
 
+import { scoreModelByHeuristics } from './tools/heuristic-capability-scorer.js';
+
 /**
  * @interface ModelInfo
  * @description Defines the structure for storing detailed information about a single AI model.
@@ -75,23 +77,44 @@ export async function registerProviderModels(
     models = [];
   }
 
-  return models.map((m: any) => ({
-    id: `${provider}:${m.id}`,
-    provider,
-    model: m.id,
-    displayName: m.displayName || m.name,
-    description: m.description || m.summary || '',
-    contextWindow: m.contextWindow || m.limits?.max_input_tokens || 8000,
-    capabilities: m.capabilities || {
-      completion: true,
-      streaming: m.capabilities?.includes?.('streaming') ?? true,
-      reasoning: m.capabilities?.includes?.('reasoning') ?? false,
-      vision: m.supported_input_modalities?.includes?.('image') ?? false,
-      tools: m.capabilities?.includes?.('tool-calling') ?? false,
-    },
-    cost: m.cost || 'free',
-    subscription: m.subscription,
-  }));
+  return models.map((m: any) => {
+    const modelInfo: ModelInfo = {
+      id: `${provider}:${m.id}`,
+      provider,
+      model: m.id,
+      displayName: m.displayName || m.name,
+      description: m.description || m.summary || '',
+      contextWindow: m.contextWindow || m.limits?.max_input_tokens || 8000,
+      capabilities: m.capabilities || {
+        completion: true,
+        streaming: m.capabilities?.includes?.('streaming') ?? true,
+        reasoning: m.capabilities?.includes?.('reasoning') ?? false,
+        vision: m.supported_input_modalities?.includes?.('image') ?? false,
+        tools: m.capabilities?.includes?.('tool-calling') ?? false,
+      },
+      cost: m.cost || 'free',
+      subscription: m.subscription,
+    };
+
+    // Automatically score model capabilities with heuristics
+    try {
+      const scores = scoreModelByHeuristics(modelInfo);
+      modelInfo.capabilityScores = {
+        code: scores.code,
+        reasoning: scores.reasoning,
+        creativity: scores.creativity,
+        speed: scores.speed,
+        cost: scores.cost,
+        tool_capacity: calculateToolCapacityScore(modelInfo.contextWindow),
+        confidence: scores.confidence,
+        reasoning_text: scores.reasoning_text,
+      };
+    } catch (error) {
+      console.warn(`[ModelRegistry] Failed to score model ${modelInfo.id}:`, error);
+    }
+
+    return modelInfo;
+  });
 }
 
 const MODEL_CATALOG_CACHE_FILE = '.cache/model-catalog.json';

@@ -476,12 +476,14 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
 
     codebase_id = "singularity"
 
-    # Persist each learned module
+    # Persist each learned module using unified ingestion service
     results =
       Map.get(learning, :knowledge, %{}) |> Map.get(:modules, %{}) |> Map.values()
       |> Task.async_stream(
         fn module ->
-          persist_module_to_db(module, codebase_id)
+          # Extract file path from module and use unified ingestion
+          file_path = Map.get(module, :file_path) || Map.get(module, :file)
+          Singularity.Code.UnifiedIngestionService.ingest_file(file_path, codebase_id: codebase_id)
         end,
         max_concurrency: 10,
         timeout: :infinity

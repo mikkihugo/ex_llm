@@ -33,9 +33,17 @@ export type { CopilotProvider as BaseCopilotProviderType } from './copilot-provi
 export type { CopilotModelConfig } from './copilot-language-model';
 
 /**
- * Free-tier models (no quota limits within subscription)
+ * Free-tier models (no quota limits within GitHub Copilot subscription)
+ * Based on actual GitHub Copilot API (verified 2025-01-15):
+ * - Free unlimited: gpt-4.1, gpt-5-mini, gpt-4o, grok-code-fast-1
+ * - Limited quota: Claude models, Gemini models, o3/o4 models, gpt-5/gpt-5-codex
  */
-const FREE_TIER_MODELS = new Set(['gpt-4.1', 'gpt-5-mini', 'grok-code-fast-1']);
+const FREE_TIER_MODELS = new Set([
+  'gpt-4.1',           // 128K context, vision
+  'gpt-5-mini',        // 264K context, vision
+  'gpt-4o',            // 128K context, vision
+  'grok-code-fast-1',  // 128K context, coding-focused
+]);
 
 /**
  * Fetch models from GitHub Copilot API and apply cost tiers

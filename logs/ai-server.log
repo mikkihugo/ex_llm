@@ -428,3 +428,101 @@ AI Server Started: 2025-10-14T13:33:47.052Z
 [2025-10-14T13:44:45.291Z] [METRIC] request.nats_llm_request.duration_ms=30507
 [2025-10-14T13:44:45.291Z] [METRIC] model.copilot.gpt-4o.count=2
 [2025-10-14T13:44:45.291Z] [INFO] [NATS] LLM request completed {"model":"copilot:gpt-4o","duration":"30507ms"}
+
+AI Server Shutdown: 2025-10-15T11:12:44.654Z
+================================================================================
+
+
+================================================================================
+AI Server Started: 2025-10-15T11:12:48.810Z
+================================================================================
+[2025-10-15T11:12:48.902Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-15T11:12:48.904Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.sonnet"}
+[2025-10-15T11:12:48.904Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.opus"}
+[2025-10-15T11:12:48.904Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-15T11:12:48.904Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-flash"}
+[2025-10-15T11:12:48.904Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-4o"}
+[2025-10-15T11:12:48.904Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-15T11:12:48.904Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-15T11:12:48.904Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+
+AI Server Shutdown: 2025-10-15T11:25:45.280Z
+================================================================================
+
+
+================================================================================
+AI Server Started: 2025-10-15T11:26:28.946Z
+================================================================================
+[2025-10-15T11:26:29.033Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-15T11:26:29.033Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.sonnet"}
+[2025-10-15T11:26:29.033Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.opus"}
+[2025-10-15T11:26:29.034Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-15T11:26:29.034Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-flash"}
+[2025-10-15T11:26:29.034Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-4o"}
+[2025-10-15T11:26:29.034Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-15T11:26:29.034Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-15T11:26:29.034Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+
+AI Server Shutdown: 2025-10-15T11:28:54.509Z
+================================================================================
+
+
+================================================================================
+AI Server Started: 2025-10-15T11:29:06.989Z
+================================================================================
+[2025-10-15T11:29:07.096Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-15T11:29:07.097Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.sonnet"}
+[2025-10-15T11:29:07.097Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.opus"}
+[2025-10-15T11:29:07.097Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-15T11:29:07.097Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-flash"}
+[2025-10-15T11:29:07.097Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-4o"}
+[2025-10-15T11:29:07.097Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-15T11:29:07.098Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-15T11:29:07.099Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+
+AI Server Shutdown: 2025-10-15T11:32:15.427Z
+================================================================================
+
+
+================================================================================
+AI Server Started: 2025-10-15T11:33:23.326Z
+================================================================================
+[2025-10-15T11:33:23.418Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-15T11:33:23.418Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.sonnet"}
+[2025-10-15T11:33:23.418Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.opus"}
+[2025-10-15T11:33:23.418Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-15T11:33:23.419Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-flash"}
+[2025-10-15T11:33:23.419Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-4o"}
+[2025-10-15T11:33:23.419Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-15T11:33:23.419Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-15T11:33:23.419Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+
+================================================================================
+AI Server Started: 2025-10-15T11:36:27.849Z
+================================================================================
+[2025-10-15T11:36:27.923Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-15T11:36:27.923Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.sonnet"}
+[2025-10-15T11:36:27.923Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.opus"}
+[2025-10-15T11:36:27.923Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-15T11:36:27.923Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-flash"}
+[2025-10-15T11:36:27.924Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-4o"}
+[2025-10-15T11:36:27.924Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-15T11:36:27.924Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-15T11:36:27.924Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+
+================================================================================
+AI Server Started: 2025-10-15T14:40:11.454Z
+================================================================================
+[2025-10-15T14:40:11.553Z] [INFO] HTDAG LLM Worker connected to NATS {"url":"nats://localhost:4222"}
+[2025-10-15T14:40:11.554Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.sonnet"}
+[2025-10-15T14:40:11.554Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.opus"}
+[2025-10-15T14:40:11.555Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-pro"}
+[2025-10-15T14:40:11.555Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gemini-2.5-flash"}
+[2025-10-15T14:40:11.555Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-4o"}
+[2025-10-15T14:40:11.555Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.gpt-5-codex"}
+[2025-10-15T14:40:11.555Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.o3-mini-codex"}
+[2025-10-15T14:40:11.555Z] [INFO] Subscribed to HTDAG LLM subject {"subject":"llm.req.auto"}
+
+AI Server Shutdown: 2025-10-15T15:38:46.035Z
+================================================================================
+
