@@ -8,7 +8,6 @@ jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
 
-    # Configure PostgreSQL service for Phoenix app
     services:
       postgres:
         image: postgres:16
@@ -28,7 +27,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Setup Elixir, Erlang, Gleam, Rebar3 using latest versions
       - name: Set up Elixir/Erlang/Gleam/Rebar3
         uses: erlef/setup-beam@v1
         with:
@@ -37,67 +35,7 @@ jobs:
           gleam-version: 'latest'
           rebar3-version: 'latest'
 
-      # Setup Rust toolchain
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
-
-      # Setup Bun for TypeScript/ai-server
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      # Cache Elixir dependencies
-      - name: Cache Elixir deps
-        uses: actions/cache@v4
-        with:
-          path: singularity_app/deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-mix-
-          
-      - name: Get Elixir dependencies
-        working-directory: singularity_app
-        run: mix deps.get
-        
-      - name: Install Bun dependencies
-        working-directory: ai-server
-        run: bun install
-        
-      # Cache the compiled _build directory for faster subsequent runs
-      - name: Cache build
-        uses: actions/cache@v4
-        with:
-          path: singularity_app/_build
-          key: ${{ runner.os }}-build-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-build-
-      
-      - name: Compile Elixir code
-        working-directory: singularity_app
-        run: mix compile
-
-      # Uncomment to run Elixir tests
-      # - name: Run Elixir tests
-      #   working-directory: singularity_app
-      #   run: mix test
-
-      # Uncomment to run Bun tests
-      # - name: Run Bun tests
-      #   working-directory: ai-server
-      #   run: bun test
-
-      - name: Verify setup
-        run: |
-          echo "✓ Elixir setup complete"
-          elixir --version
-          echo "✓ Gleam setup complete"
-          gleam --version
-          echo "✓ Rebar3 setup complete"
-          rebar3 --version
-          echo "✓ Bun setup complete"
-          bun --version
-          echo "✓ PostgreSQL service running"
-          PGPASSWORD=postgres psql -h localhost -U postgres -p 5432 -c "SELECT version();"
+          components: rustfmt
