@@ -77,13 +77,15 @@ defmodule Mix.Tasks.Code.Ingest do
       Mix.raise("Path does not exist: #{codebase_path}")
     end
 
-    # Get database connection
+    # Get database connection using Repo config
+    repo_config = Repo.config()
+
     {:ok, conn} = Postgrex.start_link(
-      hostname: System.get_env("PGHOST", "localhost"),
-      port: String.to_integer(System.get_env("PGPORT", "5432")),
-      database: System.get_env("PGDATABASE", "singularity"),
-      username: System.get_env("PGUSER", "postgres"),
-      password: System.get_env("PGPASSWORD", "")
+      hostname: repo_config[:hostname] || "localhost",
+      port: repo_config[:port] || 5432,
+      database: repo_config[:database] || "singularity",
+      username: repo_config[:username] || System.get_env("USER") || "postgres",
+      password: repo_config[:password] || ""
     )
 
     try do
