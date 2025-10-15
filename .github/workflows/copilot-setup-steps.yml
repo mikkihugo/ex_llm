@@ -11,7 +11,7 @@ jobs:
     # Configure PostgreSQL service for Phoenix app
     services:
       postgres:
-        image: postgres:17
+        image: postgres:16
         ports:
           - 5432:5432
         env:
@@ -32,9 +32,10 @@ jobs:
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: '28.0'
-          elixir-version: '1.18.0'
-          gleam-version: '1.6.2'
+          otp-version: '28'
+          elixir-version: '1'
+          gleam-version: '1'
+          rebar3-version: '3'
 
       # Setup Rust toolchain
       - name: Set up Rust
