@@ -1,127 +1,42 @@
-name: "Copilot Setup Steps"
-
-# Automatically run the setup steps when they are changed to allow for easy validation, and
-# allow manual testing through the repository's "Actions" tab
-on:
-  workflow_dispatch:
-  push:
-    paths:
-      - .github/workflows/copilot-setup-steps.yml
-  pull_request:
-    paths:
-      - .github/workflows/copilot-setup-steps.yml
-
+name: Copilot Setup Steps
+on: workflow_dispatch # Or whatever trigger Copilot uses
 jobs:
-  nix-setup:
-    uses: ./.github/workflows/nix-setup.yml
-    secrets: inherit
-    with:
-      cachix_push: false
-      cache_key_prefix: 'copilot-otp28-elixir1184'
-
-  # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
   copilot-setup-steps:
-    needs: nix-setup
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    
+    # Configure a Postgres service, common for Phoenix apps
+    services:
+      db:
+        image: postgres:16
+        ports: ["5432:5432"]
+        env:
+          POSTGRES_PASSWORD: postgres
+    
     steps:
+      # Step: Setup Elixir and Erlang using the community action
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "28" # Example latest Erlang/OTP version
+          elixir-version: "1" # Example latest Elixir version
+      
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+    
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Maximize disk space for Nix
-        uses: wimpysworld/nothing-but-nix@main
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@a809471b5c7c913aa67bec8f459a11a0decc3fce # v31
+        uses: actions/checkout@v4
+        
+      # Step: Cache and get dependencies to speed up the agent
+      - name: Cache deps
+        uses: actions/cache@v3
         with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-            accept-flake-config = true
-
-      - name: Use Cachix (pull)
-        uses: cachix/cachix-action@master
-        with:
-          name: mikkihugo
-
-      - name: Restore all build artifacts (Mix, Cargo, Moon, Bun)
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
-        with:
-          path: |
-            **/.mix
-            **/.hex
-            **/deps
-            **/_build
-            .cargo-build
-            .moon/cache
-            **/node_modules
-          key: copilot-otp28-elixir1184-${{ runner.os }}-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('**/moon.yml') }}-${{ hashFiles('**/bun.lock*') }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            copilot-otp28-elixir1184-${{ runner.os }}-
-
-      - name: Install dependencies via Nix
-        run: |
-          nix develop .#dev --command bash -c "
-            echo 'Nix development environment loaded successfully'
-            echo 'Available tools:'
-            which elixir || echo 'elixir not found'
-            which gleam || echo 'gleam not found'
-            which cargo || echo 'cargo not found'
-            which just || echo 'just not found'
-            elixir --version || true
-            gleam --version || true
-            cargo --version || true
-          "
-
-      - name: Install Elixir dependencies
-        run: |
-          nix develop .#dev --command bash -c "
-            cd singularity_app
-            mix local.hex --force
-            mix local.rebar --force
-            mix deps.get
-            mix gleam.deps.get
-          "
-
-      - name: Warm-up compile (reduce first-run latency)
-        run: |
-          nix develop -c bash -lc '
-            cd singularity_app && mix compile
-          '
-
-      - name: Build Nix packages (optional)
-        run: |
-          SYSTEM=$(nix eval --raw --impure --expr 'builtins.currentSystem')
-          nix build .#packages.$SYSTEM.ai-server --out-link /tmp/ai-server-result -L || echo "ai-server package build skipped"
-
-      - name: Install JavaScript dependencies
-        run: |
-          nix develop .#dev --command bash -c "
-            if [ -f bun.lock ] || [ -f bun.lockb ]; then
-              bun install --frozen-lockfile
-            else
-              bun install
-            fi
-          "
-
-      - name: Verify setup
-        run: |
-          nix develop .#dev --command bash -c "
-            echo '=== Environment Verification ==='
-            echo 'Elixir version:'
-            elixir --version
-            echo ''
-            echo 'Gleam version:'
-            gleam --version
-            echo ''
-            echo 'Rust version:'
-            cargo --version
-            echo ''
-            echo 'Just version:'
-            just --version
-            echo ''
-            echo 'Mix deps status:'
-            cd singularity_app && mix deps
-            echo ''
-            echo 'Setup complete! Copilot can now use this environment.'
-          "
+          path: deps
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          
+      - name: Get dependencies
+        run: mix deps.get
+        run: bun install
+        
+      # You might also cache the compiled _build directory and run mix compile
