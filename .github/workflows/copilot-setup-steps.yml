@@ -14,18 +14,6 @@ env:
   RUST_COMPONENTS: 'rustfmt'
   BUN_VERSION: 'latest'
 
-  # Action versions (centralized)
-  ACTIONS_CHECKOUT: 'v5'
-  SETUP_BEAM_ACTION: 'v1'
-  RUST_TOOLCHAIN_ACTION: 'stable'
-  SETUP_BUN_ACTION: 'v2'
-  ACTIONS_CACHE: 'v4'
-  DOCKER_QEMU: 'v2'
-  DOCKER_BUILDX: 'v2'
-  DOCKER_BUILD_PUSH: 'v4'
-  DOCKER_LOGIN: 'v2'
-  UPLOAD_ARTIFACT: 'v4'
-
 jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
@@ -47,10 +35,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@${{ env.ACTIONS_CHECKOUT }}
+        uses: actions/checkout@v5
 
       - name: Set up Elixir/Erlang/Gleam/Rebar3
-        uses: erlef/setup-beam@${{ env.SETUP_BEAM_ACTION }}
+        uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ env.OTP_VERSION }}
           elixir-version: ${{ env.ELIXIR_VERSION }}
@@ -61,7 +49,7 @@ jobs:
       # Elixir / Mix caching
       # --------------------------
       - name: Cache Elixir deps and build
-        uses: actions/cache@${{ env.ACTIONS_CACHE }}
+        uses: actions/cache@v4
         id: cache-elixir
         with:
           path: |
@@ -88,12 +76,12 @@ jobs:
       # Rust caching
       # --------------------------
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@${{ env.RUST_TOOLCHAIN_ACTION }}
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: ${{ env.RUST_COMPONENTS }}
 
       - name: Cache Cargo registry and target
-        uses: actions/cache@${{ env.ACTIONS_CACHE }}
+        uses: actions/cache@v4
         id: cache-rust
         with:
           path: |
@@ -113,12 +101,12 @@ jobs:
       # Bun / JS caching
       # --------------------------
       - name: Setup Bun
-        uses: oven-sh/setup-bun@${{ env.SETUP_BUN_ACTION }}
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
       - name: Cache Bun and JS deps
-        uses: actions/cache@${{ env.ACTIONS_CACHE }}
+        uses: actions/cache@v4
         id: cache-bun
         with:
           path: |
@@ -136,13 +124,13 @@ jobs:
       # Docker build + persistent layer cache (optional)
       # --------------------------
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@${{ env.DOCKER_QEMU }}
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@${{ env.DOCKER_BUILDX }}
+        uses: docker/setup-buildx-action@v2
 
       - name: Build Docker image (with GitHub Actions cache for layers)
-        uses: docker/build-push-action@${{ env.DOCKER_BUILD_PUSH }}
+        uses: docker/build-push-action@v4
         with:
           context: .
           push: false
@@ -152,13 +140,13 @@ jobs:
 
       # Optionally push built image to GitHub Container Registry (ghcr)
       # - name: Login to ghcr
-      #   uses: docker/login-action@${{ env.DOCKER_LOGIN }}
+      #   uses: docker/login-action@v2
       #   with:
       #     registry: ghcr.io
       #     username: ${{ github.actor }}
       #     password: ${{ secrets.GITHUB_TOKEN }}
       # - name: Build and push to ghcr (with cache)
-      #   uses: docker/build-push-action@${{ env.DOCKER_BUILD_PUSH }}
+      #   uses: docker/build-push-action@v4
       #   with:
       #     context: .
       #     push: true
