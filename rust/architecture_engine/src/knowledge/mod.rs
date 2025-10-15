@@ -206,38 +206,31 @@ pub mod nif {
 }
 
 // ============================================================================
-// Central Service Module (optional - enabled with "central" feature)
+// Central Service Module (optional - for future central_cloud integration)
+// NATS integration is handled in Elixir via Singularity.NATS
 // ============================================================================
 
-#[cfg(feature = "central")]
+#[allow(dead_code)]
 pub mod central {
     use super::*;
 
-    /// Broadcast asset update via NATS (TODO: implement)
+    /// Broadcast asset update via NATS
+    ///
+    /// Note: NATS integration is handled in Elixir. This is a placeholder for
+    /// potential future Rust-based NATS integration.
     pub async fn broadcast_update(asset: &KnowledgeAsset) -> Result<()> {
-        tracing::info!("Broadcasting update for asset: {}", asset.id);
-        // TODO: Implement NATS publish
+        tracing::info!("Broadcasting update for asset: {} (via Elixir NATS)", asset.id);
+        // NATS publish is done via Elixir Singularity.NATS module
         Ok(())
     }
 
-    /// Subscribe to NATS updates and update local cache
-    pub async fn subscribe_to_updates(nats_url: String, cache: GlobalCache) -> Result<()> {
-        use async_nats::Client;
-        
-        tracing::info!("Connecting to NATS at {}", nats_url);
-        let client = Client::connect(&nats_url).await?;
-        
-        let mut subscriber = client.subscribe("knowledge.cache.update.>").await?;
-        tracing::info!("Subscribed to knowledge.cache.update.>");
-        
-        while let Some(msg) = subscriber.next().await {
-            if let Ok(asset) = serde_json::from_slice::<KnowledgeAsset>(&msg.payload) {
-                let mut cache_guard = cache.write();
-                cache_guard.insert(asset.id.clone(), asset.clone());
-                tracing::info!("Updated cache with asset: {}", asset.id);
-            }
-        }
-        
+    /// Subscribe to updates from NATS
+    ///
+    /// Note: NATS subscriptions are handled in Elixir. This is a placeholder for
+    /// potential future Rust-based NATS integration.
+    pub async fn subscribe_to_updates(_nats_url: String, _cache: GlobalCache) -> Result<()> {
+        tracing::info!("NATS subscriptions handled via Elixir Singularity.NATS module");
+        // NATS subscriptions are done via Elixir Singularity.NATS module
         Ok(())
     }
 }

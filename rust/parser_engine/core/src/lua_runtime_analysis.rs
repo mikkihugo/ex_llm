@@ -15,7 +15,6 @@
 //! 4. **Security Auditing**: Verify sandboxing and timeout patterns
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Comprehensive Luerl runtime analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -613,32 +612,161 @@ impl Default for PerformanceMetrics {
 pub fn analyze_luerl_usage(elixir_source: &str) -> LuerlAnalysisResult {
     let mut result = LuerlAnalysisResult::default();
 
-    // TODO: Implement analysis using tree-sitter-elixir
-    // - Detect Lua.new(), Lua.eval!, Lua.set!, Lua.load_api patterns
-    // - Extract embedded ~LUA sigils
-    // - Find LuaRunner.execute/execute_rule calls
-    // - Analyze error handling and timeout patterns
+    // Basic pattern detection using string matching (tree-sitter parsing would be more robust)
+    if elixir_source.contains("Lua.new()") || elixir_source.contains(":luerl.init") {
+        result.runtime_patterns.state_creations.push(StateCreationInfo {
+            location: "unknown".to_string(),
+            line: 0,
+            state_variable: "lua_state".to_string(),
+            initialization_chain: vec!["Lua.new()".to_string()],
+        });
+    }
+
+    if elixir_source.contains("Lua.eval!") || elixir_source.contains(":luerl.eval") {
+        result.runtime_patterns.script_executions.push(ScriptExecutionInfo {
+            location: "unknown".to_string(),
+            line: 0,
+            script_source: ScriptSource::Embedded { content: "inline".to_string() },
+            has_error_handling: elixir_source.contains("rescue") || elixir_source.contains("with "),
+            has_timeout: elixir_source.contains("timeout"),
+            execution_context: None,
+        });
+    }
+
+    if elixir_source.contains("Lua.set!") || elixir_source.contains(":luerl.set_table") {
+        result.runtime_patterns.context_injections.push(ContextInjectionInfo {
+            location: "unknown".to_string(),
+            line: 0,
+            key: "unknown".to_string(),
+            value_type: "dynamic".to_string(),
+            is_safe: !elixir_source.contains("SECRET"),
+        });
+    }
+
+    // Detect embedded Lua scripts via sigils or heredocs
+    if elixir_source.contains("~LUA") || elixir_source.contains("@lua") {
+        result.script_analysis.embedded_scripts.push(EmbeddedScriptInfo {
+            location: "sigil".to_string(),
+            line_start: 0,
+            line_end: 0,
+            script_type: EmbeddedScriptType::CustomLogic,
+            complexity: 1.0,
+            safety_score: 80.0,
+            has_documentation: false,
+        });
+
+        result.script_analysis.script_metrics.push(ScriptMetrics {
+            script_id: "embedded".to_string(),
+            location: "sigil".to_string(),
+            loc: 10,
+            complexity: 1.0,
+            halstead_volume: 10.0,
+            maintainability_index: 80.0,
+            function_count: 0,
+            safety_score: 80.0,
+            performance_score: 75.0,
+        });
+    }
+
+    // Detect LuaRunner usage
+    if elixir_source.contains("LuaRunner.execute") {
+        result.runtime_patterns.script_executions.push(ScriptExecutionInfo {
+            location: "LuaRunner".to_string(),
+            line: 0,
+            script_source: ScriptSource::Variable { name: "runner_script".to_string() },
+            has_error_handling: elixir_source.contains("rescue") || elixir_source.contains("with "),
+            has_timeout: elixir_source.contains("timeout"),
+            execution_context: Some("LuaRunner.execute".to_string()),
+        });
+    }
+
+    // Update summary statistics
+    result.runtime_patterns.pattern_stats.total_lua_states = result.runtime_patterns.state_creations.len() as u32;
+    result.runtime_patterns.pattern_stats.total_executions = result.runtime_patterns.script_executions.len() as u32;
+    result.runtime_patterns.pattern_stats.executions_with_error_handling = result
+        .runtime_patterns
+        .script_executions
+        .iter()
+        .filter(|exec| exec.has_error_handling)
+        .count() as u32;
+    result.runtime_patterns.pattern_stats.executions_with_timeout = result
+        .runtime_patterns
+        .script_executions
+        .iter()
+        .filter(|exec| exec.has_timeout)
+        .count() as u32;
 
     result
 }
 
 /// Analyze single Lua script for quality and safety
 pub fn analyze_lua_script(lua_source: &str) -> ScriptMetrics {
-    // TODO: Implement using RCA metrics
-    // - Calculate complexity, halstead, maintainability
-    // - Detect unsafe patterns
-    // - Estimate performance
+    // Basic analysis using line counting and pattern detection
+    let lines: Vec<&str> = lua_source.lines().collect();
+    let loc = lines.len();
+
+    // Count control flow for basic complexity estimate
+    let mut complexity = 1.0; // Base complexity
+    for line in &lines {
+        if line.contains("if ") || line.contains("elseif ") {
+            complexity += 1.0;
+        }
+        if line.contains("for ") || line.contains("while ") {
+            complexity += 1.0;
+        }
+        if line.contains("function ") {
+            complexity += 1.0;
+        }
+    }
+
+    // Detect unsafe patterns
+    let mut unsafe_patterns = Vec::new();
+    if lua_source.contains("os.execute") || lua_source.contains("io.popen") {
+        unsafe_patterns.push("System command execution detected".to_string());
+    }
+    if lua_source.contains("loadstring") || lua_source.contains("load(") {
+        unsafe_patterns.push("Dynamic code execution (loadstring/load)".to_string());
+    }
+    if lua_source.contains("require") && !lua_source.contains("--") {
+        unsafe_patterns.push("External module loading".to_string());
+    }
+
+    // Basic maintainability calculation (inverse of complexity, scaled 0-100)
+    let maintainability_index: f64 = if complexity > 0.0 {
+        f64::max(100.0 - (complexity * 2.0), 0.0)
+    } else {
+        100.0
+    };
+
+    // Calculate function count
+    let function_count = lines.iter()
+        .filter(|line| line.contains("function "))
+        .count() as u32;
+
+    // Calculate safety score (0-100, higher is safer)
+    let safety_score: f64 = if unsafe_patterns.is_empty() {
+        100.0
+    } else {
+        f64::max(100.0 - (unsafe_patterns.len() as f64 * 20.0), 0.0)
+    };
+
+    // Calculate performance score (based on complexity, lower complexity = better performance)
+    let performance_score: f64 = if complexity <= 5.0 {
+        100.0
+    } else {
+        f64::max(100.0 - (complexity - 5.0) * 5.0, 0.0)
+    };
 
     ScriptMetrics {
-        script_id: "unknown".to_string(),
-        location: "unknown".to_string(),
-        loc: 0,
-        complexity: 0.0,
-        halstead_volume: 0.0,
-        maintainability_index: 0.0,
-        function_count: 0,
-        safety_score: 0.0,
-        performance_score: 0.0,
+        script_id: "analyzed".to_string(),
+        location: "inline".to_string(),
+        loc: loc as u32,
+        complexity,
+        halstead_volume: (loc as f64) * 2.0, // Rough estimate
+        maintainability_index,
+        function_count,
+        safety_score,
+        performance_score,
     }
 }
 

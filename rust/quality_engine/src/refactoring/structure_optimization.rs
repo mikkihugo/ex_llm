@@ -206,13 +206,13 @@ impl StructureOptimizationAnalyzer {
         let mut in_function = false;
         let mut function_lines = 0;
         
-        for (i, line) in lines.iter().enumerate().skip(start_line) {
+        for (_i, line) in lines.iter().enumerate().skip(start_line) {
             let line = line.trim();
-            
+
             if line.contains("fn ") || line.contains("def ") || line.contains("function ") {
                 in_function = true;
             }
-            
+
             if in_function {
                 function_lines += 1;
                 
@@ -251,13 +251,13 @@ impl StructureOptimizationAnalyzer {
         let mut in_function = false;
         let mut function_lines = 0;
         
-        for (i, line) in lines.iter().enumerate().skip(start_line) {
+        for (_i, line) in lines.iter().enumerate().skip(start_line) {
             let line = line.trim();
-            
+
             if line.contains("fn ") || line.contains("def ") || line.contains("function ") {
                 in_function = true;
             }
-            
+
             if in_function {
                 function_lines += 1;
                 

@@ -1,8 +1,7 @@
-use tree_sitter::{Language, Parser, Query, QueryCursor, StreamingIterator};
+use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator};
 
 /// Lua parser using tree-sitter-lua
 pub struct LuaParser {
-    language: Language,
     parser: Parser,
     query: Query,
 }
@@ -42,7 +41,6 @@ impl LuaParser {
         )?;
 
         Ok(Self {
-            language,
             parser,
             query,
         })
@@ -61,10 +59,7 @@ impl LuaParser {
         while let Some((matched_node, _)) = captures.next() {
             for capture in matched_node.captures {
                 let node = capture.node;
-                let text = &content[node.byte_range()];
-                let start = node.start_position();
-                let end = node.end_position();
-                
+
                 // Map capture index to capture name based on query order
                 let capture_name = match capture.index {
                     0 => "function",

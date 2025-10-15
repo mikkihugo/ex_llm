@@ -1,4 +1,7 @@
-use tree_sitter::{Language, Parser, Query, QueryCursor};
+use tree_sitter::{Language, Parser, Query, QueryCursor, Tree};
+use parser_core::{
+    Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
+};
 
 /// Dockerfile parser using tree-sitter-dockerfile
 pub struct DockerfileParser {
@@ -692,5 +695,137 @@ CMD ["npm", "start"]
         assert_eq!(doc.exposes.len(), 1);
         assert_eq!(doc.cmds.len(), 1);
         assert_eq!(doc.comments.len(), 1);
+    }
+}
+
+impl LanguageParser for DockerfileParser {
+    fn get_language(&self) -> &str {
+        "dockerfile"
+    }
+
+    fn get_extensions(&self) -> Vec<&str> {
+        vec!["Dockerfile", "dockerfile", "Dockerfile.*", "*.dockerfile"]
+    }
+
+    fn parse(&self, content: &str) -> Result<AST, ParseError> {
+        let mut parser = Parser::new();
+        parser.set_language(self.language)
+            .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
+        
+        let tree = parser.parse(content, None)
+            .ok_or_else(|| ParseError::ParseError("Failed to parse Dockerfile".to_string()))?;
+        
+        Ok(AST::new(tree, content.to_string()))
+    }
+
+    fn get_metrics(&self, ast: &AST) -> Result<LanguageMetrics, ParseError> {
+        let content = &ast.content;
+        let lines: Vec<&str> = content.lines().collect();
+        let total_lines = lines.len() as u32;
+        
+        let mut blank_lines = 0;
+        let mut comment_lines = 0;
+        let mut code_lines = 0;
+        
+        for line in &lines {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                blank_lines += 1;
+            } else if trimmed.starts_with('#') {
+                comment_lines += 1;
+            } else {
+                code_lines += 1;
+            }
+        }
+        
+        // Count Dockerfile instructions
+        let mut instruction_count = 0;
+        let mut cursor = QueryCursor::new();
+        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+        
+        for _match in matches {
+            instruction_count += 1;
+        }
+        
+        Ok(LanguageMetrics {
+            total_lines: total_lines as u64,
+            blank_lines: blank_lines as u64,
+            lines_of_comments: comment_lines as u64,
+            lines_of_code: code_lines as u64,
+            functions: instruction_count as u64,
+            classes: 0, // Dockerfiles don't have classes
+            complexity_score: instruction_count as f64,
+        })
+    }
+
+    fn get_functions(&self, ast: &AST) -> Result<Vec<FunctionInfo>, ParseError> {
+        let mut functions = Vec::new();
+        let content = &ast.content;
+        let mut cursor = QueryCursor::new();
+        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+        
+        for (match_index, _match) in matches.enumerate() {
+            for capture in _match.captures {
+                let node = capture.node;
+                let instruction_type = node.kind();
+                let start_byte = node.start_byte();
+                let end_byte = node.end_byte();
+                let start_line = node.start_position().row as u32 + 1;
+                let end_line = node.end_position().row as u32 + 1;
+                
+                // Extract instruction content
+                let instruction_content = &content[start_byte..end_byte];
+                let name = format!("{}_instruction_{}", instruction_type, match_index);
+                
+                functions.push(FunctionInfo {
+                    name,
+                    line_start: start_line,
+                    line_end: end_line,
+                    parameters: vec![], // Dockerfile instructions don't have parameters in the traditional sense
+                    return_type: None,
+                    complexity: 1,
+                    is_async: false,
+                    is_generator: false,
+                    docstring: None,
+                    decorators: vec![],
+                    signature: Some(instruction_content.to_string()),
+                    body: Some(instruction_content.to_string()),
+                });
+            }
+        }
+        
+        Ok(functions)
+    }
+
+    fn get_imports(&self, _ast: &AST) -> Result<Vec<Import>, ParseError> {
+        // Dockerfiles don't have traditional imports, but they do have FROM statements
+        // which could be considered as "imports" of base images
+        Ok(vec![])
+    }
+
+    fn get_comments(&self, ast: &AST) -> Result<Vec<Comment>, ParseError> {
+        let mut comments = Vec::new();
+        let content = &ast.content;
+        let mut cursor = QueryCursor::new();
+        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+        
+        for _match in matches {
+            for capture in _match.captures {
+                if capture.node.kind() == "comment" {
+                    let node = capture.node;
+                    let comment_content = &content[node.start_byte()..node.end_byte()];
+                    let line = node.start_position().row as u32 + 1;
+                    let column = node.start_position().column as u32 + 1;
+                    
+                    comments.push(Comment {
+                        content: comment_content.to_string(),
+                        line,
+                        column,
+                    });
+                }
+            }
+        }
+        
+        Ok(comments)
     }
 }

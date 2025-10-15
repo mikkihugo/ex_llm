@@ -30,6 +30,9 @@ tree-sitter = "0.25.10"
 # AST-Grep for structural search, linting, and code transformation
 ast-grep-core = { workspace = true }
 
+# Lazy static for global language registry
+lazy_static = "1.4"
+
 # Core utilities
 async-trait = "0.1"
 futures = "0.3"
@@ -49,8 +52,7 @@ regex = "1.0"
 # Logging
 tracing = "0.1"
 
-# Temporary files (only for RCA analysis which requires file paths)
-tempfile = "3.0"
+# Note: RCA analysis now uses in-memory processing with dummy paths
 
 # Singularity rust-code-analysis for comprehensive complexity metrics
 singularity-code-analysis = { path = "../analyzers/rust_code_analysis" }
@@ -71,6 +73,15 @@ tree-sitter-bash = { workspace = true }
 tree-sitter-json = { workspace = true }
 tree-sitter-yaml = { workspace = true }
 tree-sitter-lua = { workspace = true }
+tree-sitter-md = { workspace = true }
+tree-sitter-dockerfile = { workspace = true }
+tree-sitter-toml = { workspace = true }
+tree-sitter-sql = { workspace = true }
+
+tree-sitter-language = "0.1.5"
+
+# Utility crates
+num_cpus = { workspace = true }
 
 [dev-dependencies]
 tokio-test = "0.4"

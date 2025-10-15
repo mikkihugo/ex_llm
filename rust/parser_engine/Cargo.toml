@@ -13,7 +13,7 @@ categories = ["development-tools", "parsing"]
 [lib]
 name = "parser_code"
 path = "src/lib.rs"
-crate-type = ["cdylib"]  # NIF library - separate from code_engine NIF
+crate-type = ["rlib", "cdylib"]  # Both library and NIF (like code_engine)
 
 [dependencies]
 # Core parser library (shared types, no NIF)
@@ -29,25 +29,26 @@ anyhow = "1.0"
 # Universal dependency analysis - stable version
 tokei = "12.1"
 
-# Tree-sitter core and language bindings - ONLY essential languages
+# Tree-sitter core
 tree-sitter = "0.25.10"
-tree-sitter-elixir = "0.3.4"
-tree-sitter-erlang = "0.15.0"
-tree-sitter-gleam = "1.0.0"
-tree-sitter-rust = "0.24.0"
-tree-sitter-javascript = "0.25.0"
-tree-sitter-typescript = "0.23.2"
-tree-sitter-python = "0.25.0"
-tree-sitter-json = "0.24.8"
-tree-sitter-yaml = "0.7.2"
-tree-sitter-bash = "0.25.0"
-tree-sitter-go = "0.25"
-tree-sitter-java = "0.23"
-tree-sitter-c-sharp = "0.23"
-tree-sitter-c = "0.24"
-tree-sitter-cpp = "0.23"
-tree-sitter-md = { git = "https://github.com/mikkihugo/tree-sitter-markdown", branch = "update-tree-sitter-0.25", features = ["parser"] }
-tree-sitter-lua = "0.2.0"
+
+# Language parser crates (separate crates for each language)
+elixir_parser = { path = "./languages/elixir" }
+erlang_parser = { path = "./languages/erlang" }
+gleam_parser = { path = "./languages/gleam" }
+rust_parser = { path = "./languages/rust" }
+javascript_parser = { path = "./languages/javascript" }
+typescript_parser = { path = "./languages/typescript" }
+python_parser = { path = "./languages/python" }
+json_parser = { path = "./languages/json" }
+yaml_parser = { path = "./languages/yaml" }
+bash_parser = { path = "./languages/bash" }
+go_parser = { path = "./languages/go" }
+java_parser = { path = "./languages/java" }
+csharp_parser = { path = "./languages/csharp" }
+c_parser = { path = "./languages/c" }
+cpp_parser = { path = "./languages/cpp" }
+parser_engine_lua = { path = "./languages/lua" }
 
 # Core utilities - explicit versions (not workspace)
 serde = { version = "1.0", features = ["derive"] }

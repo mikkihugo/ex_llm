@@ -54,6 +54,7 @@ impl LanguageParser for JavascriptParser {
             total_lines: ast.content.lines().count() as u64,
             functions: functions.len() as u64,
             classes: 0, // TODO: implement class counting
+            imports: imports.len() as u64,
             complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
@@ -94,6 +95,11 @@ impl LanguageParser for JavascriptParser {
             }
 
             if let Some(node) = node {
+                let full_text = Self::extract_text(node, &ast.content);
+                let is_async = full_text.trim_start().starts_with("async ");
+                let is_generator = full_text.contains("function*") || body.contains("yield");
+                let signature = format!("{}({})", name, params);
+
                 functions.push(FunctionInfo {
                     name: name.to_owned(),
                     parameters: params.split(',').map(|s| s.trim().to_string()).collect(),
@@ -101,6 +107,12 @@ impl LanguageParser for JavascriptParser {
                     line_start: (node.start_position().row + 1) as u32,
                     line_end: (node.end_position().row + 1) as u32,
                     complexity: 0,
+                    decorators: Vec::new(),
+                    docstring: extract_jsdoc(node, &ast.content),
+                    is_async,
+                    is_generator,
+                    signature: Some(signature),
+                    body: Some(body.to_owned()),
                 });
             }
         }
@@ -135,6 +147,11 @@ impl LanguageParser for JavascriptParser {
             }
 
             if let Some(node) = node {
+                let full_text = Self::extract_text(node, &ast.content);
+                let is_async = full_text.trim_start().starts_with("async ");
+                let is_generator = body.contains("yield");
+                let signature = format!("{}({})", name, params);
+
                 functions.push(FunctionInfo {
                     name: name.to_owned(),
                     parameters: params.split(',').map(|s| s.trim().to_string()).collect(),
@@ -142,6 +159,12 @@ impl LanguageParser for JavascriptParser {
                     line_start: (node.start_position().row + 1) as u32,
                     line_end: (node.end_position().row + 1) as u32,
                     complexity: 0,
+                    decorators: Vec::new(),
+                    docstring: extract_jsdoc(node, &ast.content),
+                    is_async,
+                    is_generator,
+                    signature: Some(signature),
+                    body: Some(body.to_owned()),
                 });
             }
         }
@@ -210,10 +233,16 @@ impl LanguageParser for JavascriptParser {
                     .unwrap_or_default()
                     .to_owned();
                 let position = capture.node.start_position();
+                let kind = if text.trim_start().starts_with("/*") {
+                    "block".to_string()
+                } else {
+                    "line".to_string()
+                };
                 comments.push(Comment {
                     content: text,
                     line: (position.row + 1) as u32,
                     column: (position.column + 1) as u32,
+                    kind,
                 });
             }
         }
@@ -228,4 +257,28 @@ impl LanguageParser for JavascriptParser {
     fn get_extensions(&self) -> Vec<&str> {
         vec!["js", "mjs", "cjs"]
     }
+}
+
+/// Extract JSDoc comment before a node
+fn extract_jsdoc(node: tree_sitter::Node, source: &str) -> Option<String> {
+    // Look for comment before the function
+    if let Some(prev_sibling) = node.prev_sibling() {
+        if prev_sibling.kind() == "comment" {
+            let text = prev_sibling.utf8_text(source.as_bytes()).ok()?;
+            if text.trim_start().starts_with("/**") {
+                let cleaned = text
+                    .trim()
+                    .trim_start_matches("/**")
+                    .trim_end_matches("*/")
+                    .lines()
+                    .map(|line| line.trim().trim_start_matches('*').trim())
+                    .collect::<Vec<_>>()
+                    .join("\n")
+                    .trim()
+                    .to_string();
+                return Some(cleaned);
+            }
+        }
+    }
+    None
 }

@@ -210,6 +210,7 @@ impl LanguageRules {
 
 /// Case style for naming conventions
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
 pub enum CaseStyle {
     SnakeCase,
     CamelCase,

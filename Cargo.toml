@@ -92,6 +92,8 @@ reqwest = { version = "0.12.23", features = ["json"] }
 tree-sitter = "0.25.10"
 futures = "0.3"
 tokei = "12.1"
+ast-grep-core = "0.39.6"
+tree-sitter-language = "0.1.5"
 
 # Tree-sitter language parsers
 tree-sitter-javascript = "0.25.0"
@@ -127,7 +129,11 @@ tree-sitter-dart = "0.0.4"
 # Data languages
 tree-sitter-toml = "0.20.0"
 tree-sitter-xml = "0.7.0"
-tree-sitter-markdown = "0.7.1"
+tree-sitter-md = "0.5.1"
+tree-sitter-sql = "0.0.2"
+
+# Infrastructure languages
+tree-sitter-dockerfile = "0.2.0"
 
 # System languages
 tree-sitter-zig = "1.1.2"

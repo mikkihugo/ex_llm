@@ -67,6 +67,7 @@ impl LanguageParser for TypescriptParser {
             total_lines: ast.content.lines().count() as u64,
             functions: functions.len() as u64,
             classes: 0, // TODO: implement class counting
+            imports: imports.len() as u64,
             complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
@@ -113,6 +114,16 @@ impl LanguageParser for TypescriptParser {
             }
 
             if let Some(node) = fn_node {
+                let full_text = Self::extract_text(node, &ast.content);
+                let is_async = full_text.trim_start().starts_with("async ");
+                let is_generator = full_text.contains("function*") || body.contains("yield");
+                let decorators = extract_decorators(node, &ast.content);
+                let signature = if ret.is_empty() || ret == "any" {
+                    format!("{}({})", name, params)
+                } else {
+                    format!("{}({}): {}", name, params, ret)
+                };
+
                 functions.push(FunctionInfo {
                     name: name.to_owned(),
                     parameters: params.split(',').map(|s| s.trim().to_string()).collect(),
@@ -120,6 +131,12 @@ impl LanguageParser for TypescriptParser {
                     line_start: (node.start_position().row + 1) as u32,
                     line_end: (node.end_position().row + 1) as u32,
                     complexity: 0,
+                    decorators,
+                    docstring: extract_jsdoc_ts(node, &ast.content),
+                    is_async,
+                    is_generator,
+                    signature: Some(signature),
+                    body: Some(body.to_owned()),
                 });
             }
         }
@@ -159,6 +176,15 @@ impl LanguageParser for TypescriptParser {
             }
 
             if let Some(node) = arrow_node {
+                let full_text = Self::extract_text(node, &ast.content);
+                let is_async = full_text.trim_start().starts_with("async ") || full_text.contains("async (");
+                let is_generator = body.contains("yield");
+                let signature = if ret.is_empty() || ret == "any" {
+                    format!("{}({})", name, params)
+                } else {
+                    format!("{}({}): {}", name, params, ret)
+                };
+
                 functions.push(FunctionInfo {
                     name: name.to_owned(),
                     parameters: params.split(',').map(|s| s.trim().to_string()).collect(),
@@ -166,6 +192,12 @@ impl LanguageParser for TypescriptParser {
                     line_start: (node.start_position().row + 1) as u32,
                     line_end: (node.end_position().row + 1) as u32,
                     complexity: 0,
+                    decorators: Vec::new(),
+                    docstring: extract_jsdoc_ts(node, &ast.content),
+                    is_async,
+                    is_generator,
+                    signature: Some(signature),
+                    body: Some(body.to_owned()),
                 });
             }
         }
@@ -203,6 +235,16 @@ impl LanguageParser for TypescriptParser {
             }
 
             if let Some(node) = method_node {
+                let full_text = Self::extract_text(node, &ast.content);
+                let is_async = full_text.trim_start().starts_with("async ");
+                let is_generator = full_text.contains("*") || body.contains("yield");
+                let decorators = extract_decorators(node, &ast.content);
+                let signature = if ret.is_empty() || ret == "any" {
+                    format!("{}({})", name, params)
+                } else {
+                    format!("{}({}): {}", name, params, ret)
+                };
+
                 functions.push(FunctionInfo {
                     name: name.to_owned(),
                     parameters: params.split(',').map(|s| s.trim().to_string()).collect(),
@@ -210,6 +252,12 @@ impl LanguageParser for TypescriptParser {
                     line_start: (node.start_position().row + 1) as u32,
                     line_end: (node.end_position().row + 1) as u32,
                     complexity: 0,
+                    decorators,
+                    docstring: extract_jsdoc_ts(node, &ast.content),
+                    is_async,
+                    is_generator,
+                    signature: Some(signature),
+                    body: Some(body.to_owned()),
                 });
             }
         }
@@ -278,16 +326,16 @@ impl LanguageParser for TypescriptParser {
                     .unwrap_or_default()
                     .to_owned();
                 let start = capture.node.start_position().row + 1;
-                let end = capture.node.end_position().row + 1;
                 let kind = if text.trim_start().starts_with("/*") {
-                    "block"
+                    "block".to_string()
                 } else {
-                    "line"
+                    "line".to_string()
                 };
                 comments.push(Comment {
                     content: text,
                     line: start as u32,
                     column: 0, // TODO: implement column counting
+                    kind,
                 });
             }
         }
@@ -302,6 +350,51 @@ impl LanguageParser for TypescriptParser {
     fn get_extensions(&self) -> Vec<&str> {
         vec!["ts", "tsx"]
     }
+}
+
+/// Extract JSDoc/TSDoc comment before a node
+fn extract_jsdoc_ts(node: tree_sitter::Node, source: &str) -> Option<String> {
+    // Look for comment before the function
+    if let Some(prev_sibling) = node.prev_sibling() {
+        if prev_sibling.kind() == "comment" {
+            let text = prev_sibling.utf8_text(source.as_bytes()).ok()?;
+            if text.trim_start().starts_with("/**") {
+                let cleaned = text
+                    .trim()
+                    .trim_start_matches("/**")
+                    .trim_end_matches("*/")
+                    .lines()
+                    .map(|line| line.trim().trim_start_matches('*').trim())
+                    .collect::<Vec<_>>()
+                    .join("\n")
+                    .trim()
+                    .to_string();
+                return Some(cleaned);
+            }
+        }
+    }
+    None
+}
+
+/// Extract TypeScript decorators from a node
+fn extract_decorators(node: tree_sitter::Node, source: &str) -> Vec<String> {
+    let mut decorators = Vec::new();
+
+    // Look for decorator nodes before the function/method
+    let mut current = node.prev_sibling();
+    while let Some(sibling) = current {
+        if sibling.kind() == "decorator" {
+            if let Ok(text) = sibling.utf8_text(source.as_bytes()) {
+                let decorator = text.trim().trim_start_matches('@').to_string();
+                decorators.insert(0, decorator); // Insert at beginning to maintain order
+            }
+            current = sibling.prev_sibling();
+        } else {
+            break;
+        }
+    }
+
+    decorators
 }
 
 #[cfg(test)]

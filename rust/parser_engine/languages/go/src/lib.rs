@@ -50,6 +50,7 @@ impl LanguageParser for GoParser {
             total_lines: ast.content.lines().count() as u64,
             functions: functions.len() as u64,
             classes: 0, // Go doesn't have classes
+            imports: imports.len() as u64,
             complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
@@ -92,6 +93,12 @@ impl LanguageParser for GoParser {
                         line_start: start as u32,
                         line_end: end as u32,
                         complexity: 1, // TODO: implement complexity calculation
+                        decorators: Vec::new(),
+                        docstring: None,
+                        is_async: false,
+                        is_generator: false,
+                        signature: None,
+                        body: None,
                     });
                 }
             }
@@ -125,7 +132,6 @@ impl LanguageParser for GoParser {
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
-                    let end = capture.node.end_position().row + 1;
                     imports.push(Import {
                         module: path,
                         items: Vec::new(),
@@ -161,11 +167,16 @@ impl LanguageParser for GoParser {
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
-                    let end = capture.node.end_position().row + 1;
+                    let kind = if text.trim_start().starts_with("/*") {
+                        "block".to_string()
+                    } else {
+                        "line".to_string()
+                    };
                     comments.push(Comment {
                         content: text,
                         line: start as u32,
                         column: (capture.node.start_position().column + 1) as u32,
+                        kind,
                     });
                 }
             }

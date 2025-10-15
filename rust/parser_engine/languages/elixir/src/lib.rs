@@ -104,6 +104,12 @@ impl LanguageParser for ElixirParser {
                         line_start: start as u32,
                         line_end: end as u32,
                         complexity: 1, // TODO: implement complexity calculation
+                        decorators: Vec::new(),
+                        docstring: None,
+                        is_async: false,
+                        is_generator: false,
+                        signature: None,
+                        body: None,
                     });
                 }
             }
@@ -186,6 +192,7 @@ impl LanguageParser for ElixirParser {
                         content: text,
                         line: start as u32,
                         column: (capture.node.start_position().column + 1) as u32,
+                        kind: "line".to_string(), // Elixir comments are always line comments
                     });
                 }
             }

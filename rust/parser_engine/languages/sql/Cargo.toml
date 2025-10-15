@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tree-sitter = "0.19.5"
+tree-sitter = { workspace = true }
 tree-sitter-sql = "0.0.2"
+parser_core = { path = "../../core" }

@@ -61,7 +61,7 @@ function processOrder(order) {
 
 /// Demo: Structural search for console.log calls
 fn demo_structural_search(code: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let grep = AstGrep::new("javascript");
+    let mut grep = AstGrep::new("javascript")?;
 
     // Search for all console.log() calls
     let pattern = Pattern::new("console.log($$$ARGS)");
@@ -87,7 +87,7 @@ fn demo_structural_search(code: &str) -> Result<(), Box<dyn std::error::Error>> 
 
 /// Demo: AST-based linting with custom rules
 fn demo_linting(code: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let grep = AstGrep::new("javascript");
+    let mut grep = AstGrep::new("javascript")?;
 
     // Define custom lint rules
     let rules = vec![
@@ -151,7 +151,7 @@ fn demo_linting(code: &str) -> Result<(), Box<dyn std::error::Error>> {
 
 /// Demo: Code transformation using AST patterns
 fn demo_transformation(code: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let grep = AstGrep::new("javascript");
+    let mut grep = AstGrep::new("javascript")?;
 
     // Replace console.log with logger.debug
     let find_pattern = Pattern::new("console.log($$$ARGS)");

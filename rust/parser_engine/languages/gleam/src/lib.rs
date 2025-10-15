@@ -56,6 +56,7 @@ impl LanguageParser for GleamParser {
             total_lines: ast.content.lines().count() as u64,
             functions: functions.len() as u64,
             classes: 0, // TODO: implement class counting
+            imports: imports.len() as u64,
             complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
@@ -94,6 +95,12 @@ impl LanguageParser for GleamParser {
                         line_start: start as u32,
                         line_end: end as u32,
                         complexity: 0,
+                        decorators: Vec::new(),
+                        docstring: None,
+                        is_async: false,
+                        is_generator: false,
+                        signature: None,
+                        body: None,
                     });
                 }
             }
@@ -167,6 +174,7 @@ impl LanguageParser for GleamParser {
                         content,
                         line: line as u32,
                         column: column as u32,
+                        kind: "line".to_string(), // Gleam comments are always line comments
                     });
                 }
             }

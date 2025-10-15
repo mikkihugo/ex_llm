@@ -5,8 +5,7 @@ use parser_core::{
     beam_analysis::{
         BeamAnalysisResult, OtpPatterns, GenServerInfo, SupervisorInfo, ApplicationInfo,
         ActorAnalysis, ProcessSpawningAnalysis, MessagePassingAnalysis, ConcurrencyPatterns,
-        FaultToleranceAnalysis, BeamMetrics, LanguageFeatures, ErlangFeatures,
-        OtpBehavior, CommonTestUsage, DialyzerUsage,
+        FaultToleranceAnalysis, BeamMetrics, LanguageFeatures, ErlangFeatures, CommonTestUsage, DialyzerUsage,
     },
 };
 use std::sync::Mutex;
@@ -95,6 +94,12 @@ impl LanguageParser for ErlangParser {
                         line_start: start as u32,
                         line_end: end as u32,
                         complexity: 1, // TODO: implement complexity calculation
+                        decorators: Vec::new(),
+                        docstring: None,
+                        is_async: false,
+                        is_generator: false,
+                        signature: None,
+                        body: None,
                     });
                 }
             }
@@ -169,6 +174,7 @@ impl LanguageParser for ErlangParser {
                         content: text,
                         line: start as u32,
                         column: (capture.node.start_position().column + 1) as u32,
+                        kind: "line".to_string(), // Erlang comments are always line comments
                     });
                 }
             }

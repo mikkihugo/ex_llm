@@ -217,25 +217,4 @@ fn validate_naming_convention(name: String, element_type: String) -> bool {
 // Removed: Simple stub detect_frameworks - use framework_detection module instead
 // The proper implementation is in src/framework_detection/mod.rs
 
-rustler::init!(
-    "Elixir.Singularity.ArchitectureEngine",
-    [
-        suggest_function_names,
-        suggest_module_names,
-        suggest_variable_names,
-        validate_naming_convention,
-        suggest_monorepo_name,
-        suggest_library_name,
-        suggest_service_name,
-        suggest_component_name,
-        suggest_package_name,
-        suggest_table_name,
-        suggest_endpoint_name,
-        suggest_microservice_name,
-        suggest_topic_name,
-        suggest_nats_subject,
-        suggest_kafka_topic,
-        suggest_names_for_architecture,
-        // detect_frameworks removed - use framework_detection module instead
-    ]
-);
+rustler::init!("Elixir.Singularity.ArchitectureEngine");

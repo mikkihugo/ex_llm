@@ -5,9 +5,8 @@
 
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use anyhow::Result;
 use petgraph::graph::{DiGraph, NodeIndex, EdgeIndex};
-use petgraph::{Graph, Directed};
+use petgraph::algo::has_path_connecting;
 
 /// Graph node representing code elements
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -293,10 +292,71 @@ impl FileDAG {
   }
 
   /// Check if adding a dependency would create a cycle
+  ///
+  /// Returns `true` if adding an edge from `from` to `to` would create a cycle.
+  ///
+  /// # Algorithm
+  ///
+  /// For a directed acyclic graph (DAG), adding edge A→B creates a cycle if and only if
+  /// there already exists a path from B to A. This is because:
+  /// - If B can reach A, then A→B would complete the cycle: A→B→...→A
+  /// - If B cannot reach A, then A→B cannot create a cycle
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// use code_engine::codebase::graphs::{DependencyDAG, GraphNode, GraphEdge};
+  /// use std::collections::HashMap;
+  ///
+  /// let mut dag = DependencyDAG::new();
+  /// let node_a = GraphNode {
+  ///     id: "A".to_string(),
+  ///     node_type: "file".to_string(),
+  ///     name: "A.rs".to_string(),
+  ///     file_path: "src/A.rs".to_string(),
+  ///     metadata: HashMap::new(),
+  /// };
+  /// let node_b = GraphNode {
+  ///     id: "B".to_string(),
+  ///     node_type: "file".to_string(),
+  ///     name: "B.rs".to_string(),
+  ///     file_path: "src/B.rs".to_string(),
+  ///     metadata: HashMap::new(),
+  /// };
+  ///
+  /// dag.add_node(node_a);
+  /// dag.add_node(node_b);
+  ///
+  /// // No cycle: A and B are independent
+  /// assert_eq!(dag.would_create_cycle("A", "B"), false);
+  ///
+  /// // Add edge A→B
+  /// dag.add_edge(GraphEdge {
+  ///     from: "A".to_string(),
+  ///     to: "B".to_string(),
+  ///     edge_type: "depends_on".to_string(),
+  ///     weight: 1.0,
+  ///     metadata: HashMap::new(),
+  /// });
+  ///
+  /// // Would create cycle: B→A would complete A→B→A
+  /// assert_eq!(dag.would_create_cycle("B", "A"), true);
+  /// ```
   pub fn would_create_cycle(&self, from: &str, to: &str) -> bool {
-    // Simple cycle detection - in practice you'd use proper algorithm
-    // This is a placeholder implementation
-    false
+    // Get node indices
+    let from_index = match self.graph.node_lookup.get(from) {
+      Some(idx) => *idx,
+      None => return false, // Node doesn't exist, no cycle possible
+    };
+
+    let to_index = match self.graph.node_lookup.get(to) {
+      Some(idx) => *idx,
+      None => return false, // Node doesn't exist, no cycle possible
+    };
+
+    // Check if there's already a path from 'to' to 'from'
+    // If yes, adding edge from→to would create a cycle
+    has_path_connecting(&self.graph.graph, to_index, from_index, None)
   }
 
   /// Get DAG statistics

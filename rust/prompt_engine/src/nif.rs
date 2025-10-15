@@ -21,20 +21,13 @@
 //! - metrics/           # Performance metrics
 
 // Import modules from lib.rs
-use crate::dspy;
-use crate::dspy_data;
-use crate::token_usage;
 use crate::assembly;
 use crate::caching;
 use crate::language_support;
 use crate::metrics;
 use crate::sparc_templates;
-use crate::template_performance_tracker;
 use crate::templates;
 use crate::prompt_bits;
-use crate::prompt_tracking;
-use crate::dspy_learning;
-use crate::nats_service;
 
 // Re-export main types
 use std::collections::HashMap;
@@ -563,7 +556,7 @@ fn nif_cache_put(key: String, value: String) -> Result<(), rustler::Error> {
 /// NIF function to clear cache
 #[rustler::nif]
 fn nif_cache_clear() -> Result<(), rustler::Error> {
-    let mut engine = get_or_init_prompt_engine()?;
+    let _engine = get_or_init_prompt_engine()?;
     // TODO: Implement cache clearing in PromptCache
     Ok(())
 }
@@ -571,7 +564,7 @@ fn nif_cache_clear() -> Result<(), rustler::Error> {
 /// NIF function to get cache statistics
 #[rustler::nif]
 fn nif_cache_stats() -> Result<NifCacheStats, rustler::Error> {
-    let engine = get_or_init_prompt_engine()?;
+    let _engine = get_or_init_prompt_engine()?;
     // TODO: Get actual stats from cache implementation
     Ok(NifCacheStats {
         total_entries: 0,

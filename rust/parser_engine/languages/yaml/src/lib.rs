@@ -50,6 +50,7 @@ impl LanguageParser for YamlParser {
             total_lines: ast.content.lines().count() as u64,
             functions: 0, // YAML doesn't have functions
             classes: 0, // YAML doesn't have classes
+            imports: 0, // YAML doesn't have imports
             complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
@@ -89,11 +90,11 @@ impl LanguageParser for YamlParser {
                         .unwrap_or_default()
                         .to_owned();
                     let start = capture.node.start_position().row + 1;
-                    let end = capture.node.end_position().row + 1;
                     comments.push(Comment {
                         content: text,
                         line: start as u32,
                         column: (capture.node.start_position().column + 1) as u32,
+                        kind: "line".to_string(), // YAML comments are always line comments
                     });
                 }
             }

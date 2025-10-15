@@ -1,11 +1,11 @@
 //! Python parser implemented with tree-sitter and the parser-framework traits.
 
 use parser_core::{
-    Class, Comment, Decorator, Enum, EnumVariant, FunctionInfo, Import, LanguageMetrics,
+    Class, Comment, Decorator, EnumVariant, FunctionInfo, Import, LanguageMetrics,
     LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
-use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator, Tree};
+use tree_sitter::{Node, Parser, StreamingIterator, Tree};
 
 pub const VERSION: &str = "python-tree-sitter-0.23";
 
@@ -102,6 +102,7 @@ impl LanguageParser for PythonParser {
             total_lines: ast.content.lines().count() as u64,
             functions: functions.len() as u64,
             classes: class_infos.len() as u64,
+            imports: imports.len() as u64,
             complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
@@ -144,6 +145,12 @@ impl LanguageParser for PythonParser {
                 line_start: (node.start_position().row + 1) as u32,
                 line_end: (node.end_position().row + 1) as u32,
                 complexity: 0,
+                decorators: decorators.iter().map(|d| d.name.clone()).collect(),
+                docstring,
+                is_async,
+                is_generator,
+                signature,
+                body: Some(body),
             });
         });
 
@@ -170,7 +177,6 @@ impl LanguageParser for PythonParser {
         let mut captures = cursor.captures(&query, ast.tree.root_node(), ast.content.as_bytes());
         while let Some(&(ref m, _)) = captures.next() {
             let mut module = "";
-            let mut kind = "import";
             let mut node_ref: Option<Node> = None;
 
             for capture in m.captures {
@@ -181,12 +187,7 @@ impl LanguageParser for PythonParser {
                             .utf8_text(ast.content.as_bytes())
                             .unwrap_or_default();
                     }
-                    1 => {
-                        kind = "import";
-                        node_ref = Some(capture.node);
-                    }
-                    3 => {
-                        kind = "from";
+                    1 | 3 => {
                         node_ref = Some(capture.node);
                     }
                     _ => {}
@@ -221,11 +222,11 @@ impl LanguageParser for PythonParser {
                     .utf8_text(ast.content.as_bytes())
                     .unwrap_or_default();
                 let start = capture.node.start_position().row + 1;
-                let end = capture.node.end_position().row + 1;
                 comments.push(Comment {
                     content: text.to_string(),
                     line: start as u32,
                     column: 0, // TODO: implement column counting
+                    kind: "line".to_string(), // Python comments are always line comments
                 });
             }
         }
@@ -271,6 +272,7 @@ async def add(a, b):
 }
 
 /// Holder for class data and enums extracted from those classes.
+#[allow(dead_code)]
 struct ClassInfo {
     class: Class,
     enum_variants: Vec<EnumVariant>,

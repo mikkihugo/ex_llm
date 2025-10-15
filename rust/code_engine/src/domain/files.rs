@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{metrics::ComplexityMetrics, symbols::CodeSymbols};
+use super::symbols::CodeSymbols;
 
 /// File node in the vector-enhanced DAG
 #[derive(Debug, Clone, Serialize, Deserialize)]

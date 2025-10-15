@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 tree-sitter = { workspace = true }
 tree-sitter-md = { workspace = true }
+parser_core = { path = "../../core" }

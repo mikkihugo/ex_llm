@@ -13,14 +13,11 @@ defmodule Singularity.ParserEngine do
   # Uses default features (includes "nif" feature) - code_engine disables "nif" via default-features = false
   # Standalone Cargo.toml (no workspace dependencies) to avoid Rustler conflicts
 
-  # TEMPORARY DISABLED: Rustler workspace detection bug (gather_local_crates returns nil)
-  # parser-code is available through CodeEngine (uses it as library)
-  # TODO: Re-enable when Rustler fixes workspace support
-  # use Rustler,
-  #   otp_app: :singularity,
-  #   crate: :parser_code,
-  #   path: "../rust/parser_engine",
-  #   skip_compilation?: false
+  # Match exact crate name from Cargo.toml (parser-code with dash)
+  use Rustler,
+    otp_app: :singularity,
+    crate: "parser-code",
+    path: "../rust/parser_engine"
 
   require Logger
   alias Singularity.NatsClient

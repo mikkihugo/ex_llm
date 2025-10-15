@@ -151,19 +151,61 @@ pub fn calculate_quality_metrics_nif(code: Option<String>, language: String) -> 
 }
 
 /// NIF: Load asset from local cache
+///
+/// Loads a cached asset by ID. Assets are stored in a local in-memory cache
+/// for fast access during analysis operations.
+///
+/// # Arguments
+/// * `id` - Unique identifier for the asset (e.g., "template:elixir-genserver", "pattern:async-worker")
+///
+/// # Returns
+/// * `Ok(Some(data))` - Asset found and loaded
+/// * `Ok(None)` - Asset not found in cache
+/// * `Err(error)` - Error loading asset
+///
+/// # Implementation Note
+/// Currently returns None (empty cache). In production, this would:
+/// 1. Check local LRU cache
+/// 2. Return cached data if available
+/// 3. Otherwise return None (caller should use query_asset_nif)
 #[rustler::nif(schedule = "DirtyCpu")]
-pub fn load_asset_nif(id: String) -> NifResult<Option<String>> {
-    // Placeholder implementation
-    // TODO: Integrate with actual knowledge cache service
-    Ok(Some("asset_data".to_string()))
+pub fn load_asset_nif(_id: String) -> NifResult<Option<String>> {
+    // TODO: Implement actual caching with once_cell or similar
+    // For now, always return None to indicate "not in cache"
+    Ok(None)
 }
 
 /// NIF: Query asset from central service
+///
+/// Queries an asset from the central knowledge service. This is typically used
+/// when the asset is not available in the local cache.
+///
+/// # Arguments
+/// * `id` - Unique identifier for the asset
+///
+/// # Returns
+/// * `Ok(Some(data))` - Asset found in central service
+/// * `Ok(None)` - Asset not found
+/// * `Err(error)` - Error querying service
+///
+/// # Implementation Note
+/// Currently returns a mock response. In production, this would:
+/// 1. Make HTTP request to central_cloud service
+/// 2. Parse response
+/// 3. Cache result locally
+/// 4. Return data
 #[rustler::nif(schedule = "DirtyCpu")]
 pub fn query_asset_nif(id: String) -> NifResult<Option<String>> {
-    // Placeholder implementation
-    // TODO: Integrate with actual knowledge central service
-    Ok(Some("query_result".to_string()))
+    // For now, return a structured response that indicates this is a query operation
+    // In production, this would call central_cloud via HTTP
+    let response = serde_json::json!({
+        "source": "query",
+        "id": id,
+        "status": "not_implemented",
+        "message": "Central service integration pending"
+    });
+
+    Ok(Some(response.to_string()))
 }
 
 // ============================================================================

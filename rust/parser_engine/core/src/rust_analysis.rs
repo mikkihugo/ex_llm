@@ -9,7 +9,6 @@
 //! - Error handling patterns (Result, Option)
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Rust-specific analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]

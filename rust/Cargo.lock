@@ -3690,14 +3690,28 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "bash_parser",
+ "c_parser",
  "chrono",
+ "cpp_parser",
  "criterion",
+ "csharp_parser",
  "dashmap 5.5.3",
+ "elixir_parser",
+ "erlang_parser",
  "futures",
+ "gleam_parser",
+ "go_parser",
+ "java_parser",
+ "javascript_parser",
+ "json_parser",
  "lru",
  "parser_core",
+ "parser_engine_lua",
  "petgraph",
+ "python_parser",
  "regex",
+ "rust_parser",
  "rustler",
  "serde",
  "serde_json",
@@ -3710,23 +3724,8 @@ dependencies = [
  "toml 0.8.23",
  "tracing",
  "tree-sitter 0.25.10",
- "tree-sitter-bash",
- "tree-sitter-c",
- "tree-sitter-c-sharp",
- "tree-sitter-cpp",
- "tree-sitter-elixir",
- "tree-sitter-erlang",
- "tree-sitter-gleam",
- "tree-sitter-go",
- "tree-sitter-java",
- "tree-sitter-javascript",
- "tree-sitter-json",
- "tree-sitter-lua",
- "tree-sitter-md",
- "tree-sitter-python",
- "tree-sitter-rust",
- "tree-sitter-typescript",
- "tree-sitter-yaml",
+ "typescript_parser",
+ "yaml_parser",
 ]
 
 [[package]]
@@ -3739,13 +3738,14 @@ dependencies = [
  "chrono",
  "dashmap 5.5.3",
  "futures",
+ "lazy_static",
  "lru",
+ "num_cpus",
  "petgraph",
  "regex",
  "serde",
  "serde_json",
  "singularity-code-analysis",
- "tempfile",
  "thiserror 1.0.69",
  "tokio",
  "tokio-test",
@@ -3754,6 +3754,7 @@ dependencies = [
  "tree-sitter-bash",
  "tree-sitter-c",
  "tree-sitter-cpp",
+ "tree-sitter-dockerfile",
  "tree-sitter-elixir",
  "tree-sitter-erlang",
  "tree-sitter-gleam",
@@ -3761,9 +3762,13 @@ dependencies = [
  "tree-sitter-java",
  "tree-sitter-javascript",
  "tree-sitter-json",
+ "tree-sitter-language",
  "tree-sitter-lua",
+ "tree-sitter-md",
  "tree-sitter-python",
  "tree-sitter-rust",
+ "tree-sitter-sql",
+ "tree-sitter-toml",
  "tree-sitter-typescript",
  "tree-sitter-yaml",
 ]
@@ -3772,7 +3777,8 @@ dependencies = [
 name = "parser_engine_dockerfile"
 version = "0.1.0"
 dependencies = [
- "tree-sitter 0.20.10",
+ "parser_core",
+ "tree-sitter 0.25.10",
  "tree-sitter-dockerfile",
 ]
 
@@ -3788,6 +3794,7 @@ dependencies = [
 name = "parser_engine_markdown"
 version = "0.1.0"
 dependencies = [
+ "parser_core",
  "tree-sitter 0.25.10",
  "tree-sitter-md",
 ]
@@ -3796,7 +3803,8 @@ dependencies = [
 name = "parser_engine_sql"
 version = "0.1.0"
 dependencies = [
- "tree-sitter 0.19.5",
+ "parser_core",
+ "tree-sitter 0.25.10",
  "tree-sitter-sql",
 ]
 
@@ -3804,7 +3812,8 @@ dependencies = [
 name = "parser_engine_toml"
 version = "0.1.0"
 dependencies = [
- "tree-sitter 0.20.10",
+ "parser_core",
+ "tree-sitter 0.25.10",
  "tree-sitter-toml",
 ]
 

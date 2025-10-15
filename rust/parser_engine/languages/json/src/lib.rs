@@ -49,6 +49,7 @@ impl LanguageParser for JsonParser {
             total_lines: ast.content.lines().count() as u64,
             functions: 0, // JSON doesn't have functions
             classes: 0, // JSON doesn't have classes
+            imports: 0, // JSON doesn't have imports
             complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }

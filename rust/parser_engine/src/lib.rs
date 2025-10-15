@@ -6,20 +6,14 @@
 use std::path::Path;
 
 // Re-export parser_core types with NIF attributes
-pub use parser_core::{
-    PolyglotCodeParser,
-    PolyglotCodeParserFrameworkConfig,
-};
+pub use parser_core::{PolyglotCodeParser, PolyglotCodeParserFrameworkConfig};
 
 // Import parser_core types
 use parser_core::{
-    AnalysisResult as CoreAnalysisResult,
-    CodeMetrics as CoreCodeMetrics,
-    RcaMetrics as CoreRcaMetrics,
+    AnalysisResult as CoreAnalysisResult, ClassInfo as CoreClassInfo,
+    CodeMetrics as CoreCodeMetrics, DependencyAnalysis as CoreDependencyAnalysis,
+    FunctionInfo as CoreFunctionInfo, RcaMetrics as CoreRcaMetrics,
     TreeSitterAnalysis as CoreTreeSitterAnalysis,
-    FunctionInfo as CoreFunctionInfo,
-    ClassInfo as CoreClassInfo,
-    DependencyAnalysis as CoreDependencyAnalysis,
 };
 
 // NIF-specific wrappers with rustler::NifStruct
@@ -198,10 +192,11 @@ impl From<CoreAnalysisResult> for AnalysisResult {
 #[rustler::nif(schedule = "DirtyCpu")]
 pub fn parse_file_nif(file_path: String) -> Result<AnalysisResult, String> {
     let path = Path::new(&file_path);
-    let mut parser = PolyglotCodeParser::new()
-        .map_err(|e| format!("Failed to initialize parser: {}", e))?;
+    let mut parser =
+        PolyglotCodeParser::new().map_err(|e| format!("Failed to initialize parser: {}", e))?;
 
-    let result = parser.analyze_file(path)
+    let result = parser
+        .analyze_file(path)
         .map_err(|e| format!("Failed to parse file: {}", e))?;
 
     Ok(result.into())
@@ -215,20 +210,10 @@ pub fn parse_tree_nif(root_path: String) -> Result<String, String> {
 
 #[rustler::nif]
 pub fn supported_languages() -> Vec<String> {
-    vec![
-        "rust".to_string(),
-        "javascript".to_string(),
-        "typescript".to_string(),
-        "python".to_string(),
-        "elixir".to_string(),
-        "erlang".to_string(),
-        "gleam".to_string(),
-        "bash".to_string(),
-        "json".to_string(),
-        "yaml".to_string(),
-        "markdown".to_string(),
-        "lua".to_string(),
-    ]
+    parser_core::ast_grep::AstGrep::supported_languages()
+        .into_iter()
+        .map(|alias| alias.to_string())
+        .collect()
 }
 
 // AST-Grep NIF types
@@ -238,7 +223,7 @@ pub struct AstGrepMatch {
     pub line: u32,
     pub column: u32,
     pub text: String,
-    pub captures: Vec<(String, String)>,  // (name, value) pairs
+    pub captures: Vec<(String, String)>, // (name, value) pairs
 }
 
 impl From<parser_core::ast_grep::SearchResult> for AstGrepMatch {
@@ -257,41 +242,36 @@ impl From<parser_core::ast_grep::SearchResult> for AstGrepMatch {
 pub fn ast_grep_search(
     content: String,
     pattern: String,
-    language: String
+    language: String,
 ) -> Result<Vec<AstGrepMatch>, String> {
     use parser_core::ast_grep::{AstGrep, Pattern};
 
     // Create AST-Grep instance for language
-    let grep = AstGrep::new(&language);
+    let mut grep = AstGrep::new(&language).map_err(|e| format!("AST-grep search failed: {}", e))?;
 
     // Create pattern
     let ast_pattern = Pattern::new(&pattern);
 
     // Execute search
-    let results = grep.search(&content, &ast_pattern)
+    let results = grep
+        .search(&content, &ast_pattern)
         .map_err(|e| format!("AST-grep search failed: {}", e))?;
 
     // Convert to NIF matches
-    let matches: Vec<AstGrepMatch> = results
-        .into_iter()
-        .map(|r| r.into())
-        .collect();
+    let matches: Vec<AstGrepMatch> = results.into_iter().map(|r| r.into()).collect();
 
     Ok(matches)
 }
 
 #[rustler::nif(schedule = "DirtyCpu")]
-pub fn ast_grep_match(
-    content: String,
-    pattern: String,
-    language: String
-) -> Result<bool, String> {
+pub fn ast_grep_match(content: String, pattern: String, language: String) -> Result<bool, String> {
     use parser_core::ast_grep::{AstGrep, Pattern};
 
-    let grep = AstGrep::new(&language);
+    let mut grep = AstGrep::new(&language).map_err(|e| format!("AST-grep match failed: {}", e))?;
     let ast_pattern = Pattern::new(&pattern);
 
-    let results = grep.search(&content, &ast_pattern)
+    let results = grep
+        .search(&content, &ast_pattern)
         .map_err(|e| format!("AST-grep match failed: {}", e))?;
 
     Ok(!results.is_empty())
@@ -302,15 +282,17 @@ pub fn ast_grep_replace(
     content: String,
     find_pattern: String,
     replace_pattern: String,
-    language: String
+    language: String,
 ) -> Result<String, String> {
     use parser_core::ast_grep::{AstGrep, Pattern};
 
-    let grep = AstGrep::new(&language);
+    let mut grep =
+        AstGrep::new(&language).map_err(|e| format!("AST-grep replace failed: {}", e))?;
     let find = Pattern::new(&find_pattern);
     let replace = Pattern::new(&replace_pattern);
 
-    let transformed = grep.replace(&content, &find, &replace)
+    let transformed = grep
+        .replace(&content, &find, &replace)
         .map_err(|e| format!("AST-grep replace failed: {}", e))?;
 
     Ok(transformed)

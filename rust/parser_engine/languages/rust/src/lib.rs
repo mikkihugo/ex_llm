@@ -2,9 +2,6 @@
 
 use parser_core::{
     Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
-    comprehensive_analysis::{
-        ComprehensiveAnalyzer, ComprehensiveAnalysisConfig, ComprehensiveAnalysisResult,
-    },
 };
 use std::sync::Mutex;
 use std::convert::Into;
@@ -53,6 +50,7 @@ impl LanguageParser for RustParser {
             total_lines: ast.content.lines().count() as u64,
             functions: functions.len() as u64,
             classes: 0, // Rust doesn't have classes (uses structs/impls)
+            imports: imports.len() as u64,
             complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }
@@ -124,13 +122,32 @@ impl LanguageParser for RustParser {
                     .unwrap_or_default()
                     .to_owned();
 
+                let full_text = fn_node.utf8_text(ast.content.as_bytes()).unwrap_or_default();
+                let is_async = full_text.contains("async fn");
+                let params_str = params.unwrap_or("");
+                let ret_str = return_type.unwrap_or("()");
+                let signature = if ret_str == "()" {
+                    format!("{}({})", name, params_str)
+                } else {
+                    format!("{}({}) -> {}", name, params_str, ret_str)
+                };
+
+                // Extract doc comment (///)
+                let docstring = extract_rust_doc_comment(fn_node, &ast.content);
+
                 functions.push(FunctionInfo {
                     name: name.to_owned(),
-                    parameters: params.unwrap_or("").split(',').map(|s| s.trim().to_owned()).collect(),
-                    return_type: Some(return_type.unwrap_or("()").to_owned()),
+                    parameters: params_str.split(',').map(|s| s.trim().to_owned()).collect(),
+                    return_type: Some(ret_str.to_owned()),
                     line_start: start as u32,
                     line_end: end as u32,
                     complexity: 1, // TODO: implement complexity calculation
+                    decorators: Vec::new(), // Rust uses attributes, not decorators
+                    docstring,
+                    is_async,
+                    is_generator: false, // Rust doesn't have generators (yet)
+                    signature: Some(signature),
+                    body: Some(body),
                 });
             }
         }
@@ -198,16 +215,16 @@ impl LanguageParser for RustParser {
                     .unwrap_or_default()
                     .to_owned();
                 let start = capture.node.start_position().row + 1;
-                let end = capture.node.end_position().row + 1;
                 let kind = if text.trim_start().starts_with("/*") {
-                    "block"
+                    "block".to_string()
                 } else {
-                    "line"
+                    "line".to_string()
                 };
                 comments.push(Comment {
                     content: text,
                     line: start as u32,
                     column: (capture.node.start_position().column + 1) as u32,
+                    kind,
                 });
             }
         }
@@ -221,5 +238,33 @@ impl LanguageParser for RustParser {
 
     fn get_extensions(&self) -> Vec<&str> {
         vec!["rs"]
+    }
+}
+
+/// Extract Rust doc comments (///) before a function
+fn extract_rust_doc_comment(node: tree_sitter::Node, source: &str) -> Option<String> {
+    let mut doc_lines = Vec::new();
+    let mut current = node.prev_sibling();
+
+    // Collect doc comments in reverse order
+    while let Some(sibling) = current {
+        if sibling.kind() == "line_comment" {
+            if let Ok(text) = sibling.utf8_text(source.as_bytes()) {
+                let trimmed = text.trim();
+                if trimmed.starts_with("///") && !trimmed.starts_with("////") {
+                    let content = trimmed.trim_start_matches("///").trim();
+                    doc_lines.insert(0, content.to_string());
+                    current = sibling.prev_sibling();
+                    continue;
+                }
+            }
+        }
+        break;
+    }
+
+    if doc_lines.is_empty() {
+        None
+    } else {
+        Some(doc_lines.join("\n"))
     }
 }

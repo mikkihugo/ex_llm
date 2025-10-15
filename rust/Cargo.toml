@@ -112,6 +112,7 @@ tree-sitter = "0.25.10"  # Latest - matches what language parsers need
 futures = "0.3"
 tokei = "12.1"
 ast-grep-core = "0.39"    # Structural search, linting, code transformation (latest version)
+tree-sitter-language = "0.1.5"
 
 # Tree-sitter language parsers
 tree-sitter-elixir = "0.3.4"         # Main app language
