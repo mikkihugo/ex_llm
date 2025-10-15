@@ -4,6 +4,28 @@ on:
   pull_request:
     types: [opened, synchronize]
 
+env:
+  # Tools / runtimes
+  OTP_VERSION: '28'
+  ELIXIR_VERSION: '1.18.4'
+  GLEAM_VERSION: '1.12'
+  REBAR3_VERSION: '3.25'
+  RUST_TOOLCHAIN: 'stable'
+  RUST_COMPONENTS: 'rustfmt'
+  BUN_VERSION: 'latest'
+
+  # Action versions (centralized)
+  ACTIONS_CHECKOUT: 'v5'
+  SETUP_BEAM_ACTION: 'v1'
+  RUST_TOOLCHAIN_ACTION: 'stable'
+  SETUP_BUN_ACTION: 'v2'
+  ACTIONS_CACHE: 'v4'
+  DOCKER_QEMU: 'v2'
+  DOCKER_BUILDX: 'v2'
+  DOCKER_BUILD_PUSH: 'v4'
+  DOCKER_LOGIN: 'v2'
+  UPLOAD_ARTIFACT: 'v4'
+
 jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
@@ -22,25 +44,133 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
-        
-      - name: Set up Elixir/Erlang/Gleam/Rebar3
-        uses: erlef/setup-beam@v1
-        with:
-          otp-version: '28'
-          elixir-version: '1.18.4'
-          gleam-version: '1.12'
-          rebar3-version: '3.25'
+        uses: actions/checkout@${{ env.ACTIONS_CHECKOUT }}
 
+      - name: Set up Elixir/Erlang/Gleam/Rebar3
+        uses: erlef/setup-beam@${{ env.SETUP_BEAM_ACTION }}
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          gleam-version: ${{ env.GLEAM_VERSION }}
+          rebar3-version: ${{ env.REBAR3_VERSION }}
+
+      # --------------------------
+      # Elixir / Mix caching
+      # --------------------------
+      - name: Cache Elixir deps and build
+        uses: actions/cache@${{ env.ACTIONS_CACHE }}
+        id: cache-elixir
+        with:
+          path: |
+            _build
+            deps
+            ~/.hex
+            ~/.cache/rebar3
+          key: ${{ runner.os }}-elixir-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-elixir-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-
+            ${{ runner.os }}-elixir-
+
+      - name: Ensure hex & rebar are present
+        run: |
+          mix local.rebar --force
+          mix local.hex --force
+
+      - name: Get and compile Mix deps
+        run: |
+          mix deps.get --only prod || mix deps.get
+          mix deps.compile
+
+      # --------------------------
+      # Rust caching
+      # --------------------------
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@${{ env.RUST_TOOLCHAIN_ACTION }}
         with:
-          components: rustfmt
- 
+          components: ${{ env.RUST_COMPONENTS }}
+
+      - name: Cache Cargo registry and target
+        uses: actions/cache@${{ env.ACTIONS_CACHE }}
+        id: cache-rust
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build Rust (example)
+        run: |
+          cargo build --release
+        working-directory: .
+
+      # --------------------------
+      # Bun / JS caching
+      # --------------------------
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@${{ env.SETUP_BUN_ACTION }}
         with:
-          bun-version: latest
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache Bun and JS deps
+        uses: actions/cache@${{ env.ACTIONS_CACHE }}
+        id: cache-bun
+        with:
+          path: |
+            ~/.bun
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('package.json', 'bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install JS deps with bun
+        run: |
+          bun install
+
+      # --------------------------
+      # Docker build + persistent layer cache (optional)
+      # --------------------------
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@${{ env.DOCKER_QEMU }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@${{ env.DOCKER_BUILDX }}
+
+      - name: Build Docker image (with GitHub Actions cache for layers)
+        uses: docker/build-push-action@${{ env.DOCKER_BUILD_PUSH }}
+        with:
+          context: .
+          push: false
+          tags: singularity-incubation:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Optionally push built image to GitHub Container Registry (ghcr)
+      # - name: Login to ghcr
+      #   uses: docker/login-action@${{ env.DOCKER_LOGIN }}
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Build and push to ghcr (with cache)
+      #   uses: docker/build-push-action@${{ env.DOCKER_BUILD_PUSH }}
+      #   with:
+      #     context: .
+      #     push: true
+      #     tags: ghcr.io/${{ github.repository_owner }}/singularity-incubation:ci-${{ github.sha }}
+      #     cache-from: type=gha
+      #     cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/singularity-incubation:cache,mode=max
+
+      # --------------------------
+      # Notes / cleanup
+      # --------------------------
+      - name: Show cache hints
+        run: |
+          echo "Elixir cache hit? ${{ steps.cache-elixir.outputs.cache-hit }}"
+          echo "Rust cache hit? ${{ steps.cache-rust.outputs.cache-hit }}"
+          echo "Bun cache hit? ${{ steps.cache-bun.outputs.cache-hit }}"
