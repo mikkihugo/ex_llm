@@ -28,14 +28,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Setup Elixir and Erlang using the community action
-      - name: Set up Elixir
+      # Setup Elixir, Erlang, Gleam, Rebar3 using latest versions
+      - name: Set up Elixir/Erlang/Gleam/Rebar3
         uses: erlef/setup-beam@v1
         with:
           otp-version: '28'
-          elixir-version: '1'
-          gleam-version: '1'
-          rebar3-version: '3'
+          elixir-version: 'latest'
+          gleam-version: 'latest'
+          rebar3-version: 'latest'
 
       # Setup Rust toolchain
       - name: Set up Rust
@@ -68,7 +68,7 @@ jobs:
         
       # Cache the compiled _build directory for faster subsequent runs
       - name: Cache build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: singularity_app/_build
           key: ${{ runner.os }}-build-${{ hashFiles('**/mix.lock') }}
@@ -78,13 +78,26 @@ jobs:
       - name: Compile Elixir code
         working-directory: singularity_app
         run: mix compile
-        
+
+      # Uncomment to run Elixir tests
+      # - name: Run Elixir tests
+      #   working-directory: singularity_app
+      #   run: mix test
+
+      # Uncomment to run Bun tests
+      # - name: Run Bun tests
+      #   working-directory: ai-server
+      #   run: bun test
+
       - name: Verify setup
         run: |
           echo "✓ Elixir setup complete"
           elixir --version
+          echo "✓ Gleam setup complete"
+          gleam --version
+          echo "✓ Rebar3 setup complete"
+          rebar3 --version
           echo "✓ Bun setup complete"
           bun --version
           echo "✓ PostgreSQL service running"
           PGPASSWORD=postgres psql -h localhost -U postgres -p 5432 -c "SELECT version();"
-
