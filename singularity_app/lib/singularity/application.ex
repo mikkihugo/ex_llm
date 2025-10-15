@@ -33,6 +33,7 @@ defmodule Singularity.Application do
       # Layer 1: Foundation - Database and metrics MUST start first
       Singularity.Repo,
       Singularity.Telemetry,
+      Singularity.ProcessRegistry,
 
       # HTTP endpoint for dashboard and health checks
       {Bandit, plug: Singularity.Web.Endpoint, port: 4000},
