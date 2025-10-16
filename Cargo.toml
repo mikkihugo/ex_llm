@@ -128,12 +128,15 @@ tree-sitter-dart = "0.0.4"
 
 # Data languages
 tree-sitter-toml = "0.20.0"
+tree-sitter-toml-ng = "0.7.0"                # Configuration files (updated for tree-sitter 0.25)
 tree-sitter-xml = "0.7.0"
-tree-sitter-md = "0.5.1"
-tree-sitter-sql = "0.0.2"
+tree-sitter-md = { git = "https://github.com/mikkihugo/tree-sitter-markdown", branch = "update-tree-sitter-0.25", features = ["parser"] }  # Markdown documentation (fork with tree-sitter 0.25)
+tree-sitter-sql = "0.0.2" # This is the old one, sequel is the new one. Keeping both in case of mixed usage.
+tree-sitter-sequel = "0.3.11"                # SQL database queries (updated for tree-sitter 0.25)
 
 # Infrastructure languages
 tree-sitter-dockerfile = "0.2.0"
+tree-sitter-dockerfile-updated = "0.2.0"     # Docker containerization (updated for tree-sitter 0.25)
 
 # System languages
 tree-sitter-zig = "1.1.2"
