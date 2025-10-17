@@ -1,11 +1,11 @@
 name: Nix Setup (Reusable)
 
-on:
+odddn:
   workflow_call:
     inputs:
       cachix_push:
         description: 'Build and push Nix outputs to Cachix (requires token)'
-        required: false
+        required: falserrrr
         default: false
         type: boolean
       cache_key_prefix:
