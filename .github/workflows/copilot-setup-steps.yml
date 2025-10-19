@@ -96,7 +96,7 @@ jobs:
 
       - name: Build Rust (example)
         run: |
-          cargo build --release
+          cargo check
         working-directory: .
 
       # --------------------------
