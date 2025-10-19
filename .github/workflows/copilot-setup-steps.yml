@@ -1,11 +1,11 @@
 name: Copilot Setup Steps
+
 on:
   workflow_dispatch:
   pull_request:
     types: [opened, synchronize]
 
 env:
-  # Tools / runtimes
   OTP_VERSION: '28'
   ELIXIR_VERSION: '1.18.4'
   GLEAM_VERSION: '1.12'
@@ -21,21 +21,28 @@ jobs:
     services:
       postgres:
         image: postgres:16
-        ports:
-          - 5432:5432
+        ports: ["5432:5432"]
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
           POSTGRES_DB: postgres
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Sanity check git
+        run: |
+          which git
+          git --version
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Set up Elixir/Erlang/Gleam/Rebar3
         uses: erlef/setup-beam@v1
@@ -45,9 +52,6 @@ jobs:
           gleam-version: ${{ env.GLEAM_VERSION }}
           rebar3-version: ${{ env.REBAR3_VERSION }}
 
-      # --------------------------
-      # Elixir / Mix caching
-      # --------------------------
       - name: Cache Elixir deps and build
         uses: actions/cache@v4
         id: cache-elixir
@@ -62,27 +66,35 @@ jobs:
             ${{ runner.os }}-elixir-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-
             ${{ runner.os }}-elixir-
 
-      - name: Ensure hex & rebar are present
+      - name: Ensure hex & rebar
         run: |
           mix local.rebar --force
           mix local.hex --force
         working-directory: singularity_app
 
-      - name: Get and compile Mix deps
+      - name: Install Mix deps
         run: |
           mix deps.get --only prod || mix deps.get
           mix deps.compile
         working-directory: singularity_app
 
-      # --------------------------
-      # Rust caching
-      # --------------------------
+      - name: Wait for Postgres
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U postgres && exit 0
+            sleep 2
+          done
+          echo "Postgres not ready" >&2
+          exit 1
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: ${{ env.RUST_COMPONENTS }}
 
-      - name: Cache Cargo registry and target
+      - name: Cache Cargo
         uses: actions/cache@v4
         id: cache-rust
         with:
@@ -94,20 +106,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Build Rust (example)
-        run: |
-          cargo check
-        working-directory: .
+      - name: Cargo check
+        run: cargo check
 
-      # --------------------------
-      # Bun / JS caching
-      # --------------------------
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
-      - name: Cache Bun and JS deps
+      - name: Cache Bun
         uses: actions/cache@v4
         id: cache-bun
         with:
@@ -118,49 +125,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
-      - name: Install JS deps with bun
-        run: |
-          bun install
+      - name: Install JS deps
+        run: bun install
 
-      # --------------------------
-      # Docker build + persistent layer cache (optional)
-      # --------------------------
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build Docker image (with GitHub Actions cache for layers)
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: false
-          tags: singularity-incubation:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Optionally push built image to GitHub Container Registry (ghcr)
-      # - name: Login to ghcr
-      #   uses: docker/login-action@v2
-      #   with:
-      #     registry: ghcr.io
-      #     username: ${{ github.actor }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Build and push to ghcr (with cache)
-      #   uses: docker/build-push-action@v4
-      #   with:
-      #     context: .
-      #     push: true
-      #     tags: ghcr.io/${{ github.repository_owner }}/singularity-incubation:ci-${{ github.sha }}
-      #     cache-from: type=gha
-      #     cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/singularity-incubation:cache,mode=max
-
-      # --------------------------
-      # Notes / cleanup
-      # --------------------------
-      - name: Show cache hints
+      - name: Show cache hits
         run: |
           echo "Elixir cache hit? ${{ steps.cache-elixir.outputs.cache-hit }}"
-          echo "Rust cache hit? ${{ steps.cache-rust.outputs.cache-hit }}"
-          echo "Bun cache hit? ${{ steps.cache-bun.outputs.cache-hit }}"
+          echo "Rust cache hit?   ${{ steps.cache-rust.outputs.cache-hit }}"
+          echo "Bun cache hit?    ${{ steps.cache-bun.outputs.cache-hit }}"
