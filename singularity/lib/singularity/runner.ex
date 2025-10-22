@@ -314,7 +314,7 @@ defmodule Singularity.Runner do
   @impl true
   def handle_info({:task_completed, execution_id, result}, state) do
     # Update execution status
-    new_executions = 
+    new_executions =
       state.executions
       |> Map.update!(execution_id, fn exec ->
         %{exec | status: :completed, result: result, completed_at: DateTime.utc_now()}
@@ -322,6 +322,13 @@ defmodule Singularity.Runner do
 
     # Update metrics
     new_metrics = update_metrics(state.metrics, :task_completed, result)
+
+    # Record outcome for self-improving agents
+    case Map.get(state.executions, execution_id) do
+      %{task: %{args: %{agent_id: agent_id}}} ->
+        Singularity.SelfImprovingAgent.record_outcome(agent_id, :success)
+      _ -> :ok
+    end
 
     # Persist completion to database
     case Map.get(state.executions, execution_id) do
@@ -344,7 +351,7 @@ defmodule Singularity.Runner do
   @impl true
   def handle_info({:task_failed, execution_id, reason}, state) do
     # Update execution status
-    new_executions = 
+    new_executions =
       state.executions
       |> Map.update!(execution_id, fn exec ->
         %{exec | status: :failed, error: reason, completed_at: DateTime.utc_now()}
@@ -352,6 +359,13 @@ defmodule Singularity.Runner do
 
     # Update metrics
     new_metrics = update_metrics(state.metrics, :task_failed, reason)
+
+    # Record outcome for self-improving agents
+    case Map.get(state.executions, execution_id) do
+      %{task: %{args: %{agent_id: agent_id}}} ->
+        Singularity.SelfImprovingAgent.record_outcome(agent_id, :failure)
+      _ -> :ok
+    end
 
     # Persist failure to database
     case Map.get(state.executions, execution_id) do

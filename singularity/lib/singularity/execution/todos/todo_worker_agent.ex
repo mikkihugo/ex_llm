@@ -228,6 +228,9 @@ defmodule Singularity.Execution.Todos.TodoWorkerAgent do
       todo_id: todo.id
     )
 
+    # Record outcome for self-improving agents
+    Singularity.SelfImprovingAgent.record_outcome(state.worker_id, :success)
+
     # Update todo in store
     case TodoStore.complete(todo, result) do
       {:ok, _updated_todo} ->
@@ -254,6 +257,9 @@ defmodule Singularity.Execution.Todos.TodoWorkerAgent do
       todo_id: todo.id,
       error: error_message
     )
+
+    # Record outcome for self-improving agents
+    Singularity.SelfImprovingAgent.record_outcome(state.worker_id, :failure)
 
     # Update todo in store (will auto-retry if under max_retries)
     case TodoStore.fail(todo, error_message) do
