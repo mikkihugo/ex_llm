@@ -32,7 +32,7 @@
 ## File Structure
 
 ```
-ai-server/
+llm-server/
 ├── src/
 │   ├── server.ts                      ✨ REFACTORED (production)
 │   ├── server.original.ts.bak        📦 Backup of original

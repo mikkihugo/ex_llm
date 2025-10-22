@@ -206,7 +206,7 @@ defmodule Singularity.NatsExecutionRouter do
   end
 
   defp calculate_cost(model, tokens) do
-    # Cost per 1M tokens (actual models from ai-server)
+    # Cost per 1M tokens (actual models from llm-server)
     costs = %{
       "gemini-2.5-flash" => 0.075,
       "gemini-2.5-pro" => 1.25,

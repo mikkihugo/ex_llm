@@ -8,7 +8,7 @@ NATS can be enabled for distributed coordination and tool invocation between ser
 
 ```
 singularity/
-├─ llm.*              - LLM operations (ai-server)
+├─ llm.*              - LLM operations (llm-server)
 ├─ events.*           - Event notifications (detection results, etc.)
 ├─ detection.*        - Technology detection coordination
 ├─ templates.technology.*   - Template distribution
@@ -43,11 +43,11 @@ singularity/
 - `events.llm_call_completed` - **Pub/Sub** - LLM call completion notification
 - `events.pattern_learned` - **Pub/Sub** - New pattern learned notification
 
-## LLM Operations (ai-server)
+## LLM Operations (llm-server)
 
 - `llm.analyze` - **Request/Reply** - LLM analysis for detection
   - Publisher: `tool_doc_index::LayeredDetector` (Level 5)
-  - Consumer: `ai-server`
+  - Consumer: `llm-server`
   - Request:
     ```json
     {
@@ -114,7 +114,7 @@ singularity/
     │                                          │
     ▼                                          ▼
 ┌─────────────┐                       ┌──────────────┐
-│ Singularity │                       │  ai-server   │
+│ Singularity │                       │  llm-server   │
 │ (Elixir)    │                       │  (TypeScript)│
 ├─────────────┤                       ├──────────────┤
 │ Ecto ✅     │                       │ Claude API   │
@@ -150,7 +150,7 @@ singularity/
    ├─> Level 1-2: Fast detection
    ├─> If confidence < 0.7:
    │   └─> NATS request: llm.analyze
-   │       └─> ai-server replies
+   │       └─> llm-server replies
    └─> Returns detection results via STDOUT
 
 4. Elixir receives results
@@ -199,7 +199,7 @@ NATS_URL=nats://localhost:4222
 # Elixir (singularity_app)
 DATABASE_URL=postgresql://localhost/singularity_dev
 
-# ai-server
+# llm-server
 ANTHROPIC_API_KEY=sk-ant-...
 
 # tool_doc_index (optional)

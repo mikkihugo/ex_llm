@@ -26,7 +26,7 @@ defmodule Singularity.Integration.Claude do
 
   ## Usage Priority
 
-  1. Primary: Use `Singularity.AIProvider` (HTTP to ai-server)
+  1. Primary: Use `Singularity.AIProvider` (HTTP to llm-server)
   2. Fallback: Use this module directly when HTTP server is down
   """
 

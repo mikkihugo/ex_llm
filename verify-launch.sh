@@ -175,10 +175,10 @@ else
     WARNINGS=$((WARNINGS + 1))
 fi
 
-if [ -d "ai-server/node_modules" ]; then
+if [ -d "llm-server/node_modules" ]; then
     echo -e "  ${GREEN}✅ AI Server dependencies installed${NC}"
 else
-    echo -e "  ${YELLOW}⚠️  AI Server deps not installed - Run 'cd ai-server && bun install'${NC}"
+    echo -e "  ${YELLOW}⚠️  AI Server deps not installed - Run 'cd llm-server && bun install'${NC}"
     WARNINGS=$((WARNINGS + 1))
 fi
 echo ""

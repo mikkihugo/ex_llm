@@ -3,7 +3,7 @@
 set -e
 
 APP_NAME="${1:-singularity}"
-DEPLOYMENT_TYPE="${2:-integrated}"  # integrated or ai-server-only
+DEPLOYMENT_TYPE="${2:-integrated}"  # integrated or llm-server-only
 
 echo "🚀 Deploying to fly.io with Nix..."
 echo "App: $APP_NAME"
@@ -31,14 +31,14 @@ fi
 # Bundle credentials
 echo "📦 Bundling credentials..."
 if [ "$DEPLOYMENT_TYPE" = "integrated" ]; then
-    if [ -f "./ai-server/scripts/bundle-credentials.sh" ]; then
-        cd ai-server
+    if [ -f "./llm-server/scripts/bundle-credentials.sh" ]; then
+        cd llm-server
         ./scripts/bundle-credentials.sh ../.env.fly
         cd ..
     fi
 else
-    if [ -f "./ai-server/scripts/bundle-credentials.sh" ]; then
-        ./ai-server/scripts/bundle-credentials.sh
+    if [ -f "./llm-server/scripts/bundle-credentials.sh" ]; then
+        ./llm-server/scripts/bundle-credentials.sh
     fi
 fi
 
@@ -48,8 +48,8 @@ if [ "$DEPLOYMENT_TYPE" = "integrated" ]; then
     nix build .#singularity-integrated --show-trace
     PACKAGE="singularity-integrated"
 else
-    nix build .#ai-server --show-trace
-    PACKAGE="ai-server"
+    nix build .#llm-server --show-trace
+    PACKAGE="llm-server"
 fi
 
 # Create Nix closure for fly.io
@@ -64,8 +64,8 @@ cat > "$CLOSURE_PATH/launcher.sh" << 'EOF'
 nix-store --import < /closure.nar
 if [ "$PROCESS_NAME" = "web" ]; then
     exec /result/bin/web
-elif [ "$PROCESS_NAME" = "ai-server" ]; then
-    exec /result/bin/ai-server
+elif [ "$PROCESS_NAME" = "llm-server" ]; then
+    exec /result/bin/llm-server
 else
     exec /result/bin/start-singularity
 fi

@@ -108,7 +108,7 @@ flyctl logs --app singularity
 
 ```bash
 # Re-encrypt
-cd ai-server
+cd llm-server
 ./scripts/encrypt-credentials.sh
 
 # Verify AGE_SECRET_KEY is set
@@ -121,7 +121,7 @@ flyctl deploy --app singularity --config fly-integrated.toml --nixpacks
 ### Need to rotate key
 
 ```bash
-cd ai-server
+cd llm-server
 
 # Remove old key
 rm .age-key.txt
@@ -145,7 +145,7 @@ git push
 - Read [CREDENTIALS_ENCRYPTION.md](CREDENTIALS_ENCRYPTION.md) for details
 - Read [NIX_DEPLOYMENT.md](NIX_DEPLOYMENT.md) for Nix specifics
 - Read [DEPLOYMENT_OPTIONS.md](DEPLOYMENT_OPTIONS.md) for alternatives
-- Read [ai-server/README.md](ai-server/README.md) for API docs
+- Read [llm-server/README.md](llm-server/README.md) for API docs
 
 ## Support
 

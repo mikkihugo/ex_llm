@@ -77,7 +77,7 @@ echo "DATABASE_URL=ecto://postgres:postgres@localhost/singularity" >> ../.env
 
 # 4. Install dependencies (10 min)
 mix deps.get && mix compile
-cd ../ai-server && bun install && cd ..
+cd ../llm-server && bun install && cd ..
 
 # 5. Start services (2 min)
 ./start-all.sh
@@ -153,7 +153,7 @@ cd ../ai-server && bun install && cd ..
 1. **Fix AI Server Errors** (1-2 hours)
    - Add try/catch blocks
    - Handle NATS race conditions
-   - See `ai-server/PRODUCTION_READINESS.md`
+   - See `llm-server/PRODUCTION_READINESS.md`
 
 2. **Complete Planner Stubs** (15 minutes)
    - Wire `generate_implementation_code/3` to RAGCodeGenerator

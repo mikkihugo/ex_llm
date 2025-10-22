@@ -41,7 +41,7 @@ Both paths coexist. The HTDAG executor uses the new NATS-first path.
 nats-server -js -sd .nats -p 4222
 
 # 2. Start AI Server (includes HTDAG worker)
-cd ai-server
+cd llm-server
 bun run dev
 
 # 3. Test the integration

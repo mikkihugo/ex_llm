@@ -66,8 +66,8 @@ Mount credential directories when deploying:
 # docker-compose.yml
 version: '3.8'
 services:
-  ai-server:
-    image: ai-server:latest
+  llm-server:
+    image: llm-server:latest
     ports:
       - "3000:3000"
     volumes:
@@ -118,12 +118,12 @@ kubectl create secret generic github-token \
 apiVersion: v1
 kind: Pod
 metadata:
-  name: ai-server
+  name: llm-server
   namespace: ai-providers
 spec:
   containers:
-  - name: ai-server
-    image: ai-server:latest
+  - name: llm-server
+    image: llm-server:latest
     ports:
     - containerPort: 3000
     env:
@@ -170,7 +170,7 @@ export CODEX_REFRESH_TOKEN=<from tokenStore>
 export CODEX_ACCOUNT_ID=<from tokenStore>
 ```
 
-Then modify `ai-server.ts` to initialize from env vars:
+Then modify `llm-server.ts` to initialize from env vars:
 
 ```typescript
 const codexTokenStore: CodexTokenStore = {

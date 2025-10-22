@@ -12,7 +12,7 @@ singularity/
 │
 ├─ apps/                     # Applications (runnable)
 │  ├─ singularity_app/       # Main Elixir/Phoenix app
-│  └─ ai-server/             # AI provider TypeScript server
+│  └─ llm-server/             # AI provider TypeScript server
 │
 ├─ libs/                     # Libraries (reusable)
 │  └─ rust/                  # Rust workspace
@@ -42,7 +42,7 @@ All projects registered in `.moon/workspace.yml`:
 | Project | Type | Language | Description |
 |---------|------|----------|-------------|
 | `singularity_app` | application | elixir | Main Elixir app with Phoenix |
-| `ai-server` | application | typescript | AI provider integration server |
+| `llm-server` | application | typescript | AI provider integration server |
 | `rust` | library | rust | Rust workspace root |
 | `rust/embedding_engine` | library | rust | Qodo-Embed-1 + Jina v3 NIF |
 | `rust/analysis_suite` | library | rust | Code quality analysis |
@@ -95,7 +95,7 @@ singularity_app/
 
 ```json
 {
-  "workspaces": ["ai-server", "tools/*"]
+  "workspaces": ["llm-server", "tools/*"]
 }
 ```
 
@@ -110,7 +110,7 @@ singularity_app/
 ### Project-specific (Not shared)
 - `singularity_app/_build/` - Dev builds
 - `rust/target/` - Rust workspace target
-- `ai-server/node_modules/` - If not using workspaces
+- `llm-server/node_modules/` - If not using workspaces
 
 ## Moon Tasks
 
@@ -167,7 +167,7 @@ moon run :install  # If moon has install tasks
 
 # Or individually
 moon run singularity_app:dev
-moon run ai-server:dev
+moon run llm-server:dev
 ```
 
 ### 3. Testing

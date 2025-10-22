@@ -172,7 +172,7 @@ if pgrep -f "bun.*server" > /dev/null || lsof -i:3000 > /dev/null 2>&1; then
         exit 1
     fi
 else
-    cd ai-server
+    cd llm-server
 
     # Install dependencies if needed
     if [ ! -d "node_modules" ]; then
@@ -186,14 +186,14 @@ else
     fi
 
     echo "Starting AI Server..."
-    bun run src/server.ts > ../logs/ai-server.log 2>&1 &
+    bun run src/server.ts > ../logs/llm-server.log 2>&1 &
     sleep 3
 
     if lsof -i:3000 > /dev/null 2>&1; then
         echo "✅ AI Server started on port 3000"
     else
         echo -e "${RED}❌ Failed to start AI Server${NC}"
-        echo "Check logs/ai-server.log for details"
+        echo "Check logs/llm-server.log for details"
     fi
     cd ..
 fi

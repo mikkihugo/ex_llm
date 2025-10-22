@@ -70,7 +70,7 @@ Safe way to store and distribute AI provider credentials using encryption.
 ### Step 1: Generate Key and Store in Fly.io
 
 ```bash
-cd ai-server
+cd llm-server
 ./scripts/setup-encryption.sh singularity
 ```
 
@@ -95,7 +95,7 @@ This will:
 ### Step 3: Encrypt Credentials
 
 ```bash
-# Still in ai-server/
+# Still in llm-server/
 ./scripts/encrypt-credentials.sh
 ```
 
@@ -127,7 +127,7 @@ cursor-agent login              # Updates ~/.config/cursor/auth.json
 gcloud auth application-default login  # Updates gcloud ADC
 
 # 2. Re-encrypt
-cd ai-server
+cd llm-server
 ./scripts/encrypt-credentials.sh
 
 # 3. Commit updated encrypted files
@@ -140,7 +140,7 @@ git push
 
 ```bash
 # Generate new key
-cd ai-server
+cd llm-server
 rm .age-key.txt
 ./scripts/setup-encryption.sh singularity
 
@@ -163,7 +163,7 @@ git push
 The Nix wrapper script automatically decrypts:
 
 ```bash
-# In /nix/store/.../bin/ai-server:
+# In /nix/store/.../bin/llm-server:
 
 if [ -n "$AGE_SECRET_KEY" ] && [ -d ".credentials.encrypted" ]; then
     echo "🔓 Decrypting credentials..."
@@ -180,7 +180,7 @@ exec bun run src/server.ts
 export AGE_SECRET_KEY="$(cat .age-key.txt)"
 
 # Decrypt
-cd ai-server
+cd llm-server
 ./scripts/decrypt-credentials.sh
 
 # Credentials are now in standard locations:
@@ -285,7 +285,7 @@ age-keygen -y /tmp/key.txt  # Get public key
 
 ```bash
 # Re-encrypt with current credentials
-cd ai-server
+cd llm-server
 ./scripts/encrypt-credentials.sh
 
 # Commit and redeploy

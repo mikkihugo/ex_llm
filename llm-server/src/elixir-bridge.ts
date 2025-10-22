@@ -124,7 +124,7 @@ export class ElixirBridge {
         context: request.context || {}
       },
       complexity: request.complexity,
-      correlation_id: `ai-server-${Date.now()}`
+      correlation_id: `llm-server-${Date.now()}`
     };
 
     try {

@@ -5,7 +5,7 @@ defmodule Singularity.Integration.Copilot do
   Prerequisites:
   - GitHub Copilot CLI installed: npm install -g @github/copilot
   - GitHub Copilot subscription (Pro, Business, Enterprise)
-  - AI server running: bun run tools/ai-server.ts
+  - AI server running: bun run tools/llm-server.ts
 
   Environment:
   - AI_SERVER_URL (default: http://localhost:3000)

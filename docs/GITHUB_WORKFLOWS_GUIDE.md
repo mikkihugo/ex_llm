@@ -326,7 +326,7 @@ path: |
   singularity_app/deps
   singularity_app/_build
   .moon/cache
-  ai-server/node_modules
+  llm-server/node_modules
 ```
 
 **Cache Key Pattern:**

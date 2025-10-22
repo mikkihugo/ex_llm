@@ -7,7 +7,7 @@
 #
 # Prerequisites:
 # 1. NATS server running (nats-server -js -p 4222)
-# 2. AI server running (cd ai-server && bun run dev)
+# 2. AI server running (cd llm-server && bun run dev)
 #
 # Usage: chmod +x examples/htdag_self_evolution.exs && ./examples/htdag_self_evolution.exs
 

@@ -35,7 +35,7 @@ defmodule Singularity.T5FineTuner do
 
   @base_model "Salesforce/codet5p-770m"
   @default_output_dir "~/.cache/singularity/codet5p-770m-singularity"
-  @training_script_path "ai-server/scripts/train_codet5.py"
+  @training_script_path "llm-server/scripts/train_codet5.py"
 
   @type training_example :: %{
     instruction: String.t(),

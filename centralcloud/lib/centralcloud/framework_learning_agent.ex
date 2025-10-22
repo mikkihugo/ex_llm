@@ -13,7 +13,7 @@ defmodule Centralcloud.FrameworkLearningAgent do
 
   - **Framework Templates**: ALWAYS fetch latest (no caching - new versions released constantly!)
   - **Prompt Templates**: Cached in JetStream KV (change less frequently)
-  - **LLM Calls**: Routed to `ai-server` via `ai.llm.request`
+  - **LLM Calls**: Routed to `llm-server` via `ai.llm.request`
 
   ## Caching Strategy
 

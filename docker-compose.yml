@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  ai-server:
+  llm-server:
     build: .
-    image: ai-server:latest
+    image: llm-server:latest
     container_name: ai-providers-server
     ports:
       - "3000:3000"

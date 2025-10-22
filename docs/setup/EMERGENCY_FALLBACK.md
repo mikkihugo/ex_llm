@@ -4,7 +4,7 @@
 
 Singularity maintains **two separate Claude installations** for redundancy with zero collision:
 
-1. **NPM Package** - `ai-sdk-provider-claude-code` (TypeScript ai-server)
+1. **NPM Package** - `ai-sdk-provider-claude-code` (TypeScript llm-server)
 2. **Recovery Binary** - `claude-recovery` native CLI for emergency Elixir fallback
 
 Named `claude-recovery` instead of `claude` to avoid conflicts with NPM SDK and allow dangerous flags for recovery scenarios.
@@ -14,7 +14,7 @@ Named `claude-recovery` instead of `claude` to avoid conflicts with NPM SDK and 
 ```
 ┌─────────────────────────────────────────────┐
 │ Primary Path (HTTP)                         │
-│ Elixir → HTTP → ai-server → NPM Claude SDK  │
+│ Elixir → HTTP → llm-server → NPM Claude SDK  │
 └─────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────┐
@@ -27,7 +27,7 @@ Named `claude-recovery` instead of `claude` to avoid conflicts with NPM SDK and 
 
 | Type | Binary Name | Location | Purpose | Installed By |
 |------|-------------|----------|---------|--------------|
-| NPM SDK | (internal) | `node_modules/ai-sdk-provider-claude-code` | ai-server primary | `bun install` |
+| NPM SDK | (internal) | `node_modules/ai-sdk-provider-claude-code` | llm-server primary | `bun install` |
 | Recovery CLI | `claude-recovery` | `~/.singularity/emergency/bin/` | Elixir emergency fallback | `./scripts/install_claude_native.sh` |
 
 ## Installation
@@ -68,7 +68,7 @@ Priority order:
 ### Primary (HTTP Server)
 
 ```elixir
-# Use the HTTP ai-server (primary path)
+# Use the HTTP llm-server (primary path)
 {:ok, response} = Singularity.AIProvider.chat("claude-code-cli", [
   %{role: "user", content: "Hello"}
 ])
@@ -111,7 +111,7 @@ The emergency CLI uses the same auth as regular Claude CLI:
 3. **Encrypted Credentials** (for deployment):
    ```bash
    # Decrypt credentials at runtime
-   ./ai-server/scripts/decrypt-credentials.sh
+   ./llm-server/scripts/decrypt-credentials.sh
    ```
 
 ## Deployment (Fly.io)

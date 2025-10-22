@@ -92,7 +92,7 @@ Implemented a complete database-first tool architecture where:
 
 ## Files Created/Modified
 
-### TypeScript Side (ai-server)
+### TypeScript Side (llm-server)
 
 **Created:**
 1. `src/unified-llm-interface.ts` - Provider-agnostic interface

@@ -18,7 +18,7 @@ AI SDK v2 provider for GitHub Copilot API with full AI SDK tools support.
 ## Installation
 
 ```bash
-cd ai-server/vendor/ai-sdk-provider-copilot
+cd llm-server/vendor/ai-sdk-provider-copilot
 bun install
 bun run build
 ```

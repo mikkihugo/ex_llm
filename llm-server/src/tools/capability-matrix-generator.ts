@@ -150,7 +150,7 @@ if (import.meta.main) {
   console.log('\n📝 Generated TypeScript (for reference):\n');
   console.log(tsCode);
 
-  console.log('\n✅ Capability scores saved to ai-server/src/data/model-capabilities.json');
+  console.log('\n✅ Capability scores saved to llm-server/src/data/model-capabilities.json');
   console.log('⚠️  Review and adjust scores based on your experience!');
   console.log('💡 Scores are loaded automatically by nats-handler.ts');
 }

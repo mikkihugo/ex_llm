@@ -200,7 +200,7 @@ score = (7 * 2 + 7 * 1) / 3 = 21 / 3 = 7.0
 **Manual regeneration** (optional):
 
 ```bash
-cd ai-server
+cd llm-server
 bun run generate:capabilities
 ```
 
@@ -218,13 +218,13 @@ bun run generate:capabilities
    - Variance < 2.0 → **Medium confidence** (some disagreement)
    - Variance ≥ 2.0 → **Low confidence** (models disagree)
 
-4. **Saves to disk** with consensus metadata: `ai-server/src/data/model-capabilities.json`
+4. **Saves to disk** with consensus metadata: `llm-server/src/data/model-capabilities.json`
 
 5. **Zero API costs** - all 3 models are FREE unlimited!
 
 **Saved to disk:**
-- `ai-server/src/data/model-capabilities.json` - Capability scores (JSON)
-- `ai-server/.cache/model-catalog.json` - Model discovery cache
+- `llm-server/src/data/model-capabilities.json` - Capability scores (JSON)
+- `llm-server/.cache/model-catalog.json` - Model discovery cache
 - Both loaded automatically by `nats-handler.ts` at startup
 - Version controlled with git
 - Easy to review and manually adjust
@@ -250,7 +250,7 @@ bun run generate:capabilities
 
 ### Adding a New Model
 
-**1. Add to MODEL_SELECTION_MATRIX** (`ai-server/src/nats-handler.ts:60-159`)
+**1. Add to MODEL_SELECTION_MATRIX** (`llm-server/src/nats-handler.ts:60-159`)
 ```typescript
 coder: {
   complex: [
@@ -261,7 +261,7 @@ coder: {
 }
 ```
 
-**2. Add Capability Profile** (`ai-server/src/nats-handler.ts:161-282`)
+**2. Add Capability Profile** (`llm-server/src/nats-handler.ts:161-282`)
 ```typescript
 'new-model': {
   code: 8,       // Rate 1-10

@@ -54,7 +54,7 @@ export const COPILOT_MODELS = ALL_COPILOT_MODELS.filter(m => m.enabled);
 
 Run this to see currently enabled models:
 ```bash
-cd ai-server/vendor/ai-sdk-provider-copilot
+cd llm-server/vendor/ai-sdk-provider-copilot
 cat src/index.ts | grep -A 10 "enabled: true"
 ```
 

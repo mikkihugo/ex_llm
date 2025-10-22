@@ -147,7 +147,7 @@ jobs:
           # Stop existing services
           pkill -f 'singularity' || true
           pkill -f 'phoenix' || true
-          pkill -f 'ai-server' || true
+          pkill -f 'llm-server' || true
 
           # Start production services
           nohup nix develop .#prod --command just start-all > singularity.log 2>&1 &

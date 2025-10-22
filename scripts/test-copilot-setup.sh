@@ -179,25 +179,25 @@ else
     error "singularity_app directory not found"
 fi
 
-# Check for ai-server directory
-if [ -d "ai-server" ]; then
-    success "ai-server directory exists"
+# Check for llm-server directory
+if [ -d "llm-server" ]; then
+    success "llm-server directory exists"
     
     # Check for package.json
-    if [ -f "ai-server/package.json" ]; then
-        success "package.json found in ai-server"
+    if [ -f "llm-server/package.json" ]; then
+        success "package.json found in llm-server"
     else
-        error "package.json not found in ai-server"
+        error "package.json not found in llm-server"
     fi
     
     # Check for bun.lockb
-    if [ -f "ai-server/bun.lockb" ]; then
+    if [ -f "llm-server/bun.lockb" ]; then
         success "bun.lockb found (for dependency management)"
     else
         warning "bun.lockb not found"
     fi
 else
-    error "ai-server directory not found"
+    error "llm-server directory not found"
 fi
 
 echo ""
@@ -227,9 +227,9 @@ else
 fi
 
 # Test bun install (if Bun is available)
-if command -v bun &> /dev/null && [ -d "ai-server" ]; then
-    info "Testing 'bun install' in ai-server..."
-    cd ai-server
+if command -v bun &> /dev/null && [ -d "llm-server" ]; then
+    info "Testing 'bun install' in llm-server..."
+    cd llm-server
     
     timeout 60 bun install 2>&1 | tee /tmp/bun-install.log
     BUN_EXIT_CODE=${PIPESTATUS[0]}
@@ -241,7 +241,7 @@ if command -v bun &> /dev/null && [ -d "ai-server" ]; then
     fi
     cd ..
 else
-    warning "Skipping bun install test (bun not available or ai-server missing)"
+    warning "Skipping bun install test (bun not available or llm-server missing)"
 fi
 
 echo ""

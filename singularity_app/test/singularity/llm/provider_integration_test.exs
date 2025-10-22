@@ -245,7 +245,7 @@ defmodule Singularity.LLM.ProviderIntegrationTest do
     @tag :manual
     @tag :skip
     test "emergency CLI fallback when HTTP down" do
-      # Manual test - would require stopping ai-server
+      # Manual test - would require stopping llm-server
       # Verify emergency CLI path exists
       assert File.exists?(Path.expand("~/.singularity/emergency/bin/claude-recovery"))
     end

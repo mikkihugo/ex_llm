@@ -202,7 +202,7 @@ describe('Server Integration', () => {
 **Immediate:**
 ```bash
 # 1. Use the refactored server (when ready)
-cp ai-server/src/server-refactored.ts ai-server/src/server.ts
+cp llm-server/src/server-refactored.ts llm-server/src/server.ts
 
 # 2. Run existing tests (they work!)
 bun test src/server.test.ts

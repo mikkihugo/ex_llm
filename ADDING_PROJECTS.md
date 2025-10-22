@@ -9,7 +9,7 @@ Singularity uses Moon for monorepo management with automatic caching:
 - **Cachix**: Nix store artifacts shared across all machines
 - **Moon**: Task orchestration and output caching in `.moon/cache/`
 
-## Adding a TypeScript/Bun Project (like ai-server)
+## Adding a TypeScript/Bun Project (like llm-server)
 
 ### 1. Create the project directory
 
@@ -66,7 +66,7 @@ Edit `.moon/workspace.yml`:
 
 ```yaml
 projects:
-  - 'ai-server'
+  - 'llm-server'
   - 'my-new-service'  # Add here
   - 'singularity_app'
   # ... other projects
@@ -295,7 +295,7 @@ mkdir central_cloud_framework
 cd central_cloud_framework
 bun init
 
-# Create moon.yml (copy from ai-server and adapt)
+# Create moon.yml (copy from llm-server and adapt)
 # Add to .moon/workspace.yml
 
 # That's all! No workflow changes needed!

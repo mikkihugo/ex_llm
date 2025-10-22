@@ -4,7 +4,7 @@ defmodule Singularity.Integration.Gemini do
 
   Prerequisites:
   - npm install -g @google/gemini-cli
-  - AI server running: bun run tools/ai-server.ts
+  - AI server running: bun run tools/llm-server.ts
 
   Environment:
   - AI_SERVER_URL (default: http://localhost:3000)

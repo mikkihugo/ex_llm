@@ -172,7 +172,7 @@ defmodule Singularity.CodeSynthesisPipeline do
     # Examples:
     #   "singularity_app/lib/singularity/cache.ex" → elixir, phoenix app
     #   "rust/api_server/src/handler.rs" → rust, axum service
-    #   "ai-server/src/routes/api.ts" → typescript, express
+    #   "llm-server/src/routes/api.ts" → typescript, express
 
     parts = Path.split(path)
     language = detect_language_from_path(path)

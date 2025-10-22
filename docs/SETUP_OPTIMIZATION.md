@@ -95,7 +95,7 @@ Even with optimizations, some things take time on first run:
 - **Cached**: Via `.mix` and `.hex` directories
 
 ### 4. Bun Dependencies (Per Project)
-- **What**: JavaScript package manager for ai-server
+- **What**: JavaScript package manager for llm-server
 - **When**: First `bun install`
 - **Duration**: 30-60 seconds
 - **Cached**: Via `node_modules`

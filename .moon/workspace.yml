@@ -4,7 +4,7 @@ $schema: './cache/schemas/workspace.json'
 # extends: './shared/workspace.yml'
 
 projects:
-  - 'ai-server'
+  - 'llm-server'
   - 'centralcloud'
   - 'seed_agent'
   - 'singularity_app'

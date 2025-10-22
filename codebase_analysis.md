@@ -67,7 +67,7 @@ singularity/
 ├── singularity_app/          # Main Elixir/Phoenix application
 ├── central_cloud/            # Separate OTP app for package intelligence
 ├── rust/                     # Rust workspace with 21 crates
-├── ai-server/                # TypeScript NATS ↔ LLM provider bridge
+├── llm-server/                # TypeScript NATS ↔ LLM provider bridge
 ├── templates_data/           # Living knowledge base (JSON artifacts)
 ├── flake.nix                 # Nix environment definition
 ├── Cargo.toml                # Rust workspace configuration
@@ -124,7 +124,7 @@ singularity_app/
 - Supervises all Rust NIFs (loaded via Rustler)
 - Publishes/subscribes to NATS subjects for distributed coordination
 - Queries PostgreSQL `singularity` database for knowledge artifacts
-- Calls `ai-server` via NATS for multi-provider LLM requests
+- Calls `llm-server` via NATS for multi-provider LLM requests
 - Imports Gleam modules compiled by `mix_gleam`
 
 ### Central Cloud Services: `central_cloud/`
@@ -215,14 +215,14 @@ fn analyze_file(path: String) -> Result<AnalysisResult, Error> {
 3. Compiled `.so` files placed in `priv/native/`
 4. Elixir loads NIFs at runtime via `:erlang.load_nif/2`
 
-### AI Server: `ai-server/`
+### AI Server: `llm-server/`
 
 **Purpose:** TypeScript bridge between NATS (Elixir world) and HTTP LLM providers (Claude, Gemini, OpenAI, Copilot).
 
 **Structure:**
 
 ```
-ai-server/
+llm-server/
 ├── src/
 │   ├── index.ts                    # Main Bun server entry
 │   ├── nats-llm-bridge.ts          # NATS subscriber → LLM router
@@ -1553,7 +1553,7 @@ moon run templates_data:embed-all  # Generate embeddings (requires GPU or CPU fa
 mix compile  # Triggers: cargo build --release for all NIFs
 
 # 8. Setup AI Server
-cd ../ai-server
+cd ../llm-server
 bun install  # Fast package installation
 
 # 9. Configure environment variables
@@ -1577,7 +1577,7 @@ mix test  # Should pass all 23+ tests
 nats-server -js
 
 # Terminal 2: Start AI Server
-cd ai-server
+cd llm-server
 bun run dev  # Hot reload enabled
 
 # Terminal 3: Start Elixir application
@@ -1784,7 +1784,7 @@ iex> Singularity.Telemetry.get_metrics()
 
 ```bash
 # Logs written to files (production)
-logs/ai-server.log      # AI Server logs
+logs/llm-server.log      # AI Server logs
 logs/elixir.log         # Singularity application logs
 
 # Centralized logging (optional)
@@ -2305,7 +2305,7 @@ singularity/
 │           └── package_intelligence/  → Standalone GraphQL service
 │
 ├── AI Coordination Layer (TypeScript)
-│   └── ai-server/                ⭐ NATS ↔ LLM bridge
+│   └── llm-server/                ⭐ NATS ↔ LLM bridge
 │       ├── src/
 │       │   ├── index.ts          → Main server
 │       │   ├── nats-llm-bridge.ts

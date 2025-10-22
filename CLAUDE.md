@@ -324,7 +324,7 @@ fn my_function(arg: String) -> String
 - `singularity_app/` - Main Elixir/Phoenix application
 - `rust/` - Rust components (parsers, analysis tools) ✅ **CLEAN**
 - `rust_global/package_registry/` - Global external package analysis ✅ **CLEAN**
-- `ai-server/` - TypeScript AI provider server (Bun)
+- `llm-server/` - TypeScript AI provider server (Bun)
 - `flake.nix` - Nix configuration with all tools
 - `start-all.sh` / `stop-all.sh` - Service orchestration scripts
 - `.envrc` - Environment variables (use with direnv)

@@ -29,7 +29,7 @@ The workflow file `.github/workflows/copilot-setup-steps.yml` has been tested an
 - ✓ singularity_app directory exists
 - ✓ mix.exs found
 - ✓ mix.lock found (enables dependency caching)
-- ✓ ai-server directory exists
+- ✓ llm-server directory exists
 - ✓ package.json found
 - ⚠ bun.lockb not found (optional)
 

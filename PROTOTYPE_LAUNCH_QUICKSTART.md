@@ -49,7 +49,7 @@ mix deps.get
 mix compile
 
 # AI Server
-cd ../ai-server
+cd ../llm-server
 bun install
 cd ..
 ```
@@ -111,7 +111,7 @@ You have a working prototype when:
 ```bash
 tail -f logs/nats.log
 tail -f logs/elixir.log
-tail -f logs/ai-server.log
+tail -f logs/llm-server.log
 ```
 
 ---
@@ -181,7 +181,7 @@ ls -lh logs/
 cd singularity_app
 mix deps.get
 mix compile
-cd ../ai-server
+cd ../llm-server
 bun install
 cd ..
 ./stop-all.sh
@@ -212,7 +212,7 @@ If everything breaks:
 cd singularity_app
 mix clean
 rm -rf _build deps
-cd ../ai-server
+cd ../llm-server
 rm -rf node_modules
 cd ..
 
@@ -225,7 +225,7 @@ nix develop  # Re-enter
 cd singularity_app
 mix deps.get
 mix compile
-cd ../ai-server
+cd ../llm-server
 bun install
 cd ..
 

@@ -2,9 +2,9 @@
 # Start AI Server (TypeScript/Bun)
 set -euo pipefail
 
-AI_SERVER_DIR="${PWD}/ai-server"
-AI_SERVER_PID_FILE="${AI_SERVER_DIR}/.ai-server.pid"
-AI_SERVER_LOG_FILE="${AI_SERVER_DIR}/logs/ai-server.log"
+AI_SERVER_DIR="${PWD}/llm-server"
+AI_SERVER_PID_FILE="${AI_SERVER_DIR}/.llm-server.pid"
+AI_SERVER_LOG_FILE="${AI_SERVER_DIR}/logs/llm-server.log"
 
 # Create logs directory if it doesn't exist
 mkdir -p "${AI_SERVER_DIR}/logs"

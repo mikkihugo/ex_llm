@@ -68,16 +68,16 @@ tasks:
 
   # AI development tasks
   ai:lint:
-    command: 'cd ai-server && nix develop ..#dev --command bunx eslint --fix src/'
+    command: 'cd llm-server && nix develop ..#dev --command bunx eslint --fix src/'
     inputs:
-      - 'ai-server/src/**/*.{ts,tsx,js,jsx}'
+      - 'llm-server/src/**/*.{ts,tsx,js,jsx}'
     options:
       cache: false
       runInCI: true
       local: true
 
   ai:test:
-    command: 'cd ai-server && nix develop ..#dev --command bun test'
+    command: 'cd llm-server && nix develop ..#dev --command bun test'
     local: true
     options:
       runInCI: true

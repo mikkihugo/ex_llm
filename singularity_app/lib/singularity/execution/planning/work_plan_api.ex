@@ -494,7 +494,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   end
 
   # COMPLETED: Enhanced error handling for unexpected messages and invalid JSON in Work Plan API.
-  # COMPLETED: All `call_llm` patterns have been refactored to use the NATS-based `ai-server`.
+  # COMPLETED: All `call_llm` patterns have been refactored to use the NATS-based `llm-server`.
   # COMPLETED: All LLM interactions are now centralized via Singularity.LLM.Service.
   # COMPLETED: Implemented mechanism to synchronize task updates from the self-improvement agent.
   # This ensures:

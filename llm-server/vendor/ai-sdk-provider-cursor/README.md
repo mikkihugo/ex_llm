@@ -25,7 +25,7 @@ This makes Cursor unique for $20/mo:
 ## Installation
 
 ```bash
-cd ai-server/vendor/ai-sdk-provider-cursor
+cd llm-server/vendor/ai-sdk-provider-cursor
 bun install
 bun run build
 ```

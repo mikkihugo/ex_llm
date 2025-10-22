@@ -4,7 +4,7 @@ defmodule Singularity.Integration.LlmProviders.CursorLlmProvider do
 
   Prerequisites:
   - Cursor Agent CLI installed: curl https://cursor.com/install -fsSL | bash
-  - AI server running: bun run tools/ai-server.ts
+  - AI server running: bun run tools/llm-server.ts
 
   Environment:
   - AI_SERVER_URL (default: http://localhost:3000)

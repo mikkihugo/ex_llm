@@ -35,7 +35,7 @@ ssh "$RTX4080_USER@$RTX4080_HOST" << 'EOF'
     echo "🛑 Stopping existing services..."
     pkill -f "singularity" || true
     pkill -f "phoenix" || true
-    pkill -f "ai-server" || true
+    pkill -f "llm-server" || true
 
     echo "🚀 Starting services with GPU..."
     nohup nix develop .#prod --command just start-all > singularity.log 2>&1 &

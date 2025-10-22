@@ -53,7 +53,7 @@ graph TB
     end
     
     subgraph "Storage"
-        Logs[logs/ai-server.log]
+        Logs[logs/llm-server.log]
         DB[(PostgreSQL<br/>Port 5432)]
     end
     
@@ -234,7 +234,7 @@ flowchart LR
     
     subgraph "Logging (logger.ts)"
         Console[Console Output]
-        FileLog[File: logs/ai-server.log]
+        FileLog[File: logs/llm-server.log]
     end
     
     subgraph "Metrics (metrics.ts)"
@@ -600,11 +600,11 @@ All flows incorporate the production fixes and monitoring capabilities implement
 - ✅ NATS connection validation
 
 **Files Referenced:**
-- `ai-server/src/server.ts`
-- `ai-server/src/nats-handler.ts`
-- `ai-server/src/logger.ts`
-- `ai-server/src/metrics.ts`
-- `ai-server/src/elixir-bridge.ts`
+- `llm-server/src/server.ts`
+- `llm-server/src/nats-handler.ts`
+- `llm-server/src/logger.ts`
+- `llm-server/src/metrics.ts`
+- `llm-server/src/elixir-bridge.ts`
 - `start-all.sh`
 
 ---

@@ -41,7 +41,7 @@ echo "✅ Elixir application started (PID: $ELIXIR_PID)"
 
 # Start AI server
 echo "🤖 Starting AI server..."
-cd ai-server
+cd llm-server
 bun run dev &
 AI_PID=$!
 cd ..
@@ -66,4 +66,4 @@ echo "  pkill -f 'nats-server|consolidated_detector|mix phx.server|bun run dev'"
 echo ""
 echo "Logs:"
 echo "  tail -f singularity_app/log/dev.log"
-echo "  tail -f ai-server/logs/ai-server.log"
+echo "  tail -f llm-server/logs/llm-server.log"

@@ -91,7 +91,7 @@ The central registry (`model-registry.ts`) is responsible for:
 ## Example: Adding a New Provider
 
 ```typescript
-// 1. Create provider wrapper (ai-server/src/providers/new-provider.ts)
+// 1. Create provider wrapper (llm-server/src/providers/new-provider.ts)
 import { createNewProvider as baseCreateNewProvider } from 'ai-sdk-provider-new';
 
 export const NEW_PROVIDER_MODELS = [

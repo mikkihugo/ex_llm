@@ -48,7 +48,7 @@ A complete NATS-based LLM integration system for HTDAG (Hierarchical Task Direct
 - Optional self-evolution through `:evolve` flag
 - Maintains backward compatibility with existing `decompose/2`
 
-### 2. TypeScript Components (ai-server/src/)
+### 2. TypeScript Components (llm-server/src/)
 
 #### `htdag-llm-worker.ts`
 - NATS worker for HTDAG-specific LLM requests
@@ -167,7 +167,7 @@ improved = HTDAGEvolution.apply_mutations(mutations, params)
 ```bash
 # Start services
 nats-server -js -p 4222
-cd ai-server && bun run dev
+cd llm-server && bun run dev
 
 # Run from Elixir
 cd singularity_app
@@ -187,7 +187,7 @@ iex> HTDAG.execute_with_nats(dag, evolve: true)
 1. `singularity_app/lib/singularity/llm/nats_operation.ex` (9.5KB)
 2. `singularity_app/lib/singularity/planning/htdag_executor.ex` (7.8KB)
 3. `singularity_app/lib/singularity/planning/htdag_evolution.ex` (7.8KB)
-4. `ai-server/src/htdag-llm-worker.ts` (10KB)
+4. `llm-server/src/htdag-llm-worker.ts` (10KB)
 5. `HTDAG_README.md` (4.6KB)
 6. `HTDAG_NATS_INTEGRATION.md` (8.8KB)
 7. `test_htdag_nats.exs` (5.9KB)
@@ -195,7 +195,7 @@ iex> HTDAG.execute_with_nats(dag, evolve: true)
 
 ### Modified Files (3)
 1. `singularity_app/lib/singularity/planning/htdag.ex` - Added `execute_with_nats/2`
-2. `ai-server/src/server.ts` - Integrated HTDAG worker
+2. `llm-server/src/server.ts` - Integrated HTDAG worker
 3. `NATS_SUBJECTS.md` - Documented new subjects
 
 **Total:** ~57KB of production code + documentation
@@ -263,7 +263,7 @@ Built-in cost controls:
 
 ✅ **Minimal Implementation** - Can execute HTDAG with external LLM  
 ✅ **Self-Evolution** - Can critique and improve itself  
-✅ **NATS Integration** - Works with existing ai-server  
+✅ **NATS Integration** - Works with existing llm-server  
 ✅ **Streaming** - Real-time token feedback  
 ✅ **Observability** - Full telemetry instrumentation  
 ✅ **Documentation** - Complete guides and examples  

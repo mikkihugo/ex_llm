@@ -97,8 +97,8 @@ gh secret set CACHIX_AUTH_TOKEN --body "YOUR_TOKEN_HERE"
 
 **How to set in Fly.io:**
 ```bash
-# From ai-server directory
-cd ai-server
+# From llm-server directory
+cd llm-server
 
 # Setup encryption (generates .age-key.txt)
 ./scripts/setup-encryption.sh singularity

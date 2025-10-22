@@ -49,10 +49,10 @@ LayeredDetector handles low-confidence LLM fallbacks correctly.
    cd singularity_app && MIX_ENV=test mix ecto.create && mix ecto.migrate
    ```
 
-2. Launch the ai-server with valid credentials (or run in dry-run mode with
+2. Launch the llm-server with valid credentials (or run in dry-run mode with
    dummy keys):
    ```bash
-   cd ../ai-server
+   cd ../llm-server
    bun run src/server.ts
    ```
 
@@ -76,12 +76,12 @@ cd rust/tool_doc_index
 cargo run -- detect ../singularity_app
 ```
 
-### Rust Layered Detector with NATS + ai-server
+### Rust Layered Detector with NATS + llm-server
 ```bash
 export NATS_URL=nats://127.0.0.1:4222
 cargo run -- detect ../singularity_app
 ```
-Watch the ai-server logs to confirm `llm.analyze` calls during low-confidence detections.
+Watch the llm-server logs to confirm `llm.analyze` calls during low-confidence detections.
 
 ### Verify Database Entries
 ```bash
@@ -99,7 +99,7 @@ Repo.all(Singularity.Schemas.TechnologyPattern)
 | Elixir unit | `mix test` | none |
 | Rust + NATS | `cargo test --test layered_detector -- --ignored` | NATS |
 | Elixir + NATS | `mix test --only nats` | NATS |
-| Full system | manual commands above | NATS, Postgres, ai-server |
+| Full system | manual commands above | NATS, Postgres, llm-server |
 
 ## 6. Tips
 
@@ -107,8 +107,8 @@ Repo.all(Singularity.Schemas.TechnologyPattern)
 - For Postgres, the Nix shell creates `.dev-db/pg`; start it with `pg_ctl` or use
   Docker (`docker run -p 5432:5432 postgres:15`).
 - The `:nats` test tag automatically skips tests if `NATS_URL` is unset.
-- To emulate slow LLM responses, start ai-server with
-  `DEBUG_DELAY_MS=500` (see `ai-server/src/providers/*`).
+- To emulate slow LLM responses, start llm-server with
+  `DEBUG_DELAY_MS=500` (see `llm-server/src/providers/*`).
 
 Direct database access is now the default; there is no `db_service` binary to
 run. Use Ecto sandboxes (`mix test`) for transactional tests and rely on NATS

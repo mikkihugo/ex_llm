@@ -306,7 +306,7 @@ defmodule Singularity.Tools.Planning do
     end
   end
 
-  # COMPLETED: All `call_llm` patterns have been audited and refactored to use the NATS-based `ai-server`.
+  # COMPLETED: All `call_llm` patterns have been audited and refactored to use the NATS-based `llm-server`.
   # COMPLETED: All LLM interactions in planning tools now route through Singularity.LLM.Service.
   # COMPLETED: Added feedback mechanism to update the planning system with changes made by the self-improvement agent.
   # This includes:

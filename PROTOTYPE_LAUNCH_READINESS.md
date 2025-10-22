@@ -66,7 +66,7 @@ mix deps.get
 mix compile
 
 # AI Server dependencies
-cd ../ai-server
+cd ../llm-server
 bun install
 ```
 
@@ -257,7 +257,7 @@ compilers: Mix.compilers(),
 
 ### 2. AI Server Production Issues
 
-**Issue:** See `ai-server/PRODUCTION_READINESS.md` - error handling gaps
+**Issue:** See `llm-server/PRODUCTION_READINESS.md` - error handling gaps
 
 **Critical Problems:**
 - Missing try/catch in model catalog refresh
@@ -282,7 +282,7 @@ compilers: Mix.compilers(),
 **Workaround:** 
 - Always run `nix develop` first
 - OR install Bun separately: `curl -fsSL https://bun.sh/install | bash`
-- OR use Node.js (not recommended): `node ai-server/src/server.ts`
+- OR use Node.js (not recommended): `node llm-server/src/server.ts`
 
 ---
 
@@ -295,12 +295,12 @@ compilers: Mix.compilers(),
 **Workaround:**
 - Check provider credentials
 - Verify at least ONE provider is configured
-- Check `logs/ai-server.log`
+- Check `logs/llm-server.log`
 
 **Quick Fix:**
 ```bash
 # Test Gemini manually
-cd ai-server
+cd llm-server
 bun run test-gemini-only.ts
 ```
 
@@ -340,7 +340,7 @@ sudo apt-get install postgresql-17-postgis
 - [ ] NATS running (`pgrep -x nats-server`)
 - [ ] Elixir app compiled (`cd singularity_app && mix compile`)
 - [ ] Elixir app running (`curl localhost:4000/health`)
-- [ ] AI server deps installed (`ls ai-server/node_modules`)
+- [ ] AI server deps installed (`ls llm-server/node_modules`)
 - [ ] AI server running (`curl localhost:3000/health`)
 
 ### AI Features (Optional)
@@ -380,7 +380,7 @@ echo "AI_SERVER_URL=http://localhost:3000" >> ../.env
 # 4. Install deps (10 min)
 mix deps.get
 mix compile
-cd ../ai-server
+cd ../llm-server
 bun install
 
 # 5. Start all (2 min)
@@ -426,7 +426,7 @@ iex -S mix
 ### Short-Term (Before Real Use)
 
 4. **Fix AI Server Error Handling** (1-2 hours)
-   - See `ai-server/PRODUCTION_READINESS.md`
+   - See `llm-server/PRODUCTION_READINESS.md`
    - Add try/catch blocks
    - Fix NATS race conditions
 
@@ -525,7 +525,7 @@ iex -S mix
    ```bash
    tail -f logs/nats.log
    tail -f logs/elixir.log
-   tail -f logs/ai-server.log
+   tail -f logs/llm-server.log
    ```
 
 2. **Verify Nix environment:**
@@ -543,7 +543,7 @@ iex -S mix
 
 4. **Test providers:**
    ```bash
-   cd ai-server
+   cd llm-server
    bun run test-gemini-only.ts
    ```
 

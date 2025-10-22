@@ -2,8 +2,8 @@
 # Stop AI Server
 set -euo pipefail
 
-AI_SERVER_DIR="${PWD}/ai-server"
-AI_SERVER_PID_FILE="${AI_SERVER_DIR}/.ai-server.pid"
+AI_SERVER_DIR="${PWD}/llm-server"
+AI_SERVER_PID_FILE="${AI_SERVER_DIR}/.llm-server.pid"
 
 if [ ! -f "$AI_SERVER_PID_FILE" ]; then
     echo "🤖 AI Server not running (no PID file)"

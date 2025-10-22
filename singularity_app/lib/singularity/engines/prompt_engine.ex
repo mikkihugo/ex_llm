@@ -147,7 +147,7 @@ defmodule Singularity.PromptEngine do
 
   @spec call_llm(String.t() | atom(), [map()], keyword()) :: {:ok, map()} | {:error, term()}
   def call_llm(model_or_complexity, messages, opts \\ []) do
-    # Use centralized LLM service via NATS-based ai-server
+    # Use centralized LLM service via NATS-based llm-server
     Singularity.LLM.Service.call(model_or_complexity, messages, opts)
   end
 

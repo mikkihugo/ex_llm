@@ -6,7 +6,7 @@ echo "🛑 Stopping all Singularity services..."
 
 # Stop AI Server first
 echo "1️⃣ Stopping AI Server..."
-./scripts/stop-ai-server.sh
+./scripts/stop-llm-server.sh
 
 # Stop NATS
 echo "2️⃣ Stopping NATS..."

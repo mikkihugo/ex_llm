@@ -19,7 +19,7 @@ TypeScript AI Server (nats-handler.ts)
    ↓ Calls Codex provider
 AI SDK Provider (vendor/ai-sdk-provider-codex)
    ↓ Uses custom Codex binary
-Custom Codex Binary (ai-server/bin/codex)
+Custom Codex Binary (llm-server/bin/codex)
    ↓ Builtin tools DISABLED
    ↓ Only uses tools from MCP
 Elixir MCP Server
@@ -32,18 +32,18 @@ Elixir MCP Server
 ### 1. Build Custom Codex
 
 ```bash
-cd ai-server
+cd llm-server
 ./scripts/build-codex.sh
 ```
 
 This will:
 - Build Codex from `vendor/codex` (feat/builtin-tool-filtering branch)
-- Copy binary to `ai-server/bin/codex`
+- Copy binary to `llm-server/bin/codex`
 - Verify the binary is executable
 
 ### 2. Configure Codex
 
-The config at `ai-server/config/codex.config.toml` disables all builtin tools:
+The config at `llm-server/config/codex.config.toml` disables all builtin tools:
 
 ```toml
 [builtin_tools]
@@ -58,7 +58,7 @@ url = "http://localhost:4000/mcp"  # Elixir app MCP endpoint
 **Verify builtin tools are disabled:**
 
 ```bash
-cd ai-server
+cd llm-server
 ./bin/codex --list-tools --config config/codex.config.toml
 ```
 
@@ -81,7 +81,7 @@ Should show:
 ### Rebuild After Changes
 
 ```bash
-cd ai-server
+cd llm-server
 ./scripts/build-codex.sh
 ```
 
@@ -101,7 +101,7 @@ Singularity.LLM.Service.call("gpt-5-codex", [
 ], provider: "codex")
 
 # Codex will:
-# 1. Receive request via ai-server
+# 1. Receive request via llm-server
 # 2. NOT see builtin tools (shell, read_file, etc.)
 # 3. ONLY see tools from Elixir MCP server
 # 4. Tools have access to RAG, templates, quality standards
@@ -124,7 +124,7 @@ Singularity.LLM.Service.call("gpt-5-codex", [
 ## Files
 
 ```
-ai-server/
+llm-server/
 ├── bin/
 │   └── codex                    # Custom Codex binary (gitignored)
 ├── config/
@@ -145,7 +145,7 @@ vendor/codex/                     # Codex source (fork)
 ### Binary not found
 
 ```bash
-cd ai-server
+cd llm-server
 ./scripts/build-codex.sh
 ```
 

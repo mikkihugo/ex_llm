@@ -1,6 +1,6 @@
 # Gleam/Elixir CodeT5+ Fine-tuning Guide
 
-This checklist captures what to gather before running the training script in `ai-server/scripts/train_codet5.py`.
+This checklist captures what to gather before running the training script in `llm-server/scripts/train_codet5.py`.
 
 ## Dataset schema
 
@@ -36,7 +36,7 @@ All training caches default to `${STATE_DIR}/.cache/huggingface` (configured in 
 ```bash
 nix develop .#llm-train
 accelerate config  # first run only
-accelerate launch ai-server/scripts/train_codet5.py \
+accelerate launch llm-server/scripts/train_codet5.py \
   --train-file data/gleam_elixir/train.jsonl \
   --eval-file data/gleam_elixir/eval.jsonl \
   --output-dir runs/codet5p-770m-gleam-elixir

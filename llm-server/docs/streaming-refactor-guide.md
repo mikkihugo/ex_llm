@@ -116,13 +116,13 @@ for await (const chunk of result.textStream) {
 ### Option 1: Direct Replacement (Recommended)
 ```bash
 # Backup original
-mv ai-server/src/server.ts ai-server/src/server-original.ts
+mv llm-server/src/server.ts llm-server/src/server-original.ts
 
 # Use refactored version
-mv ai-server/src/server-refactored.ts ai-server/src/server.ts
+mv llm-server/src/server-refactored.ts llm-server/src/server.ts
 
 # Test
-bun run ai-server/src/server.ts
+bun run llm-server/src/server.ts
 curl http://localhost:3000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"claude-sonnet-4.5","messages":[{"role":"user","content":"test"}],"stream":true}'
@@ -133,10 +133,10 @@ Keep both implementations, test refactored version separately:
 
 ```bash
 # Terminal 1: Original server
-PORT=3000 bun run ai-server/src/server.ts
+PORT=3000 bun run llm-server/src/server.ts
 
 # Terminal 2: Refactored server
-PORT=3001 bun run ai-server/src/server-refactored.ts
+PORT=3001 bun run llm-server/src/server-refactored.ts
 
 # Compare outputs
 diff <(curl http://localhost:3000/v1/chat/completions ...) \
@@ -210,7 +210,7 @@ const coreMessages = convertToCoreMessages(body.messages);
 If issues arise:
 ```bash
 # Restore original
-mv ai-server/src/server-original.ts ai-server/src/server.ts
+mv llm-server/src/server-original.ts llm-server/src/server.ts
 
 # Or cherry-pick fixes
 git diff server-original.ts server-refactored.ts | git apply

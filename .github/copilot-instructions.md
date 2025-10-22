@@ -19,7 +19,7 @@ This is a **polyglot codebase** using:
 - **Elixir** (primary) - Main application in `singularity_app/`
 - **Gleam** - BEAM-native functional language, compiles with Elixir
 - **Rust** - High-performance NIFs and services in `rust/` (architecture_engine, code_engine, parser_engine, etc.)
-- **TypeScript** - AI server in `ai-server/`
+- **TypeScript** - AI server in `llm-server/`
 
 This repository uses **Nix** + **direnv** for reproducible development environments.
 
@@ -185,11 +185,11 @@ impl TechnologyDetector {
 }
 ```
 
-### TypeScript Code (`ai-server/`)
+### TypeScript Code (`llm-server/`)
 
 **File locations**:
-- Source: `ai-server/src/`
-- Tests: `ai-server/src/*.test.ts`
+- Source: `llm-server/src/`
+- Tests: `llm-server/src/*.test.ts`
 
 **Conventions**:
 - Use `camelCase` for variables and functions
@@ -253,7 +253,7 @@ mix phx.server
 ### Run AI Server (Bun)
 
 ```bash
-cd ai-server
+cd llm-server
 bun install
 bun run src/server.ts
 ```
@@ -357,7 +357,7 @@ This is a **NATS-first microservices architecture**:
    │                          │
    ▼                          ▼
 ┌──────────────┐     ┌──────────────┐
-│  ai-server   │     │ central_cloud│
+│  llm-server   │     │ central_cloud│
 │  (Bun/TS)    │     │  (Elixir)    │
 │  LLM APIs    │     │  3 Services  │
 └──────────────┘     └──────┬───────┘
@@ -449,9 +449,9 @@ This will automatically load the Nix environment in the integrated terminal.
 4. Test with `nats sub "your.subject"`
 
 #### Adding a New LLM Provider
-1. Create provider module in `ai-server/src/providers/`
+1. Create provider module in `llm-server/src/providers/`
 2. Implement standard interface (chat, completion)
-3. Add to `ai-server/src/server.ts` routing
+3. Add to `llm-server/src/server.ts` routing
 4. Document authentication in `tools/deploy-credentials.md`
 
 ## Testing Strategy
@@ -479,7 +479,7 @@ cd singularity_app && mix test
 cd rust && cargo test --lib
 
 # TypeScript
-cd ai-server && bun test
+cd llm-server && bun test
 ```
 
 **Integration Tests** (medium speed):

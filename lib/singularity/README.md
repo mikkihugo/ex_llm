@@ -267,6 +267,6 @@ end
 
 ## See Also
 
-- [AI Server README](../../ai-server/README.md) - HTTP API documentation
+- [AI Server README](../../llm-server/README.md) - HTTP API documentation
 - [Deployment Options](../../docs/deployment/DEPLOYMENT_OPTIONS.md) - Deployment strategies
 - [Quick Start](../../docs/setup/QUICKSTART.md) - Quick deployment guide

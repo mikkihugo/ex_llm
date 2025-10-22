@@ -77,7 +77,7 @@ end
 echo "🎯 Starting T5 fine-tuning..."
 
 # Run the specialized Rust/Elixir training script
-python ai-server/scripts/train_rust_elixir_t5.py \
+python llm-server/scripts/train_rust_elixir_t5.py \
     --train-file data/rust_elixir/train.jsonl \
     --eval-file data/rust_elixir/eval.jsonl \
     --output-dir runs/codet5p-770m-rust-elixir \
