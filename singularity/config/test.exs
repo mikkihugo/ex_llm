@@ -14,3 +14,7 @@ config :singularity, Singularity.Repo,
   # Shared DB, sandboxed for tests
   database: "singularity",
   pool: Ecto.Adapters.SQL.Sandbox
+
+# Test Oban Configuration
+# Run jobs inline for deterministic testing
+config :singularity, Oban, testing: :inline

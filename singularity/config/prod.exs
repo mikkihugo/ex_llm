@@ -14,3 +14,13 @@ config :singularity, :fly,
   release_distribution: System.get_env("RELEASE_DISTRIBUTION", "name")
 
 config :singularity, :http_server_enabled, true
+
+# Production Oban Configuration
+# Persistent job queue with proper error handling
+config :singularity, Oban,
+  queues: [
+    # Override dev defaults for production
+    training: [concurrency: 1],
+    maintenance: [concurrency: 3],
+    default: [concurrency: 10]
+  ]

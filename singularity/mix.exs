@@ -132,6 +132,9 @@ defmodule Singularity.MixProject do
       # Job scheduler for PI Planning, System Demos
       {:quantum, "~> 3.5"},
 
+      # Background Job Queue for ML training, maintenance tasks
+      {:oban, "~> 2.18"},
+
       # MoonShine-style Rule Engine
       # Fast caching for rule results
       {:cachex, "~> 3.6"},

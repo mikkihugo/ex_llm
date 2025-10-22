@@ -70,3 +70,36 @@ config :singularity, Singularity.Repo,
   pool_size: String.to_integer(System.get_env("SINGULARITY_DB_POOL", "10"))
 
 config :singularity, ecto_repos: [Singularity.Repo]
+
+# Oban Background Job Queue Configuration
+# ML training, pattern mining, and maintenance tasks
+config :singularity, Oban,
+  repo: Singularity.Repo,
+  queues: [
+    # ML training jobs (GPU constraint - only 1 at a time)
+    training: [concurrency: 1, rate_limit: [allowed: 1, period: 60]],
+    # Maintenance tasks (cache cleanup, pattern sync - up to 3 concurrent)
+    maintenance: [concurrency: 3],
+    # Default queue for general background work
+    default: [concurrency: 10]
+  ],
+  plugins: [
+    # Prune completed/discarded jobs after 7 days
+    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
+    # Periodically check for stalled jobs
+    {Oban.Plugins.Stalled, interval: 60}
+  ]
+
+# Quantum Scheduler Configuration
+# Cron-like scheduling for periodic background tasks
+config :singularity, Singularity.Scheduler,
+  jobs: [
+    # Cache cleanup: every 15 minutes
+    {"*/15 * * * *", {Singularity.Jobs.CacheMaintenanceJob, :cleanup, []}},
+    # Cache refresh: every hour
+    {"0 * * * *", {Singularity.Jobs.CacheMaintenanceJob, :refresh, []}},
+    # Cache prewarm: every 6 hours
+    {"0 */6 * * *", {Singularity.Jobs.CacheMaintenanceJob, :prewarm, []}},
+    # Pattern sync: every 5 minutes
+    {"*/5 * * * *", {Singularity.Jobs.PatternSyncJob, :sync, []}}
+  ]
