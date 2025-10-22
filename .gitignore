@@ -48,7 +48,13 @@ litellm/
 .moon/cache
 .moon/docker
 
-# Singularity runtime builds
+# Elixir build outputs (all applications)
+/_build/
+/singularity/_build/
+/singularity/deps/
+/singularity/priv/plts/
+/centralcloud/_build/
+/centralcloud/deps/
 /singularity_app/_build/
 /singularity_app/deps/
 /singularity_app/priv/plts/

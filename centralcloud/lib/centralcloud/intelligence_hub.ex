@@ -103,6 +103,9 @@ defmodule Centralcloud.IntelligenceHub do
     # NEW: Template context queries
     NatsClient.subscribe("intelligence.query", &handle_intelligence_query/1)
 
+    # NEW: Dependency reports from instances
+    NatsClient.subscribe("instance.dependencies.report", &handle_dependency_report/1)
+
     :ok
   end
 
@@ -377,5 +380,19 @@ defmodule Centralcloud.IntelligenceHub do
     quality_score = if map_size(quality_context[:requirements]) > 0, do: 0.5, else: 0.0
 
     framework_score + quality_score
+  end
+
+  defp handle_dependency_report(msg) do
+    Logger.info("📦 Received dependency report from instance")
+
+    case Jason.decode(msg.payload) do
+      {:ok, %{"instance_id" => instance_id, "dependencies" => dependencies}} ->
+        # Forward to package sync job for processing
+        Centralcloud.Jobs.PackageSyncJob.handle_dependency_report(instance_id, dependencies)
+        Logger.debug("Processed dependency report from instance #{instance_id}")
+
+      {:error, reason} ->
+        Logger.error("Failed to decode dependency report: #{inspect(reason)}")
+    end
   end
 end

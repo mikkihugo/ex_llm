@@ -263,42 +263,82 @@ defmodule Centralcloud.NatsClient do
     end
   end
 
-  defp create_kv_bucket(bucket, _state) do
-    # TODO: Implement JetStream KV bucket creation
-    #
-    # In real implementation:
-    # {:ok, js} = :async_nats.jetstream(state.conn)
-    # {:ok, kv} = :async_nats_kv.create_or_bind(js, bucket)
-    # {:ok, kv}
-
-    Logger.debug("Creating JetStream KV bucket: #{bucket}")
-    {:ok, :placeholder_kv}
+  defp create_kv_bucket(bucket, %{conn: conn}) do
+    # Create JetStream context
+    case Gnat.jetstream(conn) do
+      {:ok, js} ->
+        # Create or bind to KV bucket
+        case Gnat.kv_create(js, bucket) do
+          {:ok, kv} ->
+            Logger.debug("Created JetStream KV bucket: #{bucket}")
+            {:ok, kv}
+          
+          {:error, :bucket_exists} ->
+            # Bucket already exists, bind to it
+            case Gnat.kv_bind(js, bucket) do
+              {:ok, kv} ->
+                Logger.debug("Bound to existing JetStream KV bucket: #{bucket}")
+                {:ok, kv}
+              
+              {:error, reason} ->
+                Logger.error("Failed to bind to KV bucket #{bucket}: #{inspect(reason)}")
+                {:error, reason}
+            end
+          
+          {:error, reason} ->
+            Logger.error("Failed to create KV bucket #{bucket}: #{inspect(reason)}")
+            {:error, reason}
+        end
+      
+      {:error, reason} ->
+        Logger.error("Failed to create JetStream context: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
 
-  defp kv_get_internal(bucket, key, state) do
-    # TODO: Implement actual KV get
-    #
-    # In real implementation:
-    # kv = state.kv_buckets[bucket]
-    # case :async_nats_kv.get(kv, key) do
-    #   {:ok, value} -> {:ok, Jason.decode!(value)}
-    #   {:error, :not_found} -> {:error, :not_found}
-    # end
-
-    Logger.debug("KV GET #{bucket}/#{key}")
-    {:error, :not_found}
+  defp kv_get_internal(bucket, key, %{conn: conn, kv_buckets: buckets}) do
+    kv = Map.get(buckets, bucket)
+    
+    if kv do
+      case Gnat.kv_get(kv, key) do
+        {:ok, %{value: value}} ->
+          case Jason.decode(value) do
+            {:ok, decoded} -> {:ok, decoded}
+            {:error, _} -> {:ok, value}  # Return raw value if not JSON
+          end
+        
+        {:error, :not_found} ->
+          {:error, :not_found}
+        
+        {:error, reason} ->
+          Logger.error("KV GET failed for #{bucket}/#{key}: #{inspect(reason)}")
+          {:error, reason}
+      end
+    else
+      Logger.error("KV bucket not found: #{bucket}")
+      {:error, :bucket_not_found}
+    end
   end
 
-  defp kv_put_internal(bucket, key, value, state) do
-    # TODO: Implement actual KV put
-    #
-    # In real implementation:
-    # kv = state.kv_buckets[bucket]
-    # encoded = Jason.encode!(value)
-    # :async_nats_kv.put(kv, key, encoded)
-
-    Logger.debug("KV PUT #{bucket}/#{key}")
-    :ok
+  defp kv_put_internal(bucket, key, value, %{conn: conn, kv_buckets: buckets}) do
+    kv = Map.get(buckets, bucket)
+    
+    if kv do
+      encoded_value = Jason.encode!(value)
+      
+      case Gnat.kv_put(kv, key, encoded_value) do
+        :ok ->
+          Logger.debug("KV PUT successful: #{bucket}/#{key}")
+          :ok
+        
+        {:error, reason} ->
+          Logger.error("KV PUT failed for #{bucket}/#{key}: #{inspect(reason)}")
+          {:error, reason}
+      end
+    else
+      Logger.error("KV bucket not found: #{bucket}")
+      {:error, :bucket_not_found}
+    end
   end
 
   defp nats_request(conn, subject, payload, timeout) do

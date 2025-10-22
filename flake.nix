@@ -417,6 +417,7 @@
             export LANG=C.UTF-8
             export ELIXIR_ERL_OPTIONS="+fnu"
             export ERL_AFLAGS="-proto_dist inet6_tcp"
+            export ERL_FLAGS="-heart +sbt u +sbwt very_long +swt very_low"
             export MIX_ENV=''${MIX_ENV:-${if env.name == "Remote Production Environment" then "prod" else "dev"}}
 
             ${if env.caching then ''
