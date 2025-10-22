@@ -1,4 +1,4 @@
-defmodule CentralCloud.Schemas.PackageExample do
+defmodule Centralcloud.Schemas.PackageExample do
   @moduledoc """
   Package example schema for storing usage examples.
   """
@@ -10,7 +10,7 @@ defmodule CentralCloud.Schemas.PackageExample do
   @foreign_key_type :binary_id
 
   schema "package_examples" do
-    belongs_to :package, CentralCloud.Schemas.Package
+    belongs_to :package, Centralcloud.Schemas.Package
 
     field :title, :string
     field :description, :string

@@ -1,4 +1,4 @@
-defmodule CentralCloud.Application do
+defmodule Centralcloud.Application do
   @moduledoc """
   Central Cloud Application
   
@@ -15,19 +15,19 @@ defmodule CentralCloud.Application do
 
     children = [
       # Database
-      CentralCloud.Repo,
+      Centralcloud.Repo,
 
       # NATS client
-      CentralCloud.NatsClient,
+      Centralcloud.NatsClient,
 
       # Global services
-      CentralCloud.KnowledgeCache,             # NEW: ETS-based cache
-      CentralCloud.TemplateService,
-      CentralCloud.FrameworkLearningAgent,
-      CentralCloud.IntelligenceHub,            # NEW: Replaces Rust service (handles own subscriptions)
+      Centralcloud.KnowledgeCache,             # NEW: ETS-based cache
+      Centralcloud.TemplateService,
+      Centralcloud.FrameworkLearningAgent,
+      Centralcloud.IntelligenceHub,            # NEW: Replaces Rust service (handles own subscriptions)
     ]
 
-    opts = [strategy: :one_for_one, name: CentralCloud.Supervisor]
+    opts = [strategy: :one_for_one, name: Centralcloud.Supervisor]
     Supervisor.start_link(children, opts)
   end
 end

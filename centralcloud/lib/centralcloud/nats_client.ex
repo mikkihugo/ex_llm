@@ -1,4 +1,4 @@
-defmodule CentralCloud.NatsClient do
+defmodule Centralcloud.NatsClient do
   @moduledoc """
   NATS client for Central Cloud services.
 

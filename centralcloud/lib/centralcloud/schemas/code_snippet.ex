@@ -1,4 +1,4 @@
-defmodule CentralCloud.Schemas.CodeSnippet do
+defmodule Centralcloud.Schemas.CodeSnippet do
   @moduledoc """
   Code snippet schema for package code examples and patterns.
   """
@@ -10,7 +10,7 @@ defmodule CentralCloud.Schemas.CodeSnippet do
   @foreign_key_type :binary_id
 
   schema "code_snippets" do
-    belongs_to :package, CentralCloud.Schemas.Package
+    belongs_to :package, Centralcloud.Schemas.Package
 
     field :title, :string
     field :code, :string

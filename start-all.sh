@@ -42,8 +42,8 @@ if pgrep -f "bun.*server" > /dev/null; then
     existing_processes+=("AI Server")
 fi
 
-if pgrep -f "elixir.*central_cloud" > /dev/null || pgrep -f "beam.*central_cloud" > /dev/null; then
-    existing_processes+=("Central Cloud")
+if pgrep -f "elixir.*centralcloud" > /dev/null || pgrep -f "beam.*centralcloud" > /dev/null; then
+    existing_processes+=("Centralcloud")
 fi
 
 if [ ${#existing_processes[@]} -gt 0 ]; then
@@ -83,37 +83,37 @@ else
     exit 1
 fi
 
-# 3. Start Central Cloud
-echo -e "\n${YELLOW}[3/5] Starting Central Cloud...${NC}"
+# 3. Start Centralcloud
+echo -e "\n${YELLOW}[3/5] Starting Centralcloud...${NC}"
 
-# Check for existing Central Cloud processes
-if pgrep -f "elixir.*central_cloud" > /dev/null || pgrep -f "beam.*central_cloud" > /dev/null; then
-    echo "✅ Central Cloud already running"
+# Check for existing Centralcloud processes
+if pgrep -f "elixir.*centralcloud" > /dev/null || pgrep -f "beam.*centralcloud" > /dev/null; then
+    echo "✅ Centralcloud already running"
 else
-    cd central_cloud
+    cd centralcloud
 
     # Install dependencies if needed
     if [ ! -d "deps" ]; then
-        echo "Installing Central Cloud dependencies..."
+        echo "Installing Centralcloud dependencies..."
         mix deps.get
     fi
 
     # Compile if needed
     if [ ! -d "_build" ]; then
-        echo "Compiling Central Cloud application..."
+        echo "Compiling Centralcloud application..."
         mix compile
     fi
 
     # Start the application
-    echo "Starting Central Cloud application..."
-    MIX_ENV=dev elixir --name central_cloud@127.0.0.1 --cookie singularity-secret -S mix run > ../logs/central_cloud.log 2>&1 &
+    echo "Starting Centralcloud application..."
+    MIX_ENV=dev elixir --name centralcloud@127.0.0.1 --cookie singularity-secret -S mix run > ../logs/centralcloud.log 2>&1 &
     sleep 3
 
-    if pgrep -f "elixir.*central_cloud" > /dev/null; then
-        echo "✅ Central Cloud started"
+    if pgrep -f "elixir.*centralcloud" > /dev/null; then
+        echo "✅ Centralcloud started"
     else
-        echo -e "${YELLOW}⚠️  Central Cloud may have failed to start${NC}"
-        echo "Check logs/central_cloud.log for details"
+        echo -e "${YELLOW}⚠️  Centralcloud may have failed to start${NC}"
+        echo "Check logs/centralcloud.log for details"
     fi
     cd ..
 fi
@@ -207,7 +207,7 @@ echo -e "${GREEN}═════════════════════
 services=(
     "nats-server:4222:NATS"
     "postgres:N/A:PostgreSQL"
-    "elixir.*central_cloud:N/A:Central Cloud"
+    "elixir.*centralcloud:N/A:Centralcloud"
     "beam.*singularity:N/A:Elixir App"
     "bun:3000:AI Server"
 )

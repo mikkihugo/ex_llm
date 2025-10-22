@@ -1,4 +1,4 @@
-defmodule CentralCloud.IntelligenceHubSubscriber do
+defmodule Centralcloud.IntelligenceHubSubscriber do
   @moduledoc """
   NATS subscriber for receiving intelligence data from Singularity engines.
   
@@ -12,7 +12,7 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   ## Architecture
   
   ```
-  Engine → NATS → This Subscriber → PostgreSQL (central_cloud)
+  Engine → NATS → This Subscriber → PostgreSQL (centralcloud)
   ```
   
   ## Subscriptions
@@ -27,8 +27,8 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   use GenServer
   require Logger
   
-  alias CentralCloud.{Repo, NatsClient}
-  alias CentralCloud.Schemas.{AnalysisResult, Package, PromptTemplate, CodeSnippet}
+  alias Centralcloud.{Repo, NatsClient}
+  alias Centralcloud.Schemas.{AnalysisResult, Package, PromptTemplate, CodeSnippet}
   
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)

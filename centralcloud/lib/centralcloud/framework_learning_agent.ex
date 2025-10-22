@@ -1,4 +1,4 @@
-defmodule CentralCloud.FrameworkLearningAgent do
+defmodule Centralcloud.FrameworkLearningAgent do
   @moduledoc """
   Framework Learning Agent for Central Cloud - **REACTIVE PATTERN with NATS JetStream**
 
@@ -35,9 +35,9 @@ defmodule CentralCloud.FrameworkLearningAgent do
   use GenServer
   require Logger
 
-  alias CentralCloud.Repo
-  alias CentralCloud.Schemas.Package
-  alias CentralCloud.NatsClient
+  alias Centralcloud.Repo
+  alias Centralcloud.Schemas.Package
+  alias Centralcloud.NatsClient
 
   # ===========================
   # Public API

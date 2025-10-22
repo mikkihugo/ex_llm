@@ -1,9 +1,9 @@
-defmodule CentralCloud.MixProject do
+defmodule Centralcloud.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :central_cloud,
+      app: :centralcloud,
       version: "0.1.0",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
@@ -14,7 +14,7 @@ defmodule CentralCloud.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {CentralCloud.Application, []}
+      mod: {Centralcloud.Application, []}
     ]
   end
 

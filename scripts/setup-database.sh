@@ -23,9 +23,11 @@ NC='\033[0m'
 
 DB_NAME="${SINGULARITY_DB_NAME:-singularity}"
 DB_USER="${SINGULARITY_DB_USER:-${USER}}"
+CENTRALCLOUD_DB_NAME="${CENTRALCLOUD_DB_NAME:-centralcloud}"
 
 echo -e "${GREEN}🗄️  Singularity Database Setup${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "Setting up databases: '$DB_NAME' and '$CENTRALCLOUD_DB_NAME'"
 echo ""
 
 # Check if PostgreSQL is running
@@ -118,13 +120,43 @@ SQL
 echo -e "${GREEN}✅ Extensions installed${NC}"
 echo ""
 
+# Create centralcloud database if needed
+echo -e "${GREEN}🗄️  Setting up Centralcloud database...${NC}"
+if psql -lqt | cut -d \| -f 1 | grep -qw "$CENTRALCLOUD_DB_NAME"; then
+    echo -e "${YELLOW}📊 Database '$CENTRALCLOUD_DB_NAME' already exists${NC}"
+else
+    echo -e "${GREEN}Creating database '$CENTRALCLOUD_DB_NAME'...${NC}"
+    createdb "$CENTRALCLOUD_DB_NAME" -O "$DB_USER"
+    echo -e "${GREEN}✅ Centralcloud database created${NC}"
+fi
+
+# Install extensions in centralcloud database
+echo -e "${GREEN}📦 Installing PostgreSQL extensions in centralcloud...${NC}"
+psql -d "$CENTRALCLOUD_DB_NAME" <<SQL
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pgvector;
+CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+SELECT 'Extensions installed for centralcloud';
+SQL
+
+echo ""
+
 # Run Ecto migrations
-echo -e "${GREEN}🔄 Running Ecto migrations...${NC}"
+echo -e "${GREEN}🔄 Running Ecto migrations for singularity_app...${NC}"
 cd "$PROJECT_ROOT/singularity_app"
 
 mix ecto.migrate
 
-echo -e "${GREEN}✅ Migrations complete${NC}"
+echo -e "${GREEN}✅ Singularity migrations complete${NC}"
+echo ""
+
+# Run Ecto migrations for centralcloud
+echo -e "${GREEN}🔄 Running Ecto migrations for centralcloud...${NC}"
+cd "$PROJECT_ROOT/centralcloud"
+
+mix ecto.migrate
+
+echo -e "${GREEN}✅ Centralcloud migrations complete${NC}"
 echo ""
 
 # Verify setup

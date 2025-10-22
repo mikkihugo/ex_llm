@@ -1,4 +1,4 @@
-defmodule CentralCloud.Schemas.SecurityAdvisory do
+defmodule Centralcloud.Schemas.SecurityAdvisory do
   @moduledoc """
   Security advisory schema for package vulnerabilities.
   """
@@ -10,7 +10,7 @@ defmodule CentralCloud.Schemas.SecurityAdvisory do
   @foreign_key_type :binary_id
 
   schema "security_advisories" do
-    belongs_to :package, CentralCloud.Schemas.Package
+    belongs_to :package, Centralcloud.Schemas.Package
 
     field :vulnerability_id, :string
     field :severity, :string

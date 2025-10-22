@@ -1,4 +1,4 @@
-defmodule CentralCloud.Repo do
+defmodule Centralcloud.Repo do
   @moduledoc """
   Central Services Ecto repository for package data, code snippets, 
   security advisories, and analysis results.
@@ -6,6 +6,6 @@ defmodule CentralCloud.Repo do
   This is completely separate from Singularity's Ecto setup.
   """
   use Ecto.Repo,
-    otp_app: :central_cloud,
+    otp_app: :centralcloud,
     adapter: Ecto.Adapters.Postgres
 end

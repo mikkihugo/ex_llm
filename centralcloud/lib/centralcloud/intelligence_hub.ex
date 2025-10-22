@@ -1,4 +1,4 @@
-defmodule CentralCloud.IntelligenceHub do
+defmodule Centralcloud.IntelligenceHub do
   @moduledoc """
   Intelligence Hub - Aggregates intelligence from all Singularity instances
 
@@ -21,7 +21,7 @@ defmodule CentralCloud.IntelligenceHub do
   use GenServer
   require Logger
 
-  alias CentralCloud.{Repo, NatsClient}
+  alias Centralcloud.{Repo, NatsClient}
 
   # ===========================
   # Public API
@@ -282,7 +282,7 @@ defmodule CentralCloud.IntelligenceHub do
 
   defp load_framework_metadata(framework, language) do
     # Query knowledge_artifacts for framework data
-    case Repo.get_by(CentralCloud.KnowledgeArtifact,
+    case Repo.get_by(Centralcloud.KnowledgeArtifact,
            artifact_type: "framework",
            name: framework
          ) do
@@ -318,7 +318,7 @@ defmodule CentralCloud.IntelligenceHub do
     # Query for quality standards
     artifact_id = "#{language}_#{quality_level}"
 
-    case Repo.get_by(CentralCloud.KnowledgeArtifact,
+    case Repo.get_by(Centralcloud.KnowledgeArtifact,
            artifact_type: "quality_standard",
            artifact_id: artifact_id
          ) do
@@ -356,7 +356,7 @@ defmodule CentralCloud.IntelligenceHub do
 
   defp get_relevant_prompts(task_type) do
     # Query prompt library for task-specific prompts
-    case Repo.get_by(CentralCloud.KnowledgeArtifact,
+    case Repo.get_by(Centralcloud.KnowledgeArtifact,
            artifact_type: "prompt",
            metadata: %{"use_case" => task_type}
          ) do
