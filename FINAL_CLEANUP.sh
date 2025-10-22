@@ -17,9 +17,12 @@ echo "   rust/architecture, code_analysis, embedding, framework,"
 echo "   knowledge, parser, prompt, quality, semantic, template"
 echo "   (NOT package - it's a duplicate!)"
 echo ""
-echo "✅ KEEP (3 centralcloud NATS services):"
-echo "   centralcloud/rust/package_intelligence"
-echo "   (Future: intelligence_hub, knowledge_cache)"
+echo "✅ KEEP (3 centralcloud services):"
+echo "   Rust:"
+echo "     - centralcloud/rust/package_intelligence (uses ../../parser_engine)"
+echo "   Elixir (NATS via centralcloud app):"
+echo "     - intelligence_hub"
+echo "     - knowledge_cache"
 echo ""
 echo "✅ KEEP (1 global registry):"
 echo "   rust_global/package_registry"
@@ -137,9 +140,15 @@ for crate in architecture code_analysis embedding framework knowledge parser pro
 done
 echo ""
 
-echo "📡 CENTRALCLOUD SERVICES (centralcloud/rust/) - 1:"
+echo "📡 CENTRALCLOUD SERVICES - 3 (1 Rust + 2 Elixir):"
 if [ -d "centralcloud/rust/package_intelligence" ]; then
-    echo "   ✓ package_intelligence/"
+    echo "   ✓ package_intelligence/ (Rust - uses parser_engine)"
+fi
+if [ -f "centralcloud/lib/centralcloud/intelligence_hub.ex" ]; then
+    echo "   ✓ intelligence_hub (Elixir - NATS service)"
+fi
+if [ -f "centralcloud/lib/centralcloud/knowledge_cache.ex" ]; then
+    echo "   ✓ knowledge_cache (Elixir - NATS service)"
 fi
 echo ""
 
