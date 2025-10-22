@@ -31,7 +31,11 @@ defmodule Centralcloud.MixProject do
       {:oban, "~> 2.18"},
 
       # Cron-like scheduler for periodic global tasks
-      {:quantum, "~> 3.5"}
+      {:quantum, "~> 3.5"},
+
+      # Testing dependencies
+      {:mox, "~> 1.0", only: :test},
+      {:ex_machina, "~> 2.8", only: :test}
     ]
   end
 end
