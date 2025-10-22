@@ -120,6 +120,7 @@ erl_crash.dump
 *_SEMANTIC.md
 *_TEMPLATE.md
 *_TOOL.md
+*_IMPLEMENTATION_STATUS.md
 
 # Gleam build artifacts (NOT source files!)
 /singularity_app/build/
