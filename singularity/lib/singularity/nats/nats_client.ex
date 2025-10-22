@@ -41,7 +41,7 @@ defmodule Singularity.NatsClient do
 
   ## Examples
 
-      iex> Singularity.NatsClient.publish("ai.provider.codex", "Hello world")
+      iex> Singularity.NatsClient.publish("llm.request", "Hello world")
       :ok
   """
   @spec publish(String.t(), binary(), keyword()) :: :ok | {:error, term()}
@@ -54,7 +54,7 @@ defmodule Singularity.NatsClient do
 
   ## Examples
 
-      iex> Singularity.NatsClient.request("ai.provider.codex", "Generate code", timeout: 5000)
+      iex> Singularity.NatsClient.request("llm.request", "Generate code", timeout: 5000)
       {:ok, %{data: "def hello, do: :world", ...}}
   """
   @spec request(String.t(), binary(), keyword()) :: {:ok, nats_response()} | {:error, term()}
@@ -70,7 +70,7 @@ defmodule Singularity.NatsClient do
 
   ## Examples
 
-      iex> Singularity.NatsClient.subscribe("ai.>")
+      iex> Singularity.NatsClient.subscribe("llm.>")
       {:ok, subscription_id}
   """
   @spec subscribe(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}

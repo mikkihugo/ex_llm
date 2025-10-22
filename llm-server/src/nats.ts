@@ -41,13 +41,13 @@ export class NatsService {
 
     const jsm = await this.nc!.jetstreamManager();
 
-    // NOTE: AI_EVENTS stream disabled because it was intercepting request/reply messages
-    // The stream captured all 'ai.>' subjects including 'ai.llm.request', causing
+    // NOTE: LLM_EVENTS stream disabled because it was intercepting request/reply messages
+    // The stream captured all 'llm.>' subjects including 'llm.request', causing
     // Gnat.request() to receive JetStream ACKs instead of actual LLM responses.
     // If you need event streaming in the future, use a more specific subject pattern
-    // that doesn't overlap with request/reply subjects (e.g., 'ai.events.>' instead of 'ai.>')
+    // that doesn't overlap with request/reply subjects (e.g., 'llm.events.>' instead of 'llm.>')
 
-    // AI Events stream for general AI-related events.
+    // LLM Events stream for general LLM-related events.
     // try {
     //   await jsm.streams.add({
     //     name: 'AI_EVENTS',

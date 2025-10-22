@@ -88,7 +88,7 @@ describe('NATS Handler - LLM Request Processing', () => {
     await nc?.close();
   });
 
-  test('handles ai.llm.request and publishes to ai.llm.response', async () => {
+  test('handles llm.request and publishes to llm.response', async () => {
     const correlationId = `test-${Date.now()}`;
 
     const request: LLMRequest = {
@@ -101,7 +101,7 @@ describe('NATS Handler - LLM Request Processing', () => {
     };
 
     // Subscribe to response before publishing request
-    const responseSub = nc.subscribe('ai.llm.response');
+    const responseSub = nc.subscribe('llm.response');
     const responsePromise = new Promise<LLMResponse>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Timeout waiting for response')), 10000);
 
@@ -118,7 +118,7 @@ describe('NATS Handler - LLM Request Processing', () => {
     });
 
     // Publish request
-    nc.publish('ai.llm.request', JSON.stringify(request));
+    nc.publish('llm.request', JSON.stringify(request));
 
     // Wait for response
     const response = await responsePromise;
@@ -145,7 +145,7 @@ describe('NATS Handler - LLM Request Processing', () => {
     };
 
     // Subscribe to error responses
-    const errorSub = nc.subscribe('ai.llm.error');
+    const errorSub = nc.subscribe('llm.error');
     const errorPromise = new Promise<LLMError>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Timeout waiting for error')), 10000);
 
@@ -162,7 +162,7 @@ describe('NATS Handler - LLM Request Processing', () => {
     });
 
     // Publish invalid request
-    nc.publish('ai.llm.request', JSON.stringify(request));
+    nc.publish('llm.request', JSON.stringify(request));
 
     // Wait for error response
     const error = await errorPromise;
@@ -186,7 +186,7 @@ describe('NATS Handler - LLM Request Processing', () => {
       correlation_id: correlationId
     };
 
-    const errorSub = nc.subscribe('ai.llm.error');
+    const errorSub = nc.subscribe('llm.error');
     const errorPromise = new Promise<LLMError>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Timeout waiting for validation error')), 10000);
 
@@ -202,7 +202,7 @@ describe('NATS Handler - LLM Request Processing', () => {
       })();
     });
 
-    nc.publish('ai.llm.request', JSON.stringify(invalidRequest));
+    nc.publish('llm.request', JSON.stringify(invalidRequest));
 
     const error = await errorPromise;
 
@@ -223,7 +223,7 @@ describe('NATS Handler - LLM Request Processing', () => {
       correlation_id: correlationId
     };
 
-    const responseSub = nc.subscribe('ai.llm.response');
+    const responseSub = nc.subscribe('llm.response');
     const responsePromise = new Promise<LLMResponse>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Timeout waiting for auto-selected response')), 10000);
 
@@ -239,7 +239,7 @@ describe('NATS Handler - LLM Request Processing', () => {
       })();
     });
 
-    nc.publish('ai.llm.request', JSON.stringify(request));
+    nc.publish('llm.request', JSON.stringify(request));
 
     const response = await responsePromise;
 
@@ -264,7 +264,7 @@ describe('NATS Handler - LLM Request Processing', () => {
     }
 
     // Subscribe to responses
-    const responseSub = nc.subscribe('ai.llm.response');
+    const responseSub = nc.subscribe('llm.response');
     const responses = new Set<string>();
 
     const allResponsesPromise = new Promise<void>((resolve, reject) => {
@@ -288,7 +288,7 @@ describe('NATS Handler - LLM Request Processing', () => {
 
     // Publish all requests
     requests.forEach(req => {
-      nc.publish('ai.llm.request', JSON.stringify(req));
+      nc.publish('llm.request', JSON.stringify(req));
     });
 
     // Wait for all responses
@@ -310,7 +310,7 @@ describe('NATS Handler - LLM Request Processing', () => {
       correlation_id: correlationId
     };
 
-    const responseSub = nc.subscribe('ai.llm.response');
+    const responseSub = nc.subscribe('llm.response');
     const responsePromise = new Promise<LLMResponse>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Timeout')), 15000);
 
@@ -326,7 +326,7 @@ describe('NATS Handler - LLM Request Processing', () => {
       })();
     });
 
-    nc.publish('ai.llm.request', JSON.stringify(request));
+    nc.publish('llm.request', JSON.stringify(request));
 
     const response = await responsePromise;
 
@@ -362,7 +362,7 @@ describe('NATS Handler - Provider Routing', () => {
       correlation_id: correlationId
     };
 
-    const responseSub = nc.subscribe('ai.llm.response');
+    const responseSub = nc.subscribe('llm.response');
     const responsePromise = new Promise<LLMResponse>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Timeout')), 10000);
 
@@ -378,7 +378,7 @@ describe('NATS Handler - Provider Routing', () => {
       })();
     });
 
-    nc.publish('ai.llm.request', JSON.stringify(request));
+    nc.publish('llm.request', JSON.stringify(request));
     const response = await responsePromise;
 
     expect(response.model).toContain('gemini');
@@ -397,7 +397,7 @@ describe('NATS Handler - Provider Routing', () => {
       correlation_id: correlationId
     };
 
-    const responseSub = nc.subscribe('ai.llm.response');
+    const responseSub = nc.subscribe('llm.response');
     const responsePromise = new Promise<LLMResponse>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Timeout')), 15000);
 
@@ -413,7 +413,7 @@ describe('NATS Handler - Provider Routing', () => {
       })();
     });
 
-    nc.publish('ai.llm.request', JSON.stringify(request));
+    nc.publish('llm.request', JSON.stringify(request));
     const response = await responsePromise;
 
     expect(response.model).toContain('claude');

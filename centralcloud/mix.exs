@@ -35,7 +35,16 @@ defmodule Centralcloud.MixProject do
 
       # Testing dependencies
       {:mox, "~> 1.0", only: :test},
-      {:ex_machina, "~> 2.8", only: :test}
+      {:ex_machina, "~> 2.8", only: :test},
+      
+      # Rust NIF Engines (same as Singularity)
+      {:rustler, "~> 0.34"},
+      {:architecture_engine, path: "../rust/architecture_engine", runtime: false, app: false, compile: false},
+      {:code_engine, path: "../rust/code_engine", runtime: false, app: false, compile: false},
+      {:embedding_engine, path: "../rust/embedding_engine", runtime: false, app: false, compile: false},
+      {:parser_engine, path: "../rust/parser_engine", runtime: false, app: false, compile: false, optional: true},
+      {:prompt_engine, path: "../rust/prompt_engine", runtime: false, app: false, compile: false, optional: true},
+      {:quality_engine, path: "../rust/quality_engine", runtime: false, app: false, compile: false}
     ]
   end
 end

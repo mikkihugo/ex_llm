@@ -14,7 +14,7 @@ Singularity uses a **custom Codex build** with builtin tool filtering disabled. 
 
 ```
 Elixir (singularity)
-   ↓ NATS: "ai.llm.request" (model: "gpt-5-codex")
+   ↓ NATS: "llm.request" (model: "gpt-5-codex")
 TypeScript AI Server (nats-handler.ts)
    ↓ Calls Codex provider
 AI SDK Provider (vendor/ai-sdk-provider-codex)

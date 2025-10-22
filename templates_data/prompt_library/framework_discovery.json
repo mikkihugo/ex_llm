@@ -194,7 +194,7 @@
   "usage": {
     "service": "analyze_arch_service",
     "trigger": "When confidence < 0.7 or framework not in database",
-    "nats_subject": "ai.llm.request",
+    "nats_subject": "llm.request",
     "response_subject": "architecture.framework.enriched",
     "storage": "Save to PostgreSQL frameworks + framework_versions + microsnippets tables"
   }

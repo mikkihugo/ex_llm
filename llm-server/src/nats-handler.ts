@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 
 /**
- * @file NATS Handler for AI Server
+ * @file NATS Handler for LLM Server
  * @description This module handles NATS requests from the Elixir backend,
- * routing them to the appropriate AI providers. It subscribes to `ai.llm.request`
- * and publishes responses to `ai.llm.response` or errors to `ai.llm.error`.
+ * routing them to the appropriate LLM providers. It subscribes to `llm.request`
+ * and publishes responses to `llm.response` or errors to `llm.error`.
  */
 
 import { connect, NatsConnection, Subscription } from 'nats';
@@ -172,7 +172,7 @@ class NATSHandler {
    */
   async subscribeToLLMRequests() {
     if (!this.nc) throw new Error('NATS not connected');
-    const subscription = this.nc.subscribe('ai.llm.request');
+    const subscription = this.nc.subscribe('llm.request');
     this.subscriptions.push(subscription);
     const processor = this.handleLLMRequestStream(subscription);
     const taskWithCleanup = processor.catch(error => {
@@ -463,7 +463,7 @@ class NATSHandler {
 
   private async publishResponse(response: LLMResponse) {
     if (!this.nc) throw new Error('NATS not connected');
-    this.nc.publish('ai.llm.response', JSON.stringify(response));
+    this.nc.publish('llm.response', JSON.stringify(response));
     logger.info('[NATS] Published LLM response', { model: response.model, correlationId: response.correlation_id });
   }
 
@@ -475,7 +475,7 @@ class NATSHandler {
 
   private async publishError(error: LLMError) {
     if (!this.nc) throw new Error('NATS not connected');
-    this.nc.publish('ai.llm.error', JSON.stringify(error));
+    this.nc.publish('llm.error', JSON.stringify(error));
     logger.error('[NATS] Published LLM error', { errorCode: error.error_code, correlationId: error.correlation_id });
   }
 

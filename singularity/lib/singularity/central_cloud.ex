@@ -157,7 +157,7 @@ defmodule Singularity.CentralCloud do
 
   defp call_central_cloud(operation, request) do
     # Call central cloud via NATS
-    subject = "central.cloud.#{operation}"
+    subject = "centralcloud.#{operation}"
     
     case NatsClient.request(subject, request, timeout: 30_000) do
       {:ok, response} ->

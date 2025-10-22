@@ -13,14 +13,14 @@ nats.request.medium         # Medium complexity requests
 nats.request.complex        # Complex complexity requests
 ```
 
-### AI/LLM Communication
+### LLM Communication
 ```
-ai.llm.request              # All LLM requests from Elixir to AI Server
-ai.llm.response             # LLM responses from AI Server to Elixir
-ai.llm.error                # LLM errors from AI Server to Elixir
-ai.llm.stream               # Streaming LLM requests
-ai.tools.execute            # AI tool execution requests
-ai.tools.result             # AI tool execution results
+llm.request                 # All LLM requests from Elixir to LLM Server
+llm.response                # LLM responses from LLM Server to Elixir
+llm.error                   # LLM errors from LLM Server to Elixir
+llm.stream                  # Streaming LLM requests
+llm.tools.execute           # LLM tool execution requests
+llm.tools.result            # LLM tool execution results
 
 # HTDAG Self-Evolution LLM (NATS-first architecture)
 llm.req.<model_id>          # Model-specific LLM completion requests

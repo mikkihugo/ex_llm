@@ -1191,7 +1191,7 @@ console.log(`${bold}✨ Refactored:${reset} Using AI SDK streaming utilities (~1
 console.log(`${blue}📡${reset} Starting NATS handler for Elixir integration...`);
 import('./nats-handler.js').then(module => {
   module.startNATSHandler();
-  console.log(`${green}✓${reset} NATS handler started - listening on ai.llm.request`);
+  console.log(`${green}✓${reset} NATS handler started - listening on llm.request`);
 }).catch(error => {
   console.error(`${red}✗${reset} Failed to start NATS handler:`, error);
   console.error('  Elixir→AI Server integration will not work!');
