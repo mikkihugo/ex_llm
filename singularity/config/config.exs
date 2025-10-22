@@ -93,6 +93,11 @@ config :singularity, Oban,
 # Quantum Scheduler Configuration
 # Cron-like scheduling for periodic background tasks
 config :singularity, Singularity.Scheduler,
+  # Enable the scheduler globally
+  global: true,
+  # Log execution of all jobs
+  debug: true,
+  # Define all scheduled jobs
   jobs: [
     # Cache cleanup: every 15 minutes
     {"*/15 * * * *", {Singularity.Jobs.CacheMaintenanceJob, :cleanup, []}},
