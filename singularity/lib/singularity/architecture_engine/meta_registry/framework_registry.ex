@@ -49,7 +49,7 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
   
       # Learn NATS patterns
       learn_patterns(:nats, %{
-        subjects: ["ai.provider.claude", "code.analysis.parse"],
+        subjects: ["llm.provider.claude", "code.analysis.parse"],
         messaging: ["request/response", "pub/sub"],
         patterns: ["subject.hierarchy", "wildcard.subjects"]
       })

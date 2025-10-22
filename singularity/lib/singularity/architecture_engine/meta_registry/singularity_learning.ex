@@ -31,7 +31,7 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
   
       # Learn from our NATS subjects
       learn_nats_patterns(%{
-        subjects: ["ai.provider.claude", "code.analysis.parse", "meta.registry.naming"],
+        subjects: ["llm.provider.claude", "code.analysis.parse", "meta.registry.naming"],
         messaging: ["request/response", "pub/sub", "streaming"],
         patterns: ["subject.hierarchy", "wildcard.subjects", "message.routing"]
       })
@@ -239,12 +239,12 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
     # Learn NATS patterns
     learn_nats_patterns(%{
       subjects: [
-        "ai.provider.claude", "ai.provider.gemini", "ai.provider.openai",
+        "llm.provider.claude", "llm.provider.gemini", "llm.provider.openai",
         "code.analysis.parse", "code.analysis.embed", "code.analysis.search",
         "meta.registry.naming", "meta.registry.architecture", "meta.registry.quality"
       ],
       patterns: [
-        "ai.provider.*", "code.analysis.*", "meta.registry.*",
+        "llm.provider.*", "code.analysis.*", "meta.registry.*",
         "naming.suggestions", "architecture.patterns", "quality.checks"
       ]
     })

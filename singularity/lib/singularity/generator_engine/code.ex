@@ -711,7 +711,7 @@ defmodule Singularity.GeneratorEngine.Code do
     external_prompt = build_external_llm_prompt(prompt, language)
     
     # Request external LLM via NATS
-    case Singularity.NatsClient.request("ai.llm.request", Jason.encode!(%{
+    case Singularity.NatsClient.request("llm.request", Jason.encode!(%{
       prompt: external_prompt,
       language: language,
       task_type: "code_generation",

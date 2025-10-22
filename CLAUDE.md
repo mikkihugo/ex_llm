@@ -221,13 +221,13 @@ Service.call(complexity, messages)
 
 ```
 Elixir Code
-    ↓ NATS subject: ai.llm.request
+    ↓ NATS subject: llm.request
 AI Server (TypeScript)
     ↓ HTTP
 LLM Provider APIs (Claude, Gemini, etc.)
     ↓
 AI Server
-    ↓ NATS subject: ai.llm.response
+    ↓ NATS subject: llm.response
 Elixir Code
 ```
 
@@ -254,7 +254,7 @@ Elixir Code
 
 ### Data Flow
 
-1. **Requests** → NATS subjects (`ai.provider.*`, `code.analysis.*`)
+1. **Requests** → NATS subjects (`llm.provider.*`, `code.analysis.*`)
 2. **Orchestrator** routes to appropriate handler
 3. **Handlers** process using:
    - LLM providers for AI tasks
@@ -265,7 +265,7 @@ Elixir Code
 ### NATS Subjects
 
 Key subjects defined in `NATS_SUBJECTS.md`:
-- `ai.provider.{claude|gemini|openai|copilot}` - AI provider requests
+- `llm.provider.{claude|gemini|openai|copilot}` - AI provider requests
 - `code.analysis.{parse|embed|search}` - Code analysis
 - `agents.{spawn|status|result}` - Agent management
 - `system.{health|metrics}` - System monitoring

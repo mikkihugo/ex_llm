@@ -728,88 +728,8 @@ defmodule Centralcloud.IntelligenceHub do
   end
 
   # ===========================
-  # NATS Engine Communication
+  # Database Query Functions
   # ===========================
-
-  defp call_architecture_engine_via_nats(operation, request) do
-    # Call the architecture engine via NATS (since we're in centralcloud)
-    # This would need to be implemented to call back to singularity instances
-    # For now, return mock data
-    {:ok, %{
-      "frameworks" => [
-        %{"name" => "phoenix", "confidence" => 0.95, "version" => "1.7.0"},
-        %{"name" => "ecto", "confidence" => 0.90, "version" => "3.10.0"}
-      ],
-      "patterns" => [
-        %{
-          "type" => "architecture",
-          "name" => "gen_server_supervisor_pattern",
-          "confidence" => 0.95,
-          "description" => "Standard OTP supervision pattern with GenServer",
-          "examples" => ["AgentSupervisor", "NatsOrchestrator"],
-          "best_practices" => ["Use one_for_one strategy", "Implement handle_info/2"],
-          "ecosystem" => "elixir"
-        }
-      ],
-      "technologies" => [
-        %{"name" => "elixir", "confidence" => 0.98},
-        %{"name" => "phoenix", "confidence" => 0.95}
-      ]
-    }}
-  end
-
-  defp call_code_engine_via_nats(operation, request) do
-    # Call the code engine via NATS
-    {:ok, %{
-      "business_domains" => [
-        %{"name" => "user_management", "confidence" => 0.85},
-        %{"name" => "data_processing", "confidence" => 0.78}
-      ],
-      "patterns" => [
-        %{
-          "type" => "code",
-          "name" => "repository_pattern",
-          "confidence" => 0.88,
-          "description" => "Data access abstraction pattern",
-          "examples" => ["UserRepo", "DataRepo"],
-          "best_practices" => ["Separate data access from business logic"],
-          "ecosystem" => "elixir"
-        }
-      ],
-      "architecture_insights" => [
-        %{"type" => "microservices", "confidence" => 0.75}
-      ]
-    }}
-  end
-
-  defp call_quality_engine_via_nats(operation, request) do
-    # Call the quality engine via NATS
-    {:ok, %{
-      "overall_score" => 87.5,
-      "architecture_score" => 92.0,
-      "performance_score" => 78.0,
-      "maintainability_score" => 89.0,
-      "security_score" => 85.0,
-      "quality_checks" => [
-        %{"check" => "code_complexity", "score" => 85.0, "passed" => true},
-        %{"check" => "test_coverage", "score" => 78.0, "passed" => false}
-      ]
-    }}
-  end
-
-  defp call_embedding_engine_via_nats(operation, request) do
-    # Call the embedding engine via NATS
-    {:ok, %{
-      "semantic_patterns" => [
-        %{"pattern" => "async_processing", "similarity" => 0.85},
-        %{"pattern" => "error_handling", "similarity" => 0.78}
-      ],
-      "similarity_scores" => [
-        %{"file" => "lib/user_service.ex", "similarity" => 0.92}
-      ],
-      "embeddings_generated" => 15
-    }}
-  end
 
   defp query_similar_patterns_from_db(language, frameworks) do
     # Query database for similar patterns from other instances

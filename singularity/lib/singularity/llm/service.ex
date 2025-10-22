@@ -122,7 +122,7 @@ defmodule Singularity.LLM.Service do
       Agent -->|1. call/3| Service
       Service -->|2. build_request| Service
       Service -->|3. NATS request| NATS
-      NATS -->|4. ai.llm.request| AI
+      NATS -->|4. llm.request| AI
       AI -->|5. HTTP| Claude
       AI -->|5. HTTP| Gemini
       AI -->|5. HTTP| OpenAI
@@ -241,7 +241,7 @@ defmodule Singularity.LLM.Service do
       Service->>Service: build_request(messages, opts)
       Service-->>Agent: Telemetry: [:llm_service, :call, :start]
 
-      Service->>NATS: request("ai.llm.request", json, timeout: 30s)
+      Service->>NATS: request("llm.request", json, timeout: 30s)
       NATS->>AI Server: Publish to subject
 
       AI Server->>AI Server: Select model (Claude Sonnet 4.5)
@@ -811,7 +811,7 @@ defmodule Singularity.LLM.Service do
   # @error_flow: :json_decode_error -> Response parsing failed
   # @error_flow: :timeout -> Request exceeded timeout threshold
   defp dispatch_request(request, opts) do
-    subject = "ai.llm.request"
+    subject = "llm.request"
     timeout = Keyword.get(opts, :timeout, 30_000)
     requested_model = Map.get(request, :model, "auto")
 

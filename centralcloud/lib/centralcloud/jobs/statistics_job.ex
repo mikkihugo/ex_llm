@@ -271,7 +271,7 @@ defmodule Centralcloud.Jobs.StatisticsJob do
     %{
       packages_added_24h: packages_added_today,
       pattern_growth_24h: pattern_growth,
-      growth_rate: if packages_added_today > 0, do: "growing", else: "stable",
+      growth_rate: if(packages_added_today > 0, do: "growing", else: "stable"),
       timestamp: DateTime.utc_now()
     }
   end
