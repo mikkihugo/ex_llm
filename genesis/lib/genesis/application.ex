@@ -45,6 +45,9 @@ defmodule Genesis.Application do
       Oban,
       Genesis.Scheduler,
 
+      # Task supervision for timeout handling
+      {Task.Supervisor, name: Genesis.TaskSupervisor},
+
       # Services: Experiment execution and isolation
       Genesis.NatsClient,
       Genesis.IsolationManager,

@@ -125,27 +125,117 @@ defmodule Genesis.RollbackManager do
   end
 
   defp capture_checkpoint(experiment_id, sandbox_path) do
-    # Placeholder: actual implementation would:
-    # 1. Get current Git commit hash
-    # 2. Capture current git status
-    # 3. Store in database with timestamp
-    Logger.info("Captured checkpoint for experiment #{experiment_id} at #{sandbox_path}")
+    # Get current Git commit hash in sandbox
+    try do
+      case get_git_commit(sandbox_path) do
+        {:ok, commit_hash} ->
+          checkpoint = %{
+            experiment_id: experiment_id,
+            sandbox_path: sandbox_path,
+            baseline_commit: commit_hash,
+            timestamp: DateTime.utc_now()
+          }
 
-    {:ok,
-     %{
-       experiment_id: experiment_id,
-       sandbox_path: sandbox_path,
-       baseline_commit: "abc123",
-       timestamp: DateTime.utc_now()
-     }}
+          Logger.info(
+            "Captured checkpoint for experiment #{experiment_id} at commit #{String.slice(commit_hash, 0..7)}"
+          )
+
+          {:ok, checkpoint}
+
+        {:error, reason} ->
+          Logger.error("Failed to capture Git commit: #{inspect(reason)}")
+          {:error, reason}
+      end
+    rescue
+      e ->
+        Logger.error("Exception while capturing checkpoint: #{inspect(e)}")
+        {:error, e}
+    end
   end
 
   defp execute_rollback(checkpoint) do
-    # Placeholder: actual implementation would:
-    # 1. Navigate to sandbox
-    # 2. Execute: git reset --hard <baseline_commit>
-    # 3. Verify clean working directory
-    Logger.info("Executing rollback for checkpoint")
-    :ok
+    experiment_id = checkpoint.experiment_id
+    sandbox_path = checkpoint.sandbox_path
+    baseline_commit = checkpoint.baseline_commit
+
+    try do
+      Logger.info(
+        "Executing rollback for experiment #{experiment_id} to commit #{String.slice(baseline_commit, 0..7)}"
+      )
+
+      # Execute git reset --hard in sandbox
+      case reset_to_commit(sandbox_path, baseline_commit) do
+        {:ok, _output} ->
+          # Verify clean working directory
+          case verify_clean_state(sandbox_path) do
+            {:ok, _output} ->
+              Logger.info("Rollback successful for experiment #{experiment_id}")
+              :ok
+
+            {:error, reason} ->
+              Logger.error("Failed to verify clean state after rollback: #{inspect(reason)}")
+              {:error, reason}
+          end
+
+        {:error, reason} ->
+          Logger.error("Failed to reset Git state: #{inspect(reason)}")
+          {:error, reason}
+      end
+    rescue
+      e ->
+        Logger.error("Exception during rollback: #{inspect(e)}")
+        {:error, e}
+    end
+  end
+
+  defp get_git_commit(repo_path) do
+    # Get current HEAD commit hash
+    case run_git_command(repo_path, ["rev-parse", "HEAD"]) do
+      {:ok, output} ->
+        # Output includes newline, strip it
+        {:ok, String.trim(output)}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp reset_to_commit(repo_path, commit_hash) do
+    # Reset to specific commit
+    run_git_command(repo_path, ["reset", "--hard", commit_hash])
+  end
+
+  defp verify_clean_state(repo_path) do
+    # Verify working directory is clean
+    case run_git_command(repo_path, ["status", "--porcelain"]) do
+      {:ok, output} ->
+        # If output is empty, working directory is clean
+        if String.trim(output) == "" do
+          {:ok, "clean"}
+        else
+          {:error, "Working directory not clean: #{output}"}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp run_git_command(repo_path, args) do
+    # Run git command in sandbox repo
+    try do
+      cmd = "cd #{Path.quote(repo_path)} && git #{Enum.join(args, " ")}"
+
+      case System.cmd("bash", ["-c", cmd], stderr_to_stdout: true) do
+        {output, 0} ->
+          {:ok, output}
+
+        {error_output, exit_code} ->
+          {:error, "Git command failed with exit code #{exit_code}: #{error_output}"}
+      end
+    rescue
+      e ->
+        {:error, "Exception running git command: #{inspect(e)}"}
+    end
   end
 end
