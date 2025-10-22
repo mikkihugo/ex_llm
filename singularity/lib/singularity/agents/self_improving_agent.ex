@@ -135,13 +135,34 @@ defmodule Singularity.SelfImprovingAgent do
       pending_fingerprint: nil,
       pending_previous_code: nil,
       pending_baseline: nil,
-      pending_validation_version: nil
+      pending_validation_version: nil,
+      pending_genesis_request: nil,
+      pending_genesis_experiment_id: nil
     }
+
+    # Subscribe to Genesis experiment results
+    subscribe_to_genesis_results(id)
 
     state
     |> maybe_schedule_queue_processing()
     |> schedule_tick()
     |> then(&{:ok, &1})
+  end
+
+  defp subscribe_to_genesis_results(agent_id) do
+    subject = "genesis.experiment.completed.#{agent_id}"
+
+    case Singularity.NatsClient.subscribe(subject) do
+      :ok ->
+        Logger.debug("Subscribed to Genesis results", agent_id: agent_id, subject: subject)
+
+      {:error, reason} ->
+        Logger.warning("Failed to subscribe to Genesis results",
+          agent_id: agent_id,
+          subject: subject,
+          reason: inspect(reason)
+        )
+    end
   end
 
   @impl true
@@ -204,6 +225,23 @@ defmodule Singularity.SelfImprovingAgent do
          updated_state
          |> request_genesis_experiment(payload, context)
          |> schedule_tick()}
+    end
+  end
+
+  @impl true
+  def handle_info({:genesis_experiment_completed, experiment_id, result}, state) do
+    # Handle Genesis sandbox test results
+    case state do
+      %{pending_genesis_experiment_id: ^experiment_id} ->
+        handle_genesis_result(state, experiment_id, result)
+
+      _ ->
+        Logger.warning("Received Genesis result for unknown experiment",
+          experiment_id: experiment_id,
+          agent_id: state.id
+        )
+
+        {:noreply, state}
     end
   end
 
@@ -453,6 +491,105 @@ defmodule Singularity.SelfImprovingAgent do
 
         emit_improvement_event(state.id, :genesis_request_failed, %{count: 1}, context)
         state
+    end
+  end
+
+  defp handle_genesis_result(state, experiment_id, result) do
+    Logger.info("Genesis experiment completed",
+      agent_id: state.id,
+      experiment_id: experiment_id,
+      recommendation: Map.get(result, "recommendation")
+    )
+
+    # Extract Genesis metrics and recommendation
+    metrics = Map.get(result, "metrics", %{})
+    recommendation = Map.get(result, "recommendation", "rollback")
+    payload = Map.get(state.pending_genesis_request, "payload")
+
+    case recommendation do
+      "merge" ->
+        # Approve - apply the code directly
+        Logger.info("Genesis approved improvement, applying directly",
+          agent_id: state.id,
+          experiment_id: experiment_id
+        )
+
+        emit_improvement_event(
+          state.id,
+          :genesis_approved,
+          %{count: 1},
+          %{experiment_id: experiment_id, metrics: metrics}
+        )
+
+        # Apply the Genesis-tested code
+        start_improvement_if_valid(
+          state,
+          payload,
+          %{reason: :genesis_approved, experiment_id: experiment_id},
+          payload_fingerprint(payload)
+        )
+
+      "merge_with_adaptations" ->
+        # Approve with modifications - apply with caution
+        Logger.info("Genesis approved with adaptations needed",
+          agent_id: state.id,
+          experiment_id: experiment_id
+        )
+
+        emit_improvement_event(
+          state.id,
+          :genesis_approved_adapted,
+          %{count: 1},
+          %{experiment_id: experiment_id, metrics: metrics}
+        )
+
+        # Apply with lower confidence
+        start_improvement_if_valid(
+          state,
+          payload,
+          %{
+            reason: :genesis_approved_adapted,
+            experiment_id: experiment_id,
+            adaptations_needed: Map.get(result, "adaptations", [])
+          },
+          payload_fingerprint(payload)
+        )
+
+      "rollback" ->
+        # Reject - don't apply
+        Logger.warning("Genesis rejected improvement",
+          agent_id: state.id,
+          experiment_id: experiment_id,
+          reason: Map.get(result, "reason", "test failure")
+        )
+
+        emit_improvement_event(
+          state.id,
+          :genesis_rejected,
+          %{count: 1},
+          %{
+            experiment_id: experiment_id,
+            reason: Map.get(result, "reason", "unknown")
+          }
+        )
+
+        # Return to idle - don't apply code
+        state
+        |> Map.put(:status, :idle)
+        |> Map.put(:pending_genesis_request, nil)
+        |> Map.put(:pending_genesis_experiment_id, nil)
+
+      _ ->
+        Logger.error("Unknown Genesis recommendation",
+          agent_id: state.id,
+          experiment_id: experiment_id,
+          recommendation: recommendation
+        )
+
+        state
+        |> Map.put(:status, :idle)
+        |> Map.put(:pending_genesis_request, nil)
+        |> Map.put(:pending_genesis_experiment_id, nil)
     end
   end
 
