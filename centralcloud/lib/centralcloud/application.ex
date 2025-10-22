@@ -14,17 +14,19 @@ defmodule Centralcloud.Application do
     Logger.info("Starting Central Cloud Application...")
 
     children = [
-      # Database
+      # Foundation: Database
       Centralcloud.Repo,
 
-      # NATS client
-      Centralcloud.NatsClient,
+      # Infrastructure: Background jobs & scheduling
+      Oban,                             # Background job queue for aggregation, sync
+      Centralcloud.Scheduler,           # Quantum scheduler for periodic global tasks
 
       # Global services
-      Centralcloud.KnowledgeCache,             # NEW: ETS-based cache
-      Centralcloud.TemplateService,
-      Centralcloud.FrameworkLearningAgent,
-      Centralcloud.IntelligenceHub,            # NEW: Replaces Rust service (handles own subscriptions)
+      Centralcloud.NatsClient,          # NATS messaging (for subscriptions)
+      Centralcloud.KnowledgeCache,      # ETS-based cache
+      Centralcloud.TemplateService,     # Template management
+      Centralcloud.FrameworkLearningAgent,  # Learn from external packages
+      Centralcloud.IntelligenceHub,     # Aggregate intelligence from all instances
     ]
 
     opts = [strategy: :one_for_one, name: Centralcloud.Supervisor]

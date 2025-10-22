@@ -24,7 +24,13 @@ defmodule Centralcloud.MixProject do
       {:postgrex, "~> 0.17"},
       {:pgvector, "~> 0.2"},
       {:jason, "~> 1.4"},
-      {:gnat, "~> 1.8"}
+      {:gnat, "~> 1.8"},
+
+      # Background Job Queue for aggregation, package sync, statistics
+      {:oban, "~> 2.18"},
+
+      # Cron-like scheduler for periodic global tasks
+      {:quantum, "~> 3.5"}
     ]
   end
 end
