@@ -18,18 +18,26 @@ defmodule Singularity.Jobs.PatternSyncJob do
   Refresh pattern cache and sync to NATS/JSON.
 
   Called every 5 minutes via Quantum scheduler.
+
+  Syncs patterns from PostgreSQL → ETS → NATS → JSON file.
   """
   def sync do
     Logger.debug("🔄 Syncing framework patterns...")
 
-    case Singularity.ArchitectureEngine.FrameworkPatternSync.refresh_cache() do
-      :ok ->
-        Logger.info("✅ Framework patterns synced")
-        :ok
+    try do
+      case Singularity.ArchitectureEngine.FrameworkPatternSync.refresh_cache() do
+        :ok ->
+          Logger.info("✅ Framework patterns synced to ETS/NATS/JSON")
+          :ok
 
-      {:error, reason} ->
-        Logger.error("❌ Pattern sync failed: #{inspect(reason)}")
-        {:error, reason}
+        {:error, reason} ->
+          Logger.error("❌ Pattern sync failed", reason: inspect(reason))
+          :ok  # Don't fail - patterns will sync on next cycle
+      end
+    rescue
+      e in Exception ->
+        Logger.error("❌ Pattern sync exception", error: inspect(e))
+        :ok  # Log but don't crash the scheduler
     end
   end
 end

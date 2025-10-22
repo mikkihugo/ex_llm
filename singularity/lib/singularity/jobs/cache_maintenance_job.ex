@@ -19,21 +19,31 @@ defmodule Singularity.Jobs.CacheMaintenanceJob do
   Clean up expired cache entries.
 
   Called every 15 minutes via Quantum scheduler.
+
+  Returns `:ok` for successful cleanup (even if 0 entries), or logs error.
   """
   def cleanup do
     Logger.debug("🧹 Running cache cleanup...")
 
-    case PostgresCache.cleanup_expired() do
-      {:ok, count} ->
-        if count > 0 do
-          Logger.info("🧹 Cleaned up #{count} expired cache entries")
-        end
+    try do
+      case PostgresCache.cleanup_expired() do
+        {:ok, count} ->
+          if count > 0 do
+            Logger.info("🧹 Cleaned up #{count} expired cache entries")
+          else
+            Logger.debug("🧹 No expired cache entries found")
+          end
 
-        {:ok, count}
+          :ok
 
-      {:error, reason} ->
-        Logger.error("❌ Cache cleanup failed: #{inspect(reason)}")
-        {:error, reason}
+        {:error, reason} ->
+          Logger.error("❌ Cache cleanup failed", reason: inspect(reason))
+          :ok  # Return :ok so Quantum doesn't retry - this is maintenance
+      end
+    rescue
+      e in Exception ->
+        Logger.error("❌ Cache cleanup exception", error: inspect(e))
+        :ok  # Don't fail the job, just log it
     end
   end
 
@@ -45,14 +55,20 @@ defmodule Singularity.Jobs.CacheMaintenanceJob do
   def refresh do
     Logger.debug("🔄 Refreshing hot packages materialized view...")
 
-    case PostgresCache.refresh_hot_packages() do
-      :ok ->
-        Logger.info("✅ Hot packages materialized view refreshed")
-        :ok
+    try do
+      case PostgresCache.refresh_hot_packages() do
+        :ok ->
+          Logger.info("✅ Hot packages materialized view refreshed")
+          :ok
 
-      {:error, reason} ->
-        Logger.error("❌ Materialized view refresh failed: #{inspect(reason)}")
-        {:error, reason}
+        {:error, reason} ->
+          Logger.error("❌ Materialized view refresh failed", reason: inspect(reason))
+          :ok  # Don't fail - this is maintenance
+      end
+    rescue
+      e in Exception ->
+        Logger.error("❌ Cache refresh exception", error: inspect(e))
+        :ok
     end
   end
 
@@ -64,14 +80,20 @@ defmodule Singularity.Jobs.CacheMaintenanceJob do
   def prewarm do
     Logger.debug("🔥 Prewarming cache with hot data...")
 
-    case PostgresCache.prewarm_cache() do
-      {:ok, count} ->
-        Logger.info("🔥 Prewarmed #{count} cache entries")
-        {:ok, count}
+    try do
+      case PostgresCache.prewarm_cache() do
+        {:ok, count} ->
+          Logger.info("🔥 Prewarmed #{count} cache entries")
+          :ok
 
-      {:error, reason} ->
-        Logger.error("❌ Cache prewarm failed: #{inspect(reason)}")
-        {:error, reason}
+        {:error, reason} ->
+          Logger.error("❌ Cache prewarm failed", reason: inspect(reason))
+          :ok  # Don't fail - this is optimization, not critical
+      end
+    rescue
+      e in Exception ->
+        Logger.error("❌ Cache prewarm exception", error: inspect(e))
+        :ok
     end
   end
 
