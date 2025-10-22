@@ -1,479 +1,391 @@
-# NATS Subject Map (Optional)
+# NATS Subject Architecture
 
-## Overview
-
-NATS can be enabled for distributed coordination and tool invocation between services. In the current codebase, HTTP is the default interface and LLM provider calls are handled in‑process; previous "LLM via NATS" flows are deprecated.
+This document defines the NATS subject hierarchy for Singularity's distributed architecture.
 
 ## Subject Hierarchy
 
+### Unified NATS Server (Single Entry Point)
 ```
-singularity/
-├─ llm.*              - LLM operations (llm-server)
-├─ events.*           - Event notifications (detection results, etc.)
-├─ detection.*        - Technology detection coordination
-├─ templates.technology.*   - Template distribution
-├─ knowledge.facts.*            - Fact system operations
-├─ packages.registry.*            - Tool Knowledge search (packages, examples, patterns)
-└─ search.packages_and_codebase.*           - Integrated search (Tool Knowledge + RAG)
+nats.request                # All requests go here (unified entry point)
+nats.response               # All responses come back
+nats.request.simple         # Simple complexity requests
+nats.request.medium         # Medium complexity requests  
+nats.request.complex        # Complex complexity requests
 ```
 
-## Event Notifications
+### AI/LLM Communication
+```
+ai.llm.request              # All LLM requests from Elixir to AI Server
+ai.llm.response             # LLM responses from AI Server to Elixir
+ai.llm.error                # LLM errors from AI Server to Elixir
+ai.llm.stream               # Streaming LLM requests
+ai.tools.execute            # AI tool execution requests
+ai.tools.result             # AI tool execution results
 
-### Detection Events
-- `events.technology_detected` - **Pub/Sub** - Technology detection results broadcast
-  - Publisher: `TechnologyDetector` (Elixir)
-  - Consumers: Analytics services, caching layers, logging
-  - Payload:
-    ```json
+# HTDAG Self-Evolution LLM (NATS-first architecture)
+llm.req.<model_id>          # Model-specific LLM completion requests
+llm.resp.<run_id>.<node_id> # Direct reply subject for LLM responses
+llm.tokens.<run_id>.<node_id> # Token streaming for real-time feedback
+llm.health                  # LLM worker heartbeat and status updates
+```
+
+### Framework Detection (Consolidated)
+```
+detector.analyze            # Framework detection requests
+detector.analyze.simple     # Simple detection (file patterns)
+detector.analyze.medium     # Medium detection (pattern matching)
+detector.analyze.complex    # Complex detection (LLM analysis)
+detector.match.patterns     # Pattern matching only
+detector.llm.analyze        # LLM analysis for unknown frameworks
+```
+
+### Code Analysis & Processing
+```
+code.analysis.parse         # Code parsing requests
+code.analysis.parse.result  # Code parsing results
+code.analysis.embed         # Embedding generation requests
+code.analysis.embed.result  # Embedding generation results
+code.analysis.search        # Semantic code search requests
+code.analysis.search.result # Semantic code search results
+code.analysis.quality       # Code quality analysis requests
+code.analysis.quality.result # Code quality analysis results
+```
+
+### Knowledge Management
+```
+knowledge.facts.framework_patterns    # Framework pattern updates
+knowledge.facts.technology_detected   # Technology detection events
+knowledge.templates.sync              # Template synchronization
+knowledge.templates.update            # Template updates
+knowledge.artifacts.update            # Knowledge base updates
+knowledge.artifacts.embed             # Artifact embedding requests
+```
+
+### Prompt Tracking Storage (NIF-based)
+```
+prompt.tracking.store                 # Store prompt execution data
+prompt.tracking.store.result          # Store operation results
+prompt.tracking.query                 # Query prompt tracking data
+prompt.tracking.query.result          # Query operation results
+```
+
+### Intelligence Hub (Central Communication)
+**Purpose:** All engines send intelligence data to central_cloud for aggregation and storage.
+
+```
+intelligence.hub.*.analysis          # Analysis results from any engine
+intelligence.hub.*.artifact          # Artifacts from any engine
+intelligence.hub.package.index       # Package indexing
+intelligence.hub.package.query       # Package query (request/reply)
+intelligence.hub.knowledge.cache     # Knowledge caching
+intelligence.hub.knowledge.request   # Knowledge retrieval (request/reply)
+intelligence.hub.embeddings          # Vector embeddings storage
+```
+
+**Engine-specific analysis subjects:**
+```
+intelligence.hub.architecture.analysis  # Architecture analysis results
+intelligence.hub.code.analysis         # Code analysis results
+intelligence.hub.embedding.analysis    # Embedding analysis results
+intelligence.hub.generator.analysis    # Code generation results
+intelligence.hub.parser.analysis       # Parsing results
+intelligence.hub.prompt.analysis       # Prompt optimization results
+intelligence.hub.quality.analysis      # Quality analysis results
+intelligence.hub.knowledge.analysis    # Knowledge extraction results
+```
+
+### Agent Management
+```
+agents.spawn                # Spawn new agents
+agents.spawn.result         # Agent spawn results
+agents.status               # Agent status updates
+agents.status.query         # Agent status queries
+agents.result               # Agent execution results
+agents.improve              # Agent improvement events
+agents.stop                 # Stop agent requests
+agents.stop.result          # Agent stop results
+```
+
+### Tool Execution
+```
+tools.execute               # Tool execution requests
+tools.execute.result        # Tool execution results
+tools.execute.status        # Tool execution status
+tools.quality.check         # Code quality check requests
+tools.quality.check.result  # Code quality check results
+tools.analysis.run          # Code analysis tool requests
+tools.analysis.run.result   # Code analysis tool results
+tools.generation.create     # Code generation tool requests
+tools.generation.create.result # Code generation tool results
+```
+
+### System Management
+```
+system.health               # Health check requests
+system.health.result        # Health check results
+system.health.engines       # Engine health check (all engines)
+system.metrics              # Metrics collection
+system.metrics.query        # Metrics query requests
+system.events               # System-wide events
+system.config               # Configuration updates
+system.config.query         # Configuration query requests
+system.shutdown             # System shutdown requests
+```
+
+### Engine Discovery (Introspection/Autonomy)
+**Purpose:** Singularity uses this to discover its own capabilities at runtime.
+Enables autonomous agents to query "what can I do?" without hard-coded knowledge.
+
+```
+system.engines.list                  # List all engines (architecture, code, prompt, quality, generator)
+system.engines.get.<engine_id>       # Get specific engine details (e.g., system.engines.get.prompt)
+system.capabilities.list             # List all capabilities (flat index across engines)
+system.capabilities.available        # List only available capabilities
+```
+
+**Use Cases:**
+1. **Autonomous Agents** - Query available capabilities before task execution
+2. **MCP Federation** - Expose capabilities to external tools (Claude Desktop, Cursor)
+3. **Health Monitoring** - Track which engines are healthy/degraded
+4. **Runtime Introspection** - Engines discover each other's capabilities
+
+**Example: Agent discovering what it can do**
+```elixir
+# Agent sends NATS request
+{:ok, response} = Gnat.request(conn, "system.capabilities.available", %{})
+
+# Response shows all available capabilities
+%{
+  capabilities: [
+    %{id: :parse_ast, engine: :code, label: "Parse AST", available?: true},
+    %{id: :generate_code, engine: :generator, label: "Generate Code", available?: true},
+    %{id: :optimize_prompt, engine: :prompt, label: "Optimize Prompt", available?: false}
+  ],
+  total: 15,
+  available_count: 12,
+  unavailable_count: 3
+}
+```
+
+### Planning & Work Management (SAFe 6.0)
+```
+planning.strategic_theme.create    # Create strategic theme
+planning.strategic_theme.update    # Update strategic theme
+planning.strategic_theme.delete    # Delete strategic theme
+planning.epic.create               # Create epic
+planning.epic.update               # Update epic
+planning.epic.delete               # Delete epic
+planning.feature.create            # Create feature
+planning.feature.update            # Update feature
+planning.feature.delete            # Delete feature
+planning.story.create              # Create story
+planning.story.update              # Update story
+planning.story.delete              # Delete story
+planning.task.create               # Create task
+planning.task.update               # Update task
+planning.task.delete               # Delete task
+```
+
+## Message Formats
+
+### LLM Request/Response
+```json
+// ai.llm.request
+{
+  "model": "claude-sonnet-4.5",
+  "provider": "claude",
+  "messages": [{"role": "user", "content": "Hello"}],
+  "max_tokens": 4000,
+  "temperature": 0.7,
+  "stream": false
+}
+
+// ai.llm.response
+{
+  "text": "Hello! How can I help you?",
+  "model": "claude-sonnet-4.5",
+  "tokens_used": 15,
+  "cost_cents": 0.45,
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+### Code Analysis Request/Response
+```json
+// code.analysis.parse
+{
+  "file_path": "lib/my_module.ex",
+  "content": "defmodule MyModule do...",
+  "language": "elixir",
+  "options": {"include_ast": true}
+}
+
+// code.analysis.parse.result
+{
+  "file_path": "lib/my_module.ex",
+  "language": "elixir",
+  "ast": {...},
+  "metadata": {...},
+  "success": true
+}
+```
+
+### Agent Management Request/Response
+```json
+// agents.spawn
+{
+  "agent_type": "cost_optimized",
+  "specialization": "code_generation",
+  "config": {...},
+  "correlation_id": "agent_123"
+}
+
+// agents.spawn.result
+{
+  "agent_id": "agent_123",
+  "pid": "0.123.0",
+  "status": "running",
+  "correlation_id": "agent_123"
+}
+```
+
+### Tool Execution Request/Response
+```json
+// tools.execute
+{
+  "tool_name": "quality_check",
+  "arguments": {"file_path": "lib/my_module.ex"},
+  "correlation_id": "tool_456"
+}
+
+// tools.execute.result
+{
+  "tool_name": "quality_check",
+  "result": {...},
+  "success": true,
+  "correlation_id": "tool_456"
+}
+```
+
+### Prompt Tracking Storage Request/Response
+```json
+// prompt.tracking.store
+{
+  "data": {
+    "type": "execution",
+    "execution": {
+      "id": "exec_123",
+      "prompt_id": "prompt_456",
+      "input": "user input",
+      "output": "AI response",
+      "execution_time_ms": 1500,
+      "success": true,
+      "metadata": {"model": "claude-3"}
+    }
+  },
+  "correlation_id": "store_789"
+}
+
+// prompt.tracking.store.result
+{
+  "fact_id": "fact_123",
+  "success": true,
+  "correlation_id": "store_789"
+}
+
+// prompt.tracking.query
+{
+  "query": {
+    "type": "by_prompt_id",
+    "prompt_id": "prompt_456"
+  },
+  "limit": 10,
+  "correlation_id": "query_101"
+}
+
+// prompt.tracking.query.result
+{
+  "results": [
     {
-      "codebase_id": "my-project",
-      "snapshot_id": 1728123456,
-      "detected_technologies": ["language:rust", "framework:nextjs"],
-      "summary": {
-        "technologies": [...]
-      },
-      "metadata": {
-        "detection_timestamp": "2025-10-05T...",
-        "detection_method": "rust_layered"
+      "type": "execution",
+      "data": {
+        "id": "exec_123",
+        "prompt_id": "prompt_456",
+        "execution_time_ms": 1500,
+        "success": true
       }
     }
-    ```
-
-### LLM Events
-- `events.llm_call_completed` - **Pub/Sub** - LLM call completion notification
-- `events.pattern_learned` - **Pub/Sub** - New pattern learned notification
-
-## LLM Operations (llm-server)
-
-- `llm.analyze` - **Request/Reply** - LLM analysis for detection
-  - Publisher: `tool_doc_index::LayeredDetector` (Level 5)
-  - Consumer: `llm-server`
-  - Request:
-    ```json
-    {
-      "model": "claude-3-5-sonnet-20241022",
-      "max_tokens": 200,
-      "messages": [{
-        "role": "user",
-        "content": "Technology: Next.js\nContext: ...\nQuestion: Is this Next.js?"
-      }]
-    }
-    ```
-  - Reply:
-    ```json
-    {
-      "content": [{"text": "Yes, confirmed - Next.js is present..."}]
-    }
-    ```
-
-- `llm.generate` - **Request/Reply** - General LLM generation
-- `llm.embed` - **Request/Reply** - Embedding generation
-- `llm.stream` - **Stream** - Streaming LLM responses
-
-## Detection System
-
-- `detection.request.{codebase_id}` - **Request/Reply** - Request detection
-  - Publisher: User apps, web UI
-  - Consumer: `tool_doc_index`
-  - Request: `{"codebase_path": "/path/to/project"}`
-  - Reply: `[{technology_id, technology_name, confidence, ...}]`
-
-- `detection.result.{codebase_id}` - **Pub/Sub** - Detection results broadcast
-  - Publisher: `tool_doc_index`
-  - Consumers: Analytics, caching, logging services
-
-## Template Distribution
-
-- `templates.technology` - **Request/Reply** - Fetch technology template
-  - Publisher: `TechnologyTemplateLoader` (Elixir)
-  - Consumer: Template registry service (future)
-  - Request: `{"identifier": {:framework, :nextjs}}`
-  - Reply: `{template JSON}`
-
-- `templates.technology.sync` - **Pub/Sub** - Template updates
-  - Publisher: Template update service
-  - Consumers: All detectors (invalidate cache)
-
-## Fact System
-
-- `knowledge.facts.query.{pattern}` - **Request/Reply** - Query fact database
-- `knowledge.facts.store` - **Pub/Sub** - Store new facts
-- `knowledge.facts.update` - **Pub/Sub** - Update existing facts
-
-## Service Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│ NATS (Message Bus)                                  │
-│ - Request/Reply (synchronous RPC)                   │
-│ - Pub/Sub (async events)                            │
-│ - JetStream (persistence, replay)                   │
-└──────────┬──────────────────────────────────────────┘
-           │
-    ┌──────┴──────────────────────────────────┐
-    │                                          │
-    ▼                                          ▼
-┌─────────────┐                       ┌──────────────┐
-│ Singularity │                       │  llm-server   │
-│ (Elixir)    │                       │  (TypeScript)│
-├─────────────┤                       ├──────────────┤
-│ Ecto ✅     │                       │ Claude API   │
-│ Direct DB   │                       │ LLM calls    │
-│ PostgreSQL  │                       └──────────────┘
-└─────────────┘
-    ▲
-    │ Calls via Port
-    │
-┌───┴───────────────┐
-│ tool_doc_index    │
-│ (Rust)            │
-├───────────────────┤
-│ LayeredDetector   │
-│ - Detects techs   │
-│ - Calls LLM       │
-│ - Returns to Elixir
-└───────────────────┘
+  ],
+  "total_count": 1,
+  "correlation_id": "query_101"
+}
 ```
 
-## Message Flow Examples
+## Subject Patterns
 
-### Technology Detection (Rust Path)
+### Wildcards
+- `ai.llm.*` - All LLM related subjects
+- `code.analysis.*` - All code analysis subjects
+- `agents.*` - All agent management subjects
+- `tools.*` - All tool execution subjects
+- `system.*` - All system management subjects
+- `planning.*` - All planning subjects
 
-```
-1. User calls Elixir API
-   └─> TechnologyDetector.detect_technologies("/path")
+### Request/Response Pattern
+Most subjects follow a request/response pattern:
+- `{service}.{operation}` - Request subject
+- `{service}.{operation}.result` - Response subject
 
-2. Elixir spawns Rust binary
-   └─> Port: tool-doc-index detect /path
+### Event Pattern
+Some subjects are event-only (no response expected):
+- `system.events` - System events
+- `knowledge.facts.*` - Knowledge updates
+- `agents.improve` - Agent improvement events
 
-3. Rust LayeredDetector
-   ├─> Level 1-2: Fast detection
-   ├─> If confidence < 0.7:
-   │   └─> NATS request: llm.analyze
-   │       └─> llm-server replies
-   └─> Returns detection results via STDOUT
+## Error Handling
 
-4. Elixir receives results
-   ├─> Stores to DB via Ecto
-   │   └─> Repo.insert(CodebaseSnapshot, ...)
-   └─> Optionally publishes event: events.technology_detected
-
-5. Elixir returns to user
-```
-
-### Technology Detection (Elixir Fallback)
-
-```
-1. User calls Elixir API
-   └─> TechnologyDetector.detect_technologies("/path")
-
-2. Rust unavailable (fallback)
-   └─> Elixir: detect_technologies_elixir()
-
-3. Elixir template-based detection
-   └─> Uses PolyglotCodeParser + templates
-
-4. Elixir stores result via Ecto
-   ├─> Repo.insert(CodebaseSnapshot, ...)
-   └─> Optionally publishes event: events.technology_detected
-
-5. Elixir returns to user
+### Error Response Format
+```json
+{
+  "error": "Error message",
+  "error_code": "VALIDATION_ERROR",
+  "correlation_id": "req_123",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
 ```
 
-## Benefits
+### Common Error Codes
+- `VALIDATION_ERROR` - Invalid request format
+- `SERVICE_UNAVAILABLE` - Service not available
+- `TIMEOUT` - Request timeout
+- `INTERNAL_ERROR` - Internal server error
+- `NOT_FOUND` - Resource not found
+- `UNAUTHORIZED` - Authentication required
 
-✅ **Simple Architecture**: Ecto for DB, NATS for events and coordination
-✅ **Service Coordination**: NATS enables distributed event-driven architecture
-✅ **Direct DB Access**: Ecto provides type-safe, performant database access
-✅ **Language Interop**: Rust tools integrate via Port, NATS for async events
-✅ **Observability**: NATS messages traceable, Ecto queries logged
-✅ **Resilience**: Services restart independently, database access via connection pool
-✅ **Testing**: Ecto.Sandbox for tests, easy NATS mocking
+## Implementation Notes
 
-## Environment Variables
+1. **Correlation IDs**: All requests should include a correlation_id for tracking
+2. **Timeouts**: Set appropriate timeouts for each subject type
+3. **Retries**: Implement retry logic for transient failures
+4. **Logging**: Log all NATS message flows for debugging
+5. **Monitoring**: Monitor message rates and error rates per subject
+6. **Security**: Validate all incoming messages
+7. **Rate Limiting**: Implement rate limiting for high-volume subjects
 
-```bash
-# All services
-NATS_URL=nats://localhost:4222
+## Testing
 
-# Elixir (singularity)
-DATABASE_URL=postgresql://localhost/singularity_dev
+### Unit Tests
+- Test message format validation
+- Test error handling
+- Test timeout scenarios
 
-# llm-server
-ANTHROPIC_API_KEY=sk-ant-...
+### Integration Tests
+- Test end-to-end message flows
+- Test error propagation
+- Test performance under load
 
-# tool_doc_index (optional)
-NATS_URL=nats://localhost:4222  # For LLM analysis requests
-```
-
-## NATS Deployment
-
-```bash
-# Local development
-nats-server -js
-
-# Production (with JetStream for persistence)
-nats-server -js -sd /data/nats
-```
-
-## Tool Knowledge Operations
-
-### Tool Search
-- `packages.registry.search` - **Request/Reply** - Search for packages by semantic query
-  - Publisher: Agents, UI, CLI
-  - Consumer: `Singularity.PackageRegistryKnowledge` (Elixir)
-  - Request:
-    ```json
-    {
-      "query": "async runtime for Rust",
-      "ecosystem": "cargo",  // Optional: npm, cargo, hex, pypi
-      "limit": 10,
-      "filters": {
-        "min_stars": 1000,
-        "min_downloads": 10000,
-        "recency_months": 6
-      }
-    }
-    ```
-  - Response:
-    ```json
-    {
-      "results": [
-        {
-          "tool_name": "tokio",
-          "version": "1.35.0",
-          "ecosystem": "cargo",
-          "description": "A runtime for writing reliable asynchronous applications with Rust.",
-          "similarity_score": 0.94,
-          "github_stars": 25000,
-          "download_count": 50000000,
-          "last_release_date": "2024-01-15T00:00:00Z"
-        }
-      ]
-    }
-    ```
-
-### Example Search
-- `packages.registry.examples.search` - **Request/Reply** - Search for code examples across packages
-  - Request:
-    ```json
-    {
-      "query": "spawn async task",
-      "ecosystem": "cargo",
-      "language": "rust",
-      "limit": 5
-    }
-    ```
-  - Response:
-    ```json
-    {
-      "examples": [
-        {
-          "tool_name": "tokio",
-          "version": "1.35.0",
-          "title": "Spawning tasks",
-          "code": "tokio::spawn(async { ... });",
-          "explanation": "Spawn a new asynchronous task",
-          "similarity_score": 0.91
-        }
-      ]
-    }
-    ```
-
-### Pattern Search
-- `packages.registry.patterns.search` - **Request/Reply** - Search for best practices and patterns
-  - Request:
-    ```json
-    {
-      "query": "error handling best practices",
-      "ecosystem": "cargo",
-      "pattern_type": "best_practice",
-      "limit": 5
-    }
-    ```
-
-### Package Recommendation
-- `packages.registry.recommend` - **Request/Reply** - Get package recommendation for a task
-  - Request:
-    ```json
-    {
-      "task_description": "implement web scraping",
-      "ecosystem": "hex",
-      "codebase_id": "my-project"  // Optional: for usage-aware recommendations
-    }
-    ```
-  - Response:
-    ```json
-    {
-      "recommended_package": {
-        "tool_name": "Floki",
-        "version": "0.36.0",
-        "reason": "Most popular HTML parser for Elixir"
-      },
-      "alternatives": [...],
-      "your_previous_usage": "lib/scraper.ex:15"  // If codebase_id provided
-    }
-    ```
-
-### Cross-Ecosystem Equivalents
-- `packages.registry.equivalents` - **Request/Reply** - Find equivalent packages across ecosystems
-  - Request:
-    ```json
-    {
-      "tool_name": "express",
-      "from_ecosystem": "npm",
-      "to_ecosystem": "cargo"
-    }
-    ```
-  - Response:
-    ```json
-    {
-      "equivalents": [
-        {
-          "tool_name": "actix-web",
-          "similarity_score": 0.87,
-          "github_stars": 15000
-        },
-        {
-          "tool_name": "axum",
-          "similarity_score": 0.85,
-          "github_stars": 12000
-        }
-      ]
-    }
-    ```
-
-## Integrated Search Operations
-
-### Hybrid Search
-- `search.packages_and_codebase.unified` - **Request/Reply** - Search combining Tool Knowledge + RAG
-  - Publisher: Agents, UI, CLI
-  - Consumer: `IntegratedSearch` (Elixir)
-  - Request:
-    ```json
-    {
-      "query": "how to implement web scraping",
-      "codebase_id": "my-project",
-      "ecosystem": "hex",
-      "limit": 5
-    }
-    ```
-  - Response:
-    ```json
-    {
-      "packages": [
-        {
-          "tool_name": "Floki",
-          "version": "0.36.0",
-          "description": "HTML parser and selector",
-          "similarity_score": 0.92
-        }
-      ],
-      "your_code": [
-        {
-          "path": "lib/scraper.ex",
-          "language": "elixir",
-          "similarity_score": 0.89,
-          "quality_score": 0.85
-        }
-      ],
-      "combined_insights": {
-        "status": "found_both",
-        "message": "Found Floki 0.36.0 (official) and your code in lib/scraper.ex",
-        "recommended_approach": "Use Floki 0.36.0 - you've used it before in lib/scraper.ex"
-      }
-    }
-    ```
-
-### Implementation Search
-- `search.packages_and_codebase.implementation` - **Request/Reply** - Find implementation patterns from packages + your code
-  - Request:
-    ```json
-    {
-      "task_description": "implement authentication middleware",
-      "codebase_id": "my-project",
-      "ecosystem": "hex"
-    }
-    ```
-  - Response:
-    ```json
-    {
-      "best_practices": [...],      // From tool_patterns
-      "official_examples": [...],   // From tool_examples
-      "your_implementations": [...], // From RAG search
-      "recommendation": "Follow 'Token-based auth' from Guardian. You have similar code in lib/auth.ex"
-    }
-    ```
-
-## Tool Collection Operations
-
-### Collect Package
-- `packages.registry.collect.package` - **Request/Reply** - Collect and analyze a package from registry
-  - Publisher: Admin, Scheduled jobs
-  - Consumer: `ToolCollectorBridge` (Elixir) → Rust collectors
-  - Request:
-    ```json
-    {
-      "tool_name": "tokio",
-      "version": "1.35.0",
-      "ecosystem": "cargo"
-    }
-    ```
-  - Response:
-    ```json
-    {
-      "status": "success",
-      "tool_id": "uuid",
-      "examples_count": 15,
-      "patterns_count": 8,
-      "dependencies_count": 12
-    }
-    ```
-
-### Collect Popular
-- `packages.registry.collect.popular` - **Request/Reply** - Collect top N packages from registry
-  - Request:
-    ```json
-    {
-      "ecosystem": "npm",
-      "limit": 100
-    }
-    ```
-
-### Collect from Manifest
-- `packages.registry.collect.manifest` - **Request/Reply** - Collect all dependencies from a manifest file
-  - Request:
-    ```json
-    {
-      "manifest_path": "/path/to/Cargo.toml"
-    }
-    ```
-
-## Event Notifications (Tool Knowledge)
-
-### Package Collected
-- `events.packages.registry.package_collected` - **Pub/Sub** - Package analysis completed
-  - Payload:
-    ```json
-    {
-      "tool_name": "tokio",
-      "version": "1.35.0",
-      "ecosystem": "cargo",
-      "collected_at": "2025-10-05T...",
-      "examples_count": 15,
-      "quality_score": 0.95
-    }
-    ```
-
-### Collection Failed
-- `events.packages.registry.collection_failed` - **Pub/Sub** - Package collection failed
-  - Payload:
-    ```json
-    {
-      "tool_name": "tokio",
-      "version": "1.35.0",
-      "ecosystem": "cargo",
-      "error": "Failed to download package",
-      "retry_count": 3
-    }
-    ```
+### Monitoring
+- Track message rates per subject
+- Monitor error rates
+- Alert on high latency
+- Track correlation ID flows
