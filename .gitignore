@@ -59,6 +59,10 @@ litellm/
 /singularity_app/deps/
 /singularity_app/priv/plts/
 
+# Rebar3 build artifacts (within deps directories)
+**/.rebar3/
+**/.rebar3_compiler_erl/
+
 # AI Models (auto-downloaded from HuggingFace, too large for Git)
 /singularity_app/priv/models/all-minilm-l6-v2/
 /singularity_app/priv/models/jina-v3-onnx/
@@ -71,6 +75,32 @@ litellm/
 *.crash.dump
 erl_crash.dump
 /singularity_app/erl_crash.dump
+
+# BEAM files and build artifacts
+*.beam
+**/*.beam
+/_build/**/*.beam
+/centralcloud/_build/**/*.beam
+/singularity/_build/**/*.beam
+/singularity_app/_build/**/*.beam
+
+# Elixir/Erlang build artifacts
+*.app
+*.appup
+*.rel
+*.script
+*.boot
+*.config
+*.sys
+*.d
+*.o
+*.so
+*.dylib
+*.dll
+
+# Mix artifacts
+.mix/
+.hex/
 
 # Temporary documentation files
 *_SUMMARY.md
@@ -147,6 +177,17 @@ debug/
 singularity_app/priv/native/*.so
 singularity_app/priv/native/*.dylib
 singularity_app/priv/native/*.dll
+centralcloud/priv/native/*.so
+centralcloud/priv/native/*.dylib
+centralcloud/priv/native/*.dll
+singularity/priv/native/*.so
+singularity/priv/native/*.dylib
+singularity/priv/native/*.dll
+
+# Rust NIF build artifacts
+rust/*/target/
+rust/*/.cargo-build/
+rust/*/Cargo.lock
 
 # Log files
 logs/
