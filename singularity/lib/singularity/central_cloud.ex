@@ -205,7 +205,7 @@ defmodule Singularity.CentralCloud do
       updated_at: DateTime.utc_now()
     }
     
-    case NatsClient.publish("central.knowledge.update", knowledge_update) do
+    case NatsClient.publish("centralcloud.knowledge.update", knowledge_update) do
       :ok ->
         Logger.debug("Updated central knowledge")
       
