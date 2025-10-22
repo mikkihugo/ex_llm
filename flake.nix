@@ -190,6 +190,175 @@
           nodePackages.eslint nodePackages.typescript-language-server nodePackages.typescript
         ];
 
+        getAiCliTools = env: with pkgs; [
+          # GitHub CLI (already included in base tools)
+          # gh
+
+          # LLM plugins for unified interface
+          python312Packages.llm-anthropic  # Claude access
+          python312Packages.llm-github-copilot  # GitHub Copilot access
+
+          # Custom AI CLI tools
+          (writeScriptBin "claude" ''
+            echo "🤖 Claude Code - AI-powered coding assistant"
+            echo "Claude Code is Anthropic's AI assistant for coding tasks."
+            echo ""
+            exec bunx --yes @anthropic-ai/claude-code "$@"
+          '')          (writeScriptBin "gemini" ''
+            #!${bash}/bin/bash
+            echo "🧠 Gemini CLI - Google's AI assistant"
+            echo "Gemini CLI is Google's AI assistant for coding and development."
+            echo ""
+
+            # Use bunx directly with the full package name
+            exec bunx --yes @google/gemini-cli "$@"
+          '')
+
+          (writeScriptBin "cursor-agent" ''
+            #!${bash}/bin/bash
+            echo "🤖 Cursor Agent - AI-powered development agent"
+            echo "Cursor CLI provides autonomous coding assistance."
+            echo ""
+
+            # Try to find the real cursor-agent (not this wrapper)
+            # Check common installation paths and user's PATH
+            for path in "$HOME/.local/bin/cursor-agent" "/usr/local/bin/cursor-agent" "/opt/cursor/bin/cursor-agent" "$HOME/.cursor/bin/cursor-agent"; do
+                if [ -x "$path" ] && [[ "$path" != *"/nix/store/"* ]]; then
+                    exec "$path" "$@"
+                fi
+            done
+
+            # Also check if cursor-agent is in the inherited PATH
+            if command -v cursor-agent >/dev/null 2>&1; then
+                CURSOR_CMD=$(command -v cursor-agent)
+                if [[ "$CURSOR_CMD" != *"/nix/store/"* ]]; then
+                    exec "$CURSOR_CMD" "$@"
+                fi
+            fi
+
+            # If we get here, cursor-agent is not installed
+            echo "❌ Cursor CLI not found. Please install it first:"
+            echo ""
+            echo "Installation options:"
+            echo "1. Download from: https://cursor.com/download"
+            echo "2. Or install via package manager if available"
+            echo ""
+            echo "After installation, run: cursor-agent login"
+            echo ""
+            echo "For now, use the AI server:"
+            echo "  curl -X POST http://localhost:3000/api/agent -H 'Content-Type: application/json' -d '{\"task\":\"your coding task\"}'"
+            exit 1
+          '')
+
+          (writeScriptBin "gemini-cli" ''
+            #!${bash}/bin/bash
+            echo "⚠️  'gemini-cli' is deprecated. Use 'gemini' instead."
+            exec gemini "$@"
+          '')
+
+          (writeScriptBin "codex" ''
+            #!${bash}/bin/bash
+            echo "🧠 OpenAI Codex CLI - Local coding agent"
+            echo "OpenAI Codex is a lightweight coding agent that runs locally on your computer."
+            echo ""
+
+            # Use npx to run the @openai/codex package
+            # This avoids conflicts with our wrapper script
+            if command -v npx >/dev/null 2>&1; then
+                exec npx --yes @openai/codex "$@"
+            fi
+
+            # Fallback: try downloading the binary directly
+            echo "❌ npx not found. Falling back to binary download..."
+            echo ""
+
+            # Determine platform and architecture
+            ARCH=$(uname -m)
+            OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+
+            # Map architecture names
+            case $ARCH in
+                x86_64)
+                    ARCH_NAME="x86_64"
+                    ;;
+                arm64|aarch64)
+                    ARCH_NAME="aarch64"
+                    ;;
+                *)
+                    echo "❌ Unsupported architecture: $ARCH"
+                    exit 1
+                    ;;
+            esac
+
+            # Map OS names
+            case $OS in
+                darwin)
+                    OS_NAME="apple-darwin"
+                    ;;
+                linux)
+                    OS_NAME="unknown-linux-gnu"
+                    ;;
+                *)
+                    echo "❌ Unsupported OS: $OS"
+                    exit 1
+                    ;;
+            esac
+
+            # Try to find existing Codex CLI
+            CODEX_BINARY=""
+            for path in "$HOME/.codex/bin/codex" "$HOME/.local/bin/codex" "/usr/local/bin/codex" "/opt/codex/bin/codex"; do
+                if [ -x "$path" ]; then
+                    CODEX_BINARY="$path"
+                    break
+                fi
+            done
+
+            # If not found, download it
+            if [ -z "$CODEX_BINARY" ]; then
+                CODEX_DIR="$HOME/.codex"
+                CODEX_BINARY="$CODEX_DIR/bin/codex"
+
+                if [ ! -x "$CODEX_BINARY" ]; then
+                    echo "📥 Downloading OpenAI Codex CLI..."
+                    mkdir -p "$CODEX_DIR/bin"
+
+                    BINARY_NAME="codex-$ARCH_NAME-$OS_NAME.tar.gz"
+                    DOWNLOAD_URL="https://github.com/openai/codex/releases/latest/download/$BINARY_NAME"
+
+                    if command -v curl >/dev/null 2>&1; then
+                        if curl -L "$DOWNLOAD_URL" -o "/tmp/$BINARY_NAME" 2>/dev/null; then
+                            cd "$CODEX_DIR/bin"
+                            tar -xzf "/tmp/$BINARY_NAME" 2>/dev/null || true
+                            # The extracted binary has the full name, rename it
+                            if [ -f "codex-$ARCH_NAME-$OS_NAME" ]; then
+                                mv "codex-$ARCH_NAME-$OS_NAME" codex
+                                chmod +x codex
+                            fi
+                            rm -f "/tmp/$BINARY_NAME"
+                            echo "✅ Downloaded Codex CLI to $CODEX_BINARY"
+                        else
+                            echo "❌ Failed to download Codex CLI"
+                            echo "Try: npm install -g @openai/codex"
+                            exit 1
+                        fi
+                    else
+                        echo "❌ curl not found. Try: npm install -g @openai/codex"
+                        exit 1
+                    fi
+                fi
+            fi
+
+            # Run the binary
+            if [ -x "$CODEX_BINARY" ]; then
+                exec "$CODEX_BINARY" "$@"
+            else
+                echo "❌ Failed to find or download Codex CLI"
+                echo "Try: npm install -g @openai/codex"
+                exit 1
+            fi
+          '')
+        ];
+
         getPythonTrainingEnv = env: lib.optionals (env ? includePython && env.includePython) (
           # OPTION 1: Self-hosted ML (GPU required)
           # OPTION 2: Serverless APIs (cheaper for low usage)
@@ -216,6 +385,7 @@
             (getDataServices env)
             (getWebAndCliTools env)
             (getQaTools env)
+            (getAiCliTools env)
             (getPythonTrainingEnv env)
           ];
         in pkgs.mkShell {

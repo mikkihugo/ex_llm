@@ -226,6 +226,45 @@ HybridAgent.process_task(agent, %{
 
 Singularity uses NATS for cross-service coordination (LLM requests, package registry queries, execution events). The authoritative subject list and payload formats live in [`docs/messaging/NATS_SUBJECTS.md`](docs/messaging/NATS_SUBJECTS.md).
 
+## 🤖 AI CLI Tools
+
+The development environment includes several AI-powered CLI tools for enhanced development workflows:
+
+```bash
+# Claude Code - AI-powered coding assistant
+claude --help
+claude "create a user authentication system"
+claude exec "refactor this code"    # Non-interactive execution
+claude login                      # Authenticate with Anthropic
+claude apply                      # Apply latest diff as git patch
+claude resume                     # Resume previous session
+
+# OpenAI Codex CLI - Local coding agent
+codex --help                    # Show help and available commands
+codex "create a user auth system"  # Start interactive session
+codex exec "refactor this code"    # Non-interactive execution
+codex login                      # Authenticate with OpenAI
+codex apply                      # Apply latest diff as git patch
+codex resume                     # Resume previous session
+
+# Cursor Agent - AI-powered development agent
+cursor-agent --help
+cursor-agent login
+cursor-agent -p "create a user authentication system"
+cursor-agent --resume=SESSION_ID -p "fix the bug"
+
+# Gemini CLI - Google's AI assistant
+gemini --help
+gemini "analyze this codebase"
+gemini --model=gemini-1.5-pro "generate unit tests"
+```
+
+**✅ Working Tools:**
+- **Cursor Agent**: Fully integrated via Nix wrapper with automatic binary download
+- **OpenAI Codex CLI**: Fully integrated via npx with npm package, includes sandbox execution and MCP server support
+
+**Note:** Other tools are currently placeholder scripts that provide guidance and point to the AI server. Full implementations can be added by installing the respective tools or connecting to their APIs.
+
 ## 🛠️ Available Mix Tasks
 
 ```bash
