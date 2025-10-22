@@ -48,10 +48,11 @@ Genesis maintains **three layers of isolation**:
 - Changes apply only to sandbox copies
 - Rollback is instant: delete sandbox directory
 
-### 2. Database Isolation
-- Separate `genesis_db` PostgreSQL database
-- Independent of `singularity` DB and `centralcloud` DB
-- Experiment metrics stored here
+### 2. Database Isolation (Separate Database, Same PostgreSQL)
+- Separate `genesis_db` database name (within same PostgreSQL instance)
+- Uses same PostgreSQL server as `singularity` and `central_services`
+- But logically isolated via different database names
+- Experiment metrics stored in `genesis_db`
 - Transactions isolated by Ecto.Adapters.SQL.Sandbox in tests
 
 ### 3. Process Isolation
@@ -62,9 +63,14 @@ Genesis maintains **three layers of isolation**:
 
 ## Setup
 
+Genesis uses the same PostgreSQL instance as singularity_app and centralcloud, but with a separate database name:
+
 ```bash
-# Create genesis_db
-createdb genesis_db
+# Ensure PostgreSQL is running
+# (or use: nix develop for full environment)
+
+# Create genesis_db in same PostgreSQL instance
+# (You can create via: psql -c "CREATE DATABASE genesis_db")
 
 # Install dependencies
 cd genesis
@@ -73,9 +79,20 @@ mix setup
 # Run migrations
 mix ecto.migrate
 
-# Start Genesis
+# Start Genesis (in separate terminal)
 mix phx.server
+
+# Or in production:
+MIX_ENV=prod mix phx.server
 ```
+
+## Database Schema
+
+Genesis creates its own tables in `genesis_db`:
+- `oban_jobs` - Background job queue (Oban)
+- `experiment_records` - Experiment metadata and results
+- `experiment_metrics` - Detailed metrics and performance data
+- `sandbox_history` - Sandbox cleanup/preservation history
 
 ## How It Works
 
