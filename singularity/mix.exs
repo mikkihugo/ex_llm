@@ -79,7 +79,7 @@ defmodule Singularity.MixProject do
       {:pgvector, "~> 0.2"},
 
       # Rustler NIFs
-      {:rustler, "~> 0.34.0", runtime: false},
+      {:rustler, "~> 0.37", runtime: false},
 
       # All 9 Rust NIFs (compile: false = won't rebuild every time)
       # Only include engines that actually exist

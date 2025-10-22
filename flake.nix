@@ -168,6 +168,12 @@
           beamPackages.erlang beamPackages.elixir beamPackages.hex
           beamPackages.rebar3 pkgs.elixir_ls pkgs.erlang-ls pkgs.gleam
         ];
+        
+        # Add Erlang development headers for Rustler NIFs
+        getRustTools = env: with pkgs; [
+          rustc cargo gcc
+          beamPackages.erlang  # For NIF linking
+        ];
 
         getDataServices = env: lib.optionals (lib.elem "postgresql" env.services) [
           # PostgreSQL with extensions for vector search and time-series
@@ -382,6 +388,7 @@
           allPackages = lib.flatten [
             (getBaseTools env)
             (getBeamTools env)
+            (getRustTools env)
             (getDataServices env)
             (getWebAndCliTools env)
             (getQaTools env)
@@ -418,6 +425,7 @@
             export ELIXIR_ERL_OPTIONS="+fnu"
             export ERL_AFLAGS="-proto_dist inet6_tcp"
             export ERL_FLAGS="-heart +sbt u +sbwt very_long +swt very_low"
+            export RUSTFLAGS="-C linker=gcc"
             export MIX_ENV=''${MIX_ENV:-${if env.name == "Remote Production Environment" then "prod" else "dev"}}
 
             ${if env.caching then ''

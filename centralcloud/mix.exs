@@ -38,7 +38,7 @@ defmodule Centralcloud.MixProject do
       {:ex_machina, "~> 2.8", only: :test},
       
       # Rust NIF Engines (same as Singularity)
-      {:rustler, "~> 0.34"},
+      {:rustler, "~> 0.37"},
       {:architecture_engine, path: "../rust/architecture_engine", runtime: false, app: false, compile: false},
       {:code_engine, path: "../rust/code_engine", runtime: false, app: false, compile: false},
       {:embedding_engine, path: "../rust/embedding_engine", runtime: false, app: false, compile: false},
