@@ -69,7 +69,7 @@ NATS subjects use **dot-separated hierarchy**:
 ```
 intelligence.hub.architecture.analysis  # Domain: intelligence, Subdomain: hub
 packages.storage.store                  # Domain: packages, Subdomain: storage
-ai.llm.request                          # Domain: ai, Subdomain: llm
+llm.provider.request                    # Domain: llm, Subdomain: provider
 ```
 
 ### Subject Patterns
