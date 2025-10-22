@@ -46,7 +46,7 @@ def add(a, b) when is_number(a) and is_number(b), do: a + b
 **Testing**:
 - Use ExUnit for testing
 - Run tests with `mix test` or `just test-run`
-- Follow existing test patterns in `singularity_app/test/`
+- Follow existing test patterns in `singularity/test/`
 
 ### Gleam
 

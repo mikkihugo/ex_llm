@@ -6,7 +6,7 @@ A complete NATS-based LLM integration system for HTDAG (Hierarchical Task Direct
 
 ## Core Components
 
-### 1. Elixir Modules (singularity_app/lib/singularity/)
+### 1. Elixir Modules (singularity/lib/singularity/)
 
 #### `LLM.NatsOperation`
 - DSPy-like operation interface for LLM calls via NATS
@@ -170,7 +170,7 @@ nats-server -js -p 4222
 cd llm-server && bun run dev
 
 # Run from Elixir
-cd singularity_app
+cd singularity
 iex -S mix
 iex> HTDAG.execute_with_nats(dag, evolve: true)
 ```
@@ -184,9 +184,9 @@ iex> HTDAG.execute_with_nats(dag, evolve: true)
 ## Files Created/Modified
 
 ### New Files (8)
-1. `singularity_app/lib/singularity/llm/nats_operation.ex` (9.5KB)
-2. `singularity_app/lib/singularity/planning/htdag_executor.ex` (7.8KB)
-3. `singularity_app/lib/singularity/planning/htdag_evolution.ex` (7.8KB)
+1. `singularity/lib/singularity/llm/nats_operation.ex` (9.5KB)
+2. `singularity/lib/singularity/planning/htdag_executor.ex` (7.8KB)
+3. `singularity/lib/singularity/planning/htdag_evolution.ex` (7.8KB)
 4. `llm-server/src/htdag-llm-worker.ts` (10KB)
 5. `HTDAG_README.md` (4.6KB)
 6. `HTDAG_NATS_INTEGRATION.md` (8.8KB)
@@ -194,7 +194,7 @@ iex> HTDAG.execute_with_nats(dag, evolve: true)
 8. `examples/htdag_self_evolution.exs` (2.5KB)
 
 ### Modified Files (3)
-1. `singularity_app/lib/singularity/planning/htdag.ex` - Added `execute_with_nats/2`
+1. `singularity/lib/singularity/planning/htdag.ex` - Added `execute_with_nats/2`
 2. `llm-server/src/server.ts` - Integrated HTDAG worker
 3. `NATS_SUBJECTS.md` - Documented new subjects
 

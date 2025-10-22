@@ -303,7 +303,7 @@ Repo.all(
 
 1. **Start the server:**
    ```bash
-   cd singularity_app
+   cd singularity
    mix phx.server
    ```
 

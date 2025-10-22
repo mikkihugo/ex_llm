@@ -448,7 +448,7 @@ Work through each directory in order. For each file:
 
 After documenting each directory, run:
 ```bash
-cd singularity_app
+cd singularity
 mix compile
 ```
 

@@ -124,7 +124,7 @@ Example mutations:
 elixir test_htdag_nats.exs
 
 # Full integration test (requires NATS + AI server)
-cd singularity_app
+cd singularity
 mix test test/singularity/planning/htdag_executor_test.exs
 ```
 

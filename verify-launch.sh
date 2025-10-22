@@ -161,17 +161,17 @@ echo ""
 
 # 6. Check Dependencies
 echo -e "${YELLOW}[6/7] Dependencies${NC}"
-if [ -d "singularity_app/deps" ]; then
+if [ -d "singularity/deps" ]; then
     echo -e "  ${GREEN}✅ Elixir dependencies installed${NC}"
 else
-    echo -e "  ${YELLOW}⚠️  Elixir deps not installed - Run 'cd singularity_app && mix deps.get'${NC}"
+    echo -e "  ${YELLOW}⚠️  Elixir deps not installed - Run 'cd singularity && mix deps.get'${NC}"
     WARNINGS=$((WARNINGS + 1))
 fi
 
-if [ -d "singularity_app/_build" ]; then
+if [ -d "singularity/_build" ]; then
     echo -e "  ${GREEN}✅ Elixir application compiled${NC}"
 else
-    echo -e "  ${YELLOW}⚠️  Elixir not compiled - Run 'cd singularity_app && mix compile'${NC}"
+    echo -e "  ${YELLOW}⚠️  Elixir not compiled - Run 'cd singularity && mix compile'${NC}"
     WARNINGS=$((WARNINGS + 1))
 fi
 

@@ -84,33 +84,33 @@ tasks:
 
   # Database tasks
   db:setup:
-    command: 'cd singularity_app && nix develop ..#dev --command mix ecto.setup'
+    command: 'cd singularity && nix develop ..#dev --command mix ecto.setup'
     local: true
 
   db:migrate:
-    command: 'cd singularity_app && nix develop ..#dev --command mix ecto.migrate'
+    command: 'cd singularity && nix develop ..#dev --command mix ecto.migrate'
     local: true
 
   db:reset:
-    command: 'cd singularity_app && nix develop ..#dev --command mix ecto.reset'
+    command: 'cd singularity && nix develop ..#dev --command mix ecto.reset'
     local: true
 
   # Quality assurance
   quality:
-    command: 'cd singularity_app && nix develop ..#dev --command mix quality'
+    command: 'cd singularity && nix develop ..#dev --command mix quality'
     local: true
     options:
       runInCI: true
 
   # Analysis tasks
   analysis:rust:
-    command: 'cd singularity_app && nix develop ..#dev --command mix analyze.rust'
+    command: 'cd singularity && nix develop ..#dev --command mix analyze.rust'
     local: true
     options:
       runInCI: false
 
   analysis:query:
-    command: 'cd singularity_app && nix develop ..#dev --command mix analyze.query'
+    command: 'cd singularity && nix develop ..#dev --command mix analyze.query'
     local: true
     options:
       runInCI: false

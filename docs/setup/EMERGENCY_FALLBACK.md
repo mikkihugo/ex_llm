@@ -51,7 +51,7 @@ export SINGULARITY_EMERGENCY_BIN=/opt/singularity/emergency/bin
 
 ## Configuration
 
-The emergency CLI is automatically configured in `singularity_app/config/config.exs`:
+The emergency CLI is automatically configured in `singularity/config/config.exs`:
 
 ```elixir
 config :singularity, :claude,

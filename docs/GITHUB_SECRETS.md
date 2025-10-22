@@ -36,7 +36,7 @@ gh secret set FLY_API_TOKEN --body "YOUR_TOKEN_HERE"
 **How to Set:**
 ```bash
 # 1. Install Claude Code CLI (if not already installed)
-# See: singularity_app/scripts/install_claude_native.sh
+# See: singularity/scripts/install_claude_native.sh
 
 # 2. Run setup to get OAuth token
 claude setup-token

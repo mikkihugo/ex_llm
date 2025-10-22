@@ -17,7 +17,7 @@ That's it! The system uses these to understand your code and auto-fix issues.
 ### Learning Phase (Scan Files)
 
 ```elixir
-# For each .ex file in singularity_app/lib/singularity/
+# For each .ex file in singularity/lib/singularity/
 learn_from_file(file_path)
   ↓
 Extract:
@@ -37,7 +37,7 @@ Build knowledge graph:
   }
 ```
 
-**Source:** [htdag_learner.ex:295-325](singularity_app/lib/singularity/planning/htdag_learner.ex#L295-L325)
+**Source:** [htdag_learner.ex:295-325](singularity/lib/singularity/planning/htdag_learner.ex#L295-L325)
 
 ### Issue Detection
 
@@ -52,7 +52,7 @@ After learning, it checks for:
 | **Dead code** (with tracing) | Never called at runtime | Low |
 | **Disconnected** (with tracing) | No callers/callees | Medium |
 
-**Source:** [htdag_learner.ex:364-397](singularity_app/lib/singularity/planning/htdag_learner.ex#L364-L397)
+**Source:** [htdag_learner.ex:364-397](singularity/lib/singularity/planning/htdag_learner.ex#L364-L397)
 
 ### Auto-Fix Phase
 
@@ -73,7 +73,7 @@ case issue.type do
 end
 ```
 
-**Source:** [htdag_learner.ex:444-460](singularity_app/lib/singularity/planning/htdag_learner.ex#L444-L460)
+**Source:** [htdag_learner.ex:444-460](singularity/lib/singularity/planning/htdag_learner.ex#L444-L460)
 
 ---
 
@@ -112,7 +112,7 @@ end
 - **Purpose:** "Handles authentication for users via OAuth2"
 - **Integration hints:** TokenStore, NATS, UserRepo (helpful for auto-fixing)
 
-**Source:** [htdag_learner.ex:334-355](singularity_app/lib/singularity/planning/htdag_learner.ex#L334-L355)
+**Source:** [htdag_learner.ex:334-355](singularity/lib/singularity/planning/htdag_learner.ex#L334-L355)
 
 ### 2. alias Statements (REQUIRED for dependency graph)
 
@@ -147,7 +147,7 @@ end
 - **Dependencies:** `["Singularity.Store"]`
 - **Graph:** MyModule → Store (connection tracked)
 
-**Source:** [htdag_learner.ex:341-346](singularity_app/lib/singularity/planning/htdag_learner.ex#L341-L346)
+**Source:** [htdag_learner.ex:341-346](singularity/lib/singularity/planning/htdag_learner.ex#L341-L346)
 
 ### 3. Integration Markers (OPTIONAL but helpful)
 
@@ -229,7 +229,7 @@ defmodule Singularity.MyAuthHandler do
 end
 ```
 
-**Source:** [htdag_learner.ex:679-742](singularity_app/lib/singularity/planning/htdag_learner.ex#L679-L742)
+**Source:** [htdag_learner.ex:679-742](singularity/lib/singularity/planning/htdag_learner.ex#L679-L742)
 
 ### Example 2: Broken Dependency
 
@@ -256,7 +256,7 @@ end
 
 **Auto-Fix (Option 1: Create Missing Module):**
 
-Creates `singularity_app/lib/singularity/user_cache.ex`:
+Creates `singularity/lib/singularity/user_cache.ex`:
 ```elixir
 defmodule Singularity.UserCache do
   @moduledoc """
@@ -292,7 +292,7 @@ defmodule Singularity.UserHandler do
 end
 ```
 
-**Source:** [htdag_learner.ex:462-553](singularity_app/lib/singularity/planning/htdag_learner.ex#L462-L553)
+**Source:** [htdag_learner.ex:462-553](singularity/lib/singularity/planning/htdag_learner.ex#L462-L553)
 
 ### Example 3: Isolated Module
 
@@ -326,7 +326,7 @@ Suggested integrations based on purpose: "Helper utilities"
 - Consider integrating with other utility modules
 ```
 
-**Source:** [htdag_learner.ex:744-755](singularity_app/lib/singularity/planning/htdag_learner.ex#L744-L755)
+**Source:** [htdag_learner.ex:744-755](singularity/lib/singularity/planning/htdag_learner.ex#L744-L755)
 
 ---
 
@@ -443,7 +443,7 @@ For more accurate issue detection, enable runtime tracing:
 
 **Trade-off:** Slower (adds 10s to learning), but more accurate
 
-**Source:** [htdag_learner.ex:145-187](singularity_app/lib/singularity/planning/htdag_learner.ex#L145-L187)
+**Source:** [htdag_learner.ex:145-187](singularity/lib/singularity/planning/htdag_learner.ex#L145-L187)
 
 ---
 
@@ -501,4 +501,4 @@ HTDAGAutoBootstrap.run_now(dry_run: false)
 
 - [SELF_IMPROVING_FLOW_REVIEW.md](SELF_IMPROVING_FLOW_REVIEW.md) - Complete flow documentation
 - [HTDAG_QUICK_START.md](HTDAG_QUICK_START.md) - HTDAG getting started
-- [htdag_learner.ex](singularity_app/lib/singularity/planning/htdag_learner.ex) - Source code
+- [htdag_learner.ex](singularity/lib/singularity/planning/htdag_learner.ex) - Source code

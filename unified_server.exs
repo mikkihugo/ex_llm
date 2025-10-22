@@ -19,7 +19,7 @@ defmodule UnifiedServer do
     Logger.info("=" |> String.duplicate(60))
     
     # Check if we're in the right directory
-    unless File.exists?("singularity_app") do
+    unless File.exists?("singularity") do
       Logger.error("❌ Please run from the singularity project root directory")
       System.halt(1)
     end
@@ -99,7 +99,7 @@ defmodule UnifiedServer do
       _ ->
         # Start Elixir app in background
         spawn(fn ->
-          System.cmd("bash", ["-c", "cd singularity_app && mix phx.server"], 
+          System.cmd("bash", ["-c", "cd singularity && mix phx.server"], 
             stderr_to_stdout: true, into: IO.stream())
         end)
         :timer.sleep(5000) # Wait for Elixir app to start

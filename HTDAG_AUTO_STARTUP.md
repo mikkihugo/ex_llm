@@ -9,7 +9,7 @@ The system now **automatically self-diagnoses and fixes itself on server startup
 When you start the server:
 
 ```bash
-cd singularity_app
+cd singularity
 iex -S mix phx.server
 ```
 

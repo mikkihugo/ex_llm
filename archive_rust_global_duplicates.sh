@@ -68,7 +68,7 @@ This directory contains deprecated/old Rust code that is no longer actively used
 - **consolidated_detector** - Old consolidated framework detector
 - **mozilla-code-analysis** - Mozilla's rust-code-analysis integration
 - **unified_server** - Old unified server attempt
-- **singularity_app** - Old embedded Elixir app (duplicate)
+- **singularity** - Old embedded Elixir app (duplicate)
 - **src/** - Old shared source code
 
 ## Archived (2025-10-09) - Duplicate Removal

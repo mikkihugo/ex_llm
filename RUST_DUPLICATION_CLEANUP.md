@@ -73,7 +73,7 @@ ln -s ../rust/quality rust-central/quality_engine
 - `/rust/parser/*` - Parser suite (30+ languages)
 - `/rust/prompt` - Prompt engineering
 - `/rust-central/embedding_engine` - True NIF
-- `/singularity_app/native/architecture_engine` - True NIF
+- `/singularity/native/architecture_engine` - True NIF
 
 **Status:** ✅ Compiles successfully with symlinks
 

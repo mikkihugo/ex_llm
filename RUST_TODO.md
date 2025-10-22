@@ -9,7 +9,7 @@
 
 ### ✅ COMPLETED - Duplicate Cleanup (2025-01-10)
 
-- [x] **COMPLETED: rust/framework/** - Archived (functionality in `singularity_app/native/architecture_engine/`)
+- [x] **COMPLETED: rust/framework/** - Archived (functionality in `singularity/native/architecture_engine/`)
 - [x] **COMPLETED: rust/package/** - Archived (functionality in `rust_global/package_registry/`)
 - [x] **COMPLETED: rust_backup/** - Removed (200+ duplicate files)
 - [x] **COMPLETED: rust_global duplicates** - Archived (5 duplicate modules)

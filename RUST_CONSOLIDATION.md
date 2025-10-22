@@ -92,7 +92,7 @@ Consolidated Rust codebase from **4 directories** with duplicate/deprecated code
 2. **Deprecated Duplicates**
    - ✅ `rust/semantic/` → Marked DEPRECATED (replaced by rust_global/semantic_embedding_engine)
    - ✅ `rust/embedding/` → Marked DEPRECATED (replaced by rust_global/semantic_embedding_engine)
-   - ✅ Removed `singularity_app/native/semantic_engine` symlink
+   - ✅ Removed `singularity/native/semantic_engine` symlink
 
 3. **Documented Unwired**
    - ✅ `rust/framework/` → Created UNWIRED.md with analysis

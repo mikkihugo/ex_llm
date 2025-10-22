@@ -31,7 +31,7 @@ High-performance embedding generation for Singularity using Rust + GPU accelerat
 **Models auto-download on first use!** No manual download needed.
 
 ```bash
-# From singularity_app/
+# From singularity/
 mix deps.get
 mix compile
 
@@ -196,7 +196,7 @@ Error: Model not found: priv/models/qodo-embed-1.5b/model.safetensors
 **Solution:** Models auto-download on first use. Check internet connection or download manually:
 
 ```bash
-cd singularity_app/priv/models
+cd singularity/priv/models
 git clone https://huggingface.co/Qodo/Qodo-Embed-1-1.5B qodo-embed-1.5b
 ```
 
@@ -223,7 +223,7 @@ Error: :nif_not_loaded
 **Solution:** Recompile:
 
 ```bash
-cd singularity_app
+cd singularity
 mix clean
 mix compile
 ```
@@ -272,7 +272,7 @@ cargo clippy
 **Status:** ✅ Production-ready with SOTA code embeddings
 
 **Next Steps:**
-1. `cd singularity_app && mix deps.get && mix compile`
+1. `cd singularity && mix deps.get && mix compile`
 2. Test embedding: `iex -S mix` → `EmbeddingEngine.embed("test", model: :code)`
 3. Watch models auto-download on first use
 4. Fine-tune on YOUR code for 40-60% better retrieval!

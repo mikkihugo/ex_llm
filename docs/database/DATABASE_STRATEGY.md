@@ -109,7 +109,7 @@ psql -c "CREATE DATABASE singularity;"
 ### 2. Run Migrations
 
 ```bash
-cd singularity_app
+cd singularity
 
 # Run migrations (creates tables)
 mix ecto.migrate

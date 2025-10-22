@@ -68,7 +68,7 @@ Gleam
 ## Repo Layout
 
 ```
-singularity_app/
+singularity/
 ├── lib/singularity/           # Agents, autonomy, tools, interfaces
 ├── src/                       # Gleam modules (compiled via mix_gleam)
 ├── config/                    # Mix configs
@@ -109,7 +109,7 @@ This auto-starts:
 
 ### 3. Import Knowledge Artifacts
 ```bash
-cd singularity_app
+cd singularity
 mix knowledge.migrate              # Import templates_data/**/*.json
 moon run templates_data:embed-all  # Generate embeddings
 ```
@@ -122,7 +122,7 @@ moon run templates_data:embed-all  # Generate embeddings
 ### 5. Test It
 ```bash
 # Run tests (uses shared DB + sandbox)
-cd singularity_app
+cd singularity
 mix test
 
 # Or start IEx
@@ -164,7 +164,7 @@ Gleam modules are compiled automatically by Mix (mix_gleam).
 Common commands:
 
 ```
-cd singularity_app
+cd singularity
 mix deps.get                 # also fetches Gleam deps via alias
 mix compile                  # compiles Elixir + Gleam
 gleam check                  # optional fast type-check

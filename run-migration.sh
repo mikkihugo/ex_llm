@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run Ecto migration with proper memory settings
 
-cd singularity_app
+cd singularity
 
 # Set heap size for Erlang VM
 export ERL_FLAGS="+hmax 0"

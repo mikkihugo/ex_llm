@@ -92,9 +92,9 @@
 **Archive:**
 - `_archive/analysis_engine/` - Archived (duplicate of rust/code_analysis)
 - `_archive/dependency_parser/` - Archived (duplicate of rust/parser)
-- `_archive/intelligent_namer/` - Archived (duplicate of singularity_app/native/architecture_engine)
+- `_archive/intelligent_namer/` - Archived (duplicate of singularity/native/architecture_engine)
 - `_archive/semantic_embedding_engine/` - **WILL BE ARCHIVED** (migrated to rust-central/embedding_engine)
-- `_archive/tech_detection_engine/` - Archived (duplicate of singularity_app/native/architecture_engine)
+- `_archive/tech_detection_engine/` - Archived (duplicate of singularity/native/architecture_engine)
 - `_archive/mozilla-code-analysis/` - Archived Mozilla tools
 - `_archive/codeintelligence_server/` - Archived intelligence server
 - `_archive/consolidated_detector/` - Archived detector
@@ -518,7 +518,7 @@ cd central_cloud && mix test
 ### End-to-End Tests
 ```bash
 # Full workflow test
-cd singularity_app && mix test test/integration/rust_engines_test.exs
+cd singularity && mix test test/integration/rust_engines_test.exs
 ```
 
 ---

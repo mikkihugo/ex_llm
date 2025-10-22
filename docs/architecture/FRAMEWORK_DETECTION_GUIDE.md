@@ -42,7 +42,7 @@ Framework detection is **distributed** across two layers:
 
 ## Layer 1: Singularity (Pattern Detection)
 
-**Location:** `singularity_app/lib/singularity/detection/`
+**Location:** `singularity/lib/singularity/detection/`
 
 ### Responsibilities
 
@@ -367,6 +367,6 @@ EngineCentralHub.send_analysis(:architecture, %{framework: framework})
 ---
 
 **See Also:**
-- `singularity_app/lib/singularity/detection/` - Local detection
+- `singularity/lib/singularity/detection/` - Local detection
 - `central_cloud/lib/central_cloud/framework_learning_agent.ex` - Central enrichment
 - `ENGINE_CENTRAL_ARCHITECTURE.md` - Overall NATS architecture

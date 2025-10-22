@@ -129,7 +129,7 @@ if pgrep -f "elixir.*singularity" > /dev/null || pgrep -f "beam.*singularity" > 
     echo "  or: pkill -f 'elixir.*singularity'"
     exit 1
 else
-    cd singularity_app
+    cd singularity
 
     # Install dependencies if needed
     if [ ! -d "deps" ]; then

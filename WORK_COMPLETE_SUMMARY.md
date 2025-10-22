@@ -82,13 +82,13 @@ Completed comprehensive NIF (Native Implemented Function) audit and architectura
    ```
    Impact: Single NIF per crate
 
-3. **singularity_app/lib/singularity/embedding_engine.ex**
+3. **singularity/lib/singularity/embedding_engine.ex**
    - Added `@behaviour Singularity.Engine`
    - Added `:code` and `:text` model aliases
    - Added `health/0`, `capabilities/0` functions
    - Now the single source of truth for embeddings
 
-4. **singularity_app/lib/singularity/semantic_engine.ex**
+4. **singularity/lib/singularity/semantic_engine.ex**
    ```elixir
    # Before: Full implementation
    def embed(text, opts), do: # ... NIF calls
@@ -98,7 +98,7 @@ Completed comprehensive NIF (Native Implemented Function) audit and architectura
    ```
    Impact: Backward compatible deprecation
 
-5. **singularity_app/native/semantic_engine** (removed)
+5. **singularity/native/semantic_engine** (removed)
    - Removed duplicate symlink
    - Cleaned up build configuration
 
@@ -223,12 +223,12 @@ EmbeddingEngine.embed("code", model: :code)
 ### Modified (5 files)
 - `rust/knowledge/src/lib.rs` (3 lines) - NIF name fix
 - `rust/quality/src/lib.rs` (2 lines) - Remove duplicate
-- `singularity_app/lib/singularity/embedding_engine.ex` - Enhanced
-- `singularity_app/lib/singularity/semantic_engine.ex` - Wrapper
+- `singularity/lib/singularity/embedding_engine.ex` - Enhanced
+- `singularity/lib/singularity/semantic_engine.ex` - Wrapper
 - `.gitignore` (1 line) - Backup patterns
 
 ### Removed (1 file)
-- `singularity_app/native/semantic_engine` - Duplicate symlink
+- `singularity/native/semantic_engine` - Duplicate symlink
 
 ### Created (9 files)
 - NIF_FIXES_APPLIED.md
@@ -305,7 +305,7 @@ iex> Singularity.SemanticEngine.embed("test", model: :code)
 ### 2. Recompile NIFs
 
 ```bash
-cd singularity_app
+cd singularity
 mix deps.compile --force
 mix compile
 ```

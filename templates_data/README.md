@@ -120,7 +120,7 @@ let template = load_template("rust-api-endpoint")?;
 ### Migrating Old Templates
 
 Old paths still work via symlinks:
-- `singularity_app/priv/code_quality_templates/` → `templates/code_generation/quality/`
+- `singularity/priv/code_quality_templates/` → `templates/code_generation/quality/`
 - `rust/tool_doc_index/templates/` → `templates/code_generation/patterns/`
 
 ## Indexing
@@ -162,6 +162,6 @@ Templates must:
 ## References
 
 - Schema: `schema.json`
-- API: `singularity_app/lib/singularity/templates/template_store.ex`
+- API: `singularity/lib/singularity/templates/template_store.ex`
 - Database: `templates` table with pgvector
 - Embedding: Uses Qodo-Embed-1 (CoIR: 68.53)

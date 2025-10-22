@@ -196,7 +196,7 @@ singularity/
 # All services
 NATS_URL=nats://localhost:4222
 
-# Elixir (singularity_app)
+# Elixir (singularity)
 DATABASE_URL=postgresql://localhost/singularity_dev
 
 # llm-server

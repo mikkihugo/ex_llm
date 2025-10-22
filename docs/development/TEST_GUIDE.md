@@ -15,7 +15,7 @@ cargo test
 
 **Elixir**
 ```bash
-cd singularity_app
+cd singularity
 mix test
 ```
 
@@ -33,7 +33,7 @@ cd rust/tool_doc_index
 cargo test --test layered_detector -- --ignored
 
 # Elixir tests tagged with :nats
-cd ../../singularity_app
+cd ../../singularity
 mix test --only nats
 ```
 
@@ -46,7 +46,7 @@ LayeredDetector handles low-confidence LLM fallbacks correctly.
    ```bash
    nats-server -js
    pg_ctl -D .dev-db/pg start    # or use your Postgres service
-   cd singularity_app && MIX_ENV=test mix ecto.create && mix ecto.migrate
+   cd singularity && MIX_ENV=test mix ecto.create && mix ecto.migrate
    ```
 
 2. Launch the llm-server with valid credentials (or run in dry-run mode with
@@ -58,7 +58,7 @@ LayeredDetector handles low-confidence LLM fallbacks correctly.
 
 3. Run the detection pipeline from Elixir:
    ```bash
-   cd ../singularity_app
+   cd ../singularity
    iex -S mix
    Singularity.TechnologyDetector.detect_technologies(".")
    Repo.all(Singularity.Schemas.CodebaseSnapshot)
@@ -73,19 +73,19 @@ subjects involved.
 ```bash
 unset NATS_URL
 cd rust/tool_doc_index
-cargo run -- detect ../singularity_app
+cargo run -- detect ../singularity
 ```
 
 ### Rust Layered Detector with NATS + llm-server
 ```bash
 export NATS_URL=nats://127.0.0.1:4222
-cargo run -- detect ../singularity_app
+cargo run -- detect ../singularity
 ```
 Watch the llm-server logs to confirm `llm.analyze` calls during low-confidence detections.
 
 ### Verify Database Entries
 ```bash
-cd singularity_app
+cd singularity
 iex -S mix
 Repo.all(Singularity.Schemas.CodebaseSnapshot)
 Repo.all(Singularity.Schemas.TechnologyPattern)

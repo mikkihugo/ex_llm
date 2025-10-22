@@ -51,7 +51,7 @@
 ```
 
 ### Language Distribution
-- **Elixir:** Primary application logic (singularity_app, central_cloud)
+- **Elixir:** Primary application logic (singularity, central_cloud)
 - **Rust:** High-performance parsing, analysis, ML inference (8 NIF modules)
 - **Gleam:** Type-safe functional modules (HTDAG, rule engine)
 - **TypeScript:** AI server bridge for multi-provider LLM coordination
@@ -64,7 +64,7 @@
 
 ```
 singularity/
-├── singularity_app/          # Main Elixir/Phoenix application
+├── singularity/          # Main Elixir/Phoenix application
 ├── central_cloud/            # Separate OTP app for package intelligence
 ├── rust/                     # Rust workspace with 21 crates
 ├── llm-server/                # TypeScript NATS ↔ LLM provider bridge
@@ -75,14 +75,14 @@ singularity/
 └── docker-compose.yml        # Optional containerized deployment
 ```
 
-### Primary Application: `singularity_app/`
+### Primary Application: `singularity/`
 
 **Purpose:** Main BEAM application hosting 6 autonomous agents, 8 Rust NIFs, and distributed orchestration.
 
 **Key Directories:**
 
 ```
-singularity_app/
+singularity/
 ├── lib/singularity/
 │   ├── agents/                    # 6 agent implementations
 │   │   ├── agent_supervisor.ex    # DynamicSupervisor for agent lifecycle
@@ -153,7 +153,7 @@ central_cloud/
 └── config/                         # Independent configuration
 ```
 
-**Database:** Uses separate `central_services` PostgreSQL database (not shared with singularity_app).
+**Database:** Uses separate `central_services` PostgreSQL database (not shared with singularity).
 
 **Connections:**
 - Subscribes to NATS `packages.registry.*` subjects
@@ -194,7 +194,7 @@ rust/
 **NIF Bridge Pattern:**
 
 ```elixir
-# Elixir side (singularity_app/lib/singularity/code_engine.ex)
+# Elixir side (singularity/lib/singularity/code_engine.ex)
 defmodule Singularity.CodeEngine do
   use Rustler, otp_app: :singularity, crate: "code_engine"
 
@@ -337,7 +337,7 @@ direnv allow             # Auto-load on cd (recommended)
 
 ### Core Application Files
 
-#### `singularity_app/lib/singularity/application.ex`
+#### `singularity/lib/singularity/application.ex`
 **Purpose:** OTP application entry point with 6-layer supervision tree.
 
 **Supervision Layers:**
@@ -379,7 +379,7 @@ Supervisor.init(children, strategy: :one_for_one)
 - **Nested supervisors:** Groups related processes for fault isolation
 - **`:one_for_one` strategy:** Independent child restarts (most common for internal tooling)
 
-#### `singularity_app/lib/singularity/llm/service.ex`
+#### `singularity/lib/singularity/llm/service.ex`
 **Purpose:** Unified LLM service abstraction (NATS-only, no direct HTTP).
 
 **Critical Pattern:**
@@ -408,7 +408,7 @@ complexity = Service.determine_complexity_for_task(:code_generation)
 # => :complex (based on MODEL_CAPABILITY_MATRIX.md)
 ```
 
-#### `singularity_app/lib/singularity/agents/cost_optimized_agent.ex`
+#### `singularity/lib/singularity/agents/cost_optimized_agent.ex`
 **Purpose:** Multi-tier execution pipeline (Rules → Cache → LLM).
 
 **Flow:**
@@ -433,7 +433,7 @@ User Request
 - Only 10% reach expensive LLM calls
 - Continuous learning improves rule confidence over time
 
-#### `singularity_app/lib/singularity/knowledge/artifact_store.ex`
+#### `singularity/lib/singularity/knowledge/artifact_store.ex`
 **Purpose:** Living knowledge base query API (Git ↔ PostgreSQL).
 
 **Key Functions:**
@@ -477,7 +477,7 @@ CREATE INDEX idx_artifacts_embedding ON knowledge_artifacts
   USING ivfflat (embedding vector_cosine_ops);
 ```
 
-#### `singularity_app/lib/singularity/code_engine.ex`
+#### `singularity/lib/singularity/code_engine.ex`
 **Purpose:** Elixir bridge to Rust NIF for code analysis.
 
 **NIF Functions:**
@@ -524,7 +524,7 @@ fn analyze_file(path: String) -> Result<AnalysisResult, Error> {
 }
 ```
 
-#### `singularity_app/src/singularity/htdag.gleam`
+#### `singularity/src/singularity/htdag.gleam`
 **Purpose:** Hierarchical Temporal Directed Acyclic Graph for task decomposition.
 
 **Why Gleam?**
@@ -571,7 +571,7 @@ dag = :singularity@htdag.decompose_task(
 
 ### Configuration Files
 
-#### `singularity_app/config/config.exs`
+#### `singularity/config/config.exs`
 **Purpose:** Shared configuration across all environments.
 
 **Key Sections:**
@@ -605,7 +605,7 @@ config :singularity, :embeddings,
 config :mix_gleam, :add_build_path_to_load_path, true
 ```
 
-#### `singularity_app/config/dev.exs`
+#### `singularity/config/dev.exs`
 **Purpose:** Development environment overrides.
 
 **Notable Overrides:**
@@ -734,7 +734,7 @@ anyhow = "1.0.100"
 
 ### Data Layer
 
-#### `singularity_app/priv/repo/migrations/`
+#### `singularity/priv/repo/migrations/`
 **Purpose:** Ecto database migrations for schema evolution.
 
 **Key Migrations:**
@@ -819,7 +819,7 @@ CentralCloud.Repo.all(
 )
 ```
 
-#### `singularity_app/priv/repo/seeds/work_plan_seeds.exs`
+#### `singularity/priv/repo/seeds/work_plan_seeds.exs`
 **Purpose:** Development seed data for work planning system.
 
 ```elixir
@@ -847,7 +847,7 @@ Singularity.Planning.WorkPlanAPI.add_dependency(
 
 ### Testing Files
 
-#### `singularity_app/test/singularity/agents/cost_optimized_agent_test.exs`
+#### `singularity/test/singularity/agents/cost_optimized_agent_test.exs`
 **Purpose:** Tests for cost-optimized agent execution pipeline.
 
 ```elixir
@@ -1539,7 +1539,7 @@ direnv allow
 ./scripts/setup-database.sh
 
 # 4. Install Elixir + Gleam dependencies
-cd singularity_app
+cd singularity
 mix setup  # Runs: mix deps.get && gleam deps download && mix deps.compile
 
 # 5. Run database migrations
@@ -1561,7 +1561,7 @@ cp .env.example .env
 # Edit .env with your API keys
 
 # 10. Verify setup
-cd ../singularity_app
+cd ../singularity
 mix test  # Should pass all 23+ tests
 ```
 
@@ -1581,11 +1581,11 @@ cd llm-server
 bun run dev  # Hot reload enabled
 
 # Terminal 3: Start Elixir application
-cd singularity_app
+cd singularity
 iex -S mix phx.server  # Interactive Elixir shell + Phoenix server
 
 # Terminal 4: Run tests on file change
-cd singularity_app
+cd singularity
 mix test.watch  # Requires mix_test_watch package
 ```
 
@@ -2262,7 +2262,7 @@ EXTERNAL DEPENDENCIES
 singularity/
 │
 ├── Core Applications (BEAM)
-│   ├── singularity_app/          ⭐ Main application
+│   ├── singularity/          ⭐ Main application
 │   │   ├── lib/singularity/
 │   │   │   ├── agents/           → Agent implementations (6 agents)
 │   │   │   ├── autonomy/         → Rule engine, planner, decider
@@ -2681,11 +2681,11 @@ sops-nix.defaultSopsFile = ./secrets.yaml;
 
 ```sql
 -- Production: Separate roles for different services
-CREATE ROLE singularity_app LOGIN PASSWORD 'strong_password';
+CREATE ROLE singularity LOGIN PASSWORD 'strong_password';
 CREATE ROLE central_cloud LOGIN PASSWORD 'different_password';
 
 -- Grant minimal required permissions
-GRANT SELECT, INSERT, UPDATE ON knowledge_artifacts TO singularity_app;
+GRANT SELECT, INSERT, UPDATE ON knowledge_artifacts TO singularity;
 GRANT ALL ON packages TO central_cloud;
 
 -- Enable RLS for multi-tenancy (if ever needed)
@@ -2740,7 +2740,7 @@ nats-server --config nats-server.conf
 authorization {
   users = [
     {
-      user: "singularity_app",
+      user: "singularity",
       password: "$2a$11$...",  # bcrypt hash
       permissions: {
         publish: ["ai.llm.request", "code.analysis.*"],

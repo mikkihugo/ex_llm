@@ -100,7 +100,7 @@ end
 IO.puts("\n5. Testing file discovery...")
 try do
   # Look for Elixir source files
-  source_files = Path.wildcard("singularity_app/lib/**/*.ex")
+  source_files = Path.wildcard("singularity/lib/**/*.ex")
   IO.puts("✅ Found #{length(source_files)} Elixir source files")
   
   if length(source_files) > 0 do
@@ -123,7 +123,7 @@ end
 # Test 6: Check if we can extract module info
 IO.puts("\n6. Testing module extraction...")
 try do
-  sample_file = "singularity_app/lib/singularity/planning/htdag_learner.ex"
+  sample_file = "singularity/lib/singularity/planning/htdag_learner.ex"
   if File.exists?(sample_file) do
     content = File.read!(sample_file)
     

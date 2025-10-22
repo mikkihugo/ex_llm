@@ -19,7 +19,7 @@ A complete **PostgreSQL-based code graph system** that extracts and stores:
 
 ### 1. Ingest Code (Extract Metadata)
 ```bash
-cd singularity_app
+cd singularity
 
 # This already runs on server startup via HTDAGAutoBootstrap
 # But you can manually re-run if needed:

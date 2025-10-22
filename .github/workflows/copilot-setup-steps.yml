@@ -57,8 +57,8 @@ jobs:
         id: cache-elixir
         with:
           path: |
-            singularity_app/_build
-            singularity_app/deps
+            singularity/_build
+            singularity/deps
             ~/.hex
             ~/.cache/rebar3
           key: ${{ runner.os }}-elixir-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-${{ hashFiles('**/mix.lock') }}
@@ -70,13 +70,13 @@ jobs:
         run: |
           mix local.rebar --force
           mix local.hex --force
-        working-directory: singularity_app
+        working-directory: singularity
 
       - name: Install Mix deps
         run: |
           mix deps.get --only prod || mix deps.get
           mix deps.compile
-        working-directory: singularity_app
+        working-directory: singularity
 
       - name: Wait for Postgres
         env:

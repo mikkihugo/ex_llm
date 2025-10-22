@@ -102,7 +102,7 @@ The **architecture is production-ready**. The piping works end-to-end. The ast-g
    - Shows all AST-grep features
    - Status: ✅ Runnable (returns "implementation pending")
 
-3. **`/singularity_app/lib/singularity/search/ast_grep_code_search.ex`** (300+ lines)
+3. **`/singularity/lib/singularity/search/ast_grep_code_search.ex`** (300+ lines)
    - Database integration module
    - Hybrid vector + AST search
    - extract_patterns(), health_check() functions
@@ -151,7 +151,7 @@ The **architecture is production-ready**. The piping works end-to-end. The ast-g
      - `ast_grep_replace(content, find, replace, lang)`
    - Updated rustler::init! macro
 
-5. **`/singularity_app/lib/singularity/search/ast_grep_code_search.ex`**
+5. **`/singularity/lib/singularity/search/ast_grep_code_search.ex`**
    - Hybrid search implementation
    - NIF integration (placeholder until implementation complete)
 

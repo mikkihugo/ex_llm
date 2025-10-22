@@ -20,12 +20,12 @@ All crate names now match Elixir expectations with `*_engine` naming:
 
 Changed `skip_compilation?: true` → `skip_compilation?: false` for ALL engines:
 
-- ✅ [architecture_engine.ex:25](singularity_app/lib/singularity/architecture_engine.ex#L25)
-- ✅ [code_engine.ex:16](singularity_app/lib/singularity/code_engine.ex#L16)
-- ✅ [quality_engine.ex:17](singularity_app/lib/singularity/quality_engine.ex#L17)
-- ✅ [prompt_engine.ex:357](singularity_app/lib/singularity/prompt_engine.ex#L357)
-- ✅ [parser_engine.ex:14](singularity_app/lib/singularity/parser_engine.ex#L14)
-- ✅ [embedding_engine.ex:57](singularity_app/lib/singularity/embedding_engine.ex#L57)
+- ✅ [architecture_engine.ex:25](singularity/lib/singularity/architecture_engine.ex#L25)
+- ✅ [code_engine.ex:16](singularity/lib/singularity/code_engine.ex#L16)
+- ✅ [quality_engine.ex:17](singularity/lib/singularity/quality_engine.ex#L17)
+- ✅ [prompt_engine.ex:357](singularity/lib/singularity/prompt_engine.ex#L357)
+- ✅ [parser_engine.ex:14](singularity/lib/singularity/parser_engine.ex#L14)
+- ✅ [embedding_engine.ex:57](singularity/lib/singularity/embedding_engine.ex#L57)
 
 **All NIFs now compile at build time!**
 
@@ -37,7 +37,7 @@ Deleted engines 7 & 8 (were Elixir-only, not Rust NIFs):
 
 ### 4. Created Unified NIF Loader
 
-**New Module**: [Singularity.Engine.NifLoader](singularity_app/lib/singularity/engine/nif_loader.ex)
+**New Module**: [Singularity.Engine.NifLoader](singularity/lib/singularity/engine/nif_loader.ex)
 
 **Purpose**: Centralized NIF monitoring and health checks
 
@@ -80,11 +80,11 @@ iex> NifLoader.print_status()
 
 ### 5. Automatic Startup Logging
 
-**New Module**: [Singularity.Engine.NifStatus](singularity_app/lib/singularity/engine/nif_status.ex)
+**New Module**: [Singularity.Engine.NifStatus](singularity/lib/singularity/engine/nif_status.ex)
 
 **Purpose**: Logs NIF status on application startup
 
-**Added to supervision tree** in [application.ex:69](singularity_app/lib/singularity/application.ex#L69):
+**Added to supervision tree** in [application.ex:69](singularity/lib/singularity/application.ex#L69):
 
 ```elixir
 # Layer 7: Startup Tasks - One-time tasks that run and exit
@@ -152,19 +152,19 @@ To clarify the different coordination modules:
 - **Purpose**: Metadata registry for engine capabilities
 - **What**: Lists available engines and their features
 - **Does NOT**: Load NIFs (just introspects modules)
-- **File**: [engine/registry.ex](singularity_app/lib/singularity/engine/registry.ex)
+- **File**: [engine/registry.ex](singularity/lib/singularity/engine/registry.ex)
 
 ### 2. Engine.NifLoader - NIF Health Monitoring (NEW!)
 - **Purpose**: Centralized NIF health checks and status
 - **What**: Monitors which NIFs are loaded and responding
 - **Does NOT**: Load NIFs (Rustler does that)
-- **File**: [engine/nif_loader.ex](singularity_app/lib/singularity/engine/nif_loader.ex)
+- **File**: [engine/nif_loader.ex](singularity/lib/singularity/engine/nif_loader.ex)
 
 ### 3. EngineCentralHub - NATS Communication
 - **Purpose**: Sends engine results to central_cloud via NATS
 - **What**: Messaging hub for intelligence sharing
 - **Does NOT**: Load NIFs or manage engines
-- **File**: [engine_central_hub.ex](singularity_app/lib/singularity/engine_central_hub.ex)
+- **File**: [engine_central_hub.ex](singularity/lib/singularity/engine_central_hub.ex)
 
 ## Usage Examples
 

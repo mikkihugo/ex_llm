@@ -8,12 +8,12 @@ echo ""
 
 echo "1. Checking modified Elixir files exist..."
 FILES=(
-  "singularity_app/lib/singularity/bootstrap/code_quality_enforcer.ex"
-  "singularity_app/lib/singularity/code/patterns/pattern_miner.ex"
-  "singularity_app/lib/singularity/agents/cost_optimized_agent.ex"
-  "singularity_app/lib/singularity/planning/story_decomposer.ex"
-  "singularity_app/lib/singularity/conversation/chat_conversation_agent.ex"
-  "singularity_app/lib/singularity/todos/todo_worker_agent.ex"
+  "singularity/lib/singularity/bootstrap/code_quality_enforcer.ex"
+  "singularity/lib/singularity/code/patterns/pattern_miner.ex"
+  "singularity/lib/singularity/agents/cost_optimized_agent.ex"
+  "singularity/lib/singularity/planning/story_decomposer.ex"
+  "singularity/lib/singularity/conversation/chat_conversation_agent.ex"
+  "singularity/lib/singularity/todos/todo_worker_agent.ex"
 )
 
 for file in "${FILES[@]}"; do
@@ -53,7 +53,7 @@ done
 
 echo ""
 echo "3. Compiling Elixir code..."
-cd singularity_app
+cd singularity
 if mix compile; then
   echo "  ✓ Compilation successful!"
 else

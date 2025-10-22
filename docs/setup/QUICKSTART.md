@@ -13,7 +13,7 @@ Run Singularity locally with Mix. This guide reflects the current codebase (Elix
 
 ```bash
 git clone <repo-url>
-cd singularity/singularity_app
+cd singularity/singularity
 
 # Get deps for Elixir and Gleam
 mix setup

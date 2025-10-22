@@ -108,7 +108,7 @@ Implemented a complete database-first tool architecture where:
 2. `src/tools/heuristic-capability-scorer.ts` - Scoring for new models
 3. `src/providers/codex.ts` - Removed redundant models, made tools opt-in
 
-### Elixir Side (singularity_app)
+### Elixir Side (singularity)
 
 **Created:**
 1. `lib/singularity/tools/database_tools_executor.ex` - Main tool executor GenServer

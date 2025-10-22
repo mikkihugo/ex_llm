@@ -85,7 +85,7 @@ The path is now implicit - Rustler uses the symlink at `native/embedding_engine`
 
 ### Symlink Structure
 ```
-singularity_app/native/embedding_engine → ../../rust-central/embedding_engine/
+singularity/native/embedding_engine → ../../rust-central/embedding_engine/
 ```
 
 ### Line Counts
@@ -127,7 +127,7 @@ Keep it temporarily for verification, archive later after confirming everything 
 
 ## Testing Checklist
 
-- [ ] Compile singularity_app with new embedding engine
+- [ ] Compile singularity with new embedding engine
 - [ ] Test embed_batch with sample texts
 - [ ] Test embed_single with sample text
 - [ ] Test preload_models with [:jina_v3, :qodo_embed]

@@ -186,7 +186,7 @@ SQL
 
 # Run migrations
 echo "🔄 Running database migrations..."
-cd singularity_app
+cd singularity
 mix ecto.migrate
 cd ..
 

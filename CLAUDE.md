@@ -84,7 +84,7 @@ direnv allow
 ./scripts/setup-database.sh  # Creates 'singularity' DB (main) and 'central_services' DB (central_cloud)
 
 # 3. Install dependencies
-cd singularity_app
+cd singularity
 mix setup  # Installs Elixir + Gleam deps
 
 # 4. Import knowledge artifacts (JSON → PostgreSQL)
@@ -93,13 +93,13 @@ moon run templates_data:embed-all  # Generates embeddings
 ```
 
 **Note:** Uses **TWO databases**:
-1. **`singularity`** - Main application (singularity_app) - shared across dev/test/prod
+1. **`singularity`** - Main application (singularity) - shared across dev/test/prod
    - Dev: Direct access
    - Test: Sandboxed transactions (Ecto.Sandbox)
    - Prod: Same DB (internal tooling, no separation needed)
 2. **`central_services`** - Central_cloud application - separate, independent database
    - Used by: Framework Learning Agent, Package Intelligence, Knowledge Cache
-   - Completely separate from singularity_app database
+   - Completely separate from singularity database
 
 ### Running the Application
 ```bash
@@ -111,7 +111,7 @@ moon run templates_data:embed-all  # Generates embeddings
 nats-server -js
 
 # Terminal 2: Start Elixir app
-cd singularity_app
+cd singularity
 mix phx.server  # Runs on port 4000
 
 # Stop all services
@@ -120,7 +120,7 @@ mix phx.server  # Runs on port 4000
 
 ### Testing
 ```bash
-cd singularity_app
+cd singularity
 mix test                    # Run tests
 mix test path/to/test.exs  # Run single test file
 mix test.ci                 # Run with coverage
@@ -129,7 +129,7 @@ mix coverage                # Generate HTML coverage report
 
 ### Code Quality
 ```bash
-cd singularity_app
+cd singularity
 mix quality  # Runs format, credo, dialyzer, sobelow, deps.audit
 mix format   # Format code
 mix credo --strict  # Linting
@@ -143,7 +143,7 @@ mix sobelow --exit-on-warning  # Security analysis
 nix build .#singularity-integrated
 
 # Build release (rarely needed for internal tooling)
-cd singularity_app
+cd singularity
 MIX_ENV=prod mix release
 
 # Usually run directly in Nix shell instead!
@@ -165,13 +165,13 @@ cargo audit
 
 ### Core Modules
 
-**Orchestration Layer** (`singularity_app/lib/singularity/`)
+**Orchestration Layer** (`singularity/lib/singularity/`)
 - `application.ex`: Main OTP application supervisor
 - `nats_orchestrator.ex`: NATS messaging integration, handles AI provider requests
 - `agent.ex` + `agent_supervisor.ex`: Agent lifecycle management
 
 **AI/LLM Integration**
-- `singularity_app/lib/singularity/llm/`: Provider abstraction for Claude, Gemini, OpenAI, Copilot
+- `singularity/lib/singularity/llm/`: Provider abstraction for Claude, Gemini, OpenAI, Copilot
 - **Model Selection**: Multi-dimensional capability-based ranking (see [MODEL_CAPABILITY_MATRIX.md](MODEL_CAPABILITY_MATRIX.md))
 - **NATS-based LLM calls**: ALL Elixir code uses NATS (no direct HTTP to LLM APIs)
 - MCP (Model Context Protocol) federation via `hermes_mcp`
@@ -282,7 +282,7 @@ Uses PostgreSQL with:
 
 **Setup:** Uses `mix_gleam` for seamless Elixir + Gleam compilation.
 
-Gleam modules in `singularity_app/src/`:
+Gleam modules in `singularity/src/`:
 - `singularity/htdag.gleam`: Hierarchical temporal DAG for task decomposition
 - `singularity/rule_engine.gleam`: Confidence-based rule evaluation
 - `seed/improver.gleam`: Agent improvement logic
@@ -321,7 +321,7 @@ fn my_function(arg: String) -> String
 
 ## Key Files & Directories
 
-- `singularity_app/` - Main Elixir/Phoenix application
+- `singularity/` - Main Elixir/Phoenix application
 - `rust/` - Rust components (parsers, analysis tools) ✅ **CLEAN**
 - `rust_global/package_registry/` - Global external package analysis ✅ **CLEAN**
 - `llm-server/` - TypeScript AI provider server (Bun)
@@ -349,7 +349,7 @@ Optional (with defaults):
 
 ### Elixir/Gleam compilation issues
 ```bash
-cd singularity_app
+cd singularity
 mix clean
 mix deps.clean --all
 mix setup
@@ -797,13 +797,13 @@ moon run templates_data:stats          # Usage statistics
 **Two independent databases:**
 
 #### 1. `singularity` - Main Application Database
-Used by: `singularity_app`
+Used by: `singularity`
 
 - **Dev:** Direct access
 - **Test:** Sandboxed (Ecto.Adapters.SQL.Sandbox)
 - **Prod:** Same DB (internal tooling, no isolation needed)
 
-**Why single DB for singularity_app?**
+**Why single DB for singularity?**
 - Internal use only (no multi-tenancy)
 - Learning across environments (dev experiments → test validation)
 - Simpler (one connection, one place for knowledge)
@@ -811,7 +811,7 @@ Used by: `singularity_app`
 #### 2. `central_services` - Central_Cloud Database
 Used by: `central_cloud` application
 
-- **Independent:** Completely separate from singularity_app
+- **Independent:** Completely separate from singularity
 - **Purpose:** Package Intelligence, Framework Learning, Knowledge Cache
 - **Why separate?**
   - Different deployment model (can run standalone)
@@ -822,7 +822,7 @@ Used by: `central_cloud` application
 ```bash
 nix develop
 ./scripts/setup-database.sh  # Creates BOTH 'singularity' AND 'central_services' DBs
-cd singularity_app && mix knowledge.migrate  # Import JSONs to singularity DB
+cd singularity && mix knowledge.migrate  # Import JSONs to singularity DB
 cd ../central_cloud && mix ecto.create && mix ecto.migrate  # Setup central_cloud DB
 ```
 
@@ -850,7 +850,7 @@ Singularity uses a **layered supervision tree** with nested supervisors for bett
 The application supervision tree is organized into 6 layers:
 
 ```elixir
-# singularity_app/lib/singularity/application.ex
+# singularity/lib/singularity/application.ex
 
 children = [
   # Layer 1: Foundation - Database and metrics MUST start first

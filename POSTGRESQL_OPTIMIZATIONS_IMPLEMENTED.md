@@ -331,7 +331,7 @@ These were identified in the analysis but NOT implemented (low priority or highe
 If needed, rollback both migrations:
 
 ```bash
-cd singularity_app
+cd singularity
 mix ecto.rollback --step 2
 ```
 

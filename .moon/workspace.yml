@@ -7,7 +7,7 @@ projects:
   - 'llm-server'
   - 'centralcloud'
   - 'seed_agent'
-  - 'singularity_app'
+  - 'singularity'
   - 'templates_data'
   # - 'vendor/codex'  # Codex fork for builtin tool filtering (temporarily disabled for compilation)
 

@@ -4,7 +4,7 @@
 # Run with: elixir test_package_search.exs
 
 # Add the lib directory to the path
-Code.prepend_path("singularity_app/lib")
+Code.prepend_path("singularity/lib")
 
 # Test the package search tool
 IO.puts("🧪 Testing Package Search Tool")

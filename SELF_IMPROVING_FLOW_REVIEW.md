@@ -134,7 +134,7 @@ All events are emitted for observability:
 - `Singularity.Knowledge.ArtifactStore` - Quality templates and code patterns
 - `Singularity.CodeSearch` - RAG for finding similar code examples
 
-**File Location:** [htdag_auto_bootstrap.ex](singularity_app/lib/singularity/planning/htdag_auto_bootstrap.ex)
+**File Location:** [htdag_auto_bootstrap.ex](singularity/lib/singularity/planning/htdag_auto_bootstrap.ex)
 
 ---
 
@@ -209,7 +209,7 @@ Agent Continues (Idle → Observing → ...)
 
 **Backoff:** After failure, wait 10 cycles before next attempt
 
-**File:** [decider.ex](singularity_app/lib/singularity/autonomy/decider.ex)
+**File:** [decider.ex](singularity/lib/singularity/autonomy/decider.ex)
 
 #### Autonomy Planner
 **Purpose:** Generate new code for agent improvement
@@ -228,7 +228,7 @@ Agent Continues (Idle → Observing → ...)
   - `PatternMiner` - Learned best practices
   - `Analyzer` - Refactoring needs
 
-**File:** [planner.ex](singularity_app/lib/singularity/autonomy/planner.ex)
+**File:** [planner.ex](singularity/lib/singularity/autonomy/planner.ex)
 
 #### Autonomy Limiter
 **Purpose:** Rate limiting and budget control
@@ -238,7 +238,7 @@ Agent Continues (Idle → Observing → ...)
 - Prevents thrashing
 - Budget-aware (tracks LLM costs)
 
-**File:** [limiter.ex](singularity_app/lib/singularity/autonomy/limiter.ex)
+**File:** [limiter.ex](singularity/lib/singularity/autonomy/limiter.ex)
 
 #### Hot Reload Manager
 **Purpose:** Dynamic code compilation and activation
@@ -249,7 +249,7 @@ Agent Continues (Idle → Observing → ...)
 - Rollback capability (stores previous code)
 - Validation period (30s default)
 
-**File:** [hot_reload.ex](singularity_app/lib/singularity/hot_reload.ex)
+**File:** [hot_reload.ex](singularity/lib/singularity/hot_reload.ex)
 
 ### Agent State Machine
 
@@ -334,7 +334,7 @@ SelfImprovingAgent.improve("agent-001", payload)
 
 ### File Location
 
-[self_improving_agent.ex](singularity_app/lib/singularity/agents/self_improving_agent.ex)
+[self_improving_agent.ex](singularity/lib/singularity/agents/self_improving_agent.ex)
 
 ---
 
@@ -551,12 +551,12 @@ All events are tracked in PostgreSQL (`executions` table) via `FlowTracker`.
 - Review suggested fixes (dry-run mode)
 
 **Self-Improving Agent:**
-- Comprehensive test suite: [agent_flow_test.exs](singularity_app/test/singularity/agent_flow_test.exs)
+- Comprehensive test suite: [agent_flow_test.exs](singularity/test/singularity/agent_flow_test.exs)
 - 23 tests covering all flows
 - Manual testing: Force improvement via API
 
 ```bash
-cd singularity_app
+cd singularity
 mix test test/singularity/agent_flow_test.exs
 ```
 
@@ -688,5 +688,5 @@ GenServer.call(SelfImprovingAgent.via_tuple("agent-001"), :state)
 - [HTDAG_QUICK_START.md](HTDAG_QUICK_START.md) - HTDAG getting started
 
 **Files Changed:**
-- [htdag_auto_bootstrap.ex:115](singularity_app/lib/singularity/planning/htdag_auto_bootstrap.ex#L115) - `dry_run: true` (default changed)
-- [htdag_auto_bootstrap.ex:173](singularity_app/lib/singularity/planning/htdag_auto_bootstrap.ex#L173) - `Keyword.get(config, :dry_run, true)`
+- [htdag_auto_bootstrap.ex:115](singularity/lib/singularity/planning/htdag_auto_bootstrap.ex#L115) - `dry_run: true` (default changed)
+- [htdag_auto_bootstrap.ex:173](singularity/lib/singularity/planning/htdag_auto_bootstrap.ex#L173) - `Keyword.get(config, :dry_run, true)`

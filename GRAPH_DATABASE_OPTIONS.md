@@ -487,7 +487,7 @@ cd age && make install
 
 **Create migration to enable AGE:**
 ```bash
-cd singularity_app
+cd singularity
 mix ecto.gen.migration enable_apache_age
 ```
 

@@ -142,8 +142,8 @@ SQL
 echo ""
 
 # Run Ecto migrations
-echo -e "${GREEN}🔄 Running Ecto migrations for singularity_app...${NC}"
-cd "$PROJECT_ROOT/singularity_app"
+echo -e "${GREEN}🔄 Running Ecto migrations for singularity...${NC}"
+cd "$PROJECT_ROOT/singularity"
 
 mix ecto.migrate
 

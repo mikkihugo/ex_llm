@@ -7,7 +7,7 @@ set -e
 echo "🧪 Testing T5 Training Setup"
 
 # Check if we're in the right directory
-if [ ! -f "singularity_app/mix.exs" ]; then
+if [ ! -f "singularity/mix.exs" ]; then
     echo "❌ Please run this script from the singularity project root"
     exit 1
 fi
@@ -15,7 +15,7 @@ fi
 echo "📦 Installing Elixir dependencies..."
 
 # Install Elixir dependencies
-cd singularity_app
+cd singularity
 
 # Check if we have Elixir available
 if ! command -v elixir &> /dev/null; then

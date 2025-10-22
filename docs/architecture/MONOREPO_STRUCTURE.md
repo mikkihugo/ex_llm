@@ -11,7 +11,7 @@ singularity/
 │  └─ toolchain.yml          # Shared tooling (rustc, mix, bun)
 │
 ├─ apps/                     # Applications (runnable)
-│  ├─ singularity_app/       # Main Elixir/Phoenix app
+│  ├─ singularity/       # Main Elixir/Phoenix app
 │  └─ llm-server/             # AI provider TypeScript server
 │
 ├─ libs/                     # Libraries (reusable)
@@ -41,7 +41,7 @@ All projects registered in `.moon/workspace.yml`:
 
 | Project | Type | Language | Description |
 |---------|------|----------|-------------|
-| `singularity_app` | application | elixir | Main Elixir app with Phoenix |
+| `singularity` | application | elixir | Main Elixir app with Phoenix |
 | `llm-server` | application | typescript | AI provider integration server |
 | `rust` | library | rust | Rust workspace root |
 | `rust/embedding_engine` | library | rust | Qodo-Embed-1 + Jina v3 NIF |
@@ -81,7 +81,7 @@ members = [
 Currently standalone, future: convert to umbrella:
 
 ```
-singularity_app/
+singularity/
 ├─ apps/
 │  ├─ singularity/       # Core app
 │  ├─ singularity_web/   # Phoenix web
@@ -108,7 +108,7 @@ singularity_app/
 - `/shared/node_modules/` - Shared Node deps
 
 ### Project-specific (Not shared)
-- `singularity_app/_build/` - Dev builds
+- `singularity/_build/` - Dev builds
 - `rust/target/` - Rust workspace target
 - `llm-server/node_modules/` - If not using workspaces
 
@@ -140,7 +140,7 @@ moon run rust/embedding_engine:build
 moon run rust:test
 
 # Run Elixir app
-moon run singularity_app:dev
+moon run singularity:dev
 ```
 
 ## Removed Projects
@@ -166,7 +166,7 @@ moon run :install  # If moon has install tasks
 ./start-all.sh
 
 # Or individually
-moon run singularity_app:dev
+moon run singularity:dev
 moon run llm-server:dev
 ```
 
@@ -187,7 +187,7 @@ moon run rust/embedding_engine:test
 moon run :build
 
 # Production build
-MIX_ENV=prod moon run singularity_app:build
+MIX_ENV=prod moon run singularity:build
 ```
 
 ## CI/CD
@@ -233,22 +233,22 @@ Moon caches task outputs in `.moon/cache/`:
 
 ### Gleam via mix_gleam
 
-**NOT a separate moon project!** Gleam code lives in `singularity_app/src/` and compiles with Elixir.
+**NOT a separate moon project!** Gleam code lives in `singularity/src/` and compiles with Elixir.
 
 ```yaml
 # ❌ WRONG - Don't do this
 projects:
-  - 'singularity_app'
+  - 'singularity'
   - 'gleam_libs'  # Separate Gleam project
 
-# ✅ CORRECT - Gleam is part of singularity_app
+# ✅ CORRECT - Gleam is part of singularity
 projects:
-  - 'singularity_app'  # Includes both Elixir AND Gleam
+  - 'singularity'  # Includes both Elixir AND Gleam
 ```
 
 **Build:**
 ```bash
-cd singularity_app
+cd singularity
 mix compile  # Compiles both Elixir (.ex) and Gleam (.gleam)
 ```
 
@@ -268,7 +268,7 @@ See [docs/architecture/GLEAM_INTEGRATION.md](docs/architecture/GLEAM_INTEGRATION
 Rust crates that produce NIFs (like `embedding_engine`) are loaded by Elixir:
 
 ```elixir
-# singularity_app/lib/singularity/embedding_engine.ex
+# singularity/lib/singularity/embedding_engine.ex
 use Rustler, otp_app: :singularity, crate: "embedding_engine"
 ```
 
@@ -278,7 +278,7 @@ use Rustler, otp_app: :singularity, crate: "embedding_engine"
 moon run rust/embedding_engine:build
 
 # Then Elixir loads the .so
-cd singularity_app
+cd singularity
 mix compile
 ```
 

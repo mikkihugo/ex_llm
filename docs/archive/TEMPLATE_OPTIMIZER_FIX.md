@@ -5,8 +5,8 @@
 The `NatsOrchestrator` was calling `TemplateOptimizer.select_template/1` with a map parameter, but only `get_best_template/2` existed, causing an API mismatch.
 
 ### Location
-- **File**: `/home/mhugo/code/singularity/singularity_app/lib/singularity/detection/template_optimizer.ex`
-- **Caller**: `/home/mhugo/code/singularity/singularity_app/lib/singularity/interfaces/nats/orchestrator.ex` (lines 90, 154)
+- **File**: `/home/mhugo/code/singularity/singularity/lib/singularity/detection/template_optimizer.ex`
+- **Caller**: `/home/mhugo/code/singularity/singularity/lib/singularity/interfaces/nats/orchestrator.ex` (lines 90, 154)
 
 ### Original Issue
 ```elixir

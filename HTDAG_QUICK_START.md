@@ -19,7 +19,7 @@ children = [
 ### 2. Start the Server
 
 ```bash
-cd singularity_app
+cd singularity
 iex -S mix phx.server
 ```
 
@@ -254,7 +254,7 @@ The system fixes issues in this order:
 You can add your own detection rules in `HTDAGLearner.identify_issues/1`:
 
 ```elixir
-# In singularity_app/lib/singularity/planning/htdag_learner.ex
+# In singularity/lib/singularity/planning/htdag_learner.ex
 defp identify_issues(knowledge) do
   [
     check_broken_dependencies(knowledge),

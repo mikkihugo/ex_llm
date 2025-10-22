@@ -29,7 +29,7 @@ nix develop  # or: direnv allow
 
 ### Step 2: Generate Secrets (1 min)
 ```bash
-cd singularity_app
+cd singularity
 SECRET=$(mix phx.gen.secret)
 cat > ../.env <<EOF
 SECRET_KEY_BASE=$SECRET
@@ -44,7 +44,7 @@ cd ..
 ### Step 3: Install Dependencies (10 min)
 ```bash
 # Elixir
-cd singularity_app
+cd singularity
 mix deps.get
 mix compile
 
@@ -130,14 +130,14 @@ gcloud auth application-default login
 
 ### Import Knowledge Base (10 min)
 ```bash
-cd singularity_app
+cd singularity
 mix knowledge.migrate
 moon run templates_data:embed-all
 ```
 
 ### Test AI Features (5 min)
 ```bash
-cd singularity_app
+cd singularity
 iex -S mix
 ```
 ```elixir
@@ -178,7 +178,7 @@ ls -lh logs/
 
 ### Update Code
 ```bash
-cd singularity_app
+cd singularity
 mix deps.get
 mix compile
 cd ../llm-server
@@ -209,7 +209,7 @@ If everything breaks:
 ./stop-all.sh
 
 # 2. Clean build artifacts
-cd singularity_app
+cd singularity
 mix clean
 rm -rf _build deps
 cd ../llm-server
@@ -222,7 +222,7 @@ nix develop  # Re-enter
 
 # 4. Re-run setup
 ./scripts/setup-database.sh
-cd singularity_app
+cd singularity
 mix deps.get
 mix compile
 cd ../llm-server

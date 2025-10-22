@@ -25,22 +25,22 @@ Added to `agent_behavior_confidence_rules` table:
 
 ### 2. Code Changes
 
-#### `Rule` Schema ([rule.ex](singularity_app/lib/singularity/execution/autonomy/rule.ex))
+#### `Rule` Schema ([rule.ex](singularity/lib/singularity/execution/autonomy/rule.ex))
 - Added `execution_type` and `lua_script` fields
 - Validation: Lua rules must have script, pattern rules must have patterns
 - Clean changeset handling for both types
 
-#### `RuleLoader` ([rule_loader.ex](singularity_app/lib/singularity/execution/autonomy/rule_loader.ex))
+#### `RuleLoader` ([rule_loader.ex](singularity/lib/singularity/execution/autonomy/rule_loader.ex))
 - Updated `to_gleam_rule/1` to include `execution_type` and conditional fields
 - Lua rules get `:lua_script`, pattern rules get `:patterns`
 
-#### `RuleEngineCore` ([rule_engine_core.ex](singularity_app/lib/singularity/execution/autonomy/rule_engine_core.ex))
+#### `RuleEngineCore` ([rule_engine_core.ex](singularity/lib/singularity/execution/autonomy/rule_engine_core.ex))
 - Routes execution based on `execution_type`
 - New `execute_lua_rule/2` function
 - Parses Lua results: `{decision, confidence, reasoning}`
 - Error handling for Lua execution failures
 
-#### `LuaRunner` ([lua_runner.ex](singularity_app/lib/singularity/lua_runner.ex))
+#### `LuaRunner` ([lua_runner.ex](singularity/lib/singularity/lua_runner.ex))
 - New `execute_rule/2` function for rule engine
 - Injects `context` as global variable (not `_CONTEXT` like prompts)
 - Returns map with decision/confidence/reasoning
@@ -374,13 +374,13 @@ From [LUA_EXPANSION_OPPORTUNITIES.md](LUA_EXPANSION_OPPORTUNITIES.md):
 ## Files Modified
 
 ### Core Implementation
-- [singularity_app/lib/singularity/execution/autonomy/rule.ex](singularity_app/lib/singularity/execution/autonomy/rule.ex)
-- [singularity_app/lib/singularity/execution/autonomy/rule_loader.ex](singularity_app/lib/singularity/execution/autonomy/rule_loader.ex)
-- [singularity_app/lib/singularity/execution/autonomy/rule_engine_core.ex](singularity_app/lib/singularity/execution/autonomy/rule_engine_core.ex)
-- [singularity_app/lib/singularity/lua_runner.ex](singularity_app/lib/singularity/lua_runner.ex)
+- [singularity/lib/singularity/execution/autonomy/rule.ex](singularity/lib/singularity/execution/autonomy/rule.ex)
+- [singularity/lib/singularity/execution/autonomy/rule_loader.ex](singularity/lib/singularity/execution/autonomy/rule_loader.ex)
+- [singularity/lib/singularity/execution/autonomy/rule_engine_core.ex](singularity/lib/singularity/execution/autonomy/rule_engine_core.ex)
+- [singularity/lib/singularity/lua_runner.ex](singularity/lib/singularity/lua_runner.ex)
 
 ### Database
-- [singularity_app/priv/repo/migrations/20251013235148_add_lua_support_to_rules.exs](singularity_app/priv/repo/migrations/20251013235148_add_lua_support_to_rules.exs)
+- [singularity/priv/repo/migrations/20251013235148_add_lua_support_to_rules.exs](singularity/priv/repo/migrations/20251013235148_add_lua_support_to_rules.exs)
 
 ### Examples
 - [templates_data/rules/epic_wsjf_validation.lua](templates_data/rules/epic_wsjf_validation.lua)

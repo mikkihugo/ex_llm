@@ -90,7 +90,7 @@ Even with optimizations, some things take time on first run:
 
 ### 3. Mix Dependencies (Per Project)
 - **What**: Elixir's package manager downloads dependencies
-- **When**: First `mix deps.get` in singularity_app
+- **When**: First `mix deps.get` in singularity
 - **Duration**: 1-3 minutes
 - **Cached**: Via `.mix` and `.hex` directories
 

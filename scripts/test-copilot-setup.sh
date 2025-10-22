@@ -158,25 +158,25 @@ echo ""
 echo "4. Checking Project Structure"
 echo "------------------------------"
 
-# Check for singularity_app directory
-if [ -d "singularity_app" ]; then
-    success "singularity_app directory exists"
+# Check for singularity directory
+if [ -d "singularity" ]; then
+    success "singularity directory exists"
     
     # Check for mix.exs
-    if [ -f "singularity_app/mix.exs" ]; then
-        success "mix.exs found in singularity_app"
+    if [ -f "singularity/mix.exs" ]; then
+        success "mix.exs found in singularity"
     else
-        error "mix.exs not found in singularity_app"
+        error "mix.exs not found in singularity"
     fi
     
     # Check for mix.lock
-    if [ -f "singularity_app/mix.lock" ]; then
+    if [ -f "singularity/mix.lock" ]; then
         success "mix.lock found (for dependency caching)"
     else
         warning "mix.lock not found (cache key will not work)"
     fi
 else
-    error "singularity_app directory not found"
+    error "singularity directory not found"
 fi
 
 # Check for llm-server directory
@@ -205,9 +205,9 @@ echo "5. Testing Dependency Installation Steps"
 echo "-----------------------------------------"
 
 # Test mix deps.get (if Elixir is available)
-if command -v mix &> /dev/null && [ -d "singularity_app" ]; then
-    info "Testing 'mix deps.get' in singularity_app..."
-    cd singularity_app
+if command -v mix &> /dev/null && [ -d "singularity" ]; then
+    info "Testing 'mix deps.get' in singularity..."
+    cd singularity
     
     timeout 60 mix deps.get 2>&1 | tee /tmp/mix-deps.log
     MIX_EXIT_CODE=${PIPESTATUS[0]}
@@ -223,7 +223,7 @@ if command -v mix &> /dev/null && [ -d "singularity_app" ]; then
     fi
     cd ..
 else
-    warning "Skipping mix deps.get test (mix not available or singularity_app missing)"
+    warning "Skipping mix deps.get test (mix not available or singularity missing)"
 fi
 
 # Test bun install (if Bun is available)

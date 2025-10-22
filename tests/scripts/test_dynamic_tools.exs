@@ -1,8 +1,8 @@
 #!/usr/bin/env elixir
 
 # Test dynamic tool limits
-Code.require_file("singularity_app/lib/singularity/tools/tool_selector.ex")
-Code.require_file("singularity_app/lib/singularity/tools/agent_roles.ex")
+Code.require_file("singularity/lib/singularity/tools/tool_selector.ex")
+Code.require_file("singularity/lib/singularity/tools/agent_roles.ex")
 
 alias Singularity.Tools.ToolSelector
 

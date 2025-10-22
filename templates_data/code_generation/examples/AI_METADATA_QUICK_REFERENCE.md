@@ -438,7 +438,7 @@ rg -U '@moduledoc.*```yaml.*?```' --multiline lib/
 
 See these modules for full examples:
 - `templates_data/code_generation/examples/elixir_ai_optimized_example.ex` - Complete example
-- `singularity_app/lib/singularity/llm/service.ex` - Real production module
+- `singularity/lib/singularity/llm/service.ex` - Real production module
 
 ---
 

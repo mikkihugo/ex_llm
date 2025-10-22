@@ -7,7 +7,7 @@ set -e
 echo "🚀 Setting up Rust/Elixir T5 Training Pipeline"
 
 # Check if we're in the right directory
-if [ ! -f "singularity_app/mix.exs" ]; then
+if [ ! -f "singularity/mix.exs" ]; then
     echo "❌ Please run this script from the singularity project root"
     exit 1
 fi
@@ -45,7 +45,7 @@ fi
 createdb singularity 2>/dev/null || true
 
 # Run migrations
-cd singularity_app
+cd singularity
 mix ecto.migrate
 
 echo "📊 Preparing training data from database..."

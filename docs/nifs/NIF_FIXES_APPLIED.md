@@ -124,7 +124,7 @@ These issues were identified in the audit but require more extensive changes:
 
 ### 🟡 Issue: SemanticEngine/EmbeddingEngine Conflict
 
-**Location:** `singularity_app/lib/singularity/semantic_engine.ex`
+**Location:** `singularity/lib/singularity/semantic_engine.ex`
 
 **Problem:** 
 - SemanticEngine expects `:semantic_engine` crate
@@ -178,7 +178,7 @@ These issues were identified in the audit but require more extensive changes:
 ### Compilation Command
 ```bash
 # Recompile NIFs
-cd singularity_app
+cd singularity
 mix deps.compile knowledge_engine --force
 mix deps.compile quality_engine --force
 
@@ -194,21 +194,21 @@ mix deps.compile
 
 ### 1. Check Compilation
 ```bash
-cd singularity_app
+cd singularity
 mix compile
 # Should complete without errors
 ```
 
 ### 2. Test NIF Loading
 ```bash
-cd singularity_app
+cd singularity
 mix test test/singularity/nif_loading_test.exs
 # (Create test file if needed)
 ```
 
 ### 3. Run Application
 ```bash
-cd singularity_app
+cd singularity
 iex -S mix
 # Try calling NIF functions
 ```

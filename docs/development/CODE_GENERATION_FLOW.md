@@ -154,7 +154,7 @@ Three interconnected template systems work together to generate production-quali
              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ STEP 5: LLM Call (Elixir/Rust)                              │
-│ singularity_app/lib/singularity/llm/provider.ex             │
+│ singularity/lib/singularity/llm/provider.ex             │
 │                                                              │
 │ LLM.Provider.generate(optimized_prompt)                     │
 │   → Sends to Claude/GPT                                      │
@@ -175,7 +175,7 @@ Three interconnected template systems work together to generate production-quali
              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ STEP 6: Quality Enforcement (Elixir)                        │
-│ singularity_app/lib/singularity/quality_code_generator.ex   │
+│ singularity/lib/singularity/quality_code_generator.ex   │
 │                                                              │
 │ QualityCodeGenerator.generate(                              │
 │   task: "FastAPI CRUD API",                                 │
@@ -212,7 +212,7 @@ Three interconnected template systems work together to generate production-quali
              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ STEP 7: Code Validation & Formatting                        │
-│ singularity_app/lib/singularity/quality.ex                  │
+│ singularity/lib/singularity/quality.ex                  │
 │                                                              │
 │ Quality.validate(generated_code, language: "python")        │
 │   - Run linters (ruff, black)                               │
@@ -234,7 +234,7 @@ Three interconnected template systems work together to generate production-quali
              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ STEP 8: Store & Learn (Database)                            │
-│ singularity_app/priv/repo/migrations/                       │
+│ singularity/priv/repo/migrations/                       │
 │                                                              │
 │ 1. Store generated code:                                     │
 │    INSERT INTO code_fingerprints (                           │
@@ -339,7 +339,7 @@ rust/prompt_engine/src/
 
 ### 3. Quality Templates (Elixir)
 ```
-singularity_app/priv/code_quality_templates/
+singularity/priv/code_quality_templates/
 ├── elixir_production.json
 ├── rust_production.json
 ├── go_production.json

@@ -100,7 +100,7 @@ end
 - `templates_data/prompt_library/quality/extract-patterns.lua` (97 lines)
 
 ### Modified
-- `singularity_app/lib/singularity/bootstrap/code_quality_enforcer.ex`
+- `singularity/lib/singularity/bootstrap/code_quality_enforcer.ex`
   - Updated `@moduledoc` to document Lua scripts
   - Changed `generate_new_code/4` to use `Service.call_with_script`
   - Changed `extract_patterns/2` to use `Service.call_with_script`
@@ -231,7 +231,7 @@ Convert 61-line prompt:
 - `templates_data/prompt_library/quality/extract-patterns.lua` (97 lines)
 
 ### Modified Files
-- `singularity_app/lib/singularity/bootstrap/code_quality_enforcer.ex` (-211 lines)
+- `singularity/lib/singularity/bootstrap/code_quality_enforcer.ex` (-211 lines)
   - Removed functions:
     - `build_code_generation_prompt/1` (-142 lines)
     - `build_pattern_extraction_prompt/2` (-24 lines)

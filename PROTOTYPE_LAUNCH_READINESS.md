@@ -61,7 +61,7 @@ direnv allow
 
 ```bash
 # Elixir dependencies
-cd singularity_app
+cd singularity
 mix deps.get
 mix compile
 
@@ -76,7 +76,7 @@ Create `.env` file in project root:
 
 ```bash
 # REQUIRED - Phoenix
-SECRET_KEY_BASE=$(cd singularity_app && mix phx.gen.secret)
+SECRET_KEY_BASE=$(cd singularity && mix phx.gen.secret)
 DATABASE_URL=ecto://postgres:postgres@localhost/singularity
 
 # REQUIRED - AI Server
@@ -251,7 +251,7 @@ compilers: Mix.compilers(),
 
 **Workaround:** Keep disabled. Gleam modules exist but aren't compiled.
 
-**Impact:** Some features in `singularity_app/src/*.gleam` won't run
+**Impact:** Some features in `singularity/src/*.gleam` won't run
 
 ---
 
@@ -338,7 +338,7 @@ sudo apt-get install postgresql-17-postgis
 ### Services
 
 - [ ] NATS running (`pgrep -x nats-server`)
-- [ ] Elixir app compiled (`cd singularity_app && mix compile`)
+- [ ] Elixir app compiled (`cd singularity && mix compile`)
 - [ ] Elixir app running (`curl localhost:4000/health`)
 - [ ] AI server deps installed (`ls llm-server/node_modules`)
 - [ ] AI server running (`curl localhost:3000/health`)
@@ -351,7 +351,7 @@ sudo apt-get install postgresql-17-postgis
 
 ### Functionality
 
-- [ ] Database queries work (`cd singularity_app && iex -S mix`)
+- [ ] Database queries work (`cd singularity && iex -S mix`)
 - [ ] NATS messages work (check NATS connection in logs)
 - [ ] AI requests route properly (test via `/v1/chat/completions`)
 
@@ -370,7 +370,7 @@ nix develop
 ./scripts/setup-database.sh
 
 # 3. Generate secret (1 min)
-cd singularity_app
+cd singularity
 SECRET=$(mix phx.gen.secret)
 echo "SECRET_KEY_BASE=$SECRET" > ../.env
 echo "DATABASE_URL=ecto://postgres:postgres@localhost/singularity" >> ../.env
@@ -392,7 +392,7 @@ curl http://localhost:4000/health
 curl http://localhost:3000/health
 
 # 7. Test Elixir (5 min)
-cd singularity_app
+cd singularity
 iex -S mix
 # iex> Singularity.Knowledge.ArtifactStore.stats()
 ```
@@ -407,7 +407,7 @@ iex -S mix
 
 1. **Import Knowledge Base** (10 min)
    ```bash
-   cd singularity_app
+   cd singularity
    mix knowledge.migrate
    moon run templates_data:embed-all
    ```
@@ -418,7 +418,7 @@ iex -S mix
 
 3. **Test AI Features** (5 min)
    ```bash
-   cd singularity_app
+   cd singularity
    iex -S mix
    # iex> Singularity.LLM.Service.chat("gemini-2.5-pro", [%{role: "user", content: "Hello"}])
    ```

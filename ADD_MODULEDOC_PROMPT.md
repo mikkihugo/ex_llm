@@ -267,7 +267,7 @@ alias Singularity.LLM.Service
 4. **Run validation:**
    ```bash
    # Compile to check for syntax errors
-   cd singularity_app
+   cd singularity
    mix compile
 
    # Let HTDAG Learner analyze

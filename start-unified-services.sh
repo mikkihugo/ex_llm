@@ -33,7 +33,7 @@ echo "✅ Consolidated detector started (PID: $DETECTOR_PID)"
 
 # Start Elixir application
 echo "⚡ Starting Elixir application..."
-cd singularity_app
+cd singularity
 mix phx.server &
 ELIXIR_PID=$!
 cd ..
@@ -65,5 +65,5 @@ echo "To stop all services:"
 echo "  pkill -f 'nats-server|consolidated_detector|mix phx.server|bun run dev'"
 echo ""
 echo "Logs:"
-echo "  tail -f singularity_app/log/dev.log"
+echo "  tail -f singularity/log/dev.log"
 echo "  tail -f llm-server/logs/llm-server.log"

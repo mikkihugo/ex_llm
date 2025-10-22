@@ -207,7 +207,7 @@ See **SYSTEM_FLOWS.md** for comprehensive Mermaid diagrams:
 
 **Run tests:**
 ```bash
-cd singularity_app
+cd singularity
 mix test test/singularity/agent_flow_test.exs
 ```
 

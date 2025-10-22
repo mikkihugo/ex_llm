@@ -5,7 +5,7 @@ Singularity uses **mix_gleam** for Gleam integration, NOT standalone Gleam.
 ## Architecture
 
 ```
-singularity_app/              # Elixir app
+singularity/              # Elixir app
 ├─ lib/                       # Elixir code
 │  └─ singularity/
 ├─ src/                       # Gleam code (compiled with Elixir)
@@ -120,12 +120,12 @@ pub fn process() {
 
 ## Moon Integration (mix_gleam)
 
-Since Gleam is part of `singularity_app`, it's already in moon:
+Since Gleam is part of `singularity`, it's already in moon:
 
 ```yaml
 # .moon/workspace.yml
 projects:
-  - 'singularity_app'  # Includes both Elixir AND Gleam
+  - 'singularity'  # Includes both Elixir AND Gleam
 ```
 
 **NOT separate projects** because mix_gleam compiles them together.
@@ -133,7 +133,7 @@ projects:
 ## File Organization
 
 ```
-singularity_app/
+singularity/
 ├─ lib/singularity/           # Elixir modules
 │  ├─ agent.ex
 │  ├─ code_store.ex
@@ -191,7 +191,7 @@ gleam_stdlib = "~> 0.65.0"
 **Don't do this in moon:**
 ```yaml
 projects:
-  - 'singularity_app'  # Elixir
+  - 'singularity'  # Elixir
   - 'gleam_htdag'      # ❌ Separate Gleam project
 ```
 
@@ -209,10 +209,10 @@ projects:
 
 ## Future: Multiple Gleam Libraries
 
-If you have **reusable Gleam libs**, keep them in `singularity_app/src/`:
+If you have **reusable Gleam libs**, keep them in `singularity/src/`:
 
 ```
-singularity_app/src/
+singularity/src/
 ├─ singularity/          # Main Gleam code
 │  ├─ htdag.gleam
 │  └─ rule_engine.gleam
@@ -228,9 +228,9 @@ All compiled together with `mix compile`.
 ## Summary
 
 **Gleam Structure:**
-- ✅ Gleam code in `singularity_app/src/`
+- ✅ Gleam code in `singularity/src/`
 - ✅ Compiled via mix_gleam
-- ✅ Part of singularity_app moon project
+- ✅ Part of singularity moon project
 - ✅ NOT separate moon projects
 - ❌ Currently disabled in mix.exs
 

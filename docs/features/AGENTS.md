@@ -184,7 +184,7 @@ gleam deps download      # Just Gleam deps
 ### Mix + Nix Quickstart (recommended)
 
 - Enter dev shell: `nix develop`
-- Fetch deps: `cd singularity_app && mix deps.get`
+- Fetch deps: `cd singularity && mix deps.get`
 - Compile (Gleam via mix_gleam): `mix compile`
 
 Notes:
@@ -197,7 +197,7 @@ Notes:
 ### File Organization
 
 ```
-singularity_app/
+singularity/
 ├── src/                      # Gleam source files
 │   ├── singularity/
 │   │   ├── htdag.gleam      # Task DAG

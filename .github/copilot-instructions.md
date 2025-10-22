@@ -16,7 +16,7 @@
 ## Project Languages
 
 This is a **polyglot codebase** using:
-- **Elixir** (primary) - Main application in `singularity_app/`
+- **Elixir** (primary) - Main application in `singularity/`
 - **Gleam** - BEAM-native functional language, compiles with Elixir
 - **Rust** - High-performance NIFs and services in `rust/` (architecture_engine, code_engine, parser_engine, etc.)
 - **TypeScript** - AI server in `llm-server/`
@@ -98,12 +98,12 @@ nats-server --version && pgrep -x nats-server
 
 ## Language-Specific Guidelines
 
-### Elixir Code (`singularity_app/`)
+### Elixir Code (`singularity/`)
 
 **File locations**:
-- Main app: `singularity_app/lib/singularity/`
-- Tests: `singularity_app/test/`
-- Migrations: `singularity_app/priv/repo/migrations/`
+- Main app: `singularity/lib/singularity/`
+- Tests: `singularity/test/`
+- Migrations: `singularity/priv/repo/migrations/`
 
 **Conventions**:
 - Use `snake_case` for files and functions
@@ -245,7 +245,7 @@ NATS JetStream runs automatically on port 4222. Data stored in `.nats/`.
 ### Run Elixir App
 
 ```bash
-cd singularity_app
+cd singularity
 mix deps.get
 mix phx.server
 ```
@@ -274,7 +274,7 @@ cargo test
 
 ```bash
 # Elixir tests
-cd singularity_app && mix test
+cd singularity && mix test
 
 # Rust tests
 cd rust && cargo test
@@ -419,7 +419,7 @@ This will automatically load the Nix environment in the integrated terminal.
 3. **Run tests frequently**
    ```bash
    # Elixir tests (fast feedback)
-   cd singularity_app && mix test
+   cd singularity && mix test
    
    # Rust tests (for Rust changes)
    cd rust/tool_doc_index && cargo test
@@ -473,7 +473,7 @@ This will automatically load the Nix environment in the integrated terminal.
 **Unit Tests** (fast, run often):
 ```bash
 # Elixir
-cd singularity_app && mix test
+cd singularity && mix test
 
 # Rust
 cd rust && cargo test --lib
@@ -485,7 +485,7 @@ cd llm-server && bun test
 **Integration Tests** (medium speed):
 ```bash
 # Requires NATS + PostgreSQL running
-cd singularity_app && mix test --only integration
+cd singularity && mix test --only integration
 
 # Rust integration tests
 cd rust && cargo test --test '*'
@@ -586,7 +586,7 @@ cargo build
 
 **Solution**:
 ```bash
-cd singularity_app
+cd singularity
 
 # Clear deps
 rm -rf deps _build

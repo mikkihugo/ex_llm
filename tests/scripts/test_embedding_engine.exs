@@ -3,8 +3,8 @@
 
 IO.puts("\n=== Embedding Engine Test ===\n")
 
-# Change to singularity_app directory
-File.cd!("singularity_app")
+# Change to singularity directory
+File.cd!("singularity")
 
 # Compile the NIF
 IO.puts("[1/5] Compiling Rust NIF...")

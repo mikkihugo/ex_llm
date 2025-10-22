@@ -26,7 +26,7 @@ The workflow file `.github/workflows/copilot-setup-steps.yml` has been tested an
 - ⚠ Service not running locally (expected - workflow starts container)
 
 ### 4. Project Structure ✅
-- ✓ singularity_app directory exists
+- ✓ singularity directory exists
 - ✓ mix.exs found
 - ✓ mix.lock found (enables dependency caching)
 - ✓ llm-server directory exists

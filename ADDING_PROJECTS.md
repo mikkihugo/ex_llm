@@ -68,7 +68,7 @@ Edit `.moon/workspace.yml`:
 projects:
   - 'llm-server'
   - 'my-new-service'  # Add here
-  - 'singularity_app'
+  - 'singularity'
   # ... other projects
 ```
 
@@ -86,7 +86,7 @@ moon run my-new-service:build
 moon run my-new-service:test
 ```
 
-## Adding an Elixir Project (like singularity_app)
+## Adding an Elixir Project (like singularity)
 
 ### 1. Create the Elixir application
 
@@ -168,7 +168,7 @@ Edit `.moon/workspace.yml`:
 
 ```yaml
 projects:
-  - 'singularity_app'
+  - 'singularity'
   - 'my_elixir_service'  # Add here
   # ... other projects
 ```

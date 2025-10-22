@@ -45,7 +45,7 @@ export GOOGLE_CHAT_WEBHOOK_URL="https://chat.googleapis.com/v1/spaces/.../messag
 ### 3. Install Dependencies
 
 ```bash
-cd singularity_app
+cd singularity
 mix deps.get
 mix gleam.deps.get
 ```
@@ -408,7 +408,7 @@ mix dialyzer
 
 ```bash
 # Run Rust analyzer (if available)
-analysis-suite analyze ./singularity_app
+analysis-suite analyze ./singularity
 
 # View analysis in Elixir
 iex -S mix

@@ -50,7 +50,7 @@ function findFiles(dir: string, extensions: string[]): string[] {
 async function testGeminiFullContext() {
   console.log('🔍 Gathering BEAM codebase...\n');
 
-  const rootDir = '../singularity_app';
+  const rootDir = '../singularity';
   const elixirFiles = findFiles(join(rootDir, 'lib'), ['ex', 'exs']);
   const gleamFiles = findFiles(join(rootDir, 'src'), ['gleam']);
 
@@ -82,7 +82,7 @@ async function testGeminiFullContext() {
 
   // Add Elixir files
   for (const file of elixirFiles.slice(0, 100)) { // Limit for safety
-    const relativePath = file.replace('../singularity_app/', '');
+    const relativePath = file.replace('../singularity/', '');
     try {
       const content = readFileSync(file, 'utf-8');
       context += `\n# FILE: ${relativePath}\n\`\`\`elixir\n${content}\n\`\`\`\n`;
@@ -93,7 +93,7 @@ async function testGeminiFullContext() {
 
   // Add Gleam files
   for (const file of gleamFiles) {
-    const relativePath = file.replace('../singularity_app/', '');
+    const relativePath = file.replace('../singularity/', '');
     try {
       const content = readFileSync(file, 'utf-8');
       context += `\n# FILE: ${relativePath}\n\`\`\`gleam\n${content}\n\`\`\`\n`;

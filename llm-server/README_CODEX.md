@@ -13,7 +13,7 @@ Singularity uses a **custom Codex build** with builtin tool filtering disabled. 
 ## Architecture
 
 ```
-Elixir (singularity_app)
+Elixir (singularity)
    ↓ NATS: "ai.llm.request" (model: "gpt-5-codex")
 TypeScript AI Server (nats-handler.ts)
    ↓ Calls Codex provider
@@ -172,7 +172,7 @@ cargo build --release
 
 Ensure Elixir app is running:
 ```bash
-cd ../singularity_app
+cd ../singularity
 mix phx.server  # Should start on port 4000
 ```
 

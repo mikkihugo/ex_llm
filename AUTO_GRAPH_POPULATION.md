@@ -92,7 +92,7 @@ end
 
 ```bash
 # Start server (graphs auto-populate)
-cd singularity_app
+cd singularity
 mix phx.server
 
 # Watch logs

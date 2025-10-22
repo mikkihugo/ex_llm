@@ -186,7 +186,7 @@ If health check shows database error:
 ./scripts/setup-database.sh
 
 # Or manually:
-cd singularity_app
+cd singularity
 mix ecto.create
 mix ecto.migrate
 ```
@@ -196,7 +196,7 @@ mix ecto.migrate
 With auto-start enabled, tests can run immediately:
 
 ```bash
-cd singularity_app
+cd singularity
 
 # All tests
 mix test
@@ -227,7 +227,7 @@ nix develop
 ### Start Phoenix Server Manually
 ```bash
 # If you removed .singularity-server.pid
-cd singularity_app
+cd singularity
 mix phx.server
 # Server runs in foreground with live output
 ```
@@ -256,7 +256,7 @@ With auto-start enabled, you can immediately:
 
 1. **Run integration tests:**
    ```bash
-   cd singularity_app
+   cd singularity
    mix test --only integration
    ```
 

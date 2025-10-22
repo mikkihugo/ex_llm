@@ -12,7 +12,7 @@ Singularity has **3 separate code ingestion systems** for different purposes:
 
 **When:** Runs **automatically on EVERY server startup** (async, non-blocking)
 
-**What it ingests:** All `.ex` files in `singularity_app/lib/` (~288 modules)
+**What it ingests:** All `.ex` files in `singularity/lib/` (~288 modules)
 
 **Database:** `code_files` table (uses `project_name = "singularity"`)
 

@@ -321,10 +321,10 @@ claude-pr-fix.yml
 ### Mix/Hex Dependencies
 ```yaml
 path: |
-  singularity_app/.mix
-  singularity_app/.hex
-  singularity_app/deps
-  singularity_app/_build
+  singularity/.mix
+  singularity/.hex
+  singularity/deps
+  singularity/_build
   .moon/cache
   llm-server/node_modules
 ```

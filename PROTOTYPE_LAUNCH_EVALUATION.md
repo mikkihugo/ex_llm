@@ -71,7 +71,7 @@ nix develop
 ./scripts/setup-database.sh
 
 # 3. Configure environment (5 min)
-cd singularity_app
+cd singularity
 echo "SECRET_KEY_BASE=$(mix phx.gen.secret)" > ../.env
 echo "DATABASE_URL=ecto://postgres:postgres@localhost/singularity" >> ../.env
 

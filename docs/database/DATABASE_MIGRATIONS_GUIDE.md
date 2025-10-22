@@ -8,7 +8,7 @@ Singularity uses **Elixir Ecto migrations** as the single source of truth for da
 
 ### 1. Elixir Migrations (Primary - Required)
 
-**Location**: `singularity_app/priv/repo/migrations/*.exs`
+**Location**: `singularity/priv/repo/migrations/*.exs`
 
 **Purpose**: Core application schema (tables, indexes, constraints)
 
@@ -18,7 +18,7 @@ Singularity uses **Elixir Ecto migrations** as the single source of truth for da
 nix develop
 
 # Run migrations
-cd singularity_app
+cd singularity
 mix ecto.migrate
 ```
 
@@ -86,7 +86,7 @@ Correct execution order for fresh setup:
 nix develop
 
 # 2. Run Elixir migrations (creates schema)
-cd singularity_app
+cd singularity
 mix ecto.create  # Create DB if needed
 mix ecto.migrate
 
@@ -117,7 +117,7 @@ cargo run --bin migrations
 
 **Fix**:
 ```bash
-cd singularity_app
+cd singularity
 mix ecto.migrate
 ```
 
@@ -149,7 +149,7 @@ For production deployments (Fly.io, etc):
 export DATABASE_URL="postgres://user:pass@host/dbname"
 
 # 2. Run Elixir migrations
-cd singularity_app
+cd singularity
 MIX_ENV=prod mix ecto.migrate
 
 # 3. (Optional) Apply Rust optimizations if needed

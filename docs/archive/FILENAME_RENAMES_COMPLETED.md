@@ -65,7 +65,7 @@ For each file:
 
 When compiling:
 ```bash
-cd singularity_app
+cd singularity
 mix clean
 mix compile
 ```

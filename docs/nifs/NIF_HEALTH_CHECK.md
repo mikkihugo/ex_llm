@@ -218,7 +218,7 @@ end)
 
 3. **Compilation Test**
 ```bash
-cd singularity_app
+cd singularity
 mix deps.compile --force
 mix compile
 ```
@@ -268,7 +268,7 @@ end
 
 ### Native Symlinks (All Valid)
 
-All symlinks in `singularity_app/native/` point to correct Rust crates. ✅
+All symlinks in `singularity/native/` point to correct Rust crates. ✅
 
 ---
 

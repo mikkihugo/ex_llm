@@ -18,7 +18,7 @@ nix develop
 ### Run All Tests
 
 ```bash
-cd singularity_app
+cd singularity
 
 # All tests (existing + new integration tests)
 mix test
@@ -202,7 +202,7 @@ nix develop  # Re-enter to trigger startup
 
 **Solution:**
 ```bash
-cd singularity_app
+cd singularity
 mix ecto.create
 mix ecto.migrate
 ```
@@ -216,7 +216,7 @@ undefined function Singularity.CodeEngine.analyze_file/1
 
 **Solution:**
 ```bash
-cd singularity_app
+cd singularity
 mix compile --force  # Recompile NIFs
 ```
 
@@ -244,7 +244,7 @@ Add to GitHub Actions:
 - name: Run Integration Tests
   run: |
     nix develop --command bash -c "
-      cd singularity_app &&
+      cd singularity &&
       mix test --only integration &&
       mix coveralls.github
     "

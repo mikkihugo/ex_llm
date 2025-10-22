@@ -100,7 +100,7 @@ defmodule IngestionTest do
 
       IO.puts("\n✓ Test complete!")
       IO.puts("\nNext steps:")
-      IO.puts("  1. Run: cd singularity_app && mix code.ingest")
+      IO.puts("  1. Run: cd singularity && mix code.ingest")
       IO.puts("  2. Or parse manually: ParserEngine.parse_and_store_tree(\"/path/to/code\")")
 
     after

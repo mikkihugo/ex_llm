@@ -124,7 +124,7 @@ pub fn lint(&self, source: &str, rules: &[LintRule]) -> Result<Vec<LintViolation
 ### 5. ✅ Database Integration Ready
 
 ```elixir
-# /singularity_app/lib/singularity/search/ast_grep_code_search.ex (300+ lines)
+# /singularity/lib/singularity/search/ast_grep_code_search.ex (300+ lines)
 
 defmodule Singularity.Search.AstGrepCodeSearch do
   @moduledoc """
@@ -309,7 +309,7 @@ iex> Singularity.ParserEngine.ast_grep_replace("console.log('test')", "console.l
    - search(), replace(), lint() methods
    - Status: ✅ Builds, ✅ Works with string matching
 
-2. **`/singularity_app/lib/singularity/search/ast_grep_code_search.ex`** (300+ lines)
+2. **`/singularity/lib/singularity/search/ast_grep_code_search.ex`** (300+ lines)
    - Database integration module
    - Hybrid vector + string matching search
    - extract_patterns(), health_check() functions

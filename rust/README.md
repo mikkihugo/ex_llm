@@ -25,7 +25,7 @@ This directory contains **central knowledge** components that provide shared int
 - **Learning & Training** - Pattern learning and model training
 - **Data Aggregation** - Collecting insights from multiple instances
 
-**Singularity Level (singularity_app/rust_*):**
+**Singularity Level (singularity/rust_*):**
 - **Engines** - Fast, local execution engines
 - **NIFs** - Native Implemented Functions for Elixir
 - **Real-time Processing** - Sub-100ms response times
@@ -66,6 +66,6 @@ cargo test -p code_analysis
 ```
 
 ## See Also
-- `../singularity_app/rust_*/` - Local engines and NIFs
+- `../singularity/rust_*/` - Local engines and NIFs
 - `../AGENTS.md` - Agent documentation
 - `../docs/architecture/` - Architecture guides

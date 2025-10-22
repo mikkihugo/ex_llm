@@ -3,7 +3,7 @@
 $schema: '../.moon/cache/schemas/workspace.json'
 
 projects:
-  # NIFs (consumed by singularity_app via symlinks)
+  # NIFs (consumed by singularity via symlinks)
   - 'architecture_engine'
   - 'code_engine'
   - 'embedding_engine'
