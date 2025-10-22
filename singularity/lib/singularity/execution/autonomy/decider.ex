@@ -16,15 +16,21 @@ defmodule Singularity.Execution.Autonomy.Decider do
   @failure_backoff_cycles 10
 
   @type agent_state :: map()
-  @type decision :: {:continue, agent_state} | {:improve, map(), map(), agent_state}
+  @type decision ::
+    {:continue, agent_state}
+    | {:improve_local, map(), map(), agent_state}
+    | {:improve_experimental, map(), map(), agent_state}
 
   @doc """
   Decide whether the agent should propose a new strategy.
 
-  Returns `{:continue, state}` when no action is required, or
-  `{:improve, payload, context, state}` when an improvement should be queued.
+  Returns:
+  - `{:continue, state}` when no action is required
+  - `{:improve_local, payload, context, state}` for low-risk Type 1 improvements (applied directly)
+  - `{:improve_experimental, payload, context, state}` for high-risk Type 3 improvements (sent to Genesis)
+
   The `payload` is ready to hand to `Singularity.Control.publish_improvement/2` and
-  the `context` map captures the trigger metadata (reason, score, samples, etc.).
+  the `context` map captures the trigger metadata (reason, score, samples, risk_level, etc.).
   """
   @spec decide(agent_state) :: decision
   def decide(state) do
@@ -80,7 +86,8 @@ defmodule Singularity.Execution.Autonomy.Decider do
           state.forced_context |> Map.put(:score, score) |> Map.put(:samples, samples)
 
         plan = Planner.generate_strategy_payload(state, planner_context)
-        {:improve, plan, planner_context, Map.put(state, :forced_context, nil)}
+        improvement_type = classify_improvement_risk(state, planner_context)
+        {improvement_type, plan, planner_context, Map.put(state, :forced_context, nil)}
 
       not backoff_respected? ->
         {:continue, state}
@@ -88,12 +95,14 @@ defmodule Singularity.Execution.Autonomy.Decider do
       samples >= @min_samples and score < @score_threshold ->
         trigger = %{reason: :score_drop, score: score, samples: samples, stagnation: stagnation}
         plan = Planner.generate_strategy_payload(state, trigger)
-        {:improve, plan, trigger, state}
+        improvement_type = classify_improvement_risk(state, trigger)
+        {improvement_type, plan, trigger, state}
 
       stagnation >= @stagnation_cycles ->
         trigger = %{reason: :stagnation, score: score, samples: samples, stagnation: stagnation}
         plan = Planner.generate_strategy_payload(state, trigger)
-        {:improve, plan, trigger, state}
+        improvement_type = classify_improvement_risk(state, trigger)
+        {improvement_type, plan, trigger, state}
 
       true ->
         {:continue, state}
@@ -114,4 +123,58 @@ defmodule Singularity.Execution.Autonomy.Decider do
 
   defp forced?(%{forced_context: context}) when is_map(context), do: true
   defp forced?(_), do: false
+
+  @doc """
+  Classify improvement as Type 1 (local, low-risk) or Type 3 (Genesis, high-risk).
+
+  ## Classification Rules
+
+  **Type 1 (Local):** Low-risk improvements applied directly
+  - Performance drop detected (score_drop trigger)
+  - Recent stagnation (stagnation < 100 cycles)
+  - Reasonable score (> 0.3) - not severely broken
+
+  **Type 3 (Genesis):** High-risk improvements tested in sandbox
+  - Severe performance degradation (score < 0.3)
+  - Extended stagnation (> 100 cycles without improvement)
+  - Multiple consecutive failures
+  - Forced improvement requests (manual intervention)
+  """
+  defp classify_improvement_risk(state, context) do
+    score = Map.get(context, :score, 0.5)
+    stagnation = Map.get(context, :stagnation, 0)
+    reason = Map.get(context, :reason, :unknown)
+    cycles = Map.get(state, :cycles, 0)
+    last_failure_cycle = Map.get(state, :last_failure_cycle)
+
+    # Count recent failures (within last 20 cycles)
+    consecutive_failure_cycles =
+      if last_failure_cycle && cycles - last_failure_cycle < 20 do
+        cycles - last_failure_cycle
+      else
+        0
+      end
+
+    cond do
+      # Severe degradation - send to Genesis for comprehensive testing
+      score < 0.3 ->
+        :improve_experimental
+
+      # Extended stagnation - too many cycles without progress
+      stagnation > 100 ->
+        :improve_experimental
+
+      # Recent failure with continuing problems
+      consecutive_failure_cycles > 0 and stagnation > 50 ->
+        :improve_experimental
+
+      # Forced improvement - keep locally unless explicitly marked experimental
+      reason == :forced and Map.get(context, :risk_level) != "high" ->
+        :improve_local
+
+      # Default: low-risk local improvement for parameter tuning
+      true ->
+        :improve_local
+    end
+  end
 end

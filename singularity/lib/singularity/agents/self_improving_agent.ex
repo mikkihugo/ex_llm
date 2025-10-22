@@ -191,10 +191,18 @@ defmodule Singularity.SelfImprovingAgent do
       {:continue, updated_state} ->
         {:noreply, schedule_tick(updated_state)}
 
-      {:improve, payload, context, updated_state} ->
+      {:improve_local, payload, context, updated_state} ->
+        # Type 1: Apply improvement directly (low-risk parameter tuning)
         {:noreply,
          updated_state
          |> maybe_start_improvement(payload, context)
+         |> schedule_tick()}
+
+      {:improve_experimental, payload, context, updated_state} ->
+        # Type 3: Send to Genesis for testing (high-risk changes)
+        {:noreply,
+         updated_state
+         |> request_genesis_experiment(payload, context)
          |> schedule_tick()}
     end
   end
@@ -388,6 +396,63 @@ defmodule Singularity.SelfImprovingAgent do
 
       true ->
         start_improvement_if_valid(state, payload, context, fingerprint)
+    end
+  end
+
+  defp request_genesis_experiment(state, payload, context) do
+    experiment_id = "exp-#{state.id}-#{System.monotonic_time(:millisecond)}"
+
+    Logger.info("Sending high-risk improvement to Genesis sandbox",
+      agent_id: state.id,
+      experiment_id: experiment_id,
+      reason: context_fetch(context, :reason),
+      score: context_fetch(context, :score)
+    )
+
+    # Build Genesis experiment request
+    request = %{
+      "experiment_id" => experiment_id,
+      "instance_id" => state.id,
+      "risk_level" => "high",
+      "payload" => payload,
+      "description" => "Test: #{context_fetch(context, :reason)}",
+      "metrics" => %{
+        "current_score" => context_fetch(context, :score),
+        "samples" => context_fetch(context, :samples),
+        "stagnation" => context_fetch(context, :stagnation, 0)
+      },
+      "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+
+    # Publish request to Genesis via NATS
+    subject = "genesis.experiment.request.#{state.id}"
+
+    case Singularity.NatsClient.publish(subject, request) do
+      :ok ->
+        Logger.debug("Genesis experiment request published", experiment_id: experiment_id)
+
+        emit_improvement_event(
+          state.id,
+          :genesis_request,
+          %{count: 1},
+          Map.put(context, :experiment_id, experiment_id)
+        )
+
+        # Update state to track pending Genesis request
+        state
+        |> Map.put(:status, :waiting_for_genesis)
+        |> Map.put(:pending_genesis_request, request)
+        |> Map.put(:pending_genesis_experiment_id, experiment_id)
+
+      {:error, reason} ->
+        Logger.error("Failed to send Genesis request",
+          agent_id: state.id,
+          experiment_id: experiment_id,
+          reason: inspect(reason)
+        )
+
+        emit_improvement_event(state.id, :genesis_request_failed, %{count: 1}, context)
+        state
     end
   end
 
