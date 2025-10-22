@@ -36,7 +36,7 @@ All Requests → nats.request → Unified NATS Server → Route by complexity/se
 **NATS Subjects:**
 - `nats.request` - Single entry point
 - `detector.analyze` - Framework detection
-- `ai.llm.request` - LLM requests
+- `llm.request` - LLM requests
 
 ## Architecture (Clean & Consolidated)
 

@@ -190,7 +190,7 @@ planning.task.delete               # Delete task
 
 ### LLM Request/Response
 ```json
-// ai.llm.request
+// llm.request
 {
   "model": "claude-sonnet-4.5",
   "provider": "claude",
@@ -200,7 +200,7 @@ planning.task.delete               # Delete task
   "stream": false
 }
 
-// ai.llm.response
+// llm.response
 {
   "text": "Hello! How can I help you?",
   "model": "claude-sonnet-4.5",
@@ -324,7 +324,7 @@ planning.task.delete               # Delete task
 ## Subject Patterns
 
 ### Wildcards
-- `ai.llm.*` - All LLM related subjects
+- `llm.*` - All LLM related subjects
 - `code.analysis.*` - All code analysis subjects
 - `agents.*` - All agent management subjects
 - `tools.*` - All tool execution subjects

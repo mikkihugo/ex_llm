@@ -30,7 +30,7 @@ analyze_arch_nif (fast local check)
 analyze_arch_service (LLM enrichment)
      ├─ Load enrichment_prompts/framework_discovery.json
      ├─ Fill template with code samples
-     ├─ Call LLM via NATS (ai.llm.request)
+     ├─ Call LLM via NATS (llm.request)
      ├─ LLM returns structured JSON
      ├─ Save to PostgreSQL
      └─ Broadcast via NATS (architecture.framework.discovered)

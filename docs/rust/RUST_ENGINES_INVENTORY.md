@@ -120,7 +120,7 @@
 1. **Framework Learning Agent** (Elixir GenServer)
    - Reactive framework discovery
    - Triggers on-demand when framework not found
-   - Calls LLM via NATS (`ai.llm.request`)
+   - Calls LLM via NATS (`llm.request`)
    - Caches results in PostgreSQL
 
 2. **Package Intelligence Service** (Rust Binary via NATS)
@@ -650,7 +650,7 @@ cd singularity && mix test test/integration/rust_engines_test.exs
 **Purpose:**
 - Reactive framework discovery
 - Triggers on-demand when framework not found
-- Calls LLM via NATS (`ai.llm.request`)
+- Calls LLM via NATS (`llm.request`)
 - Caches results in PostgreSQL
 
 ### 2. Intelligence Hub ✅

@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "patterns": {
     "subjects": [
-      "ai.provider.claude",
-      "ai.provider.gemini", 
-      "ai.provider.openai",
+      "llm.provider.claude",
+      "llm.provider.gemini", 
+      "llm.provider.openai",
       "code.analysis.parse",
       "code.analysis.embed",
       "code.analysis.search",
@@ -22,7 +22,7 @@
       "subject.hierarchy",
       "wildcard.subjects",
       "message.routing",
-      "ai.provider.*",
+      "llm.provider.*",
       "code.analysis.*",
       "meta.registry.*"
     ]

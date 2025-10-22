@@ -63,7 +63,7 @@ graph TB
     Caller -->|1. call/3| Service
     Service -->|2. build_request| Service
     Service -->|3. NATS request| NATS
-    NATS -->|4. ai.llm.request| AI
+    NATS -->|4. llm.request| AI
     AI -->|5. HTTP| Claude
     AI -->|5. HTTP| Gemini
     AI -->|6. response| NATS
@@ -165,7 +165,7 @@ sequenceDiagram
 
     Agent->>Service: call(:complex, messages)
     Service->>Service: build_request(messages, opts)
-    Service->>NATS: request("ai.llm.request", json)
+    Service->>NATS: request("llm.request", json)
     NATS->>AI Server: Publish to subject
     AI Server->>AI Server: Select model (Claude Sonnet)
     AI Server->>Claude: HTTP POST /v1/messages
@@ -287,7 +287,7 @@ defmodule Singularity.LLM.Service do
 
       Agent -->|call/3| Service
       Service -->|NATS request| NATS
-      NATS -->|ai.llm.request| AI
+      NATS -->|llm.request| AI
       AI -->|HTTP| Claude/Gemini
 
       style Service fill:#90EE90
@@ -316,7 +316,7 @@ defmodule Singularity.LLM.Service do
   ```mermaid
   sequenceDiagram
       Agent->>Service: call(:complex, messages)
-      Service->>NATS: request("ai.llm.request")
+      Service->>NATS: request("llm.request")
       NATS->>AI Server: Publish
       AI Server->>Claude: HTTP POST
       Claude-->>Service: Response

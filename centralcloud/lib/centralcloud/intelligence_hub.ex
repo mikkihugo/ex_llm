@@ -579,14 +579,11 @@ defmodule Centralcloud.IntelligenceHub do
   end
 
   defp analyze_quality_with_quality_engine(codebase_info) do
-    # Use the existing Quality Engine for code quality analysis
-    quality_request = %{
-      "codebase_info" => codebase_info,
-      "quality_checks" => ["maintainability", "performance", "security", "architecture"],
-      "include_metrics" => true
-    }
-
-    case call_quality_engine_via_nats("analyze_quality", quality_request) do
+    # Use Quality Engine NIF directly (same as Singularity)
+    case Centralcloud.Engines.QualityEngine.analyze_quality(codebase_info, 
+      quality_checks: ["maintainability", "performance", "security", "architecture"],
+      include_metrics: true
+    ) do
       {:ok, results} ->
         Logger.debug("Quality engine analysis completed",
           overall_score: Map.get(results, "overall_score", 0.0),
@@ -608,14 +605,11 @@ defmodule Centralcloud.IntelligenceHub do
   end
 
   defp analyze_semantics_with_embedding_engine(codebase_info) do
-    # Use the existing Embedding Engine for semantic analysis
-    semantic_request = %{
-      "codebase_info" => codebase_info,
-      "analysis_type" => "semantic_patterns",
-      "include_similarity" => true
-    }
-
-    case call_embedding_engine_via_nats("analyze_semantics", semantic_request) do
+    # Use Embedding Engine NIF directly (same as Singularity)
+    case Centralcloud.Engines.EmbeddingEngine.analyze_semantics(codebase_info, 
+      analysis_type: "semantic_patterns",
+      include_similarity: true
+    ) do
       {:ok, results} ->
         Logger.debug("Embedding engine analysis completed",
           semantic_patterns: length(Map.get(results, "semantic_patterns", [])),

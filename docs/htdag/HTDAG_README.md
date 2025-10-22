@@ -29,7 +29,7 @@ This implementation enables the HTDAG (Hierarchical Task Directed Acyclic Graph)
 
 ### Integration Points
 
-- **Existing**: `ai.llm.request` → AI Server (original path)
+- **Existing**: `llm.request` → AI Server (original path)
 - **New**: `llm.req.<model_id>` → HTDAG LLM Worker (self-evolution path)
 
 Both paths coexist. The HTDAG executor uses the new NATS-first path.

@@ -60,7 +60,7 @@ graph TB
     HTTP -->|/v1/chat/completions| Server
     HTTP -->|/health| Server
     HTTP -->|/metrics| Server
-    Elixir -->|ai.llm.request| NATS
+    Elixir -->|llm.request| NATS
     NATS -->|Subscribe| NATSHandler
     Server --> Logger
     Server --> Metrics
@@ -136,7 +136,7 @@ sequenceDiagram
     participant Metrics
     participant Provider as AI Provider
     
-    Elixir->>NATS: Publish ai.llm.request
+    Elixir->>NATS: Publish llm.request
     NATS->>Handler: Message received
     activate Handler
     Note over Handler: Start timer<br/>Check backpressure
@@ -283,7 +283,7 @@ flowchart LR
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Listening: Subscribe to ai.llm.request
+    [*] --> Listening: Subscribe to llm.request
     
     Listening --> CheckConcurrency: Message Received
     

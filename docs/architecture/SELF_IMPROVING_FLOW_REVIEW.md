@@ -481,13 +481,13 @@ code = generate_code(task, quality_template: template)
 **Flow:**
 ```
 Elixir Code
-  ↓ NATS subject: ai.llm.request
+  ↓ NATS subject: llm.request
 AI Server (TypeScript)
   ↓ HTTP to LLM API
 LLM Provider (Claude, Gemini, etc.)
   ↓
 AI Server
-  ↓ NATS subject: ai.llm.response
+  ↓ NATS subject: llm.response
 Elixir Code
 ```
 
