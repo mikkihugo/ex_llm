@@ -31,6 +31,6 @@ defmodule Genesis.Repo.Migrations.CreateExperimentRecords do
 
     create index(:experiment_records, [:instance_id])
     create index(:experiment_records, [:status])
-    create index(:experiment_records, [:created_at], order: :desc)
+    create index(:experiment_records, [:created_at])
   end
 end

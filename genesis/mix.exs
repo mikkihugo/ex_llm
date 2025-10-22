@@ -14,7 +14,8 @@ defmodule Genesis.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Genesis.Application, []}
+      mod: {Genesis.Application, []},
+      included_applications: [:quantum]
     ]
   end
 
@@ -25,8 +26,7 @@ defmodule Genesis.MixProject do
       {:postgrex, "~> 0.17"},
       {:jason, "~> 1.4"},
 
-      # Messaging
-      {:nats, "~> 1.0"},
+      # Messaging (gnat is the Elixir NATS client)
       {:gnat, "~> 1.7"},
 
       # Scheduling & Background Jobs

@@ -19,7 +19,6 @@ defmodule Genesis.Schemas.SandboxHistory do
   import Ecto.Changeset
 
   schema "sandbox_history" do
-    field :experiment_id, :string
     field :sandbox_path, :string
     field :action, :string  # created, preserved, cleaned_up
     field :reason, :string

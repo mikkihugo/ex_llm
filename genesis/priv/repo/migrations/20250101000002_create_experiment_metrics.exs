@@ -41,6 +41,6 @@ defmodule Genesis.Repo.Migrations.CreateExperimentMetrics do
 
     create index(:experiment_metrics, [:experiment_id])
     create index(:experiment_metrics, [:recommendation])
-    create index(:experiment_metrics, [:measured_at], order: :desc)
+    create index(:experiment_metrics, [:measured_at])
   end
 end

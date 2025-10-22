@@ -1,12 +1,15 @@
 import Config
 
+# Declare Ecto repos for migrations
+config :genesis, ecto_repos: [Genesis.Repo]
+
 # Configure logging
 config :logger, level: :info
 
 # Configure Ecto repository
 config :genesis, Genesis.Repo,
   database: "genesis_db",
-  username: System.get_env("DB_USER", "postgres"),
+  username: System.get_env("DB_USER", System.get_env("USER", "postgres")),
   password: System.get_env("DB_PASSWORD", ""),
   hostname: System.get_env("DB_HOST", "localhost"),
   port: System.get_env("DB_PORT", "5432") |> String.to_integer(),
@@ -14,21 +17,21 @@ config :genesis, Genesis.Repo,
 
 # Configure Oban background jobs
 config :genesis, Oban,
+  engine: Oban.Engines.Basic,
   queues: [
     cleanup: [concurrency: 1],
     analysis: [concurrency: 1],
     default: [concurrency: 2]
-  ]
-
-# Configure Quantum scheduler
-config :genesis, Genesis.Scheduler,
-  jobs: [
-    # Cleanup completed experiments every 6 hours
-    {"0 */6 * * *", {Genesis.Jobs, :cleanup_experiments, []}},
-    # Analyze trends every 24 hours
-    {"0 0 * * *", {Genesis.Jobs, :analyze_trends, []}},
-    # Report metrics to Centralcloud every 24 hours
-    {"0 1 * * *", {Genesis.Jobs, :report_metrics, []}}
+  ],
+  plugins: [
+    {Oban.Plugins.Cron, crons: [
+      # Cleanup completed experiments every 6 hours
+      {"0 */6 * * *", Genesis.Cleanup},
+      # Analyze trends every 24 hours
+      {"0 0 * * *", Genesis.Analysis},
+      # Report metrics to Centralcloud every 24 hours (1 AM)
+      {"0 1 * * *", Genesis.Reporting}
+    ]}
   ]
 
 # Configure NATS

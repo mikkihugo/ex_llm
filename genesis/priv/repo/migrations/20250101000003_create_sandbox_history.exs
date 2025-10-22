@@ -20,6 +20,6 @@ defmodule Genesis.Repo.Migrations.CreateSandboxHistory do
 
     create index(:sandbox_history, [:experiment_id])
     create index(:sandbox_history, [:action])
-    create index(:sandbox_history, [:created_at], order: :desc)
+    create index(:sandbox_history, [:created_at])
   end
 end

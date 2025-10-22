@@ -38,8 +38,6 @@ defmodule Genesis.Schemas.ExperimentMetrics do
   import Ecto.Changeset
 
   schema "experiment_metrics" do
-    field :experiment_id, :string
-
     # Outcome metrics
     field :success_rate, :float, default: 0.0
     field :regression, :float, default: 0.0
