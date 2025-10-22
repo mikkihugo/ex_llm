@@ -35,7 +35,6 @@ members = [
     "parser_engine/analyzers/rust_code_analysis",  # Mozilla rust-code-analysis (complexity metrics)
     "prompt_engine",
     "architecture_engine",
-    "service/package_intelligence",
     "template",
 ]
 

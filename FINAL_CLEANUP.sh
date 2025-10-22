@@ -17,10 +17,9 @@ echo "   rust/architecture, code_analysis, embedding, framework,"
 echo "   knowledge, parser, prompt, quality, semantic, template"
 echo "   (NOT package - it's a duplicate!)"
 echo ""
-echo "✅ KEEP (3 NATS services):"
-echo "   rust/service/intelligence_hub"
-echo "   rust/service/knowledge_cache"
-echo "   rust/service/package_intelligence"
+echo "✅ KEEP (3 centralcloud NATS services):"
+echo "   centralcloud/rust/package_intelligence"
+echo "   (Future: intelligence_hub, knowledge_cache)"
 echo ""
 echo "✅ KEEP (1 global registry):"
 echo "   rust_global/package_registry"
@@ -138,12 +137,10 @@ for crate in architecture code_analysis embedding framework knowledge parser pro
 done
 echo ""
 
-echo "📡 SERVICES (rust/service/) - 3:"
-for service in intelligence_hub knowledge_cache package_intelligence; do
-    if [ -d "rust/service/$service" ]; then
-        echo "   ✓ $service/"
-    fi
-done
+echo "📡 CENTRALCLOUD SERVICES (centralcloud/rust/) - 1:"
+if [ -d "centralcloud/rust/package_intelligence" ]; then
+    echo "   ✓ package_intelligence/"
+fi
 echo ""
 
 echo "🌍 GLOBAL (rust_global/) - 1:"

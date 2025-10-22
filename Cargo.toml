@@ -15,7 +15,7 @@ members = [
     "rust/parser_engine/languages/typescript",
     "rust/parser_engine/languages/gleam",
     "rust/prompt_engine",
-    "rust/service/package_intelligence",
+    "centralcloud/rust/package_intelligence",
     "rust/template",
     "rust/embedding_engine",
     "rust/architecture_engine",

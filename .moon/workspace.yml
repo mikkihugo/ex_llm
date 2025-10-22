@@ -5,7 +5,7 @@ $schema: './cache/schemas/workspace.json'
 
 projects:
   - 'ai-server'
-  - 'central_cloud'
+  - 'centralcloud'
   - 'seed_agent'
   - 'singularity_app'
   - 'templates_data'
@@ -22,8 +22,8 @@ projects:
   - 'rust/prompt_engine'
   - 'rust/quality_engine'
 
-  # Rust Services
-  - 'rust/service/package_intelligence'
+  # Centralcloud Rust Services
+  - 'centralcloud/rust/package_intelligence'
 
 # Note: Moon caches task outputs under .moon/cache by default. CI caches this
 # directory (see .github/workflows/ci-elixir.yml) to speed up repeated runs.
