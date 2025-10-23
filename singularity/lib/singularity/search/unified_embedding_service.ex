@@ -40,18 +40,14 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   graph TD
       A[Text Input] --> B{Strategy}
       B -->|:rust| C[Rust NIF]
-      B -->|:google| D[Google AI]
       B -->|:bumblebee| E[Bumblebee/Nx]
       B -->|:auto| F[Auto-Select]
 
       F --> G{Rust NIF Available?}
       G -->|Yes| C
-      G -->|No| H{Google AI Available?}
-      H -->|Yes| D
-      H -->|No| E
+      G -->|No| E
 
       C --> I[Vector Embedding]
-      D --> I
       E --> I
       I --> J[Store in pgvector]
   ```
@@ -104,7 +100,7 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   alias Singularity.EmbeddingGenerator
 
   @type embedding :: [float()] | Pgvector.t()
-  @type strategy :: :auto | :rust | :google | :bumblebee
+  @type strategy :: :auto | :rust | :bumblebee
   @type opts :: [
           strategy: strategy(),
           model: atom(),
@@ -116,13 +112,13 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
 
   ## Options
 
-  - `:strategy` - Embedding strategy (`:auto`, `:rust`, `:google`, `:bumblebee`)
+  - `:strategy` - Embedding strategy (`:auto`, `:rust`, `:bumblebee`)
   - `:model` - Model to use (`:jina_v3`, `:qodo_embed`, `:minilm`)
   - `:fallback` - Enable fallback to other strategies (default: `true`)
 
   ## Examples
 
-      # Auto-select (tries Rust → Google → Bumblebee)
+      # Auto-select (tries Rust → Bumblebee)
       {:ok, embedding} = UnifiedEmbeddingService.embed("text")
 
       # Force Rust NIF with code model
@@ -132,10 +128,10 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
         model: :qodo_embed
       )
 
-      # Force Google AI (no fallback)
+      # Force Bumblebee (no fallback)
       {:ok, embedding} = UnifiedEmbeddingService.embed(
         "text",
-        strategy: :google,
+        strategy: :bumblebee,
         fallback: false
       )
   """
@@ -147,7 +143,6 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     case strategy do
       :auto -> embed_auto(text, opts, fallback)
       :rust -> embed_rust(text, opts, fallback)
-      :google -> embed_google(text, opts, fallback)
       :bumblebee -> embed_bumblebee(text, opts, fallback)
       _ -> {:error, "Unknown strategy: #{strategy}"}
     end
@@ -174,7 +169,6 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     case strategy do
       :auto -> embed_batch_auto(texts, opts, fallback)
       :rust -> embed_batch_rust(texts, opts, fallback)
-      :google -> embed_batch_google(texts, opts, fallback)
       :bumblebee -> embed_batch_bumblebee(texts, opts, fallback)
       _ -> {:error, "Unknown strategy: #{strategy}"}
     end
