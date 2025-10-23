@@ -17,7 +17,7 @@
 //!   },
 //!   "pattern_signals": ["file_extensions", "import_patterns", "config_files", "package_managers"],
 //!   "confidence_algorithm": "Weighted sum: ext(0.5) + imports(0.4) + config(0.3) + pkg_mgr(0.2), scaled by success_rate",
-//!   "technology_stack": ["Rust", "Rustler 0.34", "serde"]
+//!   "technology_stack": ["Rust", "Rustler 0.37", "serde"]
 //! }
 //! ```
 //!

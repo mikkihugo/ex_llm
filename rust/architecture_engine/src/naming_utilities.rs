@@ -49,7 +49,10 @@ impl NamingUtilities {
                 if i > 0 && prev_lowercase {
                     result.push('_');
                 }
-                result.push(ch.to_lowercase().next().unwrap());
+                // Safe: to_lowercase() always returns at least one character for uppercase chars
+                if let Some(lower) = ch.to_lowercase().next() {
+                    result.push(lower);
+                }
                 prev_lowercase = false;
             } else if ch == '-' || ch == ' ' {
                 result.push('_');

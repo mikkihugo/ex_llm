@@ -65,12 +65,16 @@
 - **Depends On**: Item #1 (metrics) + Item #2 (aggregator)
 - **Files**: `lib/singularity/agents/evolution.ex`, `lib/singularity/execution/feedback/analyzer.ex`
 
-### 5. **Optimize Rust Engines for GPU Acceleration (RTX 4080)**
-- **Why**: Embedding pipeline is the bottleneck for semantic search
-- **What**: Benchmark current embeddings, enable RTX 4080 CUDA in embedding_engine
-- **Estimated Effort**: 3-5 days (profiling + optimization)
-- **Impact**: 10-100x speedup for pattern mining
-- **Files**: `rust/embedding_engine/`, Cargo.toml GPU feature flags
+### 5. **Complete GPU Acceleration for Remaining Embedding Models** (3-5 days)
+- **Why**: Only Qodo-Embed has GPU (33% done). Jina v3 & MiniLM need ONNX GPU inference
+- **What**:
+  - Implement real ONNX inference for Jina v3 (uncomment `ort` crate, add GPU code)
+  - Implement real ONNX inference for MiniLM-L6-v2
+  - Add Metal support for macOS (Candle supports it)
+  - Run benchmarks to verify speedups
+- **Current Status**: 33% complete (Qodo-Embed ✅, Jina v3 ❌, MiniLM ❌, Metal ❌)
+- **Impact**: 10-100x speedup for pattern mining once all 3 models are GPU-accelerated
+- **Files**: `rust/embedding_engine/src/models.rs`, Cargo.toml (uncomment ort crate)
 
 ---
 

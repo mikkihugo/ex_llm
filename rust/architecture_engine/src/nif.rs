@@ -27,7 +27,7 @@
 //!       "package_registry - Package collection (delegates to central)"
 //!     ]
 //!   },
-//!   "technology_stack": ["Rust", "Rustler 0.34", "serde"]
+//!   "technology_stack": ["Rust", "Rustler 0.37", "serde"]
 //! }
 //! ```
 //!

@@ -234,9 +234,10 @@ Binary cache
    - Safe evolution is critical
    - Depends on: Items #1 & #2
 
-5. **Optimize Rust Engines for GPU** (3-5 days)
-   - RTX 4080 CUDA acceleration for embeddings pipeline
-   - Performance optimization (10-100x speedup)
+5. **Complete GPU Acceleration for Embedding Models** (3-5 days)
+   - Qodo-Embed has GPU ✅, but Jina v3 & MiniLM need ONNX GPU inference
+   - Add Metal support for macOS, ROCm for AMD
+   - Performance target: 10-100x speedup for pattern mining
 
 **Full Details**: See `SELFEVOLVE.md` (architecture clarity + top 5 action items)
 **Architecture Guide**: See `docs/architecture/AGENTS.md` (agent design patterns)
