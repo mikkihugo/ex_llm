@@ -18,6 +18,7 @@ defmodule Genesis.Scheduler do
   """
 
   require Logger
+  alias Genesis.StructuredLogger
 
   @doc """
   Clean up old sandbox directories.
@@ -108,7 +109,7 @@ defmodule Genesis.Scheduler do
           end)
           |> Enum.into(%{})
 
-        {:ok, %{
+        insights = %{
           total_experiments: total,
           successful_experiments: successful,
           success_rate: Float.round(avg_success, 4),
@@ -118,7 +119,10 @@ defmodule Genesis.Scheduler do
           by_risk_level: by_risk,
           period: "30 days",
           generated_at: DateTime.utc_now()
-        }}
+        }
+
+        StructuredLogger.trend_analysis_complete(total, avg_success, by_type)
+        {:ok, insights}
       end
     rescue
       e ->
@@ -161,6 +165,7 @@ defmodule Genesis.Scheduler do
         case publish_metrics_to_nats(report) do
           :ok ->
             Logger.info("Genesis.Scheduler: Metrics reported successfully to CentralCloud")
+            StructuredLogger.metrics_reported("genesis", map_size(insights), "centralcloud")
             {:ok, insights}
 
           {:error, reason} ->

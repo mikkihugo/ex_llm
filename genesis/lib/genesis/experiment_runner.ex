@@ -53,7 +53,7 @@ defmodule Genesis.ExperimentRunner do
 
   use GenServer
   require Logger
-  alias Genesis.{IsolationManager, MetricsCollector, RollbackManager, LLMCallTracker}
+  alias Genesis.{IsolationManager, MetricsCollector, RollbackManager, LLMCallTracker, StructuredLogger}
 
   # Default timeout: 1 hour
   @default_timeout_ms 3_600_000
@@ -91,18 +91,27 @@ defmodule Genesis.ExperimentRunner do
   6. Prepares rollback if needed
   """
   def handle_experiment_request(request) do
-    Logger.info("Genesis received experiment request: #{inspect(request)}")
-
     experiment_id = request["experiment_id"]
     instance_id = request["instance_id"]
+    risk_level = request["risk_level"] || "medium"
+
+    Logger.info("Genesis received experiment request: #{inspect(request)}")
+    StructuredLogger.experiment_start(experiment_id, instance_id, risk_level)
 
     case execute_isolated_experiment(request) do
       {:ok, metrics} ->
         Logger.info("Experiment #{experiment_id} succeeded")
+        recommendation = MetricsCollector.recommend(metrics)
+        StructuredLogger.experiment_complete(experiment_id,
+          success: true,
+          recommendation: recommendation,
+          metrics: metrics
+        )
         report_success(instance_id, experiment_id, metrics)
 
       {:error, reason} ->
         Logger.error("Experiment #{experiment_id} failed: #{inspect(reason)}")
+        StructuredLogger.experiment_failed(experiment_id, reason, stage: :execution)
         report_failure(instance_id, experiment_id, reason)
     end
   end
@@ -118,6 +127,8 @@ defmodule Genesis.ExperimentRunner do
 
       {:error, :timeout} ->
         Logger.error("Experiment #{experiment_id} timed out after #{timeout_ms}ms")
+        StructuredLogger.experiment_timeout(experiment_id, timeout_ms, :execution)
+        StructuredLogger.rollback_initiated(experiment_id, "timeout")
         RollbackManager.emergency_rollback(experiment_id)
 
         # Record timeout as failure
@@ -132,6 +143,8 @@ defmodule Genesis.ExperimentRunner do
         {:error, "Experiment timed out"}
 
       {:error, reason} ->
+        StructuredLogger.experiment_failed(experiment_id, reason, stage: :setup)
+        StructuredLogger.rollback_initiated(experiment_id, reason)
         RollbackManager.emergency_rollback(experiment_id)
         {:error, reason}
     end
@@ -245,6 +258,13 @@ defmodule Genesis.ExperimentRunner do
 
       Logger.info(
         "Validation tests completed for #{experiment_id}. Success rate: #{metrics.success_rate * 100}%, LLM reduction: #{(llm_reduction * 100) |> Float.round(1)}%"
+      )
+
+      StructuredLogger.tests_completed(experiment_id,
+        success_rate: metrics.success_rate,
+        total_tests: metrics.test_count,
+        failures: metrics.failures,
+        runtime_ms: runtime_ms
       )
 
       {:ok,
