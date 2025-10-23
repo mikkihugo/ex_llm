@@ -15,6 +15,26 @@
   # Alternative: Docker/Podman (not recommended for GPU)
   #    - GPU support requires additional setup
   #    - Performance overhead compared to bare metal
+  #
+  # NATS PROTOCOL CONFIGURATION:
+  # Single NATS server with multiple protocol bindings (configurable via protocols section below)
+  #
+  # Default (Dev):
+  #   - NATS:      localhost:4222  (Elixir/Rust native clients)
+  #   - WebSocket: localhost:4223  (Browser JS clients)
+  #   - TLS:       disabled        (set to 4221 for production)
+  #   - MQTT:      disabled        (set to 1883 for IoT devices)
+  #
+  # To enable TLS or MQTT:
+  #   1. Edit flake.nix protocols section below: set tls = 4221; or mqtt = 1883;
+  #   2. Run: nix flake update && direnv reload
+  #   3. Restart NATS if running: nats-server -js
+  #
+  # Port Strategy:
+  #   4221  = TLS/Secure NATS (production only)
+  #   4222  = Core NATS protocol (always enabled)
+  #   4223  = WebSocket (always enabled)
+  #   1883  = MQTT (optional, for IoT/edge computing)
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
