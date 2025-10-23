@@ -62,10 +62,10 @@
 
 // Core modules - reorganized for domain-driven design
 pub mod domain;   // Domain types (symbols, files, metrics, relationships)
-// pub mod graph;    // DISABLED: Has many database/storage dependencies
+// pub mod graph;    // DISABLED: Missing type definitions (GraphHandle, CodePatternDatabase)
 pub mod vectors;  // Vector embeddings and operations
 // pub mod embeddings; // DISABLED: Requires external embedding services (handled by Elixir)
-// pub mod analysis; // DISABLED: Has complex integration dependencies
+// pub mod analysis; // DISABLED: Missing type definitions (FileAnalysisResult, RustAnalysisResult, etc.)
 pub mod api;      // API types
 pub mod parsing;  // Code parsing
 // paths module removed - NIF doesn't need file paths
@@ -122,5 +122,12 @@ pub use parsing::*;
 pub mod nif;
 
 // nif_bindings DISABLED - has dependencies on disabled modules (graph, analysis)
-// #[cfg(feature = "nif")]
-// pub mod nif_bindings;
+// These modules have missing type definitions that need to be refactored first
+// TODO: Re-enable when type system is unified:
+// - GraphHandle needs to be moved/re-exported from storage module
+// - FileAnalysisResult needs to be defined in domain or codebase
+// - RustAnalysisResult, PythonAnalysisResult need to be migrated
+// - CodePatternDatabase needs to be available
+#[cfg(feature = "nif")]
+#[cfg(all())]  // Explicitly disabled - change to remove this cfg gate when ready
+pub mod nif_bindings;
