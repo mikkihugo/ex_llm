@@ -1,8 +1,11 @@
 /**
  * @file NATS JetStream Integration Service
- * @description This module provides a singleton service for interacting with NATS JetStream.
- * It handles connecting to NATS, setting up streams, and publishing/subscribing to
- * various topics related to AI, LLM, agents, and tools.
+ * @description Optimized single NATS server with intelligent subject routing:
+ * - llm.* subjects: Direct request/reply (no JetStream) for maximum LLM performance
+ * - ai.events.*, agent.events.*: JetStream for persistence and replay
+ * - metrics.*, telemetry.*: JetStream for monitoring and observability
+ * 
+ * This eliminates the need for multiple NATS servers while maintaining optimal performance.
  */
 
 import { connect, type NatsConnection, type JetStreamClient, StringCodec, RetentionPolicy, StorageType } from 'nats';
@@ -41,26 +44,42 @@ export class NatsService {
 
     const jsm = await this.nc!.jetstreamManager();
 
-    // NOTE: LLM_EVENTS stream disabled because it was intercepting request/reply messages
-    // The stream captured all 'llm.>' subjects including 'llm.request', causing
-    // Gnat.request() to receive JetStream ACKs instead of actual LLM responses.
-    // If you need event streaming in the future, use a more specific subject pattern
-    // that doesn't overlap with request/reply subjects (e.g., 'llm.events.>' instead of 'llm.>')
+    // OPTIMIZED: Single NATS server with proper subject routing
+    // - llm.* subjects: Direct request/reply (no JetStream) for performance
+    // - ai.events.* subjects: JetStream for persistence and replay
+    // - agent.events.* subjects: JetStream for persistence and replay
 
-    // LLM Events stream for general LLM-related events.
-    // try {
-    //   await jsm.streams.add({
-    //     name: 'AI_EVENTS',
-    //     subjects: ['ai.>', 'llm.>', 'agent.>'],
-    //     retention: RetentionPolicy.Limits,
-    //     max_age: 3_600_000_000_000, // 1 hour
-    //     storage: StorageType.Memory,
-    //   });
-    // } catch (err: any) {
-    //   if (!err.message?.includes('stream name already in use')) {
-    //     console.error('[NATS] Failed to create AI_EVENTS stream:', err);
-    //   }
-    // }
+    // AI Events stream for persistent event storage (excludes llm.* subjects)
+    try {
+      await jsm.streams.add({
+        name: 'AI_EVENTS',
+        subjects: ['ai.events.>', 'agent.events.>', 'system.events.>'],
+        retention: RetentionPolicy.Limits,
+        max_age: 3_600_000_000_000, // 1 hour
+        storage: StorageType.Memory,
+      });
+      console.log('[NATS] ✅ AI_EVENTS stream created for persistent events');
+    } catch (err: any) {
+      if (!err.message?.includes('stream name already in use')) {
+        console.error('[NATS] Failed to create AI_EVENTS stream:', err);
+      }
+    }
+
+    // System metrics stream for monitoring and observability
+    try {
+      await jsm.streams.add({
+        name: 'SYSTEM_METRICS',
+        subjects: ['metrics.>', 'telemetry.>'],
+        retention: RetentionPolicy.Limits,
+        max_age: 24 * 3_600_000_000_000, // 24 hours
+        storage: StorageType.Memory,
+      });
+      console.log('[NATS] ✅ SYSTEM_METRICS stream created for monitoring');
+    } catch (err: any) {
+      if (!err.message?.includes('stream name already in use')) {
+        console.error('[NATS] Failed to create SYSTEM_METRICS stream:', err);
+      }
+    }
   }
 
   /**

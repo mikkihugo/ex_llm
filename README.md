@@ -20,10 +20,13 @@ Autonomous agents, semantic code search, living knowledge base, and multi-AI orc
 
 ## Unified NATS Architecture
 
-**Single Entry Point**: All services now use one unified NATS server instead of multiple disconnected bridges.
+**Single NATS Server**: Optimized architecture with intelligent subject routing:
+- `llm.*` subjects: Direct request/reply (no JetStream) for maximum LLM performance
+- `ai.events.*`, `agent.events.*`: JetStream for persistence and replay
+- `metrics.*`, `telemetry.*`: JetStream for monitoring and observability
 
 ```
-All Requests → nats.request → Unified NATS Server → Route by complexity/service
+All Requests → nats.request → Single NATS Server → Route by subject pattern
 ```
 
 **Key Components:**
