@@ -60,63 +60,30 @@
 //! - **Types Layer**: Shared types and traits
 //! - **NIF Layer**: Optional Elixir bindings (feature-gated)
 
-// Core modules - reorganized for domain-driven design
-pub mod domain;   // Domain types (symbols, files, metrics, relationships)
-pub mod graph;    // Code dependency graphs and relationship modeling
-pub mod vectors;  // Vector embeddings and operations
-// pub mod embeddings; // DISABLED: Requires external embedding services (handled by Elixir)
-pub mod analysis; // Code analysis, control flow, dependencies, and semantic features
-pub mod api;      // API types
-pub mod parsing;  // Code parsing
-// paths module removed - NIF doesn't need file paths
-// pub mod repository; // DISABLED: Has detection dependencies
-pub mod types;    // Legacy types (being migrated)
-pub mod codebase; // NEW: Single source of truth for all code metadata
-// pub mod search;   // DISABLED: Semantic search requires database (handled by Elixir)
+// Core modules
+pub mod domain;        // Domain types (symbols, files, metrics, relationships)
+pub mod graph;         // Code dependency graphs and relationship modeling
+pub mod vectors;       // Vector embeddings and operations
+pub mod analysis;      // Code analysis, control flow, dependencies, and semantic features
+pub mod api;           // API types
+pub mod parsing;       // Code parsing
+pub mod types;         // Shared types and traits
+pub mod codebase;      // Codebase storage and metadata
+pub mod centralcloud;  // CentralCloud integration via NATS (CVEs, patterns, rules)
 
-// Unified storage system
-// storage module removed - NIF doesn't need persistent storage
-// Legacy compatibility: map old storage path to new codebase::storage
+// Re-export storage for backward compatibility
 pub use codebase::storage as storage;
 
 // Re-export main types for easy access
-// Domain types (new organization)
 pub use domain::*;
-pub use graph::{Graph, GraphHandle, GraphNode, GraphEdge, GraphType};  // Core graph types
-// Note: graph::dag types (FileAnalysisResult, etc.) are available but not re-exported here
-// They're used by nif_bindings when enabled
+pub use graph::{Graph, GraphHandle, GraphNode, GraphEdge, GraphType};
 pub use vectors::*;
-
-// NEW: Codebase types (single source of truth)
 pub use codebase::*;
-
-// NEW: Search types (semantic search with custom vectors)
-// pub use search::*;  // DISABLED - search handled by Elixir
-
-// Legacy re-exports for backward compatibility
-pub use types::*;  // Export types first (these are the canonical definitions)
-
-// Re-export analyzer types
-// DISABLED: analyzer module disabled due to external dependencies
-// pub use analyzer::{
-//   ArchitecturalCodePattern, ComplexityDistribution, CrossLanguageAnalysis, FileMetrics, IntegrationCodePattern, ParsedFile, QualityConsistency, QualityGate,
-//   QualityGateResults, TechnologyStack,
-// };
-
-// Re-export analysis types (code analysis only)
-// DISABLED: analysis module disabled
-// pub use analysis::{
-//   performance, semantic, multilang, dependency, metrics, security,
-// };
-
+pub use types::*;
 pub use parsing::*;
-// pub use repository::{RepoAnalyzer, RepositoryAnalysis};  // DISABLED - module disabled
-// Storage removed - NIF receives data from Elixir
 
 // Main analyzer that orchestrates everything
-pub mod analyzer;  // Main orchestrator for multi-language analysis
-
-// Re-export the main analyzer
+pub mod analyzer;
 pub use analyzer::CodebaseAnalyzer;
 
 // NIF bindings (feature-gated for Elixir integration)
