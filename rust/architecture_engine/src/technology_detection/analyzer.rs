@@ -95,12 +95,169 @@ impl FrameworkAnalyzer {
 
     /// Load built-in framework patterns
     fn load_builtin_patterns(&mut self) -> Result<()> {
-        // PSEUDO CODE:
-        /*
-        for pattern in BuiltinPatterns::get_all() {
+        use super::detector::{FrameworkCategory, FrameworkPattern};
+
+        // Web Frameworks
+        let web_frameworks = vec![
+            FrameworkPattern {
+                name: "Express.js".to_string(),
+                patterns: vec!["require.*express".to_string(), "from.*express".to_string()],
+                category: FrameworkCategory::WebFramework,
+                weight: 0.9,
+                version_patterns: vec!["express.*package\\.json".to_string()],
+            },
+            FrameworkPattern {
+                name: "React".to_string(),
+                patterns: vec!["from.*react".to_string(), "import.*React".to_string(), "react-dom".to_string()],
+                category: FrameworkCategory::UI,
+                weight: 0.95,
+                version_patterns: vec!["react.*package\\.json".to_string()],
+            },
+            FrameworkPattern {
+                name: "Vue.js".to_string(),
+                patterns: vec!["from.*vue".to_string(), "import.*Vue".to_string()],
+                category: FrameworkCategory::UI,
+                weight: 0.9,
+                version_patterns: vec!["vue.*package\\.json".to_string()],
+            },
+            FrameworkPattern {
+                name: "Angular".to_string(),
+                patterns: vec!["@angular".to_string(), "ng-app".to_string()],
+                category: FrameworkCategory::UI,
+                weight: 0.85,
+                version_patterns: vec!["@angular.*package\\.json".to_string()],
+            },
+            FrameworkPattern {
+                name: "Django".to_string(),
+                patterns: vec!["django".to_string(), "from django".to_string(), "import django".to_string()],
+                category: FrameworkCategory::WebFramework,
+                weight: 0.95,
+                version_patterns: vec!["django.*requirements".to_string()],
+            },
+            FrameworkPattern {
+                name: "Flask".to_string(),
+                patterns: vec!["from flask".to_string(), "import Flask".to_string()],
+                category: FrameworkCategory::WebFramework,
+                weight: 0.9,
+                version_patterns: vec!["flask.*requirements".to_string()],
+            },
+            FrameworkPattern {
+                name: "Rails".to_string(),
+                patterns: vec!["rails".to_string(), "Gemfile".to_string()],
+                category: FrameworkCategory::WebFramework,
+                weight: 0.9,
+                version_patterns: vec!["rails.*Gemfile".to_string()],
+            },
+            FrameworkPattern {
+                name: "Spring Boot".to_string(),
+                patterns: vec!["spring-boot".to_string(), "org.springframework".to_string()],
+                category: FrameworkCategory::WebFramework,
+                weight: 0.9,
+                version_patterns: vec!["spring-boot.*pom\\.xml".to_string()],
+            },
+            FrameworkPattern {
+                name: "Phoenix".to_string(),
+                patterns: vec!["phoenix".to_string(), "def.*Router".to_string()],
+                category: FrameworkCategory::WebFramework,
+                weight: 0.85,
+                version_patterns: vec![":phoenix.*mix\\.exs".to_string()],
+            },
+            FrameworkPattern {
+                name: "Next.js".to_string(),
+                patterns: vec!["next".to_string(), "getServerSideProps".to_string()],
+                category: FrameworkCategory::WebFramework,
+                weight: 0.85,
+                version_patterns: vec!["next.*package\\.json".to_string()],
+            },
+        ];
+
+        // Databases
+        let databases = vec![
+            FrameworkPattern {
+                name: "PostgreSQL".to_string(),
+                patterns: vec!["postgresql".to_string(), "psycopg".to_string()],
+                category: FrameworkCategory::Database,
+                weight: 0.8,
+                version_patterns: vec!["postgres.*\\.sql".to_string()],
+            },
+            FrameworkPattern {
+                name: "MongoDB".to_string(),
+                patterns: vec!["mongodb".to_string(), "mongoose".to_string()],
+                category: FrameworkCategory::Database,
+                weight: 0.85,
+                version_patterns: vec!["mongodb.*package\\.json".to_string()],
+            },
+            FrameworkPattern {
+                name: "Redis".to_string(),
+                patterns: vec!["redis".to_string(), "ioredis".to_string()],
+                category: FrameworkCategory::Caching,
+                weight: 0.85,
+                version_patterns: vec!["redis.*package\\.json".to_string()],
+            },
+            FrameworkPattern {
+                name: "MySQL".to_string(),
+                patterns: vec!["mysql".to_string(), "pymysql".to_string()],
+                category: FrameworkCategory::Database,
+                weight: 0.8,
+                version_patterns: vec!["mysql.*config".to_string()],
+            },
+        ];
+
+        // Testing Frameworks
+        let test_frameworks = vec![
+            FrameworkPattern {
+                name: "Jest".to_string(),
+                patterns: vec!["jest".to_string(), "test.*jest".to_string()],
+                category: FrameworkCategory::Testing,
+                weight: 0.8,
+                version_patterns: vec!["jest.*package\\.json".to_string()],
+            },
+            FrameworkPattern {
+                name: "Pytest".to_string(),
+                patterns: vec!["pytest".to_string(), "def test_".to_string()],
+                category: FrameworkCategory::Testing,
+                weight: 0.85,
+                version_patterns: vec!["pytest.*requirements".to_string()],
+            },
+            FrameworkPattern {
+                name: "RSpec".to_string(),
+                patterns: vec!["rspec".to_string(), "describe.*do".to_string()],
+                category: FrameworkCategory::Testing,
+                weight: 0.8,
+                version_patterns: vec!["rspec.*Gemfile".to_string()],
+            },
+        ];
+
+        // Build Tools
+        let build_tools = vec![
+            FrameworkPattern {
+                name: "Webpack".to_string(),
+                patterns: vec!["webpack".to_string(), "webpack\\.config".to_string()],
+                category: FrameworkCategory::BuildTool,
+                weight: 0.85,
+                version_patterns: vec!["webpack.*package\\.json".to_string()],
+            },
+            FrameworkPattern {
+                name: "Maven".to_string(),
+                patterns: vec!["pom\\.xml".to_string(), "maven".to_string()],
+                category: FrameworkCategory::BuildTool,
+                weight: 0.9,
+                version_patterns: vec!["<version>.*</version>".to_string()],
+            },
+            FrameworkPattern {
+                name: "Gradle".to_string(),
+                patterns: vec!["build\\.gradle".to_string(), "gradle".to_string()],
+                category: FrameworkCategory::BuildTool,
+                weight: 0.9,
+                version_patterns: vec!["gradle.*version".to_string()],
+            },
+        ];
+
+        // Register all patterns
+        for pattern in web_frameworks.into_iter().chain(databases).chain(test_frameworks).chain(build_tools) {
             self.registry.register_pattern(pattern);
         }
-        */
+
         Ok(())
     }
 
@@ -139,107 +296,203 @@ impl FrameworkAnalyzer {
     /// Aggregate detections across files
     fn aggregate_detections(
         &self,
-        _detections: Vec<FrameworkDetection>,
+        detections: Vec<FrameworkDetection>,
     ) -> Result<FrameworkDetection> {
-        // PSEUDO CODE:
-        /*
-        let mut aggregated = FrameworkDetection::new();
+        use std::collections::HashMap;
+
+        let mut aggregated_frameworks = Vec::new();
+        let mut confidence_scores: HashMap<String, f64> = HashMap::new();
+        let mut ecosystem_hints = Vec::new();
+        let mut total_patterns_checked = 0;
+        let file_count = detections.len();
 
         for detection in detections {
-            // Merge frameworks
-            aggregated.frameworks.extend(detection.frameworks);
+            // Merge frameworks - deduplicate by name
+            for framework in detection.frameworks {
+                if !aggregated_frameworks.iter().any(|f: &super::detector::DetectedFramework| f.name == framework.name) {
+                    aggregated_frameworks.push(framework.clone());
+                }
+            }
 
-            // Update confidence scores
+            // Update confidence scores - keep max
             for (name, score) in detection.confidence_scores {
-                aggregated.confidence_scores.entry(name)
-                    .and_modify(|existing| *existing = max(*existing, score))
+                confidence_scores.entry(name)
+                    .and_modify(|existing| *existing = existing.max(score))
                     .or_insert(score);
             }
 
             // Collect ecosystem hints
-            aggregated.ecosystem_hints.extend(detection.ecosystem_hints);
+            ecosystem_hints.extend(detection.ecosystem_hints);
+
+            // Accumulate patterns checked
+            total_patterns_checked += detection.metadata.total_patterns_checked;
         }
 
-        return aggregated;
-        */
+        // Deduplicate ecosystem hints
+        ecosystem_hints.sort();
+        ecosystem_hints.dedup();
+
         Ok(FrameworkDetection {
-            frameworks: Vec::new(),
-            confidence_scores: std::collections::HashMap::new(),
-            ecosystem_hints: Vec::new(),
+            frameworks: aggregated_frameworks,
+            confidence_scores,
+            ecosystem_hints,
             metadata: super::detector::DetectionMetadata {
                 detection_time: chrono::Utc::now(),
-                file_count: 0,
-                total_patterns_checked: 0,
+                file_count,
+                total_patterns_checked,
                 detector_version: "1.0.0".to_string(),
             },
         })
     }
 
     /// Generate ecosystem insights
-    fn generate_insights(&self, _detection: &FrameworkDetection) -> Result<Vec<EcosystemInsight>> {
-        // PSEUDO CODE:
-        /*
+    fn generate_insights(&self, detection: &FrameworkDetection) -> Result<Vec<EcosystemInsight>> {
         let mut insights = Vec::new();
 
-        // Analyze framework combinations
-        if has_react_and_node(detection) {
+        // Extract framework names for analysis
+        let framework_names: Vec<String> = detection.frameworks.iter().map(|f| f.name.to_lowercase()).collect();
+
+        // Detect full-stack JavaScript
+        if framework_names.iter().any(|f| f.contains("react") || f.contains("vue") || f.contains("angular"))
+            && framework_names.iter().any(|f| f.contains("express") || f.contains("node") || f.contains("next")) {
             insights.push(EcosystemInsight {
-                type: "fullstack_js",
-                description: "Full-stack JavaScript application detected",
+                insight_type: "fullstack_javascript".to_string(),
+                description: "Full-stack JavaScript application detected".to_string(),
                 confidence: 0.9,
-                recommendations: ["Consider Next.js for SSR", "Use TypeScript for type safety"],
+                recommendations: vec![
+                    "Consider Next.js for integrated frontend/backend".to_string(),
+                    "Use TypeScript for type safety across stack".to_string(),
+                    "Implement shared types/interfaces".to_string(),
+                ],
             });
         }
 
-        // Analyze version compatibility
-        if has_version_conflicts(detection) {
+        // Detect Python web stack
+        if framework_names.iter().any(|f| f.contains("django") || f.contains("flask"))
+            && framework_names.iter().any(|f| f.contains("postgresql") || f.contains("mysql")) {
             insights.push(EcosystemInsight {
-                type: "version_conflict",
-                description: "Potential version conflicts detected",
-                confidence: 0.7,
-                recommendations: ["Update dependencies", "Check compatibility matrix"],
+                insight_type: "python_web_stack".to_string(),
+                description: "Python web application with database detected".to_string(),
+                confidence: 0.85,
+                recommendations: vec![
+                    "Consider using ORM for database abstraction".to_string(),
+                    "Implement async views for better performance".to_string(),
+                    "Use connection pooling for database".to_string(),
+                ],
             });
         }
 
-        return insights;
-        */
-        Ok(Vec::new())
+        // Detect microservices pattern
+        if detection.frameworks.len() > 3 {
+            insights.push(EcosystemInsight {
+                insight_type: "complex_architecture".to_string(),
+                description: "Complex architecture with multiple frameworks detected".to_string(),
+                confidence: 0.75,
+                recommendations: vec![
+                    "Document service boundaries clearly".to_string(),
+                    "Implement API contracts between services".to_string(),
+                    "Consider API gateway pattern".to_string(),
+                ],
+            });
+        }
+
+        // Detect testing coverage
+        if framework_names.iter().any(|f| f.contains("jest") || f.contains("pytest") || f.contains("rspec")) {
+            insights.push(EcosystemInsight {
+                insight_type: "testing_framework_present".to_string(),
+                description: "Testing framework detected in codebase".to_string(),
+                confidence: 0.8,
+                recommendations: vec![
+                    "Ensure minimum test coverage of 80%".to_string(),
+                    "Use CI/CD to run tests automatically".to_string(),
+                    "Consider mutation testing for quality assurance".to_string(),
+                ],
+            });
+        }
+
+        Ok(insights)
     }
 
     /// Generate recommendations
     fn generate_recommendations(
         &self,
-        _detection: &FrameworkDetection,
+        detection: &FrameworkDetection,
     ) -> Result<Vec<Recommendation>> {
-        // PSEUDO CODE:
-        /*
+        use super::detector::FrameworkCategory;
+
         let mut recommendations = Vec::new();
 
         for framework in &detection.frameworks {
-            match framework.category {
-                WebFramework => {
+            match &framework.category {
+                FrameworkCategory::WebFramework => {
+                    if framework.name.contains("Express") || framework.name.contains("Flask") || framework.name.contains("Django") {
+                        recommendations.push(Recommendation {
+                            recommendation_type: "security".to_string(),
+                            priority: "high".to_string(),
+                            message: "Consider implementing security headers for web framework".to_string(),
+                            action: "Add helmet.js (Node), python-security (Python), or django-cors-headers (Django)".to_string(),
+                        });
+                    }
+
                     recommendations.push(Recommendation {
-                        type: "security",
-                        priority: "high",
-                        message: "Consider implementing security headers",
-                        action: "Add helmet.js or similar security middleware",
+                        recommendation_type: "performance".to_string(),
+                        priority: "medium".to_string(),
+                        message: "Implement caching strategy".to_string(),
+                        action: "Add Redis or Memcached for session/response caching".to_string(),
                     });
                 },
-                Database => {
+                FrameworkCategory::Database => {
                     recommendations.push(Recommendation {
-                        type: "performance",
-                        priority: "medium",
-                        message: "Consider connection pooling",
-                        action: "Implement database connection pooling",
+                        recommendation_type: "performance".to_string(),
+                        priority: "high".to_string(),
+                        message: "Implement connection pooling for database performance".to_string(),
+                        action: "Use PgBouncer (PostgreSQL), HikariCP (Java), or SQLAlchemy pooling (Python)".to_string(),
+                    });
+
+                    recommendations.push(Recommendation {
+                        recommendation_type: "reliability".to_string(),
+                        priority: "high".to_string(),
+                        message: "Implement automated backups".to_string(),
+                        action: "Setup daily backups and test restore procedures".to_string(),
                     });
                 },
-                _ => {}
+                FrameworkCategory::Testing => {
+                    recommendations.push(Recommendation {
+                        recommendation_type: "quality".to_string(),
+                        priority: "high".to_string(),
+                        message: "Ensure adequate test coverage".to_string(),
+                        action: "Set minimum coverage threshold to 80% and monitor in CI/CD".to_string(),
+                    });
+                },
+                FrameworkCategory::BuildTool => {
+                    recommendations.push(Recommendation {
+                        recommendation_type: "ci_cd".to_string(),
+                        priority: "medium".to_string(),
+                        message: "Integrate build tool with CI/CD pipeline".to_string(),
+                        action: "Configure GitHub Actions, Jenkins, or GitLab CI to run builds".to_string(),
+                    });
+                },
+                FrameworkCategory::Caching => {
+                    recommendations.push(Recommendation {
+                        recommendation_type: "operations".to_string(),
+                        priority: "medium".to_string(),
+                        message: "Monitor cache hit rates".to_string(),
+                        action: "Setup monitoring alerts for cache performance metrics".to_string(),
+                    });
+                },
+                _ => {
+                    // Generic recommendation for other categories
+                    recommendations.push(Recommendation {
+                        recommendation_type: "maintenance".to_string(),
+                        priority: "low".to_string(),
+                        message: format!("Keep {} updated with latest security patches", framework.name),
+                        action: "Review changelog regularly and apply updates".to_string(),
+                    });
+                }
             }
         }
 
-        return recommendations;
-        */
-        Ok(Vec::new())
+        Ok(recommendations)
     }
 
     /// Get analysis configuration
