@@ -7,7 +7,7 @@ defmodule Genesis.ExperimentRunner do
 
   ## Request Format
 
-  NATS subject: `genesis.experiment.request.<instance_id>`
+  NATS subject: `agent.events.experiment.request.{instance_id}`
 
   ```json
   {
@@ -27,7 +27,7 @@ defmodule Genesis.ExperimentRunner do
 
   ## Response Format
 
-  NATS subject: `genesis.experiment.completed.<experiment_id>`
+  NATS subject: `agent.events.experiment.completed.{experiment_id}`
 
   ```json
   {
