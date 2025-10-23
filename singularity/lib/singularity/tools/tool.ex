@@ -1,6 +1,35 @@
 defmodule Singularity.Tools.Tool do
   @moduledoc """
   Defines a callable tool, including metadata, parameter schema, and execution function.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Tools.Tool",
+    "purpose": "ONLY way to define callable tools with metadata and parameter validation",
+    "role": "schema",
+    "layer": "tools",
+    "criticality": "HIGH",
+    "prevents_duplicates": [
+      "Tool definitions",
+      "Tool parameter schemas",
+      "Tool execution functions"
+    ]
+  }
+  ```
+
+  ### Anti-Patterns (Prevents Duplicates)
+
+  - ❌ **DO NOT** create tools without this schema
+  - ❌ **DO NOT** define tool parameters outside this structure
+  - ✅ **DO** use this for all tool definitions
+
+  ### Search Keywords
+
+  `tool`, `callable`, `schema`, `parameters`, `metadata`, `definition`
   """
 
   use Ecto.Schema

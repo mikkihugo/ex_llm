@@ -6,6 +6,72 @@ defmodule Singularity.Agent do
   evolve, synthesises new Gleam code, and hands the payload to the hot-reload
   manager. External systems can still push improvements, but they are no longer
   required for the agent to progress.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Agent",
+    "purpose": "GenServer for autonomous self-improving AI agent with feedback loop and evolution",
+    "role": "genserver",
+    "layer": "agents",
+    "criticality": "CRITICAL",
+    "prevents_duplicates": [
+      "Individual agent instances and state",
+      "Agent feedback processing",
+      "Agent performance metrics",
+      "Agent evolution logic"
+    ],
+    "relationships": {
+      "Agents.Supervisor": "Manages instances of this module",
+      "Control": "Receives improvement feedback",
+      "Agent.*": "Specialized agent strategies"
+    }
+  }
+  ```
+
+  ### Call Graph (Machine-Readable)
+
+  ```yaml
+  calls_out:
+    - module: CodeStore
+      purpose: Persist generated code
+      critical: true
+
+    - module: Control
+      purpose: Publish improvement events
+      critical: true
+
+    - module: HotReload
+      purpose: Real-time code updates
+      critical: false
+
+    - module: Autonomy.*
+      purpose: Decision making and rule evaluation
+      critical: true
+
+  called_by:
+    - module: Agents.Supervisor
+      purpose: Dynamic supervision of agent instances
+
+    - module: NatsExecutionRouter
+      purpose: Task delegation from NATS
+
+    - module: Runner
+      purpose: Execution framework for agent work
+  ```
+
+  ### Anti-Patterns (Prevents Duplicates)
+
+  - ❌ **DO NOT** create custom agent implementations - use Agent module
+  - ❌ **DO NOT** bypass Agent for direct LLM calls - use this module
+  - ✅ **DO** use Agent for all autonomous operations
+
+  ### Search Keywords
+
+  `agent`, `autonomous`, `self-improving`, `evolution`, `feedback`, `learning`, `metrics`, `task-execution`
   """
   use GenServer
 

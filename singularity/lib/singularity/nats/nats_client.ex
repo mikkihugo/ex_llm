@@ -7,6 +7,116 @@ defmodule Singularity.NatsClient do
   - Request/Reply patterns
   - Streaming subscriptions
   - JetStream operations
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.NatsClient",
+    "purpose": "GenServer providing NATS messaging for distributed inter-service communication",
+    "role": "genserver",
+    "layer": "infrastructure",
+    "criticality": "CRITICAL",
+    "prevents_duplicates": [
+      "NATS connection management",
+      "NATS publish/subscribe",
+      "NATS request-reply pattern",
+      "JetStream operations"
+    ],
+    "alternatives": {
+      "Direct Gnat library": "Low-level wrapper - use NatsClient GenServer instead",
+      "NatsExecutionRouter": "Specialized for execution routing - use NatsClient for messaging"
+    }
+  }
+  ```
+
+  ### Architecture Diagram
+
+  ```mermaid
+  graph TB
+      Module["Other Modules"]
+      Client["NatsClient GenServer"]
+      Gnat["Gnat NATS Library"]
+      NATS["NATS Server"]
+      Services["AI Server / Other Services"]
+
+      Module -->|publish/request| Client
+      Client -->|GenServer.call| Client
+      Client -->|Gnat.pub/request| Gnat
+      Gnat -->|TCP| NATS
+      NATS <-->|Messages| Services
+      Services -->|Response| NATS
+      NATS -->|Response| Gnat
+      Gnat -->|Reply| Client
+      Client -->|{:ok, result}| Module
+
+      style Client fill:#90EE90
+      style Gnat fill:#FFB6C1
+      style NATS fill:#87CEEB
+  ```
+
+  ### Call Graph (Machine-Readable)
+
+  ```yaml
+  calls_out:
+    - module: Gnat
+      function: pub/3
+      purpose: Publish message to NATS
+      critical: true
+
+    - module: Gnat
+      function: request/4
+      purpose: Request-reply pattern to NATS
+      critical: true
+
+    - module: Gnat
+      function: sub/3
+      purpose: Subscribe to NATS subject
+      critical: true
+
+    - module: Logger
+      function: "[info|error|warn|debug]/2"
+      purpose: Structured logging
+      critical: false
+
+  called_by:
+    - module: Singularity.LLM.Service
+      count: "5+"
+      purpose: LLM API requests to AI server
+
+    - module: Singularity.Agent
+      count: "3+"
+      purpose: Agent coordination and messaging
+
+    - module: Singularity.Control
+      count: "3+"
+      purpose: System event publishing
+
+    - module: Singularity.NatsExecutionRouter
+      purpose: Execution routing and delegation
+
+    - module: Singularity.Tools.*
+      count: "10+"
+      purpose: Tool execution via NATS
+
+    - module: Singularity.Agents.*
+      count: "7+"
+      purpose: Agent inter-communication
+  ```
+
+  ### Anti-Patterns (Prevents Duplicates)
+
+  - ❌ **DO NOT** use Gnat library directly - wrap through NatsClient
+  - ❌ **DO NOT** create another NATS connection - reuse NatsClient
+  - ❌ **DO NOT** bypass NatsClient with raw TCP connections
+  - ✅ **DO** use for all NATS pub/sub/request operations
+  - ✅ **DO** use for inter-service communication patterns
+
+  ### Search Keywords
+
+  `nats`, `messaging`, `distributed`, `pubsub`, `request-reply`, `communication`, `event`, `publish`, `subscribe`, `jetstream`, `inter-service`, `orchestration`
   """
 
   use GenServer
