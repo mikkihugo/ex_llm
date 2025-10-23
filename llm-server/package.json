@@ -29,7 +29,6 @@
   },
   "devDependencies": {
     "@types/escape-html": "^1.0.4",
-    "@types/node": "^24.9.1",
     "bun-types": "latest",
     "msw": "^2.11.6"
   }
