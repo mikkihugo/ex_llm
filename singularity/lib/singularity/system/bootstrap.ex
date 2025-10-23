@@ -1,17 +1,17 @@
 defmodule Singularity.System.Bootstrap do
   @moduledoc """
-  Bootstrap module that integrates HTDAG NATS-LLM self-evolution with existing Singularity infrastructure.
+  Bootstrap module that integrates TaskGraph NATS-LLM self-evolution with existing Singularity infrastructure.
 
-  Provides comprehensive system integration by connecting HTDAG with existing self-improvement
+  Provides comprehensive system integration by connecting TaskGraph with existing self-improvement
   systems including SelfImprovingAgent, SafeWorkPlanner, and code generation tools.
   Uses simple incremental learning to understand and auto-repair the codebase.
 
   ## Integration Points
 
   This module integrates with:
-  - `Singularity.Execution.Planning.HTDAG` - DAG operations (HTDAG.decompose/1)
-  - `Singularity.Execution.Planning.HTDAGExecutor` - Task execution (HTDAGExecutor.execute/3)
-  - `Singularity.Execution.Planning.HTDAGEvolution` - Self-improvement (HTDAGEvolution integration)
+  - `Singularity.Execution.Planning.TaskGraph` - DAG operations (TaskGraph.decompose/1)
+  - `Singularity.Execution.Planning.TaskGraphExecutor` - Task execution (TaskGraphExecutor.execute/3)
+  - `Singularity.Execution.Planning.TaskGraphEvolution` - Self-improvement (TaskGraphEvolution integration)
   - `Singularity.Code.FullRepoScanner` - Learning (FullRepoScanner.learn_codebase/1, auto_fix_all/1)
   - `Singularity.Store` - Knowledge storage (Store.all_services/0, query_knowledge/1)
   - `Singularity.SelfImprovingAgent` - Self-improvement (SelfImprovingAgent integration)
@@ -24,7 +24,7 @@ defmodule Singularity.System.Bootstrap do
 
   1. **Codebase Understanding** - Analyze codebase database
   2. **Self-Awareness** - Build knowledge graph of system
-  3. **Integration** - Connect HTDAG with existing systems
+  3. **Integration** - Connect TaskGraph with existing systems
   4. **Self-Improvement** - Enable autonomous improvements
 
   ## Usage
@@ -40,8 +40,8 @@ defmodule Singularity.System.Bootstrap do
 
   require Logger
 
-  # INTEGRATION: HTDAG planning and execution
-  alias Singularity.Execution.Planning.{HTDAG, HTDAGExecutor, HTDAGEvolution, FullRepoScanner}
+  # INTEGRATION: TaskGraph planning and execution
+  alias Singularity.Execution.Planning.{TaskGraph, TaskGraphExecutor, TaskGraphEvolution, FullRepoScanner}
 
   # INTEGRATION: Knowledge storage and self-improvement
   alias Singularity.{Store, SelfImprovingAgent}
@@ -51,7 +51,7 @@ defmodule Singularity.System.Bootstrap do
   alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
 
   @doc """
-  Bootstrap HTDAG with existing self-improvement infrastructure.
+  Bootstrap TaskGraph with existing self-improvement infrastructure.
 
   Now uses simple incremental learning:
   Phase 1: Learn codebase the easy way (scan source files)
@@ -60,7 +60,7 @@ defmodule Singularity.System.Bootstrap do
   Phase 4: Hand over to SafeWorkPlanner/SPARC for features
   """
   def bootstrap(opts \\ []) do
-    Logger.info("Starting HTDAG bootstrap with simple learning...")
+    Logger.info("Starting TaskGraph bootstrap with simple learning...")
 
     run_id = "bootstrap-#{System.unique_integer([:positive])}"
 
@@ -201,7 +201,7 @@ defmodule Singularity.System.Bootstrap do
     # Create goal based on analysis
     goal = %{
       description: """
-      Integrate HTDAG NATS-LLM self-evolution with existing Singularity infrastructure.
+      Integrate TaskGraph NATS-LLM self-evolution with existing Singularity infrastructure.
 
       Integration points:
       - SelfImprovingAgent: Connect evolution feedback loop
@@ -219,7 +219,7 @@ defmodule Singularity.System.Bootstrap do
       complexity: 8.0
     }
 
-    HTDAG.decompose(goal)
+    TaskGraph.decompose(goal)
   end
 
   defp list_code_artifacts do
@@ -262,26 +262,26 @@ defmodule Singularity.System.Bootstrap do
     # Check what integrations are missing
     missing = []
 
-    # Check if HTDAG is integrated with SelfImprovingAgent
+    # Check if TaskGraph is integrated with SelfImprovingAgent
     missing =
-      if not htdag_integrated_with_self_improving?() do
-        ["HTDAG → SelfImprovingAgent" | missing]
+      if not task_graph_integrated_with_self_improving?() do
+        ["TaskGraph → SelfImprovingAgent" | missing]
       else
         missing
       end
 
-    # Check if HTDAG is integrated with SafeWorkPlanner
+    # Check if TaskGraph is integrated with SafeWorkPlanner
     missing =
-      if not htdag_integrated_with_safe_planner?() do
-        ["HTDAG → SafeWorkPlanner" | missing]
+      if not task_graph_integrated_with_safe_planner?() do
+        ["TaskGraph → SafeWorkPlanner" | missing]
       else
         missing
       end
 
-    # Check if HTDAG uses RAG generator
+    # Check if TaskGraph uses RAG generator
     missing =
-      if not htdag_uses_rag?() do
-        ["HTDAG → RAGCodeGenerator" | missing]
+      if not task_graph_uses_rag?() do
+        ["TaskGraph → RAGCodeGenerator" | missing]
       else
         missing
       end
@@ -293,19 +293,19 @@ defmodule Singularity.System.Bootstrap do
     Code.ensure_loaded?(module)
   end
 
-  defp htdag_integrated_with_self_improving? do
+  defp task_graph_integrated_with_self_improving? do
     # Check if integration exists
     # For now, return false to indicate we need this integration
     false
   end
 
-  defp htdag_integrated_with_safe_planner? do
+  defp task_graph_integrated_with_safe_planner? do
     # Check if integration exists
     false
   end
 
-  defp htdag_uses_rag? do
-    # Check if HTDAG executor uses RAG
+  defp task_graph_uses_rag? do
+    # Check if TaskGraph executor uses RAG
     false
   end
 end

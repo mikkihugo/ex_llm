@@ -16,6 +16,10 @@ name = "architecture_engine"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 
+[features]
+default = ["nif"]
+nif = ["rustler"]
+
 [dependencies]
 # Core dependencies
 serde = { version = "1.0", features = ["derive"] }
@@ -27,7 +31,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 
 # NIF support for Elixir integration
-rustler = { version = "0.34" }
+rustler = { workspace = true, optional = true }
 
 # Logging
 tracing = "0.1"

@@ -1,6 +1,6 @@
-defmodule Singularity.Execution.Planning.HTDAGLuaExecutor do
+defmodule Singularity.Execution.Planning.LuaStrategyExecutor do
   @moduledoc """
-  Executes Lua scripts for HTDAG execution strategies.
+  Executes Lua scripts for TaskGraph execution strategies.
 
   Provides functions to execute each type of strategy script:
   - Decomposition: Break tasks into subtasks
@@ -12,24 +12,24 @@ defmodule Singularity.Execution.Planning.HTDAGLuaExecutor do
 
   ## Usage
 
-      alias Singularity.Execution.Planning.{HTDAGLuaExecutor, HTDAGExecutionStrategy}
+      alias Singularity.Execution.Planning.{LuaStrategyExecutor, TaskExecutionStrategy}
 
       # Decompose task
-      {:ok, subtasks} = HTDAGLuaExecutor.decompose_task(strategy, task, context)
+      {:ok, subtasks} = LuaStrategyExecutor.decompose_task(strategy, task, context)
 
       # Spawn agents
-      {:ok, agent_configs} = HTDAGLuaExecutor.spawn_agents(strategy, task, context)
+      {:ok, agent_configs} = LuaStrategyExecutor.spawn_agents(strategy, task, context)
 
       # Get orchestration plan
-      {:ok, plan} = HTDAGLuaExecutor.orchestrate_execution(strategy, task, agents, subtasks)
+      {:ok, plan} = LuaStrategyExecutor.orchestrate_execution(strategy, task, agents, subtasks)
 
       # Check completion
-      {:ok, completion} = HTDAGLuaExecutor.check_completion(strategy, task, results)
+      {:ok, completion} = LuaStrategyExecutor.check_completion(strategy, task, results)
   """
 
   require Logger
   alias Singularity.LuaRunner
-  alias Singularity.Execution.Planning.{HTDAGCore, HTDAGExecutionStrategy}
+  alias Singularity.Execution.Planning.{TaskGraphCore, TaskExecutionStrategy}
 
   ## Decomposition
 
@@ -65,10 +65,10 @@ defmodule Singularity.Execution.Planning.HTDAGLuaExecutor do
 
   ## Returns
 
-  `{:ok, [subtask_map]}` - List of subtask maps ready for HTDAG
+  `{:ok, [subtask_map]}` - List of subtask maps ready for TaskGraph
   `{:error, reason}` - Execution failed
   """
-  @spec decompose_task(HTDAGExecutionStrategy.t(), map(), map()) ::
+  @spec decompose_task(TaskExecutionStrategy.t(), map(), map()) ::
           {:ok, [map()]} | {:error, term()}
   def decompose_task(strategy, task, context \\ %{}) do
     if strategy.decomposition_script do
@@ -127,7 +127,7 @@ defmodule Singularity.Execution.Planning.HTDAGLuaExecutor do
   `{:ok, %{agents: [agent_config], orchestration: %{...}}}` - Agent spawn configurations
   `{:error, reason}` - Execution failed
   """
-  @spec spawn_agents(HTDAGExecutionStrategy.t(), map(), map()) ::
+  @spec spawn_agents(TaskExecutionStrategy.t(), map(), map()) ::
           {:ok, map()} | {:error, term()}
   def spawn_agents(strategy, task, context \\ %{}) do
     if strategy.agent_spawning_script do
@@ -192,7 +192,7 @@ defmodule Singularity.Execution.Planning.HTDAGLuaExecutor do
   `{:ok, execution_plan}` - Detailed execution plan with phases and assignments
   `{:error, reason}` - Execution failed
   """
-  @spec orchestrate_execution(HTDAGExecutionStrategy.t(), map(), list(), list()) ::
+  @spec orchestrate_execution(TaskExecutionStrategy.t(), map(), list(), list()) ::
           {:ok, map()} | {:error, term()}
   def orchestrate_execution(strategy, task, agents, subtasks) do
     if strategy.orchestration_script do
@@ -257,7 +257,7 @@ defmodule Singularity.Execution.Planning.HTDAGLuaExecutor do
   `{:ok, completion_result}` - Completion status with confidence and reasoning
   `{:error, reason}` - Execution failed
   """
-  @spec check_completion(HTDAGExecutionStrategy.t(), map(), map()) ::
+  @spec check_completion(TaskExecutionStrategy.t(), map(), map()) ::
           {:ok, map()} | {:error, term()}
   def check_completion(strategy, task, execution_data) do
     if strategy.completion_script do

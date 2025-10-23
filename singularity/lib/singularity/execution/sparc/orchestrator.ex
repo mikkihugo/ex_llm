@@ -1,14 +1,14 @@
 defmodule Singularity.Execution.SPARC.Orchestrator do
   @moduledoc """
-  SPARC Orchestrator - Template-driven SPARC execution with HTDAG integration.
+  SPARC Orchestrator - Template-driven SPARC execution with TaskGraph integration.
 
   Two-DAG architecture:
   - Template Performance DAG (top) - Selects best templates via ML
-  - SPARC HTDAG (bottom) - Executes tasks hierarchically
+  - SPARC TaskGraph (bottom) - Executes tasks hierarchically
 
   Creates a feedback loop:
   1. Template DAG selects optimal template
-  2. SPARC HTDAG executes with that template
+  2. SPARC TaskGraph executes with that template
   3. Performance metrics flow back to Template DAG
   4. Template DAG learns and improves selection
   """
@@ -16,7 +16,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
   use GenServer
   require Logger
 
-  alias Singularity.Execution.Planning.HTDAG
+  alias Singularity.Execution.Planning.TaskGraph
   alias Singularity.MethodologyExecutor
   alias Singularity.Knowledge.TemplateService
 
@@ -35,7 +35,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
   end
 
   @doc """
-  Execute a task with optimal template selection and HTDAG decomposition
+  Execute a task with optimal template selection and TaskGraph decomposition
   """
   def execute(goal, opts \\ []) do
     GenServer.call(__MODULE__, {:execute, goal, opts}, :infinity)
@@ -79,8 +79,8 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
 
     Logger.info("Template DAG selected: #{template_id}")
 
-    # 2. Create SPARC HTDAG for task decomposition
-    sparc_dag = HTDAG.decompose(goal)
+    # 2. Create SPARC TaskGraph for task decomposition
+    sparc_dag = TaskGraph.decompose(goal)
 
     # 3. Execute tasks with selected template
     execution_start = DateTime.utc_now()
@@ -144,20 +144,20 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
   # Private Functions
 
   defp execute_with_template(sparc_dag, template_id, opts) do
-    # Get tasks from HTDAG
+    # Get tasks from TaskGraph
     tasks = get_all_tasks(sparc_dag)
 
     # Execute each task with the selected template
     Enum.reduce_while(tasks, {:ok, []}, fn task, {:ok, results} ->
       case execute_task_with_template(task, template_id, opts) do
         {:ok, result} ->
-          # Mark task completed in HTDAG
-          HTDAG.mark_completed(sparc_dag, task.id)
+          # Mark task completed in TaskGraph
+          TaskGraph.mark_completed(sparc_dag, task.id)
           {:cont, {:ok, [result | results]}}
 
         {:error, reason} ->
-          # Mark task failed in HTDAG
-          HTDAG.mark_failed(sparc_dag, task.id, reason)
+          # Mark task failed in TaskGraph
+          TaskGraph.mark_failed(sparc_dag, task.id, reason)
           {:halt, {:error, reason}}
       end
     end)
@@ -177,11 +177,11 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
   end
 
   defp get_all_tasks(sparc_dag) do
-    # Get all tasks from HTDAG in execution order
+    # Get all tasks from TaskGraph in execution order
     tasks = []
 
     Enum.reduce_while(1..100, {sparc_dag, tasks}, fn _, {dag, acc} ->
-      case HTDAG.select_next_task(dag) do
+      case TaskGraph.select_next_task(dag) do
         nil -> {:halt, acc}
         task -> {:cont, {dag, [task | acc]}}
       end

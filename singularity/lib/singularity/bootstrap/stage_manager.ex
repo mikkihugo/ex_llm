@@ -45,14 +45,14 @@ defmodule Singularity.Bootstrap.StageManager do
         stage_1: %{
           target_codebase: :self,
           mode: :read_only,
-          enabled_features: [:self_discovery, :htdag_scan]
+          enabled_features: [:self_discovery, :task_graph_scan]
         },
 
         stage_2: %{
           target_codebase: :self,
           mode: :supervised,
           require_approval: true,
-          enabled_features: [:self_discovery, :htdag_fix, :agent_improvement]
+          enabled_features: [:self_discovery, :task_graph_fix, :agent_improvement]
         }
 
   ## Usage

@@ -3,7 +3,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   NATS API for submitting SAFe work items to SafeWorkPlanner with intelligent task management.
 
   Provides comprehensive NATS-based API for creating and managing SAFe work items
-  with intelligent task conflict detection, HTDAG-based prioritization, and
+  with intelligent task conflict detection, TaskGraph-based prioritization, and
   self-improvement agent synchronization for dynamic work planning.
 
   ## Integration Points
@@ -467,16 +467,16 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     end)
   end
 
-  # HTDAG-based prioritization
-  defp apply_htdag_prioritization(tasks) do
-    # Apply HTDAG principles for task prioritization
+  # TaskGraph-based prioritization
+  defp apply_task_graph_prioritization(tasks) do
+    # Apply TaskGraph principles for task prioritization
     tasks
-    |> Enum.map(&calculate_htdag_priority/1)
+    |> Enum.map(&calculate_task_graph_priority/1)
     |> Enum.sort_by(& &1.priority_score, :desc)
   end
 
-  defp calculate_htdag_priority(task) do
-    # Calculate priority based on HTDAG principles
+  defp calculate_task_graph_priority(task) do
+    # Calculate priority based on TaskGraph principles
     base_priority = Map.get(task, :priority, 3)
 
     # Factor in dependencies
@@ -526,7 +526,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   # - The planning system reflects the latest state of completed tasks.
   # - Avoidance of redundant or conflicting tasks.
   # COMPLETED: Enhanced the API to support dynamic updates to the hierarchy (reassigning tasks, merging nodes).
-  # COMPLETED: Integrated HTDAG-based prioritization to optimize task execution order.
+  # COMPLETED: Integrated TaskGraph-based prioritization to optimize task execution order.
   # COMPLETED: Work plan API now integrates with SPARC completion phase for final task delivery.
   # COMPLETED: Added telemetry to monitor API usage and its impact on SPARC workflows.
 end

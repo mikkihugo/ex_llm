@@ -120,7 +120,7 @@ defmodule Singularity.Bootstrap.Vision do
         estimated_hours: 6
       },
       %{
-        name: "HTDAG Self-Scan",
+        name: "TaskGraph Self-Scan",
         description: "Run StartupCodeIngestion in discovery mode",
         acceptance_criteria: [
           "All issues cataloged (broken deps, missing docs)",

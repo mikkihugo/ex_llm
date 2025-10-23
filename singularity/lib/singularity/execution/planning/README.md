@@ -15,7 +15,7 @@ Strategic Themes (3-5 year vision areas)
   └─ Epics (6-12 month initiatives - Business or Enabler)
       └─ Capabilities (3-6 month cross-team features)
           └─ Features (1-3 month team deliverables)
-              └─ HTDAG breakdown → Stories → Tasks
+              └─ TaskGraph breakdown → Stories → Tasks
 ```
 
 ### Components
@@ -365,7 +365,7 @@ schema "features" do
   field :name, :string
   field :description, :string
   field :status, :string  # backlog | in_progress | done
-  field :htdag_id, :string
+  field :task_graph_id, :string
   field :acceptance_criteria, {:array, :string}
   field :approved_by, :string
   belongs_to :capability, Capability
@@ -456,7 +456,7 @@ WorkPlanCoordinator.add_epic(%{
 
 1. **Web UI** - Visualize hierarchy and progress
 2. **LLM Integration** - Improve `add_chunk/2` with better LLM analysis
-3. **HTDAG Integration** - Auto-create HTDAG from features
+3. **TaskGraph Integration** - Auto-create TaskGraph from features
 4. **Metrics** - Track velocity, throughput, cycle time
 5. **Forecasting** - Predict completion dates based on velocity
 6. **Dependency Visualization** - Graph view of capability dependencies

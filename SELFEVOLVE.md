@@ -10,6 +10,11 @@
 
 ## Executive Summary
 
+**ARCHITECTURE CLARITY**: Singularity is **NOT primarily about self-evolving agents**. Instead:
+- The **6 Agents** (Architecture, CostOptimized, Technology, Refactoring, SelfImproving, Chat) are **thin wrappers** that use the system
+- The **REST of the system** (Knowledge Base, Pattern Mining, Caching, Execution, Planning) is the actual value
+- **Self-evolution** is a **centralized mechanism** that improves ALL agents, not 6 separate systems
+
 **GOOD NEWS**: Singularity has a **solid foundation** for self-evolution with excellent infrastructure:
 - ✅ Robust telemetry system (comprehensive metrics tracking)
 - ✅ Complete knowledge base (Git ↔ PostgreSQL bidirectional sync)
@@ -19,12 +24,53 @@
 - ✅ Usage tracking (complete learning loop infrastructure)
 
 **NEEDS WORK**: Evolution and feedback analysis logic:
-- 🔴 Agent evolution logic (analyze → improve → verify) not implemented
-- 🔴 Feedback analyzer (pattern extraction from telemetry) needs implementation
-- 🔴 Cross-agent learning distribution missing
+- 🔴 Metric aggregation (telemetry → actionable metrics) not implemented
+- 🔴 Feedback analyzer (metrics analysis → improvement suggestions) needs implementation
+- 🔴 Agent evolution logic (analyze → improve → A/B test → rollback) not implemented
 - 🔴 Auto-promotion system (high-quality artifacts → Git) partially implemented
 
-**Bottom Line**: Infrastructure is **production-ready**. Need to implement the intelligence layer that uses this infrastructure for autonomous evolution.
+**Bottom Line**: Infrastructure is **production-ready** (83% complete). Need to implement the intelligence layer that uses this infrastructure for autonomous evolution.
+
+---
+
+## ⚡ TOP 5 ACTION ITEMS (Next Steps)
+
+**Priority Order** (Based on dependency chain):
+
+### 1. **Complete agent_metrics Database Migration**
+- **Why**: All evolution logic depends on metrics. This is the bottleneck.
+- **What**: Create `agent_metrics` table with schema for success_rate, cost, latency per time window
+- **Estimated Effort**: 1-2 days
+- **Blocks**: Everything below
+- **Files**: New migration in `priv/repo/migrations/`, update schema in `lib/singularity/repo.ex`
+
+### 2. **Wire Up MetricsAggregationWorker with Oban Scheduling**
+- **Why**: Telemetry is collected but not aggregated into actionable metrics
+- **What**: Implement `Singularity.Jobs.MetricsAggregationWorker` to run every 5 minutes
+- **Estimated Effort**: 1-2 days
+- **Unblocks**: Item #3 (FeedbackAnalyzer needs metrics)
+- **Files**: `lib/singularity/jobs/metrics_aggregation_worker.ex`, update `config/config.exs` Oban cron
+
+### 3. **Add Pattern Library with High-Confidence Discovered Patterns**
+- **Why**: Patterns exist (42 discovered) but not curated for agents to use
+- **What**: Review discovered patterns, export best ones to `templates_data/learned/`, tag with success rates
+- **Estimated Effort**: 2-3 days (research + curation)
+- **Unblocks**: Item #4 (Evolution agents need patterns to inject)
+- **Files**: `templates_data/learned/patterns/`, validation schemas
+
+### 4. **Implement and Validate Agent Rollback Mechanism**
+- **Why**: Evolution must be safe - failed improvements need rollback
+- **What**: Implement `Agents.Evolution.rollback_improvements/2` with A/B test validation
+- **Estimated Effort**: 2-3 days
+- **Depends On**: Item #1 (metrics) + Item #2 (aggregator)
+- **Files**: `lib/singularity/agents/evolution.ex`, `lib/singularity/execution/feedback/analyzer.ex`
+
+### 5. **Optimize Rust Engines for GPU Acceleration (RTX 4080)**
+- **Why**: Embedding pipeline is the bottleneck for semantic search
+- **What**: Benchmark current embeddings, enable RTX 4080 CUDA in embedding_engine
+- **Estimated Effort**: 3-5 days (profiling + optimization)
+- **Impact**: 10-100x speedup for pattern mining
+- **Files**: `rust/embedding_engine/`, Cargo.toml GPU feature flags
 
 ---
 

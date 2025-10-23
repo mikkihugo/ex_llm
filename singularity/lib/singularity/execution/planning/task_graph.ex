@@ -1,6 +1,6 @@
-defmodule Singularity.Execution.Planning.HTDAG do
+defmodule Singularity.Execution.Planning.TaskGraph do
   @moduledoc """
-  Hierarchical Task Directed Acyclic Graph (HTDAG) orchestrator for autonomous task decomposition and execution.
+  Hierarchical Task Directed Acyclic Graph (TaskGraph) orchestrator for autonomous task decomposition and execution.
 
   Provides high-level API for decomposing complex goals into hierarchical task graphs,
   executing them with LLM integration, and supporting self-improvement through evolution.
@@ -9,23 +9,23 @@ defmodule Singularity.Execution.Planning.HTDAG do
   ## Integration Points
 
   This module integrates with:
-  - `Singularity.Execution.Planning.HTDAGCore` - Core DAG operations (HTDAGCore.new/1, add_task/2)
-  - `Singularity.Execution.Planning.HTDAGExecutor` - Task execution (HTDAGExecutor.execute/3)
-  - `Singularity.Execution.Planning.HTDAGEvolution` - Self-improvement (HTDAGEvolution.critique_and_mutate/2)
+  - `Singularity.Execution.Planning.TaskGraphCore` - Core DAG operations (TaskGraphCore.new/1, add_task/2)
+  - `Singularity.Execution.Planning.TaskGraphExecutor` - Task execution (TaskGraphExecutor.execute/3)
+  - `Singularity.Execution.Planning.TaskGraphEvolution` - Self-improvement (TaskGraphEvolution.critique_and_mutate/2)
   - `Singularity.Execution.Planning.SafeWorkPlanner` - Hierarchical planning (SafeWorkPlanner integration)
   - `Singularity.Execution.SPARC.Orchestrator` - SPARC methodology integration
   - `Singularity.LLM.Service` - Task decomposition (Service.call/3 for LLM decomposition)
-  - NATS subject: `htdag.execute.*` (publishes execution requests)
-  - PostgreSQL table: `htdag_executions` (stores execution history)
+  - NATS subject: `task_graph.execute.*` (publishes execution requests)
+  - PostgreSQL table: `task_graph_executions` (stores execution history)
 
   ## Usage
 
       # Decompose a goal into hierarchical tasks
-      dag = HTDAG.decompose(%{description: "Build user authentication system"})
+      dag = TaskGraph.decompose(%{description: "Build user authentication system"})
       # => %{root_id: "goal-123", tasks: %{...}}
 
       # Execute with self-improvement enabled
-      {:ok, result} = HTDAG.execute_with_nats(dag, 
+      {:ok, result} = TaskGraph.execute_with_nats(dag, 
         run_id: "run-123",
         evolve: true,
         use_rag: true,
@@ -40,13 +40,13 @@ defmodule Singularity.Execution.Planning.HTDAG do
   alias Singularity.LLM.Service
 
   # INTEGRATION: Core DAG operations (data structures)
-  alias Singularity.Execution.Planning.HTDAGCore
+  alias Singularity.Execution.Planning.TaskGraphCore
 
-  # INTEGRATION: Task execution (HTDAGExecutor.execute/3)
-  alias Singularity.Execution.Planning.HTDAGExecutor
+  # INTEGRATION: Task execution (TaskGraphExecutor.execute/3)
+  alias Singularity.Execution.Planning.TaskGraphExecutor
 
-  # INTEGRATION: Self-improvement (HTDAGEvolution.critique_and_mutate/2)
-  alias Singularity.Execution.Planning.HTDAGEvolution
+  # INTEGRATION: Self-improvement (TaskGraphEvolution.critique_and_mutate/2)
+  alias Singularity.Execution.Planning.TaskGraphEvolution
 
   # INTEGRATION: Hierarchical planning (SafeWorkPlanner integration)
   alias Singularity.Execution.Planning.SafeWorkPlanner
@@ -62,13 +62,13 @@ defmodule Singularity.Execution.Planning.HTDAG do
   @doc "Decompose a goal into hierarchical tasks"
   def decompose(goal, max_depth \\ @max_depth) do
     # Create initial DAG with root goal
-    dag = HTDAGCore.new(goal.description || goal[:description] || "")
+    dag = TaskGraphCore.new(goal.description || goal[:description] || "")
 
     # Create root task
     root_task = create_task_from_goal(goal)
 
     # Add to DAG
-    dag = HTDAGCore.add_task(dag, root_task)
+    dag = TaskGraphCore.add_task(dag, root_task)
 
     # Recursively decompose
     decompose_recursive(dag, root_task, max_depth)
@@ -76,32 +76,32 @@ defmodule Singularity.Execution.Planning.HTDAG do
 
   @doc "Select the next task to work on"
   def select_next_task(dag, _agent_score \\ 1.0) do
-    HTDAGCore.select_next_task(dag)
+    TaskGraphCore.select_next_task(dag)
   end
 
   @doc "Mark task as completed"
   def mark_completed(dag, task_id) do
-    HTDAGCore.mark_completed(dag, task_id)
+    TaskGraphCore.mark_completed(dag, task_id)
   end
 
   @doc "Mark task as failed"
   def mark_failed(dag, task_id, reason) do
-    HTDAGCore.mark_failed(dag, task_id, reason)
+    TaskGraphCore.mark_failed(dag, task_id, reason)
   end
 
   @doc "Count total tasks"
   def count_tasks(dag) do
-    HTDAGCore.count_tasks(dag)
+    TaskGraphCore.count_tasks(dag)
   end
 
   @doc "Count completed tasks"
   def count_completed(dag) do
-    HTDAGCore.count_completed(dag)
+    TaskGraphCore.count_completed(dag)
   end
 
   @doc "Get current active tasks"
   def current_tasks(dag) do
-    HTDAGCore.current_tasks(dag)
+    TaskGraphCore.current_tasks(dag)
   end
 
   @doc """
@@ -130,8 +130,8 @@ defmodule Singularity.Execution.Planning.HTDAG do
 
   ## Example
 
-      dag = HTDAG.decompose(%{description: "Build user auth"})
-      {:ok, result} = HTDAG.execute_with_nats(dag, 
+      dag = TaskGraph.decompose(%{description: "Build user auth"})
+      {:ok, result} = TaskGraph.execute_with_nats(dag, 
         run_id: "run-123",
         evolve: true,
         use_rag: true,
@@ -158,11 +158,11 @@ defmodule Singularity.Execution.Planning.HTDAG do
       end
 
     # Start executor
-    case HTDAGExecutor.start_link(run_id: run_id) do
+    case TaskGraphExecutor.start_link(run_id: run_id) do
       {:ok, executor} ->
         try do
           # Execute DAG
-          case HTDAGExecutor.execute(executor, dag, opts) do
+          case TaskGraphExecutor.execute(executor, dag, opts) do
             {:ok, result} ->
               # Optionally evolve based on results
               if Keyword.get(opts, :evolve, false) do
@@ -175,7 +175,7 @@ defmodule Singularity.Execution.Planning.HTDAG do
               error
           end
         after
-          HTDAGExecutor.stop(executor)
+          TaskGraphExecutor.stop(executor)
         end
 
       error ->
@@ -188,7 +188,7 @@ defmodule Singularity.Execution.Planning.HTDAG do
   defp evolve_and_retry(executor, dag, result, opts) do
     Logger.info("Attempting evolution based on execution results")
 
-    case HTDAGEvolution.critique_and_mutate(result, opts) do
+    case TaskGraphEvolution.critique_and_mutate(result, opts) do
       {:ok, mutations} when length(mutations) > 0 ->
         Logger.info("Applying #{length(mutations)} mutations for improvement")
 
@@ -207,7 +207,7 @@ defmodule Singularity.Execution.Planning.HTDAG do
   end
 
   defp generate_run_id do
-    "htdag-run-#{System.unique_integer([:positive])}"
+    "task_graph-run-#{System.unique_integer([:positive])}"
   end
 
   defp integrate_with_safe_planner(dag, opts) do
@@ -223,11 +223,11 @@ defmodule Singularity.Execution.Planning.HTDAG do
       complexity_threshold: complexity_threshold
     )
 
-    # Map HTDAG tasks to SafeWorkPlanner features
+    # Map TaskGraph tasks to SafeWorkPlanner features
     if feature_mapping do
       case map_tasks_to_features(dag, complexity_threshold, max_depth) do
         {:ok, mapped_dag} ->
-          Logger.info("Successfully mapped HTDAG tasks to SafeWorkPlanner features",
+          Logger.info("Successfully mapped TaskGraph tasks to SafeWorkPlanner features",
             task_count: length(mapped_dag.tasks),
             feature_count: count_features(mapped_dag)
           )
@@ -271,7 +271,7 @@ defmodule Singularity.Execution.Planning.HTDAG do
             # Add subtasks to DAG
             new_dag =
               Enum.reduce(subtasks, dag, fn subtask, acc_dag ->
-                HTDAGCore.add_task(acc_dag, subtask)
+                TaskGraphCore.add_task(acc_dag, subtask)
               end)
 
             # Recursively decompose each subtask
@@ -385,7 +385,7 @@ defmodule Singularity.Execution.Planning.HTDAG do
 
   # Helper functions for integrate_with_safe_planner
   defp map_tasks_to_features(dag, complexity_threshold, max_depth) do
-    # Map HTDAG tasks to SafeWorkPlanner features based on complexity
+    # Map TaskGraph tasks to SafeWorkPlanner features based on complexity
     try do
       mapped_tasks =
         dag.tasks

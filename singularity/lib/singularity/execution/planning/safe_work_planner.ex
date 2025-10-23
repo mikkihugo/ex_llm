@@ -22,7 +22,7 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
       └─ Epics (6-12 month initiatives - Business or Enabler)
           └─ Capabilities (3-6 month cross-team features)
               └─ Features (1-3 month team deliverables)
-                  └─ HTDAG breakdown → Stories → Tasks
+                  └─ TaskGraph breakdown → Stories → Tasks
 
   ## Usage
 
@@ -107,7 +107,7 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
           name: String.t(),
           description: String.t(),
           capability_id: String.t(),
-          htdag_id: String.t() | nil,
+          task_graph_id: String.t() | nil,
           acceptance_criteria: [String.t()],
           status: :backlog | :in_progress | :done,
           created_at: DateTime.t()
@@ -600,7 +600,7 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
       description: analysis.description,
       capability_id: analysis.relates_to,
       # Will be created when work starts
-      htdag_id: nil,
+      task_graph_id: nil,
       acceptance_criteria: analysis.acceptance_criteria,
       status: :backlog,
       created_at: DateTime.utc_now(),

@@ -1,6 +1,6 @@
 defmodule Singularity.LLM.NatsOperation do
   @moduledoc """
-  NATS-based LLM operation interface for HTDAG self-evolution.
+  NATS-based LLM operation interface for TaskGraph self-evolution.
 
   Provides DSPy-like operations that communicate with LLM workers via NATS:
   - Request/Reply pattern for completion

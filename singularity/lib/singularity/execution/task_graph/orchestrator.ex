@@ -5,7 +5,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   ## Purpose
 
   Provides high-level API for enqueueing tasks with dependencies, automatically:
-  - Resolves task dependencies via HTDAG (Hierarchical Temporal DAG)
+  - Resolves task dependencies via TaskGraph (Hierarchical Temporal DAG)
   - Delegates worker spawning to TaskGraph.WorkerPool
   - Enforces role-based security policies via TaskGraph.Toolkit
   - Tracks task execution and results
@@ -15,7 +15,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   ```
   TaskGraph.Orchestrator (high-level API)
        ↓
-  HTDAGCore (dependency resolution) + TodoStore (persistence)
+  TaskGraphCore (dependency resolution) + TodoStore (persistence)
        ↓
   TaskGraph.WorkerPool (worker spawning - polls for ready tasks)
        ↓
@@ -84,7 +84,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   Orchestrator **reuses** existing Singularity components:
   - `TodoStore` - Persists tasks to PostgreSQL with `depends_on_ids`
   - `TaskGraph.WorkerPool` (formerly TodoSwarmCoordinator) - Spawns workers
-  - `HTDAGCore` - Dependency resolution (pure functions)
+  - `TaskGraphCore` - Dependency resolution (pure functions)
   - `AgentSupervisor` - Process supervision
 
   ## Dependencies
@@ -92,7 +92,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   Depends on:
   - `Singularity.Execution.Todos.Supervisor` - For TaskGraph.WorkerPool
   - `Singularity.Agents.Supervisor` - For AgentSupervisor
-  - `Singularity.Execution.Planning.HTDAGCore` - For dependency graphs
+  - `Singularity.Execution.Planning.TaskGraphCore` - For dependency graphs
   - `Singularity.Repo` - For todos table persistence
   """
 
@@ -100,7 +100,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   require Logger
 
   alias Singularity.Execution.Todos.{TodoStore, TodoSwarmCoordinator}
-  alias Singularity.Execution.Planning.HTDAGCore
+  alias Singularity.Execution.Planning.TaskGraphCore
   alias Singularity.AgentSupervisor
   alias Singularity.ProcessRegistry
 
@@ -116,7 +116,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
 
   defstruct [
     :dag,
-    # HTDAG graph for dependency resolution
+    # TaskGraph graph for dependency resolution
     :tasks,
     # Map of task_id => task metadata
     # Map of task_id => result
@@ -228,7 +228,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
     end
 
     state = %__MODULE__{
-      dag: HTDAGCore.new("task-graph"),
+      dag: TaskGraphCore.new("task-graph"),
       tasks: %{},
       results: %{}
     }
@@ -272,7 +272,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
 
   @impl true
   def handle_call(:get_task_graph, _from, state) do
-    # Build graph from current HTDAG state
+    # Build graph from current TaskGraph state
     graph =
       Enum.reduce(state.tasks, %{}, fn {task_id, _task}, acc ->
         status =
@@ -290,9 +290,9 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   @impl true
   def handle_call(:get_next_ready, _from, state) do
     result =
-      case HTDAGCore.select_next_task(state.dag) do
-        {:ok, htdag_task} ->
-          {:ok, Map.get(state.tasks, htdag_task.id)}
+      case TaskGraphCore.select_next_task(state.dag) do
+        {:ok, task_graph_task} ->
+          {:ok, Map.get(state.tasks, task_graph_task.id)}
 
         {:error, :no_ready_tasks} ->
           {:error, :no_ready_tasks}
@@ -339,15 +339,15 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
 
     case TodoStore.create(todo_attrs) do
       {:ok, _todo} ->
-        # 2. Add to HTDAG graph
-        htdag_task = %{
+        # 2. Add to TaskGraph graph
+        task_graph_task = %{
           id: task.id,
           title: task.title,
           complexity: task[:complexity] || :medium,
           dependencies: task.depends_on
         }
 
-        new_dag = HTDAGCore.add_task(state.dag, htdag_task)
+        new_dag = TaskGraphCore.add_task(state.dag, task_graph_task)
 
         # 3. Store task metadata
         new_tasks = Map.put(state.tasks, task.id, task)

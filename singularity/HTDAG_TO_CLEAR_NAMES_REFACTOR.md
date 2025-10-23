@@ -1,12 +1,12 @@
-# HTDAG → Clear, Self-Documenting Names Refactor
+# TaskGraph → Clear, Self-Documenting Names Refactor
 
-**Complete rename from cryptic "HTDAG" to self-documenting module names** 📝
+**Complete rename from cryptic "TaskGraph" to self-documenting module names** 📝
 
 ---
 
 ## 🎯 Problem
 
-The old "HTDAG" (Hierarchical Temporal Directed Acyclic Graph) naming was:
+The old "TaskGraph" (Hierarchical Temporal Directed Acyclic Graph) naming was:
 - ❌ **Cryptic** - Requires explanation
 - ❌ **Not self-documenting** - Doesn't say what it does
 - ❌ **Wrong location** - In `execution/planning/` but not about planning
@@ -28,9 +28,9 @@ The old "HTDAG" (Hierarchical Temporal Directed Acyclic Graph) naming was:
 **Before:**
 ```
 lib/singularity/execution/planning/
-├── htdag_auto_bootstrap.ex    ❌ Not about "planning"
-├── htdag_learner.ex            ❌ Not about "planning"
-└── htdag_bootstrap.ex          ❌ Not about "planning"
+├── task_graph_auto_bootstrap.ex    ❌ Not about "planning"
+├── task_graph_learner.ex            ❌ Not about "planning"
+└── task_graph_bootstrap.ex          ❌ Not about "planning"
 ```
 
 **After:**
@@ -67,9 +67,9 @@ Singularity.System.Bootstrap
 
 ```bash
 # Old
-lib/singularity/execution/planning/htdag_auto_bootstrap.ex
-lib/singularity/execution/planning/htdag_learner.ex
-lib/singularity/execution/planning/htdag_bootstrap.ex
+lib/singularity/execution/planning/task_graph_auto_bootstrap.ex
+lib/singularity/execution/planning/task_graph_learner.ex
+lib/singularity/execution/planning/task_graph_bootstrap.ex
 
 # New
 lib/singularity/code/startup_code_ingestion.ex
@@ -122,8 +122,8 @@ children = [
 - `lib/singularity/application.ex` - Supervision tree comments
 - `lib/singularity/execution/planning/supervisor.ex` - Child spec
 - `lib/singularity/execution/planning/code_file_watcher.ex` - Integration
-- `lib/singularity/execution/planning/htdag_tracer.ex` - References
-- `lib/singularity/execution/planning/htdag_core.ex` - References
+- `lib/singularity/execution/planning/execution_tracer.ex` - References
+- `lib/singularity/execution/planning/task_graph_core.ex` - References
 - `lib/singularity/code/unified_ingestion_service.ex` - Integration
 - `lib/singularity/code/codebase_detector.ex` - Documentation
 - `lib/singularity/analysis/metadata_validator.ex` - References
@@ -151,7 +151,7 @@ children = [
 alias Singularity.Execution.Planning.HTDAGAutoBootstrap
 
 HTDAGAutoBootstrap.run_now()
-# ❌ What does HTDAG mean? What does it do?
+# ❌ What does TaskGraph mean? What does it do?
 ```
 
 **After:**
@@ -167,8 +167,8 @@ StartupCodeIngestion.run_now()
 **Before:**
 ```
 execution/planning/
-├── htdag_auto_bootstrap.ex  ❌ Not planning-related
-├── htdag_learner.ex          ❌ Not planning-related
+├── task_graph_auto_bootstrap.ex  ❌ Not planning-related
+├── task_graph_learner.ex          ❌ Not planning-related
 ├── safe_work_planner.ex      ✅ Actually planning
 └── work_plan_api.ex          ✅ Actually planning
 ```
@@ -197,16 +197,16 @@ system/
 - ✅ See system bootstrapping in `lib/singularity/system/`
 
 **No more:**
-- ❌ "What does HTDAG stand for?"
+- ❌ "What does TaskGraph stand for?"
 - ❌ "Why is code ingestion in the planning directory?"
-- ❌ "Which HTDAG module do I use?"
+- ❌ "Which TaskGraph module do I use?"
 
 ### 4. Better Searchability
 
 ```bash
 # Before: Hard to find
-find lib -name "*htdag*"
-# ❓ htdag_auto_bootstrap? htdag_learner? Which one?
+find lib -name "*task_graph*"
+# ❓ task_graph_auto_bootstrap? task_graph_learner? Which one?
 
 # After: Easy to find
 find lib -name "*ingestion*"
@@ -318,7 +318,7 @@ bootstrap.ex
 
 ```bash
 $ git log --follow lib/singularity/code/startup_code_ingestion.ex
-# ✅ Full history preserved from htdag_auto_bootstrap.ex
+# ✅ Full history preserved from task_graph_auto_bootstrap.ex
 ```
 
 ---

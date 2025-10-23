@@ -39,19 +39,19 @@ defmodule Singularity.Code.StartupCodeIngestion do
   ```
   Server starts
     ↓
-  AutoBootstrap starts (async) [telemetry: htdag.auto_bootstrap.start]
+  AutoBootstrap starts (async) [telemetry: task_graph.auto_bootstrap.start]
     ↓
-  Learn codebase (scan files, read @moduledoc) [telemetry: htdag.learn.start]
+  Learn codebase (scan files, read @moduledoc) [telemetry: task_graph.learn.start]
     ↓
-  Runtime trace (optional, if enabled) [telemetry: htdag.trace.start]
+  Runtime trace (optional, if enabled) [telemetry: task_graph.trace.start]
     ↓
-  Identify issues (broken deps, missing docs, etc.) [telemetry: htdag.identify_issues.complete]
+  Identify issues (broken deps, missing docs, etc.) [telemetry: task_graph.identify_issues.complete]
     ↓
-  Auto-fix high-priority issues [telemetry: htdag.fix.start]
+  Auto-fix high-priority issues [telemetry: task_graph.fix.start]
     ↓
   Iterate until all critical issues resolved
     ↓
-  System ready ✓ [telemetry: htdag.auto_bootstrap.complete]
+  System ready ✓ [telemetry: task_graph.auto_bootstrap.complete]
   ```
 
   ## Configuration
@@ -81,16 +81,16 @@ defmodule Singularity.Code.StartupCodeIngestion do
 
   This module emits telemetry events for observability:
 
-  - `[:htdag, :auto_bootstrap, :start]` - Bootstrap started
-  - `[:htdag, :auto_bootstrap, :complete]` - Bootstrap completed successfully
-  - `[:htdag, :auto_bootstrap, :error]` - Bootstrap encountered error
-  - `[:htdag, :learn, :start]` - Learning phase started
-  - `[:htdag, :learn, :complete]` - Learning phase completed
-  - `[:htdag, :trace, :start]` - Tracing phase started (if enabled)
-  - `[:htdag, :trace, :complete]` - Tracing phase completed
-  - `[:htdag, :identify_issues, :complete]` - Issue identification complete
-  - `[:htdag, :fix, :start]` - Fix phase started
-  - `[:htdag, :fix, :complete]` - Fix phase completed
+  - `[:task_graph, :auto_bootstrap, :start]` - Bootstrap started
+  - `[:task_graph, :auto_bootstrap, :complete]` - Bootstrap completed successfully
+  - `[:task_graph, :auto_bootstrap, :error]` - Bootstrap encountered error
+  - `[:task_graph, :learn, :start]` - Learning phase started
+  - `[:task_graph, :learn, :complete]` - Learning phase completed
+  - `[:task_graph, :trace, :start]` - Tracing phase started (if enabled)
+  - `[:task_graph, :trace, :complete]` - Tracing phase completed
+  - `[:task_graph, :identify_issues, :complete]` - Issue identification complete
+  - `[:task_graph, :fix, :start]` - Fix phase started
+  - `[:task_graph, :fix, :complete]` - Fix phase completed
 
   ## What Gets Fixed Automatically
 
@@ -290,7 +290,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
     start_time = System.monotonic_time()
 
     # TELEMETRY: Bootstrap started
-    :telemetry.execute([:htdag, :auto_bootstrap, :start], %{timestamp: DateTime.utc_now()}, %{})
+    :telemetry.execute([:task_graph, :auto_bootstrap, :start], %{timestamp: DateTime.utc_now()}, %{})
 
     new_state = %{state | status: :running, started_at: DateTime.utc_now()}
 
@@ -298,7 +298,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
     Logger.info("Phase 1: Learning codebase...")
 
     # TELEMETRY: Learning started
-    :telemetry.execute([:htdag, :learn, :start], %{timestamp: DateTime.utc_now()}, %{})
+    :telemetry.execute([:task_graph, :learn, :start], %{timestamp: DateTime.utc_now()}, %{})
 
     # INTEGRATION: FullRepoScanner - Scans codebase and builds knowledge graph
     case FullRepoScanner.learn_codebase() do
@@ -307,11 +307,11 @@ defmodule Singularity.Code.StartupCodeIngestion do
         Logger.info("Learning complete: #{issues_count} issues found")
 
         # TELEMETRY: Learning completed
-        :telemetry.execute([:htdag, :learn, :complete], %{issues_found: issues_count}, %{})
+        :telemetry.execute([:task_graph, :learn, :complete], %{issues_found: issues_count}, %{})
 
         # TELEMETRY: Issues identified
         :telemetry.execute(
-          [:htdag, :identify_issues, :complete],
+          [:task_graph, :identify_issues, :complete],
           %{
             total_issues: issues_count,
             high_severity: count_by_severity(learning.issues, :high),
@@ -332,7 +332,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
           Logger.info("Phase 2: Auto-fixing issues...")
 
           # TELEMETRY: Fix phase started
-          :telemetry.execute([:htdag, :fix, :start], %{issues_to_fix: issues_count}, %{})
+          :telemetry.execute([:task_graph, :fix, :start], %{issues_to_fix: issues_count}, %{})
 
           max_iterations = Keyword.get(state.config, :max_iterations, 10)
           dry_run = state.dry_run
@@ -348,7 +348,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
 
               # TELEMETRY: Fix phase completed
               :telemetry.execute(
-                [:htdag, :fix, :complete],
+                [:task_graph, :fix, :complete],
                 %{
                   iterations: fix_result.iterations,
                   fixes_applied: length(fix_result.fixes),
@@ -375,7 +375,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
 
               # TELEMETRY: Bootstrap completed successfully
               :telemetry.execute(
-                [:htdag, :auto_bootstrap, :complete],
+                [:task_graph, :auto_bootstrap, :complete],
                 %{
                   duration_ms: duration_ms,
                   issues_found: issues_count,
@@ -391,7 +391,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
               Logger.error("Auto-fix failed: #{inspect(reason)}")
 
               # TELEMETRY: Fix phase error
-              :telemetry.execute([:htdag, :fix, :error], %{reason: inspect(reason)}, %{})
+              :telemetry.execute([:task_graph, :fix, :error], %{reason: inspect(reason)}, %{})
               %{new_state | status: :failed, completed_at: DateTime.utc_now()}
           end
         else
@@ -410,11 +410,11 @@ defmodule Singularity.Code.StartupCodeIngestion do
         Logger.error("Learning failed: #{inspect(reason)}")
 
         # TELEMETRY: Learning error
-        :telemetry.execute([:htdag, :learn, :error], %{reason: inspect(reason)}, %{})
+        :telemetry.execute([:task_graph, :learn, :error], %{reason: inspect(reason)}, %{})
 
         # TELEMETRY: Bootstrap error
         :telemetry.execute(
-          [:htdag, :auto_bootstrap, :error],
+          [:task_graph, :auto_bootstrap, :error],
           %{
             phase: "learning",
             reason: inspect(reason)
@@ -488,7 +488,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
   end
 
   defp persist_learned_codebase(learning) do
-    # Persist HTDAG's learned modules directly to database
+    # Persist TaskGraph's learned modules directly to database
     # This is the UNIFIED ingestion path - no fragmentation!
 
     alias Singularity.{Repo, Schemas.CodeFile}
@@ -625,7 +625,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
   Extracts:
   - Full AST from CodeEngine NIF
   - Enhanced metadata (dependencies, call graph, type info, documentation)
-  - HTDAG learning data (module name, issues, etc.)
+  - TaskGraph learning data (module name, issues, etc.)
 
   Uses UPSERT so it's safe to call multiple times for the same file.
   """
@@ -648,7 +648,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
         # Extract enhanced metadata from AST
         enhanced_metadata = AstExtractor.extract_metadata(parsed.ast_json, file_path)
 
-        # Build attributes from file content + NIF parse results + HTDAG learning + enhanced metadata
+        # Build attributes from file content + NIF parse results + TaskGraph learning + enhanced metadata
         attrs = %{
           project_name: codebase_id,
           # Database uses project_name!
@@ -661,7 +661,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
           line_count: String.split(content, "\n") |> length(),
           hash: :crypto.hash(:md5, content) |> Base.encode16(),
           metadata: %{
-            # From HTDAG learning
+            # From TaskGraph learning
             module_name: Map.get(module, :module_name),
             has_moduledoc: Map.get(module, :has_moduledoc, false),
             issues: Map.get(module, :issues, []),
@@ -673,8 +673,8 @@ defmodule Singularity.Code.StartupCodeIngestion do
             imports: parsed.imports,
             exports: parsed.exports,
 
-            # From HTDAG learning (functions with arity)
-            functions_htdag: extract_functions(module),
+            # From TaskGraph learning (functions with arity)
+            functions_task_graph: extract_functions(module),
 
             # ✅ Enhanced metadata from AstExtractor
             dependencies: enhanced_metadata[:dependencies] || %{},

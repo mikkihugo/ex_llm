@@ -7,7 +7,7 @@ defmodule Singularity.Execution.SPARC.Supervisor do
 
   ## Managed Processes
 
-  - `Singularity.Execution.SPARC.Orchestrator` - GenServer for template-driven SPARC execution with HTDAG integration
+  - `Singularity.Execution.SPARC.Orchestrator` - GenServer for template-driven SPARC execution with TaskGraph integration
 
   ## SPARC Methodology
 

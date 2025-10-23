@@ -16,7 +16,7 @@ defmodule Singularity.Agents.RuntimeBootstrapper do
   @impl true
   def init(opts) do
     state = %{
-      agent_id: Keyword.get(opts, :agent_id, "htdag-runtime"),
+      agent_id: Keyword.get(opts, :agent_id, "task_graph-runtime"),
       agent_opts: Keyword.get(opts, :agent_opts, [])
     }
 

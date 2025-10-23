@@ -1,6 +1,6 @@
-defmodule Singularity.Execution.Planning.HTDAGStrategyLoader do
+defmodule Singularity.Execution.Planning.StrategyLoader do
   @moduledoc """
-  GenServer that loads and caches HTDAG execution strategies in ETS.
+  GenServer that loads and caches TaskGraph execution strategies in ETS.
 
   Provides fast strategy lookups by matching task descriptions against regex patterns.
   Strategies are sorted by priority (highest first) and cached in ETS for performance.
@@ -15,24 +15,24 @@ defmodule Singularity.Execution.Planning.HTDAGStrategyLoader do
   ## Usage
 
       # Get strategy for task
-      {:ok, strategy} = HTDAGStrategyLoader.get_strategy_for_task("Build user authentication")
-      # => %HTDAGExecutionStrategy{name: "secure_feature_development", ...}
+      {:ok, strategy} = StrategyLoader.get_strategy_for_task("Build user authentication")
+      # => %TaskExecutionStrategy{name: "secure_feature_development", ...}
 
       # Hot-reload after database update
-      HTDAGStrategyLoader.reload_strategies()
+      StrategyLoader.reload_strategies()
 
       # List all active strategies
-      strategies = HTDAGStrategyLoader.list_all_strategies()
+      strategies = StrategyLoader.list_all_strategies()
   """
 
   use GenServer
   require Logger
 
   alias Singularity.Repo
-  alias Singularity.Execution.Planning.HTDAGExecutionStrategy
+  alias Singularity.Execution.Planning.TaskExecutionStrategy
   import Ecto.Query
 
-  @table :htdag_strategy_cache
+  @table :task_graph_strategy_cache
   @refresh_interval :timer.minutes(5)
 
   ## Client API
@@ -52,12 +52,12 @@ defmodule Singularity.Execution.Planning.HTDAGStrategyLoader do
   ## Examples
 
       iex> get_strategy_for_task("Build user authentication system")
-      {:ok, %HTDAGExecutionStrategy{name: "secure_feature_development", ...}}
+      {:ok, %TaskExecutionStrategy{name: "secure_feature_development", ...}}
 
       iex> get_strategy_for_task("Unknown task type")
-      {:ok, %HTDAGExecutionStrategy{name: "default_strategy", ...}}
+      {:ok, %TaskExecutionStrategy{name: "default_strategy", ...}}
   """
-  @spec get_strategy_for_task(String.t()) :: {:ok, HTDAGExecutionStrategy.t()} | {:error, term()}
+  @spec get_strategy_for_task(String.t()) :: {:ok, TaskExecutionStrategy.t()} | {:error, term()}
   def get_strategy_for_task(task_description) do
     GenServer.call(__MODULE__, {:get_strategy, task_description})
   end
@@ -66,7 +66,7 @@ defmodule Singularity.Execution.Planning.HTDAGStrategyLoader do
   Get strategy by name.
   """
   @spec get_strategy_by_name(String.t()) ::
-          {:ok, HTDAGExecutionStrategy.t()} | {:error, :not_found}
+          {:ok, TaskExecutionStrategy.t()} | {:error, :not_found}
   def get_strategy_by_name(name) do
     case :ets.lookup(@table, {:by_name, name}) do
       [{_key, strategy}] -> {:ok, strategy}
@@ -77,7 +77,7 @@ defmodule Singularity.Execution.Planning.HTDAGStrategyLoader do
   @doc """
   List all active strategies, sorted by priority.
   """
-  @spec list_all_strategies() :: [HTDAGExecutionStrategy.t()]
+  @spec list_all_strategies() :: [TaskExecutionStrategy.t()]
   def list_all_strategies do
     :ets.match_object(@table, {{:strategy, :_}, :"$1"})
     |> Enum.map(fn {_key, strategy} -> strategy end)
@@ -105,7 +105,7 @@ defmodule Singularity.Execution.Planning.HTDAGStrategyLoader do
     # Schedule periodic refresh
     schedule_refresh()
 
-    Logger.info("HTDAGStrategyLoader started with #{count_strategies()} strategies")
+    Logger.info("StrategyLoader started with #{count_strategies()} strategies")
 
     {:ok, %{last_refresh: DateTime.utc_now()}}
   end
@@ -118,7 +118,7 @@ defmodule Singularity.Execution.Planning.HTDAGStrategyLoader do
 
   @impl true
   def handle_cast(:reload, state) do
-    Logger.info("Reloading HTDAG execution strategies from database")
+    Logger.info("Reloading TaskGraph execution strategies from database")
     load_all_strategies()
     {:noreply, %{state | last_refresh: DateTime.utc_now()}}
   end
@@ -138,7 +138,7 @@ defmodule Singularity.Execution.Planning.HTDAGStrategyLoader do
 
     # Load all active strategies from database, sorted by priority
     strategies =
-      from(s in HTDAGExecutionStrategy,
+      from(s in TaskExecutionStrategy,
         where: s.status == "active",
         order_by: [desc: s.priority, desc: s.inserted_at]
       )
@@ -165,7 +165,7 @@ defmodule Singularity.Execution.Planning.HTDAGStrategyLoader do
       end
     end)
 
-    Logger.debug("Loaded #{length(strategies)} HTDAG execution strategies into ETS cache")
+    Logger.debug("Loaded #{length(strategies)} TaskGraph execution strategies into ETS cache")
   end
 
   defp find_matching_strategy(task_description) do

@@ -1,7 +1,7 @@
 defmodule Singularity.HotReload.ImprovementGateway do
   @moduledoc """
   Thin facade that ensures hot-reload guardrails are used when other systems
-  (like HTDAG auto-fixes) generate code changes outside the dedicated
+  (like TaskGraph auto-fixes) generate code changes outside the dedicated
   self-improving agent loop.
 
   The gateway will:
@@ -16,7 +16,7 @@ defmodule Singularity.HotReload.ImprovementGateway do
   alias Singularity.ProcessRegistry
   alias Singularity.SelfImprovingAgent
 
-  @default_agent_id "htdag-runtime"
+  @default_agent_id "task_graph-runtime"
 
   @doc """
   Dispatch an improvement payload through the self-improving agent safeguards.

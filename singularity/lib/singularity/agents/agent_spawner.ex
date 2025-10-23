@@ -2,7 +2,7 @@ defmodule Singularity.Agents.AgentSpawner do
   @moduledoc """
   AgentSpawner - Spawns agents from Lua configurations.
 
-  Converts Lua agent configs (from HTDAGLuaExecutor) into running Agent processes.
+  Converts Lua agent configs (from LuaStrategyExecutor) into running Agent processes.
 
   ## Module Identity (JSON)
 
@@ -12,7 +12,7 @@ defmodule Singularity.Agents.AgentSpawner do
     "purpose": "Spawn agents from Lua strategy configurations",
     "layer": "Agents & Execution",
     "dependencies": ["Singularity.Agent"],
-    "used_by": ["HTDAGExecutor"]
+    "used_by": ["TaskGraphExecutor"]
   }
   ```
 
@@ -20,13 +20,13 @@ defmodule Singularity.Agents.AgentSpawner do
 
   ```mermaid
   graph LR
-    HTDAGExecutor[HTDAG Executor]
+    TaskGraphExecutor[TaskGraph Executor]
     Lua[Lua Script]
     Spawner[Agent Spawner]
     Agent[Agent Process]
 
-    HTDAGExecutor -->|agent config| Spawner
-    Lua -->|defines config| HTDAGExecutor
+    TaskGraphExecutor -->|agent config| Spawner
+    Lua -->|defines config| TaskGraphExecutor
     Spawner -->|spawn| Agent
   ```
 

@@ -1,6 +1,6 @@
 defmodule Singularity.Code.FullRepoScanner do
   @moduledoc """
-  Incremental learning system for HTDAG to understand and auto-repair the ENTIRE codebase.
+  Incremental learning system for TaskGraph to understand and auto-repair the ENTIRE codebase.
 
   Scans the FULL repository (Elixir, Rust, TypeScript, Go, Python, Nix, config files, etc.)
   for comprehensive multi-language analysis. Builds knowledge graphs of module relationships
@@ -13,9 +13,9 @@ defmodule Singularity.Code.FullRepoScanner do
   - `Singularity.Storage.Store` - Knowledge search (Store.search_knowledge/2)
   - `Singularity.LLM.Service` - Lua-based fix generation (Service.call_with_script/3)
   - `Singularity.HotReload.ImprovementGateway` - Hot reload (ImprovementGateway.dispatch/2)
-  - `Singularity.Execution.Planning.HTDAGTracer` - Runtime tracing (HTDAGTracer.full_analysis/1)
+  - `Singularity.Execution.Planning.ExecutionTracer` - Runtime tracing (ExecutionTracer.full_analysis/1)
   - `Singularity.SelfImprovingAgent` - Self-improvement (SelfImprovingAgent integration)
-  - PostgreSQL table: `htdag_learning_results` (stores learning analysis)
+  - PostgreSQL table: `task_graph_learning_results` (stores learning analysis)
 
   ## Learning Approach
 
@@ -51,8 +51,8 @@ defmodule Singularity.Code.FullRepoScanner do
   # INTEGRATION: Knowledge search and code generation
   alias Singularity.{Store, RAGCodeGenerator, QualityCodeGenerator, HotReload.ImprovementGateway}
 
-  # INTEGRATION: HTDAG planning and tracing
-  alias Singularity.Execution.Planning.{HTDAG, SystemBootstrap, HTDAGTracer}
+  # INTEGRATION: TaskGraph planning and tracing
+  alias Singularity.Execution.Planning.{TaskGraph, SystemBootstrap, ExecutionTracer}
 
   # INTEGRATION: Self-improvement (learning from execution)
   alias Singularity.SelfImprovingAgent
@@ -124,7 +124,7 @@ defmodule Singularity.Code.FullRepoScanner do
   end
 
   @doc """
-  Map all existing systems into HTDAG with inline documentation.
+  Map all existing systems into TaskGraph with inline documentation.
 
   Creates a comprehensive mapping document showing:
   - What each system does
@@ -133,7 +133,7 @@ defmodule Singularity.Code.FullRepoScanner do
   - How to fix it
   """
   def map_all_systems do
-    Logger.info("Mapping all systems into HTDAG...")
+    Logger.info("Mapping all systems into TaskGraph...")
 
     # Learn about everything
     {:ok, learning} = learn_codebase()
@@ -185,7 +185,7 @@ defmodule Singularity.Code.FullRepoScanner do
     Logger.info("Phase 2: Runtime tracing...")
 
     {:ok, trace_analysis} =
-      HTDAGTracer.full_analysis(trace_duration_ms: Keyword.get(opts, :trace_duration_ms, 10_000))
+      ExecutionTracer.full_analysis(trace_duration_ms: Keyword.get(opts, :trace_duration_ms, 10_000))
 
     # Step 3: Merge insights
     Logger.info("Phase 3: Merging insights...")
@@ -229,7 +229,7 @@ defmodule Singularity.Code.FullRepoScanner do
           end)
 
         # Check connectivity
-        connectivity = HTDAGTracer.is_connected?(String.to_atom("Elixir.#{mod_name}"))
+        connectivity = ExecutionTracer.is_connected?(String.to_atom("Elixir.#{mod_name}"))
 
         # Check for broken functions in this module
         broken_in_module =
@@ -834,7 +834,7 @@ defmodule Singularity.Code.FullRepoScanner do
           Logger.info("✓ Fixed broken dependency in #{file_path}")
 
           dispatch_metadata = %{
-            "reason" => "htdag_auto_fix",
+            "reason" => "task_graph_auto_fix",
             "issue_type" => "broken_dependency",
             "module" => issue.module,
             "missing_dependency" => issue.missing,
@@ -847,10 +847,10 @@ defmodule Singularity.Code.FullRepoScanner do
             "metadata" => dispatch_metadata
           }
 
-          case ImprovementGateway.dispatch(payload, agent_id: "htdag-runtime") do
+          case ImprovementGateway.dispatch(payload, agent_id: "task_graph-runtime") do
             :ok ->
               Logger.debug("Hot reload dispatched for #{issue.module}",
-                agent_id: "htdag-runtime"
+                agent_id: "task_graph-runtime"
               )
 
             {:error, reason} ->
@@ -930,7 +930,7 @@ defmodule Singularity.Code.FullRepoScanner do
           Logger.info("✓ Added documentation to #{file_path}")
 
           metadata = %{
-            "reason" => "htdag_auto_fix",
+            "reason" => "task_graph_auto_fix",
             "issue_type" => "missing_docs",
             "module" => issue.module,
             "file_path" => file_path
@@ -941,10 +941,10 @@ defmodule Singularity.Code.FullRepoScanner do
             "metadata" => metadata
           }
 
-          case ImprovementGateway.dispatch(payload, agent_id: "htdag-runtime") do
+          case ImprovementGateway.dispatch(payload, agent_id: "task_graph-runtime") do
             :ok ->
               Logger.debug("Hot reload dispatched after doc generation",
-                agent_id: "htdag-runtime",
+                agent_id: "task_graph-runtime",
                 module: issue.module
               )
 
@@ -1072,7 +1072,7 @@ defmodule Singularity.Code.FullRepoScanner do
       module: "Singularity.SelfImprovingAgent",
       purpose: "Self-improving agent that evolves through feedback",
       current_state: check_module_in_learning(learning, "SelfImprovingAgent"),
-      integration_with_htdag: "Feeds evolution results to HTDAG for improvements",
+      integration_with_task_graph: "Feeds evolution results to TaskGraph for improvements",
       what_it_does: """
       - Observes metrics from task execution
       - Decides when to evolve based on performance
@@ -1081,8 +1081,8 @@ defmodule Singularity.Code.FullRepoScanner do
       """,
       how_to_use_it: """
       SelfImprovingAgent.improve(agent_id, %{
-        mutations: htdag_mutations,
-        source: "htdag_evolution"
+        mutations: task_graph_mutations,
+        source: "task_graph_evolution"
       })
       """
     }
@@ -1093,16 +1093,16 @@ defmodule Singularity.Code.FullRepoScanner do
       module: "Singularity.Execution.Planning.SafeWorkPlanner",
       purpose: "SAFe 6.0 hierarchical work planning",
       current_state: check_module_in_learning(learning, "SafeWorkPlanner"),
-      integration_with_htdag: "HTDAG tasks map to Features in SafeWorkPlanner",
+      integration_with_task_graph: "TaskGraph tasks map to Features in SafeWorkPlanner",
       what_it_does: """
       - Creates Strategic Themes (3-5 year vision)
       - Breaks down into Epics (6-12 months)
       - Further into Capabilities and Features
-      - HTDAG handles task-level breakdown
+      - TaskGraph handles task-level breakdown
       """,
       how_to_use_it: """
-      # HTDAG will automatically map tasks to Features
-      HTDAG.execute_with_nats(dag, safe_planning: true)
+      # TaskGraph will automatically map tasks to Features
+      TaskGraph.execute_with_nats(dag, safe_planning: true)
       """
     }
   end
@@ -1113,7 +1113,7 @@ defmodule Singularity.Code.FullRepoScanner do
       purpose: "SPARC methodology orchestration",
       current_state:
         check_module_in_learning(learning, "Singularity.Execution.SPARC.Orchestrator"),
-      integration_with_htdag: "HTDAG executor applies SPARC phases to tasks",
+      integration_with_task_graph: "TaskGraph executor applies SPARC phases to tasks",
       what_it_does: """
       - Specification: Define requirements
       - Pseudocode: High-level algorithm
@@ -1123,7 +1123,7 @@ defmodule Singularity.Code.FullRepoScanner do
       """,
       how_to_use_it: """
       # Enable SPARC for structured development
-      HTDAG.execute_with_nats(dag, integrate_sparc: true)
+      TaskGraph.execute_with_nats(dag, integrate_sparc: true)
       """
     }
   end
@@ -1136,14 +1136,14 @@ defmodule Singularity.Code.FullRepoScanner do
         rag: check_module_in_learning(learning, "RAGCodeGenerator"),
         quality: check_module_in_learning(learning, "QualityCodeGenerator")
       },
-      integration_with_htdag: "HTDAG executor uses both for code generation",
+      integration_with_task_graph: "TaskGraph executor uses both for code generation",
       what_it_does: """
       RAG: Finds similar code from codebase, uses as examples
       Quality: Enforces documentation, specs, tests, standards
       """,
       how_to_use_it: """
       # Use both for best results
-      HTDAG.execute_with_nats(dag,
+      TaskGraph.execute_with_nats(dag,
         use_rag: true,
         use_quality_templates: true
       )
@@ -1156,7 +1156,7 @@ defmodule Singularity.Code.FullRepoScanner do
       module: "Singularity.Storage.Store",
       purpose: "Unified storage for code, knowledge, services",
       current_state: check_module_in_learning(learning, "Store"),
-      integration_with_htdag: "HTDAG uses Store for knowledge search and code storage",
+      integration_with_task_graph: "TaskGraph uses Store for knowledge search and code storage",
       what_it_does: """
       - Store.all_services(): Discover services
       - Store.search_knowledge(): Find similar code
@@ -1176,27 +1176,27 @@ defmodule Singularity.Code.FullRepoScanner do
   defp identify_integrations(learning) do
     [
       %{
-        from: "HTDAG",
+        from: "TaskGraph",
         to: "SelfImprovingAgent",
-        via: "HTDAGEvolution.critique_and_mutate/2",
-        status: check_integration_exists(learning, "HTDAGEvolution")
+        via: "TaskGraphEvolution.critique_and_mutate/2",
+        status: check_integration_exists(learning, "TaskGraphEvolution")
       },
       %{
-        from: "HTDAG",
+        from: "TaskGraph",
         to: "RAGCodeGenerator",
         via: "Store.search_knowledge/2",
         status: check_integration_exists(learning, "Store")
       },
       %{
-        from: "HTDAG",
+        from: "TaskGraph",
         to: "SafeWorkPlanner",
-        via: "HTDAG.execute_with_nats/2 with safe_planning: true",
+        via: "TaskGraph.execute_with_nats/2 with safe_planning: true",
         status: :partial
       },
       %{
-        from: "HTDAG",
+        from: "TaskGraph",
         to: "SPARC.Orchestrator",
-        via: "HTDAG.execute_with_nats/2 with integrate_sparc: true",
+        via: "TaskGraph.execute_with_nats/2 with integrate_sparc: true",
         status: :partial
       }
     ]

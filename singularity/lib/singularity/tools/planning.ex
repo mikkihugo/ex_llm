@@ -4,14 +4,14 @@ defmodule Singularity.Tools.Planning do
 
   Wraps existing planning capabilities:
   - SafeWorkPlanner - SAFe 6.0 portfolio management
-  - HTDAG - Hierarchical task decomposition
+  - TaskGraph - Hierarchical task decomposition
   - Planner - SPARC methodology
   - SPARC.Orchestrator - Task orchestration
   """
 
   require Logger
   alias Singularity.Tools.Tool
-  alias Singularity.Execution.Planning.{SafeWorkPlanner, HTDAGCore}
+  alias Singularity.Execution.Planning.{SafeWorkPlanner, TaskGraphCore}
   alias Singularity.Execution.Autonomy.Planner
   alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
 
@@ -54,7 +54,7 @@ defmodule Singularity.Tools.Planning do
   defp planning_decompose_tool do
     Tool.new!(%{
       name: "planning_decompose",
-      description: "Break down a high-level task into smaller, manageable subtasks using HTDAG.",
+      description: "Break down a high-level task into smaller, manageable subtasks using TaskGraph.",
       display_text: "Task Decomposition",
       parameters: [
         %{
@@ -202,9 +202,9 @@ defmodule Singularity.Tools.Planning do
     complexity = Map.get(args, "complexity", "medium")
     max_depth = Map.get(args, "max_depth", 3)
 
-    case HTDAGCore.decompose_task(description, complexity: complexity, max_depth: max_depth) do
+    case TaskGraphCore.decompose_task(description, complexity: complexity, max_depth: max_depth) do
       {:ok, dag} ->
-        tasks = HTDAGCore.get_all_tasks(dag)
+        tasks = TaskGraphCore.get_all_tasks(dag)
 
         {:ok,
          %{
@@ -213,7 +213,7 @@ defmodule Singularity.Tools.Planning do
            max_depth: max_depth,
            total_tasks: length(tasks),
            tasks: tasks,
-           dag_structure: HTDAGCore.get_structure(dag)
+           dag_structure: TaskGraphCore.get_structure(dag)
          }}
 
       {:error, reason} ->

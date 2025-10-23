@@ -1,8 +1,8 @@
 defmodule Singularity.Execution.Planning.Schemas.Feature do
   @moduledoc """
-  Feature schema for 1-3 month team deliverables with HTDAG integration and SAFe 6.0 Essential framework alignment.
+  Feature schema for 1-3 month team deliverables with TaskGraph integration and SAFe 6.0 Essential framework alignment.
 
-  Represents work that can be broken down into HTDAG tasks and stories
+  Represents work that can be broken down into TaskGraph tasks and stories
   with acceptance criteria tracking and integration with capabilities
   for autonomous agent execution and work planning.
 
@@ -10,7 +10,7 @@ defmodule Singularity.Execution.Planning.Schemas.Feature do
 
   This module integrates with:
   - `Singularity.Execution.Planning.Schemas.Capability` - Capability relationships (belongs_to :capability)
-  - HTDAG system - Task decomposition (htdag_id field for HTDAG integration)
+  - TaskGraph system - Task decomposition (task_graph_id field for TaskGraph integration)
   - PostgreSQL table: `safe_methodology_features` (stores feature data)
 
   ## Usage
@@ -26,7 +26,7 @@ defmodule Singularity.Execution.Planning.Schemas.Feature do
 
       # Convert to state map
       state_map = Feature.to_state_map(feature)
-      # => %{id: "123", name: "User Authentication", htdag_id: "htdag-456", ...}
+      # => %{id: "123", name: "User Authentication", task_graph_id: "task_graph-456", ...}
   """
 
   use Ecto.Schema
@@ -42,7 +42,7 @@ defmodule Singularity.Execution.Planning.Schemas.Feature do
     field :name, :string
     field :description, :string
     field :status, :string, default: "backlog"
-    field :htdag_id, :string
+    field :task_graph_id, :string
     field :acceptance_criteria, {:array, :string}, default: []
     field :approved_by, :string
 
@@ -66,7 +66,7 @@ defmodule Singularity.Execution.Planning.Schemas.Feature do
       :name,
       :description,
       :status,
-      :htdag_id,
+      :task_graph_id,
       :acceptance_criteria,
       :approved_by
     ])
@@ -86,7 +86,7 @@ defmodule Singularity.Execution.Planning.Schemas.Feature do
       name: feature.name,
       description: feature.description,
       capability_id: feature.capability_id,
-      htdag_id: feature.htdag_id,
+      task_graph_id: feature.task_graph_id,
       acceptance_criteria: feature.acceptance_criteria || [],
       status: String.to_atom(feature.status),
       created_at: feature.inserted_at,

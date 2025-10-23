@@ -200,13 +200,46 @@ Commit guard
 - The pre-commit hook refuses commits outside a Nix dev shell.
 
 Binary cache
-- The flake’s `nixConfig` sets the Cachix substituter globally for this flake.
+- The flake's `nixConfig` sets the Cachix substituter globally for this flake.
 - Optional push from your machine:
   ```bash
   nix profile install nixpkgs#cachix
   cachix authtoken <TOKEN>
   cachix watch-exec mikkihugo -- nix build .#devShells.$(nix eval --raw --impure --expr builtins.currentSystem).default -L
   ```
+
+## 🚀 Top 5 Priorities (Next Steps - 2 Weeks to MVP)
+
+**System Status**: 83% complete. Foundation is solid. Missing the intelligence layer for autonomous evolution.
+
+**Action Items** (in dependency order):
+
+1. **Complete agent_metrics Database Migration** (1-2 days)
+   - Create table with success_rate, cost, latency per agent per time window
+   - Blocks: Everything else. This is the key blocker.
+   - See: `SELFEVOLVE.md` → Priority 1
+
+2. **Wire Up MetricsAggregationWorker with Oban** (1-2 days)
+   - Aggregate telemetry into actionable metrics every 5 minutes
+   - Unblocks: Feedback analyzer
+   - See: `SELFEVOLVE.md` → Priority 1.2
+
+3. **Add Pattern Library** (2-3 days)
+   - 42 patterns discovered but not curated for agents
+   - Review and export best patterns to `templates_data/learned/`
+   - Unblocks: Evolution logic
+
+4. **Implement Rollback Mechanism** (2-3 days)
+   - A/B test improvements with automatic rollback on degradation
+   - Safe evolution is critical
+   - Depends on: Items #1 & #2
+
+5. **Optimize Rust Engines for GPU** (3-5 days)
+   - RTX 4080 CUDA acceleration for embeddings pipeline
+   - Performance optimization (10-100x speedup)
+
+**Full Details**: See `SELFEVOLVE.md` (architecture clarity + top 5 action items)
+**Architecture Guide**: See `docs/architecture/AGENTS.md` (agent design patterns)
 
 ## Notes
 

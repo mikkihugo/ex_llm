@@ -12,7 +12,7 @@ defmodule Singularity.Agents.Supervisor do
   ## Agent Types
 
   Fixed agents (supervised here):
-  - RuntimeBootstrapper - Ensures HTDAG auto-fixes work
+  - RuntimeBootstrapper - Ensures TaskGraph auto-fixes work
 
   Dynamic agents (spawned via AgentSupervisor):
   - SelfImprovingAgent

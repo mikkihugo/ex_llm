@@ -132,7 +132,7 @@ defmodule Singularity.Tools.EnhancedDescriptions do
     },
     "planning_decompose" => %{
       description: """
-      Break down a high-level task into smaller, manageable subtasks using HTDAG.
+      Break down a high-level task into smaller, manageable subtasks using TaskGraph.
 
       WHEN TO USE:
       - Breaking down large features ("How do I implement user auth?")

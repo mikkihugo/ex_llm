@@ -2,9 +2,58 @@
 
 Complete documentation for Singularity's autonomous agent system.
 
+## 🎯 CRITICAL ARCHITECTURE CLARITY
+
+**Agents are NOT the core system - they are USERS of it.**
+
+### The 6 Agents (Thin Wrappers)
+```
+Architecture Agent
+CostOptimized Agent
+Technology Agent     } → Task routers that delegate to system infrastructure
+Refactoring Agent
+SelfImproving Agent
+Chat Agent
+```
+
+### The System Infrastructure (The Real Value)
+```
+Knowledge Base (Git ↔ PostgreSQL, pgvector embeddings)
+Pattern Mining (Semantic clustering, success ranking)
+Multi-Tier Caching (L1: ETS, L2: PostgreSQL, L3: Rust)
+Execution Planning (HTDAG, SPARC, Todos)
+Telemetry & Learning (Metrics, feedback loops, evolution)
+8 Rust Engines (Parsing, analysis, embeddings, quality checks)
+```
+
+**What This Means:**
+- ✅ **Agents delegate** to infrastructure (don't contain logic)
+- ✅ **All 6 agents improve** from the same centralized evolution system
+- ✅ **Improving the infrastructure** improves all agents automatically
+- ❌ **Creating new agents** doesn't require new infrastructure
+
+**Example Execution Flow:**
+```
+Agent.execute("refactor_code", context)
+  ↓
+Agent routes to appropriate tool
+  ↓
+Infrastructure (Quality Engine, PatternMiner, LLM Service, Cache, etc.)
+  ↓
+Telemetry captures metrics
+  ↓
+Evolution system analyzes & improves infrastructure
+  ↓
+Next agent execution benefits from improvements
+```
+
+---
+
 ## Overview
 
 Singularity implements a sophisticated multi-agent system with **6 agent types**, each specialized for different tasks. All agents share common infrastructure for supervision, flow tracking, and cost optimization.
+
+**Key Point**: These agents are specialized task routers, not autonomous systems. The real autonomy is in the infrastructure they use.
 
 ## Agent Types
 

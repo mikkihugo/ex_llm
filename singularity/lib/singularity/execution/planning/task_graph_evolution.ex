@@ -1,8 +1,8 @@
-defmodule Singularity.Execution.Planning.HTDAGEvolution do
+defmodule Singularity.Execution.Planning.TaskGraphEvolution do
   @moduledoc """
-  Self-evolution module for HTDAG using context-aware Lua scripts for critique and optimization.
+  Self-evolution module for TaskGraph using context-aware Lua scripts for critique and optimization.
 
-  Enables autonomous improvement of HTDAG execution by analyzing performance metrics,
+  Enables autonomous improvement of TaskGraph execution by analyzing performance metrics,
   searching git history for successful patterns, and applying mutations to operation
   parameters, model selection, and prompt templates.
 
@@ -11,13 +11,13 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
   This module integrates with:
   - `Singularity.LLM.Service` - Lua-based critique (Service.call_with_script/3)
   - `:telemetry` - Performance metrics (telemetry events for execution analysis)
-  - PostgreSQL table: `htdag_evolution_logs` (stores mutation history and results)
+  - PostgreSQL table: `task_graph_evolution_logs` (stores mutation history and results)
 
   ## Lua-Based Critique
 
-  Uses `templates_data/prompt_library/execution/critique-htdag-run.lua` which:
+  Uses `templates_data/prompt_library/execution/critique-task_graph-run.lua` which:
   - Analyzes execution metrics (completed, failed, tokens, latency)
-  - Searches git history for successful HTDAG patterns
+  - Searches git history for successful TaskGraph patterns
   - Checks recent model configuration changes
   - Proposes mutations based on cost/quality tradeoffs
 
@@ -31,11 +31,11 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
   ## Usage
 
       # Evolve based on execution results (uses Lua script)
-      {:ok, mutations} = HTDAGEvolution.critique_and_mutate(execution_result)
+      {:ok, mutations} = TaskGraphEvolution.critique_and_mutate(execution_result)
       # => {:ok, [%{type: :model_change, target: "task-123", new_value: "claude-sonnet-4.5"}]}
 
       # Apply mutations to parameters
-      improved_params = HTDAGEvolution.apply_mutations(mutations, original_params)
+      improved_params = TaskGraphEvolution.apply_mutations(mutations, original_params)
       # => %{model_id: "claude-sonnet-4.5", temperature: 0.3, ...}
   """
 
@@ -74,7 +74,7 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
     }
 
     case Service.call_with_script(
-           "execution/critique-htdag-run.lua",
+           "execution/critique-task_graph-run.lua",
            script_context,
            complexity: :medium,
            task_type: :architect

@@ -6,8 +6,8 @@ defmodule Singularity.Execution.TaskGraph.Worker do
 
   1. Assigned a todo by TaskGraph.WorkerPool
   2. Analyzes todo requirements (title, description, context)
-  3. Decomposes task using HTDAG for hierarchical execution
-  4. Executes task DAG with HTDAG executor
+  3. Decomposes task using TaskGraph for hierarchical execution
+  4. Executes task DAG with TaskGraph executor
   5. Reports result back to coordinator
   6. Updates todo status in TodoStore
 
@@ -36,7 +36,7 @@ defmodule Singularity.Execution.TaskGraph.Worker do
   use GenServer
   require Logger
   alias Singularity.Execution.Todos.TodoStore
-  alias Singularity.Execution.Planning.HTDAG
+  alias Singularity.Execution.Planning.TaskGraph
   alias Singularity.Execution.TaskGraph.WorkerPool
   # 5 minutes
   @execution_timeout_ms 300_000
@@ -139,59 +139,59 @@ defmodule Singularity.Execution.TaskGraph.Worker do
 
   defp perform_task(todo) do
     try do
-      # Use HTDAG for hierarchical task decomposition
-      Logger.debug("Decomposing todo with HTDAG",
+      # Use TaskGraph for hierarchical task decomposition
+      Logger.debug("Decomposing todo with TaskGraph",
         todo_id: todo.id,
         complexity: todo.complexity
       )
 
-      # Create HTDAG from todo
+      # Create TaskGraph from todo
       dag =
-        HTDAG.decompose(%{
+        TaskGraph.decompose(%{
           description: todo.title,
           details: todo.description,
           context: todo.context,
           complexity: map_complexity(todo.complexity)
         })
 
-      # Execute with HTDAG
+      # Execute with TaskGraph
       run_id = "todo-#{todo.id}-#{System.system_time(:millisecond)}"
 
-      case HTDAG.execute_with_nats(dag,
+      case TaskGraph.execute_with_nats(dag,
              run_id: run_id,
              stream: false,
              # Don't evolve for simple todos
              evolve: false
            ) do
         {:ok, result} ->
-          Logger.info("HTDAG execution succeeded",
+          Logger.info("TaskGraph execution succeeded",
             todo_id: todo.id,
             run_id: run_id,
             completed: result.completed,
             failed: result.failed
           )
 
-          # Extract final result from HTDAG execution
+          # Extract final result from TaskGraph execution
           output = extract_result_output(result)
 
           {:ok,
            %{
              output: output,
-             completed_by: "TaskGraph.Worker (via HTDAG)",
+             completed_by: "TaskGraph.Worker (via TaskGraph)",
              completed_at: DateTime.utc_now(),
-             htdag_run_id: run_id,
+             task_graph_run_id: run_id,
              tasks_completed: result.completed,
              tasks_failed: result.failed
            }}
 
         {:error, reason} ->
-          Logger.error("HTDAG execution failed",
+          Logger.error("TaskGraph execution failed",
             todo_id: todo.id,
             run_id: run_id,
             reason: inspect(reason)
           )
 
-          {:error, "HTDAG execution failed: #{inspect(reason)}"}
+          {:error, "TaskGraph execution failed: #{inspect(reason)}"}
       end
     catch
       kind, reason ->
@@ -206,7 +206,7 @@ defmodule Singularity.Execution.TaskGraph.Worker do
     end
   end
 
-  # Extract meaningful output from HTDAG execution results
+  # Extract meaningful output from TaskGraph execution results
   defp extract_result_output(%{results: results}) when is_map(results) do
     results
     |> Map.values()

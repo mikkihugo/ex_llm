@@ -3,7 +3,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   Integrates template performance DAG with LLM prompting.
 
   Automatically:
-  - Selects best template based on HTDAG performance data
+  - Selects best template based on TaskGraph performance data
   - Injects template context into prompts
   - Tracks which prompts work best
   - Learns from feedback to improve selection
@@ -22,7 +22,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   @doc """
   Generate LLM prompt with optimal template selection
 
-  The HTDAG tells us which template performed best for similar tasks!
+  The TaskGraph tells us which template performed best for similar tasks!
   Now enhanced with Rust prompt engine for context-aware generation.
   """
   def generate_prompt(task, opts \\ []) do
@@ -134,7 +134,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   end
 
   defp generate_prompt_legacy(task, language, opts) do
-    # 1. Ask HTDAG for best template based on history
+    # 1. Ask TaskGraph for best template based on history
     {:ok, template_id} =
       Singularity.TemplatePerformanceTracker.get_best_template(task.type, language)
 
@@ -209,7 +209,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
               prompt_optimized: optimized_prompt != prompt_data.prompt
             }
 
-            # Record in HTDAG for learning
+            # Record in TaskGraph for learning
             Singularity.TemplatePerformanceTracker.record_usage(
               prompt_data.template_id,
               task,
@@ -401,7 +401,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   end
 
   @doc """
-  Get prompt optimization suggestions from HTDAG analysis
+  Get prompt optimization suggestions from TaskGraph analysis
   """
   def get_optimization_suggestions do
     {:ok, analysis} = Singularity.TemplatePerformanceTracker.analyze_performance()

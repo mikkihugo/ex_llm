@@ -1,6 +1,6 @@
 defmodule Singularity.TemplatePerformanceTracker do
   @moduledoc """
-  Template Performance Tracker using HTDAG for ML-driven template selection.
+  Template Performance Tracker using TaskGraph for ML-driven template selection.
 
   Uses Hierarchical Temporal DAG to:
   - Track template usage over time
@@ -22,7 +22,7 @@ defmodule Singularity.TemplatePerformanceTracker do
 
   use GenServer
   require Logger
-  alias Singularity.Execution.Planning.{HTDAG, HTDAGCore}
+  alias Singularity.Execution.Planning.{TaskGraph, TaskGraphCore}
   alias Singularity.CodeStore
 
   defstruct [
@@ -76,8 +76,8 @@ defmodule Singularity.TemplatePerformanceTracker do
 
   @impl true
   def init(opts) do
-    # Initialize HTDAG for template tracking
-    dag = HTDAGCore.new("template-performance")
+    # Initialize TaskGraph for template tracking
+    dag = TaskGraphCore.new("template-performance")
 
     state = %__MODULE__{
       dag: dag,
@@ -99,8 +99,8 @@ defmodule Singularity.TemplatePerformanceTracker do
     # Create DAG node for this usage
     node = create_performance_node(template_id, task, metrics)
 
-    # Add to HTDAG
-    HTDAG.add_node(state.dag, node)
+    # Add to TaskGraph
+    TaskGraph.add_node(state.dag, node)
 
     # Update performance data
     updated_data = update_performance_data(state.performance_data, template_id, task, metrics)
@@ -121,7 +121,7 @@ defmodule Singularity.TemplatePerformanceTracker do
 
   @impl true
   def handle_call({:get_best, task_type, language}, _from, state) do
-    # Use HTDAG to find similar successful tasks
+    # Use TaskGraph to find similar successful tasks
     similar_tasks = find_similar_tasks(state.dag, task_type, language)
 
     # Get templates used for similar tasks
@@ -272,8 +272,8 @@ defmodule Singularity.TemplatePerformanceTracker do
   end
 
   defp find_similar_tasks(dag, task_type, language) do
-    # Query HTDAG for similar task nodes
-    HTDAG.query(dag, %{
+    # Query TaskGraph for similar task nodes
+    TaskGraph.query(dag, %{
       type: :template_performance,
       filters: [
         {:task_type, :similar_to, task_type},
@@ -411,7 +411,7 @@ defmodule Singularity.TemplatePerformanceTracker do
   end
 
   defp analyze_quality_trends(_dag) do
-    # Analyze quality over time using HTDAG temporal features
+    # Analyze quality over time using TaskGraph temporal features
     # This would query the DAG for temporal patterns
     %{
       trend: :improving,

@@ -15,7 +15,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # Rustler for Elixir NIFs
-rustler = "0.34"
+rustler = { workspace = true }
 
 # ONNX Runtime for Jina v3 with CUDA support
 # ort = { version = "2.0.0-rc.10", features = ["load-dynamic"], optional = true }

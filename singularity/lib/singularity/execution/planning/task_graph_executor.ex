@@ -1,6 +1,6 @@
-defmodule Singularity.Execution.Planning.HTDAGExecutor do
+defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   @moduledoc """
-  HTDAG Executor with NATS LLM integration for self-evolving task execution.
+  TaskGraph Executor with NATS LLM integration for self-evolving task execution.
 
   Executes hierarchical task DAGs using NATS-based LLM communication with real-time
   token streaming, circuit breaking, and self-improvement through execution feedback.
@@ -9,14 +9,14 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
   ## Integration Points
 
   This module integrates with:
-  - `Singularity.Execution.Planning.HTDAGCore` - DAG operations (HTDAGCore.select_next_task/1, mark_completed/2)
+  - `Singularity.Execution.Planning.TaskGraphCore` - DAG operations (TaskGraphCore.select_next_task/1, mark_completed/2)
   - `Singularity.LLM.NatsOperation` - LLM execution (NatsOperation.compile/2, run/3)
   - `Singularity.RAGCodeGenerator` - Code generation (RAGCodeGenerator.find_similar/2)
   - `Singularity.QualityCodeGenerator` - Quality enforcement (QualityCodeGenerator.generate/2)
   - `Singularity.Store` - Knowledge search (Store.search_knowledge/2)
   - `Singularity.SelfImprovingAgent` - Self-improvement (SelfImprovingAgent.learn_from_execution/2)
-  - NATS subject: `htdag.execute.*` (publishes execution requests)
-  - PostgreSQL table: `htdag_executions` (stores execution history)
+  - NATS subject: `task_graph.execute.*` (publishes execution requests)
+  - PostgreSQL table: `task_graph_executions` (stores execution history)
 
   ## Execution Flow
 
@@ -29,11 +29,11 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
   ## Usage
 
       # Create executor
-      {:ok, executor} = HTDAGExecutor.start_link(run_id: "run-123")
+      {:ok, executor} = TaskGraphExecutor.start_link(run_id: "run-123")
       
       # Execute DAG
-      dag = HTDAG.decompose(%{description: "Build user auth"})
-      {:ok, result} = HTDAGExecutor.execute(executor, dag)
+      dag = TaskGraph.decompose(%{description: "Build user auth"})
+      {:ok, result} = TaskGraphExecutor.execute(executor, dag)
       # => {:ok, %{completed: 5, failed: 0, results: %{...}}}
   """
 
@@ -41,7 +41,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
   require Logger
 
   # INTEGRATION: DAG operations (task selection and status updates)
-  alias Singularity.Execution.Planning.{HTDAG, HTDAGCore, HTDAGStrategyLoader, HTDAGLuaExecutor}
+  alias Singularity.Execution.Planning.{TaskGraph, TaskGraphCore, StrategyLoader, LuaStrategyExecutor}
 
   # INTEGRATION: LLM execution (NATS-based operations)
   # INTEGRATION: Code generation and quality enforcement
@@ -51,7 +51,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
   # INTEGRATION: Agent spawning from Lua configurations
   @type executor_state :: %{
           run_id: String.t(),
-          dag: HTDAGCore.htdag() | nil,
+          dag: TaskGraphCore.task_graph() | nil,
           executing_tasks: %{String.t() => pid()},
           results: %{String.t() => map()},
           evolution_history: [map()]
@@ -60,7 +60,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
   ## Client API
 
   @doc """
-  Start HTDAG executor.
+  Start TaskGraph executor.
   """
   def start_link(opts) do
     run_id = Keyword.fetch!(opts, :run_id)
@@ -104,7 +104,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
       evolution_history: []
     }
 
-    Logger.info("HTDAG executor started", run_id: run_id)
+    Logger.info("TaskGraph executor started", run_id: run_id)
     {:ok, state}
   end
 
@@ -112,7 +112,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
   def handle_call({:execute, dag, opts}, _from, state) do
     Logger.info("Starting DAG execution",
       run_id: state.run_id,
-      total_tasks: HTDAGCore.count_tasks(dag)
+      total_tasks: TaskGraphCore.count_tasks(dag)
     )
 
     state = %{state | dag: dag}
@@ -121,7 +121,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
     case execute_dag_loop(state, opts) do
       {:ok, final_state} ->
         result = %{
-          completed: HTDAGCore.count_completed(final_state.dag),
+          completed: TaskGraphCore.count_completed(final_state.dag),
           failed: length(final_state.dag.failed_tasks),
           results: final_state.results,
           evolution_history: final_state.evolution_history
@@ -154,7 +154,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
 
   defp execute_dag_loop(state, opts) do
     # Select next task
-    case HTDAGCore.select_next_task(state.dag) do
+    case TaskGraphCore.select_next_task(state.dag) do
       nil ->
         # No more tasks to execute
         {:ok, state}
@@ -164,7 +164,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
         case execute_task(task, state, opts) do
           {:ok, result} ->
             # Update DAG with success
-            dag = HTDAGCore.mark_completed(state.dag, task.id)
+            dag = TaskGraphCore.mark_completed(state.dag, task.id)
             results = Map.put(state.results, task.id, result)
 
             new_state = %{state | dag: dag, results: results}
@@ -174,7 +174,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
 
           {:error, reason} ->
             # Update DAG with failure
-            dag = HTDAGCore.mark_failed(state.dag, task.id, reason)
+            dag = TaskGraphCore.mark_failed(state.dag, task.id, reason)
 
             new_state = %{state | dag: dag}
 
@@ -196,7 +196,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
     )
 
     # Get Lua strategy for this task
-    case HTDAGStrategyLoader.get_strategy_for_task(task.description) do
+    case StrategyLoader.get_strategy_for_task(task.description) do
       {:ok, strategy} ->
         # Check if task should be decomposed
         if should_decompose?(task) do
@@ -233,7 +233,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
     )
 
     # Execute Lua decomposition
-    case HTDAGLuaExecutor.decompose_task(strategy, task, state) do
+    case LuaStrategyExecutor.decompose_task(strategy, task, state) do
       {:ok, []} ->
         # No decomposition needed, execute atomically
         execute_atomic_task(task, strategy, state, opts)
@@ -247,11 +247,11 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
         # Add subtasks to DAG
         dag =
           Enum.reduce(subtasks, state.dag, fn subtask, acc_dag ->
-            HTDAGCore.add_task(acc_dag, subtask)
+            TaskGraphCore.add_task(acc_dag, subtask)
           end)
 
         # Mark parent task as in progress
-        dag = HTDAGCore.mark_in_progress(dag, task.id)
+        dag = TaskGraphCore.mark_in_progress(dag, task.id)
 
         # Return success - DAG loop will handle subtask execution
         {:ok, %{decomposed: true, subtask_count: length(subtasks)}}
@@ -274,7 +274,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
     )
 
     # 1. Spawn agents via Lua
-    case HTDAGLuaExecutor.spawn_agents(strategy, task, state) do
+    case LuaStrategyExecutor.spawn_agents(strategy, task, state) do
       {:ok, spawn_config} ->
         Logger.debug("Lua agent spawning complete",
           task_id: task.id,
@@ -288,13 +288,13 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
           end)
 
         # 3. Get orchestration plan via Lua
-        case HTDAGLuaExecutor.orchestrate_execution(strategy, task, agents, []) do
+        case LuaStrategyExecutor.orchestrate_execution(strategy, task, agents, []) do
           {:ok, orchestration} ->
             # 4. Execute orchestration plan
             results = execute_orchestration(orchestration, agents, task, state)
 
             # 5. Check completion via Lua
-            case HTDAGLuaExecutor.check_completion(strategy, task, results) do
+            case LuaStrategyExecutor.check_completion(strategy, task, results) do
               {:ok, %{"status" => "completed"} = completion} ->
                 Logger.info("Task completed via Lua validation",
                   task_id: task.id,

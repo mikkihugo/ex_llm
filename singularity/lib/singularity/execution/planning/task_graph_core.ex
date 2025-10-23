@@ -1,19 +1,19 @@
-defmodule Singularity.Execution.Planning.HTDAGCore do
+defmodule Singularity.Execution.Planning.TaskGraphCore do
   @moduledoc """
-  Pure Elixir Hierarchical Task Directed Acyclic Graph (HTDAG) for autonomous task decomposition.
+  Pure Elixir Hierarchical Task Directed Acyclic Graph (TaskGraph) for autonomous task decomposition.
 
   Provides core data structures and algorithms for managing hierarchical task graphs
   with dependency resolution, status tracking, and complexity-based decomposition.
-  Migrated from Gleam singularity/htdag.gleam based on Deep Agent 2025 research.
+  Migrated from Gleam singularity/task_graph.gleam based on Deep Agent 2025 research.
 
   ## Integration Points
 
   This module integrates with:
-  - `Singularity.Execution.Planning.HTDAGExecutor` - Task execution (HTDAGExecutor.execute_task/2)
+  - `Singularity.Execution.Planning.TaskGraphExecutor` - Task execution (TaskGraphExecutor.execute_task/2)
   - `Singularity.Code.FullRepoScanner` - Learning integration (FullRepoScanner.learn_from_execution/2)
-  - `Singularity.Execution.Planning.HTDAGTracer` - Execution tracing (HTDAGTracer.trace_task_start/2)
+  - `Singularity.Execution.Planning.ExecutionTracer` - Execution tracing (ExecutionTracer.trace_task_start/2)
   - `Singularity.LLM.Service` - Task decomposition (Service.call/3 for decomposition)
-  - PostgreSQL table: `htdag_executions` (stores task execution history)
+  - PostgreSQL table: `task_graph_executions` (stores task execution history)
 
   ## Task Structure
 
@@ -35,12 +35,12 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
   ## Usage
 
       # Create new DAG and add tasks
-      dag = HTDAGCore.new("root-goal")
-      task = HTDAGCore.create_goal_task("Build user auth", 0, nil)
-      dag = HTDAGCore.add_task(dag, task)
+      dag = TaskGraphCore.new("root-goal")
+      task = TaskGraphCore.create_goal_task("Build user auth", 0, nil)
+      dag = TaskGraphCore.add_task(dag, task)
 
       # Mark as completed
-      dag = HTDAGCore.mark_completed(dag, task.id)
+      dag = TaskGraphCore.mark_completed(dag, task.id)
       # => %{root_id: "root-goal", tasks: %{...}, completed_tasks: ["goal-task-123"]}
   """
 
@@ -65,7 +65,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
           acceptance_criteria: [String.t()]
         }
 
-  @type htdag :: %{
+  @type task_graph :: %{
           root_id: String.t(),
           tasks: %{String.t() => task()},
           dependency_graph: %{String.t() => [String.t()]},
@@ -74,9 +74,9 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
         }
 
   @doc """
-  Create a new empty HTDAG.
+  Create a new empty TaskGraph.
   """
-  @spec new(String.t()) :: htdag()
+  @spec new(String.t()) :: task_graph()
   def new(root_id) do
     %{
       root_id: root_id,
@@ -90,7 +90,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
   @doc """
   Add a task to the DAG.
   """
-  @spec add_task(htdag(), task()) :: htdag()
+  @spec add_task(task_graph(), task()) :: task_graph()
   def add_task(dag, task) do
     tasks = Map.put(dag.tasks, task.id, task)
 
@@ -115,7 +115,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
   @doc """
   Mark task as in progress.
   """
-  @spec mark_in_progress(htdag(), String.t()) :: htdag()
+  @spec mark_in_progress(task_graph(), String.t()) :: task_graph()
   def mark_in_progress(dag, task_id) do
     case Map.get(dag.tasks, task_id) do
       nil ->
@@ -132,7 +132,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
   @doc """
   Mark task as completed.
   """
-  @spec mark_completed(htdag(), String.t()) :: htdag()
+  @spec mark_completed(task_graph(), String.t()) :: task_graph()
   def mark_completed(dag, task_id) do
     case Map.get(dag.tasks, task_id) do
       nil ->
@@ -150,7 +150,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
   @doc """
   Mark task as failed.
   """
-  @spec mark_failed(htdag(), String.t(), String.t()) :: htdag()
+  @spec mark_failed(task_graph(), String.t(), String.t()) :: task_graph()
   def mark_failed(dag, task_id, _reason) do
     case Map.get(dag.tasks, task_id) do
       nil ->
@@ -168,7 +168,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
   @doc """
   Get all tasks with no unmet dependencies (ready to execute).
   """
-  @spec get_ready_tasks(htdag()) :: [task()]
+  @spec get_ready_tasks(task_graph()) :: [task()]
   def get_ready_tasks(dag) do
     dag.tasks
     |> Enum.filter(fn {_id, task} ->
@@ -182,7 +182,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
 
   Priority: lowest depth first (top-level goals), then by complexity.
   """
-  @spec select_next_task(htdag()) :: task() | nil
+  @spec select_next_task(task_graph()) :: task() | nil
   def select_next_task(dag) do
     dag
     |> get_ready_tasks()
@@ -195,7 +195,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
   @doc """
   Count total tasks in DAG.
   """
-  @spec count_tasks(htdag()) :: non_neg_integer()
+  @spec count_tasks(task_graph()) :: non_neg_integer()
   def count_tasks(dag) do
     map_size(dag.tasks)
   end
@@ -203,7 +203,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
   @doc """
   Count completed tasks.
   """
-  @spec count_completed(htdag()) :: non_neg_integer()
+  @spec count_completed(task_graph()) :: non_neg_integer()
   def count_completed(dag) do
     length(dag.completed_tasks)
   end
@@ -211,7 +211,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
   @doc """
   Get current active tasks.
   """
-  @spec current_tasks(htdag()) :: [task()]
+  @spec current_tasks(task_graph()) :: [task()]
   def current_tasks(dag) do
     dag.tasks
     |> Enum.filter(fn {_id, task} -> task.status == :active end)
@@ -254,7 +254,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
   Returns updated DAG. In real implementation, this would call LLM to decompose.
   For now, marks task as needing decomposition.
   """
-  @spec decompose_if_needed(htdag(), task(), non_neg_integer()) :: htdag()
+  @spec decompose_if_needed(task_graph(), task(), non_neg_integer()) :: task_graph()
   def decompose_if_needed(dag, task, max_depth) do
     cond do
       is_atomic(task) ->

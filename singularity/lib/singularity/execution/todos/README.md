@@ -276,7 +276,7 @@ This system is designed for **internal tooling** (Singularity's philosophy):
 - [ ] Subtask decomposition (parent_todo_id → hierarchical todos)
 - [ ] Agent specialization (assign based on agent capabilities)
 - [ ] Learning from past executions (success patterns)
-- [x] Integration with HTDAG for task planning ✅ COMPLETED
+- [x] Integration with TaskGraph for task planning ✅ COMPLETED
 - [ ] Web UI for todo visualization
 - [ ] Slack/Discord notifications on completion
 

@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Planning.HTDAGTracer do
+defmodule Singularity.Execution.Planning.ExecutionTracer do
   @moduledoc """
   Advanced runtime tracing and analysis for detecting if functions work and are connected.
 
@@ -13,7 +13,7 @@ defmodule Singularity.Execution.Planning.HTDAGTracer do
   - `:erlang.trace` - Runtime tracing (erlang.trace/3 for function call tracking)
   - `:telemetry` - Event tracking (telemetry events for execution paths)
   - `:recon_trace` - Production tracing (recon_trace for safe tracing)
-  - PostgreSQL table: `htdag_trace_results` (stores trace analysis data)
+  - PostgreSQL table: `task_graph_trace_results` (stores trace analysis data)
 
   ## Detection Methods
 
@@ -43,15 +43,15 @@ defmodule Singularity.Execution.Planning.HTDAGTracer do
   ## Usage
 
       # Trace all function calls for 10 seconds
-      {:ok, trace_results} = HTDAGTracer.trace_runtime(duration_ms: 10_000)
+      {:ok, trace_results} = ExecutionTracer.trace_runtime(duration_ms: 10_000)
       # => {:ok, %{{MyModule, :my_function, 2} => %{count: 5, avg_time_us: 1000}}}
 
       # Analyze if specific module is connected
-      HTDAGTracer.is_connected?(MyModule)
+      ExecutionTracer.is_connected?(MyModule)
       # => %{module: MyModule, connected: true, has_callers: true, has_callees: true}
 
       # Full analysis
-      {:ok, analysis} = HTDAGTracer.full_analysis()
+      {:ok, analysis} = ExecutionTracer.full_analysis()
       # => {:ok, %{trace_results: %{...}, dead_code: [...], broken_functions: [...]}}
   """
 
@@ -178,7 +178,7 @@ defmodule Singularity.Execution.Planning.HTDAGTracer do
   """
   def full_analysis(opts \\ []) do
     Logger.info("=" <> String.duplicate("=", 70))
-    Logger.info("HTDAG TRACER: Full System Analysis Starting")
+    Logger.info("TaskGraph TRACER: Full System Analysis Starting")
     Logger.info("=" <> String.duplicate("=", 70))
 
     # 1. Runtime tracing
@@ -576,7 +576,7 @@ defmodule Singularity.Execution.Planning.HTDAGTracer do
   defp print_summary(result) do
     Logger.info("")
     Logger.info("=" <> String.duplicate("=", 70))
-    Logger.info("HTDAG TRACER: Analysis Complete")
+    Logger.info("TaskGraph TRACER: Analysis Complete")
     Logger.info("=" <> String.duplicate("=", 70))
     Logger.info("")
     Logger.info("Summary:")

@@ -26,8 +26,8 @@ defmodule Singularity.StartupWarmup do
     # 3. Precompute common embeddings
     warmup_embeddings()
 
-    # 4. Initialize HTDAG with historical data
-    warmup_htdag()
+    # 4. Initialize TaskGraph with historical data
+    warmup_task_graph()
 
     Logger.info("✅ Auto-warmup complete! System ready for blazing fast performance!")
   end
@@ -100,8 +100,8 @@ defmodule Singularity.StartupWarmup do
     end
   end
 
-  defp warmup_htdag do
-    Logger.info("Loading HTDAG historical performance data...")
+  defp warmup_task_graph do
+    Logger.info("Loading TaskGraph historical performance data...")
 
     try do
       # Load recent successful task decompositions
@@ -128,11 +128,11 @@ defmodule Singularity.StartupWarmup do
           Logger.info("Loaded #{length(rows)} task-template mappings")
 
         _ ->
-          Logger.debug("No HTDAG history to warmup")
+          Logger.debug("No TaskGraph history to warmup")
       end
     rescue
       e ->
-        Logger.warning("HTDAG warmup failed: #{inspect(e)}")
+        Logger.warning("TaskGraph warmup failed: #{inspect(e)}")
     end
   end
 end

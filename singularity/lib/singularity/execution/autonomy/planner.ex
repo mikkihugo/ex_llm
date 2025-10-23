@@ -5,7 +5,7 @@ defmodule Singularity.Execution.Autonomy.Planner do
   ## Integration Points
 
   - Vision management (strategic goals via SafeWorkPlanner)
-  - HTDAG decomposition (hierarchical tasks)
+  - TaskGraph decomposition (hierarchical tasks)
   - SPARC methodology (structured implementation)
   - Pattern mining (learned best practices)
   - Refactoring triggers (need-based evolution)

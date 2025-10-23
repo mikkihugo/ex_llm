@@ -1,8 +1,8 @@
-defmodule Singularity.Execution.Planning.HTDAGExecutionStrategy do
+defmodule Singularity.Execution.Planning.TaskExecutionStrategy do
   @moduledoc """
-  Ecto schema for Lua-powered HTDAG execution strategies.
+  Ecto schema for Lua-powered TaskGraph execution strategies.
 
-  Execution strategies define how HTDAG tasks are:
+  Execution strategies define how TaskGraph tasks are:
   1. Decomposed into subtasks (decomposition_script)
   2. Assigned to dynamically spawned agents (agent_spawning_script)
   3. Orchestrated across multiple agents (orchestration_script)
@@ -15,7 +15,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutionStrategy do
 
   Strategies match tasks via regex patterns on task descriptions:
 
-      iex> strategy = %HTDAGExecutionStrategy{
+      iex> strategy = %TaskExecutionStrategy{
       ...>   name: "secure_feature_development",
       ...>   task_pattern: "(implement|build|create).*(auth|security|payment)"
       ...> }
@@ -27,7 +27,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutionStrategy do
   ### 1. Decomposition Script
   - Input: `context.task` (description, complexity, type, etc.)
   - Output: `{subtasks: [...], strategy: "sequential", reasoning: "..."}`
-  - Purpose: Break complex tasks into HTDAG subtasks
+  - Purpose: Break complex tasks into TaskGraph subtasks
 
   ### 2. Agent Spawning Script
   - Input: `context.task`, `context.available_agents`, `context.resources`
@@ -47,8 +47,8 @@ defmodule Singularity.Execution.Planning.HTDAGExecutionStrategy do
   ## Usage
 
       # Create new strategy
-      {:ok, strategy} = %HTDAGExecutionStrategy{}
-      |> HTDAGExecutionStrategy.changeset(%{
+      {:ok, strategy} = %TaskExecutionStrategy{}
+      |> TaskExecutionStrategy.changeset(%{
         name: "standard_development",
         description: "Standard feature development with testing",
         task_pattern: "(implement|build|create).*(feature|component)",
@@ -60,11 +60,11 @@ defmodule Singularity.Execution.Planning.HTDAGExecutionStrategy do
       |> Repo.insert()
 
       # Find strategy for task
-      HTDAGStrategyLoader.get_strategy_for_task("Build user profile feature")
-      # => {:ok, %HTDAGExecutionStrategy{name: "standard_development", ...}}
+      StrategyLoader.get_strategy_for_task("Build user profile feature")
+      # => {:ok, %TaskExecutionStrategy{name: "standard_development", ...}}
 
       # Execute decomposition
-      HTDAGLuaExecutor.decompose_task(strategy, task, context)
+      LuaStrategyExecutor.decompose_task(strategy, task, context)
       # => {:ok, [%{description: "...", estimated_complexity: 3.0, ...}, ...]}
   """
 
@@ -74,7 +74,7 @@ defmodule Singularity.Execution.Planning.HTDAGExecutionStrategy do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "htdag_execution_strategies" do
+  schema "task_graph_execution_strategies" do
     # Identity
     field :name, :string
     field :description, :string
@@ -116,14 +116,14 @@ defmodule Singularity.Execution.Planning.HTDAGExecutionStrategy do
   ## Examples
 
       # Minimal strategy (decomposition only)
-      changeset(%HTDAGExecutionStrategy{}, %{
+      changeset(%TaskExecutionStrategy{}, %{
         name: "simple_decomposer",
         task_pattern: ".*",
         decomposition_script: "return {subtasks: {...}}"
       })
 
       # Full strategy (all scripts)
-      changeset(%HTDAGExecutionStrategy{}, %{
+      changeset(%TaskExecutionStrategy{}, %{
         name: "complete_strategy",
         task_pattern: "(build|create).*",
         decomposition_script: "...",
