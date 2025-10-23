@@ -49,15 +49,9 @@ litellm/
 .moon/docker
 
 # Elixir build outputs (all applications)
-/_build/
-/singularity/_build/
-/singularity/deps/
-/singularity/priv/plts/
-/centralcloud/_build/
-/centralcloud/deps/
-/singularity_app/_build/
-/singularity_app/deps/
-/singularity_app/priv/plts/
+**/_build/
+**/deps/
+**/priv/plts/
 
 # Rebar3 build artifacts (within deps directories)
 **/.rebar3/
@@ -101,6 +95,7 @@ erl_crash.dump
 # Mix artifacts
 .mix/
 .hex/
+**/mix.lock
 
 # Temporary documentation files
 *_SUMMARY.md

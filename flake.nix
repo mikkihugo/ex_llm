@@ -165,8 +165,8 @@
         ] else []);
 
         getBeamTools = env: [
-          beamPackages.erlang beamPackages.elixir beamPackages.hex
-          beamPackages.rebar3 pkgs.elixir_ls pkgs.erlang-ls pkgs.gleam
+          beamPackages.erlang pkgs.elixir_1_19 beamPackages.hex
+          beamPackages.rebar3 pkgs.elixir_ls
         ];
         
         # Add Erlang development headers for Rustler NIFs
