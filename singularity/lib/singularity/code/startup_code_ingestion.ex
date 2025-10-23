@@ -1,8 +1,8 @@
-defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
+defmodule Singularity.Code.StartupCodeIngestion do
   @moduledoc """
-  Self Code Ingestion & Auto-Bootstrap - Learn Singularity's OWN codebase on startup
+  Startup Code Ingestion - Automatically ingest entire codebase on startup
 
-  **PURPOSE**: Automatically learn and persist Singularity's own code on EVERY startup
+  **PURPOSE**: Automatically scan and persist the entire codebase on EVERY startup
 
   **RUNS**: Automatically, asynchronously, non-blocking
 
@@ -10,7 +10,7 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
 
   ## What vs When to Use
 
-  - **HTDAGAutoBootstrap** (THIS): Singularity's ENTIRE repo (Elixir, Rust, TypeScript, etc.) - automatic on startup
+  - **StartupCodeIngestion** (THIS): Singularity's ENTIRE repo (Elixir, Rust, TypeScript, etc.) - automatic on startup
   - **CodeIngestionService**: External projects (Rails, Phoenix, etc.) - manual API calls
   - **mix code.ingest**: Semantic search only - different table (`codebase_metadata`)
 
@@ -29,10 +29,10 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
   ## Integration Points
 
   This module integrates with:
-  - `Singularity.Execution.Planning.HTDAGLearner` - Codebase understanding (HTDAGLearner.learn_codebase/1, auto_fix_all/1)
-  - `Singularity.Execution.Planning.HTDAGBootstrap` - System integration (HTDAGBootstrap.bootstrap/1)
+  - `Singularity.Code.FullRepoScanner` - Codebase understanding (FullRepoScanner.learn_codebase/1, auto_fix_all/1)
+  - `Singularity.System.Bootstrap` - System integration (SystemBootstrap.bootstrap/1)
   - `:telemetry` - Observability events (telemetry.execute/3 for monitoring)
-  - PostgreSQL table: `htdag_auto_bootstrap_logs` (stores bootstrap history)
+  - PostgreSQL table: `startup_code_ingestion_logs` (stores bootstrap history)
 
   ## Startup Flow
 
@@ -58,7 +58,7 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
 
   Add to config/config.exs:
 
-      config :singularity, HTDAGAutoBootstrap,
+      config :singularity, StartupCodeIngestion,
         enabled: true,              # Enable auto-bootstrap
         max_iterations: 10,         # Max fix iterations
         fix_on_startup: true,       # Auto-fix issues
@@ -69,13 +69,13 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
   ## Manual Control
 
       # Disable auto-bootstrap
-      HTDAGAutoBootstrap.disable()
+      StartupCodeIngestion.disable()
       
       # Re-run bootstrap manually
-      HTDAGAutoBootstrap.run_now()
+      StartupCodeIngestion.run_now()
       
       # Get current status
-      HTDAGAutoBootstrap.status()
+      StartupCodeIngestion.status()
 
   ## Telemetry Events
 
@@ -119,7 +119,7 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
   require Logger
 
   # INTEGRATION: Learning and bootstrap (codebase understanding and system integration)
-  alias Singularity.Execution.Planning.HTDAGLearner
+  alias Singularity.Code.FullRepoScanner
 
   @default_config [
     enabled: true,
@@ -202,19 +202,19 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
 
     if dry_run do
       Logger.info(
-        "HTDAG Auto-Bootstrap: Running in DRY-RUN mode (no actual fixes will be applied)"
+        "Startup Code Ingestion: Running in DRY-RUN mode (no actual fixes will be applied)"
       )
     end
 
     if enabled and Keyword.get(config, :run_async, true) do
       # Start bootstrap asynchronously
-      Logger.info("HTDAG Auto-Bootstrap: Starting automatic self-diagnosis and repair...")
+      Logger.info("Startup Code Ingestion: Starting automatic self-diagnosis and repair...")
       send(self(), :run_bootstrap)
     else
       if enabled do
-        Logger.info("HTDAG Auto-Bootstrap: Enabled but waiting for manual trigger")
+        Logger.info("Startup Code Ingestion: Enabled but waiting for manual trigger")
       else
-        Logger.info("HTDAG Auto-Bootstrap: Disabled")
+        Logger.info("Startup Code Ingestion: Disabled")
       end
     end
 
@@ -250,7 +250,7 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
 
   @impl true
   def handle_call({:run_now, opts}, _from, state) do
-    Logger.info("HTDAG Auto-Bootstrap: Manual bootstrap triggered")
+    Logger.info("Startup Code Ingestion: Manual bootstrap triggered")
 
     # Override config with runtime opts
     config = Keyword.merge(state.config, opts)
@@ -263,13 +263,13 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
 
   @impl true
   def handle_cast(:disable, state) do
-    Logger.info("HTDAG Auto-Bootstrap: Disabled")
+    Logger.info("Startup Code Ingestion: Disabled")
     {:noreply, %{state | enabled: false}}
   end
 
   @impl true
   def handle_cast(:enable, state) do
-    Logger.info("HTDAG Auto-Bootstrap: Enabled")
+    Logger.info("Startup Code Ingestion: Enabled")
     new_state = %{state | enabled: true}
 
     # Trigger bootstrap if idle
@@ -284,7 +284,7 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
 
   defp perform_bootstrap(state) do
     Logger.info("=" <> String.duplicate("=", 70))
-    Logger.info("HTDAG AUTO-BOOTSTRAP: Self-Diagnosis Starting")
+    Logger.info("STARTUP CODE INGESTION: Self-Diagnosis Starting")
     Logger.info("=" <> String.duplicate("=", 70))
 
     start_time = System.monotonic_time()
@@ -300,8 +300,8 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
     # TELEMETRY: Learning started
     :telemetry.execute([:htdag, :learn, :start], %{timestamp: DateTime.utc_now()}, %{})
 
-    # INTEGRATION: HTDAGLearner - Scans codebase and builds knowledge graph
-    case HTDAGLearner.learn_codebase() do
+    # INTEGRATION: FullRepoScanner - Scans codebase and builds knowledge graph
+    case FullRepoScanner.learn_codebase() do
       {:ok, learning} ->
         issues_count = length(learning.issues)
         Logger.info("Learning complete: #{issues_count} issues found")
@@ -337,8 +337,8 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
           max_iterations = Keyword.get(state.config, :max_iterations, 10)
           dry_run = state.dry_run
 
-          # INTEGRATION: HTDAGLearner.auto_fix_all - Uses RAG + Quality templates to fix issues
-          case HTDAGLearner.auto_fix_all(max_iterations: max_iterations, dry_run: dry_run) do
+          # INTEGRATION: FullRepoScanner.auto_fix_all - Uses RAG + Quality templates to fix issues
+          case FullRepoScanner.auto_fix_all(max_iterations: max_iterations, dry_run: dry_run) do
             {:ok, fix_result} ->
               mode_msg = if dry_run, do: " (DRY-RUN mode - no changes applied)", else: ""
 
@@ -465,7 +465,7 @@ defmodule Singularity.Execution.Planning.HTDAGAutoBootstrap do
 
     Logger.info("")
     Logger.info("=" <> String.duplicate("=", 70))
-    Logger.info("HTDAG AUTO-BOOTSTRAP: Self-Diagnosis Complete!")
+    Logger.info("STARTUP CODE INGESTION: Self-Diagnosis Complete!")
     Logger.info("=" <> String.duplicate("=", 70))
     Logger.info("")
     Logger.info("Summary:")

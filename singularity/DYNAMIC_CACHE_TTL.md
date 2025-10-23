@@ -80,7 +80,7 @@ ETS entry includes TTL for observability:
 
 ## Usage
 
-### Automatic (HTDAGAutoBootstrap)
+### Automatic (StartupCodeIngestion)
 
 ```elixir
 module_count = length(modules)
@@ -154,7 +154,7 @@ CodebaseDetector.detect(format: :full)
 
 ### Heavy Ingestion (30-minute TTL)
 
-✅ **HTDAGAutoBootstrap** (startup)
+✅ **StartupCodeIngestion** (startup)
   - Condition: `module_count > 100`
   - Example: 933 files on startup
   - Duration: ~3 seconds (all files use same cached value)

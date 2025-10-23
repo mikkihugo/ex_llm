@@ -1,12 +1,17 @@
 defmodule Singularity.Schemas.PackageUsagePattern do
   @moduledoc """
-  Schema for package_usage_patterns table - best practices, anti-patterns, and usage patterns from package documentation
+  Schema for dependency_catalog_patterns table - best practices, anti-patterns, and usage patterns from package documentation
 
   Pattern types:
   - best_practice: Recommended ways to use the package
   - anti_pattern: Common mistakes to avoid
   - usage_pattern: Common usage scenarios
   - migration_guide: How to upgrade between versions
+
+  ## Naming Convention
+  - Module: singular (`PackageUsagePattern` - represents ONE pattern)
+  - Table: plural (`dependency_catalog_patterns` - collection of patterns)
+  - This is the Elixir/Ecto standard pattern
   """
   use Ecto.Schema
   import Ecto.Changeset

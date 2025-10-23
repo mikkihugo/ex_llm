@@ -9,7 +9,7 @@ defmodule Singularity.Code.CodebaseDetector do
     "module": "Singularity.Code.CodebaseDetector",
     "purpose": "Auto-detect codebase_id from Git remote URL",
     "layer": "infrastructure",
-    "used_by": ["HTDAGAutoBootstrap", "CodeFileWatcher", "UnifiedIngestionService"]
+    "used_by": ["StartupCodeIngestion", "CodeFileWatcher", "UnifiedIngestionService"]
   }
   ```
 

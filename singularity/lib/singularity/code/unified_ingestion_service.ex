@@ -10,7 +10,7 @@ defmodule Singularity.Code.UnifiedIngestionService do
     "purpose": "Unified code ingestion - parse ONCE, populate BOTH tables",
     "layer": "domain_service",
     "architecture_role": "consolidates_duplicate_ingestion_pipelines",
-    "used_by": ["CodeFileWatcher", "HTDAGAutoBootstrap", "mix code.ingest"]
+    "used_by": ["CodeFileWatcher", "StartupCodeIngestion", "mix code.ingest"]
   }
   ```
 
@@ -19,7 +19,7 @@ defmodule Singularity.Code.UnifiedIngestionService do
   ```mermaid
   graph TD
     A[CodeFileWatcher] --> D[UnifiedIngestionService]
-    B[HTDAGAutoBootstrap] --> D
+    B[StartupCodeIngestion] --> D
     C[mix code.ingest] --> D
 
     D --> E[Parse ONCE with ParserEngine Rust NIF]
@@ -33,7 +33,7 @@ defmodule Singularity.Code.UnifiedIngestionService do
   DO NOT:
   - Create separate parsing pipelines (use this service!)
   - Parse files multiple times (parse once, populate both tables)
-  - Call HTDAGAutoBootstrap.persist_module_to_db directly (use this service!)
+  - Call StartupCodeIngestion.persist_module_to_db directly (use this service!)
   - Call ParserEngine.parse_and_store_file directly (use this service!)
 
   ## Benefits
@@ -172,12 +172,12 @@ defmodule Singularity.Code.UnifiedIngestionService do
 
   defp insert_to_code_files(file_path, parse_result, codebase_id, skip_validation) do
     # Extract data for code_files table schema
-    # This mirrors what HTDAGAutoBootstrap.persist_module_to_db does
+    # This mirrors what StartupCodeIngestion.persist_module_to_db does
 
     language = detect_language(file_path)
     content = File.read!(file_path)
 
-    # Use AstExtractor to get AST (same as HTDAGAutoBootstrap)
+    # Use AstExtractor to get AST (same as StartupCodeIngestion)
     ast_result = AstExtractor.extract_ast(content, language)
 
     # Validate metadata unless skipped

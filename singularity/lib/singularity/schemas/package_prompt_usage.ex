@@ -1,6 +1,17 @@
 defmodule Singularity.Schemas.PackagePromptUsage do
   @moduledoc """
   Tracks how prompt snippets and templates perform when used in code generation.
+
+  ## Naming Convention
+  - Module: singular (`PackagePromptUsage` - represents ONE usage record)
+  - Table: plural (`dependency_catalog_prompt_usage` - collection of usage records)
+  - This is the Elixir/Ecto standard pattern
+
+  ## Purpose
+
+  Stores performance metrics for prompt templates/snippets when used to generate code
+  that depends on specific packages. Enables feedback loop for improving prompts based
+  on success/failure rates.
   """
 
   use Ecto.Schema

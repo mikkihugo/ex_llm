@@ -35,9 +35,9 @@ defmodule Mix.Tasks.Metadata.Validate do
   - **legacy** - Has docs but not v2.2.0 structure (score < 0.5)
   - **missing** - No @moduledoc at all (score = 0.0)
 
-  ## Integration with HTDAGAutoBootstrap
+  ## Integration with StartupCodeIngestion
 
-  This task reads from the same `code_files` table that HTDAGAutoBootstrap
+  This task reads from the same `code_files` table that StartupCodeIngestion
   populates during ingestion. The validation results are stored in the
   `metadata.v2_2_validation` JSONB field.
 

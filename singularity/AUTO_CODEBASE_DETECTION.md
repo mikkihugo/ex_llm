@@ -68,7 +68,7 @@ git remote get-url origin
 ```elixir
 # Uses CodebaseDetector automatically!
 
-# HTDAGAutoBootstrap (startup)
+# StartupCodeIngestion (startup)
 # → Detects "mikkihugo/singularity-incubation"
 # → Ingests all files with that codebase_id
 
@@ -107,10 +107,10 @@ CodebaseDetector.detect(format: :full)
 
 ## Where It's Used
 
-### 1. HTDAGAutoBootstrap (Startup Ingestion)
+### 1. StartupCodeIngestion (Startup Ingestion)
 
 ```elixir
-# lib/singularity/execution/planning/htdag_auto_bootstrap.ex:479
+# lib/singularity/execution/planning/startup_code_ingestion.ex:479
 
 defp persist_learned_codebase(learning) do
   # Auto-detect from Git

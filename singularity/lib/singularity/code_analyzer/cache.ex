@@ -53,7 +53,7 @@ defmodule Singularity.CodeAnalyzer.Cache do
       - CodeAnalyzer (on cache miss)
     called_by:
       - CodeAnalyzer (wrapper functions)
-      - HTDAGAutoBootstrap (module reanalysis)
+      - StartupCodeIngestion (module reanalysis)
   ```
 
   ## Anti-Patterns

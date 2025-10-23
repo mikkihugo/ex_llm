@@ -10,7 +10,7 @@ defmodule Singularity.Execution.Planning.HTDAGCore do
 
   This module integrates with:
   - `Singularity.Execution.Planning.HTDAGExecutor` - Task execution (HTDAGExecutor.execute_task/2)
-  - `Singularity.Execution.Planning.HTDAGLearner` - Learning integration (HTDAGLearner.learn_from_execution/2)
+  - `Singularity.Code.FullRepoScanner` - Learning integration (FullRepoScanner.learn_from_execution/2)
   - `Singularity.Execution.Planning.HTDAGTracer` - Execution tracing (HTDAGTracer.trace_task_start/2)
   - `Singularity.LLM.Service` - Task decomposition (Service.call/3 for decomposition)
   - PostgreSQL table: `htdag_executions` (stores task execution history)

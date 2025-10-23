@@ -6,7 +6,7 @@
 
 The `CodeFileWatcher` now provides **real-time dual-table synchronization**, automatically updating both database tables when source files change:
 
-1. **`code_files`** table - Original system (HTDAGAutoBootstrap)
+1. **`code_files`** table - Original system (StartupCodeIngestion)
 2. **`codebase_metadata`** table - New database-first tools (50+ metrics)
 
 ## Architecture
@@ -27,7 +27,7 @@ The `CodeFileWatcher` now provides **real-time dual-table synchronization**, aut
 │  3. Dual-table sync:                                            │
 │                                                                 │
 │     ┌───────────────────────────────────────────────┐          │
-│     │ HTDAGAutoBootstrap.persist_module_to_db       │          │
+│     │ StartupCodeIngestion.persist_module_to_db       │          │
 │     │   └─> code_files table (old system)           │          │
 │     └───────────────────────────────────────────────┘          │
 │                                                                 │
@@ -109,7 +109,7 @@ end
 ```elixir
 def do_reingest(file_path, _project_root) do
   # 1. Write to code_files table (old system)
-  result1 = HTDAGAutoBootstrap.persist_module_to_db(module, "singularity")
+  result1 = StartupCodeIngestion.persist_module_to_db(module, "singularity")
 
   # 2. Write to codebase_metadata table (new system - 50+ metrics)
   result2 = ParserEngine.parse_and_store_single_file(
@@ -413,7 +413,7 @@ If file watcher is consuming high CPU:
 
 - **CodeFileWatcher**: `lib/singularity/execution/planning/code_file_watcher.ex`
 - **ParserEngine**: `lib/singularity/engines/parser_engine.ex`
-- **HTDAGAutoBootstrap**: `lib/singularity/execution/planning/htdag_auto_bootstrap.ex`
+- **StartupCodeIngestion**: `lib/singularity/execution/planning/startup_code_ingestion.ex`
 - **Database Schema**: `lib/singularity/search/code_search.ex:create_codebase_metadata_table/1`
 
 ## Summary

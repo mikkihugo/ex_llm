@@ -34,7 +34,7 @@ defmodule Singularity.Analysis.AstExtractor do
       - extract_type_info/1  # Extract @spec
       - extract_documentation/1  # Extract @doc
     called_by:
-      - HTDAGAutoBootstrap.persist_module_to_db/2
+      - StartupCodeIngestion.persist_module_to_db/2
       - CodeFileWatcher.reingest_file/2
   ```
 

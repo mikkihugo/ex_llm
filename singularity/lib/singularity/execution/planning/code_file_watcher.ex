@@ -12,7 +12,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
       A[File Modified] --> B[FileSystem Event]
       B --> C[CodeFileWatcher]
       C --> D{Is .ex file?}
-      D -->|Yes| E[HTDAGAutoBootstrap.persist_module_to_db]
+      D -->|Yes| E[StartupCodeIngestion.persist_module_to_db]
       D -->|No| F[Ignore]
       E --> G[(PostgreSQL)]
   ```
@@ -25,8 +25,8 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
     "purpose": "Real-time code ingestion via file-watching",
     "type": "GenServer + FileSystem integration",
     "operates_on": "lib/**/*.ex files",
-    "storage": "code_files table (via HTDAGAutoBootstrap)",
-    "dependencies": ["FileSystem", "HTDAGAutoBootstrap"]
+    "storage": "code_files table (via StartupCodeIngestion)",
+    "dependencies": ["FileSystem", "StartupCodeIngestion"]
   }
   ```
 
@@ -36,7 +36,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   CodeFileWatcher:
     calls:
       - FileSystem.subscribe/1  # Subscribe to file events
-      - HTDAGAutoBootstrap.persist_module_to_db/2  # Re-ingest changed file
+      - StartupCodeIngestion.persist_module_to_db/2  # Re-ingest changed file
     called_by:
       - ApplicationSupervisor  # Started in supervision tree
     triggers:
@@ -48,13 +48,13 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   **DO NOT create these duplicates:**
   - ❌ `CodeMonitor` - This IS the file monitor
   - ❌ `FileIngestionWatcher` - Same purpose
-  - ❌ `AutoIngestion` - HTDAGAutoBootstrap handles startup, this handles runtime
+  - ❌ `AutoIngestion` - StartupCodeIngestion handles startup, this handles runtime
 
   **Use this module when:**
   - ✅ Need real-time ingestion (file changes detected immediately)
   - ✅ During active development (files changing frequently)
 
-  **Use HTDAGAutoBootstrap when:**
+  **Use StartupCodeIngestion when:**
   - ✅ Need startup ingestion (comprehensive scan of all files)
   - ✅ First-time setup or after git pull
 
@@ -68,7 +68,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   use GenServer
   require Logger
 
-  alias Singularity.Execution.Planning.HTDAGAutoBootstrap
+  alias Singularity.Code.StartupCodeIngestion
 
   # Debounce delay (ms) - wait after last change before re-ingesting
   @debounce_delay 500
@@ -244,7 +244,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   end
 
   # Re-ingest a single file into the database.
-  # Uses HTDAGAutoBootstrap's persistence logic to:
+  # Uses StartupCodeIngestion's persistence logic to:
   # 1. Check if file is busy (being written)
   # 2. Parse file with CodeEngine NIF (tree-sitter)
   # 3. Extract enhanced metadata (dependencies, call graph, etc.)

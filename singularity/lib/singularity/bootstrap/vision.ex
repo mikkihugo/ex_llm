@@ -17,7 +17,7 @@ defmodule Singularity.Bootstrap.Vision do
 
   - `Singularity.Bootstrap.StageManager` - Current stage tracking
   - `Singularity.Execution.Planning.SafeWorkPlanner` - SAFe hierarchical planning system
-  - `Singularity.Execution.Planning.HTDAGAutoBootstrap` - Executes vision-driven tasks
+  - `Singularity.Code.StartupCodeIngestion` - Executes vision-driven tasks
 
   ## Usage
 
@@ -121,7 +121,7 @@ defmodule Singularity.Bootstrap.Vision do
       },
       %{
         name: "HTDAG Self-Scan",
-        description: "Run HTDAGAutoBootstrap in discovery mode",
+        description: "Run StartupCodeIngestion in discovery mode",
         acceptance_criteria: [
           "All issues cataloged (broken deps, missing docs)",
           "Severity scores assigned",

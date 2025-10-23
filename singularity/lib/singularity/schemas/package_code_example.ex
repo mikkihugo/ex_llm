@@ -1,9 +1,14 @@
 defmodule Singularity.Schemas.PackageCodeExample do
   @moduledoc """
-  Schema for package_code_examples table - code examples extracted from package documentation
+  Schema for dependency_catalog_examples table - code examples extracted from package documentation
 
   Stores real code examples from package sources (examples/ directories, official docs, tests)
   with embeddings for semantic search. These are curated examples, not user code.
+
+  ## Naming Convention
+  - Module: singular (`PackageCodeExample` - represents ONE example)
+  - Table: plural (`dependency_catalog_examples` - collection of examples)
+  - This is the Elixir/Ecto standard pattern
   """
   use Ecto.Schema
   import Ecto.Changeset

@@ -1,9 +1,14 @@
 defmodule Singularity.Schemas.PackageDependency do
   @moduledoc """
-  Schema for package_dependencies table - dependencies of packages from registries
+  Schema for dependency_catalog_deps table - dependencies of packages from registries
 
   Tracks what other packages a package depends on, with version constraints and dependency types
   (runtime, dev, peer, optional).
+
+  ## Naming Convention
+  - Module: singular (`PackageDependency` - represents ONE dependency)
+  - Table: plural (`dependency_catalog_deps` - collection of dependencies)
+  - This is the Elixir/Ecto standard pattern
   """
   use Ecto.Schema
   import Ecto.Changeset

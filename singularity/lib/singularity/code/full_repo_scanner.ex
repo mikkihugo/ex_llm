@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Planning.HTDAGLearner do
+defmodule Singularity.Code.FullRepoScanner do
   @moduledoc """
   Incremental learning system for HTDAG to understand and auto-repair the ENTIRE codebase.
 
@@ -38,11 +38,11 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
   ## Usage
 
       # Learn about the codebase incrementally
-      {:ok, knowledge} = HTDAGLearner.learn_codebase()
+      {:ok, knowledge} = FullRepoScanner.learn_codebase()
       # => {:ok, %{knowledge: %{modules: %{...}}, issues: [...]}}
 
       # Auto-fix everything that's broken (uses Lua scripts)
-      {:ok, fixes} = HTDAGLearner.auto_fix_all()
+      {:ok, fixes} = FullRepoScanner.auto_fix_all()
       # => {:ok, %{iterations: 3, fixes: [...]}}
   """
 
@@ -52,7 +52,7 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
   alias Singularity.{Store, RAGCodeGenerator, QualityCodeGenerator, HotReload.ImprovementGateway}
 
   # INTEGRATION: HTDAG planning and tracing
-  alias Singularity.Execution.Planning.{HTDAG, HTDAGBootstrap, HTDAGTracer}
+  alias Singularity.Execution.Planning.{HTDAG, SystemBootstrap, HTDAGTracer}
 
   # INTEGRATION: Self-improvement (learning from execution)
   alias Singularity.SelfImprovingAgent

@@ -29,7 +29,7 @@ defmodule Singularity.Analysis.MetadataValidator do
 
   ### During Ingestion (Real-time validation)
   ```elixir
-  # In HTDAGAutoBootstrap.persist_module_to_db/2
+  # In StartupCodeIngestion.persist_module_to_db/2
   validation = MetadataValidator.validate_file(file_path, content)
 
   # Store validation result in metadata
@@ -87,7 +87,7 @@ defmodule Singularity.Analysis.MetadataValidator do
 
   ## Integration Points
 
-  - `HTDAGAutoBootstrap` - Validates during ingestion
+  - `StartupCodeIngestion` - Validates during ingestion
   - `CodeFileWatcher` - Validates on file changes
   - `SelfImprovingAgent` - Fixes incomplete metadata
   - `mix metadata.validate` - Manual validation task
@@ -327,8 +327,8 @@ defmodule Singularity.Analysis.MetadataValidator do
   end
 
   defp reingest_file(file_path) do
-    # Trigger re-ingestion via CodeFileWatcher or HTDAGAutoBootstrap
-    alias Singularity.Execution.Planning.HTDAGAutoBootstrap
+    # Trigger re-ingestion via CodeFileWatcher or StartupCodeIngestion
+    alias Singularity.Code.StartupCodeIngestion
 
     # Create a minimal module structure for re-ingestion
     module = %{
@@ -338,7 +338,7 @@ defmodule Singularity.Analysis.MetadataValidator do
       issues: []
     }
 
-    HTDAGAutoBootstrap.persist_module_to_db(module, "singularity")
+    StartupCodeIngestion.persist_module_to_db(module, "singularity")
   end
 
   defp extract_module_name_from_path(file_path) do

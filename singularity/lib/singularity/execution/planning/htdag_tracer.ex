@@ -9,7 +9,7 @@ defmodule Singularity.Execution.Planning.HTDAGTracer do
   ## Integration Points
 
   This module integrates with:
-  - `Singularity.Execution.Planning.HTDAGLearner` - Learning integration (HTDAGLearner.learn_with_tracing/1)
+  - `Singularity.Code.FullRepoScanner` - Learning integration (FullRepoScanner.learn_with_tracing/1)
   - `:erlang.trace` - Runtime tracing (erlang.trace/3 for function call tracking)
   - `:telemetry` - Event tracking (telemetry events for execution paths)
   - `:recon_trace` - Production tracing (recon_trace for safe tracing)

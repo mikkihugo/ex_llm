@@ -55,7 +55,7 @@ defmodule Singularity.Application do
       Singularity.Knowledge.Supervisor,
       # Code Analyzer Cache - Analysis result caching for performance
       {Singularity.CodeAnalyzer.Cache, [max_size: 1000, ttl: 3600]},
-      # Manages: HTDAGAutoBootstrap, SafeWorkPlanner, WorkPlanAPI
+      # Manages: StartupCodeIngestion, SafeWorkPlanner, WorkPlanAPI
       Singularity.Execution.Planning.Supervisor,
       # Manages: SPARC.Orchestrator, TemplateSparcOrchestrator
       Singularity.Execution.SPARC.Supervisor,

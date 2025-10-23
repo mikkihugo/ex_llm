@@ -8,7 +8,7 @@
 
 ### Before (Only lib/)
 ```
-HTDAGAutoBootstrap scans:
+StartupCodeIngestion scans:
   ✅ singularity/lib/**/*.ex  (251 files)
   ❌ rust/**/*.rs             (NOT scanned)
   ❌ llm-server/**/*.ts       (NOT scanned)
@@ -16,7 +16,7 @@ HTDAGAutoBootstrap scans:
 
 ### After (Full Repo!)
 ```
-HTDAGAutoBootstrap scans:
+StartupCodeIngestion scans:
   ✅ singularity/**/*.ex      (416 files)
   ✅ rust/**/*.rs             (394 files)
   ✅ llm-server/**/*.ts       (100 files)
@@ -94,7 +94,7 @@ Config files:
 ```
 Application starts
     ↓
-HTDAGAutoBootstrap.start_link()
+StartupCodeIngestion.start_link()
     ↓
 Phase 1: Scan entire repo
     project_root = Path.expand("..", File.cwd!())  # Go up from singularity/ to repo root
@@ -118,7 +118,7 @@ Phase 4: Store in PostgreSQL
 
 ### Ignore Pattern Matching
 
-HTDAGLearner checks files in this order:
+FullRepoScanner checks files in this order:
 
 1. **Hardcoded patterns** (fast path)
    ```elixir

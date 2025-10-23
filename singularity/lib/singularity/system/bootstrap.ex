@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Planning.HTDAGBootstrap do
+defmodule Singularity.System.Bootstrap do
   @moduledoc """
   Bootstrap module that integrates HTDAG NATS-LLM self-evolution with existing Singularity infrastructure.
 
@@ -12,7 +12,7 @@ defmodule Singularity.Execution.Planning.HTDAGBootstrap do
   - `Singularity.Execution.Planning.HTDAG` - DAG operations (HTDAG.decompose/1)
   - `Singularity.Execution.Planning.HTDAGExecutor` - Task execution (HTDAGExecutor.execute/3)
   - `Singularity.Execution.Planning.HTDAGEvolution` - Self-improvement (HTDAGEvolution integration)
-  - `Singularity.Execution.Planning.HTDAGLearner` - Learning (HTDAGLearner.learn_codebase/1, auto_fix_all/1)
+  - `Singularity.Code.FullRepoScanner` - Learning (FullRepoScanner.learn_codebase/1, auto_fix_all/1)
   - `Singularity.Store` - Knowledge storage (Store.all_services/0, query_knowledge/1)
   - `Singularity.SelfImprovingAgent` - Self-improvement (SelfImprovingAgent integration)
   - `Singularity.RAGCodeGenerator` - Code generation (RAGCodeGenerator integration)
@@ -30,18 +30,18 @@ defmodule Singularity.Execution.Planning.HTDAGBootstrap do
   ## Usage
 
       # Bootstrap the system
-      {:ok, state} = HTDAGBootstrap.bootstrap()
+      {:ok, state} = SystemBootstrap.bootstrap()
       # => {:ok, %{run_id: "bootstrap-123", learning: %{...}, ready_for_features: true}}
 
       # Get singularity server working
-      {:ok, result} = HTDAGBootstrap.fix_singularity_server()
+      {:ok, result} = SystemBootstrap.fix_singularity_server()
       # => {:ok, %{fixes_applied: [...], safe_planner_ready: true}}
   """
 
   require Logger
 
   # INTEGRATION: HTDAG planning and execution
-  alias Singularity.Execution.Planning.{HTDAG, HTDAGExecutor, HTDAGEvolution, HTDAGLearner}
+  alias Singularity.Execution.Planning.{HTDAG, HTDAGExecutor, HTDAGEvolution, FullRepoScanner}
 
   # INTEGRATION: Knowledge storage and self-improvement
   alias Singularity.{Store, SelfImprovingAgent}
@@ -66,16 +66,16 @@ defmodule Singularity.Execution.Planning.HTDAGBootstrap do
 
     # Phase 1: Simple codebase learning
     Logger.info("Phase 1: Learning codebase the easy way...")
-    {:ok, learning} = HTDAGLearner.learn_codebase()
+    {:ok, learning} = FullRepoScanner.learn_codebase()
 
     # Phase 2: Map all systems with explanations
     Logger.info("Phase 2: Mapping all systems with inline documentation...")
-    {:ok, mapping} = HTDAGLearner.map_all_systems()
+    {:ok, mapping} = FullRepoScanner.map_all_systems()
 
     # Phase 3: Auto-fix everything
     if Keyword.get(opts, :auto_fix, false) do
       Logger.info("Phase 3: Auto-fixing all issues...")
-      {:ok, fixes} = HTDAGLearner.auto_fix_all()
+      {:ok, fixes} = FullRepoScanner.auto_fix_all()
 
       {:ok,
        %{
@@ -112,7 +112,7 @@ defmodule Singularity.Execution.Planning.HTDAGBootstrap do
     Logger.info("Auto-repairing Singularity server...")
 
     # Use the simple auto-fix approach
-    case HTDAGLearner.auto_fix_all(Keyword.put(opts, :max_iterations, 20)) do
+    case FullRepoScanner.auto_fix_all(Keyword.put(opts, :max_iterations, 20)) do
       {:ok, result} ->
         Logger.info("Auto-repair complete",
           iterations: result.iterations,

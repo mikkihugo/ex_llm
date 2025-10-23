@@ -111,7 +111,7 @@ defmodule Singularity.CodeAnalyzer do
       - Singularity.RustAnalyzer (NIF)
       - Singularity.Repo (database access)
     called_by:
-      - HTDAGAutoBootstrap (for module analysis)
+      - StartupCodeIngestion (for module analysis)
       - QualityCodeGenerator (for quality checking)
       - CodeFileWatcher (for reanalysis)
   ```

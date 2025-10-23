@@ -118,7 +118,7 @@ defmodule Singularity.Graph.AgeQueries do
 
       iex> AgeQueries.find_callers_cypher("persist_module_to_db/2")
       {:ok, [
-        %{name: "persist_learned_codebase/1", file_path: "lib/.../htdag_auto_bootstrap.ex", line: 486}
+        %{name: "persist_learned_codebase/1", file_path: "lib/.../startup_code_ingestion.ex", line: 486}
       ]}
 
   ## Cypher Query
