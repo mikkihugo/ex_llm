@@ -1,0 +1,77 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "group:allNonMajor"
+  ],
+  "description": "Auto-update dependencies for Singularity/Genesis with semantic commits and grouped updates",
+  "semanticCommits": "enabled",
+  "commitMessagePrefix": "chore(deps): ",
+  "groupName": "Dependency Updates",
+  "schedule": [
+    "before 3am on the first day of the month"
+  ],
+  "timezone": "UTC",
+  "prCreation": "auto",
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "assignees": ["@mhugo"]
+  },
+  "elixir": {
+    "enabled": true,
+    "rangeStrategy": "auto"
+  },
+  "hex": {
+    "enabled": true
+  },
+  "cargo": {
+    "enabled": true,
+    "rangeStrategy": "auto"
+  },
+  "nix": {
+    "enabled": true
+  },
+  "renovateIgnore": [],
+  "postUpdateOptions": [
+    "gomodTidy",
+    "yarnDedupeHosted"
+  ],
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict",
+  "python": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchDatasources": ["hex"],
+      "groupName": "Elixir Dependencies",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "matchDatasources": ["crate"],
+      "groupName": "Rust/Cargo Dependencies",
+      "matchUpdateTypes": ["patch"],
+      "automerge": false
+    },
+    {
+      "matchDatasources": ["npm"],
+      "groupName": "JavaScript/Node Dependencies",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "matchDatasources": ["github-tags"],
+      "matchPackagePatterns": ["NixOS/nixpkgs"],
+      "groupName": "Nix Flakes",
+      "matchUpdateTypes": ["patch", "minor"],
+      "schedule": ["after 10pm on weekends"]
+    }
+  ]
+}
