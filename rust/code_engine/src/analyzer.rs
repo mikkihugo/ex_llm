@@ -314,6 +314,238 @@ impl CodebaseAnalyzer {
     graph_builder.build_import_graph(metadata_cache)
   }
 
+  // ===========================
+  // Enhanced Parser Integration Methods
+  // ===========================
+
+  /// Analyze multiple files using RCA metrics and batch processing
+  ///
+  /// Uses parser_core's batch analysis for better performance:
+  /// - RCA complexity metrics (Cyclomatic Complexity, Halstead, MI)
+  /// - AST extraction (functions, classes, imports, exports)
+  /// - Tree-sitter parsing for supported languages
+  /// - Dependency analysis for external packages
+  ///
+  /// # Arguments
+  /// * `file_paths` - Vector of file paths to analyze
+  ///
+  /// # Returns
+  /// Vector of analysis results with full parser metrics
+  pub fn analyze_files_with_parser(&self, file_paths: &[&std::path::Path]) -> Result<Vec<crate::analysis::graph::code_graph::AnalysisResult>, String> {
+    let mut parser = self.universal_parser.clone();
+    parser.analyze_files(file_paths)
+      .map_err(|e| format!("Parser analysis failed: {}", e))
+  }
+
+  /// Extract function metadata from code using AST
+  ///
+  /// Leverages Tree-sitter to extract detailed function information:
+  /// - Function signatures with parameter types
+  /// - Return types and decorators
+  /// - Async and generator functions
+  /// - Documentation/docstrings
+  /// - Line ranges and complexity
+  ///
+  /// # Arguments
+  /// * `code` - Source code to analyze
+  /// * `language_hint` - Language ID or file extension
+  ///
+  /// # Returns
+  /// Vector of function metadata extracted from AST
+  pub fn extract_functions(&self, code: &str, language_hint: &str) -> Result<Vec<crate::analysis::graph::code_graph::FunctionInfo>, String> {
+    // For now, this is a placeholder that can be enhanced
+    // Real implementation would use tree-sitter directly
+    let mut parser = self.universal_parser.clone();
+    use std::fs;
+    use std::io::Write;
+
+    // Write to temp file for analysis
+    let mut temp_file = tempfile::NamedTempFile::new()
+      .map_err(|e| format!("Failed to create temp file: {}", e))?;
+    temp_file.write_all(code.as_bytes())
+      .map_err(|e| format!("Failed to write temp file: {}", e))?;
+
+    match parser.analyze_file(temp_file.path()) {
+      Ok(result) => {
+        if let Some(ast) = result.tree_sitter_analysis {
+          Ok(ast.functions)
+        } else {
+          Ok(Vec::new())
+        }
+      }
+      Err(e) => Err(format!("AST extraction failed: {}", e)),
+    }
+  }
+
+  /// Extract class/struct metadata from code using AST
+  ///
+  /// Leverages Tree-sitter to extract class information:
+  /// - Class/struct names and hierarchy
+  /// - Methods and fields
+  /// - Visibility and modifiers
+  /// - Line ranges
+  ///
+  /// # Arguments
+  /// * `code` - Source code to analyze
+  /// * `language_hint` - Language ID or file extension
+  ///
+  /// # Returns
+  /// Vector of class metadata extracted from AST
+  pub fn extract_classes(&self, code: &str, language_hint: &str) -> Result<Vec<crate::analysis::graph::code_graph::ClassInfo>, String> {
+    let mut parser = self.universal_parser.clone();
+    use std::io::Write;
+
+    let mut temp_file = tempfile::NamedTempFile::new()
+      .map_err(|e| format!("Failed to create temp file: {}", e))?;
+    temp_file.write_all(code.as_bytes())
+      .map_err(|e| format!("Failed to write temp file: {}", e))?;
+
+    match parser.analyze_file(temp_file.path()) {
+      Ok(result) => {
+        if let Some(ast) = result.tree_sitter_analysis {
+          Ok(ast.classes)
+        } else {
+          Ok(Vec::new())
+        }
+      }
+      Err(e) => Err(format!("Class extraction failed: {}", e)),
+    }
+  }
+
+  /// Get RCA (Rust Code Analysis) metrics for code
+  ///
+  /// Extracts detailed code quality metrics:
+  /// - Cyclomatic Complexity (CC)
+  /// - Halstead metrics (effort, vocabulary, bugs)
+  /// - Maintainability Index (MI)
+  /// - Line metrics (SLOC, PLOC, LLOC, CLOC, BLANK)
+  ///
+  /// # Arguments
+  /// * `code` - Source code to analyze
+  /// * `language_hint` - Language ID or file extension
+  ///
+  /// # Returns
+  /// RCA metrics for the code
+  pub fn get_rca_metrics(&self, code: &str, language_hint: &str) -> Result<crate::analysis::graph::code_graph::RcaMetrics, String> {
+    let mut parser = self.universal_parser.clone();
+    use std::io::Write;
+
+    let mut temp_file = tempfile::NamedTempFile::new()
+      .map_err(|e| format!("Failed to create temp file: {}", e))?;
+    temp_file.write_all(code.as_bytes())
+      .map_err(|e| format!("Failed to write temp file: {}", e))?;
+
+    match parser.analyze_file(temp_file.path()) {
+      Ok(result) => {
+        if let Some(rca) = result.rca_metrics {
+          Ok(rca)
+        } else {
+          Ok(crate::analysis::graph::code_graph::RcaMetrics::default())
+        }
+      }
+      Err(e) => Err(format!("RCA metrics extraction failed: {}", e)),
+    }
+  }
+
+  /// Extract imports and exports from code
+  ///
+  /// Uses AST to detect module dependencies:
+  /// - Import statements
+  /// - Export declarations
+  /// - Dependency relationships
+  /// - Cross-file references
+  ///
+  /// # Arguments
+  /// * `code` - Source code to analyze
+  /// * `language_hint` - Language ID or file extension
+  ///
+  /// # Returns
+  /// Tuple of (imports, exports)
+  pub fn extract_imports_exports(&self, code: &str, language_hint: &str) -> Result<(Vec<String>, Vec<String>), String> {
+    let mut parser = self.universal_parser.clone();
+    use std::io::Write;
+
+    let mut temp_file = tempfile::NamedTempFile::new()
+      .map_err(|e| format!("Failed to create temp file: {}", e))?;
+    temp_file.write_all(code.as_bytes())
+      .map_err(|e| format!("Failed to write temp file: {}", e))?;
+
+    match parser.analyze_file(temp_file.path()) {
+      Ok(result) => {
+        if let Some(ast) = result.tree_sitter_analysis {
+          Ok((ast.imports, ast.exports))
+        } else {
+          Ok((Vec::new(), Vec::new()))
+        }
+      }
+      Err(e) => Err(format!("Import/export extraction failed: {}", e)),
+    }
+  }
+
+  /// Get RCA-supported languages for metrics analysis
+  ///
+  /// Returns languages where RCA metrics are available.
+  /// Use this to determine if complexity metrics can be computed.
+  ///
+  /// # Returns
+  /// List of language IDs with RCA support
+  pub fn rca_supported_languages(&self) -> Vec<String> {
+    use parser_core::language_registry::rca_supported_languages;
+    rca_supported_languages()
+      .iter()
+      .map(|lang| lang.id.clone())
+      .collect()
+  }
+
+  /// Get AST-Grep supported languages for pattern matching
+  ///
+  /// Returns languages where AST-Grep pattern matching is available.
+  /// Use this for structural code analysis.
+  ///
+  /// # Returns
+  /// List of language IDs with AST-Grep support
+  pub fn ast_grep_supported_languages(&self) -> Vec<String> {
+    use parser_core::language_registry::ast_grep_supported_languages;
+    ast_grep_supported_languages()
+      .iter()
+      .map(|lang| lang.id.clone())
+      .collect()
+  }
+
+  /// Check if language supports RCA metrics
+  ///
+  /// # Arguments
+  /// * `language_id` - Language to check
+  ///
+  /// # Returns
+  /// True if RCA metrics are available for this language
+  pub fn has_rca_support(&self, language_id: &str) -> bool {
+    if let Some(lang) = parser_core::language_registry::get_language(language_id)
+      .or_else(|| parser_core::language_registry::get_language_by_alias(language_id))
+    {
+      lang.rca_supported
+    } else {
+      false
+    }
+  }
+
+  /// Check if language supports AST-Grep analysis
+  ///
+  /// # Arguments
+  /// * `language_id` - Language to check
+  ///
+  /// # Returns
+  /// True if AST-Grep analysis is available for this language
+  pub fn has_ast_grep_support(&self, language_id: &str) -> bool {
+    if let Some(lang) = parser_core::language_registry::get_language(language_id)
+      .or_else(|| parser_core::language_registry::get_language_by_alias(language_id))
+    {
+      lang.ast_grep_supported
+    } else {
+      false
+    }
+  }
+
   // TODO: Remove global cache methods - belong in sparc-engine orchestration
   // These methods reference global_cache which is engine-specific, not pure analysis
   // Get global cache statistics
