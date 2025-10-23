@@ -1,21 +1,20 @@
 defmodule Centralcloud.Engines.CodeEngine do
   @moduledoc """
-  Code Engine NIF - Direct bindings to Rust code analysis.
-  
-  This module loads the same Rust NIF as Singularity, allowing Centralcloud
-  to use the same code analysis capabilities directly.
+  Code Engine - Delegates to Singularity via NATS.
+
+  This module provides a simple interface to Singularity's Rust code
+  analysis engine via NATS messaging. CentralCloud does not compile its own
+  copy of the Rust NIF; instead it uses the Singularity instance's compiled
+  engines through the SharedEngineService.
   """
 
-  use Rustler, 
-    otp_app: :centralcloud,
-    crate: :code_engine,
-    path: "../rust/code_engine",
-    skip_compilation?: false
-
+  alias Centralcloud.Engines.SharedEngineService
   require Logger
 
   @doc """
   Analyze codebase for business domains and patterns.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def analyze_codebase(codebase_info, opts \\ []) do
     analysis_types = Keyword.get(opts, :analysis_types, ["business_domains", "patterns", "architecture"])
@@ -27,22 +26,13 @@ defmodule Centralcloud.Engines.CodeEngine do
       "include_embeddings" => include_embeddings
     }
 
-    case code_engine_call("analyze_codebase", request) do
-      {:ok, results} ->
-        Logger.debug("Code engine analysis completed", 
-          business_domains: length(Map.get(results, "business_domains", [])),
-          patterns: length(Map.get(results, "patterns", []))
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Code engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_code_engine("analyze_codebase", request, timeout: 30_000)
   end
 
   @doc """
   Detect business domains in codebase.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def detect_business_domains(codebase_info, opts \\ []) do
     request = %{
@@ -50,19 +40,6 @@ defmodule Centralcloud.Engines.CodeEngine do
       "confidence_threshold" => Keyword.get(opts, :confidence_threshold, 0.7)
     }
 
-    case code_engine_call("detect_business_domains", request) do
-      {:ok, results} ->
-        Logger.debug("Code engine detected business domains", 
-          domains: length(Map.get(results, "business_domains", []))
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Code engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_code_engine("detect_business_domains", request, timeout: 30_000)
   end
-
-  # NIF function (loaded from Rust)
-  defp code_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
 end

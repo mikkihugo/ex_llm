@@ -1,21 +1,20 @@
 defmodule Centralcloud.Engines.EmbeddingEngine do
   @moduledoc """
-  Embedding Engine NIF - Direct bindings to Rust embedding generation.
-  
-  This module loads the same Rust NIF as Singularity, allowing Centralcloud
-  to use the same embedding capabilities directly.
+  Embedding Engine - Delegates to Singularity via NATS.
+
+  This module provides a simple interface to Singularity's Rust embedding
+  generation engine via NATS messaging. CentralCloud does not compile its own
+  copy of the Rust NIF; instead it uses the Singularity instance's compiled
+  engines through the SharedEngineService.
   """
 
-  use Rustler, 
-    otp_app: :centralcloud,
-    crate: :embedding_engine,
-    path: "../rust/embedding_engine",
-    skip_compilation?: false
-
+  alias Centralcloud.Engines.SharedEngineService
   require Logger
 
   @doc """
-  Generate embeddings for text using Rust Embedding Engine.
+  Generate embeddings for text using Singularity's Rust Embedding Engine.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def generate_embeddings(texts, opts \\ []) do
     model = Keyword.get(opts, :model, "jina-v3")
@@ -27,22 +26,13 @@ defmodule Centralcloud.Engines.EmbeddingEngine do
       "batch_size" => batch_size
     }
 
-    case embedding_engine_call("generate_embeddings", request) do
-      {:ok, results} ->
-        Logger.debug("Embedding engine generated embeddings", 
-          count: length(Map.get(results, "embeddings", [])),
-          dimensions: Map.get(results, "dimensions", 0)
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Embedding engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_embedding_engine("generate_embeddings", request, timeout: 30_000)
   end
 
   @doc """
   Calculate similarity between embeddings.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def calculate_similarity(embedding1, embedding2, opts \\ []) do
     similarity_type = Keyword.get(opts, :similarity_type, "cosine")
@@ -53,21 +43,13 @@ defmodule Centralcloud.Engines.EmbeddingEngine do
       "similarity_type" => similarity_type
     }
 
-    case embedding_engine_call("calculate_similarity", request) do
-      {:ok, results} ->
-        Logger.debug("Embedding engine calculated similarity", 
-          similarity: Map.get(results, "similarity", 0.0)
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Embedding engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_embedding_engine("calculate_similarity", request, timeout: 30_000)
   end
 
   @doc """
   Analyze semantics of codebase.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def analyze_semantics(codebase_info, opts \\ []) do
     analysis_type = Keyword.get(opts, :analysis_type, "semantic_patterns")
@@ -79,20 +61,6 @@ defmodule Centralcloud.Engines.EmbeddingEngine do
       "include_similarity" => include_similarity
     }
 
-    case embedding_engine_call("analyze_semantics", request) do
-      {:ok, results} ->
-        Logger.debug("Embedding engine analyzed semantics", 
-          semantic_patterns: length(Map.get(results, "semantic_patterns", [])),
-          similarity_scores: length(Map.get(results, "similarity_scores", []))
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Embedding engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_embedding_engine("analyze_semantics", request, timeout: 30_000)
   end
-
-  # NIF function (loaded from Rust)
-  defp embedding_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
 end

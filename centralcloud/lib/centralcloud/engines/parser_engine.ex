@@ -1,21 +1,20 @@
 defmodule Centralcloud.Engines.ParserEngine do
   @moduledoc """
-  Parser Engine NIF - Direct bindings to Rust code parsing.
-  
-  This module loads the same Rust NIF as Singularity, allowing Centralcloud
-  to use the same parsing capabilities directly.
+  Parser Engine - Delegates to Singularity via NATS.
+
+  This module provides a simple interface to Singularity's Rust code
+  parsing engine via NATS messaging. CentralCloud does not compile its own
+  copy of the Rust NIF; instead it uses the Singularity instance's compiled
+  engines through the SharedEngineService.
   """
 
-  use Rustler, 
-    otp_app: :centralcloud,
-    crate: :parser_engine,
-    path: "../rust/parser_engine",
-    skip_compilation?: false
-
+  alias Centralcloud.Engines.SharedEngineService
   require Logger
 
   @doc """
-  Parse a single file using Rust Parser Engine.
+  Parse a single file using Singularity's Rust Parser Engine.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def parse_file(file_path, opts \\ []) do
     language = Keyword.get(opts, :language, "auto")
@@ -27,22 +26,13 @@ defmodule Centralcloud.Engines.ParserEngine do
       "include_ast" => include_ast
     }
 
-    case parser_engine_call("parse_file", request) do
-      {:ok, results} ->
-        Logger.debug("Parser engine parsed file", 
-          file: file_path,
-          language: Map.get(results, "language", "unknown")
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Parser engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_parser_engine("parse_file", request, timeout: 30_000)
   end
 
   @doc """
   Parse entire codebase.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def parse_codebase(codebase_info, opts \\ []) do
     languages = Keyword.get(opts, :languages, ["elixir", "rust", "javascript"])
@@ -54,19 +44,6 @@ defmodule Centralcloud.Engines.ParserEngine do
       "include_ast" => include_ast
     }
 
-    case parser_engine_call("parse_codebase", request) do
-      {:ok, results} ->
-        Logger.debug("Parser engine parsed codebase", 
-          files_parsed: length(Map.get(results, "parsed_files", []))
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Parser engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_parser_engine("parse_codebase", request, timeout: 30_000)
   end
-
-  # NIF function (loaded from Rust)
-  defp parser_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
 end

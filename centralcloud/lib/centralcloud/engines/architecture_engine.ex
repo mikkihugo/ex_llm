@@ -1,21 +1,20 @@
 defmodule Centralcloud.Engines.ArchitectureEngine do
   @moduledoc """
-  Architecture Engine NIF - Direct bindings to Rust architecture analysis.
-  
-  This module loads the same Rust NIF as Singularity, allowing Centralcloud
-  to use the same architecture analysis capabilities directly.
+  Architecture Engine - Delegates to Singularity via NATS.
+
+  This module provides a simple interface to Singularity's Rust architecture
+  analysis engine via NATS messaging. CentralCloud does not compile its own
+  copy of the Rust NIF; instead it uses the Singularity instance's compiled
+  engines through the SharedEngineService.
   """
 
-  use Rustler, 
-    otp_app: :centralcloud,
-    crate: :architecture_engine,
-    path: "../rust/architecture_engine",
-    skip_compilation?: false
-
+  alias Centralcloud.Engines.SharedEngineService
   require Logger
 
   @doc """
-  Detect frameworks in codebase using Rust Architecture Engine.
+  Detect frameworks in codebase using Singularity's Rust Architecture Engine.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def detect_frameworks(codebase_info, opts \\ []) do
     detection_type = Keyword.get(opts, :detection_type, "comprehensive")
@@ -29,22 +28,13 @@ defmodule Centralcloud.Engines.ArchitectureEngine do
       "include_technologies" => include_technologies
     }
 
-    case architecture_engine_call("detect_frameworks", request) do
-      {:ok, results} ->
-        Logger.debug("Architecture engine detected frameworks", 
-          frameworks: length(Map.get(results, "frameworks", [])),
-          patterns: length(Map.get(results, "patterns", []))
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Architecture engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_architecture_engine("detect_frameworks", request, timeout: 30_000)
   end
 
   @doc """
   Detect technologies in codebase.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def detect_technologies(codebase_info, opts \\ []) do
     request = %{
@@ -52,21 +42,13 @@ defmodule Centralcloud.Engines.ArchitectureEngine do
       "detection_type" => Keyword.get(opts, :detection_type, "comprehensive")
     }
 
-    case architecture_engine_call("detect_technologies", request) do
-      {:ok, results} ->
-        Logger.debug("Architecture engine detected technologies", 
-          technologies: length(Map.get(results, "technologies", []))
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Architecture engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_architecture_engine("detect_technologies", request, timeout: 30_000)
   end
 
   @doc """
   Get architectural suggestions for codebase.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def get_architectural_suggestions(codebase_info, opts \\ []) do
     request = %{
@@ -74,19 +56,6 @@ defmodule Centralcloud.Engines.ArchitectureEngine do
       "suggestion_type" => Keyword.get(opts, :suggestion_type, "comprehensive")
     }
 
-    case architecture_engine_call("get_architectural_suggestions", request) do
-      {:ok, results} ->
-        Logger.debug("Architecture engine generated suggestions", 
-          suggestions: length(Map.get(results, "suggestions", []))
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Architecture engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_architecture_engine("get_architectural_suggestions", request, timeout: 30_000)
   end
-
-  # NIF function (loaded from Rust)
-  defp architecture_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
 end

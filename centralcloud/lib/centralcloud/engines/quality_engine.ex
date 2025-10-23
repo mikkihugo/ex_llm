@@ -1,21 +1,20 @@
 defmodule Centralcloud.Engines.QualityEngine do
   @moduledoc """
-  Quality Engine NIF - Direct bindings to Rust quality analysis.
-  
-  This module loads the same Rust NIF as Singularity, allowing Centralcloud
-  to use the same quality analysis capabilities directly.
+  Quality Engine - Delegates to Singularity via NATS.
+
+  This module provides a simple interface to Singularity's Rust quality
+  analysis engine via NATS messaging. CentralCloud does not compile its own
+  copy of the Rust NIF; instead it uses the Singularity instance's compiled
+  engines through the SharedEngineService.
   """
 
-  use Rustler, 
-    otp_app: :centralcloud,
-    crate: :quality_engine,
-    path: "../rust/quality_engine",
-    skip_compilation?: false
-
+  alias Centralcloud.Engines.SharedEngineService
   require Logger
 
   @doc """
-  Analyze code quality using Rust Quality Engine.
+  Analyze code quality using Singularity's Rust Quality Engine.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def analyze_quality(codebase_info, opts \\ []) do
     quality_checks = Keyword.get(opts, :quality_checks, ["maintainability", "performance", "security", "architecture"])
@@ -27,22 +26,13 @@ defmodule Centralcloud.Engines.QualityEngine do
       "include_metrics" => include_metrics
     }
 
-    case quality_engine_call("analyze_quality", request) do
-      {:ok, results} ->
-        Logger.debug("Quality engine analysis completed", 
-          overall_score: Map.get(results, "overall_score", 0.0),
-          checks_performed: length(Map.get(results, "quality_checks", []))
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Quality engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_quality_engine("analyze_quality", request, timeout: 30_000)
   end
 
   @doc """
   Run linting on codebase.
+
+  Delegates to Singularity via NATS for the actual computation.
   """
   def run_linting(codebase_info, opts \\ []) do
     languages = Keyword.get(opts, :languages, ["elixir", "rust", "javascript"])
@@ -54,19 +44,6 @@ defmodule Centralcloud.Engines.QualityEngine do
       "strict_mode" => strict_mode
     }
 
-    case quality_engine_call("run_linting", request) do
-      {:ok, results} ->
-        Logger.debug("Quality engine linting completed", 
-          issues_found: length(Map.get(results, "issues", []))
-        )
-        {:ok, results}
-      
-      {:error, reason} ->
-        Logger.error("Quality engine failed", reason: reason)
-        {:error, reason}
-    end
+    SharedEngineService.call_quality_engine("run_linting", request, timeout: 30_000)
   end
-
-  # NIF function (loaded from Rust)
-  defp quality_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
 end
