@@ -82,15 +82,17 @@ end
 # GPU-accelerated ML/AI configuration
 if config_env() != :test do
   # Detect platform for appropriate configuration
+  # macOS (dev): CPU fallback (no Metal XLA support)
+  # Linux RTX 4080 (production): CUDA 11.8 for fast training
   platform =
     case System.get_env("XLA_TARGET") do
       nil ->
         # Auto-detect based on platform
         case :os.type() do
-          {:unix, :darwin} -> :macos   # macOS (CPU fallback, no Metal XLA binaries)
-          _ -> :linux                  # Linux (CUDA for RTX 4080)
+          {:unix, :darwin} -> :macos   # macOS dev (CPU, slow training)
+          _ -> :linux                  # Linux prod with RTX 4080 (CUDA, fast training)
         end
-      "cuda" -> :linux
+      "cuda" <> _ -> :linux            # Any CUDA variant → Linux/RTX 4080
       "metal" -> :macos
       "cpu" -> :cpu
       _ -> :cpu
