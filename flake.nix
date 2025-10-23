@@ -238,6 +238,14 @@
             exec bunx --yes @github/copilot "$@"
           '')
 
+          (writeScriptBin "kilocode" ''
+            #!${bash}/bin/bash
+            echo "🚀 Kilocode - AI-powered code generation"
+            echo "Kilocode provides fast AI-powered code generation and completion."
+            echo ""
+            exec bunx --yes @kilocode/cli "$@"
+          '')
+
           (writeScriptBin "cursor-agent" ''
             #!${bash}/bin/bash
             echo "🤖 Cursor Agent - AI-powered development agent"
