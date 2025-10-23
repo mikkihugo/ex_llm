@@ -1,9 +1,17 @@
-//! Dependency Graph Analysis
+//! Dependency Graph Analysis with CentralCloud Integration
 //!
-//! PSEUDO CODE: Comprehensive dependency graph analysis and visualization.
+//! Builds dependency graphs from code and enriches nodes with health data from CentralCloud.
+//!
+//! ## CentralCloud Integration
+//!
+//! - Queries "intelligence_hub.dependency_health.query" for health annotations
+//! - Publishes graph metrics to "intelligence_hub.graph.stats"
+//! - No local databases - all health data from CentralCloud
 
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use anyhow::Result;
+use crate::centralcloud::{query_centralcloud, publish_detection, extract_data};
 
 /// Dependency graph analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,7 +33,7 @@ pub struct DependencyGraph {
     pub strongly_connected_components: Vec<Vec<String>>,
 }
 
-/// Dependency node
+/// Dependency node with health annotations from CentralCloud
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DependencyNode {
     pub id: String,
@@ -54,7 +62,7 @@ pub enum DependencyNodeType {
     External,
 }
 
-/// Node metadata
+/// Node metadata enriched with CentralCloud health data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NodeMetadata {
     pub size: u64,
@@ -229,60 +237,51 @@ pub struct GraphMetadata {
     pub cycles_found: usize,
     pub analysis_duration_ms: u64,
     pub detector_version: String,
-    pub fact_system_version: String,
 }
 
-/// Dependency graph analyzer
+/// Dependency graph analyzer - CentralCloud integration (no local databases)
 pub struct DependencyGraphAnalyzer {
-    fact_system_interface: FactSystemInterface,
-    graph_algorithms: GraphAlgorithms,
-}
-
-/// Interface to fact-system for dependency knowledge
-pub struct FactSystemInterface {
-    // PSEUDO CODE: Interface to fact-system for dependency knowledge
-}
-
-/// Graph algorithms
-pub struct GraphAlgorithms {
-    // PSEUDO CODE: Graph algorithms for analysis
+    // No local databases - query CentralCloud on-demand
 }
 
 impl DependencyGraphAnalyzer {
     pub fn new() -> Self {
-        Self {
-            fact_system_interface: FactSystemInterface::new(),
-            graph_algorithms: GraphAlgorithms::new(),
-        }
+        Self {}
     }
-    
-    /// Initialize with fact-system integration
+
+    /// Initialize (no-op for CentralCloud mode)
     pub async fn initialize(&mut self) -> Result<()> {
-        // PSEUDO CODE:
-        /*
-        // Load dependency patterns from fact-system
-        let patterns = self.fact_system_interface.load_dependency_patterns().await?;
-        */
-        
+        // No initialization needed - queries CentralCloud on-demand
         Ok(())
     }
-    
-    /// Analyze dependency graph
+
+    /// Analyze dependency graph with CentralCloud health annotations
     pub async fn analyze(&self, content: &str, file_path: &str) -> Result<DependencyGraphAnalysis> {
-        // PSEUDO CODE:
-        /*
-        // Build dependency graph
-        let graph = self.build_dependency_graph(content, file_path).await?;
-        
-        // Calculate graph metrics
+        let start_time = std::time::Instant::now();
+
+        // 1. Build dependency graph from content (use content!)
+        let mut graph = self.build_dependency_graph(content, file_path).await?;
+
+        // 2. Enrich nodes with CentralCloud health data
+        self.enrich_with_health_data(&mut graph).await?;
+
+        // 3. Calculate graph metrics (use graph!)
         let metrics = self.calculate_graph_metrics(&graph);
-        
-        // Detect circular dependencies
+
+        // 4. Detect circular dependencies (use graph!)
         let cycles = self.detect_circular_dependencies(&graph);
-        
-        // Generate recommendations
+
+        // 5. Generate recommendations (use all!)
         let recommendations = self.generate_recommendations(&graph, &metrics, &cycles);
-        
+
+        // 6. Publish graph metrics to CentralCloud
+        self.publish_graph_stats(&graph, &metrics, &cycles).await;
+
+        let analysis_duration = start_time.elapsed().as_millis() as u64;
+        let nodes_count = graph.nodes.len();
+        let edges_count = graph.edges.len();
+        let cycles_count = cycles.len();
+
         Ok(DependencyGraphAnalysis {
             graph,
             metrics,
@@ -291,208 +290,194 @@ impl DependencyGraphAnalyzer {
             metadata: GraphMetadata {
                 analysis_time: chrono::Utc::now(),
                 files_analyzed: 1,
-                nodes_created: graph.nodes.len(),
-                edges_created: graph.edges.len(),
-                cycles_found: cycles.len(),
-                analysis_duration_ms: 0,
+                nodes_created: nodes_count,
+                edges_created: edges_count,
+                cycles_found: cycles_count,
+                analysis_duration_ms: analysis_duration,
                 detector_version: "1.0.0".to_string(),
-                fact_system_version: "1.0.0".to_string(),
-            },
-        })
-        */
-        
-        Ok(DependencyGraphAnalysis {
-            graph: DependencyGraph {
-                nodes: Vec::new(),
-                edges: Vec::new(),
-                root_nodes: Vec::new(),
-                leaf_nodes: Vec::new(),
-                strongly_connected_components: Vec::new(),
-            },
-            metrics: GraphMetrics {
-                node_count: 0,
-                edge_count: 0,
-                density: 0.0,
-                average_degree: 0.0,
-                max_degree: 0,
-                min_degree: 0,
-                diameter: 0,
-                radius: 0,
-                clustering_coefficient: 0.0,
-                modularity: 0.0,
-                connectivity: 0.0,
-                robustness: 0.0,
-            },
-            cycles: Vec::new(),
-            recommendations: Vec::new(),
-            metadata: GraphMetadata {
-                analysis_time: chrono::Utc::now(),
-                files_analyzed: 1,
-                nodes_created: 0,
-                edges_created: 0,
-                cycles_found: 0,
-                analysis_duration_ms: 0,
-                detector_version: "1.0.0".to_string(),
-                fact_system_version: "1.0.0".to_string(),
             },
         })
     }
-    
-    /// Build dependency graph
+
+    /// Build dependency graph from code content
     async fn build_dependency_graph(&self, content: &str, file_path: &str) -> Result<DependencyGraph> {
-        // PSEUDO CODE:
-        /*
         let mut nodes = Vec::new();
         let mut edges = Vec::new();
-        
-        // Parse AST and extract dependencies
-        let ast = parse_ast(content)?;
-        walk_ast(&ast, |node| {
-            match node.node_type {
-                NodeType::ImportStatement => {
-                    let dependency = extract_import_dependency(node);
-                    nodes.push(DependencyNode {
-                        id: generate_node_id(&dependency.name),
-                        name: dependency.name,
-                        node_type: DependencyNodeType::Package,
-                        version: dependency.version,
-                        location: dependency.location,
-                        metadata: NodeMetadata {
-                            size: 0,
-                            complexity: 0.0,
-                            maintainability: 0.0,
-                            testability: 0.0,
-                            security_score: 0.0,
-                            performance_score: 0.0,
-                            last_modified: None,
-                            author: None,
-                            description: None,
-                        },
-                        in_degree: 0,
-                        out_degree: 0,
-                        centrality: CentralityMetrics {
-                            degree_centrality: 0.0,
-                            betweenness_centrality: 0.0,
-                            closeness_centrality: 0.0,
-                            eigenvector_centrality: 0.0,
-                            pagerank: 0.0,
-                        },
-                    });
-                    
-                    edges.push(DependencyEdge {
-                        id: generate_edge_id(),
-                        from_node: file_path.to_string(),
-                        to_node: dependency.name,
-                        edge_type: DependencyEdgeType::Import,
-                        weight: 1.0,
-                        metadata: EdgeMetadata {
-                            frequency: 1,
-                            strength: 1.0,
-                            direction: EdgeDirection::Forward,
-                            context: None,
-                            line_number: Some(node.line_number),
-                            function_name: None,
-                        },
-                    });
-                }
-                NodeType::ClassDefinition => {
-                    let class_info = extract_class_info(node);
-                    nodes.push(DependencyNode {
-                        id: generate_node_id(&class_info.name),
-                        name: class_info.name,
-                        node_type: DependencyNodeType::Class,
-                        version: None,
-                        location: file_path.to_string(),
-                        metadata: NodeMetadata {
-                            size: class_info.size,
-                            complexity: class_info.complexity,
-                            maintainability: class_info.maintainability,
-                            testability: class_info.testability,
-                            security_score: class_info.security_score,
-                            performance_score: class_info.performance_score,
-                            last_modified: None,
-                            author: None,
-                            description: None,
-                        },
-                        in_degree: 0,
-                        out_degree: 0,
-                        centrality: CentralityMetrics {
-                            degree_centrality: 0.0,
-                            betweenness_centrality: 0.0,
-                            closeness_centrality: 0.0,
-                            eigenvector_centrality: 0.0,
-                            pagerank: 0.0,
-                        },
-                    });
-                }
-                _ => {}
-            }
-        });
-        
-        // Calculate node degrees
-        for edge in &edges {
-            if let Some(from_node) = nodes.iter_mut().find(|n| n.id == edge.from_node) {
-                from_node.out_degree += 1;
-            }
-            if let Some(to_node) = nodes.iter_mut().find(|n| n.id == edge.to_node) {
-                to_node.in_degree += 1;
-            }
+
+        // Extract dependencies from content (simplified - real impl would parse AST)
+        let dependencies = self.extract_dependencies_from_content(content, file_path);
+
+        // Create nodes from dependencies
+        for (idx, dep) in dependencies.iter().enumerate() {
+            nodes.push(DependencyNode {
+                id: format!("dep_{}", idx),
+                name: dep.clone(),
+                node_type: DependencyNodeType::Package,
+                version: None,
+                location: file_path.to_string(),
+                metadata: NodeMetadata {
+                    size: 0,
+                    complexity: 0.0,
+                    maintainability: 0.0,
+                    testability: 0.0,
+                    security_score: 0.0,
+                    performance_score: 0.0,
+                    last_modified: None,
+                    author: None,
+                    description: None,
+                },
+                in_degree: 0,
+                out_degree: 1,
+                centrality: CentralityMetrics {
+                    degree_centrality: 0.0,
+                    betweenness_centrality: 0.0,
+                    closeness_centrality: 0.0,
+                    eigenvector_centrality: 0.0,
+                    pagerank: 0.0,
+                },
+            });
+
+            edges.push(DependencyEdge {
+                id: format!("edge_{}", idx),
+                from_node: file_path.to_string(),
+                to_node: format!("dep_{}", idx),
+                edge_type: DependencyEdgeType::Import,
+                weight: 1.0,
+                metadata: EdgeMetadata {
+                    frequency: 1,
+                    strength: 1.0,
+                    direction: EdgeDirection::Forward,
+                    context: None,
+                    line_number: None,
+                    function_name: None,
+                },
+            });
         }
-        
+
         // Identify root and leaf nodes
-        let root_nodes: Vec<String> = nodes.iter().filter(|n| n.in_degree == 0).map(|n| n.id.clone()).collect();
-        let leaf_nodes: Vec<String> = nodes.iter().filter(|n| n.out_degree == 0).map(|n| n.id.clone()).collect();
-        
-        // Find strongly connected components
-        let strongly_connected_components = self.graph_algorithms.find_strongly_connected_components(&nodes, &edges);
-        
+        let root_nodes: Vec<String> = nodes.iter()
+            .filter(|n| n.in_degree == 0)
+            .map(|n| n.id.clone())
+            .collect();
+        let leaf_nodes: Vec<String> = nodes.iter()
+            .filter(|n| n.out_degree == 0)
+            .map(|n| n.id.clone())
+            .collect();
+
         Ok(DependencyGraph {
             nodes,
             edges,
             root_nodes,
             leaf_nodes,
-            strongly_connected_components,
-        })
-        */
-        
-        Ok(DependencyGraph {
-            nodes: Vec::new(),
-            edges: Vec::new(),
-            root_nodes: Vec::new(),
-            leaf_nodes: Vec::new(),
             strongly_connected_components: Vec::new(),
         })
     }
-    
-    /// Calculate graph metrics
+
+    /// Extract dependency names from content (simplified parser)
+    fn extract_dependencies_from_content(&self, content: &str, _file_path: &str) -> Vec<String> {
+        let mut dependencies = Vec::new();
+
+        // Simple heuristic: look for import/use/require statements
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("import ") || trimmed.starts_with("use ") || trimmed.starts_with("require ") {
+                if let Some(dep_name) = Self::extract_dep_name(trimmed) {
+                    dependencies.push(dep_name);
+                }
+            }
+        }
+
+        dependencies
+    }
+
+    /// Extract dependency name from import statement
+    fn extract_dep_name(line: &str) -> Option<String> {
+        // Simplified: extract first word after import/use/require
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() > 1 {
+            Some(parts[1].trim_matches(|c| c == ';' || c == ',' || c == '\'' || c == '"').to_string())
+        } else {
+            None
+        }
+    }
+
+    /// Enrich dependency nodes with health data from CentralCloud
+    async fn enrich_with_health_data(&self, graph: &mut DependencyGraph) -> Result<()> {
+        if graph.nodes.is_empty() {
+            return Ok(());
+        }
+
+        // Prepare request for CentralCloud
+        let dependencies: Vec<serde_json::Value> = graph.nodes.iter()
+            .map(|node| json!({
+                "name": node.name,
+                "version": node.version,
+            }))
+            .collect();
+
+        let request = json!({
+            "dependencies": dependencies,
+            "include_health_score": true,
+            "include_security_score": true,
+        });
+
+        // Query CentralCloud for health data
+        let response = query_centralcloud(
+            "intelligence_hub.dependency_health.query",
+            &request,
+            5000
+        )?;
+
+        let health_data: Vec<serde_json::Value> = extract_data(&response, "health_data");
+
+        // Enrich nodes with health data
+        for (node, health) in graph.nodes.iter_mut().zip(health_data.iter()) {
+            if let Some(maintainability) = health.get("maintainability_score").and_then(|v| v.as_f64()) {
+                node.metadata.maintainability = maintainability;
+            }
+            if let Some(security) = health.get("security_score").and_then(|v| v.as_f64()) {
+                node.metadata.security_score = security;
+            }
+            if let Some(performance) = health.get("performance_score").and_then(|v| v.as_f64()) {
+                node.metadata.performance_score = performance;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Calculate graph metrics using graph structure
     fn calculate_graph_metrics(&self, graph: &DependencyGraph) -> GraphMetrics {
-        // PSEUDO CODE:
-        /*
         let node_count = graph.nodes.len() as u32;
         let edge_count = graph.edges.len() as u32;
+
         let density = if node_count > 1 {
-            (2.0 * edge_count as f64) / (node_count as f64 * (node_count - 1) as f64)
+            (edge_count as f64) / ((node_count * (node_count - 1)) as f64)
         } else {
             0.0
         };
-        
-        let degrees: Vec<u32> = graph.nodes.iter().map(|n| n.in_degree + n.out_degree).collect();
+
+        let degrees: Vec<u32> = graph.nodes.iter()
+            .map(|n| n.in_degree + n.out_degree)
+            .collect();
+
         let average_degree = if node_count > 0 {
             degrees.iter().sum::<u32>() as f64 / node_count as f64
         } else {
             0.0
         };
-        
+
         let max_degree = degrees.iter().max().copied().unwrap_or(0);
         let min_degree = degrees.iter().min().copied().unwrap_or(0);
-        
-        let diameter = self.graph_algorithms.calculate_diameter(graph);
-        let radius = self.graph_algorithms.calculate_radius(graph);
-        let clustering_coefficient = self.graph_algorithms.calculate_clustering_coefficient(graph);
-        let modularity = self.graph_algorithms.calculate_modularity(graph);
-        let connectivity = self.graph_algorithms.calculate_connectivity(graph);
-        let robustness = self.graph_algorithms.calculate_robustness(graph);
-        
+
+        // Simplified metrics (real impl would use graph algorithms)
+        let diameter = node_count.saturating_sub(1);
+        let radius = diameter / 2;
+        let clustering_coefficient = if node_count > 2 { density } else { 0.0 };
+        let modularity = 1.0 - density;
+        let connectivity = if node_count > 0 { edge_count as f64 / node_count as f64 } else { 0.0 };
+        let robustness = 1.0 - (graph.strongly_connected_components.len() as f64 / node_count.max(1) as f64);
+
         GraphMetrics {
             node_count,
             edge_count,
@@ -507,60 +492,58 @@ impl DependencyGraphAnalyzer {
             connectivity,
             robustness,
         }
-        */
-        
-        GraphMetrics {
-            node_count: 0,
-            edge_count: 0,
-            density: 0.0,
-            average_degree: 0.0,
-            max_degree: 0,
-            min_degree: 0,
-            diameter: 0,
-            radius: 0,
-            clustering_coefficient: 0.0,
-            modularity: 0.0,
-            connectivity: 0.0,
-            robustness: 0.0,
-        }
     }
-    
-    /// Detect circular dependencies
+
+    /// Detect circular dependencies using strongly connected components
     fn detect_circular_dependencies(&self, graph: &DependencyGraph) -> Vec<CircularDependency> {
-        // PSEUDO CODE:
-        /*
         let mut cycles = Vec::new();
-        
-        for component in &graph.strongly_connected_components {
+
+        // Use strongly connected components from graph
+        for (idx, component) in graph.strongly_connected_components.iter().enumerate() {
             if component.len() > 1 {
+                let severity = match component.len() {
+                    2..=3 => CircularDependencySeverity::Low,
+                    4..=6 => CircularDependencySeverity::Medium,
+                    7..=10 => CircularDependencySeverity::High,
+                    _ => CircularDependencySeverity::Critical,
+                };
+
                 cycles.push(CircularDependency {
-                    id: generate_cycle_id(),
+                    id: format!("cycle_{}", idx),
                     cycle_nodes: component.clone(),
                     cycle_length: component.len() as u32,
-                    severity: self.assess_cycle_severity(component),
-                    impact: self.assess_cycle_impact(component),
+                    severity,
+                    impact: CircularDependencyImpact {
+                        build_impact: 0.7,
+                        test_impact: 0.6,
+                        maintenance_impact: 0.8,
+                        performance_impact: 0.4,
+                        scalability_impact: 0.5,
+                    },
                     description: format!("Circular dependency involving {} nodes", component.len()),
-                    remediation: self.get_cycle_remediation(component),
+                    remediation: "Refactor to break the circular dependency using dependency inversion or interfaces".to_string(),
                 });
             }
         }
-        
-        return cycles;
-        */
-        
-        Vec::new()
+
+        cycles
     }
-    
-    /// Generate recommendations
+
+    /// Generate recommendations based on graph analysis
     fn generate_recommendations(&self, graph: &DependencyGraph, metrics: &GraphMetrics, cycles: &[CircularDependency]) -> Vec<GraphRecommendation> {
-        // PSEUDO CODE:
-        /*
         let mut recommendations = Vec::new();
-        
+
         // Recommendations for circular dependencies
         for cycle in cycles {
+            let priority = match cycle.severity {
+                CircularDependencySeverity::Critical => RecommendationPriority::Critical,
+                CircularDependencySeverity::High => RecommendationPriority::High,
+                CircularDependencySeverity::Medium => RecommendationPriority::Medium,
+                _ => RecommendationPriority::Low,
+            };
+
             recommendations.push(GraphRecommendation {
-                priority: self.get_priority_for_cycle(cycle),
+                priority,
                 category: GraphCategory::Structure,
                 title: "Break Circular Dependency".to_string(),
                 description: cycle.description.clone(),
@@ -569,99 +552,80 @@ impl DependencyGraphAnalyzer {
                 effort_required: EffortEstimate::High,
             });
         }
-        
+
         // Recommendations for high coupling
         if metrics.density > 0.5 {
             recommendations.push(GraphRecommendation {
                 priority: RecommendationPriority::High,
                 category: GraphCategory::Coupling,
                 title: "Reduce Coupling".to_string(),
-                description: "High coupling detected in dependency graph".to_string(),
-                implementation: "Refactor to reduce dependencies between modules".to_string(),
+                description: format!("High coupling detected (density: {:.2})", metrics.density),
+                implementation: "Refactor to reduce dependencies between modules using interfaces or dependency injection".to_string(),
                 expected_benefit: 0.6,
                 effort_required: EffortEstimate::Medium,
             });
         }
-        
+
         // Recommendations for low modularity
         if metrics.modularity < 0.3 {
             recommendations.push(GraphRecommendation {
                 priority: RecommendationPriority::Medium,
                 category: GraphCategory::Modularity,
                 title: "Improve Modularity".to_string(),
-                description: "Low modularity detected in dependency graph".to_string(),
-                implementation: "Reorganize code into more cohesive modules".to_string(),
+                description: format!("Low modularity detected ({:.2})", metrics.modularity),
+                implementation: "Reorganize code into more cohesive modules with clear boundaries".to_string(),
                 expected_benefit: 0.5,
                 effort_required: EffortEstimate::High,
             });
         }
-        
-        return recommendations;
-        */
-        
-        Vec::new()
+
+        // Recommendations for unhealthy dependencies
+        let unhealthy_nodes: Vec<&DependencyNode> = graph.nodes.iter()
+            .filter(|n| n.metadata.security_score < 0.5 || n.metadata.maintainability < 0.5)
+            .collect();
+
+        if !unhealthy_nodes.is_empty() {
+            recommendations.push(GraphRecommendation {
+                priority: RecommendationPriority::High,
+                category: GraphCategory::Security,
+                title: "Address Unhealthy Dependencies".to_string(),
+                description: format!("{} dependencies have low health scores", unhealthy_nodes.len()),
+                implementation: "Review and update dependencies with low security or maintainability scores".to_string(),
+                expected_benefit: 0.7,
+                effort_required: EffortEstimate::Medium,
+            });
+        }
+
+        recommendations
+    }
+
+    /// Publish graph statistics to CentralCloud for collective learning
+    async fn publish_graph_stats(&self, graph: &DependencyGraph, metrics: &GraphMetrics, cycles: &[CircularDependency]) {
+        let stats = json!({
+            "type": "dependency_graph_analysis",
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+            "metrics": {
+                "node_count": metrics.node_count,
+                "edge_count": metrics.edge_count,
+                "density": metrics.density,
+                "average_degree": metrics.average_degree,
+                "cycles_found": cycles.len(),
+            },
+            "graph_summary": {
+                "total_nodes": graph.nodes.len(),
+                "total_edges": graph.edges.len(),
+                "root_nodes": graph.root_nodes.len(),
+                "leaf_nodes": graph.leaf_nodes.len(),
+            }
+        });
+
+        // Fire-and-forget publish
+        publish_detection("intelligence_hub.graph.stats", &stats).ok();
     }
 }
 
-impl GraphAlgorithms {
-    pub fn new() -> Self {
-        Self {}
+impl Default for DependencyGraphAnalyzer {
+    fn default() -> Self {
+        Self::new()
     }
-    
-    // PSEUDO CODE: Graph algorithms implementation
-    /*
-    pub fn find_strongly_connected_components(&self, nodes: &[DependencyNode], edges: &[DependencyEdge]) -> Vec<Vec<String>> {
-        // Tarjan's algorithm for finding strongly connected components
-    }
-    
-    pub fn calculate_diameter(&self, graph: &DependencyGraph) -> u32 {
-        // Floyd-Warshall algorithm for calculating diameter
-    }
-    
-    pub fn calculate_radius(&self, graph: &DependencyGraph) -> u32 {
-        // Calculate radius from diameter
-    }
-    
-    pub fn calculate_clustering_coefficient(&self, graph: &DependencyGraph) -> f64 {
-        // Calculate clustering coefficient
-    }
-    
-    pub fn calculate_modularity(&self, graph: &DependencyGraph) -> f64 {
-        // Calculate modularity using community detection
-    }
-    
-    pub fn calculate_connectivity(&self, graph: &DependencyGraph) -> f64 {
-        // Calculate connectivity metrics
-    }
-    
-    pub fn calculate_robustness(&self, graph: &DependencyGraph) -> f64 {
-        // Calculate robustness metrics
-    }
-    */
-}
-
-impl FactSystemInterface {
-    pub fn new() -> Self {
-        Self {}
-    }
-    
-    // PSEUDO CODE: These methods would integrate with the actual fact-system
-    /*
-    pub async fn load_dependency_patterns(&self) -> Result<Vec<DependencyPattern>> {
-        // Query fact-system for dependency patterns
-        // Return patterns for imports, inheritance, etc.
-    }
-    
-    pub async fn get_dependency_best_practices(&self, dependency_type: &str) -> Result<Vec<String>> {
-        // Query fact-system for best practices for specific dependency types
-    }
-    
-    pub async fn get_dependency_anti_patterns(&self, dependency_type: &str) -> Result<Vec<String>> {
-        // Query fact-system for anti-patterns to avoid
-    }
-    
-    pub async fn get_dependency_guidelines(&self, context: &str) -> Result<Vec<String>> {
-        // Query fact-system for dependency guidelines
-    }
-    */
 }

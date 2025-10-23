@@ -28,31 +28,34 @@ NVIDIA RTX 4080 GPU (16GB VRAM)
 - **System:** 4GB reserved
 - **Max Model:** ~7B-10B parameters
 
-### Auto-Detection (Smart CUDA Check)
+### Auto-Detection (Smart GPU Detection)
 
 Detection priority:
 1. Explicit `XLA_TARGET` environment variable (if set)
 2. Check for `nvidia-smi` (CUDA available?)
-3. Fall back to OS type (macOS = CPU, Linux = CPU or CUDA)
+3. Check OS type (Metal on macOS, CPU on Linux)
 
 **On macOS (local development):**
 ```bash
 $ command -v nvidia-smi  # Not found
-$ XLA_TARGET  # auto-detects → cpu
-# CPU fallback (no Metal XLA support available, no NVIDIA GPU)
+$ uname -s               # Darwin
+$ XLA_TARGET             # auto-detects → metal
+# Metal available for CoreML, MLX, other frameworks
+# EXLA falls back to CPU (no XLA Metal support)
 ```
 
 **On RTX 4080 (Linux production):**
 ```bash
 $ command -v nvidia-smi  # Found!
-$ XLA_TARGET  # auto-detects → cuda118
-# CUDA 11.8 acceleration enabled automatically
+$ XLA_TARGET             # auto-detects → cuda118
+# CUDA 11.8 acceleration enabled automatically for EXLA
 ```
 
 **On Linux without CUDA (fallback):**
 ```bash
 $ command -v nvidia-smi  # Not found
-$ XLA_TARGET  # auto-detects → cpu
+$ uname -s               # Linux
+$ XLA_TARGET             # auto-detects → cpu
 # CPU fallback (no GPU available)
 ```
 
@@ -60,9 +63,9 @@ $ XLA_TARGET  # auto-detects → cpu
 
 **Manual override (if needed):**
 ```bash
-export XLA_TARGET=cpu        # Force CPU even if CUDA available
+export XLA_TARGET=cpu        # Force CPU (testing/debugging)
 export XLA_TARGET=cuda120    # Force specific CUDA version
-export XLA_TARGET=metal      # Future Metal support on Mac
+export XLA_TARGET=metal      # Use Metal on macOS for CoreML/MLX tasks
 ```
 
 ## Model Configuration
@@ -123,20 +126,30 @@ iex> Singularity.Repo.query!("SELECT version();")
 
 **Automatic (no action needed):**
 ```bash
-# .envrc auto-detects CUDA availability:
+# .envrc auto-detects available GPU:
 XLA_TARGET=cuda118       # If nvidia-smi found (CUDA available)
-XLA_TARGET=cpu           # If nvidia-smi not found (no GPU)
+XLA_TARGET=metal         # If on macOS without CUDA (Metal available)
+XLA_TARGET=cpu           # If on Linux without CUDA (no GPU)
 EXLA_MODE=opt            # Optimized precompiled binaries (always set)
 ```
 
 **How detection works:**
 ```bash
 if command -v nvidia-smi >/dev/null 2>&1; then
-  XLA_TARGET=cuda118     # CUDA is available
+  XLA_TARGET=cuda118     # CUDA available
+elif [ "$(uname -s)" = "Darwin" ]; then
+  XLA_TARGET=metal       # macOS - Metal available for other frameworks
 else
-  XLA_TARGET=cpu         # No CUDA - use CPU
+  XLA_TARGET=cpu         # No GPU - use CPU
 fi
 ```
+
+**What each target does:**
+| Target | EXLA | Metal/CoreML | Use Case |
+|--------|------|-------------|----------|
+| `cuda118` | ✅ GPU training | N/A | RTX 4080 production |
+| `metal` | ❌ CPU (not supported) | ✅ Available | macOS embeddings via CoreML/MLX |
+| `cpu` | ✅ CPU training | N/A | No GPU available |
 
 **Optional overrides (if debugging):**
 ```bash
@@ -146,7 +159,7 @@ export XLA_TARGET=cpu
 # Force specific CUDA version
 export XLA_TARGET=cuda120  # (cuda118, cuda111 also available)
 
-# Future: Metal support on Mac
+# Force Metal on macOS for CoreML/MLX tasks
 export XLA_TARGET=metal
 ```
 
