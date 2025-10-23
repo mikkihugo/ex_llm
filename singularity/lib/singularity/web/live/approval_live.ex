@@ -11,6 +11,8 @@ defmodule Singularity.Web.ApprovalLive do
 
   use Singularity.Web, :live_view
   require Logger
+  alias Singularity.HITL.ApprovalService
+  alias Phoenix.LiveView.JS
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do

@@ -35,6 +35,9 @@ defmodule Singularity.Execution.TaskGraph.Worker do
 
   use GenServer
   require Logger
+  alias Singularity.Execution.Todos.TodoStore
+  alias Singularity.Execution.Planning.HTDAG
+  alias Singularity.Execution.TaskGraph.WorkerPool
   @execution_timeout_ms 300_000  # 5 minutes
 
   defstruct [
