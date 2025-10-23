@@ -11,6 +11,7 @@ nats.response               # All responses come back
 nats.request.simple         # Simple complexity requests
 nats.request.medium         # Medium complexity requests  
 nats.request.complex        # Complex complexity requests
+nats.request.direct         # Direct routing bypass (internal use)
 ```
 
 ### LLM Communication
@@ -61,12 +62,31 @@ knowledge.artifacts.update            # Knowledge base updates
 knowledge.artifacts.embed             # Artifact embedding requests
 ```
 
+### Pattern Mining & Clustering
+```
+patterns.mined.completed              # Pattern mining completion
+patterns.mined.failed                 # Pattern mining failure
+patterns.cluster.updated              # Pattern cluster updates
+```
+
 ### Prompt Tracking Storage (NIF-based)
 ```
 prompt.tracking.store                 # Store prompt execution data
 prompt.tracking.store.result          # Store operation results
 prompt.tracking.query                 # Query prompt tracking data
 prompt.tracking.query.result          # Query operation results
+prompt.generate                       # Generate prompts (legacy)
+prompt.generate.request               # Generate prompts (request)
+prompt.optimize.request               # Optimize prompts (request)
+```
+
+### Code Generation & ML Training
+```
+code.t5.generate                      # T5 model code generation
+ml.training.t5.completed             # T5 training completion
+ml.training.t5.failed                # T5 training failure
+ml.training.vocabulary.completed      # Vocabulary training completion
+ml.training.vocabulary.failed         # Vocabulary training failure
 ```
 
 ### Intelligence Hub (Central Communication)
@@ -92,6 +112,18 @@ intelligence.hub.parser.analysis       # Parsing results
 intelligence.hub.prompt.analysis       # Prompt optimization results
 intelligence.hub.quality.analysis      # Quality analysis results
 intelligence.hub.knowledge.analysis    # Knowledge extraction results
+```
+
+### Central Services (Direct Engine Communication)
+**Purpose:** Direct communication between central_cloud and individual engines.
+
+```
+central.parser.capabilities          # Parser engine capabilities query
+central.parser.recommendations       # Parser engine recommendations
+central.embedding.models             # Embedding engine model info
+central.embedding.recommendations    # Embedding engine recommendations
+central.quality.rules                # Quality engine rules query
+central.quality.recommendations      # Quality engine recommendations
 ```
 
 ### Agent Management
@@ -184,6 +216,7 @@ planning.story.delete              # Delete story
 planning.task.create               # Create task
 planning.task.update               # Update task
 planning.task.delete               # Delete task
+planning.next_work.get             # Get next work item
 ```
 
 ## Message Formats

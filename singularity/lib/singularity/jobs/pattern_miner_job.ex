@@ -7,7 +7,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
   - Extracts architectural patterns (GenServer, NATS, async/await)
   - Clusters similar patterns using embeddings
   - Stores patterns in database with pgvector embeddings
-  - Publishes pattern updates to NATS for central_cloud sync
+  - Publishes pattern updates to NATS for centralcloud sync
 
   **Job Configuration:**
   - Queue: `:pattern_mining` (dedicated queue for pattern analysis)
@@ -87,6 +87,21 @@ defmodule Singularity.Jobs.PatternMinerJob do
 
   ## Private Functions
 
+  defp get_instance_id do
+    # Get unique instance identifier (same as central_cloud.ex)
+    cond do
+      instance_id = System.get_env("SINGULARITY_INSTANCE_ID") ->
+        instance_id
+      
+      true ->
+        hostname = :inet.gethostname() |> elem(1) |> List.to_string()
+        workdir = File.cwd!() |> Path.basename()
+        path_hash = :crypto.hash(:sha256, File.cwd!()) |> Base.encode16(case: :lower) |> String.slice(0, 8)
+        timestamp = DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string() |> String.slice(-6, 6)
+        "#{hostname}-#{workdir}-#{path_hash}-#{timestamp}"
+    end
+  end
+
   defp scan_codebase(codebase_path, languages) do
     Logger.info("Scanning codebase for patterns",
       path: codebase_path,
@@ -113,7 +128,9 @@ defmodule Singularity.Jobs.PatternMinerJob do
       LIMIT 1000
       """
 
-      repo_pattern = "#{codebase_path}%"
+      # Create instance-aware repo pattern to avoid conflicts
+      instance_id = get_instance_id()
+      repo_pattern = "#{codebase_path}%#{instance_id}%"
 
       case Repo.query(query, [languages, repo_pattern]) do
         {:ok, %{rows: rows}} when length(rows) > 0 ->

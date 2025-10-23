@@ -66,6 +66,13 @@ defmodule Singularity.Application do
       # Manages: Control, Runner (moved from ApplicationSupervisor in future refactor)
       Singularity.ApplicationSupervisor,
 
+      # Documentation System - Multi-language quality enforcement and upgrades
+      # Manages: DocumentationUpgrader, QualityEnforcer, DocumentationPipeline
+      Singularity.Agents.DocumentationUpgrader,
+      Singularity.Agents.QualityEnforcer,
+      Singularity.Agents.DocumentationPipeline,
+
+
       # Layer 5: Singletons - Standalone services that don't fit in other categories
       Singularity.Execution.Autonomy.RuleEngine,
 
@@ -73,7 +80,10 @@ defmodule Singularity.Application do
       # Git.Supervisor moved to ApplicationSupervisor to avoid duplication
 
       # Layer 7: Startup Tasks - One-time tasks that run and exit
-      Singularity.Engine.NifStatus
+      Singularity.Engine.NifStatus,
+      
+      # Documentation System Bootstrap - Initialize documentation system on startup
+      {Task, fn -> Singularity.Startup.DocumentationBootstrap.bootstrap_documentation_system() end}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

@@ -1,7 +1,117 @@
 defmodule Singularity.RefactoringAgent do
   @moduledoc """
-  Detects when refactoring is NEEDED based on code analysis.
-  Triggers autonomous refactoring tasks based on metrics, not schedules.
+  Refactoring Agent - Autonomous code refactoring based on quality metrics and analysis.
+
+  ## Overview
+
+  Detects when refactoring is NEEDED based on code analysis and triggers
+  autonomous refactoring tasks based on metrics, not schedules. Uses quality
+  metrics, code complexity analysis, and pattern recognition to identify
+  refactoring opportunities.
+
+  ## Public API Contract
+
+  - `analyze_refactoring_need/0` - Analyze refactoring needs based on codebase metrics
+  - `trigger_refactoring/2` - Trigger refactoring for specific code patterns
+  - `assess_refactoring_impact/2` - Assess impact of proposed refactoring
+  - `execute_refactoring/2` - Execute refactoring with safety checks
+
+  ## Error Matrix
+
+  - `{:error, :no_refactoring_needed}` - No refactoring opportunities found
+  - `{:error, :refactoring_failed}` - Refactoring execution failed
+  - `{:error, :safety_check_failed}` - Safety validation failed
+  - `{:error, :metrics_unavailable}` - Required metrics not available
+
+  ## Performance Notes
+
+  - Refactoring analysis: 1-5s depending on codebase size
+  - Impact assessment: 500ms-2s
+  - Refactoring execution: 2-10s depending on complexity
+  - Safety checks: 100-500ms
+
+  ## Concurrency Semantics
+
+  - Stateless analysis operations (safe for concurrent calls)
+  - Atomic refactoring execution (prevents partial updates)
+  - Uses async execution for non-critical refactoring
+
+  ## Security Considerations
+
+  - Validates all refactoring operations before execution
+  - Creates backups before destructive changes
+  - Sandboxes refactoring experiments in Genesis
+  - Rate limits refactoring operations
+
+  ## Examples
+
+      # Analyze refactoring needs
+      {:ok, needs} = RefactoringAgent.analyze_refactoring_need()
+
+      # Trigger refactoring
+      {:ok, task_id} = RefactoringAgent.trigger_refactoring(:extract_method, %{file: "lib/module.ex"})
+
+      # Assess impact
+      {:ok, impact} = RefactoringAgent.assess_refactoring_impact(:extract_method, %{file: "lib/module.ex"})
+
+  ## Relationships
+
+  - **Uses**: Analysis, CodeStore, QualityEngine
+  - **Integrates with**: Genesis (experiments), CentralCloud (patterns)
+  - **Supervised by**: Storage.Code.Quality.Supervisor
+
+  ## Template Version
+
+  - **Applied:** refactoring-agent v2.3.0
+  - **Applied on:** 2025-01-15
+  - **Upgrade path:** v2.2.0 -> v2.3.0 (added self-awareness protocol)
+
+  ## Module Identity (JSON)
+  ```json
+  {
+    "module_name": "RefactoringAgent",
+    "purpose": "autonomous_code_refactoring",
+    "domain": "quality",
+    "capabilities": ["refactoring_detection", "impact_assessment", "safe_execution", "pattern_analysis"],
+    "dependencies": ["Analysis", "CodeStore", "QualityEngine"]
+  }
+  ```
+
+  ## Architecture Diagram (Mermaid)
+  ```mermaid
+  graph TD
+    A[RefactoringAgent] --> B[Analysis Engine]
+    A --> C[CodeStore]
+    A --> D[QualityEngine]
+    B --> E[Code Metrics]
+    C --> F[Code Patterns]
+    D --> G[Quality Standards]
+    E --> H[Refactoring Opportunities]
+    F --> H
+    G --> H
+    H --> I[Genesis Sandbox]
+    I --> J[Safe Execution]
+  ```
+
+  ## Call Graph (YAML)
+  ```yaml
+  RefactoringAgent:
+    analyze_refactoring_need/0: [Analysis.analyze/1, QualityEngine.assess/1]
+    trigger_refactoring/2: [CodeStore.get/2, QualityEngine.validate/2]
+    assess_refactoring_impact/2: [Analysis.impact/2, QualityEngine.safety_check/2]
+    execute_refactoring/2: [Genesis.experiment/2, CodeStore.update/2]
+  ```
+
+  ## Anti-Patterns
+
+  - **DO NOT** execute refactoring without safety checks
+  - **DO NOT** bypass Genesis sandbox for high-risk changes
+  - **DO NOT** perform refactoring without impact assessment
+  - **DO NOT** ignore quality metrics in refactoring decisions
+
+  ## Search Keywords
+
+  refactoring, autonomous, code, quality, metrics, analysis, patterns, safety, execution, impact, assessment, genesis, sandbox, extraction, optimization, cleanup
   """
 
   require Logger

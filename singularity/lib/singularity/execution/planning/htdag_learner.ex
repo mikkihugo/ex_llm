@@ -331,7 +331,7 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
 
   defp find_source_files do
     # Find all source files in the entire project root
-    # This includes: singularity/, rust/, llm-server/, central_cloud/, etc.
+    # This includes: singularity/, rust/, llm-server/, centralcloud/, etc.
     project_root = File.cwd!()
     
     # Define source file patterns for different languages
@@ -425,7 +425,7 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
       String.contains?(file_path, "/singularity/") -> :elixir_app
       String.contains?(file_path, "/rust/") -> :rust_component
       String.contains?(file_path, "/llm-server/") -> :typescript_service
-      String.contains?(file_path, "/central_cloud/") -> :elixir_service
+      String.contains?(file_path, "/centralcloud/") -> :elixir_service
       String.contains?(file_path, "/templates_data/") -> :templates
       String.contains?(file_path, "/scripts/") -> :scripts
       String.ends_with?(file_path, "flake.nix") -> :nix_config

@@ -1,6 +1,6 @@
 {
     "name": "TSX Component Production Quality",
-    "spec_version": "2.2.0",
+    "spec_version": "2.3.0",
     "capabilities": [
         "quality",
         "graph",
@@ -13,6 +13,15 @@
     "quality_level": "production",
     "description": "Production-grade quality standards for React/TSX components with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, focus on accessibility, stability, and composability",
     "changelog": {
+        "2.3.0": {
+            "date": "2025-01-14",
+            "changes": [
+                "Integrated self-awareness protocol for agent evolution",
+                "Added documentation-first development requirements",
+                "Enhanced duplicate prevention and architecture understanding",
+                "Multi-language coordination with Elixir and Rust"
+            ]
+        },
         "2.2.0": {
             "date": "2025-01-14",
             "changes": [

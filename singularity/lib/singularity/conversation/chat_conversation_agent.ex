@@ -1,10 +1,64 @@
 defmodule Singularity.Conversation.ChatConversationAgent do
   @moduledoc """
+  Chat Conversation Agent - Manages bidirectional communication between autonomous agents and humans.
+
+  ## Overview
+
   Manages bidirectional communication between autonomous agents and humans.
   Agents ask questions, get feedback, explain decisions, and request approvals.
+  Primary interface: Google Chat (mobile & desktop friendly). No code analysis -
+  just business decisions.
 
-  Primary interface: Google Chat (mobile & desktop friendly)
-  No code analysis - just business decisions
+  ## Public API Contract
+
+  - `start_link/1` - Start the chat conversation agent
+  - `send_message/2` - Send message to human via chat interface
+  - `handle_human_response/2` - Process human responses and feedback
+  - `request_approval/3` - Request approval for agent decisions
+
+  ## Error Matrix
+
+  - `{:error, :chat_unavailable}` - Chat interface not available
+  - `{:error, :message_failed}` - Message sending failed
+  - `{:error, :response_timeout}` - Human response timeout
+  - `{:error, :approval_denied}` - Human denied approval request
+
+  ## Performance Notes
+
+  - Message sending: 100-500ms depending on interface
+  - Response processing: < 50ms per message
+  - Approval requests: 1-30s (human dependent)
+  - Template rendering: < 10ms per message
+
+  ## Concurrency Semantics
+
+  - Single-threaded GenServer (no concurrent access to state)
+  - Async message sending via Task.Supervisor
+  - Thread-safe conversation state management
+
+  ## Security Considerations
+
+  - Validates all messages before sending
+  - Sanitizes human input before processing
+  - Rate limits message frequency
+  - Encrypts sensitive approval requests
+
+  ## Examples
+
+      # Start agent
+      {:ok, pid} = ChatConversationAgent.start_link(name: :chat_agent)
+
+      # Send message
+      {:ok, message_id} = ChatConversationAgent.send_message(pid, "Agent needs approval for refactoring")
+
+      # Handle response
+      {:ok, result} = ChatConversationAgent.handle_human_response(pid, %{message_id: "123", response: "approved"})
+
+  ## Relationships
+
+  - **Uses**: GoogleChat, Slack, TemplateRenderer
+  - **Integrates with**: All 6 agents (communication hub)
+  - **Supervised by**: Conversation.Supervisor
 
   ## Template Integration
 

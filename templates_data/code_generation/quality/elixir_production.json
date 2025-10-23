@@ -1,6 +1,6 @@
 {
   "name": "Elixir Production Quality",
-  "spec_version": "2.2.0",
+  "spec_version": "2.3.0",
   "capabilities": [
     "quality",
     "graph",
@@ -13,6 +13,14 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for Elixir code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.3.0": {
+      "date": "2025-01-15",
+      "changes": [
+        "Integrated self-awareness protocol for agent evolution",
+        "Added documentation-first development requirements",
+        "Enhanced duplicate prevention and architecture understanding"
+      ]
+    },
     "2.2.0": {
       "date": "2025-01-14",
       "changes": [

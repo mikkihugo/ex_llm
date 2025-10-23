@@ -44,7 +44,7 @@ defmodule Singularity.CentralCloud do
       instance_id: request.instance_id
     )
     
-    case call_central_cloud(:analyze_codebase, request) do
+    case call_centralcloud(:analyze_codebase, request) do
       {:ok, results} ->
         # Store results locally and update central knowledge
         store_analysis_results(results)
@@ -82,7 +82,7 @@ defmodule Singularity.CentralCloud do
       learning_type: learning_type
     )
     
-    call_central_cloud(:learn_patterns, request)
+    call_centralcloud(:learn_patterns, request)
   end
 
   @doc """
@@ -99,7 +99,7 @@ defmodule Singularity.CentralCloud do
       instance_id: get_instance_id()
     }
     
-    call_central_cloud(:get_global_stats, request)
+    call_centralcloud(:get_global_stats, request)
   end
 
   @doc """
@@ -122,7 +122,7 @@ defmodule Singularity.CentralCloud do
       training_data_size: training_data_size
     )
     
-    case call_central_cloud(:train_models, request) do
+    case call_centralcloud(:train_models, request) do
       {:ok, results} ->
         Logger.info("✅ Model training completed", 
           models_trained: length(Map.get(results, :trained_models, [])),
@@ -150,12 +150,12 @@ defmodule Singularity.CentralCloud do
       requesting_instance: get_instance_id()
     }
     
-    call_central_cloud(:get_cross_instance_insights, request)
+    call_centralcloud(:get_cross_instance_insights, request)
   end
 
   # Private Functions
 
-  defp call_central_cloud(operation, request) do
+  defp call_centralcloud(operation, request) do
     # Call central cloud via NATS
     subject = "central.#{operation}"
     
@@ -170,9 +170,20 @@ defmodule Singularity.CentralCloud do
   end
 
   defp get_instance_id do
-    # Get unique instance identifier
-    # This could be based on hostname, IP, or configured instance ID
-    :crypto.strong_rand_bytes(8) |> Base.encode64(padding: false)
+    # Get unique instance identifier with path-based disambiguation
+    # Priority: ENV var > hostname+path+timestamp > random
+    cond do
+      instance_id = System.get_env("SINGULARITY_INSTANCE_ID") ->
+        instance_id
+      
+      true ->
+        # Create stable ID from hostname + working directory + path hash
+        hostname = :inet.gethostname() |> elem(1) |> List.to_string()
+        workdir = File.cwd!() |> Path.basename()
+        path_hash = :crypto.hash(:sha256, File.cwd!()) |> Base.encode16(case: :lower) |> String.slice(0, 8)
+        timestamp = DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string() |> String.slice(-6, 6)
+        "#{hostname}-#{workdir}-#{path_hash}-#{timestamp}"
+    end
   end
 
   defp store_analysis_results(results) do

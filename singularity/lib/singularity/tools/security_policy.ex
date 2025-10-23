@@ -228,7 +228,7 @@ defmodule Singularity.Tools.SecurityPolicy do
   defp validate_codebase_access(%{"codebase_id" => codebase_id}) when is_binary(codebase_id) do
     # TODO: Check user permissions for codebase
     # For now, allow all internal codebases
-    if codebase_id in ["singularity", "central_cloud"] do
+    if codebase_id in ["singularity", "centralcloud"] do
       :ok
     else
       {:error, "Access denied: codebase not accessible"}

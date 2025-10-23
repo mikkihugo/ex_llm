@@ -1,0 +1,237 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white shadow">
+    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Approval Queue</h1>
+          <p class="mt-1 text-sm text-gray-500">Human-in-the-loop code change approvals</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="text-sm text-gray-500">
+            <%= length(@approvals) %> pending
+          </div>
+          <button 
+            phx-click="refresh" 
+            class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Flash Messages -->
+    <%= if @flash[:success] do %>
+      <div class="mb-4 bg-green-50 border border-green-200 rounded-md p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-green-700"><%= @flash[:success] %></p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%= if @flash[:error] do %>
+      <div class="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-red-700"><%= @flash[:error] %></p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Approvals List -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+      <%= if @loading do %>
+        <div class="p-6 text-center">
+          <div class="inline-flex items-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Loading approvals...
+          </div>
+        </div>
+      <% else %>
+        <%= if Enum.empty?(@approvals) do %>
+          <div class="p-6 text-center text-gray-500">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No pending approvals</h3>
+            <p class="mt-1 text-sm text-gray-500">All caught up! New approval requests will appear here.</p>
+          </div>
+        <% else %>
+          <ul class="divide-y divide-gray-200">
+            <%= for approval <- @approvals do %>
+              <li>
+                <div class="px-4 py-4 flex items-center justify-between hover:bg-gray-50">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                      <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                        <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="ml-4 flex-1 min-w-0">
+                      <div class="flex items-center justify-between">
+                        <p class="text-sm font-medium text-gray-900 truncate">
+                          <%= approval.file_path %>
+                        </p>
+                        <div class="ml-2 flex-shrink-0 flex">
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= get_status_class(approval.status) %>">
+                            <%= get_status_text(approval.status) %>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="mt-1 flex items-center text-sm text-gray-500">
+                        <p class="truncate">
+                          Agent: <%= approval.agent_id %> • 
+                          Requested: <%= format_timestamp(approval.inserted_at) %>
+                        </p>
+                      </div>
+                      <%= if approval.description do %>
+                        <p class="mt-1 text-sm text-gray-600">
+                          <%= approval.description %>
+                        </p>
+                      <% end %>
+                    </div>
+                  </div>
+                  <div class="ml-4 flex-shrink-0 flex space-x-2">
+                    <button
+                      phx-click="select_approval"
+                      phx-value-id={approval.id}
+                      class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      View
+                    </button>
+                    <%= if approval.status == "pending" do %>
+                      <button
+                        phx-click="approve"
+                        phx-value-id={approval.id}
+                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        phx-click="reject"
+                        phx-value-id={approval.id}
+                        phx-value-reason="Rejected via LiveView"
+                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        Reject
+                      </button>
+                    <% end %>
+                  </div>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
+      <% end %>
+    </div>
+
+    <!-- Approval Detail Modal -->
+    <%= if @selected_approval do %>
+      <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+          <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <div class="sm:flex sm:items-start">
+                <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                  <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                    Approval Request: <%= @selected_approval.file_path %>
+                  </h3>
+                  <div class="mt-2">
+                    <p class="text-sm text-gray-500">
+                      Agent: <%= @selected_approval.agent_id %> • 
+                      Status: <span class="<%= get_status_class(@selected_approval.status) %> px-2 py-1 rounded-full text-xs font-medium">
+                        <%= get_status_text(@selected_approval.status) %>
+                      </span>
+                    </p>
+                    <%= if @selected_approval.description do %>
+                      <p class="mt-2 text-sm text-gray-700">
+                        <%= @selected_approval.description %>
+                      </p>
+                    <% end %>
+                  </div>
+                  
+                  <!-- Diff Toggle -->
+                  <div class="mt-4">
+                    <button
+                      phx-click="toggle_diff"
+                      class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <%= if @show_diff, do: "Hide", else: "Show" %> Diff
+                    </button>
+                  </div>
+
+                  <!-- Diff Display -->
+                  <%= if @show_diff do %>
+                    <div class="mt-4 bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                      <pre class="text-sm text-green-400 font-mono"><%= format_diff(@selected_approval.diff) %></pre>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <%= if @selected_approval.status == "pending" do %>
+                <button
+                  phx-click="approve"
+                  phx-value-id={@selected_approval.id}
+                  class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Approve
+                </button>
+                <button
+                  phx-click="reject"
+                  phx-value-id={@selected_approval.id}
+                  phx-value-reason="Rejected via LiveView"
+                  class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Reject
+                </button>
+              <% end %>
+              <button
+                phx-click="select_approval"
+                phx-value-id=""
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Last Update -->
+    <div class="mt-4 text-center text-sm text-gray-500">
+      Last updated: <%= format_timestamp(@last_update) %>
+    </div>
+  </div>
+</div>

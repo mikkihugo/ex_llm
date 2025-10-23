@@ -245,7 +245,7 @@ defmodule Singularity.Knowledge.TemplateUsageTrackingTest do
           end
 
           # Should publish events for aggregation
-          # (Central Cloud will aggregate these)
+          # (CentralCloud will aggregate these)
           Process.sleep(100)
           :ok
 
@@ -348,10 +348,10 @@ defmodule Singularity.Knowledge.TemplateUsageTrackingTest do
     end
   end
 
-  describe "Central Cloud integration" do
-    @tag :central_cloud_required
-    test "Central Cloud can aggregate usage stats" do
-      # This test would require Central Cloud to be running
+  describe "CentralCloud integration" do
+    @tag :centralcloud_required
+    test "CentralCloud can aggregate usage stats" do
+      # This test would require CentralCloud to be running
       # For now, just verify event format is compatible
 
       case Singularity.NatsClient.subscribe("template.usage.>") do
@@ -362,7 +362,7 @@ defmodule Singularity.Knowledge.TemplateUsageTrackingTest do
             {:msg, %{body: body}} ->
               case Jason.decode(body) do
                 {:ok, event} ->
-                  # Event should have fields Central Cloud expects
+                  # Event should have fields CentralCloud expects
                   assert Map.has_key?(event, "template_id")
                   assert Map.has_key?(event, "status")
                   assert Map.has_key?(event, "timestamp")

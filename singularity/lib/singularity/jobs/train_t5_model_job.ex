@@ -5,7 +5,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
   **What it does:**
   - Trains T5 models on Rust/Elixir patterns from codebase
   - Stores trained models in database
-  - Publishes completion events to NATS for central_cloud
+  - Publishes completion events to NATS for centralcloud
   - Tracks training metrics and performance
 
   **Job Configuration:**

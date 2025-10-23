@@ -375,13 +375,13 @@ defmodule Singularity.PlatformIntegration.NatsConnector do
     stream_configs = [
       %{
         name: "EVENTS",
-        subjects: ["events.>"],
+        subjects: ["*.events.*"],
         retention: "limits",
         max_msgs_per_subject: 10000,
         # 1GB
         max_bytes: 1024 * 1024 * 1024,
-        # 7 days
-        max_age: 7 * 24 * 3600,
+        # 1 hour as documented in README
+        max_age: 1 * 3600,
         storage: "file",
         replicas: 3
       },
@@ -399,12 +399,12 @@ defmodule Singularity.PlatformIntegration.NatsConnector do
       },
       %{
         name: "METRICS",
-        subjects: ["metrics.>"],
+        subjects: ["*.metrics.*"],
         retention: "limits",
         max_msgs_per_subject: 50000,
         # 500MB
         max_bytes: 500 * 1024 * 1024,
-        # 1 day
+        # 24 hours as documented in README
         max_age: 24 * 3600,
         storage: "file",
         replicas: 3

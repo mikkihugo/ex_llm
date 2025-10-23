@@ -1,5 +1,5 @@
 {
-    "chatgpt.commentCodeLensEnabled": false,
+    "chatgpt.commentCodeLensEnabled": true,
     "chat.tools.autoApprove": true,
     "chat.tools.terminal.enableAutoApprove": true,
     "chat.tools.terminal.autoApprove": {
