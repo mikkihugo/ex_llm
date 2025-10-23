@@ -26,7 +26,7 @@ describe('Provider Integration', () => {
         'gemini-code': geminiCode,
         'claude-code': claudeCode,
         'openai-codex': codex,
-        'github-copilot': copilot,
+        'github-copilot': copilot as any,
         'github-models': githubModels,
       });
 
@@ -216,7 +216,7 @@ describe('Provider Integration', () => {
         'gemini-code': geminiCode,
         'claude-code': claudeCode,
         'openai-codex': codex,
-        'github-copilot': copilot,
+        'github-copilot': copilot as any,
         'github-models': githubModels,
       });
 
@@ -248,7 +248,7 @@ describe('Provider Integration', () => {
         'gemini-code': geminiCode,
         'claude-code': claudeCode,
         'openai-codex': codex,
-        'github-copilot': copilot,
+        'github-copilot': copilot as any,
         'github-models': githubModels,
       });
 

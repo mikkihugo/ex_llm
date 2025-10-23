@@ -182,8 +182,13 @@ export async function buildModelCatalog(
 
   const models: ModelInfo[] = [];
   for (const [providerName, provider] of Object.entries(providers)) {
-    const providerModels = await registerProviderModels(providerName, provider);
-    models.push(...providerModels);
+    try {
+      const providerModels = await registerProviderModels(providerName, provider);
+      models.push(...providerModels);
+    } catch (error: any) {
+      console.warn(`⚠️  Failed to register models for provider ${providerName}:`, error.message);
+      // Continue with other providers instead of failing completely
+    }
   }
 
   if (useCache) {

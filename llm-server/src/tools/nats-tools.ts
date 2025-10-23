@@ -11,8 +11,6 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { connect, type NatsConnection } from 'nats';
-
 /**
  * NATS subjects for database-first tool execution
  */
@@ -39,41 +37,9 @@ export const TOOL_SUBJECTS = {
   GIT_BLAME: 'tools.git.blame',
 } as const;
 
-/**
- * NATS client singleton
- */
-let natsClient: NatsConnection | null = null;
-
-async function getNatsClient(): Promise<NatsConnection> {
-  if (!natsClient) {
-    const natsUrl = process.env.NATS_URL || 'nats://localhost:4222';
-    natsClient = await connect({ servers: natsUrl });
-    console.log('[nats-tools] Connected to NATS:', natsUrl);
-  }
-  return natsClient;
-}
-
-/**
- * Execute tool via NATS request-reply pattern
- */
-async function executeViaNATS(subject: string, request: any, timeoutMs: number = 30000): Promise<any> {
-  const nc = await getNatsClient();
-
-  console.log(`[nats-tools] Sending request to ${subject}:`, request);
-
-  // Use JSON.stringify/parse like nats-handler does
-  const requestData = JSON.stringify(request);
-  const response = await nc.request(subject, requestData, { timeout: timeoutMs });
-  const result = JSON.parse(new TextDecoder().decode(response.data));
-
-  console.log(`[nats-tools] Received response from ${subject}:`, result);
-
-  if (result.error) {
-    throw new Error(result.error);
-  }
-
-  return result.data;
-}
+// Note: Tool execution is handled separately from tool definition in AI SDK v5+
+// The tools defined here are metadata-only; actual execution happens via the AI SDK runtime
+// When execution is needed, implement getNatsClient() and executeViaNATS() patterns
 
 /**
  * ============================================================================
@@ -87,20 +53,12 @@ async function executeViaNATS(subject: string, request: any, timeoutMs: number =
  */
 export const getCodeTool = tool({
   description: 'Get code file with AST, symbols, and metadata from database',
-  parameters: z.object({
+  inputSchema: z.object({
     path: z.string().describe('File path'),
     codebaseId: z.string().optional().describe('Codebase ID (default: current project)'),
     includeAST: z.boolean().optional().describe('Include parsed AST'),
     includeSymbols: z.boolean().optional().describe('Include symbol definitions'),
   }),
-  execute: async ({ path, codebaseId, includeAST, includeSymbols }) => {
-    return await executeViaNATS(TOOL_SUBJECTS.CODE_GET, {
-      path,
-      codebase_id: codebaseId,
-      include_ast: includeAST,
-      include_symbols: includeSymbols,
-    });
-  },
 });
 
 /**
@@ -108,20 +66,12 @@ export const getCodeTool = tool({
  */
 export const searchCodeTool = tool({
   description: 'Semantic code search using embeddings (finds similar code)',
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().describe('Natural language search query'),
     limit: z.number().optional().describe('Max results (default: 10)'),
     minSimilarity: z.number().optional().describe('Minimum similarity 0-1 (default: 0.7)'),
     codebaseId: z.string().optional().describe('Codebase ID'),
   }),
-  execute: async ({ query, limit, minSimilarity, codebaseId }) => {
-    return await executeViaNATS(TOOL_SUBJECTS.CODE_SEARCH, {
-      query,
-      limit,
-      min_similarity: minSimilarity,
-      codebase_id: codebaseId,
-    });
-  },
 });
 
 /**
@@ -129,18 +79,11 @@ export const searchCodeTool = tool({
  */
 export const listCodeFilesTool = tool({
   description: 'List all indexed code files from database',
-  parameters: z.object({
+  inputSchema: z.object({
     codebaseId: z.string().optional().describe('Codebase ID'),
     language: z.string().optional().describe('Filter by language (elixir, typescript, rust, etc.)'),
     pattern: z.string().optional().describe('Glob pattern to filter paths'),
   }),
-  execute: async ({ codebaseId, language, pattern }) => {
-    return await executeViaNATS(TOOL_SUBJECTS.CODE_LIST, {
-      codebase_id: codebaseId,
-      language,
-      pattern,
-    });
-  },
 });
 
 /**
@@ -154,18 +97,11 @@ export const listCodeFilesTool = tool({
  */
 export const findSymbolTool = tool({
   description: 'Find where symbol (function, class, variable) is defined',
-  parameters: z.object({
+  inputSchema: z.object({
     symbol: z.string().describe('Symbol name to find'),
     codebaseId: z.string().optional().describe('Codebase ID'),
     symbolType: z.enum(['function', 'class', 'module', 'variable']).optional().describe('Symbol type'),
   }),
-  execute: async ({ symbol, codebaseId, symbolType }) => {
-    return await executeViaNATS(TOOL_SUBJECTS.SYMBOL_FIND, {
-      symbol,
-      codebase_id: codebaseId,
-      symbol_type: symbolType,
-    });
-  },
 });
 
 /**
@@ -173,16 +109,10 @@ export const findSymbolTool = tool({
  */
 export const findReferencesTool = tool({
   description: 'Find all references to a symbol (where it is used)',
-  parameters: z.object({
+  inputSchema: z.object({
     symbol: z.string().describe('Symbol name'),
     codebaseId: z.string().optional().describe('Codebase ID'),
   }),
-  execute: async ({ symbol, codebaseId }) => {
-    return await executeViaNATS(TOOL_SUBJECTS.SYMBOL_REFS, {
-      symbol,
-      codebase_id: codebaseId,
-    });
-  },
 });
 
 /**
@@ -190,18 +120,11 @@ export const findReferencesTool = tool({
  */
 export const listSymbolsTool = tool({
   description: 'List all symbols (functions, classes, etc.) in a file',
-  parameters: z.object({
+  inputSchema: z.object({
     path: z.string().describe('File path'),
     codebaseId: z.string().optional().describe('Codebase ID'),
     symbolType: z.enum(['function', 'class', 'module', 'variable', 'all']).optional().describe('Filter by type'),
   }),
-  execute: async ({ path, codebaseId, symbolType }) => {
-    return await executeViaNATS(TOOL_SUBJECTS.SYMBOL_LIST, {
-      path,
-      codebase_id: codebaseId,
-      symbol_type: symbolType,
-    });
-  },
 });
 
 /**
@@ -215,18 +138,11 @@ export const listSymbolsTool = tool({
  */
 export const getDependenciesTool = tool({
   description: 'Get file dependencies (imports/requires)',
-  parameters: z.object({
+  inputSchema: z.object({
     path: z.string().describe('File path'),
     codebaseId: z.string().optional().describe('Codebase ID'),
     includeTransitive: z.boolean().optional().describe('Include transitive dependencies'),
   }),
-  execute: async ({ path, codebaseId, includeTransitive }) => {
-    return await executeViaNATS(TOOL_SUBJECTS.DEPS_GET, {
-      path,
-      codebase_id: codebaseId,
-      include_transitive: includeTransitive,
-    });
-  },
 });
 
 /**
@@ -234,16 +150,10 @@ export const getDependenciesTool = tool({
  */
 export const getDependencyGraphTool = tool({
   description: 'Get full dependency graph for codebase',
-  parameters: z.object({
+  inputSchema: z.object({
     codebaseId: z.string().optional().describe('Codebase ID'),
     format: z.enum(['json', 'mermaid', 'dot']).optional().describe('Output format'),
   }),
-  execute: async ({ codebaseId, format }) => {
-    return await executeViaNATS(TOOL_SUBJECTS.DEPS_GRAPH, {
-      codebase_id: codebaseId,
-      format,
-    });
-  },
 });
 
 /**
@@ -263,8 +173,10 @@ export interface ToolSecurityPolicy {
  * - essential: Tier 1 (getCode, searchCode, listFiles)
  * - standard: Tier 1 + Tier 2 (adds symbol navigation)
  * - full: All tiers (adds dependencies, patterns, git)
+ *
+ * Note: Security policy parameter reserved for future implementation
  */
-export function createStandardTools(policy?: ToolSecurityPolicy) {
+export function createStandardTools(_policy?: ToolSecurityPolicy) {
   const essential = {
     getCode: getCodeTool,
     searchCode: searchCodeTool,
@@ -323,12 +235,9 @@ export function getFullTools() {
 
 /**
  * Close NATS connection on shutdown
+ * Note: Currently a no-op as NATS execution is not implemented
  */
 export async function closeNatsTools() {
-  if (natsClient) {
-    await natsClient.close();
-    natsClient = null;
-    jsonCodec = null;
-    console.log('[nats-tools] NATS connection closed');
-  }
+  // No-op: NATS connection management will be handled when tool execution is implemented
+  console.log('[nats-tools] closeNatsTools called (no-op in current implementation)');
 }

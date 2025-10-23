@@ -286,8 +286,9 @@ export async function getCopilotAccessToken(): Promise<string | null> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`[copilot-oauth] Failed to exchange token: ${response.status} - ${errorText.substring(0, 200)}`);
-    throw new Error(`Failed to get Copilot token: ${response.status} ${response.statusText}`);
+    console.warn(`[copilot-oauth] Failed to exchange token: ${response.status} - ${errorText.substring(0, 200)}`);
+    console.warn('[copilot-oauth] Copilot provider will be unavailable');
+    return null; // Return null instead of throwing to allow graceful degradation
   }
 
   const tokenData = await response.json() as CopilotTokenResponse;
