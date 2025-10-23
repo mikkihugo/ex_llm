@@ -81,25 +81,38 @@ end
 
 # GPU-accelerated ML/AI configuration
 if config_env() != :test do
-  # Use EXLA backend with CUDA (RTX 4080)
+  # Detect platform for appropriate EXLA configuration
+  xla_target =
+    case System.get_env("XLA_TARGET") do
+      nil ->
+        # Auto-detect: use CPU on macOS (no CUDA precompiled binaries)
+        case :os.type() do
+          {:unix, :darwin} -> "cpu"
+          _ -> "cuda"
+        end
+      target -> target
+    end
+
+  # Use EXLA backend
   config :nx, :default_backend, EXLA.Backend
 
   config :exla,
-    # Use GPU 0 (your RTX 4080 - 16GB VRAM)
-    default_client: :cuda,
+    default_client: if(xla_target == "cuda", do: :cuda, else: :host),
     clients: [
-      # RTX 4080 16GB - allocate 75% for models (12GB), leave 4GB for system
+      # RTX 4080 16GB (Linux/production) - allocate 75% for models (12GB), leave 4GB for system
       cuda: [platform: :cuda, memory_fraction: 0.75],
-      # CPU fallback if CUDA unavailable
+      # CPU fallback for macOS development or systems without CUDA
       host: [platform: :host]
     ]
 
   # Configure Bumblebee
+  bumblebee_client = if(xla_target == "cuda", do: :cuda, else: :host)
+
   config :bumblebee,
     # Cache models in ~/.cache/huggingface
     offline: false,
-    # RTX 4080 16GB - use GPU acceleration
-    default_backend: {EXLA.Backend, client: :cuda}
+    # Use appropriate backend based on platform
+    default_backend: {EXLA.Backend, client: bumblebee_client}
 end
 
 # Embedding service configuration
