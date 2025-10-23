@@ -20,6 +20,7 @@ defmodule Centralcloud.IntelligenceHub do
 
   use GenServer
   require Logger
+  import Ecto.Query
 
   alias Centralcloud.{Repo, NatsClient}
 
@@ -71,9 +72,16 @@ defmodule Centralcloud.IntelligenceHub do
   @impl true
   def handle_call({:query_insights, query, _opts}, _from, state) do
     # Query aggregated insights from PostgreSQL
-    # TODO: Implement query logic
     Logger.debug("Querying insights: #{inspect(query)}")
-    {:reply, {:ok, []}, state}
+
+    try do
+      insights = execute_query(query)
+      {:reply, {:ok, insights}, state}
+    rescue
+      e ->
+        Logger.error("Query execution error: #{inspect(e)}")
+        {:reply, {:error, "Query failed"}, state}
+    end
   end
 
   @impl true
@@ -966,5 +974,185 @@ defmodule Centralcloud.IntelligenceHub do
   defp send_error_response(msg, error_message) do
     error_response = %{"error" => error_message}
     send_response(msg, error_response)
+  end
+
+  # ===========================
+  # Query Execution Engine
+  # ===========================
+
+  defp execute_query(query) do
+    Logger.debug("Executing query with type: #{query["query_type"]}")
+
+    case query["query_type"] do
+      "framework" ->
+        query_frameworks(query)
+
+      "patterns" ->
+        query_patterns(query)
+
+      "quality" ->
+        query_quality_insights(query)
+
+      "packages" ->
+        query_package_insights(query)
+
+      "cross_instance" ->
+        query_cross_instance_data(query)
+
+      _other ->
+        Logger.warning("Unknown query type: #{query["query_type"]}")
+        []
+    end
+  end
+
+  defp query_frameworks(query) do
+    language = query["language"]
+    framework = query["framework"]
+
+    Logger.debug("Querying frameworks for #{language}")
+
+    # Query knowledge artifacts for framework data
+    query_stmt =
+      from(ka in Centralcloud.KnowledgeArtifact,
+        where: ka.artifact_type == "framework",
+        where: fragment("?->>'language' = ?", ka.metadata, ^language),
+        select: ka.content,
+        limit: 10
+      )
+
+    case Repo.all(query_stmt) do
+      [] ->
+        Logger.info("No frameworks found for #{language}")
+        []
+
+      results ->
+        Logger.info("Found #{length(results)} frameworks")
+        results
+    end
+  end
+
+  defp query_patterns(query) do
+    language = query["language"]
+    pattern_type = query["pattern_type"] || "all"
+
+    Logger.debug("Querying patterns: type=#{pattern_type}, language=#{language}")
+
+    query_stmt =
+      from(ka in Centralcloud.KnowledgeArtifact,
+        where: ka.artifact_type == "pattern",
+        where: fragment("?->>'language' = ?", ka.metadata, ^language),
+        select: %{
+          name: fragment("?->>'name'", ka.content),
+          pattern: ka.content,
+          usage_count: fragment("COALESCE(?->>'usage_count', '0')::int", ka.metadata)
+        },
+        order_by: [desc: fragment("COALESCE(?->>'usage_count', '0')::int", ka.metadata)],
+        limit: 50
+      )
+
+    case Repo.all(query_stmt) do
+      [] ->
+        Logger.info("No patterns found")
+        []
+
+      results ->
+        Logger.info("Found #{length(results)} patterns")
+        results
+    end
+  end
+
+  defp query_quality_insights(query) do
+    quality_level = query["quality_level"] || "production"
+    language = query["language"]
+
+    Logger.debug("Querying quality insights for #{language} at #{quality_level}")
+
+    # Query quality standards
+    case Repo.get_by(Centralcloud.KnowledgeArtifact,
+           artifact_type: "quality_standard",
+           metadata: %{"language" => language, "quality_level" => quality_level}
+         ) do
+      nil ->
+        Logger.warning("Quality standard not found")
+        []
+
+      artifact ->
+        Logger.info("Found quality insights")
+        [artifact.content]
+    end
+  end
+
+  defp query_package_insights(query) do
+    ecosystem = query["ecosystem"] || "npm"
+    language = query["language"]
+
+    Logger.debug("Querying packages for #{ecosystem}/#{language}")
+
+    # Query package knowledge
+    query_stmt =
+      from(ka in Centralcloud.KnowledgeArtifact,
+        where: ka.artifact_type == "package",
+        where: fragment("?->>'ecosystem' = ?", ka.metadata, ^ecosystem),
+        where: fragment("?->>'language' = ?", ka.metadata, ^language),
+        select: %{
+          name: fragment("?->>'name'", ka.content),
+          version: fragment("?->>'version'", ka.content),
+          popularity: fragment("COALESCE(?->>'downloads', '0')::bigint", ka.metadata)
+        },
+        order_by: [desc: fragment("COALESCE(?->>'downloads', '0')::bigint", ka.metadata)],
+        limit: 25
+      )
+
+    case Repo.all(query_stmt) do
+      [] ->
+        Logger.info("No packages found")
+        []
+
+      results ->
+        Logger.info("Found #{length(results)} packages")
+        results
+    end
+  end
+
+  defp query_cross_instance_data(query) do
+    query_type = query["cross_instance_type"] || "patterns"
+
+    Logger.debug("Querying cross-instance data: type=#{query_type}")
+
+    case query_type do
+      "patterns" ->
+        # Query all patterns across all instances
+        Repo.all(
+          from(ka in Centralcloud.KnowledgeArtifact,
+            where: ka.artifact_type == "pattern",
+            select: ka.content,
+            order_by: [desc: ka.inserted_at],
+            limit: 100
+          )
+        )
+
+      "stats" ->
+        # Get aggregated statistics
+        [
+          %{
+            "type" => "cross_instance_stats",
+            "total_patterns" =>
+              Repo.aggregate(
+                from(ka in Centralcloud.KnowledgeArtifact, where: ka.artifact_type == "pattern"),
+                :count
+              ),
+            "total_frameworks" =>
+              Repo.aggregate(
+                from(ka in Centralcloud.KnowledgeArtifact, where: ka.artifact_type == "framework"),
+                :count
+              ),
+            "last_updated" => DateTime.utc_now()
+          }
+        ]
+
+      _other ->
+        Logger.warning("Unknown cross_instance_type: #{query_type}")
+        []
+    end
   end
 end
