@@ -96,7 +96,7 @@ tar = { version = "0.4", optional = true }
 # prompt-engine = { workspace = true, optional = true }
 
 # Parser dependencies
-dependency_parser = { path = "../../parser_engine/formats/dependency" }
+dependency_parser = { path = "../../../rust/parser_engine/formats/dependency" }
 
 [dev-dependencies]
 criterion = { workspace = true, features = ["html_reports"] }
