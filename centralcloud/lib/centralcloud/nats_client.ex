@@ -267,29 +267,29 @@ defmodule Centralcloud.NatsClient do
     # Create JetStream context
     case Gnat.jetstream(conn) do
       {:ok, js} ->
-        # Create or bind to KV bucket
-        case Gnat.kv_create(js, bucket) do
+        # Create or bind to KV bucket using JetStream KV API
+        case Gnat.JetStream.kv_create(js, bucket) do
           {:ok, kv} ->
             Logger.debug("Created JetStream KV bucket: #{bucket}")
             {:ok, kv}
-          
+
           {:error, :bucket_exists} ->
             # Bucket already exists, bind to it
-            case Gnat.kv_bind(js, bucket) do
+            case Gnat.JetStream.kv_bind(js, bucket) do
               {:ok, kv} ->
                 Logger.debug("Bound to existing JetStream KV bucket: #{bucket}")
                 {:ok, kv}
-              
+
               {:error, reason} ->
                 Logger.error("Failed to bind to KV bucket #{bucket}: #{inspect(reason)}")
                 {:error, reason}
             end
-          
+
           {:error, reason} ->
             Logger.error("Failed to create KV bucket #{bucket}: #{inspect(reason)}")
             {:error, reason}
         end
-      
+
       {:error, reason} ->
         Logger.error("Failed to create JetStream context: #{inspect(reason)}")
         {:error, reason}
@@ -298,18 +298,18 @@ defmodule Centralcloud.NatsClient do
 
   defp kv_get_internal(bucket, key, %{conn: conn, kv_buckets: buckets}) do
     kv = Map.get(buckets, bucket)
-    
+
     if kv do
-      case Gnat.kv_get(kv, key) do
+      case Gnat.JetStream.kv_get(kv, key) do
         {:ok, %{value: value}} ->
           case Jason.decode(value) do
             {:ok, decoded} -> {:ok, decoded}
             {:error, _} -> {:ok, value}  # Return raw value if not JSON
           end
-        
+
         {:error, :not_found} ->
           {:error, :not_found}
-        
+
         {:error, reason} ->
           Logger.error("KV GET failed for #{bucket}/#{key}: #{inspect(reason)}")
           {:error, reason}
@@ -322,15 +322,15 @@ defmodule Centralcloud.NatsClient do
 
   defp kv_put_internal(bucket, key, value, %{conn: conn, kv_buckets: buckets}) do
     kv = Map.get(buckets, bucket)
-    
+
     if kv do
       encoded_value = Jason.encode!(value)
-      
-      case Gnat.kv_put(kv, key, encoded_value) do
+
+      case Gnat.JetStream.kv_put(kv, key, encoded_value) do
         :ok ->
           Logger.debug("KV PUT successful: #{bucket}/#{key}")
           :ok
-        
+
         {:error, reason} ->
           Logger.error("KV PUT failed for #{bucket}/#{key}: #{inspect(reason)}")
           {:error, reason}
