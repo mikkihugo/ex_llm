@@ -1,14 +1,16 @@
 defmodule Centralcloud.Engines.CodeEngine do
   @moduledoc """
-  Code Engine - Delegates to Singularity via NATS.
+  Code Engine NIF - Direct bindings to Rust code analysis.
 
-  This module provides a simple interface to Singularity's Rust code
-  analysis engine via NATS messaging. CentralCloud does not compile its own
-  copy of the Rust NIF; instead it uses the Singularity instance's compiled
-  engines through the SharedEngineService.
+  This module loads the shared Rust NIF from the project root rust/ directory,
+  allowing CentralCloud to use the same compiled code analysis engine as Singularity.
   """
 
-  alias Centralcloud.Engines.SharedEngineService
+  use Rustler,
+    otp_app: :centralcloud,
+    crate: :code_engine,
+    path: "../../../rust/code_engine"
+
   require Logger
 
   @doc """
@@ -26,13 +28,22 @@ defmodule Centralcloud.Engines.CodeEngine do
       "include_embeddings" => include_embeddings
     }
 
-    SharedEngineService.call_code_engine("analyze_codebase", request, timeout: 30_000)
+    case code_engine_call("analyze_codebase", request) do
+      {:ok, results} ->
+        Logger.debug("Code engine analysis completed",
+          business_domains: length(Map.get(results, "business_domains", [])),
+          patterns: length(Map.get(results, "patterns", []))
+        )
+        {:ok, results}
+
+      {:error, reason} ->
+        Logger.error("Code engine failed", reason: reason)
+        {:error, reason}
+    end
   end
 
   @doc """
   Detect business domains in codebase.
-
-  Delegates to Singularity via NATS for the actual computation.
   """
   def detect_business_domains(codebase_info, opts \\ []) do
     request = %{
@@ -40,6 +51,19 @@ defmodule Centralcloud.Engines.CodeEngine do
       "confidence_threshold" => Keyword.get(opts, :confidence_threshold, 0.7)
     }
 
-    SharedEngineService.call_code_engine("detect_business_domains", request, timeout: 30_000)
+    case code_engine_call("detect_business_domains", request) do
+      {:ok, results} ->
+        Logger.debug("Code engine detected business domains",
+          domains: length(Map.get(results, "business_domains", []))
+        )
+        {:ok, results}
+
+      {:error, reason} ->
+        Logger.error("Code engine failed", reason: reason)
+        {:error, reason}
+    end
   end
+
+  # NIF function (loaded from shared Rust crate)
+  defp code_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
 end

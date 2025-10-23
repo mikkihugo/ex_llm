@@ -1,20 +1,20 @@
 defmodule Centralcloud.Engines.PromptEngine do
   @moduledoc """
-  Prompt Engine - Delegates to Singularity via NATS.
+  Prompt Engine NIF - Direct bindings to Rust prompt generation.
 
-  This module provides a simple interface to Singularity's Rust prompt
-  generation engine via NATS messaging. CentralCloud does not compile its own
-  copy of the Rust NIF; instead it uses the Singularity instance's compiled
-  engines through the SharedEngineService.
+  This module loads the shared Rust NIF from the project root rust/ directory,
+  allowing CentralCloud to use the same compiled prompt engine as Singularity.
   """
 
-  alias Centralcloud.Engines.SharedEngineService
+  use Rustler,
+    otp_app: :centralcloud,
+    crate: :prompt_engine,
+    path: "../../../rust/prompt_engine"
+
   require Logger
 
   @doc """
-  Generate AI prompts using Singularity's Rust Prompt Engine.
-
-  Delegates to Singularity via NATS for the actual computation.
+  Generate AI prompts using Rust Prompt Engine.
   """
   def generate_prompt(prompt_type, context, opts \\ []) do
     template = Keyword.get(opts, :template, "default")
@@ -27,13 +27,22 @@ defmodule Centralcloud.Engines.PromptEngine do
       "optimization_level" => optimization_level
     }
 
-    SharedEngineService.call_prompt_engine("generate_prompt", request, timeout: 30_000)
+    case prompt_engine_call("generate_prompt", request) do
+      {:ok, results} ->
+        Logger.debug("Prompt engine generated prompt",
+          prompt_type: prompt_type,
+          length: String.length(Map.get(results, "prompt", ""))
+        )
+        {:ok, results}
+
+      {:error, reason} ->
+        Logger.error("Prompt engine failed", reason: reason)
+        {:error, reason}
+    end
   end
 
   @doc """
   Optimize existing prompt.
-
-  Delegates to Singularity via NATS for the actual computation.
   """
   def optimize_prompt(prompt, opts \\ []) do
     optimization_goals = Keyword.get(opts, :optimization_goals, ["clarity", "effectiveness"])
@@ -45,6 +54,20 @@ defmodule Centralcloud.Engines.PromptEngine do
       "target_length" => target_length
     }
 
-    SharedEngineService.call_prompt_engine("optimize_prompt", request, timeout: 30_000)
+    case prompt_engine_call("optimize_prompt", request) do
+      {:ok, results} ->
+        Logger.debug("Prompt engine optimized prompt",
+          original_length: String.length(prompt),
+          optimized_length: String.length(Map.get(results, "optimized_prompt", ""))
+        )
+        {:ok, results}
+
+      {:error, reason} ->
+        Logger.error("Prompt engine failed", reason: reason)
+        {:error, reason}
+    end
   end
+
+  # NIF function (loaded from shared Rust crate)
+  defp prompt_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
 end
