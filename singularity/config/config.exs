@@ -60,8 +60,12 @@ config :singularity, :claude,
 
 import_config "#{config_env()}.exs"
 
+# Database Configuration - Auto-detected by Nix
+# Dev: PostgreSQL auto-starts via nix develop
+# Prod: Same shared database (single DB strategy for internal tooling)
+# All environments use same database for living knowledge base
 config :singularity, Singularity.Repo,
-  # Single shared DB
+  # Single shared DB (internal tooling - no multi-tenancy)
   database: System.get_env("SINGULARITY_DB_NAME", "singularity"),
   username: System.get_env("SINGULARITY_DB_USER") || System.get_env("USER") || "postgres",
   password: System.get_env("SINGULARITY_DB_PASSWORD", ""),
