@@ -234,11 +234,12 @@ Binary cache
    - Safe evolution is critical
    - Depends on: Items #1 & #2
 
-5. **Expand Embedding Engine: Jina v3, MiniLM, Metal & ROCm** (2-3 weeks)
-   - Qodo-Embed ✅ (code-optimized, CUDA)
-   - Add Jina v3 (general text, CUDA/Metal/ROCm)
-   - Add MiniLM (lightweight CPU fallback)
-   - Complete multi-model, multi-GPU, multi-platform vision
+5. **Expand Embedding Engine: Real ONNX + Multi-GPU** (2-3 weeks)
+   - ✅ Qodo-Embed (code-optimized, CUDA) - REAL inference working
+   - ⚠️ Jina v3 (general text) - Downloads work, inference is FAKE ❌
+   - ⚠️ MiniLM (CPU fallback) - Downloads work, inference is FAKE ❌
+   - Fix: Uncomment `ort` crate, implement real ONNX forward passes
+   - Add: Metal (Apple) and ROCm (AMD) GPU support
 
 **Full Details**: See `SELFEVOLVE.md` (architecture clarity + top 5 action items)
 **Architecture Guide**: See `docs/architecture/AGENTS.md` (agent design patterns)

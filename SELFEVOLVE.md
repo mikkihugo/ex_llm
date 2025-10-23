@@ -65,40 +65,74 @@
 - **Depends On**: Item #1 (metrics) + Item #2 (aggregator)
 - **Files**: `lib/singularity/agents/evolution.ex`, `lib/singularity/execution/feedback/analyzer.ex`
 
-### 5. **Expand Embedding Engine: Jina v3, MiniLM, Metal & ROCm** (2-3 weeks)
+### 5. **Expand Embedding Engine: Real ONNX + Multi-GPU** (2-3 weeks)
 
-**Current Status**: ✅ Qodo-Embed with CUDA works. Expanding to multi-model, multi-GPU, multi-platform.
+**CRITICAL: Replace Stubs with Real Inference**
 
-**What Will Be Running After Completion:**
-
-**Primary Models (GPU):**
-- ✅ **Qodo-Embed-1** (Candle) - Code-optimized, CUDA ✅
-- ✅ **Jina v3** (ONNX) - General text, CUDA/Metal/ROCm ← NEW
+**Current Status:**
+- ✅ **Qodo-Embed-1** (Candle) - REAL Candle inference ✅ (fully implemented)
+- ⚠️ **Jina v3** (ONNX) - Downloads real model, returns FAKE embeddings ❌
+- ⚠️ **MiniLM-L6-v2** (ONNX) - Downloads real model, returns FAKE embeddings ❌
 - ⚠️ **Google AI FREE** (fallback) - When NIF unavailable
 
-**Secondary Model (CPU):**
-- ✅ **MiniLM-L6-v2** (ONNX) - Lightweight CPU fallback ← NEW
+**The Problem:**
+1. Models download successfully from HuggingFace ✅
+2. BUT: Jina v3 & MiniLM return mock/deterministic fake embeddings ❌
+3. ROOT CAUSE: `ort` crate (ONNX Runtime) is commented out in Cargo.toml ❌
+4. Result: System appears to work but embeddings are useless ❌
 
-**GPU Platforms:**
-- ✅ CUDA (NVIDIA) - Qodo-Embed ✅, Jina v3 ← NEW
-- ✅ Metal (Apple) - Jina v3 ← NEW
-- ✅ ROCm (AMD) - Jina v3 ← NEW
+**What Needs to Happen:**
 
-**Breakdown (by effort):**
-1. Implement Jina v3 ONNX GPU inference (uncomment `ort` crate, add inference code) - **2-3 days**
-2. Implement MiniLM-L6-v2 ONNX CPU inference - **2-3 days**
-3. Add Metal GPU support (Candle + ONNX) - **1-2 days**
-4. Add ROCm GPU support (Candle + ONNX) - **1-2 days**
-5. Benchmark all models, compare quality/speed - **2-3 days**
+**Phase 1: Enable ONNX Inference (3-4 days)**
+1. Uncomment `ort` crate in Cargo.toml (line 21)
+   ```toml
+   ort = { version = "2.0.0-rc.10", features = ["load-dynamic"], optional = true }
+   ```
+2. Add `ort` to features:
+   ```toml
+   [features]
+   default = ["cpu"]
+   cpu = ["candle-core", "ort"]
+   cuda = ["candle-core/cuda", "ort/cuda"]
+   ```
+3. Implement real ONNX inference for Jina v3:
+   - Replace fake `JinaV3Model` with `OnnxModel` wrapper
+   - Use `ort::Session` to load `model.onnx`
+   - Implement actual forward pass (~100 lines)
+4. Implement real ONNX inference for MiniLM-L6-v2:
+   - Replace fake `MiniLML6V2Model` with `OnnxModel` wrapper
+   - Use `ort::Session` to load `model.onnx`
+   - Implement actual forward pass (~100 lines)
+
+**Phase 2: GPU Support (2-3 days)**
+5. Add Metal GPU support (Apple Silicon)
+   - Enable Candle Metal features for Qodo-Embed
+   - Enable ONNX Runtime Metal backend for Jina v3
+6. Add ROCm GPU support (AMD GPUs)
+   - Enable Candle ROCm features for Qodo-Embed
+   - Enable ONNX Runtime ROCm backend for Jina v3
+
+**Phase 3: Testing & Optimization (2-3 days)**
+7. Benchmark all models:
+   - Compare inference speed (Qodo vs Jina vs MiniLM)
+   - Compare accuracy on code vs text tasks
+   - Compare GPU memory usage
+8. Validate GPU fallback (GPU → CPU seamlessly)
 
 **Total Effort**: 2-3 weeks (7-12 working days)
 
-**Why Complete the Vision:**
-- ✅ Qodo-Embed excels at code, Jina v3 at general text → complementary
-- ✅ MiniLM provides fallback for resource-constrained environments
-- ✅ Metal support critical for Apple Silicon developers
-- ✅ ROCm support critical for AMD GPU users
-- ✅ Complete the architected vision = complete confidence in system
+**Files to Modify:**
+- `rust/embedding_engine/Cargo.toml` - Uncomment ort, add features
+- `rust/embedding_engine/src/models.rs` - Replace JinaV3Model & MiniLML6V2Model stubs with real ONNX
+- `rust/embedding_engine/src/lib.rs` - Add OnnxModel wrapper struct
+- Add `rust/embedding_engine/src/onnx_model.rs` - ONNX inference implementation
+
+**Why This Matters:**
+- ✅ Qodo-Embed is ready now (no changes needed)
+- ❌ Jina v3 & MiniLM are currently USELESS (return garbage embeddings)
+- ✅ Once fixed, you have specialized models for code vs text
+- ✅ Once fixed, semantic search actually works
+- ✅ Once fixed, pattern mining has quality embeddings
 
 **Note on NIF Compilation:**
 - ⚠️ `skip_compilation?: true` in embedding_engine.ex means NIF is pre-compiled, not recompiled with `mix compile`
