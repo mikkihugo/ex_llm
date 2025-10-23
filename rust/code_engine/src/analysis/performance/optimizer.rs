@@ -1,9 +1,17 @@
-//! Performance Optimization Analysis
+//! Performance Optimization Analysis with CentralCloud Integration
 //!
-//! PSEUDO CODE: Performance optimization recommendations and analysis.
+//! Detects performance optimization opportunities using patterns from CentralCloud.
+//!
+//! ## CentralCloud Integration
+//!
+//! - Queries "intelligence_hub.performance_patterns.query" for optimization patterns
+//! - Publishes optimizations to "intelligence_hub.performance_issue.detected"
+//! - No local pattern databases - all patterns from CentralCloud
 
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use anyhow::Result;
+use crate::centralcloud::{query_centralcloud, publish_detection, extract_data};
 
 /// Performance optimization result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -101,70 +109,57 @@ pub struct OptimizationMetadata {
     pub files_analyzed: usize,
     pub optimizations_found: usize,
     pub detector_version: String,
-    pub fact_system_version: String,
 }
 
-/// Performance optimizer
-pub struct PerformanceOptimizer {
-    fact_system_interface: FactSystemInterface,
-    optimization_patterns: Vec<OptimizationPattern>,
-}
-
-/// Interface to fact-system for optimization knowledge
-pub struct FactSystemInterface {
-    // PSEUDO CODE: Interface to fact-system for optimization knowledge
-}
-
-/// Optimization pattern definition
+/// Optimization pattern from CentralCloud
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OptimizationPattern {
     pub name: String,
     pub pattern: String,
-    pub optimization_type: OptimizationType,
+    pub optimization_type: String,
     pub potential_improvement: f64,
-    pub implementation_effort: ImplementationEffort,
+    pub effort: String,
     pub description: String,
     pub implementation: String,
 }
 
+/// Performance optimizer - CentralCloud integration (no local patterns)
+pub struct PerformanceOptimizer {
+    // No local pattern database - query CentralCloud on-demand
+}
+
 impl PerformanceOptimizer {
     pub fn new() -> Self {
-        Self {
-            fact_system_interface: FactSystemInterface::new(),
-            optimization_patterns: Vec::new(),
-        }
+        Self {}
     }
-    
-    /// Initialize with fact-system integration
+
+    /// Initialize (no-op for CentralCloud mode)
     pub async fn initialize(&mut self) -> Result<()> {
-        // PSEUDO CODE:
-        /*
-        // Load optimization patterns from fact-system
-        let patterns = self.fact_system_interface.load_optimization_patterns().await?;
-        self.optimization_patterns.extend(patterns);
-        */
-        
+        // No initialization needed - queries CentralCloud on-demand
         Ok(())
     }
-    
-    /// Analyze optimizations
+
+    /// Analyze performance optimizations with CentralCloud patterns
     pub async fn analyze(&self, content: &str, file_path: &str) -> Result<OptimizationAnalysis> {
-        // PSEUDO CODE:
-        /*
-        let mut optimizations = Vec::new();
-        
-        // Check each optimization pattern
-        for pattern in &self.optimization_patterns {
-            let detected_optimizations = self.detect_optimization_pattern(content, file_path, pattern).await?;
-            optimizations.extend(detected_optimizations);
-        }
-        
-        // Calculate performance gain
+        let start_time = std::time::Instant::now();
+
+        // 1. Query CentralCloud for optimization patterns
+        let patterns = self.query_optimization_patterns(file_path).await?;
+
+        // 2. Detect optimization opportunities (use content!)
+        let optimizations = self.detect_optimizations(content, file_path, &patterns).await?;
+
+        // 3. Calculate performance gain (use optimizations!)
         let performance_gain = self.calculate_performance_gain(&optimizations);
-        
-        // Generate recommendations
+
+        // 4. Generate recommendations (use optimizations!)
         let recommendations = self.generate_recommendations(&optimizations);
-        
+
+        // 5. Publish optimization detections to CentralCloud
+        self.publish_optimization_stats(&optimizations).await;
+
+        let opt_count = optimizations.len();
+
         Ok(OptimizationAnalysis {
             optimizations,
             performance_gain,
@@ -172,123 +167,202 @@ impl PerformanceOptimizer {
             metadata: OptimizationMetadata {
                 analysis_time: chrono::Utc::now(),
                 files_analyzed: 1,
-                optimizations_found: optimizations.len(),
+                optimizations_found: opt_count,
                 detector_version: "1.0.0".to_string(),
-                fact_system_version: "1.0.0".to_string(),
-            },
-        })
-        */
-        
-        Ok(OptimizationAnalysis {
-            optimizations: Vec::new(),
-            performance_gain: 0.0,
-            recommendations: Vec::new(),
-            metadata: OptimizationMetadata {
-                analysis_time: chrono::Utc::now(),
-                files_analyzed: 1,
-                optimizations_found: 0,
-                detector_version: "1.0.0".to_string(),
-                fact_system_version: "1.0.0".to_string(),
             },
         })
     }
-    
-    /// Detect optimization pattern
-    async fn detect_optimization_pattern(
+
+    /// Query CentralCloud for performance optimization patterns
+    async fn query_optimization_patterns(&self, file_path: &str) -> Result<Vec<OptimizationPattern>> {
+        let language = Self::detect_language(file_path);
+
+        let request = json!({
+            "language": language,
+            "optimization_types": ["algorithmic", "caching", "parallelization", "data_structure", "lazy_loading"],
+            "include_implementation": true,
+        });
+
+        let response = query_centralcloud(
+            "intelligence_hub.performance_patterns.query",
+            &request,
+            3000
+        )?;
+
+        Ok(extract_data(&response, "patterns"))
+    }
+
+    /// Detect language from file path
+    fn detect_language(file_path: &str) -> &str {
+        if file_path.ends_with(".rs") {
+            "rust"
+        } else if file_path.ends_with(".ex") || file_path.ends_with(".exs") {
+            "elixir"
+        } else if file_path.ends_with(".py") {
+            "python"
+        } else if file_path.ends_with(".js") || file_path.ends_with(".ts") {
+            "javascript"
+        } else {
+            "unknown"
+        }
+    }
+
+    /// Detect optimization opportunities in content using CentralCloud patterns
+    async fn detect_optimizations(
         &self,
         content: &str,
         file_path: &str,
-        pattern: &OptimizationPattern,
+        patterns: &[OptimizationPattern],
     ) -> Result<Vec<Optimization>> {
-        // PSEUDO CODE:
-        /*
         let mut optimizations = Vec::new();
-        
-        if let Ok(regex) = Regex::new(&pattern.pattern) {
-            for mat in regex.find_iter(content) {
+
+        // Check each optimization pattern
+        for (idx, pattern) in patterns.iter().enumerate() {
+            if content.contains(&pattern.pattern) {
+                let optimization_type = match pattern.optimization_type.as_str() {
+                    "algorithmic" | "algorithm" => OptimizationType::AlgorithmOptimization,
+                    "data_structure" => OptimizationType::DataStructureOptimization,
+                    "caching" | "cache" => OptimizationType::Caching,
+                    "parallelization" | "parallel" => OptimizationType::Parallelization,
+                    "lazy_loading" | "lazy" => OptimizationType::LazyLoading,
+                    "connection_pooling" | "pooling" => OptimizationType::ConnectionPooling,
+                    "compression" => OptimizationType::Compression,
+                    "indexing" | "index" => OptimizationType::Indexing,
+                    "memoization" | "memo" => OptimizationType::Memoization,
+                    "batch_processing" | "batching" => OptimizationType::BatchProcessing,
+                    _ => OptimizationType::AlgorithmOptimization,
+                };
+
+                let implementation_effort = match pattern.effort.as_str() {
+                    "low" => ImplementationEffort::Low,
+                    "medium" => ImplementationEffort::Medium,
+                    "high" => ImplementationEffort::High,
+                    "very_high" => ImplementationEffort::VeryHigh,
+                    _ => ImplementationEffort::Medium,
+                };
+
                 optimizations.push(Optimization {
-                    id: generate_optimization_id(),
-                    optimization_type: pattern.optimization_type.clone(),
+                    id: format!("OPT-{}", idx),
+                    optimization_type,
                     potential_improvement: pattern.potential_improvement,
-                    implementation_effort: pattern.implementation_effort.clone(),
+                    implementation_effort,
                     description: pattern.description.clone(),
                     location: OptimizationLocation {
                         file_path: file_path.to_string(),
-                        line_number: Some(get_line_number(content, mat.start())),
-                        function_name: extract_function_name(content, mat.start()),
-                        code_snippet: Some(extract_code_snippet(content, mat.start(), mat.end())),
+                        line_number: None,
+                        function_name: None,
+                        code_snippet: Some(pattern.pattern.clone()),
                         context: None,
                     },
                     implementation: pattern.implementation.clone(),
                 });
             }
         }
-        
-        return optimizations;
-        */
-        
-        Ok(Vec::new())
+
+        Ok(optimizations)
     }
-    
-    /// Calculate performance gain
+
+    /// Calculate performance gain from optimizations
     fn calculate_performance_gain(&self, optimizations: &[Optimization]) -> f64 {
-        // PSEUDO CODE:
-        /*
-        let mut total_gain = 0.0;
-        
-        for optimization in optimizations {
-            total_gain += optimization.potential_improvement;
+        if optimizations.is_empty() {
+            return 0.0;
         }
-        
-        return total_gain.min(1.0); // Cap at 100% improvement
-        */
-        
-        0.0
+
+        // Sum potential improvements
+        let total_gain: f64 = optimizations.iter()
+            .map(|opt| opt.potential_improvement)
+            .sum();
+
+        // Average and cap at 100%
+        (total_gain / optimizations.len() as f64).min(1.0)
     }
-    
-    /// Generate recommendations
+
+    /// Generate recommendations from optimizations
     fn generate_recommendations(&self, optimizations: &[Optimization]) -> Vec<OptimizationRecommendation> {
-        // PSEUDO CODE:
-        /*
         let mut recommendations = Vec::new();
-        
+
         for optimization in optimizations {
+            // Prioritize based on improvement vs effort
+            let priority = if optimization.potential_improvement > 0.5
+                && matches!(optimization.implementation_effort, ImplementationEffort::Low | ImplementationEffort::Medium) {
+                RecommendationPriority::High
+            } else if optimization.potential_improvement > 0.3 {
+                RecommendationPriority::Medium
+            } else {
+                RecommendationPriority::Low
+            };
+
+            let category = match optimization.optimization_type {
+                OptimizationType::AlgorithmOptimization => OptimizationCategory::Algorithm,
+                OptimizationType::DataStructureOptimization => OptimizationCategory::Memory,
+                OptimizationType::Caching | OptimizationType::Memoization => OptimizationCategory::Caching,
+                OptimizationType::Parallelization => OptimizationCategory::Concurrency,
+                OptimizationType::LazyLoading => OptimizationCategory::Memory,
+                OptimizationType::ConnectionPooling => OptimizationCategory::Network,
+                OptimizationType::Compression => OptimizationCategory::Network,
+                OptimizationType::Indexing => OptimizationCategory::Database,
+                OptimizationType::BatchProcessing => OptimizationCategory::Database,
+            };
+
+            let type_str = match optimization.optimization_type {
+                OptimizationType::AlgorithmOptimization => "Algorithm Optimization",
+                OptimizationType::DataStructureOptimization => "Data Structure Optimization",
+                OptimizationType::Caching => "Caching",
+                OptimizationType::Parallelization => "Parallelization",
+                OptimizationType::LazyLoading => "Lazy Loading",
+                OptimizationType::ConnectionPooling => "Connection Pooling",
+                OptimizationType::Compression => "Compression",
+                OptimizationType::Indexing => "Indexing",
+                OptimizationType::Memoization => "Memoization",
+                OptimizationType::BatchProcessing => "Batch Processing",
+            };
+
             recommendations.push(OptimizationRecommendation {
-                priority: self.get_priority_for_improvement(optimization.potential_improvement),
-                category: self.get_category_for_optimization_type(&optimization.optimization_type),
-                title: format!("Optimize {}", optimization.optimization_type),
+                priority,
+                category,
+                title: format!("Apply {}", type_str),
                 description: optimization.description.clone(),
                 implementation: optimization.implementation.clone(),
                 expected_improvement: optimization.potential_improvement,
-                effort_required: optimization.implementation_effort.clone(),
+                effort_required: match optimization.implementation_effort {
+                    ImplementationEffort::Low => ImplementationEffort::Low,
+                    ImplementationEffort::Medium => ImplementationEffort::Medium,
+                    ImplementationEffort::High => ImplementationEffort::High,
+                    ImplementationEffort::VeryHigh => ImplementationEffort::VeryHigh,
+                },
             });
         }
-        
-        return recommendations;
-        */
-        
-        Vec::new()
+
+        recommendations
+    }
+
+    /// Publish optimization detections to CentralCloud for collective learning
+    async fn publish_optimization_stats(&self, optimizations: &[Optimization]) {
+        if optimizations.is_empty() {
+            return;
+        }
+
+        let stats = json!({
+            "type": "performance_optimization_detection",
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+            "optimizations_found": optimizations.len(),
+            "total_potential_gain": optimizations.iter().map(|o| o.potential_improvement).sum::<f64>(),
+            "optimization_types": optimizations.iter().map(|o| format!("{:?}", o.optimization_type)).collect::<Vec<_>>(),
+            "effort_distribution": {
+                "low": optimizations.iter().filter(|o| matches!(o.implementation_effort, ImplementationEffort::Low)).count(),
+                "medium": optimizations.iter().filter(|o| matches!(o.implementation_effort, ImplementationEffort::Medium)).count(),
+                "high": optimizations.iter().filter(|o| matches!(o.implementation_effort, ImplementationEffort::High)).count(),
+                "very_high": optimizations.iter().filter(|o| matches!(o.implementation_effort, ImplementationEffort::VeryHigh)).count(),
+            },
+        });
+
+        // Fire-and-forget publish
+        publish_detection("intelligence_hub.performance_issue.detected", &stats).ok();
     }
 }
 
-impl FactSystemInterface {
-    pub fn new() -> Self {
-        Self {}
+impl Default for PerformanceOptimizer {
+    fn default() -> Self {
+        Self::new()
     }
-    
-    // PSEUDO CODE: These methods would integrate with the actual fact-system
-    /*
-    pub async fn load_optimization_patterns(&self) -> Result<Vec<OptimizationPattern>> {
-        // Query fact-system for optimization patterns
-        // Return patterns for caching, parallelization, etc.
-    }
-    
-    pub async fn get_optimization_guidelines(&self, optimization_type: &str) -> Result<Vec<String>> {
-        // Query fact-system for optimization guidelines
-    }
-    
-    pub async fn get_performance_benchmarks(&self, technology: &str) -> Result<PerformanceBenchmarks> {
-        // Query fact-system for performance benchmarks
-    }
-    */
 }

@@ -1,0 +1,413 @@
+name: Deploy to Production (Windows RTX 4080)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'singularity/**'
+      - 'centralcloud/**'
+      - 'genesis/**'
+      - 'llm-server/**'
+      - 'rust/**'
+      - 'flake.nix'
+      - 'flake.lock'
+      - '.github/workflows/deploy-production-windows-4080.yml'
+  workflow_dispatch:
+    inputs:
+      deployment_mode:
+        description: 'Deployment mode'
+        required: true
+        default: 'podman'
+        type: choice
+        options:
+          - podman
+          - podman-k8s
+          - k8s-only
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/singularity
+  NATS_HOST: localhost
+  NATS_PORT: 4222
+  POSTGRES_DB_HOST: localhost
+  POSTGRES_DB_PORT: 5432
+
+jobs:
+  build:
+    name: Build Services
+    runs-on: windows-latest  # GitHub-hosted Windows runner on RTX 4080 machine
+    outputs:
+      singularity-image: ${{ steps.images.outputs.singularity }}
+      centralcloud-image: ${{ steps.images.outputs.centralcloud }}
+      genesis-image: ${{ steps.images.outputs.genesis }}
+      llm-server-image: ${{ steps.images.outputs.llm-server }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Set up Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build Singularity OCI Image
+        run: |
+          nix build .#singularity-container-image
+          echo "SINGULARITY_IMAGE=$(ls result/*/singularity-*.tar.gz | head -1)" >> $env:GITHUB_ENV
+
+      - name: Build CentralCloud OCI Image
+        run: |
+          nix build .#centralcloud-container-image
+          echo "CENTRALCLOUD_IMAGE=$(ls result/*/centralcloud-*.tar.gz | head -1)" >> $env:GITHUB_ENV
+
+      - name: Build Genesis OCI Image
+        run: |
+          nix build .#genesis-container-image
+          echo "GENESIS_IMAGE=$(ls result/*/genesis-*.tar.gz | head -1)" >> $env:GITHUB_ENV
+
+      - name: Build llm-server OCI Image
+        run: |
+          nix build .#llm-server-container-image
+          echo "LLM_SERVER_IMAGE=$(ls result/*/llm-server-*.tar.gz | head -1)" >> $env:GITHUB_ENV
+
+      - name: Push Images to Registry
+        run: |
+          # Login to GitHub Container Registry
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login -u ${{ github.actor }} --password-stdin ${{ env.REGISTRY }}
+
+          # Push Singularity
+          podman load -i ${{ env.SINGULARITY_IMAGE }}
+          podman push localhost/singularity:latest ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/singularity:${{ github.sha }}
+          podman push localhost/singularity:latest ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/singularity:latest
+
+          # Push CentralCloud
+          podman load -i ${{ env.CENTRALCLOUD_IMAGE }}
+          podman push localhost/centralcloud:latest ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/centralcloud:${{ github.sha }}
+          podman push localhost/centralcloud:latest ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/centralcloud:latest
+
+          # Push Genesis
+          podman load -i ${{ env.GENESIS_IMAGE }}
+          podman push localhost/genesis:latest ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/genesis:${{ github.sha }}
+          podman push localhost/genesis:latest ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/genesis:latest
+
+          # Push llm-server
+          podman load -i ${{ env.LLM_SERVER_IMAGE }}
+          podman push localhost/llm-server:latest ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/llm-server:${{ github.sha }}
+          podman push localhost/llm-server:latest ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/llm-server:latest
+
+      - name: Output Image References
+        id: images
+        run: |
+          echo "singularity=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/singularity:${{ github.sha }}" >> $env:GITHUB_OUTPUT
+          echo "centralcloud=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/centralcloud:${{ github.sha }}" >> $env:GITHUB_OUTPUT
+          echo "genesis=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/genesis:${{ github.sha }}" >> $env:GITHUB_OUTPUT
+          echo "llm-server=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/llm-server:${{ github.sha }}" >> $env:GITHUB_OUTPUT
+
+  deploy-podman:
+    name: Deploy with Podman
+    runs-on: windows-latest
+    needs: build
+    if: |
+      github.event.inputs.deployment_mode == 'podman' ||
+      github.event.inputs.deployment_mode == 'podman-k8s' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Podman
+        run: |
+          # Podman should already be installed on Windows runner
+          podman --version
+
+      - name: Stop Running Services
+        continue-on-error: true
+        run: |
+          podman-compose -f production/podman-compose.yml down || true
+
+      - name: Create Networks
+        run: |
+          podman network create singularity-net || true
+
+      - name: Start PostgreSQL
+        run: |
+          podman run -d `
+            --name singularity-postgres `
+            --network singularity-net `
+            -e POSTGRES_PASSWORD=postgres `
+            -v singularity-postgres-data:/var/lib/postgresql/data `
+            -p 5432:5432 `
+            postgres:17-alpine
+
+          # Wait for PostgreSQL to be ready
+          Start-Sleep -Seconds 10
+
+      - name: Initialize Databases
+        run: |
+          # Create three databases
+          podman exec singularity-postgres psql -U postgres -c "CREATE DATABASE singularity;" || true
+          podman exec singularity-postgres psql -U postgres -c "CREATE DATABASE centralcloud;" || true
+          podman exec singularity-postgres psql -U postgres -c "CREATE DATABASE genesis;" || true
+
+      - name: Start NATS
+        run: |
+          podman run -d `
+            --name singularity-nats `
+            --network singularity-net `
+            -p 4222:4222 `
+            -p 4221:4221 `
+            -p 4223:4223 `
+            -p 8222:8222 `
+            nats:alpine `
+            -js
+
+      - name: Start llm-server
+        run: |
+          podman run -d `
+            --name singularity-llm-server `
+            --network singularity-net `
+            -p 3000:3000 `
+            -e NATS_HOST=singularity-nats `
+            -e NATS_PORT=4222 `
+            ${{ needs.build.outputs.llm-server-image }}
+
+      - name: Start CentralCloud
+        run: |
+          podman run -d `
+            --name singularity-centralcloud `
+            --network singularity-net `
+            -p 4001:4000 `
+            -e DATABASE_URL=postgres://postgres:postgres@singularity-postgres:5432/centralcloud `
+            -e NATS_HOST=singularity-nats `
+            -e NATS_PORT=4222 `
+            ${{ needs.build.outputs.centralcloud-image }}
+
+          # Wait for migration
+          Start-Sleep -Seconds 5
+
+      - name: Start Genesis
+        run: |
+          podman run -d `
+            --name singularity-genesis `
+            --network singularity-net `
+            -p 4002:4000 `
+            -e DATABASE_URL=postgres://postgres:postgres@singularity-postgres:5432/genesis `
+            -e NATS_HOST=singularity-nats `
+            -e NATS_PORT=4222 `
+            ${{ needs.build.outputs.genesis-image }}
+
+      - name: Start Singularity
+        run: |
+          podman run -d `
+            --name singularity-app `
+            --network singularity-net `
+            -p 4000:4000 `
+            --gpus=all `
+            -e DATABASE_URL=postgres://postgres:postgres@singularity-postgres:5432/singularity `
+            -e NATS_HOST=singularity-nats `
+            -e NATS_PORT=4222 `
+            -e CENTRALCLOUD_URL=http://singularity-centralcloud:4000 `
+            -e XLA_TARGET=cuda118 `
+            ${{ needs.build.outputs.singularity-image }}
+
+      - name: Start Reverse Proxy
+        run: |
+          # Create Nginx config
+          $nginxConfig = @"
+          upstream singularity {
+            server singularity-app:4000;
+          }
+          upstream centralcloud {
+            server singularity-centralcloud:4000;
+          }
+          upstream llm_server {
+            server singularity-llm-server:3000;
+          }
+          server {
+            listen 80;
+            server_name _;
+
+            location / {
+              proxy_pass http://singularity;
+              proxy_set_header Host `$host;
+              proxy_set_header X-Real-IP `$remote_addr;
+            }
+
+            location /internal/centralcloud/ {
+              proxy_pass http://centralcloud/;
+              proxy_set_header Host `$host;
+            }
+
+            location /internal/llm/ {
+              proxy_pass http://llm_server/;
+              proxy_set_header Host `$host;
+            }
+          }
+          "@
+
+          $nginxConfig | podman run -d `
+            --name singularity-nginx `
+            --network singularity-net `
+            -p 80:80 `
+            -i nginx:alpine
+
+      - name: Health Checks
+        run: |
+          # Wait for services to stabilize
+          Start-Sleep -Seconds 10
+
+          # Check Singularity
+          $response = Invoke-WebRequest -Uri "http://localhost:4000/health" -UseBasicParsing
+          Write-Host "Singularity Health: $($response.StatusCode)"
+
+          # Check NATS
+          $natsCheck = podman exec singularity-nats nats rtt
+          Write-Host "NATS Status: $natsCheck"
+
+          # Check PostgreSQL
+          $pgCheck = podman exec singularity-postgres pg_isready
+          Write-Host "PostgreSQL Status: $pgCheck"
+
+      - name: Deployment Summary
+        run: |
+          Write-Host "================================"
+          Write-Host "Deployment Complete!"
+          Write-Host "================================"
+          Write-Host ""
+          Write-Host "Services running:"
+          podman ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          Write-Host ""
+          Write-Host "Access points:"
+          Write-Host "  Singularity: http://localhost:4000"
+          Write-Host "  NATS Admin:  http://localhost:8222"
+          Write-Host "  PostgreSQL:  localhost:5432"
+          Write-Host ""
+
+  deploy-kubernetes:
+    name: Deploy to Kubernetes
+    runs-on: windows-latest
+    needs: build
+    if: |
+      github.event.inputs.deployment_mode == 'podman-k8s' ||
+      github.event.inputs.deployment_mode == 'k8s-only'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          # Configure kubeconfig (assumes it's already set up on the Windows runner)
+          # The runner should have access to the local K8s cluster
+          kubectl cluster-info
+
+      - name: Create Namespace
+        run: |
+          kubectl create namespace singularity || true
+
+      - name: Create Docker Registry Secret
+        run: |
+          kubectl create secret docker-registry ghcr-secret `
+            --docker-server=${{ env.REGISTRY }} `
+            --docker-username=${{ github.actor }} `
+            --docker-password=${{ secrets.GITHUB_TOKEN }} `
+            --docker-email=${{ github.actor }}@users.noreply.github.com `
+            -n singularity || true
+
+      - name: Apply PostgreSQL StatefulSet
+        run: |
+          kubectl apply -f production/k8s/postgresql-statefulset.yml -n singularity
+
+      - name: Wait for PostgreSQL
+        run: |
+          kubectl wait --for=condition=ready pod `
+            -l app=postgresql `
+            -n singularity `
+            --timeout=300s
+
+      - name: Initialize Databases
+        run: |
+          kubectl exec -n singularity postgresql-0 -- `
+            psql -U postgres -c "CREATE DATABASE singularity;" || true
+          kubectl exec -n singularity postgresql-0 -- `
+            psql -U postgres -c "CREATE DATABASE centralcloud;" || true
+          kubectl exec -n singularity postgresql-0 -- `
+            psql -U postgres -c "CREATE DATABASE genesis;" || true
+
+      - name: Apply NATS StatefulSet
+        run: |
+          kubectl apply -f production/k8s/nats-statefulset.yml -n singularity
+
+      - name: Wait for NATS
+        run: |
+          kubectl wait --for=condition=ready pod `
+            -l app=nats `
+            -n singularity `
+            --timeout=300s
+
+      - name: Apply Configuration Maps
+        run: |
+          kubectl create configmap app-config `
+            --from-literal=NATS_HOST=nats-0.nats `
+            --from-literal=NATS_PORT=4222 `
+            --from-literal=POSTGRES_DB_HOST=postgresql-0.postgresql `
+            --from-literal=POSTGRES_DB_PORT=5432 `
+            -n singularity || true
+
+      - name: Apply Deployments
+        run: |
+          # Update image references in manifests
+          (Get-Content production/k8s/deployments.yml) `
+            -replace "SINGULARITY_IMAGE", "${{ needs.build.outputs.singularity-image }}" `
+            -replace "CENTRALCLOUD_IMAGE", "${{ needs.build.outputs.centralcloud-image }}" `
+            -replace "GENESIS_IMAGE", "${{ needs.build.outputs.genesis-image }}" `
+            -replace "LLM_SERVER_IMAGE", "${{ needs.build.outputs.llm-server-image }}" | `
+            kubectl apply -f - -n singularity
+
+      - name: Wait for Deployments
+        run: |
+          kubectl rollout status deployment/singularity -n singularity --timeout=600s
+          kubectl rollout status deployment/centralcloud -n singularity --timeout=600s
+          kubectl rollout status deployment/genesis -n singularity --timeout=600s
+          kubectl rollout status deployment/llm-server -n singularity --timeout=600s
+
+      - name: Apply Ingress
+        run: |
+          kubectl apply -f production/k8s/ingress.yml -n singularity
+
+      - name: Deployment Summary
+        run: |
+          Write-Host "================================"
+          Write-Host "Kubernetes Deployment Complete!"
+          Write-Host "================================"
+          Write-Host ""
+          Write-Host "Pods:"
+          kubectl get pods -n singularity
+          Write-Host ""
+          Write-Host "Services:"
+          kubectl get svc -n singularity
+          Write-Host ""
+          Write-Host "Ingress:"
+          kubectl get ingress -n singularity
+          Write-Host ""
+
+  notify:
+    name: Notify Deployment Status
+    runs-on: windows-latest
+    needs: [build, deploy-podman, deploy-kubernetes]
+    if: always()
+    steps:
+      - name: Check Status
+        run: |
+          if (${{ needs.deploy-podman.result }} -eq 'success' -or ${{ needs.deploy-kubernetes.result }} -eq 'success') {
+            Write-Host "✅ Deployment successful!"
+            exit 0
+          } else {
+            Write-Host "❌ Deployment failed!"
+            exit 1
+          }
