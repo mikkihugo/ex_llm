@@ -65,16 +65,30 @@
 - **Depends On**: Item #1 (metrics) + Item #2 (aggregator)
 - **Files**: `lib/singularity/agents/evolution.ex`, `lib/singularity/execution/feedback/analyzer.ex`
 
-### 5. **Complete GPU Acceleration for Remaining Embedding Models** (3-5 days)
-- **Why**: Only Qodo-Embed has GPU (33% done). Jina v3 & MiniLM need ONNX GPU inference
-- **What**:
-  - Implement real ONNX inference for Jina v3 (uncomment `ort` crate, add GPU code)
-  - Implement real ONNX inference for MiniLM-L6-v2
-  - Add Metal support for macOS (Candle supports it)
-  - Run benchmarks to verify speedups
-- **Current Status**: 33% complete (Qodo-Embed ✅, Jina v3 ❌, MiniLM ❌, Metal ❌)
-- **Impact**: 10-100x speedup for pattern mining once all 3 models are GPU-accelerated
-- **Files**: `rust/embedding_engine/src/models.rs`, Cargo.toml (uncomment ort crate)
+### 5. **Optional: Implement Alternative Embedding Backends** (Lower priority)
+
+**Current Status**: ✅ GPU acceleration is FULLY COMPLETE for production model!
+
+**What's Actually Running:**
+- ✅ **Qodo-Embed-1** (Candle backend) - REAL inference with CUDA GPU support enabled
+- ⚠️ **Google AI fallback** (FREE tier) - Used if Rust NIF unavailable
+- ❌ **Jina v3 & MiniLM** (ONNX) - Architecturally planned but stubbed (mock embeddings)
+
+**Why Priority #5 is NOT urgent:**
+- GPU is already working for the production model (Qodo-Embed)
+- ONNX models are alternatives/fallbacks, not replacements
+- Main evolution loop (Priorities 1-4) doesn't depend on them
+
+**Optional Implementation (if you want):**
+- Implement real ONNX inference for Jina v3 (uncomment `ort` crate in Cargo.toml)
+- Implement real ONNX inference for MiniLM-L6-v2
+- Add Metal support for macOS developers
+- Add ROCm support for AMD GPU users
+- Benchmark models to compare quality/speed
+
+**Note on NIF Compilation:**
+- ⚠️ `skip_compilation?: true` in embedding_engine.ex means NIF is pre-compiled, not recompiled with `mix compile`
+- This is a development/deployment concern, not a GPU concern
 
 ---
 

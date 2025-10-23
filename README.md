@@ -234,10 +234,10 @@ Binary cache
    - Safe evolution is critical
    - Depends on: Items #1 & #2
 
-5. **Complete GPU Acceleration for Embedding Models** (3-5 days)
-   - Qodo-Embed has GPU ✅, but Jina v3 & MiniLM need ONNX GPU inference
-   - Add Metal support for macOS, ROCm for AMD
-   - Performance target: 10-100x speedup for pattern mining
+5. **Optional: Alternative Embedding Backends** (Lower priority)
+   - GPU is ALREADY COMPLETE ✅ (Qodo-Embed with CUDA working)
+   - Alternative models (Jina v3, MiniLM) are architecturally planned but optional
+   - Not blocking the evolution loop (Priorities 1-4 are the critical path)
 
 **Full Details**: See `SELFEVOLVE.md` (architecture clarity + top 5 action items)
 **Architecture Guide**: See `docs/architecture/AGENTS.md` (agent design patterns)
