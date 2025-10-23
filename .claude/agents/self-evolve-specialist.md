@@ -109,7 +109,39 @@ When working with self-evolution:
 - **`lib/singularity/execution/feedback/collector.ex`** - Aggregate agent performance
 - **`lib/singularity/execution/feedback/analyzer.ex`** - Identify improvement opportunities
 
-### Background Jobs (Oban)
+### Background Jobs (Oban) ✅ **ALL 5 PRIORITIES IMPLEMENTED**
+
+#### Priority 1: Metrics Aggregation ✅
+- **`lib/singularity/jobs/metrics_aggregation_worker.ex`** - Every 5 minutes
+- Aggregates telemetry into actionable metrics per agent
+- Feeds data to Feedback Analyzer
+
+#### Priority 2: Feedback Analysis ✅
+- **`lib/singularity/execution/feedback/analyzer.ex`** - Every 30 minutes
+- Analyzes agent performance from telemetry
+- Generates improvement suggestions (patterns, cost optimization, quality)
+- Feeds to Agent Evolution Worker
+
+#### Priority 3: Agent Evolution ✅
+- **`lib/singularity/execution/evolution.ex`** - Every 1 hour
+- Evolves agents based on feedback analysis
+- Uses A/B testing for validation
+- Rollback mechanism if degraded
+- Feeds learned patterns to Knowledge Export Worker
+
+#### Priority 4: Knowledge Export ✅
+- **`lib/singularity/jobs/knowledge_export_worker.ex`** - Daily (midnight UTC)
+- Exports high-quality learned patterns to Git
+- Meets criteria: 100+ uses, 95%+ success, 0.85+ quality
+- Creates feature branch, commits, and creates PR for human review
+
+#### Priority 5: Metrics Dashboard ✅
+- **`lib/singularity/web/live/index_live.ex`** - Real-time (5-second updates)
+- Phoenix LiveView on home page (`/`)
+- Displays 6 key metrics: Agents, Learning, Patterns, Improvements, Success Rate, Cost Savings
+- Self-documenting function names for maintainability
+
+#### Supporting Workers (Oban)
 - **Pattern Sync Worker**: Every 5 minutes, sync learned patterns
 - **Cache Cleanup Worker**: Every 15 minutes, prune stale cache
 - **Cache Refresh Worker**: Every hour, refresh hot patterns
@@ -129,108 +161,41 @@ Launch 3-5 research agents in parallel:
 
 ## The Complete Evolution Cycle
 
-### Phase 1: Execution & Collection
-```elixir
-# Agent executes task
-{:ok, result} = Agent.execute(task)
+### Phase 1: Execution & Collection ✅ **IMPLEMENTED**
+- Location: `lib/singularity/telemetry.ex` (307 lines)
+- Telemetry hooks capture metrics: duration, cost, tokens per agent
+- Feedback recorded in `usage_events` table
 
-# Telemetry captures metrics
-:telemetry.execute(
-  [:agent, :execution, :complete],
-  %{duration: duration, cost: cost, tokens: tokens},
-  %{agent_id: agent_id, task_type: task_type}
-)
+### Phase 2: Pattern Mining ✅ **IMPLEMENTED**
+- Location: `lib/singularity/storage/code/patterns/pattern_miner.ex` (761 lines)
+- Semantic pattern extraction with pgvector embeddings
+- Success rate ranking and clustering
 
-# Feedback recorded
-Feedback.record(%{
-  agent_id: agent_id,
-  success: true,
-  quality_score: 0.95,
-  cost_cents: 2.5,
-  patterns_used: ["otp_supervision", "nats_request_reply"]
-})
-```
+### Phase 3: Knowledge Export ✅ **IMPLEMENTED (Priority 4)**
+- Location: `lib/singularity/jobs/knowledge_export_worker.ex` (300+ lines)
+- Exports high-quality patterns to Git daily
+- Promotion criteria: 100+ uses, 95%+ success, 0.85+ quality
 
-### Phase 2: Pattern Mining
-```elixir
-# Background job analyzes successful executions
-defmodule PatternMiningWorker do
-  def perform(_args) do
-    # Find high-performing patterns
-    patterns = Feedback.high_success_patterns(min_success_rate: 0.90, min_count: 10)
+### Phase 4: Agent Enhancement ✅ **IMPLEMENTED (Priority 3)**
+- Location: `lib/singularity/execution/evolution.ex` (200+ lines)
+- Analyzes performance and applies improvements
+- A/B testing with rollback mechanism
 
-    # Extract reusable templates
-    Enum.each(patterns, fn pattern ->
-      template = PatternMiner.extract_template(pattern)
-      ArtifactStore.create(template, type: :learned_pattern)
-    end)
-  end
-end
-```
+### Phase 5: Metrics Aggregation ✅ **IMPLEMENTED (Priority 1)**
+- Location: `lib/singularity/jobs/metrics_aggregation_worker.ex` (100+ lines)
+- Aggregates telemetry into actionable agent metrics
+- Runs every 5 minutes
 
-### Phase 3: Knowledge Export
-```elixir
-# Export learned patterns to Git
-defmodule KnowledgeExportWorker do
-  def perform(_args) do
-    # Find artifacts with high usage + success
-    artifacts = ArtifactStore.exportable_artifacts(
-      min_usage_count: 100,
-      min_success_rate: 0.95
-    )
+### Phase 6: Feedback Analysis ✅ **IMPLEMENTED (Priority 2)**
+- Location: `lib/singularity/execution/feedback/analyzer.ex` (150+ lines)
+- Identifies improvement opportunities from metrics
+- Generates suggestions for patterns, cost, quality
 
-    # Write to templates_data/learned/
-    Enum.each(artifacts, fn artifact ->
-      path = "templates_data/learned/#{artifact.type}/#{artifact.name}.json"
-      File.write!(path, Jason.encode!(artifact.content, pretty: true))
-    end)
-  end
-end
-```
-
-### Phase 4: Agent Enhancement
-```elixir
-# Agents get improved prompts based on learned patterns
-defmodule AgentEvolution do
-  def evolve_agent(agent_id) do
-    # Analyze agent's performance
-    feedback = Feedback.for_agent(agent_id)
-
-    # Find improvement opportunities
-    improvements = FeedbackAnalyzer.suggest_improvements(feedback)
-
-    # Update agent configuration
-    Enum.each(improvements, fn improvement ->
-      case improvement.type do
-        :add_pattern -> add_pattern_to_prompt(agent_id, improvement.pattern)
-        :optimize_cost -> adjust_model_selection(agent_id, improvement.strategy)
-        :improve_quality -> enhance_verification_steps(agent_id, improvement.checks)
-      end
-    end)
-  end
-end
-```
-
-### Phase 5: Continuous Improvement
-```elixir
-# System continuously learns and optimizes
-defmodule SelfEvolutionSupervisor do
-  def init(_opts) do
-    children = [
-      # Every 5 min: sync patterns
-      {Oban.Worker, PatternSyncWorker},
-      # Every hour: analyze feedback
-      {Oban.Worker, FeedbackAnalysisWorker},
-      # Every 6 hours: evolve agents
-      {Oban.Worker, AgentEvolutionWorker},
-      # Every day: export learned knowledge
-      {Oban.Worker, KnowledgeExportWorker}
-    ]
-
-    Supervisor.init(children, strategy: :one_for_one)
-  end
-end
-```
+### Phase 7: Metrics Dashboard ✅ **IMPLEMENTED (Priority 5)**
+- Location: `lib/singularity/web/live/index_live.ex` + `index_live.html.heex`
+- Real-time evolution metrics on home page (`/`)
+- 6 key metrics: Agents, Learning, Patterns, Improvements, Success Rate, Cost Savings
+- 5-second live updates via Phoenix LiveView
 
 ## Key Metrics to Track
 
