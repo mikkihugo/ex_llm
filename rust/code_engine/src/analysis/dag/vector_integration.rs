@@ -71,8 +71,8 @@ use serde::{Deserialize, Serialize};
 // use crate::crates::universal_parser::metadata_interface::{
 //   CommonDocumentationMetadata, DocumentationMetadataProvider,
 // };
-use crate::storage::graph::ComplexityMetrics;
-use crate::storage::graph::{DAGStats, Graph, GraphHandle};
+use crate::domain::metrics::ComplexityMetrics;
+use crate::graph::{DAGStats, Graph, GraphHandle};
 use crate::domain::files::CodeMetadata;
 
 /// Placeholder for PromptCoordinator

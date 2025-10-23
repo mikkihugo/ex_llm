@@ -7,6 +7,26 @@ use serde::{Deserialize, Serialize};
 
 use super::symbols::CodeSymbols;
 
+/// Semantic features extracted from code vectors
+///
+/// Represents high-level semantic characteristics of code derived from vector embeddings.
+/// These features capture domain knowledge, architectural patterns, and code characteristics.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SemanticFeatures {
+  /// Domain categories (e.g., "domain:ecommerce", "domain:payments")
+  pub domains: Vec<String>,
+  /// Architectural and design patterns (e.g., "pattern:singleton", "behavior:observer")
+  pub patterns: Vec<String>,
+  /// Technical features (e.g., "functionality:async", "cognitive:high")
+  pub features: Vec<String>,
+  /// Business context and use cases
+  pub business_context: Vec<String>,
+  /// Performance characteristics (e.g., "performance:optimized", "cached")
+  pub performance: Vec<String>,
+  /// Security characteristics (e.g., "security:authenticated", "encrypted")
+  pub security: Vec<String>,
+}
+
 /// File node in the vector-enhanced DAG
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileNode {
@@ -16,6 +36,8 @@ pub struct FileNode {
   pub vectors: Vec<String>,
   /// Comprehensive code metadata (includes all semantic features)
   pub metadata: CodeMetadata,
+  /// Semantic features extracted from vectors (domains, patterns, features, etc.)
+  pub semantic_features: SemanticFeatures,
   /// Dependencies extracted from code (also in metadata.dependencies)
   pub dependencies: Vec<String>,
   /// Related files based on vector similarity (also in metadata.related_files)
@@ -47,6 +69,8 @@ pub struct CodeMetadata {
   pub file_type: String,
   
   // === COMPLEXITY METRICS ===
+  /// Overall complexity score (0-100, derived from multiple metrics)
+  pub complexity: f64,
   /// Cyclomatic complexity
   pub cyclomatic_complexity: f64,
   /// Cognitive complexity
@@ -147,6 +171,10 @@ pub struct CodeMetadata {
   pub imports: Vec<String>,
   /// Export statements
   pub exports: Vec<String>,
+
+  // === PARSED SYMBOLS ===
+  /// Parsed code symbols (functions, structs, enums, traits, etc.)
+  pub symbols: Option<CodeSymbols>,
 }
 
 impl Default for CodeMetadata {
@@ -160,6 +188,7 @@ impl Default for CodeMetadata {
       file_type: "source".to_string(),
       
       // Complexity metrics
+      complexity: 0.0,
       cyclomatic_complexity: 0.0,
       cognitive_complexity: 0.0,
       maintainability_index: 0.0,
@@ -219,12 +248,15 @@ impl Default for CodeMetadata {
       related_files: Vec::new(),
       imports: Vec::new(),
       exports: Vec::new(),
+
+      // Parsed symbols
+      symbols: None,
     }
   }
 }
 
-// SemanticFeatures removed - all semantic data is now in CodeMetadata!
-// Use CodeMetadata.domains, CodeMetadata.patterns, etc. instead
+// SemanticFeatures is now defined above and used by FileNode
+// It contains extracted semantic characteristics from code vectors
 
 /// File relationship in the DAG
 #[derive(Debug, Clone, Serialize, Deserialize)]

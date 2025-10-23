@@ -65,7 +65,7 @@ pub mod domain;   // Domain types (symbols, files, metrics, relationships)
 pub mod graph;    // Code dependency graphs and relationship modeling
 pub mod vectors;  // Vector embeddings and operations
 // pub mod embeddings; // DISABLED: Requires external embedding services (handled by Elixir)
-// pub mod analysis; // DISABLED: Requires refactoring - hardcoded storage::graph imports
+pub mod analysis; // Code analysis, control flow, dependencies, and semantic features
 pub mod api;      // API types
 pub mod parsing;  // Code parsing
 // paths module removed - NIF doesn't need file paths
@@ -123,16 +123,10 @@ pub use parsing::*;
 #[cfg(feature = "nif")]
 pub mod nif;
 
-// nif_bindings COMPLETELY DISABLED - analysis module required
-//
-// Root cause: analysis module imports `crate::storage::graph::GraphHandle`
-// but storage module doesn't exist (removed as part of refactoring).
-//
-// To re-enable nif_bindings:
-// 1. Refactor analysis/graph/code_graph.rs to import from crate::graph
-// 2. Fix all analysis/* imports of storage::graph to use crate::graph
-// 3. Move/create missing types: GraphHandle, SemanticFeatures, etc.
-// 4. Uncomment the line below
-//
-// #[cfg(feature = "nif")]
-// pub mod nif_bindings;
+// nif_bindings - Elixir NIF bindings for analysis functionality
+// Re-enabled after Phase 1-3 refactoring (commit: PHASE3):
+// - Phase 1: Added SemanticFeatures type, complexity field, symbols field to CodeMetadata
+// - Phase 2: Fixed all storage::graph imports to use crate::graph
+// - Phase 3: Re-enabled analysis module and nif_bindings
+#[cfg(feature = "nif")]
+pub mod nif_bindings;

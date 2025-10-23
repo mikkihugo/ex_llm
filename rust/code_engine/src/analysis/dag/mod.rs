@@ -30,6 +30,6 @@
 
 pub mod vector_integration;
 
-// Re-export graph types from storage
-pub use crate::storage::graph::*;
+// Re-export graph types (moved from storage to crate::graph)
+pub use crate::graph::*;
 pub use vector_integration::*;

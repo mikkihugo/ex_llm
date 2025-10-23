@@ -13,7 +13,7 @@ use tokio::sync::RwLock;
 
 use crate::{
   analysis::dag::vector_integration::FileAnalysisResult,
-  storage::graph::{Graph, GraphHandle},
+  graph::{Graph, GraphHandle},
 };
 
 /// Advanced analysis results with intelligent insights
@@ -372,7 +372,7 @@ impl CodeInsightsEngine {
         language: "rust".to_string(),
         last_modified: 0,
         file_type: "source".to_string(),
-        complexity: crate::storage::graph::ComplexityMetrics {
+        complexity: crate::domain::metrics::ComplexityMetrics {
           cyclomatic: 5.0,
           cognitive: 3.0,
           maintainability: 75.0,

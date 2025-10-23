@@ -3,11 +3,10 @@
 //! Exposes code_engine functions to Elixir via Rustler NIFs
 //! NO I/O - pure computation only!
 //!
-//! **DISABLED**: This module requires the analysis module to be enabled.
-//! The analysis module has hardcoded imports to non-existent storage::graph paths.
-//! To re-enable: Fix imports in analysis/* to use crate::graph instead of crate::storage::graph
-
-#![cfg(feature = "disabled_nif_bindings")]  // Disabled via feature gate
+//! **ENABLED**: Re-enabled after Phase 1-3 refactoring
+//! - Phase 1: Added missing type definitions (SemanticFeatures, complexity field, symbols field)
+//! - Phase 2: Fixed all storage::graph imports to use crate::graph
+//! - Phase 3: Uncommented analysis and nif_bindings modules
 
 use rustler::{Encoder, Env, NifStruct, Term};
 use serde::{Deserialize, Serialize};
