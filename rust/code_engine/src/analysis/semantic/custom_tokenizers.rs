@@ -557,6 +557,50 @@ impl TokenizerFactory {
   }
 }
 
+/// Semantic tokenizer wrapper for multi-language support
+///
+/// Provides language-specific tokenization via the factory pattern.
+/// Used for semantic analysis of code in various programming languages.
+pub struct SemanticTokenizer {
+  language: String,
+  tokenizer: Box<dyn CustomTokenizer>,
+}
+
+impl SemanticTokenizer {
+  /// Create a new semantic tokenizer for the given language
+  pub fn new(language: &str) -> Self {
+    // For semantic tokenization, we use code tokenization with language context
+    let data_type = DataType::Code {
+      language: language.to_string(),
+      content: String::new(),
+    };
+    let tokenizer = TokenizerFactory::create_tokenizer(&data_type);
+
+    Self {
+      language: language.to_string(),
+      tokenizer,
+    }
+  }
+
+  /// Tokenize content in the specified language
+  pub fn tokenize(&self, content: &str) -> Result<Vec<DataToken>> {
+    let data = DataType::Code {
+      language: self.language.clone(),
+      content: content.to_string(),
+    };
+    self.tokenizer.tokenize(&data)
+  }
+
+  /// Extract semantic keywords from content
+  pub fn extract_keywords(&self, content: &str) -> Result<Vec<String>> {
+    let data = DataType::Code {
+      language: self.language.clone(),
+      content: content.to_string(),
+    };
+    self.tokenizer.extract_keywords(&data)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

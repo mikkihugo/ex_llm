@@ -74,6 +74,7 @@ use serde::{Deserialize, Serialize};
 use crate::domain::metrics::ComplexityMetrics;
 use crate::graph::{DAGStats, Graph, GraphHandle};
 use crate::domain::files::CodeMetadata;
+use crate::analysis::results::{FileAnalysisResult, RustAnalysisResult, PythonAnalysisResult, DocumentationMetadata};
 
 /// Placeholder for PromptCoordinator
 #[derive(Debug, Clone)]
@@ -120,10 +121,8 @@ impl VectorIntegration {
 
   /// Analyze a file using our enhanced parsers and add it to the DAG
   pub async fn analyze_file(&mut self, file_path: &str, content: &str) -> Result<FileAnalysisResult, String> {
-    // Check cache first
-    if let Some(cached) = self.analysis_cache.get(file_path) {
-      return Ok(cached.clone());
-    }
+    // Note: Cache stores CodeMetadata, not FileAnalysisResult, so we can't use it directly here
+    // The full analysis would require recomputing vectors anyway
 
     // Use our enhanced parsers to extract metadata and vectors
     let (vectors, metadata) = self.parse_with_enhanced_parsers(file_path, content).await?;
@@ -144,8 +143,8 @@ impl VectorIntegration {
     // Create result
     let result = FileAnalysisResult { file_path: file_path.to_string(), vectors, metadata, related_files, similarity_scores: HashMap::new() };
 
-    // Cache the result
-    self.analysis_cache.insert(file_path.to_string(), result.clone());
+    // Cache the metadata for later reference
+    self.analysis_cache.insert(file_path.to_string(), result.metadata.clone());
 
     Ok(result)
   }

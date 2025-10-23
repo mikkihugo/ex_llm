@@ -177,6 +177,18 @@ pub struct CodeMetadata {
   pub symbols: Option<CodeSymbols>,
 }
 
+impl CodeMetadata {
+  /// Create CodeMetadata with minimal required fields
+  /// All other fields are initialized to sensible defaults
+  pub fn minimal(size: u64, lines: usize, language: String) -> Self {
+    let mut metadata = Self::default();
+    metadata.size = size;
+    metadata.lines = lines;
+    metadata.language = language;
+    metadata
+  }
+}
+
 impl Default for CodeMetadata {
   fn default() -> Self {
     Self {
@@ -186,14 +198,14 @@ impl Default for CodeMetadata {
       language: "unknown".to_string(),
       last_modified: 0,
       file_type: "source".to_string(),
-      
+
       // Complexity metrics
       complexity: 0.0,
       cyclomatic_complexity: 0.0,
       cognitive_complexity: 0.0,
       maintainability_index: 0.0,
       nesting_depth: 0,
-      
+
       // Code metrics
       function_count: 0,
       class_count: 0,
@@ -201,40 +213,40 @@ impl Default for CodeMetadata {
       enum_count: 0,
       trait_count: 0,
       interface_count: 0,
-      
+
       // Line metrics
       total_lines: 0,
       code_lines: 0,
       comment_lines: 0,
       blank_lines: 0,
-      
+
       // Halstead metrics
       halstead_vocabulary: 0,
       halstead_length: 0,
       halstead_volume: 0.0,
       halstead_difficulty: 0.0,
       halstead_effort: 0.0,
-      
+
       // PageRank & graph metrics
       pagerank_score: 0.0,
       centrality_score: 0.0,
       dependency_count: 0,
       dependent_count: 0,
-      
+
       // Performance metrics
       technical_debt_ratio: 0.0,
       code_smells_count: 0,
       duplication_percentage: 0.0,
-      
+
       // Security metrics
       security_score: 0.0,
       vulnerability_count: 0,
-      
+
       // Quality metrics
       quality_score: 0.0,
       test_coverage: 0.0,
       documentation_coverage: 0.0,
-      
+
       // Semantic features
       domains: Vec::new(),
       patterns: Vec::new(),
@@ -242,7 +254,7 @@ impl Default for CodeMetadata {
       business_context: Vec::new(),
       performance_characteristics: Vec::new(),
       security_characteristics: Vec::new(),
-      
+
       // Dependencies & relationships
       dependencies: Vec::new(),
       related_files: Vec::new(),

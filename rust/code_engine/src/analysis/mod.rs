@@ -23,6 +23,7 @@ pub mod graph;
 pub mod metrics;
 pub mod multilang;
 pub mod performance;
+pub mod results;
 pub mod security;
 pub mod semantic;
 
@@ -33,5 +34,6 @@ pub use graph::*;
 pub use metrics::*;
 pub use multilang::*;
 pub use performance::*;
+pub use results::*;
 pub use security::*;
 pub use semantic::*;

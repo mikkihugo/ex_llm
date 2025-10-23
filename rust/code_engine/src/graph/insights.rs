@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
 use crate::{
-  analysis::dag::vector_integration::FileAnalysisResult,
+  analysis::results::{FileAnalysisResult, CodePatternDatabase},
   graph::{Graph, GraphHandle},
 };
 
@@ -363,30 +363,18 @@ impl CodeInsightsEngine {
   async fn perform_basic_analysis(&self, file_path: &str, content: &str) -> Result<FileAnalysisResult, String> {
     // This would integrate with our VectorIntegration
     // For now, create a basic result
+    let mut metadata = crate::domain::files::CodeMetadata::minimal(
+      content.len() as u64,
+      content.lines().count(),
+      "rust".to_string(),
+    );
+    metadata.file_type = "source".to_string();
+    metadata.complexity = 5.0; // Basic complexity score
+
     Ok(FileAnalysisResult {
       file_path: file_path.to_string(),
       vectors: vec!["sample vector".to_string()],
-      metadata: crate::domain::files::CodeMetadata {
-        size: content.len() as u64,
-        lines: content.lines().count(),
-        language: "rust".to_string(),
-        last_modified: 0,
-        file_type: "source".to_string(),
-        complexity: crate::domain::metrics::ComplexityMetrics {
-          cyclomatic: 5.0,
-          cognitive: 3.0,
-          maintainability: 75.0,
-          function_count: 10,
-          class_count: 2,
-          halstead_volume: 0.0,
-          halstead_difficulty: 0.0,
-          halstead_effort: 0.0,
-          total_lines: content.lines().count(),
-          code_lines: content.lines().count(),
-          comment_lines: 0,
-          blank_lines: 0,
-        },
-      },
+      metadata,
       related_files: vec![],
       similarity_scores: HashMap::new(),
     })
@@ -649,42 +637,8 @@ impl CodeInsightsEngine {
 }
 
 /// CodePattern database for code pattern detection
-// CodePatternDatabase removed - use codebase::storage::CodebaseDatabase instead
-
-impl CodePatternDatabase {
-  fn new() -> Self {
-    let mut patterns = HashMap::new();
-
-    // Add some common patterns
-    patterns.insert(
-      "singleton".to_string(),
-      CodeCodePattern {
-        name: "Singleton CodePattern".to_string(),
-        pattern_type: CodePatternType::DesignCodePattern,
-        confidence: 0.9,
-        lines: vec![],
-        description: "Singleton pattern implementation".to_string(),
-        benefits: vec!["Single instance".to_string(), "Global access".to_string()],
-        potential_issues: vec!["Testing difficulties".to_string(), "Global state".to_string()],
-      },
-    );
-
-    Self { patterns }
-  }
-
-  fn detect_patterns(&self, content: &str) -> Vec<CodeCodePattern> {
-    let mut detected = Vec::new();
-
-    // Simple pattern detection
-    if content.contains("static mut") || content.contains("lazy_static") {
-      if let Some(pattern) = self.patterns.get("singleton") {
-        detected.push(pattern.clone());
-      }
-    }
-
-    detected
-  }
-}
+// CodePatternDatabase removed - use crate::analysis::results::CodePatternDatabase instead
+// The old impl CodePatternDatabase has been removed - use the results module instead
 
 /// Insight engine for generating intelligent insights
 struct InsightEngine {
