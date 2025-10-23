@@ -12,6 +12,10 @@ use parking_lot::RwLock;
 use std::sync::Arc;
 use tracing::{info, warn, error};
 
+rustler::atoms! {
+    error,
+}
+
 /// Custom error type for embedding engine NIFs
 #[derive(Debug, thiserror::Error)]
 pub enum EmbeddingError {
@@ -49,9 +53,15 @@ pub enum EmbeddingError {
 // Implement Encoder to convert errors to Erlang terms
 impl Encoder for EmbeddingError {
     fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
-        let error_atom = rustler::atoms::error().encode(env);
         let reason = self.to_string().encode(env);
-        (error_atom, reason).encode(env)
+        (error(), reason).encode(env)
+    }
+}
+
+// Implement From trait for rustler error conversion
+impl From<EmbeddingError> for rustler::Error {
+    fn from(err: EmbeddingError) -> Self {
+        rustler::Error::Term(Box::new(err.to_string()))
     }
 }
 
