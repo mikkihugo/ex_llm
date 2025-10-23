@@ -17,6 +17,7 @@ node_modules/
 # Nix build artifacts
 result/
 result-*/
+flake.lock  # Machine-specific, generated per architecture
 
 # AI Provider Credentials - NEVER COMMIT
 .env
