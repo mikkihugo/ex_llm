@@ -78,6 +78,8 @@ defmodule Singularity.Repo.Migrations.OptimizeWithCitextIntarrayBloom do
     if graph_nodes_exists do
       execute "ALTER TABLE graph_nodes ALTER COLUMN name TYPE citext"
       IO.puts("   ✓ graph_nodes: name → citext")
+    else
+      IO.puts("   ⊘ graph_nodes: skipped (table not created yet)")
     end
 
     # code_files (skip language - used by generated column search_vector)
