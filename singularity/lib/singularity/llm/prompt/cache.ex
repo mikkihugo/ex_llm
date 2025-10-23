@@ -121,92 +121,23 @@ defmodule Singularity.LLM.Prompt.Cache do
   ## Private Functions
 
   defp generate_embedding(text) do
-    # Use lightweight embedding model (much cheaper than Claude/GPT-4)
-    # Options:
-    # 1. Google text-embedding-004 (FREE for < 15 million tokens/month!)
-    # 2. OpenAI text-embedding-3-small ($0.02/1M tokens)
-    # 3. Local sentence-transformers (free but need GPU)
+    # Use pure local ONNX embeddings via Singularity.EmbeddingGenerator
+    # - No API calls, works offline
+    # - No API keys required
+    # - GPU accelerated when available
+    # - Deterministic results
 
-    case Application.get_env(:singularity, :embedding_provider) do
-      :google -> generate_google_embedding(text)
-      :openai -> generate_openai_embedding(text)
-      :local -> generate_local_embedding(text)
-      # Default to Google (FREE!)
-      _ -> generate_google_embedding(text)
-    end
-  end
-
-  defp generate_openai_embedding(text) do
-    # Call OpenAI embeddings API
-    # text-embedding-ada-002: 1536 dimensions, $0.0001/1K tokens
-
-    case Singularity.Integration.OpenAI.embed(text) do
+    case Singularity.EmbeddingGenerator.embed(text) do
       {:ok, embedding} ->
-        # Convert to Pgvector format
-        Pgvector.new(embedding)
+        embedding
 
       {:error, reason} ->
-        Logger.error("Failed to generate embedding", reason: reason)
-        # Return zero vector as fallback
-        Pgvector.new(List.duplicate(0.0, 1536))
+        Logger.error("Failed to generate local embedding", reason: inspect(reason))
+        # Fallback: return zero vector (embedding will be missing, not cached)
+        Pgvector.new(List.duplicate(0.0, 384))
     end
   end
 
-  defp generate_google_embedding(text) do
-    # Google text-embedding-004 or gemini-embedding-001
-    # - 768 dimensions (default)
-    # - FREE up to 15 million tokens/month
-    # - Best multilingual support (100+ languages)
-    # API: https://ai.google.dev/gemini-api/docs/embeddings
-
-    api_key =
-      System.get_env("GOOGLE_AI_STUDIO_API_KEY") ||
-        System.get_env("GOOGLE_AI_API_KEY") ||
-        Application.get_env(:singularity, :google_ai_api_key)
-
-    if is_nil(api_key) do
-      Logger.error("GOOGLE_AI_STUDIO_API_KEY not set, falling back to zero vector")
-      Pgvector.new(List.duplicate(0.0, 768))
-    else
-      model = Application.get_env(:singularity, :google_embedding_model, "text-embedding-004")
-      url = "https://generativelanguage.googleapis.com/v1beta/models/#{model}:embedContent"
-
-      body = %{
-        "model" => "models/#{model}",
-        "content" => %{
-          "parts" => [%{"text" => text}]
-        }
-      }
-
-      case Req.post(url,
-             json: body,
-             headers: [{"x-goog-api-key", api_key}],
-             receive_timeout: 30_000
-           ) do
-        {:ok, %{status: 200, body: %{"embedding" => %{"values" => embedding}}}}
-        when is_list(embedding) ->
-          Pgvector.new(embedding)
-
-        {:ok, %{status: status, body: error_body}} ->
-          Logger.error("Google embedding API error",
-            status: status,
-            error: error_body
-          )
-
-          Pgvector.new(List.duplicate(0.0, 768))
-
-        {:error, reason} ->
-          Logger.error("Failed to call Google embedding API", reason: reason)
-          Pgvector.new(List.duplicate(0.0, 768))
-      end
-    end
-  end
-
-  defp generate_local_embedding(_text) do
-    # TODO: Integrate local sentence-transformers model
-    # For now, return zero vector
-    Pgvector.new(List.duplicate(0.0, 768))
-  end
 
   defp calculate_similarity(embedding1, embedding2) do
     # Cosine similarity: 1 - cosine_distance

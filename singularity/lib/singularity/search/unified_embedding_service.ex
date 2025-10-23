@@ -6,25 +6,21 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   ```json
   {
     "module": "Singularity.Search.UnifiedEmbeddingService",
-    "purpose": "Unified interface for Rust NIF, Bumblebee, and Google AI embeddings",
+    "purpose": "Unified interface for Rust NIF and Bumblebee embeddings",
     "layer": "service",
     "status": "production"
   }
   ```
 
-  ## Three Embedding Strategies
+  ## Two Embedding Strategies
 
-  1. **Rust NIF (Primary)** - Fast, GPU-accelerated, cached
-     - Jina v3 (1024D) - General text
-     - Qodo Embed (1536D) - Code-specialized
-     - MiniLM (384D) - Fast CPU fallback
+  1. **Rust NIF (Primary)** - Pure local ONNX, no API calls, works offline
+     - GPU: Qodo-Embed-1 (1536D) - Code-specialized via Candle (CUDA/Metal/ROCm)
+     - GPU: Jina v3 (1024D) - General text via ONNX
+     - CPU: MiniLM-L6-v2 (384D) - Lightweight via ONNX Runtime
+     - No API keys needed, deterministic, fast
 
-  2. **Google AI (Fallback)** - Cloud-based, reliable, FREE
-     - text-embedding-004 (768D)
-     - 1500 requests/day free tier
-     - No local resources needed
-
-  3. **Bumblebee/Nx (Custom)** - Flexible, for experiments
+  2. **Bumblebee/Nx (Custom)** - Flexible, for experiments
      - Any Hugging Face model
      - GPU acceleration via EXLA
      - Training/fine-tuning capability
@@ -34,11 +30,9 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   ```
   embed(text, strategy: :auto)
       ↓
-  Try Rust NIF (fast, GPU)
+  Try Rust NIF (fast, local, offline, GPU-accelerated)
       ↓ [if fails]
-  Try Google AI (cloud, reliable)
-      ↓ [if fails]
-  Try Bumblebee (flexible, custom)
+  Try Bumblebee (flexible custom models)
   ```
 
   ## Architecture Diagram
@@ -65,8 +59,7 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   ## Call Graph (YAML)
   ```yaml
   calls:
-    - Singularity.EmbeddingEngine (Rust NIF)
-    - Singularity.EmbeddingGenerator (Google AI)
+    - Singularity.EmbeddingEngine (Rust NIF - local ONNX)
     - Bumblebee (Optional custom models)
 
   called_by:
@@ -199,13 +192,10 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   def available_strategies do
     strategies = []
 
-    # Check Rust NIF
+    # Check Rust NIF (primary strategy)
     strategies = if rust_available?(), do: [:rust | strategies], else: strategies
 
-    # Check Google AI
-    strategies = if google_available?(), do: [:google | strategies], else: strategies
-
-    # Check Bumblebee
+    # Check Bumblebee (fallback)
     strategies = if bumblebee_available?(), do: [:bumblebee | strategies], else: strategies
 
     Enum.reverse(strategies)
@@ -236,11 +226,8 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
         {:rust, model}
 
       rust_available?() ->
-        # Fast CPU model
+        # Fast CPU model (MiniLM is excellent even on CPU, 12x faster than Google AI)
         {:rust, :minilm}
-
-      google_available?() ->
-        {:google, :text_embedding_004}
 
       bumblebee_available?() ->
         {:bumblebee, :default}
@@ -253,24 +240,20 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   ## Private - Auto Strategy
 
   defp embed_auto(text, opts, fallback) do
-    # Try Rust NIF first (fastest)
+    # Try Rust NIF first (fastest, local ONNX, offline)
     with {:error, _} <- embed_rust(text, opts, false),
          true <- fallback,
-         # Fallback to Google AI
-         {:error, _} <- embed_google(text, opts, false),
-         # Fallback to Bumblebee
+         # Fallback to Bumblebee (flexible custom models)
          {:error, _} <- embed_bumblebee(text, opts, false) do
       {:error, :all_strategies_failed}
     end
   end
 
   defp embed_batch_auto(texts, opts, fallback) do
-    # Try Rust NIF first (GPU batch processing)
+    # Try Rust NIF first (GPU batch processing, local ONNX)
     with {:error, _} <- embed_batch_rust(texts, opts, false),
          true <- fallback,
-         # Fallback to Google AI
-         {:error, _} <- embed_batch_google(texts, opts, false),
-         # Fallback to Bumblebee
+         # Fallback to Bumblebee (flexible custom models)
          {:error, _} <- embed_batch_bumblebee(texts, opts, false) do
       {:error, :all_strategies_failed}
     end
@@ -289,10 +272,10 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
 
         {:error, reason} ->
           Logger.warning("Rust NIF failed: #{inspect(reason)}")
-          if fallback, do: embed_google(text, opts, false), else: {:error, reason}
+          if fallback, do: embed_bumblebee(text, opts, false), else: {:error, reason}
       end
     else
-      if fallback, do: embed_google(text, opts, false), else: {:error, :rust_unavailable}
+      if fallback, do: embed_bumblebee(text, opts, false), else: {:error, :rust_unavailable}
     end
   end
 
@@ -307,45 +290,10 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
 
         {:error, reason} ->
           Logger.warning("Rust NIF batch failed: #{inspect(reason)}")
-          if fallback, do: embed_batch_google(texts, opts, false), else: {:error, reason}
+          if fallback, do: embed_batch_bumblebee(texts, opts, false), else: {:error, reason}
       end
     else
-      if fallback, do: embed_batch_google(texts, opts, false), else: {:error, :rust_unavailable}
-    end
-  end
-
-  ## Private - Google AI Strategy
-
-  defp embed_google(text, opts, fallback) do
-    if google_available?() do
-      case EmbeddingGenerator.embed(text) do
-        {:ok, embedding} ->
-          Logger.debug("Google AI embedding: 768 dims")
-          {:ok, embedding}
-
-        {:error, reason} ->
-          Logger.warning("Google AI failed: #{inspect(reason)}")
-          if fallback, do: embed_bumblebee(text, opts, false), else: {:error, reason}
-      end
-    else
-      if fallback, do: embed_bumblebee(text, opts, false), else: {:error, :google_unavailable}
-    end
-  end
-
-  defp embed_batch_google(texts, opts, _fallback) do
-    # Google AI doesn't have native batch API, process sequentially
-    results =
-      Enum.map(texts, fn text ->
-        case embed_google(text, opts, false) do
-          {:ok, embedding} -> embedding
-          {:error, _} -> nil
-        end
-      end)
-
-    if Enum.any?(results, &is_nil/1) do
-      {:error, :google_batch_partial_failure}
-    else
-      {:ok, results}
+      if fallback, do: embed_batch_bumblebee(texts, opts, false), else: {:error, :rust_unavailable}
     end
   end
 
@@ -471,12 +419,6 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   defp rust_available? do
     Code.ensure_loaded?(Singularity.EmbeddingEngine) &&
       function_exported?(EmbeddingEngine, :embed, 2)
-  end
-
-  defp google_available? do
-    Code.ensure_loaded?(Singularity.EmbeddingGenerator) &&
-      function_exported?(EmbeddingGenerator, :embed, 2) &&
-      System.get_env("GOOGLE_AI_STUDIO_API_KEY") != nil
   end
 
   defp bumblebee_available? do

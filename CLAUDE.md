@@ -279,7 +279,8 @@ Elixir Code
 
 **Semantic Code Search**
 - `semantic_code_search.ex`: Main search interface
-- `embedding_service.ex`: Embedding generation (Google text-embedding-004)
+- `embedding_generator.ex`: Pure local ONNX embeddings via Rust NIF (GPU/CPU auto-detection)
+- `embedding_model_loader.ex`: Model lifecycle management (Jina v3, Qodo-Embed, MiniLM)
 - `code_store.ex`: Code chunk storage with pgvector
 - `polyglot_code_parser.ex`: Multi-language parsing
 
@@ -380,7 +381,6 @@ fn my_function(arg: String) -> String
 ## Environment Variables
 
 Required in `.env` or shell:
-- `GOOGLE_AI_STUDIO_API_KEY` - For embeddings (free tier)
 - `ANTHROPIC_API_KEY` - Claude API
 - `OPENAI_API_KEY` - OpenAI API
 - `DATABASE_URL` - PostgreSQL connection
@@ -390,6 +390,12 @@ Optional (with defaults):
 - `NATS_PORT` - NATS server port (default: 4222)
   - NatsOrchestrator gracefully degrades if NATS is unavailable
   - Start NATS with: `nats-server -js`
+
+**Note on Embeddings:**
+- ✅ Pure local ONNX inference (no API keys required)
+- Auto-detects GPU (CUDA/Metal/ROCm) and uses appropriate model
+- `CUDA_VISIBLE_DEVICES` or `HIP_VISIBLE_DEVICES` set → Qodo-Embed (1536D)
+- No GPU detected → MiniLM-L6-v2 (384D) on CPU
 
 ## Troubleshooting
 

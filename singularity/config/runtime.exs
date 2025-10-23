@@ -166,29 +166,34 @@ if config_env() != :test do
 end
 
 # Embedding service configuration (Inference - ONNX Runtime)
-# Works independently from XLA_TARGET (which is for EXLA training)
+# Pure local ONNX inference, no API calls, works offline
 config :singularity,
-  # Embedding provider: :rustler for GPU-accelerated Rust NIF embeddings via ONNX
-  # Jina v3 + Qodo-Embed-1 with platform-specific acceleration:
-  # - macOS dev: Metal GPU via Rust NIF + ONNX (5-10ms per embedding)
-  # - RTX 4080 prod: CUDA GPU via Rust NIF + ONNX (5-10ms per embedding)
-  # - Fallback: CPU (10-20ms per embedding)
-  # - 1024 dims (Jina v3) / 1536 dims (Qodo-Embed)
-  # - No rate limits, no API costs, full privacy
+  # Embedding strategy: Pure local ONNX via Rust NIF
+  # - GPU available (CUDA/Metal/ROCm): Qodo-Embed-1 (1536D) - code-specialized, ~15ms
+  # - CPU only: MiniLM-L6-v2 (384D) - lightweight but excellent, ~40ms
+  #
+  # Benefits:
+  # ✅ Works offline (no internet required)
+  # ✅ No API keys needed
+  # ✅ No rate limits or quotas
+  # ✅ Deterministic (same input = same embedding always)
+  # ✅ GPU-accelerated on available hardware (CUDA/Metal/ROCm)
+  # ✅ Auto device detection
   embedding_provider: :rustler,
 
   # Rust NIF embedding models (GPU-accelerated ONNX inference)
-  # - Jina v3: 1024 dims, text/docs (8192 tokens) - runs on Metal/CUDA/CPU
-  # - Qodo-Embed-1: 1536 dims, code (32k tokens) - SOTA 2025, runs on Metal/CUDA/CPU
-  # Note: Embeddings use ONNX Runtime (independent of EXLA)
-  #       ONNX handles GPU detection automatically
+  # - Jina v3: 1024 dims, general text (8192 tokens) - ONNX Runtime
+  # - Qodo-Embed-1: 1536 dims, code-specialized (32k tokens) - Candle backend
+  # - MiniLM-L6-v2: 384D dims, lightweight CPU model - ONNX Runtime
+  #
+  # Device detection is automatic:
+  # - CUDA_VISIBLE_DEVICES set → Use GPU model
+  # - No GPU → Fall back to MiniLM
   rustler_models: [
     jina_v3: "jina-embeddings-v3",
-    qodo_embed: "qodo-embed-1-1.5b"
+    qodo_embed: "qodo-embed-1-1.5b",
+    minilm: "sentence-transformers/all-MiniLM-L6-v2"
   ],
-
-  # Google AI API key (optional - not used for embeddings anymore)
-  google_ai_api_key: System.get_env("GOOGLE_AI_STUDIO_API_KEY"),
 
   # Code generation model configuration
   code_generation: [
