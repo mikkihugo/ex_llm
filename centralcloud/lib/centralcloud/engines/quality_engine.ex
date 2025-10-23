@@ -9,7 +9,7 @@ defmodule Centralcloud.Engines.QualityEngine do
   use Rustler,
     otp_app: :centralcloud,
     crate: :quality_engine,
-    path: "../../../rust/quality_engine"
+    path: "../../rust/quality_engine"
 
   require Logger
 

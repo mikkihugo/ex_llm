@@ -9,7 +9,7 @@ defmodule Centralcloud.Engines.CodeEngine do
   use Rustler,
     otp_app: :centralcloud,
     crate: :code_engine,
-    path: "../../../rust/code_engine"
+    path: "../../rust/code_engine"
 
   require Logger
 

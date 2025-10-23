@@ -9,7 +9,7 @@ defmodule Centralcloud.Engines.EmbeddingEngine do
   use Rustler,
     otp_app: :centralcloud,
     crate: :embedding_engine,
-    path: "../../../rust/embedding_engine"
+    path: "../../rust/embedding_engine"
 
   require Logger
 

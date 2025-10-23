@@ -10,7 +10,7 @@ defmodule Centralcloud.Engines.ArchitectureEngine do
   use Rustler,
     otp_app: :centralcloud,
     crate: :architecture_engine,
-    path: "../../../rust/architecture_engine"
+    path: "../../rust/architecture_engine"
 
   require Logger
 

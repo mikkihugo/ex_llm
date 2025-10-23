@@ -9,7 +9,7 @@ defmodule Centralcloud.Engines.ParserEngine do
   use Rustler,
     otp_app: :centralcloud,
     crate: :parser_engine,
-    path: "../../../rust/parser_engine"
+    path: "../../rust/parser_engine"
 
   require Logger
 

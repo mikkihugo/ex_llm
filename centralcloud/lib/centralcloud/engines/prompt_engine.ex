@@ -9,7 +9,7 @@ defmodule Centralcloud.Engines.PromptEngine do
   use Rustler,
     otp_app: :centralcloud,
     crate: :prompt_engine,
-    path: "../../../rust/prompt_engine"
+    path: "../../rust/prompt_engine"
 
   require Logger
 
