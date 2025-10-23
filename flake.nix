@@ -124,8 +124,9 @@
           nats = {
             name = "NATS Message Bus";
             purpose = "Distributed messaging for LLM requests and service communication";
-            ports = [4222 4223];
+            ports = [4222];
             jetstream = true;
+            websocket = 4223;  # Alternate protocol on same server
           };
 
           postgresql = {
@@ -497,10 +498,10 @@
             ${lib.concatMapStrings (serviceName:
               let service = services.${serviceName}; in
               if serviceName == "nats" && lib.elem serviceName env.services then ''
-              # NATS setup
+              # NATS setup (single server with multiple protocol bindings)
               export NATS_URL="nats://localhost:${toString (builtins.head service.ports)}"
-              export NATS_JETSTREAM_URL="nats://localhost:${toString (builtins.elemAt service.ports 1)}"
-              echo "📡 ${service.name} configured on port ${toString (builtins.head service.ports)} (client), ${toString (builtins.elemAt service.ports 1)} (websocket)"
+              echo "📡 ${service.name} configured on port ${toString (builtins.head service.ports)}"
+              ${if service ? websocket then ''echo "   WebSocket available on port ${toString service.websocket}"'' else ""}
               '' else if serviceName == "postgresql" && lib.elem serviceName env.services then ''
               # PostgreSQL setup
               export PGHOST="localhost"
