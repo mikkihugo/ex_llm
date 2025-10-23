@@ -230,12 +230,12 @@
             exec bunx --yes @google/gemini-cli "$@"
           '')
 
-          (writeScriptBin "gh-copilot" ''
+          (writeScriptBin "copilot" ''
             #!${bash}/bin/bash
-            echo "🤖 GitHub Copilot CLI - AI-powered command assistant"
-            echo "GitHub Copilot CLI provides AI assistance for command line tasks."
+            echo "🤖 GitHub Copilot CLI - AI-powered development assistant"
+            echo "GitHub Copilot CLI brings AI-powered coding assistance to your terminal."
             echo ""
-            exec bunx --yes @github-copilot/cli "$@"
+            exec bunx --yes @github/copilot "$@"
           '')
 
           (writeScriptBin "cursor-agent" ''
