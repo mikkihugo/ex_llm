@@ -11,6 +11,7 @@ use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use tokio::fs;
+use toml::Value;
 
 #[cfg(feature = "cargo-collector")]
 use super::rustsec_advisory::RustSecAdvisoryCollector;
@@ -29,6 +30,46 @@ pub struct CargoCollector {
 }
 
 impl CargoCollector {
+  /// Classify SPDX license identifier into license type and properties
+  fn classify_license(license_id: &str) -> (String, String, bool, bool, bool) {
+    let license_lower = license_id.to_lowercase();
+
+    // Determine license type and properties based on SPDX identifier
+    match license_lower.as_str() {
+      // Permissive licenses
+      "mit" | "bsd-2-clause" | "bsd-3-clause" | "apache-2.0" | "apache" |
+      "mpl-2.0" | "isc" | "wtfpl" | "0bsd" | "zlib" | "unlicense" => {
+        ("permissive".to_string(), license_id.to_string(), true, true, false)
+      },
+      // Copyleft licenses
+      "gpl-3.0" | "gpl-3.0-or-later" | "gpl-3.0-only" |
+      "gpl-2.0" | "gpl-2.0-or-later" | "gpl-2.0-only" |
+      "agpl-3.0" | "agpl-3.0-or-later" | "agpl-3.0-only" => {
+        ("copyleft".to_string(), license_id.to_string(), false, true, true)
+      },
+      // Weak copyleft
+      "lgpl-3.0" | "lgpl-3.0-or-later" | "lgpl-3.0-only" |
+      "lgpl-2.1" | "lgpl-2.1-or-later" | "lgpl-2.1-only" => {
+        ("weak-copyleft".to_string(), license_id.to_string(), true, true, true)
+      },
+      // Proprietary
+      "proprietary" => {
+        ("proprietary".to_string(), license_id.to_string(), false, false, false)
+      },
+      // Unknown or other
+      _ => {
+        // Default: assume permissive if not in exclusion list
+        if license_lower.contains("gpl") || license_lower.contains("agpl") {
+          ("copyleft".to_string(), license_id.to_string(), false, true, true)
+        } else if license_lower.contains("lgpl") {
+          ("weak-copyleft".to_string(), license_id.to_string(), true, true, true)
+        } else {
+          ("unknown".to_string(), license_id.to_string(), true, false, false)
+        }
+      }
+    }
+  }
+
   /// Create new cargo collector
   ///
   /// # Arguments
@@ -325,6 +366,44 @@ impl CargoCollector {
     Ok(snippets)
   }
 
+  /// Extract license information from Cargo.toml
+  async fn extract_license_from_manifest(
+    &self,
+    crate_dir: &Path,
+  ) -> Result<Option<crate::storage::LicenseInfo>> {
+    let manifest_path = crate_dir.join("Cargo.toml");
+
+    if !manifest_path.exists() {
+      return Ok(None);
+    }
+
+    let content = fs::read_to_string(&manifest_path).await?;
+    let toml: Value = toml::from_str(&content)
+      .context("Failed to parse Cargo.toml")?;
+
+    // Try to extract license from [package] section
+    let license_str = toml
+      .get("package")
+      .and_then(|p| p.get("license"))
+      .and_then(|l| l.as_str())
+      .map(|s| s.to_string());
+
+    if let Some(license_id) = license_str {
+      let (license_type, license_id_normalized, commercial_use, requires_attribution, is_copyleft) =
+        Self::classify_license(&license_id);
+
+      Ok(Some(crate::storage::LicenseInfo {
+        license: license_id_normalized,
+        license_type,
+        commercial_use,
+        requires_attribution,
+        is_copyleft,
+      }))
+    } else {
+      Ok(None)
+    }
+  }
+
   /// Cleanup downloaded crate
   async fn cleanup_crate(&self, crate_dir: &Path) -> Result<()> {
     if !self.keep_cache && crate_dir.exists() {
@@ -360,6 +439,15 @@ impl PackageCollector for CargoCollector {
 
     // Extract examples
     let snippets = self.extract_examples(&crate_dir).await.unwrap_or_default();
+
+    // Extract license information from Cargo.toml
+    let license_info = self
+      .extract_license_from_manifest(&crate_dir)
+      .await
+      .unwrap_or_else(|e| {
+        log::warn!("Failed to extract license from Cargo.toml: {}", e);
+        None
+      });
 
     // Cleanup if needed
     self.cleanup_crate(&crate_dir).await?;
@@ -440,7 +528,7 @@ impl PackageCollector for CargoCollector {
       learning_data: Default::default(),
       vulnerabilities,
       security_score,
-      license_info: None, // TODO: Extract from Cargo.toml
+      license_info,
     })
   }
 

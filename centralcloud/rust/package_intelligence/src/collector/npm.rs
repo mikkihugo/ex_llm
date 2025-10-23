@@ -49,6 +49,7 @@ struct NpmVersionMetadata {
   name: String,
   version: String,
   description: Option<String>,
+  license: Option<String>,  // SPDX license identifier
   dist: NpmDist,
   dependencies: Option<std::collections::HashMap<String, String>>,
   #[serde(rename = "devDependencies")]
@@ -63,6 +64,46 @@ struct NpmDist {
 }
 
 impl NpmCollector {
+  /// Classify SPDX license identifier into license type and properties
+  fn classify_license(license_id: &str) -> (String, String, bool, bool, bool) {
+    let license_lower = license_id.to_lowercase();
+
+    // Determine license type and properties based on SPDX identifier
+    match license_lower.as_str() {
+      // Permissive licenses
+      "mit" | "bsd-2-clause" | "bsd-3-clause" | "apache-2.0" | "apache" |
+      "mpl-2.0" | "isc" | "wtfpl" | "0bsd" | "zlib" => {
+        ("permissive".to_string(), license_id.to_string(), true, true, false)
+      },
+      // Copyleft licenses
+      "gpl-3.0" | "gpl-3.0-or-later" | "gpl-3.0-only" |
+      "gpl-2.0" | "gpl-2.0-or-later" | "gpl-2.0-only" |
+      "agpl-3.0" | "agpl-3.0-or-later" | "agpl-3.0-only" => {
+        ("copyleft".to_string(), license_id.to_string(), false, true, true)
+      },
+      // Weak copyleft
+      "lgpl-3.0" | "lgpl-3.0-or-later" | "lgpl-3.0-only" |
+      "lgpl-2.1" | "lgpl-2.1-or-later" | "lgpl-2.1-only" => {
+        ("weak-copyleft".to_string(), license_id.to_string(), true, true, true)
+      },
+      // Proprietary
+      "proprietary" | "unlicense" => {
+        ("proprietary".to_string(), license_id.to_string(), false, false, false)
+      },
+      // Unknown or other
+      _ => {
+        // Default: assume permissive if not in exclusion list
+        if license_lower.contains("gpl") || license_lower.contains("agpl") {
+          ("copyleft".to_string(), license_id.to_string(), false, true, true)
+        } else if license_lower.contains("lgpl") {
+          ("weak-copyleft".to_string(), license_id.to_string(), true, true, true)
+        } else {
+          ("unknown".to_string(), license_id.to_string(), true, false, false)
+        }
+      }
+    }
+  }
+
   /// Create new npm collector
   ///
   /// # Arguments
@@ -230,6 +271,29 @@ impl PackageCollector for NpmCollector {
 
     log::info!("Collecting npm package: {} v{}", package, version);
 
+    // Get package metadata to extract license info
+    let metadata = self.get_package_metadata(package).await?;
+    let version_meta = metadata.versions.get(version).context(format!(
+      "Version {} not found for package {}",
+      version, package
+    ))?;
+
+    // Extract license information
+    let license_info = if let Some(license_str) = &version_meta.license {
+      let (license_type, license_id, commercial_use, requires_attribution, is_copyleft) =
+        Self::classify_license(license_str);
+
+      Some(crate::storage::LicenseInfo {
+        license: license_id,
+        license_type,
+        commercial_use,
+        requires_attribution,
+        is_copyleft,
+      })
+    } else {
+      None
+    };
+
     // Download package
     let package_dir = self
       .download_package(package, version)
@@ -321,7 +385,7 @@ impl PackageCollector for NpmCollector {
       learning_data: Default::default(),
       vulnerabilities,
       security_score,
-      license_info: None, // TODO: Extract from package.json
+      license_info,
     })
   }
 
