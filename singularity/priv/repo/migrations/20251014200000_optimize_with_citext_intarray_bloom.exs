@@ -24,7 +24,19 @@ defmodule Singularity.Repo.Migrations.OptimizeWithCitextIntarrayBloom do
   - citext: 3-5x faster case-insensitive queries
   - intarray: 10-100x faster dependency lookups
   - bloom: 10x smaller indexes, 2-5x faster multi-column queries
+
+  ## Note
+  This migration skips graph_nodes operations if the table doesn't exist,
+  as the table creation (20250101000020_create_code_search_tables) may run after this.
   """
+
+  def check_table_exists(table_name) do
+    {:ok, _} = Ecto.Adapters.SQL.query(Singularity.Repo,
+      "SELECT 1 FROM information_schema.tables WHERE table_name = '#{table_name}' AND table_schema = 'public'", [])
+    true
+  rescue
+    _ -> false
+  end
 
   def up do
     IO.puts("\n" <> String.duplicate("=", 70))
@@ -57,11 +69,16 @@ defmodule Singularity.Repo.Migrations.OptimizeWithCitextIntarrayBloom do
     end
     IO.puts("   ✓ technology_patterns: technology_name → citext")
 
-    # graph_nodes
-    alter table(:graph_nodes) do
-      modify :name, :citext
+    # graph_nodes - Only if table exists (20250101000020_create_code_search_tables must run first)
+    case check_table_exists(:graph_nodes) do
+      true ->
+        alter table(:graph_nodes) do
+          modify :name, :citext
+        end
+        IO.puts("   ✓ graph_nodes: name → citext")
+      false ->
+        IO.puts("   ⊘ graph_nodes: table not created yet, skipping (will be created by 20250101000020)")
     end
-    IO.puts("   ✓ graph_nodes: name → citext")
 
     # code_files (skip language - used by generated column search_vector)
     alter table(:code_files) do
@@ -77,12 +94,29 @@ defmodule Singularity.Repo.Migrations.OptimizeWithCitextIntarrayBloom do
 
     IO.puts("2. Adding intarray fields for fast dependency queries...")
 
-    # graph_nodes - Add dependency tracking arrays
-    alter table(:graph_nodes) do
-      add :dependency_node_ids, {:array, :integer}, default: []
-      add :dependent_node_ids, {:array, :integer}, default: []
+    # graph_nodes - Add dependency tracking arrays (only if table exists)
+    if check_table_exists(:graph_nodes) do
+      alter table(:graph_nodes) do
+        add :dependency_node_ids, {:array, :integer}, default: []
+        add :dependent_node_ids, {:array, :integer}, default: []
+      end
+      IO.puts("   ✓ graph_nodes: dependency_node_ids, dependent_node_ids")
+
+      # Create GIN indexes for intarray operators
+      execute """
+      CREATE INDEX graph_nodes_dependency_ids_idx
+      ON graph_nodes USING GIN (dependency_node_ids gin__int_ops)
+      """
+      IO.puts("   ✓ Created GIN index on graph_nodes.dependency_node_ids")
+
+      execute """
+      CREATE INDEX graph_nodes_dependent_ids_idx
+      ON graph_nodes USING GIN (dependent_node_ids gin__int_ops)
+      """
+      IO.puts("   ✓ Created GIN index on graph_nodes.dependent_node_ids")
+    else
+      IO.puts("   ⊘ graph_nodes: table not created yet, skipping intarray columns and indexes")
     end
-    IO.puts("   ✓ graph_nodes: dependency_node_ids, dependent_node_ids")
 
     # code_files - Add module import tracking arrays
     alter table(:code_files) do
@@ -90,19 +124,6 @@ defmodule Singularity.Repo.Migrations.OptimizeWithCitextIntarrayBloom do
       add :importing_module_ids, {:array, :integer}, default: []
     end
     IO.puts("   ✓ code_files: imported_module_ids, importing_module_ids")
-
-    # Create GIN indexes for intarray operators
-    execute """
-    CREATE INDEX graph_nodes_dependency_ids_idx
-    ON graph_nodes USING GIN (dependency_node_ids gin__int_ops)
-    """
-    IO.puts("   ✓ Created GIN index on graph_nodes.dependency_node_ids")
-
-    execute """
-    CREATE INDEX graph_nodes_dependent_ids_idx
-    ON graph_nodes USING GIN (dependent_node_ids gin__int_ops)
-    """
-    IO.puts("   ✓ Created GIN index on graph_nodes.dependent_node_ids")
 
     execute """
     CREATE INDEX code_files_imported_module_ids_idx
@@ -149,41 +170,45 @@ defmodule Singularity.Repo.Migrations.OptimizeWithCitextIntarrayBloom do
 
     IO.puts("4. Creating helper functions for intarray queries...")
 
-    # Function: Find nodes with common dependencies
-    execute """
-    CREATE OR REPLACE FUNCTION find_nodes_with_common_dependencies(
-      target_node_id INTEGER,
-      min_common INTEGER DEFAULT 1,
-      result_limit INTEGER DEFAULT 10
-    )
-    RETURNS TABLE (
-      node_id INTEGER,
-      node_name TEXT,
-      common_dependency_count INTEGER,
-      common_dependencies INTEGER[]
-    ) AS $$
-    BEGIN
-      RETURN QUERY
-      SELECT
-        gn.id::INTEGER,
-        gn.name::TEXT,
-        array_length(gn.dependency_node_ids & target.dependency_node_ids, 1) as common_count,
-        gn.dependency_node_ids & target.dependency_node_ids as common_deps
-      FROM graph_nodes gn
-      CROSS JOIN (
-        SELECT dependency_node_ids
-        FROM graph_nodes
-        WHERE id = target_node_id
-      ) target
-      WHERE gn.id != target_node_id
-        AND gn.dependency_node_ids && target.dependency_node_ids
-        AND array_length(gn.dependency_node_ids & target.dependency_node_ids, 1) >= min_common
-      ORDER BY common_count DESC
-      LIMIT result_limit;
-    END;
-    $$ LANGUAGE plpgsql;
-    """
-    IO.puts("   ✓ Created find_nodes_with_common_dependencies()")
+    # Function: Find nodes with common dependencies (only if graph_nodes exists)
+    if check_table_exists(:graph_nodes) do
+      execute """
+      CREATE OR REPLACE FUNCTION find_nodes_with_common_dependencies(
+        target_node_id INTEGER,
+        min_common INTEGER DEFAULT 1,
+        result_limit INTEGER DEFAULT 10
+      )
+      RETURNS TABLE (
+        node_id INTEGER,
+        node_name TEXT,
+        common_dependency_count INTEGER,
+        common_dependencies INTEGER[]
+      ) AS $$
+      BEGIN
+        RETURN QUERY
+        SELECT
+          gn.id::INTEGER,
+          gn.name::TEXT,
+          array_length(gn.dependency_node_ids & target.dependency_node_ids, 1) as common_count,
+          gn.dependency_node_ids & target.dependency_node_ids as common_deps
+        FROM graph_nodes gn
+        CROSS JOIN (
+          SELECT dependency_node_ids
+          FROM graph_nodes
+          WHERE id = target_node_id
+        ) target
+        WHERE gn.id != target_node_id
+          AND gn.dependency_node_ids && target.dependency_node_ids
+          AND array_length(gn.dependency_node_ids & target.dependency_node_ids, 1) >= min_common
+        ORDER BY common_count DESC
+        LIMIT result_limit;
+      END;
+      $$ LANGUAGE plpgsql;
+      """
+      IO.puts("   ✓ Created find_nodes_with_common_dependencies()")
+    else
+      IO.puts("   ⊘ find_nodes_with_common_dependencies(): graph_nodes table not created yet, skipping")
+    end
 
     # Function: Find modules using any of given packages
     execute """
