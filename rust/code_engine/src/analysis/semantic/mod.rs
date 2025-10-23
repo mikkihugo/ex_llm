@@ -19,6 +19,4 @@ pub mod statistical_vectors;
 // Re-export main types
 pub use custom_tokenizers::*;
 pub use ml_similarity::*;
-pub use retrieval_vectors::*;
 pub use search_index::*;
-pub use statistical_vectors::*;

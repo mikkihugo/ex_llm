@@ -483,8 +483,8 @@ defmodule Singularity.CodeDeduplicator do
   # Language-specific keyword extraction
 
   defp extract_elixir_keywords(code) do
-    # Use ParserEngine for accurate AST-based extraction
-    case ParserEngine.extract_functions(code) do
+    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
+    case Singularity.CodeAnalyzer.extract_functions(code, "elixir") do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         module_names = extract_module_names_from_code(code)
@@ -494,10 +494,10 @@ defmodule Singularity.CodeDeduplicator do
         domain_patterns = extract_patterns(code, [
           "http", "api", "request", "cache", "pubsub", "nats", "database"
         ])
-        
+
         (function_names ++ module_names ++ framework_patterns ++ domain_patterns)
         |> Enum.map(&String.downcase/1)
-      
+
       {:error, _} ->
         # Fallback to basic extraction
         extract_generic_keywords(code)
@@ -505,8 +505,8 @@ defmodule Singularity.CodeDeduplicator do
   end
 
   defp extract_rust_keywords(code) do
-    # Use ParserEngine for accurate AST-based extraction
-    case ParserEngine.extract_functions(code) do
+    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
+    case Singularity.CodeAnalyzer.extract_functions(code, "rust") do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         class_names = extract_class_names_from_code(code)
@@ -524,8 +524,8 @@ defmodule Singularity.CodeDeduplicator do
   end
 
   defp extract_go_keywords(code) do
-    # Use ParserEngine for accurate AST-based extraction
-    case ParserEngine.extract_functions(code) do
+    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
+    case Singularity.CodeAnalyzer.extract_functions(code, "go") do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         class_names = extract_class_names_from_code(code)
@@ -543,8 +543,8 @@ defmodule Singularity.CodeDeduplicator do
   end
 
   defp extract_ts_keywords(code) do
-    # Use ParserEngine for accurate AST-based extraction
-    case ParserEngine.extract_functions(code) do
+    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
+    case Singularity.CodeAnalyzer.extract_functions(code, "typescript") do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         class_names = extract_class_names_from_code(code)
@@ -562,8 +562,8 @@ defmodule Singularity.CodeDeduplicator do
   end
 
   defp extract_python_keywords(code) do
-    # Use ParserEngine for accurate AST-based extraction
-    case ParserEngine.extract_functions(code) do
+    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
+    case Singularity.CodeAnalyzer.extract_functions(code, "python") do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         class_names = extract_class_names_from_code(code)
@@ -581,8 +581,8 @@ defmodule Singularity.CodeDeduplicator do
   end
 
   defp extract_java_keywords(code) do
-    # Use ParserEngine for accurate AST-based extraction
-    case ParserEngine.extract_functions(code) do
+    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
+    case Singularity.CodeAnalyzer.extract_functions(code, "java") do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         class_names = extract_class_names_from_code(code)

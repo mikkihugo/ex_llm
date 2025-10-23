@@ -113,7 +113,10 @@ defmodule Singularity.MixProject do
       # T5 Training & LLM Integration
       {:bumblebee, "~> 0.5"},
       {:nx, "~> 0.6"},
-      # {:exla, "~> 0.6"},  # Temporarily disabled for macOS compatibility
+      # EXLA with graceful fallback to CPU (auto-detect CUDA/Metal or use CPU)
+      # On macOS: Falls back to CPU (no Metal XLA binaries available)
+      # On Linux: Uses CUDA for RTX 4080
+      {:exla, "~> 0.6", optional: true},
       {:kino, "~> 0.12"},
 
       # Distributed Systems

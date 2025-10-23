@@ -9,11 +9,8 @@
 //! Pure computation layer (no storage, no sessions, no caching).
 //! All data passed via parameters, all results returned to caller.
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use tracing::info;
 
 use crate::analysis::multilang::{
   LanguageAnalyzer, LanguageSpecificRulesAnalyzer, CrossLanguageCodePatternsDetector,

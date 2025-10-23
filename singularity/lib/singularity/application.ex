@@ -52,6 +52,8 @@ defmodule Singularity.Application do
       Singularity.LLM.Supervisor,
       # Manages: TemplateService, TemplatePerformanceTracker, CodeStore
       Singularity.Knowledge.Supervisor,
+      # Code Analyzer Cache - Analysis result caching for performance
+      {Singularity.CodeAnalyzer.Cache, [max_size: 1000, ttl: 3600]},
       # Manages: HTDAGAutoBootstrap, SafeWorkPlanner, WorkPlanAPI
       Singularity.Execution.Planning.Supervisor,
       # Manages: SPARC.Orchestrator, TemplateSparcOrchestrator

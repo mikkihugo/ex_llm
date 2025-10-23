@@ -147,18 +147,37 @@ defmodule Singularity.CodeAnalyzer do
   ## Parameters
   - `code`: Source code string
   - `language_hint`: Language ID, alias, or file extension (e.g., "elixir", "rs", "javascript")
+  - `opts`: Options
+    - `:cache` - Use caching (default: true if Cache is running)
 
   ## Returns
   - `{:ok, analysis}` - Language analysis result
   - `{:error, reason}` - If language unsupported or analysis fails
   """
-  def analyze_language(code, language_hint) when is_binary(code) and is_binary(language_hint) do
+  def analyze_language(code, language_hint, opts \\ [])
+      when is_binary(code) and is_binary(language_hint) do
+    use_cache = Keyword.get(opts, :cache, cache_enabled?())
+
+    if use_cache do
+      Singularity.CodeAnalyzer.Cache.get_or_analyze(code, language_hint, fn ->
+        do_analyze_language(code, language_hint)
+      end)
+    else
+      do_analyze_language(code, language_hint)
+    end
+  end
+
+  defp do_analyze_language(code, language_hint) do
     case Singularity.RustAnalyzer.analyze_language(code, language_hint) do
       {:ok, analysis} -> {:ok, analysis}
       {:error, reason} ->
         Logger.warning("analyze_language failed for #{language_hint}: #{inspect(reason)}")
         {:error, reason}
     end
+  end
+
+  defp cache_enabled? do
+    Process.whereis(Singularity.CodeAnalyzer.Cache) != nil
   end
 
   @doc """

@@ -5,7 +5,7 @@
 use anyhow::Result;
 use std::collections::HashSet;
 
-use crate::graph::{CodeDependencyGraph, GraphNode, GraphEdge, GraphType};
+use crate::graph::{CodeDependencyGraph, GraphNode};
 use petgraph::{Direction, visit::{Dfs, EdgeRef}};
 
 /// Control Flow Graph - extends existing graph infrastructure

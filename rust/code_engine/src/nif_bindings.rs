@@ -8,12 +8,11 @@
 //! - Phase 2: Fixed all storage::graph imports to use crate::graph
 //! - Phase 3: Uncommented analysis and nif_bindings modules
 
-use rustler::{Encoder, Env, NifStruct, Term};
+use rustler::NifStruct;
 use serde::{Deserialize, Serialize};
 
 use crate::analysis::control_flow::{
-    analyze_function_flow, ControlFlowAnalysis, DeadEnd, DeadEndReason, UnreachableCode,
-    FlowCompleteness,
+    analyze_function_flow, ControlFlowAnalysis,
 };
 use crate::graph::{CodeDependencyGraph, GraphType};
 
