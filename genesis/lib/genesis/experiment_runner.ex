@@ -392,7 +392,7 @@ defmodule Genesis.ExperimentRunner do
   defp build_sandbox_app(sandbox) do
     # Build Elixir app in sandbox
     try do
-      cmd = "cd #{Path.quote(sandbox)}/singularity_app && mix compile 2>&1"
+      cmd = "cd #{Path.quote(sandbox)}/singularity && mix compile 2>&1"
 
       case System.cmd("bash", ["-c", cmd], stderr_to_stdout: true) do
         {output, 0} ->
@@ -422,7 +422,7 @@ defmodule Genesis.ExperimentRunner do
     # Run Mix tests in sandbox
     try do
       timeout_ms = 300_000  # 5 minute timeout
-      cmd = "cd #{Path.quote(sandbox)}/singularity_app && timeout 300 mix test #{test_pattern} --formatter=json 2>&1"
+      cmd = "cd #{Path.quote(sandbox)}/singularity && timeout 300 mix test #{test_pattern} --formatter=json 2>&1"
 
       case System.cmd("bash", ["-c", cmd], stderr_to_stdout: true, timeout: timeout_ms) do
         {output, 0} ->
