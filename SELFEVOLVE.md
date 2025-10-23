@@ -65,30 +65,44 @@
 - **Depends On**: Item #1 (metrics) + Item #2 (aggregator)
 - **Files**: `lib/singularity/agents/evolution.ex`, `lib/singularity/execution/feedback/analyzer.ex`
 
-### 5. **Optional: Implement Alternative Embedding Backends** (Lower priority)
+### 5. **Expand Embedding Engine: Jina v3, MiniLM, Metal & ROCm** (2-3 weeks)
 
-**Current Status**: ✅ GPU acceleration is FULLY COMPLETE for production model!
+**Current Status**: ✅ Qodo-Embed with CUDA works. Expanding to multi-model, multi-GPU, multi-platform.
 
-**What's Actually Running:**
-- ✅ **Qodo-Embed-1** (Candle backend) - REAL inference with CUDA GPU support enabled
-- ⚠️ **Google AI fallback** (FREE tier) - Used if Rust NIF unavailable
-- ❌ **Jina v3 & MiniLM** (ONNX) - Architecturally planned but stubbed (mock embeddings)
+**What Will Be Running After Completion:**
 
-**Why Priority #5 is NOT urgent:**
-- GPU is already working for the production model (Qodo-Embed)
-- ONNX models are alternatives/fallbacks, not replacements
-- Main evolution loop (Priorities 1-4) doesn't depend on them
+**Primary Models (GPU):**
+- ✅ **Qodo-Embed-1** (Candle) - Code-optimized, CUDA ✅
+- ✅ **Jina v3** (ONNX) - General text, CUDA/Metal/ROCm ← NEW
+- ⚠️ **Google AI FREE** (fallback) - When NIF unavailable
 
-**Optional Implementation (if you want):**
-- Implement real ONNX inference for Jina v3 (uncomment `ort` crate in Cargo.toml)
-- Implement real ONNX inference for MiniLM-L6-v2
-- Add Metal support for macOS developers
-- Add ROCm support for AMD GPU users
-- Benchmark models to compare quality/speed
+**Secondary Model (CPU):**
+- ✅ **MiniLM-L6-v2** (ONNX) - Lightweight CPU fallback ← NEW
+
+**GPU Platforms:**
+- ✅ CUDA (NVIDIA) - Qodo-Embed ✅, Jina v3 ← NEW
+- ✅ Metal (Apple) - Jina v3 ← NEW
+- ✅ ROCm (AMD) - Jina v3 ← NEW
+
+**Breakdown (by effort):**
+1. Implement Jina v3 ONNX GPU inference (uncomment `ort` crate, add inference code) - **2-3 days**
+2. Implement MiniLM-L6-v2 ONNX CPU inference - **2-3 days**
+3. Add Metal GPU support (Candle + ONNX) - **1-2 days**
+4. Add ROCm GPU support (Candle + ONNX) - **1-2 days**
+5. Benchmark all models, compare quality/speed - **2-3 days**
+
+**Total Effort**: 2-3 weeks (7-12 working days)
+
+**Why Complete the Vision:**
+- ✅ Qodo-Embed excels at code, Jina v3 at general text → complementary
+- ✅ MiniLM provides fallback for resource-constrained environments
+- ✅ Metal support critical for Apple Silicon developers
+- ✅ ROCm support critical for AMD GPU users
+- ✅ Complete the architected vision = complete confidence in system
 
 **Note on NIF Compilation:**
 - ⚠️ `skip_compilation?: true` in embedding_engine.ex means NIF is pre-compiled, not recompiled with `mix compile`
-- This is a development/deployment concern, not a GPU concern
+- This is a development/deployment concern, address during integration testing
 
 ---
 
