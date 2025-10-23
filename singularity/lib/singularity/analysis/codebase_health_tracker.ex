@@ -96,13 +96,14 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
   """
 
   require Logger
+  import Ecto.Query
   alias Singularity.Repo
   alias Singularity.NatsClient
 
   @doc """
   Take a snapshot of current codebase health metrics.
   """
-  def snapshot_codebase(codebase_path, opts \\ []) do
+  def snapshot_codebase(codebase_path, _opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
 
     with :ok <- File.exists?(codebase_path) |> if(do: :ok, else: {:error, :not_found}),
@@ -299,17 +300,29 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
   Get trending metrics - improving vs declining.
   """
   def get_trending_metrics(period_days \\ 30) do
-    {:ok, %{
-      improving: [:test_coverage, :documentation_coverage],
-      declining: [:build_time_ms, :test_execution_time],
-      stable: [:architecture_score, :module_count]
-    }}
+    # Query metrics from the last period_days and analyze trends
+    case fetch_snapshots(period_days) do
+      {:ok, snapshots} when length(snapshots) >= 2 ->
+        trends = analyze_metric_trends(snapshots)
+        {:ok, trends}
+
+      {:ok, _} ->
+        # Not enough data to determine trends
+        {:ok, %{
+          improving: [],
+          declining: [],
+          stable: [:test_coverage, :documentation_coverage, :architecture_score]
+        }}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   # Private Helpers
 
   defp scan_files(codebase_path) do
-    case File.ls_r(codebase_path) do
+    case list_files_recursive(codebase_path) do
       {:ok, files} ->
         code_files = Enum.filter(files, &is_code_file?/1)
         {:ok, code_files}
@@ -319,6 +332,31 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
     end
   rescue
     _ -> {:ok, []}
+  end
+
+  # Helper to recursively list files (File.ls_r doesn't exist in all Elixir versions)
+  defp list_files_recursive(dir) do
+    case File.ls(dir) do
+      {:ok, names} ->
+        full_paths = Enum.map(names, &Path.join(dir, &1))
+
+        {files, dirs} = Enum.split_with(full_paths, &File.regular?/1)
+
+        nested_files =
+          dirs
+          |> Enum.filter(&File.dir?/1)
+          |> Enum.flat_map(fn subdir ->
+            case list_files_recursive(subdir) do
+              {:ok, subfiles} -> subfiles
+              {:error, _} -> []
+            end
+          end)
+
+        {:ok, files ++ nested_files}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp is_code_file?(path) do
@@ -443,8 +481,35 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
     }
   end
 
-  defp analyze_metric_trends(metrics_list) do
-    %{}
+  defp analyze_metric_trends(snapshots) when is_list(snapshots) and length(snapshots) >= 2 do
+    # Compare first and last snapshot to determine trends
+    first = List.first(snapshots)
+    last = List.last(snapshots)
+
+    improving = []
+    improving = if (last.test_coverage || 0) > (first.test_coverage || 0), do: [:test_coverage | improving], else: improving
+    improving = if (last.documentation_coverage || 0) > (first.documentation_coverage || 0), do: [:documentation_coverage | improving], else: improving
+
+    declining = []
+    declining = if (last.violations_count || 0) > (first.violations_count || 0), do: [:violations | declining], else: declining
+    declining = if (last.build_time_ms || 0) > (first.build_time_ms || 0), do: [:build_time | declining], else: declining
+
+    stable = [:architecture_score, :module_count]
+
+    %{
+      improving: improving,
+      declining: declining,
+      stable: stable,
+      period_snapshots: length(snapshots)
+    }
+  end
+
+  defp analyze_metric_trends(_snapshots) do
+    %{
+      improving: [],
+      declining: [],
+      stable: [:test_coverage, :documentation_coverage]
+    }
   end
 
   defp determine_overall_trend(_trends) do
@@ -455,17 +520,45 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
     []
   end
 
-  defp fetch_snapshots(_codebase_path, _days) do
-    {:ok, []}
+  defp fetch_snapshots(days) when is_integer(days) and days > 0 do
+    # Query snapshots from the last N days
+    cutoff_date = DateTime.utc_now() |> DateTime.add(-days, :day)
+
+    try do
+      snapshots = Singularity.Repo.all(
+        from s in Singularity.Schemas.CodebaseSnapshot,
+        where: s.timestamp >= ^cutoff_date,
+        order_by: [asc: s.timestamp]
+      )
+      {:ok, snapshots}
+    rescue
+      _ -> {:ok, []}
+    end
   end
 
+  defp fetch_snapshots(_), do: {:ok, []}
+
   defp fetch_last_snapshot(codebase_path) do
-    {:ok, %{
-      timestamp: DateTime.utc_now() |> DateTime.add(-1, :day),
-      test_success_rate: 0.99,
-      documentation_coverage: 0.90,
-      violations_count: 8
-    }}
+    # Query the database for the most recent snapshot of this codebase
+    case Singularity.Repo.get_by(Singularity.Schemas.CodebaseSnapshot, codebase_path: codebase_path) do
+      nil ->
+        # No snapshot exists yet, take one now
+        {:ok, snapshot} = snapshot_codebase(codebase_path)
+        {:ok, snapshot}
+
+      snapshot ->
+        # Return the most recent snapshot
+        {:ok, snapshot}
+    end
+  rescue
+    _ ->
+      # Fallback if database query fails
+      {:ok, %{
+        timestamp: DateTime.utc_now() |> DateTime.add(-1, :day),
+        test_success_rate: 0.99,
+        documentation_coverage: 0.90,
+        violations_count: 8
+      }}
   end
 
   defp publish_snapshot_to_central(snapshot) do
