@@ -142,59 +142,113 @@ impl CodeTokenizer {
   }
 
   fn tokenize_rust(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use rust-parser crate (syn-based + PolyglotCodeParser trait) for proper Rust tokenization
-    // For now, use improved text-based tokenization
-    self.tokenize_generic(content)
+    // Use keyword-based tokenization for Rust
+    self.tokenize_with_keywords(content, &[
+      "fn", "struct", "enum", "trait", "impl", "pub", "async", "await",
+      "mod", "use", "let", "mut", "const", "static", "type", "if", "else",
+      "for", "while", "loop", "match", "return", "yield", "break", "continue"
+    ])
   }
 
   fn tokenize_python(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use python-parser crate (PolyglotCodeParser trait) for proper Python tokenization
-    self.tokenize_generic(content)
+    // Extract Python identifiers and keywords
+    self.tokenize_with_keywords(content, &[
+      "def", "class", "async", "await", "import", "from", "if", "elif", "else",
+      "for", "while", "with", "try", "except", "finally", "return", "yield",
+      "break", "continue", "pass", "lambda", "global", "nonlocal"
+    ])
   }
 
   fn tokenize_typescript(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use typescript-parser crate (oxc-based + PolyglotCodeParser trait) for proper TypeScript tokenization
-    self.tokenize_generic(content)
+    // Extract TypeScript/JavaScript identifiers
+    self.tokenize_with_keywords(content, &[
+      "function", "async", "await", "class", "interface", "type", "enum",
+      "import", "export", "const", "let", "var", "if", "else", "for",
+      "while", "do", "switch", "case", "return", "break", "continue",
+      "default", "static", "public", "private", "protected", "readonly"
+    ])
   }
 
   fn tokenize_javascript(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use javascript-parser crate (oxc-based + PolyglotCodeParser trait) for proper JavaScript tokenization
-    self.tokenize_generic(content)
+    // Extract JavaScript identifiers
+    self.tokenize_with_keywords(content, &[
+      "function", "async", "await", "class", "import", "export", "const", "let",
+      "var", "if", "else", "for", "while", "do", "switch", "case", "default",
+      "return", "break", "continue", "try", "catch", "finally", "throw", "new",
+      "this", "super", "static", "extends", "implements"
+    ])
   }
 
   fn tokenize_java(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use java-parser crate (PolyglotCodeParser trait) for proper Java tokenization
-    self.tokenize_generic(content)
+    // Extract Java identifiers and keywords
+    self.tokenize_with_keywords(content, &[
+      "class", "interface", "enum", "public", "private", "protected", "static",
+      "final", "abstract", "synchronized", "volatile", "transient", "native",
+      "strictfp", "extends", "implements", "new", "throw", "throws", "try",
+      "catch", "finally", "if", "else", "for", "while", "do", "switch", "case",
+      "return", "break", "continue", "default"
+    ])
   }
 
   fn tokenize_go(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use go-parser crate (universal-parser) for proper Go tokenization
-    self.tokenize_generic(content)
+    // Extract Go identifiers and keywords
+    self.tokenize_with_keywords(content, &[
+      "func", "type", "struct", "interface", "import", "package", "const",
+      "var", "if", "else", "for", "range", "switch", "case", "default",
+      "return", "break", "continue", "goto", "fallthrough", "defer", "go",
+      "chan", "select", "map", "make", "new", "len", "cap", "append", "copy"
+    ])
   }
 
   fn tokenize_c_cpp(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use c-cpp-parser crate (universal-parser) for proper C/C++ tokenization
-    self.tokenize_generic(content)
+    // Extract C/C++ identifiers
+    self.tokenize_with_keywords(content, &[
+      "int", "float", "double", "char", "void", "bool", "struct", "union",
+      "enum", "class", "template", "namespace", "using", "typedef", "define",
+      "ifdef", "ifndef", "endif", "if", "else", "for", "while", "do", "switch",
+      "case", "default", "return", "break", "continue", "goto", "static",
+      "const", "volatile", "inline", "virtual", "public", "private", "protected"
+    ])
   }
 
   fn tokenize_csharp(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use csharp-parser crate (universal-parser) for proper C# tokenization
-    self.tokenize_generic(content)
+    // Extract C# identifiers
+    self.tokenize_with_keywords(content, &[
+      "class", "struct", "interface", "enum", "delegate", "namespace", "using",
+      "public", "private", "protected", "internal", "static", "readonly",
+      "volatile", "const", "abstract", "sealed", "partial", "async", "await",
+      "if", "else", "for", "foreach", "while", "do", "switch", "case", "default",
+      "return", "break", "continue", "throw", "try", "catch", "finally", "yield",
+      "new", "this", "base", "virtual", "override", "abstract", "is", "as"
+    ])
   }
 
   fn tokenize_elixir(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use elixir-parser crate (universal-parser) for proper Elixir tokenization
-    self.tokenize_generic(content)
+    // Extract Elixir identifiers and keywords
+    self.tokenize_with_keywords(content, &[
+      "def", "defp", "defm", "defmodule", "defstruct", "defexception", "defprotocol",
+      "defimpl", "if", "unless", "case", "cond", "for", "try", "catch", "rescue",
+      "after", "receive", "import", "alias", "require", "use", "when", "do", "end",
+      "and", "or", "not", "in", "fn", "quote", "unquote", "unquote_splicing"
+    ])
   }
 
   fn tokenize_erlang(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use erlang-parser crate (universal-parser) for proper Erlang tokenization
-    self.tokenize_generic(content)
+    // Extract Erlang identifiers and keywords
+    self.tokenize_with_keywords(content, &[
+      "module", "export", "import", "function", "case", "if", "of", "when", "try",
+      "catch", "after", "receive", "send", "spawn", "link", "monitor", "record",
+      "include", "define", "ifdef", "ifndef", "endif", "error", "warning"
+    ])
   }
 
   fn tokenize_gleam(&self, content: &str) -> Result<Vec<DataToken>> {
-    // TODO: Use gleam-parser crate (universal-parser) for proper Gleam tokenization
-    self.tokenize_generic(content)
+    // Extract Gleam identifiers and keywords
+    self.tokenize_with_keywords(content, &[
+      "pub", "fn", "type", "const", "assert", "let", "case", "try", "use", "import",
+      "as", "assert_equal", "panic", "todo", "result", "option", "ok", "error",
+      "nil", "true", "false", "list", "string", "int", "float", "bool"
+    ])
   }
 
   fn tokenize_generic(&self, content: &str) -> Result<Vec<DataToken>> {
@@ -224,6 +278,41 @@ impl CodeTokenizer {
     } else {
       TokenType::VariableName
     }
+  }
+
+  /// Helper to tokenize with language-specific keywords
+  fn tokenize_with_keywords(&self, content: &str, keywords: &[&str]) -> Result<Vec<DataToken>> {
+    let mut tokens = Vec::new();
+
+    // Split on code delimiters (expanded set for better tokenization)
+    for part in content.split(&[' ', '\t', '\n', '_', '-', '.', '/', '\\', ':', ';', '(', ')', '[', ']', '{', '}', ',', '"', '\'', '`', '=', '+', '-', '*', '/', '%', '<', '>', '!', '&', '|', '^'][..]) {
+      let cleaned = part.chars().filter(|c| c.is_alphanumeric()).collect::<String>().to_lowercase();
+
+      if cleaned.len() > 1 && !cleaned.chars().all(|c| c.is_numeric()) {
+        let token_type = if keywords.contains(&cleaned.as_str()) {
+          TokenType::Keyword
+        } else {
+          self.classify_token(&cleaned)
+        };
+
+        let weight = match token_type {
+          TokenType::Keyword => 0.5,
+          TokenType::FunctionName => 1.0,
+          TokenType::ClassName => 0.9,
+          TokenType::VariableName => 0.7,
+          _ => 0.1,
+        };
+
+        tokens.push(DataToken {
+          text: cleaned,
+          token_type,
+          weight,
+          context: "language-specific".to_string(),
+        });
+      }
+    }
+
+    Ok(tokens)
   }
 }
 
@@ -473,12 +562,123 @@ mod tests {
   use super::*;
 
   #[test]
-  fn test_code_tokenizer() {
+  fn test_code_tokenizer_rust() {
     let tokenizer = CodeTokenizer::new();
     let data = DataType::Code { language: "rust".to_string(), content: "fn get_user_name() -> String { user.name }".to_string() };
 
     let tokens = tokenizer.tokenize(&data).unwrap();
     assert!(!tokens.is_empty());
+    // Should contain "fn", "get_user_name", etc.
+    let keyword_tokens: Vec<_> = tokens.iter().filter(|t| matches!(t.token_type, TokenType::Keyword)).collect();
+    assert!(!keyword_tokens.is_empty(), "Should have keyword tokens");
+  }
+
+  #[test]
+  fn test_code_tokenizer_python() {
+    let tokenizer = CodeTokenizer::new();
+    let data = DataType::Code { language: "python".to_string(), content: "def calculate_total(items): return sum(items)".to_string() };
+
+    let tokens = tokenizer.tokenize(&data).unwrap();
+    assert!(!tokens.is_empty());
+    let keyword_tokens: Vec<_> = tokens.iter().filter(|t| matches!(t.token_type, TokenType::Keyword)).collect();
+    assert!(!keyword_tokens.is_empty());
+  }
+
+  #[test]
+  fn test_code_tokenizer_typescript() {
+    let tokenizer = CodeTokenizer::new();
+    let data = DataType::Code { language: "typescript".to_string(), content: "function greet(name: string): void { console.log(name); }".to_string() };
+
+    let tokens = tokenizer.tokenize(&data).unwrap();
+    assert!(!tokens.is_empty());
+    let keyword_tokens: Vec<_> = tokens.iter().filter(|t| matches!(t.token_type, TokenType::Keyword)).collect();
+    assert!(!keyword_tokens.is_empty());
+  }
+
+  #[test]
+  fn test_code_tokenizer_javascript() {
+    let tokenizer = CodeTokenizer::new();
+    let data = DataType::Code { language: "javascript".to_string(), content: "const getValue = (key) => data[key];".to_string() };
+
+    let tokens = tokenizer.tokenize(&data).unwrap();
+    assert!(!tokens.is_empty());
+    let keyword_tokens: Vec<_> = tokens.iter().filter(|t| matches!(t.token_type, TokenType::Keyword)).collect();
+    assert!(!keyword_tokens.is_empty());
+  }
+
+  #[test]
+  fn test_code_tokenizer_java() {
+    let tokenizer = CodeTokenizer::new();
+    let data = DataType::Code { language: "java".to_string(), content: "public class User { private String name; }".to_string() };
+
+    let tokens = tokenizer.tokenize(&data).unwrap();
+    assert!(!tokens.is_empty());
+    let keyword_tokens: Vec<_> = tokens.iter().filter(|t| matches!(t.token_type, TokenType::Keyword)).collect();
+    assert!(!keyword_tokens.is_empty());
+  }
+
+  #[test]
+  fn test_code_tokenizer_go() {
+    let tokenizer = CodeTokenizer::new();
+    let data = DataType::Code { language: "go".to_string(), content: "func main() { fmt.Println(\"Hello\") }".to_string() };
+
+    let tokens = tokenizer.tokenize(&data).unwrap();
+    assert!(!tokens.is_empty());
+    let keyword_tokens: Vec<_> = tokens.iter().filter(|t| matches!(t.token_type, TokenType::Keyword)).collect();
+    assert!(!keyword_tokens.is_empty());
+  }
+
+  #[test]
+  fn test_code_tokenizer_csharp() {
+    let tokenizer = CodeTokenizer::new();
+    let data = DataType::Code { language: "csharp".to_string(), content: "public class Program { static void Main() { } }".to_string() };
+
+    let tokens = tokenizer.tokenize(&data).unwrap();
+    assert!(!tokens.is_empty());
+    let keyword_tokens: Vec<_> = tokens.iter().filter(|t| matches!(t.token_type, TokenType::Keyword)).collect();
+    assert!(!keyword_tokens.is_empty());
+  }
+
+  #[test]
+  fn test_code_tokenizer_elixir() {
+    let tokenizer = CodeTokenizer::new();
+    let data = DataType::Code { language: "elixir".to_string(), content: "defmodule User do def get_name(user), do: user.name end".to_string() };
+
+    let tokens = tokenizer.tokenize(&data).unwrap();
+    assert!(!tokens.is_empty());
+    let keyword_tokens: Vec<_> = tokens.iter().filter(|t| matches!(t.token_type, TokenType::Keyword)).collect();
+    assert!(!keyword_tokens.is_empty());
+  }
+
+  #[test]
+  fn test_code_tokenizer_erlang() {
+    let tokenizer = CodeTokenizer::new();
+    let data = DataType::Code { language: "erlang".to_string(), content: "-module(hello). -export([world/0]). world() -> ok.".to_string() };
+
+    let tokens = tokenizer.tokenize(&data).unwrap();
+    assert!(!tokens.is_empty());
+  }
+
+  #[test]
+  fn test_code_tokenizer_gleam() {
+    let tokenizer = CodeTokenizer::new();
+    let data = DataType::Code { language: "gleam".to_string(), content: "pub fn main() { let x = 42 x }".to_string() };
+
+    let tokens = tokenizer.tokenize(&data).unwrap();
+    assert!(!tokens.is_empty());
+    let keyword_tokens: Vec<_> = tokens.iter().filter(|t| matches!(t.token_type, TokenType::Keyword)).collect();
+    assert!(!keyword_tokens.is_empty());
+  }
+
+  #[test]
+  fn test_code_tokenizer_cpp() {
+    let tokenizer = CodeTokenizer::new();
+    let data = DataType::Code { language: "c++".to_string(), content: "int main() { return 0; }".to_string() };
+
+    let tokens = tokenizer.tokenize(&data).unwrap();
+    assert!(!tokens.is_empty());
+    let keyword_tokens: Vec<_> = tokens.iter().filter(|t| matches!(t.token_type, TokenType::Keyword)).collect();
+    assert!(!keyword_tokens.is_empty());
   }
 
   #[test]
@@ -497,5 +697,32 @@ mod tests {
 
     let tokens = tokenizer.tokenize(&data).unwrap();
     assert_eq!(tokens.len(), 2);
+  }
+
+  #[test]
+  fn test_tokenizer_factory() {
+    let code_data = DataType::Code { language: "rust".to_string(), content: "fn test() {}".to_string() };
+    let tokenizer = TokenizerFactory::create_tokenizer(&code_data);
+    let tokens = tokenizer.tokenize(&code_data).unwrap();
+    assert!(!tokens.is_empty());
+  }
+
+  #[test]
+  fn test_keyword_weights() {
+    let tokenizer = CodeTokenizer::new();
+    let data = DataType::Code { language: "rust".to_string(), content: "fn main() -> i32 { let x = 42; x }".to_string() };
+
+    let tokens = tokenizer.tokenize(&data).unwrap();
+
+    // Verify weight distribution
+    let keyword_weights: Vec<f32> = tokens.iter()
+      .filter(|t| matches!(t.token_type, TokenType::Keyword))
+      .map(|t| t.weight)
+      .collect();
+
+    // Keywords should have weight 0.5
+    for weight in keyword_weights {
+      assert_eq!(weight, 0.5);
+    }
   }
 }
