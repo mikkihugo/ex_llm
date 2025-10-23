@@ -59,15 +59,8 @@ impl Graph {
     let semantic_features = self.extract_semantic_features(&vectors);
     let dependencies = self.extract_dependencies(&vectors);
 
-    let graph_metadata = crate::domain::files::CodeMetadata {
-      size: metadata.size,
-      lines: metadata.lines,
-      language: metadata.language,
-      last_modified: metadata.last_modified,
-      complexity: metadata.complexity,
-      dependencies: metadata.dependencies,
-      symbols: metadata.symbols,
-    };
+    // Use the provided metadata directly
+    let graph_metadata = metadata;
 
     let file_node = FileNode {
       file_path: file_path.clone(),

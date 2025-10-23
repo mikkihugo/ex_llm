@@ -290,14 +290,9 @@ impl VectorIntegration {
       blank_lines: 0,
     };
 
-    CodeMetadata {
-      size: content.len() as u64,
-      lines: content.lines().count(),
-      language: "erlang".to_string(),
-      last_modified: 0,
-      file_type: "source".to_string(),
-      complexity,
-    }
+    let mut metadata = CodeMetadata::minimal(content.len() as u64, content.lines().count(), "erlang".to_string());
+    metadata.complexity = complexity.cyclomatic;
+    metadata
   }
 
   /// Calculate Erlang-specific complexity
@@ -363,14 +358,9 @@ impl VectorIntegration {
       blank_lines: content.lines().filter(|l| l.trim().is_empty()).count(),
     };
 
-    CodeMetadata {
-      size: content.len() as u64,
-      lines: content.lines().count(),
-      language: "gleam".to_string(),
-      last_modified: 0,
-      file_type: "source".to_string(),
-      complexity,
-    }
+    let mut metadata = CodeMetadata::minimal(content.len() as u64, content.lines().count(), "gleam".to_string());
+    metadata.complexity = complexity.cyclomatic;
+    metadata
   }
 
   /// Calculate Gleam-specific complexity
@@ -406,14 +396,9 @@ impl VectorIntegration {
       blank_lines: 0,
     };
 
-    CodeMetadata {
-      size: content.len() as u64,
-      lines: content.lines().count(),
-      language: "rust".to_string(),
-      last_modified: 0,
-      file_type: "source".to_string(),
-      complexity,
-    }
+    let mut metadata = CodeMetadata::minimal(content.len() as u64, content.lines().count(), "rust".to_string());
+    metadata.complexity = complexity.cyclomatic;
+    metadata
   }
 
   /// Create file metadata from Python parser result
@@ -433,14 +418,9 @@ impl VectorIntegration {
       blank_lines: content.lines().filter(|l| l.trim().is_empty()).count(),
     };
 
-    CodeMetadata {
-      size: content.len() as u64,
-      lines: content.lines().count(),
-      language: "python".to_string(),
-      last_modified: 0,
-      file_type: "source".to_string(),
-      complexity,
-    }
+    let mut metadata = CodeMetadata::minimal(content.len() as u64, content.lines().count(), "python".to_string());
+    metadata.complexity = complexity.cyclomatic;
+    metadata
   }
 
   /// Generate comprehensive vectors for a file
@@ -1279,14 +1259,10 @@ impl VectorIntegration {
       blank_lines: 0,
     };
 
-    CodeMetadata {
-      size: content.len() as u64,
-      lines: content.lines().count(),
-      language,
-      last_modified: 0, // Would be set from file system
-      file_type,
-      complexity,
-    }
+    let mut metadata = CodeMetadata::minimal(content.len() as u64, content.lines().count(), language);
+    metadata.file_type = file_type;
+    metadata.complexity = complexity.cyclomatic;
+    metadata
   }
 
   /// Calculate cyclomatic complexity

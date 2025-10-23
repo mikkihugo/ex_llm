@@ -133,4 +133,11 @@ impl CodePatternDatabase {
       })
       .unwrap_or_default()
   }
+
+  /// Detect patterns in content (stub implementation)
+  pub fn detect_patterns(&self, _content: &str) -> Vec<PatternDetectionResult> {
+    // This would analyze content and return detected patterns
+    // For now, return empty - would be implemented with actual pattern detection
+    Vec::new()
+  }
 }

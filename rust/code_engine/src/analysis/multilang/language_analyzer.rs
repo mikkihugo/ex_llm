@@ -58,12 +58,21 @@ pub struct LanguageAnalysis {
 }
 
 /// Multi-language analyzer using centralized registry and semantic tokenizers
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct LanguageAnalyzer {
   /// Analysis results by language ID
   pub analysis: HashMap<String, LanguageAnalysis>,
   /// Reference to centralized language registry
   registry: &'static LanguageRegistry,
+}
+
+impl std::fmt::Debug for LanguageAnalyzer {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("LanguageAnalyzer")
+      .field("analysis", &self.analysis)
+      .field("registry", &"<LanguageRegistry>")
+      .finish()
+  }
 }
 
 impl Default for LanguageAnalyzer {
@@ -175,8 +184,8 @@ fn calculate_complexity(tokens: &[crate::analysis::semantic::custom_tokenizers::
   for token in tokens {
     match token.token_type {
       crate::analysis::semantic::custom_tokenizers::TokenType::Keyword => keyword_count += 1,
-      crate::analysis::semantic::custom_tokenizers::TokenType::Function => function_count += 1,
-      crate::analysis::semantic::custom_tokenizers::TokenType::Class => class_count += 1,
+      crate::analysis::semantic::custom_tokenizers::TokenType::FunctionName => function_count += 1,
+      crate::analysis::semantic::custom_tokenizers::TokenType::ClassName => class_count += 1,
       _ => {}
     }
   }
@@ -200,9 +209,9 @@ fn calculate_quality(tokens: &[crate::analysis::semantic::custom_tokenizers::Dat
   // 2. Code density (reasonable lines per token)
   // 3. Function count (more functions = better modularity)
 
-  let avg_weight: f64 = tokens.iter().map(|t| t.weight).sum::<f64>() / tokens.len() as f64;
+  let avg_weight: f64 = tokens.iter().map(|t| t.weight as f64).sum::<f64>() / tokens.len() as f64;
   let code_density = tokens.len() as f64 / total_lines as f64;
-  let modularity = tokens.iter().filter(|t| matches!(t.token_type, crate::analysis::semantic::custom_tokenizers::TokenType::Function)).count() as f64;
+  let modularity = tokens.iter().filter(|t| matches!(t.token_type, crate::analysis::semantic::custom_tokenizers::TokenType::FunctionName)).count() as f64;
 
   // Quality = (avg_weight * 0.4) + (density * 0.3) + (modularity * 0.3)
   let density_score = (code_density / 0.5).min(1.0); // Good density is ~0.5 tokens per line

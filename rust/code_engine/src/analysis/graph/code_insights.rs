@@ -324,7 +324,16 @@ impl CodeInsightsEngine {
     let insights = self.insight_engine.generate_insights(&basic_analysis, content);
 
     // Detect code patterns
-    let patterns = self.pattern_database.detect_patterns(content);
+    let detected_patterns = self.pattern_database.detect_patterns(content);
+    let patterns: Vec<CodeCodePattern> = detected_patterns.into_iter().map(|p| CodeCodePattern {
+      name: p.pattern_name,
+      pattern_type: CodePatternType::DesignCodePattern, // Infer from pattern type
+      confidence: p.confidence,
+      lines: Vec::new(),
+      description: p.description,
+      benefits: Vec::new(),
+      potential_issues: Vec::new(),
+    }).collect();
 
     // Generate architectural recommendations
     let recommendations = self.generate_architectural_recommendations(&basic_analysis, &patterns);
@@ -385,7 +394,7 @@ impl CodeInsightsEngine {
     let mut recommendations = Vec::new();
 
     // Analyze complexity
-    if analysis.metadata.complexity.cyclomatic > 10.0 {
+    if analysis.metadata.complexity > 10.0 {
       recommendations.push(ArchitecturalRecommendation {
         recommendation_type: RecommendationType::Refactoring,
         title: "Reduce Cyclomatic Complexity".to_string(),
@@ -647,7 +656,7 @@ impl InsightEngine {
   fn new() -> Self {
     Self {
       insight_rules: vec![InsightRule {
-        condition: |analysis| analysis.metadata.complexity.cyclomatic > 15.0,
+        condition: |analysis| analysis.metadata.complexity > 15.0,
         insight_type: InsightType::CodeQuality,
         message: "High cyclomatic complexity detected".to_string(),
         confidence: 0.9,

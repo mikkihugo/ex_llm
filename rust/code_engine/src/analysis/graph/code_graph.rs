@@ -464,27 +464,9 @@ impl CodeGraphBuilder {
     let mut graph = CodeGraph::new(GraphType::SemanticGraph);
 
     // Build CodeMetadata list for vectorization
-    use std::collections::HashMap;
-
-    use crate::analysis::CodeMetadata;
-
     let metadata_list: Vec<CodeMetadata> = metadata_cache
       .iter()
-      .map(|(file_path, metadata)| {
-        CodeMetadata {
-          file_path: file_path.to_string_lossy().to_string(),
-          content: String::new(), // TODO: Add actual content
-          language: metadata.language.clone(),
-          embedding: None,
-          metadata: HashMap::new(),
-          functions: metadata.functions.clone(),
-          imports: metadata.imports.clone(),
-          exports: metadata.exports.clone(),
-          classes: metadata.classes.clone(),
-          patterns: metadata.patterns.clone(),
-          keywords: metadata.keywords.clone(),
-        }
-      })
+      .map(|(_, metadata)| metadata.clone())
       .collect();
 
     // Initialize ML vectorizer with production algorithms

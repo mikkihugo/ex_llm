@@ -325,7 +325,7 @@ impl VectorIntegration {
     };
 
     let mut metadata = CodeMetadata::minimal(content.len() as u64, content.lines().count(), "erlang".to_string());
-    metadata.complexity = complexity;
+    metadata.complexity = complexity.cyclomatic;
     metadata
   }
 
@@ -393,7 +393,7 @@ impl VectorIntegration {
     };
 
     let mut metadata = CodeMetadata::minimal(content.len() as u64, content.lines().count(), "gleam".to_string());
-    metadata.complexity = complexity;
+    metadata.complexity = complexity.cyclomatic;
     metadata
   }
 
@@ -1295,7 +1295,7 @@ impl VectorIntegration {
 
     let mut metadata = CodeMetadata::minimal(content.len() as u64, content.lines().count(), language);
     metadata.file_type = file_type;
-    metadata.complexity = complexity;
+    metadata.complexity = complexity.cyclomatic;
     metadata
   }
 
