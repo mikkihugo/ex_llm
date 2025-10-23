@@ -33,8 +33,8 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
     # PostGIS (geospatial) - configured in Nix
     execute "CREATE EXTENSION IF NOT EXISTS postgis"
 
-    # Scheduled tasks (requires cron.database_name config - skip for now)
-    # execute "CREATE EXTENSION IF NOT EXISTS pg_cron"
+    # Scheduled tasks (pg_cron - configured in setup-database.sh via cron.database_name)
+    execute "CREATE EXTENSION IF NOT EXISTS pg_cron"
 
     # PostgreSQL testing (optional - skip for now)
     # execute "CREATE EXTENSION IF NOT EXISTS pgtap"
@@ -42,7 +42,7 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
 
   def down do
     # execute "DROP EXTENSION IF EXISTS pgtap"
-    # execute "DROP EXTENSION IF EXISTS pg_cron"
+    execute "DROP EXTENSION IF EXISTS pg_cron"
     execute "DROP EXTENSION IF EXISTS postgis"
     execute "DROP EXTENSION IF EXISTS timescaledb"
     execute "DROP EXTENSION IF EXISTS ltree"
