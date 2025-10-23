@@ -289,8 +289,14 @@ impl PolyglotCodeParser {
         // Each crate (tree-sitter-rust, tree-sitter-python, etc.) provides:
         // - pub const LANGUAGE: LanguageFn - Callable language factory
         // - unsafe binding to tree-sitter C library
+        //
+        // Safety: The tree-sitter-* crates provide pre-compiled, battle-tested
+        // FFI bindings to tree-sitter C library. Accessing LANGUAGE constants
+        // is the standard, safe way to initialize parsers in the ecosystem.
+        // See: https://github.com/tree-sitter/tree-sitter/tree/master/lib/binding_rust
 
         // BEAM Languages - Functional, immutable, built on BEAM VM
+        // Safety: tree_sitter_elixir::LANGUAGE is a stable FFI constant
         self.language_cache.insert("elixir".to_string(), unsafe { tree_sitter_elixir::LANGUAGE.clone().into() });
         self.language_cache.insert("erlang".to_string(), unsafe { tree_sitter_erlang::LANGUAGE.clone().into() });
         self.language_cache.insert("gleam".to_string(), unsafe { tree_sitter_gleam::LANGUAGE.clone().into() });
