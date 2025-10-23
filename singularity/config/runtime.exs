@@ -85,10 +85,10 @@ if config_env() != :test do
   xla_target =
     case System.get_env("XLA_TARGET") do
       nil ->
-        # Auto-detect: use CPU on macOS (no CUDA precompiled binaries)
+        # Auto-detect based on platform
         case :os.type() do
-          {:unix, :darwin} -> "cpu"
-          _ -> "cuda"
+          {:unix, :darwin} -> "metal"  # macOS ARM64 with Metal GPU acceleration
+          _ -> "cuda"                  # Linux with CUDA (RTX 4080)
         end
       target -> target
     end
@@ -97,21 +97,31 @@ if config_env() != :test do
   config :nx, :default_backend, EXLA.Backend
 
   config :exla,
-    default_client: if(xla_target == "cuda", do: :cuda, else: :host),
+    default_client:
+      cond do
+        xla_target == "metal" -> :host   # Metal is handled via host client on macOS
+        xla_target == "cuda" -> :cuda
+        true -> :host                     # CPU fallback if Metal/CUDA unavailable
+      end,
     clients: [
       # RTX 4080 16GB (Linux/production) - allocate 75% for models (12GB), leave 4GB for system
       cuda: [platform: :cuda, memory_fraction: 0.75],
-      # CPU fallback for macOS development or systems without CUDA
+      # macOS Metal + CPU fallback or CPU-only on unsupported platforms
       host: [platform: :host]
     ]
 
   # Configure Bumblebee
-  bumblebee_client = if(xla_target == "cuda", do: :cuda, else: :host)
+  bumblebee_client =
+    cond do
+      xla_target == "metal" -> :host   # Metal is default on macOS with EXLA
+      xla_target == "cuda" -> :cuda
+      true -> :host
+    end
 
   config :bumblebee,
     # Cache models in ~/.cache/huggingface
     offline: false,
-    # Use appropriate backend based on platform
+    # Use appropriate backend based on platform (Metal on macOS, CUDA on Linux)
     default_backend: {EXLA.Backend, client: bumblebee_client}
 end
 
