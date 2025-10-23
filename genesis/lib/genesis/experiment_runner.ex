@@ -435,53 +435,144 @@ defmodule Genesis.ExperimentRunner do
   end
 
   defp parse_json_test_output(output) do
-    # Try to extract JSON test output
+    # Try to extract JSON test output from various test framework formats
     case Jason.decode(output) do
       {:ok, data} ->
-        total_tests = Map.get(data, "tests", 0)
-        failed_tests = Map.get(data, "failures", 0)
-        success_count = total_tests - failed_tests
+        # Try different JSON structures used by various test frameworks
+        case extract_test_counts_from_json(data) do
+          {:ok, total, failures} ->
+            success_count = max(0, total - failures)
 
-        success_rate =
-          if total_tests > 0 do
-            success_count / total_tests
-          else
-            1.0
-          end
+            success_rate =
+              if total > 0 do
+                success_count / total
+              else
+                1.0
+              end
 
-        {:ok,
-         %{
-           success_rate: success_rate,
-           llm_reduction: 0.0,  # Measured separately
-           regression: failed_tests / max(total_tests, 1),
-           test_count: total_tests,
-           failures: failed_tests
-         }}
+            {:ok,
+             %{
+               success_rate: success_rate,
+               llm_reduction: 0.0,  # Measured separately
+               regression: failures / max(total, 1),
+               test_count: total,
+               failures: failures
+             }}
+
+          :error ->
+            :error
+        end
 
       {:error, _reason} ->
         :error
     end
   end
 
-  defp parse_text_test_output(output) do
-    # Try to extract from text patterns like "X passed, Y failed"
-    case Regex.run(~r/(\d+) passed, (\d+) failed/, output) do
-      [_match, passed_str, failed_str] ->
-        passed = String.to_integer(passed_str)
-        failed = String.to_integer(failed_str)
-        total = passed + failed
+  defp extract_test_counts_from_json(data) when is_map(data) do
+    # Try multiple JSON key patterns used by different test frameworks
+    # Pattern 1: ExUnit/Elixir format - "tests" and "failures"
+    case {Map.get(data, "tests"), Map.get(data, "failures")} do
+      {total, failures} when is_integer(total) and is_integer(failures) ->
+        {:ok, total, failures}
 
+      _ ->
+        # Pattern 2: Pytest format - "passed" and "failed"
+        case {Map.get(data, "passed"), Map.get(data, "failed")} do
+          {passed, failed} when is_integer(passed) and is_integer(failed) ->
+            {:ok, passed + failed, failed}
+
+          _ ->
+            # Pattern 3: Jest format - "numTotalTests" and "numFailedTests"
+            case {Map.get(data, "numTotalTests"), Map.get(data, "numFailedTests")} do
+              {total, failures} when is_integer(total) and is_integer(failures) ->
+                {:ok, total, failures}
+
+              _ ->
+                # Pattern 4: Summary object with test counts
+                case Map.get(data, "summary") do
+                  summary when is_map(summary) ->
+                    total = Map.get(summary, "total") || Map.get(summary, "count")
+                    failures = Map.get(summary, "failures") || Map.get(summary, "failed") || 0
+
+                    case {total, failures} do
+                      {t, f} when is_integer(t) and is_integer(f) ->
+                        {:ok, t, f}
+
+                      _ ->
+                        :error
+                    end
+
+                  _ ->
+                    :error
+                end
+            end
+        end
+    end
+  end
+
+  defp extract_test_counts_from_json(_), do: :error
+
+  defp parse_text_test_output(output) do
+    # Try multiple text patterns to extract test results
+    # Supports various test framework output formats
+
+    # Pattern 1: "X passed, Y failed" (ExUnit, Pytest, etc.)
+    case Regex.run(~r/(\d+)\s+passed[^\d]*(\d+)\s+failed/, output) do
+      [_match, passed_str, failed_str] ->
+        parse_test_results(String.to_integer(passed_str), String.to_integer(failed_str))
+
+      _no_match ->
+        # Pattern 2: "passed: X, failed: Y"
+        case Regex.run(~r/passed:\s*(\d+)[^\d]*failed:\s*(\d+)/, output) do
+          [_match, passed_str, failed_str] ->
+            parse_test_results(String.to_integer(passed_str), String.to_integer(failed_str))
+
+          _no_match ->
+            # Pattern 3: "X test(s) passed, Y failed" (more verbose)
+            case Regex.run(~r/(\d+)\s+tests?\s+passed[^\d]*(\d+)\s+failed/, output) do
+              [_match, passed_str, failed_str] ->
+                parse_test_results(String.to_integer(passed_str), String.to_integer(failed_str))
+
+              _no_match ->
+                # Pattern 4: Total summary line with success count
+                case Regex.run(~r/(\d+)\s+(?:tests|examples)\s+?.*?(\d+)\s+(?:failures|failed)/, output) do
+                  [_match, total_str, failed_str] ->
+                    total = String.to_integer(total_str)
+                    failed = String.to_integer(failed_str)
+                    passed = total - failed
+                    parse_test_results(passed, failed)
+
+                  _no_match ->
+                    # Pattern 5: Just count lines with "✓" or "✗" symbols (some test frameworks)
+                    passed = Enum.count(Regex.scan(~r/[✓✔]/, output))
+                    failed = Enum.count(Regex.scan(~r/[✗✖]/, output))
+
+                    case passed + failed do
+                      0 -> :error
+                      _ -> parse_test_results(passed, failed)
+                    end
+                end
+            end
+        end
+    end
+  end
+
+  defp parse_test_results(passed, failed) when is_integer(passed) and is_integer(failed) do
+    total = passed + failed
+
+    case total do
+      0 ->
+        :error
+
+      _ ->
         {:ok,
          %{
-           success_rate: passed / max(total, 1),
+           success_rate: passed / total,
            llm_reduction: 0.0,
-           regression: failed / max(total, 1),
+           regression: failed / total,
            test_count: total,
            failures: failed
          }}
-
-      _no_match ->
-        :error
     end
   end
 
