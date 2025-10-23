@@ -71,6 +71,19 @@ if [ -z "${DB_EXISTS:-}" ]; then
     echo ""
 fi
 
+# Configure PostgreSQL for TimescaleDB (requires preloading)
+echo -e "${GREEN}⚙️  Configuring PostgreSQL for TimescaleDB...${NC}"
+if ! grep -q "timescaledb" "$PGDATA/postgresql.conf" 2>/dev/null; then
+    echo "shared_preload_libraries = 'timescaledb'" >> "$PGDATA/postgresql.conf"
+    echo -e "${YELLOW}⚠️  PostgreSQL config updated - restarting server...${NC}"
+
+    # Stop and start PostgreSQL to apply config
+    pg_ctl -D "$PGDATA" stop -m fast 2>&1 | grep -v "^$" || true
+    sleep 2
+    pg_ctl -D "$PGDATA" start -l "$PGDATA/postgresql.log" 2>&1 | grep -v "^$" || true
+    sleep 3
+fi
+
 # Install extensions
 echo -e "${GREEN}📦 Installing PostgreSQL extensions...${NC}"
 

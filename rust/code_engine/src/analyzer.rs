@@ -1,101 +1,25 @@
 //! Main Codebase Analyzer
 //!
-//! This module provides the main orchestrator that coordinates all
-//! codebase analysis systems. It uses the storage layer for data
-//! and the analysis layer for logic.
+//! Orchestrates multi-language code analysis by coordinating:
+//! - LanguageAnalyzer: Semantic tokenization & complexity/quality metrics
+//! - LanguageSpecificRulesAnalyzer: Language-specific style & best practice rules
+//! - CrossLanguagePatternDetector: Polyglot pattern detection
+//! - CodeGraphBuilder: Call graph and import graph analysis
+//!
+//! Pure computation layer (no storage, no sessions, no caching).
+//! All data passed via parameters, all results returned to caller.
 
-// Import core types from main sparc-engine crate
-// Circular dependency - temporarily stubbed until sparc-engine integration
-// use sparc_engine::{
-//     graph::vector_dag::VectorDAG,
-//     memory::CodeGraph,
-//     naming::IntelligentNamer,
-// };
-
-// Import real implementations from analysis module
-use std::path::Path;
-
-use crate::{
-  analysis::{graph::CodeGraph, *},
-  storage::{graph::Graph, *},
-  types::*,
-};
-
-// Temporary placeholder for CodeNamer (will integrate with sparc-engine later)
-// Note: Real implementation is in sparc-engine/src/naming/codenamer (renamed to CodeNamer)
-#[derive(Debug, Clone)]
-pub struct CodeNamer;
-impl CodeNamer {
-  pub fn new() -> Self {
-    Self
-  }
-
-  // Delegate to existing intelligent naming system
-  pub fn suggest_name(
-    &self,
-    base_name: &str,
-    _element_type: crate::CodeElementType,
-    _category: crate::CodeElementCategory,
-    _context: &crate::CodeContext,
-  ) -> Vec<String> {
-    // TODO: Integrate with existing IntelligentNamer system
-    // For now, return basic fallback to avoid duplication
-    // The real implementation should call the existing intelligent namer
-    vec![base_name.to_lowercase().replace('_', "-")]
-  }
-}
-
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-// use crate::prompt_engine::ProjectTechStackFact;  // DISABLED: prompt_engine in separate crate
 use tracing::info;
 
-// NOTE: CodebaseDatabase removed - all storage now in Elixir (PostgreSQL)
-// use crate::codebase::CodebaseDatabase;
-
-/// Framework detector - delegates to existing framework detection system
-#[derive(Debug, Clone)]
-pub struct FrameworkDetector;
-
-impl FrameworkDetector {
-  pub fn new() -> Result<Self> {
-    Ok(Self)
-  }
-
-  /// Detect frameworks using existing framework detection system
-  pub fn detect_frameworks(&self, path: &Path) -> Result<Vec<String>> {
-    // TODO: Integrate with existing framework detection system
-    // For now, return empty to avoid duplication
-    // The real implementation should call the existing framework detector
-    Ok(Vec::new())
-  }
-}
-impl Default for FrameworkDetector {
-  fn default() -> Self {
-    Self
-  }
-}
-
-
-
-// Temporary placeholder for IntelligenceEngine (from sparc-engine)
-#[derive(Debug, Clone)]
-pub struct IntelligenceEngine;
-impl Default for IntelligenceEngine {
-  fn default() -> Self {
-    Self
-  }
-}
-
-// LibraryAnalysisCache removed - use codebase::storage::CodebaseDatabase instead
-// All database functionality moved to codebase module
-
-// External crate dependencies
-// parser-coordinator merged into universal-parser/ml_predictions
-// DISABLED: These are separate crates, not part of code_engine
-// use crate::linting_engine::LintingEngine;
-// use crate::prompt_engine::PromptEngine;
-// use crate::sparc_methodology::{SPARCProject, ProjectComplexity};
+use crate::analysis::multilang::{
+  LanguageAnalyzer, LanguageSpecificRulesAnalyzer, CrossLanguageCodePatternsDetector,
+};
+use crate::analysis::graph::CodeGraphBuilder;
+use crate::analysis::semantic::search_index::CodeMetadata;
 use parser_core::interfaces::PolyglotCodeParser; // Trait for parser methods
 use parser_core::{CodeAnalysisEngine, UniversalDependencies, PolyglotCodeParserFrameworkConfig};
 
@@ -105,19 +29,9 @@ use parser_core::{CodeAnalysisEngine, UniversalDependencies, PolyglotCodeParserF
 /// Those belong in sparc-engine orchestration layer
 pub struct CodebaseAnalyzer {
   // NOTE: storage removed - all data stored in Elixir (PostgreSQL), Rust does pure computation
-  // TODO: Remove global_cache - belongs in sparc-engine, not pure analysis
-  // /// Global cache manager
-  // pub global_cache: GlobalCacheCoordinator,
-  // TODO: Remove session_manager - belongs in sparc-engine
-  // /// Session manager
-  // pub session_manager: SessionCoordinator,
-  // TODO: Remove smart_intelligence - belongs in sparc-engine
-  // /// Smart intelligence engine
-  // pub smart_intelligence: SmartIntelligenceEngine,
   /// Performance tracker
   pub performance_tracker: PerformanceTracker,
   /// Analysis systems
-  pub namer: CodeNamer,
   pub metrics_collector: crate::analysis::metrics::MetricsCollector,
   pub pattern_detector: CodePatternDetector,
   pub graph_analyzer: CodeGraph,
@@ -129,8 +43,6 @@ pub struct CodebaseAnalyzer {
   pub universal_parser: UniversalDependencies,
   pub sparc_methodology: SPARCProject,
   pub prompt_engine: PromptEngine,
-  /// Framework detection system
-  pub framework_detector: FrameworkDetector,
 }
 
 impl CodebaseAnalyzer {
@@ -142,7 +54,6 @@ impl CodebaseAnalyzer {
     Ok(Self {
       // No storage - pure computation, data passed via parameters
       performance_tracker: PerformanceTracker::new(),
-      namer: CodeNamer::new(),
       metrics_collector: crate::analysis::metrics::MetricsCollector::new(),
       pattern_detector: CodePatternDetector::new(),
       graph_analyzer: CodeGraph::new(crate::analysis::graph::code_graph::GraphType::CallGraph),
@@ -164,7 +75,6 @@ impl CodebaseAnalyzer {
         // Fallback implementation if prompt engine fails to initialize
         panic!("Failed to initialize PromptEngine - this is required for ML-based analysis")
       }),
-      framework_detector: FrameworkDetector::new().unwrap_or_else(|_| FrameworkDetector::default()),
     })
   }
 
@@ -195,11 +105,6 @@ impl CodebaseAnalyzer {
     // TODO: Implement proper code analysis integration
     // For now, return a default result
     Err("Code analysis not yet implemented".to_string())
-  }
-
-  /// Get intelligent naming suggestions
-  pub fn get_naming_suggestions(&self, base_name: &str, element_type: CodeElementType, category: CodeElementCategory, context: &CodeContext) -> Vec<String> {
-    self.namer.suggest_name(base_name, element_type, category, context)
   }
 
   /// Get performance report
