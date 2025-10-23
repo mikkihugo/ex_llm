@@ -400,3 +400,36 @@ After implementing self-evolution improvements:
 - **CLAUDE.md** - Living knowledge base section
 
 Remember: **Self-evolution is a continuous process** - small improvements compound over time into significant capability gains.
+
+## ⚠️ RESEARCH CHECKLIST - Before Suggesting Changes
+
+Before suggesting ANY self-evolution improvements, new features, or evolution system changes:
+
+**Read First**:
+1. `/SELFEVOLVE.md` - Complete implementation status of all 5 priorities
+2. `/AGENT_BRIEFING.md` - System state and what's already implemented
+3. Check the commit history for recent evolution work
+
+**Already Implemented - Don't Suggest As Missing**:
+- ✅ Priority 1: Metrics Aggregation → `MetricsAggregationWorker` (Every 5 min)
+- ✅ Priority 2: Feedback Analysis → `FeedbackAnalyzer` (Every 30 min)
+- ✅ Priority 3: Agent Evolution → `Evolution` module with A/B testing
+- ✅ Priority 4: Knowledge Export → `KnowledgeExportWorker` (Daily)
+- ✅ Priority 5: Metrics Dashboard → IndexLive with real-time updates
+- ✅ NATS Integration → Working for telemetry publishing
+- ✅ Oban Jobs → All 8 workers scheduled in config/config.exs
+- ✅ PostgreSQL Schema → Knowledge artifacts with pgvector embeddings
+- ✅ Cost Optimization → Multi-tier routing (Rules → Cache → LLM)
+- ✅ Agent Lifecycle → DynamicSupervisor managing agent spawning
+
+**Always Ask Yourself**:
+- Is this already documented in SELFEVOLVE.md?
+- Is this feature already implemented?
+- Does the codebase already have this?
+- What's the actual current implementation status?
+
+**When You Find Missing Pieces**:
+- Document them clearly with file locations
+- Mark as TODO only if truly unimplemented
+- Reference what blocks them if applicable
+- Update SELFEVOLVE.md to reflect current state
