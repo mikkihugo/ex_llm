@@ -84,6 +84,7 @@ if config_env() != :test do
   # Platform detection for XLA configuration
   # Detects CUDA availability first, then falls back to OS-based detection
   # Priority: 1) Explicit XLA_TARGET env var, 2) nvidia-smi (CUDA available), 3) OS type
+  # Note: Metal (macOS GPU) NOT supported by EXLA - only via CoreML/MLX for other tasks
   platform =
     case System.get_env("XLA_TARGET") do
       nil ->
@@ -92,12 +93,12 @@ if config_env() != :test do
           :linux  # CUDA available (RTX 4080 on Linux, or any machine with NVIDIA GPU)
         else
           case :os.type() do
-            {:unix, :darwin} -> :macos   # macOS dev (CPU, no Metal XLA support available)
+            {:unix, :darwin} -> :macos   # macOS dev (CPU, Metal not supported by EXLA)
             _ -> :linux                  # Linux without CUDA (CPU fallback)
           end
         end
       "cuda" <> _ -> :linux            # Any explicit CUDA variant → use CUDA
-      "metal" -> :macos
+      "metal" -> :macos                # Metal: CPU fallback (Metal not supported by EXLA, use CoreML/MLX instead)
       "cpu" -> :cpu
       _ -> :cpu
     end

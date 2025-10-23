@@ -195,10 +195,11 @@ iex> Singularity.SemanticCodeSearch.search("async handler")
 
 ## Known Limitations
 
-1. **Metal/macOS XLA:** No upstream support
-   - macOS dev uses CPU fallback (works but slow)
-   - Only used for local development
-   - Not a production blocker
+1. **Metal/macOS XLA:** No upstream EXLA support
+   - macOS dev uses CPU fallback for EXLA (works but slow)
+   - Metal CAN be used for other GPU work (CoreML, MLX for embeddings, etc)
+   - Only EXLA training uses CPU fallback on macOS
+   - Not a production blocker (production is RTX 4080 with CUDA)
 
 2. **StarCoder2-7B Size:** 14GB full precision
    - Solution: INT8 quantization → 3.5GB
