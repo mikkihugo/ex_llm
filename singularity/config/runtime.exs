@@ -82,17 +82,21 @@ end
 # GPU-accelerated ML/AI configuration
 if config_env() != :test do
   # Platform detection for XLA configuration
-  # Every deployment targets RTX 4080 on Linux with CUDA 11.8
-  # During local development on macOS, uses CPU fallback (no Metal XLA support available)
+  # Detects CUDA availability first, then falls back to OS-based detection
+  # Priority: 1) Explicit XLA_TARGET env var, 2) nvidia-smi (CUDA available), 3) OS type
   platform =
     case System.get_env("XLA_TARGET") do
       nil ->
-        # Auto-detect based on platform
-        case :os.type() do
-          {:unix, :darwin} -> :macos   # macOS dev (CPU, slow training)
-          _ -> :linux                  # Linux prod with RTX 4080 (CUDA, fast training)
+        # Auto-detect based on CUDA availability (works for RTX 4080, external GPUs, or future Macs with CUDA)
+        if System.find_executable("nvidia-smi") do
+          :linux  # CUDA available (RTX 4080 on Linux, or any machine with NVIDIA GPU)
+        else
+          case :os.type() do
+            {:unix, :darwin} -> :macos   # macOS dev (CPU, no Metal XLA support available)
+            _ -> :linux                  # Linux without CUDA (CPU fallback)
+          end
         end
-      "cuda" <> _ -> :linux            # Any CUDA variant → Linux/RTX 4080
+      "cuda" <> _ -> :linux            # Any explicit CUDA variant → use CUDA
       "metal" -> :macos
       "cpu" -> :cpu
       _ -> :cpu

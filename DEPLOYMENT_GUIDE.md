@@ -28,23 +28,42 @@ NVIDIA RTX 4080 GPU (16GB VRAM)
 - **System:** 4GB reserved
 - **Max Model:** ~7B-10B parameters
 
-### Auto-Detection
+### Auto-Detection (Smart CUDA Check)
+
+Detection priority:
+1. Explicit `XLA_TARGET` environment variable (if set)
+2. Check for `nvidia-smi` (CUDA available?)
+3. Fall back to OS type (macOS = CPU, Linux = CPU or CUDA)
 
 **On macOS (local development):**
 ```bash
-$ uname -s  # Darwin
+$ command -v nvidia-smi  # Not found
 $ XLA_TARGET  # auto-detects → cpu
-# CPU fallback (no Metal XLA support available)
+# CPU fallback (no Metal XLA support available, no NVIDIA GPU)
 ```
 
-**On Linux (RTX 4080 production):**
+**On RTX 4080 (Linux production):**
 ```bash
-$ uname -s  # Linux
+$ command -v nvidia-smi  # Found!
 $ XLA_TARGET  # auto-detects → cuda118
 # CUDA 11.8 acceleration enabled automatically
 ```
 
+**On Linux without CUDA (fallback):**
+```bash
+$ command -v nvidia-smi  # Not found
+$ XLA_TARGET  # auto-detects → cpu
+# CPU fallback (no GPU available)
+```
+
 **No manual configuration needed** - the system handles it.
+
+**Manual override (if needed):**
+```bash
+export XLA_TARGET=cpu        # Force CPU even if CUDA available
+export XLA_TARGET=cuda120    # Force specific CUDA version
+export XLA_TARGET=metal      # Future Metal support on Mac
+```
 
 ## Model Configuration
 
@@ -104,18 +123,31 @@ iex> Singularity.Repo.query!("SELECT version();")
 
 **Automatic (no action needed):**
 ```bash
-# .envrc auto-sets on Linux:
-XLA_TARGET=cuda118       # Auto-detected for RTX 4080
-EXLA_MODE=opt            # Optimized precompiled binaries
+# .envrc auto-detects CUDA availability:
+XLA_TARGET=cuda118       # If nvidia-smi found (CUDA available)
+XLA_TARGET=cpu           # If nvidia-smi not found (no GPU)
+EXLA_MODE=opt            # Optimized precompiled binaries (always set)
+```
+
+**How detection works:**
+```bash
+if command -v nvidia-smi >/dev/null 2>&1; then
+  XLA_TARGET=cuda118     # CUDA is available
+else
+  XLA_TARGET=cpu         # No CUDA - use CPU
+fi
 ```
 
 **Optional overrides (if debugging):**
 ```bash
-# Force CPU even on RTX 4080 (for testing)
+# Force CPU even if CUDA available (for testing)
 export XLA_TARGET=cpu
 
-# Or specific CUDA version
+# Force specific CUDA version
 export XLA_TARGET=cuda120  # (cuda118, cuda111 also available)
+
+# Future: Metal support on Mac
+export XLA_TARGET=metal
 ```
 
 ## Verification
