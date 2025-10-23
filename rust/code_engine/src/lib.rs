@@ -62,10 +62,10 @@
 
 // Core modules - reorganized for domain-driven design
 pub mod domain;   // Domain types (symbols, files, metrics, relationships)
-// pub mod graph;    // DISABLED: Missing type definitions (GraphHandle, CodePatternDatabase)
+pub mod graph;    // Code dependency graphs and relationship modeling
 pub mod vectors;  // Vector embeddings and operations
 // pub mod embeddings; // DISABLED: Requires external embedding services (handled by Elixir)
-// pub mod analysis; // DISABLED: Missing type definitions (FileAnalysisResult, RustAnalysisResult, etc.)
+// pub mod analysis; // DISABLED: Requires refactoring - hardcoded storage::graph imports
 pub mod api;      // API types
 pub mod parsing;  // Code parsing
 // paths module removed - NIF doesn't need file paths
@@ -82,7 +82,9 @@ pub use codebase::storage as storage;
 // Re-export main types for easy access
 // Domain types (new organization)
 pub use domain::*;
-// pub use graph::*;  // DISABLED - module disabled
+pub use graph::{Graph, GraphHandle, GraphNode, GraphEdge, GraphType};  // Core graph types
+// Note: graph::dag types (FileAnalysisResult, etc.) are available but not re-exported here
+// They're used by nif_bindings when enabled
 pub use vectors::*;
 
 // NEW: Codebase types (single source of truth)
@@ -121,13 +123,16 @@ pub use parsing::*;
 #[cfg(feature = "nif")]
 pub mod nif;
 
-// nif_bindings DISABLED - has dependencies on disabled modules (graph, analysis)
-// These modules have missing type definitions that need to be refactored first
-// TODO: Re-enable when type system is unified:
-// - GraphHandle needs to be moved/re-exported from storage module
-// - FileAnalysisResult needs to be defined in domain or codebase
-// - RustAnalysisResult, PythonAnalysisResult need to be migrated
-// - CodePatternDatabase needs to be available
-#[cfg(feature = "nif")]
-#[cfg(all())]  // Explicitly disabled - change to remove this cfg gate when ready
-pub mod nif_bindings;
+// nif_bindings COMPLETELY DISABLED - analysis module required
+//
+// Root cause: analysis module imports `crate::storage::graph::GraphHandle`
+// but storage module doesn't exist (removed as part of refactoring).
+//
+// To re-enable nif_bindings:
+// 1. Refactor analysis/graph/code_graph.rs to import from crate::graph
+// 2. Fix all analysis/* imports of storage::graph to use crate::graph
+// 3. Move/create missing types: GraphHandle, SemanticFeatures, etc.
+// 4. Uncomment the line below
+//
+// #[cfg(feature = "nif")]
+// pub mod nif_bindings;
