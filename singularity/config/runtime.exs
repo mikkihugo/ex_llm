@@ -97,12 +97,13 @@ if config_env() != :test do
   config :nx, :default_backend, EXLA.Backend
 
   config :exla,
-    default_client:
+    default_client: (
       cond do
         xla_target == "metal" -> :host   # Metal is handled via host client on macOS
         xla_target == "cuda" -> :cuda
         true -> :host                     # CPU fallback if Metal/CUDA unavailable
-      end,
+      end
+    ),
     clients: [
       # RTX 4080 16GB (Linux/production) - allocate 75% for models (12GB), leave 4GB for system
       cuda: [platform: :cuda, memory_fraction: 0.75],

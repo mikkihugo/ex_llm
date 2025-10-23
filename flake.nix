@@ -214,10 +214,13 @@
         getDataServices = env: lib.optionals (lib.elem "postgresql" env.services) [
           # PostgreSQL with extensions for vector search and time-series
           (pkgs.postgresql_16.withPackages (ps:
-            let
-              extensions = ["pgvector" "timescaledb" "postgis" "pgtap" "pg_cron"];
-              available = lib.filter (name: lib.hasAttr name ps) extensions;
-            in map (name: lib.getAttr name ps) available
+            [
+              ps.pgvector      # Vector embeddings for semantic search
+              ps.postgis       # Geospatial queries
+              ps.timescaledb   # Time-series database
+              ps.pgtap         # PostgreSQL testing framework
+              ps.pg_cron       # Scheduled tasks
+            ]
           ))
         ];
 

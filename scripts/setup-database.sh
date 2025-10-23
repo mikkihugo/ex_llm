@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Database setup script for Singularity (Nix PostgreSQL)
-# Creates shared database with extensions for all environments
+# Creates shared databases with extensions for all environments
+# Applications: singularity, centralcloud, genesis
 
 set -euo pipefail
 
@@ -24,10 +25,11 @@ NC='\033[0m'
 DB_NAME="${SINGULARITY_DB_NAME:-singularity}"
 DB_USER="${SINGULARITY_DB_USER:-${USER}}"
 CENTRALCLOUD_DB_NAME="${CENTRALCLOUD_DB_NAME:-centralcloud}"
+GENESIS_DB_NAME="${GENESIS_DB_NAME:-genesis}"
 
 echo -e "${GREEN}🗄️  Singularity Database Setup${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo "Setting up databases: '$DB_NAME' and '$CENTRALCLOUD_DB_NAME'"
+echo "Setting up databases: '$DB_NAME', '$CENTRALCLOUD_DB_NAME', and '$GENESIS_DB_NAME'"
 echo ""
 
 # Check if PostgreSQL is running
@@ -134,9 +136,33 @@ fi
 echo -e "${GREEN}📦 Installing PostgreSQL extensions in centralcloud...${NC}"
 psql -d "$CENTRALCLOUD_DB_NAME" <<SQL
 CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS pgvector;
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 SELECT 'Extensions installed for centralcloud';
+SQL
+
+echo ""
+
+# Create genesis database if needed
+echo -e "${GREEN}🗄️  Setting up Genesis database...${NC}"
+if psql -lqt | cut -d \| -f 1 | grep -qw "$GENESIS_DB_NAME"; then
+    echo -e "${YELLOW}📊 Database '$GENESIS_DB_NAME' already exists${NC}"
+else
+    echo -e "${GREEN}Creating database '$GENESIS_DB_NAME'...${NC}"
+    createdb "$GENESIS_DB_NAME" -O "$DB_USER"
+    echo -e "${GREEN}✅ Genesis database created${NC}"
+fi
+
+# Install extensions in genesis database
+echo -e "${GREEN}📦 Installing PostgreSQL extensions in genesis...${NC}"
+psql -d "$GENESIS_DB_NAME" <<SQL
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+SELECT 'Extensions installed for genesis';
 SQL
 
 echo ""
@@ -159,6 +185,15 @@ mix ecto.migrate
 echo -e "${GREEN}✅ Centralcloud migrations complete${NC}"
 echo ""
 
+# Run Ecto migrations for genesis
+echo -e "${GREEN}🔄 Running Ecto migrations for genesis...${NC}"
+cd "$PROJECT_ROOT/genesis"
+
+mix ecto.migrate
+
+echo -e "${GREEN}✅ Genesis migrations complete${NC}"
+echo ""
+
 # Verify setup
 echo -e "${GREEN}🔍 Verifying database setup...${NC}"
 
@@ -177,11 +212,15 @@ echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━
 echo -e "${GREEN}✨ Database setup complete!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo "Database name: $DB_NAME"
+echo "Databases created:"
+echo "  • $DB_NAME (Singularity)"
+echo "  • $CENTRALCLOUD_DB_NAME (CentralCloud)"
+echo "  • $GENESIS_DB_NAME (Genesis)"
+echo ""
 echo "Database user: $DB_USER"
 echo ""
 echo "Next steps:"
-echo "  1. Import knowledge artifacts: mix knowledge.migrate"
+echo "  1. Import knowledge artifacts: cd $PROJECT_ROOT/singularity && mix knowledge.migrate"
 echo "  2. Generate embeddings:        moon run templates_data:embed-all"
 echo "  3. View statistics:            moon run templates_data:stats"
 echo ""

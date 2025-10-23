@@ -169,6 +169,56 @@ defmodule Singularity.Agent do
     update_metrics(agent_id, %{force_improvement: true, force_reason: reason})
   end
 
+  @doc """
+  Execute a task using the specified agent.
+
+  Routes to the appropriate agent type module (ArchitectureAgent, CostOptimizedAgent, etc.)
+  which decides what tools to use and how to orchestrate them.
+
+  ## Parameters
+
+  - `agent_id`: String identifier of the agent (maps to agent type in registry)
+  - `task`: String description of the task or task name
+  - `context`: Map with task context (path, requirements, etc.)
+
+  ## Returns
+
+  - `{:ok, result}` - Task executed successfully with result
+  - `{:error, :not_found}` - Agent not found in registry
+  - `{:error, reason}` - Task execution failed with reason
+  """
+  @spec execute_task(String.t(), String.t(), map()) ::
+          {:ok, term()} | {:error, :not_found | term()}
+  def execute_task(agent_id, task, context \\ %{})
+
+  def execute_task(agent_id, task, context) when is_binary(agent_id) and is_binary(task) and is_map(context) do
+    case get_agent_type(agent_id) do
+      {:ok, agent_type} ->
+        case resolve_agent_module(agent_type) do
+          {:ok, module} ->
+            try do
+              module.execute_task(task, context)
+            rescue
+              e ->
+                Logger.error("Agent task execution failed",
+                  agent_id: agent_id,
+                  agent_type: agent_type,
+                  task: task,
+                  error: inspect(e)
+                )
+
+                {:error, "Agent task execution failed: #{Exception.message(e)}"}
+            end
+
+          {:error, _} = error ->
+            error
+        end
+
+      {:error, _} = error ->
+        error
+    end
+  end
+
   ## GenServer callbacks
 
   @impl true
@@ -385,6 +435,58 @@ defmodule Singularity.Agent do
       [] ->
         {:error, :not_found}
     end
+  end
+
+  defp get_agent_type(agent_id) do
+    agent_id = to_string(agent_id)
+
+    case Registry.lookup(ProcessRegistry, {:agent, agent_id}) do
+      [{_pid, agent_type}] when is_atom(agent_type) ->
+        {:ok, agent_type}
+
+      [{_pid, agent_type}] when is_binary(agent_type) ->
+        {:ok, String.to_atom(agent_type)}
+
+      [{_pid, _}] ->
+        # Agent found but no type metadata
+        {:error, :agent_type_unknown}
+
+      [] ->
+        {:error, :not_found}
+    end
+  end
+
+  defp resolve_agent_module(agent_type) when is_atom(agent_type) do
+    case agent_type do
+      :architecture ->
+        {:ok, Singularity.Agents.ArchitectureAgent}
+
+      :cost_optimized ->
+        {:ok, Singularity.Agents.CostOptimizedAgent}
+
+      :technology ->
+        {:ok, Singularity.Agents.TechnologyAgent}
+
+      :refactoring ->
+        {:ok, Singularity.Agents.RefactoringAgent}
+
+      :self_improving ->
+        {:ok, Singularity.Agents.SelfImprovingAgent}
+
+      :chat ->
+        {:ok, Singularity.Agents.ChatConversationAgent}
+
+      _ ->
+        {:error, "Unknown agent type: #{inspect(agent_type)}"}
+    end
+  end
+
+  defp resolve_agent_module(agent_type) when is_binary(agent_type) do
+    agent_type
+    |> String.to_atom()
+    |> resolve_agent_module()
+  rescue
+    _ -> {:error, "Invalid agent type: #{agent_type}"}
   end
 
   defp make_id do

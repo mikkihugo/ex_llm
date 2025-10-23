@@ -6,7 +6,7 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
     execute "CREATE EXTENSION IF NOT EXISTS pgcrypto"
     execute ~s(CREATE EXTENSION IF NOT EXISTS "uuid-ossp")
 
-    # Vector and similarity search
+    # Vector and similarity search (pgvector configured in Nix)
     execute "CREATE EXTENSION IF NOT EXISTS vector"
 
     # Text search and fuzzy matching
@@ -18,9 +18,6 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
     execute "CREATE EXTENSION IF NOT EXISTS btree_gin"
     execute "CREATE EXTENSION IF NOT EXISTS btree_gist"
 
-    # Time-series data (skip for now - can cause PostgreSQL to crash)
-    # execute "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE"
-
     # Performance monitoring
     execute "CREATE EXTENSION IF NOT EXISTS pg_stat_statements"
     execute "CREATE EXTENSION IF NOT EXISTS pg_buffercache"
@@ -29,15 +26,30 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
     # Additional useful extensions
     execute "CREATE EXTENSION IF NOT EXISTS hstore"
     execute "CREATE EXTENSION IF NOT EXISTS ltree"
+
+    # TimescaleDB (time-series data) - configured in Nix
+    execute "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE"
+
+    # PostGIS (geospatial) - configured in Nix
+    execute "CREATE EXTENSION IF NOT EXISTS postgis"
+
+    # Scheduled tasks
+    execute "CREATE EXTENSION IF NOT EXISTS pg_cron"
+
+    # PostgreSQL testing
+    execute "CREATE EXTENSION IF NOT EXISTS pgtap"
   end
 
   def down do
+    execute "DROP EXTENSION IF EXISTS pgtap"
+    execute "DROP EXTENSION IF EXISTS pg_cron"
+    execute "DROP EXTENSION IF EXISTS postgis"
+    execute "DROP EXTENSION IF EXISTS timescaledb"
     execute "DROP EXTENSION IF EXISTS ltree"
     execute "DROP EXTENSION IF EXISTS hstore"
     execute "DROP EXTENSION IF EXISTS pg_prewarm"
     execute "DROP EXTENSION IF EXISTS pg_buffercache"
     execute "DROP EXTENSION IF EXISTS pg_stat_statements"
-    # execute "DROP EXTENSION IF EXISTS timescaledb"
     execute "DROP EXTENSION IF EXISTS btree_gist"
     execute "DROP EXTENSION IF EXISTS btree_gin"
     execute "DROP EXTENSION IF EXISTS unaccent"

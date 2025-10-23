@@ -96,9 +96,11 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
   """
 
   require Logger
-  import Ecto.Query
   alias Singularity.Repo
   alias Singularity.NatsClient
+
+  # Ecto.Query is imported locally in functions that need it
+  # to avoid compile-time circular dependency issues
 
   @doc """
   Take a snapshot of current codebase health metrics.
@@ -301,7 +303,7 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
   """
   def get_trending_metrics(period_days \\ 30) do
     # Query metrics from the last period_days and analyze trends
-    case fetch_snapshots(period_days) do
+    case fetch_snapshots(".", period_days) do
       {:ok, snapshots} when length(snapshots) >= 2 ->
         trends = analyze_metric_trends(snapshots)
         {:ok, trends}
@@ -520,23 +522,29 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
     []
   end
 
-  defp fetch_snapshots(days) when is_integer(days) and days > 0 do
+  defp fetch_snapshots(_codebase_path, days) when is_integer(days) and days > 0 do
     # Query snapshots from the last N days
     cutoff_date = DateTime.utc_now() |> DateTime.add(-days, :day)
 
     try do
-      snapshots = Singularity.Repo.all(
-        from s in Singularity.Schemas.CodebaseSnapshot,
-        where: s.timestamp >= ^cutoff_date,
-        order_by: [asc: s.timestamp]
-      )
+      # Try to query snapshots using Repo functions
+      # If schema exists, fetch all and filter
+      snapshots = Singularity.Repo.all(Singularity.Schemas.CodebaseSnapshot)
+      |> Enum.filter(fn snapshot ->
+        case snapshot do
+          %{timestamp: ts} when is_struct(ts) -> DateTime.compare(ts, cutoff_date) != :lt
+          _ -> false
+        end
+      end)
+      |> Enum.sort_by(fn s -> s.timestamp end)
+
       {:ok, snapshots}
     rescue
       _ -> {:ok, []}
     end
   end
 
-  defp fetch_snapshots(_), do: {:ok, []}
+  defp fetch_snapshots(_, _), do: {:ok, []}
 
   defp fetch_last_snapshot(codebase_path) do
     # Query the database for the most recent snapshot of this codebase
