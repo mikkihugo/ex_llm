@@ -19,8 +19,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Living Knowledge Base** (Git ←→ PostgreSQL bidirectional learning)
 - **Multi-AI Orchestration** (Claude, Gemini, OpenAI, Copilot via NATS)
 - **Distributed Messaging** (NATS with JetStream)
+- **Multi-System Architecture** (Multiple Singularity instances ←→ Shared CentralCloud knowledge)
 
-**Environment:** All runs in Nix (dev/test/prod) with single shared PostgreSQL database.
+**Environment:** Nix-based (dev/test/prod) with PostgreSQL. Supports **multiple Singularity instances** learning collectively through a centralized CentralCloud service.
+
+### Multi-System Architecture
+
+Singularity supports **distributed learning across multiple instances** via CentralCloud:
+
+```
+Singularity Instance 1 ─────┐
+Singularity Instance 2 ─────┤
+Singularity Instance N ─────┴──→ CentralCloud (Knowledge Authority)
+                                  ↓
+                         PostgreSQL (Shared KB)
+```
+
+**Pattern:** Framework Discovery & Enrichment
+
+1. **Singularity discovers unknown framework** → Queries CentralCloud API
+2. **CentralCloud looks it up** → Checks local database for known patterns
+3. **CentralCloud enriches patterns** → Uses Rust engines (if enabled) to analyze
+4. **Stores in shared database** → All Singularity instances benefit immediately
+5. **Singularity uses enriched data** → Gets full framework context
+
+**Benefits:**
+- ✅ No duplicate learning across instances (collective intelligence)
+- ✅ Constant knowledge improvement (patterns learned by one help all)
+- ✅ Zero Singularity ←→ Singularity coupling (only via CentralCloud)
+- ✅ CentralCloud independent of any Singularity (can run standalone)
+- ✅ Flexible engine usage (use only engines that add value)
 
 ## Complete Documentation
 
