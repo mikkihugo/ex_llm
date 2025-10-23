@@ -15,7 +15,7 @@ defmodule Singularity.Bootstrap.Vision do
 
   ## Integration Points
 
-  - `Singularity.Bootstrap.StageManager` - Current stage tracking
+  - `Singularity.Bootstrap.EvolutionStageController` - Current stage tracking
   - `Singularity.Execution.Planning.SafeWorkPlanner` - SAFe hierarchical planning system
   - `Singularity.Code.StartupCodeIngestion` - Executes vision-driven tasks
 
@@ -35,7 +35,7 @@ defmodule Singularity.Bootstrap.Vision do
 
   require Logger
   alias Singularity.Execution.Planning.SafeWorkPlanner
-  alias Singularity.Bootstrap.StageManager
+  alias Singularity.Bootstrap.EvolutionStageController
 
   @portfolio_vision %{
     statement: """
@@ -462,7 +462,7 @@ defmodule Singularity.Bootstrap.Vision do
   Get the vision for the current bootstrap stage.
   """
   def get_current_vision do
-    stage = StageManager.get_current_stage()
+    stage = EvolutionStageController.get_current_stage()
     get_stage_vision(stage)
   end
 
@@ -506,7 +506,7 @@ defmodule Singularity.Bootstrap.Vision do
   """
   def stage_vision_complete? do
     vision = get_current_vision()
-    metrics = StageManager.status().metrics
+    metrics = EvolutionStageController.status().metrics
 
     Enum.all?(vision.metrics, fn {key, required_value} ->
       actual = Map.get(metrics, key)

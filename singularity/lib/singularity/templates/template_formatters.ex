@@ -1,4 +1,4 @@
-defmodule Singularity.Templates.SolidHelpers do
+defmodule Singularity.Templates.TemplateFormatters do
   @moduledoc """
   Custom Solid (Handlebars) helpers for Singularity templates.
 
@@ -13,7 +13,7 @@ defmodule Singularity.Templates.SolidHelpers do
 
   Register helpers on application startup:
 
-      Singularity.Templates.SolidHelpers.register_all()
+      Singularity.Templates.TemplateFormatters.register_all()
 
   Then use in templates:
 

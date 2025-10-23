@@ -20,7 +20,7 @@ defmodule Singularity.Templates.Renderer do
   """
 
   alias Singularity.Knowledge.TemplateService
-  alias Singularity.Templates.SolidHelpers
+  alias Singularity.Templates.TemplateFormatters
   require Logger
 
   @templates_data_dir Application.compile_env(:singularity, :templates_data_dir, "templates_data")
@@ -288,7 +288,7 @@ defmodule Singularity.Templates.Renderer do
 
   defp render_solid(solid_template, variables) do
     # Ensure helpers are registered
-    SolidHelpers.register_all()
+    TemplateFormatters.register_all()
 
     case Solid.render(solid_template, variables) do
       {:ok, rendered} ->

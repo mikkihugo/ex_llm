@@ -128,7 +128,7 @@ children = [
 - `lib/singularity/code/codebase_detector.ex` - Documentation
 - `lib/singularity/analysis/metadata_validator.ex` - References
 - `lib/singularity/analysis/ast_extractor.ex` - References
-- `lib/singularity/bootstrap/stage_manager.ex` - References
+- `lib/singularity/bootstrap/evolution_stage_controller.ex` - References
 - `lib/singularity/bootstrap/vision.ex` - References
 - `lib/singularity/code_analyzer/cache.ex` - Documentation
 - `lib/mix/tasks/metadata.validate.ex` - References

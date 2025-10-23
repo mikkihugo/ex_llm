@@ -28,7 +28,7 @@ defmodule Singularity.Health do
 
   defp safe_queue_depth do
     try do
-      Singularity.Manager.queue_depth()
+      Singularity.SystemStatusMonitor.queue_depth()
     catch
       :exit, _ -> 0
     end

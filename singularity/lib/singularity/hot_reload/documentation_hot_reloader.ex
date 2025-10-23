@@ -40,7 +40,7 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
 
   use GenServer
   require Logger
-  alias Singularity.HotReload.{ModuleReloader, ImprovementGateway}
+  alias Singularity.HotReload.{ModuleReloader, SafeCodeChangeDispatcher}
   alias Singularity.Agents.{DocumentationUpgrader, QualityEnforcer}
 
   @type improvement_type :: :documentation | :quality | :code | :agent_behavior
@@ -290,7 +290,7 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
 
   defp hot_reload_code_file(payload) do
     # Use the improvement gateway for general code improvements
-    case ImprovementGateway.dispatch(payload.content,
+    case SafeCodeChangeDispatcher.dispatch(payload.content,
            agent_id: payload.agent_id,
            metadata: payload.metadata
          ) do

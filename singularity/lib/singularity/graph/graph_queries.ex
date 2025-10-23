@@ -26,7 +26,7 @@ defmodule Singularity.Graph.GraphQueries do
       GraphQueries.find_callees("manager/0")
 
       # Find module dependencies
-      GraphQueries.find_dependencies("Singularity.Manager")
+      GraphQueries.find_dependencies("Singularity.SystemStatusMonitor")
 
       # Find circular dependencies
       GraphQueries.find_circular_dependencies()

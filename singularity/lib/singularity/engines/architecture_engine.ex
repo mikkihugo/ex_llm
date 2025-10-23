@@ -141,9 +141,7 @@ defmodule Singularity.ArchitectureEngine do
   use Rustler,
     otp_app: :singularity,
     crate: :architecture_engine,
-    path: "../rust/architecture_engine",
-    # Temporarily skip compilation to fix hot reload
-    skip_compilation?: true
+    path: "../rust/architecture_engine"
 
   require Logger
   alias Singularity.Repo

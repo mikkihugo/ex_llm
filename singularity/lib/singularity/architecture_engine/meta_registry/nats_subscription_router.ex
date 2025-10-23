@@ -1,4 +1,4 @@
-defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
+defmodule Singularity.ArchitectureEngine.MetaRegistry.NatsSubscriptionRouter do
   @moduledoc """
   NATS message handlers for the meta-registry system.
 
@@ -43,7 +43,7 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
     {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.meta_registry_templates())
     {:ok, _sid} = Gnat.sub(gnat, self(), NatsSubjects.meta_registry_refactoring())
 
-    Logger.info("Meta-Registry MessageHandlers listening on NATS subjects")
+    Logger.info("Meta-Registry NatsSubscriptionRouter listening on NATS subjects")
 
     {:ok, %{gnat: gnat}}
   end

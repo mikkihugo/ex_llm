@@ -1,4 +1,4 @@
-defmodule Singularity.ArchitectureEngine.EtsManager do
+defmodule Singularity.ArchitectureEngine.ConfigCache do
   @moduledoc """
   ETS Manager for ArchitectureEngine configuration
 

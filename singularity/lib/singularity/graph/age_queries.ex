@@ -301,7 +301,7 @@ defmodule Singularity.Graph.AgeQueries do
 
   ## Examples
 
-      iex> AgeQueries.find_module_dependencies_cypher("Singularity.Manager")
+      iex> AgeQueries.find_module_dependencies_cypher("Singularity.SystemStatusMonitor")
       {:ok, [
         %{name: "Singularity.Runner", dependency_type: "internal"},
         %{name: "Ecto.Query", dependency_type: "external"}
@@ -310,7 +310,7 @@ defmodule Singularity.Graph.AgeQueries do
   ## Cypher Query
 
   ```cypher
-  MATCH (module:Module {name: 'Singularity.Manager'})-[:IMPORTS]->(dep:Module)
+  MATCH (module:Module {name: 'Singularity.SystemStatusMonitor'})-[:IMPORTS]->(dep:Module)
   RETURN dep.name, dep.dependency_type
   ```
   """

@@ -37,7 +37,7 @@ defmodule Mix.Tasks.Graph.Populate do
       # Check graphs in IEx
       iex> alias Singularity.Graph.GraphQueries
       iex> GraphQueries.find_callers("process_data/2")
-      iex> GraphQueries.find_dependencies("Singularity.Manager")
+      iex> GraphQueries.find_dependencies("Singularity.SystemStatusMonitor")
   """
 
   use Mix.Task
@@ -108,7 +108,7 @@ defmodule Mix.Tasks.Graph.Populate do
         Mix.shell().info("Query examples:")
         Mix.shell().info("  iex> alias Singularity.Graph.GraphQueries")
         Mix.shell().info("  iex> GraphQueries.find_callers(\"my_function/2\")")
-        Mix.shell().info("  iex> GraphQueries.find_dependencies(\"Singularity.Manager\")")
+        Mix.shell().info("  iex> GraphQueries.find_dependencies(\"Singularity.SystemStatusMonitor\")")
 
       {:error, reason} ->
         Mix.shell().error("✗ Graph population failed: #{inspect(reason)}")

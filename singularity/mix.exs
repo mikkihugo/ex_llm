@@ -84,20 +84,17 @@ defmodule Singularity.MixProject do
       # Rustler NIFs
       {:rustler, "~> 0.37", runtime: false},
 
-      # All 9 Rust NIFs (compile: false = won't rebuild every time)
-      # Only include engines that actually exist
-      {:architecture_engine,
-       path: "../rust/architecture_engine", runtime: false, app: false, compile: false},
-      {:code_engine, path: "../rust/code_engine", runtime: false, app: false, compile: false},
-      {:embedding_engine,
-       path: "../rust/embedding_engine", runtime: false, app: false, compile: false},
+      # All 6 Rust NIFs with Rustler integration (compile: false)
+      # Rustler NIF compilation happens via Elixir modules that call `use Rustler`
+      # Each module has: use Rustler, otp_app: :singularity, crate: :engine_name, path: ../..
+      # NIFs are compiled on-demand when modules are loaded, not via Mix dependency compilation
+      {:architecture_engine, path: "../rust/architecture_engine", runtime: false, compile: false, app: false},
+      {:code_engine, path: "../rust/code_engine", runtime: false, compile: false, app: false},
+      {:embedding_engine, path: "../rust/embedding_engine", runtime: false, compile: false, app: false},
       # knowledge_engine consolidated into architecture_engine
-      {:parser_engine,
-       path: "../rust/parser_engine", runtime: false, app: false, compile: false, optional: true},
-      {:prompt_engine,
-       path: "../rust/prompt_engine", runtime: false, app: false, compile: false, optional: true},
-      {:quality_engine,
-       path: "../rust/quality_engine", runtime: false, app: false, compile: false},
+      {:parser_engine, path: "../rust/parser_engine", runtime: false, compile: false, app: false, optional: true},
+      {:prompt_engine, path: "../rust/prompt_engine", runtime: false, compile: false, app: false, optional: true},
+      {:quality_engine, path: "../rust/quality_engine", runtime: false, compile: false, app: false},
       # Other engines are symlinks to rust/ or rust-central/ directories (already included in workspace)
 
       # Data & Serialization
@@ -110,13 +107,13 @@ defmodule Singularity.MixProject do
       {:lua, "~> 0.3.0"},
 
       # T5 Training & LLM Integration
-      {:bumblebee, "~> 0.5"},
+      # TEMPORARILY DISABLED: Bumblebee and EXLA cause startup failures on macOS
+      # EXLA requires XLA C++ compilation which isn't available in this environment
+      # Can be re-enabled on Linux systems with proper build tools
+      # {:bumblebee, "~> 0.5"},
       {:nx, "~> 0.6"},
-      # EXLA with graceful fallback to CPU (auto-detect CUDA/Metal or use CPU)
-      # On macOS: Falls back to CPU (no Metal XLA binaries available)
-      # On Linux: Uses CUDA for RTX 4080
-      {:exla, "~> 0.6", optional: true},
-      {:kino, "~> 0.12"},
+      # {:exla, "~> 0.6", optional: true, app: false},
+      # {:kino, "~> 0.12"},
 
       # Distributed Systems
       {:libcluster, "~> 3.3"},
@@ -181,7 +178,7 @@ defmodule Singularity.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "gleam.deps.get", "deps.compile"],
+      setup: ["deps.get", "deps.compile"],
       test: ["test"],
       "test.ci": ["test --color --cover"],
       coverage: ["coveralls.html"],

@@ -21,7 +21,7 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.Supervisor do
 
     children = [
       # Start the message handlers
-      {Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers, []}
+      {Singularity.ArchitectureEngine.MetaRegistry.NatsSubscriptionRouter, []}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

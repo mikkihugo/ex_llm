@@ -61,12 +61,17 @@ defmodule Singularity.Application do
       Singularity.Execution.SPARC.Supervisor,
       # Manages: TodoSwarmCoordinator
       Singularity.Execution.Todos.Supervisor,
+      # Tracks bootstrap progression across evolutionary stages
+      Singularity.Bootstrap.EvolutionStageController,
 
       # Layer 4: Agents & Execution - Dynamic agent management and task execution
       # Manages: RuntimeBootstrapper, AgentSupervisor (DynamicSupervisor)
       Singularity.Agents.Supervisor,
       # Manages: Control, Runner (moved from ApplicationSupervisor in future refactor)
       Singularity.ApplicationSupervisor,
+
+      # Real Workload Feeder - Executes real LLM tasks and measures actual performance metrics
+      Singularity.Agents.RealWorkloadFeeder,
 
       # Documentation System - Multi-language quality enforcement and upgrades
       # Manages: DocumentationUpgrader, QualityEnforcer, DocumentationPipeline

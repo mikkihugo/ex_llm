@@ -1,4 +1,4 @@
-defmodule Singularity.HotReload.ImprovementGateway do
+defmodule Singularity.HotReload.SafeCodeChangeDispatcher do
   @moduledoc """
   Thin facade that ensures hot-reload guardrails are used when other systems
   (like TaskGraph auto-fixes) generate code changes outside the dedicated

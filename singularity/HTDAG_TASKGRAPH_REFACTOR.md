@@ -135,7 +135,7 @@ lib/singularity/execution/planning/execution_tracer.ex
   - `lib/singularity/agents/runtime_bootstrapper.ex`
   - `lib/singularity/agents/supervisor.ex`
 - Bootstrap modules (2):
-  - `lib/singularity/bootstrap/stage_manager.ex`
+  - `lib/singularity/bootstrap/evolution_stage_controller.ex`
   - `lib/singularity/bootstrap/vision.ex`
 - Code modules (2):
   - `lib/singularity/code/full_repo_scanner.ex`
@@ -158,7 +158,7 @@ lib/singularity/execution/planning/execution_tracer.ex
   - `lib/singularity/execution/todos/README.md`
   - `lib/singularity/execution/todos/todo_worker_agent.ex`
 - Infrastructure modules (5):
-  - `lib/singularity/hot_reload/improvement_gateway.ex`
+  - `lib/singularity/hot_reload/safe_code_change_dispatcher.ex`
   - `lib/singularity/llm/nats_operation.ex`
   - `lib/singularity/llm/prompt/template_aware.ex`
   - `lib/singularity/startup_warmup.ex`

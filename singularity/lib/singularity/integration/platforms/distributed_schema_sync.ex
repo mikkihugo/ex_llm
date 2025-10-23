@@ -1,4 +1,4 @@
-defmodule Singularity.EngineDatabaseManager do
+defmodule Singularity.DistributedSchemaSync do
   @moduledoc """
   Connects to singularity-engine databases and manages schema synchronization
   across the distributed service architecture.

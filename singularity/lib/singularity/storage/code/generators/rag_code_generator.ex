@@ -53,7 +53,7 @@ defmodule Singularity.RAGCodeGenerator do
   """
 
   require Logger
-  alias Singularity.{EmbeddingEngine, CodeModel, HotReload.ImprovementGateway}
+  alias Singularity.{EmbeddingEngine, CodeModel, HotReload.SafeCodeChangeDispatcher}
   alias Jason
   alias Singularity.Code.Quality.TemplateValidator
 
@@ -830,7 +830,7 @@ defmodule Singularity.RAGCodeGenerator do
       |> Map.merge(compact_metadata(extra_metadata))
       |> Map.put_new("source", "rag_code_generator")
 
-    case ImprovementGateway.dispatch(%{"code" => code},
+    case SafeCodeChangeDispatcher.dispatch(%{"code" => code},
            agent_id: agent_id,
            metadata: final_metadata
          ) do

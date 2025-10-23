@@ -1,4 +1,4 @@
-defmodule Singularity.Bootstrap.StageManager do
+defmodule Singularity.Bootstrap.EvolutionStageController do
   @moduledoc """
   Manages Singularity's evolution stages from minimal self-discovery to full autonomy.
 
@@ -58,16 +58,16 @@ defmodule Singularity.Bootstrap.StageManager do
   ## Usage
 
       # Check current stage
-      StageManager.get_current_stage()
+      EvolutionStageController.get_current_stage()
       # => 1
 
       # Check if can advance
-      StageManager.can_advance?()
+      EvolutionStageController.can_advance?()
       # => {:ok, "All requirements met"}
       # => {:error, "Need 5 more days in stage"}
 
       # Advance stage (requires human confirmation)
-      StageManager.advance_stage!()
+      EvolutionStageController.advance_stage!()
 
   ## Integration Points
 

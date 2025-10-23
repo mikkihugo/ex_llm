@@ -12,7 +12,7 @@ defmodule Singularity.Code.FullRepoScanner do
   This module integrates with:
   - `Singularity.Storage.Store` - Knowledge search (Store.search_knowledge/2)
   - `Singularity.LLM.Service` - Lua-based fix generation (Service.call_with_script/3)
-  - `Singularity.HotReload.ImprovementGateway` - Hot reload (ImprovementGateway.dispatch/2)
+  - `Singularity.HotReload.SafeCodeChangeDispatcher` - Hot reload (SafeCodeChangeDispatcher.dispatch/2)
   - `Singularity.Execution.Planning.ExecutionTracer` - Runtime tracing (ExecutionTracer.full_analysis/1)
   - `Singularity.SelfImprovingAgent` - Self-improvement (SelfImprovingAgent integration)
   - PostgreSQL table: `task_graph_learning_results` (stores learning analysis)
@@ -49,7 +49,7 @@ defmodule Singularity.Code.FullRepoScanner do
   require Logger
 
   # INTEGRATION: Knowledge search and code generation
-  alias Singularity.{Store, RAGCodeGenerator, QualityCodeGenerator, HotReload.ImprovementGateway}
+  alias Singularity.{Store, RAGCodeGenerator, QualityCodeGenerator, HotReload.SafeCodeChangeDispatcher}
 
   # INTEGRATION: TaskGraph planning and tracing
   alias Singularity.Execution.Planning.{TaskGraph, SystemBootstrap, ExecutionTracer}
@@ -847,7 +847,7 @@ defmodule Singularity.Code.FullRepoScanner do
             "metadata" => dispatch_metadata
           }
 
-          case ImprovementGateway.dispatch(payload, agent_id: "task_graph-runtime") do
+          case SafeCodeChangeDispatcher.dispatch(payload, agent_id: "task_graph-runtime") do
             :ok ->
               Logger.debug("Hot reload dispatched for #{issue.module}",
                 agent_id: "task_graph-runtime"
@@ -941,7 +941,7 @@ defmodule Singularity.Code.FullRepoScanner do
             "metadata" => metadata
           }
 
-          case ImprovementGateway.dispatch(payload, agent_id: "task_graph-runtime") do
+          case SafeCodeChangeDispatcher.dispatch(payload, agent_id: "task_graph-runtime") do
             :ok ->
               Logger.debug("Hot reload dispatched after doc generation",
                 agent_id: "task_graph-runtime",
