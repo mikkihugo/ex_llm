@@ -108,6 +108,8 @@ config :oban,
        {"*/5 * * * *", Singularity.Jobs.MetricsAggregationWorker},
        # Feedback analysis: every 30 minutes (feeds Agent Evolution)
        {"*/30 * * * *", Singularity.Jobs.FeedbackAnalysisWorker},
+       # Agent evolution: every 1 hour (applies improvements from feedback analysis)
+       {"0 * * * *", Singularity.Jobs.AgentEvolutionWorker},
        # Cache cleanup: every 15 minutes
        {"*/15 * * * *", Singularity.Jobs.CacheCleanupWorker},
        # Cache refresh: every hour
