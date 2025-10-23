@@ -11,8 +11,8 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
 
     # Text search and fuzzy matching
     execute "CREATE EXTENSION IF NOT EXISTS pg_trgm"
-    execute "CREATE EXTENSION IF NOT EXISTS fuzzystrmatch"
-    execute "CREATE EXTENSION IF NOT EXISTS unaccent"
+    execute "CREATE EXTENSION IF NOT EXISTS fuzzystrmatch CASCADE"
+    execute "CREATE EXTENSION IF NOT EXISTS unaccent CASCADE"
 
     # JSONB indexing
     execute "CREATE EXTENSION IF NOT EXISTS btree_gin"
