@@ -185,5 +185,327 @@ fn convert_analysis_to_result(analysis: ControlFlowAnalysis) -> ControlFlowResul
     }
 }
 
+// ===========================
+// Multi-Language Analyzer NIF Bindings
+// ===========================
+
+/// Language analysis result (maps to Elixir struct)
+#[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
+#[module = "Singularity.CodeAnalyzer.LanguageAnalysis"]
+pub struct LanguageAnalysisResult {
+    pub language_id: String,
+    pub language_name: String,
+    pub family: Option<String>,
+    pub complexity_score: f64,
+    pub quality_score: f64,
+    pub rca_supported: bool,
+    pub ast_grep_supported: bool,
+}
+
+/// Language rule violation result
+#[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
+#[module = "Singularity.CodeAnalyzer.RuleViolation"]
+pub struct RuleViolationResult {
+    pub rule_id: String,
+    pub rule_name: String,
+    pub severity: String,
+    pub location: String,
+    pub details: String,
+}
+
+/// Cross-language pattern result
+#[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
+#[module = "Singularity.CodeAnalyzer.CrossLanguagePattern"]
+pub struct CrossLanguagePatternResult {
+    pub id: String,
+    pub name: String,
+    pub pattern_type: String,
+    pub source_language: String,
+    pub target_language: String,
+    pub confidence: f64,
+    pub characteristics: Vec<String>,
+}
+
+/// RCA metrics result
+#[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
+#[module = "Singularity.CodeAnalyzer.RcaMetrics"]
+pub struct RcaMetricsResult {
+    pub cyclomatic_complexity: String,
+    pub halstead_metrics: String,
+    pub maintainability_index: String,
+    pub source_lines_of_code: u64,
+    pub logical_lines_of_code: u64,
+    pub comment_lines_of_code: u64,
+    pub blank_lines: u64,
+}
+
+/// Function metadata result
+#[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
+#[module = "Singularity.CodeAnalyzer.FunctionMetadata"]
+pub struct FunctionMetadataResult {
+    pub name: String,
+    pub line_start: u32,
+    pub line_end: u32,
+    pub parameters: Vec<String>,
+    pub return_type: Option<String>,
+    pub is_async: bool,
+    pub is_generator: bool,
+    pub docstring: Option<String>,
+}
+
+/// Class metadata result
+#[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
+#[module = "Singularity.CodeAnalyzer.ClassMetadata"]
+pub struct ClassMetadataResult {
+    pub name: String,
+    pub line_start: u32,
+    pub line_end: u32,
+    pub methods: Vec<String>,
+    pub fields: Vec<String>,
+}
+
+/// Analyze a single language file
+///
+/// Pure computation NIF - NO I/O!
+/// Returns language analysis with registry metadata
+#[rustler::nif]
+pub fn analyze_language(code: String, language_hint: String) -> Result<LanguageAnalysisResult, String> {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    let analyzer = CodebaseAnalyzer::new()
+        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+
+    match analyzer.analyze_language(&code, &language_hint) {
+        Some(analysis) => {
+            Ok(LanguageAnalysisResult {
+                language_id: analysis.language_id,
+                language_name: analysis.language_name,
+                family: analysis.family,
+                complexity_score: analysis.complexity_score,
+                quality_score: analysis.quality_score,
+                rca_supported: analysis.rca_supported,
+                ast_grep_supported: analysis.ast_grep_supported,
+            })
+        }
+        None => Err(format!("Unsupported language: {}", language_hint)),
+    }
+}
+
+/// Check code against language-specific rules
+///
+/// Pure computation NIF - NO I/O!
+/// Returns list of rule violations
+#[rustler::nif]
+pub fn check_language_rules(code: String, language_hint: String) -> Result<Vec<RuleViolationResult>, String> {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    let analyzer = CodebaseAnalyzer::new()
+        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+
+    let violations = analyzer.check_language_rules(&code, &language_hint);
+
+    Ok(violations
+        .into_iter()
+        .map(|v| RuleViolationResult {
+            rule_id: v.rule.id,
+            rule_name: v.rule.name,
+            severity: format!("{:?}", v.rule.severity),
+            location: v.location,
+            details: v.details,
+        })
+        .collect())
+}
+
+/// Detect cross-language patterns in polyglot codebases
+///
+/// Pure computation NIF - NO I/O!
+/// Analyzes multiple files to find patterns spanning language boundaries
+#[rustler::nif]
+pub fn detect_cross_language_patterns(
+    files: Vec<(String, String)>,
+) -> Result<Vec<CrossLanguagePatternResult>, String> {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    let analyzer = CodebaseAnalyzer::new()
+        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+
+    let patterns = analyzer.detect_cross_language_patterns(&files);
+
+    Ok(patterns
+        .into_iter()
+        .map(|p| CrossLanguagePatternResult {
+            id: p.id,
+            name: p.name,
+            pattern_type: format!("{:?}", p.pattern_type),
+            source_language: p.source_language,
+            target_language: p.target_language,
+            confidence: p.confidence,
+            characteristics: p.characteristics,
+        })
+        .collect())
+}
+
+/// Get RCA metrics for code
+///
+/// Pure computation NIF - NO I/O!
+/// Returns detailed complexity metrics (CC, Halstead, MI, SLOC, etc.)
+#[rustler::nif]
+pub fn get_rca_metrics(code: String, language_hint: String) -> Result<RcaMetricsResult, String> {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    let analyzer = CodebaseAnalyzer::new()
+        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+
+    let metrics = analyzer.get_rca_metrics(&code, &language_hint)?;
+
+    Ok(RcaMetricsResult {
+        cyclomatic_complexity: metrics.cyclomatic_complexity,
+        halstead_metrics: metrics.halstead_metrics,
+        maintainability_index: metrics.maintainability_index,
+        source_lines_of_code: metrics.source_lines_of_code,
+        logical_lines_of_code: metrics.logical_lines_of_code,
+        comment_lines_of_code: metrics.comment_lines_of_code,
+        blank_lines: metrics.blank_lines,
+    })
+}
+
+/// Extract function metadata from code using AST
+///
+/// Pure computation NIF - NO I/O!
+/// Uses Tree-sitter to extract function signatures, parameters, etc.
+#[rustler::nif]
+pub fn extract_functions(code: String, language_hint: String) -> Result<Vec<FunctionMetadataResult>, String> {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    let analyzer = CodebaseAnalyzer::new()
+        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+
+    let functions = analyzer.extract_functions(&code, &language_hint)?;
+
+    Ok(functions
+        .into_iter()
+        .map(|f| FunctionMetadataResult {
+            name: f.name,
+            line_start: f.line_start,
+            line_end: f.line_end,
+            parameters: f.parameters,
+            return_type: f.return_type,
+            is_async: f.is_async,
+            is_generator: f.is_generator,
+            docstring: f.docstring,
+        })
+        .collect())
+}
+
+/// Extract class metadata from code using AST
+///
+/// Pure computation NIF - NO I/O!
+/// Uses Tree-sitter to extract class structure
+#[rustler::nif]
+pub fn extract_classes(code: String, language_hint: String) -> Result<Vec<ClassMetadataResult>, String> {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    let analyzer = CodebaseAnalyzer::new()
+        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+
+    let classes = analyzer.extract_classes(&code, &language_hint)?;
+
+    Ok(classes
+        .into_iter()
+        .map(|c| ClassMetadataResult {
+            name: c.name,
+            line_start: c.line_start,
+            line_end: c.line_end,
+            methods: c.methods.into_iter().map(|m| m.name).collect(),
+            fields: c.fields,
+        })
+        .collect())
+}
+
+/// Extract imports and exports from code
+///
+/// Pure computation NIF - NO I/O!
+/// Uses AST-based detection for accurate dependency extraction
+#[rustler::nif]
+pub fn extract_imports_exports(
+    code: String,
+    language_hint: String,
+) -> Result<(Vec<String>, Vec<String>), String> {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    let analyzer = CodebaseAnalyzer::new()
+        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+
+    analyzer.extract_imports_exports(&code, &language_hint)
+}
+
+/// Get supported languages
+///
+/// Pure computation NIF - NO I/O!
+/// Returns all 18+ supported languages
+#[rustler::nif]
+pub fn supported_languages() -> Vec<String> {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    match CodebaseAnalyzer::new() {
+        Ok(analyzer) => analyzer.supported_languages(),
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Get RCA-supported languages
+///
+/// Pure computation NIF - NO I/O!
+/// Returns languages where RCA metrics are available
+#[rustler::nif]
+pub fn rca_supported_languages() -> Vec<String> {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    match CodebaseAnalyzer::new() {
+        Ok(analyzer) => analyzer.rca_supported_languages(),
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Get AST-Grep supported languages
+///
+/// Pure computation NIF - NO I/O!
+/// Returns languages where AST-Grep pattern matching works
+#[rustler::nif]
+pub fn ast_grep_supported_languages() -> Vec<String> {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    match CodebaseAnalyzer::new() {
+        Ok(analyzer) => analyzer.ast_grep_supported_languages(),
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Check if language has RCA support
+///
+/// Pure computation NIF - NO I/O!
+#[rustler::nif]
+pub fn has_rca_support(language_id: String) -> bool {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    match CodebaseAnalyzer::new() {
+        Ok(analyzer) => analyzer.has_rca_support(&language_id),
+        Err(_) => false,
+    }
+}
+
+/// Check if language has AST-Grep support
+///
+/// Pure computation NIF - NO I/O!
+#[rustler::nif]
+pub fn has_ast_grep_support(language_id: String) -> bool {
+    use crate::analyzer::CodebaseAnalyzer;
+
+    match CodebaseAnalyzer::new() {
+        Ok(analyzer) => analyzer.has_ast_grep_support(&language_id),
+        Err(_) => false,
+    }
+}
+
 // NOTE: rustler::init! moved to src/nif/mod.rs to avoid duplicate nif_init symbol
 // This file only exports the NIF function - initialization happens in nif/mod.rs

@@ -16,6 +16,33 @@ use std::path::Path;
 use serde::{Serialize, Deserialize};
 use anyhow::Result;
 
+/// Language-level pattern signatures (syntax/keywords only, NOT libraries!)
+///
+/// **IMPORTANT**: This should ONLY contain language syntax features, NOT libraries/frameworks.
+/// Libraries and frameworks (kafka, reqwest, NATS, etc.) should come from CentralCloud patterns.
+///
+/// Examples:
+/// - ✅ Language features: "Result<", "async", "await", "?", "try:", "catch"
+/// - ❌ Libraries: "kafka", "reqwest", "express" (these go in CentralCloud!)
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PatternSignatures {
+    /// Error handling SYNTAX (language keywords, not libraries)
+    /// Examples: ["Result<", "?", "unwrap"] for Rust, ["try:", "except"] for Python
+    pub error_handling_syntax: Vec<String>,
+    /// Async/concurrency SYNTAX (language keywords, not libraries)
+    /// Examples: ["async", "await"] for Rust/JS, ["spawn", "Task"] for Elixir
+    pub async_syntax: Vec<String>,
+    /// Testing SYNTAX (language built-ins, not frameworks)
+    /// Examples: ["#[test]", "assert!"] for Rust, ["deftest"] for Elixir
+    pub testing_syntax: Vec<String>,
+    /// Pattern matching SYNTAX
+    /// Examples: ["match", "case"] for Rust, ["case", "when"] for Elixir
+    pub pattern_matching_syntax: Vec<String>,
+    /// Module/import SYNTAX
+    /// Examples: ["use", "mod"] for Rust, ["import", "alias"] for Elixir
+    pub module_syntax: Vec<String>,
+}
+
 /// Comprehensive language information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LanguageInfo {
@@ -39,6 +66,9 @@ pub struct LanguageInfo {
     pub family: Option<String>,
     /// Whether this is a compiled or interpreted language
     pub is_compiled: bool,
+    /// Pattern signatures for cross-language pattern detection
+    #[serde(default)]
+    pub pattern_signatures: PatternSignatures,
 }
 
 /// Central language registry with optimized lookups
@@ -82,6 +112,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-elixir".to_string(), "application/x-elixir".to_string()],
             family: Some("BEAM".to_string()),
             is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         self.register_language(LanguageInfo {
@@ -95,6 +126,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-erlang".to_string(), "application/x-erlang".to_string()],
             family: Some("BEAM".to_string()),
             is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         self.register_language(LanguageInfo {
@@ -108,6 +140,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-gleam".to_string(), "application/x-gleam".to_string()],
             family: Some("BEAM".to_string()),
             is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         // Systems Programming Languages
@@ -122,6 +155,14 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-rust".to_string(), "application/x-rust".to_string()],
             family: Some("Systems".to_string()),
             is_compiled: true,
+            pattern_signatures: PatternSignatures {
+                // Only language syntax, NOT libraries!
+                error_handling_syntax: vec!["Result<".to_string(), "Option<".to_string(), "?".to_string(), "unwrap".to_string(), "expect".to_string()],
+                async_syntax: vec!["async".to_string(), "await".to_string(), ".await".to_string()],
+                testing_syntax: vec!["#[test]".to_string(), "assert!".to_string(), "assert_eq!".to_string(), "#[cfg(test)]".to_string()],
+                pattern_matching_syntax: vec!["match".to_string(), "if let".to_string(), "while let".to_string()],
+                module_syntax: vec!["use".to_string(), "mod".to_string(), "pub".to_string(), "crate::".to_string()],
+            },
         });
         
         self.register_language(LanguageInfo {
@@ -135,6 +176,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-c".to_string(), "text/x-csrc".to_string()],
             family: Some("C-like".to_string()),
             is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         self.register_language(LanguageInfo {
@@ -148,6 +190,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-c++".to_string(), "text/x-cpp".to_string()],
             family: Some("C-like".to_string()),
             is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         // Web Technologies
@@ -162,6 +205,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/javascript".to_string(), "application/javascript".to_string()],
             family: Some("Web".to_string()),
             is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         self.register_language(LanguageInfo {
@@ -175,6 +219,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/typescript".to_string(), "application/typescript".to_string()],
             family: Some("Web".to_string()),
             is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         // High-Level Languages
@@ -189,6 +234,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-python".to_string(), "application/x-python".to_string()],
             family: Some("Scripting".to_string()),
             is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         self.register_language(LanguageInfo {
@@ -202,8 +248,23 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-java".to_string(), "application/x-java".to_string()],
             family: Some("JVM".to_string()),
             is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
         });
-        
+
+        self.register_language(LanguageInfo {
+            id: "csharp".to_string(),
+            name: "C#".to_string(),
+            extensions: vec!["cs".to_string()],
+            aliases: vec!["csharp".to_string(), "cs".to_string(), "c#".to_string()],
+            tree_sitter_language: Some("c_sharp".to_string()),
+            rca_supported: true,
+            ast_grep_supported: true,
+            mime_types: vec!["text/x-csharp".to_string(), "application/x-csharp".to_string()],
+            family: Some("CLR".to_string()),
+            is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
+        });
+
         self.register_language(LanguageInfo {
             id: "go".to_string(),
             name: "Go".to_string(),
@@ -215,6 +276,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-go".to_string(), "application/x-go".to_string()],
             family: Some("Systems".to_string()),
             is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         // Scripting Languages
@@ -229,6 +291,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-lua".to_string(), "application/x-lua".to_string()],
             family: Some("Scripting".to_string()),
             is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         self.register_language(LanguageInfo {
@@ -242,6 +305,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-sh".to_string(), "application/x-sh".to_string()],
             family: Some("Shell".to_string()),
             is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         // Data Formats
@@ -256,6 +320,7 @@ impl LanguageRegistry {
             mime_types: vec!["application/json".to_string()],
             family: Some("Data".to_string()),
             is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         self.register_language(LanguageInfo {
@@ -269,6 +334,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/yaml".to_string(), "application/x-yaml".to_string()],
             family: Some("Data".to_string()),
             is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         self.register_language(LanguageInfo {
@@ -282,6 +348,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-toml".to_string(), "application/toml".to_string()],
             family: Some("Data".to_string()),
             is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         // Documentation
@@ -296,6 +363,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/markdown".to_string(), "text/x-markdown".to_string()],
             family: Some("Documentation".to_string()),
             is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         // Infrastructure
@@ -310,6 +378,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-dockerfile".to_string()],
             family: Some("Infrastructure".to_string()),
             is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
         });
         
         self.register_language(LanguageInfo {
@@ -323,6 +392,7 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-sql".to_string(), "application/sql".to_string()],
             family: Some("Database".to_string()),
             is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
         });
     }
     
@@ -527,17 +597,18 @@ mod tests {
     fn test_rca_supported_languages() {
         let rca_languages = rca_supported_languages();
         let rca_ids: Vec<&str> = rca_languages.iter().map(|lang| lang.id.as_str()).collect();
-        
+
         // RCA should support these languages
         assert!(rca_ids.contains(&"rust"));
         assert!(rca_ids.contains(&"python"));
         assert!(rca_ids.contains(&"javascript"));
         assert!(rca_ids.contains(&"typescript"));
         assert!(rca_ids.contains(&"java"));
+        assert!(rca_ids.contains(&"csharp"));
         assert!(rca_ids.contains(&"go"));
         assert!(rca_ids.contains(&"c"));
         assert!(rca_ids.contains(&"cpp"));
-        
+
         // RCA should NOT support BEAM languages
         assert!(!rca_ids.contains(&"elixir"));
         assert!(!rca_ids.contains(&"erlang"));
