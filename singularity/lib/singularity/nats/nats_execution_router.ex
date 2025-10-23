@@ -27,13 +27,13 @@ defmodule Singularity.NatsExecutionRouter do
   def init(_opts) do
     # Use Singularity.NatsClient for NATS operations
     # Subscribe to execution requests
-    case Singularity.NatsClient.subscribe("execution.request") do
+    case Singularity.NatsClient.subscribe("execution.request.task") do
       {:ok, _subscription_id} -> Logger.info("NatsExecutionRouter subscribed to: execution.request")
       {:error, reason} -> Logger.error("Failed to subscribe to execution.request: #{reason}")
     end
 
     # Subscribe to template recommendation requests
-    case Singularity.NatsClient.subscribe("template.recommend") do
+    case Singularity.NatsClient.subscribe("template.recommend.request") do
       {:ok, _subscription_id} -> Logger.info("NatsExecutionRouter subscribed to: template.recommend")
       {:error, reason} -> Logger.error("Failed to subscribe to template.recommend: #{reason}")
     end
@@ -46,7 +46,7 @@ defmodule Singularity.NatsExecutionRouter do
   end
 
   @impl true
-  def handle_info({:msg, %{topic: "execution.request", body: body, reply_to: reply_to}}, state) do
+  def handle_info({:msg, %{topic: "execution.request.task", body: body, reply_to: reply_to}}, state) do
     Task.async(fn ->
       handle_execution_request(body, reply_to)
     end)
@@ -55,7 +55,7 @@ defmodule Singularity.NatsExecutionRouter do
   end
 
   @impl true
-  def handle_info({:msg, %{topic: "template.recommend", body: body, reply_to: reply_to}}, state) do
+  def handle_info({:msg, %{topic: "template.recommend.request", body: body, reply_to: reply_to}}, state) do
     Task.async(fn ->
       handle_template_recommendation(body, reply_to)
     end)

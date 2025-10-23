@@ -1,9 +1,25 @@
 /**
  * @file NATS JetStream Integration Service
- * @description Optimized single NATS server with intelligent subject routing:
- * - llm.* subjects: Direct request/reply (no JetStream) for maximum LLM performance
- * - ai.events.*, agent.events.*: JetStream for persistence and replay
- * - metrics.*, telemetry.*: JetStream for monitoring and observability
+ * @description Streamlined single NATS server with hierarchical subject routing:
+ * 
+ * ## Topic Hierarchy (Pattern: {domain}.{subdomain}.{action}):
+ * - `llm.*` - Direct request/reply (no JetStream) for maximum LLM performance
+ * - `system.engines.*` - Direct discovery (no JetStream) for performance
+ * - `system.capabilities.*` - Direct discovery (no JetStream) for performance  
+ * - `system.health.*` - Direct health checks (no JetStream) for performance
+ * - `system.events.*` - JetStream for system events
+ * - `agent.*` - Agent management (commands direct, events JetStream)
+ * - `planning.*` - Work planning and task management (direct)
+ * - `knowledge.*` - Knowledge and template management (direct)
+ * - `analysis.*` - Code analysis and processing (direct)
+ * - `central.*` - Central services and cross-cutting concerns (direct)
+ * - `intelligence.*` - AI intelligence and insights (direct)
+ * - `patterns.*` - Pattern mining and management (direct)
+ * - `packages.*` - Package registry and management (direct)
+ * 
+ * ## JetStream Streams:
+ * - `EVENTS` - All `*.events.*` subjects (1 hour retention)
+ * - `METRICS` - All `*.metrics.*` subjects (24 hour retention)
  * 
  * This eliminates the need for multiple NATS servers while maintaining optimal performance.
  */
@@ -44,42 +60,60 @@ export class NatsService {
 
     const jsm = await this.nc!.jetstreamManager();
 
-    // OPTIMIZED: Single NATS server with proper subject routing
-    // - llm.* subjects: Direct request/reply (no JetStream) for performance
-    // - ai.events.* subjects: JetStream for persistence and replay
-    // - agent.events.* subjects: JetStream for persistence and replay
+      // STREAMLINED: Single NATS server with hierarchical subject routing
+      // - llm.* subjects: Direct request/reply (no JetStream) for performance
+      // - *.events.* subjects: JetStream for persistence and replay
+      // - *.metrics.* subjects: JetStream for monitoring and observability
 
-    // AI Events stream for persistent event storage (excludes llm.* subjects)
-    try {
-      await jsm.streams.add({
-        name: 'AI_EVENTS',
-        subjects: ['ai.events.>', 'agent.events.>', 'system.events.>'],
-        retention: RetentionPolicy.Limits,
-        max_age: 3_600_000_000_000, // 1 hour
-        storage: StorageType.Memory,
-      });
-      console.log('[NATS] ✅ AI_EVENTS stream created for persistent events');
-    } catch (err: any) {
-      if (!err.message?.includes('stream name already in use')) {
-        console.error('[NATS] Failed to create AI_EVENTS stream:', err);
+      // Events stream for persistent event storage (excludes llm.* subjects)
+      try {
+        await jsm.streams.add({
+          name: 'EVENTS',
+          subjects: [
+            'system.events.>', 
+            'agent.events.>',
+            'planning.events.>',
+            'knowledge.events.>',
+            'analysis.events.>',
+            'intelligence.events.>',
+            'patterns.events.>',
+            'packages.events.>'
+          ],
+          retention: RetentionPolicy.Limits,
+          max_age: 3_600_000_000_000, // 1 hour
+          storage: StorageType.Memory,
+        });
+        console.log('[NATS] ✅ EVENTS stream created for persistent events');
+      } catch (err: any) {
+        if (!err.message?.includes('stream name already in use')) {
+          console.error('[NATS] Failed to create EVENTS stream:', err);
+        }
       }
-    }
 
-    // System metrics stream for monitoring and observability
-    try {
-      await jsm.streams.add({
-        name: 'SYSTEM_METRICS',
-        subjects: ['metrics.>', 'telemetry.>'],
-        retention: RetentionPolicy.Limits,
-        max_age: 24 * 3_600_000_000_000, // 24 hours
-        storage: StorageType.Memory,
-      });
-      console.log('[NATS] ✅ SYSTEM_METRICS stream created for monitoring');
-    } catch (err: any) {
-      if (!err.message?.includes('stream name already in use')) {
-        console.error('[NATS] Failed to create SYSTEM_METRICS stream:', err);
+      // Metrics stream for monitoring and observability
+      try {
+        await jsm.streams.add({
+          name: 'METRICS',
+          subjects: [
+            'system.metrics.>',
+            'agent.metrics.>',
+            'planning.metrics.>',
+            'knowledge.metrics.>',
+            'analysis.metrics.>',
+            'intelligence.metrics.>',
+            'patterns.metrics.>',
+            'packages.metrics.>'
+          ],
+          retention: RetentionPolicy.Limits,
+          max_age: 24 * 3_600_000_000_000, // 24 hours
+          storage: StorageType.Memory,
+        });
+        console.log('[NATS] ✅ METRICS stream created for monitoring');
+      } catch (err: any) {
+        if (!err.message?.includes('stream name already in use')) {
+          console.error('[NATS] Failed to create METRICS stream:', err);
+        }
       }
-    }
   }
 
   /**

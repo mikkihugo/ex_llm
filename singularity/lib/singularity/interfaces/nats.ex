@@ -11,7 +11,7 @@ defmodule Singularity.Interfaces.NATS do
 
       interface = %Singularity.Interfaces.NATS{
         reply_to: "responses.abc123",
-        subject: "tools.execute",
+        subject: "tools.execute.request",
         correlation_id: "req_xyz"
       }
 

@@ -195,7 +195,7 @@ defmodule Singularity.Runner do
     case persist_execution(execution_id, task, :pending) do
       :ok ->
         # Publish task started event
-        publish_nats_event(state.gnat, "task.started", %{
+        publish_nats_event(state.gnat, "system.events.runner.task.started", %{
           execution_id: execution_id,
           task_type: task.type,
           timestamp: DateTime.utc_now()
@@ -338,7 +338,7 @@ defmodule Singularity.Runner do
     end
 
     # Publish completion event
-    publish_nats_event(state.gnat, "task.completed", %{
+    publish_nats_event(state.gnat, "system.events.runner.task.completed", %{
       execution_id: execution_id,
       result: result,
       timestamp: DateTime.utc_now()
@@ -375,7 +375,7 @@ defmodule Singularity.Runner do
     end
 
     # Publish failure event
-    publish_nats_event(state.gnat, "task.failed", %{
+    publish_nats_event(state.gnat, "system.events.runner.task.failed", %{
       execution_id: execution_id,
       error: reason,
       timestamp: DateTime.utc_now()
@@ -396,7 +396,7 @@ defmodule Singularity.Runner do
       end)
 
     # Publish circuit breaker event
-    publish_nats_event(state.gnat, "circuit.opened", %{
+    publish_nats_event(state.gnat, "system.events.runner.circuit.opened", %{
       service: service,
       timestamp: DateTime.utc_now()
     })
@@ -416,7 +416,7 @@ defmodule Singularity.Runner do
       end)
 
     # Publish circuit breaker event
-    publish_nats_event(state.gnat, "circuit.closed", %{
+    publish_nats_event(state.gnat, "system.events.runner.circuit.closed", %{
       service: service,
       timestamp: DateTime.utc_now()
     })
@@ -714,7 +714,7 @@ defmodule Singularity.Runner do
 
   defp publish_nats_event(_gnat, event_type, payload) do
     try do
-      subject = "singularity.runner.#{event_type}"
+      subject = "system.events.runner.#{event_type}"
       message = Jason.encode!(payload)
       Singularity.NATS.Client.publish(subject, message)
       :ok

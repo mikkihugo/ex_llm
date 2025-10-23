@@ -115,7 +115,7 @@ defmodule Singularity.NatsIntegrationTest do
   describe "LLM request flow integration" do
     setup do
       # Mock AI server response for testing
-      test_subject = "ai.llm.request.test"
+      test_subject = "llm.request"
 
       {:ok, subscription} = NatsClient.subscribe(test_subject, fn message ->
         # Simulate AI server response

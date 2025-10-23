@@ -57,18 +57,18 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
   alias Singularity.Execution.Todos.{TodoStore, TodoSwarmCoordinator}
 
   @subjects %{
-    create: "todos.create",
-    get: "todos.get",
-    list: "todos.list",
-    search: "todos.search",
-    update: "todos.update",
-    delete: "todos.delete",
-    assign: "todos.assign",
-    complete: "todos.complete",
-    fail: "todos.fail",
-    swarm_spawn: "todos.swarm.spawn",
-    swarm_status: "todos.swarm.status",
-    stats: "todos.stats"
+    create: "planning.todo.create",
+    get: "planning.todo.get",
+    list: "planning.todo.list",
+    search: "planning.todo.search",
+    update: "planning.todo.update",
+    delete: "planning.todo.delete",
+    assign: "planning.todo.assign",
+    complete: "planning.todo.complete",
+    fail: "planning.todo.fail",
+    swarm_spawn: "planning.todo.swarm.spawn",
+    swarm_status: "planning.todo.swarm.status",
+    stats: "planning.todo.stats"
   }
 
   # ===========================
@@ -141,7 +141,7 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
   end
 
   # Create todo
-  defp route_message("todos.create", attrs) do
+  defp route_message("planning.todo.create", attrs) do
     case TodoStore.create(attrs) do
       {:ok, todo} ->
         success_response(%{
@@ -161,7 +161,7 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
   end
 
   # Get todo
-  defp route_message("todos.get", %{"id" => id}) do
+  defp route_message("planning.todo.get", %{"id" => id}) do
     case TodoStore.get(id) do
       {:ok, todo} ->
         success_response(%{todo: serialize_todo(todo)})
@@ -171,12 +171,12 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
     end
   end
 
-  defp route_message("todos.get", _) do
+  defp route_message("planning.todo.get", _) do
     error_response("Missing required field: id", "MISSING_FIELD")
   end
 
   # List todos
-  defp route_message("todos.list", attrs) do
+  defp route_message("planning.todo.list", attrs) do
     opts = build_list_opts(attrs)
     todos = TodoStore.list(opts)
 
@@ -187,7 +187,7 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
   end
 
   # Search todos
-  defp route_message("todos.search", %{"query" => query} = attrs) do
+  defp route_message("planning.todo.search", %{"query" => query} = attrs) do
     opts = Map.take(attrs, ["limit", "status", "min_similarity"]) |> Map.to_list()
 
     case TodoStore.search(query, opts) do
@@ -204,12 +204,12 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
     end
   end
 
-  defp route_message("todos.search", _) do
+  defp route_message("planning.todo.search", _) do
     error_response("Missing required field: query", "MISSING_FIELD")
   end
 
   # Complete todo
-  defp route_message("todos.complete", %{"id" => id, "result" => result}) do
+  defp route_message("planning.todo.complete", %{"id" => id, "result" => result}) do
     with {:ok, todo} <- TodoStore.get(id),
          {:ok, updated_todo} <- TodoStore.complete(todo, result) do
       success_response(%{
@@ -225,12 +225,12 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
     end
   end
 
-  defp route_message("todos.complete", _) do
+  defp route_message("planning.todo.complete", _) do
     error_response("Missing required fields: id, result", "MISSING_FIELD")
   end
 
   # Fail todo
-  defp route_message("todos.fail", %{"id" => id, "error_message" => error_msg}) do
+  defp route_message("planning.todo.fail", %{"id" => id, "error_message" => error_msg}) do
     with {:ok, todo} <- TodoStore.get(id),
          {:ok, updated_todo} <- TodoStore.fail(todo, error_msg) do
       success_response(%{
@@ -246,12 +246,12 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
     end
   end
 
-  defp route_message("todos.fail", _) do
+  defp route_message("planning.todo.fail", _) do
     error_response("Missing required fields: id, error_message", "MISSING_FIELD")
   end
 
   # Spawn swarm
-  defp route_message("todos.swarm.spawn", attrs) do
+  defp route_message("planning.todo.swarm.spawn", attrs) do
     opts = build_swarm_opts(attrs)
     TodoSwarmCoordinator.spawn_swarm(opts)
 
@@ -259,13 +259,13 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
   end
 
   # Swarm status
-  defp route_message("todos.swarm.status", _attrs) do
+  defp route_message("planning.todo.swarm.status", _attrs) do
     status = TodoSwarmCoordinator.get_status()
     success_response(status)
   end
 
   # Statistics
-  defp route_message("todos.stats", _attrs) do
+  defp route_message("planning.todo.stats", _attrs) do
     stats = TodoStore.get_stats()
     success_response(stats)
   end

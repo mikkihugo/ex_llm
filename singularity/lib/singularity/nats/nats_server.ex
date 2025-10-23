@@ -75,7 +75,7 @@ defmodule Singularity.NatsServer do
 
     # Subscribe to NATS request subjects
     Enum.each([
-      "nats.request",
+      "nats.request.direct",
       "nats.request.simple", 
       "nats.request.medium",
       "nats.request.complex"
@@ -356,7 +356,7 @@ defmodule Singularity.NatsServer do
       :complex -> "nats.request.complex"
     end
 
-    case Singularity.NatsClient.request("nats.request", Jason.encode!(request), timeout: timeout) do
+    case Singularity.NatsClient.request("nats.request.direct", Jason.encode!(request), timeout: timeout) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data}

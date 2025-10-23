@@ -157,7 +157,7 @@ defmodule Singularity.CentralCloud do
 
   defp call_central_cloud(operation, request) do
     # Call central cloud via NATS
-    subject = "centralcloud.#{operation}"
+    subject = "central.#{operation}"
     
     case NatsClient.request(subject, request, timeout: 30_000) do
       {:ok, response} ->
@@ -205,7 +205,7 @@ defmodule Singularity.CentralCloud do
       updated_at: DateTime.utc_now()
     }
     
-    case NatsClient.publish("centralcloud.knowledge.update", knowledge_update) do
+    case NatsClient.publish("central.knowledge.update", knowledge_update) do
       :ok ->
         Logger.debug("Updated central knowledge")
       

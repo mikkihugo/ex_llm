@@ -14,9 +14,9 @@ defmodule Singularity.MetaRegistry.Frameworks.Nats do
   
       # Learn from our NATS subjects
       learn_patterns(%{
-        subjects: ["llm.provider.claude", "code.analysis.parse", "meta.registry.naming"],
+        subjects: ["llm.provider.claude", "analysis.code.parse", "analysis.meta.registry.naming"],
         messaging: ["request/response", "pub/sub", "streaming"],
-        patterns: ["subject.hierarchy", "wildcard.subjects", "message.routing"]
+        patterns: ["analysis.meta.subject.hierarchy", "analysis.meta.wildcard.subjects", "analysis.meta.message.routing"]
       })
   """
   def learn_patterns(attrs) do
@@ -57,13 +57,13 @@ defmodule Singularity.MetaRegistry.Frameworks.Nats do
     learn_patterns(%{
       subjects: [
         "llm.provider.claude", "llm.provider.gemini", "llm.provider.openai",
-        "code.analysis.parse", "code.analysis.embed", "code.analysis.search",
-        "meta.registry.naming", "meta.registry.architecture", "meta.registry.quality"
+        "analysis.code.parse", "analysis.code.embed", "analysis.code.search",
+        "analysis.meta.registry.naming", "analysis.meta.registry.architecture", "analysis.meta.registry.quality"
       ],
       messaging: ["request/response", "pub/sub", "streaming"],
       patterns: [
-        "subject.hierarchy", "wildcard.subjects", "message.routing",
-        "llm.provider.*", "code.analysis.*", "meta.registry.*"
+        "analysis.meta.subject.hierarchy", "analysis.meta.wildcard.subjects", "analysis.meta.message.routing",
+        "llm.provider.*", "analysis.code.*", "analysis.meta.registry.*"
       ]
     })
   end

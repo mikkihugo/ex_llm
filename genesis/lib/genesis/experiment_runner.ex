@@ -73,7 +73,7 @@ defmodule Genesis.ExperimentRunner do
     # Subscribe to all experiment requests from any Singularity instance
     # Format: genesis.experiment.request.{instance_id}
     # We use a wildcard subscription to catch all instances
-    case Genesis.NatsClient.subscribe("genesis.experiment.request.>") do
+    case Genesis.NatsClient.subscribe("agent.events.experiment.request.>") do
       {:ok, _} -> Logger.info("Subscribed to experiment requests")
       {:error, reason} -> Logger.error("Failed to subscribe to requests: #{inspect(reason)}")
     end
@@ -483,7 +483,7 @@ defmodule Genesis.ExperimentRunner do
     }
 
     case Genesis.NatsClient.publish(
-      "genesis.experiment.completed.#{experiment_id}",
+      "agent.events.experiment.completed.#{experiment_id}",
       Jason.encode!(response)
     ) do
       :ok ->
@@ -506,7 +506,7 @@ defmodule Genesis.ExperimentRunner do
     }
 
     case Genesis.NatsClient.publish(
-      "genesis.experiment.failed.#{experiment_id}",
+      "agent.events.experiment.failed.#{experiment_id}",
       Jason.encode!(response)
     ) do
       :ok -> Logger.info("Reported failure for experiment #{experiment_id} to #{instance_id}")

@@ -78,21 +78,21 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
 
   defp route_message(payload, topic) do
     case topic do
-      "naming.suggestions" -> handle_naming_request(payload)
-      "architecture.patterns" -> handle_architecture_request(payload)
-      "quality.checks" -> handle_quality_request(payload)
-      "dependencies.analysis" -> handle_dependencies_request(payload)
-      "patterns.suggestions" -> handle_patterns_request(payload)
-      "templates.suggestions" -> handle_templates_request(payload)
-      "refactoring.suggestions" -> handle_refactoring_request(payload)
+      "analysis.meta.naming.suggestions" -> handle_naming_request(payload)
+      "analysis.meta.architecture.patterns" -> handle_architecture_request(payload)
+      "analysis.meta.quality.checks" -> handle_quality_request(payload)
+      "analysis.meta.dependencies.analysis" -> handle_dependencies_request(payload)
+      "analysis.meta.patterns.suggestions" -> handle_patterns_request(payload)
+      "analysis.meta.templates.suggestions" -> handle_templates_request(payload)
+      "analysis.meta.refactoring.suggestions" -> handle_refactoring_request(payload)
 
-      "meta.registry.naming" -> handle_meta_naming_request(payload)
-      "meta.registry.architecture" -> handle_meta_architecture_request(payload)
-      "meta.registry.quality" -> handle_meta_quality_request(payload)
-      "meta.registry.dependencies" -> handle_meta_dependencies_request(payload)
-      "meta.registry.patterns" -> handle_meta_patterns_request(payload)
-      "meta.registry.templates" -> handle_meta_templates_request(payload)
-      "meta.registry.refactoring" -> handle_meta_refactoring_request(payload)
+      "analysis.meta.registry.naming" -> handle_meta_naming_request(payload)
+      "analysis.meta.registry.architecture" -> handle_meta_architecture_request(payload)
+      "analysis.meta.registry.quality" -> handle_meta_quality_request(payload)
+      "analysis.meta.registry.dependencies" -> handle_meta_dependencies_request(payload)
+      "analysis.meta.registry.patterns" -> handle_meta_patterns_request(payload)
+      "analysis.meta.registry.templates" -> handle_meta_templates_request(payload)
+      "analysis.meta.registry.refactoring" -> handle_meta_refactoring_request(payload)
 
       _ -> {:error, %{error: "Unknown topic: #{topic}"}}
     end

@@ -140,7 +140,7 @@ defmodule Genesis.NatsClient do
     {:noreply, state}
   end
 
-  defp route_message("genesis.experiment.request." <> _instance_id = subject, data) do
+  defp route_message("agent.events.experiment.request." <> _instance_id = subject, data) do
     # Route experiment requests to ExperimentRunner
     Logger.info("Routing experiment request from #{subject}")
 
@@ -150,7 +150,7 @@ defmodule Genesis.NatsClient do
     end
   end
 
-  defp route_message("genesis.control.shutdown", _data) do
+  defp route_message("agent.control.shutdown", _data) do
     Logger.info("Shutdown signal received")
     System.halt(0)
   end

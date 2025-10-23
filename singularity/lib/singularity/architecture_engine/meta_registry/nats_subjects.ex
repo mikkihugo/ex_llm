@@ -26,35 +26,35 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
 
   # App-facing subjects (what the APPLICATION sees)
   @app_facing_subjects %{
-    naming: "naming.suggestions",
-    architecture: "architecture.patterns", 
-    quality: "quality.checks",
-    dependencies: "dependencies.analysis",
-    patterns: "patterns.suggestions",
-    templates: "templates.suggestions",
-    refactoring: "refactoring.suggestions"
+    naming: "analysis.meta.naming.suggestions",
+    architecture: "analysis.meta.architecture.patterns", 
+    quality: "analysis.meta.quality.checks",
+    dependencies: "analysis.meta.dependencies.analysis",
+    patterns: "analysis.meta.patterns.suggestions",
+    templates: "analysis.meta.templates.suggestions",
+    refactoring: "analysis.meta.refactoring.suggestions"
   }
 
   # Internal meta-registry subjects (what OUR SYSTEM uses)
   @meta_subjects %{
-    naming: "meta.registry.naming",
-    architecture: "meta.registry.architecture",
-    quality: "meta.registry.quality", 
-    dependencies: "meta.registry.dependencies",
-    patterns: "meta.registry.patterns",
-    templates: "meta.registry.templates",
-    refactoring: "meta.registry.refactoring"
+    naming: "analysis.meta.registry.naming",
+    architecture: "analysis.meta.registry.architecture",
+    quality: "analysis.meta.registry.quality", 
+    dependencies: "analysis.meta.registry.dependencies",
+    patterns: "analysis.meta.registry.patterns",
+    templates: "analysis.meta.registry.templates",
+    refactoring: "analysis.meta.registry.refactoring"
   }
 
   # Usage tracking subjects
   @usage_subjects %{
-    naming: "meta.usage.naming",
-    architecture: "meta.usage.architecture",
-    quality: "meta.usage.quality",
-    dependencies: "meta.usage.dependencies",
-    patterns: "meta.usage.patterns",
-    templates: "meta.usage.templates",
-    refactoring: "meta.usage.refactoring"
+    naming: "analysis.meta.usage.naming",
+    architecture: "analysis.meta.usage.architecture",
+    quality: "analysis.meta.usage.quality",
+    dependencies: "analysis.meta.usage.dependencies",
+    patterns: "analysis.meta.usage.patterns",
+    templates: "analysis.meta.usage.templates",
+    refactoring: "analysis.meta.usage.refactoring"
   }
 
   @doc """
@@ -63,13 +63,13 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
   ## Examples
   
       iex> NatsSubjects.app_facing(:naming)
-      "naming.suggestions"
+      "analysis.meta.naming.suggestions"
       
       iex> NatsSubjects.app_facing(:architecture)
-      "architecture.patterns"
+      "analysis.meta.architecture.patterns"
   """
   def app_facing(category) when is_atom(category) do
-    Map.get(@app_facing_subjects, category, "unknown.suggestions")
+    Map.get(@app_facing_subjects, category, "analysis.meta.unknown.suggestions")
   end
 
   @doc """
@@ -78,13 +78,13 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
   ## Examples
   
       iex> NatsSubjects.meta(:naming)
-      "meta.registry.naming"
+      "analysis.meta.registry.naming"
       
       iex> NatsSubjects.meta(:architecture)
-      "meta.registry.architecture"
+      "analysis.meta.registry.architecture"
   """
   def meta(category) when is_atom(category) do
-    Map.get(@meta_subjects, category, "meta.registry.unknown")
+    Map.get(@meta_subjects, category, "analysis.meta.registry.unknown")
   end
 
   @doc """
@@ -93,13 +93,13 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
   ## Examples
   
       iex> NatsSubjects.usage(:naming)
-      "meta.usage.naming"
+      "analysis.meta.usage.naming"
       
       iex> NatsSubjects.usage(:architecture)
-      "meta.usage.architecture"
+      "analysis.meta.usage.architecture"
   """
   def usage(category) when is_atom(category) do
-    Map.get(@usage_subjects, category, "meta.usage.unknown")
+    Map.get(@usage_subjects, category, "analysis.meta.usage.unknown")
   end
 
   @doc """
@@ -151,16 +151,16 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
       iex> NatsSubjects.for_tech_stack("php", "laravel")
       %{
         app_facing: %{naming: "naming.suggestions", ...},
-        meta: %{naming: "meta.registry.naming", ...},
-        usage: %{naming: "meta.usage.naming", ...}
+        meta: %{naming: "analysis.meta.registry.naming", ...},
+        usage: %{naming: "analysis.meta.usage.naming", ...}
       }
       
       # For a Node.js/Express app  
       iex> NatsSubjects.for_tech_stack("javascript", "express")
       %{
         app_facing: %{naming: "naming.suggestions", ...},
-        meta: %{naming: "meta.registry.naming", ...},
-        usage: %{naming: "meta.usage.naming", ...}
+        meta: %{naming: "analysis.meta.registry.naming", ...},
+        usage: %{naming: "analysis.meta.usage.naming", ...}
       }
   """
   def for_tech_stack(language, framework \\ nil) do

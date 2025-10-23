@@ -101,17 +101,17 @@ defmodule Centralcloud.IntelligenceHub do
     NatsClient.subscribe("intelligence.quality.aggregate", &handle_quality_report/1)
 
     # NEW: Template context queries
-    NatsClient.subscribe("intelligence.query", &handle_intelligence_query/1)
+    NatsClient.subscribe("intelligence.query.request", &handle_intelligence_query/1)
 
     # NEW: Dependency reports from instances
-    NatsClient.subscribe("instance.dependencies.report", &handle_dependency_report/1)
+    NatsClient.subscribe("system.instance.dependencies.report", &handle_dependency_report/1)
 
     # CRITICAL: The API that Singularity actually calls!
-    NatsClient.subscribe("centralcloud.analyze_codebase", &handle_analyze_codebase/1)
-    NatsClient.subscribe("centralcloud.learn_patterns", &handle_learn_patterns/1)
-    NatsClient.subscribe("centralcloud.get_global_stats", &handle_get_global_stats/1)
-    NatsClient.subscribe("centralcloud.train_models", &handle_train_models/1)
-    NatsClient.subscribe("centralcloud.get_cross_instance_insights", &handle_get_cross_instance_insights/1)
+    NatsClient.subscribe("central.analyze_codebase", &handle_analyze_codebase/1)
+    NatsClient.subscribe("central.learn_patterns", &handle_learn_patterns/1)
+    NatsClient.subscribe("central.get_global_stats", &handle_get_global_stats/1)
+    NatsClient.subscribe("central.train_models", &handle_train_models/1)
+    NatsClient.subscribe("central.get_cross_instance_insights", &handle_get_cross_instance_insights/1)
 
     :ok
   end

@@ -336,14 +336,14 @@ defmodule Singularity.PromptEngine do
   defp normalize_result(other), do: {:ok, other}
 
   defp nats_generate_prompt(request) do
-    with {:ok, response} <- NatsClient.request("prompt.generate", Jason.encode!(request), timeout: 15_000),
+    with {:ok, response} <- NatsClient.request("prompt.generate.request", Jason.encode!(request), timeout: 15_000),
          {:ok, data} <- Jason.decode(response.data) do
       {:ok, data}
     end
   end
 
   defp nats_optimize_prompt(request) do
-    with {:ok, response} <- NatsClient.request("prompt.optimize", Jason.encode!(request), timeout: 15_000),
+    with {:ok, response} <- NatsClient.request("prompt.optimize.request", Jason.encode!(request), timeout: 15_000),
          {:ok, data} <- Jason.decode(response.data) do
       {:ok, data}
     end
