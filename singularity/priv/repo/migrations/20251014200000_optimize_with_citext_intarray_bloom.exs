@@ -70,14 +70,11 @@ defmodule Singularity.Repo.Migrations.OptimizeWithCitextIntarrayBloom do
     IO.puts("   ✓ technology_patterns: technology_name → citext")
 
     # graph_nodes - Only if table exists (20250101000020_create_code_search_tables must run first)
-    case check_table_exists(:graph_nodes) do
-      true ->
-        alter table(:graph_nodes) do
-          modify :name, :citext
-        end
-        IO.puts("   ✓ graph_nodes: name → citext")
-      false ->
-        IO.puts("   ⊘ graph_nodes: table not created yet, skipping (will be created by 20250101000020)")
+    if check_table_exists(:graph_nodes) do
+      execute "ALTER TABLE graph_nodes ALTER COLUMN name TYPE citext"
+      IO.puts("   ✓ graph_nodes: name → citext")
+    else
+      IO.puts("   ⊘ graph_nodes: table not created yet, skipping (will be created by 20250101000020)")
     end
 
     # code_files (skip language - used by generated column search_vector)
@@ -96,10 +93,8 @@ defmodule Singularity.Repo.Migrations.OptimizeWithCitextIntarrayBloom do
 
     # graph_nodes - Add dependency tracking arrays (only if table exists)
     if check_table_exists(:graph_nodes) do
-      alter table(:graph_nodes) do
-        add :dependency_node_ids, {:array, :integer}, default: []
-        add :dependent_node_ids, {:array, :integer}, default: []
-      end
+      execute "ALTER TABLE graph_nodes ADD COLUMN dependency_node_ids integer[] DEFAULT '{}'::integer[]"
+      execute "ALTER TABLE graph_nodes ADD COLUMN dependent_node_ids integer[] DEFAULT '{}'::integer[]"
       IO.puts("   ✓ graph_nodes: dependency_node_ids, dependent_node_ids")
 
       # Create GIN indexes for intarray operators
