@@ -5,41 +5,46 @@ type: 'library'
 
 tasks:
   build:
-    command: 'cargo build --release -p prompt-engine -p universal-parser'
+    command: 'nix develop ..#dev --command bash -c "cd rust_global && cargo build --release"'
     inputs:
-      - 'src/**/*'
+      - '**/*.rs'
       - 'Cargo.toml'
       - 'Cargo.lock'
     outputs:
       - 'target/'
 
   test:
-    command: 'cargo test -p prompt-engine -p universal-parser'
+    command: 'nix develop ..#dev --command bash -c "cd rust_global && cargo test"'
     deps:
       - 'build'
     inputs:
-      - 'src/**/*'
-      - 'tests/**/*'
+      - '**/*.rs'
       - 'Cargo.toml'
       - 'Cargo.lock'
+    options:
+      runInCI: true
 
   check:
-    command: 'cargo check -p prompt-engine -p universal-parser'
+    command: 'nix develop ..#dev --command bash -c "cd rust_global && cargo check"'
     inputs:
-      - 'src/**/*'
+      - '**/*.rs'
       - 'Cargo.toml'
 
-  service:
-    command: 'cargo build --release --bin singularity-rust-service'
+  clippy:
+    command: 'nix develop ..#dev --command bash -c "cd rust_global && cargo clippy --all-targets"'
     inputs:
-      - 'src/**/*'
+      - '**/*.rs'
       - 'Cargo.toml'
-    outputs:
-      - 'target/release/singularity-rust-service'
-
-  start:
-    command: 'cargo run --release --bin singularity-rust-service'
-    deps:
-      - 'service'
     options:
-      persistent: true
+      runInCI: true
+
+  fmt:
+    command: 'nix develop ..#dev --command bash -c "cd rust_global && cargo fmt --check"'
+    inputs:
+      - '**/*.rs'
+    options:
+      runInCI: true
+
+  clean:
+    command: 'nix develop ..#dev --command bash -c "cd rust_global && cargo clean"'
+    local: true
