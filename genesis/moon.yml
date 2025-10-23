@@ -1,0 +1,61 @@
+$schema: '../.moon/cache/schemas/project.json'
+
+language: 'elixir'
+type: 'application'
+
+tasks:
+  deps.get:
+    command: 'nix develop ..#dev --command bash -c "cd genesis && mix deps.get"'
+    inputs:
+      - 'mix.exs'
+      - 'mix.lock'
+
+  compile:
+    command: 'nix develop ..#dev --command bash -c "cd genesis && mix compile"'
+    inputs:
+      - 'mix.exs'
+      - 'mix.lock'
+      - 'lib/**/*.ex'
+    deps:
+      - '~:deps.get'
+
+  test:
+    command: 'nix develop ..#dev --command bash -c "cd genesis && mix test"'
+    inputs:
+      - 'mix.exs'
+      - 'mix.lock'
+      - 'lib/**/*.ex'
+      - 'test/**/*.ex'
+    deps:
+      - '~:compile'
+    options:
+      runInCI: true
+
+  format:
+    command: 'nix develop ..#dev --command bash -c "cd genesis && mix format --check-formatted"'
+    inputs:
+      - 'mix.exs'
+      - '**/*.ex'
+    options:
+      runInCI: true
+
+  lint:
+    command: 'nix develop ..#dev --command bash -c "cd genesis && mix credo"'
+    inputs:
+      - 'mix.exs'
+      - 'lib/**/*.ex'
+      - 'test/**/*.ex'
+    options:
+      runInCI: true
+
+  type:
+    command: 'nix develop ..#dev --command bash -c "cd genesis && mix dialyzer"'
+    inputs:
+      - 'mix.exs'
+      - 'lib/**/*.ex'
+    options:
+      runInCI: false
+
+  clean:
+    command: 'nix develop ..#dev --command bash -c "cd genesis && mix clean"'
+    local: true
