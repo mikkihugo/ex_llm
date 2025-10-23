@@ -33,8 +33,6 @@ defmodule Singularity.Execution.Todos.TodoSwarmCoordinator do
   require Logger
 
   alias Singularity.Execution.Todos.{TodoStore, TodoWorkerAgent}
-  alias Singularity.ProcessRegistry
-
   @poll_interval_ms 5_000
   @max_concurrent_workers 10
   @default_swarm_size 3

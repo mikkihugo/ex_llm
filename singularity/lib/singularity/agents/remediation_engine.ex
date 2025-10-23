@@ -131,8 +131,6 @@ defmodule Singularity.Agents.RemediationEngine do
 
   require Logger
   alias Singularity.Storage.{RAGCodeGenerator, Store}
-  alias Singularity.LLM.Service
-
   @doc """
   Remediate all issues in a file.
 

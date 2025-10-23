@@ -45,11 +45,6 @@ defmodule Singularity.Jobs.PatternMinerJob do
     priority: 2
 
   require Logger
-  alias Singularity.Learning.PatternMiner
-  alias Singularity.CodePatternExtractor
-  alias Singularity.NatsClient
-  alias Singularity.Repo
-
   @impl Oban.Worker
   def perform(%Oban.Job{args: args}) do
     Logger.info("Starting pattern mining job", args: args)

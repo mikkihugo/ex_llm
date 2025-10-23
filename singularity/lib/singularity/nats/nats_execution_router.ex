@@ -14,11 +14,6 @@ defmodule Singularity.NatsExecutionRouter do
 
   use GenServer
   require Logger
-  alias Singularity.Execution.SPARC.Orchestrator
-  alias Singularity.TemplatePerformanceTracker
-  alias Singularity.LLM.Prompt.Cache
-  alias Singularity.Agents.CostOptimizedAgent
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end

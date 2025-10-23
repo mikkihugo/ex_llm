@@ -31,7 +31,6 @@ defmodule Singularity.RustElixirT5Trainer do
   require Logger
   alias Singularity.{CodeStore, Repo}
   alias Singularity.Schemas.{T5TrainingSession, T5TrainingExample, T5ModelVersion, T5EvaluationResult}
-  alias Singularity.Code.Training.T5FineTuner
   import Ecto.Query
 
   defp rust_patterns do

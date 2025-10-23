@@ -388,10 +388,6 @@ defmodule Singularity.LLM.Service do
   """
 
   require Logger
-  alias Singularity.NatsClient
-  alias Singularity.Engines.PromptEngine
-  alias Singularity.LuaRunner
-
   @capability_aliases %{
     "code" => "code",
     "codegen" => "code",

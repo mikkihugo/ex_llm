@@ -116,8 +116,6 @@ defmodule Singularity.Agents.DocumentationUpgrader do
 
   use GenServer
   require Logger
-
-  alias Singularity.Agents.{
     SelfImprovingAgent,
     ArchitectureAgent,
     TechnologyAgent,

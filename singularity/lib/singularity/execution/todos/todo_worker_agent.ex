@@ -37,9 +37,6 @@ defmodule Singularity.Execution.Todos.TodoWorkerAgent do
   require Logger
 
   alias Singularity.Execution.Todos.{TodoStore, TodoSwarmCoordinator}
-  alias Singularity.Execution.Planning.HTDAG
-  alias Singularity.LLM.Service, as: LLMService
-
   @execution_timeout_ms 300_000  # 5 minutes
 
   defstruct [

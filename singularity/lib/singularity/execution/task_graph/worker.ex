@@ -35,12 +35,6 @@ defmodule Singularity.Execution.TaskGraph.Worker do
 
   use GenServer
   require Logger
-
-  alias Singularity.Execution.Todos.TodoStore
-  alias Singularity.Execution.TaskGraph.WorkerPool
-  alias Singularity.Execution.Planning.HTDAG
-  alias Singularity.LLM.Service, as: LLMService
-
   @execution_timeout_ms 300_000  # 5 minutes
 
   defstruct [

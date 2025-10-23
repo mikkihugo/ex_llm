@@ -47,13 +47,8 @@ defmodule Singularity.Execution.Planning.HTDAGBootstrap do
   alias Singularity.{Store, SelfImprovingAgent}
 
   # INTEGRATION: Code generation and quality enforcement
-  alias Singularity.RAGCodeGenerator
-  alias Singularity.QualityCodeGenerator
-
   # INTEGRATION: SPARC methodology and hierarchical planning
   alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
-  alias Singularity.Execution.Planning.SafeWorkPlanner
-  
   @doc """
   Bootstrap HTDAG with existing self-improvement infrastructure.
   

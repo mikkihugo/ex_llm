@@ -58,8 +58,6 @@ defmodule Singularity.Execution.Planning.HTDAGTracer do
   require Logger
   
   # INTEGRATION: Learning integration (trace analysis feeds into learning)
-  alias Singularity.Execution.Planning.HTDAGLearner
-  
   defstruct [
     :trace_results,
     :call_graph,

@@ -8,9 +8,6 @@ defmodule Singularity.Tools.CodeAnalysis do
   - TodoDetector - TODO detection
   - ConsolidationEngine - Code consolidation
   """
-
-  alias Singularity.Tools.Tool
-  alias Singularity.Code.Quality.RefactoringAnalyzer
   alias Singularity.Code.Analyzers.{RustToolingAnalyzer, TodoDetector, ConsolidationEngine}
 
   @doc "Register code analysis tools with the shared registry."

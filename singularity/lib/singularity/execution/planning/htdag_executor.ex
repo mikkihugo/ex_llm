@@ -44,17 +44,11 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
   alias Singularity.Execution.Planning.{HTDAG, HTDAGCore, HTDAGStrategyLoader, HTDAGLuaExecutor}
 
   # INTEGRATION: LLM execution (NATS-based operations)
-  alias Singularity.LLM.NatsOperation
-
   # INTEGRATION: Code generation and quality enforcement
   alias Singularity.{RAGCodeGenerator, QualityCodeGenerator, Store}
 
   # INTEGRATION: Self-improvement (learning from execution)
-  alias Singularity.SelfImprovingAgent
-
   # INTEGRATION: Agent spawning from Lua configurations
-  alias Singularity.Agents.AgentSpawner
-  
   @type executor_state :: %{
           run_id: String.t(),
           dag: HTDAGCore.htdag() | nil,

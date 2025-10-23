@@ -25,14 +25,7 @@ defmodule Singularity.NatsServer do
 
   use GenServer
   require Logger
-
-  alias Singularity.LLM.Service, as: LLMService
   alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
-  alias Singularity.TemplatePerformanceTracker
-  alias Singularity.Agents.CostOptimizedAgent
-  alias Singularity.Detection.FrameworkDetector
-  alias Singularity.Tools.Runner
-
   @type complexity :: :simple | :medium | :complex
   @type service :: :detection | :llm | :templates | :tools | :prompts
   @type request_type :: :detect_framework | :generate_code | :analyze_quality | :optimize_prompt | :execute_tool

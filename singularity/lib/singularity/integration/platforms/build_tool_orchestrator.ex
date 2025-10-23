@@ -5,9 +5,6 @@ defmodule Singularity.BuildToolOrchestrator do
   """
 
   require Logger
-
-  alias Singularity.Engine.CodebaseStore
-
   @doc "Run Bazel commands for singularity-engine"
   def run_bazel_commands(commands) do
     Logger.info("Running #{length(commands)} Bazel commands")

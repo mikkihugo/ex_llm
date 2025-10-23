@@ -42,11 +42,7 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
   require Logger
 
   # INTEGRATION: LLM operations (NATS-based critique and mutation)
-  alias Singularity.LLM.NatsOperation
-
   # INTEGRATION: LLM service with Lua script support for context-aware critique
-  alias Singularity.LLM.Service
-  
   @type mutation :: %{
           type: :model_change | :param_change | :prompt_change,
           target: String.t(),

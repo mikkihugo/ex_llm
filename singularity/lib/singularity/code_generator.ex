@@ -74,10 +74,7 @@ defmodule Singularity.CodeGenerator do
   """
 
   require Logger
-  alias Singularity.LLM.Service
   alias Singularity.{RAGCodeGenerator, EmbeddingEngine, CodeModel}
-  alias Singularity.Code.Quality.TemplateValidator
-
   @type generation_method :: :t5_local | :api | :auto
   @type complexity :: :simple | :medium | :complex
   @type quality_level :: :production | :standard | :draft

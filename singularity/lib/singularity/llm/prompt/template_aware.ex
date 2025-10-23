@@ -18,8 +18,6 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
 
   alias Singularity.{TechnologyTemplateLoader, RAGCodeGenerator}
   alias Singularity.LLM.{Service, PromptCache}
-  alias Singularity.PromptEngine
-
   @doc """
   Generate LLM prompt with optimal template selection
 

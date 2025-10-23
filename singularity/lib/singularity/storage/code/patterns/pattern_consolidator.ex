@@ -111,12 +111,6 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
   """
 
   require Logger
-  alias Singularity.Repo
-  alias Singularity.Storage.Code.Patterns.PatternMiner
-  alias Singularity.Storage.Code.Patterns.PatternIndexer
-  alias Singularity.Storage.Store
-  alias Singularity.NatsClient
-
   @dedup_similarity_threshold 0.85
   @quality_threshold_for_promotion 0.75
 
