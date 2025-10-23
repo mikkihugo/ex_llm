@@ -57,7 +57,10 @@ Then run `nix flake update` and `direnv reload` to apply changes.
 
 ### Topic Hierarchy (Pattern: `{domain}.{subdomain}.{action}`)
 - **`llm.*`** - Direct request/reply (no JetStream) for maximum LLM performance
-- **`system.*`** - System discovery and health (mixed routing)
+- **`system.engines.*`** - Direct discovery (no JetStream) for performance
+- **`system.capabilities.*`** - Direct discovery (no JetStream) for performance  
+- **`system.health.*`** - Direct health checks (no JetStream) for performance
+- **`system.events.*`** - JetStream for system events
 - **`agent.*`** - Agent management (commands direct, events JetStream)
 - **`planning.*`** - Work planning and task management (direct)
 - **`knowledge.*`** - Knowledge and template management (direct)
@@ -68,8 +71,14 @@ Then run `nix flake update` and `direnv reload` to apply changes.
 - **`packages.*`** - Package registry and management (direct)
 
 ### JetStream Streams
-- **`EVENTS`** - All `*.events.*` subjects (1 hour retention)
-- **`METRICS`** - All `*.metrics.*` subjects (24 hour retention)
+- **`EVENTS`** - All `*.events.*` subjects (1 hour retention) - excludes `llm.*`
+- **`METRICS`** - All `*.metrics.*` subjects (24 hour retention) - excludes `llm.*`
+
+### Excluded from JetStream (Direct Request/Reply)
+- **`llm.*`** - All LLM requests for maximum performance
+- **`system.engines.*`** - Engine discovery
+- **`system.capabilities.*`** - Capability discovery  
+- **`system.health.*`** - Health checks
 
 ```
 All Requests → Single NATS Server → Route by hierarchical subject pattern

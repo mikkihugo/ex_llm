@@ -75,17 +75,22 @@ defmodule Genesis.Scheduler do
         # Calculate aggregate metrics
         total = Enum.count(experiments)
         successful = Enum.count(experiments, &(&1.success_rate >= 0.9))
-        avg_success = experiments |> Enum.map(& &1.success_rate) |> Enum.sum() / total
-        avg_regression = experiments |> Enum.map(& &1.regression) |> Enum.sum() / total
-        avg_llm_reduction = experiments |> Enum.map(& &1.llm_reduction) |> Enum.sum() / total
+        sum_success = experiments |> Enum.map(& &1.success_rate) |> Enum.sum()
+        avg_success = sum_success / total
+        sum_regression = experiments |> Enum.map(& &1.regression) |> Enum.sum()
+        avg_regression = sum_regression / total
+        sum_llm_reduction = experiments |> Enum.map(& &1.llm_reduction) |> Enum.sum()
+        avg_llm_reduction = sum_llm_reduction / total
 
         # Group by experiment type (if available)
         by_type = experiments
           |> Enum.group_by(& &1.experiment_type)
           |> Enum.map(fn {type, exps} ->
+            count = Enum.count(exps)
+            sum = exps |> Enum.map(& &1.success_rate) |> Enum.sum()
             {type, %{
-              count: Enum.count(exps),
-              success_rate: exps |> Enum.map(& &1.success_rate) |> Enum.sum() / Enum.count(exps)
+              count: count,
+              success_rate: sum / count
             }}
           end)
           |> Enum.into(%{})
@@ -94,9 +99,11 @@ defmodule Genesis.Scheduler do
         by_risk = experiments
           |> Enum.group_by(& &1.risk_level)
           |> Enum.map(fn {risk, exps} ->
+            count = Enum.count(exps)
+            sum = exps |> Enum.map(& &1.success_rate) |> Enum.sum()
             {risk, %{
-              count: Enum.count(exps),
-              success_rate: exps |> Enum.map(& &1.success_rate) |> Enum.sum() / Enum.count(exps)
+              count: count,
+              success_rate: sum / count
             }}
           end)
           |> Enum.into(%{})
@@ -122,11 +129,69 @@ defmodule Genesis.Scheduler do
 
   @doc """
   Report metrics to Centralcloud for aggregation.
+
+  Retrieves the latest trend analysis and publishes metrics to CentralCloud
+  via NATS subject `system.metrics.genesis` for cross-instance analysis.
+
+  ## Returns
+
+  - `{:ok, metrics}` - Successfully reported metrics
+  - `{:error, reason}` - Failed to retrieve or publish metrics
   """
   def report_metrics do
     Logger.info("Genesis.Scheduler: Starting report_metrics")
-    # TODO: Implement MetricsReporter module
-    {:ok, "Metrics reporting not yet implemented"}
+
+    # Get the latest trend analysis
+    case analyze_experiment_metrics() do
+      {:ok, insights} ->
+        # Prepare metrics report for CentralCloud
+        hostname = case :inet.gethostname() do
+          {:ok, name} -> name |> to_string()
+          {:error, _} -> "unknown"
+        end
+
+        report = %{
+          "source" => "genesis",
+          "hostname" => hostname,
+          "timestamp" => DateTime.utc_now(),
+          "metrics" => insights
+        }
+
+        # Publish to CentralCloud via NATS
+        case publish_metrics_to_nats(report) do
+          :ok ->
+            Logger.info("Genesis.Scheduler: Metrics reported successfully to CentralCloud")
+            {:ok, insights}
+
+          {:error, reason} ->
+            Logger.error("Genesis.Scheduler: Failed to publish metrics to CentralCloud - #{inspect(reason)}")
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        Logger.error("Genesis.Scheduler: Failed to analyze metrics - #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  defp publish_metrics_to_nats(report) do
+    subject = "system.metrics.genesis"
+
+    try do
+      case Genesis.NatsClient.publish(subject, Jason.encode!(report)) do
+        :ok ->
+          Logger.info("Published metrics to #{subject}")
+          :ok
+
+        {:error, reason} ->
+          Logger.error("Failed to publish metrics to NATS: #{inspect(reason)}")
+          {:error, reason}
+      end
+    rescue
+      e ->
+        Logger.error("Exception while publishing metrics: #{inspect(e)}")
+        {:error, e}
+    end
   end
 
   @doc """
