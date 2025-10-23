@@ -61,37 +61,28 @@ defmodule Singularity.Repo.Migrations.OptimizeWithCitextIntarrayBloom do
     IO.puts("1. Converting key fields to citext for case-insensitive queries...")
 
     # store_knowledge_artifacts
-    alter table(:store_knowledge_artifacts) do
-      modify :artifact_type, :citext
-      modify :artifact_id, :citext
-    end
+    execute "ALTER TABLE store_knowledge_artifacts ALTER COLUMN artifact_type TYPE citext"
+    execute "ALTER TABLE store_knowledge_artifacts ALTER COLUMN artifact_id TYPE citext"
     IO.puts("   ✓ store_knowledge_artifacts: artifact_type, artifact_id → citext")
 
     # curated_knowledge_artifacts
-    alter table(:curated_knowledge_artifacts) do
-      modify :artifact_type, :citext
-      modify :artifact_id, :citext
-    end
+    execute "ALTER TABLE curated_knowledge_artifacts ALTER COLUMN artifact_type TYPE citext"
+    execute "ALTER TABLE curated_knowledge_artifacts ALTER COLUMN artifact_id TYPE citext"
     IO.puts("   ✓ curated_knowledge_artifacts: artifact_type, artifact_id → citext")
 
     # technology_patterns
-    alter table(:technology_patterns) do
-      modify :technology_name, :citext
-    end
+    execute "ALTER TABLE technology_patterns ALTER COLUMN technology_name TYPE citext"
     IO.puts("   ✓ technology_patterns: technology_name → citext")
 
-    # graph_nodes
+    # graph_nodes (use execute instead of alter table macro to support conditional logic)
     if graph_nodes_exists do
-      alter table(:graph_nodes) do
-        modify :name, :citext
-      end
+      execute "ALTER TABLE graph_nodes ALTER COLUMN name TYPE citext"
       IO.puts("   ✓ graph_nodes: name → citext")
     end
 
     # code_files (skip language - used by generated column search_vector)
-    alter table(:code_files) do
-      modify :project_name, :citext
-    end
+    # Use execute to support conditional logic properly
+    execute "ALTER TABLE code_files ALTER COLUMN project_name TYPE citext"
     IO.puts("   ✓ code_files: project_name → citext (language skipped - used by search_vector)")
 
     IO.puts("   → Queries can now use simple equality (no LOWER() needed!)\n")
@@ -125,10 +116,8 @@ defmodule Singularity.Repo.Migrations.OptimizeWithCitextIntarrayBloom do
     end
 
     # code_files - Add module import tracking arrays
-    alter table(:code_files) do
-      add :imported_module_ids, {:array, :integer}, default: []
-      add :importing_module_ids, {:array, :integer}, default: []
-    end
+    execute "ALTER TABLE code_files ADD COLUMN imported_module_ids integer[] DEFAULT '{}'::integer[]"
+    execute "ALTER TABLE code_files ADD COLUMN importing_module_ids integer[] DEFAULT '{}'::integer[]"
     IO.puts("   ✓ code_files: imported_module_ids, importing_module_ids")
 
     execute """
