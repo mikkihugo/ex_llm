@@ -114,19 +114,12 @@ pub use parsing::*;
 // Storage removed - NIF receives data from Elixir
 
 // Main analyzer that orchestrates everything
-// pub mod analyzer;  // DISABLED: Has too many external dependencies (prompt_engine, linting_engine, sparc_methodology)
+pub mod analyzer;  // Main orchestrator for multi-language analysis
 
 // Re-export the main analyzer
-// pub use analyzer::*;  // DISABLED - see above
+pub use analyzer::CodebaseAnalyzer;
 
 // NIF bindings (feature-gated for Elixir integration)
 #[cfg(feature = "nif")]
 pub mod nif;
 
-// nif_bindings - Elixir NIF bindings for analysis functionality
-// Re-enabled after Phase 1-3 refactoring (commit: PHASE3):
-// - Phase 1: Added SemanticFeatures type, complexity field, symbols field to CodeMetadata
-// - Phase 2: Fixed all storage::graph imports to use crate::graph
-// - Phase 3: Re-enabled analysis module and nif_bindings
-#[cfg(feature = "nif")]
-pub mod nif_bindings;
