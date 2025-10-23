@@ -403,11 +403,9 @@ pub fn detect_language_by_manifest_nif(manifest_path: String) -> NifResult<Langu
     })
 }
 
-// NOTE: nif_bindings module disabled (has dependencies on disabled graph/analysis modules)
-// TODO: Re-enable when graph/analysis modules are fixed
-
 // Initialize the NIF module (SINGLE rustler::init! for entire crate)
 rustler::init!("Elixir.Singularity.RustAnalyzer", [
+    // Existing NIFs (legacy)
     analyze_code_nif,
     calculate_quality_metrics_nif,
     load_asset_nif,
@@ -415,5 +413,18 @@ rustler::init!("Elixir.Singularity.RustAnalyzer", [
     parse_file_nif,
     supported_languages_nif,
     detect_language_by_extension_nif,
-    detect_language_by_manifest_nif
+    detect_language_by_manifest_nif,
+
+    // Multi-language analyzer NIFs (CodebaseAnalyzer)
+    crate::nif_bindings::analyze_language,
+    crate::nif_bindings::check_language_rules,
+    crate::nif_bindings::detect_cross_language_patterns,
+    crate::nif_bindings::get_rca_metrics,
+    crate::nif_bindings::extract_functions,
+    crate::nif_bindings::extract_classes,
+    crate::nif_bindings::extract_imports_exports,
+    crate::nif_bindings::rca_supported_languages,
+    crate::nif_bindings::ast_grep_supported_languages,
+    crate::nif_bindings::has_rca_support,
+    crate::nif_bindings::has_ast_grep_support
 ]);

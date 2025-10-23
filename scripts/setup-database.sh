@@ -87,49 +87,73 @@ fi
 # Install extensions
 echo -e "${GREEN}📦 Installing PostgreSQL extensions...${NC}"
 
-psql -d "$DB_NAME" <<SQL
--- Vector embeddings (pgvector)
+psql -d "$DB_NAME" << 'SQL'
+-- Install all 56 available PostgreSQL extensions
+-- This comprehensive set unlocks capabilities for:
+-- - Vector embeddings (semantic search)
+-- - Time-series analytics
+-- - Geospatial queries
+-- - Full-text search
+-- - Graph databases
+-- - Analytics & monitoring
+
 CREATE EXTENSION IF NOT EXISTS vector;
-
--- TimescaleDB (time-series data)
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
-
--- PostGIS (geospatial, if needed)
 CREATE EXTENSION IF NOT EXISTS postgis;
-
--- Apache AGE (graph database with Cypher queries)
-CREATE EXTENSION IF NOT EXISTS age;
-
--- PgRouting (graph routing algorithms)
-CREATE EXTENSION IF NOT EXISTS pgrouting;
-
--- PgTAP (PostgreSQL testing)
-CREATE EXTENSION IF NOT EXISTS pgtap;
-
--- PgCron (scheduled tasks)
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
--- Postgres FDW (Foreign Data Wrapper)
-CREATE EXTENSION IF NOT EXISTS postgres_fdw;
-
--- UUID generation
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- Full-text search (pg_trgm for similarity)
+CREATE EXTENSION IF NOT EXISTS postgis_raster;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
+CREATE EXTENSION IF NOT EXISTS postgis_tiger_geocoder;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
-
--- Additional useful extensions
+CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+CREATE EXTENSION IF NOT EXISTS unaccent;
 CREATE EXTENSION IF NOT EXISTS btree_gin;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+CREATE EXTENSION IF NOT EXISTS pg_buffercache;
+CREATE EXTENSION IF NOT EXISTS pg_prewarm;
 CREATE EXTENSION IF NOT EXISTS hstore;
 CREATE EXTENSION IF NOT EXISTS ltree;
-CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
-CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE EXTENSION IF NOT EXISTS intarray;
+CREATE EXTENSION IF NOT EXISTS citext;
+CREATE EXTENSION IF NOT EXISTS cube;
+CREATE EXTENSION IF NOT EXISTS bloom;
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+CREATE EXTENSION IF NOT EXISTS file_fdw;
+CREATE EXTENSION IF NOT EXISTS dblink;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS tablefunc;
+CREATE EXTENSION IF NOT EXISTS pgtap;
+CREATE EXTENSION IF NOT EXISTS earthdistance;
+CREATE EXTENSION IF NOT EXISTS dict_int;
+CREATE EXTENSION IF NOT EXISTS dict_xsyn;
+CREATE EXTENSION IF NOT EXISTS isn;
+CREATE EXTENSION IF NOT EXISTS seg;
+CREATE EXTENSION IF NOT EXISTS lo;
+CREATE EXTENSION IF NOT EXISTS xml2;
+CREATE EXTENSION IF NOT EXISTS sslinfo;
+CREATE EXTENSION IF NOT EXISTS adminpack;
+CREATE EXTENSION IF NOT EXISTS amcheck;
+CREATE EXTENSION IF NOT EXISTS insert_username;
+CREATE EXTENSION IF NOT EXISTS moddatetime;
+CREATE EXTENSION IF NOT EXISTS refint;
+CREATE EXTENSION IF NOT EXISTS tcn;
+CREATE EXTENSION IF NOT EXISTS tsm_system_rows;
+CREATE EXTENSION IF NOT EXISTS tsm_system_time;
+CREATE EXTENSION IF NOT EXISTS old_snapshot;
+CREATE EXTENSION IF NOT EXISTS pageinspect;
+CREATE EXTENSION IF NOT EXISTS pg_freespacemap;
+CREATE EXTENSION IF NOT EXISTS pg_visibility;
+CREATE EXTENSION IF NOT EXISTS pg_walinspect;
+CREATE EXTENSION IF NOT EXISTS pg_surgery;
+CREATE EXTENSION IF NOT EXISTS pgrowlocks;
+CREATE EXTENSION IF NOT EXISTS pgstattuple;
+CREATE EXTENSION IF NOT EXISTS address_standardizer;
+CREATE EXTENSION IF NOT EXISTS address_standardizer_data_us;
+CREATE EXTENSION IF NOT EXISTS intagg;
+CREATE EXTENSION IF NOT EXISTS autoinc;
 
-SELECT 'Extension installed: ' || extname
-FROM pg_extension
-WHERE extname IN ('vector', 'timescaledb', 'postgis', 'age', 'pgrouting', 'pgtap', 'pg_cron', 'postgres_fdw', 'uuid-ossp', 'pg_trgm', 'btree_gin', 'btree_gist', 'pg_stat_statements', 'hstore', 'ltree', 'fuzzystrmatch', 'unaccent');
+SELECT 'All extensions installed: ' || count(*) FROM pg_extension;
 SQL
 
 echo -e "${GREEN}✅ Extensions installed${NC}"

@@ -123,3 +123,6 @@ pub use analyzer::CodebaseAnalyzer;
 #[cfg(feature = "nif")]
 pub mod nif;
 
+#[cfg(feature = "nif")]
+pub mod nif_bindings;
+
