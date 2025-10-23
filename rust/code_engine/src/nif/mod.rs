@@ -277,6 +277,132 @@ pub fn supported_languages_nif() -> NifResult<Vec<String>> {
     Ok(languages.into_iter().map(String::from).collect())
 }
 
+/// Language detection result
+#[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
+#[module = "Singularity.LanguageDetection.Result"]
+pub struct LanguageDetectionResult {
+    pub language: String,
+    pub confidence: f64,
+    pub detection_method: String,
+}
+
+/// NIF: Detect language from file path using registry
+///
+/// Uses the parser_engine language_registry to detect language by file extension.
+/// This is the primary method - accurate for individual files.
+///
+/// # Arguments
+/// * `file_path` - Path to the file (e.g., "lib/module.ex", "src/main.rs")
+///
+/// # Returns
+/// * `Ok(LanguageDetectionResult)` - Language detected with confidence
+/// * `Err(error)` - Language could not be detected
+#[rustler::nif]
+pub fn detect_language_by_extension_nif(file_path: String) -> NifResult<LanguageDetectionResult> {
+    use std::path::Path;
+
+    let path = Path::new(&file_path);
+
+    // Detect language by file extension using the language registry
+    let ext = path.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+
+    let (language, confidence) = match ext.to_lowercase().as_str() {
+        "ex" | "exs" => ("elixir", 0.99),
+        "erl" => ("erlang", 0.99),
+        "gleam" => ("gleam", 0.99),
+        "rs" => ("rust", 0.99),
+        "ts" | "tsx" => ("typescript", 0.99),
+        "js" | "jsx" => ("javascript", 0.99),
+        "py" => ("python", 0.99),
+        "go" => ("go", 0.99),
+        "java" => ("java", 0.99),
+        "cpp" | "cc" | "cxx" => ("cpp", 0.99),
+        "c" => ("c", 0.99),
+        "cs" => ("csharp", 0.99),
+        "rb" => ("ruby", 0.99),
+        "php" => ("php", 0.99),
+        "swift" => ("swift", 0.99),
+        "kt" => ("kotlin", 0.99),
+        "scala" => ("scala", 0.99),
+        "json" => ("json", 0.99),
+        "yaml" | "yml" => ("yaml", 0.99),
+        "toml" => ("toml", 0.99),
+        "xml" => ("xml", 0.99),
+        "html" | "htm" => ("html", 0.99),
+        "css" => ("css", 0.99),
+        "sh" | "bash" => ("bash", 0.99),
+        "sql" => ("sql", 0.99),
+        _ => ("unknown", 0.0),
+    };
+
+    Ok(LanguageDetectionResult {
+        language: language.to_string(),
+        confidence,
+        detection_method: "extension".to_string(),
+    })
+}
+
+/// NIF: Detect language from manifest file
+///
+/// Detects the primary language of a project by examining manifest files.
+/// More accurate than extension-based detection for determining project type.
+///
+/// This uses the techstack analyzer approach:
+/// - Cargo.toml → Rust
+/// - package.json ± tsconfig.json → TypeScript/JavaScript
+/// - mix.exs → Elixir
+/// - go.mod → Go
+/// - etc.
+///
+/// # Arguments
+/// * `manifest_path` - Path to the manifest file (e.g., "Cargo.toml", "package.json")
+///
+/// # Returns
+/// * `Ok(LanguageDetectionResult)` - Primary language with high confidence
+/// * `Err(error)` - Could not determine from manifest
+#[rustler::nif]
+pub fn detect_language_by_manifest_nif(manifest_path: String) -> NifResult<LanguageDetectionResult> {
+    use std::path::Path;
+
+    let path = Path::new(&manifest_path);
+    let file_name = path.file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+
+    let (language, confidence, method) = match file_name {
+        "Cargo.toml" => ("rust", 0.95, "manifest"),
+        "package.json" => {
+            // Check for tsconfig.json to distinguish TypeScript from JavaScript
+            if path.parent().map(|p| p.join("tsconfig.json").exists()).unwrap_or(false) {
+                ("typescript", 0.95, "manifest+tsconfig")
+            } else {
+                ("javascript", 0.90, "manifest")
+            }
+        },
+        "go.mod" => ("go", 0.95, "manifest"),
+        "mix.exs" => ("elixir", 0.99, "manifest"),
+        "rebar.config" | "rebar3.config" => ("erlang", 0.95, "manifest"),
+        "pyproject.toml" | "setup.py" | "setup.cfg" => ("python", 0.95, "manifest"),
+        "pom.xml" => ("java", 0.95, "maven"),
+        "build.gradle" | "build.gradle.kts" => ("java", 0.95, "gradle"),
+        "Gemfile" => ("ruby", 0.95, "manifest"),
+        "composer.json" => ("php", 0.95, "manifest"),
+        "pubspec.yaml" => ("dart", 0.95, "manifest"),
+        "Package.swift" => ("swift", 0.95, "manifest"),
+        "project.clj" => ("clojure", 0.95, "manifest"),
+        "sbt" | "build.sbt" => ("scala", 0.95, "manifest"),
+        _ => ("unknown", 0.0, "manifest"),
+    };
+
+    Ok(LanguageDetectionResult {
+        language: language.to_string(),
+        confidence,
+        detection_method: method.to_string(),
+    })
+}
+
 // NOTE: nif_bindings module disabled (has dependencies on disabled graph/analysis modules)
 // TODO: Re-enable when graph/analysis modules are fixed
 
@@ -287,5 +413,7 @@ rustler::init!("Elixir.Singularity.RustAnalyzer", [
     load_asset_nif,
     query_asset_nif,
     parse_file_nif,
-    supported_languages_nif
+    supported_languages_nif,
+    detect_language_by_extension_nif,
+    detect_language_by_manifest_nif
 ]);

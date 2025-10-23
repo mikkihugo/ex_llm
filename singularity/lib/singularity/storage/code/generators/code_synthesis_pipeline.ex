@@ -190,17 +190,10 @@ defmodule Singularity.CodeSynthesisPipeline do
   end
 
   defp detect_language_from_path(path) do
-    cond do
-      String.ends_with?(path, ".ex") or String.ends_with?(path, ".exs") -> "elixir"
-      String.ends_with?(path, ".erl") -> "erlang"
-      String.ends_with?(path, ".gleam") -> "gleam"
-      String.ends_with?(path, ".rs") -> "rust"
-      String.ends_with?(path, ".go") -> "go"
-      String.ends_with?(path, ".ts") or String.ends_with?(path, ".tsx") -> "typescript"
-      String.ends_with?(path, ".js") or String.ends_with?(path, ".jsx") -> "javascript"
-      String.ends_with?(path, ".py") -> "python"
-      String.ends_with?(path, ".java") -> "java"
-      true -> "unknown"
+    # Use Rust-backed language detection (single source of truth)
+    case Singularity.LanguageDetection.detect_file(path) do
+      {:ok, lang} -> Atom.to_string(lang)
+      {:error, _} -> "unknown"
     end
   end
 
@@ -266,7 +259,7 @@ defmodule Singularity.CodeSynthesisPipeline do
     facts = []
     
     # Query package registry knowledge
-    case Singularity.Search.PackageRegistryKnowledge.search("tech stack", %{ecosystem: :all, top_k: 10}) do
+    case Singularity.ArchitectureEngine.PackageRegistryKnowledge.search("tech stack", %{ecosystem: :all, top_k: 10}) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_package_fact/1)
       _ -> :ok
@@ -280,7 +273,7 @@ defmodule Singularity.CodeSynthesisPipeline do
     end
     
     # Query framework pattern store
-    case Singularity.Code.Patterns.FrameworkPatternStore.search("framework patterns", %{top_k: 5}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("framework patterns", %{top_k: 5}) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_framework_fact/1)
       _ -> :ok

@@ -31,7 +31,7 @@ defmodule Singularity.Search.PostgresVectorSearch do
   PostgresVectorSearch:
     calls:
       - Repo.query/1  # Execute vector search functions
-      - EmbeddingService.generate_embedding/1  # Generate embeddings
+      - EmbeddingGenerator.embed/1  # Generate embeddings
     called_by:
       - CodeSearch  # When vector search is needed
       - TodoStore  # For todo similarity
@@ -321,7 +321,7 @@ defmodule Singularity.Search.PostgresVectorSearch do
   # Private functions
 
   defp generate_embedding(text) do
-    case EmbeddingService.generate_embedding(text) do
+    case Singularity.EmbeddingGenerator.embed(text) do
       {:ok, embedding} -> {:ok, embedding}
       {:error, reason} -> {:error, "Embedding generation failed: #{inspect(reason)}"}
     end

@@ -540,7 +540,7 @@ defmodule Singularity.Runner do
 
   defp execute_tool_task(task) do
     # Execute tool with intelligent routing
-    case Singularity.Tools.ToolSelector.execute_tool(task.args.tool, task.args.args || %{}) do
+    case Singularity.Tools.execute_tool(task.args.tool, task.args.args || %{}) do
       {:ok, result} ->
         {:ok, %{
           type: :tool,

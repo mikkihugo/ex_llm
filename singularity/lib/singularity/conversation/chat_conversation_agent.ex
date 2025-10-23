@@ -398,14 +398,8 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       # Use template for chat response
       conversation_history = format_conversation_history(state.conversation_history)
 
-      case Singularity.LLM.Service.call_with_template(
-        "conversation/chat-response.hbs",
-        %{
-          conversation_history: conversation_history,
-          user_message: message_text
-        },
-        complexity: :simple,
-        task_type: :simple_chat
+      case Singularity.LLM.Service.call_with_prompt(:simple,
+        "Respond to: #{message_text}\nContext: #{conversation_history}"
       ) do
         {:ok, %{text: response}} ->
           GoogleChat.notify("💬 #{response}")
@@ -428,11 +422,8 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   defp parse_human_message(message, _state) when is_binary(message) do
     try do
       # Use template for intelligent message parsing
-      case Singularity.LLM.Service.call_with_template(
-        "conversation/parse-message.hbs",
-        %{message: message},
-        complexity: :simple,
-        task_type: :parser
+      case Singularity.LLM.Service.call_with_prompt(:simple,
+        "Parse this message intent: #{message}"
       ) do
         {:ok, %{text: response}} ->
           case Jason.decode(response) do

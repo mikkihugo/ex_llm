@@ -273,72 +273,17 @@ defmodule Singularity.ParserEngine do
 
   @doc """
   Detect the language of a file based on extension.
+
+  Uses Rust-backed language detection for consistency and extensibility.
   """
   def detect_language(file_path) do
-    extension = Path.extname(file_path) |> String.downcase()
+    case Singularity.LanguageDetection.by_extension(file_path) do
+      {:ok, %{language: lang}} ->
+        {:ok, lang}
 
-    language =
-      case extension do
-        ".ex" -> "elixir"
-        ".exs" -> "elixir"
-        ".gleam" -> "gleam"
-        ".rs" -> "rust"
-        ".js" -> "javascript"
-        ".ts" -> "typescript"
-        ".tsx" -> "typescript"
-        ".jsx" -> "javascript"
-        ".py" -> "python"
-        ".go" -> "go"
-        ".java" -> "java"
-        ".c" -> "c"
-        ".cpp" -> "cpp"
-        ".h" -> "c"
-        ".hpp" -> "cpp"
-        ".cs" -> "csharp"
-        ".php" -> "php"
-        ".rb" -> "ruby"
-        ".swift" -> "swift"
-        ".kt" -> "kotlin"
-        ".scala" -> "scala"
-        ".clj" -> "clojure"
-        ".hs" -> "haskell"
-        ".ml" -> "ocaml"
-        ".fs" -> "fsharp"
-        ".dart" -> "dart"
-        ".lua" -> "lua"
-        ".r" -> "r"
-        ".m" -> "matlab"
-        ".jl" -> "julia"
-        ".sh" -> "bash"
-        ".zsh" -> "zsh"
-        ".fish" -> "fish"
-        ".ps1" -> "powershell"
-        ".bat" -> "batch"
-        ".cmd" -> "batch"
-        ".sql" -> "sql"
-        ".html" -> "html"
-        ".css" -> "css"
-        ".scss" -> "scss"
-        ".sass" -> "sass"
-        ".less" -> "less"
-        ".xml" -> "xml"
-        ".yaml" -> "yaml"
-        ".yml" -> "yaml"
-        ".json" -> "json"
-        ".toml" -> "toml"
-        ".ini" -> "ini"
-        ".cfg" -> "config"
-        ".conf" -> "config"
-        ".env" -> "env"
-        ".dockerfile" -> "dockerfile"
-        ".md" -> "markdown"
-        ".rst" -> "restructuredtext"
-        ".tex" -> "latex"
-        ".txt" -> "text"
-        _ -> "unknown"
-      end
-
-    {:ok, language}
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   # Private helpers -----------------------------------------------------------

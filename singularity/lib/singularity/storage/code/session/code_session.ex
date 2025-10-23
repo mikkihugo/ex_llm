@@ -405,7 +405,7 @@ defmodule Singularity.CodeSession do
     facts = []
     
     # Query package registry knowledge for tech stack information
-    case Singularity.Search.PackageRegistryKnowledge.search("technology stack", %{ecosystem: :all, top_k: 15}) do
+    case Singularity.ArchitectureEngine.PackageRegistryKnowledge.search("technology stack", %{ecosystem: :all, top_k: 15}) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_tech_stack_fact/1)
       _ -> :ok
@@ -419,7 +419,7 @@ defmodule Singularity.CodeSession do
     end
     
     # Query framework pattern store for relevant frameworks
-    case Singularity.Code.Patterns.FrameworkPatternStore.search("framework detection", %{top_k: 8}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("framework detection", %{top_k: 8}) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_framework_tech_fact/1)
       _ -> :ok

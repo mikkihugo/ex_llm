@@ -388,7 +388,7 @@ defmodule Singularity.LLM.Service do
   """
 
   require Logger
-  alias Singularity.NATS.Client
+  alias Singularity.NatsClient
   alias Singularity.Engines.PromptEngine
   alias Singularity.LuaRunner
 
