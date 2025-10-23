@@ -116,13 +116,6 @@ defmodule Singularity.Agents.DocumentationUpgrader do
 
   use GenServer
   require Logger
-    SelfImprovingAgent,
-    ArchitectureAgent,
-    TechnologyAgent,
-    RefactoringAgent,
-    CostOptimizedAgent,
-    ChatConversationAgent
-  }
 
   @type upgrade_status :: :pending | :in_progress | :completed | :failed
   @type documentation_report :: %{
