@@ -838,39 +838,41 @@ moon run templates_data:embed-all      # Generate embeddings
 moon run templates_data:stats          # Usage statistics
 ```
 
-### Database (Internal Tooling - Two Separate DBs)
+### Database (Internal Tooling - Single Database Strategy)
 
-**Two independent databases:**
+**Currently: One `singularity` database (all environments)**
 
-#### 1. `singularity` - Main Application Database
-Used by: `singularity`
+#### Current: `singularity` - Universal Database
+Used by: `singularity` application
 
 - **Dev:** Direct access
 - **Test:** Sandboxed (Ecto.Adapters.SQL.Sandbox)
 - **Prod:** Same DB (internal tooling, no isolation needed)
 
-**Why single DB for singularity?**
-- Internal use only (no multi-tenancy)
-- Learning across environments (dev experiments → test validation)
-- Simpler (one connection, one place for knowledge)
+**Why single DB?**
+- ✅ Internal use only (no multi-tenancy needed)
+- ✅ Learning across environments (dev experiments → test validation)
+- ✅ Simpler (one connection, one place for knowledge)
+- ✅ Living knowledge base learns everywhere
 
-#### 2. `central_services` - Central_Cloud Database
-Used by: `central_cloud` application
+#### Future: CentralCloud (For Multi-Instance Deployment)
+**NOT currently used** - Reserved for future architecture
 
-- **Independent:** Completely separate from singularity
-- **Purpose:** Package Intelligence, Framework Learning, Knowledge Cache
-- **Why separate?**
-  - Different deployment model (can run standalone)
-  - Different data model (external package metadata)
-  - Service isolation
+- **Purpose:** Multi-instance Singularity scaling (run multiple instances, share knowledge)
+- **When:** Only needed if/when deploying multiple Singularity instances
+- **Until then:** Use single 'singularity' database for all instances
 
 **Setup:**
 ```bash
 nix develop
-./scripts/setup-database.sh  # Creates BOTH 'singularity' AND 'central_services' DBs
-cd singularity && mix knowledge.migrate  # Import JSONs to singularity DB
-cd ../central_cloud && mix ecto.create && mix ecto.migrate  # Setup central_cloud DB
+./scripts/setup-database.sh  # Creates 'singularity' DB (main)
+cd singularity
+mix knowledge.migrate        # Import JSONs to singularity DB
+mix ecto.migrate             # Run migrations
 ```
+
+**Note:** CentralCloud database support exists in setup script but is unused.
+When scaling to multiple instances, you'll enable CentralCloud as a knowledge authority.
 
 ### Priority: Features over Speed/Security
 

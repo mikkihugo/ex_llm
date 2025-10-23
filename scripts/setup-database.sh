@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Database setup script for Singularity (Nix PostgreSQL)
-# Creates shared databases with extensions for all environments
-# Applications: singularity, centralcloud, genesis
+# Current: Creates single 'singularity' database for all environments
+# Future: CentralCloud (multi-instance knowledge sharing) - currently unused
 
 set -euo pipefail
 
@@ -29,7 +29,10 @@ GENESIS_DB_NAME="${GENESIS_DB_NAME:-genesis}"
 
 echo -e "${GREEN}🗄️  Singularity Database Setup${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo "Setting up databases: '$DB_NAME', '$CENTRALCLOUD_DB_NAME', and '$GENESIS_DB_NAME'"
+echo "Setting up database: '$DB_NAME' (single DB for internal tooling)"
+echo ""
+echo "Note: CentralCloud (centralcloud DB) is for future multi-instance architecture"
+echo "      Currently: Single Singularity instance uses shared 'singularity' database"
 echo ""
 
 # Check if PostgreSQL is running
