@@ -147,18 +147,23 @@ if config_env() != :test do
   end
 end
 
-# Embedding service configuration
+# Embedding service configuration (Inference - ONNX Runtime)
+# Works independently from XLA_TARGET (which is for EXLA training)
 config :singularity,
-  # Embedding provider: :rustler for GPU-accelerated Rust NIF embeddings
-  # Jina v3 + Qodo-Embed-1 with CUDA acceleration on RTX 4080
+  # Embedding provider: :rustler for GPU-accelerated Rust NIF embeddings via ONNX
+  # Jina v3 + Qodo-Embed-1 with platform-specific acceleration:
+  # - macOS dev: Metal GPU via Rust NIF + ONNX (5-10ms per embedding)
+  # - RTX 4080 prod: CUDA GPU via Rust NIF + ONNX (5-10ms per embedding)
+  # - Fallback: CPU (10-20ms per embedding)
   # - 1024 dims (Jina v3) / 1536 dims (Qodo-Embed)
-  # - GPU-accelerated with ONNX Runtime + Candle
   # - No rate limits, no API costs, full privacy
   embedding_provider: :rustler,
 
-  # Rust NIF embedding models (RTX 4080 GPU with CUDA)
-  # - Jina v3: 1024 dims, text/docs (8192 tokens)
-  # - Qodo-Embed-1: 1536 dims, code (32k tokens) - SOTA 2025
+  # Rust NIF embedding models (GPU-accelerated ONNX inference)
+  # - Jina v3: 1024 dims, text/docs (8192 tokens) - runs on Metal/CUDA/CPU
+  # - Qodo-Embed-1: 1536 dims, code (32k tokens) - SOTA 2025, runs on Metal/CUDA/CPU
+  # Note: Embeddings use ONNX Runtime (independent of EXLA)
+  #       ONNX handles GPU detection automatically
   rustler_models: [
     jina_v3: "jina-embeddings-v3",
     qodo_embed: "qodo-embed-1-1.5b"
