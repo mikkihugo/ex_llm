@@ -61,3 +61,27 @@ When working with Rust NIFs:
 7. Check clippy and format compliance: `cargo clippy` and `cargo fmt`
 
 Remember: Rust engines are shared between Singularity and CentralCloud via relative paths in use Rustler directives.
+
+## ⚠️ RESEARCH CHECKLIST - Before Suggesting Changes
+
+Before suggesting ANY Rust NIF improvements, optimizations, or new features:
+
+**Read First**:
+1. `/AGENT_BRIEFING.md` - System state and what's implemented
+2. `/SELFEVOLVE.md` - Complete evolution system status
+3. `/RUST_ENGINES_INVENTORY.md` - All 8 NIF engines and services
+4. Check existing code - Does this already exist?
+
+**Already Implemented - Don't Duplicate**:
+- ✅ Code parsing (25+ languages) → `universal_parser` NIF
+- ✅ Code analysis → `analysis_suite` NIF
+- ✅ Embeddings generation → `embedding_engine` NIF
+- ✅ Semantic search → pgvector + `semantic_engine` NIF
+- ✅ Quality analysis → `quality_engine` NIF
+- ✅ 8 total NIF modules → All documented in RUST_ENGINES_INVENTORY.md
+
+**Always Ask Yourself**:
+- Does this optimization already exist in /rust/?
+- Is this documented in RUST_ENGINES_INVENTORY.md?
+- Does SELFEVOLVE.md mention this feature?
+- What's the implementation status in codebase?

@@ -104,3 +104,25 @@ When reviewing code, you MUST systematically examine:
 - If the code is fundamentally flawed, recommend a complete rewrite rather than incremental fixes
 
 Your goal is not to be difficult, but to ensure that every line of code meets professional standards. Poor code today becomes technical debt tomorrow. Be the guardian of code quality that every project needs.
+
+## ⚠️ RESEARCH CHECKLIST - Before Code Review
+
+Before reviewing ANY code, check what's already been implemented:
+
+**Read First**:
+1. `/AGENT_BRIEFING.md` - System state and what's implemented
+2. `/SELFEVOLVE.md` - Complete evolution system status
+3. Check if feature already exists
+
+**Already Implemented - Verify Quality Against These**:
+- ✅ Metrics aggregation → `MetricsAggregationWorker` (verify self-documenting names)
+- ✅ Feedback analysis → `FeedbackAnalyzer` (verify error handling)
+- ✅ Agent evolution → `Evolution` module (verify A/B testing correctness)
+- ✅ Knowledge export → `KnowledgeExportWorker` (verify Git operations)
+- ✅ Metrics dashboard → `IndexLive` + `index_live.html.heex` (verify LiveView patterns)
+
+**When Reviewing Code**:
+- Compare against CLAUDE.md patterns and naming conventions
+- Check if it follows self-documenting code principles
+- Verify error handling in distributed contexts (NATS, multi-process)
+- Ensure it integrates with existing self-evolution system

@@ -66,3 +66,28 @@ Your goal is to:
 6. Estimate total effort and expected outcomes
 
 Use RUST_NIF_MODERNIZATION.md, PROPOSED_CLAUDE_AGENTS.md, and AGENT_IMPLEMENTATION_PLAN.md as reference for past analysis.
+
+## ⚠️ RESEARCH CHECKLIST - Before Suggesting Debt Items
+
+Before suggesting ANY technical debt items, refactoring, or optimization work:
+
+**Read First**:
+1. `/AGENT_BRIEFING.md` - System state and what's implemented
+2. `/SELFEVOLVE.md` - Complete evolution system status
+3. Check what's already been analyzed
+
+**Already Implemented - Don't Suggest As Debt**:
+- ✅ Metrics system → Complete (Priority 1)
+- ✅ Feedback analysis → Complete (Priority 2)
+- ✅ Agent evolution → Complete (Priority 3)
+- ✅ Knowledge export → Complete (Priority 4)
+- ✅ Metrics dashboard → Complete (Priority 5)
+- ✅ Supervision architecture → Implemented
+- ✅ NATS integration → Implemented
+- ✅ Knowledge base → Implemented
+
+**Always Ask Yourself**:
+- Is this already implemented in SELFEVOLVE.md?
+- Is this documented in AGENT_BRIEFING.md?
+- Does the codebase already have this?
+- What's the actual implementation status?

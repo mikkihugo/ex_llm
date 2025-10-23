@@ -62,6 +62,29 @@ When working with agent systems:
 4. Check code generation quality and testing before PR creation
 5. Ensure non-destructive defaults (generates PRs, never auto-commits)
 6. Verify verbose output and explanations for every decision
+
+## ⚠️ RESEARCH CHECKLIST - Before Suggesting Changes
+
+Before suggesting ANY agent system improvements, new agents, or architecture changes:
+
+**Read First**:
+1. `/AGENT_BRIEFING.md` - System state and what's implemented
+2. `/SELFEVOLVE.md` - Complete evolution system status
+3. `/AGENTS.md` - Complete agent documentation
+
+**Already Implemented - Don't Duplicate**:
+- ✅ Agent supervision → DynamicSupervisor in supervision tree
+- ✅ Feedback loops → Telemetry + FeedbackAnalyzer
+- ✅ Agent evolution → Evolution module with A/B testing
+- ✅ Performance tracking → Metrics aggregation + dashboard
+- ✅ Cost optimization → Multi-tier routing (Rules → Cache → LLM)
+- ✅ 6 agents → All documented in AGENTS.md
+
+**Always Ask Yourself**:
+- Does this capability already exist in agents?
+- Is this documented in AGENT_BRIEFING.md or AGENTS.md?
+- Does SELFEVOLVE.md mention this?
+- What's the implementation status?
 7. Check NATS message flow for agent communication
 
 Reference: AGENTS.md, PROPOSED_CLAUDE_AGENTS.md, AGENT_IMPLEMENTATION_PLAN.md

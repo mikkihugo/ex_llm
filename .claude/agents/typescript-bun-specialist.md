@@ -61,3 +61,25 @@ When implementing TypeScript/Bun code:
 7. Test with `bunx tsc --noEmit` for type checking
 
 Keep in mind this is the critical bridge between Elixir and external AI providers via NATS messaging.
+
+## ⚠️ RESEARCH CHECKLIST - Before Suggesting Changes
+
+Before suggesting ANY TypeScript/AI Server improvements, integrations, or new features:
+
+**Read First**:
+1. `/AGENT_BRIEFING.md` - System state and what's implemented
+2. `/SELFEVOLVE.md` - Complete evolution system status
+3. Check existing code - Does this already exist?
+
+**Already Implemented - Don't Duplicate**:
+- ✅ NATS integration → `/llm-server/src/nats.ts`
+- ✅ Multi-provider support → Claude, Gemini, OpenAI, Copilot integrations
+- ✅ Tool definitions → AI SDK v5 with inputSchema
+- ✅ Error handling → Distributed context error propagation
+- ✅ Type safety → Full TypeScript with strict types
+
+**Always Ask Yourself**:
+- Does this feature already exist in /llm-server/?
+- Is this documented in AGENT_BRIEFING.md?
+- Does SELFEVOLVE.md mention this?
+- What's the implementation status in codebase?

@@ -346,3 +346,25 @@ After running this agent:
 - ✅ Future developers understand why TODOs exist
 
 Remember: **Quality over quantity** - One properly fixed warning is better than ten suppressed ones.
+
+## ⚠️ RESEARCH CHECKLIST - Before Fixing Warnings
+
+Before suggesting ANY warning fixes or related refactoring:
+
+**Read First**:
+1. `/AGENT_BRIEFING.md` - System state and what's implemented
+2. `/SELFEVOLVE.md` - Complete evolution system status
+3. Check if this is a known, intentional pattern
+
+**Already Implemented - Don't Rewrite**:
+- ✅ Metrics aggregation → `MetricsAggregationWorker`
+- ✅ Feedback analysis → `FeedbackAnalyzer`
+- ✅ Agent evolution → `Evolution` module
+- ✅ Knowledge export → `KnowledgeExportWorker`
+- ✅ Metrics dashboard → `IndexLive`
+
+**When Fixing Warnings**:
+- Research what's already implemented in SELFEVOLVE.md
+- Don't refactor working code just to eliminate warnings
+- If refactoring is needed, check AGENT_BRIEFING.md first
+- Verify the fix doesn't break existing integration

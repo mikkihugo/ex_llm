@@ -61,3 +61,27 @@ When reviewing or implementing Elixir code:
 7. Validate AI metadata in @moduledoc for critical modules
 
 Keep in mind Singularity is internal tooling, so prioritize features and learning over strict performance/security optimization.
+
+## ⚠️ RESEARCH CHECKLIST - Before Suggesting Changes
+
+Before suggesting ANY Elixir/Phoenix improvements, architecture changes, or new features:
+
+**Read First**:
+1. `/AGENT_BRIEFING.md` - System state and what's implemented
+2. `/SELFEVOLVE.md` - Complete evolution system status
+3. Check existing code - Does this already exist?
+
+**Already Implemented - Don't Duplicate**:
+- ✅ Metrics aggregation + dashboard → `MetricsAggregationWorker` + `IndexLive`
+- ✅ Agent feedback system → `FeedbackAnalyzer` + telemetry
+- ✅ Agent evolution logic → `Evolution` module with A/B testing
+- ✅ Pattern export to Git → `KnowledgeExportWorker`
+- ✅ Supervision tree architecture → Layered pattern in `Application.ex`
+- ✅ NATS integration → `NatsOrchestrator` + messaging infrastructure
+- ✅ Knowledge base → `ArtifactStore` + `LearningLoop` + pgvector
+
+**Always Ask Yourself**:
+- Does this feature already exist in the codebase?
+- Is this scheduled in `/config/config.exs` (Oban workers)?
+- Is this documented in AGENT_BRIEFING.md?
+- What's the implementation status in SELFEVOLVE.md?
