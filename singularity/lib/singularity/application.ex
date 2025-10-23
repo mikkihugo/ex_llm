@@ -39,8 +39,7 @@ defmodule Singularity.Application do
       {Bandit, plug: Singularity.Web.Endpoint, port: 4000},
 
       # Background Job Queue & Scheduling (before domain services)
-      Oban,                          # Background job queue for ML training, pattern mining
-      Singularity.Scheduler,         # Quantum scheduler for periodic maintenance tasks
+      Oban,                          # Background job queue for ML training, pattern mining, cron jobs
 
       # Layer 2: Infrastructure - Core services required by application layer
       # Moved to ApplicationSupervisor to avoid duplicate startup

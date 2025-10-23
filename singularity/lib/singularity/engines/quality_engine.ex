@@ -15,7 +15,7 @@ defmodule Singularity.QualityEngine do
     otp_app: :singularity,
     crate: :quality_engine,
     path: "../rust/quality_engine",
-    skip_compilation?: false
+    skip_compilation?: true  # Temporarily skip compilation to fix hot reload
 
   require Logger
   alias Singularity.NatsClient

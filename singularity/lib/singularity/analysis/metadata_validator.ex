@@ -402,43 +402,6 @@ defmodule Singularity.Analysis.MetadataValidator do
     }
   end
 
-  defp has_human_content?(moduledoc) do
-    # Check for human-readable content (not just AI metadata)
-    moduledoc
-    |> String.split("---")
-    |> List.first()
-    |> String.trim()
-    |> String.length() > 100
-  end
-
-  defp has_separator?(moduledoc) do
-    String.contains?(moduledoc, "---") and 
-    String.contains?(moduledoc, "AI Navigation Metadata")
-  end
-
-  defp has_module_identity?(moduledoc) do
-    String.contains?(moduledoc, "Module Identity") and
-    String.contains?(moduledoc, "{")
-  end
-
-  defp has_architecture_diagram?(moduledoc) do
-    String.contains?(moduledoc, "Architecture Diagram") and
-    String.contains?(moduledoc, "```mermaid")
-  end
-
-  defp has_call_graph?(moduledoc) do
-    String.contains?(moduledoc, "Call Graph") and
-    String.contains?(moduledoc, "```yaml")
-  end
-
-  defp has_anti_patterns?(moduledoc) do
-    String.contains?(moduledoc, "Anti-Patterns")
-  end
-
-  defp has_search_keywords?(moduledoc) do
-    String.contains?(moduledoc, "Search Keywords")
-  end
-
   defp calculate_score(has_map) do
     total = map_size(has_map)
     true_count = Enum.count(has_map, fn {_k, v} -> v end)

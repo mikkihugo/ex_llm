@@ -54,7 +54,7 @@ defmodule Singularity.EmbeddingEngine do
     otp_app: :singularity,
     crate: :embedding_engine,
     path: "../rust/embedding_engine",
-    skip_compilation?: false,
+    skip_compilation?: true,  # Temporarily skip compilation to fix hot reload
     mode: :release
 
   require Logger

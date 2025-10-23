@@ -1,16 +1,17 @@
 defmodule Centralcloud.Engines.ArchitectureEngine do
   @moduledoc """
-  Architecture Engine NIF - Direct bindings to Rust architecture analysis.
+  Architecture Engine - Delegates to Singularity via NATS.
 
-  This module loads the shared Rust NIF from the project root rust/ directory,
-  allowing CentralCloud to use the same compiled architecture analysis engine
-  as Singularity without code duplication.
+  CentralCloud doesn't compile Rust NIFs directly (compile: false in mix.exs).
+  Instead, this module delegates architecture analysis requests to Singularity
+  via NATS, which has the compiled architecture_engine NIF.
   """
 
-  use Rustler,
-    otp_app: :centralcloud,
-    crate: :architecture_engine,
-    path: "../../rust/architecture_engine"
+  # Note: Rustler bindings disabled - NIFs compiled only in Singularity
+  # use Rustler,
+  #   otp_app: :centralcloud,
+  #   crate: :architecture_engine,
+  #   path: "../../../../rust/architecture_engine"
 
   require Logger
 

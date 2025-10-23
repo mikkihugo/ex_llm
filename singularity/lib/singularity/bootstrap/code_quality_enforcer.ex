@@ -283,7 +283,7 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
           }}
         else
           # Try to fix non-compliant code
-          Logger.warn("Generated code not compliant, attempting fixes...")
+          Logger.warning("Generated code not compliant, attempting fixes...")
           template = load_production_template()
           fix_code_quality(code, validation, template)
         end

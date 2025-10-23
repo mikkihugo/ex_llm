@@ -990,7 +990,7 @@ defmodule Singularity.LLM.Service do
   end
 
   defp log_slo_breach(operation, duration, threshold) do
-    Logger.warn("SLO breach detected", %{
+    Logger.warning("SLO breach detected", %{
       operation: operation,
       duration_ms: duration,
       threshold_ms: threshold,

@@ -1,0 +1,182 @@
+<div class="py-8 px-4 sm:px-6 lg:px-8">
+  <!-- Page Header -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-3xl font-bold text-gray-900">Approval Queue</h2>
+        <p class="mt-1 text-sm text-gray-500">Human-in-the-loop code change approvals</p>
+      </div>
+      <div class="flex items-center space-x-4">
+        <.badge variant="secondary">
+          <%= length(@approvals) %> pending
+        </.badge>
+        <.button phx-click="refresh" variant="outline" size="sm">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Refresh
+        </.button>
+      </div>
+    </div>
+  </div>
+    <!-- Flash Messages using Salad UI Alert -->
+    <%= if @flash[:success] do %>
+      <.alert variant="default" class="mb-4 bg-green-50 border-green-200">
+        <div class="flex items-center">
+          <svg class="h-5 w-5 text-green-600 mr-3" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+          <p class="text-sm text-green-700"><%= @flash[:success] %></p>
+        </div>
+      </.alert>
+    <% end %>
+
+    <%= if @flash[:error] do %>
+      <.alert variant="destructive" class="mb-4">
+        <div class="flex items-center">
+          <svg class="h-5 w-5 text-red-600 mr-3" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+          <p class="text-sm text-red-700"><%= @flash[:error] %></p>
+        </div>
+      </.alert>
+    <% end %>
+
+    <!-- Approvals List using Salad UI Card -->
+    <.card>
+      <%= if @loading do %>
+        <.card_content class="p-6 text-center">
+          <div class="inline-flex items-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Loading approvals...
+          </div>
+        </.card_content>
+      <% else %>
+        <%= if Enum.empty?(@approvals) do %>
+          <.card_content class="p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No pending approvals</h3>
+            <p class="mt-1 text-sm text-gray-500">All caught up! New approval requests will appear here.</p>
+          </.card_content>
+        <% else %>
+          <div class="divide-y">
+            <%= for approval <- @approvals do %>
+              <div class="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                <div class="flex items-center gap-4 flex-1 min-w-0">
+                  <div class="h-10 w-10 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                    <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-4">
+                      <p class="text-sm font-medium text-gray-900 truncate">
+                        <%= approval.file_path %>
+                      </p>
+                      <.badge variant={if approval.status == "pending", do: "secondary", else: "outline"}>
+                        <%= get_status_text(approval.status) %>
+                      </.badge>
+                    </div>
+                    <div class="mt-1 text-sm text-gray-500">
+                      Agent: <%= approval.agent_id %> • Requested: <%= format_timestamp(approval.inserted_at) %>
+                    </div>
+                    <%= if approval.description do %>
+                      <p class="mt-1 text-sm text-gray-600">
+                        <%= approval.description %>
+                      </p>
+                    <% end %>
+                  </div>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex gap-2">
+                  <.button phx-click="select_approval" phx-value-id={approval.id} variant="outline" size="sm">
+                    View
+                  </.button>
+                  <%= if approval.status == "pending" do %>
+                    <.button phx-click="approve" phx-value-id={approval.id} variant="default" size="sm">
+                      Approve
+                    </.button>
+                    <.button phx-click="reject" phx-value-id={approval.id} phx-value-reason="Rejected via LiveView" variant="destructive" size="sm">
+                      Reject
+                    </.button>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      <% end %>
+    </.card>
+
+    <!-- Approval Detail Modal using Salad UI Dialog -->
+    <.dialog :if={@selected_approval} id="approval-detail-dialog" show on_cancel={JS.push("select_approval", value: %{"id" => ""})}>
+      <.dialog_header>
+        <.dialog_title>Approval Request</.dialog_title>
+        <.dialog_description>
+          <%= @selected_approval.file_path %>
+        </.dialog_description>
+      </.dialog_header>
+
+      <div class="space-y-4 py-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900">Agent</p>
+            <p class="text-sm text-gray-500"><%= @selected_approval.agent_id %></p>
+          </div>
+          <.badge variant={if @selected_approval.status == "pending", do: "secondary", else: "outline"}>
+            <%= get_status_text(@selected_approval.status) %>
+          </.badge>
+        </div>
+
+        <%= if @selected_approval.description do %>
+          <div>
+            <p class="text-sm font-medium text-gray-900 mb-1">Description</p>
+            <p class="text-sm text-gray-600">
+              <%= @selected_approval.description %>
+            </p>
+          </div>
+        <% end %>
+
+        <!-- Diff Toggle -->
+        <div>
+          <.button phx-click="toggle_diff" variant="outline" size="sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <%= if @show_diff, do: "Hide", else: "Show" %> Diff
+          </.button>
+        </div>
+
+        <!-- Diff Display -->
+        <%= if @show_diff do %>
+          <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+            <pre class="text-sm text-green-400 font-mono"><%= format_diff(@selected_approval.diff) %></pre>
+          </div>
+        <% end %>
+      </div>
+
+      <.dialog_footer>
+        <%= if @selected_approval.status == "pending" do %>
+          <.button phx-click="reject" phx-value-id={@selected_approval.id} phx-value-reason="Rejected via LiveView" variant="outline">
+            Reject
+          </.button>
+          <.button phx-click="approve" phx-value-id={@selected_approval.id}>
+            Approve
+          </.button>
+        <% else %>
+          <.button phx-click="select_approval" phx-value-id="">
+            Close
+          </.button>
+        <% end %>
+      </.dialog_footer>
+    </.dialog>
+
+  <!-- Last Update -->
+  <div class="mt-8 text-center text-sm text-gray-500 py-8 border-t border-gray-200">
+    Last updated: <%= format_timestamp(@last_update) %>
+  </div>
+</div>

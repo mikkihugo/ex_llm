@@ -90,21 +90,26 @@ config :singularity, Oban,
     {Oban.Plugins.Stalled, interval: 60}
   ]
 
-# Quantum Scheduler Configuration
-# Cron-like scheduling for periodic background tasks
-config :singularity, Singularity.Scheduler,
-  # Enable the scheduler globally
-  global: true,
-  # Log execution of all jobs
-  debug: true,
-  # Define all scheduled jobs
-  jobs: [
-    # Cache cleanup: every 15 minutes
-    {"*/15 * * * *", {Singularity.Jobs.CacheMaintenanceJob, :cleanup, []}},
-    # Cache refresh: every hour
-    {"0 * * * *", {Singularity.Jobs.CacheMaintenanceJob, :refresh, []}},
-    # Cache prewarm: every 6 hours
-    {"0 */6 * * *", {Singularity.Jobs.CacheMaintenanceJob, :prewarm, []}},
-    # Pattern sync: every 5 minutes
-    {"*/5 * * * *", {Singularity.Jobs.PatternSyncJob, :sync, []}}
-  ]
+# Oban Job Queue & Cron Configuration
+# Background job processing with cron-like scheduling for periodic tasks
+config :oban,
+  repo: Singularity.Repo,
+  plugins: [
+    Oban.Plugins.Pruner,
+    Oban.Plugins.Repeater,
+    # Cron plugin for scheduled jobs
+    {Oban.Plugins.Cron,
+     crontab: [
+       # Cache cleanup: every 15 minutes
+       {"*/15 * * * *", Singularity.Jobs.CacheCleanupWorker},
+       # Cache refresh: every hour
+       {"0 * * * *", Singularity.Jobs.CacheRefreshWorker},
+       # Cache prewarm: every 6 hours
+       {"0 */6 * * *", Singularity.Jobs.CachePrewarmWorker},
+       # Pattern sync: every 5 minutes
+       {"*/5 * * * *", Singularity.Jobs.PatternSyncWorker}
+     ]}
+  ],
+  queues: [default: 10, ml_training: 5, pattern_mining: 3],
+  # Enable verbose logging for job execution
+  verbose: true

@@ -71,6 +71,9 @@ defmodule Singularity.MixProject do
       {:finch, "~> 0.17"},
       {:req, "~> 0.5"},
 
+      # UI Component Library (inspired by shadcn/ui)
+      {:salad_ui, "~> 0.14"},
+
       # Database
       {:ecto, "~> 3.11"},
       {:ecto_sql, "~> 3.11"},
@@ -110,7 +113,7 @@ defmodule Singularity.MixProject do
       # T5 Training & LLM Integration
       {:bumblebee, "~> 0.5"},
       {:nx, "~> 0.6"},
-      {:exla, "~> 0.6"},
+      # {:exla, "~> 0.6"},  # Temporarily disabled for macOS compatibility
       {:kino, "~> 0.12"},
 
       # Distributed Systems
@@ -128,11 +131,7 @@ defmodule Singularity.MixProject do
       {:telemetry_poller, "~> 1.1"},
       {:phoenix_live_dashboard, "~> 0.8"},
 
-      # SAFe Coordination
-      # Job scheduler for PI Planning, System Demos
-      {:quantum, "~> 3.5"},
-
-      # Background Job Queue for ML training, maintenance tasks
+      # Background Job Queue for ML training, maintenance tasks, and cron scheduling
       {:oban, "~> 2.18"},
 
       # MoonShine-style Rule Engine

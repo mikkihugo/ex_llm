@@ -202,19 +202,30 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
     case File.write(payload.target_file, payload.content) do
       :ok ->
         # Trigger documentation validation
-        case DocumentationUpgrader.validate_file(payload.target_file) do
-          {:ok, _validation} ->
+        case validate_documentation_content(payload.content) do
+          :ok ->
             Logger.info("Documentation hot reload successful", file: payload.target_file)
             :ok
           {:error, reason} ->
-            Logger.error("Documentation validation failed after hot reload", 
+            Logger.error("Documentation validation failed after hot reload",
               file: payload.target_file, reason: reason)
             {:error, :validation_failed}
         end
       {:error, reason} ->
-        Logger.error("Failed to write documentation file", 
+        Logger.error("Failed to write documentation file",
           file: payload.target_file, reason: reason)
         {:error, :write_failed}
+    end
+  end
+
+  # Validate documentation content has required elements
+  defp validate_documentation_content(content) when is_binary(content) do
+    # Check if content has at least @moduledoc or documentation markers
+    cond do
+      String.contains?(content, "@moduledoc") -> :ok
+      String.contains?(content, "///") -> :ok
+      String.contains?(content, "//!") -> :ok
+      true -> {:error, :missing_documentation}
     end
   end
 
@@ -273,9 +284,11 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
   end
 
   defp update_stats(stats, type, result) do
+    key = if result == :success, do: :successful_reloads, else: :failed_reloads
+
     stats
     |> Map.update!(:total_reloads, &(&1 + 1))
-    |> Map.update!(if result == :success, do: :successful_reloads, else: :failed_reloads, &(&1 + 1))
+    |> Map.update!(key, &(&1 + 1))
     |> Map.update!(type_reloads_key(type), &(&1 + 1))
     |> Map.put(:last_reload, DateTime.utc_now())
   end

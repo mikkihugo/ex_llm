@@ -1,15 +1,17 @@
 defmodule Centralcloud.Engines.PromptEngine do
   @moduledoc """
-  Prompt Engine NIF - Direct bindings to Rust prompt generation.
+  Prompt Engine - Delegates to Singularity via NATS.
 
-  This module loads the shared Rust NIF from the project root rust/ directory,
-  allowing CentralCloud to use the same compiled prompt engine as Singularity.
+  CentralCloud doesn't compile Rust NIFs directly (compile: false in mix.exs).
+  Instead, this module delegates prompt generation requests to Singularity
+  via NATS, which has the compiled prompt_engine NIF.
   """
 
-  use Rustler,
-    otp_app: :centralcloud,
-    crate: :prompt_engine,
-    path: "../../rust/prompt_engine"
+  # Note: Rustler bindings disabled - NIFs compiled only in Singularity
+  # use Rustler,
+  #   otp_app: :centralcloud,
+  #   crate: :prompt_engine,
+  #   path: "../../../../rust/prompt_engine"
 
   require Logger
 

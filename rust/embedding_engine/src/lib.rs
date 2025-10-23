@@ -6,11 +6,54 @@ use anyhow::Result;
 
 use models::{ModelType, EmbeddingModel};
 use tokenizer_cache::get_tokenizer;
-use rustler::{NifResult, Error as RustlerError};
+use rustler::{NifResult, Encoder, Env, Term};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use std::sync::Arc;
 use tracing::{info, warn, error};
+
+/// Custom error type for embedding engine NIFs
+#[derive(Debug, thiserror::Error)]
+pub enum EmbeddingError {
+    #[error("Model not loaded")]
+    ModelNotLoaded,
+
+    #[error("Unknown model type: {0}")]
+    UnknownModelType(String),
+
+    #[error("Embedding failed: {0}")]
+    EmbeddingFailed(String),
+
+    #[error("No embedding generated")]
+    NoEmbeddingGenerated,
+
+    #[error("Model load failed: {0}")]
+    ModelLoadFailed(String),
+
+    #[error("Tokenization failed: {0}")]
+    TokenizationFailed(String),
+
+    #[error("Tokenizer error: {0}")]
+    TokenizerError(String),
+
+    #[error("Detokenization failed: {0}")]
+    DetokenizationFailed(String),
+
+    #[error("Model validation failed: {0}")]
+    ModelValidationFailed(String),
+
+    #[error("Unknown fusion method")]
+    UnknownFusionMethod,
+}
+
+// Implement Encoder to convert errors to Erlang terms
+impl Encoder for EmbeddingError {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        let error_atom = rustler::atoms::error().encode(env);
+        let reason = self.to_string().encode(env);
+        (error_atom, reason).encode(env)
+    }
+}
 
 /// Type alias for model cache
 type ModelCache = Arc<RwLock<Option<Box<dyn EmbeddingModel>>>>;
@@ -31,7 +74,8 @@ rustler::init!("Elixir.Singularity.EmbeddingEngine");
 /// Uses DirtyCpu scheduler to avoid blocking BEAM
 #[rustler::nif(schedule = "DirtyCpu")]
 fn nif_embed_batch(texts: Vec<String>, model_type: String) -> NifResult<Vec<Vec<f32>>> {
-    let model_type = parse_model_type(&model_type)?;
+    let model_type = parse_model_type(&model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
 
     // Preprocess texts with tokenizer (optional enhancement)
     let processed_texts = match preprocess_texts(&texts, model_type) {
@@ -46,14 +90,14 @@ fn nif_embed_batch(texts: Vec<String>, model_type: String) -> NifResult<Vec<Vec<
     };
 
     // Get or load model
-    let model = get_or_load_model(model_type)?;
+    let model = get_or_load_model(model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
 
     // Generate embeddings in batch (GPU-accelerated)
     let model_ref = model.read();
-    let model_instance = model_ref.as_ref().ok_or_else(|| {
-        RustlerError::Term(Box::new("Model not loaded"))
-    })?;
-    
+    let model_instance = model_ref.as_ref()
+        .ok_or_else(|| rustler::Error::Term(Box::new(EmbeddingError::ModelNotLoaded.to_string())))?;
+
     match model_instance.embed_batch(&processed_texts) {
         Ok(embeddings) => {
             info!("Generated {} embeddings with {:?}", embeddings.len(), model_type);
@@ -61,7 +105,7 @@ fn nif_embed_batch(texts: Vec<String>, model_type: String) -> NifResult<Vec<Vec<
         }
         Err(e) => {
             error!("Batch embedding failed: {}", e);
-            Err(RustlerError::Term(Box::new(format!("Embedding failed: {}", e))))
+            Err(rustler::Error::Term(Box::new(EmbeddingError::EmbeddingFailed(e.to_string()).to_string())))
         }
     }
 }
@@ -69,18 +113,19 @@ fn nif_embed_batch(texts: Vec<String>, model_type: String) -> NifResult<Vec<Vec<
 /// Generate embedding for a single text (convenience wrapper)
 #[rustler::nif(schedule = "DirtyCpu")]
 fn nif_embed_single(text: String, model_type: String) -> NifResult<Vec<f32>> {
-    let model_type_parsed = parse_model_type(&model_type)?;
-    let model = get_or_load_model(model_type_parsed)?;
-    
+    let model_type_parsed = parse_model_type(&model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+    let model = get_or_load_model(model_type_parsed)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+
     let model_ref = model.read();
-    let model_instance = model_ref.as_ref().ok_or_else(|| {
-        RustlerError::Term(Box::new("Model not loaded"))
-    })?;
-    
+    let model_instance = model_ref.as_ref()
+        .ok_or_else(|| rustler::Error::Term(Box::new(EmbeddingError::ModelNotLoaded.to_string())))?;
+
     let embeddings = model_instance.embed_batch(&[text])
-        .map_err(|e| RustlerError::Term(Box::new(format!("Embedding failed: {}", e))))?;
+        .map_err(|e| rustler::Error::Term(Box::new(EmbeddingError::EmbeddingFailed(e.to_string()).to_string())))?;
     embeddings.into_iter().next()
-        .ok_or_else(|| RustlerError::Term(Box::new("No embedding generated")))
+        .ok_or_else(|| rustler::Error::Term(Box::new(EmbeddingError::NoEmbeddingGenerated.to_string())))
 }
 
 /// Preload models on startup to avoid cold start latency
@@ -132,17 +177,17 @@ fn nif_cosine_similarity_batch(
 }
 
 /// Helper: Parse model type string
-fn parse_model_type(s: &str) -> Result<ModelType, RustlerError> {
+fn parse_model_type(s: &str) -> Result<ModelType, EmbeddingError> {
     match s.to_lowercase().as_str() {
         "jina_v3" | "jina-v3" | "jina" | "text" => Ok(ModelType::JinaV3),
         "qodo_embed" | "qodo-embed" | "qodo" | "code" => Ok(ModelType::QodoEmbed),
         "minilm" | "minilm_l6_v2" | "all-minilm-l6-v2" | "cpu" | "fast" => Ok(ModelType::MiniLML6V2),
-        _ => Err(RustlerError::Term(Box::new(format!("Unknown model type: {}", s))))
+        _ => Err(EmbeddingError::UnknownModelType(s.to_string()))
     }
 }
 
 /// Helper: Get or load model from cache
-fn get_or_load_model(model_type: ModelType) -> Result<ModelCache, RustlerError> {
+fn get_or_load_model(model_type: ModelType) -> Result<ModelCache, EmbeddingError> {
     let cache = match model_type {
         ModelType::JinaV3 => JINA_V3_MODEL.clone(),
         ModelType::QodoEmbed => QODO_EMBED_MODEL.clone(),
@@ -163,7 +208,7 @@ fn get_or_load_model(model_type: ModelType) -> Result<ModelCache, RustlerError> 
         if write_lock.is_none() {
             info!("Loading model: {:?}", model_type);
             let model = models::load_model(model_type)
-                .map_err(|e| RustlerError::Term(Box::new(format!("Model load failed: {}", e))))?;
+                .map_err(|e| EmbeddingError::ModelLoadFailed(e.to_string()))?;
             *write_lock = Some(model);
         }
     }
@@ -198,47 +243,49 @@ fn preprocess_texts(texts: &[String], model_type: ModelType) -> Result<Vec<Strin
 /// Batch tokenization with parallel processing
 #[rustler::nif(schedule = "DirtyCpu")]
 fn batch_tokenize(texts: Vec<String>, model_type: String) -> NifResult<Vec<Vec<u32>>> {
-    let model_type = parse_model_type(&model_type)?;
-    
+    let model_type = parse_model_type(&model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+
     match get_tokenizer(model_type) {
         Ok(tokenizer) => {
             use rayon::prelude::*;
-            
+
             let results: Result<Vec<_>, _> = texts
                 .par_iter()
                 .map(|text| {
                     tokenizer.encode(text.as_str(), false)
                         .map(|encoding| encoding.get_ids().to_vec())
-                        .map_err(|e| format!("Tokenization failed: {}", e))
+                        .map_err(|e| EmbeddingError::TokenizationFailed(e.to_string()))
                 })
                 .collect();
-            
-            results.map_err(|e| RustlerError::Term(Box::new(e)))
+
+            results.map_err(|e| rustler::Error::Term(Box::new(e.to_string())))
         }
-        Err(e) => Err(RustlerError::Term(Box::new(format!("Tokenizer error: {}", e))))
+        Err(e) => Err(rustler::Error::Term(Box::new(EmbeddingError::TokenizerError(e.to_string()).to_string())))
     }
 }
 
-/// Batch detokenization with parallel processing  
+/// Batch detokenization with parallel processing
 #[rustler::nif(schedule = "DirtyCpu")]
 fn batch_detokenize(token_ids: Vec<Vec<u32>>, model_type: String) -> NifResult<Vec<String>> {
-    let model_type = parse_model_type(&model_type)?;
-    
+    let model_type = parse_model_type(&model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+
     match get_tokenizer(model_type) {
         Ok(tokenizer) => {
             use rayon::prelude::*;
-            
+
             let results: Result<Vec<_>, _> = token_ids
                 .par_iter()
                 .map(|ids| {
                     tokenizer.decode(ids, true)
-                        .map_err(|e| format!("Detokenization failed: {}", e))
+                        .map_err(|e| EmbeddingError::DetokenizationFailed(e.to_string()))
                 })
                 .collect();
-            
-            results.map_err(|e| RustlerError::Term(Box::new(e)))
+
+            results.map_err(|e| rustler::Error::Term(Box::new(e.to_string())))
         }
-        Err(e) => Err(RustlerError::Term(Box::new(format!("Tokenizer error: {}", e))))
+        Err(e) => Err(rustler::Error::Term(Box::new(EmbeddingError::TokenizerError(e.to_string()).to_string())))
     }
 }
 
@@ -280,29 +327,31 @@ fn ensure_models_downloaded(model_types: Vec<String>) -> NifResult<String> {
 /// Get model information (dimensions, type, etc.)
 #[rustler::nif(schedule = "DirtyCpu")]
 fn nif_get_model_info(model_type: String) -> NifResult<String> {
-    let model_type = parse_model_type(&model_type)?;
-    let model = get_or_load_model(model_type)?;
-    
+    let model_type = parse_model_type(&model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+    let model = get_or_load_model(model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+
     let model_ref = model.read();
-    let model_instance = model_ref.as_ref().ok_or_else(|| {
-        RustlerError::Term(Box::new("Model not loaded"))
-    })?;
-    
+    let model_instance = model_ref.as_ref()
+        .ok_or_else(|| rustler::Error::Term(Box::new(EmbeddingError::ModelNotLoaded.to_string())))?;
+
     let info = format!(
         "Model: {:?}, Dimensions: {}, Type: {:?}",
         model_type,
         model_instance.dimension(),
         model_instance.model_type()
     );
-    
+
     Ok(info)
 }
 
 /// Tokenize texts using model-specific tokenizer
 #[rustler::nif(schedule = "DirtyCpu")]
 fn tokenize_texts(texts: Vec<String>, model_type: String) -> NifResult<Vec<Vec<u32>>> {
-    let model_type = parse_model_type(&model_type)?;
-    
+    let model_type = parse_model_type(&model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+
     match get_tokenizer(model_type) {
         Ok(tokenizer) => {
             let mut tokenized = Vec::new();
@@ -312,21 +361,26 @@ fn tokenize_texts(texts: Vec<String>, model_type: String) -> NifResult<Vec<Vec<u
                         tokenized.push(encoding.get_ids().to_vec());
                     }
                     Err(e) => {
-                        return Err(RustlerError::Term(Box::new(format!("Tokenization failed: {}", e))));
+                        return Err(rustler::Error::Term(Box::new(
+                            EmbeddingError::TokenizationFailed(e.to_string()).to_string()
+                        )));
                     }
                 }
             }
             Ok(tokenized)
         }
-        Err(e) => Err(RustlerError::Term(Box::new(format!("Tokenizer error: {}", e))))
+        Err(e) => Err(rustler::Error::Term(Box::new(
+            EmbeddingError::TokenizerError(e.to_string()).to_string()
+        )))
     }
 }
 
 /// Detokenize token IDs back to text
 #[rustler::nif(schedule = "DirtyCpu")]
 fn detokenize_texts(token_ids: Vec<Vec<u32>>, model_type: String) -> NifResult<Vec<String>> {
-    let model_type = parse_model_type(&model_type)?;
-    
+    let model_type = parse_model_type(&model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+
     match get_tokenizer(model_type) {
         Ok(tokenizer) => {
             let mut detokenized = Vec::new();
@@ -336,27 +390,32 @@ fn detokenize_texts(token_ids: Vec<Vec<u32>>, model_type: String) -> NifResult<V
                         detokenized.push(text);
                     }
                     Err(e) => {
-                        return Err(RustlerError::Term(Box::new(format!("Detokenization failed: {}", e))));
+                        return Err(rustler::Error::Term(Box::new(
+                            EmbeddingError::DetokenizationFailed(e.to_string()).to_string()
+                        )));
                     }
                 }
             }
             Ok(detokenized)
         }
-        Err(e) => Err(RustlerError::Term(Box::new(format!("Tokenizer error: {}", e))))
+        Err(e) => Err(rustler::Error::Term(Box::new(
+            EmbeddingError::TokenizerError(e.to_string()).to_string()
+        )))
     }
 }
 
 /// Validate model by running a test embedding
 #[rustler::nif(schedule = "DirtyCpu")]
 fn validate_model(model_type: String) -> NifResult<String> {
-    let model_type = parse_model_type(&model_type)?;
-    let model = get_or_load_model(model_type)?;
-    
+    let model_type = parse_model_type(&model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+    let model = get_or_load_model(model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+
     let model_ref = model.read();
-    let model_instance = model_ref.as_ref().ok_or_else(|| {
-        RustlerError::Term(Box::new("Model not loaded"))
-    })?;
-    
+    let model_instance = model_ref.as_ref()
+        .ok_or_else(|| rustler::Error::Term(Box::new(EmbeddingError::ModelNotLoaded.to_string())))?;
+
     // Test with a simple text
     let test_texts = vec!["Hello, world!".to_string()];
     match model_instance.embed_batch(&test_texts) {
@@ -369,34 +428,37 @@ fn validate_model(model_type: String) -> NifResult<String> {
             );
             Ok(info)
         }
-        Err(e) => Err(RustlerError::Term(Box::new(format!("Model validation failed: {}", e))))
+        Err(e) => Err(rustler::Error::Term(Box::new(
+            EmbeddingError::ModelValidationFailed(e.to_string()).to_string()
+        )))
     }
 }
 
 /// Get model statistics and cache information
 #[rustler::nif(schedule = "DirtyCpu")]
 fn get_model_stats(model_type: String) -> NifResult<String> {
-    let model_type = parse_model_type(&model_type)?;
-    let model = get_or_load_model(model_type)?;
-    
+    let model_type = parse_model_type(&model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+    let model = get_or_load_model(model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+
     let model_ref = model.read();
-    let model_instance = model_ref.as_ref().ok_or_else(|| {
-        RustlerError::Term(Box::new("Model not loaded"))
-    })?;
-    
+    let model_instance = model_ref.as_ref()
+        .ok_or_else(|| rustler::Error::Term(Box::new(EmbeddingError::ModelNotLoaded.to_string())))?;
+
     // Check tokenizer availability
     let tokenizer_status = match get_tokenizer(model_type) {
         Ok(_) => "Available",
         Err(_) => "Not available"
     };
-    
+
     let stats = format!(
         "Model: {:?}\nDimensions: {}\nTokenizer: {}\nCache Status: Loaded",
         model_type,
         model_instance.dimension(),
         tokenizer_status
     );
-    
+
     Ok(stats)
 }
 
@@ -433,33 +495,35 @@ fn cleanup_cache(model_types: Vec<String>) -> NifResult<String> {
 /// Helper function to call embed_single NIF
 fn call_embed_single(text: String, model_type: String) -> NifResult<Vec<f32>> {
     // Call the actual NIF function directly
-    let model_type_parsed = parse_model_type(&model_type)?;
-    let model = get_or_load_model(model_type_parsed)?;
-    
+    let model_type_parsed = parse_model_type(&model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+    let model = get_or_load_model(model_type_parsed)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+
     let model_ref = model.read();
-    let model_instance = model_ref.as_ref().ok_or_else(|| {
-        RustlerError::Term(Box::new("Model not loaded"))
-    })?;
-    
+    let model_instance = model_ref.as_ref()
+        .ok_or_else(|| rustler::Error::Term(Box::new(EmbeddingError::ModelNotLoaded.to_string())))?;
+
     let embeddings = model_instance.embed_batch(&[text])
-        .map_err(|e| RustlerError::Term(Box::new(format!("Embedding failed: {}", e))))?;
+        .map_err(|e| rustler::Error::Term(Box::new(EmbeddingError::EmbeddingFailed(e.to_string()).to_string())))?;
     embeddings.into_iter().next()
-        .ok_or_else(|| RustlerError::Term(Box::new("No embedding generated")))
+        .ok_or_else(|| rustler::Error::Term(Box::new(EmbeddingError::NoEmbeddingGenerated.to_string())))
 }
 
 /// Helper function to call embed_batch NIF
 fn call_embed_batch(texts: Vec<String>, model_type: String) -> NifResult<Vec<Vec<f32>>> {
     // Call the actual NIF function directly
-    let model_type_parsed = parse_model_type(&model_type)?;
-    let model = get_or_load_model(model_type_parsed)?;
-    
+    let model_type_parsed = parse_model_type(&model_type)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+    let model = get_or_load_model(model_type_parsed)
+        .map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
+
     let model_ref = model.read();
-    let model_instance = model_ref.as_ref().ok_or_else(|| {
-        RustlerError::Term(Box::new("Model not loaded"))
-    })?;
-    
+    let model_instance = model_ref.as_ref()
+        .ok_or_else(|| rustler::Error::Term(Box::new(EmbeddingError::ModelNotLoaded.to_string())))?;
+
     model_instance.embed_batch(&texts)
-        .map_err(|e| RustlerError::Term(Box::new(format!("Embedding failed: {}", e))))
+        .map_err(|e| rustler::Error::Term(Box::new(EmbeddingError::EmbeddingFailed(e.to_string()).to_string())))
 }
 
 /// Advanced similarity search with ranking and filtering
@@ -864,7 +928,7 @@ fn embedding_fusion(
     }
     
     if all_embeddings.is_empty() {
-        return Err(RustlerError::Term(Box::new("No embeddings generated")));
+        return Err(rustler::Error::Term(Box::new(EmbeddingError::NoEmbeddingGenerated.to_string())));
     }
     
     let text_count = texts.len();
@@ -908,7 +972,7 @@ fn embedding_fusion(
                 }
             }
             _ => {
-                return Err(RustlerError::Term(Box::new("Unknown fusion method")));
+                return Err(rustler::Error::Term(Box::new(EmbeddingError::UnknownFusionMethod.to_string())));
             }
         }
         

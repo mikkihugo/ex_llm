@@ -1,15 +1,17 @@
 defmodule Centralcloud.Engines.QualityEngine do
   @moduledoc """
-  Quality Engine NIF - Direct bindings to Rust quality analysis.
+  Quality Engine - Delegates to Singularity via NATS.
 
-  This module loads the shared Rust NIF from the project root rust/ directory,
-  allowing CentralCloud to use the same compiled quality engine as Singularity.
+  CentralCloud doesn't compile Rust NIFs directly (compile: false in mix.exs).
+  Instead, this module delegates quality analysis requests to Singularity
+  via NATS, which has the compiled quality_engine NIF.
   """
 
-  use Rustler,
-    otp_app: :centralcloud,
-    crate: :quality_engine,
-    path: "../../rust/quality_engine"
+  # Note: Rustler bindings disabled - NIFs compiled only in Singularity
+  # use Rustler,
+  #   otp_app: :centralcloud,
+  #   crate: :quality_engine,
+  #   path: "../../../../rust/quality_engine"
 
   require Logger
 

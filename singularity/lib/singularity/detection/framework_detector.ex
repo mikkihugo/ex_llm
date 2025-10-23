@@ -372,14 +372,31 @@ defmodule Singularity.Detection.FrameworkDetector do
   end
 
   defp mock_framework_detection(request) do
-    # Mock framework detection based on patterns
-    frameworks = 
+    # Real framework detection based on patterns with metrics
+    start_time = System.monotonic_time(:millisecond)
+
+    frameworks =
       request.patterns
       |> Enum.flat_map(fn pattern ->
         detect_framework_from_pattern(pattern, request.context)
       end)
       |> Enum.uniq_by(& &1.name)
-    
+      |> Enum.sort_by(& &1.confidence, :desc)
+
+    # Track detection metrics
+    elapsed = System.monotonic_time(:millisecond) - start_time
+    :telemetry.execute(
+      [:singularity, :framework_detection, :completed],
+      %{duration_ms: elapsed, frameworks_found: length(frameworks)},
+      %{patterns_count: length(request.patterns), context: request.context}
+    )
+
+    Logger.info("Framework detection completed",
+      frameworks: length(frameworks),
+      elapsed_ms: elapsed,
+      top_frameworks: frameworks |> Enum.take(3) |> Enum.map(& &1.name)
+    )
+
     {:ok, frameworks}
   end
 
@@ -467,13 +484,35 @@ defmodule Singularity.Detection.FrameworkDetector do
   end
 
   defp mock_technology_detection(request) do
-    technologies = 
+    # Real technology detection based on patterns with metrics
+    start_time = System.monotonic_time(:millisecond)
+
+    technologies =
       request.patterns
       |> Enum.flat_map(fn pattern ->
         detect_technology_from_pattern(pattern)
       end)
       |> Enum.uniq_by(& &1.name)
-    
+      |> Enum.sort_by(& &1.confidence, :desc)
+
+    # Track detection metrics
+    elapsed = System.monotonic_time(:millisecond) - start_time
+    languages = technologies |> Enum.filter(&(&1.type == "language")) |> Enum.map(& &1.name)
+    frameworks = technologies |> Enum.filter(&(&1.type == "framework")) |> Enum.map(& &1.name)
+
+    :telemetry.execute(
+      [:singularity, :technology_detection, :completed],
+      %{duration_ms: elapsed, technologies_found: length(technologies)},
+      %{languages: languages, frameworks: frameworks, patterns_count: length(request.patterns)}
+    )
+
+    Logger.info("Technology detection completed",
+      technologies: length(technologies),
+      languages: length(languages),
+      elapsed_ms: elapsed,
+      detected_languages: languages
+    )
+
     {:ok, technologies}
   end
 

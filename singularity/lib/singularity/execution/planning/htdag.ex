@@ -208,12 +208,43 @@ defmodule Singularity.Execution.Planning.HTDAG do
     "htdag-run-#{System.unique_integer([:positive])}"
   end
   
-  defp integrate_with_safe_planner(dag, _opts) do
-    # TODO: Integrate HTDAG tasks with SafeWorkPlanner hierarchy
-    # For now, return dag as-is
-    # Future: Map tasks to Features in SafeWorkPlanner
-    Logger.info("SafeWorkPlanner integration: Planning hierarchical task breakdown")
-    dag
+  defp integrate_with_safe_planner(dag, opts) do
+    # Extract options
+    planning_mode = Keyword.get(opts, :planning_mode, :hierarchical)
+    feature_mapping = Keyword.get(opts, :feature_mapping, true)
+    complexity_threshold = Keyword.get(opts, :complexity_threshold, 0.7)
+    max_depth = Keyword.get(opts, :max_depth, 5)
+    
+    Logger.info("SafeWorkPlanner integration: Planning hierarchical task breakdown",
+      planning_mode: planning_mode,
+      feature_mapping: feature_mapping,
+      complexity_threshold: complexity_threshold
+    )
+    
+    # Map HTDAG tasks to SafeWorkPlanner features
+    if feature_mapping do
+      case map_tasks_to_features(dag, complexity_threshold, max_depth) do
+        {:ok, mapped_dag} ->
+          Logger.info("Successfully mapped HTDAG tasks to SafeWorkPlanner features",
+            task_count: length(mapped_dag.tasks),
+            feature_count: count_features(mapped_dag)
+          )
+          mapped_dag
+        {:error, reason} ->
+          Logger.warning("Failed to map tasks to features, using original DAG",
+            reason: reason
+          )
+          dag
+      end
+    else
+      # Just validate the DAG structure
+      case validate_dag_structure(dag) do
+        :ok -> dag
+        {:error, reason} ->
+          Logger.warning("DAG validation failed", reason: reason)
+          dag
+      end
+    end
   end
 
   defp decompose_recursive(dag, _task, max_depth) when max_depth <= 0 do
@@ -343,5 +374,167 @@ defmodule Singularity.Execution.Planning.HTDAG do
 
   defp generate_task_id do
     "task-#{System.unique_integer([:positive, :monotonic])}"
+  end
+
+  # Helper functions for integrate_with_safe_planner
+  defp map_tasks_to_features(dag, complexity_threshold, max_depth) do
+    # Map HTDAG tasks to SafeWorkPlanner features based on complexity
+    try do
+      mapped_tasks = dag.tasks
+      |> Enum.map(fn task ->
+        case calculate_task_complexity(task) do
+          complexity when complexity >= complexity_threshold ->
+            # High complexity task -> Map to Feature
+            map_to_feature(task, complexity)
+          _ ->
+            # Low complexity task -> Keep as task
+            task
+        end
+      end)
+      
+      # Create new DAG with mapped tasks
+      mapped_dag = %{dag | tasks: mapped_tasks}
+      
+      # Validate the mapped DAG
+      case validate_dag_structure(mapped_dag) do
+        :ok -> {:ok, mapped_dag}
+        {:error, reason} -> {:error, {:validation_failed, reason}}
+      end
+    rescue
+      error ->
+        Logger.error("Failed to map tasks to features", error: inspect(error))
+        {:error, {:mapping_failed, error}}
+    end
+  end
+
+  defp calculate_task_complexity(task) do
+    # Calculate task complexity based on various factors
+    base_complexity = case task.type do
+      :atomic -> 0.1
+      :composite -> 0.5
+      :orchestration -> 0.8
+      _ -> 0.3
+    end
+    
+    # Add complexity based on dependencies
+    dependency_complexity = length(task.dependencies) * 0.1
+    
+    # Add complexity based on estimated duration
+    duration_complexity = case task.estimated_duration do
+      duration when duration > 3600 -> 0.3  # > 1 hour
+      duration when duration > 1800 -> 0.2  # > 30 minutes
+      duration when duration > 600 -> 0.1   # > 10 minutes
+      _ -> 0.0
+    end
+    
+    # Add complexity based on resource requirements
+    resource_complexity = case task.resource_requirements do
+      requirements when is_map(requirements) ->
+        Map.values(requirements)
+        |> Enum.map(fn req -> if req > 1, do: 0.1, else: 0.0 end)
+        |> Enum.sum()
+      _ -> 0.0
+    end
+    
+    # Calculate final complexity (0.0 to 1.0)
+    total_complexity = base_complexity + dependency_complexity + duration_complexity + resource_complexity
+    min(1.0, max(0.0, total_complexity))
+  end
+
+  defp map_to_feature(task, complexity) do
+    # Map a high-complexity task to a SafeWorkPlanner feature
+    feature_id = "feature-#{task.id}"
+    
+    %{task | 
+      type: :feature,
+      id: feature_id,
+      feature_metadata: %{
+        original_task_id: task.id,
+        complexity: complexity,
+        mapped_at: DateTime.utc_now(),
+        safe_planner_integration: true
+      }
+    }
+  end
+
+  defp count_features(dag) do
+    dag.tasks
+    |> Enum.count(fn task -> task.type == :feature end)
+  end
+
+  defp validate_dag_structure(dag) do
+    # Validate DAG structure for consistency
+    try do
+      # Check if all tasks have valid IDs
+      task_ids = MapSet.new(dag.tasks, & &1.id)
+      
+      # Check if all dependencies reference valid task IDs
+      invalid_deps = dag.tasks
+      |> Enum.flat_map(fn task -> task.dependencies end)
+      |> Enum.reject(fn dep_id -> MapSet.member?(task_ids, dep_id) end)
+      
+      if length(invalid_deps) > 0 do
+        {:error, {:invalid_dependencies, invalid_deps}}
+      else
+        # Check for circular dependencies
+        case detect_circular_dependencies(dag) do
+          :ok -> :ok
+          {:error, reason} -> {:error, {:circular_dependencies, reason}}
+        end
+      end
+    rescue
+      error ->
+        {:error, {:validation_error, error}}
+    end
+  end
+
+  defp detect_circular_dependencies(dag) do
+    # Simple cycle detection using DFS
+    task_map = Map.new(dag.tasks, fn task -> {task.id, task} end)
+    
+    visited = MapSet.new()
+    rec_stack = MapSet.new()
+    
+    dag.tasks
+    |> Enum.find_value(fn task ->
+      case detect_cycle_from_task(task.id, task_map, visited, rec_stack) do
+        :ok -> nil
+        {:error, reason} -> {:error, reason}
+      end
+    end)
+    |> case do
+      nil -> :ok
+      error -> error
+    end
+  end
+
+  defp detect_cycle_from_task(task_id, task_map, visited, rec_stack) do
+    if MapSet.member?(rec_stack, task_id) do
+      {:error, {:circular_dependency, task_id}}
+    else
+      if MapSet.member?(visited, task_id) do
+        :ok
+      else
+        new_visited = MapSet.put(visited, task_id)
+        new_rec_stack = MapSet.put(rec_stack, task_id)
+        
+        task = Map.get(task_map, task_id)
+        if task do
+          task.dependencies
+          |> Enum.find_value(fn dep_id ->
+            case detect_cycle_from_task(dep_id, task_map, new_visited, new_rec_stack) do
+              :ok -> nil
+              {:error, reason} -> {:error, reason}
+            end
+          end)
+          |> case do
+            nil -> :ok
+            error -> error
+          end
+        else
+          {:error, {:task_not_found, task_id}}
+        end
+      end
+    end
   end
 end

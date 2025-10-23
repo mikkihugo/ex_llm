@@ -1,4 +1,4 @@
-defmodule SingularityWeb.DocumentationLive do
+defmodule Singularity.Web.DocumentationLive do
   @moduledoc """
   Documentation System LiveView - Real-time interface for documentation management.
 
@@ -9,7 +9,7 @@ defmodule SingularityWeb.DocumentationLive do
   - Monitor pipeline progress
   """
 
-  use SingularityWeb, :live_view
+  use Singularity.Web, :live_view
   require Logger
   alias Singularity.Agents.DocumentationPipeline
   alias Singularity.Agents.QualityEnforcer

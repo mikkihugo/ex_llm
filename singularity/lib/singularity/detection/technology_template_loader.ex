@@ -214,7 +214,37 @@ defmodule Singularity.TechnologyTemplateLoader do
     template
   end
 
-  defp persist_template(_identifier, template, _source, _opts), do: template
+  defp persist_template(identifier, template, source, opts) do
+    # Extract options
+    quality_level = Keyword.get(opts, :quality_level, :production)
+    force_update = Keyword.get(opts, :force_update, false)
+    validate_schema = Keyword.get(opts, :validate_schema, true)
+    
+    # Validate template schema if requested
+    if validate_schema do
+      case validate_template_schema(template) do
+        :ok -> :ok
+        {:error, reason} ->
+          Logger.warning("Template validation failed", identifier: identifier, reason: reason)
+          {:error, {:validation_failed, reason}}
+      end
+    end
+    
+    # Check if template already exists
+    case get_existing_template(identifier) do
+      nil ->
+        # Create new template
+        create_template(identifier, template, source, quality_level)
+      existing_template ->
+        if force_update or template_updated?(existing_template, template) do
+          # Update existing template
+          update_template(identifier, template, source, quality_level)
+        else
+          # No changes needed
+          {:ok, existing_template}
+        end
+    end
+  end
 
   defp normalize_pattern(pattern) when is_binary(pattern) do
     trimmed = String.trim(pattern)
@@ -231,4 +261,89 @@ defmodule Singularity.TechnologyTemplateLoader do
   defp normalize_pattern(%{pattern: pattern}), do: normalize_pattern(pattern)
 
   defp normalize_pattern(_), do: nil
+
+  # Helper functions for persist_template
+  defp validate_template_schema(template) do
+    required_fields = ["name", "description", "patterns", "quality_standards"]
+    
+    missing_fields = required_fields
+    |> Enum.reject(fn field -> Map.has_key?(template, field) end)
+    
+    if length(missing_fields) > 0 do
+      {:error, {:missing_fields, missing_fields}}
+    else
+      :ok
+    end
+  end
+
+  defp get_existing_template(identifier) do
+    # Try to get existing template from database
+    case TechnologyTemplateStore.get(identifier) do
+      {:ok, template} -> template
+      {:error, :not_found} -> nil
+      {:error, _reason} -> nil
+    end
+  end
+
+  defp create_template(identifier, template, source, quality_level) do
+    # Create new template in database
+    template_data = Map.merge(template, %{
+      "identifier" => identifier,
+      "source" => source,
+      "quality_level" => quality_level,
+      "created_at" => DateTime.utc_now(),
+      "updated_at" => DateTime.utc_now()
+    })
+    
+    case TechnologyTemplateStore.create(template_data) do
+      {:ok, created_template} ->
+        Logger.info("Created new technology template", 
+          identifier: identifier, 
+          source: source,
+          quality_level: quality_level
+        )
+        {:ok, created_template}
+      {:error, reason} ->
+        Logger.error("Failed to create technology template", 
+          identifier: identifier, 
+          reason: reason
+        )
+        {:error, {:creation_failed, reason}}
+    end
+  end
+
+  defp update_template(identifier, template, source, quality_level) do
+    # Update existing template in database
+    update_data = Map.merge(template, %{
+      "source" => source,
+      "quality_level" => quality_level,
+      "updated_at" => DateTime.utc_now()
+    })
+    
+    case TechnologyTemplateStore.update(identifier, update_data) do
+      {:ok, updated_template} ->
+        Logger.info("Updated technology template", 
+          identifier: identifier, 
+          source: source,
+          quality_level: quality_level
+        )
+        {:ok, updated_template}
+      {:error, reason} ->
+        Logger.error("Failed to update technology template", 
+          identifier: identifier, 
+          reason: reason
+        )
+        {:error, {:update_failed, reason}}
+    end
+  end
+
+  defp template_updated?(existing_template, new_template) do
+    # Compare key fields to see if template has been updated
+    key_fields = ["name", "description", "patterns", "quality_standards"]
+    
+    key_fields
+    |> Enum.any?(fn field ->
+      Map.get(existing_template, field) != Map.get(new_template, field)
+    end)
+  end
 end

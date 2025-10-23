@@ -141,7 +141,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
   require Logger
   alias Singularity.Agents.DocumentationUpgrader
   alias Singularity.Agents.QualityEnforcer
-  alias Singularity.CodeStore
 
   ## Client API
 
@@ -183,7 +182,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
   ## Server Callbacks
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     state = %{
       pipeline_running: false,
       last_run: nil,
@@ -207,7 +206,10 @@ defmodule Singularity.Agents.DocumentationPipeline do
       # Run pipeline in background task
       task = Task.async(fn -> run_pipeline_internal(:full) end)
       
-      {:reply, {:ok, :pipeline_started}, new_state}
+      # Monitor task completion
+      Process.monitor(task.pid)
+      
+      {:reply, {:ok, :pipeline_started}, %{new_state | upgrade_task: task}}
     end
   end
 
@@ -221,7 +223,10 @@ defmodule Singularity.Agents.DocumentationPipeline do
       # Run incremental pipeline in background task
       task = Task.async(fn -> run_pipeline_internal({:incremental, files}) end)
       
-      {:reply, {:ok, :incremental_pipeline_started}, new_state}
+      # Monitor task completion
+      Process.monitor(task.pid)
+      
+      {:reply, {:ok, :incremental_pipeline_started}, %{new_state | upgrade_task: task}}
     end
   end
 
@@ -371,16 +376,50 @@ defmodule Singularity.Agents.DocumentationPipeline do
   end
 
   defp analyze_files(files) do
-    # Use DocumentationUpgrader to analyze files
-    case DocumentationUpgrader.scan_codebase_documentation() do
-      {:ok, results} -> results
-      {:error, _reason} -> %{total_files: 0, documented: 0, quality_modules: 0}
-    end
+    # Analyze the specific files provided
+    results = files
+    |> Enum.map(fn file_path ->
+      case File.read(file_path) do
+        {:ok, content} ->
+          language = detect_language(file_path)
+          has_documentation = case language do
+            :elixir -> String.contains?(content, "@moduledoc")
+            :rust -> String.contains?(content, "///")
+            :typescript -> String.contains?(content, "/**")
+            _ -> false
+          end
+          %{file: file_path, language: language, has_documentation: has_documentation}
+        {:error, _reason} ->
+          %{file: file_path, language: :unknown, has_documentation: false}
+      end
+    end)
+    
+    documented_count = Enum.count(results, & &1.has_documentation)
+    total_count = length(results)
+    
+    %{
+      total_files: total_count,
+      documented: documented_count,
+      quality_modules: documented_count,
+      files_analyzed: results
+    }
   end
 
   defp upgrade_files(files, analysis_results) do
-    # Use DocumentationUpgrader to upgrade files
-    upgraded = files
+    # Use analysis results to prioritize files that need documentation
+    files_to_upgrade = files
+    |> Enum.filter(fn file_path ->
+      # Find analysis result for this file
+      case Enum.find(analysis_results.files_analyzed, &(&1.file == file_path)) do
+        %{has_documentation: false} -> true
+        _ -> false
+      end
+    end)
+    
+    Logger.info("Found #{length(files_to_upgrade)} files that need documentation upgrade")
+    
+    # Upgrade files that need documentation
+    upgraded = files_to_upgrade
     |> Enum.map(fn file_path ->
       case DocumentationUpgrader.upgrade_module_documentation(file_path, []) do
         {:ok, _result} -> 1
@@ -389,18 +428,50 @@ defmodule Singularity.Agents.DocumentationPipeline do
     end)
     |> Enum.sum()
 
-    %{upgraded: upgraded}
+    Logger.info("Upgraded #{upgraded} files out of #{length(files_to_upgrade)} that needed upgrades")
+    %{upgraded: upgraded, total_needed: length(files_to_upgrade)}
   end
 
   defp validate_upgrades(files) do
-    # Use QualityEnforcer to validate files
-    case QualityEnforcer.get_quality_report() do
-      {:ok, report} -> report
-      {:error, _reason} -> %{compliant: 0, non_compliant: 0, languages: %{}}
-    end
+    # Validate the specific files that were upgraded
+    validation_results = files
+    |> Enum.map(fn file_path ->
+      case QualityEnforcer.validate_file_quality(file_path) do
+        {:ok, %{compliant: true}} -> %{file: file_path, status: :compliant}
+        {:ok, %{compliant: false}} -> %{file: file_path, status: :non_compliant}
+        {:error, _reason} -> %{file: file_path, status: :error}
+      end
+    end)
+    
+    compliant_count = Enum.count(validation_results, &(&1.status == :compliant))
+    non_compliant_count = Enum.count(validation_results, &(&1.status == :non_compliant))
+    
+    Logger.info("Validation complete: #{compliant_count} compliant, #{non_compliant_count} non-compliant")
+    
+    %{
+      compliant: compliant_count,
+      non_compliant: non_compliant_count,
+      total_validated: length(files),
+      validation_results: validation_results
+    }
   end
 
   defp schedule_automatic_upgrade(interval_minutes) do
     Process.send_after(self(), :run_automatic_upgrade, interval_minutes * 60 * 1000)
+  end
+
+  defp detect_language(file_path) do
+    cond do
+      String.ends_with?(file_path, ".ex") or String.ends_with?(file_path, ".exs") ->
+        :elixir
+      String.ends_with?(file_path, ".rs") ->
+        :rust
+      String.ends_with?(file_path, ".ts") or String.ends_with?(file_path, ".tsx") ->
+        :typescript
+      String.ends_with?(file_path, ".js") or String.ends_with?(file_path, ".jsx") ->
+        :javascript
+      true ->
+        :unknown
+    end
   end
 end

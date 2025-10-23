@@ -142,7 +142,7 @@ defmodule Singularity.ArchitectureEngine do
     otp_app: :singularity,
     crate: :architecture_engine,
     path: "../rust/architecture_engine",
-    skip_compilation?: false
+    skip_compilation?: true  # Temporarily skip compilation to fix hot reload
 
   require Logger
   alias Singularity.Repo

@@ -1,4 +1,4 @@
-defmodule SingularityWeb.HealthRouter do
+defmodule Singularity.Web.HealthRouter do
   @moduledoc """
   Minimal HTTP router for health checks and metrics only.
 

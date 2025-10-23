@@ -17,7 +17,8 @@ defmodule Singularity.ParserEngine do
   use Rustler,
     otp_app: :singularity,
     crate: "parser-code",
-    path: "../rust/parser_engine"
+    path: "../rust/parser_engine",
+    skip_compilation?: true  # Temporarily skip compilation to fix hot reload
 
   require Logger
   alias Singularity.NatsClient

@@ -164,7 +164,7 @@ defmodule Singularity.Schemas.UserPreferences do
   """
   def with_preference_key(query \\ __MODULE__, key) do
     from p in query,
-      where: fragment("? ? ?", p.preferences, ^key),
+      where: fragment("? -> ? IS NOT NULL", p.preferences, ^key),
       where: p.is_active == true
   end
 
@@ -201,9 +201,6 @@ defmodule Singularity.Schemas.UserPreferences do
   Find users with similar preferences.
   """
   def similar_users(query \\ __MODULE__, user_id, limit \\ 5) do
-    # Get user's preferences
-    user_prefs = from p in query, where: p.user_id == ^user_id and p.is_active == true
-
     # Find similar users by preference similarity
     from p in query,
       where: p.user_id != ^user_id,
@@ -225,6 +222,137 @@ defmodule Singularity.Schemas.UserPreferences do
         by_type: fragment("jsonb_object_agg(?, count(*))", p.preference_type),
         last_updated: max(p.updated_at)
       }
+  end
+
+  @doc """
+  Get preferences created within a date range.
+  """
+  def created_between(query \\ __MODULE__, start_date, end_date) do
+    from p in query,
+      where: p.inserted_at >= ^start_date,
+      where: p.inserted_at <= ^end_date,
+      where: p.is_active == true,
+      order_by: [desc: p.inserted_at]
+  end
+
+  @doc """
+  Get preferences with specific metadata key.
+  """
+  def with_metadata_key(query \\ __MODULE__, key) do
+    from p in query,
+      where: fragment("? -> ? IS NOT NULL", p.metadata, ^key),
+      where: p.is_active == true
+  end
+
+  @doc """
+  Get preferences by metadata value.
+  """
+  def by_metadata_value(query \\ __MODULE__, key, value) do
+    from p in query,
+      where: fragment("?->>? = ?", p.metadata, ^key, ^value),
+      where: p.is_active == true
+  end
+
+  @doc """
+  Get inactive preferences for cleanup.
+  """
+  def inactive_preferences(query \\ __MODULE__, older_than_days \\ 30) do
+    cutoff_date = DateTime.utc_now() |> DateTime.add(-older_than_days * 24 * 60 * 60, :second)
+
+    from p in query,
+      where: p.is_active == false,
+      where: p.updated_at < ^cutoff_date,
+      order_by: [asc: p.updated_at]
+  end
+
+  @doc """
+  Bulk deactivate preferences for a user.
+  """
+  def bulk_deactivate_for_user(user_id, reason \\ "bulk_cleanup") do
+    from p in __MODULE__,
+      where: p.user_id == ^user_id,
+      where: p.is_active == true,
+      update: [set: [is_active: false, change_reason: ^reason, updated_at: fragment("NOW()")]]
+  end
+
+  ## Utility Functions
+
+  @doc """
+  Extract virtual fields from preferences map.
+  """
+  def extract_virtual_fields(%__MODULE__{preferences: preferences} = struct) do
+    %{
+      struct
+      | theme: preferences["theme"],
+        language: preferences["language"],
+        notifications: preferences["notifications"]
+    }
+  end
+
+  @doc """
+  Create a new version of preferences with change tracking.
+  """
+  def create_new_version(%__MODULE__{} = current, new_preferences, change_reason, created_by) do
+    %{
+      user_id: current.user_id,
+      preference_type: current.preference_type,
+      preferences: new_preferences,
+      metadata: current.metadata,
+      version: increment_version(current.version),
+      is_active: true,
+      created_by: created_by,
+      change_reason: change_reason,
+      previous_version_id: current.id
+    }
+  end
+
+  @doc """
+  Get preference value with default fallback.
+  """
+  def get_preference_value(%__MODULE__{preferences: preferences}, key, default \\ nil) do
+    Map.get(preferences, key, default)
+  end
+
+  @doc """
+  Set preference value and return updated preferences map.
+  """
+  def set_preference_value(%__MODULE__{preferences: preferences}, key, value) do
+    Map.put(preferences, key, value)
+  end
+
+  @doc """
+  Merge new preferences with existing ones.
+  """
+  def merge_preferences(%__MODULE__{preferences: existing}, new_prefs) when is_map(new_prefs) do
+    Map.merge(existing, new_prefs)
+  end
+
+  @doc """
+  Check if preference key exists and has a truthy value.
+  """
+  def preference_enabled?(%__MODULE__{preferences: preferences}, key) do
+    case Map.get(preferences, key) do
+      nil -> false
+      false -> false
+      "" -> false
+      [] -> false
+      _ -> true
+    end
+  end
+
+  ## Private Helpers
+
+  defp increment_version(version) do
+    # Simple semantic versioning increment (patch version)
+    case String.split(version, ".") do
+      [major, minor, patch] ->
+        {patch_num, _} = Integer.parse(patch)
+        "#{major}.#{minor}.#{patch_num + 1}"
+
+      _ ->
+        # Fallback for non-standard versions
+        "#{version}.1"
+    end
   end
 
   ## Private Validation Helpers
@@ -252,7 +380,7 @@ defmodule Singularity.Schemas.UserPreferences do
   end
 
   defp validate_theme(changeset, theme) do
-    add_error(changeset, :preferences, "theme must be one of: light, dark, auto, got: #{theme}")
+    add_error(changeset, :preferences, "theme must be one of: light, dark, auto, got: #{inspect(theme)}")
   end
 
   defp validate_language(changeset, language) when language in [nil, "en", "es", "fr", "de", "zh", "ja"] do
@@ -260,7 +388,7 @@ defmodule Singularity.Schemas.UserPreferences do
   end
 
   defp validate_language(changeset, language) do
-    add_error(changeset, :preferences, "unsupported language: #{language}")
+    add_error(changeset, :preferences, "unsupported language: #{inspect(language)}")
   end
 
   defp validate_notifications(changeset, notifications) when is_map(notifications) or is_nil(notifications) do
@@ -271,8 +399,8 @@ defmodule Singularity.Schemas.UserPreferences do
     end
   end
 
-  defp validate_notifications(changeset, _notifications) do
-    add_error(changeset, :preferences, "notifications must be a map")
+  defp validate_notifications(changeset, notifications) do
+    add_error(changeset, :preferences, "notifications must be a map, got: #{inspect(notifications)}")
   end
 
   defp validate_notification_keys(changeset, notifications) do
@@ -280,9 +408,23 @@ defmodule Singularity.Schemas.UserPreferences do
     invalid_keys = Map.keys(notifications) -- valid_keys
 
     if Enum.empty?(invalid_keys) do
-      changeset
+      # Also validate that values are booleans
+      validate_notification_values(changeset, notifications)
     else
       add_error(changeset, :preferences, "invalid notification keys: #{Enum.join(invalid_keys, ", ")}")
+    end
+  end
+
+  defp validate_notification_values(changeset, notifications) do
+    invalid_values = Enum.filter(notifications, fn {_key, value} ->
+      not is_boolean(value)
+    end)
+
+    if Enum.empty?(invalid_values) do
+      changeset
+    else
+      invalid_keys = Enum.map(invalid_values, fn {key, _value} -> key end)
+      add_error(changeset, :preferences, "notification values must be booleans for keys: #{Enum.join(invalid_keys, ", ")}")
     end
   end
 
@@ -302,20 +444,50 @@ defmodule Singularity.Schemas.UserPreferences do
     if embedding do
       case Pgvector.to_list(embedding) do
         {:ok, list} when length(list) == 1536 ->
-          changeset
+          # Additional validation: check that all values are finite numbers
+          validate_embedding_values(changeset, list)
 
         {:ok, list} ->
           add_error(
             changeset,
             :embedding,
-            "must be 1536 dimensions (Qodo-Embed-1), got #{length(list)}"
+            "must be 1536 dimensions (Qodo-Embed-1), got #{length(list)} dimensions"
           )
 
-        {:error, _} ->
-          add_error(changeset, :embedding, "invalid vector format")
+        {:error, reason} ->
+          add_error(changeset, :embedding, "invalid vector format: #{inspect(reason)}")
       end
     else
       changeset
     end
+  end
+
+  defp validate_embedding_values(changeset, values) do
+    non_finite = Enum.filter(values, fn value ->
+      not (is_number(value) and is_finite_number?(value))
+    end)
+
+    if Enum.empty?(non_finite) do
+      changeset
+    else
+      add_error(changeset, :embedding, "embedding contains non-finite values: #{Enum.take(non_finite, 3) |> Enum.join(", ")}")
+    end
+  end
+
+  defp is_finite_number?(value) when is_float(value) do
+    not (value == :infinity or value == :"-infinity" or is_nan?(value))
+  end
+
+  defp is_finite_number?(value) when is_integer(value) do
+    true
+  end
+
+  defp is_finite_number?(_) do
+    false
+  end
+
+  defp is_nan?(value) do
+    # NaN is the only float that doesn't equal itself
+    value != value
   end
 end

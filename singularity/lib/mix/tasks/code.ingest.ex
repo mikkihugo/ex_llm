@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Code.Ingest do
   use Mix.Task
   require Logger
 
-  alias Singularity.{Repo, ParserEngine, CodeSearch, EmbeddingGenerator}
+  alias Singularity.{Repo, CodeSearch, EmbeddingGenerator}
 
   @shortdoc "Ingest codebase into database for semantic search"
 

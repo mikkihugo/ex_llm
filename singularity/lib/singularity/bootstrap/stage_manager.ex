@@ -420,7 +420,7 @@ defmodule Singularity.Bootstrap.StageManager do
         {stage, started_at, Jason.decode!(metrics || "{}")}
       nil ->
         # First run - initialize database
-        Logger.warn("Bootstrap stages table not initialized, using defaults")
+        Logger.warning("Bootstrap stages table not initialized, using defaults")
         {1, DateTime.utc_now(), %{}}
     end
   rescue

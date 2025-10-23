@@ -51,6 +51,9 @@ defmodule Singularity.Agents.AgentSpawner do
   @doc """
   Spawn an agent from Lua configuration.
 
+  Actually starts a new Agent GenServer process via DynamicSupervisor.
+  Returns the spawned agent's PID (not the spawner's PID).
+
   ## Parameters
 
   - `agent_config` - Map with keys:
@@ -60,14 +63,14 @@ defmodule Singularity.Agents.AgentSpawner do
 
   ## Returns
 
-  - `{:ok, agent}` - Spawned agent metadata
+  - `{:ok, agent}` - Spawned agent metadata with correct PID
   - `{:error, reason}` - Spawn failed
 
   ## Examples
 
       iex> config = %{"role" => "architect", "config" => %{}}
       iex> AgentSpawner.spawn(config)
-      {:ok, %{id: "agent-xyz", pid: #PID<...>, role: "architect"}}
+      {:ok, %{id: "agent-xyz", pid: #PID<0.250.0>, role: "architect"}}
   """
   def spawn(agent_config) do
     role = agent_config["role"] || agent_config[:role] || "code_developer"
@@ -83,17 +86,45 @@ defmodule Singularity.Agents.AgentSpawner do
       behavior_id: behavior_id
     )
 
-    # For now, return agent metadata without spawning actual process
-    # In full implementation, this would start an Agent GenServer
-    {:ok,
-     %{
-       id: agent_id,
-       pid: self(),
-       role: role,
-       behavior_id: behavior_id,
-       config: config,
-       spawned_at: DateTime.utc_now()
-     }}
+    # Start new Agent GenServer via DynamicSupervisor
+    case DynamicSupervisor.start_child(
+           Singularity.AgentSupervisor,
+           {
+             Singularity.Agent,
+             [
+               id: agent_id,
+               role: role,
+               behavior_id: behavior_id,
+               config: config
+             ]
+           }
+         ) do
+      {:ok, agent_pid} ->
+        Logger.info("Agent spawned successfully",
+          agent_id: agent_id,
+          pid: inspect(agent_pid),
+          role: role
+        )
+
+        {:ok,
+         %{
+           id: agent_id,
+           pid: agent_pid,
+           role: role,
+           behavior_id: behavior_id,
+           config: config,
+           spawned_at: DateTime.utc_now()
+         }}
+
+      {:error, reason} ->
+        Logger.error("Failed to spawn agent",
+          agent_id: agent_id,
+          role: role,
+          reason: inspect(reason)
+        )
+
+        {:error, {:spawn_failed, reason}}
+    end
   end
 
   @doc """

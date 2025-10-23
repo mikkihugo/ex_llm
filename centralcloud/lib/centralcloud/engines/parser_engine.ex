@@ -1,15 +1,17 @@
 defmodule Centralcloud.Engines.ParserEngine do
   @moduledoc """
-  Parser Engine NIF - Direct bindings to Rust code parsing.
+  Parser Engine - Delegates to Singularity via NATS.
 
-  This module loads the shared Rust NIF from the project root rust/ directory,
-  allowing CentralCloud to use the same compiled parser engine as Singularity.
+  CentralCloud doesn't compile Rust NIFs directly (compile: false in mix.exs).
+  Instead, this module delegates parsing requests to Singularity
+  via NATS, which has the compiled parser_engine NIF.
   """
 
-  use Rustler,
-    otp_app: :centralcloud,
-    crate: :parser_engine,
-    path: "../../rust/parser_engine"
+  # Note: Rustler bindings disabled - NIFs compiled only in Singularity
+  # use Rustler,
+  #   otp_app: :centralcloud,
+  #   crate: :parser_engine,
+  #   path: "../../../../rust/parser_engine"
 
   require Logger
 

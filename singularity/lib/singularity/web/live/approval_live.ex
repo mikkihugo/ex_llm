@@ -1,4 +1,4 @@
-defmodule SingularityWeb.ApprovalLive do
+defmodule Singularity.Web.ApprovalLive do
   @moduledoc """
   Approval LiveView - Real-time interface for human-in-the-loop approvals.
 
@@ -9,7 +9,7 @@ defmodule SingularityWeb.ApprovalLive do
   - Integration with hot reload system
   """
 
-  use SingularityWeb, :live_view
+  use Singularity.Web, :live_view
   require Logger
   alias Singularity.HITL.ApprovalService
   alias Singularity.Schemas.ApprovalQueue
@@ -126,7 +126,7 @@ defmodule SingularityWeb.ApprovalLive do
   ## Private Functions
 
   defp load_approvals(socket) do
-    approvals = ApprovalService.list_pending_approvals()
+    approvals = ApprovalService.list_pending()
     |> Enum.sort_by(& &1.inserted_at, :asc)
 
     assign(socket, :approvals, approvals)

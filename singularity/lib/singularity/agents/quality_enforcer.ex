@@ -138,8 +138,6 @@ defmodule Singularity.Agents.QualityEnforcer do
   use GenServer
   require Logger
   alias Singularity.Knowledge.ArtifactStore
-  alias Singularity.Agents.TechnologyAgent
-  alias Singularity.Agents.RefactoringAgent
 
   ## Client API
 
@@ -327,7 +325,7 @@ defmodule Singularity.Agents.QualityEnforcer do
     {:ok, report}
   end
 
-  defp get_required_elements(language, template) do
+  defp get_required_elements(language, _template) do
     case language do
       :elixir ->
         [
@@ -407,7 +405,7 @@ defmodule Singularity.Agents.QualityEnforcer do
     Float.round(score, 2)
   end
 
-  defp find_missing_elements(checks, required_elements) do
+  defp find_missing_elements(checks, _required_elements) do
     []
     |> maybe_add(!checks.has_documentation, "documentation")
     |> maybe_add(!checks.has_identity, "identity")

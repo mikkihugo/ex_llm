@@ -1,15 +1,17 @@
 defmodule Centralcloud.Engines.CodeEngine do
   @moduledoc """
-  Code Engine NIF - Direct bindings to Rust code analysis.
+  Code Engine - Delegates to Singularity via NATS.
 
-  This module loads the shared Rust NIF from the project root rust/ directory,
-  allowing CentralCloud to use the same compiled code analysis engine as Singularity.
+  CentralCloud doesn't compile Rust NIFs directly (compile: false in mix.exs).
+  Instead, this module delegates code analysis requests to Singularity
+  via NATS, which has the compiled code_engine NIF.
   """
 
-  use Rustler,
-    otp_app: :centralcloud,
-    crate: :code_engine,
-    path: "../../rust/code_engine"
+  # Note: Rustler bindings disabled - NIFs compiled only in Singularity
+  # use Rustler,
+  #   otp_app: :centralcloud,
+  #   crate: :code_engine,
+  #   path: "../../../../rust/code_engine"
 
   require Logger
 

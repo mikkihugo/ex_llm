@@ -1,0 +1,180 @@
+<div class="py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Hero Section -->
+    <div class="mb-12">
+      <h2 class="text-4xl font-bold text-gray-900 mb-4">AI Development Environment</h2>
+      <p class="text-xl text-gray-600">
+        Intelligent internal tooling with multi-AI orchestration, semantic code search, and autonomous agents
+      </p>
+    </div>
+
+    <!-- Quick Links Grid using Salad UI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+      <!-- Approval Queue Card -->
+      <a href="/approvals" class="hover:shadow-lg transition-shadow">
+        <.card>
+          <.card_header>
+            <div class="flex items-start space-x-4">
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <.card_title>Approval Queue</.card_title>
+                <.card_description>Human-in-the-loop code change approvals</.card_description>
+              </div>
+            </div>
+          </.card_header>
+          <.card_footer>
+            <.badge variant="secondary">Real-time LiveView</.badge>
+          </.card_footer>
+        </.card>
+      </a>
+
+      <!-- Documentation System Card -->
+      <a href="/documentation" class="hover:shadow-lg transition-shadow">
+        <.card>
+          <.card_header>
+            <div class="flex items-start space-x-4">
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <.card_title>Documentation System</.card_title>
+                <.card_description>Multi-language quality enforcement</.card_description>
+              </div>
+            </div>
+          </.card_header>
+          <.card_footer>
+            <.badge variant="secondary">Real-time LiveView</.badge>
+          </.card_footer>
+        </.card>
+      </a>
+
+      <!-- System Dashboard Card -->
+      <a href="/dashboard" class="hover:shadow-lg transition-shadow">
+        <.card>
+          <.card_header>
+            <div class="flex items-start space-x-4">
+              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div>
+                <.card_title>System Dashboard</.card_title>
+                <.card_description>Monitoring and metrics</.card_description>
+              </div>
+            </div>
+          </.card_header>
+          <.card_footer>
+            <.badge variant="secondary">Phoenix LiveDashboard</.badge>
+          </.card_footer>
+        </.card>
+      </a>
+    </div>
+
+    <!-- Dashboard Tabs Info using Salad UI Cards -->
+    <.card class="mb-12">
+      <.card_header>
+        <.card_title>Dashboard Monitoring</.card_title>
+        <.card_description>Real-time system insights and metrics</.card_description>
+      </.card_header>
+      <.card_content>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="border-l-4 border-indigo-500 pl-4">
+            <h4 class="font-semibold text-gray-900 mb-2">System Health</h4>
+            <p class="text-gray-600 text-sm">
+              Codebase metrics, technology detection, search analytics, learning progress, and remediation activity
+            </p>
+          </div>
+          <div class="border-l-4 border-blue-500 pl-4">
+            <h4 class="font-semibold text-gray-900 mb-2">Agents</h4>
+            <p class="text-gray-600 text-sm">
+              Active agents monitoring, task execution stats, uptime tracking, and performance metrics
+            </p>
+          </div>
+          <div class="border-l-4 border-green-500 pl-4">
+            <h4 class="font-semibold text-gray-900 mb-2">LLM Metrics</h4>
+            <p class="text-gray-600 text-sm">
+              Request volume by complexity, cost breakdown by model, cache hit rate, and latency tracking
+            </p>
+          </div>
+        </div>
+      </.card_content>
+    </.card>
+
+    <!-- API Documentation using Salad UI Card -->
+    <.card>
+      <.card_header>
+        <.card_title>API Endpoints</.card_title>
+        <.card_description>REST endpoints for system monitoring and control</.card_description>
+      </.card_header>
+      <.card_content>
+        <div class="space-y-4">
+          <div class="flex items-start gap-4">
+            <.badge variant="outline">GET</.badge>
+            <div class="flex-1">
+              <p class="font-mono text-sm font-semibold text-gray-900">/api/health</p>
+              <p class="text-gray-600 text-sm">Overall system health status</p>
+            </div>
+          </div>
+          <.separator />
+          <div class="flex items-start gap-4">
+            <.badge variant="outline">GET</.badge>
+            <div class="flex-1">
+              <p class="font-mono text-sm font-semibold text-gray-900">/api/metrics</p>
+              <p class="text-gray-600 text-sm">System metrics in JSON format</p>
+            </div>
+          </div>
+          <.separator />
+          <div class="flex items-start gap-4">
+            <.badge variant="outline">GET</.badge>
+            <div class="flex-1">
+              <p class="font-mono text-sm font-semibold text-gray-900">/api/documentation/health</p>
+              <p class="text-gray-600 text-sm">Documentation system health check</p>
+            </div>
+          </div>
+          <.separator />
+          <div class="flex items-start gap-4">
+            <.badge variant="outline">GET</.badge>
+            <div class="flex-1">
+              <p class="font-mono text-sm font-semibold text-gray-900">/api/documentation/status</p>
+              <p class="text-gray-600 text-sm">Detailed documentation system status</p>
+            </div>
+          </div>
+          <.separator />
+          <div class="flex items-start gap-4">
+            <.badge variant="destructive">POST</.badge>
+            <div class="flex-1">
+              <p class="font-mono text-sm font-semibold text-gray-900">/api/documentation/upgrade</p>
+              <p class="text-gray-600 text-sm">Trigger documentation upgrade (type: full|incremental)</p>
+            </div>
+          </div>
+          <.separator />
+          <div class="flex items-start gap-4">
+            <.badge variant="destructive">POST</.badge>
+            <div class="flex-1">
+              <p class="font-mono text-sm font-semibold text-gray-900">/api/self-awareness/run</p>
+              <p class="text-gray-600 text-sm">Run self-awareness pipeline</p>
+            </div>
+          </div>
+          <.separator />
+          <div class="flex items-start gap-4">
+            <.badge variant="outline">GET</.badge>
+            <div class="flex-1">
+              <p class="font-mono text-sm font-semibold text-gray-900">/api/self-awareness/status</p>
+              <p class="text-gray-600 text-sm">Self-awareness pipeline status</p>
+            </div>
+          </div>
+        </div>
+      </.card_content>
+    </.card>
+
+    <!-- Footer -->
+    <div class="mt-12 text-center text-sm text-gray-500 py-8 border-t border-gray-200">
+      <p>Singularity v1.0 - Internal AI Development Environment</p>
+    </div>
+</div>
