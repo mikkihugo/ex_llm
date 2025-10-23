@@ -1,10 +1,20 @@
 {
   description = "Singularity - Autonomous agent platform with GPU-accelerated semantic code search";
 
-  # LLM-Friendly: Simplified environments for working prototype:
-  # - dev: Full local development with all services
+  # Environment Configurations:
+  # - dev: Local development (any OS via Nix)
   # - ci: Automated testing environment
-  # - prod: Remote production (Docker/K8s ready)
+  # - prod: NixOS-based production (RTX 4080 optimized, reproducible builds)
+  #
+  # PRODUCTION DEPLOYMENT (RTX 4080):
+  # ✅ RECOMMENDED: NixOS ISO on bare metal
+  #    - Best GPU access (CUDA/Metal without layers)
+  #    - Direct hardware passthrough (no WSL2/Podman overhead)
+  #    - Use: nix build .#singularity-integrated
+  #
+  # Alternative: Docker/Podman (not recommended for GPU)
+  #    - GPU support requires additional setup
+  #    - Performance overhead compared to bare metal
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";

@@ -137,17 +137,35 @@ mix dialyzer  # Type checking
 mix sobelow --exit-on-warning  # Security analysis
 ```
 
-### Building (Internal Tooling - Optional)
+### Building (Production Deployment)
+
+#### Recommended: NixOS ISO (RTX 4080)
 ```bash
-# Build with Nix (if deploying internally)
+# Build complete reproducible NixOS system for RTX 4080
 nix build .#singularity-integrated
 
-# Build release (rarely needed for internal tooling)
+# This produces a Nix package ready for:
+# - NixOS system configuration
+# - Bare metal deployment (best GPU performance)
+# - Direct hardware access (no containerization overhead)
+```
+
+#### For Development
+```bash
+# Usually just run directly in Nix shell instead
+nix develop
+
+# Build release only if needed for export
 cd singularity
 MIX_ENV=prod mix release
-
-# Usually run directly in Nix shell instead!
 ```
+
+#### Why NixOS for Production?
+- ✅ **Reproducible builds** - Exact same binary across machines
+- ✅ **GPU access** - Direct CUDA/Metal (no WSL2/Podman layers)
+- ✅ **Declarative config** - Infrastructure as code
+- ✅ **Atomic upgrades** - Rollback capability
+- ❌ **NOT recommended** - Docker/Podman (GPU overhead, complexity)
 
 ### Rust Components
 ```bash
