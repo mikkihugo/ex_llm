@@ -68,6 +68,7 @@ defmodule Singularity.Startup.DocumentationBootstrap do
       :ok ->
         Logger.info("Automatic documentation upgrades enabled (every 60 minutes)")
         :ok
+
       {:error, reason} ->
         Logger.error("Failed to enable automatic upgrades: #{inspect(reason)}")
         {:error, reason}
@@ -89,9 +90,11 @@ defmodule Singularity.Startup.DocumentationBootstrap do
         {:ok, _pid} ->
           Logger.debug("Started #{name}")
           acc
+
         {:error, {:already_started, _pid}} ->
           Logger.debug("#{name} already started")
           acc
+
         {:error, reason} ->
           Logger.error("Failed to start #{name}: #{inspect(reason)}")
           {:error, reason}
@@ -104,6 +107,7 @@ defmodule Singularity.Startup.DocumentationBootstrap do
       :ok ->
         Logger.info("Quality gates enabled")
         :ok
+
       {:error, reason} ->
         Logger.error("Failed to enable quality gates: #{inspect(reason)}")
         {:error, reason}
@@ -115,6 +119,7 @@ defmodule Singularity.Startup.DocumentationBootstrap do
       :ok ->
         Logger.info("Automatic documentation upgrades scheduled (every 60 minutes)")
         :ok
+
       {:error, reason} ->
         Logger.error("Failed to schedule automatic upgrades: #{inspect(reason)}")
         {:error, reason}

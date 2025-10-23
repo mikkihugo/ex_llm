@@ -35,7 +35,8 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
   require Logger
 
   @default_timeout 30_000
-  @max_response_size 10_000_000  # 10MB
+  # 10MB
+  @max_response_size 10_000_000
 
   @doc """
   Execute HTTP request.

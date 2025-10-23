@@ -26,7 +26,8 @@ defmodule Singularity.Dashboard.AgentsPage do
     columns = table_columns()
 
     # Build table rows
-    rows = agents
+    rows =
+      agents
       |> Enum.map(fn agent ->
         Enum.map(columns, &Map.get(agent, &1.field))
       end)
@@ -128,6 +129,7 @@ defmodule Singularity.Dashboard.AgentsPage do
       queue_len when is_integer(queue_len) ->
         # Use queue length as proxy for activity/uptime estimate
         queue_len * 2
+
       _ ->
         # Fallback: estimate from reductions
         case Keyword.get(info, :reductions, 0) do

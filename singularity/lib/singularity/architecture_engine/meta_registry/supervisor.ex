@@ -1,7 +1,7 @@
 defmodule Singularity.ArchitectureEngine.MetaRegistry.Supervisor do
   @moduledoc """
   Meta-Registry Supervisor - Manages meta-registry services and NATS subscriptions.
-  
+
   Starts and supervises:
   - Message handlers for meta-registry NATS subjects
   - Framework registry initialization

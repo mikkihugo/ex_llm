@@ -135,7 +135,8 @@ defmodule Singularity.TechnologyAgent do
 
     with :ok <- validate_codebase_path(codebase_path),
          {:ok, patterns} <- extract_patterns(codebase_path),
-         {:ok, frameworks} <- FrameworkDetector.detect_frameworks(patterns, context: codebase_path),
+         {:ok, frameworks} <-
+           FrameworkDetector.detect_frameworks(patterns, context: codebase_path),
          {:ok, technologies} <- detect_technologies_from_patterns(patterns, opts),
          detected = merge_detections(frameworks, technologies, opts) do
       elapsed = System.monotonic_time(:millisecond) - start_time
@@ -163,6 +164,7 @@ defmodule Singularity.TechnologyAgent do
           codebase: codebase_path,
           reason: reason
         )
+
         {:error, reason}
     end
   end
@@ -182,8 +184,8 @@ defmodule Singularity.TechnologyAgent do
   def analyze_dependencies(codebase_path, opts \\ []) do
     with :ok <- validate_codebase_path(codebase_path),
          {:ok, technologies} <- detect_technologies(codebase_path, opts) do
-
-      dependencies = technologies
+      dependencies =
+        technologies
         |> Enum.filter(&(&1.type in [:framework, :tool, :database]))
         |> Enum.group_by(& &1.ecosystem)
 
@@ -191,14 +193,15 @@ defmodule Singularity.TechnologyAgent do
       direct = technologies |> Enum.filter(&(&1.confidence > 0.9))
       transitive = technologies |> Enum.filter(&(&1.confidence <= 0.9 and &1.confidence > 0.5))
 
-      {:ok, %{
-        direct_dependencies: direct,
-        transitive_dependencies: transitive,
-        total_count: length(technologies),
-        by_ecosystem: dependencies,
-        primary_languages: get_primary_languages(technologies),
-        primary_frameworks: get_primary_frameworks(technologies)
-      }}
+      {:ok,
+       %{
+         direct_dependencies: direct,
+         transitive_dependencies: transitive,
+         total_count: length(technologies),
+         by_ecosystem: dependencies,
+         primary_languages: get_primary_languages(technologies),
+         primary_frameworks: get_primary_frameworks(technologies)
+       }}
     end
   end
 
@@ -214,7 +217,8 @@ defmodule Singularity.TechnologyAgent do
   """
   def classify_frameworks(codebase_path, opts \\ []) do
     with {:ok, technologies} <- detect_technologies(codebase_path, opts) do
-      frameworks = technologies
+      frameworks =
+        technologies
         |> Enum.filter(&(&1.type == :framework))
         |> Enum.sort_by(& &1.confidence, :desc)
 
@@ -222,13 +226,14 @@ defmodule Singularity.TechnologyAgent do
       secondary = Enum.filter(frameworks, &(&1.confidence > 0.7 and &1.confidence <= 0.85))
       unsupported = Enum.filter(frameworks, &(&1.confidence <= 0.7))
 
-      {:ok, %{
-        primary_frameworks: primary,
-        secondary_frameworks: secondary,
-        unsupported_frameworks: unsupported,
-        framework_count: length(frameworks),
-        primary_ecosystem: get_primary_ecosystem(primary)
-      }}
+      {:ok,
+       %{
+         primary_frameworks: primary,
+         secondary_frameworks: secondary,
+         unsupported_frameworks: unsupported,
+         framework_count: length(frameworks),
+         primary_ecosystem: get_primary_ecosystem(primary)
+       }}
     end
   end
 
@@ -252,7 +257,6 @@ defmodule Singularity.TechnologyAgent do
     with {:ok, technologies} <- detect_technologies(codebase_path, opts),
          {:ok, dependencies} <- analyze_dependencies(codebase_path, opts),
          {:ok, frameworks} <- classify_frameworks(codebase_path, opts) do
-
       languages = Enum.filter(technologies, &(&1.type == :language))
       tools = Enum.filter(technologies, &(&1.type == :tool))
       databases = Enum.filter(technologies, &(&1.type == :database))
@@ -260,20 +264,21 @@ defmodule Singularity.TechnologyAgent do
       summary = generate_summary(technologies, frameworks, languages)
       recommendations = generate_recommendations(technologies)
 
-      {:ok, %{
-        summary: summary,
-        codebase: codebase_path,
-        detected_at: DateTime.utc_now(),
-        technologies: technologies,
-        languages: languages,
-        frameworks: frameworks.primary_frameworks ++ frameworks.secondary_frameworks,
-        tools: tools,
-        databases: databases,
-        dependencies: dependencies,
-        total_technologies: length(technologies),
-        primary_language: List.first(languages),
-        recommendations: recommendations
-      }}
+      {:ok,
+       %{
+         summary: summary,
+         codebase: codebase_path,
+         detected_at: DateTime.utc_now(),
+         technologies: technologies,
+         languages: languages,
+         frameworks: frameworks.primary_frameworks ++ frameworks.secondary_frameworks,
+         tools: tools,
+         databases: databases,
+         dependencies: dependencies,
+         total_technologies: length(technologies),
+         primary_language: List.first(languages),
+         recommendations: recommendations
+       }}
     end
   end
 
@@ -303,10 +308,12 @@ defmodule Singularity.TechnologyAgent do
   def analyze_code_patterns(codebase_path, opts \\ []) do
     with :ok <- validate_codebase_path(codebase_path),
          {:ok, patterns} <- extract_patterns(codebase_path) do
-
       analysis = %{
         file_count: length(patterns),
-        file_types: patterns |> Enum.group_by(&get_file_type/1) |> Enum.map(fn {type, files} -> {type, length(files)} end),
+        file_types:
+          patterns
+          |> Enum.group_by(&get_file_type/1)
+          |> Enum.map(fn {type, files} -> {type, length(files)} end),
         imports_found: count_imports(patterns),
         class_definitions: count_definitions(patterns, "class"),
         function_definitions: count_definitions(patterns, "def"),
@@ -333,10 +340,14 @@ defmodule Singularity.TechnologyAgent do
     # Scan codebase for code patterns
     case File.ls_r(codebase_path) do
       {:ok, files} ->
-        patterns = files
+        patterns =
+          files
           |> Enum.filter(&code_file?/1)
-          |> Enum.take(500)  # Limit to 500 files for performance
+          # Limit to 500 files for performance
+          |> Enum.take(500)
+
         {:ok, patterns}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -345,7 +356,9 @@ defmodule Singularity.TechnologyAgent do
   end
 
   defp code_file?(path) do
-    extensions = ~w(.ex .exs .rs .js .ts .tsx .py .rb .java .go .php .cs .html .css .json .yaml .toml)
+    extensions =
+      ~w(.ex .exs .rs .js .ts .tsx .py .rb .java .go .php .cs .html .css .json .yaml .toml)
+
     String.downcase(Path.extname(path)) in extensions
   end
 
@@ -353,7 +366,8 @@ defmodule Singularity.TechnologyAgent do
     min_confidence = Keyword.get(opts, :min_confidence, 0.7)
     categories = Keyword.get(opts, :categories, nil)
 
-    technologies = patterns
+    technologies =
+      patterns
       |> Enum.flat_map(&extract_tech_from_file/1)
       |> Enum.uniq_by(& &1.name)
       |> Enum.filter(&(&1.confidence >= min_confidence))
@@ -370,20 +384,119 @@ defmodule Singularity.TechnologyAgent do
     name = Path.basename(file_path)
 
     cond do
-      ext == ".ex" or ext == ".exs" -> [%{name: "elixir", type: :language, confidence: 0.95, location: file_path, ecosystem: "elixir"}]
-      ext == ".rs" -> [%{name: "rust", type: :language, confidence: 0.95, location: file_path, ecosystem: "rust"}]
-      ext == ".ts" or ext == ".tsx" -> [%{name: "typescript", type: :language, confidence: 0.90, location: file_path, ecosystem: "javascript"}]
-      ext == ".js" -> [%{name: "javascript", type: :language, confidence: 0.90, location: file_path, ecosystem: "javascript"}]
-      ext == ".py" -> [%{name: "python", type: :language, confidence: 0.95, location: file_path, ecosystem: "python"}]
-      ext == ".rb" -> [%{name: "ruby", type: :language, confidence: 0.95, location: file_path, ecosystem: "ruby"}]
-      ext == ".go" -> [%{name: "go", type: :language, confidence: 0.95, location: file_path, ecosystem: "go"}]
-      name == "package.json" -> [%{name: "npm", type: :tool, confidence: 0.95, location: file_path, ecosystem: "javascript"}]
-      name == "mix.exs" -> [%{name: "mix", type: :tool, confidence: 0.95, location: file_path, ecosystem: "elixir"}]
-      name == "Gemfile" -> [%{name: "bundler", type: :tool, confidence: 0.95, location: file_path, ecosystem: "ruby"}]
-      name == "Cargo.toml" -> [%{name: "cargo", type: :tool, confidence: 0.95, location: file_path, ecosystem: "rust"}]
-      name == "pyproject.toml" -> [%{name: "pip", type: :tool, confidence: 0.90, location: file_path, ecosystem: "python"}]
-      ext == ".json" and String.contains?(file_path, "package") -> [%{name: "npm", type: :tool, confidence: 0.85, location: file_path, ecosystem: "javascript"}]
-      true -> []
+      ext == ".ex" or ext == ".exs" ->
+        [
+          %{
+            name: "elixir",
+            type: :language,
+            confidence: 0.95,
+            location: file_path,
+            ecosystem: "elixir"
+          }
+        ]
+
+      ext == ".rs" ->
+        [
+          %{
+            name: "rust",
+            type: :language,
+            confidence: 0.95,
+            location: file_path,
+            ecosystem: "rust"
+          }
+        ]
+
+      ext == ".ts" or ext == ".tsx" ->
+        [
+          %{
+            name: "typescript",
+            type: :language,
+            confidence: 0.90,
+            location: file_path,
+            ecosystem: "javascript"
+          }
+        ]
+
+      ext == ".js" ->
+        [
+          %{
+            name: "javascript",
+            type: :language,
+            confidence: 0.90,
+            location: file_path,
+            ecosystem: "javascript"
+          }
+        ]
+
+      ext == ".py" ->
+        [
+          %{
+            name: "python",
+            type: :language,
+            confidence: 0.95,
+            location: file_path,
+            ecosystem: "python"
+          }
+        ]
+
+      ext == ".rb" ->
+        [
+          %{
+            name: "ruby",
+            type: :language,
+            confidence: 0.95,
+            location: file_path,
+            ecosystem: "ruby"
+          }
+        ]
+
+      ext == ".go" ->
+        [%{name: "go", type: :language, confidence: 0.95, location: file_path, ecosystem: "go"}]
+
+      name == "package.json" ->
+        [
+          %{
+            name: "npm",
+            type: :tool,
+            confidence: 0.95,
+            location: file_path,
+            ecosystem: "javascript"
+          }
+        ]
+
+      name == "mix.exs" ->
+        [%{name: "mix", type: :tool, confidence: 0.95, location: file_path, ecosystem: "elixir"}]
+
+      name == "Gemfile" ->
+        [
+          %{
+            name: "bundler",
+            type: :tool,
+            confidence: 0.95,
+            location: file_path,
+            ecosystem: "ruby"
+          }
+        ]
+
+      name == "Cargo.toml" ->
+        [%{name: "cargo", type: :tool, confidence: 0.95, location: file_path, ecosystem: "rust"}]
+
+      name == "pyproject.toml" ->
+        [%{name: "pip", type: :tool, confidence: 0.90, location: file_path, ecosystem: "python"}]
+
+      ext == ".json" and String.contains?(file_path, "package") ->
+        [
+          %{
+            name: "npm",
+            type: :tool,
+            confidence: 0.85,
+            location: file_path,
+            ecosystem: "javascript"
+          }
+        ]
+
+      true ->
+        []
     end
   end
 
@@ -392,9 +505,9 @@ defmodule Singularity.TechnologyAgent do
     max_results = Keyword.get(opts, :max_results, 50)
 
     (frameworks ++ technologies)
-      |> Enum.uniq_by(& &1.name)
-      |> Enum.sort_by(& &1.confidence, :desc)
-      |> Enum.take(max_results)
+    |> Enum.uniq_by(& &1.name)
+    |> Enum.sort_by(& &1.confidence, :desc)
+    |> Enum.take(max_results)
   end
 
   defp generate_summary(technologies, frameworks, languages) do
@@ -409,40 +522,42 @@ defmodule Singularity.TechnologyAgent do
     recommendations = []
 
     # Add version recommendations
-    recommendations = Enum.reduce(technologies, recommendations, fn tech, acc ->
-      case check_outdated(tech) do
-        {:outdated, latest} -> acc ++ [{"Update #{tech.name} to #{latest}", :medium}]
-        :current -> acc
-      end
-    end)
+    recommendations =
+      Enum.reduce(technologies, recommendations, fn tech, acc ->
+        case check_outdated(tech) do
+          {:outdated, latest} -> acc ++ [{"Update #{tech.name} to #{latest}", :medium}]
+          :current -> acc
+        end
+      end)
 
     recommendations
   end
 
   defp check_outdated(_tech) do
-    :current  # Simplified for now
+    # Simplified for now
+    :current
   end
 
   defp get_primary_languages(technologies) do
     technologies
-      |> Enum.filter(&(&1.type == :language))
-      |> Enum.sort_by(& &1.confidence, :desc)
-      |> Enum.take(3)
+    |> Enum.filter(&(&1.type == :language))
+    |> Enum.sort_by(& &1.confidence, :desc)
+    |> Enum.take(3)
   end
 
   defp get_primary_frameworks(technologies) do
     technologies
-      |> Enum.filter(&(&1.type == :framework))
-      |> Enum.sort_by(& &1.confidence, :desc)
-      |> Enum.take(3)
+    |> Enum.filter(&(&1.type == :framework))
+    |> Enum.sort_by(& &1.confidence, :desc)
+    |> Enum.take(3)
   end
 
   defp get_primary_ecosystem(frameworks) do
     frameworks
-      |> Enum.map(& &1.ecosystem)
-      |> Enum.frequencies()
-      |> Enum.max_by(fn {_k, v} -> v end, fn -> {nil, 0} end)
-      |> elem(0)
+    |> Enum.map(& &1.ecosystem)
+    |> Enum.frequencies()
+    |> Enum.max_by(fn {_k, v} -> v end, fn -> {nil, 0} end)
+    |> elem(0)
   end
 
   defp get_file_type(file_path) do
@@ -451,14 +566,15 @@ defmodule Singularity.TechnologyAgent do
 
   defp count_imports(patterns) do
     patterns
-      |> Enum.map(&count_import_statements/1)
-      |> Enum.sum()
+    |> Enum.map(&count_import_statements/1)
+    |> Enum.sum()
   end
 
   defp count_import_statements(file_path) do
     case File.read(file_path) do
       {:ok, content} ->
-        (String.scan(content, ~r/\b(import|require|use|include|from)\b/) |> length())
+        String.scan(content, ~r/\b(import|require|use|include|from)\b/) |> length()
+
       {:error, _} ->
         0
     end
@@ -468,36 +584,38 @@ defmodule Singularity.TechnologyAgent do
 
   defp count_definitions(patterns, keyword) do
     patterns
-      |> Enum.map(fn path ->
-        try do
-          case File.read(path) do
-            {:ok, content} ->
-              Regex.scan(~r/\b#{keyword}\s+\w+/, content) |> length()
-            {:error, _} ->
-              0
-          end
-        rescue
-          _ -> 0
+    |> Enum.map(fn path ->
+      try do
+        case File.read(path) do
+          {:ok, content} ->
+            Regex.scan(~r/\b#{keyword}\s+\w+/, content) |> length()
+
+          {:error, _} ->
+            0
         end
-      end)
-      |> Enum.sum()
+      rescue
+        _ -> 0
+      end
+    end)
+    |> Enum.sum()
   end
 
   defp count_decorators(patterns) do
     patterns
-      |> Enum.map(fn path ->
-        try do
-          case File.read(path) do
-            {:ok, content} ->
-              Regex.scan(~r/@\w+/, content) |> length()
-            {:error, _} ->
-              0
-          end
-        rescue
-          _ -> 0
+    |> Enum.map(fn path ->
+      try do
+        case File.read(path) do
+          {:ok, content} ->
+            Regex.scan(~r/@\w+/, content) |> length()
+
+          {:error, _} ->
+            0
         end
-      end)
-      |> Enum.sum()
+      rescue
+        _ -> 0
+      end
+    end)
+    |> Enum.sum()
   end
 
   defp detect_package_managers(patterns) do

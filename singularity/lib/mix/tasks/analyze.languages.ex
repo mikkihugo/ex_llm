@@ -28,12 +28,13 @@ defmodule Mix.Tasks.Analyze.Languages do
 
   @impl Mix.Task
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args,
-      strict: [
-        rca_only: :boolean,
-        detailed: :boolean
-      ]
-    )
+    {opts, _, _} =
+      OptionParser.parse(args,
+        strict: [
+          rca_only: :boolean,
+          detailed: :boolean
+        ]
+      )
 
     rca_only = opts[:rca_only] || false
     detailed = opts[:detailed] || false
@@ -89,14 +90,17 @@ defmodule Mix.Tasks.Analyze.Languages do
 
     if !Enum.empty?(languages_with_rca) do
       Mix.shell().info("With RCA Metrics (#{length(languages_with_rca)}):")
+
       Enum.each(languages_with_rca, fn lang ->
         Mix.shell().info("  ✓ #{lang}")
       end)
+
       Mix.shell().info("")
     end
 
     if !Enum.empty?(languages_without_rca) do
       Mix.shell().info("AST-Only (#{length(languages_without_rca)}):")
+
       Enum.each(languages_without_rca, fn lang ->
         Mix.shell().info("  • #{lang}")
       end)
@@ -122,13 +126,17 @@ defmodule Mix.Tasks.Analyze.Languages do
 
       Mix.shell().info(
         String.pad_trailing(lang, 15) <>
-        " |" <> rca_mark <> "|" <> ast_mark <> "| " <> capabilities
+          " |" <> rca_mark <> "|" <> ast_mark <> "| " <> capabilities
       )
     end)
 
     Mix.shell().info("")
     Mix.shell().info("Legend:")
-    Mix.shell().info("  RCA      - Cyclomatic Complexity, Halstead metrics, Maintainability Index")
+
+    Mix.shell().info(
+      "  RCA      - Cyclomatic Complexity, Halstead metrics, Maintainability Index"
+    )
+
     Mix.shell().info("  AST-Grep - Function/class extraction, imports/exports, pattern matching")
   end
 

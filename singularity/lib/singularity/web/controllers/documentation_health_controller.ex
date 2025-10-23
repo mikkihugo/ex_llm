@@ -24,10 +24,15 @@ defmodule Singularity.Web.Controllers.DocumentationHealthController do
     case DocumentationBootstrap.check_documentation_health() do
       :healthy ->
         json(conn, %{status: "healthy", message: "Documentation system is running"})
+
       {:unhealthy, reason} ->
         conn
         |> put_status(:service_unavailable)
-        |> json(%{status: "unhealthy", message: "Documentation system is not healthy", reason: inspect(reason)})
+        |> json(%{
+          status: "unhealthy",
+          message: "Documentation system is not healthy",
+          reason: inspect(reason)
+        })
     end
   end
 
@@ -37,13 +42,12 @@ defmodule Singularity.Web.Controllers.DocumentationHealthController do
   def status(conn, _params) do
     with {:ok, pipeline_status} <- DocumentationPipeline.get_pipeline_status(),
          {:ok, quality_report} <- QualityEnforcer.get_quality_report() do
-      
       status = %{
         pipeline: pipeline_status,
         quality: quality_report,
         timestamp: DateTime.utc_now()
       }
-      
+
       json(conn, status)
     else
       {:error, reason} ->
@@ -60,10 +64,12 @@ defmodule Singularity.Web.Controllers.DocumentationHealthController do
     case DocumentationPipeline.run_full_pipeline() do
       {:ok, :pipeline_started} ->
         json(conn, %{message: "Full documentation upgrade started"})
+
       {:error, :pipeline_already_running} ->
         conn
         |> put_status(:conflict)
         |> json(%{error: "Pipeline is already running"})
+
       {:error, reason} ->
         conn
         |> put_status(:internal_server_error)
@@ -75,10 +81,12 @@ defmodule Singularity.Web.Controllers.DocumentationHealthController do
     case DocumentationPipeline.run_incremental_pipeline(files) do
       {:ok, :incremental_pipeline_started} ->
         json(conn, %{message: "Incremental documentation upgrade started", files: files})
+
       {:error, :pipeline_already_running} ->
         conn
         |> put_status(:conflict)
         |> json(%{error: "Pipeline is already running"})
+
       {:error, reason} ->
         conn
         |> put_status(:internal_server_error)

@@ -34,31 +34,34 @@ defmodule Singularity.Agents.RefactoringAgent do
 
     case task_name do
       "refactor_complexity" ->
-        {:ok, %{
-          type: :refactoring_task,
-          task: task_name,
-          message: "Complexity refactoring prepared",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :refactoring_task,
+           task: task_name,
+           message: "Complexity refactoring prepared",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
 
       "improve_quality" ->
-        {:ok, %{
-          type: :quality_improvement,
-          task: task_name,
-          message: "Quality improvements identified",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :quality_improvement,
+           task: task_name,
+           message: "Quality improvements identified",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
 
       _ ->
-        {:ok, %{
-          type: :refactoring_task,
-          task: task_name,
-          message: "Refactoring Agent processed task",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :refactoring_task,
+           task: task_name,
+           message: "Refactoring Agent processed task",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
     end
   end
 end

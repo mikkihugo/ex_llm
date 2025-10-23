@@ -131,6 +131,7 @@ defmodule Singularity.Agents.RemediationEngine do
 
   require Logger
   alias Singularity.Storage.{RAGCodeGenerator, Store}
+
   @doc """
   Remediate all issues in a file.
 
@@ -150,21 +151,22 @@ defmodule Singularity.Agents.RemediationEngine do
     with :ok <- File.exists?(file_path) |> if(do: :ok, else: {:error, :file_not_found}),
          {:ok, content} <- File.read(file_path),
          {:ok, fixes} <- generate_fixes(file_path, opts) do
-
       # Create backup if requested
       backup_path = if backup and not dry_run, do: create_backup(file_path), else: nil
 
       # Apply fixes
-      result = if auto_apply or dry_run do
-        apply_fixes_batch(content, fixes, opts)
-      else
-        {:ok, %{
-          fixes_generated: length(fixes),
-          fixes_applied: 0,
-          requires_approval: true,
-          fixes: fixes
-        }}
-      end
+      result =
+        if auto_apply or dry_run do
+          apply_fixes_batch(content, fixes, opts)
+        else
+          {:ok,
+           %{
+             fixes_generated: length(fixes),
+             fixes_applied: 0,
+             requires_approval: true,
+             fixes: fixes
+           }}
+        end
 
       case result do
         {:ok, %{new_content: new_content}} ->
@@ -188,12 +190,13 @@ defmodule Singularity.Agents.RemediationEngine do
             elapsed_ms: elapsed
           )
 
-          {:ok, %{
-            fixes_applied: length(fixes),
-            issues_resolved: length(fixes),
-            backup_path: backup_path,
-            elapsed_ms: elapsed
-          }}
+          {:ok,
+           %{
+             fixes_applied: length(fixes),
+             issues_resolved: length(fixes),
+             backup_path: backup_path,
+             elapsed_ms: elapsed
+           }}
 
         {:ok, info} ->
           {:ok, info}
@@ -202,7 +205,11 @@ defmodule Singularity.Agents.RemediationEngine do
           # Restore backup if fix failed
           if backup_path && File.exists?(backup_path) do
             File.cp!(backup_path, file_path)
-            Logger.warning("Remediation failed, restored from backup", file: file_path, reason: reason)
+
+            Logger.warning("Remediation failed, restored from backup",
+              file: file_path,
+              reason: reason
+            )
           end
 
           {:error, reason}
@@ -220,10 +227,12 @@ defmodule Singularity.Agents.RemediationEngine do
   def remediate_batch(file_paths, opts \\ []) do
     Logger.info("Starting batch remediation", file_count: length(file_paths))
 
-    results = file_paths
-      |> Task.async_stream(fn file_path ->
-        remediate_file(file_path, opts)
-      end, max_concurrency: 5, timeout: 30_000)
+    results =
+      file_paths
+      |> Task.async_stream(
+        fn file_path ->
+          remediate_file(file_path, opts)
+        end, max_concurrency: 5, timeout: 30_000)
       |> Enum.map(fn
         {:ok, result} -> result
         {:exit, reason} -> {:error, reason}
@@ -238,12 +247,13 @@ defmodule Singularity.Agents.RemediationEngine do
       errors: error_count
     )
 
-    {:ok, %{
-      total_files: length(file_paths),
-      success: success_count,
-      errors: error_count,
-      results: results
-    }}
+    {:ok,
+     %{
+       total_files: length(file_paths),
+       success: success_count,
+       errors: error_count,
+       results: results
+     }}
   end
 
   @doc """
@@ -254,8 +264,8 @@ defmodule Singularity.Agents.RemediationEngine do
          {:ok, content} <- File.read(file_path),
          language <- detect_language(file_path),
          {:ok, issues} <- detect_issues(content, language) do
-
-      fixes = issues
+      fixes =
+        issues
         |> Enum.map(&generate_fix_for_issue(&1, language))
         |> Enum.filter(&(&1 != nil))
 
@@ -300,15 +310,17 @@ defmodule Singularity.Agents.RemediationEngine do
       syntax_valid: check_syntax(new_content, language),
       no_regressions: check_for_regressions(original_content, new_content),
       formatting_ok: check_formatting(new_content, language),
-      tests_pass: true  # Would run actual tests
+      # Would run actual tests
+      tests_pass: true
     }
 
     all_valid = Enum.all?(validation_results, fn {_k, v} -> v end)
 
-    {:ok, %{
-      valid: all_valid,
-      details: validation_results
-    }}
+    {:ok,
+     %{
+       valid: all_valid,
+       details: validation_results
+     }}
   end
 
   # Private Helpers
@@ -317,32 +329,45 @@ defmodule Singularity.Agents.RemediationEngine do
     issues = []
 
     # Check for missing documentation
-    issues = if check_missing_moduledoc(content, language) do
-      issues ++ [%{type: :missing_documentation, severity: :high, description: "Missing @moduledoc"}]
-    else
-      issues
-    end
+    issues =
+      if check_missing_moduledoc(content, language) do
+        issues ++
+          [%{type: :missing_documentation, severity: :high, description: "Missing @moduledoc"}]
+      else
+        issues
+      end
 
     # Check for long functions
-    issues = if has_long_functions(content, language) do
-      issues ++ [%{type: :refactoring, severity: :medium, description: "Function exceeds 20 lines"}]
-    else
-      issues
-    end
+    issues =
+      if has_long_functions(content, language) do
+        issues ++
+          [%{type: :refactoring, severity: :medium, description: "Function exceeds 20 lines"}]
+      else
+        issues
+      end
 
     # Check for unused imports
-    issues = if has_unused_imports(content, language) do
-      issues ++ [%{type: :cleanup, severity: :low, description: "Unused imports detected"}]
-    else
-      issues
-    end
+    issues =
+      if has_unused_imports(content, language) do
+        issues ++ [%{type: :cleanup, severity: :low, description: "Unused imports detected"}]
+      else
+        issues
+      end
 
     # Check for complex conditions
-    issues = if has_complex_conditions(content, language) do
-      issues ++ [%{type: :refactoring, severity: :medium, description: "Complex conditions should be extracted"}]
-    else
-      issues
-    end
+    issues =
+      if has_complex_conditions(content, language) do
+        issues ++
+          [
+            %{
+              type: :refactoring,
+              severity: :medium,
+              description: "Complex conditions should be extracted"
+            }
+          ]
+      else
+        issues
+      end
 
     {:ok, issues}
   rescue
@@ -387,25 +412,28 @@ defmodule Singularity.Agents.RemediationEngine do
   end
 
   defp apply_fixes_batch(content, fixes, _opts) do
-    new_content = Enum.reduce(fixes, content, fn fix, acc ->
-      case apply_auto_fix(acc, fix) do
-        {:ok, updated} -> updated
-        {:error, _} -> acc
-      end
-    end)
+    new_content =
+      Enum.reduce(fixes, content, fn fix, acc ->
+        case apply_auto_fix(acc, fix) do
+          {:ok, updated} -> updated
+          {:error, _} -> acc
+        end
+      end)
 
-    {:ok, %{
-      new_content: new_content,
-      fixes_applied: length(fixes),
-      issues_resolved: length(fixes)
-    }}
+    {:ok,
+     %{
+       new_content: new_content,
+       fixes_applied: length(fixes),
+       issues_resolved: length(fixes)
+     }}
   end
 
   defp apply_auto_fix(content, fix) do
     case fix.id do
       "add_moduledoc" -> {:ok, prepend_moduledoc(content, "")}
       "remove_unused_imports" -> {:ok, remove_unused_imports(content)}
-      "refactor_function" -> {:ok, content}  # Complex - requires LLM
+      # Complex - requires LLM
+      "refactor_function" -> {:ok, content}
       _ -> {:error, :unknown_fix}
     end
   end
@@ -438,8 +466,10 @@ defmodule Singularity.Agents.RemediationEngine do
     case language do
       :elixir ->
         Regex.scan(~r/def\s+\w+.*?end/s, content)
-          |> Enum.any?(fn [match] -> String.split(match, "\n") |> length() > 20 end)
-      _ -> false
+        |> Enum.any?(fn [match] -> String.split(match, "\n") |> length() > 20 end)
+
+      _ ->
+        false
     end
   end
 
@@ -510,7 +540,8 @@ defmodule Singularity.Agents.RemediationEngine do
   end
 
   defp check_formatting(_content, _language) do
-    true  # For unsupported languages, assume formatting is OK
+    # For unsupported languages, assume formatting is OK
+    true
   end
 
   defp count_functions(content) do
@@ -522,15 +553,16 @@ defmodule Singularity.Agents.RemediationEngine do
     # Check if parentheses, brackets, and braces are balanced
     chars = String.graphemes(content)
 
-    result = Enum.reduce(chars, 0, fn
-      "(", acc -> acc + 1
-      ")", acc -> acc - 1
-      "[", acc -> acc + 1
-      "]", acc -> acc - 1
-      "{", acc -> acc + 1
-      "}", acc -> acc - 1
-      _, acc -> acc
-    end)
+    result =
+      Enum.reduce(chars, 0, fn
+        "(", acc -> acc + 1
+        ")", acc -> acc - 1
+        "[", acc -> acc + 1
+        "]", acc -> acc - 1
+        "{", acc -> acc + 1
+        "}", acc -> acc - 1
+        _, acc -> acc
+      end)
 
     result == 0
   end

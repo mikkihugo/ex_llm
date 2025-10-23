@@ -24,7 +24,8 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Shell do
   require Logger
 
   @default_timeout 120_000
-  @max_output_size 1_000_000  # 1MB
+  # 1MB
+  @max_output_size 1_000_000
 
   @doc """
   Execute shell command safely.
@@ -69,27 +70,28 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Shell do
     binary = List.first(cmd)
     args = Enum.drop(cmd, 1)
 
-    task = Task.async(fn ->
-      try do
-        system_opts = [
-          cd: cwd,
-          env: map_to_env_list(env),
-          stderr_to_stdout: !capture_stderr,
-          parallelism: true
-        ]
+    task =
+      Task.async(fn ->
+        try do
+          system_opts = [
+            cd: cwd,
+            env: map_to_env_list(env),
+            stderr_to_stdout: !capture_stderr,
+            parallelism: true
+          ]
 
-        if capture_stderr do
-          # Use Port for separate stderr capture
-          port_exec(binary, args, system_opts)
-        else
-          # Use System.cmd for simplicity
-          System.cmd(binary, args, system_opts)
+          if capture_stderr do
+            # Use Port for separate stderr capture
+            port_exec(binary, args, system_opts)
+          else
+            # Use System.cmd for simplicity
+            System.cmd(binary, args, system_opts)
+          end
+        rescue
+          e ->
+            {:error, {:execution_failed, Exception.message(e)}}
         end
-      rescue
-        e ->
-          {:error, {:execution_failed, Exception.message(e)}}
-      end
-    end)
+      end)
 
     case Task.yield(task, timeout) || Task.shutdown(task, :brutal_kill) do
       {:ok, {:error, reason}} ->

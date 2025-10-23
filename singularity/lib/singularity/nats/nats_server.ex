@@ -28,26 +28,27 @@ defmodule Singularity.NatsServer do
   alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
   @type complexity :: :simple | :medium | :complex
   @type service :: :detection | :llm | :templates | :tools | :prompts
-  @type request_type :: :detect_framework | :generate_code | :analyze_quality | :optimize_prompt | :execute_tool
+  @type request_type ::
+          :detect_framework | :generate_code | :analyze_quality | :optimize_prompt | :execute_tool
 
   @type unified_request :: %{
-    required(:type) => request_type(),
-    required(:data) => map(),
-    optional(:complexity) => complexity(),
-    optional(:service) => service(),
-    optional(:correlation_id) => String.t(),
-    optional(:timeout) => non_neg_integer()
-  }
+          required(:type) => request_type(),
+          required(:data) => map(),
+          optional(:complexity) => complexity(),
+          optional(:service) => service(),
+          optional(:correlation_id) => String.t(),
+          optional(:timeout) => non_neg_integer()
+        }
 
   @type unified_response :: %{
-    required(:success) => boolean(),
-    required(:data) => map(),
-    optional(:error) => String.t(),
-    optional(:service_used) => service(),
-    optional(:complexity) => complexity(),
-    optional(:correlation_id) => String.t(),
-    optional(:metrics) => map()
-  }
+          required(:success) => boolean(),
+          required(:data) => map(),
+          optional(:error) => String.t(),
+          optional(:service_used) => service(),
+          optional(:complexity) => complexity(),
+          optional(:correlation_id) => String.t(),
+          optional(:metrics) => map()
+        }
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -67,17 +68,20 @@ defmodule Singularity.NatsServer do
     Process.sleep(100)
 
     # Subscribe to NATS request subjects
-    Enum.each([
-      "nats.request.direct",
-      "nats.request.simple", 
-      "nats.request.medium",
-      "nats.request.complex"
-    ], fn subject ->
-      case Singularity.NatsClient.subscribe(subject) do
-        {:ok, _subscription_id} -> Logger.info("NatsServer subscribed to: #{subject}")
-        {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
+    Enum.each(
+      [
+        "nats.request.direct",
+        "nats.request.simple",
+        "nats.request.medium",
+        "nats.request.complex"
+      ],
+      fn subject ->
+        case Singularity.NatsClient.subscribe(subject) do
+          {:ok, _subscription_id} -> Logger.info("NatsServer subscribed to: #{subject}")
+          {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
+        end
       end
-    end)
+    )
 
     # Subscribe to engine discovery subjects (for introspection/autonomy)
     # EngineDiscoveryHandler should use NatsClient internally
@@ -128,25 +132,28 @@ defmodule Singularity.NatsServer do
 
         # Add performance metrics
         end_time = System.monotonic_time(:millisecond)
-        response = Map.put(response, :metrics, %{
-          processing_time_ms: end_time - start_time,
-          service: service,
-          complexity: complexity
-        })
+
+        response =
+          Map.put(response, :metrics, %{
+            processing_time_ms: end_time - start_time,
+            service: service,
+            complexity: complexity
+          })
 
         # Send response back via NATS
         Singularity.NatsClient.publish(reply_to, Jason.encode!(response))
       end
-
     rescue
       error ->
         Logger.error("NATS Server error", error: error, topic: topic)
+
         error_response = %{
           success: false,
           error: Exception.message(error),
           data: %{},
           correlation_id: nil
         }
+
         Singularity.NatsClient.publish(reply_to, Jason.encode!(error_response))
     end
   end
@@ -212,17 +219,28 @@ defmodule Singularity.NatsServer do
   defp extract_complexity_from_topic("nats.request.simple"), do: :simple
   defp extract_complexity_from_topic("nats.request.medium"), do: :medium
   defp extract_complexity_from_topic("nats.request.complex"), do: :complex
-  defp extract_complexity_from_topic(_), do: :medium  # Default
+  # Default
+  defp extract_complexity_from_topic(_), do: :medium
 
   # Determine which service should handle the request
   defp determine_service(request, complexity) do
     case request["type"] do
-      "detect_framework" -> :detection
-      "generate_code" -> :llm
-      "analyze_quality" -> :tools
-      "optimize_prompt" -> :prompts
-      "execute_tool" -> :tools
-      _ -> 
+      "detect_framework" ->
+        :detection
+
+      "generate_code" ->
+        :llm
+
+      "analyze_quality" ->
+        :tools
+
+      "optimize_prompt" ->
+        :prompts
+
+      "execute_tool" ->
+        :tools
+
+      _ ->
         # Auto-determine based on content
         if String.contains?(request["data"]["content"] || "", ["framework", "detect"]) do
           :detection
@@ -285,20 +303,24 @@ defmodule Singularity.NatsServer do
     prompt_type = request["data"]["prompt_type"] || "general"
 
     # Call prompt engine via NATS
-    case Singularity.NatsClient.request("prompt.generate", Jason.encode!(%{
-      context: context,
-      language: language,
-      prompt_type: prompt_type,
-      complexity: complexity
-    }), timeout: 10_000) do
+    case Singularity.NatsClient.request(
+           "prompt.generate",
+           Jason.encode!(%{
+             context: context,
+             language: language,
+             prompt_type: prompt_type,
+             complexity: complexity
+           }), timeout: 10_000) do
       {:ok, response} ->
         case Jason.decode(response.data) do
-          {:ok, data} -> {:ok, data}
-          {:error, reason} -> 
+          {:ok, data} ->
+            {:ok, data}
+
+          {:error, reason} ->
             Logger.error("Failed to decode prompt response", reason: reason)
             {:error, :json_decode_error}
         end
-      
+
       {:error, reason} ->
         Logger.error("Prompt engine NATS call failed", reason: reason)
         # Fallback to simple prompt generation
@@ -343,19 +365,24 @@ defmodule Singularity.NatsServer do
       correlation_id: correlation_id
     }
 
-    subject = case complexity do
-      :simple -> "nats.request.simple"
-      :medium -> "nats.request.medium"
-      :complex -> "nats.request.complex"
-    end
+    subject =
+      case complexity do
+        :simple -> "nats.request.simple"
+        :medium -> "nats.request.medium"
+        :complex -> "nats.request.complex"
+      end
 
-    case Singularity.NatsClient.request("nats.request.direct", Jason.encode!(request), timeout: timeout) do
+    case Singularity.NatsClient.request("nats.request.direct", Jason.encode!(request),
+           timeout: timeout
+         ) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data}
           {:error, reason} -> {:error, {:json_decode, reason}}
         end
-      {:error, reason} -> {:error, {:nats_request, reason}}
+
+      {:error, reason} ->
+        {:error, {:nats_request, reason}}
     end
   end
 

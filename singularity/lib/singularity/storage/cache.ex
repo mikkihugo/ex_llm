@@ -394,9 +394,9 @@ defmodule Singularity.Cache do
       clear(:embedding),
       clear(:analysis)
     ]
-    
+
     failed = Enum.filter(results, &match?({:error, _}, &1))
-    
+
     if Enum.empty?(failed) do
       Logger.info("Successfully cleared all caches")
       :ok

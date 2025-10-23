@@ -185,7 +185,8 @@ defmodule Singularity.Search.SearchAnalytics do
       cache_hit: cache_hit,
       fallback_used: fallback_used,
       timestamp: DateTime.utc_now(),
-      user_satisfaction: nil  # Will be filled by rating
+      # Will be filled by rating
+      user_satisfaction: nil
     }
 
     case Repo.insert(metric) do
@@ -206,6 +207,7 @@ defmodule Singularity.Search.SearchAnalytics do
           query: query,
           reason: reason
         )
+
         {:error, reason}
     end
   rescue
@@ -214,6 +216,7 @@ defmodule Singularity.Search.SearchAnalytics do
         query: query,
         error: inspect(e)
       )
+
       {:error, :recording_failed}
   end
 
@@ -240,6 +243,7 @@ defmodule Singularity.Search.SearchAnalytics do
             index: result_index,
             rating: rating
           )
+
           :ok
 
         {:error, reason} ->
@@ -247,6 +251,7 @@ defmodule Singularity.Search.SearchAnalytics do
             query: query,
             reason: reason
           )
+
           {:error, reason}
       end
     else
@@ -255,6 +260,7 @@ defmodule Singularity.Search.SearchAnalytics do
           query: query,
           reason: reason
         )
+
         {:error, reason}
     end
   end
@@ -265,31 +271,41 @@ defmodule Singularity.Search.SearchAnalytics do
   def get_search_metrics(query) do
     with {:ok, searches} <- find_all_searches(query) do
       elapsed_times = Enum.map(searches, & &1.elapsed_ms)
-      ratings = searches
+
+      ratings =
+        searches
         |> Enum.map(& &1.user_satisfaction)
         |> Enum.reject(&is_nil/1)
 
       cache_hits = Enum.count(searches, & &1.cache_hit)
       fallback_uses = Enum.count(searches, & &1.fallback_used)
-      models = searches
+
+      models =
+        searches
         |> Enum.map(& &1.embedding_model)
         |> Enum.frequencies()
         |> Enum.max_by(fn {_k, v} -> v end, fn -> {nil, 0} end)
         |> elem(0)
 
-      {:ok, %{
-        query: query,
-        total_searches: length(searches),
-        avg_execution_time_ms: if(Enum.empty?(elapsed_times), do: 0, else: div(Enum.sum(elapsed_times), length(elapsed_times))),
-        p95_execution_time_ms: percentile(elapsed_times, 0.95),
-        max_execution_time_ms: Enum.max(elapsed_times, fn -> 0 end),
-        avg_results_count: avg(Enum.map(searches, & &1.results_count)),
-        cache_hit_rate: cache_hits / length(searches),
-        fallback_rate: fallback_uses / length(searches),
-        avg_user_rating: if(Enum.empty?(ratings), do: 0.0, else: Enum.sum(ratings) / length(ratings)),
-        preferred_model: models,
-        trending: is_trending(query)
-      }}
+      {:ok,
+       %{
+         query: query,
+         total_searches: length(searches),
+         avg_execution_time_ms:
+           if(Enum.empty?(elapsed_times),
+             do: 0,
+             else: div(Enum.sum(elapsed_times), length(elapsed_times))
+           ),
+         p95_execution_time_ms: percentile(elapsed_times, 0.95),
+         max_execution_time_ms: Enum.max(elapsed_times, fn -> 0 end),
+         avg_results_count: avg(Enum.map(searches, & &1.results_count)),
+         cache_hit_rate: cache_hits / length(searches),
+         fallback_rate: fallback_uses / length(searches),
+         avg_user_rating:
+           if(Enum.empty?(ratings), do: 0.0, else: Enum.sum(ratings) / length(ratings)),
+         preferred_model: models,
+         trending: is_trending(query)
+       }}
     end
   end
 
@@ -299,28 +315,33 @@ defmodule Singularity.Search.SearchAnalytics do
   def get_performance_report do
     with {:ok, all_searches} <- fetch_all_searches() do
       elapsed_times = Enum.map(all_searches, & &1.elapsed_ms)
-      ratings = all_searches
+
+      ratings =
+        all_searches
         |> Enum.map(& &1.user_satisfaction)
         |> Enum.reject(&is_nil/1)
 
-      slow_queries = find_slow_queries(all_searches, 500)  # > 500ms
+      # > 500ms
+      slow_queries = find_slow_queries(all_searches, 500)
       cache_hits = Enum.count(all_searches, & &1.cache_hit)
       fallback_uses = Enum.count(all_searches, & &1.fallback_used)
 
-      {:ok, %{
-        total_searches: length(all_searches),
-        avg_query_time_ms: div(Enum.sum(elapsed_times), max(length(elapsed_times), 1)),
-        p50_query_time_ms: percentile(elapsed_times, 0.50),
-        p95_query_time_ms: percentile(elapsed_times, 0.95),
-        p99_query_time_ms: percentile(elapsed_times, 0.99),
-        slowest_query_ms: Enum.max(elapsed_times, fn -> 0 end),
-        cache_hit_rate: cache_hits / max(length(all_searches), 1),
-        fallback_rate: fallback_uses / max(length(all_searches), 1),
-        avg_user_satisfaction: if(Enum.empty?(ratings), do: 0.0, else: Enum.sum(ratings) / length(ratings)),
-        slow_queries: Enum.map(slow_queries, & &1.query) |> Enum.uniq(),
-        trending_searches: get_trending_searches(all_searches, 7),
-        optimization_opportunities: generate_optimization_recommendations(all_searches)
-      }}
+      {:ok,
+       %{
+         total_searches: length(all_searches),
+         avg_query_time_ms: div(Enum.sum(elapsed_times), max(length(elapsed_times), 1)),
+         p50_query_time_ms: percentile(elapsed_times, 0.50),
+         p95_query_time_ms: percentile(elapsed_times, 0.95),
+         p99_query_time_ms: percentile(elapsed_times, 0.99),
+         slowest_query_ms: Enum.max(elapsed_times, fn -> 0 end),
+         cache_hit_rate: cache_hits / max(length(all_searches), 1),
+         fallback_rate: fallback_uses / max(length(all_searches), 1),
+         avg_user_satisfaction:
+           if(Enum.empty?(ratings), do: 0.0, else: Enum.sum(ratings) / length(ratings)),
+         slow_queries: Enum.map(slow_queries, & &1.query) |> Enum.uniq(),
+         trending_searches: get_trending_searches(all_searches, 7),
+         optimization_opportunities: generate_optimization_recommendations(all_searches)
+       }}
     else
       {:error, reason} ->
         Logger.warning("Failed to generate performance report", reason: reason)
@@ -336,69 +357,80 @@ defmodule Singularity.Search.SearchAnalytics do
       recommendations = []
 
       # Check cache hit rate
-      recommendations = if report.cache_hit_rate < 0.3 do
-        recommendations ++ [
-          %{
-            priority: :high,
-            area: "caching",
-            issue: "Cache hit rate #{round(report.cache_hit_rate * 100)}% is below target (40%)",
-            recommendation: "Increase cache TTL or cache more query patterns",
-            estimated_improvement: "10-20% faster queries"
-          }
-        ]
-      else
-        recommendations
-      end
+      recommendations =
+        if report.cache_hit_rate < 0.3 do
+          recommendations ++
+            [
+              %{
+                priority: :high,
+                area: "caching",
+                issue:
+                  "Cache hit rate #{round(report.cache_hit_rate * 100)}% is below target (40%)",
+                recommendation: "Increase cache TTL or cache more query patterns",
+                estimated_improvement: "10-20% faster queries"
+              }
+            ]
+        else
+          recommendations
+        end
 
       # Check for slow queries
-      recommendations = if Enum.any?(report.slow_queries, fn q -> String.length(q) < 20 end) do
-        recommendations ++ [
-          %{
-            priority: :high,
-            area: "index_optimization",
-            issue: "Some short queries are slow (> 500ms)",
-            recommendation: "Add index for common short queries",
-            estimated_improvement: "5-10% faster for short queries"
-          }
-        ]
-      else
-        recommendations
-      end
+      recommendations =
+        if Enum.any?(report.slow_queries, fn q -> String.length(q) < 20 end) do
+          recommendations ++
+            [
+              %{
+                priority: :high,
+                area: "index_optimization",
+                issue: "Some short queries are slow (> 500ms)",
+                recommendation: "Add index for common short queries",
+                estimated_improvement: "5-10% faster for short queries"
+              }
+            ]
+        else
+          recommendations
+        end
 
       # Check user satisfaction
-      recommendations = if report.avg_user_satisfaction < 3.5 do
-        recommendations ++ [
-          %{
-            priority: :medium,
-            area: "relevance",
-            issue: "User satisfaction #{round(report.avg_user_satisfaction * 10) / 10} is below 4.0",
-            recommendation: "Improve embedding or ranking algorithm",
-            estimated_improvement: "Better result relevance"
-          }
-        ]
-      else
-        recommendations
-      end
+      recommendations =
+        if report.avg_user_satisfaction < 3.5 do
+          recommendations ++
+            [
+              %{
+                priority: :medium,
+                area: "relevance",
+                issue:
+                  "User satisfaction #{round(report.avg_user_satisfaction * 10) / 10} is below 4.0",
+                recommendation: "Improve embedding or ranking algorithm",
+                estimated_improvement: "Better result relevance"
+              }
+            ]
+        else
+          recommendations
+        end
 
       # Check fallback rate
-      recommendations = if report.fallback_rate > 0.1 do
-        recommendations ++ [
-          %{
-            priority: :medium,
-            area: "embedding_model",
-            issue: "Fallback rate #{round(report.fallback_rate * 100)}% is above target (5%)",
-            recommendation: "Improve primary embedding model reliability",
-            estimated_improvement: "Reduced latency variance"
-          }
-        ]
-      else
-        recommendations
-      end
+      recommendations =
+        if report.fallback_rate > 0.1 do
+          recommendations ++
+            [
+              %{
+                priority: :medium,
+                area: "embedding_model",
+                issue: "Fallback rate #{round(report.fallback_rate * 100)}% is above target (5%)",
+                recommendation: "Improve primary embedding model reliability",
+                estimated_improvement: "Reduced latency variance"
+              }
+            ]
+        else
+          recommendations
+        end
 
-      {:ok, %{
-        recommendations: recommendations,
-        execution_summary: report
-      }}
+      {:ok,
+       %{
+         recommendations: recommendations,
+         execution_summary: report
+       }}
     end
   end
 
@@ -412,25 +444,28 @@ defmodule Singularity.Search.SearchAnalytics do
     days = Keyword.get(opts, :days, 7)
 
     with {:ok, recent_searches} <- fetch_recent_searches(days) do
-      query_frequencies = recent_searches
+      query_frequencies =
+        recent_searches
         |> Enum.map(& &1.query)
         |> Enum.frequencies()
         |> Enum.sort_by(fn {_k, v} -> v end, :desc)
 
-      trending = query_frequencies
+      trending =
+        query_frequencies
         |> Enum.take(10)
         |> Enum.map(&elem(&1, 0))
 
       search_velocity = div(length(recent_searches), max(days, 1))
 
-      {:ok, %{
-        period_days: days,
-        total_searches: length(recent_searches),
-        search_velocity_per_day: search_velocity,
-        trending_queries: trending,
-        emerging_patterns: detect_emerging_patterns(recent_searches),
-        declining_searches: detect_declining_searches(recent_searches)
-      }}
+      {:ok,
+       %{
+         period_days: days,
+         total_searches: length(recent_searches),
+         search_velocity_per_day: search_velocity,
+         trending_queries: trending,
+         emerging_patterns: detect_emerging_patterns(recent_searches),
+         declining_searches: detect_declining_searches(recent_searches)
+       }}
     end
   end
 
@@ -438,12 +473,12 @@ defmodule Singularity.Search.SearchAnalytics do
 
   defp find_latest_search(query) do
     case Repo.one(
-      from(sm in SearchMetric,
-        where: sm.query == ^query,
-        order_by: [desc: sm.inserted_at],
-        limit: 1
-      )
-    ) do
+           from(sm in SearchMetric,
+             where: sm.query == ^query,
+             order_by: [desc: sm.inserted_at],
+             limit: 1
+           )
+         ) do
       nil -> {:error, :not_found}
       metric -> {:ok, metric}
     end
@@ -455,12 +490,14 @@ defmodule Singularity.Search.SearchAnalytics do
 
   defp find_all_searches(query) do
     try do
-      metrics = Repo.all(
-        from(sm in SearchMetric,
-          where: sm.query == ^query,
-          order_by: [desc: sm.inserted_at]
+      metrics =
+        Repo.all(
+          from(sm in SearchMetric,
+            where: sm.query == ^query,
+            order_by: [desc: sm.inserted_at]
+          )
         )
-      )
+
       {:ok, metrics}
     rescue
       e ->
@@ -471,11 +508,13 @@ defmodule Singularity.Search.SearchAnalytics do
 
   defp fetch_all_searches do
     try do
-      metrics = Repo.all(
-        from(sm in SearchMetric,
-          order_by: [desc: sm.inserted_at]
+      metrics =
+        Repo.all(
+          from(sm in SearchMetric,
+            order_by: [desc: sm.inserted_at]
+          )
         )
-      )
+
       {:ok, metrics}
     rescue
       e ->
@@ -488,12 +527,14 @@ defmodule Singularity.Search.SearchAnalytics do
     try do
       cutoff_time = DateTime.utc_now() |> DateTime.add(-days, :day)
 
-      metrics = Repo.all(
-        from(sm in SearchMetric,
-          where: sm.inserted_at >= ^cutoff_time,
-          order_by: [desc: sm.inserted_at]
+      metrics =
+        Repo.all(
+          from(sm in SearchMetric,
+            where: sm.inserted_at >= ^cutoff_time,
+            order_by: [desc: sm.inserted_at]
+          )
         )
-      )
+
       {:ok, metrics}
     rescue
       e ->
@@ -516,20 +557,21 @@ defmodule Singularity.Search.SearchAnalytics do
   end
 
   defp is_trending(_query) do
-    false  # Simplified
+    # Simplified
+    false
   end
 
   defp find_slow_queries(searches, threshold_ms) do
-    Enum.filter(searches, & &1.elapsed_ms > threshold_ms)
+    Enum.filter(searches, &(&1.elapsed_ms > threshold_ms))
   end
 
   defp get_trending_searches(searches, days) do
     searches
-      |> Enum.map(& &1.query)
-      |> Enum.frequencies()
-      |> Enum.sort_by(fn {_k, v} -> v end, :desc)
-      |> Enum.take(5)
-      |> Enum.map(&elem(&1, 0))
+    |> Enum.map(& &1.query)
+    |> Enum.frequencies()
+    |> Enum.sort_by(fn {_k, v} -> v end, :desc)
+    |> Enum.take(5)
+    |> Enum.map(&elem(&1, 0))
   end
 
   defp generate_optimization_recommendations(_searches) do

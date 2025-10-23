@@ -1,19 +1,19 @@
 defmodule Singularity.Schemas.UsageEvent do
   @moduledoc """
   Usage events for tracking suggestion acceptance and learning patterns.
-  
+
   This schema tracks how users interact with suggestions from the meta-registry
   to improve the learning system over time.
-  
+
   ## Purpose:
-  
+
   - Track which suggestions are accepted vs rejected
   - Learn from user behavior to improve future suggestions
   - Build confidence scores for different suggestion types
   - Identify patterns that work well for specific codebases
-  
+
   ## Usage:
-  
+
       # Record a usage event
       {:ok, event} = UsageEvent.create(%{
         codebase_id: "my-app",
@@ -27,7 +27,7 @@ defmodule Singularity.Schemas.UsageEvent do
       acceptance_rate = UsageEvent.acceptance_rate("naming", "my-app")
       
   ## Schema Fields:
-  
+
   - `codebase_id` - Which codebase this event relates to
   - `category` - Type of suggestion (naming, architecture, pattern, etc.)
   - `suggestion` - The actual suggestion that was made
@@ -57,15 +57,21 @@ defmodule Singularity.Schemas.UsageEvent do
     usage_event
     |> cast(attrs, [:codebase_id, :category, :suggestion, :accepted, :context, :confidence])
     |> validate_required([:codebase_id, :category, :suggestion, :accepted])
-    |> validate_inclusion(:category, ["naming", "architecture", "pattern", "refactoring", "structure"])
+    |> validate_inclusion(:category, [
+      "naming",
+      "architecture",
+      "pattern",
+      "refactoring",
+      "structure"
+    ])
     |> validate_number(:confidence, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0)
   end
 
   @doc """
   Create a new usage event.
-  
+
   ## Examples
-  
+
       {:ok, event} = UsageEvent.create(%{
         codebase_id: "my-app",
         category: "naming",
@@ -115,6 +121,7 @@ defmodule Singularity.Schemas.UsageEvent do
     # For now, return placeholder that uses the parameter for logging
     require Logger
     Logger.debug("Getting stats for codebase=#{codebase_id}")
+
     %{
       total_events: 0,
       acceptance_rate: 0.0,

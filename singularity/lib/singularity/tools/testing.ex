@@ -789,7 +789,7 @@ defmodule Singularity.Tools.Testing do
     # Detect framework using Architecture Engine
     detected_framework = detect_testing_framework(language, path)
     effective_framework = framework || detected_framework
-    
+
     case language do
       "elixir" ->
         cmd = "mix test"
@@ -822,7 +822,7 @@ defmodule Singularity.Tools.Testing do
   defp build_coverage_command(language, format, path) do
     # Detect framework using Architecture Engine
     detected_framework = detect_testing_framework(language, path)
-    
+
     case language do
       "elixir" ->
         cmd = "mix test --cover"
@@ -1009,21 +1009,25 @@ defmodule Singularity.Tools.Testing do
       end
 
     # Use target to filter patterns more specifically
-    target_patterns = if target do
-      # Add target-specific patterns
-      case language do
-        "elixir" -> 
-          ["test/**/#{target}_test.exs", "test/**/#{target}_test.ex"] ++ test_patterns
-        "javascript" -> 
-          ["**/#{target}.test.js", "**/#{target}.spec.js"] ++ test_patterns
-        "python" -> 
-          ["**/test_#{target}.py", "**/#{target}_test.py"] ++ test_patterns
-        _ -> 
-          ["**/*#{target}*test*", "**/test/**/*#{target}*"] ++ test_patterns
+    target_patterns =
+      if target do
+        # Add target-specific patterns
+        case language do
+          "elixir" ->
+            ["test/**/#{target}_test.exs", "test/**/#{target}_test.ex"] ++ test_patterns
+
+          "javascript" ->
+            ["**/#{target}.test.js", "**/#{target}.spec.js"] ++ test_patterns
+
+          "python" ->
+            ["**/test_#{target}.py", "**/#{target}_test.py"] ++ test_patterns
+
+          _ ->
+            ["**/*#{target}*test*", "**/test/**/*#{target}*"] ++ test_patterns
+        end
+      else
+        test_patterns
       end
-    else
-      test_patterns
-    end
 
     # Filter by type if specified
     filtered_patterns =
@@ -1129,37 +1133,41 @@ defmodule Singularity.Tools.Testing do
     module_name = extract_module_name(target)
 
     # Generate test code based on type
-    test_setup = case type do
-      "unit" -> 
-        """
-        setup do
-          # Unit test setup - minimal dependencies
-          :ok
-        end
-        """
-      "integration" -> 
-        """
-        setup do
-          # Integration test setup - database, external services
-          Ecto.Adapters.SQL.Sandbox.checkout(Singularity.Repo)
-          :ok
-        end
-        """
-      "e2e" -> 
-        """
-        setup do
-          # End-to-end test setup - full application stack
-          :ok
-        end
-        """
-      _ -> 
-        """
-        setup do
-          # Default test setup
-          :ok
-        end
-        """
-    end
+    test_setup =
+      case type do
+        "unit" ->
+          """
+          setup do
+            # Unit test setup - minimal dependencies
+            :ok
+          end
+          """
+
+        "integration" ->
+          """
+          setup do
+            # Integration test setup - database, external services
+            Ecto.Adapters.SQL.Sandbox.checkout(Singularity.Repo)
+            :ok
+          end
+          """
+
+        "e2e" ->
+          """
+          setup do
+            # End-to-end test setup - full application stack
+            :ok
+          end
+          """
+
+        _ ->
+          """
+          setup do
+            # Default test setup
+            :ok
+          end
+          """
+      end
 
     case template do
       "comprehensive" ->
@@ -1211,88 +1219,100 @@ defmodule Singularity.Tools.Testing do
 
   defp generate_javascript_test(target, type, framework, template) do
     # Generate test code based on type and template
-    test_imports = case {framework, type} do
-      {"jest", "unit"} -> 
-        "import { render, screen } from '@testing-library/react';\nimport '@testing-library/jest-dom';"
-      {"jest", "integration"} -> 
-        "import { render, screen, waitFor } from '@testing-library/react';\nimport '@testing-library/jest-dom';\nimport { server } from './mocks/server';"
-      {"jest", "e2e"} -> 
-        "import { render, screen, waitFor } from '@testing-library/react';\nimport '@testing-library/jest-dom';\nimport { setupServer } from 'msw/node';"
-      {"mocha", _} -> 
-        "import { expect } from 'chai';\nimport { describe, it, beforeEach, afterEach } from 'mocha';"
-      _ -> 
-        ""
-    end
+    test_imports =
+      case {framework, type} do
+        {"jest", "unit"} ->
+          "import { render, screen } from '@testing-library/react';\nimport '@testing-library/jest-dom';"
 
-    test_setup = case type do
-      "unit" -> 
-        """
-        beforeEach(() => {
-          // Unit test setup
-        });
-        """
-      "integration" -> 
-        """
-        beforeEach(() => {
-          // Integration test setup
-          server.listen();
-        });
-        
-        afterEach(() => {
-          server.resetHandlers();
-        });
-        """
-      "e2e" -> 
-        """
-        beforeAll(() => {
-          // E2E test setup
-        });
-        """
-      _ -> 
-        ""
-    end
+        {"jest", "integration"} ->
+          "import { render, screen, waitFor } from '@testing-library/react';\nimport '@testing-library/jest-dom';\nimport { server } from './mocks/server';"
+
+        {"jest", "e2e"} ->
+          "import { render, screen, waitFor } from '@testing-library/react';\nimport '@testing-library/jest-dom';\nimport { setupServer } from 'msw/node';"
+
+        {"mocha", _} ->
+          "import { expect } from 'chai';\nimport { describe, it, beforeEach, afterEach } from 'mocha';"
+
+        _ ->
+          ""
+      end
+
+    test_setup =
+      case type do
+        "unit" ->
+          """
+          beforeEach(() => {
+            // Unit test setup
+          });
+          """
+
+        "integration" ->
+          """
+          beforeEach(() => {
+            // Integration test setup
+            server.listen();
+          });
+
+          afterEach(() => {
+            server.resetHandlers();
+          });
+          """
+
+        "e2e" ->
+          """
+          beforeAll(() => {
+            // E2E test setup
+          });
+          """
+
+        _ ->
+          ""
+      end
 
     # Generate test code based on template
-    test_content = case template do
-      "comprehensive" ->
-        """
-        describe('#{target}', () => {
-          #{test_setup}
-          
-          test('should work correctly', () => {
-            expect(true).toBe(true);
+    test_content =
+      case template do
+        "comprehensive" ->
+          """
+          describe('#{target}', () => {
+            #{test_setup}
+            
+            test('should work correctly', () => {
+              expect(true).toBe(true);
+            });
+            
+            test('should handle edge cases', () => {
+              expect(true).toBe(true);
+            });
           });
-          
-          test('should handle edge cases', () => {
-            expect(true).toBe(true);
+          """
+
+        "minimal" ->
+          """
+          describe('#{target}', () => {
+            test('should work', () => {
+              expect(true).toBe(true);
+            });
           });
-        });
-        """
-      "minimal" ->
-        """
-        describe('#{target}', () => {
-          test('should work', () => {
-            expect(true).toBe(true);
+          """
+
+        _ ->
+          """
+          describe('#{target}', () => {
+            #{test_setup}
+            
+            test('should work correctly', () => {
+              expect(true).toBe(true);
+            });
           });
-        });
-        """
-      _ ->
-        """
-        describe('#{target}', () => {
-          #{test_setup}
-          
-          test('should work correctly', () => {
-            expect(true).toBe(true);
-          });
-        });
-        """
-    end
+          """
+      end
 
     case framework do
       "jest" ->
         """
         #{test_imports}
-        
+
         #{test_content}
         """
 
@@ -1308,69 +1328,80 @@ defmodule Singularity.Tools.Testing do
 
   defp generate_python_test(target, type, template) do
     # Generate Python test code based on type and template
-    test_imports = case type do
-      "unit" -> 
-        "import unittest\nfrom unittest.mock import Mock, patch"
-      "integration" -> 
-        "import unittest\nimport requests\nfrom unittest.mock import patch"
-      "e2e" -> 
-        "import unittest\nimport requests\nimport time\nfrom selenium import webdriver"
-      _ -> 
-        "import unittest"
-    end
+    test_imports =
+      case type do
+        "unit" ->
+          "import unittest\nfrom unittest.mock import Mock, patch"
 
-    test_setup = case type do
-      "unit" -> 
-        """
-        def setUp(self):
-            # Unit test setup
-            pass
-        """
-      "integration" -> 
-        """
-        def setUp(self):
-            # Integration test setup
-            self.base_url = "http://localhost:8000"
-        """
-      "e2e" -> 
-        """
-        def setUp(self):
-            # E2E test setup
-            self.driver = webdriver.Chrome()
-            self.driver.implicitly_wait(10)
-        """
-      _ -> 
-        """
-        def setUp(self):
-            # Default test setup
-            pass
-        """
-    end
+        "integration" ->
+          "import unittest\nimport requests\nfrom unittest.mock import patch"
+
+        "e2e" ->
+          "import unittest\nimport requests\nimport time\nfrom selenium import webdriver"
+
+        _ ->
+          "import unittest"
+      end
+
+    test_setup =
+      case type do
+        "unit" ->
+          """
+          def setUp(self):
+              # Unit test setup
+              pass
+          """
+
+        "integration" ->
+          """
+          def setUp(self):
+              # Integration test setup
+              self.base_url = "http://localhost:8000"
+          """
+
+        "e2e" ->
+          """
+          def setUp(self):
+              # E2E test setup
+              self.driver = webdriver.Chrome()
+              self.driver.implicitly_wait(10)
+          """
+
+        _ ->
+          """
+          def setUp(self):
+              # Default test setup
+              pass
+          """
+      end
 
     # Generate test code based on template
-    test_methods = case template do
-      "comprehensive" ->
-        """
-        def test_should_work(self):
-            self.assertTrue(True)
-            
-        def test_should_handle_edge_cases(self):
-            self.assertTrue(True)
-            
-        def test_should_validate_input(self):
-            self.assertTrue(True)
-        """
-      "minimal" ->
-        """
-        def test_should_work(self):
-            self.assertTrue(True)
-        """
-      _ ->
-        """
-        def test_should_work(self):
-            self.assertTrue(True)
-        """
-    end
+    test_methods =
+      case template do
+        "comprehensive" ->
+          """
+          def test_should_work(self):
+              self.assertTrue(True)
+              
+          def test_should_handle_edge_cases(self):
+              self.assertTrue(True)
+              
+          def test_should_validate_input(self):
+              self.assertTrue(True)
+          """
+
+        "minimal" ->
+          """
+          def test_should_work(self):
+              self.assertTrue(True)
+          """
+
+        _ ->
+          """
+          def test_should_work(self):
+              self.assertTrue(True)
+          """
+      end
 
     """
     #{test_imports}
@@ -1396,16 +1427,20 @@ defmodule Singularity.Tools.Testing do
 
   defp determine_test_file_path(target, language, type) do
     # Generate test file path based on language and type
-    base_path = case language do
-      "elixir" ->
-        "test/#{String.downcase(target)}_test.exs"
-      "javascript" ->
-        "#{target}.test.js"
-      "python" ->
-        "test_#{String.downcase(target)}.py"
-      _ ->
-        "#{target}_test"
-    end
+    base_path =
+      case language do
+        "elixir" ->
+          "test/#{String.downcase(target)}_test.exs"
+
+        "javascript" ->
+          "#{target}.test.js"
+
+        "python" ->
+          "test_#{String.downcase(target)}.py"
+
+        _ ->
+          "#{target}_test"
+      end
 
     # Add type-specific path modifications
     case type do
@@ -1416,6 +1451,7 @@ defmodule Singularity.Tools.Testing do
           "python" -> "tests/unit/test_#{String.downcase(target)}.py"
           _ -> "tests/unit/#{target}_test"
         end
+
       "integration" ->
         case language do
           "elixir" -> "test/integration/#{String.downcase(target)}_test.exs"
@@ -1423,6 +1459,7 @@ defmodule Singularity.Tools.Testing do
           "python" -> "tests/integration/test_#{String.downcase(target)}.py"
           _ -> "tests/integration/#{target}_test"
         end
+
       "e2e" ->
         case language do
           "elixir" -> "test/e2e/#{String.downcase(target)}_test.exs"
@@ -1430,6 +1467,7 @@ defmodule Singularity.Tools.Testing do
           "python" -> "tests/e2e/test_#{String.downcase(target)}.py"
           _ -> "tests/e2e/#{target}_test"
         end
+
       _ ->
         base_path
     end
@@ -1490,42 +1528,47 @@ defmodule Singularity.Tools.Testing do
     case File.read(path || "test/") do
       {:ok, content} ->
         # Language-specific mock detection
-        mock_patterns = case language do
-          "elixir" -> ["Mock", "stub", "with_mock", "expect"]
-          "javascript" -> ["jest.mock", "mock", "stub", "spy", "mockImplementation"]
-          "python" -> ["mock", "patch", "MagicMock", "Mock"]
-          _ -> ["mock", "stub"]
-        end
+        mock_patterns =
+          case language do
+            "elixir" -> ["Mock", "stub", "with_mock", "expect"]
+            "javascript" -> ["jest.mock", "mock", "stub", "spy", "mockImplementation"]
+            "python" -> ["mock", "patch", "MagicMock", "Mock"]
+            _ -> ["mock", "stub"]
+          end
 
         # Check for mock usage
         has_mocks = Enum.any?(mock_patterns, &String.contains?(content, &1))
-        
+
         # Calculate score based on strictness and language
         base_score = if has_mocks, do: 1.0, else: 0.5
-        
+
         # Adjust score based on strictness
-        adjusted_score = case strict do
-          true -> 
-            # Strict mode: require proper mock patterns
-            if has_mocks and String.contains?(content, "verify") do
+        adjusted_score =
+          case strict do
+            true ->
+              # Strict mode: require proper mock patterns
+              if has_mocks and String.contains?(content, "verify") do
+                base_score
+              else
+                base_score * 0.8
+              end
+
+            false ->
               base_score
-            else
-              base_score * 0.8
-            end
-          false -> 
-            base_score
-          _ -> 
-            base_score
-        end
+
+            _ ->
+              base_score
+          end
 
         # Language-specific recommendations
-        recommendation = case {language, has_mocks} do
-          {"elixir", false} -> "Consider using Mox for mocking external dependencies"
-          {"javascript", false} -> "Consider using Jest mocks for better test isolation"
-          {"python", false} -> "Consider using unittest.mock for better test control"
-          {_, true} -> "Good mock usage detected"
-          _ -> "Mock usage could be improved"
-        end
+        recommendation =
+          case {language, has_mocks} do
+            {"elixir", false} -> "Consider using Mox for mocking external dependencies"
+            {"javascript", false} -> "Consider using Jest mocks for better test isolation"
+            {"python", false} -> "Consider using unittest.mock for better test control"
+            {_, true} -> "Good mock usage detected"
+            _ -> "Mock usage could be improved"
+          end
 
         %{
           check: "mocks",
@@ -1661,15 +1704,16 @@ defmodule Singularity.Tools.Testing do
     case Singularity.ArchitectureEngine.detect_frameworks([], []) do
       {:ok, %{frameworks: frameworks}} ->
         # Look for testing frameworks in the detected frameworks
-        testing_frameworks = Enum.filter(frameworks, fn fw ->
-          fw.name && String.contains?(String.downcase(fw.name), "test")
-        end)
-        
+        testing_frameworks =
+          Enum.filter(frameworks, fn fw ->
+            fw.name && String.contains?(String.downcase(fw.name), "test")
+          end)
+
         case testing_frameworks do
           [%{name: name} | _] -> String.downcase(name)
           _ -> get_default_testing_framework(language)
         end
-      
+
       {:error, _} ->
         # Fallback to file-based detection
         detect_framework_from_files(language, path)
@@ -1685,18 +1729,21 @@ defmodule Singularity.Tools.Testing do
           File.exists?(Path.join(path, "test/support/data_case.ex")) -> "ecto"
           true -> "exunit"
         end
+
       "javascript" ->
         cond do
           File.exists?(Path.join(path, "jest.config.js")) -> "jest"
           File.exists?(Path.join(path, ".mocharc.json")) -> "mocha"
           true -> "jest"
         end
+
       "python" ->
         cond do
           File.exists?(Path.join(path, "pytest.ini")) -> "pytest"
           File.exists?(Path.join(path, "setup.py")) -> "unittest"
           true -> "pytest"
         end
+
       _ ->
         get_default_testing_framework(language)
     end
@@ -1707,16 +1754,22 @@ defmodule Singularity.Tools.Testing do
     case {language, framework} do
       {"elixir", "phoenix"} ->
         "#{cmd} --exclude integration"
+
       {"elixir", "ecto"} ->
         "#{cmd} --exclude slow"
+
       {"javascript", "jest"} ->
         "#{cmd} --passWithNoTests"
+
       {"javascript", "mocha"} ->
         "#{cmd} --reporter spec"
+
       {"python", "pytest"} ->
         "#{cmd} -v"
+
       {"python", "unittest"} ->
         "#{cmd} -v"
+
       _ ->
         cmd
     end
@@ -1727,16 +1780,22 @@ defmodule Singularity.Tools.Testing do
     case {language, format} do
       {"elixir", "html"} ->
         "#{cmd} --cover-format=html"
+
       {"elixir", "json"} ->
         "#{cmd} --cover-format=json"
+
       {"javascript", "html"} ->
         "#{cmd} --coverageReporters=html"
+
       {"javascript", "json"} ->
         "#{cmd} --coverageReporters=json"
+
       {"python", "html"} ->
         "#{cmd} --cov-report=html"
+
       {"python", "json"} ->
         "#{cmd} --cov-report=json"
+
       _ ->
         cmd
     end
@@ -1747,12 +1806,16 @@ defmodule Singularity.Tools.Testing do
     case {language, framework} do
       {"elixir", "phoenix"} ->
         "#{cmd} --cover-exclude=test/support/"
+
       {"elixir", "ecto"} ->
         "#{cmd} --cover-exclude=test/support/data_case.ex"
+
       {"javascript", "jest"} ->
         "#{cmd} --coverageDirectory=coverage"
+
       {"javascript", "mocha"} ->
         "#{cmd} --reporter json"
+
       _ ->
         cmd
     end
@@ -1785,11 +1848,12 @@ defmodule Singularity.Tools.Testing do
     passed = total - failed
 
     # Add framework-specific parsing
-    framework_notes = case framework do
-      "phoenix" -> "Phoenix integration tests included"
-      "ecto" -> "Ecto database tests included"
-      _ -> ""
-    end
+    framework_notes =
+      case framework do
+        "phoenix" -> "Phoenix integration tests included"
+        "ecto" -> "Ecto database tests included"
+        _ -> ""
+      end
 
     %{
       total: total,
@@ -1816,11 +1880,12 @@ defmodule Singularity.Tools.Testing do
     duration = if duration_match, do: String.to_float(Enum.at(duration_match, 1)), else: 0.0
 
     # Add framework-specific parsing
-    framework_notes = case framework do
-      "jest" -> "Jest test runner"
-      "mocha" -> "Mocha test runner"
-      _ -> ""
-    end
+    framework_notes =
+      case framework do
+        "jest" -> "Jest test runner"
+        "mocha" -> "Mocha test runner"
+        _ -> ""
+      end
 
     %{
       total: total,

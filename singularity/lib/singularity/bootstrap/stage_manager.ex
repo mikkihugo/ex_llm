@@ -200,7 +200,9 @@ defmodule Singularity.Bootstrap.StageManager do
       config: config
     }
 
-    Logger.info("Bootstrap Stage Manager: Starting at Stage #{current_stage} (#{get_stage_description(current_stage)})")
+    Logger.info(
+      "Bootstrap Stage Manager: Starting at Stage #{current_stage} (#{get_stage_description(current_stage)})"
+    )
 
     {:ok, state}
   end
@@ -233,14 +235,17 @@ defmodule Singularity.Bootstrap.StageManager do
           # Update application env
           update_stage_config(new_stage)
 
-          new_state = %{state |
-            current_stage: new_stage,
-            stage_started_at: DateTime.utc_now(),
-            metrics: %{},
-            can_advance: false
+          new_state = %{
+            state
+            | current_stage: new_stage,
+              stage_started_at: DateTime.utc_now(),
+              metrics: %{},
+              can_advance: false
           }
 
-          Logger.info("🎉 Advanced to Bootstrap Stage #{new_stage} (#{get_stage_description(new_stage)})")
+          Logger.info(
+            "🎉 Advanced to Bootstrap Stage #{new_stage} (#{get_stage_description(new_stage)})"
+          )
 
           # Emit telemetry
           :telemetry.execute(
@@ -320,33 +325,36 @@ defmodule Singularity.Bootstrap.StageManager do
   end
 
   defp check_metrics(actual_metrics, required_metrics) do
-    unmet = Enum.reduce(required_metrics, [], fn {key, required_value}, acc ->
-      actual_value = Map.get(actual_metrics, key)
+    unmet =
+      Enum.reduce(required_metrics, [], fn {key, required_value}, acc ->
+        actual_value = Map.get(actual_metrics, key)
 
-      met? = case required_value do
-        true -> actual_value == true
-        false -> actual_value == false
-        num when is_number(num) -> is_number(actual_value) and actual_value >= num
-        {:less_than, max} -> is_number(actual_value) and actual_value < max
-        _ -> actual_value == required_value
-      end
+        met? =
+          case required_value do
+            true -> actual_value == true
+            false -> actual_value == false
+            num when is_number(num) -> is_number(actual_value) and actual_value >= num
+            {:less_than, max} -> is_number(actual_value) and actual_value < max
+            _ -> actual_value == required_value
+          end
 
-      if met?, do: acc, else: [{key, required_value, actual_value} | acc]
-    end)
+        if met?, do: acc, else: [{key, required_value, actual_value} | acc]
+      end)
 
     if Enum.empty?(unmet) do
       {:ok, "All metrics met"}
     else
-      unmet_descriptions = Enum.map(unmet, fn {key, required, actual} ->
-        "#{key}: required #{inspect(required)}, got #{inspect(actual)}"
-      end)
+      unmet_descriptions =
+        Enum.map(unmet, fn {key, required, actual} ->
+          "#{key}: required #{inspect(required)}, got #{inspect(actual)}"
+        end)
 
       {:error, "Unmet metrics: #{Enum.join(unmet_descriptions, ", ")}"}
     end
   end
 
   defp days_since(datetime) do
-    DateTime.diff(DateTime.utc_now(), datetime, :second) / 86400
+    (DateTime.diff(DateTime.utc_now(), datetime, :second) / 86400)
     |> Float.floor()
     |> trunc()
   end
@@ -415,9 +423,14 @@ defmodule Singularity.Bootstrap.StageManager do
   ## Database Persistence
 
   defp load_from_db do
-    case Repo.one(from b in "bootstrap_stages", select: {b.current_stage, b.stage_started_at, b.metrics}, limit: 1) do
+    case Repo.one(
+           from b in "bootstrap_stages",
+             select: {b.current_stage, b.stage_started_at, b.metrics},
+             limit: 1
+         ) do
       {stage, started_at, metrics} ->
         {stage, started_at, Jason.decode!(metrics || "{}")}
+
       nil ->
         # First run - initialize database
         Logger.warning("Bootstrap stages table not initialized, using defaults")

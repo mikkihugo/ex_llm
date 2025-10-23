@@ -7,7 +7,7 @@ defmodule Singularity.CodeAnalyzer.PropertyTest do
 
   describe "property: all 20 languages are supported" do
     property "supported_languages always returns 20 languages" do
-      check all _iteration <- integer(1..100) do
+      check all(_iteration <- integer(1..100)) do
         languages = CodeAnalyzer.supported_languages()
         assert length(languages) == 20
         assert is_list(languages)
@@ -16,7 +16,7 @@ defmodule Singularity.CodeAnalyzer.PropertyTest do
     end
 
     property "supported languages are unique" do
-      check all _iteration <- integer(1..100) do
+      check all(_iteration <- integer(1..100)) do
         languages = CodeAnalyzer.supported_languages()
         assert length(languages) == length(Enum.uniq(languages))
       end
@@ -25,7 +25,7 @@ defmodule Singularity.CodeAnalyzer.PropertyTest do
 
   describe "property: RCA languages subset of all languages" do
     property "rca_supported_languages is subset of supported_languages" do
-      check all _iteration <- integer(1..100) do
+      check all(_iteration <- integer(1..100)) do
         all_languages = CodeAnalyzer.supported_languages()
         rca_languages = CodeAnalyzer.rca_supported_languages()
 
@@ -40,35 +40,38 @@ defmodule Singularity.CodeAnalyzer.PropertyTest do
 
   describe "property: has_rca_support consistency" do
     property "has_rca_support matches rca_supported_languages list" do
-      check all _iteration <- integer(1..100) do
+      check all(_iteration <- integer(1..100)) do
         rca_languages = CodeAnalyzer.rca_supported_languages()
         all_languages = CodeAnalyzer.supported_languages()
 
         # All RCA languages should return true
         assert Enum.all?(rca_languages, fn lang ->
-          CodeAnalyzer.has_rca_support?(lang) == true
-        end)
+                 CodeAnalyzer.has_rca_support?(lang) == true
+               end)
 
         # Non-RCA languages should return false
         non_rca = all_languages -- rca_languages
+
         assert Enum.all?(non_rca, fn lang ->
-          CodeAnalyzer.has_rca_support?(lang) == false
-        end)
+                 CodeAnalyzer.has_rca_support?(lang) == false
+               end)
       end
     end
   end
 
   describe "property: analyze_language handles various inputs" do
     property "analyze_language handles empty code" do
-      check all language <- member_of(CodeAnalyzer.supported_languages()) do
+      check all(language <- member_of(CodeAnalyzer.supported_languages())) do
         result = CodeAnalyzer.analyze_language("", language)
         assert match?({:ok, _}, result) or match?({:error, _}, result)
       end
     end
 
     property "analyze_language handles whitespace-only code" do
-      check all language <- member_of(CodeAnalyzer.supported_languages()),
-                whitespace <- string(:printable, min_length: 1, max_length: 100) do
+      check all(
+              language <- member_of(CodeAnalyzer.supported_languages()),
+              whitespace <- string(:printable, min_length: 1, max_length: 100)
+            ) do
         # Only whitespace
         code = String.duplicate(" ", String.length(whitespace))
         result = CodeAnalyzer.analyze_language(code, language)
@@ -77,7 +80,7 @@ defmodule Singularity.CodeAnalyzer.PropertyTest do
     end
 
     property "analyze_language returns consistent language_id" do
-      check all language <- member_of(CodeAnalyzer.supported_languages()) do
+      check all(language <- member_of(CodeAnalyzer.supported_languages())) do
         code = generate_simple_code(language)
 
         case CodeAnalyzer.analyze_language(code, language) do
@@ -95,7 +98,7 @@ defmodule Singularity.CodeAnalyzer.PropertyTest do
 
   describe "property: extract_functions always returns list" do
     property "extract_functions returns list for all languages" do
-      check all language <- member_of(CodeAnalyzer.supported_languages()) do
+      check all(language <- member_of(CodeAnalyzer.supported_languages())) do
         code = generate_simple_code(language)
 
         case CodeAnalyzer.extract_functions(code, language) do
@@ -111,8 +114,10 @@ defmodule Singularity.CodeAnalyzer.PropertyTest do
 
   describe "property: caching is deterministic" do
     property "repeated analysis of same code returns same result" do
-      check all language <- member_of(["elixir", "rust", "python"]),
-                max_runs: 10 do
+      check all(
+              language <- member_of(["elixir", "rust", "python"]),
+              max_runs: 10
+            ) do
         code = generate_simple_code(language)
 
         # Clear cache
@@ -121,9 +126,10 @@ defmodule Singularity.CodeAnalyzer.PropertyTest do
         end
 
         # Analyze 5 times
-        results = Enum.map(1..5, fn _ ->
-          CodeAnalyzer.analyze_language(code, language, cache: true)
-        end)
+        results =
+          Enum.map(1..5, fn _ ->
+            CodeAnalyzer.analyze_language(code, language, cache: true)
+          end)
 
         # All successful results should be identical
         successful_results = Enum.filter(results, &match?({:ok, _}, &1))
@@ -138,14 +144,14 @@ defmodule Singularity.CodeAnalyzer.PropertyTest do
 
   describe "property: cross-language pattern detection" do
     property "accepts empty file list" do
-      check all _iteration <- integer(1..10) do
+      check all(_iteration <- integer(1..10)) do
         result = CodeAnalyzer.detect_cross_language_patterns([])
         assert match?({:ok, _}, result)
       end
     end
 
     property "accepts single language" do
-      check all language <- member_of(["elixir", "rust", "python"]) do
+      check all(language <- member_of(["elixir", "rust", "python"])) do
         code = generate_simple_code(language)
         files = [{language, code}]
 
@@ -155,10 +161,14 @@ defmodule Singularity.CodeAnalyzer.PropertyTest do
     end
 
     property "handles multiple languages" do
-      check all languages <- list_of(member_of(["elixir", "rust", "python"]), min_length: 2, max_length: 5) do
-        files = Enum.map(languages, fn lang ->
-          {lang, generate_simple_code(lang)}
-        end)
+      check all(
+              languages <-
+                list_of(member_of(["elixir", "rust", "python"]), min_length: 2, max_length: 5)
+            ) do
+        files =
+          Enum.map(languages, fn lang ->
+            {lang, generate_simple_code(lang)}
+          end)
 
         result = CodeAnalyzer.detect_cross_language_patterns(files)
         assert match?({:ok, _}, result) or match?({:error, _}, result)
@@ -168,8 +178,10 @@ defmodule Singularity.CodeAnalyzer.PropertyTest do
 
   describe "property: RCA metrics structure" do
     property "RCA metrics have required fields" do
-      check all language <- member_of(CodeAnalyzer.rca_supported_languages()),
-                max_runs: 10 do
+      check all(
+              language <- member_of(CodeAnalyzer.rca_supported_languages()),
+              max_runs: 10
+            ) do
         code = generate_simple_code(language)
 
         case CodeAnalyzer.get_rca_metrics(code, language) do

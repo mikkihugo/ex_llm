@@ -18,6 +18,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
 
   alias Singularity.{TechnologyTemplateLoader, RAGCodeGenerator}
   alias Singularity.LLM.{Service, PromptCache}
+
   @doc """
   Generate LLM prompt with optimal template selection
 
@@ -42,12 +43,13 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
         case get_template_for_framework(framework, category, language) do
           {:ok, template} ->
             prompt = build_prompt_from_template(template, task.description, language)
-            Logger.info("Generated prompt using centralized template service", 
-              framework: framework, 
-              category: category, 
+
+            Logger.info("Generated prompt using centralized template service",
+              framework: framework,
+              category: category,
               template_id: template.id
             )
-            
+
             %{
               prompt: prompt,
               template_id: template.id,
@@ -61,22 +63,23 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
                 confidence: 0.9
               }
             }
-          
+
           {:error, reason} ->
             Logger.warning("Template service failed, falling back to legacy", reason: reason)
             generate_prompt_legacy(task, language, opts)
         end
-      
+
       {:language, lang, category} ->
         case get_template_for_language(lang, category) do
           {:ok, template} ->
             prompt = build_prompt_from_template(template, task.description, language)
-            Logger.info("Generated prompt using centralized template service", 
-              language: lang, 
-              category: category, 
+
+            Logger.info("Generated prompt using centralized template service",
+              language: lang,
+              category: category,
               template_id: template.id
             )
-            
+
             %{
               prompt: prompt,
               template_id: template.id,
@@ -90,21 +93,21 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
                 confidence: 0.8
               }
             }
-          
+
           {:error, reason} ->
             Logger.warning("Prompt engine failed, falling back to legacy", reason: reason)
             generate_prompt_legacy(task, language, opts)
         end
-      
+
       {:pattern, pattern, category} ->
         case PromptEngine.generate_pattern_prompt(task.description, pattern, category, language) do
           {:ok, %{prompt: prompt, confidence: confidence, template_used: template_used}} ->
-            Logger.info("Generated prompt using prompt engine", 
-              pattern: pattern, 
-              category: category, 
+            Logger.info("Generated prompt using prompt engine",
+              pattern: pattern,
+              category: category,
               confidence: confidence
             )
-            
+
             %{
               prompt: prompt,
               template_id: template_used,
@@ -118,12 +121,12 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
                 confidence: confidence
               }
             }
-          
+
           {:error, reason} ->
             Logger.warning("Prompt engine failed, falling back to legacy", reason: reason)
             generate_prompt_legacy(task, language, opts)
         end
-      
+
       :unknown ->
         # Fall back to legacy template system
         generate_prompt_legacy(task, language, opts)
@@ -175,6 +178,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
       {:ok, cached_response} ->
         Logger.info("Using cached prompt response", cache_key: cache_key)
         cached_response
+
       :miss ->
         # Optimize prompt using prompt engine if available
         optimized_prompt = optimize_prompt_if_available(prompt_data.prompt, task, opts)
@@ -432,53 +436,53 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
 
   defp detect_context_type(task) do
     description = String.downcase(task.description)
-    
+
     # Detect framework patterns
     cond do
       String.contains?(description, "phoenix") ->
         {:framework, "phoenix", detect_category(description)}
-      
+
       String.contains?(description, "rails") ->
         {:framework, "rails", detect_category(description)}
-      
+
       String.contains?(description, "nextjs") or String.contains?(description, "next.js") ->
         {:framework, "nextjs", detect_category(description)}
-      
+
       String.contains?(description, "react") ->
         {:framework, "react", detect_category(description)}
-      
+
       String.contains?(description, "spring") ->
         {:framework, "spring", detect_category(description)}
-      
+
       # Detect language patterns
       String.contains?(description, "rust") ->
         {:language, "rust", detect_category(description)}
-      
+
       String.contains?(description, "elixir") ->
         {:language, "elixir", detect_category(description)}
-      
+
       String.contains?(description, "python") ->
         {:language, "python", detect_category(description)}
-      
+
       String.contains?(description, "javascript") or String.contains?(description, "js") ->
         {:language, "javascript", detect_category(description)}
-      
+
       String.contains?(description, "go") ->
         {:language, "go", detect_category(description)}
-      
+
       # Detect pattern types
       String.contains?(description, "microservice") ->
         {:pattern, "microservice", detect_category(description)}
-      
+
       String.contains?(description, "api") ->
         {:pattern, "api", detect_category(description)}
-      
+
       String.contains?(description, "database") or String.contains?(description, "db") ->
         {:pattern, "database", detect_category(description)}
-      
+
       String.contains?(description, "test") or String.contains?(description, "testing") ->
         {:pattern, "testing", detect_category(description)}
-      
+
       true ->
         :unknown
     end
@@ -488,45 +492,47 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
     cond do
       String.contains?(description, "command") or String.contains?(description, "run") ->
         "commands"
-      
+
       String.contains?(description, "depend") or String.contains?(description, "install") ->
         "dependencies"
-      
+
       String.contains?(description, "config") or String.contains?(description, "setup") ->
         "configuration"
-      
+
       String.contains?(description, "example") or String.contains?(description, "sample") ->
         "examples"
-      
+
       String.contains?(description, "test") or String.contains?(description, "testing") ->
         "testing"
-      
+
       String.contains?(description, "deploy") or String.contains?(description, "production") ->
         "deployment"
-      
+
       String.contains?(description, "integrate") or String.contains?(description, "connect") ->
         "integration"
-      
+
       true ->
-        "commands"  # Default fallback
+        # Default fallback
+        "commands"
     end
   end
 
   defp optimize_prompt_if_available(prompt, task, opts) do
     use_optimization = Keyword.get(opts, :optimize_prompt, true)
-    
+
     if use_optimization do
-      case PromptEngine.optimize_prompt(prompt, 
-        context: task.description,
-        language: Keyword.get(opts, :language, "elixir")
-      ) do
+      case PromptEngine.optimize_prompt(prompt,
+             context: task.description,
+             language: Keyword.get(opts, :language, "elixir")
+           ) do
         {:ok, %{optimized_prompt: optimized}} ->
-          Logger.info("Prompt optimized using prompt engine", 
+          Logger.info("Prompt optimized using prompt engine",
             original_length: String.length(prompt),
             optimized_length: String.length(optimized)
           )
+
           optimized
-        
+
         {:error, reason} ->
           Logger.debug("Prompt optimization failed, using original", reason: reason)
           prompt
@@ -544,7 +550,9 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   defp get_template_for_framework(framework, category, language) do
     # Use dynamic template discovery for framework templates
     case Singularity.Knowledge.TemplateService.find_framework_template(language, framework) do
-      {:ok, template} -> {:ok, template}
+      {:ok, template} ->
+        {:ok, template}
+
       {:error, _} ->
         # Try with category as use case
         Singularity.Knowledge.TemplateService.find_template("framework", language, category)
@@ -557,7 +565,9 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   defp get_template_for_language(language, category) do
     # Use dynamic template discovery for language templates
     case Singularity.Knowledge.TemplateService.find_template("language", language, category) do
-      {:ok, template} -> {:ok, template}
+      {:ok, template} ->
+        {:ok, template}
+
       {:error, _} ->
         # Fallback to general language template
         Singularity.Knowledge.TemplateService.find_template("language", language, "general")
@@ -569,11 +579,12 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   """
   defp build_prompt_from_template(template, task_description, language) do
     # Extract prompt template from the template content
-    prompt_template = get_in(template, ["content", "prompt"]) || 
-                     get_in(template, ["prompt"]) || 
-                     template["content"] || 
-                     "Generate #{language} code for: {{task}}"
-    
+    prompt_template =
+      get_in(template, ["content", "prompt"]) ||
+        get_in(template, ["prompt"]) ||
+        template["content"] ||
+        "Generate #{language} code for: {{task}}"
+
     # Replace placeholders
     prompt_template
     |> String.replace("{{task}}", task_description)

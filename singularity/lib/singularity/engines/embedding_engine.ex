@@ -54,7 +54,8 @@ defmodule Singularity.EmbeddingEngine do
     otp_app: :singularity,
     crate: :embedding_engine,
     path: "../rust/embedding_engine",
-    skip_compilation?: true,  # Temporarily skip compilation to fix hot reload
+    # Temporarily skip compilation to fix hot reload
+    skip_compilation?: true,
     mode: :release
 
   require Logger
@@ -122,10 +123,16 @@ defmodule Singularity.EmbeddingEngine do
   defp nif_embed_batch(_texts, _model_type), do: :erlang.nif_error(:nif_not_loaded)
   defp nif_embed_single(_text, _model_type), do: :erlang.nif_error(:nif_not_loaded)
   defp nif_preload_models(_model_types), do: :erlang.nif_error(:nif_not_loaded)
-  defp nif_cosine_similarity_batch(_query_embeddings, _candidate_embeddings), do: :erlang.nif_error(:nif_not_loaded)
+
+  defp nif_cosine_similarity_batch(_query_embeddings, _candidate_embeddings),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   defp nif_get_model_info(_model_type), do: :erlang.nif_error(:nif_not_loaded)
   defp nif_cross_model_comparison(_texts, _model_types), do: :erlang.nif_error(:nif_not_loaded)
-  defp embedding_fusion(_texts, _model_types, _fusion_method), do: :erlang.nif_error(:nif_not_loaded)
+
+  defp embedding_fusion(_texts, _model_types, _fusion_method),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   defp batch_tokenize(_texts, _model_type), do: :erlang.nif_error(:nif_not_loaded)
   defp batch_detokenize(_token_ids, _model_type), do: :erlang.nif_error(:nif_not_loaded)
   defp ensure_models_downloaded(_model_types), do: :erlang.nif_error(:nif_not_loaded)
@@ -134,12 +141,28 @@ defmodule Singularity.EmbeddingEngine do
   defp cleanup_cache(_model_types), do: :erlang.nif_error(:nif_not_loaded)
   defp tokenize_texts(_texts, _model_type), do: :erlang.nif_error(:nif_not_loaded)
   defp detokenize_texts(_token_ids, _model_type), do: :erlang.nif_error(:nif_not_loaded)
-  defp advanced_similarity_search(_query_text, _candidate_texts, _model_type, _top_k, _similarity_threshold), do: :erlang.nif_error(:nif_not_loaded)
-  defp embedding_clustering(_embeddings, _num_clusters, _max_iterations), do: :erlang.nif_error(:nif_not_loaded)
-  defp semantic_search(_query, _documents, _model_type, _expand_query, _rerank_top_k), do: :erlang.nif_error(:nif_not_loaded)
-  defp batch_process_documents(_documents, _model_type, _batch_size, _chunk_size), do: :erlang.nif_error(:nif_not_loaded)
+
+  defp advanced_similarity_search(
+         _query_text,
+         _candidate_texts,
+         _model_type,
+         _top_k,
+         _similarity_threshold
+       ), do: :erlang.nif_error(:nif_not_loaded)
+
+  defp embedding_clustering(_embeddings, _num_clusters, _max_iterations),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  defp semantic_search(_query, _documents, _model_type, _expand_query, _rerank_top_k),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  defp batch_process_documents(_documents, _model_type, _batch_size, _chunk_size),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   defp get_embedding_quality_metrics(_embeddings), do: :erlang.nif_error(:nif_not_loaded)
-  defp optimize_embeddings(_embeddings, _normalize, _target_dimensions), do: :erlang.nif_error(:nif_not_loaded)
+
+  defp optimize_embeddings(_embeddings, _normalize, _target_dimensions),
+    do: :erlang.nif_error(:nif_not_loaded)
 
   ## Public API
 
@@ -323,7 +346,8 @@ defmodule Singularity.EmbeddingEngine do
     if gpu_available?() do
       # GPU available: Use high-quality models
       case content_type do
-        :code -> :qodo_embed  # 70.06 CoIR score - BEST for code!
+        # 70.06 CoIR score - BEST for code!
+        :code -> :qodo_embed
         :technical -> :qodo_embed
         :documentation -> :qodo_embed
         :text -> :jina_v3
@@ -357,10 +381,14 @@ defmodule Singularity.EmbeddingEngine do
   defp model_to_string(:jina_v3), do: "jina_v3"
   defp model_to_string(:qodo_embed), do: "qodo_embed"
   defp model_to_string(:minilm), do: "minilm"
-  defp model_to_string(:text), do: "jina_v3"  # Alias
-  defp model_to_string(:code), do: "qodo_embed"  # Alias
-  defp model_to_string(:cpu), do: "minilm"  # Alias for CPU-optimized
-  defp model_to_string(:fast), do: "minilm"  # Alias for fast/lightweight
+  # Alias
+  defp model_to_string(:text), do: "jina_v3"
+  # Alias
+  defp model_to_string(:code), do: "qodo_embed"
+  # Alias for CPU-optimized
+  defp model_to_string(:cpu), do: "minilm"
+  # Alias for fast/lightweight
+  defp model_to_string(:fast), do: "minilm"
   defp model_to_string(model) when is_binary(model), do: model
 
   defp nif_loaded? do
@@ -376,19 +404,22 @@ defmodule Singularity.EmbeddingEngine do
 
   defp mock_embed_single(text, model_type) do
     # Mock embedding generation - return fixed-size vector based on model
-    dims = case model_type do
-      "jina_v3" -> 1024
-      "qodo_embed" -> 1536
-      _ -> 1536
-    end
+    dims =
+      case model_type do
+        "jina_v3" -> 1024
+        "qodo_embed" -> 1536
+        _ -> 1536
+      end
 
     # Generate deterministic but varied embeddings based on text hash
     hash = :erlang.phash2(text)
     seed = :rand.seed_s(:exsplus, {hash, hash, hash})
 
-    embedding = for _ <- 1..dims do
-      :rand.uniform() * 2 - 1  # Random values between -1 and 1
-    end
+    embedding =
+      for _ <- 1..dims do
+        # Random values between -1 and 1
+        :rand.uniform() * 2 - 1
+      end
 
     # Restore original random seed
     :rand.seed_s(:exsplus, seed)
@@ -417,13 +448,14 @@ defmodule Singularity.EmbeddingEngine do
       include_performance: true,
       include_metadata: true
     }
-    
+
     case NatsClient.request("central.embedding.models", Jason.encode!(request), timeout: 5000) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data}
           {:error, reason} -> {:error, "Failed to decode central response: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "NATS request failed: #{reason}"}
     end
@@ -438,7 +470,7 @@ defmodule Singularity.EmbeddingEngine do
       stats: stats,
       timestamp: DateTime.utc_now()
     }
-    
+
     case NatsClient.publish("central.embedding.usage", Jason.encode!(request)) do
       :ok -> :ok
       {:error, reason} -> {:error, "Failed to send usage stats: #{reason}"}
@@ -455,12 +487,15 @@ defmodule Singularity.EmbeddingEngine do
       performance_requirements: performance_requirements
     }
 
-    case NatsClient.request("central.embedding.recommendations", Jason.encode!(request), timeout: 3000) do
+    case NatsClient.request("central.embedding.recommendations", Jason.encode!(request),
+           timeout: 3000
+         ) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data["recommendations"] || []}
           {:error, reason} -> {:error, "Failed to decode central response: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "NATS request failed: #{reason}"}
     end
@@ -495,8 +530,10 @@ defmodule Singularity.EmbeddingEngine do
         :average
       )
   """
-  @spec fuse_embeddings([String.t()], [model()], atom()) :: {:ok, [embedding()]} | {:error, term()}
-  def fuse_embeddings(texts, models, fusion_method \\ :concatenate) when is_list(texts) and is_list(models) do
+  @spec fuse_embeddings([String.t()], [model()], atom()) ::
+          {:ok, [embedding()]} | {:error, term()}
+  def fuse_embeddings(texts, models, fusion_method \\ :concatenate)
+      when is_list(texts) and is_list(models) do
     model_strings = Enum.map(models, &model_to_string/1)
     fusion_method_str = Atom.to_string(fusion_method)
 

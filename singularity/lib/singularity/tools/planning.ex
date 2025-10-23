@@ -319,18 +319,21 @@ defmodule Singularity.Tools.Planning do
 
   # Feedback mechanism for self-improvement agent updates
   def update_planning_from_agent_feedback(feedback) do
-    Logger.info("Processing agent feedback for planning system", 
+    Logger.info("Processing agent feedback for planning system",
       feedback_type: feedback.type,
       task_id: feedback.task_id
     )
-    
+
     case feedback.type do
       :task_completion ->
         handle_task_completion_feedback(feedback)
+
       :context_change ->
         handle_context_change_feedback(feedback)
+
       :metrics_update ->
         handle_metrics_feedback(feedback)
+
       _ ->
         Logger.warning("Unknown feedback type", type: feedback.type)
         {:error, :unknown_feedback_type}
@@ -339,18 +342,18 @@ defmodule Singularity.Tools.Planning do
 
   defp handle_task_completion_feedback(feedback) do
     %{task_id: task_id, completion_data: data} = feedback
-    
+
     # Update task status and gather metrics
     case update_task_completion(task_id, data) do
       {:ok, updated_task} ->
         # Validate hierarchical alignment
         validate_hierarchical_alignment(updated_task)
-        
+
         # Update decomposition metrics
         update_decomposition_metrics(updated_task)
-        
+
         {:ok, updated_task}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -358,13 +361,15 @@ defmodule Singularity.Tools.Planning do
 
   defp handle_context_change_feedback(feedback) do
     %{context_changes: changes, affected_tasks: task_ids} = feedback
-    
+
     # Apply context changes to affected tasks
     task_ids
     |> Enum.reduce({:ok, []}, fn task_id, {:ok, results} ->
       case apply_context_changes(task_id, changes) do
-        {:ok, updated_task} -> {:ok, [updated_task | results]}
-        {:error, reason} -> 
+        {:ok, updated_task} ->
+          {:ok, [updated_task | results]}
+
+        {:error, reason} ->
           Logger.warning("Failed to apply context changes", task_id: task_id, reason: reason)
           {:ok, results}
       end
@@ -373,14 +378,14 @@ defmodule Singularity.Tools.Planning do
 
   defp handle_metrics_feedback(feedback) do
     %{metrics: metrics, task_id: task_id} = feedback
-    
+
     # Store metrics for effectiveness evaluation
     case store_task_metrics(task_id, metrics) do
       {:ok, _} ->
         # Recalculate decomposition effectiveness
         recalculate_decomposition_effectiveness()
         {:ok, :metrics_updated}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -402,16 +407,16 @@ defmodule Singularity.Tools.Planning do
     # Validate that task decomposition aligns with workflow hierarchy
     parent_tasks = get_parent_tasks(task)
     child_tasks = get_child_tasks(task)
-    
+
     alignment_score = calculate_hierarchical_alignment(parent_tasks, child_tasks, task)
-    
+
     if alignment_score < 0.7 do
-      Logger.warning("Low hierarchical alignment detected", 
+      Logger.warning("Low hierarchical alignment detected",
         task_id: task.task_id,
         alignment_score: alignment_score
       )
     end
-    
+
     {:ok, %{task: task, alignment_score: alignment_score}}
   end
 
@@ -419,19 +424,20 @@ defmodule Singularity.Tools.Planning do
     # Calculate how well the task fits in the hierarchy
     parent_alignment = calculate_parent_alignment(parent_tasks, current_task)
     child_alignment = calculate_child_alignment(child_tasks, current_task)
-    
+
     # Weighted average (parents more important than children)
-    (parent_alignment * 0.7) + (child_alignment * 0.3)
+    parent_alignment * 0.7 + child_alignment * 0.3
   end
 
   defp calculate_parent_alignment(parent_tasks, current_task) do
     if Enum.empty?(parent_tasks) do
-      1.0  # No parents, perfect alignment
+      # No parents, perfect alignment
+      1.0
     else
       # Check if current task scope aligns with parent scope
       parent_scopes = Enum.map(parent_tasks, & &1.scope)
       current_scope = current_task.scope
-      
+
       # Calculate scope alignment
       scope_alignment = calculate_scope_alignment(parent_scopes, current_scope)
       scope_alignment
@@ -440,14 +446,17 @@ defmodule Singularity.Tools.Planning do
 
   defp calculate_child_alignment(child_tasks, current_task) do
     if Enum.empty?(child_tasks) do
-      1.0  # No children, perfect alignment
+      # No children, perfect alignment
+      1.0
     else
       # Check if children properly decompose the current task
       child_scopes = Enum.map(child_tasks, & &1.scope)
       current_scope = current_task.scope
-      
+
       # Calculate decomposition completeness
-      decomposition_completeness = calculate_decomposition_completeness(child_scopes, current_scope)
+      decomposition_completeness =
+        calculate_decomposition_completeness(child_scopes, current_scope)
+
       decomposition_completeness
     end
   end
@@ -457,24 +466,25 @@ defmodule Singularity.Tools.Planning do
     parent_scope_union = Enum.join(parent_scopes, " ")
     current_scope_words = String.split(current_scope, " ") |> MapSet.new()
     parent_scope_words = String.split(parent_scope_union, " ") |> MapSet.new()
-    
+
     intersection = MapSet.intersection(current_scope_words, parent_scope_words) |> MapSet.size()
     union = MapSet.union(current_scope_words, parent_scope_words) |> MapSet.size()
-    
+
     if union > 0, do: intersection / union, else: 0.0
   end
 
   defp calculate_decomposition_completeness(child_scopes, parent_scope) do
     # Check if children cover the parent scope adequately
     parent_words = String.split(parent_scope, " ") |> MapSet.new()
-    child_words = 
+
+    child_words =
       child_scopes
       |> Enum.flat_map(&String.split(&1, " "))
       |> MapSet.new()
-    
+
     intersection = MapSet.intersection(parent_words, child_words) |> MapSet.size()
     parent_size = MapSet.size(parent_words)
-    
+
     if parent_size > 0, do: intersection / parent_size, else: 0.0
   end
 
@@ -487,35 +497,39 @@ defmodule Singularity.Tools.Planning do
       decomposition_depth: calculate_decomposition_depth(task),
       efficiency_score: calculate_efficiency_score(task)
     }
-    
+
     store_decomposition_metrics(metrics)
   end
 
   defp calculate_decomposition_depth(task) do
     # Calculate how deep the task was decomposed
     child_tasks = get_child_tasks(task)
+
     if Enum.empty?(child_tasks) do
       0
     else
-      max_child_depth = 
+      max_child_depth =
         child_tasks
         |> Enum.map(&calculate_decomposition_depth/1)
         |> Enum.max(fn -> 0 end)
-      
+
       max_child_depth + 1
     end
   end
 
   defp calculate_efficiency_score(task) do
     # Calculate efficiency based on completion time vs estimated time
-    estimated_duration = Map.get(task, :estimated_duration, 3600)  # Default 1 hour
+    # Default 1 hour
+    estimated_duration = Map.get(task, :estimated_duration, 3600)
     actual_duration = Map.get(task, :actual_duration, 0)
-    
+
     if actual_duration > 0 and estimated_duration > 0 do
       # Efficiency = estimated / actual (higher is better)
-      min(estimated_duration / actual_duration, 2.0)  # Cap at 2x efficiency
+      # Cap at 2x efficiency
+      min(estimated_duration / actual_duration, 2.0)
     else
-      1.0  # Default efficiency
+      # Default efficiency
+      1.0
     end
   end
 
@@ -543,16 +557,20 @@ defmodule Singularity.Tools.Planning do
   """
   def integrate_with_sparc_completion(task) do
     Logger.info("Integrating planning task with SPARC completion phase", task_id: task.id)
-    
+
     # Prepare task for SPARC completion phase
     sparc_context = prepare_sparc_context(task)
-    
+
     # Execute through SPARC orchestrator
-    case Singularity.Execution.SPARC.Orchestrator.execute_phase(:completion, task.description, sparc_context) do
+    case Singularity.Execution.SPARC.Orchestrator.execute_phase(
+           :completion,
+           task.description,
+           sparc_context
+         ) do
       {:ok, completion_result} ->
         # Process completion result and update task
         process_sparc_completion_result(task, completion_result)
-      
+
       {:error, reason} ->
         Logger.error("SPARC completion failed", task_id: task.id, reason: reason)
         {:error, reason}
@@ -578,7 +596,7 @@ defmodule Singularity.Tools.Planning do
   defp process_sparc_completion_result(task, completion_result) do
     # Extract generated code and artifacts from SPARC completion
     generated_code = Map.get(completion_result, :artifacts, %{})
-    
+
     # Update task with completion results
     updated_task = %{
       task
@@ -590,12 +608,12 @@ defmodule Singularity.Tools.Planning do
         },
         completed_at: DateTime.utc_now()
     }
-    
-    Logger.info("Task completed via SPARC", 
+
+    Logger.info("Task completed via SPARC",
       task_id: task.id,
       artifacts_count: map_size(generated_code)
     )
-    
+
     {:ok, updated_task}
   end
 
@@ -603,10 +621,14 @@ defmodule Singularity.Tools.Planning do
   Add telemetry to track planning tool effectiveness in SPARC workflows.
   """
   def track_planning_effectiveness(metric_name, value, metadata \\ %{}) do
-    :telemetry.execute([:planning_tools, :effectiveness, metric_name], %{
-      value: value,
-      timestamp: System.system_time(:millisecond)
-    }, metadata)
+    :telemetry.execute(
+      [:planning_tools, :effectiveness, metric_name],
+      %{
+        value: value,
+        timestamp: System.system_time(:millisecond)
+      },
+      metadata
+    )
   end
 
   def track_sparc_integration_metrics(task, sparc_result) do
@@ -614,17 +636,17 @@ defmodule Singularity.Tools.Planning do
     completion_time = calculate_completion_time(task)
     quality_score = extract_quality_score(sparc_result)
     artifact_count = count_artifacts(sparc_result)
-    
+
     track_planning_effectiveness(:sparc_completion_time, completion_time, %{
       task_id: task.id,
       complexity: task.complexity
     })
-    
+
     track_planning_effectiveness(:sparc_quality_score, quality_score, %{
       task_id: task.id,
       language: Map.get(task.context, :language, "elixir")
     })
-    
+
     track_planning_effectiveness(:sparc_artifact_count, artifact_count, %{
       task_id: task.id,
       task_type: Map.get(task.context, :task_type, "general")

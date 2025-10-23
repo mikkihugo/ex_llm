@@ -28,10 +28,10 @@ defmodule Singularity.Templates.Renderer do
 
   @type variables :: %{(String.t() | atom()) => any()}
   @type render_opts :: [
-    validate: boolean(),
-    quality_check: boolean(),
-    cache: boolean()
-  ]
+          validate: boolean(),
+          quality_check: boolean(),
+          cache: boolean()
+        ]
 
   ## Public API
 
@@ -123,7 +123,8 @@ defmodule Singularity.Templates.Renderer do
         "lib/my_app_web/controllers/user_controller.ex" => "..."
       }}
   """
-  @spec render_snippets(String.t(), variables(), render_opts()) :: {:ok, %{String.t() => String.t()}} | {:error, term()}
+  @spec render_snippets(String.t(), variables(), render_opts()) ::
+          {:ok, %{String.t() => String.t()}} | {:error, term()}
   def render_snippets(template_id, variables \\ %{}, opts \\ []) do
     with {:ok, template} <- load_template(template_id, opts),
          {:ok, snippets} <- extract_snippets(template),
@@ -161,12 +162,13 @@ defmodule Singularity.Templates.Renderer do
       Path.join([@priv_templates_dir, "**", "#{template_id}.hbs"])
     ]
 
-    found = Enum.any?(hbs_paths, fn pattern ->
-      case Path.wildcard(pattern) do
-        [] -> false
-        _ -> true
-      end
-    end)
+    found =
+      Enum.any?(hbs_paths, fn pattern ->
+        case Path.wildcard(pattern) do
+          [] -> false
+          _ -> true
+        end
+      end)
 
     if found, do: :solid, else: :legacy
   end
@@ -317,11 +319,11 @@ defmodule Singularity.Templates.Renderer do
     with {:ok, base_code} <- load_base_template(template),
          {:ok, bits_code} <- load_composed_bits(template, variables),
          {:ok, content_code} <- extract_content(template) do
-
       # Combine in order: base -> bits -> content
-      combined = [base_code, bits_code, content_code]
-      |> Enum.reject(&(&1 == ""))
-      |> Enum.join("\n\n")
+      combined =
+        [base_code, bits_code, content_code]
+        |> Enum.reject(&(&1 == ""))
+        |> Enum.join("\n\n")
 
       {:ok, combined}
     end
@@ -333,26 +335,30 @@ defmodule Singularity.Templates.Renderer do
       error -> error
     end
   end
+
   defp load_base_template(_), do: {:ok, ""}
 
   defp load_composed_bits(%{"compose" => bit_ids}, variables) when is_list(bit_ids) do
-    bits = Enum.map(bit_ids, fn bit_id ->
-      case TemplateService.get_template("template", bit_id) do
-        {:ok, bit} ->
-          case extract_content(bit) do
-            {:ok, code} -> replace_variables(code, variables)
-            _ -> ""
-          end
-        _ ->
-          Logger.warn("Bit not found: #{bit_id}")
-          ""
-      end
-    end)
-    |> Enum.reject(&(&1 == ""))
-    |> Enum.join("\n\n")
+    bits =
+      Enum.map(bit_ids, fn bit_id ->
+        case TemplateService.get_template("template", bit_id) do
+          {:ok, bit} ->
+            case extract_content(bit) do
+              {:ok, code} -> replace_variables(code, variables)
+              _ -> ""
+            end
+
+          _ ->
+            Logger.warn("Bit not found: #{bit_id}")
+            ""
+        end
+      end)
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.join("\n\n")
 
     {:ok, bits}
   end
+
   defp load_composed_bits(_, _), do: {:ok, ""}
 
   defp extract_content(%{"content" => %{"type" => "code", "code" => code}}), do: {:ok, code}
@@ -376,20 +382,22 @@ defmodule Singularity.Templates.Renderer do
     var_defs = get_in(template, ["content", "variables"]) || %{}
     normalized = normalize_variables(variables)
 
-    missing = Enum.filter(var_defs, fn {key, def_map} ->
-      Map.get(def_map, "required", false) && !Map.has_key?(normalized, key)
-    end)
-    |> Enum.map(fn {key, _} -> key end)
+    missing =
+      Enum.filter(var_defs, fn {key, def_map} ->
+        Map.get(def_map, "required", false) && !Map.has_key?(normalized, key)
+      end)
+      |> Enum.map(fn {key, _} -> key end)
 
     if Enum.empty?(missing) do
       # Add defaults for missing optional variables
-      with_defaults = Enum.reduce(var_defs, normalized, fn {key, def_map}, acc ->
-        if !Map.has_key?(acc, key) && Map.has_key?(def_map, "default") do
-          Map.put(acc, key, def_map["default"])
-        else
-          acc
-        end
-      end)
+      with_defaults =
+        Enum.reduce(var_defs, normalized, fn {key, def_map}, acc ->
+          if !Map.has_key?(acc, key) && Map.has_key?(def_map, "default") do
+            Map.put(acc, key, def_map["default"])
+          else
+            acc
+          end
+        end)
 
       {:ok, with_defaults}
     else
@@ -407,23 +415,26 @@ defmodule Singularity.Templates.Renderer do
     var_defs = get_in(template, ["content", "variables"]) || %{}
     normalized = normalize_variables(variables)
 
-    missing_required = Enum.filter(var_defs, fn {key, def_map} ->
-      Map.get(def_map, "required", false) && !Map.has_key?(normalized, key)
-    end)
-    |> Enum.map(fn {key, _} -> key end)
+    missing_required =
+      Enum.filter(var_defs, fn {key, def_map} ->
+        Map.get(def_map, "required", false) && !Map.has_key?(normalized, key)
+      end)
+      |> Enum.map(fn {key, _} -> key end)
 
     provided = Map.keys(normalized)
 
-    defaults_used = Enum.filter(var_defs, fn {key, def_map} ->
-      !Map.has_key?(normalized, key) && Map.has_key?(def_map, "default")
-    end)
-    |> Enum.map(fn {key, _} -> key end)
+    defaults_used =
+      Enum.filter(var_defs, fn {key, def_map} ->
+        !Map.has_key?(normalized, key) && Map.has_key?(def_map, "default")
+      end)
+      |> Enum.map(fn {key, _} -> key end)
 
-    {:ok, %{
-      missing_required: missing_required,
-      provided: provided,
-      defaults_used: defaults_used
-    }}
+    {:ok,
+     %{
+       missing_required: missing_required,
+       provided: provided,
+       defaults_used: defaults_used
+     }}
   end
 
   ## Rendering
@@ -441,7 +452,8 @@ defmodule Singularity.Templates.Renderer do
 
       acc
       |> String.replace("{{#{key_str}}}", value_str)
-      |> String.replace("{{ #{key_str} }}", value_str) # Support spaces
+      # Support spaces
+      |> String.replace("{{ #{key_str} }}", value_str)
     end)
   end
 
@@ -450,17 +462,19 @@ defmodule Singularity.Templates.Renderer do
   defp extract_snippets(%{"content" => %{"type" => "snippets", "snippets" => snippets}}) do
     {:ok, snippets}
   end
+
   defp extract_snippets(_) do
     {:error, :not_a_snippet_template}
   end
 
   defp render_all_snippets(snippets, variables, template) do
-    rendered = Enum.reduce(snippets, %{}, fn {name, snippet}, acc ->
-      case render_single_snippet(name, snippet, variables, template) do
-        {:ok, file_path, code} -> Map.put(acc, file_path, code)
-        {:error, _} -> acc
-      end
-    end)
+    rendered =
+      Enum.reduce(snippets, %{}, fn {name, snippet}, acc ->
+        case render_single_snippet(name, snippet, variables, template) do
+          {:ok, file_path, code} -> Map.put(acc, file_path, code)
+          {:error, _} -> acc
+        end
+      end)
 
     {:ok, rendered}
   end
@@ -470,14 +484,15 @@ defmodule Singularity.Templates.Renderer do
     file_path = snippet["file_path"] || "#{name}.ex"
 
     # Compose bits if specified
-    composed_code = if snippet["compose"] do
-      case load_snippet_bits(snippet["compose"], variables) do
-        {:ok, bits} -> bits <> "\n\n" <> code
-        _ -> code
+    composed_code =
+      if snippet["compose"] do
+        case load_snippet_bits(snippet["compose"], variables) do
+          {:ok, bits} -> bits <> "\n\n" <> code
+          _ -> code
+        end
+      else
+        code
       end
-    else
-      code
-    end
 
     rendered_code = replace_variables(composed_code, variables)
     rendered_path = replace_variables(file_path, variables)
@@ -486,17 +501,20 @@ defmodule Singularity.Templates.Renderer do
   end
 
   defp load_snippet_bits(bit_ids, variables) when is_list(bit_ids) do
-    bits = Enum.map(bit_ids, fn bit_id ->
-      case TemplateService.get_template("template", bit_id) do
-        {:ok, bit} ->
-          case extract_content(bit) do
-            {:ok, code} -> replace_variables(code, variables)
-            _ -> ""
-          end
-        _ -> ""
-      end
-    end)
-    |> Enum.join("\n\n")
+    bits =
+      Enum.map(bit_ids, fn bit_id ->
+        case TemplateService.get_template("template", bit_id) do
+          {:ok, bit} ->
+            case extract_content(bit) do
+              {:ok, code} -> replace_variables(code, variables)
+              _ -> ""
+            end
+
+          _ ->
+            ""
+        end
+      end)
+      |> Enum.join("\n\n")
 
     {:ok, bits}
   end
@@ -517,5 +535,6 @@ defmodule Singularity.Templates.Renderer do
     Logger.debug("Quality check: #{standard_id}")
     {:ok, code}
   end
+
   defp quality_check(code, _), do: {:ok, code}
 end

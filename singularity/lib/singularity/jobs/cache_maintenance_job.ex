@@ -38,12 +38,14 @@ defmodule Singularity.Jobs.CacheMaintenanceJob do
 
         {:error, reason} ->
           Logger.error("❌ Cache cleanup failed", reason: inspect(reason))
-          :ok  # Return :ok so Quantum doesn't retry - this is maintenance
+          # Return :ok so Quantum doesn't retry - this is maintenance
+          :ok
       end
     rescue
       e in Exception ->
         Logger.error("❌ Cache cleanup exception", error: inspect(e))
-        :ok  # Don't fail the job, just log it
+        # Don't fail the job, just log it
+        :ok
     end
   end
 
@@ -63,7 +65,8 @@ defmodule Singularity.Jobs.CacheMaintenanceJob do
 
         {:error, reason} ->
           Logger.error("❌ Materialized view refresh failed", reason: inspect(reason))
-          :ok  # Don't fail - this is maintenance
+          # Don't fail - this is maintenance
+          :ok
       end
     rescue
       e in Exception ->
@@ -88,7 +91,8 @@ defmodule Singularity.Jobs.CacheMaintenanceJob do
 
         {:error, reason} ->
           Logger.error("❌ Cache prewarm failed", reason: inspect(reason))
-          :ok  # Don't fail - this is optimization, not critical
+          # Don't fail - this is optimization, not critical
+          :ok
       end
     rescue
       e in Exception ->

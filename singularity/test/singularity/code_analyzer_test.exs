@@ -115,7 +115,8 @@ defmodule Singularity.CodeAnalyzerTest do
 
       assert {:ok, functions} = CodeAnalyzer.extract_functions(code, "elixir")
       assert is_list(functions)
-      assert length(functions) >= 2  # At least bar and qux (baz is private)
+      # At least bar and qux (baz is private)
+      assert length(functions) >= 2
     end
 
     test "extracts Rust functions" do

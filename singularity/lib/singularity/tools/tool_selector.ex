@@ -325,7 +325,7 @@ defmodule Singularity.Tools.ToolSelector do
       %{module: module, function: function} ->
         # Execute the tool via the appropriate module
         apply(module, function, [args])
-      
+
       _ ->
         {:error, "Tool not found: #{tool_name}"}
     end

@@ -2,7 +2,9 @@ defmodule Singularity.Repo.Migrations.CreateSearchMetricsTable do
   use Ecto.Migration
 
   def change do
-    create table(:search_metrics) do
+    # NOTE: This table already exists in the database
+    # This migration is idempotent - it only creates if table doesn't exist
+    create_if_not_exists table(:search_metrics) do
       add :query, :string, null: false
       add :elapsed_ms, :integer, null: false
       add :results_count, :integer, null: false
@@ -17,10 +19,10 @@ defmodule Singularity.Repo.Migrations.CreateSearchMetricsTable do
     end
 
     # Index for query lookups
-    create index(:search_metrics, [:query])
+    create_if_not_exists index(:search_metrics, [:query])
     # Index for time-based queries
-    create index(:search_metrics, [:inserted_at])
+    create_if_not_exists index(:search_metrics, [:inserted_at])
     # Composite index for query + satisfaction
-    create index(:search_metrics, [:query, :user_satisfaction])
+    create_if_not_exists index(:search_metrics, [:query, :user_satisfaction])
   end
 end

@@ -188,8 +188,8 @@ defmodule Singularity.CodeModel do
 
       try do
         # Load model (fine-tuned or base)
-        {model_info, tokenizer, generation_config} = 
-          if use_fine_tuned and fine_tuned_path && File.exists?(Path.expand(fine_tuned_path)) do
+        {model_info, tokenizer, generation_config} =
+          if (use_fine_tuned and fine_tuned_path) && File.exists?(Path.expand(fine_tuned_path)) do
             load_fine_tuned_model(fine_tuned_path)
           else
             load_base_model(model_repo)
@@ -229,7 +229,7 @@ defmodule Singularity.CodeModel do
 
   defp generate(serving, prompt, temperature, max_tokens, stop_sequences) do
     model_repo = get_model_name()
-    
+
     # Use T5-specific generation for CodeT5 models
     if String.contains?(model_repo, "codet5") do
       generate_t5_style(prompt, temperature, max_tokens, stop_sequences)
@@ -281,12 +281,12 @@ defmodule Singularity.CodeModel do
 
   defp load_fine_tuned_model(fine_tuned_path) do
     expanded_path = Path.expand(fine_tuned_path)
-    
+
     # Load fine-tuned model components
     {:ok, model_info} = Bumblebee.load_model({:local, expanded_path})
     {:ok, tokenizer} = Bumblebee.load_tokenizer({:local, expanded_path})
     {:ok, generation_config} = Bumblebee.load_generation_config({:local, expanded_path})
-    
+
     Logger.info("Loaded fine-tuned model from: #{expanded_path}")
     {model_info, tokenizer, generation_config}
   end
@@ -301,7 +301,7 @@ defmodule Singularity.CodeModel do
           defn_options: [compiler: EXLA],
           preallocate_params: true
         )
-      
+
       String.contains?(model_repo, "starcoder") ->
         # StarCoder configuration
         Bumblebee.Text.generation(model_info, tokenizer, generation_config,
@@ -309,7 +309,7 @@ defmodule Singularity.CodeModel do
           defn_options: [compiler: EXLA],
           preallocate_params: true
         )
-      
+
       true ->
         # Default configuration
         Bumblebee.Text.generation(model_info, tokenizer, generation_config,
@@ -324,7 +324,7 @@ defmodule Singularity.CodeModel do
   defp generate_t5_style(prompt, temperature, max_tokens, stop_sequences) do
     # Format prompt for T5 instruction-following
     formatted_prompt = format_t5_prompt(prompt)
-    
+
     # Use standard generation with T5-optimized parameters
     generate_standard(formatted_prompt, temperature, max_tokens, stop_sequences)
   end

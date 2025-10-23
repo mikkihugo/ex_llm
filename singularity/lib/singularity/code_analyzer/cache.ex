@@ -74,7 +74,8 @@ defmodule Singularity.CodeAnalyzer.Cache do
 
   # Default configuration
   @default_max_size 1000
-  @default_ttl 3600  # 1 hour in seconds
+  # 1 hour in seconds
+  @default_ttl 3600
 
   # ETS table name
   @table_name :code_analyzer_cache
@@ -105,7 +106,8 @@ defmodule Singularity.CodeAnalyzer.Cache do
   - `{:ok, result}` - Cached or computed result
   - `{:error, reason}` - If analysis fails
   """
-  def get_or_analyze(code, language, analyzer_fun) when is_binary(code) and is_function(analyzer_fun, 0) do
+  def get_or_analyze(code, language, analyzer_fun)
+      when is_binary(code) and is_function(analyzer_fun, 0) do
     key = cache_key(code, language)
 
     case get(key) do

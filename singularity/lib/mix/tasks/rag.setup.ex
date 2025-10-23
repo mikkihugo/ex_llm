@@ -57,16 +57,17 @@ defmodule Mix.Tasks.Rag.Setup do
 
   @impl Mix.Task
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args,
-      strict: [
-        step: :string,
-        skip_parsing: :boolean,
-        skip_embeddings: :boolean,
-        skip_test: :boolean,
-        path: :string
-      ],
-      aliases: [s: :step, p: :path]
-    )
+    {opts, _, _} =
+      OptionParser.parse(args,
+        strict: [
+          step: :string,
+          skip_parsing: :boolean,
+          skip_embeddings: :boolean,
+          skip_test: :boolean,
+          path: :string
+        ],
+        aliases: [s: :step, p: :path]
+      )
 
     Mix.Task.run("app.start")
 
@@ -77,33 +78,38 @@ defmodule Mix.Tasks.Rag.Setup do
     parse_path = opts[:path] || "lib/"
 
     Mix.shell().info("""
-    
+
     ╔══════════════════════════════════════════════════════════════╗
     ║  RAG Quality-Aware Code Generation - Setup                   ║
     ╚══════════════════════════════════════════════════════════════╝
     """)
 
     case step do
-      "templates" -> 
+      "templates" ->
         run_templates_sync()
-      "parse" -> 
+
+      "parse" ->
         run_codebase_parsing(parse_path)
+
       "embeddings" ->
         run_embedding_generation()
-      "test" -> 
+
+      "test" ->
         run_system_test()
+
       nil ->
         # Full setup
         run_full_setup(skip_parsing, skip_embeddings, skip_test, parse_path)
+
       _ ->
         Mix.shell().error("Unknown step: #{step}")
         Mix.shell().error("Valid steps: templates, parse, embeddings, test")
     end
 
     Mix.shell().info("""
-    
+
     ✅ Setup complete!
-    
+
     Try it:
       iex -S mix
       alias Singularity.RAGCodeGenerator
@@ -138,7 +144,7 @@ defmodule Mix.Tasks.Rag.Setup do
 
   defp run_templates_sync do
     Mix.shell().info("""
-    
+
     ┌──────────────────────────────────────────────────────────┐
     │ Step 1: Syncing Quality Templates                        │
     └──────────────────────────────────────────────────────────┘
@@ -151,7 +157,7 @@ defmodule Mix.Tasks.Rag.Setup do
 
   defp run_codebase_parsing(parse_path) do
     Mix.shell().info("""
-    
+
     ┌──────────────────────────────────────────────────────────┐
     │ Step 2: Parsing Codebase (#{parse_path})
     │ This may take 2-5 minutes...                             │
@@ -164,28 +170,28 @@ defmodule Mix.Tasks.Rag.Setup do
       Mix.shell().error("Skipping codebase parsing")
       :ok
     else
+      alias Singularity.ParserEngine
 
-    alias Singularity.ParserEngine
+      case ParserEngine.parse_and_store_tree(parse_path) do
+        {:ok, results} ->
+          success_count = Enum.count(results, fn r -> match?({:ok, _}, r) end)
+          error_count = Enum.count(results, fn r -> match?({:error, _}, r) end)
 
-    case ParserEngine.parse_and_store_tree(parse_path) do
-      {:ok, results} ->
-        success_count = Enum.count(results, fn r -> match?({:ok, _}, r) end)
-        error_count = Enum.count(results, fn r -> match?({:error, _}, r) end)
-        
-        Mix.shell().info("✅ Parsed #{success_count} files successfully")
-        if error_count > 0 do
-          Mix.shell().warn("⚠️  #{error_count} files failed to parse")
-        end
+          Mix.shell().info("✅ Parsed #{success_count} files successfully")
 
-      {:error, reason} ->
-        Mix.shell().error("Failed to parse codebase: #{inspect(reason)}")
-    end
+          if error_count > 0 do
+            Mix.shell().warn("⚠️  #{error_count} files failed to parse")
+          end
+
+        {:error, reason} ->
+          Mix.shell().error("Failed to parse codebase: #{inspect(reason)}")
+      end
     end
   end
 
   defp run_embedding_generation do
     Mix.shell().info("""
-    
+
     ┌──────────────────────────────────────────────────────────┐
     │ Step 3: Generating Embeddings                            │
     │ This may take 1-3 minutes...                             │
@@ -199,16 +205,15 @@ defmodule Mix.Tasks.Rag.Setup do
       Mix.shell().info("Get a free key at: https://makersuite.google.com/app/apikey")
       :ok
     else
+      Mix.Task.run("knowledge.embed", ["--type", "quality_template"])
 
-    Mix.Task.run("knowledge.embed", ["--type", "quality_template"])
-    
-    Mix.shell().info("✅ Embeddings generated for quality templates")
+      Mix.shell().info("✅ Embeddings generated for quality templates")
     end
   end
 
   defp run_system_test do
     Mix.shell().info("""
-    
+
     ┌──────────────────────────────────────────────────────────┐
     │ Step 4: Testing RAG System                               │
     └──────────────────────────────────────────────────────────┘
@@ -218,19 +223,22 @@ defmodule Mix.Tasks.Rag.Setup do
 
     # Test 1: Check if templates are loaded
     Mix.shell().info("Testing: Quality template loading...")
+
     case ArtifactStore.get("quality_template", "elixir_production") do
       {:ok, template} ->
         Mix.shell().info("  ✅ elixir_production template loaded (v#{template.version})")
+
       {:error, reason} ->
         Mix.shell().error("  ❌ Failed to load template: #{inspect(reason)}")
     end
 
     # Test 2: Check template validator
     Mix.shell().info("Testing: Template validator...")
+
     test_code = """
     @doc \"\"\"
     Parses JSON data.
-    
+
     ## Examples
         iex> parse("{}")
         {:ok, %{}}
@@ -248,31 +256,39 @@ defmodule Mix.Tasks.Rag.Setup do
     case ArtifactStore.get("quality_template", "elixir_production") do
       {:ok, template} ->
         alias Singularity.Code.Quality.TemplateValidator
-        
+
         case TemplateValidator.validate(test_code, template, "elixir") do
           {:ok, %{compliant: true, score: score}} ->
             Mix.shell().info("  ✅ Validator works (score: #{Float.round(score, 2)})")
+
           {:ok, %{compliant: false, score: score, violations: violations}} ->
-            Mix.shell().warn("  ⚠️  Validator works but test code failed (score: #{Float.round(score, 2)})")
+            Mix.shell().warn(
+              "  ⚠️  Validator works but test code failed (score: #{Float.round(score, 2)})"
+            )
+
             Mix.shell().warn("  Violations: #{inspect(violations)}")
+
           {:error, reason} ->
             Mix.shell().error("  ❌ Validator error: #{inspect(reason)}")
         end
+
       {:error, _} ->
         Mix.shell().warn("  ⚠️  Skipping validator test (template not loaded)")
     end
 
     # Test 3: Check parser
     Mix.shell().info("Testing: Parser engine...")
+
     case Singularity.ParserEngine.supported_languages() do
       languages when is_list(languages) ->
         Mix.shell().info("  ✅ Parser ready (#{length(languages)} languages)")
+
       _ ->
         Mix.shell().warn("  ⚠️  Parser may not be ready")
     end
 
     Mix.shell().info("""
-    
+
     ✅ System tests complete!
     """)
   end

@@ -162,7 +162,7 @@ defmodule Singularity.CodeDeduplicator do
       {:ok, ast} ->
         ast_string = ast_to_string(ast)
         :crypto.hash(:sha256, ast_string) |> Base.encode16(case: :lower)
-      
+
       {:error, _reason} ->
         # Fallback to normalized hash if AST parsing fails
         Logger.warning("AST parsing failed, using normalized hash", language: language)
@@ -174,12 +174,16 @@ defmodule Singularity.CodeDeduplicator do
     case language do
       "elixir" ->
         parse_elixir_ast(code)
+
       "rust" ->
         parse_rust_ast(code)
+
       "javascript" ->
         parse_javascript_ast(code)
+
       "python" ->
         parse_python_ast(code)
+
       _ ->
         # For unsupported languages, use normalized hash
         {:error, :unsupported_language}
@@ -197,34 +201,37 @@ defmodule Singularity.CodeDeduplicator do
   defp parse_rust_ast(code) do
     # For Rust, we would use a Rust parser via NIF or external service
     # For now, create a simple structure-based representation
-    {:ok, %{
-      type: "rust_file",
-      functions: extract_rust_functions(code),
-      structs: extract_rust_structs(code),
-      impls: extract_rust_impls(code)
-    }}
+    {:ok,
+     %{
+       type: "rust_file",
+       functions: extract_rust_functions(code),
+       structs: extract_rust_structs(code),
+       impls: extract_rust_impls(code)
+     }}
   end
 
   defp parse_javascript_ast(code) do
     # For JavaScript, we would use a JS parser
     # For now, create a simple structure-based representation
-    {:ok, %{
-      type: "javascript_file",
-      functions: extract_js_functions(code),
-      classes: extract_js_classes(code),
-      variables: extract_js_variables(code)
-    }}
+    {:ok,
+     %{
+       type: "javascript_file",
+       functions: extract_js_functions(code),
+       classes: extract_js_classes(code),
+       variables: extract_js_variables(code)
+     }}
   end
 
   defp parse_python_ast(code) do
     # For Python, we would use a Python parser
     # For now, create a simple structure-based representation
-    {:ok, %{
-      type: "python_file",
-      functions: extract_python_functions(code),
-      classes: extract_python_classes(code),
-      imports: extract_python_imports(code)
-    }}
+    {:ok,
+     %{
+       type: "python_file",
+       functions: extract_python_functions(code),
+       classes: extract_python_classes(code),
+       imports: extract_python_imports(code)
+     }}
   end
 
   defp ast_to_string(ast) when is_list(ast) do
@@ -314,7 +321,7 @@ defmodule Singularity.CodeDeduplicator do
   defp extract_python_imports(code) do
     # Extract Python imports
     Regex.scan(~r/(?:from\s+(\w+)\s+)?import\s+(\w+)/, code)
-    |> Enum.map(fn [_, module, name] -> 
+    |> Enum.map(fn [_, module, name] ->
       if module != "", do: "#{module}.#{name}", else: name
     end)
   end
@@ -488,12 +495,27 @@ defmodule Singularity.CodeDeduplicator do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         module_names = extract_module_names_from_code(code)
-        framework_patterns = extract_patterns(code, [
-          "GenServer", "Supervisor", "Agent", "Task", "Broadway", "Ecto.Schema"
-        ])
-        domain_patterns = extract_patterns(code, [
-          "http", "api", "request", "cache", "pubsub", "nats", "database"
-        ])
+
+        framework_patterns =
+          extract_patterns(code, [
+            "GenServer",
+            "Supervisor",
+            "Agent",
+            "Task",
+            "Broadway",
+            "Ecto.Schema"
+          ])
+
+        domain_patterns =
+          extract_patterns(code, [
+            "http",
+            "api",
+            "request",
+            "cache",
+            "pubsub",
+            "nats",
+            "database"
+          ])
 
         (function_names ++ module_names ++ framework_patterns ++ domain_patterns)
         |> Enum.map(&String.downcase/1)
@@ -510,13 +532,21 @@ defmodule Singularity.CodeDeduplicator do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         class_names = extract_class_names_from_code(code)
-        framework_patterns = extract_patterns(code, [
-          "Result", "Option", "Vec", "HashMap", "async", "tokio", "serde"
-        ])
-        
+
+        framework_patterns =
+          extract_patterns(code, [
+            "Result",
+            "Option",
+            "Vec",
+            "HashMap",
+            "async",
+            "tokio",
+            "serde"
+          ])
+
         (function_names ++ class_names ++ framework_patterns)
         |> Enum.map(&String.downcase/1)
-      
+
       {:error, _} ->
         # Fallback to basic extraction
         extract_generic_keywords(code)
@@ -529,13 +559,20 @@ defmodule Singularity.CodeDeduplicator do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         class_names = extract_class_names_from_code(code)
-        framework_patterns = extract_patterns(code, [
-          "http", "context", "goroutine", "channel", "error", "interface"
-        ])
-        
+
+        framework_patterns =
+          extract_patterns(code, [
+            "http",
+            "context",
+            "goroutine",
+            "channel",
+            "error",
+            "interface"
+          ])
+
         (function_names ++ class_names ++ framework_patterns)
         |> Enum.map(&String.downcase/1)
-      
+
       {:error, _} ->
         # Fallback to basic extraction
         extract_generic_keywords(code)
@@ -548,13 +585,20 @@ defmodule Singularity.CodeDeduplicator do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         class_names = extract_class_names_from_code(code)
-        framework_patterns = extract_patterns(code, [
-          "async", "await", "Promise", "Observable", "http", "api"
-        ])
-        
+
+        framework_patterns =
+          extract_patterns(code, [
+            "async",
+            "await",
+            "Promise",
+            "Observable",
+            "http",
+            "api"
+          ])
+
         (function_names ++ class_names ++ framework_patterns)
         |> Enum.map(&String.downcase/1)
-      
+
       {:error, _} ->
         # Fallback to basic extraction
         extract_generic_keywords(code)
@@ -567,13 +611,20 @@ defmodule Singularity.CodeDeduplicator do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         class_names = extract_class_names_from_code(code)
-        framework_patterns = extract_patterns(code, [
-          "async", "await", "dataclass", "pydantic", "fastapi", "django"
-        ])
-        
+
+        framework_patterns =
+          extract_patterns(code, [
+            "async",
+            "await",
+            "dataclass",
+            "pydantic",
+            "fastapi",
+            "django"
+          ])
+
         (function_names ++ class_names ++ framework_patterns)
         |> Enum.map(&String.downcase/1)
-      
+
       {:error, _} ->
         # Fallback to basic extraction
         extract_generic_keywords(code)
@@ -586,13 +637,20 @@ defmodule Singularity.CodeDeduplicator do
       {:ok, functions} ->
         function_names = Enum.map(functions, & &1.name)
         class_names = extract_class_names_from_code(code)
-        framework_patterns = extract_patterns(code, [
-          "Spring", "Repository", "Service", "Controller", "Entity", "Optional"
-        ])
-        
+
+        framework_patterns =
+          extract_patterns(code, [
+            "Spring",
+            "Repository",
+            "Service",
+            "Controller",
+            "Entity",
+            "Optional"
+          ])
+
         (function_names ++ class_names ++ framework_patterns)
         |> Enum.map(&String.downcase/1)
-      
+
       {:error, _} ->
         # Fallback to basic extraction
         extract_generic_keywords(code)
@@ -615,12 +673,14 @@ defmodule Singularity.CodeDeduplicator do
     case ParserEngine.detect_language(code) do
       {:ok, "elixir"} ->
         case ParserEngine.parse_file(code) do
-          {:ok, document} -> 
+          {:ok, document} ->
             # Extract module names from AST
             extract_module_from_ast(document.ast)
-          {:error, _} -> 
+
+          {:error, _} ->
             extract_by_regex(code, ~r/defmodule\s+([A-Z][A-Za-z0-9_.]+)/)
         end
+
       _ ->
         extract_by_regex(code, ~r/defmodule\s+([A-Z][A-Za-z0-9_.]+)/)
     end
@@ -631,6 +691,7 @@ defmodule Singularity.CodeDeduplicator do
     case ParserEngine.extract_classes(code) do
       {:ok, classes} ->
         Enum.map(classes, & &1.name)
+
       {:error, _} ->
         extract_by_regex(code, ~r/(?:class|struct)\s+([A-Z][A-Za-z0-9_]+)/)
     end
@@ -643,6 +704,7 @@ defmodule Singularity.CodeDeduplicator do
         body
         |> Enum.filter(&(&1["type"] == "ModuleDeclaration"))
         |> Enum.map(& &1["name"])
+
       _ ->
         []
     end

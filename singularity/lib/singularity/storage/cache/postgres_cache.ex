@@ -35,7 +35,8 @@ defmodule Singularity.Storage.Cache.PostgresCache do
   import Ecto.Query
   alias Singularity.Repo
 
-  @default_ttl 3600  # 1 hour in seconds
+  # 1 hour in seconds
+  @default_ttl 3600
 
   # ============================================================================
   # Public API

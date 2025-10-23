@@ -15,9 +15,12 @@ defmodule Singularity.Storage.Cache.CacheJanitor do
   require Logger
   alias Singularity.Storage.Cache.PostgresCache
 
-  @cleanup_interval :timer.minutes(15)  # Every 15 minutes
-  @refresh_interval :timer.hours(1)      # Every hour
-  @prewarm_interval :timer.hours(6)      # Every 6 hours
+  # Every 15 minutes
+  @cleanup_interval :timer.minutes(15)
+  # Every hour
+  @refresh_interval :timer.hours(1)
+  # Every 6 hours
+  @prewarm_interval :timer.hours(6)
 
   # ============================================================================
   # Client API

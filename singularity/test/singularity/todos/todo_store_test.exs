@@ -128,7 +128,8 @@ defmodule Singularity.Execution.Todos.TodoStoreTest do
       {:ok, started} = TodoStore.start(todo)
 
       assert {:ok, failed} = TodoStore.fail(started, "Error occurred")
-      assert failed.status == "pending"  # Auto-retried
+      # Auto-retried
+      assert failed.status == "pending"
       assert failed.retry_count == 1
       assert failed.error_message == "Error occurred"
     end
@@ -182,7 +183,10 @@ defmodule Singularity.Execution.Todos.TodoStoreTest do
 
     test "skips todos with unsatisfied dependencies" do
       {:ok, dep} = TodoStore.create(%{title: "Dependency", priority: 1})
-      {:ok, _blocked} = TodoStore.create(%{title: "Blocked", priority: 1, depends_on_ids: [dep.id]})
+
+      {:ok, _blocked} =
+        TodoStore.create(%{title: "Blocked", priority: 1, depends_on_ids: [dep.id]})
+
       {:ok, available} = TodoStore.create(%{title: "Available", priority: 2})
 
       assert {:ok, next} = TodoStore.get_next_available()

@@ -59,12 +59,12 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
       {:ok, payload} ->
         payload
         |> route_message(topic)
-        |> Jason.encode!
+        |> Jason.encode!()
         |> then(&Gnat.pub(gnat, reply_to, &1))
 
       {:error, _error} ->
         %{error: "Invalid JSON payload"}
-        |> Jason.encode!
+        |> Jason.encode!()
         |> then(&Gnat.pub(gnat, reply_to, &1))
     end
   rescue
@@ -72,7 +72,7 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
       Logger.error("Error handling message on #{topic}: #{inspect(error)}")
 
       %{error: "Internal server error"}
-      |> Jason.encode!
+      |> Jason.encode!()
       |> then(&Gnat.pub(gnat, reply_to, &1))
   end
 
@@ -85,7 +85,6 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
       "analysis.meta.patterns.suggestions" -> handle_patterns_request(payload)
       "analysis.meta.templates.suggestions" -> handle_templates_request(payload)
       "analysis.meta.refactoring.suggestions" -> handle_refactoring_request(payload)
-
       "analysis.meta.registry.naming" -> handle_meta_naming_request(payload)
       "analysis.meta.registry.architecture" -> handle_meta_architecture_request(payload)
       "analysis.meta.registry.quality" -> handle_meta_quality_request(payload)
@@ -93,7 +92,6 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
       "analysis.meta.registry.patterns" -> handle_meta_patterns_request(payload)
       "analysis.meta.registry.templates" -> handle_meta_templates_request(payload)
       "analysis.meta.registry.refactoring" -> handle_meta_refactoring_request(payload)
-
       _ -> {:error, %{error: "Unknown topic: #{topic}"}}
     end
   end
@@ -130,7 +128,9 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
 
       suggestions =
         QuerySystem.query_architecture_suggestions(codebase_id, context)
-        |> fallback_if_empty(fn -> generate_default_architecture_suggestions(description, context) end)
+        |> fallback_if_empty(fn ->
+          generate_default_architecture_suggestions(description, context)
+        end)
 
       QuerySystem.track_usage(:architecture, codebase_id, context, true)
 
@@ -172,7 +172,9 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
 
       suggestions =
         QuerySystem.query_architecture_suggestions(codebase_id, context)
-        |> fallback_if_empty(fn -> generate_default_dependency_suggestions(description, context) end)
+        |> fallback_if_empty(fn ->
+          generate_default_dependency_suggestions(description, context)
+        end)
 
       QuerySystem.track_usage(:dependencies, codebase_id, context, true)
 
@@ -186,7 +188,8 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
   Provide pattern suggestions (framework or domain patterns).
   """
   def handle_patterns_request(payload) do
-    with {:ok, attrs} <- normalize_payload(payload, [:codebase_id], [:context, :category, :description]) do
+    with {:ok, attrs} <-
+           normalize_payload(payload, [:codebase_id], [:context, :category, :description]) do
       codebase_id = attrs.codebase_id
       context = Map.get(attrs, :context) || Map.get(attrs, :category, "pattern")
       description = Map.get(attrs, :description, context)
@@ -214,7 +217,9 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
 
       suggestions =
         QuerySystem.query_naming_suggestions(codebase_id, context)
-        |> fallback_if_empty(fn -> generate_default_template_suggestions(description, context) end)
+        |> fallback_if_empty(fn ->
+          generate_default_template_suggestions(description, context)
+        end)
 
       QuerySystem.track_usage(:templates, codebase_id, context, true)
 
@@ -235,7 +240,9 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
 
       suggestions =
         QuerySystem.query_quality_suggestions(codebase_id, context)
-        |> fallback_if_empty(fn -> generate_default_refactoring_suggestions(description, context) end)
+        |> fallback_if_empty(fn ->
+          generate_default_refactoring_suggestions(description, context)
+        end)
 
       QuerySystem.track_usage(:refactoring, codebase_id, context, true)
 
@@ -249,7 +256,8 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
   Handle internal naming learning events.
   """
   def handle_meta_naming_request(payload) do
-    with {:ok, attrs} <- normalize_payload(payload, [:codebase_id, :language, :framework, :patterns]) do
+    with {:ok, attrs} <-
+           normalize_payload(payload, [:codebase_id, :language, :framework, :patterns]) do
       learning_attrs = %{
         codebase_id: attrs.codebase_id,
         language: attrs.language,
@@ -307,7 +315,8 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
   Handle internal dependency learning events.
   """
   def handle_meta_dependencies_request(payload) do
-    with {:ok, attrs} <- normalize_payload(payload, [:codebase_id], [:patterns, :dependencies, :services]) do
+    with {:ok, attrs} <-
+           normalize_payload(payload, [:codebase_id], [:patterns, :dependencies, :services]) do
       patterns = attrs |> Map.get(:patterns) || Map.get(attrs, :dependencies, [])
       services = attrs |> Map.get(:services, patterns)
 
@@ -346,7 +355,13 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
   Handle internal template learning events.
   """
   def handle_meta_templates_request(payload) do
-    with {:ok, attrs} <- normalize_payload(payload, [:codebase_id], [:patterns, :templates, :language, :framework]) do
+    with {:ok, attrs} <-
+           normalize_payload(payload, [:codebase_id], [
+             :patterns,
+             :templates,
+             :language,
+             :framework
+           ]) do
       patterns = attrs |> Map.get(:templates) || Map.get(attrs, :patterns, [])
       language = Map.get(attrs, :language, "generic")
       framework = Map.get(attrs, :framework, "templates")
@@ -534,7 +549,10 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.MessageHandlers do
   defp learning_response(_), do: {:ok, %{status: "learning_recorded"}}
 
   defp format_error({:missing_key, key}), do: %{error: "Missing required key: #{key}"}
-  defp format_error({:unknown_category, category}), do: %{error: "Unknown learning category: #{inspect(category)}"}
+
+  defp format_error({:unknown_category, category}),
+    do: %{error: "Unknown learning category: #{inspect(category)}"}
+
   defp format_error(:invalid_payload), do: %{error: "Invalid payload"}
   defp format_error(reason), do: %{error: inspect(reason)}
 end

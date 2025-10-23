@@ -1,7 +1,7 @@
 defmodule Singularity.Runner.ExecutionRecord do
   @moduledoc """
   Ecto schema for runner execution records.
-  
+
   Persists execution history to PostgreSQL for:
   - Execution tracking and monitoring
   - Performance analytics
@@ -70,10 +70,11 @@ defmodule Singularity.Runner.ExecutionRecord do
     status = Keyword.get(opts, :status)
     task_type = Keyword.get(opts, :task_type)
 
-    query = from e in __MODULE__,
-      order_by: [desc: e.started_at],
-      limit: ^limit,
-      offset: ^offset
+    query =
+      from e in __MODULE__,
+        order_by: [desc: e.started_at],
+        limit: ^limit,
+        offset: ^offset
 
     query = if status, do: where(query, [e], e.status == ^status), else: query
     query = if task_type, do: where(query, [e], e.task_type == ^task_type), else: query
@@ -86,30 +87,34 @@ defmodule Singularity.Runner.ExecutionRecord do
   """
   def get_stats do
     total = Repo.aggregate(__MODULE__, :count, :id)
-    
-    successful = Repo.aggregate(
-      from(e in __MODULE__, where: e.status == "completed"),
-      :count,
-      :id
-    )
 
-    failed = Repo.aggregate(
-      from(e in __MODULE__, where: e.status == "failed"),
-      :count,
-      :id
-    )
+    successful =
+      Repo.aggregate(
+        from(e in __MODULE__, where: e.status == "completed"),
+        :count,
+        :id
+      )
 
-    running = Repo.aggregate(
-      from(e in __MODULE__, where: e.status == "running"),
-      :count,
-      :id
-    )
+    failed =
+      Repo.aggregate(
+        from(e in __MODULE__, where: e.status == "failed"),
+        :count,
+        :id
+      )
 
-    avg_time = Repo.aggregate(
-      from(e in __MODULE__, where: not is_nil(e.execution_time_ms)),
-      :avg,
-      :execution_time_ms
-    )
+    running =
+      Repo.aggregate(
+        from(e in __MODULE__, where: e.status == "running"),
+        :count,
+        :id
+      )
+
+    avg_time =
+      Repo.aggregate(
+        from(e in __MODULE__, where: not is_nil(e.execution_time_ms)),
+        :avg,
+        :execution_time_ms
+      )
 
     %{
       total: total,
@@ -149,10 +154,11 @@ defmodule Singularity.Runner.ExecutionRecord do
         {:error, :not_found}
 
       record ->
-        update_attrs = Map.merge(attrs, %{
-          status: status,
-          completed_at: DateTime.utc_now()
-        })
+        update_attrs =
+          Map.merge(attrs, %{
+            status: status,
+            completed_at: DateTime.utc_now()
+          })
 
         record
         |> changeset(update_attrs)

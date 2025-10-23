@@ -63,7 +63,8 @@ defmodule Singularity.Tools.Todos do
             },
             description: %{
               type: "string",
-              description: "Detailed description of what needs to be done (optional, max 5000 chars)"
+              description:
+                "Detailed description of what needs to be done (optional, max 5000 chars)"
             },
             priority: %{
               type: "integer",
@@ -101,7 +102,15 @@ defmodule Singularity.Tools.Todos do
           properties: %{
             status: %{
               type: "string",
-              enum: ["pending", "assigned", "in_progress", "completed", "failed", "blocked", "cancelled"],
+              enum: [
+                "pending",
+                "assigned",
+                "in_progress",
+                "completed",
+                "failed",
+                "blocked",
+                "cancelled"
+              ],
               description: "Filter by status"
             },
             priority: %{

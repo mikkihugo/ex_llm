@@ -109,7 +109,15 @@ defmodule Singularity.Execution.Todos.Todo do
   """
   def status_changeset(todo, attrs) do
     todo
-    |> cast(attrs, [:status, :assigned_agent_id, :started_at, :completed_at, :failed_at, :error_message, :result])
+    |> cast(attrs, [
+      :status,
+      :assigned_agent_id,
+      :started_at,
+      :completed_at,
+      :failed_at,
+      :error_message,
+      :result
+    ])
     |> validate_required([:status])
     |> validate_inclusion(:status, @valid_statuses)
     |> validate_status_transition(todo.status)
@@ -172,14 +180,21 @@ defmodule Singularity.Execution.Todos.Todo do
     if valid_transition? do
       changeset
     else
-      add_error(changeset, :status, "invalid status transition from #{current_status} to #{new_status}")
+      add_error(
+        changeset,
+        :status,
+        "invalid status transition from #{current_status} to #{new_status}"
+      )
     end
   end
 
   defp calculate_actual_duration(changeset, nil), do: changeset
 
   defp calculate_actual_duration(changeset, started_at) do
-    ended_at = get_field(changeset, :completed_at) || get_field(changeset, :failed_at) || DateTime.utc_now()
+    ended_at =
+      get_field(changeset, :completed_at) || get_field(changeset, :failed_at) ||
+        DateTime.utc_now()
+
     duration = DateTime.diff(ended_at, started_at, :second)
     put_change(changeset, :actual_duration_seconds, duration)
   end

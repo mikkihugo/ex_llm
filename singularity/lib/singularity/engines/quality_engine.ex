@@ -15,7 +15,8 @@ defmodule Singularity.QualityEngine do
     otp_app: :singularity,
     crate: :quality_engine,
     path: "../rust/quality_engine",
-    skip_compilation?: true  # Temporarily skip compilation to fix hot reload
+    # Temporarily skip compilation to fix hot reload
+    skip_compilation?: true
 
   require Logger
   alias Singularity.NatsClient
@@ -107,13 +108,14 @@ defmodule Singularity.QualityEngine do
       quality_level: quality_level,
       include_patterns: true
     }
-    
+
     case NatsClient.request("central.quality.rules", Jason.encode!(request), timeout: 5000) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data["rules"] || []}
           {:error, reason} -> {:error, "Failed to decode central response: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "NATS request failed: #{reason}"}
     end
@@ -128,7 +130,7 @@ defmodule Singularity.QualityEngine do
       results: results,
       timestamp: DateTime.utc_now()
     }
-    
+
     case NatsClient.publish("central.quality.analytics", Jason.encode!(request)) do
       :ok -> :ok
       {:error, reason} -> {:error, "Failed to send quality analytics: #{reason}"}
@@ -145,13 +147,16 @@ defmodule Singularity.QualityEngine do
       language: language,
       include_examples: true
     }
-    
-    case NatsClient.request("central.quality.recommendations", Jason.encode!(request), timeout: 3000) do
+
+    case NatsClient.request("central.quality.recommendations", Jason.encode!(request),
+           timeout: 3000
+         ) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data["recommendations"] || []}
           {:error, reason} -> {:error, "Failed to decode central response: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "NATS request failed: #{reason}"}
     end

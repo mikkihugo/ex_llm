@@ -119,12 +119,12 @@ defmodule Singularity.Agents.DocumentationUpgrader do
 
   @type upgrade_status :: :pending | :in_progress | :completed | :failed
   @type documentation_report :: %{
-    total_modules: integer(),
-    documented_modules: integer(),
-    quality_2_2_0_modules: integer(),
-    missing_documentation: list(String.t()),
-    quality_score: float()
-  }
+          total_modules: integer(),
+          documented_modules: integer(),
+          quality_2_2_0_modules: integer(),
+          missing_documentation: list(String.t()),
+          quality_score: float()
+        }
 
   ## Client API
 
@@ -176,10 +176,13 @@ defmodule Singularity.Agents.DocumentationUpgrader do
   def handle_call(:start_upgrade, _from, state) do
     case state.status do
       :idle ->
-        task = Task.Supervisor.async_nolink(MyApp.TaskSupervisor, fn ->
-          run_documentation_upgrade()
-        end)
-        {:reply, {:ok, "upgrade_#{System.unique_integer()}"}, %{state | status: :in_progress, upgrade_task: task}}
+        task =
+          Task.Supervisor.async_nolink(MyApp.TaskSupervisor, fn ->
+            run_documentation_upgrade()
+          end)
+
+        {:reply, {:ok, "upgrade_#{System.unique_integer()}"},
+         %{state | status: :in_progress, upgrade_task: task}}
 
       _ ->
         {:reply, {:error, :upgrade_in_progress}, state}
@@ -266,6 +269,7 @@ defmodule Singularity.Agents.DocumentationUpgrader do
         files = Path.wildcard(Path.join(lib_path, "**/*.ex"))
 
         analysis = analyze_documentation_quality(files)
+
         report = %{
           total_modules: length(files),
           documented_modules: count_documented_modules(files),
@@ -276,6 +280,7 @@ defmodule Singularity.Agents.DocumentationUpgrader do
 
         Logger.info("Scanned #{length(files)} files: #{report.quality_score}% quality")
         {:ok, report}
+
       {:error, reason} ->
         Logger.error("Failed to scan codebase documentation: #{inspect(reason)}")
         {:error, reason}
@@ -307,14 +312,23 @@ defmodule Singularity.Agents.DocumentationUpgrader do
         case String.match?(content, ~r/@moduledoc/) do
           true ->
             {:ok, content}
+
           false ->
             # Insert @moduledoc after defmodule line
-            upgraded = String.replace(content, ~r/(defmodule [^d]*) do/, "\\1 do\n  @moduledoc \"\"\"\n  Auto-generated documentation.\n  \"\"\"")
+            upgraded =
+              String.replace(
+                content,
+                ~r/(defmodule [^d]*) do/,
+                "\\1 do\n  @moduledoc \"\"\"\n  Auto-generated documentation.\n  \"\"\""
+              )
+
             {:ok, upgraded}
         end
+
       "rust" ->
         # Add /// doc comments if missing
         {:ok, content}
+
       _ ->
         {:ok, content}
     end
@@ -335,7 +349,10 @@ defmodule Singularity.Agents.DocumentationUpgrader do
       end
 
       # Log upgrade coordination completion
-      Logger.info("Documentation upgrade coordination completed: #{report.quality_score}% quality")
+      Logger.info(
+        "Documentation upgrade coordination completed: #{report.quality_score}% quality"
+      )
+
       {:ok, :coordinated}
     rescue
       e ->
@@ -376,7 +393,7 @@ defmodule Singularity.Agents.DocumentationUpgrader do
     case File.read(file_path) do
       {:ok, content} ->
         language = detect_language(file_path)
-        
+
         case language do
           :elixir ->
             %{
@@ -389,31 +406,34 @@ defmodule Singularity.Agents.DocumentationUpgrader do
               has_anti_patterns: String.contains?(content, "Anti-Patterns"),
               has_search_keywords: String.contains?(content, "Search Keywords")
             }
-            
+
           :rust ->
             %{
               file: file_path,
               language: :rust,
-              has_documentation: String.contains?(content, "///") and String.contains?(content, "Crate Identity"),
+              has_documentation:
+                String.contains?(content, "///") and String.contains?(content, "Crate Identity"),
               has_identity: String.contains?(content, "Crate Identity"),
               has_architecture_diagram: String.contains?(content, "Architecture Diagram"),
               has_call_graph: String.contains?(content, "Call Graph"),
               has_anti_patterns: String.contains?(content, "Anti-Patterns"),
               has_search_keywords: String.contains?(content, "Search Keywords")
             }
-            
+
           :typescript ->
             %{
               file: file_path,
               language: :typescript,
-              has_documentation: String.contains?(content, "/**") and String.contains?(content, "Component Identity"),
+              has_documentation:
+                String.contains?(content, "/**") and
+                  String.contains?(content, "Component Identity"),
               has_identity: String.contains?(content, "Component Identity"),
               has_architecture_diagram: String.contains?(content, "Architecture Diagram"),
               has_call_graph: String.contains?(content, "Call Graph"),
               has_anti_patterns: String.contains?(content, "Anti-Patterns"),
               has_search_keywords: String.contains?(content, "Search Keywords")
             }
-            
+
           _ ->
             %{
               file: file_path,
@@ -436,13 +456,13 @@ defmodule Singularity.Agents.DocumentationUpgrader do
     cond do
       String.ends_with?(file_path, ".ex") or String.ends_with?(file_path, ".exs") ->
         :elixir
-        
+
       String.ends_with?(file_path, ".rs") ->
         :rust
-        
+
       String.ends_with?(file_path, ".ts") or String.ends_with?(file_path, ".tsx") ->
         :typescript
-        
+
       true ->
         :unknown
     end
@@ -459,11 +479,11 @@ defmodule Singularity.Agents.DocumentationUpgrader do
     |> Enum.map(&analyze_file_documentation/1)
     |> Enum.count(fn file ->
       file.has_documentation and
-      file.has_identity and
-      file.has_architecture_diagram and
-      file.has_call_graph and
-      file.has_anti_patterns and
-      file.has_search_keywords
+        file.has_identity and
+        file.has_architecture_diagram and
+        file.has_call_graph and
+        file.has_anti_patterns and
+        file.has_search_keywords
     end)
   end
 
@@ -477,7 +497,7 @@ defmodule Singularity.Agents.DocumentationUpgrader do
   defp calculate_quality_score(files) do
     total_files = length(files)
     quality_modules = count_quality_modules(files)
-    
+
     if total_files > 0 do
       quality_modules / total_files
     else
@@ -488,20 +508,42 @@ defmodule Singularity.Agents.DocumentationUpgrader do
   defp validate_documentation(content) do
     # Detect language and validate accordingly
     language = detect_language_from_content(content)
-    
-    required_elements = case language do
-      :elixir ->
-        ["@moduledoc", "Module Identity", "Architecture Diagram", "Call Graph", "Anti-Patterns", "Search Keywords"]
-        
-      :rust ->
-        ["///", "Crate Identity", "Architecture Diagram", "Call Graph", "Anti-Patterns", "Search Keywords"]
-        
-      :typescript ->
-        ["/**", "Component Identity", "Architecture Diagram", "Call Graph", "Anti-Patterns", "Search Keywords"]
-        
-      _ ->
-        ["Architecture Diagram", "Call Graph", "Anti-Patterns", "Search Keywords"]
-    end
+
+    required_elements =
+      case language do
+        :elixir ->
+          [
+            "@moduledoc",
+            "Module Identity",
+            "Architecture Diagram",
+            "Call Graph",
+            "Anti-Patterns",
+            "Search Keywords"
+          ]
+
+        :rust ->
+          [
+            "///",
+            "Crate Identity",
+            "Architecture Diagram",
+            "Call Graph",
+            "Anti-Patterns",
+            "Search Keywords"
+          ]
+
+        :typescript ->
+          [
+            "/**",
+            "Component Identity",
+            "Architecture Diagram",
+            "Call Graph",
+            "Anti-Patterns",
+            "Search Keywords"
+          ]
+
+        _ ->
+          ["Architecture Diagram", "Call Graph", "Anti-Patterns", "Search Keywords"]
+      end
 
     has_all_elements = Enum.all?(required_elements, &String.contains?(content, &1))
 
@@ -516,13 +558,13 @@ defmodule Singularity.Agents.DocumentationUpgrader do
     cond do
       String.contains?(content, "defmodule") and String.contains?(content, "@moduledoc") ->
         :elixir
-        
+
       String.contains?(content, "pub struct") and String.contains?(content, "///") ->
         :rust
-        
+
       String.contains?(content, "interface") and String.contains?(content, "/**") ->
         :typescript
-        
+
       true ->
         :unknown
     end

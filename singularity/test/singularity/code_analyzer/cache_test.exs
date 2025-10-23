@@ -45,19 +45,22 @@ defmodule Singularity.CodeAnalyzer.CacheTest do
       # Second call - should use cache
       {:ok, result2} = Cache.get_or_analyze(code, "elixir", analyzer_fun)
       assert result2 == %{result: "analysis"}
-      assert :counters.get(call_count, 1) == 1  # Analyzer not called again
+      # Analyzer not called again
+      assert :counters.get(call_count, 1) == 1
     end
 
     test "caches different results for different languages" do
       code = "def test: pass"
 
-      {:ok, result_python} = Cache.get_or_analyze(code, "python", fn ->
-        {:ok, %{language: "python"}}
-      end)
+      {:ok, result_python} =
+        Cache.get_or_analyze(code, "python", fn ->
+          {:ok, %{language: "python"}}
+        end)
 
-      {:ok, result_elixir} = Cache.get_or_analyze(code, "elixir", fn ->
-        {:ok, %{language: "elixir"}}
-      end)
+      {:ok, result_elixir} =
+        Cache.get_or_analyze(code, "elixir", fn ->
+          {:ok, %{language: "elixir"}}
+        end)
 
       assert result_python.language == "python"
       assert result_elixir.language == "elixir"
@@ -67,13 +70,15 @@ defmodule Singularity.CodeAnalyzer.CacheTest do
       code1 = "def hello, do: :world"
       code2 = "def goodbye, do: :world"
 
-      {:ok, result1} = Cache.get_or_analyze(code1, "elixir", fn ->
-        {:ok, %{code: "code1"}}
-      end)
+      {:ok, result1} =
+        Cache.get_or_analyze(code1, "elixir", fn ->
+          {:ok, %{code: "code1"}}
+        end)
 
-      {:ok, result2} = Cache.get_or_analyze(code2, "elixir", fn ->
-        {:ok, %{code: "code2"}}
-      end)
+      {:ok, result2} =
+        Cache.get_or_analyze(code2, "elixir", fn ->
+          {:ok, %{code: "code2"}}
+        end)
 
       assert result1.code == "code1"
       assert result2.code == "code2"
@@ -94,7 +99,8 @@ defmodule Singularity.CodeAnalyzer.CacheTest do
 
       # Second call - should try again (errors not cached)
       {:error, _} = Cache.get_or_analyze(code, "elixir", analyzer_fun)
-      assert :counters.get(call_count, 1) == 2  # Called again
+      # Called again
+      assert :counters.get(call_count, 1) == 2
     end
   end
 
@@ -137,7 +143,8 @@ defmodule Singularity.CodeAnalyzer.CacheTest do
 
       stats = Cache.stats()
       assert stats.size == 3
-      assert stats.max_size == 10  # From setup
+      # From setup
+      assert stats.max_size == 10
     end
 
     test "returns memory usage" do
@@ -195,19 +202,22 @@ defmodule Singularity.CodeAnalyzer.CacheTest do
       code = "def test, do: :ok"
 
       # Add entry
-      {:ok, result1} = Cache.get_or_analyze(code, "elixir", fn ->
-        {:ok, %{timestamp: DateTime.utc_now()}}
-      end)
+      {:ok, result1} =
+        Cache.get_or_analyze(code, "elixir", fn ->
+          {:ok, %{timestamp: DateTime.utc_now()}}
+        end)
 
       # Wait for TTL to expire
       Process.sleep(1100)
 
       # Should miss cache and re-analyze
       call_count = :counters.new(1, [])
-      {:ok, result2} = Cache.get_or_analyze(code, "elixir", fn ->
-        :counters.add(call_count, 1, 1)
-        {:ok, %{timestamp: DateTime.utc_now()}}
-      end)
+
+      {:ok, result2} =
+        Cache.get_or_analyze(code, "elixir", fn ->
+          :counters.add(call_count, 1, 1)
+          {:ok, %{timestamp: DateTime.utc_now()}}
+        end)
 
       # Analyzer should have been called (cache expired)
       assert :counters.get(call_count, 1) == 1
@@ -236,9 +246,9 @@ defmodule Singularity.CodeAnalyzer.CacheTest do
 
       # All should succeed
       assert Enum.all?(results, fn
-        {:ok, _} -> true
-        _ -> false
-      end)
+               {:ok, _} -> true
+               _ -> false
+             end)
 
       # Cache should have entries
       stats = Cache.stats()
@@ -253,9 +263,10 @@ defmodule Singularity.CodeAnalyzer.CacheTest do
       # Create a large result (1MB of data)
       large_data = :crypto.strong_rand_bytes(1024 * 1024) |> Base.encode64()
 
-      {:ok, result} = Cache.get_or_analyze(code, "elixir", fn ->
-        {:ok, %{large_field: large_data}}
-      end)
+      {:ok, result} =
+        Cache.get_or_analyze(code, "elixir", fn ->
+          {:ok, %{large_field: large_data}}
+        end)
 
       assert byte_size(result.large_field) > 1_000_000
 

@@ -65,7 +65,8 @@ defmodule Singularity.Execution.Planning.HTDAGStrategyLoader do
   @doc """
   Get strategy by name.
   """
-  @spec get_strategy_by_name(String.t()) :: {:ok, HTDAGExecutionStrategy.t()} | {:error, :not_found}
+  @spec get_strategy_by_name(String.t()) ::
+          {:ok, HTDAGExecutionStrategy.t()} | {:error, :not_found}
   def get_strategy_by_name(name) do
     case :ets.lookup(@table, {:by_name, name}) do
       [{_key, strategy}] -> {:ok, strategy}

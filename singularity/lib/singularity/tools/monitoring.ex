@@ -1547,89 +1547,107 @@ defmodule Singularity.Tools.Monitoring do
     end
   end
 
-  defp check_threshold_violations(metrics, thresholds) when is_map(metrics) and is_map(thresholds) do
+  defp check_threshold_violations(metrics, thresholds)
+       when is_map(metrics) and is_map(thresholds) do
     violations = []
-    
+
     # Check CPU threshold
-    violations = if Map.has_key?(thresholds, :cpu) do
-      cpu_threshold = Map.get(thresholds, :cpu)
-      cpu_usage = Map.get(metrics, :cpu_usage, 0)
-      
-      if cpu_usage > cpu_threshold do
-        [%{
-          metric: :cpu_usage,
-          value: cpu_usage,
-          threshold: cpu_threshold,
-          severity: determine_severity(cpu_usage, cpu_threshold),
-          message: "CPU usage #{cpu_usage}% exceeds threshold #{cpu_threshold}%"
-        } | violations]
+    violations =
+      if Map.has_key?(thresholds, :cpu) do
+        cpu_threshold = Map.get(thresholds, :cpu)
+        cpu_usage = Map.get(metrics, :cpu_usage, 0)
+
+        if cpu_usage > cpu_threshold do
+          [
+            %{
+              metric: :cpu_usage,
+              value: cpu_usage,
+              threshold: cpu_threshold,
+              severity: determine_severity(cpu_usage, cpu_threshold),
+              message: "CPU usage #{cpu_usage}% exceeds threshold #{cpu_threshold}%"
+            }
+            | violations
+          ]
+        else
+          violations
+        end
       else
         violations
       end
-    else
-      violations
-    end
-    
+
     # Check memory threshold
-    violations = if Map.has_key?(thresholds, :memory) do
-      memory_threshold = Map.get(thresholds, :memory)
-      memory_usage = Map.get(metrics, :memory_usage, 0)
-      
-      if memory_usage > memory_threshold do
-        [%{
-          metric: :memory_usage,
-          value: memory_usage,
-          threshold: memory_threshold,
-          severity: determine_severity(memory_usage, memory_threshold),
-          message: "Memory usage #{memory_usage}% exceeds threshold #{memory_threshold}%"
-        } | violations]
+    violations =
+      if Map.has_key?(thresholds, :memory) do
+        memory_threshold = Map.get(thresholds, :memory)
+        memory_usage = Map.get(metrics, :memory_usage, 0)
+
+        if memory_usage > memory_threshold do
+          [
+            %{
+              metric: :memory_usage,
+              value: memory_usage,
+              threshold: memory_threshold,
+              severity: determine_severity(memory_usage, memory_threshold),
+              message: "Memory usage #{memory_usage}% exceeds threshold #{memory_threshold}%"
+            }
+            | violations
+          ]
+        else
+          violations
+        end
       else
         violations
       end
-    else
-      violations
-    end
-    
+
     # Check disk threshold
-    violations = if Map.has_key?(thresholds, :disk) do
-      disk_threshold = Map.get(thresholds, :disk)
-      disk_usage = Map.get(metrics, :disk_usage, 0)
-      
-      if disk_usage > disk_threshold do
-        [%{
-          metric: :disk_usage,
-          value: disk_usage,
-          threshold: disk_threshold,
-          severity: determine_severity(disk_usage, disk_threshold),
-          message: "Disk usage #{disk_usage}% exceeds threshold #{disk_threshold}%"
-        } | violations]
+    violations =
+      if Map.has_key?(thresholds, :disk) do
+        disk_threshold = Map.get(thresholds, :disk)
+        disk_usage = Map.get(metrics, :disk_usage, 0)
+
+        if disk_usage > disk_threshold do
+          [
+            %{
+              metric: :disk_usage,
+              value: disk_usage,
+              threshold: disk_threshold,
+              severity: determine_severity(disk_usage, disk_threshold),
+              message: "Disk usage #{disk_usage}% exceeds threshold #{disk_threshold}%"
+            }
+            | violations
+          ]
+        else
+          violations
+        end
       else
         violations
       end
-    else
-      violations
-    end
-    
+
     # Check response time threshold
-    violations = if Map.has_key?(thresholds, :response_time) do
-      response_time_threshold = Map.get(thresholds, :response_time)
-      response_time = Map.get(metrics, :response_time_ms, 0)
-      
-      if response_time > response_time_threshold do
-        [%{
-          metric: :response_time,
-          value: response_time,
-          threshold: response_time_threshold,
-          severity: determine_severity(response_time, response_time_threshold),
-          message: "Response time #{response_time}ms exceeds threshold #{response_time_threshold}ms"
-        } | violations]
+    violations =
+      if Map.has_key?(thresholds, :response_time) do
+        response_time_threshold = Map.get(thresholds, :response_time)
+        response_time = Map.get(metrics, :response_time_ms, 0)
+
+        if response_time > response_time_threshold do
+          [
+            %{
+              metric: :response_time,
+              value: response_time,
+              threshold: response_time_threshold,
+              severity: determine_severity(response_time, response_time_threshold),
+              message:
+                "Response time #{response_time}ms exceeds threshold #{response_time_threshold}ms"
+            }
+            | violations
+          ]
+        else
+          violations
+        end
       else
         violations
       end
-    else
-      violations
-    end
-    
+
     violations
   end
 
@@ -1637,7 +1655,7 @@ defmodule Singularity.Tools.Monitoring do
 
   defp determine_severity(value, threshold) do
     ratio = value / threshold
-    
+
     cond do
       ratio >= 2.0 -> :critical
       ratio >= 1.5 -> :high

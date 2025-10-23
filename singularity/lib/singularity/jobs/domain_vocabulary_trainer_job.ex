@@ -61,7 +61,13 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
     min_token_frequency = Map.get(args, "min_token_frequency", 3)
 
     with {:ok, vocabulary} <-
-           extract_vocabulary(source, include_sparc, include_patterns, include_templates, languages),
+           extract_vocabulary(
+             source,
+             include_sparc,
+             include_patterns,
+             include_templates,
+             languages
+           ),
          {:ok, training_data} <- create_training_data(vocabulary),
          {:ok, augmented_tokenizer} <- augment_tokenizer(vocabulary),
          {:ok, stored_vocab_id} <- store_vocabulary(vocabulary, training_data),

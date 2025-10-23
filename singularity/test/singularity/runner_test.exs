@@ -16,6 +16,7 @@ defmodule Singularity.RunnerTest do
       case GenServer.whereis(Runner) do
         nil ->
           {:ok, _pid} = Runner.start_link()
+
         _pid ->
           :ok
       end
@@ -82,7 +83,7 @@ defmodule Singularity.RunnerTest do
       # Verify results
       assert {:ok, results} = result
       assert length(results) == 2
-      
+
       # Check each result
       Enum.each(results, fn result ->
         assert {:ok, _} = result
@@ -111,7 +112,7 @@ defmodule Singularity.RunnerTest do
 
       # Verify results
       assert length(results) == 3
-      
+
       # Check each result
       Enum.each(results, fn result ->
         assert {:ok, _} = result
@@ -147,7 +148,7 @@ defmodule Singularity.RunnerTest do
 
       # Verify history structure
       assert is_list(history)
-      
+
       # Check history items if any exist
       if length(history) > 0 do
         first_item = List.first(history)
@@ -193,10 +194,10 @@ defmodule Singularity.RunnerTest do
 
       # Check execution history
       history = Runner.get_execution_history(limit: 1)
-      
+
       # Should have at least one record
       assert length(history) >= 1
-      
+
       # Check the most recent record
       recent = List.first(history)
       assert recent.task_type == "analysis"

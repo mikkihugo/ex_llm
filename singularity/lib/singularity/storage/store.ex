@@ -656,7 +656,9 @@ defmodule Singularity.Store do
     ensure_table(@templates_table, :bag)
 
     entries = :ets.tab2list(@templates_table)
-    templates_count = Enum.reduce(entries, 0, fn {_, templates}, acc -> acc + length(templates) end)
+
+    templates_count =
+      Enum.reduce(entries, 0, fn {_, templates}, acc -> acc + length(templates) end)
 
     by_language =
       entries
@@ -676,9 +678,13 @@ defmodule Singularity.Store do
 
     by_framework =
       entries
-      |> Enum.flat_map(fn {{framework, _}, patterns} -> Enum.map(patterns, fn pattern -> {framework, pattern} end) end)
+      |> Enum.flat_map(fn {{framework, _}, patterns} ->
+        Enum.map(patterns, fn pattern -> {framework, pattern} end)
+      end)
       |> Enum.group_by(fn {framework, _pattern} -> framework end)
-      |> Enum.map(fn {framework, entries_for_framework} -> {framework, length(entries_for_framework)} end)
+      |> Enum.map(fn {framework, entries_for_framework} ->
+        {framework, length(entries_for_framework)}
+      end)
       |> Map.new()
 
     %{patterns_count: patterns_count, by_framework: by_framework}
@@ -766,9 +772,9 @@ defmodule Singularity.Store do
       clear(:cache),
       clear(:code)
     ]
-    
+
     failed = Enum.filter(results, &match?({:error, _}, &1))
-    
+
     if Enum.empty?(failed) do
       Logger.info("Successfully cleared all stores")
       :ok
@@ -788,7 +794,13 @@ defmodule Singularity.Store do
     case :ets.info(table_name) do
       :undefined ->
         try do
-          :ets.new(table_name, [type, :named_table, :public, {:read_concurrency, true}, {:write_concurrency, true}])
+          :ets.new(table_name, [
+            type,
+            :named_table,
+            :public,
+            {:read_concurrency, true},
+            {:write_concurrency, true}
+          ])
         rescue
           ArgumentError -> :ok
         end

@@ -85,19 +85,22 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
 
     # Search Singularity's own codebase
     case CodeStore.search(description,
-      codebase_type: :meta_system,  # Only search own code
-      top_k: limit
-    ) do
+           # Only search own code
+           codebase_type: :meta_system,
+           top_k: limit
+         ) do
       {:ok, results} ->
-        similar = results
-        |> Enum.filter(fn r -> r.similarity >= threshold end)
-        |> Enum.map(&enrich_with_relationships/1)
+        similar =
+          results
+          |> Enum.filter(fn r -> r.similarity >= threshold end)
+          |> Enum.map(&enrich_with_relationships/1)
 
         {:ok, similar}
 
       {:error, reason} ->
         Logger.error("Failed to find similar code: #{inspect(reason)}")
-        {:ok, []}  # Continue even if search fails
+        # Continue even if search fails
+        {:ok, []}
     end
   end
 
@@ -139,30 +142,32 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
     })
 
     # Step 1: Check for duplication
-    {reuse_existing, similar_code} = if avoid_dup do
-      case find_similar_code(description) do
-        {:ok, [match | _]} when match.similarity >= 0.95 ->
-          Logger.info("Found highly similar code (#{match.similarity}), reusing")
-          {true, match}
+    {reuse_existing, similar_code} =
+      if avoid_dup do
+        case find_similar_code(description) do
+          {:ok, [match | _]} when match.similarity >= 0.95 ->
+            Logger.info("Found highly similar code (#{match.similarity}), reusing")
+            {true, match}
 
-        {:ok, similar} ->
-          {false, similar}
+          {:ok, similar} ->
+            {false, similar}
 
-        _ ->
-          {false, []}
+          _ ->
+            {false, []}
+        end
+      else
+        {false, []}
       end
-    else
-      {false, []}
-    end
 
     if reuse_existing do
       # Reuse existing code (maybe adapt it)
-      {:ok, %{
-        code: similar_code.code,
-        quality_score: 1.0,
-        reused: true,
-        source: similar_code.file
-      }}
+      {:ok,
+       %{
+         code: similar_code.code,
+         quality_score: 1.0,
+         reused: true,
+         source: similar_code.file
+       }}
     else
       # Generate new code with quality template
       generate_new_code(description, quality_level, relationships, similar_code)
@@ -192,7 +197,8 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
     validation = %{
       has_moduledoc: has_moduledoc?(code),
       has_typespecs: has_typespecs?(code),
-      has_tests: false,  # Would need to check test files
+      # Would need to check test files
+      has_tests: false,
       error_style_ok: uses_tagged_tuples?(code),
       no_forbidden_comments: !has_forbidden_comments?(code),
       has_relationship_annotations: has_relationship_annotations?(code),
@@ -204,13 +210,14 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
     missing = find_missing_requirements(validation, template)
     suggestions = generate_suggestions(validation, template)
 
-    {:ok, %{
-      quality_score: score,
-      missing: missing,
-      suggestions: suggestions,
-      compliant: score >= 0.95,
-      details: validation
-    }}
+    {:ok,
+     %{
+       quality_score: score,
+       missing: missing,
+       suggestions: suggestions,
+       compliant: score >= 0.95,
+       details: validation
+     }}
   end
 
   @doc """
@@ -235,11 +242,11 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
     if metadata.quality_score >= 0.95 do
       # Use Lua script for pattern extraction
       case Service.call_with_script(
-        "quality/extract-patterns.lua",
-        %{code: code, metadata: metadata},
-        complexity: :medium,
-        task_type: :pattern_analyzer
-      ) do
+             "quality/extract-patterns.lua",
+             %{code: code, metadata: metadata},
+             complexity: :medium,
+             task_type: :pattern_analyzer
+           ) do
         {:ok, %{text: response}} ->
           patterns = parse_patterns_response(response)
           {:ok, patterns}
@@ -249,7 +256,8 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
           {:ok, []}
       end
     else
-      {:ok, []}  # Don't extract from low-quality code
+      # Don't extract from low-quality code
+      {:ok, []}
     end
   end
 
@@ -258,29 +266,31 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
   defp generate_new_code(description, quality_level, relationships, similar_code) do
     # Use Lua script for context-aware prompt generation
     case Service.call_with_script(
-      "quality/generate-production-code.lua",
-      %{
-        description: description,
-        quality_level: to_string(quality_level),
-        relationships: relationships,
-        similar_code: similar_code,
-        template_path: @production_template_path
-      },
-      complexity: :complex,
-      task_type: :coder
-    ) do
+           "quality/generate-production-code.lua",
+           %{
+             description: description,
+             quality_level: to_string(quality_level),
+             relationships: relationships,
+             similar_code: similar_code,
+             template_path: @production_template_path
+           },
+           complexity: :complex,
+           task_type: :coder
+         ) do
       {:ok, %{text: code}} ->
         # Validate generated code
         {:ok, validation} = validate_code(code)
 
         if validation.compliant do
           Logger.info("Generated compliant code (score: #{validation.quality_score})")
-          {:ok, %{
-            code: code,
-            quality_score: validation.quality_score,
-            reused_patterns: extract_reused_patterns(code, similar_code),
-            validation: validation
-          }}
+
+          {:ok,
+           %{
+             code: code,
+             quality_score: validation.quality_score,
+             reused_patterns: extract_reused_patterns(code, similar_code),
+             validation: validation
+           }}
         else
           # Try to fix non-compliant code
           Logger.warning("Generated code not compliant, attempting fixes...")
@@ -328,21 +338,21 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
     Return ONLY the fixed code (no markdown, no explanations).
     """
 
-    case Service.call(:complex, [%{role: "user", content: prompt}],
-      task_type: "coder"
-    ) do
+    case Service.call(:complex, [%{role: "user", content: prompt}], task_type: "coder") do
       {:ok, %{text: fixed_code}} ->
         # Re-validate
         {:ok, new_validation} = validate_code(fixed_code)
 
         if new_validation.compliant do
           Logger.info("Code fixed successfully (score: #{new_validation.quality_score})")
-          {:ok, %{
-            code: fixed_code,
-            quality_score: new_validation.quality_score,
-            fixed: true,
-            validation: new_validation
-          }}
+
+          {:ok,
+           %{
+             code: fixed_code,
+             quality_score: new_validation.quality_score,
+             fixed: true,
+             validation: new_validation
+           }}
         else
           Logger.error("Code still not compliant after fixes")
           {:error, :quality_standards_not_met}
@@ -357,11 +367,17 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
 
   defp has_moduledoc?(code), do: String.contains?(code, "@moduledoc")
   defp has_typespecs?(code), do: String.contains?(code, "@spec")
-  defp uses_tagged_tuples?(code), do: String.contains?(code, "{:ok,") or String.contains?(code, "{:error,")
+
+  defp uses_tagged_tuples?(code),
+    do: String.contains?(code, "{:ok,") or String.contains?(code, "{:error,")
+
   defp has_forbidden_comments?(code) do
     Enum.any?(["TODO", "FIXME", "HACK", "XXX"], &String.contains?(code, &1))
   end
-  defp has_relationship_annotations?(code), do: String.contains?(code, "@calls") or String.contains?(code, "@depends_on")
+
+  defp has_relationship_annotations?(code),
+    do: String.contains?(code, "@calls") or String.contains?(code, "@depends_on")
+
   defp has_telemetry?(code), do: String.contains?(code, ":telemetry.execute")
 
   defp all_functions_under_25_lines?(code) do
@@ -381,19 +397,20 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
   defp calculate_quality_score(validation, template) do
     weights = template["scoring_weights"] || %{}
 
-    score = [
-      {validation.has_moduledoc, weights["docs"] || 1.0},
-      {validation.has_typespecs, weights["specs"] || 1.0},
-      {validation.error_style_ok, weights["error_style"] || 1.0},
-      {validation.no_forbidden_comments, weights["structure"] || 0.8},
-      {validation.has_relationship_annotations, weights["structure"] || 0.8},
-      {validation.has_telemetry, weights["observability"] || 0.7},
-      {validation.functions_under_limit, weights["structure"] || 0.8}
-    ]
-    |> Enum.reduce({0.0, 0.0}, fn {passed?, weight}, {sum, total} ->
-      {sum + if(passed?, do: weight, else: 0.0), total + weight}
-    end)
-    |> then(fn {sum, total} -> sum / total end)
+    score =
+      [
+        {validation.has_moduledoc, weights["docs"] || 1.0},
+        {validation.has_typespecs, weights["specs"] || 1.0},
+        {validation.error_style_ok, weights["error_style"] || 1.0},
+        {validation.no_forbidden_comments, weights["structure"] || 0.8},
+        {validation.has_relationship_annotations, weights["structure"] || 0.8},
+        {validation.has_telemetry, weights["observability"] || 0.7},
+        {validation.functions_under_limit, weights["structure"] || 0.8}
+      ]
+      |> Enum.reduce({0.0, 0.0}, fn {passed?, weight}, {sum, total} ->
+        {sum + if(passed?, do: weight, else: 0.0), total + weight}
+      end)
+      |> then(fn {sum, total} -> sum / total end)
 
     Float.round(score, 2)
   end
@@ -414,22 +431,31 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
 
   defp generate_suggestions(validation, _template) do
     []
-    |> maybe_add(!validation.has_moduledoc, "Add @moduledoc with Overview, Public API Contract, Error Matrix, Performance Notes, Concurrency Semantics, Security Considerations, Examples, Relationships")
+    |> maybe_add(
+      !validation.has_moduledoc,
+      "Add @moduledoc with Overview, Public API Contract, Error Matrix, Performance Notes, Concurrency Semantics, Security Considerations, Examples, Relationships"
+    )
     |> maybe_add(!validation.has_typespecs, "Add @spec for every function")
-    |> maybe_add(!validation.has_relationship_annotations, "Add @calls, @called_by, @depends_on annotations")
+    |> maybe_add(
+      !validation.has_relationship_annotations,
+      "Add @calls, @called_by, @depends_on annotations"
+    )
     |> maybe_add(!validation.has_telemetry, "Add :telemetry.execute events for observability")
   end
 
   defp extract_reused_patterns(_code, []), do: []
+
   defp extract_reused_patterns(_code, _similar) do
     # Analyze which patterns from similar code were reused
-    []  # Placeholder
+    # Placeholder
+    []
   end
 
   defp load_production_template do
     case File.read(@production_template_path) do
       {:ok, content} ->
         Jason.decode!(content)
+
       {:error, _} ->
         Logger.warning("Could not load production template, using defaults")
         %{"name" => "production", "scoring_weights" => %{}}

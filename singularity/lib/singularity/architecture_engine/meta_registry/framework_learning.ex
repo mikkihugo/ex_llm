@@ -1,7 +1,7 @@
 defmodule Singularity.MetaRegistry.FrameworkLearning do
   @moduledoc """
   Meta-registry for learning from framework-specific patterns.
-  
+
   This learns from each framework we use to improve our development:
   - NATS messaging patterns
   - PostgreSQL database patterns
@@ -12,9 +12,9 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
   - Jason JSON patterns
   - Phoenix web patterns
   - ExUnit testing patterns
-  
+
   ## Framework-Specific Learning Loop
-  
+
   1. **Analyze framework code** → Learn framework patterns
   2. **Store in meta-registry** → Remember what works for each framework
   3. **Use for suggestions** → Suggest names/patterns that match framework style
@@ -27,9 +27,9 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   @doc """
   Learn from NATS messaging patterns.
-  
+
   ## Examples
-  
+
       # Learn from our NATS subjects
       learn_nats_patterns(%{
         subjects: ["llm.provider.claude", "analysis.code.parse", "analysis.meta.registry.naming"],
@@ -46,9 +46,9 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   @doc """
   Learn from PostgreSQL database patterns.
-  
+
   ## Examples
-  
+
       # Learn from our database schemas
       learn_postgresql_patterns(%{
         tables: ["code_chunks", "technology_detections", "file_architecture_patterns"],
@@ -66,9 +66,9 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   @doc """
   Learn from ETS caching patterns.
-  
+
   ## Examples
-  
+
       # Learn from our ETS tables
       learn_ets_patterns(%{
         tables: ["naming_patterns", "architecture_patterns", "quality_patterns"],
@@ -85,9 +85,9 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   @doc """
   Learn from Rust NIF patterns.
-  
+
   ## Examples
-  
+
       # Learn from our Rust NIFs
       learn_rust_nif_patterns(%{
         modules: ["ArchitectureEngine", "CodeEngine", "SemanticEngine"],
@@ -106,9 +106,9 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   @doc """
   Learn from Elixir OTP patterns.
-  
+
   ## Examples
-  
+
       # Learn from our OTP modules
       learn_elixir_otp_patterns(%{
         modules: ["GenServer", "Supervisor", "Agent", "Task"],
@@ -126,9 +126,9 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   @doc """
   Learn from Ecto ORM patterns.
-  
+
   ## Examples
-  
+
       # Learn from our Ecto schemas
       learn_ecto_patterns(%{
         schemas: ["CodeChunk", "TechnologyDetection", "FileArchitecturePattern"],
@@ -146,9 +146,9 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   @doc """
   Learn from Jason JSON patterns.
-  
+
   ## Examples
-  
+
       # Learn from our JSON handling
       learn_jason_patterns(%{
         functions: ["encode!", "decode!", "encode", "decode"],
@@ -165,9 +165,9 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   @doc """
   Learn from Phoenix web patterns.
-  
+
   ## Examples
-  
+
       # Learn from our Phoenix modules
       learn_phoenix_patterns(%{
         modules: ["Phoenix.Controller", "Phoenix.LiveView", "Phoenix.Channel"],
@@ -185,9 +185,9 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   @doc """
   Learn from ExUnit testing patterns.
-  
+
   ## Examples
-  
+
       # Learn from our test modules
       learn_exunit_patterns(%{
         modules: ["ExUnit.Case", "ExUnit.CaseTemplate", "ExUnit.Callbacks"],
@@ -207,9 +207,9 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   @doc """
   Get suggestions for specific framework based on what we've learned.
-  
+
   ## Examples
-  
+
       # Get NATS subject suggestions
       get_nats_suggestions("search", "subject")
       # Returns: ["search.semantic", "search.hybrid", "search.vector"]
@@ -268,43 +268,66 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   @doc """
   Initialize framework-specific learning patterns.
-  
+
   This sets up the meta-registry with patterns we know work for each framework.
   """
   def initialize_framework_patterns do
     # Learn NATS patterns
     learn_nats_patterns(%{
       subjects: [
-        "llm.provider.claude", "llm.provider.gemini", "llm.provider.openai",
-        "analysis.code.parse", "analysis.code.embed", "analysis.code.search",
-        "analysis.meta.registry.naming", "analysis.meta.registry.architecture", "analysis.meta.registry.quality"
+        "llm.provider.claude",
+        "llm.provider.gemini",
+        "llm.provider.openai",
+        "analysis.code.parse",
+        "analysis.code.embed",
+        "analysis.code.search",
+        "analysis.meta.registry.naming",
+        "analysis.meta.registry.architecture",
+        "analysis.meta.registry.quality"
       ],
       messaging: ["request/response", "pub/sub", "streaming"],
       patterns: [
-        "analysis.meta.subject.hierarchy", "analysis.meta.wildcard.subjects", "analysis.meta.message.routing",
-        "llm.provider.*", "analysis.code.*", "analysis.meta.registry.*"
+        "analysis.meta.subject.hierarchy",
+        "analysis.meta.wildcard.subjects",
+        "analysis.meta.message.routing",
+        "llm.provider.*",
+        "analysis.code.*",
+        "analysis.meta.registry.*"
       ]
     })
 
     # Learn PostgreSQL patterns
     learn_postgresql_patterns(%{
       tables: [
-        "code_chunks", "technology_detections", "file_architecture_patterns",
-        "file_naming_violations", "code_quality_metrics", "dependency_analysis"
+        "code_chunks",
+        "technology_detections",
+        "file_architecture_patterns",
+        "file_naming_violations",
+        "code_quality_metrics",
+        "dependency_analysis"
       ],
       queries: ["SELECT", "INSERT", "UPDATE", "DELETE"],
       indexes: ["GIN", "B-tree", "Hash"],
       patterns: [
-        "codebase_id", "snapshot_id", "metadata", "summary",
-        "detected_technologies", "capabilities", "service_structure"
+        "codebase_id",
+        "snapshot_id",
+        "metadata",
+        "summary",
+        "detected_technologies",
+        "capabilities",
+        "service_structure"
       ]
     })
 
     # Learn ETS patterns
     learn_ets_patterns(%{
       tables: [
-        "naming_patterns", "architecture_patterns", "quality_patterns",
-        "template_cache", "learning_cache", "suggestion_cache"
+        "naming_patterns",
+        "architecture_patterns",
+        "quality_patterns",
+        "template_cache",
+        "learning_cache",
+        "suggestion_cache"
       ],
       operations: ["lookup", "insert", "delete", "select"],
       patterns: ["fast_cache", "in_memory", "key_value", "ets_table"]
@@ -316,8 +339,12 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
       functions: ["analyze_architecture", "detect_patterns", "generate_embeddings"],
       types: ["Result<", "Option<", "Vec<", "HashMap<"],
       patterns: [
-        "pub fn", "use rustler", "rustler::init!",
-        "pub struct", "pub enum", "impl"
+        "pub fn",
+        "use rustler",
+        "rustler::init!",
+        "pub struct",
+        "pub enum",
+        "impl"
       ]
     })
 
@@ -326,8 +353,12 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
       modules: ["GenServer", "Supervisor", "Agent", "Task"],
       functions: ["start_link", "init", "handle_call", "handle_cast"],
       patterns: [
-        "defmodule", "use GenServer", "def start_link",
-        "def init", "def handle_call", "def handle_cast"
+        "defmodule",
+        "use GenServer",
+        "def start_link",
+        "def init",
+        "def handle_call",
+        "def handle_cast"
       ]
     })
 
@@ -336,8 +367,13 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
       schemas: ["CodeChunk", "TechnologyDetection", "FileArchitecturePattern"],
       queries: ["Ecto.Query", "Ecto.Changeset", "Ecto.Repo"],
       patterns: [
-        "use Ecto.Schema", "field :", "belongs_to", "has_many",
-        "def changeset", "def upsert", "def latest"
+        "use Ecto.Schema",
+        "field :",
+        "belongs_to",
+        "has_many",
+        "def changeset",
+        "def upsert",
+        "def latest"
       ]
     })
 
@@ -345,8 +381,13 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
     learn_jason_patterns(%{
       functions: ["encode!", "decode!", "encode", "decode"],
       patterns: [
-        "@derive {Jason.Encoder}", "Jason.Encoder", "only: @fields",
-        "Jason.encode!", "Jason.decode!", "Jason.encode", "Jason.decode"
+        "@derive {Jason.Encoder}",
+        "Jason.Encoder",
+        "only: @fields",
+        "Jason.encode!",
+        "Jason.decode!",
+        "Jason.encode",
+        "Jason.decode"
       ]
     })
 
@@ -355,8 +396,12 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
       modules: ["Phoenix.Controller", "Phoenix.LiveView", "Phoenix.Channel"],
       functions: ["render", "assign", "put_flash", "redirect"],
       patterns: [
-        "defmodule", "use Phoenix.Controller", "def index",
-        "def render", "def mount", "def handle_event"
+        "defmodule",
+        "use Phoenix.Controller",
+        "def index",
+        "def render",
+        "def mount",
+        "def handle_event"
       ]
     })
 
@@ -365,8 +410,14 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
       modules: ["ExUnit.Case", "ExUnit.CaseTemplate", "ExUnit.Callbacks"],
       functions: ["test", "describe", "it", "expect", "assert"],
       patterns: [
-        "use ExUnit.Case", "test \"", "assert ", "refute ",
-        "describe \"", "it \"", "expect ", "assert_raise"
+        "use ExUnit.Case",
+        "test \"",
+        "assert ",
+        "refute ",
+        "describe \"",
+        "it \"",
+        "expect ",
+        "assert_raise"
       ]
     })
 

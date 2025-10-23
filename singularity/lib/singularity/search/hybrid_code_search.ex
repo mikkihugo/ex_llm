@@ -106,19 +106,19 @@ defmodule Singularity.Search.HybridCodeSearch do
 
   @type search_mode :: :keyword | :semantic | :hybrid
   @type search_result :: %{
-    id: integer(),
-    content: String.t(),
-    file_path: String.t(),
-    score: float(),
-    match_type: atom()
-  }
+          id: integer(),
+          content: String.t(),
+          file_path: String.t(),
+          score: float(),
+          match_type: atom()
+        }
   @type opts :: [
-    mode: search_mode(),
-    limit: pos_integer(),
-    weights: map(),
-    threshold: float(),
-    language: String.t()
-  ]
+          mode: search_mode(),
+          limit: pos_integer(),
+          weights: map(),
+          threshold: float(),
+          language: String.t()
+        ]
 
   @default_limit 20
   @default_weights %{keyword: 0.4, semantic: 0.6}
@@ -207,24 +207,26 @@ defmodule Singularity.Search.HybridCodeSearch do
     limit = Keyword.get(opts, :limit, @default_limit)
     language = Keyword.get(opts, :language)
 
-    base_query = from c in "code_files",
-      where: fragment("similarity(content, ?) > ?", ^query, ^threshold),
-      order_by: [desc: fragment("similarity(content, ?)", ^query)],
-      limit: ^limit,
-      select: %{
-        id: c.id,
-        content: c.content,
-        file_path: c.file_path,
-        language: c.language,
-        score: fragment("similarity(content, ?)", ^query),
-        match_type: "fuzzy"
-      }
+    base_query =
+      from c in "code_files",
+        where: fragment("similarity(content, ?) > ?", ^query, ^threshold),
+        order_by: [desc: fragment("similarity(content, ?)", ^query)],
+        limit: ^limit,
+        select: %{
+          id: c.id,
+          content: c.content,
+          file_path: c.file_path,
+          language: c.language,
+          score: fragment("similarity(content, ?)", ^query),
+          match_type: "fuzzy"
+        }
 
-    query_with_language = if language do
-      from c in base_query, where: c.language == ^language
-    else
-      base_query
-    end
+    query_with_language =
+      if language do
+        from c in base_query, where: c.language == ^language
+      else
+        base_query
+      end
 
     results = Repo.all(query_with_language)
     Logger.debug("Fuzzy search: #{length(results)} results (threshold: #{threshold})")
@@ -241,35 +243,40 @@ defmodule Singularity.Search.HybridCodeSearch do
     limit = Keyword.get(opts, :limit, @default_limit)
     language = Keyword.get(opts, :language)
 
-    base_query = from c in "code_files",
-      where: fragment(
-        "search_vector @@ plainto_tsquery('english', ?)",
-        ^query
-      ),
-      order_by: [
-        desc: fragment(
-          "ts_rank(search_vector, plainto_tsquery('english', ?))",
-          ^query
-        )
-      ],
-      limit: ^limit,
-      select: %{
-        id: c.id,
-        content: c.content,
-        file_path: c.file_path,
-        language: c.language,
-        score: fragment(
-          "ts_rank(search_vector, plainto_tsquery('english', ?))",
-          ^query
-        ),
-        match_type: "keyword"
-      }
+    base_query =
+      from c in "code_files",
+        where:
+          fragment(
+            "search_vector @@ plainto_tsquery('english', ?)",
+            ^query
+          ),
+        order_by: [
+          desc:
+            fragment(
+              "ts_rank(search_vector, plainto_tsquery('english', ?))",
+              ^query
+            )
+        ],
+        limit: ^limit,
+        select: %{
+          id: c.id,
+          content: c.content,
+          file_path: c.file_path,
+          language: c.language,
+          score:
+            fragment(
+              "ts_rank(search_vector, plainto_tsquery('english', ?))",
+              ^query
+            ),
+          match_type: "keyword"
+        }
 
-    query_with_language = if language do
-      from c in base_query, where: c.language == ^language
-    else
-      base_query
-    end
+    query_with_language =
+      if language do
+        from c in base_query, where: c.language == ^language
+      else
+        base_query
+      end
 
     results = Repo.all(query_with_language)
     Logger.debug("Keyword search: #{length(results)} results")
@@ -291,24 +298,26 @@ defmodule Singularity.Search.HybridCodeSearch do
     with {:ok, embedding} <- UnifiedEmbeddingService.embed(query) do
       embedding_list = embedding_to_list(embedding)
 
-      base_query = from c in "code_files",
-        where: fragment("1 - (embedding <=> ?) > ?", ^embedding_list, ^threshold),
-        order_by: fragment("embedding <=> ?", ^embedding_list),
-        limit: ^limit,
-        select: %{
-          id: c.id,
-          content: c.content,
-          file_path: c.file_path,
-          language: c.language,
-          score: fragment("1 - (embedding <=> ?)", ^embedding_list),
-          match_type: "semantic"
-        }
+      base_query =
+        from c in "code_files",
+          where: fragment("1 - (embedding <=> ?) > ?", ^embedding_list, ^threshold),
+          order_by: fragment("embedding <=> ?", ^embedding_list),
+          limit: ^limit,
+          select: %{
+            id: c.id,
+            content: c.content,
+            file_path: c.file_path,
+            language: c.language,
+            score: fragment("1 - (embedding <=> ?)", ^embedding_list),
+            match_type: "semantic"
+          }
 
-      query_with_language = if language do
-        from c in base_query, where: c.language == ^language
-      else
-        base_query
-      end
+      query_with_language =
+        if language do
+          from c in base_query, where: c.language == ^language
+        else
+          base_query
+        end
 
       results = Repo.all(query_with_language)
       Logger.debug("Semantic search: #{length(results)} results")
@@ -338,48 +347,58 @@ defmodule Singularity.Search.HybridCodeSearch do
     with {:ok, embedding} <- UnifiedEmbeddingService.embed(query) do
       embedding_list = embedding_to_list(embedding)
 
-      base_query = from c in "code_files",
-        where: fragment(
-          "search_vector @@ plainto_tsquery('english', ?)",
-          ^query
-        ),
-        order_by: [
-          desc: fragment(
-            """
-            ts_rank(search_vector, plainto_tsquery('english', ?)) * ? +
-            (1 - (embedding <=> ?)) * ?
-            """,
-            ^query, ^keyword_weight,
-            ^embedding_list, ^semantic_weight
-          )
-        ],
-        limit: ^limit,
-        select: %{
-          id: c.id,
-          content: c.content,
-          file_path: c.file_path,
-          language: c.language,
-          keyword_score: fragment(
-            "ts_rank(search_vector, plainto_tsquery('english', ?))",
-            ^query
-          ),
-          semantic_score: fragment("1 - (embedding <=> ?)", ^embedding_list),
-          score: fragment(
-            """
-            ts_rank(search_vector, plainto_tsquery('english', ?)) * ? +
-            (1 - (embedding <=> ?)) * ?
-            """,
-            ^query, ^keyword_weight,
-            ^embedding_list, ^semantic_weight
-          ),
-          match_type: "hybrid"
-        }
+      base_query =
+        from c in "code_files",
+          where:
+            fragment(
+              "search_vector @@ plainto_tsquery('english', ?)",
+              ^query
+            ),
+          order_by: [
+            desc:
+              fragment(
+                """
+                ts_rank(search_vector, plainto_tsquery('english', ?)) * ? +
+                (1 - (embedding <=> ?)) * ?
+                """,
+                ^query,
+                ^keyword_weight,
+                ^embedding_list,
+                ^semantic_weight
+              )
+          ],
+          limit: ^limit,
+          select: %{
+            id: c.id,
+            content: c.content,
+            file_path: c.file_path,
+            language: c.language,
+            keyword_score:
+              fragment(
+                "ts_rank(search_vector, plainto_tsquery('english', ?))",
+                ^query
+              ),
+            semantic_score: fragment("1 - (embedding <=> ?)", ^embedding_list),
+            score:
+              fragment(
+                """
+                ts_rank(search_vector, plainto_tsquery('english', ?)) * ? +
+                (1 - (embedding <=> ?)) * ?
+                """,
+                ^query,
+                ^keyword_weight,
+                ^embedding_list,
+                ^semantic_weight
+              ),
+            match_type: "hybrid"
+          }
 
-      query_with_language = if language do
-        from c in base_query, where: c.language == ^language
-      else
-        base_query
-      end
+      query_with_language =
+        if language do
+          from c in base_query, where: c.language == ^language
+        else
+          base_query
+        end
 
       results = Repo.all(query_with_language)
       Logger.debug("Hybrid search: #{length(results)} results (weights: #{inspect(weights)})")

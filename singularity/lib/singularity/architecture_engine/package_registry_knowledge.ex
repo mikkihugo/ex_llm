@@ -55,7 +55,8 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
 
       {:error, reason} ->
         Logger.error("❌ Search failed: #{inspect(reason)}")
-        {:ok, []}  # Graceful degradation
+        # Graceful degradation
+        {:ok, []}
     end
   end
 
@@ -114,13 +115,15 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
     )
 
     {:ok,
-     [%{
-        package_name: "example-package",
-        example_type: "placeholder",
-        description: "Placeholder example for '#{query}'",
-        code: "// TODO: integrate real examples",
-        tags: []
-      }]}
+     [
+       %{
+         package_name: "example-package",
+         example_type: "placeholder",
+         description: "Placeholder example for '#{query}'",
+         code: "// TODO: integrate real examples",
+         tags: []
+       }
+     ]}
   end
 
   @doc """
@@ -134,11 +137,13 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
     )
 
     {:ok,
-     [%{
-        package: package_name,
-        equivalents: [],
-        note: "Real equivalents unavailable in stub mode"
-      }]}
+     [
+       %{
+         package: package_name,
+         equivalents: [],
+         note: "Real equivalents unavailable in stub mode"
+       }
+     ]}
   end
 
   @doc """
@@ -152,12 +157,14 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
     )
 
     {:ok,
-     [%{
-        package_name: package_id,
-        example_type: "getting_started",
-        code: "// Placeholder example",
-        description: "Example data unavailable in stub"
-      }]}
+     [
+       %{
+         package_name: package_id,
+         example_type: "getting_started",
+         code: "// Placeholder example",
+         description: "Example data unavailable in stub"
+       }
+     ]}
   end
 
   @doc """

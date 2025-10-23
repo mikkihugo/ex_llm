@@ -38,7 +38,8 @@ defmodule Singularity.Execution.TaskGraph.Worker do
   alias Singularity.Execution.Todos.TodoStore
   alias Singularity.Execution.Planning.HTDAG
   alias Singularity.Execution.TaskGraph.WorkerPool
-  @execution_timeout_ms 300_000  # 5 minutes
+  # 5 minutes
+  @execution_timeout_ms 300_000
 
   defstruct [
     :todo_id,
@@ -145,21 +146,23 @@ defmodule Singularity.Execution.TaskGraph.Worker do
       )
 
       # Create HTDAG from todo
-      dag = HTDAG.decompose(%{
-        description: todo.title,
-        details: todo.description,
-        context: todo.context,
-        complexity: map_complexity(todo.complexity)
-      })
+      dag =
+        HTDAG.decompose(%{
+          description: todo.title,
+          details: todo.description,
+          context: todo.context,
+          complexity: map_complexity(todo.complexity)
+        })
 
       # Execute with HTDAG
       run_id = "todo-#{todo.id}-#{System.system_time(:millisecond)}"
 
       case HTDAG.execute_with_nats(dag,
-        run_id: run_id,
-        stream: false,
-        evolve: false  # Don't evolve for simple todos
-      ) do
+             run_id: run_id,
+             stream: false,
+             # Don't evolve for simple todos
+             evolve: false
+           ) do
         {:ok, result} ->
           Logger.info("HTDAG execution succeeded",
             todo_id: todo.id,
@@ -171,14 +174,15 @@ defmodule Singularity.Execution.TaskGraph.Worker do
           # Extract final result from HTDAG execution
           output = extract_result_output(result)
 
-          {:ok, %{
-            output: output,
-            completed_by: "TaskGraph.Worker (via HTDAG)",
-            completed_at: DateTime.utc_now(),
-            htdag_run_id: run_id,
-            tasks_completed: result.completed,
-            tasks_failed: result.failed
-          }}
+          {:ok,
+           %{
+             output: output,
+             completed_by: "TaskGraph.Worker (via HTDAG)",
+             completed_at: DateTime.utc_now(),
+             htdag_run_id: run_id,
+             tasks_completed: result.completed,
+             tasks_failed: result.failed
+           }}
 
         {:error, reason} ->
           Logger.error("HTDAG execution failed",

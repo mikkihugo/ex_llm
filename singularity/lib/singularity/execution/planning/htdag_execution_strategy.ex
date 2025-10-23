@@ -179,7 +179,9 @@ defmodule Singularity.Execution.Planning.HTDAGExecutionStrategy do
     if Enum.any?(scripts, &(&1 != nil && String.trim(&1) != "")) do
       changeset
     else
-      add_error(changeset, :decomposition_script,
+      add_error(
+        changeset,
+        :decomposition_script,
         "at least one Lua script must be provided (decomposition, agent_spawning, orchestration, or completion)"
       )
     end

@@ -177,14 +177,15 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
       timeout: timeout
     )
 
-    task = Task.async(fn ->
-      try do
-        System.cmd("docker", docker_args, stderr_to_stdout: true, parallelism: true)
-      rescue
-        e ->
-          {:error, {:docker_execution_failed, Exception.message(e)}}
-      end
-    end)
+    task =
+      Task.async(fn ->
+        try do
+          System.cmd("docker", docker_args, stderr_to_stdout: true, parallelism: true)
+        rescue
+          e ->
+            {:error, {:docker_execution_failed, Exception.message(e)}}
+        end
+      end)
 
     case Task.yield(task, timeout) || Task.shutdown(task, :brutal_kill) do
       {:ok, {:error, reason}} ->

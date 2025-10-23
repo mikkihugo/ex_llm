@@ -341,7 +341,10 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           "▶️ Autonomous actions resumed"
 
         :set_vision ->
-          Singularity.Execution.Planning.Vision.set_vision(command.vision_text, approved_by: user_id)
+          Singularity.Execution.Planning.Vision.set_vision(command.vision_text,
+            approved_by: user_id
+          )
+
           "✅ Vision updated"
 
         _ ->
@@ -361,6 +364,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           {:ok, _} ->
             Logger.info("Marked task as failure and downgraded patterns")
             GoogleChat.notify("🐛 Bug logged. I'll avoid this pattern.")
+
           {:error, reason} ->
             Logger.error("Failed to mark task as failure: #{inspect(reason)}")
             GoogleChat.notify("🐛 Bug logged, but failed to update patterns.")
@@ -373,6 +377,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           {:ok, _} ->
             Logger.info("Updated pattern scores positively")
             GoogleChat.notify("✅ Thanks! I'll prioritize similar changes.")
+
           {:error, reason} ->
             Logger.error("Failed to update pattern scores: #{inspect(reason)}")
             GoogleChat.notify("✅ Thanks! (Pattern update failed)")
@@ -384,6 +389,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           {:ok, goal_id} ->
             Logger.info("Added suggestion to goal queue: #{goal_id}")
             GoogleChat.notify("💡 Added to task queue.")
+
           {:error, reason} ->
             Logger.error("Failed to add to goal queue: #{inspect(reason)}")
             GoogleChat.notify("💡 Suggestion received, but failed to queue.")
@@ -398,9 +404,10 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       # Use template for chat response
       conversation_history = format_conversation_history(state.conversation_history)
 
-      case Singularity.LLM.Service.call_with_prompt(:simple,
-        "Respond to: #{message_text}\nContext: #{conversation_history}"
-      ) do
+      case Singularity.LLM.Service.call_with_prompt(
+             :simple,
+             "Respond to: #{message_text}\nContext: #{conversation_history}"
+           ) do
         {:ok, %{text: response}} ->
           GoogleChat.notify("💬 #{response}")
           Logger.info("Chat response sent to user #{user_id}")
@@ -422,9 +429,10 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   defp parse_human_message(message, _state) when is_binary(message) do
     try do
       # Use template for intelligent message parsing
-      case Singularity.LLM.Service.call_with_prompt(:simple,
-        "Parse this message intent: #{message}"
-      ) do
+      case Singularity.LLM.Service.call_with_prompt(
+             :simple,
+             "Parse this message intent: #{message}"
+           ) do
         {:ok, %{text: response}} ->
           case Jason.decode(response) do
             {:ok, %{"intent" => intent, "confidence" => confidence}} ->
@@ -502,10 +510,10 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     try do
       # Pause all autonomous agents
       Singularity.Agent.Supervisor.pause_all_agents()
-      
+
       # Update state to reflect paused status
       state = %{autonomous_enabled: false, paused_at: DateTime.utc_now()}
-      
+
       GoogleChat.notify("⏸️ Autonomous actions paused")
       {:ok, state}
     rescue
@@ -520,10 +528,10 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     try do
       # Resume all autonomous agents
       Singularity.Agent.Supervisor.resume_all_agents()
-      
+
       # Update state to reflect resumed status
       state = %{autonomous_enabled: true, resumed_at: DateTime.utc_now()}
-      
+
       GoogleChat.notify("▶️ Autonomous actions resumed")
       {:ok, state}
     rescue
@@ -542,7 +550,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           GoogleChat.notify("✅ Executed recommendation: #{recommendation.description}")
           Logger.info("Recommendation executed successfully: #{inspect(result)}")
           {:ok, result}
-        
+
         {:error, reason} ->
           GoogleChat.notify("❌ Failed to execute recommendation: #{inspect(reason)}")
           Logger.error("Recommendation execution failed: #{inspect(reason)}")
@@ -568,7 +576,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           Logger.info("Updated pattern score for rejection: #{recommendation.pattern_id}")
           GoogleChat.notify("📚 Learned from rejection")
           :ok
-        
+
         {:error, error_reason} ->
           Logger.warning("Failed to update pattern score: #{inspect(error_reason)}")
           :ok
@@ -608,7 +616,8 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   defp format_conversation_history(history) do
     history
-    |> Enum.take(5)  # Last 5 conversations
+    # Last 5 conversations
+    |> Enum.take(5)
     |> Enum.map(fn {conversation, answer} ->
       """
       Q: #{conversation.question || inspect(conversation)}
@@ -626,7 +635,8 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     case System.get_env("CHAT_CHANNEL") do
       "slack" -> :slack
       "google_chat" -> :google_chat
-      _ -> :google_chat  # Default to Google Chat
+      # Default to Google Chat
+      _ -> :google_chat
     end
   end
 
@@ -641,7 +651,10 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   defp send_to_channel(:google_chat, :ask_approval, data), do: GoogleChat.ask_approval(data)
   defp send_to_channel(:google_chat, :notify, data), do: GoogleChat.notify(data)
   defp send_to_channel(:google_chat, :daily_summary, data), do: GoogleChat.daily_summary(data)
-  defp send_to_channel(:google_chat, :deployment, data), do: GoogleChat.deployment_notification(data)
+
+  defp send_to_channel(:google_chat, :deployment, data),
+    do: GoogleChat.deployment_notification(data)
+
   defp send_to_channel(:google_chat, :policy_change, data), do: GoogleChat.policy_change(data)
 
   defp send_to_channel(unknown_channel, action, _data) do

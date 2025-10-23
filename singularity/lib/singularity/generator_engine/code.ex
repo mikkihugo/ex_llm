@@ -23,7 +23,7 @@ defmodule Singularity.GeneratorEngine.Code do
   defp generate_elixir_code(description) do
     module_name = Util.slug(description) |> String.capitalize()
     function_name = Util.slug(description) |> String.downcase()
-    
+
     """
     defmodule #{module_name} do
       @moduledoc \"\"\"
@@ -48,7 +48,7 @@ defmodule Singularity.GeneratorEngine.Code do
 
   defp generate_typescript_code(description) do
     function_name = Util.slug(description)
-    
+
     """
     /**
      * #{String.capitalize(description)}
@@ -64,12 +64,12 @@ defmodule Singularity.GeneratorEngine.Code do
 
   defp generate_python_code(description) do
     function_name = Util.slug(description)
-    
+
     """
     \"\"\"
     #{String.capitalize(description)}
     \"\"\"
-    
+
     def #{function_name}():
         \"\"\"
         #{String.capitalize(description)}.
@@ -84,7 +84,7 @@ defmodule Singularity.GeneratorEngine.Code do
 
   defp generate_rust_code(description) do
     function_name = Util.slug(description)
-    
+
     """
     /// #{String.capitalize(description)}
     pub fn #{function_name}() -> Result<(), Box<dyn std::error::Error>> {
@@ -96,7 +96,7 @@ defmodule Singularity.GeneratorEngine.Code do
 
   defp generate_go_code(description) do
     function_name = Util.slug(description) |> String.capitalize()
-    
+
     """
     // #{String.capitalize(description)}
     func #{function_name}() error {
@@ -134,7 +134,13 @@ defmodule Singularity.GeneratorEngine.Code do
   - `quality` - Quality level: 'production', 'prototype', 'quick' (default: 'production')
   - `include_tests` - Generate tests (default: true for production)
   """
-  def code_generate(task, language \\ "elixir", repo \\ nil, quality \\ "production", include_tests \\ true) do
+  def code_generate(
+        task,
+        language \\ "elixir",
+        repo \\ nil,
+        quality \\ "production",
+        include_tests \\ true
+      ) do
     quality_atom = String.to_atom(quality)
 
     case generate_with_t5_and_rag(task, language, repo, quality_atom, include_tests) do
@@ -311,11 +317,11 @@ defmodule Singularity.GeneratorEngine.Code do
   defp generate_mock_examples(query, language, limit) do
     # Replace mock examples with real knowledge base retrieval
     case Singularity.Knowledge.ArtifactStore.search(query, %{
-      language: language,
-      top_k: limit,
-      min_similarity: 0.6,
-      artifact_types: ["code_example", "code_pattern", "function", "module"]
-    }) do
+           language: language,
+           top_k: limit,
+           min_similarity: 0.6,
+           artifact_types: ["code_example", "code_pattern", "function", "module"]
+         }) do
       {:ok, results} ->
         # Transform knowledge base results into example format
         Enum.map(results, fn %{artifact: artifact, similarity: similarity} ->
@@ -352,22 +358,26 @@ defmodule Singularity.GeneratorEngine.Code do
 
     # Find lines containing the query or related terms
     query_lower = String.downcase(query)
-    relevant_lines = Enum.filter(content_lines, fn line ->
-      String.contains?(String.downcase(line), query_lower) or
-      String.contains?(String.downcase(line), "def ") or
-      String.contains?(String.downcase(line), "function") or
-      String.contains?(String.downcase(line), "class ")
-    end)
+
+    relevant_lines =
+      Enum.filter(content_lines, fn line ->
+        String.contains?(String.downcase(line), query_lower) or
+          String.contains?(String.downcase(line), "def ") or
+          String.contains?(String.downcase(line), "function") or
+          String.contains?(String.downcase(line), "class ")
+      end)
 
     # Take first few relevant lines or first 5 lines as preview
-    preview_lines = if length(relevant_lines) > 0 do
-      Enum.take(relevant_lines, 3)
-    else
-      Enum.take(content_lines, 5)
-    end
+    preview_lines =
+      if length(relevant_lines) > 0 do
+        Enum.take(relevant_lines, 3)
+      else
+        Enum.take(content_lines, 5)
+      end
 
     # Join and limit length
     preview = Enum.join(preview_lines, "\n")
+
     if String.length(preview) > 200 do
       String.slice(preview, 0, 200) <> "..."
     else
@@ -392,7 +402,8 @@ defmodule Singularity.GeneratorEngine.Code do
   end
 
   defp has_documentation?(code) do
-    String.contains?(code, "@doc") or String.contains?(code, "///") or String.contains?(code, "# ")
+    String.contains?(code, "@doc") or String.contains?(code, "///") or
+      String.contains?(code, "# ")
   end
 
   defp has_tests?(code) do
@@ -400,7 +411,8 @@ defmodule Singularity.GeneratorEngine.Code do
   end
 
   defp has_error_handling?(code) do
-    String.contains?(code, "try") or String.contains?(code, "catch") or String.contains?(code, "rescue")
+    String.contains?(code, "try") or String.contains?(code, "catch") or
+      String.contains?(code, "rescue")
   end
 
   defp has_types?(code, language) do
@@ -436,7 +448,8 @@ defmodule Singularity.GeneratorEngine.Code do
   defp add_basic_error_handling(code, language) do
     case language do
       "elixir" ->
-        "case " <> code <> " do\n  {:ok, result} -> result\n  {:error, error} -> {:error, error}\nend"
+        "case " <>
+          code <> " do\n  {:ok, result} -> result\n  {:error, error} -> {:error, error}\nend"
 
       _ ->
         code
@@ -500,12 +513,21 @@ defmodule Singularity.GeneratorEngine.Code do
       case code_validate(result.code, language) do
         {:ok, validation} ->
           if validation.score >= threshold do
-            {:ok, Map.put(result, :status, "quality_achieved") |> Map.put(:final_score, validation.score)}
+            {:ok,
+             Map.put(result, :status, "quality_achieved")
+             |> Map.put(:final_score, validation.score)}
           else
             case code_refine(result.code, validation, language) do
               {:ok, refined} ->
                 new_result = Map.put(result, :code, refined.refined_code)
-                iterate_until_quality(new_result, language, threshold, max_iterations, current_iteration + 1)
+
+                iterate_until_quality(
+                  new_result,
+                  language,
+                  threshold,
+                  max_iterations,
+                  current_iteration + 1
+                )
 
               error ->
                 error
@@ -532,8 +554,9 @@ defmodule Singularity.GeneratorEngine.Code do
         case generate_with_rust_elixir_t5(prompt, language) do
           {:ok, base_code} ->
             # Enhanced code with iterative improvement
-            enhanced_code = enhance_rust_elixir_code_quality(base_code, language, quality, include_tests)
-            
+            enhanced_code =
+              enhance_rust_elixir_code_quality(base_code, language, quality, include_tests)
+
             # Try to improve the code iteratively
             case improve_code_iteratively(enhanced_code, task, language, quality) do
               {:ok, improved_code} -> {:ok, improved_code}
@@ -551,12 +574,21 @@ defmodule Singularity.GeneratorEngine.Code do
 
   defp find_rag_examples(task, language, repo) do
     # Enhanced RAG example selection with better filtering
-    case RAGCodeGenerator.find_best_examples(task, language, if(repo, do: [repo], else: nil), 8, true, false) do
-      {:ok, examples} -> 
+    case RAGCodeGenerator.find_best_examples(
+           task,
+           language,
+           if(repo, do: [repo], else: nil),
+           8,
+           true,
+           false
+         ) do
+      {:ok, examples} ->
         # Filter and rank examples by quality
         filtered_examples = filter_and_rank_examples(examples, task, language)
         {:ok, Enum.take(filtered_examples, 5)}
-      {:error, _} -> {:ok, []}
+
+      {:error, _} ->
+        {:ok, []}
     end
   end
 
@@ -567,12 +599,15 @@ defmodule Singularity.GeneratorEngine.Code do
       code_length = String.length(example.code || "")
       code_length > 50 && code_length < 2000
     end)
-    |> Enum.sort_by(fn example ->
-      # Rank by relevance score (if available) and recency
-      relevance_score = Map.get(example, :similarity_score, 0.5)
-      recency_bonus = if Map.get(example, :recent, false), do: 0.1, else: 0.0
-      relevance_score + recency_bonus
-    end, :desc)
+    |> Enum.sort_by(
+      fn example ->
+        # Rank by relevance score (if available) and recency
+        relevance_score = Map.get(example, :similarity_score, 0.5)
+        recency_bonus = if Map.get(example, :recent, false), do: 0.1, else: 0.0
+        relevance_score + recency_bonus
+      end,
+      :desc
+    )
   end
 
   defp build_t5_prompt(task, examples, language, quality) do
@@ -627,25 +662,29 @@ defmodule Singularity.GeneratorEngine.Code do
 
   defp generate_with_rust_elixir_t5(prompt, language) do
     # Hook up real T5 model generation via NATS
-    case Singularity.NatsClient.request("code.t5.generate", Jason.encode!(%{
-      prompt: prompt,
-      language: language,
-      model: "rust_elixir_t5",
-      max_length: 512,
-      temperature: 0.7
-    }), timeout: 30_000) do
+    case Singularity.NatsClient.request(
+           "code.t5.generate",
+           Jason.encode!(%{
+             prompt: prompt,
+             language: language,
+             model: "rust_elixir_t5",
+             max_length: 512,
+             temperature: 0.7
+           }), timeout: 30_000) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, %{"generated_code" => code}} ->
             {:ok, code}
+
           {:ok, data} ->
             # Fallback if response format is different
             {:ok, Map.get(data, "code", Map.get(data, "text", ""))}
+
           {:error, reason} ->
             Logger.error("Failed to decode T5 response", reason: reason)
             generate_fallback_code(prompt, language)
         end
-      
+
       {:error, reason} ->
         Logger.warning("T5 model generation failed, using external LLM fallback", reason: reason)
         generate_external_llm_fallback(prompt, language)
@@ -659,26 +698,27 @@ defmodule Singularity.GeneratorEngine.Code do
   end
 
   defp build_llm_fallback_prompt(prompt, language) do
-    language_instruction = case language do
-      "elixir" -> "Generate clean, production-ready Elixir code"
-      "rust" -> "Generate clean, production-ready Rust code"
-      "typescript" -> "Generate clean, production-ready TypeScript code"
-      "python" -> "Generate clean, production-ready Python code"
-      "go" -> "Generate clean, production-ready Go code"
-      _ -> "Generate clean, production-ready #{String.capitalize(language)} code"
-    end
-    
+    language_instruction =
+      case language do
+        "elixir" -> "Generate clean, production-ready Elixir code"
+        "rust" -> "Generate clean, production-ready Rust code"
+        "typescript" -> "Generate clean, production-ready TypeScript code"
+        "python" -> "Generate clean, production-ready Python code"
+        "go" -> "Generate clean, production-ready Go code"
+        _ -> "Generate clean, production-ready #{String.capitalize(language)} code"
+      end
+
     """
     #{language_instruction} for the following task:
-    
+
     Task: #{prompt}
-    
+
     Requirements:
     - Include proper error handling
     - Add documentation/comments
     - Use idiomatic #{language} patterns
     - Make it production-ready
-    
+
     Generate only the code, no explanations:
     """
   end
@@ -706,37 +746,44 @@ defmodule Singularity.GeneratorEngine.Code do
   defp generate_external_llm_fallback(prompt, language) do
     # Ultimate fallback to external LLM via NATS when local models fail
     Logger.info("Using external LLM fallback for language: #{language}")
-    
+
     # Build prompt for external LLM
     external_prompt = build_external_llm_prompt(prompt, language)
-    
+
     # Request external LLM via NATS
-    case Singularity.NatsClient.request("llm.request", Jason.encode!(%{
-      prompt: external_prompt,
-      language: language,
-      task_type: "code_generation",
-      complexity: "medium",
-      temperature: 0.1,
-      max_tokens: 512
-    }), timeout: 30_000) do
+    case Singularity.NatsClient.request(
+           "llm.request",
+           Jason.encode!(%{
+             prompt: external_prompt,
+             language: language,
+             task_type: "code_generation",
+             complexity: "medium",
+             temperature: 0.1,
+             max_tokens: 512
+           }), timeout: 30_000) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, %{"code" => code}} ->
             cleaned_code = cleanup_generated_code(code)
             {:ok, cleaned_code}
+
           {:ok, %{"response" => code}} ->
             cleaned_code = cleanup_generated_code(code)
             {:ok, cleaned_code}
+
           {:ok, data} ->
             # Try to extract code from any field
-            code = Map.get(data, "code") || Map.get(data, "text") || Map.get(data, "content") || ""
+            code =
+              Map.get(data, "code") || Map.get(data, "text") || Map.get(data, "content") || ""
+
             cleaned_code = cleanup_generated_code(code)
             {:ok, cleaned_code}
+
           {:error, reason} ->
             Logger.error("Failed to decode external LLM response: #{inspect(reason)}")
             {:error, "All code generation methods failed"}
         end
-      
+
       {:error, reason} ->
         Logger.error("External LLM request failed: #{inspect(reason)}")
         {:error, "All code generation methods failed"}
@@ -746,20 +793,19 @@ defmodule Singularity.GeneratorEngine.Code do
   defp build_external_llm_prompt(prompt, language) do
     """
     Generate clean, production-ready #{String.capitalize(language)} code for the following task:
-    
+
     Task: #{prompt}
-    
+
     Requirements:
     - Include proper error handling
     - Add documentation/comments
     - Use idiomatic #{language} patterns
     - Make it production-ready
     - Return only the code, no explanations
-    
+
     Code:
     """
   end
-
 
   defp enhance_rust_elixir_code_quality(base_code, language, quality, include_tests) do
     enhanced =
@@ -777,6 +823,7 @@ defmodule Singularity.GeneratorEngine.Code do
     case generate_optimized_prompt(task, examples, language, quality) do
       {:ok, optimized_prompt} ->
         optimized_prompt
+
       {:error, _} ->
         # Fallback to manual prompt building
         build_manual_prompt(task, examples, language, quality)
@@ -789,11 +836,11 @@ defmodule Singularity.GeneratorEngine.Code do
       {:ok, template} ->
         # Enhance template with learning data
         enhanced_template = enhance_template_with_learning(template, task, language, quality)
-        
+
         # Build prompt from enhanced template
         prompt = build_template_prompt(enhanced_template, task, language, quality, examples)
         {:ok, prompt}
-      
+
       {:error, reason} ->
         Logger.debug("Template loading failed, using TemplateAware fallback", reason: reason)
         # Fallback to TemplateAware prompting
@@ -815,6 +862,7 @@ defmodule Singularity.GeneratorEngine.Code do
           %{prompt: prompt} ->
             enhanced_prompt = enhance_prompt_with_examples(prompt, examples, language, quality)
             {:ok, enhanced_prompt}
+
           error ->
             Logger.debug("TemplateAware prompting failed, using manual prompt", error: error)
             {:error, error}
@@ -828,7 +876,7 @@ defmodule Singularity.GeneratorEngine.Code do
     else
       examples_context = build_examples_context(examples, language)
       quality_requirements = build_quality_requirements(language, quality)
-      
+
       """
       #{prompt}
 
@@ -867,7 +915,7 @@ defmodule Singularity.GeneratorEngine.Code do
       """
       ### Context from Similar Code:
       The following examples show similar patterns from your codebase:
-      
+
       #{format_examples_for_context(examples, language)}
       """
     end
@@ -885,6 +933,7 @@ defmodule Singularity.GeneratorEngine.Code do
         - Include performance optimizations
         - Add comprehensive tests
         """
+
       :prototype ->
         """
         ### Prototype Quality Requirements:
@@ -892,6 +941,7 @@ defmodule Singularity.GeneratorEngine.Code do
         - Add minimal documentation
         - Focus on functionality over optimization
         """
+
       :quick ->
         """
         ### Quick Quality Requirements:
@@ -928,14 +978,19 @@ defmodule Singularity.GeneratorEngine.Code do
             else
               # Try to improve based on validation feedback
               improvement_prompt = build_improvement_prompt(code, task, language, validation)
-              
+
               case generate_with_rust_elixir_t5(improvement_prompt, language) do
                 {:ok, improved_code} -> {:ok, improved_code}
-                {:error, _} -> {:ok, code}  # Return original if improvement fails
+                # Return original if improvement fails
+                {:error, _} -> {:ok, code}
               end
             end
-          {:error, _} -> {:ok, code}  # Return original if validation fails
+
+          # Return original if validation fails
+          {:error, _} ->
+            {:ok, code}
         end
+
       _ ->
         # For non-production quality, return as-is
         {:ok, code}
@@ -945,50 +1000,51 @@ defmodule Singularity.GeneratorEngine.Code do
   defp validate_generated_code(code, language) do
     # Basic validation - check for common issues
     issues = []
-    
+
     # Check for TODO comments
     if String.contains?(code, "TODO") or String.contains?(code, "FIXME") do
       issues = ["Contains TODO/FIXME comments" | issues]
     end
-    
+
     # Check for basic structure
     if String.length(code) < 50 do
       issues = ["Code too short" | issues]
     end
-    
+
     # Check for error handling (language-specific)
-    has_error_handling = case language do
-      "elixir" -> String.contains?(code, "case") or String.contains?(code, "with")
-      "rust" -> String.contains?(code, "Result") or String.contains?(code, "Option")
-      "typescript" -> String.contains?(code, "try") or String.contains?(code, "catch")
-      _ -> true
-    end
-    
+    has_error_handling =
+      case language do
+        "elixir" -> String.contains?(code, "case") or String.contains?(code, "with")
+        "rust" -> String.contains?(code, "Result") or String.contains?(code, "Option")
+        "typescript" -> String.contains?(code, "try") or String.contains?(code, "catch")
+        _ -> true
+      end
+
     if not has_error_handling do
       issues = ["Missing error handling" | issues]
     end
-    
+
     # Calculate score
-    score = if Enum.empty?(issues), do: 1.0, else: max(0.0, 1.0 - (length(issues) * 0.2))
-    
+    score = if Enum.empty?(issues), do: 1.0, else: max(0.0, 1.0 - length(issues) * 0.2)
+
     {:ok, %{score: score, issues: issues}}
   end
 
   defp build_improvement_prompt(code, task, language, validation) do
     issues_text = Enum.join(validation.issues, ", ")
-    
+
     """
     Improve the following #{language} code based on the validation feedback:
-    
+
     Original Task: #{task}
-    
+
     Current Code:
     ```#{language}
     #{code}
     ```
-    
+
     Issues to Fix: #{issues_text}
-    
+
     Please provide an improved version that addresses these issues while maintaining the original functionality.
     """
   end
@@ -1095,7 +1151,8 @@ defmodule Singularity.GeneratorEngine.Code do
     if String.contains?(code, "{:ok,") or String.contains?(code, "{:error,") do
       code
     else
-      "case " <> code <> " do\n  {:ok, result} -> result\n  {:error, reason} -> {:error, reason}\nend"
+      "case " <>
+        code <> " do\n  {:ok, result} -> result\n  {:error, reason} -> {:error, reason}\nend"
     end
   end
 
@@ -1135,9 +1192,11 @@ defmodule Singularity.GeneratorEngine.Code do
     # Use centralized template service for template loading
     template_type = determine_template_type(task, language, quality)
     template_id = build_template_id(task, language, quality)
-    
+
     case Singularity.Knowledge.TemplateService.get_template(template_type, template_id) do
-      {:ok, template} -> {:ok, template}
+      {:ok, template} ->
+        {:ok, template}
+
       {:error, _} ->
         # Fallback to general template
         fallback_id = "#{language}-#{quality}"
@@ -1169,13 +1228,14 @@ defmodule Singularity.GeneratorEngine.Code do
 
   defp build_template_id(task, language, quality) do
     # Extract key terms from task for template ID
-    task_clean = task
-    |> String.downcase()
-    |> String.replace(~r/[^a-z0-9\s]/, "")
-    |> String.split()
-    |> Enum.take(3)
-    |> Enum.join("-")
-    
+    task_clean =
+      task
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9\s]/, "")
+      |> String.split()
+      |> Enum.take(3)
+      |> Enum.join("-")
+
     "#{language}-#{quality}-#{task_clean}"
   end
 end

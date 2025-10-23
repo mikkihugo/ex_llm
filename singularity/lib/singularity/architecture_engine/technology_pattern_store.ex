@@ -162,7 +162,10 @@ defmodule Singularity.ArchitectureEngine.TechnologyPatternStore do
   """
   def learn_pattern(detection_result) do
     # Extract patterns from evidence
-    {file_exts, import_pats, config_files, pkg_mgrs} = extract_patterns_from_evidence(detection_result[:evidence] || detection_result.evidence || [])
+    {file_exts, import_pats, config_files, pkg_mgrs} =
+      extract_patterns_from_evidence(
+        detection_result[:evidence] || detection_result.evidence || []
+      )
 
     query = """
     INSERT INTO technology_patterns (
@@ -185,7 +188,10 @@ defmodule Singularity.ArchitectureEngine.TechnologyPatternStore do
     """
 
     # Get technology type from result or default to "unknown"
-    tech_type = detection_result[:technology_type] || detection_result[:type] || infer_technology_type(detection_result)
+    tech_type =
+      detection_result[:technology_type] || detection_result[:type] ||
+        infer_technology_type(detection_result)
+
     version = detection_result[:version] || "unknown"
     confidence = detection_result[:confidence] || 0.8
 
@@ -202,7 +208,10 @@ defmodule Singularity.ArchitectureEngine.TechnologyPatternStore do
 
     case Repo.query(query, params) do
       {:ok, %{rows: [[id]]}} ->
-        Logger.info("Learned technology pattern for #{detection_result[:name] || detection_result.name} (id: #{id})")
+        Logger.info(
+          "Learned technology pattern for #{detection_result[:name] || detection_result.name} (id: #{id})"
+        )
+
         {:ok, id}
 
       {:error, reason} ->
@@ -533,7 +542,18 @@ defmodule Singularity.ArchitectureEngine.TechnologyPatternStore do
     name = (result[:name] || result.name || "") |> String.downcase()
 
     cond do
-      name in ["elixir", "rust", "python", "javascript", "typescript", "go", "java", "ruby", "c", "cpp"] ->
+      name in [
+        "elixir",
+        "rust",
+        "python",
+        "javascript",
+        "typescript",
+        "go",
+        "java",
+        "ruby",
+        "c",
+        "cpp"
+      ] ->
         "language"
 
       name in ["postgresql", "mysql", "redis", "mongodb", "elasticsearch"] ->

@@ -78,23 +78,33 @@ defmodule Singularity.PromptEngine do
   @type prompt_response :: {:ok, map()} | {:error, term()}
 
   @default_templates [
-    %{id: "general-command", category: "commands", language: "elixir", skeleton: """
-    ## Task
-    {{context}}
+    %{
+      id: "general-command",
+      category: "commands",
+      language: "elixir",
+      skeleton: """
+      ## Task
+      {{context}}
 
-    ## Expectations
-    - Provide idiomatic {{language}} code
-    - Include inline documentation where helpful
-    """},
-    %{id: "service-blueprint", category: "architecture", language: "general", skeleton: """
-    You are designing a service that handles {{context}}.
+      ## Expectations
+      - Provide idiomatic {{language}} code
+      - Include inline documentation where helpful
+      """
+    },
+    %{
+      id: "service-blueprint",
+      category: "architecture",
+      language: "general",
+      skeleton: """
+      You are designing a service that handles {{context}}.
 
-    Outline:
-    1. Responsibilities
-    2. API surface
-    3. Data flow
-    4. Operational considerations
-    """}
+      Outline:
+      1. Responsibilities
+      2. API surface
+      3. Data flow
+      4. Operational considerations
+      """
+    }
   ]
 
   # ---------------------------------------------------------------------------
@@ -118,7 +128,8 @@ defmodule Singularity.PromptEngine do
     end
   end
 
-  @spec generate_framework_prompt(String.t(), String.t(), String.t(), String.t()) :: prompt_response
+  @spec generate_framework_prompt(String.t(), String.t(), String.t(), String.t()) ::
+          prompt_response
   def generate_framework_prompt(context, framework, category, language \\ "elixir") do
     generate_prompt(context, language,
       trigger_type: "framework",
@@ -151,18 +162,21 @@ defmodule Singularity.PromptEngine do
     Singularity.LLM.Service.call(model_or_complexity, messages, opts)
   end
 
-  @spec call_llm_with_prompt(String.t() | atom(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec call_llm_with_prompt(String.t() | atom(), String.t(), keyword()) ::
+          {:ok, map()} | {:error, term()}
   def call_llm_with_prompt(model_or_complexity, prompt, opts \\ []) do
     messages = [%{role: "user", content: prompt}]
     call_llm(model_or_complexity, messages, opts)
   end
 
-  @spec call_llm_with_system(String.t() | atom(), String.t(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec call_llm_with_system(String.t() | atom(), String.t(), String.t(), keyword()) ::
+          {:ok, map()} | {:error, term()}
   def call_llm_with_system(model_or_complexity, system_prompt, user_message, opts \\ []) do
     messages = [
       %{role: "system", content: system_prompt},
       %{role: "user", content: user_message}
     ]
+
     call_llm(model_or_complexity, messages, opts)
   end
 
@@ -295,7 +309,8 @@ defmodule Singularity.PromptEngine do
   end
 
   defp resolve_template(%{template_id: template_id} = request) do
-    Enum.find(@default_templates, &(&1.id == template_id)) || resolve_template(%{request | template_id: nil})
+    Enum.find(@default_templates, &(&1.id == template_id)) ||
+      resolve_template(%{request | template_id: nil})
   end
 
   # ---------------------------------------------------------------------------
@@ -336,14 +351,16 @@ defmodule Singularity.PromptEngine do
   defp normalize_result(other), do: {:ok, other}
 
   defp nats_generate_prompt(request) do
-    with {:ok, response} <- NatsClient.request("prompt.generate.request", Jason.encode!(request), timeout: 15_000),
+    with {:ok, response} <-
+           NatsClient.request("prompt.generate.request", Jason.encode!(request), timeout: 15_000),
          {:ok, data} <- Jason.decode(response.data) do
       {:ok, data}
     end
   end
 
   defp nats_optimize_prompt(request) do
-    with {:ok, response} <- NatsClient.request("prompt.optimize.request", Jason.encode!(request), timeout: 15_000),
+    with {:ok, response} <-
+           NatsClient.request("prompt.optimize.request", Jason.encode!(request), timeout: 15_000),
          {:ok, data} <- Jason.decode(response.data) do
       {:ok, data}
     end

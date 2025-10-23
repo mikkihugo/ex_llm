@@ -1,7 +1,7 @@
 defmodule Singularity.MetaRegistry.Frameworks.ElixirOtp do
   @moduledoc """
   Elixir OTP framework learning patterns.
-  
+
   Learns from Elixir OTP patterns to improve our OTP usage.
   """
 
@@ -9,9 +9,9 @@ defmodule Singularity.MetaRegistry.Frameworks.ElixirOtp do
 
   @doc """
   Learn from Elixir OTP patterns.
-  
+
   ## Examples
-  
+
       # Learn from our OTP modules
       learn_patterns(%{
         modules: ["GenServer", "Supervisor", "Agent", "Task"],
@@ -29,9 +29,9 @@ defmodule Singularity.MetaRegistry.Frameworks.ElixirOtp do
 
   @doc """
   Get Elixir OTP suggestions based on learned patterns.
-  
+
   ## Examples
-  
+
       # Get module suggestions
       get_suggestions("user", "module")
       # Returns: ["User.Server", "User.Supervisor", "User.Agent"]
@@ -59,8 +59,12 @@ defmodule Singularity.MetaRegistry.Frameworks.ElixirOtp do
       modules: ["GenServer", "Supervisor", "Agent", "Task"],
       functions: ["start_link", "init", "handle_call", "handle_cast"],
       patterns: [
-        "defmodule", "use GenServer", "def start_link",
-        "def init", "def handle_call", "def handle_cast"
+        "defmodule",
+        "use GenServer",
+        "def start_link",
+        "def init",
+        "def handle_call",
+        "def handle_cast"
       ]
     })
   end

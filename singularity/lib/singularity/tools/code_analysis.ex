@@ -476,10 +476,14 @@ defmodule Singularity.Tools.CodeAnalysis do
       }
 
       # Run mix compile to check for compilation errors
-      case System.cmd("mix", ["compile", "--warnings-as-errors"], cd: path, stderr_to_stdout: true) do
+      case System.cmd("mix", ["compile", "--warnings-as-errors"],
+             cd: path,
+             stderr_to_stdout: true
+           ) do
         {output, 0} ->
           results = Map.put(results, :compilation_status, "success")
           results = Map.put(results, :tools_used, ["mix compile"])
+
         {output, _exit_code} ->
           compilation_errors = parse_elixir_compilation_errors(output)
           results = Map.put(results, :compilation_status, "failed")
@@ -499,7 +503,10 @@ defmodule Singularity.Tools.CodeAnalysis do
 
       # Run dialyzer for type analysis
       if analysis_type in ["all", "types"] do
-        case System.cmd("mix", ["dialyzer", "--format", "dialyxir"], cd: path, stderr_to_stdout: true) do
+        case System.cmd("mix", ["dialyzer", "--format", "dialyxir"],
+               cd: path,
+               stderr_to_stdout: true
+             ) do
           {output, _exit_code} ->
             dialyzer_results = parse_dialyzer_output(output)
             results = Map.put(results, :type_issues, dialyzer_results)
@@ -518,16 +525,18 @@ defmodule Singularity.Tools.CodeAnalysis do
       end
 
       # Calculate overall metrics
-      total_issues = length(results.issues) + 
-                    length(Map.get(results, :quality_issues, [])) + 
-                    length(Map.get(results, :type_issues, []))
-      
-      results = Map.put(results, :metrics, %{
-        total_issues: total_issues,
-        compilation_status: Map.get(results, :compilation_status, "unknown"),
-        test_coverage: Map.get(Map.get(results, :test_coverage, %{}), :coverage, 0),
-        analysis_timestamp: DateTime.utc_now()
-      })
+      total_issues =
+        length(results.issues) +
+          length(Map.get(results, :quality_issues, [])) +
+          length(Map.get(results, :type_issues, []))
+
+      results =
+        Map.put(results, :metrics, %{
+          total_issues: total_issues,
+          compilation_status: Map.get(results, :compilation_status, "unknown"),
+          test_coverage: Map.get(Map.get(results, :test_coverage, %{}), :coverage, 0),
+          analysis_timestamp: DateTime.utc_now()
+        })
 
       results
     rescue
@@ -560,6 +569,7 @@ defmodule Singularity.Tools.CodeAnalysis do
         {output, 0} ->
           results = Map.put(results, :compilation_status, "success")
           results = Map.put(results, :tools_used, ["tsc"])
+
         {output, _exit_code} ->
           type_errors = parse_typescript_errors(output)
           results = Map.put(results, :compilation_status, "failed")
@@ -569,7 +579,10 @@ defmodule Singularity.Tools.CodeAnalysis do
 
       # Run eslint for code quality
       if analysis_type in ["all", "quality"] do
-        case System.cmd("npx", ["eslint", ".", "--format", "json"], cd: path, stderr_to_stdout: true) do
+        case System.cmd("npx", ["eslint", ".", "--format", "json"],
+               cd: path,
+               stderr_to_stdout: true
+             ) do
           {output, _exit_code} ->
             eslint_results = parse_eslint_output(output)
             results = Map.put(results, :quality_issues, eslint_results)
@@ -598,16 +611,18 @@ defmodule Singularity.Tools.CodeAnalysis do
       end
 
       # Calculate overall metrics
-      total_issues = length(results.issues) + 
-                    length(Map.get(results, :quality_issues, [])) + 
-                    length(Map.get(results, :security_issues, []))
-      
-      results = Map.put(results, :metrics, %{
-        total_issues: total_issues,
-        compilation_status: Map.get(results, :compilation_status, "unknown"),
-        test_status: Map.get(Map.get(results, :test_results, %{}), :status, "unknown"),
-        analysis_timestamp: DateTime.utc_now()
-      })
+      total_issues =
+        length(results.issues) +
+          length(Map.get(results, :quality_issues, [])) +
+          length(Map.get(results, :security_issues, []))
+
+      results =
+        Map.put(results, :metrics, %{
+          total_issues: total_issues,
+          compilation_status: Map.get(results, :compilation_status, "unknown"),
+          test_status: Map.get(Map.get(results, :test_results, %{}), :status, "unknown"),
+          analysis_timestamp: DateTime.utc_now()
+        })
 
       results
     rescue
@@ -647,7 +662,10 @@ defmodule Singularity.Tools.CodeAnalysis do
 
       # Run mypy for type checking
       if analysis_type in ["all", "types"] do
-        case System.cmd("mypy", ["--json-report", "/tmp/mypy-report", "."], cd: path, stderr_to_stdout: true) do
+        case System.cmd("mypy", ["--json-report", "/tmp/mypy-report", "."],
+               cd: path,
+               stderr_to_stdout: true
+             ) do
           {output, _exit_code} ->
             mypy_results = parse_mypy_output(output)
             results = Map.put(results, :type_issues, mypy_results)
@@ -667,7 +685,10 @@ defmodule Singularity.Tools.CodeAnalysis do
 
       # Run pytest for tests
       if analysis_type in ["all", "tests"] do
-        case System.cmd("pytest", ["--cov=.", "--cov-report=json"], cd: path, stderr_to_stdout: true) do
+        case System.cmd("pytest", ["--cov=.", "--cov-report=json"],
+               cd: path,
+               stderr_to_stdout: true
+             ) do
           {output, _exit_code} ->
             test_results = parse_pytest_output(output)
             results = Map.put(results, :test_coverage, test_results)
@@ -676,15 +697,17 @@ defmodule Singularity.Tools.CodeAnalysis do
       end
 
       # Calculate overall metrics
-      total_issues = length(Map.get(results, :quality_issues, [])) + 
-                    length(Map.get(results, :type_issues, [])) + 
-                    length(Map.get(results, :security_issues, []))
-      
-      results = Map.put(results, :metrics, %{
-        total_issues: total_issues,
-        test_coverage: Map.get(Map.get(results, :test_coverage, %{}), :coverage, 0),
-        analysis_timestamp: DateTime.utc_now()
-      })
+      total_issues =
+        length(Map.get(results, :quality_issues, [])) +
+          length(Map.get(results, :type_issues, [])) +
+          length(Map.get(results, :security_issues, []))
+
+      results =
+        Map.put(results, :metrics, %{
+          total_issues: total_issues,
+          test_coverage: Map.get(Map.get(results, :test_coverage, %{}), :coverage, 0),
+          analysis_timestamp: DateTime.utc_now()
+        })
 
       results
     rescue
@@ -718,6 +741,7 @@ defmodule Singularity.Tools.CodeAnalysis do
           {output, 0} ->
             results = Map.put(results, :vet_status, "clean")
             results = Map.put(results, :tools_used, ["go vet"])
+
           {output, _exit_code} ->
             vet_issues = parse_go_vet_output(output)
             results = Map.put(results, :vet_status, "issues_found")
@@ -732,6 +756,7 @@ defmodule Singularity.Tools.CodeAnalysis do
           {output, 0} ->
             results = Map.put(results, :lint_status, "clean")
             results = Map.put(results, :tools_used, results.tools_used ++ ["golint"])
+
           {output, _exit_code} ->
             lint_issues = parse_golint_output(output)
             results = Map.put(results, :lint_status, "issues_found")
@@ -761,17 +786,19 @@ defmodule Singularity.Tools.CodeAnalysis do
       end
 
       # Calculate overall metrics
-      total_issues = length(results.issues) + 
-                    length(Map.get(results, :style_issues, [])) + 
-                    length(Map.get(results, :security_issues, []))
-      
-      results = Map.put(results, :metrics, %{
-        total_issues: total_issues,
-        vet_status: Map.get(results, :vet_status, "unknown"),
-        lint_status: Map.get(results, :lint_status, "unknown"),
-        test_status: Map.get(Map.get(results, :test_results, %{}), :status, "unknown"),
-        analysis_timestamp: DateTime.utc_now()
-      })
+      total_issues =
+        length(results.issues) +
+          length(Map.get(results, :style_issues, [])) +
+          length(Map.get(results, :security_issues, []))
+
+      results =
+        Map.put(results, :metrics, %{
+          total_issues: total_issues,
+          vet_status: Map.get(results, :vet_status, "unknown"),
+          lint_status: Map.get(results, :lint_status, "unknown"),
+          test_status: Map.get(Map.get(results, :test_results, %{}), :status, "unknown"),
+          analysis_timestamp: DateTime.utc_now()
+        })
 
       results
     rescue
@@ -801,7 +828,10 @@ defmodule Singularity.Tools.CodeAnalysis do
 
       # Run spotbugs for bug detection
       if analysis_type in ["all", "bugs"] do
-        case System.cmd("spotbugs", ["-textui", "-output", "/tmp/spotbugs.txt", "."], cd: path, stderr_to_stdout: true) do
+        case System.cmd("spotbugs", ["-textui", "-output", "/tmp/spotbugs.txt", "."],
+               cd: path,
+               stderr_to_stdout: true
+             ) do
           {output, _exit_code} ->
             spotbugs_results = parse_spotbugs_output(output)
             results = Map.put(results, :bug_issues, spotbugs_results)
@@ -811,7 +841,10 @@ defmodule Singularity.Tools.CodeAnalysis do
 
       # Run checkstyle for code style
       if analysis_type in ["all", "style"] do
-        case System.cmd("checkstyle", ["-c", "sun_checks.xml", "."], cd: path, stderr_to_stdout: true) do
+        case System.cmd("checkstyle", ["-c", "sun_checks.xml", "."],
+               cd: path,
+               stderr_to_stdout: true
+             ) do
           {output, _exit_code} ->
             checkstyle_results = parse_checkstyle_output(output)
             results = Map.put(results, :style_issues, checkstyle_results)
@@ -821,7 +854,12 @@ defmodule Singularity.Tools.CodeAnalysis do
 
       # Run dependency-check for security vulnerabilities
       if analysis_type in ["all", "security"] do
-        case System.cmd("dependency-check", ["--format", "JSON", "--out", "/tmp/dependency-check"], cd: path, stderr_to_stdout: true) do
+        case System.cmd(
+               "dependency-check",
+               ["--format", "JSON", "--out", "/tmp/dependency-check"],
+               cd: path,
+               stderr_to_stdout: true
+             ) do
           {output, _exit_code} ->
             dependency_results = parse_dependency_check_output(output)
             results = Map.put(results, :security_issues, dependency_results)
@@ -840,15 +878,17 @@ defmodule Singularity.Tools.CodeAnalysis do
       end
 
       # Calculate overall metrics
-      total_issues = length(Map.get(results, :bug_issues, [])) + 
-                    length(Map.get(results, :style_issues, [])) + 
-                    length(Map.get(results, :security_issues, []))
-      
-      results = Map.put(results, :metrics, %{
-        total_issues: total_issues,
-        test_status: Map.get(Map.get(results, :test_results, %{}), :status, "unknown"),
-        analysis_timestamp: DateTime.utc_now()
-      })
+      total_issues =
+        length(Map.get(results, :bug_issues, [])) +
+          length(Map.get(results, :style_issues, [])) +
+          length(Map.get(results, :security_issues, []))
+
+      results =
+        Map.put(results, :metrics, %{
+          total_issues: total_issues,
+          test_status: Map.get(Map.get(results, :test_results, %{}), :status, "unknown"),
+          analysis_timestamp: DateTime.utc_now()
+        })
 
       results
     rescue
@@ -894,7 +934,9 @@ defmodule Singularity.Tools.CodeAnalysis do
             line: Map.get(issue, "line_no", 0)
           }
         end)
-      {:error, _} -> []
+
+      {:error, _} ->
+        []
     end
   end
 
@@ -916,10 +958,10 @@ defmodule Singularity.Tools.CodeAnalysis do
     # Parse mix test output for coverage
     coverage_match = Regex.run(~r/Coverage: (\d+\.?\d*)%/, output)
     coverage = if coverage_match, do: String.to_float(Enum.at(coverage_match, 1)), else: 0.0
-    
+
     %{
       coverage: coverage,
-      status: (if String.contains?(output, "test failure"), do: "failed", else: "passed")
+      status: if(String.contains?(output, "test failure"), do: "failed", else: "passed")
     }
   end
 
@@ -954,7 +996,9 @@ defmodule Singularity.Tools.CodeAnalysis do
             }
           end)
         end)
-      {:error, _} -> []
+
+      {:error, _} ->
+        []
     end
   end
 
@@ -971,13 +1015,15 @@ defmodule Singularity.Tools.CodeAnalysis do
             category: "security"
           }
         end)
-      {:error, _} -> []
+
+      {:error, _} ->
+        []
     end
   end
 
   defp parse_npm_test_output(output) do
     %{
-      status: (if String.contains?(output, "failing"), do: "failed", else: "passed"),
+      status: if(String.contains?(output, "failing"), do: "failed", else: "passed"),
       output: output
     }
   end
@@ -996,7 +1042,9 @@ defmodule Singularity.Tools.CodeAnalysis do
             line: Map.get(issue, "line", 0)
           }
         end)
-      {:error, _} -> []
+
+      {:error, _} ->
+        []
     end
   end
 
@@ -1027,17 +1075,23 @@ defmodule Singularity.Tools.CodeAnalysis do
             category: "security"
           }
         end)
-      {:error, _} -> []
+
+      {:error, _} ->
+        []
     end
   end
 
   defp parse_pytest_output(output) do
     coverage_match = Regex.run(~r/TOTAL.*?(\d+%)/, output)
-    coverage = if coverage_match, do: String.to_float(String.replace(Enum.at(coverage_match, 1), "%", "")), else: 0.0
-    
+
+    coverage =
+      if coverage_match,
+        do: String.to_float(String.replace(Enum.at(coverage_match, 1), "%", "")),
+        else: 0.0
+
     %{
       coverage: coverage,
-      status: (if String.contains?(output, "FAILED"), do: "failed", else: "passed")
+      status: if(String.contains?(output, "FAILED"), do: "failed", else: "passed")
     }
   end
 
@@ -1082,13 +1136,15 @@ defmodule Singularity.Tools.CodeAnalysis do
             line: Map.get(issue, "line", 0)
           }
         end)
-      {:error, _} -> []
+
+      {:error, _} ->
+        []
     end
   end
 
   defp parse_go_test_output(output) do
     %{
-      status: (if String.contains?(output, "FAIL"), do: "failed", else: "passed"),
+      status: if(String.contains?(output, "FAIL"), do: "failed", else: "passed"),
       output: output
     }
   end
@@ -1137,13 +1193,15 @@ defmodule Singularity.Tools.CodeAnalysis do
             }
           end)
         end)
-      {:error, _} -> []
+
+      {:error, _} ->
+        []
     end
   end
 
   defp parse_maven_test_output(output) do
     %{
-      status: (if String.contains?(output, "BUILD FAILURE"), do: "failed", else: "passed"),
+      status: if(String.contains?(output, "BUILD FAILURE"), do: "failed", else: "passed"),
       output: output
     }
   end

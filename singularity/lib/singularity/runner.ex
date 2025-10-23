@@ -59,13 +59,13 @@ defmodule Singularity.Runner do
   @type task :: map()
   @type execution_result :: {:ok, map()} | {:error, term()}
   @type runner_state :: %{
-    executions: %{execution_id() => map()},
-    metrics: map(),
-    circuit_breakers: %{atom() => map()},
-    supervisor_ref: reference(),
-    gnat: pid() | nil,
-    execution_history: [map()]
-  }
+          executions: %{execution_id() => map()},
+          metrics: map(),
+          circuit_breakers: %{atom() => map()},
+          supervisor_ref: reference(),
+          gnat: pid() | nil,
+          execution_history: [map()]
+        }
 
   # ============================================================================
   # PUBLIC API
@@ -148,14 +148,16 @@ defmodule Singularity.Runner do
     circuit_breakers = initialize_circuit_breakers()
 
     # Connect to NATS if available
-    gnat = case connect_to_nats() do
-      {:ok, pid} -> 
-        Logger.info("Connected to NATS")
-        pid
-      {:error, reason} -> 
-        Logger.warning("NATS connection failed: #{inspect(reason)}")
-        nil
-    end
+    gnat =
+      case connect_to_nats() do
+        {:ok, pid} ->
+          Logger.info("Connected to NATS")
+          pid
+
+        {:error, reason} ->
+          Logger.warning("NATS connection failed: #{inspect(reason)}")
+          nil
+      end
 
     # Load execution history from database
     execution_history = load_execution_history()
@@ -190,7 +192,7 @@ defmodule Singularity.Runner do
   @impl true
   def handle_call({:execute_task, task}, from, state) do
     execution_id = generate_execution_id()
-    
+
     # Persist task to database
     case persist_execution(execution_id, task, :pending) do
       :ok ->
@@ -203,19 +205,20 @@ defmodule Singularity.Runner do
 
         # Start execution task under supervisor
         case DynamicSupervisor.start_child(state.supervisor_ref, {
-          Task,
-          fn -> execute_task_with_monitoring(execution_id, task, from) end
-        }) do
+               Task,
+               fn -> execute_task_with_monitoring(execution_id, task, from) end
+             }) do
           {:ok, task_pid} ->
             # Track execution
-            new_executions = Map.put(state.executions, execution_id, %{
-              id: execution_id,
-              task: task,
-              pid: task_pid,
-              from: from,
-              started_at: DateTime.utc_now(),
-              status: :running
-            })
+            new_executions =
+              Map.put(state.executions, execution_id, %{
+                id: execution_id,
+                task: task,
+                pid: task_pid,
+                from: from,
+                started_at: DateTime.utc_now(),
+                status: :running
+              })
 
             new_state = %{state | executions: new_executions}
             {:noreply, new_state}
@@ -239,7 +242,7 @@ defmodule Singularity.Runner do
     timeout = Keyword.get(opts, :timeout, 30_000)
 
     # Execute tasks concurrently with backpressure
-    results = 
+    results =
       tasks
       |> Task.async_stream(
         fn task -> execute_task_internal(task) end,
@@ -261,7 +264,7 @@ defmodule Singularity.Runner do
     timeout = Keyword.get(opts, :timeout, 30_000)
 
     # Create streaming execution
-    stream = 
+    stream =
       tasks
       |> Task.async_stream(
         fn task -> execute_task_internal(task) end,
@@ -297,10 +300,11 @@ defmodule Singularity.Runner do
   def handle_call({:get_execution_history, opts}, _from, state) do
     limit = Keyword.get(opts, :limit, 100)
     offset = Keyword.get(opts, :offset, 0)
-    
-    history = state.execution_history
-    |> Enum.drop(offset)
-    |> Enum.take(limit)
+
+    history =
+      state.execution_history
+      |> Enum.drop(offset)
+      |> Enum.take(limit)
 
     {:reply, history, state}
   end
@@ -327,14 +331,18 @@ defmodule Singularity.Runner do
     case Map.get(state.executions, execution_id) do
       %{task: %{args: %{agent_id: agent_id}}} ->
         Singularity.SelfImprovingAgent.record_outcome(agent_id, :success)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
 
     # Persist completion to database
     case Map.get(state.executions, execution_id) do
       %{task: task} ->
         persist_execution(execution_id, task, :completed, result: result)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
 
     # Publish completion event
@@ -364,14 +372,18 @@ defmodule Singularity.Runner do
     case Map.get(state.executions, execution_id) do
       %{task: %{args: %{agent_id: agent_id}}} ->
         Singularity.SelfImprovingAgent.record_outcome(agent_id, :failure)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
 
     # Persist failure to database
     case Map.get(state.executions, execution_id) do
       %{task: task} ->
         persist_execution(execution_id, task, :failed, error: reason)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
 
     # Publish failure event
@@ -388,8 +400,8 @@ defmodule Singularity.Runner do
   @impl true
   def handle_info({:circuit_opened, service}, state) do
     Logger.warning("Circuit breaker opened", service: service)
-    
-    new_circuit_breakers = 
+
+    new_circuit_breakers =
       state.circuit_breakers
       |> Map.update!(service, fn cb ->
         %{cb | state: :open, opened_at: DateTime.utc_now()}
@@ -408,8 +420,8 @@ defmodule Singularity.Runner do
   @impl true
   def handle_info({:circuit_closed, service}, state) do
     Logger.info("Circuit breaker closed", service: service)
-    
-    new_circuit_breakers = 
+
+    new_circuit_breakers =
       state.circuit_breakers
       |> Map.update!(service, fn cb ->
         %{cb | state: :closed, closed_at: DateTime.utc_now()}
@@ -451,7 +463,6 @@ defmodule Singularity.Runner do
 
       # Reply to caller
       GenServer.reply(from, {:ok, result})
-
     rescue
       error ->
         # Emit error event
@@ -480,14 +491,14 @@ defmodule Singularity.Runner do
 
   defp execute_task_with_circuit_breaker(task) do
     service = determine_service(task)
-    
+
     case get_circuit_breaker_state(service) do
       :open ->
         {:error, :circuit_breaker_open}
-      
+
       :closed ->
         execute_task_core(task)
-      
+
       :half_open ->
         # Try execution, will update circuit state based on result
         execute_task_core(task)
@@ -498,16 +509,16 @@ defmodule Singularity.Runner do
     case task.type do
       :analysis ->
         execute_analysis_task(task)
-      
+
       :tool ->
         execute_tool_task(task)
-      
+
       :agent_task ->
         execute_agent_task(task)
-      
+
       :semantic_search ->
         execute_semantic_search_task(task)
-      
+
       _ ->
         {:error, :unknown_task_type}
     end
@@ -516,23 +527,23 @@ defmodule Singularity.Runner do
   defp execute_analysis_task(task) do
     # Display progress
     display_progress("Starting analysis", 0)
-    
+
     # Multi-stage analysis pipeline
     with {:ok, discovery} <- run_codebase_discovery(task.args.path),
          {:ok, structural} <- run_structural_analysis(discovery),
          {:ok, semantic} <- run_semantic_analysis(structural),
          {:ok, ai_insights} <- generate_ai_insights(semantic, task.args.options || %{}) do
-      
       display_progress("Analysis complete", 100)
-      
-      {:ok, %{
-        type: :analysis,
-        discovery: discovery,
-        structural: structural,
-        semantic: semantic,
-        ai_insights: ai_insights,
-        completed_at: DateTime.utc_now()
-      }}
+
+      {:ok,
+       %{
+         type: :analysis,
+         discovery: discovery,
+         structural: structural,
+         semantic: semantic,
+         ai_insights: ai_insights,
+         completed_at: DateTime.utc_now()
+       }}
     else
       {:error, reason} -> {:error, reason}
     end
@@ -542,13 +553,14 @@ defmodule Singularity.Runner do
     # Execute tool with intelligent routing
     case Singularity.Tools.execute_tool(task.args.tool, task.args.args || %{}) do
       {:ok, result} ->
-        {:ok, %{
-          type: :tool,
-          tool: task.args.tool,
-          result: result,
-          completed_at: DateTime.utc_now()
-        }}
-      
+        {:ok,
+         %{
+           type: :tool,
+           tool: task.args.tool,
+           result: result,
+           completed_at: DateTime.utc_now()
+         }}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -556,15 +568,20 @@ defmodule Singularity.Runner do
 
   defp execute_agent_task(task) do
     # Execute agent task with full orchestration
-    case Singularity.Agent.execute_task(task.args.agent_id, task.args.task, task.args.context || %{}) do
+    case Singularity.Agent.execute_task(
+           task.args.agent_id,
+           task.args.task,
+           task.args.context || %{}
+         ) do
       {:ok, result} ->
-        {:ok, %{
-          type: :agent_task,
-          agent_id: task.args.agent_id,
-          result: result,
-          completed_at: DateTime.utc_now()
-        }}
-      
+        {:ok,
+         %{
+           type: :agent_task,
+           agent_id: task.args.agent_id,
+           result: result,
+           completed_at: DateTime.utc_now()
+         }}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -573,19 +590,20 @@ defmodule Singularity.Runner do
   defp execute_semantic_search_task(task) do
     # Execute semantic search with embeddings
     case Singularity.CodeSearch.semantic_search(
-      Repo,
-      task.args.codebase_id || "default",
-      task.args.query,
-      task.args.limit || 10
-    ) do
+           Repo,
+           task.args.codebase_id || "default",
+           task.args.query,
+           task.args.limit || 10
+         ) do
       {:ok, results} ->
-        {:ok, %{
-          type: :semantic_search,
-          query: task.args.query,
-          results: results,
-          completed_at: DateTime.utc_now()
-        }}
-      
+        {:ok,
+         %{
+           type: :semantic_search,
+           query: task.args.query,
+           results: results,
+           completed_at: DateTime.utc_now()
+         }}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -662,8 +680,10 @@ defmodule Singularity.Runner do
 
       # Persist to database
       case Singularity.Runner.ExecutionRecord.upsert(execution_record) do
-        {:ok, _record} -> :ok
-        {:error, changeset} -> 
+        {:ok, _record} ->
+          :ok
+
+        {:error, changeset} ->
           Logger.error("Failed to persist execution to database", changeset: changeset)
           {:error, changeset}
       end
@@ -705,7 +725,8 @@ defmodule Singularity.Runner do
   defp connect_to_nats do
     try do
       # Use Singularity.NATS.Client instead of direct Gnat connection
-      {:ok, nil}  # NATS connection handled by application startup
+      # NATS connection handled by application startup
+      {:ok, nil}
     rescue
       error ->
         {:error, error}
@@ -726,7 +747,8 @@ defmodule Singularity.Runner do
   end
 
   defp publish_nats_event(nil, _event_type, _payload) do
-    :ok  # NATS not available, silently ignore
+    # NATS not available, silently ignore
+    :ok
   end
 
   # ============================================================================
@@ -748,21 +770,24 @@ defmodule Singularity.Runner do
     case event do
       :task_completed ->
         execution_time = Map.get(data, :execution_time_ms, 0)
-        %{metrics | 
-          total_executions: metrics.total_executions + 1,
-          successful_executions: metrics.successful_executions + 1,
-          total_execution_time_ms: metrics.total_execution_time_ms + execution_time
+
+        %{
+          metrics
+          | total_executions: metrics.total_executions + 1,
+            successful_executions: metrics.successful_executions + 1,
+            total_execution_time_ms: metrics.total_execution_time_ms + execution_time
         }
-      
+
       :task_failed ->
-        %{metrics | 
-          total_executions: metrics.total_executions + 1,
-          failed_executions: metrics.failed_executions + 1
+        %{
+          metrics
+          | total_executions: metrics.total_executions + 1,
+            failed_executions: metrics.failed_executions + 1
         }
-      
+
       :circuit_opened ->
         %{metrics | circuit_breaker_opens: metrics.circuit_breaker_opens + 1}
-      
+
       _ ->
         metrics
     end
@@ -777,36 +802,61 @@ defmodule Singularity.Runner do
   # TELEMETRY
   # ============================================================================
 
-  defp handle_telemetry_event([:singularity, :runner, :task, :start], measurements, metadata, _config) do
-    Logger.debug("Task started", 
+  defp handle_telemetry_event(
+         [:singularity, :runner, :task, :start],
+         measurements,
+         metadata,
+         _config
+       ) do
+    Logger.debug("Task started",
       execution_id: metadata.execution_id,
       task_type: metadata.task_type,
       count: measurements.count
     )
   end
 
-  defp handle_telemetry_event([:singularity, :runner, :task, :stop], measurements, metadata, _config) do
-    Logger.debug("Task completed", 
+  defp handle_telemetry_event(
+         [:singularity, :runner, :task, :stop],
+         measurements,
+         metadata,
+         _config
+       ) do
+    Logger.debug("Task completed",
       execution_id: metadata.execution_id,
       duration_ms: measurements.duration,
       success: metadata.success
     )
   end
 
-  defp handle_telemetry_event([:singularity, :runner, :task, :exception], measurements, metadata, _config) do
-    Logger.error("Task failed", 
+  defp handle_telemetry_event(
+         [:singularity, :runner, :task, :exception],
+         measurements,
+         metadata,
+         _config
+       ) do
+    Logger.error("Task failed",
       execution_id: metadata.execution_id,
       error: metadata.error,
       count: measurements.count
     )
   end
 
-  defp handle_telemetry_event([:singularity, :runner, :circuit, :open], _measurements, metadata, _config) do
+  defp handle_telemetry_event(
+         [:singularity, :runner, :circuit, :open],
+         _measurements,
+         metadata,
+         _config
+       ) do
     Logger.warning("Circuit breaker opened", service: metadata.service)
     send(__MODULE__, {:circuit_opened, metadata.service})
   end
 
-  defp handle_telemetry_event([:singularity, :runner, :circuit, :close], _measurements, metadata, _config) do
+  defp handle_telemetry_event(
+         [:singularity, :runner, :circuit, :close],
+         _measurements,
+         metadata,
+         _config
+       ) do
     Logger.info("Circuit breaker closed", service: metadata.service)
     send(__MODULE__, {:circuit_closed, metadata.service})
   end
@@ -827,27 +877,35 @@ defmodule Singularity.Runner do
   defp run_codebase_discovery(path) do
     # Delegate to ArchitectureEngine for comprehensive analysis
     case Singularity.ArchitectureEngine.detect_frameworks([], []) do
-      {:ok, analysis} -> 
-        {:ok, %{
-          total_files: analysis.summary.total_files || 0,
-          languages: analysis.summary.languages || [],
-          frameworks: analysis.summary.frameworks || [],
-          path: path,
-          analysis_timestamp: analysis.analysis_timestamp
-        }}
-      {:error, reason} -> 
-        Logger.warning("Architecture analysis failed, falling back to basic discovery: #{inspect(reason)}")
+      {:ok, analysis} ->
+        {:ok,
+         %{
+           total_files: analysis.summary.total_files || 0,
+           languages: analysis.summary.languages || [],
+           frameworks: analysis.summary.frameworks || [],
+           path: path,
+           analysis_timestamp: analysis.analysis_timestamp
+         }}
+
+      {:error, reason} ->
+        Logger.warning(
+          "Architecture analysis failed, falling back to basic discovery: #{inspect(reason)}"
+        )
+
         # Fallback to basic file system discovery
         case Singularity.Tools.FileSystem.list_files(path, %{recursive: true}) do
           {:ok, files} ->
-            {:ok, %{
-              total_files: length(files),
-              languages: extract_languages(files),
-              frameworks: detect_frameworks(files),
-              path: path,
-              analysis_timestamp: DateTime.utc_now()
-            }}
-          {:error, reason} -> {:error, reason}
+            {:ok,
+             %{
+               total_files: length(files),
+               languages: extract_languages(files),
+               frameworks: detect_frameworks(files),
+               path: path,
+               analysis_timestamp: DateTime.utc_now()
+             }}
+
+          {:error, reason} ->
+            {:error, reason}
         end
     end
   end
@@ -856,45 +914,60 @@ defmodule Singularity.Runner do
     # Delegate to existing architecture analysis
     case Singularity.ArchitectureEngine.detect_frameworks([], []) do
       {:ok, architecture} ->
-        {:ok, %{
-          complexity_score: architecture.complexity_score || calculate_complexity_score(discovery),
-          architecture_patterns: architecture.patterns || detect_architecture_patterns(discovery),
-          quality_metrics: architecture.quality_metrics || calculate_quality_metrics(discovery),
-          modules: architecture.modules || [],
-          dependencies: architecture.dependencies || [],
-          layers: architecture.layers || [],
-          services: architecture.services || []
-        }}
+        {:ok,
+         %{
+           complexity_score:
+             architecture.complexity_score || calculate_complexity_score(discovery),
+           architecture_patterns:
+             architecture.patterns || detect_architecture_patterns(discovery),
+           quality_metrics: architecture.quality_metrics || calculate_quality_metrics(discovery),
+           modules: architecture.modules || [],
+           dependencies: architecture.dependencies || [],
+           layers: architecture.layers || [],
+           services: architecture.services || []
+         }}
+
       {:error, reason} ->
         Logger.warning("Architecture analysis failed: #{inspect(reason)}")
-        {:ok, %{
-          complexity_score: calculate_complexity_score(discovery),
-          architecture_patterns: detect_architecture_patterns(discovery),
-          quality_metrics: calculate_quality_metrics(discovery),
-          modules: [],
-          dependencies: [],
-          layers: [],
-          services: []
-        }}
+
+        {:ok,
+         %{
+           complexity_score: calculate_complexity_score(discovery),
+           architecture_patterns: detect_architecture_patterns(discovery),
+           quality_metrics: calculate_quality_metrics(discovery),
+           modules: [],
+           dependencies: [],
+           layers: [],
+           services: []
+         }}
     end
   end
 
   defp run_semantic_analysis(structural) do
     # Delegate to existing semantic search
-    case Singularity.CodeSearch.semantic_search(Repo, structural.codebase_id || "default", "codebase analysis", 10) do
+    case Singularity.CodeSearch.semantic_search(
+           Repo,
+           structural.codebase_id || "default",
+           "codebase analysis",
+           10
+         ) do
       {:ok, results} ->
-        {:ok, %{
-          semantic_patterns: extract_semantic_patterns_from_results(results),
-          code_similarities: find_code_similarities_from_results(results),
-          semantic_matches: results
-        }}
+        {:ok,
+         %{
+           semantic_patterns: extract_semantic_patterns_from_results(results),
+           code_similarities: find_code_similarities_from_results(results),
+           semantic_matches: results
+         }}
+
       {:error, reason} ->
         Logger.warning("Semantic analysis failed: #{inspect(reason)}")
-        {:ok, %{
-          semantic_patterns: [],
-          code_similarities: [],
-          semantic_matches: []
-        }}
+
+        {:ok,
+         %{
+           semantic_patterns: [],
+           code_similarities: [],
+           semantic_matches: []
+         }}
     end
   end
 
@@ -902,26 +975,34 @@ defmodule Singularity.Runner do
     # Extract options with defaults
     complexity = Keyword.get(options, :complexity, :complex)
     include_recommendations = Keyword.get(options, :include_recommendations, true)
-    
+
     # Delegate to existing LLM service for AI insights
-    case Singularity.LLM.Service.call(complexity, [%{
-      role: "user", 
-      content: "Analyze this codebase semantic data: #{inspect(semantic)}#{if include_recommendations, do: " Include specific recommendations for improvement.", else: ""}"
-    }], task_type: "code_analysis", capabilities: [:analysis, :reasoning]) do
+    case Singularity.LLM.Service.call(
+           complexity,
+           [
+             %{
+               role: "user",
+               content:
+                 "Analyze this codebase semantic data: #{inspect(semantic)}#{if include_recommendations, do: " Include specific recommendations for improvement.", else: ""}"
+             }
+           ], task_type: "code_analysis", capabilities: [:analysis, :reasoning]) do
       {:ok, %{text: insights}} ->
-        {:ok, %{
-          ai_insights: insights,
-          recommendations: extract_recommendations_from_insights(insights),
-          risk_assessment: assess_risks_from_insights(insights)
-        }}
-      
+        {:ok,
+         %{
+           ai_insights: insights,
+           recommendations: extract_recommendations_from_insights(insights),
+           risk_assessment: assess_risks_from_insights(insights)
+         }}
+
       {:error, reason} ->
         Logger.warning("AI insights generation failed: #{inspect(reason)}")
-        {:ok, %{
-          ai_insights: "Analysis failed: #{inspect(reason)}",
-          recommendations: [],
-          risk_assessment: %{}
-        }}
+
+        {:ok,
+         %{
+           ai_insights: "Analysis failed: #{inspect(reason)}",
+           recommendations: [],
+           risk_assessment: %{}
+         }}
     end
   end
 
@@ -954,34 +1035,42 @@ defmodule Singularity.Runner do
 
   defp detect_frameworks_in_file(file_path) do
     frameworks = []
-    
+
     # Phoenix detection
-    frameworks = if String.contains?(file_path, "phoenix") or String.contains?(file_path, "web/"), do: [:phoenix | frameworks], else: frameworks
-    
+    frameworks =
+      if String.contains?(file_path, "phoenix") or String.contains?(file_path, "web/"),
+        do: [:phoenix | frameworks],
+        else: frameworks
+
     # NATS detection
-    frameworks = if String.contains?(file_path, "nats"), do: [:nats | frameworks], else: frameworks
-    
+    frameworks =
+      if String.contains?(file_path, "nats"), do: [:nats | frameworks], else: frameworks
+
     # PostgreSQL detection
-    frameworks = if String.contains?(file_path, "postgres") or String.contains?(file_path, "repo"), do: [:postgresql | frameworks], else: frameworks
-    
+    frameworks =
+      if String.contains?(file_path, "postgres") or String.contains?(file_path, "repo"),
+        do: [:postgresql | frameworks],
+        else: frameworks
+
     frameworks
   end
 
   defp calculate_complexity_score(discovery) do
     file_count = discovery.total_files
     language_count = map_size(discovery.languages)
-    min(1.0, (file_count / 1000.0) + (language_count / 10.0))
+    min(1.0, file_count / 1000.0 + language_count / 10.0)
   end
 
   defp detect_architecture_patterns(discovery) do
     patterns = []
-    
+
     # MVC pattern detection
     patterns = if has_mvc_structure(discovery), do: [:mvc | patterns], else: patterns
-    
+
     # Microservices pattern detection
-    patterns = if has_microservices_structure(discovery), do: [:microservices | patterns], else: patterns
-    
+    patterns =
+      if has_microservices_structure(discovery), do: [:microservices | patterns], else: patterns
+
     patterns
   end
 
@@ -990,25 +1079,26 @@ defmodule Singularity.Runner do
     file_count = Map.get(discovery, :file_count, 0)
     test_coverage = Map.get(discovery, :test_coverage, 0.0)
     complexity_score = Map.get(discovery, :complexity_score, 0.5)
-    
+
     # Calculate maintainability based on file structure and complexity
-    maintainability = case file_count do
-      0 -> 0.0
-      count when count < 10 -> 0.9
-      count when count < 50 -> 0.8
-      count when count < 100 -> 0.7
-      _ -> 0.6
-    end
-    
+    maintainability =
+      case file_count do
+        0 -> 0.0
+        count when count < 10 -> 0.9
+        count when count < 50 -> 0.8
+        count when count < 100 -> 0.7
+        _ -> 0.6
+      end
+
     # Testability based on test coverage
     testability = min(test_coverage / 100.0, 1.0)
-    
+
     # Performance based on complexity (lower complexity = better performance)
     performance = 1.0 - complexity_score
-    
+
     # Overall score is weighted average
-    overall_score = (maintainability * 0.3 + testability * 0.3 + performance * 0.4)
-    
+    overall_score = maintainability * 0.3 + testability * 0.3 + performance * 0.4
+
     %{
       overall_score: Float.round(overall_score, 2),
       maintainability: Float.round(maintainability, 2),
@@ -1039,7 +1129,9 @@ defmodule Singularity.Runner do
         matches
         |> Enum.map(fn [_, rec] -> String.trim(rec) end)
         |> Enum.reject(&(&1 == ""))
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
@@ -1048,12 +1140,15 @@ defmodule Singularity.Runner do
     case Regex.scan(~r/risk(?:s)?[:\s]+([^\.]+)/i, insights) do
       [_ | _] = matches ->
         %{
-          identified_risks: matches
-          |> Enum.map(fn [_, risk] -> String.trim(risk) end)
-          |> Enum.reject(&(&1 == "")),
+          identified_risks:
+            matches
+            |> Enum.map(fn [_, risk] -> String.trim(risk) end)
+            |> Enum.reject(&(&1 == "")),
           risk_level: determine_risk_level(insights)
         }
-      _ -> %{identified_risks: [], risk_level: :low}
+
+      _ ->
+        %{identified_risks: [], risk_level: :low}
     end
   end
 
@@ -1080,11 +1175,12 @@ defmodule Singularity.Runner do
       {:ok, architecture} ->
         # Check if MVC pattern is detected in architecture patterns
         architecture.patterns && "mvc" in architecture.patterns
-      {:error, _} -> 
+
+      {:error, _} ->
         # Fallback: check for MVC directory structure
-        File.exists?(Path.join(discovery.path, "controllers/")) and 
-        File.exists?(Path.join(discovery.path, "models/")) and
-        File.exists?(Path.join(discovery.path, "views/"))
+        File.exists?(Path.join(discovery.path, "controllers/")) and
+          File.exists?(Path.join(discovery.path, "models/")) and
+          File.exists?(Path.join(discovery.path, "views/"))
     end
   end
 end

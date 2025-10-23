@@ -119,9 +119,7 @@ defmodule Singularity.Graph.GraphPopulator do
         %{nodes: acc.nodes + result.nodes, edges: acc.edges + result.edges}
       end)
 
-    Logger.info(
-      "✓ Call graph: #{totals.nodes} function nodes, #{totals.edges} call edges"
-    )
+    Logger.info("✓ Call graph: #{totals.nodes} function nodes, #{totals.edges} call edges")
 
     {:ok, totals}
   end
@@ -156,9 +154,7 @@ defmodule Singularity.Graph.GraphPopulator do
         %{nodes: acc.nodes + result.nodes, edges: acc.edges + result.edges}
       end)
 
-    Logger.info(
-      "✓ Import graph: #{totals.nodes} module nodes, #{totals.edges} import edges"
-    )
+    Logger.info("✓ Import graph: #{totals.nodes} module nodes, #{totals.edges} import edges")
 
     {:ok, totals}
   end

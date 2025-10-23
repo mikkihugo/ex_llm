@@ -1,7 +1,7 @@
 defmodule Singularity.MetaRegistry.Frameworks.Jason do
   @moduledoc """
   Jason framework learning patterns.
-  
+
   Learns from Jason JSON patterns to improve our JSON handling.
   """
 
@@ -9,9 +9,9 @@ defmodule Singularity.MetaRegistry.Frameworks.Jason do
 
   @doc """
   Learn from Jason JSON patterns.
-  
+
   ## Examples
-  
+
       # Learn from our JSON handling
       learn_patterns(%{
         functions: ["encode!", "decode!", "encode", "decode"],
@@ -28,9 +28,9 @@ defmodule Singularity.MetaRegistry.Frameworks.Jason do
 
   @doc """
   Get Jason suggestions based on learned patterns.
-  
+
   ## Examples
-  
+
       # Get function suggestions
       get_suggestions("user", "function")
       # Returns: ["encode_user!", "decode_user!", "encode_user", "decode_user"]
@@ -57,8 +57,13 @@ defmodule Singularity.MetaRegistry.Frameworks.Jason do
     learn_patterns(%{
       functions: ["encode!", "decode!", "encode", "decode"],
       patterns: [
-        "@derive {Jason.Encoder}", "Jason.Encoder", "only: @fields",
-        "Jason.encode!", "Jason.decode!", "Jason.encode", "Jason.decode"
+        "@derive {Jason.Encoder}",
+        "Jason.Encoder",
+        "only: @fields",
+        "Jason.encode!",
+        "Jason.decode!",
+        "Jason.encode",
+        "Jason.decode"
       ]
     })
   end

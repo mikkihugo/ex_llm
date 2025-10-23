@@ -376,12 +376,15 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryCollector do
 
   defp parse_datetime(datetime) when is_binary(datetime) do
     case DateTime.from_iso8601(datetime) do
-      {:ok, dt, _} -> dt
+      {:ok, dt, _} ->
+        dt
+
       {:error, _} ->
         # Try parsing as Unix timestamp
         case Integer.parse(datetime) do
           {timestamp, ""} when is_integer(timestamp) ->
             DateTime.from_unix(timestamp)
+
           _ ->
             # Try parsing common formats
             case parse_common_datetime_formats(datetime) do

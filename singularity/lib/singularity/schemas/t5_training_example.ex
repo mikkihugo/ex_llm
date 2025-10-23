@@ -1,7 +1,7 @@
 defmodule Singularity.Schemas.T5TrainingExample do
   @moduledoc """
   T5 Training Example Schema
-  
+
   Stores individual training examples for T5 fine-tuning.
   Links to code chunks and provides instruction-output pairs.
   """
@@ -31,8 +31,17 @@ defmodule Singularity.Schemas.T5TrainingExample do
   def changeset(training_example, attrs) do
     training_example
     |> cast(attrs, [
-      :training_session_id, :code_chunk_id, :instruction, :input, :output,
-      :language, :file_path, :repo, :quality_score, :is_validation, :metadata
+      :training_session_id,
+      :code_chunk_id,
+      :instruction,
+      :input,
+      :output,
+      :language,
+      :file_path,
+      :repo,
+      :quality_score,
+      :is_validation,
+      :metadata
     ])
     |> validate_required([:training_session_id, :instruction, :input, :output, :language])
     |> validate_length(:instruction, min: 10, max: 1000)

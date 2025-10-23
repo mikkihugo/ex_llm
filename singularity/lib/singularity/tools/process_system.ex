@@ -924,16 +924,16 @@ defmodule Singularity.Tools.ProcessSystem do
       "USER" => System.get_env("USER") || "user",
       "PWD" => System.get_env("PWD") || "/tmp"
     }
-    
+
     # Add custom environment variables from opts
     custom_env = Map.get(opts, :env, %{})
-    
+
     # Add Elixir-specific environment variables
     elixir_env = %{
       "ELIXIR_ERL_OPTIONS" => System.get_env("ELIXIR_ERL_OPTIONS") || "",
       "MIX_ENV" => Map.get(opts, :mix_env, System.get_env("MIX_ENV") || "dev")
     }
-    
+
     # Merge all environment variables
     base_env
     |> Map.merge(elixir_env)

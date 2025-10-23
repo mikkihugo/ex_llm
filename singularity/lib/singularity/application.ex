@@ -39,7 +39,8 @@ defmodule Singularity.Application do
       {Bandit, plug: Singularity.Web.Endpoint, port: 4000},
 
       # Background Job Queue & Scheduling (before domain services)
-      Oban,                          # Background job queue for ML training, pattern mining, cron jobs
+      # Background job queue for ML training, pattern mining, cron jobs
+      Oban,
 
       # Layer 2: Infrastructure - Core services required by application layer
       # Moved to ApplicationSupervisor to avoid duplicate startup
@@ -73,7 +74,6 @@ defmodule Singularity.Application do
       Singularity.Agents.QualityEnforcer,
       Singularity.Agents.DocumentationPipeline,
 
-
       # Layer 5: Singletons - Standalone services that don't fit in other categories
       Singularity.Execution.Autonomy.RuleEngine,
 
@@ -81,15 +81,25 @@ defmodule Singularity.Application do
       # Git.Supervisor moved to ApplicationSupervisor to avoid duplication
 
       # Layer 7: Startup Tasks - One-time tasks that run and exit
-      Singularity.Engine.NifStatus,
-      
-      # Documentation System Bootstrap - Initialize documentation system on startup
-      {Task, fn -> Singularity.Startup.DocumentationBootstrap.bootstrap_documentation_system() end}
+      Singularity.Engine.NifStatus
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Singularity.Supervisor]
-    Supervisor.start_link(children, opts)
+
+    case Supervisor.start_link(children, opts) do
+      {:ok, pid} ->
+        # Run documentation bootstrap AFTER supervision tree starts
+        # (not supervised - runs once and exits)
+        Task.start(fn ->
+          Singularity.Startup.DocumentationBootstrap.bootstrap_documentation_system()
+        end)
+
+        {:ok, pid}
+
+      error ->
+        error
+    end
   end
 end

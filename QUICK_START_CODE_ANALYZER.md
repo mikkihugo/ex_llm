@@ -11,6 +11,13 @@ Already installed! CodeAnalyzer is integrated into Singularity and starts automa
 ```bash
 cd singularity
 mix compile  # Compiles Rust NIFs automatically
+
+# Start app - Auto-ingests all code!
+iex -S mix
+# ✓ Auto-detects "mikkihugo/singularity-incubation" from Git
+# ✓ Scans lib/**/*.ex (250+ files)
+# ✓ Ingests to database automatically
+# ✓ Starts hot-reload file watcher
 ```
 
 ---

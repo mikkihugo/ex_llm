@@ -91,17 +91,30 @@ if config_env() != :test do
       nil ->
         # Auto-detect based on available GPU
         if System.find_executable("nvidia-smi") do
-          :linux  # CUDA available (RTX 4080 on Linux, or any NVIDIA GPU)
+          # CUDA available (RTX 4080 on Linux, or any NVIDIA GPU)
+          :linux
         else
           case :os.type() do
-            {:unix, :darwin} -> :metal   # macOS with Metal GPU (other frameworks can use it)
-            _ -> :linux                  # Linux without CUDA (CPU fallback)
+            # macOS with Metal GPU (other frameworks can use it)
+            {:unix, :darwin} -> :metal
+            # Linux without CUDA (CPU fallback)
+            _ -> :linux
           end
         end
-      "cuda" <> _ -> :linux            # Any explicit CUDA variant → use CUDA
-      "metal" -> :metal                # Metal: CPU for EXLA, Metal available for CoreML/MLX
-      "cpu" -> :cpu
-      _ -> :cpu
+
+      # Any explicit CUDA variant → use CUDA
+      "cuda" <> _ ->
+        :linux
+
+      # Metal: CPU for EXLA, Metal available for CoreML/MLX
+      "metal" ->
+        :metal
+
+      "cpu" ->
+        :cpu
+
+      _ ->
+        :cpu
     end
 
   # Try to configure EXLA if available (optional)
@@ -111,13 +124,15 @@ if config_env() != :test do
     config :nx, :default_backend, EXLA.Backend
 
     config :exla,
-      default_client: (
-        case platform do
-          :linux -> :cuda   # RTX 4080 with CUDA
-          :metal -> :host   # macOS with Metal: EXLA uses CPU, Metal available for other frameworks
-          :cpu -> :host     # CPU fallback
-        end
-      ),
+      default_client:
+        (case platform do
+           # RTX 4080 with CUDA
+           :linux -> :cuda
+           # macOS with Metal: EXLA uses CPU, Metal available for other frameworks
+           :metal -> :host
+           # CPU fallback
+           :cpu -> :host
+         end),
       clients: [
         # RTX 4080 16GB (Linux/production) - allocate 75% for models (12GB), leave 4GB for system
         cuda: [platform: :cuda, memory_fraction: 0.75],
@@ -128,9 +143,12 @@ if config_env() != :test do
     # Configure Bumblebee with EXLA if available
     bumblebee_client =
       case platform do
-        :linux -> :cuda   # CUDA for Linux
-        :metal -> :host   # macOS with Metal: Bumblebee uses CPU, Metal available via CoreML/MLX
-        :cpu -> :host     # CPU fallback
+        # CUDA for Linux
+        :linux -> :cuda
+        # macOS with Metal: Bumblebee uses CPU, Metal available via CoreML/MLX
+        :metal -> :host
+        # CPU fallback
+        :cpu -> :host
       end
 
     config :bumblebee,

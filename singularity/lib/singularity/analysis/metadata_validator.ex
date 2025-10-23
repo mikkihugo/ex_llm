@@ -211,19 +211,18 @@ defmodule Singularity.Analysis.MetadataValidator do
   """
   def fix_incomplete_metadata(file_path) do
     Logger.info("Auto-fixing v2.2.0 metadata for: #{file_path}")
-    
+
     with {:ok, content} <- File.read(file_path),
          {:ok, language} <- detect_language(file_path),
          {:ok, template} <- load_template(language),
          {:ok, updated_content} <- generate_docs_with_llm(content, template, language) do
-      
       # Write updated content back to file
       File.write!(file_path, updated_content)
       Logger.info("✓ Updated #{file_path} with v2.2.0 metadata")
-      
+
       # Re-ingest the file to update database
       reingest_file(file_path)
-      
+
       {:ok, :fixed}
     else
       {:error, reason} ->
@@ -235,7 +234,7 @@ defmodule Singularity.Analysis.MetadataValidator do
   defp detect_language(file_path) do
     # Convert charlist to string if needed
     file_path_str = if is_list(file_path), do: List.to_string(file_path), else: file_path
-    
+
     cond do
       String.ends_with?(file_path_str, [".ex", ".exs"]) -> {:ok, "elixir"}
       String.ends_with?(file_path_str, ".rs") -> {:ok, "rust"}
@@ -249,8 +248,17 @@ defmodule Singularity.Analysis.MetadataValidator do
 
   defp load_template(language) do
     # Templates are in the project root, not relative to singularity
-    template_path = Path.join([File.cwd!(), "..", "templates_data", "prompt_library", "quality", language, "add-missing-docs-production.hbs"])
-    
+    template_path =
+      Path.join([
+        File.cwd!(),
+        "..",
+        "templates_data",
+        "prompt_library",
+        "quality",
+        language,
+        "add-missing-docs-production.hbs"
+      ])
+
     if File.exists?(template_path) do
       {:ok, File.read!(template_path)}
     else
@@ -261,35 +269,49 @@ defmodule Singularity.Analysis.MetadataValidator do
   defp generate_docs_with_llm(content, template, language) do
     # Use LLM Service to generate documentation
     alias Singularity.LLM.Service
-    
+
     # Language-specific system prompt
-    system_prompt = case language do
-      "elixir" -> "You are an expert Elixir documentation generator. Generate complete v2.2.0 AI metadata for Elixir modules."
-      "rust" -> "You are an expert Rust documentation generator. Generate complete v2.2.0 AI metadata for Rust modules."
-      "typescript" -> "You are an expert TypeScript documentation generator. Generate complete v2.2.0 AI metadata for TypeScript modules."
-      "javascript" -> "You are an expert JavaScript documentation generator. Generate complete v2.2.0 AI metadata for JavaScript modules."
-      "go" -> "You are an expert Go documentation generator. Generate complete v2.2.0 AI metadata for Go modules."
-      "java" -> "You are an expert Java documentation generator. Generate complete v2.2.0 AI metadata for Java modules."
-      _ -> "You are an expert documentation generator. Generate complete v2.2.0 AI metadata for the provided code."
-    end
-    
+    system_prompt =
+      case language do
+        "elixir" ->
+          "You are an expert Elixir documentation generator. Generate complete v2.2.0 AI metadata for Elixir modules."
+
+        "rust" ->
+          "You are an expert Rust documentation generator. Generate complete v2.2.0 AI metadata for Rust modules."
+
+        "typescript" ->
+          "You are an expert TypeScript documentation generator. Generate complete v2.2.0 AI metadata for TypeScript modules."
+
+        "javascript" ->
+          "You are an expert JavaScript documentation generator. Generate complete v2.2.0 AI metadata for JavaScript modules."
+
+        "go" ->
+          "You are an expert Go documentation generator. Generate complete v2.2.0 AI metadata for Go modules."
+
+        "java" ->
+          "You are an expert Java documentation generator. Generate complete v2.2.0 AI metadata for Java modules."
+
+        _ ->
+          "You are an expert documentation generator. Generate complete v2.2.0 AI metadata for the provided code."
+      end
+
     messages = [
       %{
         role: "system",
         content: system_prompt
       },
       %{
-        role: "user", 
+        role: "user",
         content: template |> String.replace("{{code}}", content)
       }
     ]
-    
+
     case Service.call(:medium, messages, task_type: :documentation) do
       {:ok, %{content: generated_content}} ->
         # Extract the code from the response (remove markdown code blocks)
         cleaned_content = extract_code_from_response(generated_content)
         {:ok, cleaned_content}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -299,14 +321,15 @@ defmodule Singularity.Analysis.MetadataValidator do
     # Remove markdown code blocks and extract the actual code
     response
     |> String.split("```")
-    |> Enum.at(1)  # Get content between first ``` and second ```
+    # Get content between first ``` and second ```
+    |> Enum.at(1)
     |> String.trim()
   end
 
   defp reingest_file(file_path) do
     # Trigger re-ingestion via CodeFileWatcher or HTDAGAutoBootstrap
     alias Singularity.Execution.Planning.HTDAGAutoBootstrap
-    
+
     # Create a minimal module structure for re-ingestion
     module = %{
       file_path: file_path,
@@ -314,14 +337,14 @@ defmodule Singularity.Analysis.MetadataValidator do
       has_moduledoc: true,
       issues: []
     }
-    
+
     HTDAGAutoBootstrap.persist_module_to_db(module, "singularity")
   end
 
   defp extract_module_name_from_path(file_path) do
     # Convert charlist to string if needed
     file_path_str = if is_list(file_path), do: List.to_string(file_path), else: file_path
-    
+
     file_path_str
     |> String.replace(~r/^.*\/lib\//, "")
     |> String.replace(".ex", "")
@@ -379,15 +402,19 @@ defmodule Singularity.Analysis.MetadataValidator do
       search_keywords: has_search_keywords
     }
 
-    missing = Enum.filter([
-      :human_content,
-      :separator,
-      :module_identity,
-      :architecture_diagram,
-      :call_graph,
-      :anti_patterns,
-      :search_keywords
-    ], fn key -> !Map.get(has_map, key) end)
+    missing =
+      Enum.filter(
+        [
+          :human_content,
+          :separator,
+          :module_identity,
+          :architecture_diagram,
+          :call_graph,
+          :anti_patterns,
+          :search_keywords
+        ],
+        fn key -> !Map.get(has_map, key) end
+      )
 
     score = calculate_score(has_map)
     level = determine_level(score, has_map)

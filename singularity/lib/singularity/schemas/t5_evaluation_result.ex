@@ -30,16 +30,32 @@ defmodule Singularity.Schemas.T5EvaluationResult do
   def changeset(evaluation_result, attrs) do
     evaluation_result
     |> cast(attrs, [
-      :model_version_id, :test_dataset_id, :bleu_score, :rouge_score,
-      :exact_match, :code_quality_score, :syntax_correctness,
-      :semantic_similarity, :evaluation_metrics, :sample_predictions
+      :model_version_id,
+      :test_dataset_id,
+      :bleu_score,
+      :rouge_score,
+      :exact_match,
+      :code_quality_score,
+      :syntax_correctness,
+      :semantic_similarity,
+      :evaluation_metrics,
+      :sample_predictions
     ])
     |> validate_required([:model_version_id])
     |> validate_number(:bleu_score, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 100.0)
     |> validate_number(:rouge_score, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 100.0)
     |> validate_number(:exact_match, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 100.0)
-    |> validate_number(:code_quality_score, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 100.0)
-    |> validate_number(:syntax_correctness, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 100.0)
-    |> validate_number(:semantic_similarity, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 100.0)
+    |> validate_number(:code_quality_score,
+      greater_than_or_equal_to: 0.0,
+      less_than_or_equal_to: 100.0
+    )
+    |> validate_number(:syntax_correctness,
+      greater_than_or_equal_to: 0.0,
+      less_than_or_equal_to: 100.0
+    )
+    |> validate_number(:semantic_similarity,
+      greater_than_or_equal_to: 0.0,
+      less_than_or_equal_to: 100.0
+    )
   end
 end

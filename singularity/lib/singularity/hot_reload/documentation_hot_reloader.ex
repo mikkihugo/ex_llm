@@ -45,12 +45,12 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
 
   @type improvement_type :: :documentation | :quality | :code | :agent_behavior
   @type hot_reload_payload :: %{
-    type: improvement_type(),
-    content: String.t(),
-    target_file: String.t(),
-    agent_id: String.t(),
-    metadata: map()
-  }
+          type: improvement_type(),
+          content: String.t(),
+          target_file: String.t(),
+          agent_id: String.t(),
+          metadata: map()
+        }
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -59,19 +59,20 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
   @doc """
   Hot reload a documentation improvement.
   """
-  @spec hot_reload_documentation(String.t(), String.t(), String.t(), map()) :: 
-    :ok | {:error, term()}
+  @spec hot_reload_documentation(String.t(), String.t(), String.t(), map()) ::
+          :ok | {:error, term()}
   def hot_reload_documentation(file_path, improved_content, agent_id, metadata \\ %{}) do
     payload = %{
       type: :documentation,
       content: improved_content,
       target_file: file_path,
       agent_id: agent_id,
-      metadata: Map.merge(metadata, %{
-        improvement_type: "documentation_upgrade",
-        timestamp: DateTime.utc_now(),
-        quality_version: "2.3.0"
-      })
+      metadata:
+        Map.merge(metadata, %{
+          improvement_type: "documentation_upgrade",
+          timestamp: DateTime.utc_now(),
+          quality_version: "2.3.0"
+        })
     }
 
     GenServer.call(__MODULE__, {:hot_reload, payload})
@@ -80,19 +81,20 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
   @doc """
   Hot reload a quality improvement.
   """
-  @spec hot_reload_quality(String.t(), String.t(), String.t(), map()) :: 
-    :ok | {:error, term()}
+  @spec hot_reload_quality(String.t(), String.t(), String.t(), map()) ::
+          :ok | {:error, term()}
   def hot_reload_quality(file_path, improved_content, agent_id, metadata \\ %{}) do
     payload = %{
       type: :quality,
       content: improved_content,
       target_file: file_path,
       agent_id: agent_id,
-      metadata: Map.merge(metadata, %{
-        improvement_type: "quality_fix",
-        timestamp: DateTime.utc_now(),
-        quality_version: "2.3.0"
-      })
+      metadata:
+        Map.merge(metadata, %{
+          improvement_type: "quality_fix",
+          timestamp: DateTime.utc_now(),
+          quality_version: "2.3.0"
+        })
     }
 
     GenServer.call(__MODULE__, {:hot_reload, payload})
@@ -101,19 +103,20 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
   @doc """
   Hot reload agent behavior improvement.
   """
-  @spec hot_reload_agent_behavior(String.t(), String.t(), String.t(), map()) :: 
-    :ok | {:error, term()}
+  @spec hot_reload_agent_behavior(String.t(), String.t(), String.t(), map()) ::
+          :ok | {:error, term()}
   def hot_reload_agent_behavior(agent_module, improved_code, agent_id, metadata \\ %{}) do
     payload = %{
       type: :agent_behavior,
       content: improved_code,
       target_file: agent_module,
       agent_id: agent_id,
-      metadata: Map.merge(metadata, %{
-        improvement_type: "agent_evolution",
-        timestamp: DateTime.utc_now(),
-        self_improvement: true
-      })
+      metadata:
+        Map.merge(metadata, %{
+          improvement_type: "agent_evolution",
+          timestamp: DateTime.utc_now(),
+          self_improvement: true
+        })
     }
 
     GenServer.call(__MODULE__, {:hot_reload, payload})
@@ -162,6 +165,7 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
         new_stats = update_stats(state.stats, payload.type, :success)
         new_state = %{state | stats: new_stats}
         {:reply, :ok, new_state}
+
       {:error, reason} ->
         new_stats = update_stats(state.stats, payload.type, :failure)
         new_state = %{state | stats: new_stats}
@@ -184,8 +188,8 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
   ## Private Functions
 
   defp process_hot_reload(payload) do
-    Logger.info("Hot reloading #{payload.type} improvement", 
-      file: payload.target_file, 
+    Logger.info("Hot reloading #{payload.type} improvement",
+      file: payload.target_file,
       agent: payload.agent_id
     )
 
@@ -206,14 +210,22 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
           :ok ->
             Logger.info("Documentation hot reload successful", file: payload.target_file)
             :ok
+
           {:error, reason} ->
             Logger.error("Documentation validation failed after hot reload",
-              file: payload.target_file, reason: reason)
+              file: payload.target_file,
+              reason: reason
+            )
+
             {:error, :validation_failed}
         end
+
       {:error, reason} ->
         Logger.error("Failed to write documentation file",
-          file: payload.target_file, reason: reason)
+          file: payload.target_file,
+          reason: reason
+        )
+
         {:error, :write_failed}
     end
   end
@@ -238,14 +250,18 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
           {:ok, _validation} ->
             Logger.info("Quality hot reload successful", file: payload.target_file)
             :ok
+
           {:error, reason} ->
-            Logger.error("Quality validation failed after hot reload", 
-              file: payload.target_file, reason: reason)
+            Logger.error("Quality validation failed after hot reload",
+              file: payload.target_file,
+              reason: reason
+            )
+
             {:error, :validation_failed}
         end
+
       {:error, reason} ->
-        Logger.error("Failed to write quality file", 
-          file: payload.target_file, reason: reason)
+        Logger.error("Failed to write quality file", file: payload.target_file, reason: reason)
         {:error, :write_failed}
     end
   end
@@ -261,24 +277,33 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
       :ok ->
         Logger.info("Agent behavior hot reload queued", agent: payload.agent_id)
         :ok
+
       {:error, reason} ->
-        Logger.error("Failed to queue agent behavior hot reload", 
-          agent: payload.agent_id, reason: reason)
+        Logger.error("Failed to queue agent behavior hot reload",
+          agent: payload.agent_id,
+          reason: reason
+        )
+
         {:error, :queue_failed}
     end
   end
 
   defp hot_reload_code_file(payload) do
     # Use the improvement gateway for general code improvements
-    case ImprovementGateway.dispatch(payload.content, 
-           agent_id: payload.agent_id, 
-           metadata: payload.metadata) do
+    case ImprovementGateway.dispatch(payload.content,
+           agent_id: payload.agent_id,
+           metadata: payload.metadata
+         ) do
       :ok ->
         Logger.info("Code hot reload dispatched", file: payload.target_file)
         :ok
+
       {:error, reason} ->
-        Logger.error("Failed to dispatch code hot reload", 
-          file: payload.target_file, reason: reason)
+        Logger.error("Failed to dispatch code hot reload",
+          file: payload.target_file,
+          reason: reason
+        )
+
         {:error, :dispatch_failed}
     end
   end

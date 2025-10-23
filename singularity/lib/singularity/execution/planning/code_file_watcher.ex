@@ -179,8 +179,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
         send(self(), {:reingest_complete, file_path, result})
       end)
 
-      {:noreply,
-       %{state | pending_ingestions: new_pending, in_progress: new_in_progress}}
+      {:noreply, %{state | pending_ingestions: new_pending, in_progress: new_in_progress}}
     end
   end
 
@@ -283,38 +282,59 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   end
 
   defp do_reingest(file_path, _project_root) do
+    # Auto-detect codebase_id from Git (e.g., "mikkihugo/singularity-incubation")
+    # Uses default 5-minute cache (no extend_cache needed for single file hot reload)
+    codebase_id = Singularity.Code.CodebaseDetector.detect(format: :full)
+
     # Use unified ingestion service - parses ONCE, populates BOTH tables
-    Singularity.Code.UnifiedIngestionService.ingest_file(file_path, codebase_id: "singularity")
+    Singularity.Code.UnifiedIngestionService.ingest_file(file_path, codebase_id: codebase_id)
   end
 
   # Check if a file is a source file we want to monitor
   defp is_source_file?(file_path) do
     source_extensions = [
-      ".ex", ".exs",           # Elixir
-      ".rs",                   # Rust
-      ".ts", ".tsx",           # TypeScript
-      ".js", ".jsx",           # JavaScript
-      ".py",                   # Python
-      ".go",                   # Go
-      ".nix",                  # Nix
-      ".sh",                   # Shell
-      ".toml",                 # TOML
-      ".json",                 # JSON
-      ".yaml", ".yml",         # YAML
-      ".md"                    # Markdown
+      # Elixir
+      ".ex",
+      ".exs",
+      # Rust
+      ".rs",
+      # TypeScript
+      ".ts",
+      ".tsx",
+      # JavaScript
+      ".js",
+      ".jsx",
+      # Python
+      ".py",
+      # Go
+      ".go",
+      # Nix
+      ".nix",
+      # Shell
+      ".sh",
+      # TOML
+      ".toml",
+      # JSON
+      ".json",
+      # YAML
+      ".yaml",
+      ".yml",
+      # Markdown
+      ".md"
     ]
-    
+
     # Check if file has a source extension
-    has_source_extension = Enum.any?(source_extensions, fn ext ->
-      String.ends_with?(file_path, ext)
-    end)
-    
+    has_source_extension =
+      Enum.any?(source_extensions, fn ext ->
+        String.ends_with?(file_path, ext)
+      end)
+
     # Also check if it's not in ignored directories
     not_ignored = not ignore_file?(file_path)
-    
+
     has_source_extension and not_ignored
   end
-  
+
   # Ignore common non-source files and directories
   defp ignore_file?(file_path) do
     ignore_patterns = [
@@ -334,7 +354,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
       "Thumbs.db",
       # Large binary files
       ".png",
-      ".jpg", 
+      ".jpg",
       ".jpeg",
       ".gif",
       ".ico",
@@ -342,7 +362,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
       ".zip",
       ".tar.gz"
     ]
-    
+
     Enum.any?(ignore_patterns, fn pattern ->
       String.contains?(file_path, pattern)
     end)
@@ -361,13 +381,14 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
         |> String.split("/")
         |> Enum.map(&String.capitalize/1)
         |> Enum.join(".")
-      
+
       true ->
         # For non-Elixir files, use the relative path as identifier
         file_path
         |> String.replace(File.cwd!() <> "/", "")
         |> String.replace("/", ".")
-        |> String.replace(~r/\.[^.]*$/, "")  # Remove file extension
+        # Remove file extension
+        |> String.replace(~r/\.[^.]*$/, "")
     end
   end
 

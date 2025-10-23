@@ -144,7 +144,8 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
       Logger.debug("Generalized #{length(generalized)} patterns")
 
       # Step 4: Score quality
-      scored = generalized
+      scored =
+        generalized
         |> Enum.map(&score_pattern_quality/1)
         |> Enum.sort_by(& &1.quality_score, :desc)
 
@@ -153,11 +154,12 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
       Logger.debug("Found #{length(promotable)} patterns ready for promotion")
 
       # Persist if not dry run
-      result = if not dry_run do
-        persist_consolidation(scored, promotable)
-      else
-        {:ok, %{}}
-      end
+      result =
+        if not dry_run do
+          persist_consolidation(scored, promotable)
+        else
+          {:ok, %{}}
+        end
 
       elapsed = System.monotonic_time(:millisecond) - start_time
 
@@ -171,7 +173,8 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
             generalized: length(generalized),
             quality_scored: length(scored),
             promoted_to_templates: length(promotable),
-            consolidation_ratio: (length(all_patterns) - length(deduplicated)) / max(length(all_patterns), 1),
+            consolidation_ratio:
+              (length(all_patterns) - length(deduplicated)) / max(length(all_patterns), 1),
             quality_improvement: calculate_quality_improvement(all_patterns, scored),
             elapsed_ms: elapsed,
             persistence: persistence_result
@@ -211,29 +214,31 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
       duplicates = []
 
       # Compare patterns pairwise (simplified - would use vector search in practice)
-      duplicates = Enum.reduce(0..(length(patterns) - 1), duplicates, fn i, acc ->
-        Enum.reduce((i + 1)..(length(patterns) - 1), acc, fn j, acc2 ->
-          pattern_a = Enum.at(patterns, i)
-          pattern_b = Enum.at(patterns, j)
+      duplicates =
+        Enum.reduce(0..(length(patterns) - 1), duplicates, fn i, acc ->
+          Enum.reduce((i + 1)..(length(patterns) - 1), acc, fn j, acc2 ->
+            pattern_a = Enum.at(patterns, i)
+            pattern_b = Enum.at(patterns, j)
 
-          similarity = calculate_similarity(pattern_a, pattern_b)
+            similarity = calculate_similarity(pattern_a, pattern_b)
 
-          if similarity >= threshold do
-            acc2 ++ [{pattern_a.id, pattern_b.id, similarity}]
-          else
-            acc2
-          end
+            if similarity >= threshold do
+              acc2 ++ [{pattern_a.id, pattern_b.id, similarity}]
+            else
+              acc2
+            end
+          end)
         end)
-      end)
 
       merged = merge_duplicate_patterns(duplicates)
 
-      {:ok, %{
-        pairs_examined: pairs_to_check,
-        duplicates_found: length(duplicates),
-        merged_count: length(merged),
-        consolidation_ratio: length(duplicates) / max(length(patterns), 1)
-      }}
+      {:ok,
+       %{
+         pairs_examined: pairs_to_check,
+         duplicates_found: length(duplicates),
+         merged_count: length(merged),
+         consolidation_ratio: length(duplicates) / max(length(patterns), 1)
+       }}
     end
   end
 
@@ -244,21 +249,23 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
     pattern_type = Keyword.get(opts, :type, :generic)
 
     with {:ok, pattern} <- fetch_pattern(pattern_id) do
-      generalized = case pattern_type do
-        :elixir_pattern -> generalize_elixir(pattern)
-        :rust_pattern -> generalize_rust(pattern)
-        :typescript_pattern -> generalize_typescript(pattern)
-        _ -> pattern
-      end
+      generalized =
+        case pattern_type do
+          :elixir_pattern -> generalize_elixir(pattern)
+          :rust_pattern -> generalize_rust(pattern)
+          :typescript_pattern -> generalize_typescript(pattern)
+          _ -> pattern
+        end
 
-      {:ok, %{
-        pattern_id: pattern_id,
-        original_specificity: calculate_specificity(pattern),
-        generalized_specificity: calculate_specificity(generalized),
-        variables_parameterized: count_parameterized(generalized),
-        functions_parameterized: count_function_params(generalized),
-        ready_for_template: ready_for_template?(generalized)
-      }}
+      {:ok,
+       %{
+         pattern_id: pattern_id,
+         original_specificity: calculate_specificity(pattern),
+         generalized_specificity: calculate_specificity(generalized),
+         variables_parameterized: count_parameterized(generalized),
+         functions_parameterized: count_function_params(generalized),
+         ready_for_template: ready_for_template?(generalized)
+       }}
     end
   end
 
@@ -275,17 +282,19 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
         maintainability: score_maintainability(pattern)
       }
 
-      overall_score = (scores.reusability + scores.simplicity +
-                      scores.performance + scores.coverage +
-                      scores.maintainability) / 5
+      overall_score =
+        (scores.reusability + scores.simplicity +
+           scores.performance + scores.coverage +
+           scores.maintainability) / 5
 
-      {:ok, %{
-        pattern_id: pattern_id,
-        scores: scores,
-        overall_score: overall_score,
-        ready_for_promotion: overall_score >= @quality_threshold_for_promotion,
-        promotion_reason: promotion_reason(scores)
-      }}
+      {:ok,
+       %{
+         pattern_id: pattern_id,
+         scores: scores,
+         overall_score: overall_score,
+         ready_for_promotion: overall_score >= @quality_threshold_for_promotion,
+         promotion_reason: promotion_reason(scores)
+       }}
     end
   end
 
@@ -327,12 +336,13 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
 
   defp normalize_patterns(patterns) do
     patterns
-      |> Enum.map(&normalize_pattern/1)
+    |> Enum.map(&normalize_pattern/1)
   end
 
   defp normalize_pattern(%{content: content} = pattern) do
     # Normalize whitespace and formatting
-    normalized_content = content
+    normalized_content =
+      content
       |> String.trim()
       |> normalize_whitespace()
 
@@ -346,8 +356,8 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
   defp normalize_whitespace(text) do
     # Normalize multiple spaces/newlines to single space/newline
     text
-      |> String.replace(~r/\s+/, " ")
-      |> String.replace(~r/\n\s*\n/, "\n")
+    |> String.replace(~r/\s+/, " ")
+    |> String.replace(~r/\n\s*\n/, "\n")
   end
 
   defp deduplicate_patterns(patterns, _threshold) do
@@ -355,7 +365,8 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
   end
 
   defp generalize_patterns(patterns) do
-    patterns  # Simplified
+    # Simplified
+    patterns
   end
 
   defp score_pattern_quality(pattern) do
@@ -382,7 +393,7 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
       distance = levenshtein_distance(content_a, content_b)
       max_len = max(String.length(content_a), String.length(content_b))
 
-      similarity = 1.0 - (distance / max_len)
+      similarity = 1.0 - distance / max_len
       max(0.0, min(1.0, similarity))
     end
   end
@@ -406,7 +417,7 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
     b_chars = String.graphemes(b)
 
     # Initialize DP table
-    dp = for i <- 0..alen, do: for j <- 0..blen, do: 0
+    dp = for i <- 0..alen, do: for(j <- 0..blen, do: 0)
 
     # Simplified: use basic approximation for performance
     # Full DP would be slower for large patterns
@@ -419,13 +430,14 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
     end)
 
     # Calculate actual distance using character comparison
-    char_distance = Enum.reduce(a_chars, 0, fn char_a, dist ->
-      if Enum.any?(b_chars, &(&1 == char_a)) do
-        dist
-      else
-        dist + 1
-      end
-    end)
+    char_distance =
+      Enum.reduce(a_chars, 0, fn char_a, dist ->
+        if Enum.any?(b_chars, &(&1 == char_a)) do
+          dist
+        else
+          dist + 1
+        end
+      end)
 
     char_distance
   end

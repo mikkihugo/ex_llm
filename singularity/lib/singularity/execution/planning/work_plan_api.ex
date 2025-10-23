@@ -167,7 +167,9 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   defp get_type(_), do: "unknown"
 
   defp route_message("planning.strategic_theme.create", attrs) do
-    case SafeWorkPlanner.add_chunk("Strategic Theme: #{attrs["name"]} - #{attrs["description"]}", type: :strategic_theme) do
+    case SafeWorkPlanner.add_chunk("Strategic Theme: #{attrs["name"]} - #{attrs["description"]}",
+           type: :strategic_theme
+         ) do
       {:ok, id} ->
         %{
           status: "ok",
@@ -198,7 +200,9 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
         attrs
       end
 
-    case SafeWorkPlanner.add_chunk("Epic: #{attrs["name"]} - #{attrs["description"]}", type: :epic) do
+    case SafeWorkPlanner.add_chunk("Epic: #{attrs["name"]} - #{attrs["description"]}",
+           type: :epic
+         ) do
       {:ok, id} ->
         %{
           status: "ok",
@@ -221,7 +225,9 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   end
 
   defp route_message("planning.capability.create", attrs) do
-    case SafeWorkPlanner.add_chunk("Capability: #{attrs["name"]} - #{attrs["description"]}", type: :capability) do
+    case SafeWorkPlanner.add_chunk("Capability: #{attrs["name"]} - #{attrs["description"]}",
+           type: :capability
+         ) do
       {:ok, id} ->
         %{
           status: "ok",
@@ -283,7 +289,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       suggestions: suggestions,
       available_subjects: [
         "planning.strategic_theme.create",
-        "planning.epic.create", 
+        "planning.epic.create",
         "planning.capability.create",
         "planning.feature.create",
         "planning.hierarchy.get",
@@ -296,7 +302,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   defp get_similar_topics(topic) do
     available = [
       "planning.strategic_theme.create",
-      "planning.epic.create", 
+      "planning.epic.create",
       "planning.capability.create",
       "planning.feature.create",
       "planning.hierarchy.get",
@@ -306,31 +312,37 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
     # Find topics with similar prefixes
     topic_parts = String.split(topic, ".")
+
     available
     |> Enum.filter(fn available_topic ->
       available_parts = String.split(available_topic, ".")
       # Check if first two parts match
       Enum.take(topic_parts, 2) == Enum.take(available_parts, 2)
     end)
-    |> Enum.take(3)  # Limit to 3 suggestions
+    # Limit to 3 suggestions
+    |> Enum.take(3)
   end
 
   # Task synchronization mechanism for self-improvement agent updates
   defp sync_task_updates(updates) do
-    Logger.info("Syncing task updates from self-improvement agent", 
+    Logger.info("Syncing task updates from self-improvement agent",
       update_count: length(updates)
     )
-    
+
     updates
     |> Enum.reduce({:ok, []}, fn update, {:ok, results} ->
       case process_task_update(update) do
-        {:ok, result} -> {:ok, [result | results]}
-        {:error, reason} -> 
-          Logger.warning("Failed to process task update", 
-            update: update, 
+        {:ok, result} ->
+          {:ok, [result | results]}
+
+        {:error, reason} ->
+          Logger.warning("Failed to process task update",
+            update: update,
             reason: reason
           )
-          {:ok, results}  # Continue processing other updates
+
+          # Continue processing other updates
+          {:ok, results}
       end
     end)
   end
@@ -343,10 +355,11 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
         case check_task_conflicts(updated_task) do
           :ok ->
             {:ok, %{task_id: task_id, status: :updated, conflicts: []}}
+
           {:conflicts, conflicts} ->
             {:ok, %{task_id: task_id, status: :updated_with_conflicts, conflicts: conflicts}}
         end
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -355,16 +368,16 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   defp check_task_conflicts(task) do
     # Check for redundant or conflicting tasks
     similar_tasks = SafeWorkPlanner.find_similar_tasks(task)
-    
-    conflicts = 
+
+    conflicts =
       similar_tasks
       |> Enum.filter(fn similar_task ->
         # Check for redundancy (same scope, overlapping timeline)
-        is_redundant?(task, similar_task) or 
         # Check for conflicts (contradictory requirements)
-        is_conflicting?(task, similar_task)
+        is_redundant?(task, similar_task) or
+          is_conflicting?(task, similar_task)
       end)
-    
+
     if Enum.empty?(conflicts) do
       :ok
     else
@@ -376,7 +389,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     # Check if tasks have similar scope and overlapping timeline
     scope_similarity = calculate_scope_similarity(task1, task2)
     timeline_overlap = check_timeline_overlap(task1, task2)
-    
+
     scope_similarity > 0.8 and timeline_overlap
   end
 
@@ -384,7 +397,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     # Check for contradictory requirements
     requirements1 = Map.get(task1, :requirements, [])
     requirements2 = Map.get(task2, :requirements, [])
-    
+
     # Look for contradictory requirements
     Enum.any?(requirements1, fn req1 ->
       Enum.any?(requirements2, fn req2 ->
@@ -399,14 +412,14 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     title2 = Map.get(task2, :title, "")
     desc1 = Map.get(task1, :description, "")
     desc2 = Map.get(task2, :description, "")
-    
+
     # Use Jaccard similarity on words
     words1 = String.split(title1 <> " " <> desc1, " ") |> MapSet.new()
     words2 = String.split(title2 <> " " <> desc2, " ") |> MapSet.new()
-    
+
     intersection = MapSet.intersection(words1, words2) |> MapSet.size()
     union = MapSet.union(words1, words2) |> MapSet.size()
-    
+
     if union > 0, do: intersection / union, else: 0.0
   end
 
@@ -415,13 +428,21 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     end1 = Map.get(task1, :end_date)
     start2 = Map.get(task2, :start_date)
     end2 = Map.get(task2, :end_date)
-    
+
     # Check if date ranges overlap
     case {start1, end1, start2, end2} do
-      {nil, _, _, _} -> false
-      {_, nil, _, _} -> false
-      {_, _, nil, _} -> false
-      {_, _, _, nil} -> false
+      {nil, _, _, _} ->
+        false
+
+      {_, nil, _, _} ->
+        false
+
+      {_, _, nil, _} ->
+        false
+
+      {_, _, _, nil} ->
+        false
+
       {s1, e1, s2, e2} ->
         # Check if ranges overlap
         s1 <= e2 and s2 <= e1
@@ -432,7 +453,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     # Simple contradiction detection
     req1_str = String.downcase(to_string(req1))
     req2_str = String.downcase(to_string(req2))
-    
+
     # Check for common contradictory patterns
     contradictions = [
       {"must use", "must not use"},
@@ -440,7 +461,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       {"enabled", "disabled"},
       {"true", "false"}
     ]
-    
+
     Enum.any?(contradictions, fn {pattern1, pattern2} ->
       String.contains?(req1_str, pattern1) and String.contains?(req2_str, pattern2)
     end)
@@ -457,31 +478,35 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   defp calculate_htdag_priority(task) do
     # Calculate priority based on HTDAG principles
     base_priority = Map.get(task, :priority, 3)
-    
+
     # Factor in dependencies
     dependency_factor = calculate_dependency_factor(task)
-    
+
     # Factor in business value
     business_value = Map.get(task, :business_value, 0.5)
-    
+
     # Factor in effort estimation
     effort = Map.get(task, :estimated_effort, 1.0)
     effort_factor = if effort > 0, do: 1.0 / effort, else: 1.0
-    
+
     # Calculate final priority score
     priority_score = base_priority * dependency_factor * business_value * effort_factor
-    
+
     Map.put(task, :priority_score, priority_score)
   end
 
   defp calculate_dependency_factor(task) do
     dependencies = Map.get(task, :depends_on, [])
-    
+
     case length(dependencies) do
-      0 -> 1.0  # No dependencies, full priority
-      n when n <= 2 -> 0.8  # Few dependencies, slightly reduced
-      n when n <= 5 -> 0.6  # Moderate dependencies
-      _ -> 0.4  # Many dependencies, significantly reduced
+      # No dependencies, full priority
+      0 -> 1.0
+      # Few dependencies, slightly reduced
+      n when n <= 2 -> 0.8
+      # Moderate dependencies
+      n when n <= 5 -> 0.6
+      # Many dependencies, significantly reduced
+      _ -> 0.4
     end
   end
 

@@ -59,23 +59,24 @@ defmodule Mix.Tasks.Documentation.Upgrade do
 
   @impl true
   def run(args) do
-    {opts, _parsed, _invalid} = OptionParser.parse(args,
-      strict: [
-        files: :string,
-        language: :string,
-        enforce_quality: :boolean,
-        status: :boolean,
-        schedule: :integer,
-        dry_run: :boolean
-      ],
-      aliases: [
-        f: :files,
-        l: :language,
-        e: :enforce_quality,
-        s: :status,
-        d: :dry_run
-      ]
-    )
+    {opts, _parsed, _invalid} =
+      OptionParser.parse(args,
+        strict: [
+          files: :string,
+          language: :string,
+          enforce_quality: :boolean,
+          status: :boolean,
+          schedule: :integer,
+          dry_run: :boolean
+        ],
+        aliases: [
+          f: :files,
+          l: :language,
+          e: :enforce_quality,
+          s: :status,
+          d: :dry_run
+        ]
+      )
 
     Mix.shell().info("""
     ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -107,27 +108,39 @@ defmodule Mix.Tasks.Documentation.Upgrade do
 
     # Start DocumentationPipeline
     case DocumentationPipeline.start_link() do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-      {:error, reason} -> 
+      {:ok, _pid} ->
+        :ok
+
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      {:error, reason} ->
         Mix.shell().error("Failed to start DocumentationPipeline: #{inspect(reason)}")
         System.halt(1)
     end
 
     # Start QualityEnforcer
     case QualityEnforcer.start_link() do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-      {:error, reason} -> 
+      {:ok, _pid} ->
+        :ok
+
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      {:error, reason} ->
         Mix.shell().error("Failed to start QualityEnforcer: #{inspect(reason)}")
         System.halt(1)
     end
 
     # Start DocumentationUpgrader
     case DocumentationUpgrader.start_link() do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-      {:error, reason} -> 
+      {:ok, _pid} ->
+        :ok
+
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      {:error, reason} ->
         Mix.shell().error("Failed to start DocumentationUpgrader: #{inspect(reason)}")
         System.halt(1)
     end
@@ -140,7 +153,6 @@ defmodule Mix.Tasks.Documentation.Upgrade do
 
     with {:ok, pipeline_status} <- DocumentationPipeline.get_pipeline_status(),
          {:ok, quality_report} <- QualityEnforcer.get_quality_report() do
-      
       Mix.shell().info("""
       📊 Documentation Status Report
       ═══════════════════════════════════════════════════════════════════════════════
@@ -173,7 +185,6 @@ defmodule Mix.Tasks.Documentation.Upgrade do
       Mix.shell().info("""
       Quality Gates: #{if quality_report.quality_gates_enabled, do: "Enabled", else: "Disabled"}
       """)
-
     else
       {:error, reason} ->
         Mix.shell().error("Failed to get status: #{inspect(reason)}")
@@ -182,12 +193,18 @@ defmodule Mix.Tasks.Documentation.Upgrade do
   end
 
   defp schedule_automatic_upgrades(interval_minutes) do
-    Mix.shell().info("Scheduling automatic documentation upgrades every #{interval_minutes} minutes...")
+    Mix.shell().info(
+      "Scheduling automatic documentation upgrades every #{interval_minutes} minutes..."
+    )
 
     case DocumentationPipeline.schedule_automatic_upgrades(interval_minutes) do
       :ok ->
         Mix.shell().info("✅ Automatic upgrades scheduled successfully")
-        Mix.shell().info("The system will now automatically upgrade documentation every #{interval_minutes} minutes")
+
+        Mix.shell().info(
+          "The system will now automatically upgrade documentation every #{interval_minutes} minutes"
+        )
+
       {:error, reason} ->
         Mix.shell().error("Failed to schedule automatic upgrades: #{inspect(reason)}")
         System.halt(1)
@@ -239,7 +256,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
     end
 
     files = get_files_to_process(opts)
-    
+
     Mix.shell().info("""
     🚀 Starting Documentation Upgrade Pipeline
     ═══════════════════════════════════════════════════════════════════════════════
@@ -252,11 +269,16 @@ defmodule Mix.Tasks.Documentation.Upgrade do
     case DocumentationPipeline.run_full_pipeline() do
       {:ok, :pipeline_started} ->
         Mix.shell().info("✅ Pipeline started successfully")
-        Mix.shell().info("The pipeline is running in the background. Check status with: mix documentation.upgrade --status")
-        
+
+        Mix.shell().info(
+          "The pipeline is running in the background. Check status with: mix documentation.upgrade --status"
+        )
+
       {:error, :pipeline_already_running} ->
-        Mix.shell().warning("Pipeline is already running. Check status with: mix documentation.upgrade --status")
-        
+        Mix.shell().warning(
+          "Pipeline is already running. Check status with: mix documentation.upgrade --status"
+        )
+
       {:error, reason} ->
         Mix.shell().error("Failed to start pipeline: #{inspect(reason)}")
         System.halt(1)
@@ -270,13 +292,18 @@ defmodule Mix.Tasks.Documentation.Upgrade do
         |> String.split(",")
         |> Enum.map(&String.trim/1)
         |> Enum.filter(&File.exists?/1)
-        
+
       opts[:language] ->
         get_files_by_language(opts[:language])
-        
+
       true ->
         # Get all files
-        ["./singularity/lib/**/*.ex", "./rust/**/*.rs", "./llm-server/**/*.ts", "./llm-server/**/*.tsx"]
+        [
+          "./singularity/lib/**/*.ex",
+          "./rust/**/*.rs",
+          "./llm-server/**/*.ts",
+          "./llm-server/**/*.tsx"
+        ]
         |> Enum.flat_map(fn pattern ->
           Path.wildcard(pattern)
         end)
@@ -289,17 +316,20 @@ defmodule Mix.Tasks.Documentation.Upgrade do
       "elixir" ->
         Path.wildcard("./singularity/lib/**/*.ex")
         |> Enum.filter(&File.regular?/1)
-        
+
       "rust" ->
         Path.wildcard("./rust/**/*.rs")
         |> Enum.filter(&File.regular?/1)
-        
+
       "typescript" ->
-        Path.wildcard("./llm-server/**/*.ts") ++ Path.wildcard("./llm-server/**/*.tsx")
+        (Path.wildcard("./llm-server/**/*.ts") ++ Path.wildcard("./llm-server/**/*.tsx"))
         |> Enum.filter(&File.regular?/1)
-        
+
       _ ->
-        Mix.shell().error("Unsupported language: #{language}. Supported: elixir, rust, typescript")
+        Mix.shell().error(
+          "Unsupported language: #{language}. Supported: elixir, rust, typescript"
+        )
+
         System.halt(1)
     end
   end

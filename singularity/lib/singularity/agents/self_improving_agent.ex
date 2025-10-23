@@ -207,7 +207,7 @@ defmodule Singularity.SelfImprovingAgent do
 
   @doc """
   Run complete self-awareness pipeline: parse codebase, detect issues, enforce quality, generate fixes.
-  
+
   This is the main entry point for the self-evolving system to understand and improve itself.
   """
   @spec run_self_awareness_pipeline(String.t()) :: {:ok, map()} | {:error, term()}
@@ -217,7 +217,7 @@ defmodule Singularity.SelfImprovingAgent do
 
   @doc """
   Upgrade documentation for a file to quality 2.2.0+ standards.
-  
+
   This function is called by the DocumentationUpgrader to coordinate
   documentation upgrades across all source files.
   """
@@ -229,9 +229,11 @@ defmodule Singularity.SelfImprovingAgent do
         case identify_missing_documentation(content, file_path) do
           {:ok, missing_elements} ->
             generate_enhanced_documentation(content, missing_elements, opts)
+
           {:error, reason} ->
             {:error, reason}
         end
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -239,7 +241,7 @@ defmodule Singularity.SelfImprovingAgent do
 
   @doc """
   Analyze file documentation quality.
-  
+
   This function is called by the DocumentationUpgrader to assess
   the current documentation quality of a file.
   """
@@ -257,7 +259,9 @@ defmodule Singularity.SelfImprovingAgent do
           language: detect_language(file_path),
           quality_score: calculate_quality_score(content, file_path)
         }
+
         {:ok, quality_analysis}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -267,14 +271,15 @@ defmodule Singularity.SelfImprovingAgent do
 
   defp identify_missing_documentation(content, file_path) do
     language = detect_language(file_path)
-    
-    missing = []
-    |> maybe_add(!has_documentation?(content, file_path), :documentation)
-    |> maybe_add(!String.contains?(content, "Identity"), :identity)
-    |> maybe_add(!String.contains?(content, "Architecture Diagram"), :architecture_diagram)
-    |> maybe_add(!String.contains?(content, "Call Graph"), :call_graph)
-    |> maybe_add(!String.contains?(content, "Anti-Patterns"), :anti_patterns)
-    |> maybe_add(!String.contains?(content, "Search Keywords"), :search_keywords)
+
+    missing =
+      []
+      |> maybe_add(!has_documentation?(content, file_path), :documentation)
+      |> maybe_add(!String.contains?(content, "Identity"), :identity)
+      |> maybe_add(!String.contains?(content, "Architecture Diagram"), :architecture_diagram)
+      |> maybe_add(!String.contains?(content, "Call Graph"), :call_graph)
+      |> maybe_add(!String.contains?(content, "Anti-Patterns"), :anti_patterns)
+      |> maybe_add(!String.contains?(content, "Search Keywords"), :search_keywords)
 
     {:ok, %{missing: missing, language: language}}
   end
@@ -282,31 +287,61 @@ defmodule Singularity.SelfImprovingAgent do
   defp generate_enhanced_documentation(content, %{missing: missing, language: language}, opts) do
     # Use self-improvement capabilities to generate enhanced documentation
     # This integrates with the LLM service to generate quality documentation
-    
+
     # Extract options
     quality_level = Keyword.get(opts, :quality_level, :production)
     include_examples = Keyword.get(opts, :include_examples, true)
     include_architecture = Keyword.get(opts, :include_architecture, true)
-    
+
     # Generate documentation based on missing elements and language
     case language do
       :elixir ->
-        generate_elixir_documentation(content, missing, quality_level, include_examples, include_architecture)
+        generate_elixir_documentation(
+          content,
+          missing,
+          quality_level,
+          include_examples,
+          include_architecture
+        )
+
       :rust ->
-        generate_rust_documentation(content, missing, quality_level, include_examples, include_architecture)
+        generate_rust_documentation(
+          content,
+          missing,
+          quality_level,
+          include_examples,
+          include_architecture
+        )
+
       :typescript ->
-        generate_typescript_documentation(content, missing, quality_level, include_examples, include_architecture)
+        generate_typescript_documentation(
+          content,
+          missing,
+          quality_level,
+          include_examples,
+          include_architecture
+        )
+
       _ ->
-        generate_generic_documentation(content, missing, quality_level, include_examples, include_architecture)
+        generate_generic_documentation(
+          content,
+          missing,
+          quality_level,
+          include_examples,
+          include_architecture
+        )
     end
-    enhanced_content = content
-    |> add_missing_documentation(missing, language)
-    
+
+    enhanced_content =
+      content
+      |> add_missing_documentation(missing, language)
+
     {:ok, enhanced_content}
   end
 
   defp has_documentation?(content, file_path) do
     language = detect_language(file_path)
+
     case language do
       :elixir -> String.contains?(content, "@moduledoc")
       :rust -> String.contains?(content, "///")
@@ -319,10 +354,13 @@ defmodule Singularity.SelfImprovingAgent do
     cond do
       String.ends_with?(file_path, ".ex") or String.ends_with?(file_path, ".exs") ->
         :elixir
+
       String.ends_with?(file_path, ".rs") ->
         :rust
+
       String.ends_with?(file_path, ".ts") or String.ends_with?(file_path, ".tsx") ->
         :typescript
+
       true ->
         :unknown
     end
@@ -331,21 +369,50 @@ defmodule Singularity.SelfImprovingAgent do
   defp calculate_quality_score(content, file_path) do
     language = detect_language(file_path)
     required_elements = get_required_elements(language)
-    
-    score = required_elements
-    |> Enum.map(fn element -> String.contains?(content, element) end)
-    |> Enum.count(& &1)
-    |> Kernel./(length(required_elements))
-    
+
+    score =
+      required_elements
+      |> Enum.map(fn element -> String.contains?(content, element) end)
+      |> Enum.count(& &1)
+      |> Kernel./(length(required_elements))
+
     Float.round(score, 2)
   end
 
   defp get_required_elements(language) do
     case language do
-      :elixir -> ["@moduledoc", "Module Identity", "Architecture Diagram", "Call Graph", "Anti-Patterns", "Search Keywords"]
-      :rust -> ["///", "Crate Identity", "Architecture Diagram", "Call Graph", "Anti-Patterns", "Search Keywords"]
-      :typescript -> ["/**", "Component Identity", "Architecture Diagram", "Call Graph", "Anti-Patterns", "Search Keywords"]
-      _ -> []
+      :elixir ->
+        [
+          "@moduledoc",
+          "Module Identity",
+          "Architecture Diagram",
+          "Call Graph",
+          "Anti-Patterns",
+          "Search Keywords"
+        ]
+
+      :rust ->
+        [
+          "///",
+          "Crate Identity",
+          "Architecture Diagram",
+          "Call Graph",
+          "Anti-Patterns",
+          "Search Keywords"
+        ]
+
+      :typescript ->
+        [
+          "/**",
+          "Component Identity",
+          "Architecture Diagram",
+          "Call Graph",
+          "Anti-Patterns",
+          "Search Keywords"
+        ]
+
+      _ ->
+        []
     end
   end
 
@@ -1118,12 +1185,12 @@ defmodule Singularity.SelfImprovingAgent do
   defp payload_fingerprint(payload) when is_map(payload) do
     try do
       # Create a stable fingerprint by sorting keys and converting to binary
-      sorted_payload = 
+      sorted_payload =
         payload
         |> Map.to_list()
         |> Enum.sort_by(fn {k, _} -> k end)
         |> Enum.into(%{})
-      
+
       :erlang.term_to_binary(sorted_payload)
       |> :erlang.phash2()
     rescue
@@ -1331,36 +1398,39 @@ defmodule Singularity.SelfImprovingAgent do
     try do
       # 1. Parse codebase using existing ParserEngine
       parse_result = parse_codebase_existing(codebase_path)
-      
+
       # 2. Analyze using existing CodeStore
       analysis_result = analyze_codebase_existing(codebase_path)
-      
+
       # 3. Check quality using existing QualityEnforcer
       quality_result = check_quality_existing(codebase_path)
-      
+
       # 4. Check documentation using existing DocumentationUpgrader
       doc_result = check_documentation_existing(codebase_path)
-      
+
       # 5. Generate fixes using existing tools OR emergency Claude CLI
-      fixes = generate_fixes_with_fallback(analysis_result, quality_result, doc_result, codebase_path)
-      
+      fixes =
+        generate_fixes_with_fallback(analysis_result, quality_result, doc_result, codebase_path)
+
       # 6. Request approval using existing ApprovalService
       if length(fixes) > 0 do
         request_approvals_existing(fixes)
       end
-      
+
       # 7. Apply approved fixes using existing HotReload
       apply_fixes_existing(fixes)
 
-      Logger.info("Self-awareness pipeline complete", 
+      Logger.info("Self-awareness pipeline complete",
         files_parsed: parse_result.files_parsed,
         issues_found: analysis_result.issues_found,
         fixes_generated: length(fixes)
       )
-
     rescue
       error ->
-        Logger.error("Self-awareness pipeline failed, trying emergency Claude CLI", error: inspect(error))
+        Logger.error("Self-awareness pipeline failed, trying emergency Claude CLI",
+          error: inspect(error)
+        )
+
         # Fallback to emergency Claude CLI
         run_emergency_self_awareness(codebase_path)
     end
@@ -1369,15 +1439,16 @@ defmodule Singularity.SelfImprovingAgent do
   defp parse_codebase_existing(codebase_path) do
     # Use existing ParserEngine for parsing
     files = discover_files(codebase_path)
-    
-    parse_results = files
-    |> Enum.map(fn file_path ->
-      case ParserEngine.parse_file(file_path) do
-        {:ok, parsed} -> {:ok, file_path, parsed}
-        {:error, reason} -> {:error, file_path, reason}
-      end
-    end)
-    |> Enum.filter(fn result -> match?({:ok, _, _}, result) end)
+
+    parse_results =
+      files
+      |> Enum.map(fn file_path ->
+        case ParserEngine.parse_file(file_path) do
+          {:ok, parsed} -> {:ok, file_path, parsed}
+          {:error, reason} -> {:error, file_path, reason}
+        end
+      end)
+      |> Enum.filter(fn result -> match?({:ok, _, _}, result) end)
 
     %{
       files_parsed: length(parse_results),
@@ -1391,6 +1462,7 @@ defmodule Singularity.SelfImprovingAgent do
     case Repo.get_by(Singularity.Schemas.Codebase, path: codebase_path) do
       nil ->
         %{issues_found: 0, analysis_available: false}
+
       codebase ->
         case Singularity.CodeStore.analyze_codebase(codebase.id) do
           {:ok, analysis} ->
@@ -1399,6 +1471,7 @@ defmodule Singularity.SelfImprovingAgent do
               analysis_available: true,
               analysis: analysis
             }
+
           {:error, _reason} ->
             %{issues_found: 0, analysis_available: false}
         end
@@ -1408,18 +1481,22 @@ defmodule Singularity.SelfImprovingAgent do
   defp check_quality_existing(codebase_path) do
     # Use existing QualityEnforcer
     files = discover_files(codebase_path)
-    
-    quality_results = files
-    |> Enum.map(fn file_path ->
-      case QualityEnforcer.validate_file_quality(file_path) do
-        {:ok, validation} -> {:ok, file_path, validation}
-        {:error, reason} -> {:error, file_path, reason}
-      end
-    end)
 
-    compliant_files = quality_results
-    |> Enum.filter(fn result -> match?({:ok, _, %{quality_score: score}} when score >= 0.8, result) end)
-    |> length()
+    quality_results =
+      files
+      |> Enum.map(fn file_path ->
+        case QualityEnforcer.validate_file_quality(file_path) do
+          {:ok, validation} -> {:ok, file_path, validation}
+          {:error, reason} -> {:error, file_path, reason}
+        end
+      end)
+
+    compliant_files =
+      quality_results
+      |> Enum.filter(fn result ->
+        match?({:ok, _, %{quality_score: score}} when score >= 0.8, result)
+      end)
+      |> length()
 
     %{
       total_files: length(files),
@@ -1431,18 +1508,22 @@ defmodule Singularity.SelfImprovingAgent do
   defp check_documentation_existing(codebase_path) do
     # Use existing DocumentationUpgrader
     files = discover_files(codebase_path)
-    
-    doc_results = files
-    |> Enum.map(fn file_path ->
-      case DocumentationUpgrader.analyze_file_documentation(file_path) do
-        {:ok, analysis} -> {:ok, file_path, analysis}
-        {:error, reason} -> {:error, file_path, reason}
-      end
-    end)
 
-    documented_files = doc_results
-    |> Enum.filter(fn result -> match?({:ok, _, %{quality_score: score}} when score >= 0.8, result) end)
-    |> length()
+    doc_results =
+      files
+      |> Enum.map(fn file_path ->
+        case DocumentationUpgrader.analyze_file_documentation(file_path) do
+          {:ok, analysis} -> {:ok, file_path, analysis}
+          {:error, reason} -> {:error, file_path, reason}
+        end
+      end)
+
+    documented_files =
+      doc_results
+      |> Enum.filter(fn result ->
+        match?({:ok, _, %{quality_score: score}} when score >= 0.8, result)
+      end)
+      |> length()
 
     %{
       total_files: length(files),
@@ -1458,13 +1539,27 @@ defmodule Singularity.SelfImprovingAgent do
         # Existing tools generated fixes - log metrics
         Logger.info("Generated #{length(fixes)} fixes from existing tools",
           fix_count: length(fixes),
-          quality_compliance: quality_result.compliance_rate)
+          quality_compliance: quality_result.compliance_rate
+        )
+
         fixes
+
       [] ->
         # No fixes generated by existing tools, try emergency Claude CLI
         Logger.info("No fixes generated by existing tools, trying emergency Claude CLI")
-        generated = generate_fixes_emergency_claude(analysis_result, quality_result, doc_result, codebase_path)
-        Logger.info("Emergency Claude generated #{length(generated)} fixes", fix_count: length(generated))
+
+        generated =
+          generate_fixes_emergency_claude(
+            analysis_result,
+            quality_result,
+            doc_result,
+            codebase_path
+          )
+
+        Logger.info("Emergency Claude generated #{length(generated)} fixes",
+          fix_count: length(generated)
+        )
+
         generated
     end
   end
@@ -1473,40 +1568,53 @@ defmodule Singularity.SelfImprovingAgent do
     fixes = []
 
     # Generate quality fixes if needed
-    fixes = if quality_result.compliance_rate < 0.8 do
-      [%{
-        type: :quality,
-        description: "Quality compliance below threshold (#{quality_result.compliance_rate})",
-        files_affected: quality_result.total_files - quality_result.compliant_files,
-        priority: :medium
-      } | fixes]
-    else
-      fixes
-    end
+    fixes =
+      if quality_result.compliance_rate < 0.8 do
+        [
+          %{
+            type: :quality,
+            description: "Quality compliance below threshold (#{quality_result.compliance_rate})",
+            files_affected: quality_result.total_files - quality_result.compliant_files,
+            priority: :medium
+          }
+          | fixes
+        ]
+      else
+        fixes
+      end
 
     # Generate documentation fixes if needed
-    fixes = if doc_result.documentation_rate < 0.8 do
-      [%{
-        type: :documentation,
-        description: "Documentation compliance below threshold (#{doc_result.documentation_rate})",
-        files_affected: doc_result.total_files - doc_result.documented_files,
-        priority: :medium
-      } | fixes]
-    else
-      fixes
-    end
+    fixes =
+      if doc_result.documentation_rate < 0.8 do
+        [
+          %{
+            type: :documentation,
+            description:
+              "Documentation compliance below threshold (#{doc_result.documentation_rate})",
+            files_affected: doc_result.total_files - doc_result.documented_files,
+            priority: :medium
+          }
+          | fixes
+        ]
+      else
+        fixes
+      end
 
     # Generate analysis fixes if issues found
-    fixes = if analysis_result.issues_found > 0 do
-      [%{
-        type: :analysis,
-        description: "Code analysis found #{analysis_result.issues_found} issues",
-        files_affected: analysis_result.issues_found,
-        priority: :high
-      } | fixes]
-    else
-      fixes
-    end
+    fixes =
+      if analysis_result.issues_found > 0 do
+        [
+          %{
+            type: :analysis,
+            description: "Code analysis found #{analysis_result.issues_found} issues",
+            files_affected: analysis_result.issues_found,
+            priority: :high
+          }
+          | fixes
+        ]
+      else
+        fixes
+      end
 
     fixes
   end
@@ -1514,10 +1622,11 @@ defmodule Singularity.SelfImprovingAgent do
   defp generate_fixes_emergency_claude(analysis_result, quality_result, doc_result, codebase_path) do
     # Use emergency Claude CLI to generate fixes
     prompt = build_emergency_prompt(analysis_result, quality_result, doc_result, codebase_path)
-    
+
     case call_emergency_claude(prompt) do
       {:ok, response} ->
         parse_emergency_response(response)
+
       {:error, reason} ->
         Logger.error("Emergency Claude CLI failed", reason: reason)
         []
@@ -1529,17 +1638,17 @@ defmodule Singularity.SelfImprovingAgent do
     You are an emergency AI assistant helping to fix a self-evolving codebase.
 
     Codebase: #{codebase_path}
-    
+
     Analysis Results:
     - Issues found: #{analysis_result.issues_found}
     - Quality compliance: #{quality_result.compliance_rate}
     - Documentation compliance: #{doc_result.documentation_rate}
-    
+
     Please generate specific fixes for this codebase. Focus on:
     1. Quality 2.3.0 compliance improvements
     2. Documentation upgrades with AI metadata
     3. Code analysis issue fixes
-    
+
     Return fixes in JSON format:
     [
       {
@@ -1558,6 +1667,7 @@ defmodule Singularity.SelfImprovingAgent do
     case Singularity.Integration.Claude.chat(prompt, profile: :recovery) do
       {:ok, response} ->
         {:ok, response}
+
       {:error, reason} ->
         Logger.error("Emergency Claude CLI call failed", reason: reason)
         {:error, reason}
@@ -1586,28 +1696,29 @@ defmodule Singularity.SelfImprovingAgent do
 
   defp run_emergency_self_awareness(codebase_path) do
     Logger.info("Running emergency self-awareness with Claude CLI", path: codebase_path)
-    
+
     # Use emergency Claude CLI to analyze and fix the codebase
     emergency_prompt = """
     Analyze this codebase and provide comprehensive fixes:
-    
+
     Codebase: #{codebase_path}
-    
+
     Please:
     1. Scan for quality issues (Elixir, Rust, TypeScript)
     2. Check documentation compliance (2.3.0 standards)
     3. Identify bugs and errors
     4. Generate specific fixes
-    
+
     Focus on making the system self-aware and self-improving.
     """
-    
+
     case call_emergency_claude(emergency_prompt) do
       {:ok, response} ->
         Logger.info("Emergency Claude CLI analysis complete", response: response)
         # Parse and apply emergency fixes
         emergency_fixes = parse_emergency_response(response)
         apply_emergency_fixes(emergency_fixes)
+
       {:error, reason} ->
         Logger.error("Emergency Claude CLI completely failed", reason: reason)
     end
@@ -1615,11 +1726,11 @@ defmodule Singularity.SelfImprovingAgent do
 
   defp apply_emergency_fixes(fixes) do
     Enum.each(fixes, fn fix ->
-      Logger.info("Applying emergency fix", 
-        type: fix.type, 
+      Logger.info("Applying emergency fix",
+        type: fix.type,
         description: fix.description
       )
-      
+
       # Apply fix using emergency Claude CLI
       apply_emergency_fix(fix)
     end)
@@ -1628,17 +1739,18 @@ defmodule Singularity.SelfImprovingAgent do
   defp apply_emergency_fix(fix) do
     fix_prompt = """
     Apply this fix to the codebase:
-    
+
     Type: #{fix.type}
     Description: #{fix.description}
     Fix Content: #{fix.fix_content}
-    
+
     Please implement this fix directly in the codebase.
     """
-    
+
     case call_emergency_claude(fix_prompt) do
       {:ok, _response} ->
         Logger.info("Emergency fix applied", type: fix.type)
+
       {:error, reason} ->
         Logger.error("Failed to apply emergency fix", type: fix.type, reason: reason)
     end
@@ -1648,19 +1760,20 @@ defmodule Singularity.SelfImprovingAgent do
     # Use existing ApprovalService
     Enum.each(fixes, fn fix ->
       case ApprovalService.request_approval(
-        file_path: "system_wide",
-        diff: generate_fix_diff(fix),
-        description: fix.description,
-        agent_id: "self_improving_agent"
-      ) do
+             file_path: "system_wide",
+             diff: generate_fix_diff(fix),
+             description: fix.description,
+             agent_id: "self_improving_agent"
+           ) do
         {:ok, approval_id} ->
-          Logger.info("Approval requested for fix", 
-            fix_type: fix.type, 
+          Logger.info("Approval requested for fix",
+            fix_type: fix.type,
             approval_id: approval_id
           )
+
         {:error, reason} ->
-          Logger.error("Failed to request approval", 
-            fix_type: fix.type, 
+          Logger.error("Failed to request approval",
+            fix_type: fix.type,
             reason: reason
           )
       end
@@ -1674,9 +1787,11 @@ defmodule Singularity.SelfImprovingAgent do
         :quality ->
           # Trigger quality upgrade using existing system
           QualityEnforcer.enable_quality_gates()
+
         :documentation ->
           # Trigger documentation upgrade using existing system
           DocumentationUpgrader.scan_codebase_documentation()
+
         :analysis ->
           # Use existing code generation capabilities
           Logger.info("Analysis fix would be applied via existing code generation")
@@ -1687,7 +1802,7 @@ defmodule Singularity.SelfImprovingAgent do
   defp discover_files(codebase_path) do
     patterns = [
       "#{codebase_path}/**/*.ex",
-      "#{codebase_path}/**/*.exs", 
+      "#{codebase_path}/**/*.exs",
       "#{codebase_path}/**/*.rs",
       "#{codebase_path}/**/*.ts",
       "#{codebase_path}/**/*.tsx"
@@ -1701,11 +1816,11 @@ defmodule Singularity.SelfImprovingAgent do
 
   defp is_source_file?(file_path) do
     not String.contains?(file_path, "/test/") and
-    not String.contains?(file_path, "/_build/") and
-    not String.contains?(file_path, "/deps/") and
-    not String.contains?(file_path, "/node_modules/") and
-    not String.contains?(file_path, "/target/") and
-    not String.ends_with?(file_path, ".beam")
+      not String.contains?(file_path, "/_build/") and
+      not String.contains?(file_path, "/deps/") and
+      not String.contains?(file_path, "/node_modules/") and
+      not String.contains?(file_path, "/target/") and
+      not String.ends_with?(file_path, ".beam")
   end
 
   defp count_issues(analysis) do
@@ -1720,143 +1835,185 @@ defmodule Singularity.SelfImprovingAgent do
   end
 
   # Helper functions for generate_enhanced_documentation
-  defp generate_elixir_documentation(content, missing, quality_level, include_examples, include_architecture) do
+  defp generate_elixir_documentation(
+         content,
+         missing,
+         quality_level,
+         include_examples,
+         include_architecture
+       ) do
     # Generate Elixir-specific documentation
-    moduledoc = generate_moduledoc(content, missing, quality_level, include_examples, include_architecture)
-    
+    moduledoc =
+      generate_moduledoc(content, missing, quality_level, include_examples, include_architecture)
+
     # Add module identity JSON
     identity = generate_module_identity(content, quality_level)
-    
+
     # Add architecture diagram if requested
-    architecture = if include_architecture do
-      generate_architecture_diagram(content)
-    else
-      ""
-    end
-    
+    architecture =
+      if include_architecture do
+        generate_architecture_diagram(content)
+      else
+        ""
+      end
+
     # Add call graph
     call_graph = generate_call_graph(content)
-    
+
     # Add anti-patterns
     anti_patterns = generate_anti_patterns(content)
-    
+
     # Add search keywords
     keywords = generate_search_keywords(content)
-    
+
     # Combine all documentation
-    enhanced_content = content
-    |> add_moduledoc(moduledoc)
-    |> add_module_identity(identity)
-    |> add_architecture_diagram(architecture)
-    |> add_call_graph(call_graph)
-    |> add_anti_patterns(anti_patterns)
-    |> add_search_keywords(keywords)
-    
+    enhanced_content =
+      content
+      |> add_moduledoc(moduledoc)
+      |> add_module_identity(identity)
+      |> add_architecture_diagram(architecture)
+      |> add_call_graph(call_graph)
+      |> add_anti_patterns(anti_patterns)
+      |> add_search_keywords(keywords)
+
     enhanced_content
   end
 
-  defp generate_rust_documentation(content, missing, quality_level, include_examples, include_architecture) do
+  defp generate_rust_documentation(
+         content,
+         missing,
+         quality_level,
+         include_examples,
+         include_architecture
+       ) do
     # Generate Rust-specific documentation
-    crate_doc = generate_crate_doc(content, missing, quality_level, include_examples, include_architecture)
-    
+    crate_doc =
+      generate_crate_doc(content, missing, quality_level, include_examples, include_architecture)
+
     # Add crate identity JSON
     identity = generate_crate_identity(content, quality_level)
-    
+
     # Add architecture diagram if requested
-    architecture = if include_architecture do
-      generate_rust_architecture_diagram(content)
-    else
-      ""
-    end
-    
+    architecture =
+      if include_architecture do
+        generate_rust_architecture_diagram(content)
+      else
+        ""
+      end
+
     # Add call graph
     call_graph = generate_rust_call_graph(content)
-    
+
     # Add anti-patterns
     anti_patterns = generate_rust_anti_patterns(content)
-    
+
     # Add search keywords
     keywords = generate_rust_search_keywords(content)
-    
+
     # Combine all documentation
-    enhanced_content = content
-    |> add_crate_doc(crate_doc)
-    |> add_crate_identity(identity)
-    |> add_architecture_diagram(architecture)
-    |> add_call_graph(call_graph)
-    |> add_anti_patterns(anti_patterns)
-    |> add_search_keywords(keywords)
-    
+    enhanced_content =
+      content
+      |> add_crate_doc(crate_doc)
+      |> add_crate_identity(identity)
+      |> add_architecture_diagram(architecture)
+      |> add_call_graph(call_graph)
+      |> add_anti_patterns(anti_patterns)
+      |> add_search_keywords(keywords)
+
     enhanced_content
   end
 
-  defp generate_typescript_documentation(content, missing, quality_level, include_examples, include_architecture) do
+  defp generate_typescript_documentation(
+         content,
+         missing,
+         quality_level,
+         include_examples,
+         include_architecture
+       ) do
     # Generate TypeScript-specific documentation
-    jsdoc = generate_jsdoc(content, missing, quality_level, include_examples, include_architecture)
-    
+    jsdoc =
+      generate_jsdoc(content, missing, quality_level, include_examples, include_architecture)
+
     # Add component identity JSON
     identity = generate_component_identity(content, quality_level)
-    
+
     # Add architecture diagram if requested
-    architecture = if include_architecture do
-      generate_typescript_architecture_diagram(content)
-    else
-      ""
-    end
-    
+    architecture =
+      if include_architecture do
+        generate_typescript_architecture_diagram(content)
+      else
+        ""
+      end
+
     # Add call graph
     call_graph = generate_typescript_call_graph(content)
-    
+
     # Add anti-patterns
     anti_patterns = generate_typescript_anti_patterns(content)
-    
+
     # Add search keywords
     keywords = generate_typescript_search_keywords(content)
-    
+
     # Combine all documentation
-    enhanced_content = content
-    |> add_jsdoc(jsdoc)
-    |> add_component_identity(identity)
-    |> add_architecture_diagram(architecture)
-    |> add_call_graph(call_graph)
-    |> add_anti_patterns(anti_patterns)
-    |> add_search_keywords(keywords)
-    
+    enhanced_content =
+      content
+      |> add_jsdoc(jsdoc)
+      |> add_component_identity(identity)
+      |> add_architecture_diagram(architecture)
+      |> add_call_graph(call_graph)
+      |> add_anti_patterns(anti_patterns)
+      |> add_search_keywords(keywords)
+
     enhanced_content
   end
 
-  defp generate_generic_documentation(content, missing, quality_level, include_examples, include_architecture) do
+  defp generate_generic_documentation(
+         content,
+         missing,
+         quality_level,
+         include_examples,
+         include_architecture
+       ) do
     # Generate generic documentation for unknown languages
-    doc_comment = generate_generic_doc(content, missing, quality_level, include_examples, include_architecture)
-    
+    doc_comment =
+      generate_generic_doc(
+        content,
+        missing,
+        quality_level,
+        include_examples,
+        include_architecture
+      )
+
     # Add generic identity JSON
     identity = generate_generic_identity(content, quality_level)
-    
+
     # Add architecture diagram if requested
-    architecture = if include_architecture do
-      generate_generic_architecture_diagram(content)
-    else
-      ""
-    end
-    
+    architecture =
+      if include_architecture do
+        generate_generic_architecture_diagram(content)
+      else
+        ""
+      end
+
     # Add call graph
     call_graph = generate_generic_call_graph(content)
-    
+
     # Add anti-patterns
     anti_patterns = generate_generic_anti_patterns(content)
-    
+
     # Add search keywords
     keywords = generate_generic_search_keywords(content)
-    
+
     # Combine all documentation
-    enhanced_content = content
-    |> add_generic_doc(doc_comment)
-    |> add_generic_identity(identity)
-    |> add_architecture_diagram(architecture)
-    |> add_call_graph(call_graph)
-    |> add_anti_patterns(anti_patterns)
-    |> add_search_keywords(keywords)
-    
+    enhanced_content =
+      content
+      |> add_generic_doc(doc_comment)
+      |> add_generic_identity(identity)
+      |> add_architecture_diagram(architecture)
+      |> add_call_graph(call_graph)
+      |> add_anti_patterns(anti_patterns)
+      |> add_search_keywords(keywords)
+
     enhanced_content
   end
 
@@ -1878,36 +2035,40 @@ defmodule Singularity.SelfImprovingAgent do
     """
 
     # Add documentation for missing sections
-    missing_docs = if Enum.any?(missing) do
-      missing_items = missing
-        |> Enum.map(fn
-          :human_content -> "- **Content**: Add human-readable explanation"
-          :examples -> "- **Examples**: Add usage examples"
-          :architecture -> "- **Architecture**: Add architecture diagram"
-          :call_graph -> "- **Call Graph**: Add call graph documentation"
-          :anti_patterns -> "- **Anti-Patterns**: Document what NOT to do"
-          other -> "- **#{other}**: Add missing documentation"
-        end)
-        |> Enum.join("\n")
+    missing_docs =
+      if Enum.any?(missing) do
+        missing_items =
+          missing
+          |> Enum.map(fn
+            :human_content -> "- **Content**: Add human-readable explanation"
+            :examples -> "- **Examples**: Add usage examples"
+            :architecture -> "- **Architecture**: Add architecture diagram"
+            :call_graph -> "- **Call Graph**: Add call graph documentation"
+            :anti_patterns -> "- **Anti-Patterns**: Document what NOT to do"
+            other -> "- **#{other}**: Add missing documentation"
+          end)
+          |> Enum.join("\n")
 
-      "\n\n## Missing Documentation\n\nThe following sections should be added:\n\n#{missing_items}"
-    else
-      ""
-    end
+        "\n\n## Missing Documentation\n\nThe following sections should be added:\n\n#{missing_items}"
+      else
+        ""
+      end
 
     # Add examples if requested
-    examples = if include_examples do
-      generate_examples(content, :elixir)
-    else
-      ""
-    end
+    examples =
+      if include_examples do
+        generate_examples(content, :elixir)
+      else
+        ""
+      end
 
     # Add architecture info if requested
-    arch_info = if include_architecture do
-      generate_architecture_info(content, :elixir)
-    else
-      ""
-    end
+    arch_info =
+      if include_architecture do
+        generate_architecture_info(content, :elixir)
+      else
+        ""
+      end
 
     base_doc <> missing_docs <> examples <> arch_info
   end
@@ -1929,35 +2090,39 @@ defmodule Singularity.SelfImprovingAgent do
     """
 
     # Add documentation for missing sections
-    missing_docs = if Enum.any?(missing) do
-      missing_items = missing
-        |> Enum.map(fn
-          :tests -> "- **Tests**: Add unit and integration tests"
-          :examples -> "- **Examples**: Add usage examples in lib.rs"
-          :safety -> "- **Safety**: Document unsafe blocks"
-          :performance -> "- **Performance**: Add performance notes and benchmarks"
-          other -> "- **#{other}**: Add missing documentation"
-        end)
-        |> Enum.join("\n")
+    missing_docs =
+      if Enum.any?(missing) do
+        missing_items =
+          missing
+          |> Enum.map(fn
+            :tests -> "- **Tests**: Add unit and integration tests"
+            :examples -> "- **Examples**: Add usage examples in lib.rs"
+            :safety -> "- **Safety**: Document unsafe blocks"
+            :performance -> "- **Performance**: Add performance notes and benchmarks"
+            other -> "- **#{other}**: Add missing documentation"
+          end)
+          |> Enum.join("\n")
 
-      "\n\n## Missing Documentation\n\n#{missing_items}"
-    else
-      ""
-    end
+        "\n\n## Missing Documentation\n\n#{missing_items}"
+      else
+        ""
+      end
 
     # Add examples if requested
-    examples = if include_examples do
-      generate_examples(content, :rust)
-    else
-      ""
-    end
+    examples =
+      if include_examples do
+        generate_examples(content, :rust)
+      else
+        ""
+      end
 
     # Add architecture info if requested
-    arch_info = if include_architecture do
-      generate_architecture_info(content, :rust)
-    else
-      ""
-    end
+    arch_info =
+      if include_architecture do
+        generate_architecture_info(content, :rust)
+      else
+        ""
+      end
 
     base_doc <> missing_docs <> examples <> arch_info
   end
@@ -1974,40 +2139,50 @@ defmodule Singularity.SelfImprovingAgent do
     """
 
     # Add documentation for missing sections
-    missing_docs = if Enum.any?(missing) do
-      missing_items = missing
-        |> Enum.map(fn
-          :props -> "- **@param props**: Document component props"
-          :return -> "- **@returns**: Document return type"
-          :examples -> "- **@example**: Add usage examples"
-          :throws -> "- **@throws**: Document error conditions"
-          other -> "- **@#{other}**: Add missing JSDoc"
-        end)
-        |> Enum.join("\n")
+    missing_docs =
+      if Enum.any?(missing) do
+        missing_items =
+          missing
+          |> Enum.map(fn
+            :props -> "- **@param props**: Document component props"
+            :return -> "- **@returns**: Document return type"
+            :examples -> "- **@example**: Add usage examples"
+            :throws -> "- **@throws**: Document error conditions"
+            other -> "- **@#{other}**: Add missing JSDoc"
+          end)
+          |> Enum.join("\n")
 
-      "\n\n/**\n * Missing Documentation\n * #{missing_items}\n */\n"
-    else
-      ""
-    end
+        "\n\n/**\n * Missing Documentation\n * #{missing_items}\n */\n"
+      else
+        ""
+      end
 
     # Add examples if requested
-    examples = if include_examples do
-      generate_examples(content, :typescript)
-    else
-      ""
-    end
+    examples =
+      if include_examples do
+        generate_examples(content, :typescript)
+      else
+        ""
+      end
 
     # Add architecture info if requested
-    arch_info = if include_architecture do
-      generate_architecture_info(content, :typescript)
-    else
-      ""
-    end
+    arch_info =
+      if include_architecture do
+        generate_architecture_info(content, :typescript)
+      else
+        ""
+      end
 
     base_doc <> missing_docs <> examples <> arch_info
   end
 
-  defp generate_generic_doc(content, missing, quality_level, include_examples, include_architecture) do
+  defp generate_generic_doc(
+         content,
+         missing,
+         quality_level,
+         include_examples,
+         include_architecture
+       ) do
     name = extract_generic_name(content)
     purpose = extract_purpose(content)
 
@@ -2019,35 +2194,39 @@ defmodule Singularity.SelfImprovingAgent do
     """
 
     # Add documentation for missing sections
-    missing_docs = if Enum.any?(missing) do
-      missing_items = missing
-        |> Enum.map(fn
-          :overview -> "- **Overview**: Add high-level description"
-          :usage -> "- **Usage**: Add usage instructions"
-          :examples -> "- **Examples**: Add practical examples"
-          :errors -> "- **Error Handling**: Document error cases"
-          other -> "- **#{other}**: Add missing documentation"
-        end)
-        |> Enum.join("\n")
+    missing_docs =
+      if Enum.any?(missing) do
+        missing_items =
+          missing
+          |> Enum.map(fn
+            :overview -> "- **Overview**: Add high-level description"
+            :usage -> "- **Usage**: Add usage instructions"
+            :examples -> "- **Examples**: Add practical examples"
+            :errors -> "- **Error Handling**: Document error cases"
+            other -> "- **#{other}**: Add missing documentation"
+          end)
+          |> Enum.join("\n")
 
-      "\n\nMissing Documentation:\n#{missing_items}"
-    else
-      ""
-    end
+        "\n\nMissing Documentation:\n#{missing_items}"
+      else
+        ""
+      end
 
     # Add examples if requested
-    examples = if include_examples do
-      generate_examples(content, :generic)
-    else
-      ""
-    end
+    examples =
+      if include_examples do
+        generate_examples(content, :generic)
+      else
+        ""
+      end
 
     # Add architecture info if requested
-    arch_info = if include_architecture do
-      generate_architecture_info(content, :generic)
-    else
-      ""
-    end
+    arch_info =
+      if include_architecture do
+        generate_architecture_info(content, :generic)
+      else
+        ""
+      end
 
     base_doc <> missing_docs <> examples <> arch_info
   end
@@ -2056,7 +2235,7 @@ defmodule Singularity.SelfImprovingAgent do
   defp generate_module_identity(content, quality_level) do
     module_name = extract_module_name(content)
     purpose = extract_purpose(content)
-    
+
     %{
       "module_name" => module_name,
       "purpose" => purpose,
@@ -2069,7 +2248,7 @@ defmodule Singularity.SelfImprovingAgent do
   defp generate_crate_identity(content, quality_level) do
     crate_name = extract_crate_name(content)
     purpose = extract_purpose(content)
-    
+
     %{
       "crate_name" => crate_name,
       "purpose" => purpose,
@@ -2082,7 +2261,7 @@ defmodule Singularity.SelfImprovingAgent do
   defp generate_component_identity(content, quality_level) do
     component_name = extract_component_name(content)
     purpose = extract_purpose(content)
-    
+
     %{
       "component_name" => component_name,
       "purpose" => purpose,
@@ -2095,7 +2274,7 @@ defmodule Singularity.SelfImprovingAgent do
   defp generate_generic_identity(content, quality_level) do
     name = extract_generic_name(content)
     purpose = extract_purpose(content)
-    
+
     %{
       "name" => name,
       "purpose" => purpose,
@@ -2148,7 +2327,8 @@ defmodule Singularity.SelfImprovingAgent do
     module_name = extract_module_name(content)
     functions = extract_elixir_functions(content)
 
-    function_examples = functions
+    function_examples =
+      functions
       |> Enum.take(3)
       |> Enum.map(fn func ->
         "    iex> #{module_name}.#{func}()"
@@ -2165,7 +2345,8 @@ defmodule Singularity.SelfImprovingAgent do
   defp generate_examples(content, :rust) do
     functions = extract_rust_functions(content)
 
-    function_examples = functions
+    function_examples =
+      functions
       |> Enum.take(3)
       |> Enum.map(fn func ->
         "    let result = #{func}();"
@@ -2182,7 +2363,8 @@ defmodule Singularity.SelfImprovingAgent do
   defp generate_examples(content, :typescript) do
     functions = extract_typescript_functions(content)
 
-    function_examples = functions
+    function_examples =
+      functions
       |> Enum.take(3)
       |> Enum.map(fn func ->
         "    const result = #{func}();"
@@ -2196,16 +2378,19 @@ defmodule Singularity.SelfImprovingAgent do
     end
   end
 
-  defp generate_examples(_content, _language), do: "\n\n## Examples\n\nSee usage examples in the code.\n"
+  defp generate_examples(_content, _language),
+    do: "\n\n## Examples\n\nSee usage examples in the code.\n"
 
-  defp generate_architecture_info(_content, _language), do: "\n\n## Architecture\n\nSee architecture diagram below.\n"
+  defp generate_architecture_info(_content, _language),
+    do: "\n\n## Architecture\n\nSee architecture diagram below.\n"
 
   defp generate_architecture_diagram(content) do
     functions = extract_elixir_functions(content)
     num_functions = length(functions)
 
     if num_functions > 0 do
-      func_nodes = functions
+      func_nodes =
+        functions
         |> Enum.take(5)
         |> Enum.with_index()
         |> Enum.map(fn {func, idx} ->
@@ -2224,7 +2409,8 @@ defmodule Singularity.SelfImprovingAgent do
     num_functions = length(functions)
 
     if num_functions > 0 do
-      func_nodes = functions
+      func_nodes =
+        functions
         |> Enum.take(5)
         |> Enum.with_index()
         |> Enum.map(fn {func, idx} ->
@@ -2243,7 +2429,8 @@ defmodule Singularity.SelfImprovingAgent do
     num_functions = length(functions)
 
     if num_functions > 0 do
-      func_nodes = functions
+      func_nodes =
+        functions
         |> Enum.take(5)
         |> Enum.with_index()
         |> Enum.map(fn {func, idx} ->
@@ -2257,13 +2444,15 @@ defmodule Singularity.SelfImprovingAgent do
     end
   end
 
-  defp generate_generic_architecture_diagram(_content), do: "```mermaid\ngraph TD\n    A[Module] --> B[Functions]\n```\n"
+  defp generate_generic_architecture_diagram(_content),
+    do: "```mermaid\ngraph TD\n    A[Module] --> B[Functions]\n```\n"
 
   defp generate_call_graph(content) do
     functions = extract_elixir_functions(content)
 
     if Enum.any?(functions) do
-      calls = functions
+      calls =
+        functions
         |> Enum.take(3)
         |> Enum.map(fn func ->
           "  #{func}:"
@@ -2280,7 +2469,8 @@ defmodule Singularity.SelfImprovingAgent do
     functions = extract_rust_functions(content)
 
     if Enum.any?(functions) do
-      calls = functions
+      calls =
+        functions
         |> Enum.take(3)
         |> Enum.map(fn func ->
           "  #{func}:"
@@ -2297,7 +2487,8 @@ defmodule Singularity.SelfImprovingAgent do
     functions = extract_typescript_functions(content)
 
     if Enum.any?(functions) do
-      calls = functions
+      calls =
+        functions
         |> Enum.take(3)
         |> Enum.map(fn func ->
           "  #{func}:"
@@ -2316,23 +2507,26 @@ defmodule Singularity.SelfImprovingAgent do
     # Detect common anti-patterns
     anti_patterns = []
 
-    anti_patterns = if String.contains?(content, "global ") or String.contains?(content, "mutable ") do
-      anti_patterns ++ ["- **DO NOT** use global mutable state"]
-    else
-      anti_patterns
-    end
+    anti_patterns =
+      if String.contains?(content, "global ") or String.contains?(content, "mutable ") do
+        anti_patterns ++ ["- **DO NOT** use global mutable state"]
+      else
+        anti_patterns
+      end
 
-    anti_patterns = if String.contains?(content, "spawn(fn") do
-      anti_patterns ++ ["- **DO NOT** spawn processes without supervision"]
-    else
-      anti_patterns
-    end
+    anti_patterns =
+      if String.contains?(content, "spawn(fn") do
+        anti_patterns ++ ["- **DO NOT** spawn processes without supervision"]
+      else
+        anti_patterns
+      end
 
-    anti_patterns = if String.contains?(content, "Process.sleep") and String.length(content) < 500 do
-      anti_patterns ++ ["- **DO NOT** use Process.sleep for delays in GenServers"]
-    else
-      anti_patterns
-    end
+    anti_patterns =
+      if String.contains?(content, "Process.sleep") and String.length(content) < 500 do
+        anti_patterns ++ ["- **DO NOT** use Process.sleep for delays in GenServers"]
+      else
+        anti_patterns
+      end
 
     if Enum.any?(anti_patterns) do
       pattern_text = anti_patterns |> Enum.join("\n")
@@ -2345,17 +2539,19 @@ defmodule Singularity.SelfImprovingAgent do
   defp generate_rust_anti_patterns(content) do
     anti_patterns = []
 
-    anti_patterns = if String.contains?(content, "unsafe") do
-      anti_patterns ++ ["- **DO NOT** use unsafe blocks without proper documentation"]
-    else
-      anti_patterns
-    end
+    anti_patterns =
+      if String.contains?(content, "unsafe") do
+        anti_patterns ++ ["- **DO NOT** use unsafe blocks without proper documentation"]
+      else
+        anti_patterns
+      end
 
-    anti_patterns = if String.contains?(content, "unwrap()") do
-      anti_patterns ++ ["- **DO NOT** use unwrap() in production code"]
-    else
-      anti_patterns
-    end
+    anti_patterns =
+      if String.contains?(content, "unwrap()") do
+        anti_patterns ++ ["- **DO NOT** use unwrap() in production code"]
+      else
+        anti_patterns
+      end
 
     if Enum.any?(anti_patterns) do
       pattern_text = anti_patterns |> Enum.join("\n")
@@ -2368,17 +2564,19 @@ defmodule Singularity.SelfImprovingAgent do
   defp generate_typescript_anti_patterns(content) do
     anti_patterns = []
 
-    anti_patterns = if String.contains?(content, "any ") or String.contains?(content, ": any") do
-      anti_patterns ++ ["- **DO NOT** use 'any' type - prefer specific types"]
-    else
-      anti_patterns
-    end
+    anti_patterns =
+      if String.contains?(content, "any ") or String.contains?(content, ": any") do
+        anti_patterns ++ ["- **DO NOT** use 'any' type - prefer specific types"]
+      else
+        anti_patterns
+      end
 
-    anti_patterns = if String.contains?(content, "!") and String.contains?(content, "null") do
-      anti_patterns ++ ["- **DO NOT** use non-null assertion (!) without null checking"]
-    else
-      anti_patterns
-    end
+    anti_patterns =
+      if String.contains?(content, "!") and String.contains?(content, "null") do
+        anti_patterns ++ ["- **DO NOT** use non-null assertion (!) without null checking"]
+      else
+        anti_patterns
+      end
 
     if Enum.any?(anti_patterns) do
       pattern_text = anti_patterns |> Enum.join("\n")
@@ -2394,18 +2592,19 @@ defmodule Singularity.SelfImprovingAgent do
     functions = extract_elixir_functions(content) |> Enum.join(", ")
     module_name = extract_module_name(content)
 
-    keywords = [
-      String.downcase(module_name),
-      functions,
-      "elixir",
-      "gen_server",
-      "module",
-      "genserver",
-      "process"
-    ]
-    |> Enum.reject(&(String.trim(&1) == ""))
-    |> Enum.uniq()
-    |> Enum.join(", ")
+    keywords =
+      [
+        String.downcase(module_name),
+        functions,
+        "elixir",
+        "gen_server",
+        "module",
+        "genserver",
+        "process"
+      ]
+      |> Enum.reject(&(String.trim(&1) == ""))
+      |> Enum.uniq()
+      |> Enum.join(", ")
 
     "## Search Keywords\n\n#{keywords}\n"
   end
@@ -2414,16 +2613,17 @@ defmodule Singularity.SelfImprovingAgent do
     functions = extract_rust_functions(content) |> Enum.join(", ")
     crate_name = extract_crate_name(content)
 
-    keywords = [
-      String.downcase(crate_name),
-      functions,
-      "rust",
-      "crate",
-      "module"
-    ]
-    |> Enum.reject(&(String.trim(&1) == ""))
-    |> Enum.uniq()
-    |> Enum.join(", ")
+    keywords =
+      [
+        String.downcase(crate_name),
+        functions,
+        "rust",
+        "crate",
+        "module"
+      ]
+      |> Enum.reject(&(String.trim(&1) == ""))
+      |> Enum.uniq()
+      |> Enum.join(", ")
 
     "## Search Keywords\n\n#{keywords}\n"
   end
@@ -2432,22 +2632,24 @@ defmodule Singularity.SelfImprovingAgent do
     functions = extract_typescript_functions(content) |> Enum.join(", ")
     component_name = extract_component_name(content)
 
-    keywords = [
-      String.downcase(component_name),
-      functions,
-      "typescript",
-      "component",
-      "function",
-      "javascript"
-    ]
-    |> Enum.reject(&(String.trim(&1) == ""))
-    |> Enum.uniq()
-    |> Enum.join(", ")
+    keywords =
+      [
+        String.downcase(component_name),
+        functions,
+        "typescript",
+        "component",
+        "function",
+        "javascript"
+      ]
+      |> Enum.reject(&(String.trim(&1) == ""))
+      |> Enum.uniq()
+      |> Enum.join(", ")
 
     "## Search Keywords\n\n#{keywords}\n"
   end
 
-  defp generate_generic_search_keywords(_content), do: "## Search Keywords\n\nmodule, function, code\n"
+  defp generate_generic_search_keywords(_content),
+    do: "## Search Keywords\n\nmodule, function, code\n"
 
   # Documentation insertion helpers
   defp add_moduledoc(content, moduledoc) do
@@ -2549,19 +2751,29 @@ defmodule Singularity.SelfImprovingAgent do
     |> String.split("\n")
     |> Enum.reduce([], fn line, acc ->
       cond do
-        Regex.match?(~r/^\s*(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/, line) ->
-          case Regex.run(~r/^\s*(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/, line) do
+        Regex.match?(
+          ~r/^\s*(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/,
+          line
+        ) ->
+          case Regex.run(
+                 ~r/^\s*(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/,
+                 line
+               ) do
             [_, func_name] -> acc ++ [func_name]
             _ -> acc
           end
 
-        Regex.match?(~r/^\s*(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*\(.*\)\s*=>/, line) ->
+        Regex.match?(
+          ~r/^\s*(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*\(.*\)\s*=>/,
+          line
+        ) ->
           case Regex.run(~r/^\s*(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/, line) do
             [_, func_name] -> acc ++ [func_name]
             _ -> acc
           end
 
-        true -> acc
+        true ->
+          acc
       end
     end)
     |> Enum.uniq()

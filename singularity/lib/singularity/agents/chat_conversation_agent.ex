@@ -33,31 +33,34 @@ defmodule Singularity.Agents.ChatConversationAgent do
 
     case task_name do
       "chat_response" ->
-        {:ok, %{
-          type: :chat_response,
-          task: task_name,
-          message: "Chat response generated",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :chat_response,
+           task: task_name,
+           message: "Chat response generated",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
 
       "understand_intent" ->
-        {:ok, %{
-          type: :intent_understanding,
-          task: task_name,
-          message: "User intent extracted",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :intent_understanding,
+           task: task_name,
+           message: "User intent extracted",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
 
       _ ->
-        {:ok, %{
-          type: :chat_task,
-          task: task_name,
-          message: "Chat Conversation Agent processed task",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :chat_task,
+           task: task_name,
+           message: "Chat Conversation Agent processed task",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
     end
   end
 end

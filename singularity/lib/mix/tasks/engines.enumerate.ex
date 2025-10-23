@@ -120,7 +120,9 @@ defmodule Mix.Tasks.Engines.Enumerate do
     end
 
     case engine.capabilities do
-      [] -> :ok
+      [] ->
+        :ok
+
       capabilities ->
         IO.puts("  Capabilities: #{length(capabilities)}")
 
@@ -149,14 +151,24 @@ defmodule Mix.Tasks.Engines.Enumerate do
 
     IO.puts("  Health:      #{health_status}#{IO.ANSI.reset()}")
 
-    IO.puts("\n" <> IO.ANSI.bright() <> "Capabilities (#{length(engine.capabilities)})" <> IO.ANSI.reset())
+    IO.puts(
+      "\n" <>
+        IO.ANSI.bright() <> "Capabilities (#{length(engine.capabilities)})" <> IO.ANSI.reset()
+    )
 
     if length(engine.capabilities) == 0 do
       IO.puts("  " <> IO.ANSI.faint() <> "No capabilities defined" <> IO.ANSI.reset())
     else
       Enum.each(engine.capabilities, fn cap ->
-        status = if cap.available?, do: IO.ANSI.green() <> "✓ AVAILABLE", else: IO.ANSI.red() <> "✗ UNAVAILABLE"
-        IO.puts("\n  #{status}#{IO.ANSI.reset()} #{IO.ANSI.yellow()}#{cap.label}#{IO.ANSI.reset()}")
+        status =
+          if cap.available?,
+            do: IO.ANSI.green() <> "✓ AVAILABLE",
+            else: IO.ANSI.red() <> "✗ UNAVAILABLE"
+
+        IO.puts(
+          "\n  #{status}#{IO.ANSI.reset()} #{IO.ANSI.yellow()}#{cap.label}#{IO.ANSI.reset()}"
+        )
+
         IO.puts("    ID:          #{cap.id}")
         IO.puts("    Description: #{cap.description}")
 

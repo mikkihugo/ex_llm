@@ -54,20 +54,24 @@ defmodule Singularity.Execution.TaskGraph.Policy do
       git_blacklist: ["push --force", "reset --hard", "rebase -i", "filter-branch"],
       shell_whitelist: ["mix", "git", "elixir", "gleam", "cargo", "npm", "bun"],
       fs_allowed_paths: ["/code", "/tmp"],
-      max_timeout: 300_000,  # 5 minutes
+      # 5 minutes
+      max_timeout: 300_000,
       network: :deny
     },
     tester: %{
       allowed_tools: [:docker, :shell],
       shell_whitelist: ["mix test", "cargo test", "npm test", "bun test", "pytest"],
       docker_resource_limits_required: true,
-      max_timeout: 600_000,  # 10 minutes
+      # 10 minutes
+      max_timeout: 600_000,
       network: :deny
     },
     critic: %{
       allowed_tools: [:fs, :lua],
-      fs_write_denied: true,  # Read-only
-      max_timeout: 30_000,  # 30 seconds
+      # Read-only
+      fs_write_denied: true,
+      # 30 seconds
+      max_timeout: 30_000,
       network: :deny
     },
     researcher: %{
@@ -82,12 +86,14 @@ defmodule Singularity.Execution.TaskGraph.Policy do
         "npmjs.com",
         "crates.io"
       ],
-      max_timeout: 60_000,  # 1 minute
+      # 1 minute
+      max_timeout: 60_000,
       network: :allow_whitelisted
     },
     admin: %{
       allowed_tools: [:git, :fs, :shell, :docker, :lua, :http],
-      max_timeout: nil,  # No limit
+      # No limit
+      max_timeout: nil,
       network: :allow
     }
   }

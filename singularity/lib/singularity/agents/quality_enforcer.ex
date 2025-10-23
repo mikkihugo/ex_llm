@@ -188,7 +188,7 @@ defmodule Singularity.Agents.QualityEnforcer do
   @impl true
   def init(opts) do
     quality_gates_enabled = Keyword.get(opts, :quality_gates_enabled, true)
-    
+
     state = %{
       quality_gates_enabled: quality_gates_enabled,
       templates: %{},
@@ -216,7 +216,10 @@ defmodule Singularity.Agents.QualityEnforcer do
         if state.quality_gates_enabled do
           {:reply, {:error, :quality_standards_not_met, report}, state}
         else
-          Logger.warning("File #{file_path} does not meet quality standards but gates are disabled")
+          Logger.warning(
+            "File #{file_path} does not meet quality standards but gates are disabled"
+          )
+
           {:reply, {:ok, :non_compliant}, state}
         end
 
@@ -265,7 +268,9 @@ defmodule Singularity.Agents.QualityEnforcer do
 
   defp load_template(type, name) do
     case ArtifactStore.get(type, name) do
-      {:ok, template} -> template
+      {:ok, template} ->
+        template
+
       {:error, _reason} ->
         Logger.warning("Failed to load template #{type}/#{name}, using defaults")
         %{"spec_version" => "2.2.0", "requirements" => []}
@@ -277,7 +282,6 @@ defmodule Singularity.Agents.QualityEnforcer do
          {:ok, content} <- File.read(file_path),
          language <- detect_language(file_path),
          template <- Map.get(state.templates, language) do
-      
       validate_content_quality(content, language, template)
     else
       {:error, :enoent} -> {:error, :file_not_found}
@@ -294,13 +298,13 @@ defmodule Singularity.Agents.QualityEnforcer do
     cond do
       String.ends_with?(file_path, ".ex") or String.ends_with?(file_path, ".exs") ->
         :elixir
-        
+
       String.ends_with?(file_path, ".rs") ->
         :rust
-        
+
       String.ends_with?(file_path, ".ts") or String.ends_with?(file_path, ".tsx") ->
         :typescript
-        
+
       true ->
         :unsupported_language
     end
@@ -310,9 +314,9 @@ defmodule Singularity.Agents.QualityEnforcer do
     required_elements = get_required_elements(language, template)
     quality_checks = perform_quality_checks(content, language, required_elements)
     quality_score = calculate_quality_score(quality_checks, template)
-    
+
     compliant = quality_score >= 0.95
-    
+
     report = %{
       language: language,
       quality_score: quality_score,
@@ -336,23 +340,23 @@ defmodule Singularity.Agents.QualityEnforcer do
           "Anti-Patterns",
           "Search Keywords"
         ]
-        
+
       :rust ->
         [
           "///",
           "Crate Identity",
-          "Architecture Diagram", 
+          "Architecture Diagram",
           "Call Graph",
           "Anti-Patterns",
           "Search Keywords"
         ]
-        
+
       :typescript ->
         [
           "/**",
           "Component Identity",
           "Architecture Diagram",
-          "Call Graph", 
+          "Call Graph",
           "Anti-Patterns",
           "Search Keywords"
         ]
@@ -380,27 +384,30 @@ defmodule Singularity.Agents.QualityEnforcer do
   end
 
   defp calculate_quality_score(checks, template) do
-    weights = template["scoring_weights"] || %{
-      "documentation" => 1.0,
-      "identity" => 1.0,
-      "architecture" => 1.0,
-      "call_graph" => 1.0,
-      "anti_patterns" => 1.0,
-      "search_keywords" => 1.0
-    }
+    weights =
+      template["scoring_weights"] ||
+        %{
+          "documentation" => 1.0,
+          "identity" => 1.0,
+          "architecture" => 1.0,
+          "call_graph" => 1.0,
+          "anti_patterns" => 1.0,
+          "search_keywords" => 1.0
+        }
 
-    score = [
-      {checks.has_documentation, weights["documentation"]},
-      {checks.has_identity, weights["identity"]},
-      {checks.has_architecture_diagram, weights["architecture"]},
-      {checks.has_call_graph, weights["call_graph"]},
-      {checks.has_anti_patterns, weights["anti_patterns"]},
-      {checks.has_search_keywords, weights["search_keywords"]}
-    ]
-    |> Enum.reduce({0.0, 0.0}, fn {passed?, weight}, {sum, total} ->
-      {sum + if(passed?, do: weight, else: 0.0), total + weight}
-    end)
-    |> then(fn {sum, total} -> sum / total end)
+    score =
+      [
+        {checks.has_documentation, weights["documentation"]},
+        {checks.has_identity, weights["identity"]},
+        {checks.has_architecture_diagram, weights["architecture"]},
+        {checks.has_call_graph, weights["call_graph"]},
+        {checks.has_anti_patterns, weights["anti_patterns"]},
+        {checks.has_search_keywords, weights["search_keywords"]}
+      ]
+      |> Enum.reduce({0.0, 0.0}, fn {passed?, weight}, {sum, total} ->
+        {sum + if(passed?, do: weight, else: 0.0), total + weight}
+      end)
+      |> then(fn {sum, total} -> sum / total end)
 
     Float.round(score, 2)
   end
@@ -420,28 +427,34 @@ defmodule Singularity.Agents.QualityEnforcer do
 
   defp generate_quality_report(state) do
     files = scan_all_files()
-    
-    results = files
-    |> Enum.map(fn file_path ->
-      case validate_file_quality_internal(file_path, state) do
-        {:ok, report} -> {file_path, report}
-        {:error, _reason} -> {file_path, %{language: :unknown, quality_score: 0.0, compliant: false}}
-      end
-    end)
+
+    results =
+      files
+      |> Enum.map(fn file_path ->
+        case validate_file_quality_internal(file_path, state) do
+          {:ok, report} ->
+            {file_path, report}
+
+          {:error, _reason} ->
+            {file_path, %{language: :unknown, quality_score: 0.0, compliant: false}}
+        end
+      end)
 
     compliant = Enum.count(results, fn {_file, report} -> report.compliant end)
     non_compliant = length(results) - compliant
 
-    languages = results
-    |> Enum.group_by(fn {_file, report} -> report.language end)
-    |> Enum.map(fn {lang, files} ->
-      {lang, %{
-        total: length(files),
-        compliant: Enum.count(files, fn {_file, report} -> report.compliant end),
-        avg_quality: calculate_avg_quality(files)
-      }}
-    end)
-    |> Enum.into(%{})
+    languages =
+      results
+      |> Enum.group_by(fn {_file, report} -> report.language end)
+      |> Enum.map(fn {lang, files} ->
+        {lang,
+         %{
+           total: length(files),
+           compliant: Enum.count(files, fn {_file, report} -> report.compliant end),
+           avg_quality: calculate_avg_quality(files)
+         }}
+      end)
+      |> Enum.into(%{})
 
     %{
       total_files: length(results),
@@ -454,7 +467,12 @@ defmodule Singularity.Agents.QualityEnforcer do
   end
 
   defp scan_all_files do
-    ["./singularity/lib/**/*.ex", "./rust/**/*.rs", "./llm-server/**/*.ts", "./llm-server/**/*.tsx"]
+    [
+      "./singularity/lib/**/*.ex",
+      "./rust/**/*.rs",
+      "./llm-server/**/*.ts",
+      "./llm-server/**/*.tsx"
+    ]
     |> Enum.flat_map(fn pattern ->
       Path.wildcard(pattern)
     end)
@@ -462,9 +480,10 @@ defmodule Singularity.Agents.QualityEnforcer do
   end
 
   defp calculate_avg_quality(files) do
-    scores = files
-    |> Enum.map(fn {_file, report} -> report.quality_score end)
-    |> Enum.filter(&(&1 > 0))
+    scores =
+      files
+      |> Enum.map(fn {_file, report} -> report.quality_score end)
+      |> Enum.filter(&(&1 > 0))
 
     if length(scores) > 0 do
       scores

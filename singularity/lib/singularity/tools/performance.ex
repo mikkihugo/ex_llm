@@ -1840,7 +1840,9 @@ defmodule Singularity.Tools.Performance do
 
   defp calculate_estimated_improvement(optimizations) do
     case optimizations do
-      [] -> 0
+      [] ->
+        0
+
       optimizations ->
         total_improvement = Enum.sum(Enum.map(optimizations, & &1.expected_improvement))
         total_improvement / length(optimizations)

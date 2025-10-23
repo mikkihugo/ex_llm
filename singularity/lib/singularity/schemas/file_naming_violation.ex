@@ -1,7 +1,7 @@
 defmodule Singularity.Schemas.FileNamingViolation do
   @moduledoc """
   Schema for per-file naming violations detected during analysis.
-  
+
   Stores naming convention violations found in individual files, linked to both
   the file and the detection run that found them.
   """

@@ -142,7 +142,8 @@ defmodule Singularity.ArchitectureEngine do
     otp_app: :singularity,
     crate: :architecture_engine,
     path: "../rust/architecture_engine",
-    skip_compilation?: true  # Temporarily skip compilation to fix hot reload
+    # Temporarily skip compilation to fix hot reload
+    skip_compilation?: true
 
   require Logger
   alias Singularity.Repo
@@ -176,7 +177,8 @@ defmodule Singularity.ArchitectureEngine do
     # STEP 1: Fetch learned patterns from PostgreSQL (Elixir I/O)
     with {:ok, db_patterns} <- fetch_framework_patterns_from_db(),
          # STEP 2: Call Rust NIF for pure computation
-         {:ok, results} <- call_rust_detect_frameworks(code_patterns, db_patterns, context, confidence_threshold),
+         {:ok, results} <-
+           call_rust_detect_frameworks(code_patterns, db_patterns, context, confidence_threshold),
          # STEP 3: Store results back to PostgreSQL (Elixir I/O)
          :ok <- store_detection_results(results) do
       Logger.info("✅ Detected #{length(results)} frameworks")
@@ -208,7 +210,13 @@ defmodule Singularity.ArchitectureEngine do
     # STEP 1: Fetch learned technology patterns from PostgreSQL (Elixir I/O)
     with {:ok, db_patterns} <- fetch_technology_patterns_from_db(),
          # STEP 2: Call Rust NIF for pure computation
-         {:ok, results} <- call_rust_detect_technologies(code_patterns, db_patterns, context, confidence_threshold),
+         {:ok, results} <-
+           call_rust_detect_technologies(
+             code_patterns,
+             db_patterns,
+             context,
+             confidence_threshold
+           ),
          # STEP 3: Store results back to PostgreSQL (Elixir I/O)
          :ok <- store_technology_results(results) do
       Logger.info("✅ Detected #{length(results)} technologies")
@@ -266,7 +274,17 @@ defmodule Singularity.ArchitectureEngine do
   end
 
   # Parse a database row into a framework pattern map
-  defp parse_framework_pattern_row([name, type, version, files, dirs, configs, weight, rate, count]) do
+  defp parse_framework_pattern_row([
+         name,
+         type,
+         version,
+         files,
+         dirs,
+         configs,
+         weight,
+         rate,
+         count
+       ]) do
     %{
       framework_name: name,
       framework_type: type,
@@ -348,7 +366,18 @@ defmodule Singularity.ArchitectureEngine do
   end
 
   # Parse a database row into a technology pattern map
-  defp parse_technology_pattern_row([name, type, version, exts, imports, configs, pkg_mgrs, weight, rate, count]) do
+  defp parse_technology_pattern_row([
+         name,
+         type,
+         version,
+         exts,
+         imports,
+         configs,
+         pkg_mgrs,
+         weight,
+         rate,
+         count
+       ]) do
     %{
       technology_name: name,
       technology_type: type,
@@ -462,6 +491,7 @@ defmodule Singularity.ArchitectureEngine do
     Enum.each(results, fn result ->
       FrameworkPatternStore.learn_pattern(result)
     end)
+
     :ok
   end
 
@@ -484,6 +514,7 @@ defmodule Singularity.ArchitectureEngine do
     Enum.each(results, fn result ->
       TechnologyPatternStore.learn_pattern(result)
     end)
+
     :ok
   end
 

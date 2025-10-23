@@ -160,7 +160,9 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
           Logger.info("[DatabaseToolsExecutor] Subscribed to #{subject}")
 
         {:error, reason} ->
-          Logger.error("[DatabaseToolsExecutor] Failed to subscribe to #{subject}: #{inspect(reason)}")
+          Logger.error(
+            "[DatabaseToolsExecutor] Failed to subscribe to #{subject}: #{inspect(reason)}"
+          )
       end
     end)
 
@@ -349,16 +351,21 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
     min_similarity = Map.get(request, "min_similarity", 0.7)
 
     # Use CodeSearch module for semantic search
-    case CodeSearch.semantic_search(query, codebase_id: codebase_id, limit: limit, min_similarity: min_similarity) do
+    case CodeSearch.semantic_search(query,
+           codebase_id: codebase_id,
+           limit: limit,
+           min_similarity: min_similarity
+         ) do
       {:ok, results} ->
-        {:ok, Enum.map(results, fn r ->
-          %{
-            path: r.path,
-            language: r.language,
-            similarity: r.similarity,
-            snippet: truncate_text(r.path, 200)
-          }
-        end)}
+        {:ok,
+         Enum.map(results, fn r ->
+           %{
+             path: r.path,
+             language: r.language,
+             similarity: r.similarity,
+             snippet: truncate_text(r.path, 200)
+           }
+         end)}
 
       {:error, reason} ->
         {:error, "Search failed: #{inspect(reason)}"}
@@ -470,10 +477,18 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
       result ->
         symbols =
           case symbol_type do
-            "function" -> result.functions || []
-            "class" -> result.classes || []
-            "struct" -> result.structs || []
-            "enum" -> result.enums || []
+            "function" ->
+              result.functions || []
+
+            "class" ->
+              result.classes || []
+
+            "struct" ->
+              result.structs || []
+
+            "enum" ->
+              result.enums || []
+
             "all" ->
               (result.functions || []) ++
                 (result.classes || []) ++
@@ -502,10 +517,11 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
         {:error, "File not found: #{path}"}
 
       result ->
-        {:ok, %{
-          imports: result.imports || [],
-          dependencies: result.dependencies || []
-        }}
+        {:ok,
+         %{
+           imports: result.imports || [],
+           dependencies: result.dependencies || []
+         }}
     end
   end
 
@@ -527,11 +543,12 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
 
     graph = %{
       nodes: Enum.map(results, & &1.path),
-      edges: Enum.flat_map(results, fn r ->
-        Enum.map(r.dependencies || [], fn dep ->
-          %{from: r.path, to: dep}
+      edges:
+        Enum.flat_map(results, fn r ->
+          Enum.map(r.dependencies || [], fn dep ->
+            %{from: r.path, to: dep}
+          end)
         end)
-      end)
     }
 
     case format do

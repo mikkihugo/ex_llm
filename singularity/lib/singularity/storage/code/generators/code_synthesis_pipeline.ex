@@ -239,7 +239,7 @@ defmodule Singularity.CodeSynthesisPipeline do
     try do
       # Use existing knowledge base systems to query tech stack facts
       tech_stack_facts = get_tech_stack_facts(repo)
-      
+
       if tech_stack_facts != [] do
         {:ok, tech_stack_facts}
       else
@@ -257,28 +257,39 @@ defmodule Singularity.CodeSynthesisPipeline do
   defp get_tech_stack_facts(repo) do
     # Query existing knowledge base systems
     facts = []
-    
+
     # Query package registry knowledge
-    case Singularity.ArchitectureEngine.PackageRegistryKnowledge.search("tech stack", %{ecosystem: :all, top_k: 10}) do
+    case Singularity.ArchitectureEngine.PackageRegistryKnowledge.search("tech stack", %{
+           ecosystem: :all,
+           top_k: 10
+         }) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_package_fact/1)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
-    
+
     # Query semantic code search for tech patterns
     case Singularity.CodeSearch.semantic_search(Repo, repo, "technology stack patterns", 5) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_semantic_fact/1)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
-    
+
     # Query framework pattern store
-    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("framework patterns", %{top_k: 5}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("framework patterns", %{
+           top_k: 5
+         }) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_framework_fact/1)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
-    
+
     facts
   end
 
@@ -318,7 +329,7 @@ defmodule Singularity.CodeSynthesisPipeline do
   defp detect_basic_tech_stack(repo) do
     # Basic tech stack detection using file system analysis
     tech_stack = []
-    
+
     # Check for common tech stack indicators
     tech_stack = tech_stack ++ detect_elixir_stack(repo)
     tech_stack = tech_stack ++ detect_rust_stack(repo)
@@ -326,19 +337,21 @@ defmodule Singularity.CodeSynthesisPipeline do
     tech_stack = tech_stack ++ detect_python_stack(repo)
     tech_stack = tech_stack ++ detect_go_stack(repo)
     tech_stack = tech_stack ++ detect_java_stack(repo)
-    
+
     tech_stack
   end
 
   defp detect_elixir_stack(repo) do
     if File.exists?(Path.join(repo, "mix.exs")) do
-      [%{
-        type: "language",
-        name: "Elixir",
-        version: detect_elixir_version(repo),
-        confidence: 0.9,
-        source: "file_detection"
-      }]
+      [
+        %{
+          type: "language",
+          name: "Elixir",
+          version: detect_elixir_version(repo),
+          confidence: 0.9,
+          source: "file_detection"
+        }
+      ]
     else
       []
     end
@@ -346,13 +359,15 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   defp detect_rust_stack(repo) do
     if File.exists?(Path.join(repo, "Cargo.toml")) do
-      [%{
-        type: "language",
-        name: "Rust",
-        version: detect_rust_version(repo),
-        confidence: 0.9,
-        source: "file_detection"
-      }]
+      [
+        %{
+          type: "language",
+          name: "Rust",
+          version: detect_rust_version(repo),
+          confidence: 0.9,
+          source: "file_detection"
+        }
+      ]
     else
       []
     end
@@ -360,27 +375,32 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   defp detect_javascript_stack(repo) do
     if File.exists?(Path.join(repo, "package.json")) do
-      [%{
-        type: "language",
-        name: "JavaScript/TypeScript",
-        version: detect_node_version(repo),
-        confidence: 0.8,
-        source: "file_detection"
-      }]
+      [
+        %{
+          type: "language",
+          name: "JavaScript/TypeScript",
+          version: detect_node_version(repo),
+          confidence: 0.8,
+          source: "file_detection"
+        }
+      ]
     else
       []
     end
   end
 
   defp detect_python_stack(repo) do
-    if File.exists?(Path.join(repo, "requirements.txt")) or File.exists?(Path.join(repo, "pyproject.toml")) do
-      [%{
-        type: "language",
-        name: "Python",
-        version: detect_python_version(repo),
-        confidence: 0.8,
-        source: "file_detection"
-      }]
+    if File.exists?(Path.join(repo, "requirements.txt")) or
+         File.exists?(Path.join(repo, "pyproject.toml")) do
+      [
+        %{
+          type: "language",
+          name: "Python",
+          version: detect_python_version(repo),
+          confidence: 0.8,
+          source: "file_detection"
+        }
+      ]
     else
       []
     end
@@ -388,13 +408,15 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   defp detect_go_stack(repo) do
     if File.exists?(Path.join(repo, "go.mod")) do
-      [%{
-        type: "language",
-        name: "Go",
-        version: detect_go_version(repo),
-        confidence: 0.9,
-        source: "file_detection"
-      }]
+      [
+        %{
+          type: "language",
+          name: "Go",
+          version: detect_go_version(repo),
+          confidence: 0.9,
+          source: "file_detection"
+        }
+      ]
     else
       []
     end
@@ -402,13 +424,15 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   defp detect_java_stack(repo) do
     if File.exists?(Path.join(repo, "pom.xml")) or File.exists?(Path.join(repo, "build.gradle")) do
-      [%{
-        type: "language",
-        name: "Java",
-        version: detect_java_version(repo),
-        confidence: 0.8,
-        source: "file_detection"
-      }]
+      [
+        %{
+          type: "language",
+          name: "Java",
+          version: detect_java_version(repo),
+          confidence: 0.8,
+          source: "file_detection"
+        }
+      ]
     else
       []
     end
@@ -421,7 +445,9 @@ defmodule Singularity.CodeSynthesisPipeline do
           [_, version] -> version
           _ -> "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -432,7 +458,9 @@ defmodule Singularity.CodeSynthesisPipeline do
           [_, edition] -> edition
           _ -> "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -443,9 +471,13 @@ defmodule Singularity.CodeSynthesisPipeline do
           {:ok, data} ->
             Map.get(data, "engines", %{})
             |> Map.get("node", "unknown")
-          _ -> "unknown"
+
+          _ ->
+            "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -456,7 +488,9 @@ defmodule Singularity.CodeSynthesisPipeline do
           [_, version] -> version
           _ -> "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -467,7 +501,9 @@ defmodule Singularity.CodeSynthesisPipeline do
           [_, version] -> version
           _ -> "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -478,7 +514,9 @@ defmodule Singularity.CodeSynthesisPipeline do
           [_, version] -> version
           _ -> "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 

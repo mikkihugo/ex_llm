@@ -88,8 +88,7 @@ defmodule Singularity.MixProject do
       # Only include engines that actually exist
       {:architecture_engine,
        path: "../rust/architecture_engine", runtime: false, app: false, compile: false},
-      {:code_engine,
-       path: "../rust/code_engine", runtime: false, app: false, compile: false},
+      {:code_engine, path: "../rust/code_engine", runtime: false, app: false, compile: false},
       {:embedding_engine,
        path: "../rust/embedding_engine", runtime: false, app: false, compile: false},
       # knowledge_engine consolidated into architecture_engine

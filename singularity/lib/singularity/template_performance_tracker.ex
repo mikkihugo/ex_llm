@@ -322,20 +322,20 @@ defmodule Singularity.TemplatePerformanceTracker do
     try do
       # Load historical performance data from database
       case Singularity.Repo.query("""
-        SELECT 
-          template_id,
-          execution_count,
-          success_rate,
-          avg_execution_time_ms,
-          last_executed_at,
-          created_at
-        FROM template_performance_history 
-        WHERE created_at >= NOW() - INTERVAL '30 days'
-        ORDER BY created_at DESC
-        LIMIT 1000
-      """) do
+             SELECT 
+               template_id,
+               execution_count,
+               success_rate,
+               avg_execution_time_ms,
+               last_executed_at,
+               created_at
+             FROM template_performance_history 
+             WHERE created_at >= NOW() - INTERVAL '30 days'
+             ORDER BY created_at DESC
+             LIMIT 1000
+           """) do
         {:ok, %{rows: rows}} ->
-          historical_data = 
+          historical_data =
             rows
             |> Enum.map(fn [template_id, exec_count, success_rate, avg_time, last_exec, created] ->
               %{
@@ -347,17 +347,20 @@ defmodule Singularity.TemplatePerformanceTracker do
                 created_at: created
               }
             end)
-          
+
           # Group by template_id and calculate aggregates
-          grouped_data = 
+          grouped_data =
             historical_data
             |> Enum.group_by(& &1.template_id)
             |> Enum.map(fn {template_id, records} ->
               total_executions = Enum.sum(Enum.map(records, & &1.execution_count))
               avg_success_rate = Enum.sum(Enum.map(records, & &1.success_rate)) / length(records)
-              avg_execution_time = Enum.sum(Enum.map(records, & &1.avg_execution_time_ms)) / length(records)
+
+              avg_execution_time =
+                Enum.sum(Enum.map(records, & &1.avg_execution_time_ms)) / length(records)
+
               last_executed = Enum.max_by(records, & &1.last_executed_at, fn -> nil end)
-              
+
               %{
                 template_id: template_id,
                 total_executions: total_executions,
@@ -367,10 +370,10 @@ defmodule Singularity.TemplatePerformanceTracker do
                 record_count: length(records)
               }
             end)
-          
+
           Logger.info("Loaded #{length(grouped_data)} template performance records")
           Map.put(state, :historical_data, grouped_data)
-        
+
         {:error, reason} ->
           Logger.warning("Failed to load historical data: #{inspect(reason)}")
           Logger.info("Starting with empty performance data")

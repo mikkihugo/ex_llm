@@ -385,7 +385,7 @@ defmodule Singularity.CodeSession do
     try do
       # Use existing knowledge base systems to query tech stack facts
       tech_stack_facts = get_tech_stack_facts_from_knowledge_base(repo)
-      
+
       if tech_stack_facts != [] do
         {:ok, tech_stack_facts}
       else
@@ -403,35 +403,50 @@ defmodule Singularity.CodeSession do
   defp get_tech_stack_facts_from_knowledge_base(repo) do
     # Query existing knowledge base systems
     facts = []
-    
+
     # Query package registry knowledge for tech stack information
-    case Singularity.ArchitectureEngine.PackageRegistryKnowledge.search("technology stack", %{ecosystem: :all, top_k: 15}) do
+    case Singularity.ArchitectureEngine.PackageRegistryKnowledge.search("technology stack", %{
+           ecosystem: :all,
+           top_k: 15
+         }) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_tech_stack_fact/1)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
-    
+
     # Query semantic code search for tech patterns in the specific repo
     case Singularity.CodeSearch.semantic_search(Repo, repo, "technology stack patterns", 10) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_semantic_tech_fact/1)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
-    
+
     # Query framework pattern store for relevant frameworks
-    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("framework detection", %{top_k: 8}) do
+    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("framework detection", %{
+           top_k: 8
+         }) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_framework_tech_fact/1)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
-    
+
     # Query technology template store
-    case Singularity.Code.Patterns.TechnologyTemplateStore.search("technology templates", %{top_k: 5}) do
+    case Singularity.Code.Patterns.TechnologyTemplateStore.search("technology templates", %{
+           top_k: 5
+         }) do
       {:ok, results} ->
         facts = facts ++ Enum.map(results, &format_template_tech_fact/1)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
-    
+
     facts
   end
 
@@ -486,7 +501,7 @@ defmodule Singularity.CodeSession do
   defp detect_tech_stack_from_files(repo) do
     # Basic tech stack detection using file system analysis
     tech_stack = []
-    
+
     # Check for common tech stack indicators
     tech_stack = tech_stack ++ detect_elixir_tech_stack(repo)
     tech_stack = tech_stack ++ detect_rust_tech_stack(repo)
@@ -496,20 +511,22 @@ defmodule Singularity.CodeSession do
     tech_stack = tech_stack ++ detect_java_tech_stack(repo)
     tech_stack = tech_stack ++ detect_database_tech_stack(repo)
     tech_stack = tech_stack ++ detect_deployment_tech_stack(repo)
-    
+
     tech_stack
   end
 
   defp detect_elixir_tech_stack(repo) do
     if File.exists?(Path.join(repo, "mix.exs")) do
-      [%{
-        type: "language",
-        name: "Elixir",
-        version: detect_elixir_version_from_mix(repo),
-        confidence: 0.9,
-        source: "file_detection",
-        category: "language"
-      }]
+      [
+        %{
+          type: "language",
+          name: "Elixir",
+          version: detect_elixir_version_from_mix(repo),
+          confidence: 0.9,
+          source: "file_detection",
+          category: "language"
+        }
+      ]
     else
       []
     end
@@ -517,14 +534,16 @@ defmodule Singularity.CodeSession do
 
   defp detect_rust_tech_stack(repo) do
     if File.exists?(Path.join(repo, "Cargo.toml")) do
-      [%{
-        type: "language",
-        name: "Rust",
-        version: detect_rust_version_from_cargo(repo),
-        confidence: 0.9,
-        source: "file_detection",
-        category: "language"
-      }]
+      [
+        %{
+          type: "language",
+          name: "Rust",
+          version: detect_rust_version_from_cargo(repo),
+          confidence: 0.9,
+          source: "file_detection",
+          category: "language"
+        }
+      ]
     else
       []
     end
@@ -532,29 +551,34 @@ defmodule Singularity.CodeSession do
 
   defp detect_javascript_tech_stack(repo) do
     if File.exists?(Path.join(repo, "package.json")) do
-      [%{
-        type: "language",
-        name: "JavaScript/TypeScript",
-        version: detect_node_version_from_package(repo),
-        confidence: 0.8,
-        source: "file_detection",
-        category: "language"
-      }]
+      [
+        %{
+          type: "language",
+          name: "JavaScript/TypeScript",
+          version: detect_node_version_from_package(repo),
+          confidence: 0.8,
+          source: "file_detection",
+          category: "language"
+        }
+      ]
     else
       []
     end
   end
 
   defp detect_python_tech_stack(repo) do
-    if File.exists?(Path.join(repo, "requirements.txt")) or File.exists?(Path.join(repo, "pyproject.toml")) do
-      [%{
-        type: "language",
-        name: "Python",
-        version: detect_python_version_from_files(repo),
-        confidence: 0.8,
-        source: "file_detection",
-        category: "language"
-      }]
+    if File.exists?(Path.join(repo, "requirements.txt")) or
+         File.exists?(Path.join(repo, "pyproject.toml")) do
+      [
+        %{
+          type: "language",
+          name: "Python",
+          version: detect_python_version_from_files(repo),
+          confidence: 0.8,
+          source: "file_detection",
+          category: "language"
+        }
+      ]
     else
       []
     end
@@ -562,14 +586,16 @@ defmodule Singularity.CodeSession do
 
   defp detect_go_tech_stack(repo) do
     if File.exists?(Path.join(repo, "go.mod")) do
-      [%{
-        type: "language",
-        name: "Go",
-        version: detect_go_version_from_mod(repo),
-        confidence: 0.9,
-        source: "file_detection",
-        category: "language"
-      }]
+      [
+        %{
+          type: "language",
+          name: "Go",
+          version: detect_go_version_from_mod(repo),
+          confidence: 0.9,
+          source: "file_detection",
+          category: "language"
+        }
+      ]
     else
       []
     end
@@ -577,14 +603,16 @@ defmodule Singularity.CodeSession do
 
   defp detect_java_tech_stack(repo) do
     if File.exists?(Path.join(repo, "pom.xml")) or File.exists?(Path.join(repo, "build.gradle")) do
-      [%{
-        type: "language",
-        name: "Java",
-        version: detect_java_version_from_build_files(repo),
-        confidence: 0.8,
-        source: "file_detection",
-        category: "language"
-      }]
+      [
+        %{
+          type: "language",
+          name: "Java",
+          version: detect_java_version_from_build_files(repo),
+          confidence: 0.8,
+          source: "file_detection",
+          category: "language"
+        }
+      ]
     else
       []
     end
@@ -593,86 +621,105 @@ defmodule Singularity.CodeSession do
   defp detect_database_tech_stack(repo) do
     # Detect database technologies
     databases = []
-    
+
     # Check for PostgreSQL
     if File.exists?(Path.join(repo, "docker-compose.yml")) do
       case File.read(Path.join(repo, "docker-compose.yml")) do
         {:ok, content} ->
           if String.contains?(content, "postgres") do
-            databases = [%{
-              type: "database",
-              name: "PostgreSQL",
-              version: "unknown",
-              confidence: 0.7,
-              source: "docker_compose",
-              category: "database"
-            } | databases]
+            databases = [
+              %{
+                type: "database",
+                name: "PostgreSQL",
+                version: "unknown",
+                confidence: 0.7,
+                source: "docker_compose",
+                category: "database"
+              }
+              | databases
+            ]
           end
-        _ -> :ok
+
+        _ ->
+          :ok
       end
     end
-    
+
     # Check for Redis
     if File.exists?(Path.join(repo, "docker-compose.yml")) do
       case File.read(Path.join(repo, "docker-compose.yml")) do
         {:ok, content} ->
           if String.contains?(content, "redis") do
-            databases = [%{
-              type: "database",
-              name: "Redis",
-              version: "unknown",
-              confidence: 0.7,
-              source: "docker_compose",
-              category: "database"
-            } | databases]
+            databases = [
+              %{
+                type: "database",
+                name: "Redis",
+                version: "unknown",
+                confidence: 0.7,
+                source: "docker_compose",
+                category: "database"
+              }
+              | databases
+            ]
           end
-        _ -> :ok
+
+        _ ->
+          :ok
       end
     end
-    
+
     databases
   end
 
   defp detect_deployment_tech_stack(repo) do
     # Detect deployment technologies
     deployment_tech = []
-    
+
     # Check for Docker
     if File.exists?(Path.join(repo, "Dockerfile")) do
-      deployment_tech = [%{
-        type: "deployment",
-        name: "Docker",
-        version: "unknown",
-        confidence: 0.9,
-        source: "dockerfile",
-        category: "deployment"
-      } | deployment_tech]
+      deployment_tech = [
+        %{
+          type: "deployment",
+          name: "Docker",
+          version: "unknown",
+          confidence: 0.9,
+          source: "dockerfile",
+          category: "deployment"
+        }
+        | deployment_tech
+      ]
     end
-    
+
     # Check for Kubernetes
     if File.exists?(Path.join(repo, "k8s/")) or File.exists?(Path.join(repo, "kubernetes/")) do
-      deployment_tech = [%{
-        type: "deployment",
-        name: "Kubernetes",
-        version: "unknown",
-        confidence: 0.8,
-        source: "directory_structure",
-        category: "deployment"
-      } | deployment_tech]
+      deployment_tech = [
+        %{
+          type: "deployment",
+          name: "Kubernetes",
+          version: "unknown",
+          confidence: 0.8,
+          source: "directory_structure",
+          category: "deployment"
+        }
+        | deployment_tech
+      ]
     end
-    
+
     # Check for Terraform
     if File.exists?(Path.join(repo, "terraform/")) or File.exists?(Path.join(repo, "*.tf")) do
-      deployment_tech = [%{
-        type: "deployment",
-        name: "Terraform",
-        version: "unknown",
-        confidence: 0.8,
-        source: "file_detection",
-        category: "deployment"
-      } | deployment_tech]
+      deployment_tech = [
+        %{
+          type: "deployment",
+          name: "Terraform",
+          version: "unknown",
+          confidence: 0.8,
+          source: "file_detection",
+          category: "deployment"
+        }
+        | deployment_tech
+      ]
     end
-    
+
     deployment_tech
   end
 
@@ -683,7 +730,9 @@ defmodule Singularity.CodeSession do
           [_, version] -> version
           _ -> "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -694,7 +743,9 @@ defmodule Singularity.CodeSession do
           [_, edition] -> edition
           _ -> "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -705,9 +756,13 @@ defmodule Singularity.CodeSession do
           {:ok, data} ->
             Map.get(data, "engines", %{})
             |> Map.get("node", "unknown")
-          _ -> "unknown"
+
+          _ ->
+            "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -718,7 +773,9 @@ defmodule Singularity.CodeSession do
           [_, version] -> version
           _ -> "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -729,7 +786,9 @@ defmodule Singularity.CodeSession do
           [_, version] -> version
           _ -> "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -740,7 +799,9 @@ defmodule Singularity.CodeSession do
           [_, version] -> version
           _ -> "unknown"
         end
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 

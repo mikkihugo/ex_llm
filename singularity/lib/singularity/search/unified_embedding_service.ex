@@ -113,10 +113,10 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   @type embedding :: [float()] | Pgvector.t()
   @type strategy :: :auto | :rust | :google | :bumblebee
   @type opts :: [
-    strategy: strategy(),
-    model: atom(),
-    fallback: boolean()
-  ]
+          strategy: strategy(),
+          model: atom(),
+          fallback: boolean()
+        ]
 
   @doc """
   Generate embedding with automatic strategy selection.
@@ -226,15 +226,18 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   def recommended_strategy(content_type) do
     cond do
       rust_available?() && gpu_available?() ->
-        model = case content_type do
-          :code -> :qodo_embed
-          :technical -> :qodo_embed
-          _ -> :jina_v3
-        end
+        model =
+          case content_type do
+            :code -> :qodo_embed
+            :technical -> :qodo_embed
+            _ -> :jina_v3
+          end
+
         {:rust, model}
 
       rust_available?() ->
-        {:rust, :minilm}  # Fast CPU model
+        # Fast CPU model
+        {:rust, :minilm}
 
       google_available?() ->
         {:google, :text_embedding_004}
@@ -331,12 +334,13 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
 
   defp embed_batch_google(texts, opts, _fallback) do
     # Google AI doesn't have native batch API, process sequentially
-    results = Enum.map(texts, fn text ->
-      case embed_google(text, opts, false) do
-        {:ok, embedding} -> embedding
-        {:error, _} -> nil
-      end
-    end)
+    results =
+      Enum.map(texts, fn text ->
+        case embed_google(text, opts, false) do
+          {:ok, embedding} -> embedding
+          {:error, _} -> nil
+        end
+      end)
 
     if Enum.any?(results, &is_nil/1) do
       {:error, :google_batch_partial_failure}
@@ -353,13 +357,13 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     max_length = Keyword.get(opts, :max_length, 512)
     normalize = Keyword.get(opts, :normalize, true)
     device = Keyword.get(opts, :device, :cpu)
-    
+
     Logger.info("Generating Bumblebee embedding",
       model: model_name,
       text_length: String.length(text),
       device: device
     )
-    
+
     try do
       # Check if Bumblebee is available
       case check_bumblebee_availability() do
@@ -371,18 +375,23 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
                 model: model_name,
                 embedding_size: length(embedding)
               )
+
               {:ok, embedding}
+
             {:error, reason} ->
               Logger.warning("Bumblebee embedding failed, using fallback",
                 model: model_name,
                 reason: reason
               )
+
               fallback.()
           end
+
         {:error, reason} ->
           Logger.warning("Bumblebee not available, using fallback",
             reason: reason
           )
+
           fallback.()
       end
     rescue
@@ -390,6 +399,7 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
         Logger.error("Bumblebee embedding error, using fallback",
           error: inspect(error)
         )
+
         fallback.()
     end
   end
@@ -401,37 +411,49 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     normalize = Keyword.get(opts, :normalize, true)
     device = Keyword.get(opts, :device, :cpu)
     batch_size = Keyword.get(opts, :batch_size, 32)
-    
+
     Logger.info("Generating Bumblebee batch embeddings",
       model: model_name,
       text_count: length(texts),
       batch_size: batch_size,
       device: device
     )
-    
+
     try do
       # Check if Bumblebee is available
       case check_bumblebee_availability() do
         :ok ->
           # Generate embeddings in batches
-          case generate_batch_bumblebee_embeddings(texts, model_name, max_length, normalize, device, batch_size) do
+          case generate_batch_bumblebee_embeddings(
+                 texts,
+                 model_name,
+                 max_length,
+                 normalize,
+                 device,
+                 batch_size
+               ) do
             {:ok, embeddings} ->
               Logger.info("Bumblebee batch embeddings generated successfully",
                 model: model_name,
                 embedding_count: length(embeddings)
               )
+
               {:ok, embeddings}
+
             {:error, reason} ->
               Logger.warning("Bumblebee batch embedding failed, using fallback",
                 model: model_name,
                 reason: reason
               )
+
               fallback.()
           end
+
         {:error, reason} ->
           Logger.warning("Bumblebee not available, using fallback",
             reason: reason
           )
+
           fallback.()
       end
     rescue
@@ -439,6 +461,7 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
         Logger.error("Bumblebee batch embedding error, using fallback",
           error: inspect(error)
         )
+
         fallback.()
     end
   end
@@ -478,11 +501,14 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
             version when is_list(version) ->
               Logger.info("Bumblebee available", version: version)
               :ok
+
             _ ->
               {:error, :version_check_failed}
           end
+
         {:error, :nofile} ->
           {:error, :bumblebee_not_available}
+
         {:error, reason} ->
           {:error, {:load_failed, reason}}
       end
@@ -504,12 +530,15 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
               case generate_embedding_from_tokens(tokens, model, normalize) do
                 {:ok, embedding} ->
                   {:ok, embedding}
+
                 {:error, reason} ->
                   {:error, {:embedding_generation_failed, reason}}
               end
+
             {:error, reason} ->
               {:error, {:tokenization_failed, reason}}
           end
+
         {:error, reason} ->
           {:error, {:model_loading_failed, reason}}
       end
@@ -519,7 +548,14 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     end
   end
 
-  defp generate_batch_bumblebee_embeddings(texts, model_name, max_length, normalize, device, batch_size) do
+  defp generate_batch_bumblebee_embeddings(
+         texts,
+         model_name,
+         max_length,
+         normalize,
+         device,
+         batch_size
+       ) do
     try do
       # Load the model
       case load_bumblebee_model(model_name, device) do
@@ -531,10 +567,12 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
             case process_batch(batch, model, max_length, normalize) do
               {:ok, batch_embeddings} ->
                 {:cont, {:ok, acc ++ batch_embeddings}}
+
               {:error, reason} ->
                 {:halt, {:error, {:batch_processing_failed, reason}}}
             end
           end)
+
         {:error, reason} ->
           {:error, {:model_loading_failed, reason}}
       end
@@ -554,12 +592,12 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
         device: device,
         loaded_at: DateTime.utc_now()
       }
-      
-      Logger.info("Bumblebee model loaded", 
-        model: model_name, 
+
+      Logger.info("Bumblebee model loaded",
+        model: model_name,
         device: device
       )
-      
+
       {:ok, model_info}
     rescue
       error ->
@@ -572,10 +610,11 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     # In a real implementation, this would use Bumblebee.Text.tokenize/3
     try do
       # Simulate tokenization
-      tokens = String.split(text, " ")
-      |> Enum.take(max_length)
-      |> Enum.map(&String.trim/1)
-      
+      tokens =
+        String.split(text, " ")
+        |> Enum.take(max_length)
+        |> Enum.map(&String.trim/1)
+
       {:ok, tokens}
     rescue
       error ->
@@ -588,18 +627,23 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     # In a real implementation, this would use Bumblebee.Text.embed/3
     try do
       # Simulate embedding generation
-      embedding_size = 384  # Typical size for all-MiniLM-L6-v2
-      embedding = for _ <- 1..embedding_size do
-        :rand.uniform() * 2 - 1  # Random values between -1 and 1
-      end
-      
+      # Typical size for all-MiniLM-L6-v2
+      embedding_size = 384
+
+      embedding =
+        for _ <- 1..embedding_size do
+          # Random values between -1 and 1
+          :rand.uniform() * 2 - 1
+        end
+
       # Normalize if requested
-      final_embedding = if normalize do
-        normalize_embedding(embedding)
-      else
-        embedding
-      end
-      
+      final_embedding =
+        if normalize do
+          normalize_embedding(embedding)
+        else
+          embedding
+        end
+
       {:ok, final_embedding}
     rescue
       error ->
@@ -618,6 +662,7 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
               {:ok, embedding} -> {:ok, embedding}
               {:error, reason} -> {:error, reason}
             end
+
           {:error, reason} ->
             {:error, reason}
         end
@@ -635,7 +680,7 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   defp normalize_embedding(embedding) do
     # Normalize embedding vector to unit length
     magnitude = :math.sqrt(Enum.sum(Enum.map(embedding, &(&1 * &1))))
-    
+
     if magnitude > 0 do
       Enum.map(embedding, &(&1 / magnitude))
     else

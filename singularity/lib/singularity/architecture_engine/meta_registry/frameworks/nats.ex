@@ -1,7 +1,7 @@
 defmodule Singularity.MetaRegistry.Frameworks.Nats do
   @moduledoc """
   NATS framework learning patterns.
-  
+
   Learns from NATS messaging patterns to improve our NATS usage.
   """
 
@@ -9,9 +9,9 @@ defmodule Singularity.MetaRegistry.Frameworks.Nats do
 
   @doc """
   Learn from NATS messaging patterns.
-  
+
   ## Examples
-  
+
       # Learn from our NATS subjects
       learn_patterns(%{
         subjects: ["llm.provider.claude", "analysis.code.parse", "analysis.meta.registry.naming"],
@@ -28,9 +28,9 @@ defmodule Singularity.MetaRegistry.Frameworks.Nats do
 
   @doc """
   Get NATS suggestions based on learned patterns.
-  
+
   ## Examples
-  
+
       # Get subject suggestions
       get_suggestions("search", "subject")
       # Returns: ["search.semantic", "search.hybrid", "search.vector"]
@@ -56,14 +56,24 @@ defmodule Singularity.MetaRegistry.Frameworks.Nats do
   def initialize_patterns do
     learn_patterns(%{
       subjects: [
-        "llm.provider.claude", "llm.provider.gemini", "llm.provider.openai",
-        "analysis.code.parse", "analysis.code.embed", "analysis.code.search",
-        "analysis.meta.registry.naming", "analysis.meta.registry.architecture", "analysis.meta.registry.quality"
+        "llm.provider.claude",
+        "llm.provider.gemini",
+        "llm.provider.openai",
+        "analysis.code.parse",
+        "analysis.code.embed",
+        "analysis.code.search",
+        "analysis.meta.registry.naming",
+        "analysis.meta.registry.architecture",
+        "analysis.meta.registry.quality"
       ],
       messaging: ["request/response", "pub/sub", "streaming"],
       patterns: [
-        "analysis.meta.subject.hierarchy", "analysis.meta.wildcard.subjects", "analysis.meta.message.routing",
-        "llm.provider.*", "analysis.code.*", "analysis.meta.registry.*"
+        "analysis.meta.subject.hierarchy",
+        "analysis.meta.wildcard.subjects",
+        "analysis.meta.message.routing",
+        "llm.provider.*",
+        "analysis.code.*",
+        "analysis.meta.registry.*"
       ]
     })
   end

@@ -43,16 +43,17 @@ defmodule Mix.Tasks.Rag.Test do
 
   @impl Mix.Task
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args,
-      strict: [
-        task: :string,
-        language: :string,
-        validate: :boolean,
-        retries: :integer,
-        examples: :integer
-      ],
-      aliases: [t: :task, l: :language, r: :retries, e: :examples]
-    )
+    {opts, _, _} =
+      OptionParser.parse(args,
+        strict: [
+          task: :string,
+          language: :string,
+          validate: :boolean,
+          retries: :integer,
+          examples: :integer
+        ],
+        aliases: [t: :task, l: :language, r: :retries, e: :examples]
+      )
 
     Mix.Task.run("app.start")
 
@@ -63,7 +64,7 @@ defmodule Mix.Tasks.Rag.Test do
     examples_count = opts[:examples] || 1
 
     Mix.shell().info("""
-    
+
     ╔══════════════════════════════════════════════════════════════╗
     ║  RAG Quality-Aware Code Generation - Test                    ║
     ╚══════════════════════════════════════════════════════════════╝
@@ -90,13 +91,14 @@ defmodule Mix.Tasks.Rag.Test do
 
     start_time = System.monotonic_time(:millisecond)
 
-    result = RAGCodeGenerator.generate(
-      task: task,
-      language: language,
-      quality_level: "production",
-      validate: validate,
-      max_retries: retries
-    )
+    result =
+      RAGCodeGenerator.generate(
+        task: task,
+        language: language,
+        quality_level: "production",
+        validate: validate,
+        max_retries: retries
+      )
 
     end_time = System.monotonic_time(:millisecond)
     duration = end_time - start_time
@@ -104,20 +106,20 @@ defmodule Mix.Tasks.Rag.Test do
     case result do
       {:ok, code} ->
         Mix.shell().info("""
-        
+
         ✅ Generation successful! (#{duration}ms)
-        
+
         ┌─────────────────────────── Generated Code ───────────────────────────┐
         #{code}
         └──────────────────────────────────────────────────────────────────────┘
-        
+
         Lines: #{count_lines(code)}
         Size: #{byte_size(code)} bytes
         """)
 
       {:error, reason} ->
         Mix.shell().error("""
-        
+
         ❌ Generation failed: #{inspect(reason)}
         """)
     end
@@ -132,27 +134,28 @@ defmodule Mix.Tasks.Rag.Test do
 
     tasks = Enum.take(@default_tasks, count)
 
-    results = Enum.with_index(tasks, 1)
-    |> Enum.map(fn {{task, language}, index} ->
-      Mix.shell().info("""
-      
-      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      Example #{index}/#{count}: #{task}
-      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      """)
+    results =
+      Enum.with_index(tasks, 1)
+      |> Enum.map(fn {{task, language}, index} ->
+        Mix.shell().info("""
 
-      test_generation(task, language, validate, retries)
-      
-      # Small delay between requests
-      if index < count, do: Process.sleep(1000)
-      
-      :ok
-    end)
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        Example #{index}/#{count}: #{task}
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        """)
+
+        test_generation(task, language, validate, retries)
+
+        # Small delay between requests
+        if index < count, do: Process.sleep(1000)
+
+        :ok
+      end)
 
     success_count = Enum.count(results, &(&1 == :ok))
 
     Mix.shell().info("""
-    
+
     ═══════════════════════════════════════════════════════════════
     Summary: #{success_count}/#{count} tests completed
     ═══════════════════════════════════════════════════════════════

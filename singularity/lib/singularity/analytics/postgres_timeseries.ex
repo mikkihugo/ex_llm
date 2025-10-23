@@ -85,17 +85,20 @@ defmodule Singularity.Analytics.PostgresTimeseries do
 
     case Repo.query(query_sql, [metric_name, time_range, bucket_size]) do
       {:ok, result} ->
-        trends = Enum.map(result.rows, fn row ->
-          [bucket, avg_value, min_value, max_value, sample_count, trend_direction] = row
-          %{
-            bucket: bucket,
-            avg_value: avg_value,
-            min_value: min_value,
-            max_value: max_value,
-            sample_count: sample_count,
-            trend_direction: trend_direction
-          }
-        end)
+        trends =
+          Enum.map(result.rows, fn row ->
+            [bucket, avg_value, min_value, max_value, sample_count, trend_direction] = row
+
+            %{
+              bucket: bucket,
+              avg_value: avg_value,
+              min_value: min_value,
+              max_value: max_value,
+              sample_count: sample_count,
+              trend_direction: trend_direction
+            }
+          end)
+
         {:ok, trends}
 
       {:error, reason} ->
@@ -122,16 +125,19 @@ defmodule Singularity.Analytics.PostgresTimeseries do
 
     case Repo.query(query_sql, [metric_name, time_range, threshold_multiplier]) do
       {:ok, result} ->
-        anomalies = Enum.map(result.rows, fn row ->
-          [anomaly_time, value, expected_value, deviation, severity] = row
-          %{
-            anomaly_time: anomaly_time,
-            value: value,
-            expected_value: expected_value,
-            deviation: deviation,
-            severity: severity
-          }
-        end)
+        anomalies =
+          Enum.map(result.rows, fn row ->
+            [anomaly_time, value, expected_value, deviation, severity] = row
+
+            %{
+              anomaly_time: anomaly_time,
+              value: value,
+              expected_value: expected_value,
+              deviation: deviation,
+              severity: severity
+            }
+          end)
+
         {:ok, anomalies}
 
       {:error, reason} ->
@@ -157,19 +163,31 @@ defmodule Singularity.Analytics.PostgresTimeseries do
 
     case Repo.query(query_sql, [time_range]) do
       {:ok, result} ->
-        analysis = Enum.map(result.rows, fn row ->
-          [provider, model, total_tokens, total_cost, avg_cost_per_token, call_count, success_rate, avg_response_time] = row
-          %{
-            provider: provider,
-            model: model,
-            total_tokens: total_tokens,
-            total_cost: total_cost,
-            avg_cost_per_token: avg_cost_per_token,
-            call_count: call_count,
-            success_rate: success_rate,
-            avg_response_time: avg_response_time
-          }
-        end)
+        analysis =
+          Enum.map(result.rows, fn row ->
+            [
+              provider,
+              model,
+              total_tokens,
+              total_cost,
+              avg_cost_per_token,
+              call_count,
+              success_rate,
+              avg_response_time
+            ] = row
+
+            %{
+              provider: provider,
+              model: model,
+              total_tokens: total_tokens,
+              total_cost: total_cost,
+              avg_cost_per_token: avg_cost_per_token,
+              call_count: call_count,
+              success_rate: success_rate,
+              avg_response_time: avg_response_time
+            }
+          end)
+
         {:ok, analysis}
 
       {:error, reason} ->
@@ -195,17 +213,21 @@ defmodule Singularity.Analytics.PostgresTimeseries do
 
     case Repo.query(query_sql, [time_range]) do
       {:ok, result} ->
-        health = Enum.map(result.rows, fn row ->
-          [metric_type, current_value, avg_value, max_value, health_status, recommendation] = row
-          %{
-            metric_type: metric_type,
-            current_value: current_value,
-            avg_value: avg_value,
-            max_value: max_value,
-            health_status: health_status,
-            recommendation: recommendation
-          }
-        end)
+        health =
+          Enum.map(result.rows, fn row ->
+            [metric_type, current_value, avg_value, max_value, health_status, recommendation] =
+              row
+
+            %{
+              metric_type: metric_type,
+              current_value: current_value,
+              avg_value: avg_value,
+              max_value: max_value,
+              health_status: health_status,
+              recommendation: recommendation
+            }
+          end)
+
         {:ok, health}
 
       {:error, reason} ->
@@ -232,15 +254,19 @@ defmodule Singularity.Analytics.PostgresTimeseries do
 
     case Repo.query(query_sql, [metric_name, forecast_hours]) do
       {:ok, result} ->
-        forecast = Enum.map(result.rows, fn row ->
-          [forecast_time, predicted_value, confidence_interval_lower, confidence_interval_upper] = row
-          %{
-            forecast_time: forecast_time,
-            predicted_value: predicted_value,
-            confidence_interval_lower: confidence_interval_lower,
-            confidence_interval_upper: confidence_interval_upper
-          }
-        end)
+        forecast =
+          Enum.map(result.rows, fn row ->
+            [forecast_time, predicted_value, confidence_interval_lower, confidence_interval_upper] =
+              row
+
+            %{
+              forecast_time: forecast_time,
+              predicted_value: predicted_value,
+              confidence_interval_lower: confidence_interval_lower,
+              confidence_interval_upper: confidence_interval_upper
+            }
+          end)
+
         {:ok, forecast}
 
       {:error, reason} ->
@@ -274,14 +300,17 @@ defmodule Singularity.Analytics.PostgresTimeseries do
 
     case Repo.query(query_sql, params) do
       {:ok, result} ->
-        metrics = Enum.map(result.rows, fn row ->
-          [bucket, avg_value, sample_count] = row
-          %{
-            bucket: bucket,
-            avg_value: avg_value,
-            sample_count: sample_count
-          }
-        end)
+        metrics =
+          Enum.map(result.rows, fn row ->
+            [bucket, avg_value, sample_count] = row
+
+            %{
+              bucket: bucket,
+              avg_value: avg_value,
+              sample_count: sample_count
+            }
+          end)
+
         {:ok, metrics}
 
       {:error, reason} ->
@@ -336,23 +365,40 @@ defmodule Singularity.Analytics.PostgresTimeseries do
     case Repo.query(query_sql, [metric_name, current_period, previous_period]) do
       {:ok, result} ->
         case result.rows do
-          [[current_avg, current_max, current_min, previous_avg, previous_max, previous_min, change_percent] | _] ->
-            {:ok, %{
-              current_period: %{
-                avg: current_avg,
-                max: current_max,
-                min: current_min
-              },
-              previous_period: %{
-                avg: previous_avg,
-                max: previous_max,
-                min: previous_min
-              },
-              change_percent: change_percent
-            }}
+          [
+            [
+              current_avg,
+              current_max,
+              current_min,
+              previous_avg,
+              previous_max,
+              previous_min,
+              change_percent
+            ]
+            | _
+          ] ->
+            {:ok,
+             %{
+               current_period: %{
+                 avg: current_avg,
+                 max: current_max,
+                 min: current_min
+               },
+               previous_period: %{
+                 avg: previous_avg,
+                 max: previous_max,
+                 min: previous_min
+               },
+               change_percent: change_percent
+             }}
 
           [] ->
-            {:ok, %{current_period: %{avg: 0, max: 0, min: 0}, previous_period: %{avg: 0, max: 0, min: 0}, change_percent: 0}}
+            {:ok,
+             %{
+               current_period: %{avg: 0, max: 0, min: 0},
+               previous_period: %{avg: 0, max: 0, min: 0},
+               change_percent: 0
+             }}
         end
 
       {:error, reason} ->
@@ -386,15 +432,22 @@ defmodule Singularity.Analytics.PostgresTimeseries do
       {:ok, result} ->
         case result.rows do
           [[hypertable_count, continuous_aggregate_count, total_chunks, compression_ratio] | _] ->
-            {:ok, %{
-              hypertable_count: hypertable_count,
-              continuous_aggregate_count: continuous_aggregate_count,
-              total_chunks: total_chunks,
-              compression_ratio: compression_ratio
-            }}
+            {:ok,
+             %{
+               hypertable_count: hypertable_count,
+               continuous_aggregate_count: continuous_aggregate_count,
+               total_chunks: total_chunks,
+               compression_ratio: compression_ratio
+             }}
 
           [] ->
-            {:ok, %{hypertable_count: 0, continuous_aggregate_count: 0, total_chunks: 0, compression_ratio: 0.0}}
+            {:ok,
+             %{
+               hypertable_count: 0,
+               continuous_aggregate_count: 0,
+               total_chunks: 0,
+               compression_ratio: 0.0
+             }}
         end
 
       {:error, reason} ->

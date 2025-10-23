@@ -1,10 +1,10 @@
 defmodule Singularity.T5FineTuner do
   @moduledoc """
   T5/CodeT5 Fine-Tuning Integration for GeneratorEngine
-  
+
   Provides seamless integration between fine-tuned T5 models and the GeneratorEngine.
   Handles model training, deployment, and switching between base and fine-tuned models.
-  
+
   ## Features:
   - LoRA fine-tuning with PEFT
   - Domain-specific vocabulary training
@@ -12,9 +12,9 @@ defmodule Singularity.T5FineTuner do
   - Training data preparation from PostgreSQL
   - Performance monitoring and evaluation
   - Database-driven training pipeline
-  
+
   ## Usage:
-  
+
       # Prepare training data from your codebase (stored in DB)
       {:ok, training_id} = T5FineTuner.prepare_training_data(language: "elixir")
       
@@ -38,17 +38,17 @@ defmodule Singularity.T5FineTuner do
   @training_script_path "llm-server/scripts/train_codet5.py"
 
   @type training_example :: %{
-    instruction: String.t(),
-    input: String.t(),
-    output: String.t(),
-    metadata: map()
-  }
+          instruction: String.t(),
+          input: String.t(),
+          output: String.t(),
+          metadata: map()
+        }
 
   @type dataset :: [training_example()]
 
   @doc """
   Prepare training data from PostgreSQL code_store table and store in database
-  
+
   ## Options:
   - `:name` - Training session name (required)
   - `:description` - Training session description
@@ -61,7 +61,14 @@ defmodule Singularity.T5FineTuner do
   @spec prepare_training_data(keyword()) :: {:ok, String.t()} | {:error, term()}
   def prepare_training_data(opts \\ []) do
     name = Keyword.fetch!(opts, :name)
-    description = Keyword.get(opts, :description, "T5 training session for #{Keyword.get(opts, :language, "all")} languages")
+
+    description =
+      Keyword.get(
+        opts,
+        :description,
+        "T5 training session for #{Keyword.get(opts, :language, "all")} languages"
+      )
+
     language = Keyword.get(opts, :language)
     min_length = Keyword.get(opts, :min_length, 50)
     max_examples = Keyword.get(opts, :max_examples, 10000)
@@ -90,7 +97,14 @@ defmodule Singularity.T5FineTuner do
     case Repo.insert(training_session) do
       {:ok, session} ->
         # Prepare training examples in database
-        case prepare_training_examples(session.id, language, min_length, max_examples, include_tests, split_ratio) do
+        case prepare_training_examples(
+               session.id,
+               language,
+               min_length,
+               max_examples,
+               include_tests,
+               split_ratio
+             ) do
           {:ok, {train_count, val_count}} ->
             # Update session with counts
             session
@@ -103,15 +117,16 @@ defmodule Singularity.T5FineTuner do
 
             Logger.info("Prepared #{train_count} training and #{val_count} validation examples")
             {:ok, session.id}
-          
+
           {:error, reason} ->
             # Mark session as failed
             session
             |> T5TrainingSession.changeset(%{status: :failed, error_message: inspect(reason)})
             |> Repo.update()
+
             {:error, reason}
         end
-      
+
       {:error, changeset} ->
         Logger.error("Failed to create training session: #{inspect(changeset.errors)}")
         {:error, changeset}
@@ -120,7 +135,7 @@ defmodule Singularity.T5FineTuner do
 
   @doc """
   Fine-tune CodeT5 model on your codebase using database-stored training data
-  
+
   ## Parameters:
   - `training_session_id` - Training session ID from prepare_training_data/1
   - `opts` - Training options (epochs, learning_rate, etc.)
@@ -138,7 +153,7 @@ defmodule Singularity.T5FineTuner do
     case Repo.get(T5TrainingSession, training_session_id) do
       nil ->
         {:error, :training_session_not_found}
-      
+
       session ->
         # Update session status to training
         session
@@ -148,13 +163,22 @@ defmodule Singularity.T5FineTuner do
         try do
           # Get training examples from database
           {:ok, train_examples, val_examples} = get_training_examples_from_db(training_session_id)
-          
+
           # Save training data to JSONL files
-          {:ok, train_file, eval_file} = save_training_data_to_files(train_examples, val_examples, session.id)
-          
+          {:ok, train_file, eval_file} =
+            save_training_data_to_files(train_examples, val_examples, session.id)
+
           # Run training script
-          {:ok, model_path} = run_training_script(train_file, eval_file, session.id, epochs, learning_rate, batch_size)
-          
+          {:ok, model_path} =
+            run_training_script(
+              train_file,
+              eval_file,
+              session.id,
+              epochs,
+              learning_rate,
+              batch_size
+            )
+
           # Create model version record in database
           model_version = %T5ModelVersion{
             training_session_id: training_session_id,
@@ -183,12 +207,16 @@ defmodule Singularity.T5FineTuner do
 
               Logger.info("Fine-tuning completed successfully: #{version_record.id}")
               {:ok, version_record.id}
-            
+
             {:error, changeset} ->
               # Mark session as failed
               session
-              |> T5TrainingSession.changeset(%{status: :failed, error_message: inspect(changeset.errors)})
+              |> T5TrainingSession.changeset(%{
+                status: :failed,
+                error_message: inspect(changeset.errors)
+              })
               |> Repo.update()
+
               {:error, changeset}
           end
         rescue
@@ -197,6 +225,7 @@ defmodule Singularity.T5FineTuner do
             session
             |> T5TrainingSession.changeset(%{status: :failed, error_message: inspect(error)})
             |> Repo.update()
+
             Logger.error("Fine-tuning failed: #{inspect(error)}")
             {:error, error}
         end
@@ -209,15 +238,15 @@ defmodule Singularity.T5FineTuner do
   @spec deploy_model(String.t()) :: :ok | {:error, term()}
   def deploy_model(model_path) do
     expanded_path = Path.expand(model_path)
-    
+
     if File.exists?(expanded_path) do
       # Update configuration to use fine-tuned model
-      Application.put_env(:singularity, :code_generation, [
+      Application.put_env(:singularity, :code_generation,
         model: "Salesforce/codet5p-770m",
         use_fine_tuned: true,
         fine_tuned_path: expanded_path
-      ])
-      
+      )
+
       Logger.info("Deployed fine-tuned model: #{expanded_path}")
       :ok
     else
@@ -232,16 +261,19 @@ defmodule Singularity.T5FineTuner do
   @spec switch_to_fine_tuned() :: :ok | {:error, term()}
   def switch_to_fine_tuned do
     fine_tuned_path = get_fine_tuned_path()
-    
+
     if File.exists?(Path.expand(fine_tuned_path)) do
       # Restart CodeModel serving to load fine-tuned model
       case Process.whereis(Singularity.CodeModel.Serving) do
-        nil -> :ok
-        pid -> 
+        nil ->
+          :ok
+
+        pid ->
           Process.exit(pid, :kill)
-          Process.sleep(1000)  # Wait for cleanup
+          # Wait for cleanup
+          Process.sleep(1000)
       end
-      
+
       Logger.info("Switched to fine-tuned T5 model")
       :ok
     else
@@ -255,20 +287,22 @@ defmodule Singularity.T5FineTuner do
   """
   @spec switch_to_base_model() :: :ok
   def switch_to_base_model do
-    Application.put_env(:singularity, :code_generation, [
+    Application.put_env(:singularity, :code_generation,
       model: @base_model,
       use_fine_tuned: false,
       fine_tuned_path: nil
-    ])
-    
+    )
+
     # Restart CodeModel serving
     case Process.whereis(Singularity.CodeModel.Serving) do
-      nil -> :ok
-      pid -> 
+      nil ->
+        :ok
+
+      pid ->
         Process.exit(pid, :kill)
         Process.sleep(1000)
     end
-    
+
     Logger.info("Switched to base T5 model")
     :ok
   end
@@ -279,22 +313,23 @@ defmodule Singularity.T5FineTuner do
   @spec evaluate_model(String.t(), dataset()) :: {:ok, map()} | {:error, term()}
   def evaluate_model(model_path, test_dataset) do
     Logger.info("Evaluating fine-tuned model: #{model_path}")
-    
+
     # TODO: Implement model evaluation
     # This would involve:
     # 1. Load fine-tuned model
     # 2. Run inference on test dataset
     # 3. Compare with base model
     # 4. Calculate metrics (BLEU, ROUGE, etc.)
-    
-    {:ok, %{
-      model_path: model_path,
-      test_examples: length(test_dataset),
-      bleu_score: 0.85,
-      rouge_score: 0.82,
-      accuracy: 0.78,
-      status: "evaluation_placeholder"
-    }}
+
+    {:ok,
+     %{
+       model_path: model_path,
+       test_examples: length(test_dataset),
+       bleu_score: 0.85,
+       rouge_score: 0.82,
+       accuracy: 0.78,
+       status: "evaluation_placeholder"
+     }}
   end
 
   # ============================================================================
@@ -302,22 +337,24 @@ defmodule Singularity.T5FineTuner do
   # ============================================================================
 
   defp build_code_query(language, min_length, include_tests) do
-    base_query = from c in CodeStore,
-      where: fragment("length(?)", c.content) >= ^min_length,
-      select: %{
-        content: c.content,
-        language: c.language,
-        file_path: c.file_path,
-        repo: c.repo,
-        created_at: c.inserted_at
-      }
+    base_query =
+      from c in CodeStore,
+        where: fragment("length(?)", c.content) >= ^min_length,
+        select: %{
+          content: c.content,
+          language: c.language,
+          file_path: c.file_path,
+          repo: c.repo,
+          created_at: c.inserted_at
+        }
 
     # Filter by language if specified
-    query = if language do
-      where(base_query, [c], c.language == ^language)
-    else
-      base_query
-    end
+    query =
+      if language do
+        where(base_query, [c], c.language == ^language)
+      else
+        base_query
+      end
 
     # Filter out tests if not wanted
     if not include_tests do
@@ -330,13 +367,13 @@ defmodule Singularity.T5FineTuner do
   defp convert_to_training_example(code_chunk) do
     # Extract function/module name for instruction
     instruction = extract_instruction(code_chunk.content, code_chunk.language)
-    
+
     # Use file path as input context
     input = code_chunk.file_path
-    
+
     # Use code content as output
     output = code_chunk.content
-    
+
     %{
       instruction: instruction,
       input: input,
@@ -358,19 +395,19 @@ defmodule Singularity.T5FineTuner do
           [_, module_name] -> "Create Elixir module #{module_name}"
           _ -> "Generate Elixir code"
         end
-      
+
       "rust" ->
         case Regex.run(~r/fn\s+(\w+)/, content) do
           [_, func_name] -> "Create Rust function #{func_name}"
           _ -> "Generate Rust code"
         end
-      
+
       "typescript" ->
         case Regex.run(~r/function\s+(\w+)/, content) do
           [_, func_name] -> "Create TypeScript function #{func_name}"
           _ -> "Generate TypeScript code"
         end
-      
+
       _ ->
         "Generate #{language} code"
     end
@@ -378,24 +415,24 @@ defmodule Singularity.T5FineTuner do
 
   defp valid_training_example?(example) do
     String.length(example.instruction) > 10 and
-    String.length(example.output) > 20 and
-    String.length(example.input) > 5
+      String.length(example.output) > 20 and
+      String.length(example.input) > 5
   end
 
   defp save_training_data(dataset, output_dir) do
     expanded_dir = Path.expand(output_dir)
     File.mkdir_p!(expanded_dir)
-    
+
     # Split dataset
     {train_data, eval_data} = split_dataset(dataset, 0.9)
-    
+
     # Save training data
     train_file = Path.join(expanded_dir, "train.jsonl")
     eval_file = Path.join(expanded_dir, "eval.jsonl")
-    
+
     save_jsonl(train_data, train_file)
     save_jsonl(eval_data, eval_file)
-    
+
     {:ok, train_file, eval_file}
   end
 
@@ -406,42 +443,50 @@ defmodule Singularity.T5FineTuner do
   end
 
   defp save_jsonl(data, file_path) do
-    content = 
+    content =
       data
       |> Enum.map(&Jason.encode!/1)
       |> Enum.join("\n")
-    
+
     File.write!(file_path, content)
   end
 
   defp run_training_script(train_file, eval_file, output_dir, epochs, learning_rate, batch_size) do
     script_path = Path.expand(@training_script_path)
-    
+
     if not File.exists?(script_path) do
       Logger.error("Training script not found: #{script_path}")
       {:error, :script_not_found}
     else
       # Build command
       cmd = [
-        "python", script_path,
-        "--train-file", train_file,
-        "--eval-file", eval_file,
-        "--output-dir", output_dir,
-        "--base-model", @base_model,
-        "--epochs", to_string(epochs),
-        "--learning-rate", to_string(learning_rate),
-        "--train-batch-size", to_string(batch_size)
+        "python",
+        script_path,
+        "--train-file",
+        train_file,
+        "--eval-file",
+        eval_file,
+        "--output-dir",
+        output_dir,
+        "--base-model",
+        @base_model,
+        "--epochs",
+        to_string(epochs),
+        "--learning-rate",
+        to_string(learning_rate),
+        "--train-batch-size",
+        to_string(batch_size)
       ]
-      
+
       Logger.info("Running training command: #{Enum.join(cmd, " ")}")
-      
+
       # Run training
       case System.cmd("python", cmd, stderr_to_stdout: true) do
         {output, 0} ->
           Logger.info("Training completed successfully")
           Logger.debug("Training output: #{output}")
           {:ok, output_dir}
-        
+
         {output, exit_code} ->
           Logger.error("Training failed with exit code #{exit_code}")
           Logger.error("Training output: #{output}")
@@ -459,11 +504,18 @@ defmodule Singularity.T5FineTuner do
   # DATABASE HELPER FUNCTIONS
   # ============================================================================
 
-  defp prepare_training_examples(session_id, language, min_length, max_examples, include_tests, split_ratio) do
+  defp prepare_training_examples(
+         session_id,
+         language,
+         min_length,
+         max_examples,
+         include_tests,
+         split_ratio
+       ) do
     # Query code chunks from database
     query = build_code_query(language, min_length, include_tests)
-    
-    code_chunks = 
+
+    code_chunks =
       Repo.all(query)
       |> Enum.take(max_examples)
 
@@ -471,7 +523,7 @@ defmodule Singularity.T5FineTuner do
       {:error, :insufficient_data}
     else
       # Convert to training examples and insert into database
-      examples = 
+      examples =
         code_chunks
         |> Enum.map(&convert_to_training_example/1)
         |> Enum.filter(&valid_training_example?/1)
@@ -480,42 +532,48 @@ defmodule Singularity.T5FineTuner do
       {train_examples, val_examples} = split_examples(examples, split_ratio)
 
       # Insert training examples into database
-      train_records = Enum.map(train_examples, fn example ->
-        %T5TrainingExample{
-          training_session_id: session_id,
-          code_chunk_id: example.metadata[:code_chunk_id],
-          instruction: example.instruction,
-          input: example.input,
-          output: example.output,
-          language: example.metadata[:language],
-          file_path: example.metadata[:file_path],
-          repo: example.metadata[:repo],
-          quality_score: calculate_quality_score(example),
-          is_validation: false,
-          metadata: example.metadata
-        }
-      end)
+      train_records =
+        Enum.map(train_examples, fn example ->
+          %T5TrainingExample{
+            training_session_id: session_id,
+            code_chunk_id: example.metadata[:code_chunk_id],
+            instruction: example.instruction,
+            input: example.input,
+            output: example.output,
+            language: example.metadata[:language],
+            file_path: example.metadata[:file_path],
+            repo: example.metadata[:repo],
+            quality_score: calculate_quality_score(example),
+            is_validation: false,
+            metadata: example.metadata
+          }
+        end)
 
-      val_records = Enum.map(val_examples, fn example ->
-        %T5TrainingExample{
-          training_session_id: session_id,
-          code_chunk_id: example.metadata[:code_chunk_id],
-          instruction: example.instruction,
-          input: example.input,
-          output: example.output,
-          language: example.metadata[:language],
-          file_path: example.metadata[:file_path],
-          repo: example.metadata[:repo],
-          quality_score: calculate_quality_score(example),
-          is_validation: true,
-          metadata: example.metadata
-        }
-      end)
+      val_records =
+        Enum.map(val_examples, fn example ->
+          %T5TrainingExample{
+            training_session_id: session_id,
+            code_chunk_id: example.metadata[:code_chunk_id],
+            instruction: example.instruction,
+            input: example.input,
+            output: example.output,
+            language: example.metadata[:language],
+            file_path: example.metadata[:file_path],
+            repo: example.metadata[:repo],
+            quality_score: calculate_quality_score(example),
+            is_validation: true,
+            metadata: example.metadata
+          }
+        end)
 
       # Insert all records
-      case Repo.insert_all(T5TrainingExample, Enum.map(train_records ++ val_records, &Map.from_struct/1)) do
+      case Repo.insert_all(
+             T5TrainingExample,
+             Enum.map(train_records ++ val_records, &Map.from_struct/1)
+           ) do
         {count, _} when count > 0 ->
           {:ok, {length(train_records), length(val_records)}}
+
         _ ->
           {:error, :insert_failed}
       end
@@ -523,7 +581,7 @@ defmodule Singularity.T5FineTuner do
   end
 
   defp get_training_examples_from_db(session_id) do
-    train_examples = 
+    train_examples =
       from(e in T5TrainingExample,
         where: e.training_session_id == ^session_id and e.is_validation == false,
         select: %{
@@ -535,7 +593,7 @@ defmodule Singularity.T5FineTuner do
       )
       |> Repo.all()
 
-    val_examples = 
+    val_examples =
       from(e in T5TrainingExample,
         where: e.training_session_id == ^session_id and e.is_validation == true,
         select: %{
@@ -557,11 +615,12 @@ defmodule Singularity.T5FineTuner do
     WHERE LENGTH(content) >= #{min_length}
     """
 
-    sql = if language do
-      base_sql <> " AND language = '#{language}'"
-    else
-      base_sql
-    end
+    sql =
+      if language do
+        base_sql <> " AND language = '#{language}'"
+      else
+        base_sql
+      end
 
     if not include_tests do
       sql <> " AND file_path NOT LIKE '%test%' AND file_path NOT LIKE '%spec%'"
@@ -569,7 +628,6 @@ defmodule Singularity.T5FineTuner do
       sql
     end
   end
-
 
   defp split_examples(examples, train_ratio) do
     shuffled = Enum.shuffle(examples)
@@ -581,19 +639,19 @@ defmodule Singularity.T5FineTuner do
     # Simple quality score based on code length and structure
     output_length = String.length(example.output)
     instruction_length = String.length(example.instruction)
-    
+
     # Base score from length
     length_score = min(output_length / 1000, 1.0)
-    
+
     # Bonus for detailed instructions
     instruction_score = min(instruction_length / 100, 0.5)
-    
+
     # Check for code quality indicators
-    quality_indicators = 
-      (if String.contains?(example.output, "def "), do: 0.1, else: 0) +
-      (if String.contains?(example.output, "defmodule "), do: 0.1, else: 0) +
-      (if String.contains?(example.output, "fn "), do: 0.1, else: 0) +
-      (if String.contains?(example.output, "function "), do: 0.1, else: 0)
+    quality_indicators =
+      if(String.contains?(example.output, "def "), do: 0.1, else: 0) +
+        if(String.contains?(example.output, "defmodule "), do: 0.1, else: 0) +
+        if(String.contains?(example.output, "fn "), do: 0.1, else: 0) +
+        if String.contains?(example.output, "function "), do: 0.1, else: 0
 
     min(1.0, length_score + instruction_score + quality_indicators)
   end
@@ -601,13 +659,13 @@ defmodule Singularity.T5FineTuner do
   defp save_training_data_to_files(train_examples, val_examples, session_id) do
     output_dir = Path.expand("#{@default_output_dir}/session_#{session_id}")
     File.mkdir_p!(output_dir)
-    
+
     train_file = Path.join(output_dir, "train.jsonl")
     eval_file = Path.join(output_dir, "eval.jsonl")
-    
+
     save_jsonl(train_examples, train_file)
     save_jsonl(val_examples, eval_file)
-    
+
     {:ok, train_file, eval_file}
   end
 

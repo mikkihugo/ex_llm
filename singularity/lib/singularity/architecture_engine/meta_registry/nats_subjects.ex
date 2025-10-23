@@ -1,25 +1,25 @@
 defmodule Singularity.MetaRegistry.NatsSubjects do
   @moduledoc """
   NATS subject definitions for meta-registry system.
-  
+
   ## App-Facing Subjects (Clean, no "meta" prefix)
-  
+
   These are what the APPLICATION sees and uses:
   - `naming.suggestions` - Get naming suggestions
   - `architecture.patterns` - Get architecture patterns  
   - `quality.checks` - Get quality suggestions
   - `dependencies.analysis` - Get dependency analysis
-  
+
   ## Internal Meta-Registry Subjects (With "meta" prefix)
-  
+
   These are what OUR SYSTEM uses internally:
   - `meta.registry.naming` - Store/query naming patterns we learn
   - `meta.registry.architecture` - Store/query architecture patterns we learn
   - `meta.registry.quality` - Store/query quality patterns we learn
   - `meta.registry.dependencies` - Store/query dependency patterns we learn
-  
+
   ## Tech Stack Detection
-  
+
   The meta-registry detects the application's tech stack and provides
   the right app-facing subjects based on what the application actually uses.
   """
@@ -27,7 +27,7 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
   # App-facing subjects (what the APPLICATION sees)
   @app_facing_subjects %{
     naming: "analysis.meta.naming.suggestions",
-    architecture: "analysis.meta.architecture.patterns", 
+    architecture: "analysis.meta.architecture.patterns",
     quality: "analysis.meta.quality.checks",
     dependencies: "analysis.meta.dependencies.analysis",
     patterns: "analysis.meta.patterns.suggestions",
@@ -39,7 +39,7 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
   @meta_subjects %{
     naming: "analysis.meta.registry.naming",
     architecture: "analysis.meta.registry.architecture",
-    quality: "analysis.meta.registry.quality", 
+    quality: "analysis.meta.registry.quality",
     dependencies: "analysis.meta.registry.dependencies",
     patterns: "analysis.meta.registry.patterns",
     templates: "analysis.meta.registry.templates",
@@ -59,9 +59,9 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
 
   @doc """
   Get app-facing subject for a given category.
-  
+
   ## Examples
-  
+
       iex> NatsSubjects.app_facing(:naming)
       "analysis.meta.naming.suggestions"
       
@@ -74,9 +74,9 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
 
   @doc """
   Get internal meta-registry subject for a given category.
-  
+
   ## Examples
-  
+
       iex> NatsSubjects.meta(:naming)
       "analysis.meta.registry.naming"
       
@@ -89,9 +89,9 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
 
   @doc """
   Get usage tracking subject for a given category.
-  
+
   ## Examples
-  
+
       iex> NatsSubjects.usage(:naming)
       "analysis.meta.usage.naming"
       
@@ -144,9 +144,9 @@ defmodule Singularity.MetaRegistry.NatsSubjects do
 
   @doc """
   Detect tech stack and return appropriate subjects.
-  
+
   ## Examples
-  
+
       # For a PHP/Laravel app
       iex> NatsSubjects.for_tech_stack("php", "laravel")
       %{

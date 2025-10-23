@@ -10,11 +10,13 @@ defmodule Singularity.Schemas.CodeFile do
   @foreign_key_type :binary_id
 
   schema "code_files" do
-    field :project_name, :string  # Database column name (not codebase_id)
+    # Database column name (not codebase_id)
+    field :project_name, :string
     field :file_path, :string
     field :language, :string
     field :content, :string
-    field :size_bytes, :integer  # Database column name (not file_size)
+    # Database column name (not file_size)
+    field :size_bytes, :integer
     field :line_count, :integer
     field :hash, :string
 
@@ -28,7 +30,14 @@ defmodule Singularity.Schemas.CodeFile do
   def changeset(code_file, attrs) do
     code_file
     |> cast(attrs, [
-      :project_name, :file_path, :language, :content, :size_bytes, :line_count, :hash, :metadata
+      :project_name,
+      :file_path,
+      :language,
+      :content,
+      :size_bytes,
+      :line_count,
+      :hash,
+      :metadata
     ])
     |> validate_required([:project_name, :file_path])
     |> unique_constraint([:project_name, :file_path])

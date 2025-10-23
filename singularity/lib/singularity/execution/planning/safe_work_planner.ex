@@ -343,13 +343,13 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
             level = String.to_atom(level_str)
             Logger.info("Classified work item as #{level} (confidence: #{confidence})")
             {:ok, %{level: level, confidence: confidence, reasoning: reasoning}}
-          
+
           {:error, _} ->
             Logger.warning("Failed to parse LLM classification response: #{response}")
             # Fallback to heuristic classification
             fallback_classification(text)
         end
-      
+
       {:error, reason} ->
         Logger.error("LLM classification failed: #{inspect(reason)}")
         # Fallback to heuristic classification
@@ -366,7 +366,7 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
         String.contains?(text, ~r/(capability|cross-team)/i) -> :capability
         true -> :feature
       end
-    
+
     {:ok, %{level: level, confidence: 0.3, reasoning: "Heuristic fallback classification"}}
   end
 
@@ -400,8 +400,8 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
         {:ok, embedding} ->
           # Find most similar existing items at the appropriate level
           parent_level = get_parent_level(level)
-          
-          candidates = 
+
+          candidates =
             state.work_items
             |> Enum.filter(fn {_id, item} -> item.level == parent_level end)
             |> Enum.map(fn {id, item} ->
@@ -409,24 +409,24 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
                 {:ok, item_embedding} ->
                   similarity = calculate_cosine_similarity(embedding, item_embedding)
                   {id, item, similarity}
-                
+
                 {:error, _} ->
                   nil
               end
             end)
             |> Enum.reject(&is_nil/1)
             |> Enum.sort_by(fn {_id, _item, similarity} -> similarity end, :desc)
-          
+
           case List.first(candidates) do
             {id, _item, similarity} when similarity > 0.7 ->
               Logger.info("Found semantic parent #{id} with similarity #{similarity}")
               id
-            
+
             _ ->
               Logger.info("No suitable semantic parent found")
               nil
           end
-        
+
         {:error, reason} ->
           Logger.warning("Embedding generation failed: #{inspect(reason)}")
           nil
@@ -448,14 +448,14 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
   end
 
   defp calculate_cosine_similarity(vec1, vec2) when length(vec1) == length(vec2) do
-    dot_product = 
+    dot_product =
       Enum.zip(vec1, vec2)
       |> Enum.map(fn {a, b} -> a * b end)
       |> Enum.sum()
-    
+
     magnitude1 = :math.sqrt(Enum.sum(Enum.map(vec1, &(&1 * &1))))
     magnitude2 = :math.sqrt(Enum.sum(Enum.map(vec2, &(&1 * &1))))
-    
+
     if magnitude1 > 0 and magnitude2 > 0 do
       dot_product / (magnitude1 * magnitude2)
     else

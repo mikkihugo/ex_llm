@@ -239,8 +239,12 @@ defmodule Singularity.QualityCodeGenerator do
         {:ok, template} ->
           Logger.debug("Loaded quality template from custom path: #{custom_path}")
           {:ok, template}
+
         {:error, _} ->
-          Logger.warning("Failed to load template from custom path: #{custom_path}, falling back to discovery")
+          Logger.warning(
+            "Failed to load template from custom path: #{custom_path}, falling back to discovery"
+          )
+
           load_template_via_discovery(language, quality)
       end
     else
@@ -254,14 +258,16 @@ defmodule Singularity.QualityCodeGenerator do
       {:ok, template} ->
         Logger.debug("Loaded quality template via dynamic discovery: #{language}_#{quality}")
         {:ok, template}
-      
+
       {:error, reason} ->
-        Logger.warning("Quality template not found via discovery: #{language}_#{quality}, reason: #{reason}")
+        Logger.warning(
+          "Quality template not found via discovery: #{language}_#{quality}, reason: #{reason}"
+        )
+
         # Fallback to default template
         {:ok, default_template(language, quality)}
     end
   end
-
 
   ## Private Functions
 
@@ -272,10 +278,11 @@ defmodule Singularity.QualityCodeGenerator do
           {:ok, template} -> {:ok, template}
           {:error, reason} -> {:error, "Invalid JSON in custom template: #{reason}"}
         end
-      {:error, reason} -> {:error, "Failed to read custom template: #{reason}"}
+
+      {:error, reason} ->
+        {:error, "Failed to read custom template: #{reason}"}
     end
   end
-
 
   defp default_template(language, quality) do
     %{
@@ -438,11 +445,12 @@ defmodule Singularity.QualityCodeGenerator do
 
   defp add_missing_docs(code, "elixir", quality) do
     # Check which functions are missing @doc
-    quality_instruction = case quality do
-      :production -> "Add comprehensive @moduledoc and @doc with examples for production code."
-      :standard -> "Add @moduledoc and @doc for public functions."
-      _ -> "Add basic @doc for public functions."
-    end
+    quality_instruction =
+      case quality do
+        :production -> "Add comprehensive @moduledoc and @doc with examples for production code."
+        :standard -> "Add @moduledoc and @doc for public functions."
+        _ -> "Add basic @doc for public functions."
+      end
 
     prompt = """
     #{quality_instruction}
@@ -460,11 +468,17 @@ defmodule Singularity.QualityCodeGenerator do
   end
 
   defp add_missing_docs(code, "typescript", quality) do
-    quality_instruction = case quality do
-      :production -> "Add JSDoc comments with @param, @returns, and @example for all public functions."
-      :standard -> "Add JSDoc comments for public functions."
-      _ -> "Add basic JSDoc comments."
-    end
+    quality_instruction =
+      case quality do
+        :production ->
+          "Add JSDoc comments with @param, @returns, and @example for all public functions."
+
+        :standard ->
+          "Add JSDoc comments for public functions."
+
+        _ ->
+          "Add basic JSDoc comments."
+      end
 
     prompt = """
     #{quality_instruction}
@@ -481,11 +495,12 @@ defmodule Singularity.QualityCodeGenerator do
   end
 
   defp add_missing_docs(code, "rust", quality) do
-    quality_instruction = case quality do
-      :production -> "Add comprehensive documentation comments with examples and safety notes."
-      :standard -> "Add documentation comments for public items."
-      _ -> "Add basic documentation comments."
-    end
+    quality_instruction =
+      case quality do
+        :production -> "Add comprehensive documentation comments with examples and safety notes."
+        :standard -> "Add documentation comments for public items."
+        _ -> "Add basic documentation comments."
+      end
 
     prompt = """
     #{quality_instruction}
@@ -592,16 +607,16 @@ defmodule Singularity.QualityCodeGenerator do
       case language do
         :elixir ->
           add_elixir_error_handling(code, quality)
-        
+
         :rust ->
           add_rust_error_handling(code, quality)
-        
+
         :javascript ->
           add_javascript_error_handling(code, quality)
-        
+
         :typescript ->
           add_typescript_error_handling(code, quality)
-        
+
         _ ->
           {:ok, code}
       end
@@ -650,6 +665,7 @@ defmodule Singularity.QualityCodeGenerator do
           end
         end
         """
+
         {:ok, enhanced_code}
 
       :development ->
@@ -665,6 +681,7 @@ defmodule Singularity.QualityCodeGenerator do
           end
         end
         """
+
         {:ok, enhanced_code}
 
       _ ->
@@ -703,6 +720,7 @@ defmodule Singularity.QualityCodeGenerator do
             }
         }
         """
+
         {:ok, enhanced_code}
 
       _ ->
@@ -746,6 +764,7 @@ defmodule Singularity.QualityCodeGenerator do
           }
         }
         """
+
         {:ok, enhanced_code}
 
       _ ->
@@ -799,6 +818,7 @@ defmodule Singularity.QualityCodeGenerator do
           }
         }
         """
+
         {:ok, enhanced_code}
 
       _ ->
@@ -869,7 +889,6 @@ defmodule Singularity.QualityCodeGenerator do
 
     String.replace(prompt_template, "{task}", task)
   end
-
 
   defp quality_examples_count(:production), do: 10
   defp quality_examples_count(:standard), do: 5

@@ -29,7 +29,14 @@ defmodule Singularity.CodeEngine do
   # NOTE: Rust functions keep _nif suffix, so we call them with suffix but provide cleaner API
 
   defdelegate parse_file(file_path), to: Singularity.RustAnalyzer, as: :parse_file_nif
-  defdelegate analyze_code(codebase_path, language), to: Singularity.RustAnalyzer, as: :analyze_code_nif
-  defdelegate calculate_quality_metrics(code, language), to: Singularity.RustAnalyzer, as: :calculate_quality_metrics_nif
+
+  defdelegate analyze_code(codebase_path, language),
+    to: Singularity.RustAnalyzer,
+    as: :analyze_code_nif
+
+  defdelegate calculate_quality_metrics(code, language),
+    to: Singularity.RustAnalyzer,
+    as: :calculate_quality_metrics_nif
+
   defdelegate supported_languages(), to: Singularity.RustAnalyzer, as: :supported_languages_nif
 end

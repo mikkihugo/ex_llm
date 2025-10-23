@@ -124,13 +124,14 @@ defmodule Singularity.Search.AstGrepCodeSearch do
   """
 
   require Logger
+
   @type search_opts :: [
-    query: String.t(),
-    ast_pattern: String.t() | nil,
-    language: String.t() | nil,
-    limit: pos_integer(),
-    vector_candidates: pos_integer()
-  ]
+          query: String.t(),
+          ast_pattern: String.t() | nil,
+          language: String.t() | nil,
+          limit: pos_integer(),
+          vector_candidates: pos_integer()
+        ]
 
   @doc """
   Search code using vector search + AST-grep precision filtering.
@@ -180,14 +181,21 @@ defmodule Singularity.Search.AstGrepCodeSearch do
     limit = Keyword.get(opts, :limit, 20)
     vector_candidates = Keyword.get(opts, :vector_candidates, 100)
 
-    Logger.info("AST-Grep search: query=#{query}, pattern=#{inspect(ast_pattern)}, language=#{language}")
+    Logger.info(
+      "AST-Grep search: query=#{query}, pattern=#{inspect(ast_pattern)}, language=#{language}"
+    )
 
     # Step 1: Vector search for candidates (fast but fuzzy)
     vector_results =
-      case HybridCodeSearch.search(query, mode: :semantic, limit: vector_candidates, language: language) do
+      case HybridCodeSearch.search(query,
+             mode: :semantic,
+             limit: vector_candidates,
+             language: language
+           ) do
         {:ok, results} ->
           Logger.debug("Vector search found #{length(results)} candidates")
           results
+
         {:error, reason} ->
           Logger.error("Vector search failed: #{inspect(reason)}")
           []
@@ -206,7 +214,9 @@ defmodule Singularity.Search.AstGrepCodeSearch do
     # Step 3: Limit and return
     limited_results = Enum.take(final_results, limit)
 
-    Logger.info("AST-Grep search complete: #{length(limited_results)} results (#{length(vector_results)} candidates)")
+    Logger.info(
+      "AST-Grep search complete: #{length(limited_results)} results (#{length(vector_results)} candidates)"
+    )
 
     {:ok, limited_results}
   rescue
@@ -240,10 +250,12 @@ defmodule Singularity.Search.AstGrepCodeSearch do
             candidate
             |> Map.put(:match_type, :ast_grep)
             |> Map.put(:ast_matches, matches)
-            |> Map.put(:score, candidate.score + 0.2)  # Boost score for AST match
+            # Boost score for AST match
+            |> Map.put(:score, candidate.score + 0.2)
 
           _ ->
-            nil  # Filter out non-matches
+            # Filter out non-matches
+            nil
         end
       end)
     end)
@@ -252,40 +264,54 @@ defmodule Singularity.Search.AstGrepCodeSearch do
   end
 
   @doc """
-  Check if content matches AST pattern.
+  Check if content matches AST pattern using ast-grep NIF.
 
-  ## Implementation Status
+  ## Implementation
 
-  ⏳ **TODO:** Implement NIF wrapper for parser_core::ast_grep
+  Calls `Singularity.ParserEngine.ast_grep_search/3` which uses the Rust
+  ast-grep-core library for precise AST-based pattern matching.
 
-  Currently returns placeholder. Real implementation will:
-  1. Call ParserEngine NIF with ast_grep function
-  2. Pass content, pattern, and language
-  3. Return matches with line numbers and text
+  ## Parameters
+  - `content` - Source code to search
+  - `ast_pattern` - AST pattern (supports metavariables like $VAR, $$$ARGS)
+  - `language` - Language identifier (elixir, rust, javascript, etc.)
 
-  ## Future Implementation
-
-      # Rust NIF call (when implemented)
-      case ParserEngine.ast_grep_search(content, ast_pattern, language) do
-        {:ok, matches} -> {:ok, matches}
-        {:error, _} -> {:error, "No match"}
-      end
+  ## Returns
+  - `{:ok, matches}` - List of matches with line, column, text, captures
+  - `{:error, reason}` - No match or search failed
   """
   @spec ast_grep_match?(String.t(), String.t(), String.t()) ::
-    {:ok, [%{line: integer(), text: String.t()}]} | {:error, String.t()}
+          {:ok, [%{line: integer(), column: integer(), text: String.t(), captures: list()}]}
+          | {:error, String.t()}
   defp ast_grep_match?(content, ast_pattern, language) do
-    # TODO: Implement ParserEngine NIF wrapper for ast-grep
-    # For now, return placeholder indicating implementation pending
+    Logger.debug("AST-grep match check: pattern=#{ast_pattern}, language=#{language}")
 
-    Logger.debug("AST-grep match check (implementation pending): pattern=#{ast_pattern}, language=#{language}")
+    case Singularity.ParserEngine.ast_grep_search(content, ast_pattern, language) do
+      {:ok, matches} when is_list(matches) and length(matches) > 0 ->
+        # Convert NIF struct to map for consistency
+        converted_matches =
+          Enum.map(matches, fn match ->
+            %{
+              line: match.line,
+              column: match.column,
+              text: match.text,
+              captures: match.captures
+            }
+          end)
 
-    # Placeholder: Simple string contains check (not precise!)
-    # Real implementation will use tree-sitter AST matching
-    if String.contains?(content, String.replace(ast_pattern, ~r/\$\$\$?\w+/, "")) do
-      {:ok, [%{line: 1, text: ast_pattern}]}
-    else
-      {:error, "No match"}
+        {:ok, converted_matches}
+
+      {:ok, []} ->
+        {:error, "No match"}
+
+      {:error, reason} ->
+        Logger.debug("AST-grep search failed: #{inspect(reason)}")
+        {:error, "No match"}
     end
+  rescue
+    error ->
+      Logger.error("AST-grep match error: #{inspect(error)}")
+      {:error, "AST-grep failed"}
   end
 
   @doc """
@@ -344,14 +370,16 @@ defmodule Singularity.Search.AstGrepCodeSearch do
         :not_loaded
       end
 
-    ast_grep_implementation = :pending  # TODO: Change to :ok when NIF implemented
+    # TODO: Change to :ok when NIF implemented
+    ast_grep_implementation = :pending
 
-    {:ok, %{
-      vector_search: vector_status,
-      parser_nif: parser_nif_status,
-      ast_grep_impl: ast_grep_implementation,
-      precision_boost: "95%+ (vs 70% vector-only)",
-      status: if(ast_grep_implementation == :ok, do: :production, else: :framework_ready)
-    }}
+    {:ok,
+     %{
+       vector_search: vector_status,
+       parser_nif: parser_nif_status,
+       ast_grep_impl: ast_grep_implementation,
+       precision_boost: "95%+ (vs 70% vector-only)",
+       status: if(ast_grep_implementation == :ok, do: :production, else: :framework_ready)
+     }}
   end
 end

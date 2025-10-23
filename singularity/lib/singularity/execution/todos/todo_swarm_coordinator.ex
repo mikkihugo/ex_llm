@@ -126,14 +126,15 @@ defmodule Singularity.Execution.Todos.TodoSwarmCoordinator do
       completed_count: state.completed_count,
       failed_count: state.failed_count,
       last_poll_at: state.last_poll_at,
-      workers: Enum.map(state.active_workers, fn {id, worker} ->
-        %{
-          id: id,
-          todo_id: worker.todo_id,
-          started_at: worker.started_at,
-          status: worker.status
-        }
-      end)
+      workers:
+        Enum.map(state.active_workers, fn {id, worker} ->
+          %{
+            id: id,
+            todo_id: worker.todo_id,
+            started_at: worker.started_at,
+            status: worker.status
+          }
+        end)
     }
 
     {:reply, status, state}
@@ -162,6 +163,7 @@ defmodule Singularity.Execution.Todos.TodoSwarmCoordinator do
 
     # Remove from active workers
     new_active_workers = Map.delete(state.active_workers, worker_id)
+
     new_state = %{
       state
       | active_workers: new_active_workers,
@@ -182,6 +184,7 @@ defmodule Singularity.Execution.Todos.TodoSwarmCoordinator do
 
     # Remove from active workers
     new_active_workers = Map.delete(state.active_workers, worker_id)
+
     new_state = %{
       state
       | active_workers: new_active_workers,
@@ -216,6 +219,7 @@ defmodule Singularity.Execution.Todos.TodoSwarmCoordinator do
         end
 
         new_active_workers = Map.delete(state.active_workers, worker_id)
+
         new_state = %{
           state
           | active_workers: new_active_workers,

@@ -52,15 +52,16 @@ defmodule Mix.Tasks.Analyze.Codebase do
 
   @impl Mix.Task
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args,
-      strict: [
-        codebase_id: :string,
-        rca: :boolean,
-        store: :boolean,
-        language: :string,
-        verbose: :boolean
-      ]
-    )
+    {opts, _, _} =
+      OptionParser.parse(args,
+        strict: [
+          codebase_id: :string,
+          rca: :boolean,
+          store: :boolean,
+          language: :string,
+          verbose: :boolean
+        ]
+      )
 
     codebase_id = opts[:codebase_id] || Mix.raise("--codebase-id is required")
     include_rca = opts[:rca] || false
@@ -69,7 +70,11 @@ defmodule Mix.Tasks.Analyze.Codebase do
     verbose = opts[:verbose] || false
 
     Mix.shell().info("Analyzing codebase: #{codebase_id}")
-    Mix.shell().info("Options: RCA=#{include_rca}, Store=#{store_results}, Language=#{language_filter || "all"}")
+
+    Mix.shell().info(
+      "Options: RCA=#{include_rca}, Store=#{store_results}, Language=#{language_filter || "all"}"
+    )
+
     Mix.shell().info("")
 
     # Load files from database
@@ -120,35 +125,56 @@ defmodule Mix.Tasks.Analyze.Codebase do
   defp analyze_files(files, include_rca, verbose) do
     total = length(files)
 
+    # Use parallel processing with controlled concurrency
+    # Default: 4 parallel tasks (conservative, won't overwhelm host)
+    max_concurrency = System.schedulers_online() |> min(4)
+
+    Mix.shell().info("Analyzing #{total} files with #{max_concurrency} parallel workers...")
+
     files
     |> Enum.with_index(1)
-    |> Enum.map(fn {file, index} ->
-      if verbose do
-        Mix.shell().info("[#{index}/#{total}] Analyzing #{file.file_path} (#{file.language})")
-      else
-        if rem(index, 10) == 0 do
-          Mix.shell().info("Progress: #{index}/#{total} files analyzed")
-        end
-      end
-
-      analysis_result = CodeAnalyzer.analyze_language(file.content, file.language)
-
-      rca_result =
-        if include_rca && CodeAnalyzer.has_rca_support?(file.language) do
-          CodeAnalyzer.get_rca_metrics(file.content, file.language)
+    |> Task.async_stream(
+      fn {file, index} ->
+        if verbose do
+          Mix.shell().info("[#{index}/#{total}] Analyzing #{file.file_path} (#{file.language})")
         else
-          nil
+          if rem(index, 10) == 0 do
+            Mix.shell().info("Progress: #{index}/#{total} files analyzed")
+          end
         end
 
-      %{
-        file_id: file.id,
-        file_path: file.file_path,
-        language: file.language,
-        analysis: analysis_result,
-        rca_metrics: rca_result,
-        analyzed_at: DateTime.utc_now()
-      }
+        analysis_result = CodeAnalyzer.analyze_language(file.content, file.language)
+
+        rca_result =
+          if include_rca && CodeAnalyzer.has_rca_support?(file.language) do
+            CodeAnalyzer.get_rca_metrics(file.content, file.language)
+          else
+            nil
+          end
+
+        %{
+          file_id: file.id,
+          file_path: file.file_path,
+          language: file.language,
+          analysis: analysis_result,
+          rca_metrics: rca_result,
+          analyzed_at: DateTime.utc_now()
+        }
+      end,
+      max_concurrency: max_concurrency,
+      # 30 seconds per file
+      timeout: 30_000,
+      on_timeout: :kill_task
+    )
+    |> Enum.map(fn
+      {:ok, result} ->
+        result
+
+      {:exit, reason} ->
+        Mix.shell().error("Task timed out: #{inspect(reason)}")
+        nil
     end)
+    |> Enum.reject(&is_nil/1)
   end
 
   defp print_summary(results, include_rca) do
@@ -166,6 +192,7 @@ defmodule Mix.Tasks.Analyze.Codebase do
 
     Mix.shell().info("")
     Mix.shell().info("Files by Language:")
+
     Enum.each(by_language, fn {lang, count} ->
       Mix.shell().info("  #{String.pad_trailing(lang, 15)} #{count} files")
     end)
@@ -177,7 +204,10 @@ defmodule Mix.Tasks.Analyze.Codebase do
       end)
 
     Mix.shell().info("")
-    Mix.shell().info("Success Rate: #{successful}/#{length(results)} (#{Float.round(successful / length(results) * 100, 1)}%)")
+
+    Mix.shell().info(
+      "Success Rate: #{successful}/#{length(results)} (#{Float.round(successful / length(results) * 100, 1)}%)"
+    )
 
     # Average complexity (for successful analyses)
     complexities =
@@ -210,10 +240,48 @@ defmodule Mix.Tasks.Analyze.Codebase do
     Mix.shell().info("=" <> String.duplicate("=", 70))
   end
 
-  defp store_analysis_results(_results) do
-    # TODO: Create an AnalysisResults schema to store these
-    # For now, this is a placeholder
-    Logger.info("Analysis result storage not yet implemented")
-    Logger.info("Create a migration and schema for storing analysis results")
+  defp store_analysis_results(results) do
+    start_time = System.monotonic_time(:millisecond)
+
+    # Store each result
+    stored_count =
+      results
+      |> Enum.map(fn result ->
+        case result.analysis do
+          {:ok, analysis} ->
+            duration_ms = if result[:duration_ms], do: result.duration_ms, else: nil
+
+            case CodeAnalyzer.store_result(result.file_id, analysis, duration_ms: duration_ms) do
+              {:ok, _stored} ->
+                :ok
+
+              {:error, changeset} ->
+                Logger.error(
+                  "Failed to store result for #{result.file_path}: #{inspect(changeset.errors)}"
+                )
+
+                :error
+            end
+
+          {:error, reason} ->
+            # Store error result
+            case CodeAnalyzer.store_error(result.file_id, result.language, reason) do
+              {:ok, _stored} ->
+                :ok
+
+              {:error, changeset} ->
+                Logger.error(
+                  "Failed to store error for #{result.file_path}: #{inspect(changeset.errors)}"
+                )
+
+                :error
+            end
+        end
+      end)
+      |> Enum.count(&(&1 == :ok))
+
+    elapsed = System.monotonic_time(:millisecond) - start_time
+
+    Mix.shell().info("Stored #{stored_count}/#{length(results)} results in #{elapsed}ms")
   end
 end

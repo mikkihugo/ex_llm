@@ -19,7 +19,8 @@ defmodule Singularity.EmbeddingModelLoader do
   def init(_opts) do
     state = %{
       models: %{},
-      default_model: "qodo_embed",  # Use code-specialized model as default
+      # Use code-specialized model as default
+      default_model: "qodo_embed",
       model_cache: %{}
     }
 
@@ -28,12 +29,15 @@ defmodule Singularity.EmbeddingModelLoader do
       case EmbeddingEngine.preload_models([:jina_v3, :qodo_embed]) do
         {:ok, result} ->
           Logger.info("Preloaded embedding models: #{result}")
+
         {:error, reason} ->
           Logger.warning("Failed to preload models (will load on-demand): #{inspect(reason)}")
       end
     rescue
       error ->
-        Logger.warning("EmbeddingEngine NIF not loaded yet (models will load on-demand): #{inspect(error)}")
+        Logger.warning(
+          "EmbeddingEngine NIF not loaded yet (models will load on-demand): #{inspect(error)}"
+        )
     end
 
     Logger.info("EmbeddingModelLoader initialized with Rust NIF backend")
@@ -117,26 +121,28 @@ defmodule Singularity.EmbeddingModelLoader do
     # Validate model name and return model info
     case model_name do
       "jina_v3" ->
-        {:ok, %{
-          name: "jina_v3",
-          type: :text,
-          dimension: 1024,
-          max_context: 8192,
-          description: "Jina v3 - General text embeddings",
-          loaded_at: DateTime.utc_now(),
-          status: :available
-        }}
+        {:ok,
+         %{
+           name: "jina_v3",
+           type: :text,
+           dimension: 1024,
+           max_context: 8192,
+           description: "Jina v3 - General text embeddings",
+           loaded_at: DateTime.utc_now(),
+           status: :available
+         }}
 
       "qodo_embed" ->
-        {:ok, %{
-          name: "qodo_embed",
-          type: :code,
-          dimension: 1536,
-          max_context: 32768,
-          description: "Qodo-Embed-1 - Code-specialized embeddings (SOTA)",
-          loaded_at: DateTime.utc_now(),
-          status: :available
-        }}
+        {:ok,
+         %{
+           name: "qodo_embed",
+           type: :code,
+           dimension: 1536,
+           max_context: 32768,
+           description: "Qodo-Embed-1 - Code-specialized embeddings (SOTA)",
+           loaded_at: DateTime.utc_now(),
+           status: :available
+         }}
 
       _ ->
         {:error, "Unsupported model: #{model_name}. Use 'jina_v3' or 'qodo_embed'"}
@@ -148,7 +154,8 @@ defmodule Singularity.EmbeddingModelLoader do
     case model_name do
       "jina_v3" -> 1024
       "qodo_embed" -> 1536
-      _ -> 1536  # Default to code model
+      # Default to code model
+      _ -> 1536
     end
   end
 end

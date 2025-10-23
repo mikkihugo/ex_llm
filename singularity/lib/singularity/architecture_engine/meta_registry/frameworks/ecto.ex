@@ -1,7 +1,7 @@
 defmodule Singularity.MetaRegistry.Frameworks.Ecto do
   @moduledoc """
   Ecto framework learning patterns.
-  
+
   Learns from Ecto ORM patterns to improve our database usage.
   """
 
@@ -9,9 +9,9 @@ defmodule Singularity.MetaRegistry.Frameworks.Ecto do
 
   @doc """
   Learn from Ecto ORM patterns.
-  
+
   ## Examples
-  
+
       # Learn from our Ecto schemas
       learn_patterns(%{
         schemas: ["CodeChunk", "TechnologyDetection", "FileArchitecturePattern"],
@@ -29,9 +29,9 @@ defmodule Singularity.MetaRegistry.Frameworks.Ecto do
 
   @doc """
   Get Ecto suggestions based on learned patterns.
-  
+
   ## Examples
-  
+
       # Get schema suggestions
       get_suggestions("user", "schema")
       # Returns: ["UserProfile", "UserSession", "UserPreference"]
@@ -59,8 +59,13 @@ defmodule Singularity.MetaRegistry.Frameworks.Ecto do
       schemas: ["CodeChunk", "TechnologyDetection", "FileArchitecturePattern"],
       queries: ["Ecto.Query", "Ecto.Changeset", "Ecto.Repo"],
       patterns: [
-        "use Ecto.Schema", "field :", "belongs_to", "has_many",
-        "def changeset", "def upsert", "def latest"
+        "use Ecto.Schema",
+        "field :",
+        "belongs_to",
+        "has_many",
+        "def changeset",
+        "def upsert",
+        "def latest"
       ]
     })
   end

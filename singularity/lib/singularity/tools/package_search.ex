@@ -1,7 +1,7 @@
 defmodule Singularity.Tools.PackageSearch do
   @moduledoc """
   Package Search Tool - Search for packages across ecosystems via NATS
-  
+
   This tool provides package search functionality that communicates with the
   Rust package registry service via NATS to get real package data from the
   dependency_catalog database.
@@ -81,9 +81,9 @@ defmodule Singularity.Tools.PackageSearch do
 
       try do
         case PackageAndCodebaseSearch.hybrid_search(clean_query, %{
-          ecosystem: parsed_ecosystem,
-          limit: limit
-        }) do
+               ecosystem: parsed_ecosystem,
+               limit: limit
+             }) do
           {:ok, results} ->
             Logger.info("✅ Found #{length(results.packages)} packages")
             format_results(results)
@@ -149,7 +149,7 @@ defmodule Singularity.Tools.PackageSearch do
 
   @doc """
   Search for packages in a specific ecosystem
-  
+
   ## Parameters
   - query: Search query string
   - ecosystem: Specific ecosystem (:npm, :cargo, :hex, :pypi)
@@ -157,13 +157,13 @@ defmodule Singularity.Tools.PackageSearch do
   """
   def search_ecosystem_packages(query, ecosystem, limit \\ 10) do
     Logger.info("🔍 Searching #{ecosystem} packages: '#{query}'")
-    
+
     try do
       case PackageAndCodebaseSearch.search_packages(query, ecosystem, limit) do
         {:ok, packages} ->
           Logger.info("✅ Found #{length(packages)} #{ecosystem} packages")
           format_packages(packages, ecosystem)
-        
+
         {:error, reason} ->
           Logger.error("❌ #{ecosystem} package search failed: #{inspect(reason)}")
           {:error, "#{ecosystem} package search failed: #{inspect(reason)}"}
@@ -177,7 +177,7 @@ defmodule Singularity.Tools.PackageSearch do
 
   @doc """
   Get package recommendations based on a codebase context
-  
+
   ## Parameters
   - context: Codebase context or description
   - language: Programming language
@@ -185,13 +185,13 @@ defmodule Singularity.Tools.PackageSearch do
   """
   def get_package_recommendations(context, language, limit \\ 5) do
     Logger.info("💡 Getting package recommendations for #{language}: '#{context}'")
-    
+
     try do
       case PackageAndCodebaseSearch.get_package_recommendations(context, language, limit) do
         {:ok, recommendations} ->
           Logger.info("✅ Found #{length(recommendations)} recommendations")
           format_recommendations(recommendations, language)
-        
+
         {:error, reason} ->
           Logger.error("❌ Package recommendations failed: #{inspect(reason)}")
           {:error, "Package recommendations failed: #{inspect(reason)}"}
@@ -205,20 +205,20 @@ defmodule Singularity.Tools.PackageSearch do
 
   @doc """
   Test the package search service connectivity
-  
+
   ## Returns
   Service status and basic connectivity test
   """
   def test_service_connectivity do
     Logger.info("🔧 Testing package search service connectivity")
-    
+
     try do
       # Test with a simple query
       case search_packages("test", :all, 1) do
         {:ok, _results} ->
           Logger.info("✅ Package search service is working")
           {:ok, "Package search service is operational"}
-        
+
         {:error, reason} ->
           Logger.warning("⚠️ Package search service issue: #{inspect(reason)}")
           {:error, "Package search service issue: #{inspect(reason)}"}
@@ -235,10 +235,10 @@ defmodule Singularity.Tools.PackageSearch do
   defp format_results(results) do
     packages = results.packages || []
     your_code = results.your_code || []
-    
+
     formatted_packages = format_packages(packages, "all")
     formatted_code = format_code_results(your_code)
-    
+
     %{
       packages: formatted_packages,
       your_code: formatted_code,

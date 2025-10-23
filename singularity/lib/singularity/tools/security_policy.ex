@@ -67,7 +67,8 @@ defmodule Singularity.Tools.SecurityPolicy do
     ]
   end
 
-  @max_file_size 10 * 1024 * 1024  # 10MB
+  # 10MB
+  @max_file_size 10 * 1024 * 1024
   @max_query_length 1000
   @max_results 100
   @max_symbol_results 50
@@ -258,7 +259,8 @@ defmodule Singularity.Tools.SecurityPolicy do
     end
   end
 
-  defp validate_result_limit(_request), do: :ok  # Default limit will be applied
+  # Default limit will be applied
+  defp validate_result_limit(_request), do: :ok
 
   defp validate_symbol_result_limit(%{"limit" => limit}) when is_integer(limit) do
     if limit > 0 and limit <= @max_symbol_results do

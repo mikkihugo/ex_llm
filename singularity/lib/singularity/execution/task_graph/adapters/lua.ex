@@ -72,14 +72,15 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Lua do
       timeout: timeout
     )
 
-    task = Task.async(fn ->
-      try do
-        execute_lua(src, argv)
-      rescue
-        e ->
-          {:error, {:lua_execution_failed, Exception.message(e)}}
-      end
-    end)
+    task =
+      Task.async(fn ->
+        try do
+          execute_lua(src, argv)
+        rescue
+          e ->
+            {:error, {:lua_execution_failed, Exception.message(e)}}
+        end
+      end)
 
     case Task.yield(task, timeout) || Task.shutdown(task, :brutal_kill) do
       {:ok, result} ->

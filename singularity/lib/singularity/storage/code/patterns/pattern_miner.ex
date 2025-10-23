@@ -287,13 +287,13 @@ defmodule Singularity.Learning.PatternMiner do
 
     # Use Runner for Rust analyzer execution
     case Singularity.Runner.execute_task(%{
-      type: :analysis,
-      args: %{path: trial_dir, tool: "analysis-suite"}
-    }) do
+           type: :analysis,
+           args: %{path: trial_dir, tool: "analysis-suite"}
+         }) do
       {:ok, result} ->
         # Extract analysis data from Runner result
         analysis_data = result.structural || result.discovery || %{}
-        
+
         case Map.get(analysis_data, :analysis_json) do
           nil ->
             # Fallback: try to get raw analysis data
@@ -303,16 +303,20 @@ defmodule Singularity.Learning.PatternMiner do
                   {:ok, analysis_json} ->
                     {:ok, summary} = Analysis.decode(analysis_json)
                     process_analysis_result(summary, trial_dir)
-                  {:error, _} -> {:error, :json_decode_failed}
+
+                  {:error, _} ->
+                    {:error, :json_decode_failed}
                 end
-              _ -> {:error, :no_analysis_data}
+
+              _ ->
+                {:error, :no_analysis_data}
             end
-          
+
           analysis_json ->
             {:ok, summary} = Analysis.decode(analysis_json)
             process_analysis_result(summary, trial_dir)
         end
-      
+
       {:error, reason} ->
         Logger.error("Analysis failed for trial #{trial_dir}: #{inspect(reason)}")
         {:error, reason}
@@ -337,26 +341,28 @@ defmodule Singularity.Learning.PatternMiner do
       end)
       |> Enum.map(&extract_anti_patterns/1)
 
-    {:ok, %{
-      trial: trial_dir,
-      successful: successful_patterns,
-      failed: failed_patterns,
-      metadata: extract_trial_metadata(trial_dir)
-    }}
+    {:ok,
+     %{
+       trial: trial_dir,
+       successful: successful_patterns,
+       failed: failed_patterns,
+       metadata: extract_trial_metadata(trial_dir)
+     }}
   end
 
   defp extract_design_patterns(file) do
     try do
       # Use Lua script for pattern extraction
       case Singularity.LLM.Service.call_with_script(
-        "patterns/extract-design-patterns.lua",
-        %{file: file},
-        complexity: :complex,
-        task_type: :pattern_analyzer
-      ) do
+             "patterns/extract-design-patterns.lua",
+             %{file: file},
+             complexity: :complex,
+             task_type: :pattern_analyzer
+           ) do
         {:ok, %{text: response}} ->
           case Jason.decode(response) do
-            {:ok, %{"patterns" => patterns, "quality_score" => quality_score, "summary" => summary}} ->
+            {:ok,
+             %{"patterns" => patterns, "quality_score" => quality_score, "summary" => summary}} ->
               %{
                 file: file.path,
                 patterns: patterns,
@@ -364,12 +370,12 @@ defmodule Singularity.Learning.PatternMiner do
                 summary: summary,
                 analyzed_at: DateTime.utc_now()
               }
-            
+
             {:error, _} ->
               Logger.warning("Failed to parse pattern analysis response")
               fallback_pattern_extraction(file)
           end
-        
+
         {:error, reason} ->
           Logger.error("LLM pattern analysis failed: #{inspect(reason)}")
           fallback_pattern_extraction(file)
@@ -384,26 +390,54 @@ defmodule Singularity.Learning.PatternMiner do
   defp fallback_pattern_extraction(file) do
     # Fallback pattern extraction using simple heuristics
     patterns = []
-    
+
     # Detect common patterns using regex
-    patterns = if String.contains?(file.content, "defmodule") and String.contains?(file.content, "use GenServer") do
-      [%{name: "GenServer", type: "architectural", confidence: 0.8, description: "OTP GenServer pattern"} | patterns]
-    else
-      patterns
-    end
-    
-    patterns = if String.contains?(file.content, "defstruct") do
-      [%{name: "Struct", type: "structural", confidence: 0.7, description: "Data structure pattern"} | patterns]
-    else
-      patterns
-    end
-    
-    patterns = if String.contains?(file.content, "with ") do
-      [%{name: "With Statement", type: "structural", confidence: 0.6, description: "Error handling pattern"} | patterns]
-    else
-      patterns
-    end
-    
+    patterns =
+      if String.contains?(file.content, "defmodule") and
+           String.contains?(file.content, "use GenServer") do
+        [
+          %{
+            name: "GenServer",
+            type: "architectural",
+            confidence: 0.8,
+            description: "OTP GenServer pattern"
+          }
+          | patterns
+        ]
+      else
+        patterns
+      end
+
+    patterns =
+      if String.contains?(file.content, "defstruct") do
+        [
+          %{
+            name: "Struct",
+            type: "structural",
+            confidence: 0.7,
+            description: "Data structure pattern"
+          }
+          | patterns
+        ]
+      else
+        patterns
+      end
+
+    patterns =
+      if String.contains?(file.content, "with ") do
+        [
+          %{
+            name: "With Statement",
+            type: "structural",
+            confidence: 0.6,
+            description: "Error handling pattern"
+          }
+          | patterns
+        ]
+      else
+        patterns
+      end
+
     %{
       file: file.path,
       patterns: patterns,
@@ -434,7 +468,7 @@ defmodule Singularity.Learning.PatternMiner do
       case cluster_patterns_with_embeddings(patterns) do
         {:ok, clustered} ->
           clustered
-        
+
         {:error, reason} ->
           Logger.warning("Embedding-based clustering failed: #{inspect(reason)}")
           # Fallback to simple grouping
@@ -449,22 +483,23 @@ defmodule Singularity.Learning.PatternMiner do
 
   defp cluster_patterns_with_embeddings(patterns) do
     # Generate embeddings for each pattern
-    pattern_embeddings = 
+    pattern_embeddings =
       patterns
       |> Enum.map(fn pattern ->
         case Singularity.EmbeddingEngine.embed(pattern.description || pattern.name) do
           {:ok, embedding} ->
             {pattern, embedding}
-          
+
           {:error, _} ->
             nil
         end
       end)
       |> Enum.reject(&is_nil/1)
-    
+
     if length(pattern_embeddings) > 1 do
       # Cluster patterns based on similarity
-      clusters = perform_clustering(pattern_embeddings, 0.7)  # 70% similarity threshold
+      # 70% similarity threshold
+      clusters = perform_clustering(pattern_embeddings, 0.7)
       {:ok, clusters}
     else
       {:error, :insufficient_patterns}
@@ -474,10 +509,10 @@ defmodule Singularity.Learning.PatternMiner do
   defp perform_clustering(pattern_embeddings, threshold) do
     # Simple clustering based on cosine similarity
     clusters = []
-    
+
     Enum.reduce(pattern_embeddings, clusters, fn {pattern, embedding}, acc ->
       # Find the best cluster for this pattern
-      best_cluster = 
+      best_cluster =
         acc
         |> Enum.map(fn cluster ->
           cluster_embedding = cluster.centroid
@@ -485,22 +520,22 @@ defmodule Singularity.Learning.PatternMiner do
           {cluster, similarity}
         end)
         |> Enum.max_by(fn {_cluster, similarity} -> similarity end, fn -> {nil, 0.0} end)
-      
+
       case best_cluster do
         {cluster, similarity} when similarity >= threshold ->
           # Add to existing cluster
           updated_cluster = %{
-            cluster | 
-            patterns: [pattern | cluster.patterns],
-            size: cluster.size + 1,
-            centroid: update_centroid(cluster.centroid, embedding, cluster.size)
+            cluster
+            | patterns: [pattern | cluster.patterns],
+              size: cluster.size + 1,
+              centroid: update_centroid(cluster.centroid, embedding, cluster.size)
           }
-          
+
           # Replace cluster in list
           Enum.map(acc, fn c ->
             if c.id == cluster.id, do: updated_cluster, else: c
           end)
-        
+
         _ ->
           # Create new cluster
           new_cluster = %{
@@ -510,7 +545,7 @@ defmodule Singularity.Learning.PatternMiner do
             centroid: embedding,
             created_at: DateTime.utc_now()
           }
-          
+
           [new_cluster | acc]
       end
     end)
@@ -534,14 +569,14 @@ defmodule Singularity.Learning.PatternMiner do
   end
 
   defp calculate_cosine_similarity(vec1, vec2) when length(vec1) == length(vec2) do
-    dot_product = 
+    dot_product =
       Enum.zip(vec1, vec2)
       |> Enum.map(fn {a, b} -> a * b end)
       |> Enum.sum()
-    
+
     magnitude1 = :math.sqrt(Enum.sum(Enum.map(vec1, &(&1 * &1))))
     magnitude2 = :math.sqrt(Enum.sum(Enum.map(vec2, &(&1 * &1))))
-    
+
     if magnitude1 > 0 and magnitude2 > 0 do
       dot_product / (magnitude1 * magnitude2)
     else
@@ -562,21 +597,21 @@ defmodule Singularity.Learning.PatternMiner do
   defp rank_by_success(clustered_patterns) do
     try do
       # Rank patterns by success rate
-      ranked_clusters = 
+      ranked_clusters =
         clustered_patterns
         |> Enum.map(fn cluster ->
           success_rate = calculate_cluster_success_rate(cluster)
           confidence = calculate_cluster_confidence(cluster)
-          
+
           %{
-            cluster | 
-            success_rate: success_rate,
-            confidence: confidence,
-            rank_score: success_rate * confidence
+            cluster
+            | success_rate: success_rate,
+              confidence: confidence,
+              rank_score: success_rate * confidence
           }
         end)
         |> Enum.sort_by(& &1.rank_score, :desc)
-      
+
       Logger.info("Ranked #{length(ranked_clusters)} pattern clusters by success rate")
       ranked_clusters
     rescue
@@ -589,17 +624,17 @@ defmodule Singularity.Learning.PatternMiner do
   defp calculate_cluster_success_rate(cluster) do
     # Calculate success rate based on pattern outcomes
     patterns = cluster.patterns
-    
+
     if Enum.empty?(patterns) do
       0.0
     else
-      successful_patterns = 
+      successful_patterns =
         patterns
         |> Enum.count(fn pattern ->
           # Check if pattern led to successful outcomes
           pattern.success_rate && pattern.success_rate > 0.7
         end)
-      
+
       successful_patterns / length(patterns)
     end
   end
@@ -607,19 +642,19 @@ defmodule Singularity.Learning.PatternMiner do
   defp calculate_cluster_confidence(cluster) do
     # Calculate confidence based on cluster size and pattern confidence
     patterns = cluster.patterns
-    
+
     if Enum.empty?(patterns) do
       0.0
     else
-      avg_pattern_confidence = 
+      avg_pattern_confidence =
         patterns
-        |> Enum.map(& &1.confidence || 0.5)
+        |> Enum.map(&(&1.confidence || 0.5))
         |> Enum.sum()
         |> Kernel./(length(patterns))
-      
+
       # Boost confidence for larger clusters
       size_boost = min(1.0, cluster.size / 10.0)
-      
+
       avg_pattern_confidence * (0.7 + 0.3 * size_boost)
     end
   end
@@ -631,7 +666,7 @@ defmodule Singularity.Learning.PatternMiner do
         {:ok, stored_count} ->
           Logger.info("Stored #{stored_count} pattern clusters in pgvector")
           :ok
-        
+
         {:error, reason} ->
           Logger.error("Failed to store patterns in pgvector: #{inspect(reason)}")
           :error
@@ -646,7 +681,7 @@ defmodule Singularity.Learning.PatternMiner do
   defp store_patterns_in_pgvector(ranked_patterns) do
     try do
       # Store each pattern cluster in the database with embeddings
-      stored_count = 
+      stored_count =
         ranked_patterns
         |> Enum.map(fn cluster ->
           case store_single_pattern_cluster(cluster) do
@@ -655,7 +690,7 @@ defmodule Singularity.Learning.PatternMiner do
           end
         end)
         |> Enum.sum()
-      
+
       {:ok, stored_count}
     rescue
       error ->
@@ -667,7 +702,7 @@ defmodule Singularity.Learning.PatternMiner do
     try do
       # Generate embedding for the cluster
       cluster_description = build_cluster_description(cluster)
-      
+
       case Singularity.EmbeddingEngine.embed(cluster_description) do
         {:ok, embedding} ->
           # Store in database
@@ -682,15 +717,15 @@ defmodule Singularity.Learning.PatternMiner do
             embedding: embedding,
             created_at: DateTime.utc_now()
           }
-          
+
           case Singularity.Repo.insert_all("pattern_clusters", [pattern_data]) do
             {1, _} ->
               {:ok, cluster.id}
-            
+
             {0, _} ->
               {:error, :insert_failed}
           end
-        
+
         {:error, reason} ->
           {:error, reason}
       end
@@ -702,18 +737,18 @@ defmodule Singularity.Learning.PatternMiner do
 
   defp build_cluster_description(cluster) do
     # Build a comprehensive description for the cluster
-    pattern_names = 
+    pattern_names =
       cluster.patterns
       |> Enum.map(& &1.name)
       |> Enum.uniq()
       |> Enum.join(", ")
-    
-    pattern_types = 
+
+    pattern_types =
       cluster.patterns
       |> Enum.map(& &1.type)
       |> Enum.uniq()
       |> Enum.join(", ")
-    
+
     """
     Pattern Cluster: #{pattern_names}
     Types: #{pattern_types}

@@ -388,6 +388,7 @@ defmodule Singularity.LLM.Service do
   """
 
   require Logger
+
   @capability_aliases %{
     "code" => "code",
     "codegen" => "code",
@@ -477,7 +478,7 @@ defmodule Singularity.LLM.Service do
   def call(model, messages, opts) when is_binary(model) do
     start_time = System.monotonic_time(:millisecond)
     correlation_id = generate_correlation_id()
-    
+
     Logger.info("LLM call started", %{
       operation: :llm_call,
       correlation_id: correlation_id,
@@ -485,13 +486,13 @@ defmodule Singularity.LLM.Service do
       message_count: length(messages),
       slo_target_ms: 2000
     })
-    
+
     :telemetry.execute([:llm_service, :call, :start], %{
       model: model,
       message_count: length(messages),
       correlation_id: correlation_id
     })
-    
+
     request =
       messages
       |> build_request(opts, %{model: model})
@@ -500,7 +501,7 @@ defmodule Singularity.LLM.Service do
       {:ok, response} = result ->
         duration = System.monotonic_time(:millisecond) - start_time
         slo_status = if duration <= 2000, do: :within_sla, else: :sla_breach
-        
+
         Logger.info("LLM call completed", %{
           operation: :llm_call,
           correlation_id: correlation_id,
@@ -512,7 +513,7 @@ defmodule Singularity.LLM.Service do
           cost_cents: Map.get(response, "cost_cents", 0),
           success: true
         })
-        
+
         :telemetry.execute([:llm_service, :call, :stop], %{
           model: model,
           duration: duration,
@@ -520,20 +521,20 @@ defmodule Singularity.LLM.Service do
           tokens_used: Map.get(response, "tokens_used", 0),
           correlation_id: correlation_id
         })
-        
+
         # Track SLO metrics
         track_slo_metric(:llm_call, duration, true)
-        
+
         # Log SLO breach if needed
         if slo_status == :sla_breach do
           log_slo_breach(:llm_call, duration, 2000)
         end
-        
+
         result
-        
+
       {:error, reason} = error ->
         duration = System.monotonic_time(:millisecond) - start_time
-        
+
         Logger.error("LLM call failed", %{
           operation: :llm_call,
           correlation_id: correlation_id,
@@ -543,17 +544,17 @@ defmodule Singularity.LLM.Service do
           slo_status: :error,
           success: false
         })
-        
+
         :telemetry.execute([:llm_service, :call, :exception], %{
           model: model,
           reason: reason,
           duration: duration,
           correlation_id: correlation_id
         })
-        
+
         # Track SLO metrics for error case
         track_slo_metric(:llm_call, duration, false)
-        
+
         error
     end
   end
@@ -698,7 +699,15 @@ defmodule Singularity.LLM.Service do
   def determine_complexity_for_task(task_type, opts) when is_atom(task_type) do
     case task_type do
       # Complex tasks - require premium models
-      task when task in [:architect, :code_generation, :pattern_analyzer, :refactoring, :code_analysis, :qa] ->
+      task
+      when task in [
+             :architect,
+             :code_generation,
+             :pattern_analyzer,
+             :refactoring,
+             :code_analysis,
+             :qa
+           ] ->
         :complex
 
       # Medium tasks - balanced models
@@ -841,6 +850,7 @@ defmodule Singularity.LLM.Service do
           complexity: Map.get(request, :complexity),
           timeout: timeout
         })
+
         {:error, :timeout}
 
       {:error, reason} ->
@@ -849,6 +859,7 @@ defmodule Singularity.LLM.Service do
           complexity: Map.get(request, :complexity),
           reason: reason
         })
+
         {:error, :nats_error}
     end
   end
@@ -997,7 +1008,7 @@ defmodule Singularity.LLM.Service do
 
   @doc """
   Call LLM with prompt optimization using the prompt engine.
-  
+
   Uses contextual complexity-based model selection (recommended approach).
 
   ## Examples
@@ -1020,23 +1031,28 @@ defmodule Singularity.LLM.Service do
   """
   @spec call_optimized(atom() | tuple() | String.t(), String.t(), String.t(), keyword()) ::
           {:ok, llm_response()} | {:error, term()}
-  def call_optimized(complexity_or_prompt, prompt_or_language, language_or_opts \\ "elixir", opts \\ []) do
+  def call_optimized(
+        complexity_or_prompt,
+        prompt_or_language,
+        language_or_opts \\ "elixir",
+        opts \\ []
+      ) do
     case {complexity_or_prompt, prompt_or_language, language_or_opts} do
       {{complexity, context}, prompt, language} when complexity in [:simple, :medium, :complex] ->
         # call_optimized({complexity, context}, prompt, language, opts)
         do_call_optimized_contextual(complexity, context, prompt, language, opts)
-      
+
       {complexity, prompt, language} when complexity in [:simple, :medium, :complex] ->
         # call_optimized(complexity, prompt, language, opts) - auto-detect context
         context = detect_context_from_prompt(prompt)
         do_call_optimized_contextual(complexity, context, prompt, language, opts)
-      
+
       {prompt, language, opts} when is_binary(prompt) and is_binary(language) and is_list(opts) ->
         # call_optimized(prompt, language, opts) - auto-detect both complexity and context
         complexity = detect_complexity_from_prompt(prompt)
         context = detect_context_from_prompt(prompt)
         do_call_optimized_contextual(complexity, context, prompt, language, opts)
-      
+
       _ ->
         {:error, :invalid_arguments}
     end
@@ -1074,36 +1090,36 @@ defmodule Singularity.LLM.Service do
 
   defp do_call_optimized(complexity, prompt, language, opts) do
     # Try to optimize the prompt using prompt engine
-    case PromptEngine.optimize_prompt(prompt, 
-      context: prompt,
-      language: language
-    ) do
+    case PromptEngine.optimize_prompt(prompt,
+           context: prompt,
+           language: language
+         ) do
       {:ok, %{optimized_prompt: optimized_prompt, optimization_score: score}} ->
-        Logger.info("Using optimized prompt", 
+        Logger.info("Using optimized prompt",
           complexity: complexity,
           original_length: String.length(prompt),
           optimized_length: String.length(optimized_prompt),
           optimization_score: score
         )
-        
+
         # Call LLM with optimized prompt using complexity-based selection
         case call(complexity, [%{role: "user", content: optimized_prompt}], opts) do
           {:ok, response} ->
             # Add optimization metadata to response
             {:ok, Map.put(response, :optimized, true)}
-          
+
           error ->
             error
         end
-      
+
       {:error, reason} ->
         Logger.debug("Prompt optimization failed, using original", reason: reason)
-        
+
         # Fall back to original prompt with complexity-based selection
         case call(complexity, [%{role: "user", content: prompt}], opts) do
           {:ok, response} ->
             {:ok, Map.put(response, :optimized, false)}
-          
+
           error ->
             error
         end

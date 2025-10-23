@@ -112,7 +112,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.5",
  "regex",
- "rustler",
+ "rustler 0.34.0",
  "serde",
  "serde_json",
  "tempfile",
@@ -261,7 +261,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -433,7 +433,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -676,7 +676,7 @@ dependencies = [
  "prompt_engine",
  "quality_engine",
  "regex",
- "rustler",
+ "rustler 0.37.0",
  "seahash",
  "serde",
  "serde_json",
@@ -749,7 +749,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -891,7 +891,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -1300,7 +1300,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -1329,7 +1329,7 @@ dependencies = [
  "parking_lot 0.12.5",
  "rayon",
  "reqwest 0.12.24",
- "rustler",
+ "rustler 0.34.0",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -1400,7 +1400,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -1891,7 +1891,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -1937,7 +1937,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -2607,7 +2607,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -2623,7 +2623,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -2659,7 +2659,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -3277,7 +3277,7 @@ dependencies = [
  "python_parser",
  "regex",
  "rust_parser",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tempfile",
@@ -3629,7 +3629,7 @@ dependencies = [
  "num_cpus",
  "once_cell",
  "reqwest 0.11.27",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tempfile",
@@ -3686,7 +3686,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "regex",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -3924,6 +3924,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex-lite"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d942b98df5e658f56f20d592c7f868833fe38115e65c33003d8cd224b0155da"
+
+[[package]]
 name = "regex-syntax"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4042,7 +4048,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -4087,8 +4093,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e94bdfa68c0388cbd725f1ca54e975956482c262599e5cced04a903eec918b7f"
 dependencies = [
  "inventory",
- "rustler_codegen",
+ "rustler_codegen 0.34.0",
  "rustler_sys",
+]
+
+[[package]]
+name = "rustler"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb867bb35b291ef105abbe0a0d04bd4d7af372e023d08845698687bc254f222b"
+dependencies = [
+ "inventory",
+ "libloading",
+ "regex-lite",
+ "rustler_codegen 0.37.0",
 ]
 
 [[package]]
@@ -4096,6 +4114,19 @@ name = "rustler_codegen"
 version = "0.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "996dc019acb78b91b4e0c1bd6fa2cd509a835d309de762dc15213b97eac399da"
+dependencies = [
+ "heck",
+ "inventory",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "rustler_codegen"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90993223c5ac0fb580ff966fb9477289c4e8a610a2f4639912a2639c5e7b5095"
 dependencies = [
  "heck",
  "inventory",
@@ -5671,7 +5702,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",
@@ -6461,7 +6492,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "parser_core",
- "rustler",
+ "rustler 0.37.0",
  "serde",
  "serde_json",
  "tokio",

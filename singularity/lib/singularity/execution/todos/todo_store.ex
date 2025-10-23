@@ -248,7 +248,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
     query =
       Todo
       |> where([t], t.status == "pending")
-      |> order_by([t], [asc: t.priority, asc: t.inserted_at])
+      |> order_by([t], asc: t.priority, asc: t.inserted_at)
 
     query =
       if complexity do
@@ -272,7 +272,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
     todos =
       Todo
       |> where([t], t.status == "pending")
-      |> order_by([t], [asc: t.priority, asc: t.inserted_at])
+      |> order_by([t], asc: t.priority, asc: t.inserted_at)
       |> limit(^limit)
       |> Repo.all()
       |> filter_ready_todos()
@@ -423,7 +423,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
 
   defp apply_order(query, opts) do
     case Keyword.get(opts, :order_by) do
-      :priority -> order_by(query, [t], [asc: t.priority, asc: t.inserted_at])
+      :priority -> order_by(query, [t], asc: t.priority, asc: t.inserted_at)
       :created -> order_by(query, [t], desc: t.inserted_at)
       :updated -> order_by(query, [t], desc: t.updated_at)
       _ -> query

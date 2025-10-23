@@ -1,7 +1,7 @@
 defmodule Singularity.MetaRegistry.SingularityLearning do
   @moduledoc """
   Meta-registry for learning from framework-specific patterns.
-  
+
   This learns from each framework we use to improve our development:
   - NATS messaging patterns
   - PostgreSQL database patterns
@@ -12,9 +12,9 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
   - Jason JSON patterns
   - Phoenix web patterns
   - ExUnit testing patterns
-  
+
   ## Framework-Specific Learning Loop
-  
+
   1. **Analyze framework code** → Learn framework patterns
   2. **Store in meta-registry** → Remember what works for each framework
   3. **Use for suggestions** → Suggest names/patterns that match framework style
@@ -26,9 +26,9 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
 
   @doc """
   Learn from NATS messaging patterns.
-  
+
   ## Examples
-  
+
       # Learn from our NATS subjects
       learn_nats_patterns(%{
         subjects: ["llm.provider.claude", "analysis.code.parse", "analysis.meta.registry.naming"],
@@ -60,9 +60,9 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
 
   @doc """
   Learn from PostgreSQL database patterns.
-  
+
   ## Examples
-  
+
       # Learn from our database schemas
       learn_postgresql_patterns(%{
         tables: ["code_chunks", "technology_detections", "file_architecture_patterns"],
@@ -102,9 +102,9 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
 
   @doc """
   Learn from Singularity's own database patterns.
-  
+
   ## Examples
-  
+
       # Learn from our own schemas
       learn_database_patterns(%{
         tables: ["code_chunks", "technology_detections", "file_architecture_patterns"],
@@ -120,9 +120,9 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
 
   @doc """
   Learn from Singularity's own testing patterns.
-  
+
   ## Examples
-  
+
       # Learn from our own tests
       learn_testing_patterns(%{
         patterns: ["test", "describe", "it", "expect"],
@@ -141,9 +141,9 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
 
   @doc """
   Learn from Singularity's own documentation patterns.
-  
+
   ## Examples
-  
+
       # Learn from our own docs
       learn_documentation_patterns(%{
         patterns: ["@moduledoc", "@doc", "## Examples", "## Usage"],
@@ -162,9 +162,9 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
 
   @doc """
   Get suggestions for Singularity development based on what we've learned.
-  
+
   ## Examples
-  
+
       # Get naming suggestions for new Elixir modules
       get_elixir_suggestions("analysis", "module")
       # Returns: ["Singularity.Analysis.NewFeature", "Singularity.Analysis.Processor"]
@@ -212,60 +212,107 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
 
   @doc """
   Initialize Singularity's own learning patterns.
-  
+
   This sets up the meta-registry with patterns we know work for us.
   """
   def initialize_singularity_patterns do
     # Learn Elixir patterns
     learn_elixir_patterns(%{
       patterns: [
-        "defmodule", "use Ecto.Schema", "alias Singularity",
-        "defstruct", "defp", "def", "defimpl", "defprotocol",
-        "GenServer", "Supervisor", "Agent", "Task",
-        "Ecto.Query", "Ecto.Changeset", "Ecto.Repo"
+        "defmodule",
+        "use Ecto.Schema",
+        "alias Singularity",
+        "defstruct",
+        "defp",
+        "def",
+        "defimpl",
+        "defprotocol",
+        "GenServer",
+        "Supervisor",
+        "Agent",
+        "Task",
+        "Ecto.Query",
+        "Ecto.Changeset",
+        "Ecto.Repo"
       ]
     })
 
     # Learn Rust patterns
     learn_rust_patterns(%{
       patterns: [
-        "pub fn", "use rustler", "rustler::init!",
-        "pub struct", "pub enum", "impl",
-        "Result<", "Option<", "Vec<", "HashMap<",
-        "String", "&str", "u32", "f64", "bool"
+        "pub fn",
+        "use rustler",
+        "rustler::init!",
+        "pub struct",
+        "pub enum",
+        "impl",
+        "Result<",
+        "Option<",
+        "Vec<",
+        "HashMap<",
+        "String",
+        "&str",
+        "u32",
+        "f64",
+        "bool"
       ]
     })
 
     # Learn NATS patterns
     learn_nats_patterns(%{
       subjects: [
-        "llm.provider.claude", "llm.provider.gemini", "llm.provider.openai",
-        "analysis.code.parse", "analysis.code.embed", "analysis.code.search",
-        "analysis.meta.registry.naming", "analysis.meta.registry.architecture", "analysis.meta.registry.quality"
+        "llm.provider.claude",
+        "llm.provider.gemini",
+        "llm.provider.openai",
+        "analysis.code.parse",
+        "analysis.code.embed",
+        "analysis.code.search",
+        "analysis.meta.registry.naming",
+        "analysis.meta.registry.architecture",
+        "analysis.meta.registry.quality"
       ],
       patterns: [
-        "llm.provider.*", "analysis.code.*", "analysis.meta.registry.*",
-        "analysis.meta.naming.suggestions", "analysis.meta.architecture.patterns", "analysis.meta.quality.checks"
+        "llm.provider.*",
+        "analysis.code.*",
+        "analysis.meta.registry.*",
+        "analysis.meta.naming.suggestions",
+        "analysis.meta.architecture.patterns",
+        "analysis.meta.quality.checks"
       ]
     })
 
     # Learn database patterns
     learn_database_patterns(%{
       tables: [
-        "code_chunks", "technology_detections", "file_architecture_patterns",
-        "file_naming_violations", "code_quality_metrics", "dependency_analysis"
+        "code_chunks",
+        "technology_detections",
+        "file_architecture_patterns",
+        "file_naming_violations",
+        "code_quality_metrics",
+        "dependency_analysis"
       ],
       patterns: [
-        "codebase_id", "snapshot_id", "metadata", "summary",
-        "detected_technologies", "capabilities", "service_structure"
+        "codebase_id",
+        "snapshot_id",
+        "metadata",
+        "summary",
+        "detected_technologies",
+        "capabilities",
+        "service_structure"
       ]
     })
 
     # Learn testing patterns
     learn_testing_patterns(%{
       patterns: [
-        "test", "describe", "it", "expect", "assert",
-        "ExUnit.Case", "ExUnit.CaseTemplate", "ExUnit.Callbacks"
+        "test",
+        "describe",
+        "it",
+        "expect",
+        "assert",
+        "ExUnit.Case",
+        "ExUnit.CaseTemplate",
+        "ExUnit.Callbacks"
       ],
       files: [
         "test/singularity/analysis_test.exs",
@@ -277,8 +324,13 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
     # Learn documentation patterns
     learn_documentation_patterns(%{
       patterns: [
-        "@moduledoc", "@doc", "## Examples", "## Usage",
-        "## Key Differences", "## Schema Fields", "## Related modules"
+        "@moduledoc",
+        "@doc",
+        "## Examples",
+        "## Usage",
+        "## Key Differences",
+        "## Schema Fields",
+        "## Related modules"
       ],
       files: [
         "lib/singularity/analysis/metadata.ex",

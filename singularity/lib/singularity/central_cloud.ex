@@ -1,12 +1,12 @@
 defmodule Singularity.CentralCloud do
   @moduledoc """
   Central Cloud Integration - BEAM-first global intelligence
-  
+
   This module talks to the Elixir-based central cloud services that aggregate
   knowledge across instances. Those services can still enlist Rust engines over
   NATS when a workload demands it, but the coordination layer now lives entirely
   on the BEAM.
-  
+
   ## Central Cloud Operations
   - Heavy code analysis and pattern learning
   - Knowledge aggregation from multiple instances
@@ -20,7 +20,7 @@ defmodule Singularity.CentralCloud do
 
   @doc """
   Analyze codebase with central cloud processing.
-  
+
   This delegates heavy analysis to the central cloud services, which may call
   into optional Rust engines if they are running.
   """
@@ -29,7 +29,7 @@ defmodule Singularity.CentralCloud do
     analysis_type = Keyword.get(opts, :analysis_type, :comprehensive)
     include_patterns = Keyword.get(opts, :include_patterns, true)
     include_learning = Keyword.get(opts, :include_learning, true)
-    
+
     request = %{
       codebase_info: codebase_info,
       analysis_type: analysis_type,
@@ -38,22 +38,24 @@ defmodule Singularity.CentralCloud do
       instance_id: get_instance_id(),
       timestamp: DateTime.utc_now()
     }
-    
-    Logger.info("☁️ Delegating codebase analysis to central cloud", 
-      analysis_type: analysis_type, 
+
+    Logger.info("☁️ Delegating codebase analysis to central cloud",
+      analysis_type: analysis_type,
       instance_id: request.instance_id
     )
-    
+
     case call_centralcloud(:analyze_codebase, request) do
       {:ok, results} ->
         # Store results locally and update central knowledge
         store_analysis_results(results)
-        Logger.info("✅ Central cloud analysis completed", 
+
+        Logger.info("✅ Central cloud analysis completed",
           patterns_found: length(Map.get(results, :patterns, [])),
           insights_count: length(Map.get(results, :insights, []))
         )
+
         {:ok, results}
-      
+
       {:error, reason} ->
         Logger.error("❌ Central cloud analysis failed", reason: reason)
         {:error, reason}
@@ -62,26 +64,26 @@ defmodule Singularity.CentralCloud do
 
   @doc """
   Learn patterns from multiple instances.
-  
+
   This aggregates learning from all Singularity instances.
   """
   @spec learn_patterns(list(map()), keyword()) :: {:ok, map()} | {:error, term()}
   def learn_patterns(instance_patterns, opts \\ []) do
     learning_type = Keyword.get(opts, :learning_type, :cross_instance)
     confidence_threshold = Keyword.get(opts, :confidence_threshold, 0.8)
-    
+
     request = %{
       instance_patterns: instance_patterns,
       learning_type: learning_type,
       confidence_threshold: confidence_threshold,
       aggregated_at: DateTime.utc_now()
     }
-    
-    Logger.info("🧠 Learning patterns from multiple instances", 
+
+    Logger.info("🧠 Learning patterns from multiple instances",
       instance_count: length(instance_patterns),
       learning_type: learning_type
     )
-    
+
     call_centralcloud(:learn_patterns, request)
   end
 
@@ -92,13 +94,13 @@ defmodule Singularity.CentralCloud do
   def get_global_stats(opts \\ []) do
     stats_type = Keyword.get(opts, :stats_type, :comprehensive)
     time_range = Keyword.get(opts, :time_range, :last_30_days)
-    
+
     request = %{
       stats_type: stats_type,
       time_range: time_range,
       instance_id: get_instance_id()
     }
-    
+
     call_centralcloud(:get_global_stats, request)
   end
 
@@ -109,27 +111,28 @@ defmodule Singularity.CentralCloud do
   def train_models(opts \\ []) do
     model_types = Keyword.get(opts, :model_types, [:naming, :patterns, :quality])
     training_data_size = Keyword.get(opts, :training_data_size, :large)
-    
+
     request = %{
       model_types: model_types,
       training_data_size: training_data_size,
       instance_id: get_instance_id(),
       training_started_at: DateTime.utc_now()
     }
-    
-    Logger.info("🤖 Training models with central cloud", 
+
+    Logger.info("🤖 Training models with central cloud",
       model_types: model_types,
       training_data_size: training_data_size
     )
-    
+
     case call_centralcloud(:train_models, request) do
       {:ok, results} ->
-        Logger.info("✅ Model training completed", 
+        Logger.info("✅ Model training completed",
           models_trained: length(Map.get(results, :trained_models, [])),
           accuracy: Map.get(results, :average_accuracy, 0.0)
         )
+
         {:ok, results}
-      
+
       {:error, reason} ->
         Logger.error("❌ Model training failed", reason: reason)
         {:error, reason}
@@ -143,13 +146,13 @@ defmodule Singularity.CentralCloud do
   def get_cross_instance_insights(opts \\ []) do
     insight_types = Keyword.get(opts, :insight_types, [:patterns, :performance, :quality])
     instance_count = Keyword.get(opts, :instance_count, :all)
-    
+
     request = %{
       insight_types: insight_types,
       instance_count: instance_count,
       requesting_instance: get_instance_id()
     }
-    
+
     call_centralcloud(:get_cross_instance_insights, request)
   end
 
@@ -158,11 +161,11 @@ defmodule Singularity.CentralCloud do
   defp call_centralcloud(operation, request) do
     # Call central cloud via NATS
     subject = "central.#{operation}"
-    
+
     case NatsClient.request(subject, request, timeout: 30_000) do
       {:ok, response} ->
         {:ok, response}
-      
+
       {:error, reason} ->
         Logger.error("Central cloud call failed", operation: operation, reason: reason)
         {:error, reason}
@@ -175,13 +178,18 @@ defmodule Singularity.CentralCloud do
     cond do
       instance_id = System.get_env("SINGULARITY_INSTANCE_ID") ->
         instance_id
-      
+
       true ->
         # Create stable ID from hostname + working directory + path hash
         hostname = :inet.gethostname() |> elem(1) |> List.to_string()
         workdir = File.cwd!() |> Path.basename()
-        path_hash = :crypto.hash(:sha256, File.cwd!()) |> Base.encode16(case: :lower) |> String.slice(0, 8)
-        timestamp = DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string() |> String.slice(-6, 6)
+
+        path_hash =
+          :crypto.hash(:sha256, File.cwd!()) |> Base.encode16(case: :lower) |> String.slice(0, 8)
+
+        timestamp =
+          DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string() |> String.slice(-6, 6)
+
         "#{hostname}-#{workdir}-#{path_hash}-#{timestamp}"
     end
   end
@@ -190,19 +198,19 @@ defmodule Singularity.CentralCloud do
     # Store analysis results locally and update central knowledge
     patterns = Map.get(results, :patterns, [])
     insights = Map.get(results, :insights, [])
-    
+
     # Store patterns in local database
     Enum.each(patterns, fn pattern ->
       Logger.debug("Storing pattern locally", pattern_type: pattern.type)
       # TODO: Store in local database
     end)
-    
+
     # Store insights in local database
     Enum.each(insights, fn insight ->
       Logger.debug("Storing insight locally", insight_type: insight.type)
       # TODO: Store in local database
     end)
-    
+
     # Update central knowledge via NATS
     update_central_knowledge(results)
   end
@@ -215,11 +223,11 @@ defmodule Singularity.CentralCloud do
       instance_id: get_instance_id(),
       updated_at: DateTime.utc_now()
     }
-    
+
     case NatsClient.publish("central.knowledge.update", knowledge_update) do
       :ok ->
         Logger.debug("Updated central knowledge")
-      
+
       {:error, reason} ->
         Logger.warning("Failed to update central knowledge", reason: reason)
     end

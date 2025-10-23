@@ -111,9 +111,10 @@ defmodule Singularity.Agents.AgentLifecycleTest do
 
       # All should complete (success or error, but not timeout)
       assert length(results) == 5
+
       assert Enum.all?(results, fn result ->
-        match?({:ok, _}, result) or match?({:error, _}, result)
-      end)
+               match?({:ok, _}, result) or match?({:error, _}, result)
+             end)
     end
 
     test "tracks task execution metrics", %{agent_pid: pid} do
@@ -264,9 +265,11 @@ defmodule Singularity.Agents.AgentLifecycleTest do
 
       pids =
         for i <- 1..50 do
-          {:ok, pid} = AgentSupervisor.start_agent(CostOptimizedAgent,
-            id: "burst-#{i}-#{System.unique_integer([:positive])}"
-          )
+          {:ok, pid} =
+            AgentSupervisor.start_agent(CostOptimizedAgent,
+              id: "burst-#{i}-#{System.unique_integer([:positive])}"
+            )
+
           pid
         end
 

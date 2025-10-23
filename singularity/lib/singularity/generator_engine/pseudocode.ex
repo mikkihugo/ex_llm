@@ -51,21 +51,24 @@ defmodule Singularity.GeneratorEngine.Pseudocode do
       {:ok, %{text: response_text}} ->
         case Jason.decode(response_text) do
           {:ok, parsed} ->
-            {:ok, %{
-              name: Util.slug(description),
-              description: description,
-              language: language,
-              steps: parsed["steps"] || [],
-              parameters: parsed["parameters"] || %{"inputs" => [], "outputs" => []},
-              data_structures: parsed["data_structures"] || [],
-              complexity: parsed["complexity"] || "unknown",
-              generated_at: DateTime.utc_now()
-            }}
+            {:ok,
+             %{
+               name: Util.slug(description),
+               description: description,
+               language: language,
+               steps: parsed["steps"] || [],
+               parameters: parsed["parameters"] || %{"inputs" => [], "outputs" => []},
+               data_structures: parsed["data_structures"] || [],
+               complexity: parsed["complexity"] || "unknown",
+               generated_at: DateTime.utc_now()
+             }}
+
           {:error, decode_error} ->
             Logger.warning("Failed to parse LLM response as JSON: #{inspect(decode_error)}")
             # Fallback to simple extraction
             {:ok, generate_fallback_pseudocode(description, language)}
         end
+
       {:error, error} ->
         Logger.error("LLM call failed: #{inspect(error)}")
         # Fallback to simple extraction
@@ -112,20 +115,23 @@ defmodule Singularity.GeneratorEngine.Pseudocode do
       {:ok, %{text: response_text}} ->
         case Jason.decode(response_text) do
           {:ok, parsed} ->
-            {:ok, %{
-              type: "function",
-              name: parsed["function_name"] || Util.slug(description),
-              description: description,
-              language: language,
-              parameters: parsed["parameters"] || [],
-              return_type: parsed["return_type"] || "void",
-              steps: parsed["steps"] || [],
-              error_cases: parsed["error_cases"] || [],
-              generated_at: DateTime.utc_now()
-            }}
+            {:ok,
+             %{
+               type: "function",
+               name: parsed["function_name"] || Util.slug(description),
+               description: description,
+               language: language,
+               parameters: parsed["parameters"] || [],
+               return_type: parsed["return_type"] || "void",
+               steps: parsed["steps"] || [],
+               error_cases: parsed["error_cases"] || [],
+               generated_at: DateTime.utc_now()
+             }}
+
           {:error, _} ->
             {:ok, generate_fallback_function_pseudocode(description, language)}
         end
+
       {:error, _} ->
         {:ok, generate_fallback_function_pseudocode(description, language)}
     end
@@ -177,21 +183,24 @@ defmodule Singularity.GeneratorEngine.Pseudocode do
       {:ok, %{text: response_text}} ->
         case Jason.decode(response_text) do
           {:ok, parsed} ->
-            {:ok, %{
-              type: "module",
-              name: parsed["module_name"] || Util.slug(description),
-              description: description,
-              language: language,
-              purpose: parsed["purpose"] || description,
-              public_functions: parsed["public_functions"] || [],
-              private_functions: parsed["private_functions"] || [],
-              data_structures: parsed["data_structures"] || [],
-              dependencies: parsed["dependencies"] || [],
-              generated_at: DateTime.utc_now()
-            }}
+            {:ok,
+             %{
+               type: "module",
+               name: parsed["module_name"] || Util.slug(description),
+               description: description,
+               language: language,
+               purpose: parsed["purpose"] || description,
+               public_functions: parsed["public_functions"] || [],
+               private_functions: parsed["private_functions"] || [],
+               data_structures: parsed["data_structures"] || [],
+               dependencies: parsed["dependencies"] || [],
+               generated_at: DateTime.utc_now()
+             }}
+
           {:error, _} ->
             {:ok, generate_fallback_module_pseudocode(description, language)}
         end
+
       {:error, _} ->
         {:ok, generate_fallback_module_pseudocode(description, language)}
     end
@@ -243,21 +252,24 @@ defmodule Singularity.GeneratorEngine.Pseudocode do
       {:ok, %{text: response_text}} ->
         case Jason.decode(response_text) do
           {:ok, parsed} ->
-            {:ok, %{
-              type: "project",
-              name: parsed["project_name"] || Util.slug(description),
-              description: description,
-              language: language,
-              architecture: parsed["architecture"] || "modular",
-              modules: parsed["modules"] || [],
-              data_flow: parsed["data_flow"] || [],
-              technologies: parsed["technologies"] || [language],
-              entry_points: parsed["entry_points"] || [],
-              generated_at: DateTime.utc_now()
-            }}
+            {:ok,
+             %{
+               type: "project",
+               name: parsed["project_name"] || Util.slug(description),
+               description: description,
+               language: language,
+               architecture: parsed["architecture"] || "modular",
+               modules: parsed["modules"] || [],
+               data_flow: parsed["data_flow"] || [],
+               technologies: parsed["technologies"] || [language],
+               entry_points: parsed["entry_points"] || [],
+               generated_at: DateTime.utc_now()
+             }}
+
           {:error, _} ->
             {:ok, generate_fallback_project_structure(description, language)}
         end
+
       {:error, _} ->
         {:ok, generate_fallback_project_structure(description, language)}
     end
@@ -332,7 +344,8 @@ defmodule Singularity.GeneratorEngine.Pseudocode do
     |> String.split(connectors)
     |> Enum.map(&String.trim/1)
     |> Enum.reject(&(&1 == ""))
-    |> Enum.take(10) # Limit to reasonable number
+    # Limit to reasonable number
+    |> Enum.take(10)
   end
 
   defp extract_parameters(description) do
@@ -349,13 +362,15 @@ defmodule Singularity.GeneratorEngine.Pseudocode do
       ~r/\b(status|code|message)\b/i
     ]
 
-    inputs = Enum.flat_map(input_patterns, &Regex.scan(&1, description))
-             |> List.flatten()
-             |> Enum.uniq()
+    inputs =
+      Enum.flat_map(input_patterns, &Regex.scan(&1, description))
+      |> List.flatten()
+      |> Enum.uniq()
 
-    outputs = Enum.flat_map(output_patterns, &Regex.scan(&1, description))
-              |> List.flatten()
-              |> Enum.uniq()
+    outputs =
+      Enum.flat_map(output_patterns, &Regex.scan(&1, description))
+      |> List.flatten()
+      |> Enum.uniq()
 
     %{"inputs" => inputs, "outputs" => outputs}
   end

@@ -1,4 +1,3 @@
-
 defmodule Singularity.Schemas.UserPreferences do
   @moduledoc """
   User Preferences schema for managing user-specific settings and configurations.
@@ -104,7 +103,13 @@ defmodule Singularity.Schemas.UserPreferences do
       :previous_version_id
     ])
     |> validate_required([:user_id, :preference_type, :preferences])
-    |> validate_inclusion(:preference_type, ["general", "ui", "notifications", "privacy", "advanced"])
+    |> validate_inclusion(:preference_type, [
+      "general",
+      "ui",
+      "notifications",
+      "privacy",
+      "advanced"
+    ])
     |> validate_preferences()
     |> validate_metadata()
     |> validate_embedding()
@@ -206,7 +211,11 @@ defmodule Singularity.Schemas.UserPreferences do
       where: p.user_id != ^user_id,
       where: p.is_active == true,
       where: not is_nil(p.embedding),
-      order_by: fragment("embedding <-> (SELECT embedding FROM user_preferences WHERE user_id = ? AND is_active = true LIMIT 1)", ^user_id),
+      order_by:
+        fragment(
+          "embedding <-> (SELECT embedding FROM user_preferences WHERE user_id = ? AND is_active = true LIMIT 1)",
+          ^user_id
+        ),
       limit: ^limit
   end
 
@@ -380,10 +389,15 @@ defmodule Singularity.Schemas.UserPreferences do
   end
 
   defp validate_theme(changeset, theme) do
-    add_error(changeset, :preferences, "theme must be one of: light, dark, auto, got: #{inspect(theme)}")
+    add_error(
+      changeset,
+      :preferences,
+      "theme must be one of: light, dark, auto, got: #{inspect(theme)}"
+    )
   end
 
-  defp validate_language(changeset, language) when language in [nil, "en", "es", "fr", "de", "zh", "ja"] do
+  defp validate_language(changeset, language)
+       when language in [nil, "en", "es", "fr", "de", "zh", "ja"] do
     changeset
   end
 
@@ -391,7 +405,8 @@ defmodule Singularity.Schemas.UserPreferences do
     add_error(changeset, :preferences, "unsupported language: #{inspect(language)}")
   end
 
-  defp validate_notifications(changeset, notifications) when is_map(notifications) or is_nil(notifications) do
+  defp validate_notifications(changeset, notifications)
+       when is_map(notifications) or is_nil(notifications) do
     if notifications do
       validate_notification_keys(changeset, notifications)
     else
@@ -400,7 +415,11 @@ defmodule Singularity.Schemas.UserPreferences do
   end
 
   defp validate_notifications(changeset, notifications) do
-    add_error(changeset, :preferences, "notifications must be a map, got: #{inspect(notifications)}")
+    add_error(
+      changeset,
+      :preferences,
+      "notifications must be a map, got: #{inspect(notifications)}"
+    )
   end
 
   defp validate_notification_keys(changeset, notifications) do
@@ -411,20 +430,30 @@ defmodule Singularity.Schemas.UserPreferences do
       # Also validate that values are booleans
       validate_notification_values(changeset, notifications)
     else
-      add_error(changeset, :preferences, "invalid notification keys: #{Enum.join(invalid_keys, ", ")}")
+      add_error(
+        changeset,
+        :preferences,
+        "invalid notification keys: #{Enum.join(invalid_keys, ", ")}"
+      )
     end
   end
 
   defp validate_notification_values(changeset, notifications) do
-    invalid_values = Enum.filter(notifications, fn {_key, value} ->
-      not is_boolean(value)
-    end)
+    invalid_values =
+      Enum.filter(notifications, fn {_key, value} ->
+        not is_boolean(value)
+      end)
 
     if Enum.empty?(invalid_values) do
       changeset
     else
       invalid_keys = Enum.map(invalid_values, fn {key, _value} -> key end)
-      add_error(changeset, :preferences, "notification values must be booleans for keys: #{Enum.join(invalid_keys, ", ")}")
+
+      add_error(
+        changeset,
+        :preferences,
+        "notification values must be booleans for keys: #{Enum.join(invalid_keys, ", ")}"
+      )
     end
   end
 
@@ -463,14 +492,19 @@ defmodule Singularity.Schemas.UserPreferences do
   end
 
   defp validate_embedding_values(changeset, values) do
-    non_finite = Enum.filter(values, fn value ->
-      not (is_number(value) and is_finite_number?(value))
-    end)
+    non_finite =
+      Enum.filter(values, fn value ->
+        not (is_number(value) and is_finite_number?(value))
+      end)
 
     if Enum.empty?(non_finite) do
       changeset
     else
-      add_error(changeset, :embedding, "embedding contains non-finite values: #{Enum.take(non_finite, 3) |> Enum.join(", ")}")
+      add_error(
+        changeset,
+        :embedding,
+        "embedding contains non-finite values: #{Enum.take(non_finite, 3) |> Enum.join(", ")}"
+      )
     end
   end
 

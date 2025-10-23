@@ -31,7 +31,8 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
     field :embedding, Pgvector.Ecto.Vector
 
     # Learning metadata
-    field :source, :string, default: "git" # 'git' or 'learned'
+    # 'git' or 'learned'
+    field :source, :string, default: "git"
     field :learned_from, :map
 
     # Usage tracking
@@ -100,7 +101,8 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
 
   defp calculate_avg_performance(artifact, new_duration) do
     if artifact.avg_performance_ms do
-      (artifact.avg_performance_ms * artifact.usage_count + new_duration) / (artifact.usage_count + 1)
+      (artifact.avg_performance_ms * artifact.usage_count + new_duration) /
+        (artifact.usage_count + 1)
     else
       new_duration
     end
@@ -161,7 +163,13 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
   def learning_candidates(query \\ __MODULE__, min_usage \\ 1000, min_success_rate \\ 0.95) do
     from a in query,
       where: a.usage_count >= ^min_usage,
-      where: fragment("?::float / NULLIF(?, 0) >= ?", a.success_count, a.usage_count, ^min_success_rate),
+      where:
+        fragment(
+          "?::float / NULLIF(?, 0) >= ?",
+          a.success_count,
+          a.usage_count,
+          ^min_success_rate
+        ),
       where: a.source == "git",
       order_by: [desc: a.usage_count]
   end
@@ -188,10 +196,11 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
   """
   def full_text_search(query \\ __MODULE__, search_term) do
     from a in query,
-      where: fragment(
-        "to_tsvector('english', content_raw) @@ plainto_tsquery('english', ?)",
-        ^search_term
-      )
+      where:
+        fragment(
+          "to_tsvector('english', content_raw) @@ plainto_tsquery('english', ?)",
+          ^search_term
+        )
   end
 
   @doc """

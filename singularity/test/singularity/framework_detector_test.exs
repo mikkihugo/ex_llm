@@ -33,10 +33,11 @@ defmodule Singularity.Detection.FrameworkDetectorTest do
       patterns = ["use Phoenix.Controller", "def index(conn, _params)"]
       context = "elixir_controller"
 
-      {:ok, results} = FrameworkDetector.detect_frameworks(patterns,
-        context: context,
-        use_knowledge_base: true
-      )
+      {:ok, results} =
+        FrameworkDetector.detect_frameworks(patterns,
+          context: context,
+          use_knowledge_base: true
+        )
 
       # Should include both NIF results and knowledge base results
       assert length(results) > 0
@@ -101,7 +102,9 @@ defmodule Singularity.Detection.FrameworkDetectorTest do
       assert length(microservice_suggestions) > 0
 
       # Should include service mesh suggestion
-      service_mesh = Enum.find(microservice_suggestions, &String.contains?(&1.suggestion, "service mesh"))
+      service_mesh =
+        Enum.find(microservice_suggestions, &String.contains?(&1.suggestion, "service mesh"))
+
       assert service_mesh
       assert service_mesh.priority == "high"
     end
@@ -118,7 +121,9 @@ defmodule Singularity.Detection.FrameworkDetectorTest do
       assert length(polyglot_suggestions) > 0
 
       # Should include API Gateway suggestion
-      api_gateway = Enum.find(polyglot_suggestions, &String.contains?(&1.suggestion, "API Gateway"))
+      api_gateway =
+        Enum.find(polyglot_suggestions, &String.contains?(&1.suggestion, "API Gateway"))
+
       assert api_gateway
     end
 
@@ -131,7 +136,9 @@ defmodule Singularity.Detection.FrameworkDetectorTest do
       assert length(security_suggestions) >= 2
 
       # Should include authentication and input validation
-      auth_suggestion = Enum.find(security_suggestions, &String.contains?(&1.suggestion, "authentication"))
+      auth_suggestion =
+        Enum.find(security_suggestions, &String.contains?(&1.suggestion, "authentication"))
+
       assert auth_suggestion
       assert auth_suggestion.priority == "high"
     end
@@ -142,9 +149,10 @@ defmodule Singularity.Detection.FrameworkDetectorTest do
         frameworks: ["phoenix"]
       }
 
-      {:ok, suggestions} = FrameworkDetector.get_architectural_suggestions(codebase_info,
-        use_knowledge_base: true
-      )
+      {:ok, suggestions} =
+        FrameworkDetector.get_architectural_suggestions(codebase_info,
+          use_knowledge_base: true
+        )
 
       # Should include knowledge base results
       kb_suggestions = Enum.filter(suggestions, &(&1.source == "knowledge_base"))
@@ -170,7 +178,8 @@ defmodule Singularity.Detection.FrameworkDetectorTest do
       patterns = ["phoenix router"]
       context = "elixir_web"
 
-      kb_patterns = FrameworkDetector.__private__(:get_knowledge_base_patterns, [patterns, context])
+      kb_patterns =
+        FrameworkDetector.__private__(:get_knowledge_base_patterns, [patterns, context])
 
       # Should return a list (may be empty if no KB data)
       assert is_list(kb_patterns)
@@ -193,7 +202,9 @@ defmodule Singularity.Detection.FrameworkDetectorTest do
 
       Enum.each(test_cases, fn {framework, expected_ecosystem} ->
         ecosystem = FrameworkDetector.__private__(:detect_ecosystem, [framework])
-        assert ecosystem == expected_ecosystem, "Expected #{expected_ecosystem} for #{framework}, got #{ecosystem}"
+
+        assert ecosystem == expected_ecosystem,
+               "Expected #{expected_ecosystem} for #{framework}, got #{ecosystem}"
       end)
     end
   end

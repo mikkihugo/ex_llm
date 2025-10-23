@@ -13,7 +13,16 @@ defmodule Singularity.Templates.Validator do
   alias Singularity.Knowledge.TemplateService
 
   @required_fields ["id", "category", "metadata", "content"]
-  @valid_categories ["base", "bit", "code_generation", "code_snippet", "framework", "prompt", "quality_standard", "workflow"]
+  @valid_categories [
+    "base",
+    "bit",
+    "code_generation",
+    "code_snippet",
+    "framework",
+    "prompt",
+    "quality_standard",
+    "workflow"
+  ]
 
   @doc """
   Validate a template.
@@ -21,13 +30,14 @@ defmodule Singularity.Templates.Validator do
   Returns {:ok, template} or {:error, reasons}
   """
   def validate(template) when is_map(template) do
-    errors = []
-    |> check_required_fields(template)
-    |> check_category(template)
-    |> check_metadata(template)
-    |> check_content(template)
-    |> check_composition_references(template)
-    |> check_quality_standard(template)
+    errors =
+      []
+      |> check_required_fields(template)
+      |> check_category(template)
+      |> check_metadata(template)
+      |> check_content(template)
+      |> check_composition_references(template)
+      |> check_quality_standard(template)
 
     if Enum.empty?(errors) do
       {:ok, template}
@@ -73,9 +83,10 @@ defmodule Singularity.Templates.Validator do
   ## Private Validation Functions
 
   defp check_required_fields(errors, template) do
-    missing = Enum.filter(@required_fields, fn field ->
-      !Map.has_key?(template, field)
-    end)
+    missing =
+      Enum.filter(@required_fields, fn field ->
+        !Map.has_key?(template, field)
+      end)
 
     if Enum.empty?(missing) do
       errors
@@ -98,9 +109,10 @@ defmodule Singularity.Templates.Validator do
     metadata = Map.get(template, "metadata", %{})
     required_meta = ["name", "version", "description"]
 
-    missing = Enum.filter(required_meta, fn field ->
-      !Map.has_key?(metadata, field) || metadata[field] == ""
-    end)
+    missing =
+      Enum.filter(required_meta, fn field ->
+        !Map.has_key?(metadata, field) || metadata[field] == ""
+      end)
 
     if Enum.empty?(missing) do
       errors
@@ -120,7 +132,8 @@ defmodule Singularity.Templates.Validator do
       content_type == "snippets" && !Map.has_key?(content, "snippets") ->
         [{:missing_snippets} | errors]
 
-      content_type == "prompt" && (!Map.has_key?(content, "system") || !Map.has_key?(content, "user")) ->
+      content_type == "prompt" &&
+          (!Map.has_key?(content, "system") || !Map.has_key?(content, "user")) ->
         [{:missing_prompt_fields} | errors]
 
       true ->
@@ -139,15 +152,17 @@ defmodule Singularity.Templates.Validator do
       {:error, _} -> [{:extends_not_found, base_id} | errors]
     end
   end
+
   defp check_extends_reference(errors, _), do: errors
 
   defp check_compose_references(errors, %{"compose" => bit_ids}) when is_list(bit_ids) do
-    missing = Enum.filter(bit_ids, fn bit_id ->
-      case TemplateService.get_template("template", bit_id) do
-        {:ok, _} -> false
-        _ -> true
-      end
-    end)
+    missing =
+      Enum.filter(bit_ids, fn bit_id ->
+        case TemplateService.get_template("template", bit_id) do
+          {:ok, _} -> false
+          _ -> true
+        end
+      end)
 
     if Enum.empty?(missing) do
       errors
@@ -155,14 +170,17 @@ defmodule Singularity.Templates.Validator do
       [{:compose_bits_not_found, missing} | errors]
     end
   end
+
   defp check_compose_references(errors, _), do: errors
 
-  defp check_quality_standard(errors, %{"quality_standard" => standard_id}) when is_binary(standard_id) do
+  defp check_quality_standard(errors, %{"quality_standard" => standard_id})
+       when is_binary(standard_id) do
     case LocalTemplateCache.get_template(standard_id) do
       {:ok, _} -> errors
       {:error, :not_found} -> [{:quality_standard_not_found, standard_id} | errors]
       _ -> errors
     end
   end
+
   defp check_quality_standard(errors, _), do: errors
 end

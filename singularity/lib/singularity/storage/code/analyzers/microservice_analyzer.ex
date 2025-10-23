@@ -70,8 +70,13 @@ defmodule Singularity.Code.Analyzers.MicroserviceAnalyzer do
   def detect_completion_status(discovery) do
     services =
       case Map.get(discovery, :path) do
-        path when is_binary(path) -> if File.dir?(path), do: discover_services(path), else: infer_services_from_files(Map.get(discovery, :source_files, []))
-        _ -> infer_services_from_files(Map.get(discovery, :source_files, []))
+        path when is_binary(path) ->
+          if File.dir?(path),
+            do: discover_services(path),
+            else: infer_services_from_files(Map.get(discovery, :source_files, []))
+
+        _ ->
+          infer_services_from_files(Map.get(discovery, :source_files, []))
       end
 
     service_count = length(services)
@@ -144,11 +149,21 @@ defmodule Singularity.Code.Analyzers.MicroserviceAnalyzer do
 
   defp detect_language(service_path) do
     cond do
-      File.exists?(Path.join(service_path, "package.json")) && ts_sources?(service_path) -> "typescript"
-      File.exists?(Path.join(service_path, "Cargo.toml")) -> "rust"
-      File.exists?(Path.join(service_path, "pyproject.toml")) || File.exists?(Path.join(service_path, "requirements.txt")) -> "python"
-      File.exists?(Path.join(service_path, "go.mod")) -> "go"
-      true -> nil
+      File.exists?(Path.join(service_path, "package.json")) && ts_sources?(service_path) ->
+        "typescript"
+
+      File.exists?(Path.join(service_path, "Cargo.toml")) ->
+        "rust"
+
+      File.exists?(Path.join(service_path, "pyproject.toml")) ||
+          File.exists?(Path.join(service_path, "requirements.txt")) ->
+        "python"
+
+      File.exists?(Path.join(service_path, "go.mod")) ->
+        "go"
+
+      true ->
+        nil
     end
   end
 
@@ -173,8 +188,12 @@ defmodule Singularity.Code.Analyzers.MicroserviceAnalyzer do
 
   defp detect_framework(service_path, "rust") do
     cond do
-      File.exists?(Path.join(service_path, "Cargo.toml")) && File.exists?(Path.join(service_path, "src/main.rs")) -> "actix"
-      true -> nil
+      File.exists?(Path.join(service_path, "Cargo.toml")) &&
+          File.exists?(Path.join(service_path, "src/main.rs")) ->
+        "actix"
+
+      true ->
+        nil
     end
   end
 
@@ -248,7 +267,9 @@ defmodule Singularity.Code.Analyzers.MicroserviceAnalyzer do
       Enum.find(segments, &service_segment?/1)
     end)
     |> Enum.reject(&is_nil/1)
-    |> Enum.map(fn name -> %{name: name, language: nil, framework: nil, entrypoint: nil, root: nil} end)
+    |> Enum.map(fn name ->
+      %{name: name, language: nil, framework: nil, entrypoint: nil, root: nil}
+    end)
   end
 
   defp service_segment?(segment) do

@@ -21,7 +21,8 @@ defmodule Singularity.Schemas.TemplateCache do
     # Cache metadata
     field :downloaded_at, :utc_datetime
     field :last_used_at, :utc_datetime
-    field :source, :string, default: "central" # 'central' or 'local-override'
+    # 'central' or 'local-override'
+    field :source, :string, default: "central"
 
     # Local usage tracking (for learning)
     field :local_usage_count, :integer, default: 0

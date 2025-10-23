@@ -1,7 +1,7 @@
 defmodule Singularity.MetaRegistry.Frameworks.Ets do
   @moduledoc """
   ETS framework learning patterns.
-  
+
   Learns from ETS caching patterns to improve our caching usage.
   """
 
@@ -9,9 +9,9 @@ defmodule Singularity.MetaRegistry.Frameworks.Ets do
 
   @doc """
   Learn from ETS caching patterns.
-  
+
   ## Examples
-  
+
       # Learn from our ETS tables
       learn_patterns(%{
         tables: ["naming_patterns", "architecture_patterns", "quality_patterns"],
@@ -28,9 +28,9 @@ defmodule Singularity.MetaRegistry.Frameworks.Ets do
 
   @doc """
   Get ETS suggestions based on learned patterns.
-  
+
   ## Examples
-  
+
       # Get table suggestions
       get_suggestions("user", "table")
       # Returns: ["user_cache", "user_patterns", "user_learning"]
@@ -56,8 +56,12 @@ defmodule Singularity.MetaRegistry.Frameworks.Ets do
   def initialize_patterns do
     learn_patterns(%{
       tables: [
-        "naming_patterns", "architecture_patterns", "quality_patterns",
-        "template_cache", "learning_cache", "suggestion_cache"
+        "naming_patterns",
+        "architecture_patterns",
+        "quality_patterns",
+        "template_cache",
+        "learning_cache",
+        "suggestion_cache"
       ],
       operations: ["lookup", "insert", "delete", "select"],
       patterns: ["fast_cache", "in_memory", "key_value", "ets_table"]

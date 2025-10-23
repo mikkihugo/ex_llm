@@ -33,31 +33,34 @@ defmodule Singularity.Agents.SelfImprovingAgent do
 
     case task_name do
       "self_improve" ->
-        {:ok, %{
-          type: :self_improvement,
-          task: task_name,
-          message: "Self-improvement cycle started",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :self_improvement,
+           task: task_name,
+           message: "Self-improvement cycle started",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
 
       "analyze_performance" ->
-        {:ok, %{
-          type: :performance_analysis,
-          task: task_name,
-          message: "Performance analysis completed",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :performance_analysis,
+           task: task_name,
+           message: "Performance analysis completed",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
 
       _ ->
-        {:ok, %{
-          type: :self_improvement_task,
-          task: task_name,
-          message: "Self-Improving Agent processed task",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :self_improvement_task,
+           task: task_name,
+           message: "Self-Improving Agent processed task",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
     end
   end
 end

@@ -39,12 +39,13 @@ defmodule Singularity.Agents.ArchitectureAgent do
         # Orchestrate multiple tools for architecture analysis
         case Singularity.Tools.execute_tool("code_analysis", context) do
           {:ok, analysis} ->
-            {:ok, %{
-              type: :architecture_analysis,
-              task: task_name,
-              analysis: analysis,
-              completed_at: DateTime.utc_now()
-            }}
+            {:ok,
+             %{
+               type: :architecture_analysis,
+               task: task_name,
+               analysis: analysis,
+               completed_at: DateTime.utc_now()
+             }}
 
           {:error, reason} ->
             {:error, "Architecture analysis failed: #{reason}"}
@@ -52,22 +53,24 @@ defmodule Singularity.Agents.ArchitectureAgent do
 
       "refactor_for_patterns" ->
         # Use refactoring tools to improve design patterns
-        {:ok, %{
-          type: :refactoring,
-          task: task_name,
-          message: "Refactoring recommendations prepared",
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :refactoring,
+           task: task_name,
+           message: "Refactoring recommendations prepared",
+           completed_at: DateTime.utc_now()
+         }}
 
       _ ->
         # Generic architecture task
-        {:ok, %{
-          type: :architecture_task,
-          task: task_name,
-          message: "Architecture Agent processed task",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :architecture_task,
+           task: task_name,
+           message: "Architecture Agent processed task",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
     end
   end
 end

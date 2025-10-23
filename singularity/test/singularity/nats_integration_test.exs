@@ -21,9 +21,10 @@ defmodule Singularity.NatsIntegrationTest do
       test_subject = "test.echo.#{System.unique_integer([:positive])}"
 
       # Subscribe to test subject and echo back
-      {:ok, subscription} = NatsClient.subscribe(test_subject, fn message ->
-        NatsClient.publish(message.reply_to, message.body)
-      end)
+      {:ok, subscription} =
+        NatsClient.subscribe(test_subject, fn message ->
+          NatsClient.publish(message.reply_to, message.body)
+        end)
 
       # Make request
       request_payload = Jason.encode!(%{test: "data", timestamp: System.system_time()})
@@ -51,9 +52,10 @@ defmodule Singularity.NatsIntegrationTest do
       test_subject = "test.malformed.#{System.unique_integer([:positive])}"
 
       # Subscribe and send invalid JSON
-      {:ok, subscription} = NatsClient.subscribe(test_subject, fn message ->
-        NatsClient.publish(message.reply_to, "not valid json {")
-      end)
+      {:ok, subscription} =
+        NatsClient.subscribe(test_subject, fn message ->
+          NatsClient.publish(message.reply_to, "not valid json {")
+        end)
 
       {:ok, response} = NatsClient.request(test_subject, "test", timeout: 1000)
 
@@ -71,13 +73,15 @@ defmodule Singularity.NatsIntegrationTest do
       test_pid = self()
 
       # Subscribe with multiple handlers
-      {:ok, sub1} = NatsClient.subscribe(test_subject, fn msg ->
-        send(test_pid, {:received_1, msg.body})
-      end)
+      {:ok, sub1} =
+        NatsClient.subscribe(test_subject, fn msg ->
+          send(test_pid, {:received_1, msg.body})
+        end)
 
-      {:ok, sub2} = NatsClient.subscribe(test_subject, fn msg ->
-        send(test_pid, {:received_2, msg.body})
-      end)
+      {:ok, sub2} =
+        NatsClient.subscribe(test_subject, fn msg ->
+          send(test_pid, {:received_2, msg.body})
+        end)
 
       # Publish message
       message = "broadcast test"
@@ -96,9 +100,10 @@ defmodule Singularity.NatsIntegrationTest do
       test_pid = self()
 
       # Subscribe to wildcard pattern
-      {:ok, subscription} = NatsClient.subscribe("test.wildcard.*", fn msg ->
-        send(test_pid, {:received, msg.subject, msg.body})
-      end)
+      {:ok, subscription} =
+        NatsClient.subscribe("test.wildcard.*", fn msg ->
+          send(test_pid, {:received, msg.subject, msg.body})
+        end)
 
       # Publish to multiple subjects matching pattern
       :ok = NatsClient.publish("test.wildcard.foo", "message 1")
@@ -117,24 +122,26 @@ defmodule Singularity.NatsIntegrationTest do
       # Mock AI server response for testing
       test_subject = "llm.request"
 
-      {:ok, subscription} = NatsClient.subscribe(test_subject, fn message ->
-        # Simulate AI server response
-        request = Jason.decode!(message.body)
+      {:ok, subscription} =
+        NatsClient.subscribe(test_subject, fn message ->
+          # Simulate AI server response
+          request = Jason.decode!(message.body)
 
-        response = %{
-          id: request["id"],
-          result: "Mock LLM response for: #{request["messages"] |> List.last() |> Map.get("content")}",
-          model: "mock-model",
-          usage: %{
-            prompt_tokens: 10,
-            completion_tokens: 20,
-            total_tokens: 30
-          },
-          latency_ms: 100
-        }
+          response = %{
+            id: request["id"],
+            result:
+              "Mock LLM response for: #{request["messages"] |> List.last() |> Map.get("content")}",
+            model: "mock-model",
+            usage: %{
+              prompt_tokens: 10,
+              completion_tokens: 20,
+              total_tokens: 30
+            },
+            latency_ms: 100
+          }
 
-        NatsClient.publish(message.reply_to, Jason.encode!(response))
-      end)
+          NatsClient.publish(message.reply_to, Jason.encode!(response))
+        end)
 
       on_exit(fn -> NatsClient.unsubscribe(subscription) end)
 
@@ -195,9 +202,10 @@ defmodule Singularity.NatsIntegrationTest do
       test_pid = self()
 
       # Subscribe
-      {:ok, subscription} = NatsClient.subscribe(test_subject, fn msg ->
-        send(test_pid, {:received, byte_size(msg.body)})
-      end)
+      {:ok, subscription} =
+        NatsClient.subscribe(test_subject, fn msg ->
+          send(test_pid, {:received, byte_size(msg.body)})
+        end)
 
       # Send large message (1MB)
       large_message = String.duplicate("x", 1024 * 1024)
@@ -214,9 +222,10 @@ defmodule Singularity.NatsIntegrationTest do
       test_subject = "test.small.#{System.unique_integer([:positive])}"
       test_pid = self()
 
-      {:ok, subscription} = NatsClient.subscribe(test_subject, fn msg ->
-        send(test_pid, {:received, msg.body})
-      end)
+      {:ok, subscription} =
+        NatsClient.subscribe(test_subject, fn msg ->
+          send(test_pid, {:received, msg.body})
+        end)
 
       # Send tiny message
       :ok = NatsClient.publish(test_subject, "x")

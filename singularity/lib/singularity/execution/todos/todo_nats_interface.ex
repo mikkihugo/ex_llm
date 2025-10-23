@@ -193,9 +193,10 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
     case TodoStore.search(query, opts) do
       {:ok, results} ->
         success_response(%{
-          results: Enum.map(results, fn %{todo: todo, similarity: sim} ->
-            Map.put(serialize_todo(todo), :similarity, sim)
-          end),
+          results:
+            Enum.map(results, fn %{todo: todo, similarity: sim} ->
+              Map.put(serialize_todo(todo), :similarity, sim)
+            end),
           count: length(results)
         })
 

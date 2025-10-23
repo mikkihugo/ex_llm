@@ -1,19 +1,19 @@
 defmodule Singularity.GeneratorEngine do
   @moduledoc """
   Generator Engine - AI-powered code generation with intelligent naming
-  
+
   Provides unified code generation capabilities using the Rust generator_engine NIF.
   This is the ONLY code generator interface - all other generators should use this.
-  
+
   ## Features:
   - Generate clean code from pseudocode
   - Intelligent naming and validation
   - Microservice and monorepo structure suggestions
   - Language-specific code generation
   - Pseudocode generation and conversion
-  
+
   ## Usage:
-  
+
       # Generate clean code
       {:ok, code} = GeneratorEngine.generate_clean_code(description, language)
       
@@ -81,9 +81,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Generate clean code from description and language
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.generate_clean_code("async worker with error handling", "elixir")
       {:ok, "defmodule Worker do\n  use GenServer\n  \n  def start_link(opts) do\n    GenServer.start_link(__MODULE__, opts, name: __MODULE__)\n  end\nend"}
   """
@@ -92,9 +92,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Generate pseudocode from description and language
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.generate_pseudocode("user authentication", "elixir")
       {:ok, %{
         functions: [%{name: "authenticate_user", params: ["email", "password"]}],
@@ -106,9 +106,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Convert pseudocode to clean code
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.convert_to_clean_code(pseudocode, "elixir")
       {:ok, "defmodule UserAuth do\n  def authenticate_user(email, password) do\n    # Implementation\n  end\nend"}
   """
@@ -117,9 +117,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Suggest microservice structure for domain and language
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.suggest_microservice_structure("user-service", "elixir")
       {:ok, %{
         structure: %{
@@ -134,9 +134,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Suggest monorepo structure for build system and project type
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.suggest_monorepo_structure("mix", "elixir")
       {:ok, %{
         structure: %{
@@ -151,9 +151,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Validate naming compliance for name and element type
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.validate_naming_compliance("user_service", :module)
       true
       
@@ -165,9 +165,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Search existing names by query and filters
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.search_existing_names("user", :business_logic, :module)
       {:ok, [%{name: "user_service", description: "Handles user operations"}]}
   """
@@ -176,9 +176,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Get name description for a given name
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.get_name_description("user_service")
       {:ok, "Handles user-related operations and business logic"}
   """
@@ -186,9 +186,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   List all names with optional category filter
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.list_all_names(:business_logic)
       {:ok, [{"user_service", "User operations"}, {"payment_service", "Payment processing"}]}
   """
@@ -196,9 +196,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Get language-specific description for name and language
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.get_language_specific_description("user_service", "elixir", file_content)
       {:ok, "Elixir module for user service operations"}
   """
@@ -211,9 +211,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Generate function pseudocode
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.generate_function_pseudocode("authenticate user", "elixir")
       {:ok, %{
         name: "authenticate_user",
@@ -227,9 +227,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Generate module pseudocode
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.generate_module_pseudocode("user service", "elixir")
       {:ok, %{
         name: "UserService",
@@ -242,9 +242,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Generate complete project structure
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.generate_project_structure("user management system", "elixir")
       {:ok, %{
         structure: %{
@@ -259,9 +259,9 @@ defmodule Singularity.GeneratorEngine do
 
   @doc """
   Validate and suggest improvements for code
-  
+
   ## Examples
-  
+
       iex> GeneratorEngine.validate_and_improve("def UserService do\nend", "elixir")
       {:ok, %{
         valid: false,
@@ -275,10 +275,10 @@ defmodule Singularity.GeneratorEngine do
   # ============================================================================
   # CONSOLIDATED CODE GENERATION FUNCTIONS
   # ============================================================================
-  
+
   @doc """
   Generate production-quality code using SPARC methodology + RAG.
-  
+
   ## Parameters:
   - `task` - What to generate (e.g., 'Create GenServer for caching with TTL')
   - `language` - Target language: 'elixir', 'rust', 'typescript', 'python' (default: 'elixir')
@@ -286,12 +286,18 @@ defmodule Singularity.GeneratorEngine do
   - `quality` - Quality level: 'production', 'prototype', 'quick' (default: 'production')
   - `include_tests` - Generate tests (default: true for production)
   """
-  def code_generate(task, language \\ "elixir", repo \\ nil, quality \\ "production", include_tests \\ true),
-    do: Code.code_generate(task, language, repo, quality, include_tests)
-  
+  def code_generate(
+        task,
+        language \\ "elixir",
+        repo \\ nil,
+        quality \\ "production",
+        include_tests \\ true
+      ),
+      do: Code.code_generate(task, language, repo, quality, include_tests)
+
   @doc """
   Quick code generation using RAG (pattern-based).
-  
+
   ## Parameters:
   - `task` - What to generate
   - `language` - Target language (default: 'elixir')
@@ -300,10 +306,10 @@ defmodule Singularity.GeneratorEngine do
   """
   def code_generate_quick(task, language \\ "elixir", repos \\ nil, top_k \\ 5),
     do: Code.code_generate_quick(task, language, repos, top_k)
-  
+
   @doc """
   Find similar code examples from codebases.
-  
+
   ## Parameters:
   - `query` - What to search for (e.g., 'async worker pattern')
   - `language` - Filter by language (optional)
@@ -312,10 +318,10 @@ defmodule Singularity.GeneratorEngine do
   """
   def code_find_examples(query, language \\ nil, repos \\ nil, limit \\ 5),
     do: Code.code_find_examples(query, language, repos, limit)
-  
+
   @doc """
   Validate code quality against standards.
-  
+
   ## Parameters:
   - `code` - Code to validate
   - `language` - Code language
@@ -323,10 +329,10 @@ defmodule Singularity.GeneratorEngine do
   """
   def code_validate(code, language, quality_level \\ "production"),
     do: Code.code_validate(code, language, quality_level)
-  
+
   @doc """
   Refine code based on validation feedback.
-  
+
   ## Parameters:
   - `code` - Original code to refine
   - `validation_result` - Validation result from code_validate
@@ -335,10 +341,10 @@ defmodule Singularity.GeneratorEngine do
   """
   def code_refine(code, validation_result, language, focus \\ "all"),
     do: Code.code_refine(code, validation_result, language, focus)
-  
+
   @doc """
   Iteratively improve code until quality threshold is met.
-  
+
   ## Parameters:
   - `task` - What to generate
   - `language` - Target language (default: 'elixir')

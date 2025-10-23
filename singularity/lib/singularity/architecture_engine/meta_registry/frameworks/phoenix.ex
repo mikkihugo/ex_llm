@@ -1,7 +1,7 @@
 defmodule Singularity.MetaRegistry.Frameworks.Phoenix do
   @moduledoc """
   Phoenix framework learning patterns.
-  
+
   Learns from Phoenix web patterns to improve our web development.
   """
 
@@ -9,9 +9,9 @@ defmodule Singularity.MetaRegistry.Frameworks.Phoenix do
 
   @doc """
   Learn from Phoenix web patterns.
-  
+
   ## Examples
-  
+
       # Learn from our Phoenix modules
       learn_patterns(%{
         modules: ["Phoenix.Controller", "Phoenix.LiveView", "Phoenix.Channel"],
@@ -29,9 +29,9 @@ defmodule Singularity.MetaRegistry.Frameworks.Phoenix do
 
   @doc """
   Get Phoenix suggestions based on learned patterns.
-  
+
   ## Examples
-  
+
       # Get module suggestions
       get_suggestions("user", "module")
       # Returns: ["UserController", "UserLiveView", "UserChannel"]
@@ -59,8 +59,12 @@ defmodule Singularity.MetaRegistry.Frameworks.Phoenix do
       modules: ["Phoenix.Controller", "Phoenix.LiveView", "Phoenix.Channel"],
       functions: ["render", "assign", "put_flash", "redirect"],
       patterns: [
-        "defmodule", "use Phoenix.Controller", "def index",
-        "def render", "def mount", "def handle_event"
+        "defmodule",
+        "use Phoenix.Controller",
+        "def index",
+        "def render",
+        "def mount",
+        "def handle_event"
       ]
     })
   end

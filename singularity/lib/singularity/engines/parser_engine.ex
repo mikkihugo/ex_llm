@@ -17,8 +17,7 @@ defmodule Singularity.ParserEngine do
   use Rustler,
     otp_app: :singularity,
     crate: "parser-code",
-    path: "../rust/parser_engine",
-    skip_compilation?: true  # Temporarily skip compilation to fix hot reload
+    path: "../rust/parser_engine"
 
   require Logger
   alias Singularity.NatsClient
@@ -35,6 +34,57 @@ defmodule Singularity.ParserEngine do
   defp parse_file_nif(_file_path), do: :erlang.nif_error(:nif_not_loaded)
   defp parse_tree_nif(_root_path), do: :erlang.nif_error(:nif_not_loaded)
   def supported_languages(), do: :erlang.nif_error(:nif_not_loaded)
+
+  # AST-Grep NIF stubs (public - used by AstGrepCodeSearch)
+  @doc """
+  Search for AST pattern in code using ast-grep.
+
+  ## Parameters
+  - `content` - Source code to search
+  - `pattern` - AST pattern (supports metavariables like $VAR, $$$ARGS)
+  - `language` - Language identifier (elixir, rust, javascript, etc.)
+
+  ## Returns
+  - `{:ok, matches}` - List of matches with line, column, text, captures
+  - `{:error, reason}` - Search failed
+
+  ## Examples
+
+      iex> ParserEngine.ast_grep_search("use GenServer", "use GenServer", "elixir")
+      {:ok, [%ParserCode.AstGrepMatch{line: 1, column: 0, text: "use GenServer", captures: []}]}
+  """
+  def ast_grep_search(_content, _pattern, _language), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc """
+  Check if AST pattern exists in code (boolean result).
+
+  ## Parameters
+  - `content` - Source code to search
+  - `pattern` - AST pattern
+  - `language` - Language identifier
+
+  ## Returns
+  - `{:ok, true}` - Pattern found
+  - `{:ok, false}` - Pattern not found
+  - `{:error, reason}` - Search failed
+  """
+  def ast_grep_match(_content, _pattern, _language), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc """
+  Replace AST pattern in code using ast-grep.
+
+  ## Parameters
+  - `content` - Source code to transform
+  - `find_pattern` - AST pattern to find
+  - `replace_pattern` - AST pattern to replace with (can use captures)
+  - `language` - Language identifier
+
+  ## Returns
+  - `{:ok, transformed_code}` - Transformed code
+  - `{:error, reason}` - Replacement failed
+  """
+  def ast_grep_replace(_content, _find_pattern, _replace_pattern, _language),
+    do: :erlang.nif_error(:nif_not_loaded)
 
   # Public API ----------------------------------------------------------------
 
@@ -92,7 +142,9 @@ defmodule Singularity.ParserEngine do
     expanded_path = Path.expand(file_path)
 
     case parse_file_nif(expanded_path) do
-      {:ok, analysis_result} -> {:ok, analysis_result}
+      {:ok, analysis_result} ->
+        {:ok, analysis_result}
+
       {:error, reason} ->
         Logger.error("Failed to parse file #{file_path}: #{inspect(reason)}")
         {:error, reason}
@@ -540,13 +592,14 @@ defmodule Singularity.ParserEngine do
       include_languages: true,
       include_performance: true
     }
-    
+
     case NatsClient.request("central.parser.capabilities", Jason.encode!(request), timeout: 5000) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data}
           {:error, reason} -> {:error, "Failed to decode central response: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "NATS request failed: #{reason}"}
     end
@@ -561,7 +614,7 @@ defmodule Singularity.ParserEngine do
       stats: stats,
       timestamp: DateTime.utc_now()
     }
-    
+
     case NatsClient.publish("central.parser.analytics", Jason.encode!(request)) do
       :ok -> :ok
       {:error, reason} -> {:error, "Failed to send parsing analytics: #{reason}"}
@@ -578,13 +631,16 @@ defmodule Singularity.ParserEngine do
       language: language,
       include_optimizations: true
     }
-    
-    case NatsClient.request("central.parser.recommendations", Jason.encode!(request), timeout: 3000) do
+
+    case NatsClient.request("central.parser.recommendations", Jason.encode!(request),
+           timeout: 3000
+         ) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data["recommendations"] || []}
           {:error, reason} -> {:error, "Failed to decode central response: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "NATS request failed: #{reason}"}
     end

@@ -480,8 +480,12 @@
             export ELIXIR_ERL_OPTIONS="+fnu"
             export ERL_AFLAGS="-proto_dist inet6_tcp"
             export ERL_FLAGS="-heart +sbt u +sbwt very_long +swt very_low"
-            export RUSTFLAGS="-C linker=gcc"
             export MIX_ENV=''${MIX_ENV:-${if env.name == "Remote Production Environment" then "prod" else "dev"}}
+
+            # Erlang NIF headers for Rustler (required for NIF compilation)
+            # NIFs use Erlang symbols at runtime (provided by BEAM VM), not at link time
+            export ERL_INCLUDE_PATH="${beamPackages.erlang}/lib/erlang/usr/include"
+            export RUSTFLAGS="-C linker=gcc"
 
             ${if env.caching then ''
             # Caching setup for performance
@@ -498,9 +502,9 @@
             ${if env.gpu then ''
             # GPU acceleration setup
             ${if platform.isAppleSilicon then ''
-            export EXLA_TARGET="metal"
+            export EXLA_TARGET="cpu"
             export XLA_FLAGS="--xla_gpu_platform_device_count=1"
-            echo "🍎 GPU: Apple Silicon Metal available"
+            echo "🍎 GPU: Apple Silicon using CPU target (EXLA doesn't support Metal)"
             '' else if platform.hasCuda then ''
             export CUDA_HOME="${gpu.cudaPaths.toolkit}"
             export CUDNN_HOME="${gpu.cudaPaths.cudnn}"

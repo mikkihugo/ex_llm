@@ -106,7 +106,7 @@ defmodule Singularity.Execution.Planning.HTDAG do
 
   @doc """
   Execute DAG with NATS LLM integration.
-  
+
   This is the new self-evolving execution path that uses:
   - NATS for LLM communication
   - Streaming tokens for real-time feedback
@@ -117,9 +117,9 @@ defmodule Singularity.Execution.Planning.HTDAG do
     * QualityCodeGenerator for enforcing standards
     * SafeWorkPlanner for hierarchical planning
     * SPARC.Orchestrator for SPARC methodology
-  
+
   ## Options
-  
+
   - `:run_id` - Unique run identifier
   - `:stream` - Enable token streaming (default: false)
   - `:evolve` - Enable self-improvement (default: false)
@@ -127,9 +127,9 @@ defmodule Singularity.Execution.Planning.HTDAG do
   - `:use_quality_templates` - Use quality templates (default: false)
   - `:integrate_sparc` - Integrate with SPARC (default: false)
   - `:safe_planning` - Use SafeWorkPlanner (default: false)
-  
+
   ## Example
-  
+
       dag = HTDAG.decompose(%{description: "Build user auth"})
       {:ok, result} = HTDAG.execute_with_nats(dag, 
         run_id: "run-123",
@@ -140,21 +140,23 @@ defmodule Singularity.Execution.Planning.HTDAG do
   """
   def execute_with_nats(dag, opts \\ []) do
     run_id = Keyword.get(opts, :run_id, generate_run_id())
-    
+
     # Integrate with SafeWorkPlanner if requested
-    dag = if Keyword.get(opts, :safe_planning, false) do
-      integrate_with_safe_planner(dag, opts)
-    else
-      dag
-    end
-    
+    dag =
+      if Keyword.get(opts, :safe_planning, false) do
+        integrate_with_safe_planner(dag, opts)
+      else
+        dag
+      end
+
     # Integrate with SPARC if requested
-    opts = if Keyword.get(opts, :integrate_sparc, false) do
-      Keyword.put(opts, :sparc_enabled, true)
-    else
-      opts
-    end
-    
+    opts =
+      if Keyword.get(opts, :integrate_sparc, false) do
+        Keyword.put(opts, :sparc_enabled, true)
+      else
+        opts
+      end
+
     # Start executor
     case HTDAGExecutor.start_link(run_id: run_id) do
       {:ok, executor} ->
@@ -168,59 +170,59 @@ defmodule Singularity.Execution.Planning.HTDAG do
               else
                 {:ok, result}
               end
-              
+
             error ->
               error
           end
         after
           HTDAGExecutor.stop(executor)
         end
-        
+
       error ->
         error
     end
   end
 
   ## Private Functions
-  
+
   defp evolve_and_retry(executor, dag, result, opts) do
     Logger.info("Attempting evolution based on execution results")
-    
+
     case HTDAGEvolution.critique_and_mutate(result, opts) do
       {:ok, mutations} when length(mutations) > 0 ->
         Logger.info("Applying #{length(mutations)} mutations for improvement")
-        
+
         # Apply mutations to future executions
         # In a real system, this would update operation configs
         {:ok, Map.put(result, :mutations_applied, mutations)}
-        
+
       {:ok, []} ->
         Logger.info("No mutations suggested, execution was optimal")
         {:ok, result}
-        
+
       {:error, reason} ->
         Logger.warning("Evolution failed, returning original results", reason: reason)
         {:ok, result}
     end
   end
-  
+
   defp generate_run_id do
     "htdag-run-#{System.unique_integer([:positive])}"
   end
-  
+
   defp integrate_with_safe_planner(dag, opts) do
     # Extract options
     planning_mode = Keyword.get(opts, :planning_mode, :hierarchical)
     feature_mapping = Keyword.get(opts, :feature_mapping, true)
     complexity_threshold = Keyword.get(opts, :complexity_threshold, 0.7)
     max_depth = Keyword.get(opts, :max_depth, 5)
-    
+
     Logger.info("SafeWorkPlanner integration: Planning hierarchical task breakdown",
       planning_mode: planning_mode,
       feature_mapping: feature_mapping,
       complexity_threshold: complexity_threshold
     )
-    
+
     # Map HTDAG tasks to SafeWorkPlanner features
     if feature_mapping do
       case map_tasks_to_features(dag, complexity_threshold, max_depth) do
@@ -229,17 +231,22 @@ defmodule Singularity.Execution.Planning.HTDAG do
             task_count: length(mapped_dag.tasks),
             feature_count: count_features(mapped_dag)
           )
+
           mapped_dag
+
         {:error, reason} ->
           Logger.warning("Failed to map tasks to features, using original DAG",
             reason: reason
           )
+
           dag
       end
     else
       # Just validate the DAG structure
       case validate_dag_structure(dag) do
-        :ok -> dag
+        :ok ->
+          dag
+
         {:error, reason} ->
           Logger.warning("DAG validation failed", reason: reason)
           dag
@@ -380,21 +387,23 @@ defmodule Singularity.Execution.Planning.HTDAG do
   defp map_tasks_to_features(dag, complexity_threshold, max_depth) do
     # Map HTDAG tasks to SafeWorkPlanner features based on complexity
     try do
-      mapped_tasks = dag.tasks
-      |> Enum.map(fn task ->
-        case calculate_task_complexity(task) do
-          complexity when complexity >= complexity_threshold ->
-            # High complexity task -> Map to Feature
-            map_to_feature(task, complexity)
-          _ ->
-            # Low complexity task -> Keep as task
-            task
-        end
-      end)
-      
+      mapped_tasks =
+        dag.tasks
+        |> Enum.map(fn task ->
+          case calculate_task_complexity(task) do
+            complexity when complexity >= complexity_threshold ->
+              # High complexity task -> Map to Feature
+              map_to_feature(task, complexity)
+
+            _ ->
+              # Low complexity task -> Keep as task
+              task
+          end
+        end)
+
       # Create new DAG with mapped tasks
       mapped_dag = %{dag | tasks: mapped_tasks}
-      
+
       # Validate the mapped DAG
       case validate_dag_structure(mapped_dag) do
         :ok -> {:ok, mapped_dag}
@@ -409,51 +418,62 @@ defmodule Singularity.Execution.Planning.HTDAG do
 
   defp calculate_task_complexity(task) do
     # Calculate task complexity based on various factors
-    base_complexity = case task.type do
-      :atomic -> 0.1
-      :composite -> 0.5
-      :orchestration -> 0.8
-      _ -> 0.3
-    end
-    
+    base_complexity =
+      case task.type do
+        :atomic -> 0.1
+        :composite -> 0.5
+        :orchestration -> 0.8
+        _ -> 0.3
+      end
+
     # Add complexity based on dependencies
     dependency_complexity = length(task.dependencies) * 0.1
-    
+
     # Add complexity based on estimated duration
-    duration_complexity = case task.estimated_duration do
-      duration when duration > 3600 -> 0.3  # > 1 hour
-      duration when duration > 1800 -> 0.2  # > 30 minutes
-      duration when duration > 600 -> 0.1   # > 10 minutes
-      _ -> 0.0
-    end
-    
+    duration_complexity =
+      case task.estimated_duration do
+        # > 1 hour
+        duration when duration > 3600 -> 0.3
+        # > 30 minutes
+        duration when duration > 1800 -> 0.2
+        # > 10 minutes
+        duration when duration > 600 -> 0.1
+        _ -> 0.0
+      end
+
     # Add complexity based on resource requirements
-    resource_complexity = case task.resource_requirements do
-      requirements when is_map(requirements) ->
-        Map.values(requirements)
-        |> Enum.map(fn req -> if req > 1, do: 0.1, else: 0.0 end)
-        |> Enum.sum()
-      _ -> 0.0
-    end
-    
+    resource_complexity =
+      case task.resource_requirements do
+        requirements when is_map(requirements) ->
+          Map.values(requirements)
+          |> Enum.map(fn req -> if req > 1, do: 0.1, else: 0.0 end)
+          |> Enum.sum()
+
+        _ ->
+          0.0
+      end
+
     # Calculate final complexity (0.0 to 1.0)
-    total_complexity = base_complexity + dependency_complexity + duration_complexity + resource_complexity
+    total_complexity =
+      base_complexity + dependency_complexity + duration_complexity + resource_complexity
+
     min(1.0, max(0.0, total_complexity))
   end
 
   defp map_to_feature(task, complexity) do
     # Map a high-complexity task to a SafeWorkPlanner feature
     feature_id = "feature-#{task.id}"
-    
-    %{task | 
-      type: :feature,
-      id: feature_id,
-      feature_metadata: %{
-        original_task_id: task.id,
-        complexity: complexity,
-        mapped_at: DateTime.utc_now(),
-        safe_planner_integration: true
-      }
+
+    %{
+      task
+      | type: :feature,
+        id: feature_id,
+        feature_metadata: %{
+          original_task_id: task.id,
+          complexity: complexity,
+          mapped_at: DateTime.utc_now(),
+          safe_planner_integration: true
+        }
     }
   end
 
@@ -467,12 +487,13 @@ defmodule Singularity.Execution.Planning.HTDAG do
     try do
       # Check if all tasks have valid IDs
       task_ids = MapSet.new(dag.tasks, & &1.id)
-      
+
       # Check if all dependencies reference valid task IDs
-      invalid_deps = dag.tasks
-      |> Enum.flat_map(fn task -> task.dependencies end)
-      |> Enum.reject(fn dep_id -> MapSet.member?(task_ids, dep_id) end)
-      
+      invalid_deps =
+        dag.tasks
+        |> Enum.flat_map(fn task -> task.dependencies end)
+        |> Enum.reject(fn dep_id -> MapSet.member?(task_ids, dep_id) end)
+
       if length(invalid_deps) > 0 do
         {:error, {:invalid_dependencies, invalid_deps}}
       else
@@ -491,10 +512,10 @@ defmodule Singularity.Execution.Planning.HTDAG do
   defp detect_circular_dependencies(dag) do
     # Simple cycle detection using DFS
     task_map = Map.new(dag.tasks, fn task -> {task.id, task} end)
-    
+
     visited = MapSet.new()
     rec_stack = MapSet.new()
-    
+
     dag.tasks
     |> Enum.find_value(fn task ->
       case detect_cycle_from_task(task.id, task_map, visited, rec_stack) do
@@ -517,8 +538,9 @@ defmodule Singularity.Execution.Planning.HTDAG do
       else
         new_visited = MapSet.put(visited, task_id)
         new_rec_stack = MapSet.put(rec_stack, task_id)
-        
+
         task = Map.get(task_map, task_id)
+
         if task do
           task.dependencies
           |> Enum.find_value(fn dep_id ->

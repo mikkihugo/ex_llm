@@ -66,13 +66,26 @@ defmodule CodeAnalyzerVerification do
     IO.puts("2. Verifying language support...")
 
     expected_languages = [
-      "elixir", "erlang", "gleam",
-      "rust", "c", "cpp", "csharp", "go",
-      "javascript", "typescript",
-      "python", "java",
-      "lua", "bash",
-      "json", "yaml", "toml",
-      "markdown", "dockerfile", "sql"
+      "elixir",
+      "erlang",
+      "gleam",
+      "rust",
+      "c",
+      "cpp",
+      "csharp",
+      "go",
+      "javascript",
+      "typescript",
+      "python",
+      "java",
+      "lua",
+      "bash",
+      "json",
+      "yaml",
+      "toml",
+      "markdown",
+      "dockerfile",
+      "sql"
     ]
 
     languages = CodeAnalyzer.supported_languages()
@@ -95,7 +108,18 @@ defmodule CodeAnalyzerVerification do
   defp verify_rca_support do
     IO.puts("3. Verifying RCA metrics support...")
 
-    expected_rca = ["rust", "c", "cpp", "csharp", "javascript", "typescript", "python", "java", "go"]
+    expected_rca = [
+      "rust",
+      "c",
+      "cpp",
+      "csharp",
+      "javascript",
+      "typescript",
+      "python",
+      "java",
+      "go"
+    ]
+
     rca_languages = CodeAnalyzer.rca_supported_languages()
 
     missing = expected_rca -- rca_languages
@@ -116,15 +140,16 @@ defmodule CodeAnalyzerVerification do
       {"python", "def hello():\n    return 'world'"}
     ]
 
-    results = Enum.map(test_cases, fn {lang, code} ->
-      case CodeAnalyzer.analyze_language(code, lang) do
-        {:ok, analysis} ->
-          analysis.language_id == lang
+    results =
+      Enum.map(test_cases, fn {lang, code} ->
+        case CodeAnalyzer.analyze_language(code, lang) do
+          {:ok, analysis} ->
+            analysis.language_id == lang
 
-        {:error, _} ->
-          false
-      end
-    end)
+          {:error, _} ->
+            false
+        end
+      end)
 
     if Enum.all?(results) do
       {:ok, "Basic analysis working", "Tested #{length(test_cases)} languages"}
@@ -272,11 +297,12 @@ defmodule CodeAnalyzerVerification do
 
     Enum.with_index(results, 1)
     |> Enum.each(fn {{status, message, details}, index} ->
-      status_icon = case status do
-        :ok -> "✅"
-        :warning -> "⚠️ "
-        :error -> "❌"
-      end
+      status_icon =
+        case status do
+          :ok -> "✅"
+          :warning -> "⚠️ "
+          :error -> "❌"
+        end
 
       IO.puts("#{status_icon} #{index}. #{message}")
 

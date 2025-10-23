@@ -394,11 +394,13 @@ defmodule Singularity.Tools.FileSystem do
   defp maybe_backup_file(path, "overwrite") do
     if File.exists?(path) do
       backup_path = "#{path}.backup.#{DateTime.utc_now() |> DateTime.to_unix()}"
+
       case File.cp(path, backup_path) do
-        :ok -> 
+        :ok ->
           Logger.info("Created backup: #{backup_path}")
           :ok
-        {:error, reason} -> 
+
+        {:error, reason} ->
           Logger.warning("Failed to create backup: #{inspect(reason)}")
           {:error, reason}
       end

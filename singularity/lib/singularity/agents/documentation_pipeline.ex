@@ -202,13 +202,13 @@ defmodule Singularity.Agents.DocumentationPipeline do
       {:reply, {:error, :pipeline_already_running}, state}
     else
       new_state = %{state | pipeline_running: true, status: :running}
-      
+
       # Run pipeline in background task
       task = Task.async(fn -> run_pipeline_internal(:full) end)
-      
+
       # Monitor task completion
       Process.monitor(task.pid)
-      
+
       {:reply, {:ok, :pipeline_started}, %{new_state | upgrade_task: task}}
     end
   end
@@ -219,13 +219,13 @@ defmodule Singularity.Agents.DocumentationPipeline do
       {:reply, {:error, :pipeline_already_running}, state}
     else
       new_state = %{state | pipeline_running: true, status: :running}
-      
+
       # Run incremental pipeline in background task
       task = Task.async(fn -> run_pipeline_internal({:incremental, files}) end)
-      
+
       # Monitor task completion
       Process.monitor(task.pid)
-      
+
       {:reply, {:ok, :incremental_pipeline_started}, %{new_state | upgrade_task: task}}
     end
   end
@@ -240,21 +240,21 @@ defmodule Singularity.Agents.DocumentationPipeline do
       upgrade_interval: state.upgrade_interval,
       results: state.results
     }
-    
+
     {:reply, {:ok, status}, state}
   end
 
   @impl true
   def handle_call({:schedule_automatic_upgrades, interval_minutes}, _from, state) do
     new_state = %{
-      state | 
-      automatic_upgrades_enabled: true,
-      upgrade_interval: interval_minutes
+      state
+      | automatic_upgrades_enabled: true,
+        upgrade_interval: interval_minutes
     }
-    
+
     # Schedule automatic upgrades
     schedule_automatic_upgrade(interval_minutes)
-    
+
     Logger.info("Automatic documentation upgrades scheduled every #{interval_minutes} minutes")
     {:reply, :ok, new_state}
   end
@@ -263,12 +263,12 @@ defmodule Singularity.Agents.DocumentationPipeline do
   def handle_info({:DOWN, _ref, :process, _pid, :normal}, state) do
     # Pipeline completed successfully
     new_state = %{
-      state | 
-      pipeline_running: false,
-      status: :completed,
-      last_run: DateTime.utc_now()
+      state
+      | pipeline_running: false,
+        status: :completed,
+        last_run: DateTime.utc_now()
     }
-    
+
     Logger.info("Documentation pipeline completed successfully")
     {:noreply, new_state}
   end
@@ -277,12 +277,12 @@ defmodule Singularity.Agents.DocumentationPipeline do
   def handle_info({:DOWN, _ref, :process, _pid, reason}, state) do
     # Pipeline failed
     new_state = %{
-      state | 
-      pipeline_running: false,
-      status: :failed,
-      last_run: DateTime.utc_now()
+      state
+      | pipeline_running: false,
+        status: :failed,
+        last_run: DateTime.utc_now()
     }
-    
+
     Logger.error("Documentation pipeline failed: #{inspect(reason)}")
     {:noreply, new_state}
   end
@@ -291,15 +291,15 @@ defmodule Singularity.Agents.DocumentationPipeline do
   def handle_info(:run_automatic_upgrade, state) do
     if state.automatic_upgrades_enabled do
       Logger.info("Running scheduled automatic documentation upgrade")
-      
+
       # Run incremental pipeline for modified files
       modified_files = get_modified_files()
       run_pipeline_internal({:incremental, modified_files})
-      
+
       # Schedule next automatic upgrade
       schedule_automatic_upgrade(state.upgrade_interval)
     end
-    
+
     {:noreply, state}
   end
 
@@ -308,27 +308,28 @@ defmodule Singularity.Agents.DocumentationPipeline do
   defp run_pipeline_internal(type) do
     try do
       Logger.info("Starting documentation pipeline: #{inspect(type)}")
-      
+
       # Phase 1: Discovery
-      files = case type do
-        :full -> scan_all_files()
-        {:incremental, file_list} -> file_list
-      end
-      
+      files =
+        case type do
+          :full -> scan_all_files()
+          {:incremental, file_list} -> file_list
+        end
+
       Logger.info("Discovered #{length(files)} files to process")
-      
+
       # Phase 2: Analysis
       analysis_results = analyze_files(files)
       Logger.info("Analysis complete: #{analysis_results.total_files} files analyzed")
-      
+
       # Phase 3: Upgrade
       upgrade_results = upgrade_files(files, analysis_results)
       Logger.info("Upgrade complete: #{upgrade_results.upgraded} files upgraded")
-      
+
       # Phase 4: Validation
       validation_results = validate_upgrades(files)
       Logger.info("Validation complete: #{validation_results.compliant} files compliant")
-      
+
       # Phase 5: Report
       final_results = %{
         type: type,
@@ -340,10 +341,9 @@ defmodule Singularity.Agents.DocumentationPipeline do
         languages: validation_results.languages,
         timestamp: DateTime.utc_now()
       }
-      
+
       Logger.info("Documentation pipeline completed successfully", final_results)
       final_results
-      
     rescue
       error ->
         Logger.error("Documentation pipeline failed: #{inspect(error)}")
@@ -352,7 +352,12 @@ defmodule Singularity.Agents.DocumentationPipeline do
   end
 
   defp scan_all_files do
-    ["./singularity/lib/**/*.ex", "./rust/**/*.rs", "./llm-server/**/*.ts", "./llm-server/**/*.tsx"]
+    [
+      "./singularity/lib/**/*.ex",
+      "./rust/**/*.rs",
+      "./llm-server/**/*.ts",
+      "./llm-server/**/*.tsx"
+    ]
     |> Enum.flat_map(fn pattern ->
       Path.wildcard(pattern)
     end)
@@ -362,7 +367,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
   defp get_modified_files do
     # Get files modified in the last 24 hours
     cutoff_time = DateTime.utc_now() |> DateTime.add(-24, :hour)
-    
+
     scan_all_files()
     |> Enum.filter(fn file_path ->
       case File.stat(file_path) do
@@ -370,33 +375,40 @@ defmodule Singularity.Agents.DocumentationPipeline do
           stat.mtime
           |> DateTime.from_unix!()
           |> DateTime.compare(cutoff_time) == :gt
-        {:error, _} -> false
+
+        {:error, _} ->
+          false
       end
     end)
   end
 
   defp analyze_files(files) do
     # Analyze the specific files provided
-    results = files
-    |> Enum.map(fn file_path ->
-      case File.read(file_path) do
-        {:ok, content} ->
-          language = detect_language(file_path)
-          has_documentation = case language do
-            :elixir -> String.contains?(content, "@moduledoc")
-            :rust -> String.contains?(content, "///")
-            :typescript -> String.contains?(content, "/**")
-            _ -> false
-          end
-          %{file: file_path, language: language, has_documentation: has_documentation}
-        {:error, _reason} ->
-          %{file: file_path, language: :unknown, has_documentation: false}
-      end
-    end)
-    
+    results =
+      files
+      |> Enum.map(fn file_path ->
+        case File.read(file_path) do
+          {:ok, content} ->
+            language = detect_language(file_path)
+
+            has_documentation =
+              case language do
+                :elixir -> String.contains?(content, "@moduledoc")
+                :rust -> String.contains?(content, "///")
+                :typescript -> String.contains?(content, "/**")
+                _ -> false
+              end
+
+            %{file: file_path, language: language, has_documentation: has_documentation}
+
+          {:error, _reason} ->
+            %{file: file_path, language: :unknown, has_documentation: false}
+        end
+      end)
+
     documented_count = Enum.count(results, & &1.has_documentation)
     total_count = length(results)
-    
+
     %{
       total_files: total_count,
       documented: documented_count,
@@ -407,47 +419,55 @@ defmodule Singularity.Agents.DocumentationPipeline do
 
   defp upgrade_files(files, analysis_results) do
     # Use analysis results to prioritize files that need documentation
-    files_to_upgrade = files
-    |> Enum.filter(fn file_path ->
-      # Find analysis result for this file
-      case Enum.find(analysis_results.files_analyzed, &(&1.file == file_path)) do
-        %{has_documentation: false} -> true
-        _ -> false
-      end
-    end)
-    
-    Logger.info("Found #{length(files_to_upgrade)} files that need documentation upgrade")
-    
-    # Upgrade files that need documentation
-    upgraded = files_to_upgrade
-    |> Enum.map(fn file_path ->
-      case DocumentationUpgrader.upgrade_module_documentation(file_path, []) do
-        {:ok, _result} -> 1
-        {:error, _reason} -> 0
-      end
-    end)
-    |> Enum.sum()
+    files_to_upgrade =
+      files
+      |> Enum.filter(fn file_path ->
+        # Find analysis result for this file
+        case Enum.find(analysis_results.files_analyzed, &(&1.file == file_path)) do
+          %{has_documentation: false} -> true
+          _ -> false
+        end
+      end)
 
-    Logger.info("Upgraded #{upgraded} files out of #{length(files_to_upgrade)} that needed upgrades")
+    Logger.info("Found #{length(files_to_upgrade)} files that need documentation upgrade")
+
+    # Upgrade files that need documentation
+    upgraded =
+      files_to_upgrade
+      |> Enum.map(fn file_path ->
+        case DocumentationUpgrader.upgrade_module_documentation(file_path, []) do
+          {:ok, _result} -> 1
+          {:error, _reason} -> 0
+        end
+      end)
+      |> Enum.sum()
+
+    Logger.info(
+      "Upgraded #{upgraded} files out of #{length(files_to_upgrade)} that needed upgrades"
+    )
+
     %{upgraded: upgraded, total_needed: length(files_to_upgrade)}
   end
 
   defp validate_upgrades(files) do
     # Validate the specific files that were upgraded
-    validation_results = files
-    |> Enum.map(fn file_path ->
-      case QualityEnforcer.validate_file_quality(file_path) do
-        {:ok, %{compliant: true}} -> %{file: file_path, status: :compliant}
-        {:ok, %{compliant: false}} -> %{file: file_path, status: :non_compliant}
-        {:error, _reason} -> %{file: file_path, status: :error}
-      end
-    end)
-    
+    validation_results =
+      files
+      |> Enum.map(fn file_path ->
+        case QualityEnforcer.validate_file_quality(file_path) do
+          {:ok, %{compliant: true}} -> %{file: file_path, status: :compliant}
+          {:ok, %{compliant: false}} -> %{file: file_path, status: :non_compliant}
+          {:error, _reason} -> %{file: file_path, status: :error}
+        end
+      end)
+
     compliant_count = Enum.count(validation_results, &(&1.status == :compliant))
     non_compliant_count = Enum.count(validation_results, &(&1.status == :non_compliant))
-    
-    Logger.info("Validation complete: #{compliant_count} compliant, #{non_compliant_count} non-compliant")
-    
+
+    Logger.info(
+      "Validation complete: #{compliant_count} compliant, #{non_compliant_count} non-compliant"
+    )
+
     %{
       compliant: compliant_count,
       non_compliant: non_compliant_count,
@@ -464,12 +484,16 @@ defmodule Singularity.Agents.DocumentationPipeline do
     cond do
       String.ends_with?(file_path, ".ex") or String.ends_with?(file_path, ".exs") ->
         :elixir
+
       String.ends_with?(file_path, ".rs") ->
         :rust
+
       String.ends_with?(file_path, ".ts") or String.ends_with?(file_path, ".tsx") ->
         :typescript
+
       String.ends_with?(file_path, ".js") or String.ends_with?(file_path, ".jsx") ->
         :javascript
+
       true ->
         :unknown
     end

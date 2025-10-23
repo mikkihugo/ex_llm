@@ -437,7 +437,8 @@ defmodule Singularity.Bootstrap.Vision do
       pattern_transfer_success: 0.85,
       codebase_health_score: 0.95,
       user_satisfaction: {:greater_than, 0.80},
-      self_improvement_rate: {:between, 1, 2}  # per week
+      # per week
+      self_improvement_rate: {:between, 1, 2}
     }
   }
 

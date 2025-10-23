@@ -191,7 +191,8 @@ defmodule Singularity.Agent do
           {:ok, term()} | {:error, :not_found | term()}
   def execute_task(agent_id, task, context \\ %{})
 
-  def execute_task(agent_id, task, context) when is_binary(agent_id) and is_binary(task) and is_map(context) do
+  def execute_task(agent_id, task, context)
+      when is_binary(agent_id) and is_binary(task) and is_map(context) do
     case get_agent_type(agent_id) do
       {:ok, agent_type} ->
         case resolve_agent_module(agent_type) do
@@ -817,12 +818,12 @@ defmodule Singularity.Agent do
   defp payload_fingerprint(payload) when is_map(payload) do
     try do
       # Create a stable fingerprint by sorting keys and converting to binary
-      sorted_payload = 
+      sorted_payload =
         payload
         |> Map.to_list()
         |> Enum.sort_by(fn {k, _} -> k end)
         |> Enum.into(%{})
-      
+
       :erlang.term_to_binary(sorted_payload)
       |> :erlang.phash2()
     rescue

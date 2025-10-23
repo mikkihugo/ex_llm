@@ -247,18 +247,18 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
   def execute_rules_with_sparc_integration(rules, context) do
     # Execute rules with SPARC context
     sparc_context = prepare_sparc_context(context)
-    
+
     # Execute rules
     case execute_rules(rules, Map.merge(context, sparc_context)) do
       {:ok, results} ->
         # Integrate results with SPARC workflows
         sparc_integration_result = integrate_with_sparc_workflows(results, sparc_context)
-        
+
         # Track rule execution impact
         track_rule_execution_impact(results, sparc_integration_result)
-        
+
         {:ok, Map.merge(results, %{sparc_integration: sparc_integration_result})}
-      
+
       {:error, reason} ->
         # Track rule execution failure
         track_rule_execution_failure(reason, sparc_context)
@@ -279,13 +279,13 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
   defp integrate_with_sparc_workflows(rule_results, sparc_context) do
     # Analyze rule results for SPARC workflow alignment
     alignment_analysis = analyze_sparc_alignment(rule_results, sparc_context)
-    
+
     # Generate SPARC workflow recommendations
     workflow_recommendations = generate_workflow_recommendations(rule_results, sparc_context)
-    
+
     # Identify code generation constraints
     code_constraints = extract_code_generation_constraints(rule_results)
-    
+
     %{
       alignment_score: alignment_analysis.score,
       workflow_recommendations: workflow_recommendations,
@@ -297,10 +297,10 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
   defp analyze_sparc_alignment(rule_results, sparc_context) do
     # Analyze how well rule results align with SPARC phase requirements
     phase_requirements = Map.get(sparc_context, :code_generation_requirements, [])
-    
+
     alignment_score = calculate_alignment_score(rule_results, phase_requirements)
     phase_requirements = identify_missing_requirements(rule_results, phase_requirements)
-    
+
     %{
       score: alignment_score,
       phase_requirements: phase_requirements,
@@ -311,12 +311,12 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
   defp generate_workflow_recommendations(rule_results, sparc_context) do
     # Generate recommendations for SPARC workflow optimization
     recommendations = []
-    
+
     # Add recommendations based on rule results
     recommendations = add_quality_recommendations(recommendations, rule_results)
     recommendations = add_performance_recommendations(recommendations, rule_results)
     recommendations = add_security_recommendations(recommendations, rule_results)
-    
+
     recommendations
   end
 
@@ -334,15 +334,19 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
   """
   def track_rule_execution_impact(rule_results, sparc_integration_result) do
     # Track overall rule execution metrics
-    :telemetry.execute([:rule_engine, :execution, :impact], %{
-      rules_executed: length(rule_results),
-      timestamp: System.system_time(:millisecond)
-    }, %{
-      sparc_alignment_score: sparc_integration_result.alignment_score,
-      workflow_recommendations_count: length(sparc_integration_result.workflow_recommendations),
-      code_constraints_count: length(sparc_integration_result.code_constraints)
-    })
-    
+    :telemetry.execute(
+      [:rule_engine, :execution, :impact],
+      %{
+        rules_executed: length(rule_results),
+        timestamp: System.system_time(:millisecond)
+      },
+      %{
+        sparc_alignment_score: sparc_integration_result.alignment_score,
+        workflow_recommendations_count: length(sparc_integration_result.workflow_recommendations),
+        code_constraints_count: length(sparc_integration_result.code_constraints)
+      }
+    )
+
     # Track individual rule impacts
     Enum.each(rule_results, fn {rule_id, result} ->
       track_individual_rule_impact(rule_id, result, sparc_integration_result)
@@ -350,26 +354,34 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
   end
 
   def track_rule_execution_failure(reason, sparc_context) do
-    :telemetry.execute([:rule_engine, :execution, :failure], %{
-      count: 1,
-      timestamp: System.system_time(:millisecond)
-    }, %{
-      error_reason: reason,
-      sparc_phase: Map.get(sparc_context, :sparc_phase),
-      workflow_id: Map.get(sparc_context, :workflow_id)
-    })
+    :telemetry.execute(
+      [:rule_engine, :execution, :failure],
+      %{
+        count: 1,
+        timestamp: System.system_time(:millisecond)
+      },
+      %{
+        error_reason: reason,
+        sparc_phase: Map.get(sparc_context, :sparc_phase),
+        workflow_id: Map.get(sparc_context, :workflow_id)
+      }
+    )
   end
 
   defp track_individual_rule_impact(rule_id, result, sparc_integration_result) do
-    :telemetry.execute([:rule_engine, :rule, :impact], %{
-      execution_time: Map.get(result, :execution_time, 0),
-      timestamp: System.system_time(:millisecond)
-    }, %{
-      rule_id: rule_id,
-      rule_type: Map.get(result, :rule_type, :unknown),
-      impact_score: Map.get(result, :impact_score, 0.0),
-      sparc_alignment: sparc_integration_result.alignment_score
-    })
+    :telemetry.execute(
+      [:rule_engine, :rule, :impact],
+      %{
+        execution_time: Map.get(result, :execution_time, 0),
+        timestamp: System.system_time(:millisecond)
+      },
+      %{
+        rule_id: rule_id,
+        rule_type: Map.get(result, :rule_type, :unknown),
+        impact_score: Map.get(result, :impact_score, 0.0),
+        sparc_alignment: sparc_integration_result.alignment_score
+      }
+    )
   end
 
   # Helper functions for SPARC integration
@@ -401,11 +413,12 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
           execution_time = System.monotonic_time(:millisecond) - rule_start
 
           # Enhance result with execution metadata
-          enhanced_result = Map.merge(result, %{
-            execution_time_ms: execution_time,
-            executed_at: DateTime.utc_now(),
-            context_fingerprint: RuleEngineCore.context_fingerprint(context)
-          })
+          enhanced_result =
+            Map.merge(result, %{
+              execution_time_ms: execution_time,
+              executed_at: DateTime.utc_now(),
+              context_fingerprint: RuleEngineCore.context_fingerprint(context)
+            })
 
           {rule.id, enhanced_result}
         rescue
@@ -417,15 +430,16 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
             )
 
             # Return error result
-            {rule.id, %{
-              rule_id: rule.id,
-              confidence: 0.0,
-              decision: {:escalated, "Rule execution failed: #{inspect(error)}"},
-              reasoning: "Execution error: #{inspect(error)}",
-              execution_time_ms: System.monotonic_time(:millisecond) - rule_start,
-              cached: false,
-              error: true
-            }}
+            {rule.id,
+             %{
+               rule_id: rule.id,
+               confidence: 0.0,
+               decision: {:escalated, "Rule execution failed: #{inspect(error)}"},
+               reasoning: "Execution error: #{inspect(error)}",
+               execution_time_ms: System.monotonic_time(:millisecond) - rule_start,
+               cached: false,
+               error: true
+             }}
         end
       end)
       |> Enum.into(%{})

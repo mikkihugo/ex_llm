@@ -85,7 +85,9 @@ defmodule Singularity.TemplateStore do
   @spec store(String.t(), map()) :: :ok | {:error, term()}
   def store(template_id, template_data) do
     # Generate embedding for semantic search
-    case EmbeddingEngine.embed(template_data["content"] || template_data["description"] || "", model: :qodo_embed) do
+    case EmbeddingEngine.embed(template_data["content"] || template_data["description"] || "",
+           model: :qodo_embed
+         ) do
       {:ok, embedding} ->
         template = %Template{
           id: template_id,
@@ -95,13 +97,14 @@ defmodule Singularity.TemplateStore do
           content: template_data["content"] || template_data,
           embedding: embedding
         }
-        
+
         case Repo.insert_or_update(template) do
           {:ok, _} -> :ok
           {:error, changeset} -> {:error, changeset}
         end
-      
-      {:error, reason} -> {:error, "Failed to generate embedding: #{reason}"}
+
+      {:error, reason} ->
+        {:error, "Failed to generate embedding: #{reason}"}
     end
   end
 
@@ -353,9 +356,9 @@ defmodule Singularity.TemplateStore do
     try do
       # Basic required fields validation
       required_fields = ["version", "type", "metadata", "content"]
-      
+
       missing_fields = Enum.reject(required_fields, &Map.has_key?(data, &1))
-      
+
       if Enum.empty?(missing_fields) do
         # Validate field types and formats
         validation_results = [
@@ -364,9 +367,9 @@ defmodule Singularity.TemplateStore do
           validate_metadata(data["metadata"]),
           validate_content(data["content"])
         ]
-        
+
         errors = Enum.filter(validation_results, &match?({:error, _}, &1))
-        
+
         if Enum.empty?(errors) do
           :ok
         else
@@ -396,11 +399,16 @@ defmodule Singularity.TemplateStore do
   defp validate_type(type) when is_binary(type) do
     # Validate template type
     valid_types = [
-      "quality_template", "framework_pattern", "system_prompt", 
-      "code_template", "architecture_template", "testing_template",
-      "deployment_template", "monitoring_template"
+      "quality_template",
+      "framework_pattern",
+      "system_prompt",
+      "code_template",
+      "architecture_template",
+      "testing_template",
+      "deployment_template",
+      "monitoring_template"
     ]
-    
+
     if type in valid_types do
       :ok
     else
@@ -414,13 +422,16 @@ defmodule Singularity.TemplateStore do
     # Validate metadata structure
     required_metadata = ["name", "description", "author"]
     missing_metadata = Enum.reject(required_metadata, &Map.has_key?(metadata, &1))
-    
+
     if Enum.empty?(missing_metadata) do
       # Validate metadata field types
       name_valid = is_binary(metadata["name"]) and String.length(metadata["name"]) > 0
-      desc_valid = is_binary(metadata["description"]) and String.length(metadata["description"]) > 0
+
+      desc_valid =
+        is_binary(metadata["description"]) and String.length(metadata["description"]) > 0
+
       author_valid = is_binary(metadata["author"]) and String.length(metadata["author"]) > 0
-      
+
       cond do
         not name_valid -> {:error, "Metadata name must be a non-empty string"}
         not desc_valid -> {:error, "Metadata description must be a non-empty string"}
@@ -438,7 +449,7 @@ defmodule Singularity.TemplateStore do
     # Validate content structure
     if Map.has_key?(content, "template") do
       template = content["template"]
-      
+
       if is_binary(template) and String.length(template) > 0 do
         :ok
       else

@@ -46,11 +46,22 @@ defmodule Singularity.Web.Endpoint do
       :healthy ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(200, Jason.encode!(%{status: "healthy", message: "Documentation system is running"}))
+        |> send_resp(
+          200,
+          Jason.encode!(%{status: "healthy", message: "Documentation system is running"})
+        )
+
       {:unhealthy, reason} ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(503, Jason.encode!(%{status: "unhealthy", message: "Documentation system is not healthy", reason: inspect(reason)}))
+        |> send_resp(
+          503,
+          Jason.encode!(%{
+            status: "unhealthy",
+            message: "Documentation system is not healthy",
+            reason: inspect(reason)
+          })
+        )
     end
   end
 
@@ -58,13 +69,12 @@ defmodule Singularity.Web.Endpoint do
   get "/api/documentation/status" do
     with {:ok, pipeline_status} <- Singularity.Agents.DocumentationPipeline.get_pipeline_status(),
          {:ok, quality_report} <- Singularity.Agents.QualityEnforcer.get_quality_report() do
-      
       status = %{
         pipeline: pipeline_status,
         quality: quality_report,
         timestamp: DateTime.utc_now()
       }
-      
+
       conn
       |> put_resp_content_type("application/json")
       |> send_resp(200, Jason.encode!(status))
@@ -72,7 +82,10 @@ defmodule Singularity.Web.Endpoint do
       {:error, reason} ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(500, Jason.encode!(%{error: "Failed to get documentation status", reason: inspect(reason)}))
+        |> send_resp(
+          500,
+          Jason.encode!(%{error: "Failed to get documentation status", reason: inspect(reason)})
+        )
     end
   end
 
@@ -82,15 +95,25 @@ defmodule Singularity.Web.Endpoint do
       {:ok, :pipeline_started} ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(200, Jason.encode!(%{message: "Self-awareness pipeline started (with emergency Claude CLI fallback)"}))
+        |> send_resp(
+          200,
+          Jason.encode!(%{
+            message: "Self-awareness pipeline started (with emergency Claude CLI fallback)"
+          })
+        )
+
       {:error, :pipeline_already_running} ->
         conn
         |> put_resp_content_type("application/json")
         |> send_resp(409, Jason.encode!(%{error: "Pipeline is already running"}))
+
       {:error, reason} ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(500, Jason.encode!(%{error: "Failed to start pipeline", reason: inspect(reason)}))
+        |> send_resp(
+          500,
+          Jason.encode!(%{error: "Failed to start pipeline", reason: inspect(reason)})
+        )
     end
   end
 
@@ -98,7 +121,8 @@ defmodule Singularity.Web.Endpoint do
   get "/api/self-awareness/status" do
     # Get status from SelfImprovingAgent
     status = %{
-      pipeline_running: false,  # Would need to track this in the agent
+      # Would need to track this in the agent
+      pipeline_running: false,
       last_run: nil,
       capabilities: %{
         parser_engine: Code.ensure_loaded?(Singularity.ParserEngine),
@@ -110,7 +134,7 @@ defmodule Singularity.Web.Endpoint do
       existing_systems: [
         "SelfImprovingAgent - Main self-evolution system",
         "ParserEngine - Multi-language parsing",
-        "CodeEngine - AST analysis and quality metrics", 
+        "CodeEngine - AST analysis and quality metrics",
         "CodeStore - Codebase analysis and storage",
         "QualityEnforcer - Quality 2.3.0 enforcement",
         "DocumentationUpgrader - Documentation standards",
@@ -119,7 +143,7 @@ defmodule Singularity.Web.Endpoint do
         "Emergency Claude CLI - Fallback system"
       ]
     }
-    
+
     conn
     |> put_resp_content_type("application/json")
     |> send_resp(200, Jason.encode!(status))
@@ -134,34 +158,57 @@ defmodule Singularity.Web.Endpoint do
             conn
             |> put_resp_content_type("application/json")
             |> send_resp(200, Jason.encode!(%{message: "Full documentation upgrade started"}))
+
           {:error, :pipeline_already_running} ->
             conn
             |> put_resp_content_type("application/json")
             |> send_resp(409, Jason.encode!(%{error: "Pipeline is already running"}))
+
           {:error, reason} ->
             conn
             |> put_resp_content_type("application/json")
-            |> send_resp(500, Jason.encode!(%{error: "Failed to start pipeline", reason: inspect(reason)}))
+            |> send_resp(
+              500,
+              Jason.encode!(%{error: "Failed to start pipeline", reason: inspect(reason)})
+            )
         end
+
       %{"type" => "incremental", "files" => files} when is_list(files) ->
         case Singularity.Agents.DocumentationPipeline.run_incremental_pipeline(files) do
           {:ok, :incremental_pipeline_started} ->
             conn
             |> put_resp_content_type("application/json")
-            |> send_resp(200, Jason.encode!(%{message: "Incremental documentation upgrade started", files: files}))
+            |> send_resp(
+              200,
+              Jason.encode!(%{message: "Incremental documentation upgrade started", files: files})
+            )
+
           {:error, :pipeline_already_running} ->
             conn
             |> put_resp_content_type("application/json")
             |> send_resp(409, Jason.encode!(%{error: "Pipeline is already running"}))
+
           {:error, reason} ->
             conn
             |> put_resp_content_type("application/json")
-            |> send_resp(500, Jason.encode!(%{error: "Failed to start incremental pipeline", reason: inspect(reason)}))
+            |> send_resp(
+              500,
+              Jason.encode!(%{
+                error: "Failed to start incremental pipeline",
+                reason: inspect(reason)
+              })
+            )
         end
+
       _ ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(400, Jason.encode!(%{error: "Invalid upgrade type. Use 'full' or 'incremental' with 'files' parameter"}))
+        |> send_resp(
+          400,
+          Jason.encode!(%{
+            error: "Invalid upgrade type. Use 'full' or 'incremental' with 'files' parameter"
+          })
+        )
     end
   end
 

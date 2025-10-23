@@ -1,7 +1,7 @@
 defmodule Singularity.Schemas.T5TrainingSession do
   @moduledoc """
   T5 Training Session Schema
-  
+
   Tracks T5 fine-tuning sessions in the database.
   Stores training configuration, data sources, and results.
   """
@@ -16,7 +16,11 @@ defmodule Singularity.Schemas.T5TrainingSession do
     field :description, :string
     field :language, :string
     field :base_model, :string, default: "Salesforce/codet5p-770m"
-    field :status, Ecto.Enum, values: [:pending, :preparing, :training, :completed, :failed], default: :pending
+
+    field :status, Ecto.Enum,
+      values: [:pending, :preparing, :training, :completed, :failed],
+      default: :pending
+
     field :config, :map, default: %{}
     field :training_data_query, :string
     field :training_examples_count, :integer, default: 0
@@ -36,10 +40,22 @@ defmodule Singularity.Schemas.T5TrainingSession do
   def changeset(training_session, attrs) do
     training_session
     |> cast(attrs, [
-      :name, :description, :language, :base_model, :status, :config,
-      :training_data_query, :training_examples_count, :validation_examples_count,
-      :started_at, :completed_at, :error_message, :model_path,
-      :performance_metrics, :is_deployed, :is_active
+      :name,
+      :description,
+      :language,
+      :base_model,
+      :status,
+      :config,
+      :training_data_query,
+      :training_examples_count,
+      :validation_examples_count,
+      :started_at,
+      :completed_at,
+      :error_message,
+      :model_path,
+      :performance_metrics,
+      :is_deployed,
+      :is_active
     ])
     |> validate_required([:name, :language, :base_model])
     |> validate_inclusion(:status, [:pending, :preparing, :training, :completed, :failed])

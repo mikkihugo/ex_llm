@@ -111,7 +111,6 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
     with :ok <- File.exists?(codebase_path) |> if(do: :ok, else: {:error, :not_found}),
          {:ok, files} <- scan_files(codebase_path),
          metrics = collect_metrics(files, codebase_path) do
-
       snapshot = %{
         timestamp: DateTime.utc_now(),
         codebase_path: codebase_path,
@@ -122,7 +121,8 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
         documentation_coverage: calculate_doc_coverage(files),
         avg_complexity: calculate_avg_complexity(files),
         violations_count: count_violations(files),
-        test_success_rate: 1.0,  # Would get from test results
+        # Would get from test results
+        test_success_rate: 1.0,
         build_time_ms: calculate_build_time(),
         architecture_score: calculate_architecture_score(files),
         trends: detect_trends(metrics)
@@ -165,20 +165,22 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
     days = Keyword.get(opts, :days, 30)
 
     with {:ok, snapshots} <- fetch_snapshots(codebase_path, days) do
-      trends = snapshots
+      trends =
+        snapshots
         |> Enum.map(&extract_metrics/1)
         |> analyze_metric_trends()
 
       overall_trend = determine_overall_trend(trends)
 
-      {:ok, %{
-        codebase_path: codebase_path,
-        period_days: days,
-        overall_trend: overall_trend,
-        snapshot_count: length(snapshots),
-        metric_trends: trends,
-        recommendations: generate_trend_recommendations(trends)
-      }}
+      {:ok,
+       %{
+         codebase_path: codebase_path,
+         period_days: days,
+         overall_trend: overall_trend,
+         snapshot_count: length(snapshots),
+         metric_trends: trends,
+         recommendations: generate_trend_recommendations(trends)
+       }}
     end
   end
 
@@ -194,60 +196,66 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
 
     with {:ok, current} <- snapshot_codebase(codebase_path),
          {:ok, baseline} <- fetch_last_snapshot(codebase_path) do
-
       regressions = []
 
       # Check test coverage
-      regressions = if current.test_success_rate < baseline.test_success_rate * (1 - threshold) do
-        regressions ++ [
-          %{
-            metric: :test_success_rate,
-            from: baseline.test_success_rate,
-            to: current.test_success_rate,
-            severity: :high
-          }
-        ]
-      else
-        regressions
-      end
+      regressions =
+        if current.test_success_rate < baseline.test_success_rate * (1 - threshold) do
+          regressions ++
+            [
+              %{
+                metric: :test_success_rate,
+                from: baseline.test_success_rate,
+                to: current.test_success_rate,
+                severity: :high
+              }
+            ]
+        else
+          regressions
+        end
 
       # Check documentation
-      regressions = if current.documentation_coverage < baseline.documentation_coverage * (1 - threshold) do
-        regressions ++ [
-          %{
-            metric: :documentation_coverage,
-            from: baseline.documentation_coverage,
-            to: current.documentation_coverage,
-            severity: :medium
-          }
-        ]
-      else
-        regressions
-      end
+      regressions =
+        if current.documentation_coverage < baseline.documentation_coverage * (1 - threshold) do
+          regressions ++
+            [
+              %{
+                metric: :documentation_coverage,
+                from: baseline.documentation_coverage,
+                to: current.documentation_coverage,
+                severity: :medium
+              }
+            ]
+        else
+          regressions
+        end
 
       # Check violations
-      regressions = if current.violations_count > baseline.violations_count * (1 + threshold) do
-        regressions ++ [
-          %{
-            metric: :violations_count,
-            from: baseline.violations_count,
-            to: current.violations_count,
-            severity: :medium
-          }
-        ]
-      else
-        regressions
-      end
+      regressions =
+        if current.violations_count > baseline.violations_count * (1 + threshold) do
+          regressions ++
+            [
+              %{
+                metric: :violations_count,
+                from: baseline.violations_count,
+                to: current.violations_count,
+                severity: :medium
+              }
+            ]
+        else
+          regressions
+        end
 
       detected = not Enum.empty?(regressions)
 
-      {:ok, %{
-        detected: detected,
-        regression_count: length(regressions),
-        regressions: regressions,
-        baseline_timestamp: baseline.timestamp,
-        current_timestamp: current.timestamp
-      }}
+      {:ok,
+       %{
+         detected: detected,
+         regression_count: length(regressions),
+         regressions: regressions,
+         baseline_timestamp: baseline.timestamp,
+         current_timestamp: current.timestamp
+       }}
     end
   end
 
@@ -255,26 +263,27 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
   Get comprehensive codebase health report.
   """
   def get_health_report do
-    {:ok, %{
-      overall_score: 0.87,
-      status: :good,
-      key_metrics: %{
-        test_coverage: 0.87,
-        documentation: 0.92,
-        complexity: 3.2,
-        violations: 12
-      },
-      trends: %{
-        improving: [:documentation, :test_coverage],
-        stable: [:architecture],
-        declining: [:test_execution_time]
-      },
-      recommendations: [
-        "Reduce average cyclomatic complexity from 3.2 to < 3.0",
-        "Address 12 code violations",
-        "Improve test execution time (currently trending up)"
-      ]
-    }}
+    {:ok,
+     %{
+       overall_score: 0.87,
+       status: :good,
+       key_metrics: %{
+         test_coverage: 0.87,
+         documentation: 0.92,
+         complexity: 3.2,
+         violations: 12
+       },
+       trends: %{
+         improving: [:documentation, :test_coverage],
+         stable: [:architecture],
+         declining: [:test_execution_time]
+       },
+       recommendations: [
+         "Reduce average cyclomatic complexity from 3.2 to < 3.0",
+         "Address 12 code violations",
+         "Improve test execution time (currently trending up)"
+       ]
+     }}
   end
 
   @doc """
@@ -295,6 +304,7 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
         metric: metric_name,
         error: inspect(e)
       )
+
       {:error, :tracking_failed}
   end
 
@@ -310,11 +320,12 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
 
       {:ok, _} ->
         # Not enough data to determine trends
-        {:ok, %{
-          improving: [],
-          declining: [],
-          stable: [:test_coverage, :documentation_coverage, :architecture_score]
-        }}
+        {:ok,
+         %{
+           improving: [],
+           declining: [],
+           stable: [:test_coverage, :documentation_coverage, :architecture_score]
+         }}
 
       {:error, reason} ->
         {:error, reason}
@@ -376,8 +387,8 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
 
   defp calculate_loc(files) do
     files
-      |> Enum.map(&count_lines/1)
-      |> Enum.sum()
+    |> Enum.map(&count_lines/1)
+    |> Enum.sum()
   end
 
   defp count_lines(file_path) do
@@ -391,20 +402,20 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
 
   defp count_modules(files) do
     files
-      |> Enum.map(fn file ->
-        try do
-          case File.read(file) do
-            {:ok, content} ->
-              Regex.scan(~r/\bdefmodule\b/, content) |> length()
+    |> Enum.map(fn file ->
+      try do
+        case File.read(file) do
+          {:ok, content} ->
+            Regex.scan(~r/\bdefmodule\b/, content) |> length()
 
-            {:error, _} ->
-              0
-          end
-        rescue
-          _ -> 0
+          {:error, _} ->
+            0
         end
-      end)
-      |> Enum.sum()
+      rescue
+        _ -> 0
+      end
+    end)
+    |> Enum.sum()
   end
 
   defp count_test_files(files) do
@@ -420,54 +431,58 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
 
   defp count_functions(files) do
     files
-      |> Enum.map(fn file ->
-        try do
-          case File.read(file) do
-            {:ok, content} ->
-              Regex.scan(~r/\bdef\s+\w+/, content) |> length()
+    |> Enum.map(fn file ->
+      try do
+        case File.read(file) do
+          {:ok, content} ->
+            Regex.scan(~r/\bdef\s+\w+/, content) |> length()
 
-            {:error, _} ->
-              0
-          end
-        rescue
-          _ -> 0
+          {:error, _} ->
+            0
         end
-      end)
-      |> Enum.sum()
+      rescue
+        _ -> 0
+      end
+    end)
+    |> Enum.sum()
   end
 
   defp count_documented_functions(files) do
     files
-      |> Enum.map(fn file ->
-        try do
-          case File.read(file) do
-            {:ok, content} ->
-              Regex.scan(~r/@doc\s+""".*?def\s+\w+/s, content) |> length()
+    |> Enum.map(fn file ->
+      try do
+        case File.read(file) do
+          {:ok, content} ->
+            Regex.scan(~r/@doc\s+""".*?def\s+\w+/s, content) |> length()
 
-            {:error, _} ->
-              0
-          end
-        rescue
-          _ -> 0
+          {:error, _} ->
+            0
         end
-      end)
-      |> Enum.sum()
+      rescue
+        _ -> 0
+      end
+    end)
+    |> Enum.sum()
   end
 
   defp calculate_avg_complexity(_files) do
-    3.2  # Simplified
+    # Simplified
+    3.2
   end
 
   defp count_violations(_files) do
-    0  # Would use quality engine
+    # Would use quality engine
+    0
   end
 
   defp calculate_build_time do
-    5000  # Simplified
+    # Simplified
+    5000
   end
 
   defp calculate_architecture_score(_files) do
-    0.82  # Simplified
+    # Simplified
+    0.82
   end
 
   defp detect_trends(_metrics) do
@@ -489,12 +504,28 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
     last = List.last(snapshots)
 
     improving = []
-    improving = if (last.test_coverage || 0) > (first.test_coverage || 0), do: [:test_coverage | improving], else: improving
-    improving = if (last.documentation_coverage || 0) > (first.documentation_coverage || 0), do: [:documentation_coverage | improving], else: improving
+
+    improving =
+      if (last.test_coverage || 0) > (first.test_coverage || 0),
+        do: [:test_coverage | improving],
+        else: improving
+
+    improving =
+      if (last.documentation_coverage || 0) > (first.documentation_coverage || 0),
+        do: [:documentation_coverage | improving],
+        else: improving
 
     declining = []
-    declining = if (last.violations_count || 0) > (first.violations_count || 0), do: [:violations | declining], else: declining
-    declining = if (last.build_time_ms || 0) > (first.build_time_ms || 0), do: [:build_time | declining], else: declining
+
+    declining =
+      if (last.violations_count || 0) > (first.violations_count || 0),
+        do: [:violations | declining],
+        else: declining
+
+    declining =
+      if (last.build_time_ms || 0) > (first.build_time_ms || 0),
+        do: [:build_time | declining],
+        else: declining
 
     stable = [:architecture_score, :module_count]
 
@@ -529,14 +560,15 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
     try do
       # Try to query snapshots using Repo functions
       # If schema exists, fetch all and filter
-      snapshots = Singularity.Repo.all(Singularity.Schemas.CodebaseSnapshot)
-      |> Enum.filter(fn snapshot ->
-        case snapshot do
-          %{timestamp: ts} when is_struct(ts) -> DateTime.compare(ts, cutoff_date) != :lt
-          _ -> false
-        end
-      end)
-      |> Enum.sort_by(fn s -> s.timestamp end)
+      snapshots =
+        Singularity.Repo.all(Singularity.Schemas.CodebaseSnapshot)
+        |> Enum.filter(fn snapshot ->
+          case snapshot do
+            %{timestamp: ts} when is_struct(ts) -> DateTime.compare(ts, cutoff_date) != :lt
+            _ -> false
+          end
+        end)
+        |> Enum.sort_by(fn s -> s.timestamp end)
 
       {:ok, snapshots}
     rescue
@@ -548,7 +580,9 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
 
   defp fetch_last_snapshot(codebase_path) do
     # Query the database for the most recent snapshot of this codebase
-    case Singularity.Repo.get_by(Singularity.Schemas.CodebaseSnapshot, codebase_path: codebase_path) do
+    case Singularity.Repo.get_by(Singularity.Schemas.CodebaseSnapshot,
+           codebase_path: codebase_path
+         ) do
       nil ->
         # No snapshot exists yet, take one now
         {:ok, snapshot} = snapshot_codebase(codebase_path)
@@ -561,12 +595,13 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
   rescue
     _ ->
       # Fallback if database query fails
-      {:ok, %{
-        timestamp: DateTime.utc_now() |> DateTime.add(-1, :day),
-        test_success_rate: 0.99,
-        documentation_coverage: 0.90,
-        violations_count: 8
-      }}
+      {:ok,
+       %{
+         timestamp: DateTime.utc_now() |> DateTime.add(-1, :day),
+         test_success_rate: 0.99,
+         documentation_coverage: 0.90,
+         violations_count: 8
+       }}
   end
 
   defp publish_snapshot_to_central(snapshot) do

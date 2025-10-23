@@ -71,7 +71,9 @@ defmodule Singularity.Conversation.GoogleChat do
           📈 Avg Confidence: #{summary.avg_confidence}%
           """),
           case summary.pending_questions || [] do
-            [] -> nil
+            [] ->
+              nil
+
             questions ->
               text_section("""
               🤔 Waiting on your input:

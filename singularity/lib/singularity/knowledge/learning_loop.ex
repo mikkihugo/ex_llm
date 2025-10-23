@@ -180,13 +180,14 @@ defmodule Singularity.Knowledge.LearningLoop do
     quality_score = Keyword.get(opts, :quality_score, nil)
     context = Keyword.get(opts, :context, %{})
 
-    context_data = %{
-      "elapsed_ms" => elapsed_ms,
-      "quality_score" => quality_score
-    }
-    |> Map.merge(context)
-    |> Enum.reject(fn {_k, v} -> v == nil end)
-    |> Map.new()
+    context_data =
+      %{
+        "elapsed_ms" => elapsed_ms,
+        "quality_score" => quality_score
+      }
+      |> Map.merge(context)
+      |> Enum.reject(fn {_k, v} -> v == nil end)
+      |> Map.new()
 
     log_entry = %{
       artifact_id: artifact_id,
@@ -226,7 +227,8 @@ defmodule Singularity.Knowledge.LearningLoop do
       artifact_id: artifact_id,
       artifact_type: artifact_type,
       success: false,
-      feedback_score: 1.0,  # Failure gets lowest score
+      # Failure gets lowest score
+      feedback_score: 1.0,
       context_data: context_data,
       timestamp: DateTime.utc_now()
     }
@@ -257,41 +259,46 @@ defmodule Singularity.Knowledge.LearningLoop do
       failed_uses = total_uses - successful_uses
       success_rate = if total_uses > 0, do: successful_uses / total_uses, else: 0.0
 
-      feedback_scores = logs
+      feedback_scores =
+        logs
         |> Enum.map(& &1.feedback_score)
         |> Enum.reject(&is_nil/1)
 
-      avg_feedback = if Enum.empty?(feedback_scores) do
-        0.0
-      else
-        Enum.sum(feedback_scores) / length(feedback_scores)
-      end
+      avg_feedback =
+        if Enum.empty?(feedback_scores) do
+          0.0
+        else
+          Enum.sum(feedback_scores) / length(feedback_scores)
+        end
 
-      quality_scores = logs
+      quality_scores =
+        logs
         |> Enum.map(fn log -> log.context_data["quality_score"] end)
         |> Enum.reject(&is_nil/1)
 
-      avg_quality = if Enum.empty?(quality_scores) do
-        0.0
-      else
-        Enum.sum(quality_scores) / length(quality_scores)
-      end
+      avg_quality =
+        if Enum.empty?(quality_scores) do
+          0.0
+        else
+          Enum.sum(quality_scores) / length(quality_scores)
+        end
 
       days_active = calculate_days_active(logs)
       usage_trend = calculate_trend(logs)
 
-      {:ok, %{
-        artifact_id: artifact_id,
-        total_uses: total_uses,
-        successful_uses: successful_uses,
-        failed_uses: failed_uses,
-        success_rate: success_rate,
-        avg_feedback_score: avg_feedback,
-        avg_quality_score: avg_quality,
-        days_active: days_active,
-        usage_trend: usage_trend,
-        last_used: get_last_used(logs)
-      }}
+      {:ok,
+       %{
+         artifact_id: artifact_id,
+         total_uses: total_uses,
+         successful_uses: successful_uses,
+         failed_uses: failed_uses,
+         success_rate: success_rate,
+         avg_feedback_score: avg_feedback,
+         avg_quality_score: avg_quality,
+         days_active: days_active,
+         usage_trend: usage_trend,
+         last_used: get_last_used(logs)
+       }}
     else
       {:error, reason} ->
         Logger.warning("Failed to get usage stats", artifact_id: artifact_id, reason: reason)
@@ -332,8 +339,9 @@ defmodule Singularity.Knowledge.LearningLoop do
           },
           feedback: %{
             required: @promotion_feedback_threshold,
-            actual: stats.avg_feedback_score / 5.0,  # Normalize 1-5 to 0-1
-            met: (stats.avg_feedback_score / 5.0) >= @promotion_feedback_threshold
+            # Normalize 1-5 to 0-1
+            actual: stats.avg_feedback_score / 5.0,
+            met: stats.avg_feedback_score / 5.0 >= @promotion_feedback_threshold
           }
         }
       }
@@ -349,7 +357,8 @@ defmodule Singularity.Knowledge.LearningLoop do
     dry_run = Keyword.get(opts, :dry_run, false)
 
     with {:ok, candidates} <- find_promotion_candidates() do
-      promoted = candidates
+      promoted =
+        candidates
         |> Enum.filter(&meets_promotion_criteria?/1)
         |> Enum.map(fn stats ->
           if dry_run do
@@ -362,11 +371,12 @@ defmodule Singularity.Knowledge.LearningLoop do
         |> Enum.filter(fn {status, _} -> status == :ok end)
         |> Enum.map(&elem(&1, 1))
 
-      {:ok, %{
-        promoted_count: length(promoted),
-        promoted_artifacts: promoted,
-        dry_run: dry_run
-      }}
+      {:ok,
+       %{
+         promoted_count: length(promoted),
+         promoted_artifacts: promoted,
+         dry_run: dry_run
+       }}
     end
   end
 
@@ -378,7 +388,8 @@ defmodule Singularity.Knowledge.LearningLoop do
     max_exports = Keyword.get(opts, :max_exports, 100)
 
     with {:ok, candidates} <- find_export_candidates(max_exports) do
-      exported = candidates
+      exported =
+        candidates
         |> Enum.map(&export_artifact_to_git(&1, export_dir))
         |> Enum.filter(fn {status, _} -> status == :ok end)
         |> Enum.map(&elem(&1, 1))
@@ -388,11 +399,12 @@ defmodule Singularity.Knowledge.LearningLoop do
         path: export_dir
       )
 
-      {:ok, %{
-        exported_count: length(exported),
-        export_path: export_dir,
-        exported_artifacts: exported
-      }}
+      {:ok,
+       %{
+         exported_count: length(exported),
+         export_path: export_dir,
+         exported_artifacts: exported
+       }}
     end
   end
 
@@ -401,23 +413,24 @@ defmodule Singularity.Knowledge.LearningLoop do
   """
   def get_learning_insights do
     with {:ok, all_artifacts} <- ArtifactStore.list_all(),
-         promotion_ready = Enum.filter(all_artifacts, fn %{id: id} ->
-           case analyze_quality(id) do
-             {:ok, %{ready_to_promote: true}} -> true
-             _ -> false
-           end
-         end),
+         promotion_ready =
+           Enum.filter(all_artifacts, fn %{id: id} ->
+             case analyze_quality(id) do
+               {:ok, %{ready_to_promote: true}} -> true
+               _ -> false
+             end
+           end),
          trending = calculate_trending_patterns() do
-
-      {:ok, %{
-        total_artifacts: length(all_artifacts),
-        actively_learning: count_actively_learning(all_artifacts),
-        ready_to_promote: length(promotion_ready),
-        promotion_candidates: promotion_ready,
-        trending_patterns: trending,
-        system_learning_rate: calculate_learning_rate(),
-        recommended_actions: generate_recommendations(all_artifacts)
-      }}
+      {:ok,
+       %{
+         total_artifacts: length(all_artifacts),
+         actively_learning: count_actively_learning(all_artifacts),
+         ready_to_promote: length(promotion_ready),
+         promotion_candidates: promotion_ready,
+         trending_patterns: trending,
+         system_learning_rate: calculate_learning_rate(),
+         recommended_actions: generate_recommendations(all_artifacts)
+       }}
     else
       {:error, reason} ->
         Logger.warning("Failed to get learning insights", reason: reason)
@@ -429,12 +442,14 @@ defmodule Singularity.Knowledge.LearningLoop do
 
   defp fetch_usage_logs(artifact_id, _artifact_type) do
     try do
-      logs = Repo.all(
-        from(ue in UsageEvent,
-          where: ue.context["artifact_id"] == ^artifact_id,
-          order_by: [desc: ue.inserted_at]
+      logs =
+        Repo.all(
+          from(ue in UsageEvent,
+            where: ue.context["artifact_id"] == ^artifact_id,
+            order_by: [desc: ue.inserted_at]
+          )
         )
-      )
+
       {:ok, logs}
     rescue
       e ->
@@ -447,19 +462,19 @@ defmodule Singularity.Knowledge.LearningLoop do
     stats.total_uses >= @promotion_usage_threshold and
       stats.success_rate >= @promotion_success_threshold and
       stats.avg_quality_score >= @promotion_quality_threshold and
-      (stats.avg_feedback_score / 5.0) >= @promotion_feedback_threshold
+      stats.avg_feedback_score / 5.0 >= @promotion_feedback_threshold
   end
 
   defp meets_promotion_criteria?(%{
-    usage_count: uses,
-    success_rate: sr,
-    quality_score: qs,
-    feedback_score: fs
-  }) do
+         usage_count: uses,
+         success_rate: sr,
+         quality_score: qs,
+         feedback_score: fs
+       }) do
     uses >= @promotion_usage_threshold and
       sr >= @promotion_success_threshold and
       qs >= @promotion_quality_threshold and
-      (fs / 5.0) >= @promotion_feedback_threshold
+      fs / 5.0 >= @promotion_feedback_threshold
   end
 
   defp calculate_days_active(logs) do
@@ -486,8 +501,8 @@ defmodule Singularity.Knowledge.LearningLoop do
 
   defp get_last_used(logs) do
     logs
-      |> Enum.map(& &1.timestamp)
-      |> Enum.max(DateTime)
+    |> Enum.map(& &1.timestamp)
+    |> Enum.max(DateTime)
   end
 
   defp find_promotion_candidates do
@@ -495,12 +510,13 @@ defmodule Singularity.Knowledge.LearningLoop do
       # Find artifacts with high usage and success rates
       cutoff_days = 30
 
-      candidates = Repo.all(
-        from(ka in KnowledgeArtifact,
-          where: ka.artifact_type in ["code_template", "framework_pattern", "quality_template"],
-          order_by: [desc: ka.updated_at]
+      candidates =
+        Repo.all(
+          from(ka in KnowledgeArtifact,
+            where: ka.artifact_type in ["code_template", "framework_pattern", "quality_template"],
+            order_by: [desc: ka.updated_at]
+          )
         )
-      )
 
       {:ok, candidates}
     rescue
@@ -513,13 +529,14 @@ defmodule Singularity.Knowledge.LearningLoop do
   defp find_export_candidates(max_count) when is_integer(max_count) do
     try do
       # Find recently promoted artifacts ready for export to Git
-      candidates = Repo.all(
-        from(ka in KnowledgeArtifact,
-          where: ka.artifact_type in ["code_template", "framework_pattern", "quality_template"],
-          order_by: [desc: ka.inserted_at],
-          limit: ^max_count
+      candidates =
+        Repo.all(
+          from(ka in KnowledgeArtifact,
+            where: ka.artifact_type in ["code_template", "framework_pattern", "quality_template"],
+            order_by: [desc: ka.inserted_at],
+            limit: ^max_count
+          )
         )
-      )
 
       {:ok, candidates}
     rescue
@@ -547,7 +564,8 @@ defmodule Singularity.Knowledge.LearningLoop do
 
   defp count_actively_learning(artifacts) do
     # Count artifacts with uses in last 7 days
-    length(artifacts) / 10  # Simplified
+    # Simplified
+    length(artifacts) / 10
   end
 
   defp calculate_trending_patterns do

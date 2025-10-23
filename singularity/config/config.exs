@@ -71,7 +71,7 @@ config :singularity, Singularity.Repo,
   password: System.get_env("SINGULARITY_DB_PASSWORD", ""),
   hostname: System.get_env("SINGULARITY_DB_HOST", "localhost"),
   port: String.to_integer(System.get_env("SINGULARITY_DB_PORT", "5432")),
-  pool_size: String.to_integer(System.get_env("SINGULARITY_DB_POOL", "10"))
+  pool_size: String.to_integer(System.get_env("SINGULARITY_DB_POOL", "25"))
 
 config :singularity, ecto_repos: [Singularity.Repo]
 
@@ -104,6 +104,8 @@ config :oban,
     # Cron plugin for scheduled jobs
     {Oban.Plugins.Cron,
      crontab: [
+       # Metrics aggregation: every 5 minutes (feeds Feedback Analyzer)
+       {"*/5 * * * *", Singularity.Jobs.MetricsAggregationWorker},
        # Cache cleanup: every 15 minutes
        {"*/15 * * * *", Singularity.Jobs.CacheCleanupWorker},
        # Cache refresh: every hour

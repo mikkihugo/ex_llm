@@ -119,7 +119,10 @@ defmodule Mix.Tasks.Metadata.Validate do
       |> Enum.sort_by(fn {_path, v} -> v.score end, :asc)
 
     if length(incomplete) > 0 do
-      Mix.shell().info("Files needing attention (showing #{min(10, length(incomplete))} of #{length(incomplete)}):")
+      Mix.shell().info(
+        "Files needing attention (showing #{min(10, length(incomplete))} of #{length(incomplete)}):"
+      )
+
       Mix.shell().info("")
 
       incomplete
@@ -182,23 +185,22 @@ defmodule Mix.Tasks.Metadata.Validate do
     if length(incomplete) == 0 do
       Mix.shell().info("✓ No files need fixing!")
     else
+      Mix.shell().info("")
+      Mix.shell().info("Auto-fixing #{length(incomplete)} files...")
+      Mix.shell().info("")
 
-    Mix.shell().info("")
-    Mix.shell().info("Auto-fixing #{length(incomplete)} files...")
-    Mix.shell().info("")
+      incomplete
+      |> Enum.each(fn file_path ->
+        Mix.shell().info("Fixing: #{file_path}")
 
-    incomplete
-    |> Enum.each(fn file_path ->
-      Mix.shell().info("Fixing: #{file_path}")
+        case MetadataValidator.fix_incomplete_metadata(file_path) do
+          {:ok, :queued} ->
+            Mix.shell().info("  ✓ Queued for auto-fix")
 
-      case MetadataValidator.fix_incomplete_metadata(file_path) do
-        {:ok, :queued} ->
-          Mix.shell().info("  ✓ Queued for auto-fix")
-
-        {:error, reason} ->
-          Mix.shell().info("  ✗ Error: #{inspect(reason)}")
-      end
-    end)
+          {:error, reason} ->
+            Mix.shell().info("  ✗ Error: #{inspect(reason)}")
+        end
+      end)
 
       Mix.shell().info("")
       Mix.shell().info("Auto-fix complete! Re-run validation to see results.")

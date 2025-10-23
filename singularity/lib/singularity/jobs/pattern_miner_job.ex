@@ -87,12 +87,17 @@ defmodule Singularity.Jobs.PatternMinerJob do
     cond do
       instance_id = System.get_env("SINGULARITY_INSTANCE_ID") ->
         instance_id
-      
+
       true ->
         hostname = :inet.gethostname() |> elem(1) |> List.to_string()
         workdir = File.cwd!() |> Path.basename()
-        path_hash = :crypto.hash(:sha256, File.cwd!()) |> Base.encode16(case: :lower) |> String.slice(0, 8)
-        timestamp = DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string() |> String.slice(-6, 6)
+
+        path_hash =
+          :crypto.hash(:sha256, File.cwd!()) |> Base.encode16(case: :lower) |> String.slice(0, 8)
+
+        timestamp =
+          DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string() |> String.slice(-6, 6)
+
         "#{hostname}-#{workdir}-#{path_hash}-#{timestamp}"
     end
   end
@@ -306,7 +311,8 @@ defmodule Singularity.Jobs.PatternMinerJob do
         quality_range: quality_range,
         patterns: cluster_patterns,
         size: length(cluster_patterns),
-        avg_quality: Enum.sum(Enum.map(cluster_patterns, & &1.quality_score)) / length(cluster_patterns),
+        avg_quality:
+          Enum.sum(Enum.map(cluster_patterns, & &1.quality_score)) / length(cluster_patterns),
         created_at: DateTime.utc_now()
       }
     end)

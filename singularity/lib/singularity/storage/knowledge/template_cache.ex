@@ -69,15 +69,18 @@ defmodule Singularity.Knowledge.TemplateCache do
     gnat_name = Singularity.NatsOrchestrator.gnat_name()
 
     # Subscribe to template updates using Singularity.NatsClient
-    Enum.each([
-      "template.updated.>",
-      "template.invalidate.>"
-    ], fn subject ->
-      case Singularity.NatsClient.subscribe(subject) do
-        :ok -> Logger.info("TemplateCache subscribed to: #{subject}")
-        {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
+    Enum.each(
+      [
+        "template.updated.>",
+        "template.invalidate.>"
+      ],
+      fn subject ->
+        case Singularity.NatsClient.subscribe(subject) do
+          :ok -> Logger.info("TemplateCache subscribed to: #{subject}")
+          {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
+        end
       end
-    end)
+    )
 
     Logger.info("Template cache started (ETS only)")
 

@@ -191,6 +191,7 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
     case Singularity.NatsClient.publish(@nats_subject, Jason.encode!(_message)) do
       :ok ->
         Logger.debug("Published pattern to NATS: #{@nats_subject}")
+
       {:error, reason} ->
         Logger.warning("Failed to publish pattern to NATS: #{inspect(reason)}")
     end

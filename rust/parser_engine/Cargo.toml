@@ -19,8 +19,8 @@ crate-type = ["cdylib"]  # Pure NIF - parser_core provides the rlib
 # Core parser library (shared types, no NIF)
 parser_core = { path = "./core" }
 
-# Rustler for NIF
-rustler = "0.34"
+# Rustler for NIF (match Elixir mix.exs version)
+rustler = "0.37"
 
 # Error handling
 thiserror = "1.0"

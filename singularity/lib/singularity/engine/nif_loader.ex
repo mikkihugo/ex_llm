@@ -35,14 +35,19 @@ defmodule Singularity.Engine.NifLoader do
 
   require Logger
 
-  @type nif_name :: :parser_engine | :code_engine | :architecture_engine |
-                    :quality_engine | :embedding_engine | :prompt_engine
+  @type nif_name ::
+          :parser_engine
+          | :code_engine
+          | :architecture_engine
+          | :quality_engine
+          | :embedding_engine
+          | :prompt_engine
   @type health_status :: :ok | {:error, term()}
 
   # Map of NIF name to its Elixir module
   @nif_modules %{
     parser_engine: Singularity.ParserEngine,
-    code_engine: Singularity.RustAnalyzer,
+    code_engine: Singularity.CodeEngineNif,
     architecture_engine: Singularity.ArchitectureEngine,
     quality_engine: Singularity.QualityEngine,
     embedding_engine: Singularity.EmbeddingEngine,
@@ -78,8 +83,10 @@ defmodule Singularity.Engine.NifLoader do
       :ok -> true
       {:ok, _} -> true
       {:error, :nif_not_loaded} -> false
-      {:error, :no_health_check} -> true  # Assume loaded if no health check defined
-      {:error, _} -> true  # Loaded but has other errors
+      # Assume loaded if no health check defined
+      {:error, :no_health_check} -> true
+      # Loaded but has other errors
+      {:error, _} -> true
     end
   end
 
@@ -109,6 +116,7 @@ defmodule Singularity.Engine.NifLoader do
         rescue
           ErlangError ->
             {:error, :nif_not_loaded}
+
           error ->
             {:error, error}
         end
@@ -150,7 +158,8 @@ defmodule Singularity.Engine.NifLoader do
         module: module_for(nif),
         loaded: loaded?(nif),
         health: health,
-        crate: nif  # Rust crate name matches NIF name
+        # Rust crate name matches NIF name
+        crate: nif
       }
     end)
   end

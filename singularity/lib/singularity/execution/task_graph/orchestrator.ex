@@ -119,7 +119,8 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
     # HTDAG graph for dependency resolution
     :tasks,
     # Map of task_id => task metadata
-    :results         # Map of task_id => result
+    # Map of task_id => result
+    :results
   ]
 
   ## Public API

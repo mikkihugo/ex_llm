@@ -213,7 +213,8 @@ defmodule Singularity.PackageAndCodebaseSearch do
     )
   end
 
-  defp search_your_code(query, codebase_id, limit) when is_binary(query) and is_binary(codebase_id) do
+  defp search_your_code(query, codebase_id, limit)
+       when is_binary(query) and is_binary(codebase_id) do
     try do
       case Singularity.CodeSearch.search(query, %{
              codebase_id: codebase_id,
@@ -231,7 +232,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
               metadata: result.metadata || %{}
             }
           end)
-        
+
         {:error, reason} ->
           Logger.warning("Semantic code search failed: #{inspect(reason)}")
           []

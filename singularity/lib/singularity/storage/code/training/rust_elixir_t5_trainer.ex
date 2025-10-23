@@ -1,19 +1,19 @@
 defmodule Singularity.RustElixirT5Trainer do
   @moduledoc """
   Specialized T5 Trainer for Rust and Elixir Code Generation
-  
+
   Optimized training pipeline specifically for Rust and Elixir code patterns.
   Includes language-specific preprocessing, quality scoring, and evaluation metrics.
-  
+
   ## Features:
   - Rust-specific code parsing and instruction generation
   - Elixir-specific module/function pattern recognition
   - Cross-language learning (Rust patterns → Elixir, Elixir patterns → Rust)
   - Language-specific quality metrics
   - Specialized evaluation for both languages
-  
+
   ## Usage:
-  
+
       # Train on both Rust and Elixir
       {:ok, session_id} = RustElixirT5Trainer.prepare_multi_language_training(
         name: "rust_elixir_v1",
@@ -30,7 +30,14 @@ defmodule Singularity.RustElixirT5Trainer do
 
   require Logger
   alias Singularity.{CodeStore, Repo}
-  alias Singularity.Schemas.{T5TrainingSession, T5TrainingExample, T5ModelVersion, T5EvaluationResult}
+
+  alias Singularity.Schemas.{
+    T5TrainingSession,
+    T5TrainingExample,
+    T5ModelVersion,
+    T5EvaluationResult
+  }
+
   import Ecto.Query
 
   defp rust_patterns do
@@ -57,7 +64,7 @@ defmodule Singularity.RustElixirT5Trainer do
 
   @doc """
   Prepare multi-language training data for Rust and Elixir
-  
+
   ## Options:
   - `:name` - Training session name (required)
   - `:languages` - List of languages ["rust", "elixir"] (default: both)
@@ -78,7 +85,8 @@ defmodule Singularity.RustElixirT5Trainer do
     # Create training session
     training_session = %T5TrainingSession{
       name: name,
-      description: "Multi-language T5 training for #{Enum.join(languages, ", ")} with cross-language learning",
+      description:
+        "Multi-language T5 training for #{Enum.join(languages, ", ")} with cross-language learning",
       language: Enum.join(languages, ","),
       base_model: "Salesforce/codet5p-770m",
       status: :preparing,
@@ -95,14 +103,20 @@ defmodule Singularity.RustElixirT5Trainer do
     case Repo.insert(training_session) do
       {:ok, session} ->
         # Prepare training examples for each language
-        case prepare_language_specific_examples(session.id, languages, max_examples, quality_threshold) do
+        case prepare_language_specific_examples(
+               session.id,
+               languages,
+               max_examples,
+               quality_threshold
+             ) do
           {:ok, {total_train, total_val}} ->
             # Add cross-language examples if enabled
-            {final_train, final_val} = if cross_language do
-              add_cross_language_examples(session.id, languages, total_train, total_val)
-            else
-              {total_train, total_val}
-            end
+            {final_train, final_val} =
+              if cross_language do
+                add_cross_language_examples(session.id, languages, total_train, total_val)
+              else
+                {total_train, total_val}
+              end
 
             # Update session
             session
@@ -115,14 +129,15 @@ defmodule Singularity.RustElixirT5Trainer do
 
             Logger.info("Prepared #{final_train} training and #{final_val} validation examples")
             {:ok, session.id}
-          
+
           {:error, reason} ->
             session
             |> T5TrainingSession.changeset(%{status: :failed, error_message: inspect(reason)})
             |> Repo.update()
+
             {:error, reason}
         end
-      
+
       {:error, changeset} ->
         Logger.error("Failed to create training session: #{inspect(changeset.errors)}")
         {:error, changeset}
@@ -169,7 +184,7 @@ defmodule Singularity.RustElixirT5Trainer do
 
     # Evaluate Rust performance
     {:ok, rust_metrics} = evaluate_language_performance(rust_examples, "rust")
-    
+
     # Evaluate Elixir performance  
     {:ok, elixir_metrics} = evaluate_language_performance(elixir_examples, "elixir")
 
@@ -202,6 +217,7 @@ defmodule Singularity.RustElixirT5Trainer do
       case prepare_language_examples(session_id, language, max_examples, quality_threshold) do
         {:ok, {train_count, val_count}} ->
           {:cont, {train_acc + train_count, val_acc + val_count}}
+
         {:error, reason} ->
           {:halt, {:error, reason}}
       end
@@ -210,18 +226,19 @@ defmodule Singularity.RustElixirT5Trainer do
 
   defp prepare_language_examples(session_id, language, max_examples, quality_threshold) do
     # Query code chunks for specific language
-    query = from c in CodeStore,
-      where: c.language == ^language and fragment("byte_length(?)", c.content) >= 50,
-      select: %{
-        content: c.content,
-        language: c.language,
-        file_path: c.file_path,
-        repo: c.repo,
-        inserted_at: c.inserted_at,
-        id: c.id
-      }
+    query =
+      from c in CodeStore,
+        where: c.language == ^language and fragment("byte_length(?)", c.content) >= 50,
+        select: %{
+          content: c.content,
+          language: c.language,
+          file_path: c.file_path,
+          repo: c.repo,
+          inserted_at: c.inserted_at,
+          id: c.id
+        }
 
-    code_chunks = 
+    code_chunks =
       Repo.all(query)
       |> Enum.take(max_examples)
 
@@ -229,7 +246,7 @@ defmodule Singularity.RustElixirT5Trainer do
       {:error, :insufficient_data}
     else
       # Convert to training examples with language-specific preprocessing
-      examples = 
+      examples =
         code_chunks
         |> Enum.map(&convert_to_language_specific_example/1)
         |> Enum.filter(&(quality_score(&1) >= quality_threshold))
@@ -266,8 +283,10 @@ defmodule Singularity.RustElixirT5Trainer do
     case language do
       "rust" ->
         generate_rust_instruction(content)
+
       "elixir" ->
         generate_elixir_instruction(content)
+
       _ ->
         "Generate #{language} code"
     end
@@ -280,23 +299,23 @@ defmodule Singularity.RustElixirT5Trainer do
       Regex.match?(patterns.functions, content) ->
         [_, func_name] = Regex.run(patterns.functions, content)
         "Create Rust function #{func_name} with proper error handling and documentation"
-      
+
       Regex.match?(patterns.structs, content) ->
         [_, struct_name] = Regex.run(patterns.structs, content)
         "Define Rust struct #{struct_name} with appropriate fields and methods"
-      
+
       Regex.match?(patterns.impls, content) ->
         [_, trait_name] = Regex.run(patterns.impls, content)
         "Implement #{trait_name} trait with required methods"
-      
+
       Regex.match?(patterns.traits, content) ->
         [_, trait_name] = Regex.run(patterns.traits, content)
         "Define Rust trait #{trait_name} with associated types and methods"
-      
+
       Regex.match?(patterns.enums, content) ->
         [_, enum_name] = Regex.run(patterns.enums, content)
         "Create Rust enum #{enum_name} with variants and methods"
-      
+
       true ->
         "Generate Rust code following best practices and error handling patterns"
     end
@@ -309,23 +328,23 @@ defmodule Singularity.RustElixirT5Trainer do
       Regex.match?(patterns.modules, content) ->
         [_, module_name] = Regex.run(patterns.modules, content)
         "Create Elixir module #{module_name} with proper documentation and error handling"
-      
+
       Regex.match?(patterns.functions, content) ->
         [_, func_name] = Regex.run(patterns.functions, content)
         "Define Elixir function #{func_name} with pattern matching and documentation"
-      
+
       Regex.match?(patterns.private_functions, content) ->
         [_, func_name] = Regex.run(patterns.private_functions, content)
         "Create private Elixir function #{func_name} for internal use"
-      
+
       Regex.match?(patterns.macros, content) ->
         [_, macro_name] = Regex.run(patterns.macros, content)
         "Define Elixir macro #{macro_name} for code generation"
-      
+
       Regex.match?(patterns.behaviours, content) ->
         [_, behaviour_name] = Regex.run(patterns.behaviours, content)
         "Implement #{behaviour_name} behaviour with required callbacks"
-      
+
       true ->
         "Generate Elixir code following OTP patterns and best practices"
     end
@@ -335,12 +354,14 @@ defmodule Singularity.RustElixirT5Trainer do
     # Extract context from file path
     path_parts = String.split(file_path, "/")
     filename = List.last(path_parts)
-    
+
     case language do
       "rust" ->
         "File: #{filename} in Rust project"
+
       "elixir" ->
         "File: #{filename} in Elixir project"
+
       _ ->
         "File: #{filename}"
     end
@@ -348,26 +369,29 @@ defmodule Singularity.RustElixirT5Trainer do
 
   defp quality_score(%{content: content, language: language}) do
     base_score = 0.5
-    
+
     # Language-specific quality indicators
-    language_score = case language do
-      "rust" ->
-        rust_quality_indicators(content)
-      "elixir" ->
-        elixir_quality_indicators(content)
-      _ ->
-        0.0
-    end
-    
+    language_score =
+      case language do
+        "rust" ->
+          rust_quality_indicators(content)
+
+        "elixir" ->
+          elixir_quality_indicators(content)
+
+        _ ->
+          0.0
+      end
+
     # General quality indicators
     general_score = general_quality_indicators(content)
-    
+
     min(1.0, base_score + language_score + general_score)
   end
 
   defp rust_quality_indicators(content) do
     score = 0.0
-    
+
     # Check for Rust best practices
     score = if String.contains?(content, "Result<"), do: score + 0.1, else: score
     score = if String.contains?(content, "Option<"), do: score + 0.1, else: score
@@ -375,13 +399,13 @@ defmodule Singularity.RustElixirT5Trainer do
     score = if String.contains?(content, "///"), do: score + 0.1, else: score
     score = if String.contains?(content, "match "), do: score + 0.1, else: score
     score = if String.contains?(content, "?;"), do: score + 0.1, else: score
-    
+
     score
   end
 
   defp elixir_quality_indicators(content) do
     score = 0.0
-    
+
     # Check for Elixir best practices
     score = if String.contains?(content, "@doc"), do: score + 0.1, else: score
     score = if String.contains?(content, "defmodule"), do: score + 0.1, else: score
@@ -389,22 +413,29 @@ defmodule Singularity.RustElixirT5Trainer do
     score = if String.contains?(content, "case "), do: score + 0.1, else: score
     score = if String.contains?(content, "with "), do: score + 0.1, else: score
     score = if String.contains?(content, "|>"), do: score + 0.1, else: score
-    
+
     score
   end
 
   defp general_quality_indicators(content) do
     score = 0.0
-    
+
     # Length-based scoring
     length = String.length(content)
     score = if length > 100, do: score + 0.1, else: score
     score = if length > 500, do: score + 0.1, else: score
-    
+
     # Structure indicators
-    score = if String.contains?(content, "fn ") or String.contains?(content, "def "), do: score + 0.1, else: score
-    score = if String.contains?(content, "//") or String.contains?(content, "#"), do: score + 0.1, else: score
-    
+    score =
+      if String.contains?(content, "fn ") or String.contains?(content, "def "),
+        do: score + 0.1,
+        else: score
+
+    score =
+      if String.contains?(content, "//") or String.contains?(content, "#"),
+        do: score + 0.1,
+        else: score
+
     score
   end
 
@@ -418,9 +449,13 @@ defmodule Singularity.RustElixirT5Trainer do
     train_records = Enum.map(train_examples, &build_training_record(session_id, &1, false))
     val_records = Enum.map(val_examples, &build_training_record(session_id, &1, true))
 
-    case Repo.insert_all(T5TrainingExample, Enum.map(train_records ++ val_records, &Map.from_struct/1)) do
+    case Repo.insert_all(
+           T5TrainingExample,
+           Enum.map(train_records ++ val_records, &Map.from_struct/1)
+         ) do
       {count, _} when count > 0 ->
         {:ok, {length(train_records), length(val_records)}}
+
       _ ->
         {:error, :insert_failed}
     end
@@ -445,21 +480,21 @@ defmodule Singularity.RustElixirT5Trainer do
   defp add_cross_language_examples(session_id, languages, train_count, val_count) do
     # Implement cross-language pattern learning
     # This creates examples that teach Rust patterns to Elixir generation and vice versa
-    
+
     if "rust" in languages and "elixir" in languages do
       # Generate cross-language examples
       rust_to_elixir_count = div(train_count, 4)
       elixir_to_rust_count = div(train_count, 4)
-      
+
       # Create Rust → Elixir examples
       create_rust_to_elixir_examples(session_id, rust_to_elixir_count)
-      
+
       # Create Elixir → Rust examples  
       create_elixir_to_rust_examples(session_id, elixir_to_rust_count)
-      
+
       # Create pattern translation examples
       create_pattern_translation_examples(session_id, div(train_count, 4))
-      
+
       {train_count, val_count}
     else
       {train_count, val_count}
@@ -481,12 +516,12 @@ defmodule Singularity.RustElixirT5Trainer do
         instruction: "Convert this Rust function to Elixir function",
         input: "fn add(a: i32, b: i32) -> i32 { a + b }",
         output: "def add(a, b), do: a + b",
-        language: "elixir", 
+        language: "elixir",
         is_validation: false,
         metadata: %{pattern_type: "function_conversion", source_language: "rust"}
       }
     ]
-    
+
     # Store examples in database
     Enum.each(examples, fn example ->
       %T5TrainingExample{}
@@ -509,13 +544,14 @@ defmodule Singularity.RustElixirT5Trainer do
       %{
         instruction: "Convert this Elixir GenServer to Rust actor",
         input: "defmodule MyServer do\n  use GenServer\n  def init(state), do: {:ok, state}\nend",
-        output: "struct MyServer {\n    state: State\n}\n\nimpl Actor for MyServer {\n    fn init(state: State) -> Self { Self { state } }\n}",
+        output:
+          "struct MyServer {\n    state: State\n}\n\nimpl Actor for MyServer {\n    fn init(state: State) -> Self { Self { state } }\n}",
         language: "rust",
         is_validation: false,
         metadata: %{pattern_type: "genserver_to_actor", source_language: "elixir"}
       }
     ]
-    
+
     # Store examples in database
     Enum.each(examples, fn example ->
       %T5TrainingExample{}
@@ -536,15 +572,16 @@ defmodule Singularity.RustElixirT5Trainer do
         metadata: %{pattern_type: "error_handling", cross_language: true}
       },
       %{
-        instruction: "Generate async pattern in both languages", 
+        instruction: "Generate async pattern in both languages",
         input: "Process data asynchronously",
-        output: "Rust: async fn process_data() -> Result<(), Error>\nElixir: def process_data_async(), do: Task.async(fn -> process_data() end)",
+        output:
+          "Rust: async fn process_data() -> Result<(), Error>\nElixir: def process_data_async(), do: Task.async(fn -> process_data() end)",
         language: "cross_language",
         is_validation: false,
         metadata: %{pattern_type: "async_processing", cross_language: true}
       }
     ]
-    
+
     # Store examples in database
     Enum.each(examples, fn example ->
       %T5TrainingExample{}
@@ -554,15 +591,16 @@ defmodule Singularity.RustElixirT5Trainer do
   end
 
   defp get_test_examples(language, count) do
-    query = from e in T5TrainingExample,
-      where: e.language == ^language and e.is_validation == true,
-      limit: ^count,
-      select: %{
-        instruction: e.instruction,
-        input: e.input,
-        output: e.output,
-        language: e.language
-      }
+    query =
+      from e in T5TrainingExample,
+        where: e.language == ^language and e.is_validation == true,
+        limit: ^count,
+        select: %{
+          instruction: e.instruction,
+          input: e.input,
+          output: e.output,
+          language: e.language
+        }
 
     examples = Repo.all(query)
     {:ok, examples}
@@ -573,10 +611,13 @@ defmodule Singularity.RustElixirT5Trainer do
     case language do
       "rust" ->
         evaluate_rust_performance(examples)
+
       "elixir" ->
         evaluate_elixir_performance(examples)
+
       "cross_language" ->
         evaluate_cross_language_performance(examples)
+
       _ ->
         evaluate_generic_performance(examples)
     end
@@ -626,49 +667,52 @@ defmodule Singularity.RustElixirT5Trainer do
   # Rust-specific evaluation functions
   defp calculate_rust_syntax_accuracy(examples) do
     # Check Rust syntax correctness
-    valid_count = 
+    valid_count =
       examples
       |> Enum.count(fn example ->
         is_valid_rust_syntax?(example.output)
       end)
-    
+
     if length(examples) > 0, do: valid_count / length(examples), else: 0.0
   end
 
   defp calculate_rust_compilation_rate(examples) do
     # Check if generated Rust code compiles
-    compiles_count = 
+    compiles_count =
       examples
       |> Enum.count(fn example ->
         rust_code_compiles?(example.output)
       end)
-    
+
     if length(examples) > 0, do: compiles_count / length(examples), else: 0.0
   end
 
   defp calculate_rust_performance_score(examples) do
     # Calculate average performance score across examples
-    scores = Enum.map(examples, fn example ->
-      analyze_rust_performance(example.output)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_rust_performance(example.output)
+      end)
 
     if length(scores) > 0, do: Enum.sum(scores) / length(scores), else: 0.0
   end
 
   defp calculate_rust_memory_safety_score(examples) do
     # Calculate average memory safety score across examples
-    scores = Enum.map(examples, fn example ->
-      analyze_rust_memory_safety(example.output)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_rust_memory_safety(example.output)
+      end)
 
     if length(scores) > 0, do: Enum.sum(scores) / length(scores), else: 0.0
   end
 
   defp calculate_rust_idiomatic_score(examples) do
     # Calculate average idiomatic score across examples
-    scores = Enum.map(examples, fn example ->
-      analyze_rust_idioms(example.output)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_rust_idioms(example.output)
+      end)
 
     if length(scores) > 0, do: Enum.sum(scores) / length(scores), else: 0.0
   end
@@ -676,49 +720,52 @@ defmodule Singularity.RustElixirT5Trainer do
   # Elixir-specific evaluation functions
   defp calculate_elixir_syntax_accuracy(examples) do
     # Check Elixir syntax correctness
-    valid_count = 
+    valid_count =
       examples
       |> Enum.count(fn example ->
         is_valid_elixir_syntax?(example.output)
       end)
-    
+
     if length(examples) > 0, do: valid_count / length(examples), else: 0.0
   end
 
   defp calculate_elixir_compilation_rate(examples) do
     # Check if generated Elixir code compiles
-    compiles_count = 
+    compiles_count =
       examples
       |> Enum.count(fn example ->
         elixir_code_compiles?(example.output)
       end)
-    
+
     if length(examples) > 0, do: compiles_count / length(examples), else: 0.0
   end
 
   defp calculate_elixir_pattern_usage_score(examples) do
     # Calculate average pattern usage score across examples
-    scores = Enum.map(examples, fn example ->
-      analyze_elixir_patterns(example.output)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_elixir_patterns(example.output)
+      end)
 
     if length(scores) > 0, do: Enum.sum(scores) / length(scores), else: 0.0
   end
 
   defp calculate_elixir_functional_style_score(examples) do
     # Calculate average functional style score across examples
-    scores = Enum.map(examples, fn example ->
-      analyze_elixir_functional_style(example.output)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_elixir_functional_style(example.output)
+      end)
 
     if length(scores) > 0, do: Enum.sum(scores) / length(scores), else: 0.0
   end
 
   defp calculate_elixir_otp_compliance_score(examples) do
     # Calculate average OTP compliance score across examples
-    scores = Enum.map(examples, fn example ->
-      analyze_elixir_otp_compliance(example.output)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_elixir_otp_compliance(example.output)
+      end)
 
     if length(scores) > 0, do: Enum.sum(scores) / length(scores), else: 0.0
   end
@@ -731,9 +778,10 @@ defmodule Singularity.RustElixirT5Trainer do
 
   defp calculate_pattern_preservation(examples) do
     # Evaluate how well patterns are preserved across languages
-    scores = Enum.map(examples, fn example ->
-      analyze_pattern_preservation(example.input, example.output)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_pattern_preservation(example.input, example.output)
+      end)
 
     sum_scores = Enum.sum(scores)
     sum_scores / max(length(examples), 1)
@@ -741,9 +789,10 @@ defmodule Singularity.RustElixirT5Trainer do
 
   defp calculate_language_appropriateness(examples) do
     # Evaluate how appropriate the output is for the target language
-    scores = Enum.map(examples, fn example ->
-      analyze_language_appropriateness(example.output, example.language)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_language_appropriateness(example.output, example.language)
+      end)
 
     sum_scores = Enum.sum(scores)
     sum_scores / max(length(examples), 1)
@@ -751,9 +800,10 @@ defmodule Singularity.RustElixirT5Trainer do
 
   defp calculate_consistency_score(examples) do
     # Evaluate consistency across different examples
-    scores = Enum.map(examples, fn example ->
-      analyze_consistency(example)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_consistency(example)
+      end)
 
     sum_scores = Enum.sum(scores)
     sum_scores / max(length(examples), 1)
@@ -762,20 +812,21 @@ defmodule Singularity.RustElixirT5Trainer do
   # Generic evaluation functions
   defp calculate_generic_syntax_accuracy(examples) do
     # Generic syntax accuracy check
-    valid_count = 
+    valid_count =
       examples
       |> Enum.count(fn example ->
         is_valid_syntax?(example.output, example.language)
       end)
-    
+
     if length(examples) > 0, do: valid_count / length(examples), else: 0.0
   end
 
   defp calculate_completeness_score(examples) do
     # Evaluate completeness of generated code
-    scores = Enum.map(examples, fn example ->
-      analyze_completeness(example.input, example.output)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_completeness(example.input, example.output)
+      end)
 
     sum_scores = Enum.sum(scores)
     sum_scores / max(length(examples), 1)
@@ -783,9 +834,10 @@ defmodule Singularity.RustElixirT5Trainer do
 
   defp calculate_quality_score(examples) do
     # Overall quality score
-    scores = Enum.map(examples, fn example ->
-      analyze_overall_quality(example)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_overall_quality(example)
+      end)
 
     sum_scores = Enum.sum(scores)
     sum_scores / max(length(examples), 1)
@@ -808,9 +860,12 @@ defmodule Singularity.RustElixirT5Trainer do
 
     # Check for semicolons in appropriate places
     lines = String.split(code, "\n")
-    has_statements = Enum.any?(lines, fn line ->
-      String.trim(line) != "" and not String.ends_with?(line, "{") and not String.ends_with?(line, "}")
-    end)
+
+    has_statements =
+      Enum.any?(lines, fn line ->
+        String.trim(line) != "" and not String.ends_with?(line, "{") and
+          not String.ends_with?(line, "}")
+      end)
 
     has_fn and balanced_braces and (has_main or has_statements)
   end
@@ -818,9 +873,9 @@ defmodule Singularity.RustElixirT5Trainer do
   defp rust_code_compiles?(code) do
     # Simulate compilation check by validating syntax and structure
     is_valid_rust_syntax?(code) and
-    not String.contains?(code, "undefined") and
-    not String.contains?(code, "error") and
-    String.length(String.trim(code)) > 10
+      not String.contains?(code, "undefined") and
+      not String.contains?(code, "error") and
+      String.length(String.trim(code)) > 10
   end
 
   defp analyze_rust_performance(code) do
@@ -828,9 +883,20 @@ defmodule Singularity.RustElixirT5Trainer do
     score = 0.5
 
     # Check for efficient patterns
-    score = if String.contains?(code, "&") or String.contains?(code, "clone()"), do: score + 0.1, else: score
-    score = if String.contains?(code, "Vec::") or String.contains?(code, "HashMap::"), do: score + 0.1, else: score
-    score = if String.contains?(code, "iter()") or String.contains?(code, "map("), do: score + 0.1, else: score
+    score =
+      if String.contains?(code, "&") or String.contains?(code, "clone()"),
+        do: score + 0.1,
+        else: score
+
+    score =
+      if String.contains?(code, "Vec::") or String.contains?(code, "HashMap::"),
+        do: score + 0.1,
+        else: score
+
+    score =
+      if String.contains?(code, "iter()") or String.contains?(code, "map("),
+        do: score + 0.1,
+        else: score
 
     # Penalize for obvious inefficiencies
     score = if String.contains?(code, "unwrap()"), do: score - 0.1, else: score
@@ -844,13 +910,28 @@ defmodule Singularity.RustElixirT5Trainer do
     score = 0.8
 
     # Reward safe patterns
-    score = if String.contains?(code, "&") and not String.contains?(code, "unsafe"), do: score + 0.1, else: score
-    score = if String.contains?(code, "Option<") or String.contains?(code, "Result<"), do: score + 0.1, else: score
-    score = if String.contains?(code, ".clone()") and String.contains?(code, "&"), do: score - 0.05, else: score
+    score =
+      if String.contains?(code, "&") and not String.contains?(code, "unsafe"),
+        do: score + 0.1,
+        else: score
+
+    score =
+      if String.contains?(code, "Option<") or String.contains?(code, "Result<"),
+        do: score + 0.1,
+        else: score
+
+    score =
+      if String.contains?(code, ".clone()") and String.contains?(code, "&"),
+        do: score - 0.05,
+        else: score
 
     # Penalize unsafe patterns
     score = if String.contains?(code, "unsafe"), do: score - 0.3, else: score
-    score = if String.contains?(code, "*mut") or String.contains?(code, "*const"), do: score - 0.2, else: score
+
+    score =
+      if String.contains?(code, "*mut") or String.contains?(code, "*const"),
+        do: score - 0.2,
+        else: score
 
     max(0.0, min(1.0, score))
   end
@@ -860,12 +941,27 @@ defmodule Singularity.RustElixirT5Trainer do
     score = 0.6
 
     # Check for Rust idioms
-    score = if String.contains?(code, "impl") and String.contains?(code, "struct"), do: score + 0.1, else: score
-    score = if String.contains?(code, "match") or String.contains?(code, "if let"), do: score + 0.1, else: score
-    score = if String.contains?(code, "derive(") or String.contains?(code, "#[derive"), do: score + 0.1, else: score
+    score =
+      if String.contains?(code, "impl") and String.contains?(code, "struct"),
+        do: score + 0.1,
+        else: score
+
+    score =
+      if String.contains?(code, "match") or String.contains?(code, "if let"),
+        do: score + 0.1,
+        else: score
+
+    score =
+      if String.contains?(code, "derive(") or String.contains?(code, "#[derive"),
+        do: score + 0.1,
+        else: score
 
     # Check for non-idiomatic patterns
-    score = if String.contains?(code, "null") or String.contains?(code, "NULL"), do: score - 0.2, else: score
+    score =
+      if String.contains?(code, "null") or String.contains?(code, "NULL"),
+        do: score - 0.2,
+        else: score
+
     score = if String.contains?(code, "for i in 0.."), do: score + 0.05, else: score
 
     max(0.0, min(1.0, score))
@@ -886,7 +982,8 @@ defmodule Singularity.RustElixirT5Trainer do
     balanced_ends = abs(def_count - end_count) <= 1
 
     # Check for proper Elixir patterns
-    has_patterns = String.contains?(code, "do") or String.contains?(code, "|>") or String.contains?(code, "->")
+    has_patterns =
+      String.contains?(code, "do") or String.contains?(code, "|>") or String.contains?(code, "->")
 
     (has_def or has_module) and has_end and balanced_ends and has_patterns
   end
@@ -894,9 +991,9 @@ defmodule Singularity.RustElixirT5Trainer do
   defp elixir_code_compiles?(code) do
     # Simulate compilation check by validating syntax and structure
     is_valid_elixir_syntax?(code) and
-    not String.contains?(code, "undefined") and
-    not String.contains?(code, "** (") and
-    String.length(String.trim(code)) > 10
+      not String.contains?(code, "undefined") and
+      not String.contains?(code, "** (") and
+      String.length(String.trim(code)) > 10
   end
 
   defp analyze_elixir_patterns(code) do
@@ -904,16 +1001,32 @@ defmodule Singularity.RustElixirT5Trainer do
     score = 0.5
 
     # Reward pattern matching usage
-    score = if String.contains?(code, "case ") or String.contains?(code, "cond "), do: score + 0.15, else: score
+    score =
+      if String.contains?(code, "case ") or String.contains?(code, "cond "),
+        do: score + 0.15,
+        else: score
+
     score = if String.contains?(code, "with "), do: score + 0.1, else: score
-    score = if String.contains?(code, "|>") or String.contains?(code, "Enum."), do: score + 0.1, else: score
-    score = if String.contains?(code, "%{}") or String.contains?(code, "%"), do: score + 0.1, else: score
+
+    score =
+      if String.contains?(code, "|>") or String.contains?(code, "Enum."),
+        do: score + 0.1,
+        else: score
+
+    score =
+      if String.contains?(code, "%{}") or String.contains?(code, "%"),
+        do: score + 0.1,
+        else: score
 
     # Check for function clauses with patterns
     lines = String.split(code, "\n")
-    has_pattern_clauses = Enum.any?(lines, fn line ->
-      String.contains?(line, "def ") and (String.contains?(line, "when ") or String.contains?(line, "("))
-    end)
+
+    has_pattern_clauses =
+      Enum.any?(lines, fn line ->
+        String.contains?(line, "def ") and
+          (String.contains?(line, "when ") or String.contains?(line, "("))
+      end)
+
     score = if has_pattern_clauses, do: score + 0.1, else: score
 
     max(0.0, min(1.0, score))
@@ -924,13 +1037,29 @@ defmodule Singularity.RustElixirT5Trainer do
     score = 0.7
 
     # Reward functional patterns
-    score = if String.contains?(code, "Enum.") or String.contains?(code, "Stream."), do: score + 0.1, else: score
-    score = if String.contains?(code, "|>") or String.contains?(code, "&"), do: score + 0.1, else: score
-    score = if String.contains?(code, "fn ") or String.contains?(code, "&("), do: score + 0.1, else: score
+    score =
+      if String.contains?(code, "Enum.") or String.contains?(code, "Stream."),
+        do: score + 0.1,
+        else: score
+
+    score =
+      if String.contains?(code, "|>") or String.contains?(code, "&"), do: score + 0.1, else: score
+
+    score =
+      if String.contains?(code, "fn ") or String.contains?(code, "&("),
+        do: score + 0.1,
+        else: score
 
     # Penalize imperative patterns
-    score = if String.contains?(code, "for ") and not String.contains?(code, "Enum"), do: score - 0.1, else: score
-    score = if String.contains?(code, "while ") or String.contains?(code, "loop "), do: score - 0.1, else: score
+    score =
+      if String.contains?(code, "for ") and not String.contains?(code, "Enum"),
+        do: score - 0.1,
+        else: score
+
+    score =
+      if String.contains?(code, "while ") or String.contains?(code, "loop "),
+        do: score - 0.1,
+        else: score
 
     # Check for immutability
     has_mutation = String.contains?(code, "var!") or String.contains?(code, "update_in")
@@ -944,9 +1073,21 @@ defmodule Singularity.RustElixirT5Trainer do
     score = 0.6
 
     # Check for OTP patterns
-    score = if String.contains?(code, "GenServer") or String.contains?(code, "use GenServer"), do: score + 0.15, else: score
-    score = if String.contains?(code, "Supervisor") or String.contains?(code, "use Supervisor"), do: score + 0.15, else: score
-    score = if String.contains?(code, "@behaviour") or String.contains?(code, "@callback"), do: score + 0.1, else: score
+    score =
+      if String.contains?(code, "GenServer") or String.contains?(code, "use GenServer"),
+        do: score + 0.15,
+        else: score
+
+    score =
+      if String.contains?(code, "Supervisor") or String.contains?(code, "use Supervisor"),
+        do: score + 0.15,
+        else: score
+
+    score =
+      if String.contains?(code, "@behaviour") or String.contains?(code, "@callback"),
+        do: score + 0.1,
+        else: score
+
     score = if String.contains?(code, "start_link"), do: score + 0.1, else: score
 
     # Check for proper module structure
@@ -971,7 +1112,7 @@ defmodule Singularity.RustElixirT5Trainer do
 
     if total_input > 0 do
       concept_overlap = overlap / total_input
-      score = score + (concept_overlap * 0.4)
+      score = score + concept_overlap * 0.4
     end
 
     # Check for structural similarity
@@ -982,7 +1123,9 @@ defmodule Singularity.RustElixirT5Trainer do
 
     # Check for data structure similarity
     input_has_structs = String.contains?(input, "struct") or String.contains?(input, "class")
-    output_has_structs = String.contains?(output, "struct") or String.contains?(output, "defmodule")
+
+    output_has_structs =
+      String.contains?(output, "struct") or String.contains?(output, "defmodule")
 
     if input_has_structs == output_has_structs, do: score = score + 0.1
 
@@ -996,16 +1139,21 @@ defmodule Singularity.RustElixirT5Trainer do
     # Check for algorithmic patterns
     patterns = ["loop", "iteration", "recursion", "conditional", "collection"]
 
-    preserved_patterns = Enum.count(patterns, fn pattern ->
-      String.contains?(input, pattern) and String.contains?(output, pattern)
-    end)
+    preserved_patterns =
+      Enum.count(patterns, fn pattern ->
+        String.contains?(input, pattern) and String.contains?(output, pattern)
+      end)
 
     pattern_score = preserved_patterns / length(patterns)
-    score = score + (pattern_score * 0.3)
+    score = score + pattern_score * 0.3
 
     # Check for error handling patterns
-    input_has_error_handling = String.contains?(input, "error") or String.contains?(input, "exception")
-    output_has_error_handling = String.contains?(output, "Result") or String.contains?(output, "try") or String.contains?(output, "catch")
+    input_has_error_handling =
+      String.contains?(input, "error") or String.contains?(input, "exception")
+
+    output_has_error_handling =
+      String.contains?(output, "Result") or String.contains?(output, "try") or
+        String.contains?(output, "catch")
 
     if input_has_error_handling == output_has_error_handling, do: score = score + 0.1
 
@@ -1019,15 +1167,37 @@ defmodule Singularity.RustElixirT5Trainer do
     case language do
       "rust" ->
         # Check Rust-specific patterns
-        score = if String.contains?(output, "fn ") and String.contains?(output, "{"), do: score + 0.1, else: score
-        score = if String.contains?(output, "let ") or String.contains?(output, "mut "), do: score + 0.1, else: score
-        score = if not String.contains?(output, "def ") and not String.contains?(output, "class "), do: score + 0.1, else: score
+        score =
+          if String.contains?(output, "fn ") and String.contains?(output, "{"),
+            do: score + 0.1,
+            else: score
+
+        score =
+          if String.contains?(output, "let ") or String.contains?(output, "mut "),
+            do: score + 0.1,
+            else: score
+
+        score =
+          if not String.contains?(output, "def ") and not String.contains?(output, "class "),
+            do: score + 0.1,
+            else: score
 
       "elixir" ->
         # Check Elixir-specific patterns
-        score = if String.contains?(output, "def ") or String.contains?(output, "defmodule "), do: score + 0.1, else: score
-        score = if String.contains?(output, "do") and String.contains?(output, "end"), do: score + 0.1, else: score
-        score = if String.contains?(output, "|>") or String.contains?(output, "Enum."), do: score + 0.1, else: score
+        score =
+          if String.contains?(output, "def ") or String.contains?(output, "defmodule "),
+            do: score + 0.1,
+            else: score
+
+        score =
+          if String.contains?(output, "do") and String.contains?(output, "end"),
+            do: score + 0.1,
+            else: score
+
+        score =
+          if String.contains?(output, "|>") or String.contains?(output, "Enum."),
+            do: score + 0.1,
+            else: score
 
       _ ->
         score
@@ -1049,10 +1219,11 @@ defmodule Singularity.RustElixirT5Trainer do
     if length_ratio > 0.1 and length_ratio < 10.0, do: score = score + 0.1
 
     # Check for meaningful content
-    has_code_elements = String.contains?(example.output, "fn ") or
-                       String.contains?(example.output, "def ") or
-                       String.contains?(example.output, "struct") or
-                       String.contains?(example.output, "defmodule")
+    has_code_elements =
+      String.contains?(example.output, "fn ") or
+        String.contains?(example.output, "def ") or
+        String.contains?(example.output, "struct") or
+        String.contains?(example.output, "defmodule")
 
     if has_code_elements, do: score = score + 0.1
 
@@ -1079,7 +1250,10 @@ defmodule Singularity.RustElixirT5Trainer do
     if output_words < input_words * 5.0, do: score = score + 0.2
 
     # Check for code structure completeness
-    has_opening = String.contains?(output, "fn ") or String.contains?(output, "def ") or String.contains?(output, "struct")
+    has_opening =
+      String.contains?(output, "fn ") or String.contains?(output, "def ") or
+        String.contains?(output, "struct")
+
     has_closing = String.contains?(output, "}") or String.contains?(output, "end")
 
     if has_opening and has_closing, do: score = score + 0.1
@@ -1089,46 +1263,51 @@ defmodule Singularity.RustElixirT5Trainer do
 
   defp analyze_overall_quality(example) do
     # Overall quality assessment combining multiple factors
-    syntax_score = if is_valid_syntax?(example.output, example.language || "rust"), do: 0.8, else: 0.3
+    syntax_score =
+      if is_valid_syntax?(example.output, example.language || "rust"), do: 0.8, else: 0.3
+
     completeness_score = analyze_completeness(example.input || "", example.output || "")
     consistency_score = analyze_consistency(example)
 
     # Weighted average
-    (syntax_score * 0.4) + (completeness_score * 0.3) + (consistency_score * 0.3)
+    syntax_score * 0.4 + completeness_score * 0.3 + consistency_score * 0.3
   end
 
   defp evaluate_language_specific_performance(_examples, language) do
     # This would test the model's ability to generate code in the specific language
-    {:ok, %{
-      language: language,
-      bleu_score: 0.85,
-      rouge_score: 0.82,
-      syntax_correctness: 0.90,
-      semantic_similarity: 0.88,
-      code_quality: 0.87
-    }}
+    {:ok,
+     %{
+       language: language,
+       bleu_score: 0.85,
+       rouge_score: 0.82,
+       syntax_correctness: 0.90,
+       semantic_similarity: 0.88,
+       code_quality: 0.87
+     }}
   end
 
   defp evaluate_cross_language_performance(rust_examples, elixir_examples) do
     # COMPLETED: Implemented cross-language evaluation
     # This tests if Rust patterns help Elixir generation and vice versa
-    
+
     rust_to_elixir_score = calculate_cross_language_score(rust_examples, "elixir")
     elixir_to_rust_score = calculate_cross_language_score(elixir_examples, "rust")
     pattern_transfer_score = calculate_pattern_transfer_score(rust_examples, elixir_examples)
-    
-    {:ok, %{
-      rust_to_elixir: rust_to_elixir_score,
-      elixir_to_rust: elixir_to_rust_score,
-      pattern_transfer: pattern_transfer_score
-    }}
+
+    {:ok,
+     %{
+       rust_to_elixir: rust_to_elixir_score,
+       elixir_to_rust: elixir_to_rust_score,
+       pattern_transfer: pattern_transfer_score
+     }}
   end
 
   defp calculate_cross_language_score(examples, target_language) do
     # Calculate how well examples from one language help generate code in another
-    scores = Enum.map(examples, fn example ->
-      analyze_cross_language_effectiveness(example, target_language)
-    end)
+    scores =
+      Enum.map(examples, fn example ->
+        analyze_cross_language_effectiveness(example, target_language)
+      end)
 
     sum_scores = Enum.sum(scores)
     sum_scores / max(length(examples), 1)
@@ -1138,7 +1317,7 @@ defmodule Singularity.RustElixirT5Trainer do
     # Calculate how well patterns transfer between languages
     rust_patterns = extract_patterns(rust_examples)
     elixir_patterns = extract_patterns(elixir_examples)
-    
+
     pattern_overlap = calculate_pattern_overlap(rust_patterns, elixir_patterns)
     pattern_overlap
   end
@@ -1156,7 +1335,7 @@ defmodule Singularity.RustElixirT5Trainer do
     # Analyze how well Rust patterns translate to Elixir
     rust_patterns = extract_rust_patterns(example.input)
     elixir_equivalents = find_elixir_equivalents(rust_patterns)
-    
+
     if length(elixir_equivalents) > 0, do: 0.8, else: 0.3
   end
 
@@ -1164,7 +1343,7 @@ defmodule Singularity.RustElixirT5Trainer do
     # Analyze how well Elixir patterns translate to Rust
     elixir_patterns = extract_elixir_patterns(example.input)
     rust_equivalents = find_rust_equivalents(elixir_patterns)
-    
+
     if length(rust_equivalents) > 0, do: 0.8, else: 0.3
   end
 
@@ -1181,10 +1360,10 @@ defmodule Singularity.RustElixirT5Trainer do
     # Calculate overlap between pattern sets
     keys1 = Map.keys(patterns1) |> MapSet.new()
     keys2 = Map.keys(patterns2) |> MapSet.new()
-    
+
     intersection = MapSet.intersection(keys1, keys2) |> MapSet.size()
     union = MapSet.union(keys1, keys2) |> MapSet.size()
-    
+
     if union > 0, do: intersection / union, else: 0.0
   end
 
@@ -1208,21 +1387,23 @@ defmodule Singularity.RustElixirT5Trainer do
       evaluated_at: DateTime.utc_now(),
       status: "completed"
     }
-    
+
     # Store in T5EvaluationResults table
     case Repo.insert(%T5EvaluationResult{} |> Ecto.Changeset.change(evaluation_result)) do
       {:ok, result} ->
-        Logger.info("Stored evaluation results", 
+        Logger.info("Stored evaluation results",
           model_version_id: model_version_id,
           evaluation_id: result.id
         )
+
         {:ok, result}
-      
+
       {:error, changeset} ->
-        Logger.error("Failed to store evaluation results", 
+        Logger.error("Failed to store evaluation results",
           model_version_id: model_version_id,
           errors: changeset.errors
         )
+
         {:error, changeset}
     end
   end

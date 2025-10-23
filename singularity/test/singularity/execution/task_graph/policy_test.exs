@@ -167,7 +167,12 @@ defmodule Singularity.Execution.TaskGraph.PolicyTest do
                Policy.enforce(:researcher, :http, %{url: "https://docs.rs/tokio"}, [])
 
       assert :ok ==
-               Policy.enforce(:researcher, :http, %{url: "https://github.com/elixir-lang/elixir"}, [])
+               Policy.enforce(
+                 :researcher,
+                 :http,
+                 %{url: "https://github.com/elixir-lang/elixir"},
+                 []
+               )
     end
 
     test "blocks HTTP to non-whitelisted domains" do
@@ -207,7 +212,9 @@ defmodule Singularity.Execution.TaskGraph.PolicyTest do
       assert :ok ==
                Policy.enforce(:admin, :shell, %{cmd: ["any", "command", "here"]}, [])
 
-      assert :ok == Policy.enforce(:admin, :docker, %{image: "any", cmd: ["cmd"]}, cpu: 1, mem: "1g")
+      assert :ok ==
+               Policy.enforce(:admin, :docker, %{image: "any", cmd: ["cmd"]}, cpu: 1, mem: "1g")
+
       assert :ok == Policy.enforce(:admin, :lua, %{src: "return 42"}, [])
       assert :ok == Policy.enforce(:admin, :http, %{url: "https://any-domain.com"}, [])
     end

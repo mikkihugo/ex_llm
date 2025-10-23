@@ -17,9 +17,9 @@ defmodule Singularity.Execution.Autonomy.Decider do
 
   @type agent_state :: map()
   @type decision ::
-    {:continue, agent_state}
-    | {:improve_local, map(), map(), agent_state}
-    | {:improve_experimental, map(), map(), agent_state}
+          {:continue, agent_state}
+          | {:improve_local, map(), map(), agent_state}
+          | {:improve_experimental, map(), map(), agent_state}
 
   @doc """
   Decide whether the agent should propose a new strategy.

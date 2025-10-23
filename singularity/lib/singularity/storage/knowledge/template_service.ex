@@ -62,15 +62,18 @@ defmodule Singularity.Knowledge.TemplateService do
     gnat_name = :nats_client
 
     # Subscribe to template requests using Singularity.NatsClient
-    Enum.each([
-      "template.get.>",
-      "template.search.>"
-    ], fn subject ->
-      case Singularity.NatsClient.subscribe(subject) do
-        {:ok, _subscription_id} -> Logger.info("TemplateService subscribed to: #{subject}")
-        {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
+    Enum.each(
+      [
+        "template.get.>",
+        "template.search.>"
+      ],
+      fn subject ->
+        case Singularity.NatsClient.subscribe(subject) do
+          {:ok, _subscription_id} -> Logger.info("TemplateService subscribed to: #{subject}")
+          {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
+        end
       end
-    end)
+    )
 
     Logger.info("Template NATS service started")
     Logger.info("  Listening on: template.get.*, template.search.*")
@@ -149,16 +152,17 @@ defmodule Singularity.Knowledge.TemplateService do
     # Implement semantic search using pgvector
     case Singularity.Knowledge.ArtifactStore.search(query, top_k: 10) do
       {:ok, results} ->
-        formatted_results = Enum.map(results, fn artifact ->
-          %{
-            id: artifact.id,
-            artifact_type: artifact.artifact_type,
-            name: artifact.name,
-            description: artifact.description,
-            similarity: artifact.similarity,
-            content_preview: String.slice(artifact.content_raw || "", 0, 200) <> "..."
-          }
-        end)
+        formatted_results =
+          Enum.map(results, fn artifact ->
+            %{
+              id: artifact.id,
+              artifact_type: artifact.artifact_type,
+              name: artifact.name,
+              description: artifact.description,
+              similarity: artifact.similarity,
+              content_preview: String.slice(artifact.content_raw || "", 0, 200) <> "..."
+            }
+          end)
 
         response =
           Jason.encode!(%{
@@ -259,7 +263,8 @@ defmodule Singularity.Knowledge.TemplateService do
       iex> render_template_with_solid("phoenix-api", %{resource: "User"}, validate: true)
       {:ok, rendered_code}
   """
-  @spec render_template_with_solid(String.t(), map(), keyword()) :: {:ok, String.t()} | {:error, term()}
+  @spec render_template_with_solid(String.t(), map(), keyword()) ::
+          {:ok, String.t()} | {:error, term()}
   def render_template_with_solid(template_id, variables, opts \\ []) do
     # Delegate to Renderer for actual rendering logic
     case Singularity.Templates.Renderer.render(template_id, variables, opts) do
@@ -271,11 +276,13 @@ defmodule Singularity.Knowledge.TemplateService do
       {:error, reason} = error ->
         # Track failure for learning
         track_template_usage(template_id, :failure)
+
         Logger.error("Template render failed",
           template_id: template_id,
           reason: inspect(reason),
           variables: Map.keys(variables)
         )
+
         error
     end
   end
@@ -285,7 +292,8 @@ defmodule Singularity.Knowledge.TemplateService do
 
   Use this when you need to ensure Handlebars features are available.
   """
-  @spec render_with_solid_only(String.t(), map(), keyword()) :: {:ok, String.t()} | {:error, term()}
+  @spec render_with_solid_only(String.t(), map(), keyword()) ::
+          {:ok, String.t()} | {:error, term()}
   def render_with_solid_only(template_id, variables, opts \\ []) do
     case Singularity.Templates.Renderer.render_with_solid(template_id, variables, opts) do
       {:ok, rendered} ->
@@ -303,7 +311,8 @@ defmodule Singularity.Knowledge.TemplateService do
 
   Use this for backward compatibility or when Handlebars features aren't needed.
   """
-  @spec render_with_json_only(String.t(), map(), keyword()) :: {:ok, String.t()} | {:error, term()}
+  @spec render_with_json_only(String.t(), map(), keyword()) ::
+          {:ok, String.t()} | {:error, term()}
   def render_with_json_only(template_id, variables, opts \\ []) do
     case Singularity.Templates.Renderer.render_legacy(template_id, variables, opts) do
       {:ok, rendered} ->
@@ -323,43 +332,49 @@ defmodule Singularity.Knowledge.TemplateService do
   def search_patterns(detection_methods) do
     # Convert detection methods to search query
     query = Enum.join(detection_methods, " ")
-    
+
     # First try local TemplateStore for fast access
     case Singularity.TemplateStore.search(query, limit: 100) do
-      {:ok, results} when length(results) > 0 -> 
+      {:ok, results} when length(results) > 0 ->
         # Convert template results to pattern format
-        patterns = Enum.map(results, fn template ->
-          %{
-            id: template.id,
-            framework_name: template.name,
-            pattern_type: template.type,
-            pattern_data: template.content,
-            confidence_weight: 0.9,
-            success_count: 100,
-            failure_count: 5,
-            last_used: template.updated_at
-          }
-        end)
+        patterns =
+          Enum.map(results, fn template ->
+            %{
+              id: template.id,
+              framework_name: template.name,
+              pattern_type: template.type,
+              pattern_data: template.content,
+              confidence_weight: 0.9,
+              success_count: 100,
+              failure_count: 5,
+              last_used: template.updated_at
+            }
+          end)
+
         {:ok, patterns}
-      
+
       _ ->
         # Fallback to TemplateCache if TemplateStore has no results
         case TemplateCache.search(query, limit: 100) do
-          {:ok, results} -> 
-            patterns = Enum.map(results, fn template ->
-              %{
-                id: template.id,
-                framework_name: template.name,
-                pattern_type: template.type,
-                pattern_data: template.content,
-                confidence_weight: 0.9,
-                success_count: 100,
-                failure_count: 5,
-                last_used: template.updated_at
-              }
-            end)
+          {:ok, results} ->
+            patterns =
+              Enum.map(results, fn template ->
+                %{
+                  id: template.id,
+                  framework_name: template.name,
+                  pattern_type: template.type,
+                  pattern_data: template.content,
+                  confidence_weight: 0.9,
+                  success_count: 100,
+                  failure_count: 5,
+                  last_used: template.updated_at
+                }
+              end)
+
             {:ok, patterns}
-          {:error, reason} -> {:error, reason}
+
+          {:error, reason} ->
+            {:error, reason}
         end
     end
   end
@@ -371,15 +386,21 @@ defmodule Singularity.Knowledge.TemplateService do
   def get_template(template_type, template_id) do
     # First try local TemplateStore for fast access
     case Singularity.TemplateStore.get("#{template_type}-#{template_id}") do
-      {:ok, template} -> {:ok, template}
+      {:ok, template} ->
+        {:ok, template}
+
       {:error, _} ->
         # Fallback to TemplateCache
         case TemplateCache.get(template_type, template_id) do
-          {:ok, template} -> {:ok, template}
-          {:error, :not_found} -> 
+          {:ok, template} ->
+            {:ok, template}
+
+          {:error, :not_found} ->
             # Fetch from central cloud via NATS and cache locally
             fetch_and_cache_from_central(template_type, template_id)
-          {:error, reason} -> {:error, reason}
+
+          {:error, reason} ->
+            {:error, reason}
         end
     end
   end
@@ -390,13 +411,13 @@ defmodule Singularity.Knowledge.TemplateService do
   """
   def list_templates(template_type, opts \\ []) do
     limit = Keyword.get(opts, :limit, 100)
-    
+
     # First try local TemplateStore
     case Singularity.TemplateStore.search("", type: template_type, limit: limit) do
-      {:ok, results} when length(results) > 0 -> 
+      {:ok, results} when length(results) > 0 ->
         template_ids = Enum.map(results, & &1.id)
         {:ok, template_ids}
-      
+
       _ ->
         # Fetch from central cloud via NATS
         fetch_template_list_from_central(template_type, limit)
@@ -410,13 +431,16 @@ defmodule Singularity.Knowledge.TemplateService do
   def find_template(template_type, language, use_case, opts \\ []) do
     # Build candidate patterns based on convention
     candidates = build_template_candidates(template_type, language, use_case, opts)
-    
+
     # Try each candidate in order of preference
     case try_template_candidates(template_type, candidates) do
-      {:ok, template} -> {:ok, template}
+      {:ok, template} ->
+        {:ok, template}
+
       {:error, _} ->
         # Fallback to semantic search
         search_query = build_search_query(template_type, language, use_case)
+
         case search_templates(search_query, template_type, limit: 5) do
           {:ok, [best_match | _]} -> {:ok, best_match}
           {:ok, []} -> {:error, :no_templates_found}
@@ -460,7 +484,7 @@ defmodule Singularity.Knowledge.TemplateService do
   """
   def search_templates(query, template_type, opts \\ []) do
     limit = Keyword.get(opts, :limit, 10)
-    
+
     # Use TemplateStore for semantic search
     case Singularity.TemplateStore.search(query, type: template_type, limit: limit) do
       {:ok, results} -> {:ok, results}
@@ -477,12 +501,14 @@ defmodule Singularity.Knowledge.TemplateService do
       :ok ->
         # Also store in TemplateCache for immediate access
         TemplateCache.put("#{template_type}.#{template_id}", template_data)
-        
+
         # Sync to central cloud via NATS
         sync_to_central(template_type, template_id, template_data)
-        
+
         {:ok, template_data}
-      {:error, reason} -> {:error, reason}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -496,15 +522,19 @@ defmodule Singularity.Knowledge.TemplateService do
       template_id: template_id,
       template_data: template_data
     }
-    
+
     case Singularity.NatsClient.publish("knowledge.template.store", Jason.encode!(request)) do
-      :ok -> :ok
-      {:error, reason} -> 
-        Logger.warning("Failed to sync template to central cloud", 
-          template: "#{template_type}.#{template_id}", 
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("Failed to sync template to central cloud",
+          template: "#{template_type}.#{template_id}",
           reason: reason
         )
-        :ok  # Don't fail local operations if central sync fails
+
+        # Don't fail local operations if central sync fails
+        :ok
     end
   end
 
@@ -515,8 +545,10 @@ defmodule Singularity.Knowledge.TemplateService do
     request = %{
       id: "#{template_type}-#{template_id}"
     }
-    
-    case Singularity.NatsClient.request("knowledge.template.get", Jason.encode!(request), timeout: 5000) do
+
+    case Singularity.NatsClient.request("knowledge.template.get", Jason.encode!(request),
+           timeout: 5000
+         ) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, template_data} ->
@@ -524,9 +556,13 @@ defmodule Singularity.Knowledge.TemplateService do
             TemplateCache.put("#{template_type}.#{template_id}", template_data)
             Singularity.TemplateStore.store("#{template_type}-#{template_id}", template_data)
             {:ok, template_data}
-          {:error, reason} -> {:error, "Failed to decode central response: #{reason}"}
+
+          {:error, reason} ->
+            {:error, "Failed to decode central response: #{reason}"}
         end
-      {:error, reason} -> {:error, "Central template not found: #{reason}"}
+
+      {:error, reason} ->
+        {:error, "Central template not found: #{reason}"}
     end
   end
 
@@ -536,15 +572,19 @@ defmodule Singularity.Knowledge.TemplateService do
       category: template_type,
       limit: limit
     }
-    
-    case Singularity.NatsClient.request("knowledge.template.list", Jason.encode!(request), timeout: 5000) do
+
+    case Singularity.NatsClient.request("knowledge.template.list", Jason.encode!(request),
+           timeout: 5000
+         ) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, %{"templates" => templates}} -> {:ok, templates}
           {:ok, data} -> {:ok, data["template_ids"] || []}
           {:error, reason} -> {:error, "Failed to decode central response: #{reason}"}
         end
-      {:error, reason} -> {:error, "Central template list not found: #{reason}"}
+
+      {:error, reason} ->
+        {:error, "Central template list not found: #{reason}"}
     end
   end
 
@@ -553,7 +593,7 @@ defmodule Singularity.Knowledge.TemplateService do
   defp build_template_candidates(template_type, language, use_case, opts) do
     version = Keyword.get(opts, :version, "latest")
     include_variants = Keyword.get(opts, :include_variants, true)
-    
+
     base_candidates = [
       "#{language}_#{use_case}",
       "#{language}_#{use_case}_#{version}",
@@ -562,17 +602,18 @@ defmodule Singularity.Knowledge.TemplateService do
       "#{use_case}_#{language}",
       "#{use_case}_#{language}_#{version}"
     ]
-    
+
     if include_variants do
-      base_candidates ++ [
-        "#{language}_#{use_case}_production",
-        "#{language}_#{use_case}_standard",
-        "#{language}_#{use_case}_default",
-        "default_#{use_case}",
-        "base_#{use_case}",
-        "generic_#{use_case}",
-        "#{use_case}_template"
-      ]
+      base_candidates ++
+        [
+          "#{language}_#{use_case}_production",
+          "#{language}_#{use_case}_standard",
+          "#{language}_#{use_case}_default",
+          "default_#{use_case}",
+          "base_#{use_case}",
+          "generic_#{use_case}",
+          "#{use_case}_template"
+        ]
     else
       base_candidates
     end
@@ -589,11 +630,12 @@ defmodule Singularity.Knowledge.TemplateService do
 
   defp build_search_query(template_type, language, use_case) do
     # Build semantic search query from components
-    query_parts = [language, use_case, template_type]
-    |> Enum.reject(&is_nil/1)
-    |> Enum.reject(fn x -> x == "any" end)
-    |> Enum.join(" ")
-    
+    query_parts =
+      [language, use_case, template_type]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.reject(fn x -> x == "any" end)
+      |> Enum.join(" ")
+
     if String.trim(query_parts) == "" do
       template_type
     else
@@ -639,6 +681,7 @@ defmodule Singularity.Knowledge.TemplateService do
           template_id: template_id,
           status: status
         )
+
         :ok
 
       {:error, reason} ->
@@ -647,6 +690,7 @@ defmodule Singularity.Knowledge.TemplateService do
           status: status,
           reason: reason
         )
+
         # Don't fail the render operation if tracking fails
         :ok
     end

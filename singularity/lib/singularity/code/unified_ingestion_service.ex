@@ -50,6 +50,7 @@ defmodule Singularity.Code.UnifiedIngestionService do
   alias Singularity.{Repo, ParserEngine}
   alias Singularity.Schemas.CodeFile
   alias Singularity.Analysis.{AstExtractor, MetadataValidator}
+  alias Singularity.Code.CodebaseDetector
 
   @doc """
   Ingest a single file - parse once, populate both tables.
@@ -58,7 +59,7 @@ defmodule Singularity.Code.UnifiedIngestionService do
 
   - `file_path` - Absolute path to file
   - `opts` - Options
-    - `:codebase_id` - Codebase identifier (default: "singularity")
+    - `:codebase_id` - Codebase identifier (default: auto-detect from Git)
     - `:skip_validation` - Skip metadata validation (default: false)
 
   ## Returns
@@ -70,12 +71,18 @@ defmodule Singularity.Code.UnifiedIngestionService do
 
   ## Examples
 
+      # Auto-detect codebase_id from Git
+      iex> UnifiedIngestionService.ingest_file("/path/to/file.ex")
+      {:ok, %{code_files: %CodeFile{}, codebase_metadata: %{id: 123}}}
+
+      # Override codebase_id
       iex> UnifiedIngestionService.ingest_file("/path/to/file.ex", codebase_id: "my_project")
       {:ok, %{code_files: %CodeFile{}, codebase_metadata: %{id: 123}}}
 
   """
   def ingest_file(file_path, opts \\ []) do
-    codebase_id = Keyword.get(opts, :codebase_id, "singularity")
+    # Auto-detect from Git (e.g., "mikkihugo/singularity-incubation")
+    codebase_id = Keyword.get(opts, :codebase_id) || CodebaseDetector.detect(format: :full)
     skip_validation = Keyword.get(opts, :skip_validation, false)
 
     start_time = System.monotonic_time(:millisecond)
@@ -86,8 +93,13 @@ defmodule Singularity.Code.UnifiedIngestionService do
     case ParserEngine.parse_file(file_path) do
       {:ok, parse_result} ->
         # Step 2: Insert to BOTH tables in parallel
-        task1 = Task.async(fn -> insert_to_code_files(file_path, parse_result, codebase_id, skip_validation) end)
-        task2 = Task.async(fn -> insert_to_codebase_metadata(file_path, parse_result, codebase_id) end)
+        task1 =
+          Task.async(fn ->
+            insert_to_code_files(file_path, parse_result, codebase_id, skip_validation)
+          end)
+
+        task2 =
+          Task.async(fn -> insert_to_codebase_metadata(file_path, parse_result, codebase_id) end)
 
         result1 = Task.await(task1, 30_000)
         result2 = Task.await(task2, 30_000)
@@ -98,7 +110,10 @@ defmodule Singularity.Code.UnifiedIngestionService do
         handle_dual_insert_results(result1, result2, file_path, duration)
 
       {:error, reason} ->
-        Logger.error("[UnifiedIngestion] Parse failed for #{Path.basename(file_path)}: #{inspect(reason)}")
+        Logger.error(
+          "[UnifiedIngestion] Parse failed for #{Path.basename(file_path)}: #{inspect(reason)}"
+        )
+
         {:error, {:parse_failed, reason}}
     end
   end
@@ -138,10 +153,11 @@ defmodule Singularity.Code.UnifiedIngestionService do
       |> Enum.to_list()
 
     # Count successes and failures
-    success_count = Enum.count(results, fn
-      {:ok, {:ok, _}} -> true
-      _ -> false
-    end)
+    success_count =
+      Enum.count(results, fn
+        {:ok, {:ok, _}} -> true
+        _ -> false
+      end)
 
     failed_count = length(results) - success_count
 
@@ -170,9 +186,14 @@ defmodule Singularity.Code.UnifiedIngestionService do
         ast_result
       else
         case MetadataValidator.validate_ast_metadata(ast_result, language) do
-          {:ok, validated} -> validated
+          {:ok, validated} ->
+            validated
+
           {:error, reason} ->
-            Logger.warning("[UnifiedIngestion] Validation failed: #{inspect(reason)}, using unvalidated AST")
+            Logger.warning(
+              "[UnifiedIngestion] Validation failed: #{inspect(reason)}, using unvalidated AST"
+            )
+
             ast_result
         end
       end
@@ -217,29 +238,50 @@ defmodule Singularity.Code.UnifiedIngestionService do
         {:ok, %{code_files: code_file, codebase_metadata: metadata}}
 
       {{:ok, code_file}, {:error, reason2}} ->
-        Logger.warning("✓✗ code_files OK, codebase_metadata failed for #{basename}: #{inspect(reason2)}")
+        Logger.warning(
+          "✓✗ code_files OK, codebase_metadata failed for #{basename}: #{inspect(reason2)}"
+        )
+
         {:ok, %{code_files: code_file}}
 
       {{:error, reason1}, {:ok, metadata}} ->
-        Logger.warning("✗✓ code_files failed, codebase_metadata OK for #{basename}: #{inspect(reason1)}")
+        Logger.warning(
+          "✗✓ code_files failed, codebase_metadata OK for #{basename}: #{inspect(reason1)}"
+        )
+
         {:ok, %{codebase_metadata: metadata}}
 
       {{:error, reason1}, {:error, reason2}} ->
-        Logger.error("✗✗ Both tables failed for #{basename} - code_files: #{inspect(reason1)}, codebase_metadata: #{inspect(reason2)}")
+        Logger.error(
+          "✗✗ Both tables failed for #{basename} - code_files: #{inspect(reason1)}, codebase_metadata: #{inspect(reason2)}"
+        )
+
         {:error, {:both_failed, reason1, reason2}}
     end
   end
 
   defp find_source_files(root_path) do
-    extensions = [".ex", ".exs", ".gleam", ".rs", ".ts", ".tsx", ".js", ".jsx", ".py", ".java", ".go"]
+    extensions = [
+      ".ex",
+      ".exs",
+      ".gleam",
+      ".rs",
+      ".ts",
+      ".tsx",
+      ".js",
+      ".jsx",
+      ".py",
+      ".java",
+      ".go"
+    ]
 
     root_path
     |> Path.join("**/*")
     |> Path.wildcard()
     |> Enum.filter(fn path ->
       File.regular?(path) and
-      String.ends_with?(path, extensions) and
-      not String.contains?(path, ["/_build/", "/deps/", "/node_modules/", "/.git/"])
+        String.ends_with?(path, extensions) and
+        not String.contains?(path, ["/_build/", "/deps/", "/node_modules/", "/.git/"])
     end)
   end
 
@@ -264,8 +306,12 @@ defmodule Singularity.Code.UnifiedIngestionService do
     # Try to extract module name from parse result
     # Fallback to file path if not found
     case parse_result do
-      %{module_name: name} when is_binary(name) -> name
-      %{"module_name" => name} when is_binary(name) -> name
+      %{module_name: name} when is_binary(name) ->
+        name
+
+      %{"module_name" => name} when is_binary(name) ->
+        name
+
       _ ->
         # Derive from file path (e.g., lib/singularity/foo.ex -> Singularity.Foo)
         file_path

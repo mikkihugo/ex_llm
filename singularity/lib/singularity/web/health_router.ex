@@ -155,11 +155,11 @@ defmodule Singularity.Web.HealthRouter do
       {:ok, _approval} ->
         Logger.info("Approval #{approval_id} approved by #{user}")
         %{text: "✅ Approval recorded by #{user}"}
-      
+
       {:error, :not_found} ->
         Logger.warning("Approval #{approval_id} not found")
         %{text: "❌ Approval ID not found: #{approval_id}"}
-      
+
       {:error, reason} ->
         Logger.error("Failed to approve #{approval_id}: #{inspect(reason)}")
         %{text: "❌ Failed to record approval: #{inspect(reason)}"}
@@ -171,11 +171,11 @@ defmodule Singularity.Web.HealthRouter do
       {:ok, _approval} ->
         Logger.info("Approval #{approval_id} rejected by #{user}")
         %{text: "❌ Rejection recorded by #{user}"}
-      
+
       {:error, :not_found} ->
         Logger.warning("Approval #{approval_id} not found")
         %{text: "❌ Approval ID not found: #{approval_id}"}
-      
+
       {:error, reason} ->
         Logger.error("Failed to reject #{approval_id}: #{inspect(reason)}")
         %{text: "❌ Failed to record rejection: #{inspect(reason)}"}
@@ -186,8 +186,10 @@ defmodule Singularity.Web.HealthRouter do
     # Look for approval ID patterns in the text
     # This could be a UUID or other identifier
     case Regex.run(~r/approval[:\s]+([a-f0-9-]{36})/i, text) do
-      [_, id] -> id
-      _ -> 
+      [_, id] ->
+        id
+
+      _ ->
         case Regex.run(~r/id[:\s]+([a-f0-9-]{36})/i, text) do
           [_, id] -> id
           _ -> nil
@@ -198,7 +200,9 @@ defmodule Singularity.Web.HealthRouter do
   defp extract_rejection_reason_from_text(text) do
     # Extract reason after "reject" or "reason:"
     case Regex.run(~r/reject[:\s]+(.+)/i, text) do
-      [_, reason] -> String.trim(reason)
+      [_, reason] ->
+        String.trim(reason)
+
       _ ->
         case Regex.run(~r/reason[:\s]+(.+)/i, text) do
           [_, reason] -> String.trim(reason)

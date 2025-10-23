@@ -90,16 +90,19 @@ defmodule Singularity.Search.PostgresVectorSearch do
 
       case Repo.query(query_sql, [embedding, threshold, limit]) do
         {:ok, result} ->
-          results = Enum.map(result.rows, fn row ->
-            [code_id, content, similarity, file_path, language] = row
-            %{
-              code_id: code_id,
-              content: content,
-              similarity: similarity,
-              file_path: file_path,
-              language: language
-            }
-          end)
+          results =
+            Enum.map(result.rows, fn row ->
+              [code_id, content, similarity, file_path, language] = row
+
+              %{
+                code_id: code_id,
+                content: content,
+                similarity: similarity,
+                file_path: file_path,
+                language: language
+              }
+            end)
+
           {:ok, results}
 
         {:error, reason} ->
@@ -130,17 +133,20 @@ defmodule Singularity.Search.PostgresVectorSearch do
 
       case Repo.query(query_sql, [embedding, threshold, limit]) do
         {:ok, result} ->
-          results = Enum.map(result.rows, fn row ->
-            [todo_id, title, description, similarity, status, priority] = row
-            %{
-              todo_id: todo_id,
-              title: title,
-              description: description,
-              similarity: similarity,
-              status: status,
-              priority: priority
-            }
-          end)
+          results =
+            Enum.map(result.rows, fn row ->
+              [todo_id, title, description, similarity, status, priority] = row
+
+              %{
+                todo_id: todo_id,
+                title: title,
+                description: description,
+                similarity: similarity,
+                status: status,
+                priority: priority
+              }
+            end)
+
           {:ok, results}
 
         {:error, reason} ->
@@ -175,17 +181,20 @@ defmodule Singularity.Search.PostgresVectorSearch do
 
       case Repo.query(query_sql, [embedding, artifact_type, threshold, limit]) do
         {:ok, result} ->
-          results = Enum.map(result.rows, fn row ->
-            [artifact_id, name, content, similarity, artifact_type, language] = row
-            %{
-              artifact_id: artifact_id,
-              name: name,
-              content: content,
-              similarity: similarity,
-              artifact_type: artifact_type,
-              language: language
-            }
-          end)
+          results =
+            Enum.map(result.rows, fn row ->
+              [artifact_id, name, content, similarity, artifact_type, language] = row
+
+              %{
+                artifact_id: artifact_id,
+                name: name,
+                content: content,
+                similarity: similarity,
+                artifact_type: artifact_type,
+                language: language
+              }
+            end)
+
           {:ok, results}
 
         {:error, reason} ->
@@ -218,18 +227,22 @@ defmodule Singularity.Search.PostgresVectorSearch do
 
       case Repo.query(query_sql, [query, embedding, vector_weight, text_weight, threshold, limit]) do
         {:ok, result} ->
-          results = Enum.map(result.rows, fn row ->
-            [code_id, content, file_path, language, vector_score, text_score, combined_score] = row
-            %{
-              code_id: code_id,
-              content: content,
-              file_path: file_path,
-              language: language,
-              vector_score: vector_score,
-              text_score: text_score,
-              combined_score: combined_score
-            }
-          end)
+          results =
+            Enum.map(result.rows, fn row ->
+              [code_id, content, file_path, language, vector_score, text_score, combined_score] =
+                row
+
+              %{
+                code_id: code_id,
+                content: content,
+                file_path: file_path,
+                language: language,
+                vector_score: vector_score,
+                text_score: text_score,
+                combined_score: combined_score
+              }
+            end)
+
           {:ok, results}
 
         {:error, reason} ->
@@ -259,16 +272,19 @@ defmodule Singularity.Search.PostgresVectorSearch do
 
     case Repo.query(query_sql, [cluster_count, min_cluster_size]) do
       {:ok, result} ->
-        results = Enum.map(result.rows, fn row ->
-          [cluster_id, code_id, content, file_path, distance_to_centroid] = row
-          %{
-            cluster_id: cluster_id,
-            code_id: code_id,
-            content: content,
-            file_path: file_path,
-            distance_to_centroid: distance_to_centroid
-          }
-        end)
+        results =
+          Enum.map(result.rows, fn row ->
+            [cluster_id, code_id, content, file_path, distance_to_centroid] = row
+
+            %{
+              cluster_id: cluster_id,
+              code_id: code_id,
+              content: content,
+              file_path: file_path,
+              distance_to_centroid: distance_to_centroid
+            }
+          end)
+
         {:ok, results}
 
       {:error, reason} ->
@@ -302,15 +318,22 @@ defmodule Singularity.Search.PostgresVectorSearch do
       {:ok, result} ->
         case result.rows do
           [[total_embeddings, index_size, avg_query_time, cache_hit_ratio] | _] ->
-            {:ok, %{
-              total_embeddings: total_embeddings,
-              index_size: index_size,
-              avg_query_time: avg_query_time,
-              cache_hit_ratio: cache_hit_ratio
-            }}
+            {:ok,
+             %{
+               total_embeddings: total_embeddings,
+               index_size: index_size,
+               avg_query_time: avg_query_time,
+               cache_hit_ratio: cache_hit_ratio
+             }}
 
           [] ->
-            {:ok, %{total_embeddings: 0, index_size: "0 bytes", avg_query_time: "0 ms", cache_hit_ratio: 0.0}}
+            {:ok,
+             %{
+               total_embeddings: 0,
+               index_size: "0 bytes",
+               avg_query_time: "0 ms",
+               cache_hit_ratio: 0.0
+             }}
         end
 
       {:error, reason} ->

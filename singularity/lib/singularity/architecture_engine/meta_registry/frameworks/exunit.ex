@@ -1,7 +1,7 @@
 defmodule Singularity.MetaRegistry.Frameworks.ExUnit do
   @moduledoc """
   ExUnit framework learning patterns.
-  
+
   Learns from ExUnit testing patterns to improve our testing.
   """
 
@@ -9,9 +9,9 @@ defmodule Singularity.MetaRegistry.Frameworks.ExUnit do
 
   @doc """
   Learn from ExUnit testing patterns.
-  
+
   ## Examples
-  
+
       # Learn from our test modules
       learn_patterns(%{
         modules: ["ExUnit.Case", "ExUnit.CaseTemplate", "ExUnit.Callbacks"],
@@ -31,9 +31,9 @@ defmodule Singularity.MetaRegistry.Frameworks.ExUnit do
 
   @doc """
   Get ExUnit suggestions based on learned patterns.
-  
+
   ## Examples
-  
+
       # Get test suggestions
       get_suggestions("user", "test")
       # Returns: ["test user creation", "test user validation", "test user deletion"]
@@ -61,8 +61,14 @@ defmodule Singularity.MetaRegistry.Frameworks.ExUnit do
       modules: ["ExUnit.Case", "ExUnit.CaseTemplate", "ExUnit.Callbacks"],
       functions: ["test", "describe", "it", "expect", "assert"],
       patterns: [
-        "use ExUnit.Case", "test \"", "assert ", "refute ",
-        "describe \"", "it \"", "expect ", "assert_raise"
+        "use ExUnit.Case",
+        "test \"",
+        "assert ",
+        "refute ",
+        "describe \"",
+        "it \"",
+        "expect ",
+        "assert_raise"
       ]
     })
   end

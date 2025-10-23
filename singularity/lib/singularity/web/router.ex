@@ -54,28 +54,30 @@ defmodule Singularity.Web.Router do
 
   # LiveView routes
   scope "/", Singularity.Web do
-    pipe_through :browser
+    pipe_through(:browser)
 
-    live "/", IndexLive
-    live "/approvals", ApprovalLive
-    live "/documentation", DocumentationLive
+    live("/", IndexLive)
+    live("/approvals", ApprovalLive)
+    live("/documentation", DocumentationLive)
   end
 
   # Phoenix LiveDashboard with custom pages
   scope "/" do
-    pipe_through :browser
-    live_dashboard "/dashboard",
+    pipe_through(:browser)
+
+    live_dashboard("/dashboard",
       metrics: Singularity.Telemetry,
       custom_pages: [
         {Singularity.Dashboard.SystemHealthPage, "System"},
         {Singularity.Dashboard.AgentsPage, "Agents"},
         {Singularity.Dashboard.LLMPage, "LLM"}
       ]
+    )
   end
 
   # API routes (health checks, metrics, etc.)
   scope "/api" do
-    pipe_through :api
+    pipe_through(:api)
 
     get "/health", Singularity.Web.HealthController, :health
     get "/metrics", Singularity.Web.HealthController, :metrics
@@ -88,7 +90,7 @@ defmodule Singularity.Web.Router do
 
   # Catch-all route (matches any request not matched above)
   scope "/" do
-    pipe_through :api
+    pipe_through(:api)
     get "/*path", Singularity.Web.ErrorController, :not_found
   end
 end

@@ -218,7 +218,8 @@ defmodule Singularity.Telemetry do
 
   defp nats_metrics do
     %{
-      messages_sent: get_counter_value([:singularity, :nats, :message, :count], %{direction: :send}),
+      messages_sent:
+        get_counter_value([:singularity, :nats, :message, :count], %{direction: :send}),
       messages_received:
         get_counter_value([:singularity, :nats, :message, :count], %{direction: :receive})
     }
@@ -243,7 +244,10 @@ defmodule Singularity.Telemetry do
       })
   """
   @spec log_tool_execution(map()) :: :ok
-  def log_tool_execution(%{subject: subject, codebase_id: codebase_id, result: result, duration_ms: duration_ms} = params) do
+  def log_tool_execution(
+        %{subject: subject, codebase_id: codebase_id, result: result, duration_ms: duration_ms} =
+          params
+      ) do
     # Extract tool name from subject (e.g., "tools.code.get" -> "code.get")
     tool = subject |> String.split(".") |> Enum.drop(1) |> Enum.join(".")
 

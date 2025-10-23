@@ -36,7 +36,7 @@ defmodule Singularity.ApplicationSupervisor do
       Singularity.Git.Supervisor,
 
       # Real-time code ingestion (file watching)
-      Singularity.Execution.Planning.CodeFileWatcher,
+      Singularity.Execution.Planning.CodeFileWatcher
 
       # NIF-based services (when available)
       # Note: These may fail to load if NIF libraries are missing

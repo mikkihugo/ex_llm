@@ -215,7 +215,8 @@ defmodule Singularity.Analysis.AstExtractor do
       text when is_binary(text) ->
         text
         |> String.trim()
-        |> String.replace(~r/\(.*\)$/, "")  # Remove arguments
+        # Remove arguments
+        |> String.replace(~r/\(.*\)$/, "")
 
       _ ->
         nil

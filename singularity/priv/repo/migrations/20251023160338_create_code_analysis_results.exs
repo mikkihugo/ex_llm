@@ -6,7 +6,7 @@ defmodule Singularity.Repo.Migrations.CreateCodeAnalysisResults do
       add :id, :binary_id, primary_key: true
 
       # Reference to code file
-      add :code_file_id, references(:code_files, on_delete: :delete_all), null: false
+      add :code_file_id, references(:code_files, type: :binary_id, on_delete: :delete_all), null: false
 
       # Analysis metadata
       add :language_id, :string, null: false

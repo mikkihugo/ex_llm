@@ -58,4 +58,5 @@ defmodule Singularity.Manager do
     {:reply, status, state}
   end
 end
+
 # Test modification 1760427075

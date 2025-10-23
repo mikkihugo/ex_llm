@@ -79,9 +79,10 @@ defmodule Singularity.Conversation.Slack do
   @webhook_url Application.compile_env(:singularity, :slack_webhook_url) ||
                  System.get_env("SLACK_WEBHOOK_URL")
 
+  # Also check SLACK_TOKEN
   @bot_token Application.compile_env(:singularity, :slack_bot_token) ||
                System.get_env("SLACK_BOT_TOKEN") ||
-               System.get_env("SLACK_TOKEN")  # Also check SLACK_TOKEN
+               System.get_env("SLACK_TOKEN")
 
   @web_url Application.compile_env(:singularity, :web_url, "http://localhost:4000")
 
@@ -210,8 +211,7 @@ defmodule Singularity.Conversation.Slack do
           type: "section",
           text: %{
             type: "mrkdwn",
-            text:
-              "*#{question.question}*\n#{urgency_text(question.urgency)}#{context_text}"
+            text: "*#{question.question}*\n#{urgency_text(question.urgency)}#{context_text}"
           }
         },
         # Divider

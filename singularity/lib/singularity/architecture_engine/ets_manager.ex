@@ -1,7 +1,7 @@
 defmodule Singularity.ArchitectureEngine.EtsManager do
   @moduledoc """
   ETS Manager for ArchitectureEngine configuration
-  
+
   Manages ETS tables for workspace detection, build tool detection, and other configs.
   In production, this data comes from central NATS. For testing, we use local ETS files.
   """
@@ -74,15 +74,16 @@ defmodule Singularity.ArchitectureEngine.EtsManager do
   """
   def update_from_central_nats(config_type, data) do
     table_name = Map.get(@ets_tables, config_type)
+
     if table_name do
       # Clear existing data
       :ets.delete_all_objects(table_name)
-      
+
       # Insert new data
       Enum.each(data, fn {key, value} ->
         :ets.insert(table_name, {key, value})
       end)
-      
+
       Logger.info("Updated #{config_type} from central NATS")
       :ok
     else
@@ -101,13 +102,16 @@ defmodule Singularity.ArchitectureEngine.EtsManager do
 
   defp load_workspace_detection do
     config_file = Path.join(@config_dir, "workspace_detection.ets")
+
     if File.exists?(config_file) do
       case Code.eval_file(config_file) do
         {configs, _} ->
           Enum.each(configs, fn {key, value} ->
             :ets.insert(:workspace_detection, {key, value})
           end)
+
           Logger.info("Loaded workspace detection configs from ETS file")
+
         error ->
           Logger.warning("Failed to load workspace detection configs: #{inspect(error)}")
       end
@@ -118,13 +122,16 @@ defmodule Singularity.ArchitectureEngine.EtsManager do
 
   defp load_build_tool_detection do
     config_file = Path.join(@config_dir, "build_tool_detection.ets")
+
     if File.exists?(config_file) do
       case Code.eval_file(config_file) do
         {configs, _} ->
           Enum.each(configs, fn {key, value} ->
             :ets.insert(:build_tool_detection, {key, value})
           end)
+
           Logger.info("Loaded build tool detection configs from ETS file")
+
         error ->
           Logger.warning("Failed to load build tool detection configs: #{inspect(error)}")
       end
@@ -137,6 +144,7 @@ defmodule Singularity.ArchitectureEngine.EtsManager do
     # For now, use same data as build tool detection
     # In production, this would be separate
     build_tools = :ets.tab2list(:build_tool_detection)
+
     Enum.each(build_tools, fn {key, value} ->
       :ets.insert(:package_manager_detection, {key, value})
     end)
@@ -145,13 +153,16 @@ defmodule Singularity.ArchitectureEngine.EtsManager do
   defp load_naming_conventions do
     # Load naming conventions from ETS file
     config_file = Path.join(@config_dir, "naming_conventions.ets")
+
     if File.exists?(config_file) do
       case Code.eval_file(config_file) do
         {configs, _} ->
           Enum.each(configs, fn {key, value} ->
             :ets.insert(:naming_conventions, {key, value})
           end)
+
           Logger.info("Loaded naming conventions from ETS file")
+
         error ->
           Logger.warning("Failed to load naming conventions: #{inspect(error)}")
       end

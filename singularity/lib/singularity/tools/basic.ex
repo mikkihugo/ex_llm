@@ -483,9 +483,13 @@ defmodule Singularity.Tools.Basic do
   defp normalize_headers(headers) when is_list(headers) do
     headers
     |> Enum.map(fn
-      {key, value} -> {normalize_header_key(key), normalize_header_value(value)}
-      [key, value] -> {normalize_header_key(key), normalize_header_value(value)}
-      header when is_binary(header) -> 
+      {key, value} ->
+        {normalize_header_key(key), normalize_header_value(value)}
+
+      [key, value] ->
+        {normalize_header_key(key), normalize_header_value(value)}
+
+      header when is_binary(header) ->
         case String.split(header, ":", parts: 2) do
           [key, value] -> {normalize_header_key(key), normalize_header_value(value)}
           _ -> nil
@@ -511,9 +515,13 @@ defmodule Singularity.Tools.Basic do
   defp normalize_response_headers(headers) when is_list(headers) do
     headers
     |> Enum.map(fn
-      {key, value} -> {normalize_response_header_key(key), normalize_header_value(value)}
-      [key, value] -> {normalize_response_header_key(key), normalize_header_value(value)}
-      header when is_binary(header) -> 
+      {key, value} ->
+        {normalize_response_header_key(key), normalize_header_value(value)}
+
+      [key, value] ->
+        {normalize_response_header_key(key), normalize_header_value(value)}
+
+      header when is_binary(header) ->
         case String.split(header, ":", parts: 2) do
           [key, value] -> {normalize_response_header_key(key), normalize_header_value(value)}
           _ -> nil

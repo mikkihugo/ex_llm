@@ -32,12 +32,14 @@ defmodule Singularity.Jobs.PatternSyncJob do
 
         {:error, reason} ->
           Logger.error("❌ Pattern sync failed", reason: inspect(reason))
-          :ok  # Don't fail - patterns will sync on next cycle
+          # Don't fail - patterns will sync on next cycle
+          :ok
       end
     rescue
       e in Exception ->
         Logger.error("❌ Pattern sync exception", error: inspect(e))
-        :ok  # Log but don't crash the scheduler
+        # Log but don't crash the scheduler
+        :ok
     end
   end
 end

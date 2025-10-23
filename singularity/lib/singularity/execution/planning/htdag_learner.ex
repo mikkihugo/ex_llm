@@ -1,10 +1,11 @@
 defmodule Singularity.Execution.Planning.HTDAGLearner do
   @moduledoc """
-  Incremental learning system for HTDAG to understand and auto-repair the codebase.
+  Incremental learning system for HTDAG to understand and auto-repair the ENTIRE codebase.
 
-  Provides comprehensive codebase analysis through static file scanning and runtime
-  tracing, building knowledge graphs of module relationships and automatically
-  fixing broken dependencies, missing documentation, and integration issues.
+  Scans the FULL repository (Elixir, Rust, TypeScript, Go, Python, Nix, config files, etc.)
+  for comprehensive multi-language analysis. Builds knowledge graphs of module relationships
+  across all languages and automatically fixes broken dependencies, missing documentation,
+  and integration issues.
 
   ## Integration Points
 
@@ -332,8 +333,9 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
   defp find_source_files do
     # Find all source files in the entire project root
     # This includes: singularity/, rust/, llm-server/, centralcloud/, etc.
-    project_root = File.cwd!()
-    
+    # App runs from singularity/ dir, so go up one level to get repo root
+    project_root = Path.expand("..", File.cwd!())
+
     # Define source file patterns for different languages
     source_patterns = [
       # Elixir files
@@ -342,7 +344,7 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
       "#{project_root}/**/*.rs",
       # TypeScript/JavaScript files
       "#{project_root}/**/*.ts",
-      "#{project_root}/**/*.tsx", 
+      "#{project_root}/**/*.tsx",
       "#{project_root}/**/*.js",
       "#{project_root}/**/*.jsx",
       # Python files
@@ -361,24 +363,43 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
       # Documentation
       "#{project_root}/**/*.md"
     ]
-    
+
     # Find all matching files
     source_patterns
     |> Enum.flat_map(&Path.wildcard/1)
     |> Enum.filter(&File.regular?/1)
     |> Enum.reject(&ignore_file?/1)
   end
-  
+
   # Ignore common non-source files and directories
+  # Respects .gitignore + hardcoded patterns for deps/build artifacts
   defp ignore_file?(file_path) do
-    ignore_patterns = [
-      # Build artifacts
-      "/_build/",
+    # Hardcoded patterns (always ignore, even if not in .gitignore)
+    hardcoded_patterns = [
+      # Dependencies (never ingest third-party code!)
+      # Elixir deps
       "/deps/",
+      # npm deps
       "/node_modules/",
+      # Cargo deps (except our own code in target/debug/)
       "/target/",
+      # Cargo registry cache
+      "/.cargo/",
+      # Cargo build cache
+      "/.cargo-build/",
+      # Build artifacts
+      # Elixir build
+      "/_build/",
+      # TypeScript/JavaScript build
+      "/dist/",
+      # Generic build
+      "/build/",
+      # VCS
       "/.git/",
+      # Nix
       "/.nix/",
+      # Nix build result symlink
+      "/result",
       # Logs and temporary files
       ".log",
       ".tmp",
@@ -388,20 +409,114 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
       "Thumbs.db",
       # Large binary files
       ".png",
-      ".jpg", 
+      ".jpg",
       ".jpeg",
       ".gif",
       ".ico",
       ".pdf",
       ".zip",
-      ".tar.gz"
+      ".tar.gz",
+      ".wasm",
+      ".so",
+      ".dylib",
+      ".dll"
     ]
-    
-    Enum.any?(ignore_patterns, fn pattern ->
-      String.contains?(file_path, pattern)
-    end)
+
+    # Check hardcoded patterns first (fast path)
+    if Enum.any?(hardcoded_patterns, &String.contains?(file_path, &1)) do
+      true
+    else
+      # Then check .gitignore patterns (if exists)
+      check_gitignore(file_path)
+    end
   end
-  
+
+  # Check if file matches .gitignore or .singularityignore patterns
+  # Simple implementation - checks common gitignore patterns
+  defp check_gitignore(file_path) do
+    # Get project root
+    project_root = Path.expand("..", File.cwd!())
+    gitignore_path = Path.join(project_root, ".gitignore")
+    singularityignore_path = Path.join(project_root, ".singularityignore")
+
+    # Load patterns from both files
+    gitignore_patterns =
+      if File.exists?(gitignore_path) do
+        File.read!(gitignore_path)
+        |> String.split("\n")
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == "" or String.starts_with?(&1, "#")))
+      else
+        []
+      end
+
+    singularityignore_patterns =
+      if File.exists?(singularityignore_path) do
+        File.read!(singularityignore_path)
+        |> String.split("\n")
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == "" or String.starts_with?(&1, "#")))
+      else
+        []
+      end
+
+    # Combine patterns
+    all_patterns = gitignore_patterns ++ singularityignore_patterns
+
+    # If no patterns, skip this check
+    if Enum.empty?(all_patterns) do
+      false
+    else
+      # Make file_path relative to project root for matching
+      relative_path = Path.relative_to(file_path, project_root)
+
+      # Check if any pattern matches
+      Enum.any?(all_patterns, fn pattern ->
+        gitignore_pattern_matches?(relative_path, pattern)
+      end)
+    end
+  end
+
+  # Simple gitignore pattern matching
+  # Supports: *.ext, dir/, /dir/, dir/*, etc.
+  defp gitignore_pattern_matches?(file_path, pattern) do
+    cond do
+      # Exact match: node_modules
+      pattern == file_path ->
+        true
+
+      # Directory match: node_modules/
+      String.ends_with?(pattern, "/") ->
+        dir_pattern = String.trim_trailing(pattern, "/")
+        String.starts_with?(file_path, dir_pattern <> "/") or file_path == dir_pattern
+
+      # Extension match: *.log
+      String.starts_with?(pattern, "*.") ->
+        ext = String.trim_leading(pattern, "*")
+        String.ends_with?(file_path, ext)
+
+      # Wildcard match: logs/*.log
+      String.contains?(pattern, "*") ->
+        # Convert to regex
+        regex_pattern =
+          pattern
+          |> String.replace(".", "\\.")
+          |> String.replace("*", ".*")
+          |> then(&("^" <> &1 <> "$"))
+
+        case Regex.compile(regex_pattern) do
+          {:ok, regex} -> Regex.match?(regex, file_path)
+          _ -> false
+        end
+
+      # Path prefix match: __pycache__
+      true ->
+        String.contains?(file_path, "/" <> pattern <> "/") or
+          String.starts_with?(file_path, pattern <> "/") or
+          String.ends_with?(file_path, "/" <> pattern)
+    end
+  end
+
   # Detect programming language from file extension
   defp detect_language(file_path) do
     cond do
@@ -418,7 +533,7 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
       true -> "unknown"
     end
   end
-  
+
   # Detect file type/category
   defp detect_file_type(file_path) do
     cond do
@@ -438,7 +553,7 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
     try do
       # Read file content
       content = File.read!(file_path)
-      
+
       # Determine file type and language
       language = detect_language(file_path)
       file_type = detect_file_type(file_path)
@@ -474,7 +589,6 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
     end
   end
 
-
   # Language-specific module name extraction
   defp extract_module_name(file_path, content, language) do
     case language do
@@ -484,21 +598,21 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
           [_, module_name] -> module_name
           _ -> "Unknown"
         end
-      
+
       "rust" ->
         # Try to extract module name from mod declaration
         case Regex.run(~r/mod\s+([a-z_][a-z0-9_]*)/, content) do
           [_, module_name] -> String.capitalize(module_name)
           _ -> Path.basename(file_path, ".rs") |> String.capitalize()
         end
-      
+
       "typescript" ->
         # Use file path as module name
         file_path
         |> String.replace(File.cwd!() <> "/", "")
         |> String.replace("/", ".")
         |> String.replace(~r/\.[^.]*$/, "")
-      
+
       _ ->
         # For other languages, use file path
         file_path
@@ -517,29 +631,30 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
           [_, moduledoc] -> moduledoc
           _ -> ""
         end
-      
+
       "rust" ->
         # Try to extract doc comments
         case Regex.run(~r/\/\/!?\s*(.*?)(?=\n\s*\/\/!?|\n\s*[^\/]|$)/s, content) do
           [_, doc] -> doc
           _ -> ""
         end
-      
+
       "typescript" ->
         # Try to extract JSDoc comments
         case Regex.run(~r/\*\*([^*]|\*(?!\/))*\*\/\s*export/, content) do
           [doc] -> doc
           _ -> ""
         end
-      
+
       "markdown" ->
         # For markdown files, use the first heading
         case Regex.run(~r/^#\s+(.+)$/m, content) do
           [_, title] -> title
           _ -> ""
         end
-      
-      _ -> ""
+
+      _ ->
+        ""
     end
   end
 
@@ -554,18 +669,19 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
         # Extract aliases (dependencies)
         Regex.scan(~r/alias\s+([A-Za-z0-9_.]+)/, content)
         |> Enum.map(fn [_, alias_name] -> alias_name end)
-      
+
       "rust" ->
         # Extract use statements
         Regex.scan(~r/use\s+([a-z0-9_::]+)/, content)
         |> Enum.map(fn [_, use_name] -> use_name end)
-      
+
       "typescript" ->
         # Extract import statements
         Regex.scan(~r/import.*from\s+['"]([^'"]+)['"]/, content)
         |> Enum.map(fn [_, import_name] -> import_name end)
-      
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
@@ -995,7 +1111,8 @@ defmodule Singularity.Execution.Planning.HTDAGLearner do
     %{
       module: "Singularity.Execution.SPARC.Orchestrator",
       purpose: "SPARC methodology orchestration",
-      current_state: check_module_in_learning(learning, "Singularity.Execution.SPARC.Orchestrator"),
+      current_state:
+        check_module_in_learning(learning, "Singularity.Execution.SPARC.Orchestrator"),
       integration_with_htdag: "HTDAG executor applies SPARC phases to tasks",
       what_it_does: """
       - Specification: Define requirements

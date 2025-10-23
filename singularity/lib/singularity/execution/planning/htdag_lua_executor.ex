@@ -138,7 +138,8 @@ defmodule Singularity.Execution.Planning.HTDAGLuaExecutor do
           agent_configs = parse_agent_configs(result["agents"] || [])
           orchestration = result["orchestration"] || %{}
 
-          {:ok, %{agents: agent_configs, orchestration: orchestration, reasoning: result["reasoning"]}}
+          {:ok,
+           %{agents: agent_configs, orchestration: orchestration, reasoning: result["reasoning"]}}
 
         {:error, reason} ->
           Logger.error("Agent spawning script failed",
@@ -308,11 +309,13 @@ defmodule Singularity.Execution.Planning.HTDAGLuaExecutor do
         code_files: task.code_files || task[:code_files] || []
       },
       available_agents: additional_context[:available_agents] || [],
-      resources: additional_context[:resources] || %{
-        cpu_available: 0.8,
-        memory_available: 0.8,
-        max_concurrent_agents: 5
-      }
+      resources:
+        additional_context[:resources] ||
+          %{
+            cpu_available: 0.8,
+            memory_available: 0.8,
+            max_concurrent_agents: 5
+          }
     }
   end
 

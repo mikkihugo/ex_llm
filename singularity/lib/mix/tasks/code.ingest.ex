@@ -80,13 +80,14 @@ defmodule Mix.Tasks.Code.Ingest do
     # Get database connection using Repo config
     repo_config = Repo.config()
 
-    {:ok, conn} = Postgrex.start_link(
-      hostname: repo_config[:hostname] || "localhost",
-      port: repo_config[:port] || 5432,
-      database: repo_config[:database] || "singularity",
-      username: repo_config[:username] || System.get_env("USER") || "postgres",
-      password: repo_config[:password] || ""
-    )
+    {:ok, conn} =
+      Postgrex.start_link(
+        hostname: repo_config[:hostname] || "localhost",
+        port: repo_config[:port] || 5432,
+        database: repo_config[:database] || "singularity",
+        username: repo_config[:username] || System.get_env("USER") || "postgres",
+        password: repo_config[:password] || ""
+      )
 
     try do
       # Step 1: Create schema
@@ -130,7 +131,9 @@ defmodule Mix.Tasks.Code.Ingest do
 
       case parse_results do
         {:ok, %{success: success_count, failed: failed_count}} ->
-          Mix.shell().info("✓ Parsed #{success_count}/#{total_files} files (#{failed_count} failed)")
+          Mix.shell().info(
+            "✓ Parsed #{success_count}/#{total_files} files (#{failed_count} failed)"
+          )
 
         {:error, reason} ->
           Mix.shell().error("Failed to parse files: #{inspect(reason)}")
@@ -185,7 +188,6 @@ defmodule Mix.Tasks.Code.Ingest do
       # Summary
       Mix.shell().info("\n✓ Ingestion complete!")
       print_summary(conn, codebase_id)
-
     after
       GenServer.stop(conn)
     end
@@ -194,6 +196,7 @@ defmodule Mix.Tasks.Code.Ingest do
   # Private helpers
 
   defp parse_languages(nil), do: nil
+
   defp parse_languages(langs_str) do
     langs_str
     |> String.split(",")
@@ -203,8 +206,21 @@ defmodule Mix.Tasks.Code.Ingest do
   defp discover_source_files(path, nil) do
     # All supported languages
     extensions = [
-      ".ex", ".exs", ".gleam", ".rs", ".ts", ".tsx", ".js", ".jsx",
-      ".py", ".go", ".java", ".c", ".cpp", ".h", ".hpp"
+      ".ex",
+      ".exs",
+      ".gleam",
+      ".rs",
+      ".ts",
+      ".tsx",
+      ".js",
+      ".jsx",
+      ".py",
+      ".go",
+      ".java",
+      ".c",
+      ".cpp",
+      ".h",
+      ".hpp"
     ]
 
     files =
@@ -253,18 +269,19 @@ defmodule Mix.Tasks.Code.Ingest do
   end
 
   defp query_files_without_embeddings(conn, codebase_id) do
-    result = Postgrex.query!(
-      conn,
-      """
-      SELECT id, path, language, code_lines, comment_lines
-      FROM codebase_metadata
-      WHERE codebase_id = $1
-        AND vector_embedding IS NULL
-        AND code_lines > 0
-      ORDER BY code_lines DESC
-      """,
-      [codebase_id]
-    )
+    result =
+      Postgrex.query!(
+        conn,
+        """
+        SELECT id, path, language, code_lines, comment_lines
+        FROM codebase_metadata
+        WHERE codebase_id = $1
+          AND vector_embedding IS NULL
+          AND code_lines > 0
+        ORDER BY code_lines DESC
+        """,
+        [codebase_id]
+      )
 
     result.rows
     |> Enum.map(fn [id, path, language, code_lines, comment_lines] ->
@@ -280,10 +297,11 @@ defmodule Mix.Tasks.Code.Ingest do
 
   defp generate_and_store_embedding(conn, codebase_id, file) do
     # Read file content
-    content = case File.read(file.path) do
-      {:ok, content} -> content
-      {:error, _} -> ""
-    end
+    content =
+      case File.read(file.path) do
+        {:ok, content} -> content
+        {:error, _} -> ""
+      end
 
     if String.trim(content) == "" do
       Logger.debug("Skipping empty file: #{file.path} (codebase: #{codebase_id})")
@@ -303,6 +321,7 @@ defmodule Mix.Tasks.Code.Ingest do
             """,
             [file.id, codebase_id, embedding]
           )
+
           {:ok, :embedded}
 
         {:error, reason} ->
@@ -317,20 +336,21 @@ defmodule Mix.Tasks.Code.Ingest do
   end
 
   defp print_summary(conn, codebase_id) do
-    result = Postgrex.query!(
-      conn,
-      """
-      SELECT
-        COUNT(*) as total_files,
-        COUNT(DISTINCT language) as languages,
-        SUM(code_lines) as total_code_lines,
-        COUNT(CASE WHEN vector_embedding IS NOT NULL THEN 1 END) as embedded_files,
-        AVG(quality_score) as avg_quality
-      FROM codebase_metadata
-      WHERE codebase_id = $1
-      """,
-      [codebase_id]
-    )
+    result =
+      Postgrex.query!(
+        conn,
+        """
+        SELECT
+          COUNT(*) as total_files,
+          COUNT(DISTINCT language) as languages,
+          SUM(code_lines) as total_code_lines,
+          COUNT(CASE WHEN vector_embedding IS NOT NULL THEN 1 END) as embedded_files,
+          AVG(quality_score) as avg_quality
+        FROM codebase_metadata
+        WHERE codebase_id = $1
+        """,
+        [codebase_id]
+      )
 
     case result.rows do
       [[total, langs, lines, embedded, quality]] ->

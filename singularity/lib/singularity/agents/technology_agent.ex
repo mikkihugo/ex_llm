@@ -34,31 +34,34 @@ defmodule Singularity.Agents.TechnologyAgent do
 
     case task_name do
       "recommend_framework" ->
-        {:ok, %{
-          type: :technology_recommendation,
-          task: task_name,
-          message: "Framework recommendations prepared",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :technology_recommendation,
+           task: task_name,
+           message: "Framework recommendations prepared",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
 
       "evaluate_technology" ->
-        {:ok, %{
-          type: :technology_evaluation,
-          task: task_name,
-          message: "Technology evaluation completed",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :technology_evaluation,
+           task: task_name,
+           message: "Technology evaluation completed",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
 
       _ ->
-        {:ok, %{
-          type: :technology_task,
-          task: task_name,
-          message: "Technology Agent processed task",
-          context: context,
-          completed_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           type: :technology_task,
+           task: task_name,
+           message: "Technology Agent processed task",
+           context: context,
+           completed_at: DateTime.utc_now()
+         }}
     end
   end
 end

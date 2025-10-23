@@ -26,7 +26,8 @@ defmodule Singularity.Nats.EngineDiscoveryHandler do
     with :ok <- subscribe_to(conn, "system.engines.list", &handle_list_engines/2),
          :ok <- subscribe_to(conn, "system.engines.get.*", &handle_get_engine/2),
          :ok <- subscribe_to(conn, "system.capabilities.list", &handle_list_capabilities/2),
-         :ok <- subscribe_to(conn, "system.capabilities.available", &handle_available_capabilities/2),
+         :ok <-
+           subscribe_to(conn, "system.capabilities.available", &handle_available_capabilities/2),
          :ok <- subscribe_to(conn, "system.health.engines", &handle_health_check/2) do
       Logger.info("[EngineDiscovery] Subscribed to all engine discovery subjects")
       :ok
@@ -39,7 +40,10 @@ defmodule Singularity.Nats.EngineDiscoveryHandler do
   def subscribe() do
     # TODO: Implement subscription using NatsClient
     # For now, just log that we're subscribing
-    Logger.info("[EngineDiscovery] Engine discovery subscription initialized (NatsClient integration pending)")
+    Logger.info(
+      "[EngineDiscovery] Engine discovery subscription initialized (NatsClient integration pending)"
+    )
+
     :ok
   end
 
@@ -187,13 +191,14 @@ defmodule Singularity.Nats.EngineDiscoveryHandler do
       overall_health: if(length(unhealthy) == 0, do: :ok, else: :degraded),
       healthy_count: length(healthy),
       unhealthy_count: length(unhealthy),
-      engines: Enum.map(engines, fn engine ->
-        %{
-          id: engine.id,
-          label: engine.label,
-          health: engine.health
-        }
-      end),
+      engines:
+        Enum.map(engines, fn engine ->
+          %{
+            id: engine.id,
+            label: engine.label,
+            health: engine.health
+          }
+        end),
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
     }
   end
@@ -214,6 +219,8 @@ defmodule Singularity.Nats.EngineDiscoveryHandler do
     capabilities
     |> Enum.flat_map(fn cap -> Enum.map(cap.tags, &{&1, cap.id}) end)
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
-    |> Map.new(fn {tag, cap_ids} -> {tag, %{count: length(cap_ids), capabilities: Enum.uniq(cap_ids)}} end)
+    |> Map.new(fn {tag, cap_ids} ->
+      {tag, %{count: length(cap_ids), capabilities: Enum.uniq(cap_ids)}}
+    end)
   end
 end

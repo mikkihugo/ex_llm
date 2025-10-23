@@ -24,11 +24,12 @@ defmodule Singularity.Knowledge.SemanticSearchIntegrationTest do
           artifact_type: "code_pattern",
           artifact_id: "elixir-genserver-async",
           version: "1.0.0",
-          content_raw: Jason.encode!(%{
-            language: "elixir",
-            pattern: "GenServer async pattern",
-            code: "GenServer.cast(pid, {:async_task, data})"
-          }),
+          content_raw:
+            Jason.encode!(%{
+              language: "elixir",
+              pattern: "GenServer async pattern",
+              code: "GenServer.cast(pid, {:async_task, data})"
+            }),
           content: %{
             "language" => "elixir",
             "pattern" => "GenServer async pattern",
@@ -41,11 +42,12 @@ defmodule Singularity.Knowledge.SemanticSearchIntegrationTest do
           artifact_type: "code_pattern",
           artifact_id: "elixir-task-async",
           version: "1.0.0",
-          content_raw: Jason.encode!(%{
-            language: "elixir",
-            pattern: "Task async pattern",
-            code: "Task.async(fn -> heavy_work() end)"
-          }),
+          content_raw:
+            Jason.encode!(%{
+              language: "elixir",
+              pattern: "Task async pattern",
+              code: "Task.async(fn -> heavy_work() end)"
+            }),
           content: %{
             "language" => "elixir",
             "pattern" => "Task async pattern",
@@ -58,11 +60,12 @@ defmodule Singularity.Knowledge.SemanticSearchIntegrationTest do
           artifact_type: "code_pattern",
           artifact_id: "rust-async-await",
           version: "1.0.0",
-          content_raw: Jason.encode!(%{
-            language: "rust",
-            pattern: "Async/await pattern",
-            code: "async fn fetch_data() -> Result<Data> { ... }"
-          }),
+          content_raw:
+            Jason.encode!(%{
+              language: "rust",
+              pattern: "Async/await pattern",
+              code: "async fn fetch_data() -> Result<Data> { ... }"
+            }),
           content: %{
             "language" => "rust",
             "pattern" => "Async/await pattern",
@@ -100,11 +103,12 @@ defmodule Singularity.Knowledge.SemanticSearchIntegrationTest do
     end
 
     test "filters results by language", %{artifacts: _artifacts} do
-      {:ok, results} = ArtifactStore.search(
-        "async pattern",
-        language: "elixir",
-        top_k: 10
-      )
+      {:ok, results} =
+        ArtifactStore.search(
+          "async pattern",
+          language: "elixir",
+          top_k: 10
+        )
 
       # All results should be Elixir
       Enum.each(results, fn result ->
@@ -113,11 +117,12 @@ defmodule Singularity.Knowledge.SemanticSearchIntegrationTest do
     end
 
     test "filters results by artifact type", %{artifacts: _artifacts} do
-      {:ok, results} = ArtifactStore.search(
-        "pattern",
-        artifact_type: "code_pattern",
-        top_k: 10
-      )
+      {:ok, results} =
+        ArtifactStore.search(
+          "pattern",
+          artifact_type: "code_pattern",
+          top_k: 10
+        )
 
       # All results should be code patterns
       Enum.each(results, fn result ->
@@ -135,10 +140,11 @@ defmodule Singularity.Knowledge.SemanticSearchIntegrationTest do
     end
 
     test "handles empty search results gracefully" do
-      {:ok, results} = ArtifactStore.search(
-        "nonexistent pattern that definitely does not exist",
-        top_k: 10
-      )
+      {:ok, results} =
+        ArtifactStore.search(
+          "nonexistent pattern that definitely does not exist",
+          top_k: 10
+        )
 
       # Should return empty list, not error
       assert results == []
@@ -180,15 +186,16 @@ defmodule Singularity.Knowledge.SemanticSearchIntegrationTest do
 
   describe "usage tracking and learning" do
     setup do
-      {:ok, artifact} = ArtifactStore.insert(%{
-        artifact_type: "code_pattern",
-        artifact_id: "usage-test-#{System.unique_integer([:positive])}",
-        version: "1.0.0",
-        content_raw: "{}",
-        content: %{"test" => true},
-        usage_count: 0,
-        success_rate: 0.0
-      })
+      {:ok, artifact} =
+        ArtifactStore.insert(%{
+          artifact_type: "code_pattern",
+          artifact_id: "usage-test-#{System.unique_integer([:positive])}",
+          version: "1.0.0",
+          content_raw: "{}",
+          content: %{"test" => true},
+          usage_count: 0,
+          success_rate: 0.0
+        })
 
       {:ok, artifact: artifact}
     end
@@ -222,13 +229,15 @@ defmodule Singularity.Knowledge.SemanticSearchIntegrationTest do
   end
 
   describe "Git ↔ PostgreSQL sync" do
-    @tag :skip  # Requires file system access
+    # Requires file system access
+    @tag :skip
     test "imports artifacts from JSON files" do
       # This would test the mix knowledge.migrate task
       # Skipped in CI as it requires templates_data/ directory
     end
 
-    @tag :skip  # Requires file system access
+    # Requires file system access
+    @tag :skip
     test "exports high-performing artifacts to Git" do
       # This would test learned artifact export
       # Skipped in CI as it requires file system write access
@@ -243,13 +252,15 @@ defmodule Singularity.Knowledge.SemanticSearchIntegrationTest do
 
       artifacts =
         for i <- 1..100 do
-          {:ok, artifact} = ArtifactStore.insert(%{
-            artifact_type: "code_pattern",
-            artifact_id: "bulk-test-#{i}-#{System.unique_integer([:positive])}",
-            version: "1.0.0",
-            content_raw: "{}",
-            content: %{"index" => i}
-          })
+          {:ok, artifact} =
+            ArtifactStore.insert(%{
+              artifact_type: "code_pattern",
+              artifact_id: "bulk-test-#{i}-#{System.unique_integer([:positive])}",
+              version: "1.0.0",
+              content_raw: "{}",
+              content: %{"index" => i}
+            })
+
           artifact
         end
 
@@ -305,9 +316,9 @@ defmodule Singularity.Knowledge.SemanticSearchIntegrationTest do
 
       # All should succeed
       assert Enum.all?(results, fn
-        {:ok, _} -> true
-        _ -> false
-      end)
+               {:ok, _} -> true
+               _ -> false
+             end)
     end
 
     test "handles concurrent insertions" do
@@ -329,9 +340,9 @@ defmodule Singularity.Knowledge.SemanticSearchIntegrationTest do
 
       # All should succeed
       assert Enum.all?(results, fn
-        {:ok, _} -> true
-        _ -> false
-      end)
+               {:ok, _} -> true
+               _ -> false
+             end)
     end
   end
 

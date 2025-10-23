@@ -1,21 +1,21 @@
 defmodule Singularity.MetaRegistry.QuerySystem do
   @moduledoc """
   Meta-registry query system for learning application patterns.
-  
+
   This system learns from the application's actual usage patterns and provides
   suggestions based on what the application actually uses, regardless of language/framework.
-  
+
   ## Tech Stack Agnostic
-  
+
   Works with any language/framework:
   - PHP/Laravel → Learns Laravel patterns
   - Node.js/Express → Learns Express patterns  
   - Python/Django → Learns Django patterns
   - Go/Gin → Learns Gin patterns
   - Rust/Actix → Learns Actix patterns
-  
+
   ## Learning Flow
-  
+
   1. **Analyze application code** → Detect its patterns
   2. **Store in meta-registry** → Learn the app's style
   3. **Use for suggestions** → Suggest names/patterns that match the app's style
@@ -28,9 +28,9 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
   @doc """
   Learn naming patterns from application code.
-  
+
   ## Examples
-  
+
       # Learn from PHP/Laravel app
       learn_naming_patterns("my-laravel-app", %{
         language: "php",
@@ -45,7 +45,11 @@ defmodule Singularity.MetaRegistry.QuerySystem do
         patterns: ["usersRouter", "authMiddleware", "usersController"]
       })
   """
-  def learn_naming_patterns(codebase_id, %{language: language, framework: framework, patterns: patterns}) do
+  def learn_naming_patterns(codebase_id, %{
+        language: language,
+        framework: framework,
+        patterns: patterns
+      }) do
     # Store learned patterns in meta-registry
     attrs = %{
       codebase_id: codebase_id,
@@ -75,9 +79,9 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
   @doc """
   Learn architecture patterns from application code.
-  
+
   ## Examples
-  
+
       # Learn from microservices app
       learn_architecture_patterns("my-microservices-app", %{
         patterns: ["event-driven", "microservices", "api-gateway"],
@@ -118,9 +122,9 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
   @doc """
   Learn quality patterns from application code.
-  
+
   ## Examples
-  
+
       # Learn from high-quality codebase
       learn_quality_patterns("my-quality-app", %{
         patterns: ["test-driven", "type-safe", "documented"],
@@ -153,9 +157,9 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
   @doc """
   Query learned patterns for suggestions.
-  
+
   ## Examples
-  
+
       # Get naming suggestions based on learned patterns
       query_naming_suggestions("my-laravel-app", "controller")
       # Returns: ["UserController", "ProductController", "OrderController"]
@@ -166,7 +170,9 @@ defmodule Singularity.MetaRegistry.QuerySystem do
   """
   def query_naming_suggestions(codebase_id, context) do
     case TechnologyDetection.latest(Singularity.Repo, codebase_id) do
-      nil -> []
+      nil ->
+        []
+
       detection ->
         patterns = Map.get(detection.summary, :naming_patterns, [])
         filter_patterns_by_context(patterns, context)
@@ -175,7 +181,9 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
   def query_architecture_suggestions(codebase_id, context) do
     case TechnologyDetection.latest(Singularity.Repo, codebase_id) do
-      nil -> []
+      nil ->
+        []
+
       detection ->
         patterns = Map.get(detection.summary, :architecture_patterns, [])
         services = Map.get(detection.service_structure, :services, [])
@@ -185,7 +193,9 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
   def query_quality_suggestions(codebase_id, context) do
     case TechnologyDetection.latest(Singularity.Repo, codebase_id) do
-      nil -> []
+      nil ->
+        []
+
       detection ->
         patterns = Map.get(detection.summary, :quality_patterns, [])
         filter_patterns_by_context(patterns, context)
@@ -194,9 +204,9 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
   @doc """
   Track usage of suggestions to improve learning.
-  
+
   ## Examples
-  
+
       # Track when a naming suggestion is used
       track_usage(:naming, "my-laravel-app", "UserController", true)
       
@@ -214,20 +224,24 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
     # Publish to NATS for real-time learning
     subject = NatsSubjects.usage(category)
+
     case Singularity.NatsClient.publish(subject, Jason.encode!(usage_event)) do
       :ok ->
         Logger.debug("Published usage event to NATS: #{subject}")
+
       {:error, reason} ->
         Logger.warning("Failed to publish usage event to NATS: #{inspect(reason)}")
     end
-    
+
     # Store in database for persistence
     case store_usage_event(usage_event) do
       {:ok, _} ->
         Logger.debug("Stored usage event in database")
+
       {:error, reason} ->
         Logger.warning("Failed to store usage event in database: #{inspect(reason)}")
     end
+
     {:ok, usage_event}
   end
 
@@ -249,25 +263,26 @@ defmodule Singularity.MetaRegistry.QuerySystem do
 
   defp filter_patterns_by_context(patterns, context) do
     context_lower = String.downcase(context)
-    
+
     patterns
     |> Enum.filter(fn pattern ->
       pattern
       |> String.downcase()
       |> String.contains?(context_lower)
     end)
-    |> Enum.take(5)  # Limit to top 5 suggestions
+    # Limit to top 5 suggestions
+    |> Enum.take(5)
   end
 
   # Store usage event in database for persistence
   defp store_usage_event(usage_event) do
     # Log the event
-    Logger.info("Usage event recorded", 
+    Logger.info("Usage event recorded",
       category: usage_event.category,
       suggestion: usage_event.suggestion,
       accepted: usage_event.accepted
     )
-    
+
     # Store to usage_events table
     usage_event_attrs = %{
       codebase_id: usage_event.codebase_id,
@@ -277,15 +292,17 @@ defmodule Singularity.MetaRegistry.QuerySystem do
       context: usage_event.context || %{},
       confidence: usage_event.confidence || 0.5
     }
-    
+
     case Singularity.Schemas.UsageEvent.create(usage_event_attrs) do
-      {:ok, changeset} -> 
+      {:ok, changeset} ->
         # Insert into database
         case Singularity.Repo.insert(changeset) do
           {:ok, event} -> {:ok, event}
           {:error, changeset} -> {:error, changeset}
         end
-      {:error, changeset} -> {:error, changeset}
+
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 end

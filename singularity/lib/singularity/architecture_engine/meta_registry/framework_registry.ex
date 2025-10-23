@@ -1,7 +1,7 @@
 defmodule Singularity.MetaRegistry.FrameworkRegistry do
   @moduledoc """
   Framework registry for managing all framework learning patterns.
-  
+
   This is the main entry point for framework-specific learning and suggestions.
   Each framework has its own learning module in the frameworks/ directory.
   """
@@ -20,9 +20,9 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
 
   @doc """
   Get suggestions for a specific framework.
-  
+
   ## Examples
-  
+
       # Get NATS suggestions
       get_suggestions(:nats, "search", "subject")
       # Returns: ["search.semantic", "search.hybrid", "search.vector"]
@@ -44,9 +44,9 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
 
   @doc """
   Learn patterns for a specific framework.
-  
+
   ## Examples
-  
+
       # Learn NATS patterns
       learn_patterns(:nats, %{
         subjects: ["llm.provider.claude", "analysis.code.parse"],
@@ -70,9 +70,9 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
 
   @doc """
   Initialize patterns for a specific framework.
-  
+
   ## Examples
-  
+
       # Initialize NATS patterns
       initialize_framework(:nats)
       
@@ -88,9 +88,9 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
 
   @doc """
   Initialize all framework patterns.
-  
+
   ## Examples
-  
+
       # Initialize all frameworks
       initialize_all_frameworks()
   """
@@ -107,9 +107,9 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
 
   @doc """
   Get all available frameworks.
-  
+
   ## Examples
-  
+
       # Get all frameworks
       get_available_frameworks()
       # Returns: [:nats, :postgresql, :ets, :rust_nif, :elixir_otp, :ecto, :jason, :phoenix, :exunit]
@@ -120,9 +120,9 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
 
   @doc """
   Check if a framework is available.
-  
+
   ## Examples
-  
+
       # Check if NATS is available
       framework_available?(:nats)
       # Returns: true

@@ -1815,7 +1815,9 @@ defmodule Singularity.Tools.Deployment do
 
     alerts =
       case unhealthy_apps do
-        [] -> alerts
+        [] ->
+          alerts
+
         apps ->
           [
             %{
@@ -1833,7 +1835,9 @@ defmodule Singularity.Tools.Deployment do
 
     alerts =
       case high_cpu_apps do
-        [] -> alerts
+        [] ->
+          alerts
+
         apps ->
           [
             %{

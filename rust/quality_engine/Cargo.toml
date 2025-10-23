@@ -24,7 +24,7 @@ walkdir = { workspace = true }
 tracing = { workspace = true }
 
 # NIF dependencies
-rustler = { version = "0.34", features = ["derive"], optional = true }
+rustler = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 default = ["rust-clippy", "javascript-eslint", "typescript-eslint", "python-pylint", "go-golangci", "java-spotbugs", "cpp-clang-tidy", "csharp-sonar", "elixir-credo", "erlang-dialyzer", "gleam-check", "nif"]

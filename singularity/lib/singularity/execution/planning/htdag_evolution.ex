@@ -38,7 +38,7 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
       improved_params = HTDAGEvolution.apply_mutations(mutations, original_params)
       # => %{model_id: "claude-sonnet-4.5", temperature: 0.3, ...}
   """
-  
+
   require Logger
 
   # INTEGRATION: LLM operations (NATS-based critique and mutation)
@@ -51,7 +51,7 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
           reason: String.t(),
           confidence: float()
         }
-  
+
   @doc """
   Critique execution results and propose mutations via LLM using context-aware Lua script.
 
@@ -88,10 +88,10 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
         {:error, reason}
     end
   end
-  
+
   @doc """
   Apply mutations to operation parameters.
-  
+
   Returns updated parameters with mutations applied.
   """
   @spec apply_mutations([mutation()], map()) :: map()
@@ -100,26 +100,27 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
       apply_mutation(mutation, acc)
     end)
   end
-  
+
   @doc """
   Evaluate if a mutation improved performance.
-  
+
   Compares metrics before and after mutation.
   """
   @spec evaluate_mutation(mutation(), map(), map()) :: {:better | :worse | :neutral, float()}
   def evaluate_mutation(mutation, before_metrics, after_metrics) do
     # Calculate improvement score
     score = calculate_improvement_score(before_metrics, after_metrics)
-    
-    result = cond do
-      score > 0.1 -> :better
-      score < -0.1 -> :worse
-      true -> :neutral
-    end
-    
+
+    result =
+      cond do
+        score > 0.1 -> :better
+        score < -0.1 -> :worse
+        true -> :neutral
+      end
+
     {result, score}
   end
-  
+
   ## Private Functions
 
   defp parse_mutations(llm_response) do
@@ -128,17 +129,17 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
       {:ok, %{"mutations" => mutations}} when is_list(mutations) ->
         parsed = Enum.map(mutations, &parse_mutation/1)
         {:ok, parsed}
-        
+
       {:ok, _} ->
         Logger.warning("No mutations found in LLM response")
         {:ok, []}
-        
+
       {:error, reason} ->
         Logger.error("Failed to parse mutations", reason: reason)
         {:error, reason}
     end
   end
-  
+
   defp parse_mutation(mutation_data) do
     %{
       type: parse_mutation_type(mutation_data["type"]),
@@ -149,12 +150,12 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
       confidence: mutation_data["confidence"] || 0.5
     }
   end
-  
+
   defp parse_mutation_type("model_change"), do: :model_change
   defp parse_mutation_type("param_change"), do: :param_change
   defp parse_mutation_type("prompt_change"), do: :prompt_change
   defp parse_mutation_type(_), do: :unknown
-  
+
   defp extract_json(text) do
     # Find JSON block in markdown or raw text
     case Regex.run(~r/```json\s*(\{.*?\})\s*```/s, text) do
@@ -162,32 +163,32 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
       nil -> Jason.decode(text)
     end
   end
-  
+
   defp apply_mutation(%{type: :model_change, target: target, new_value: new_model}, params) do
     Map.update(params, :model_id, new_model, fn _ -> new_model end)
   end
-  
+
   defp apply_mutation(%{type: :param_change, target: param_name, new_value: new_value}, params) do
     param_key = String.to_atom(param_name)
     Map.put(params, param_key, new_value)
   end
-  
+
   defp apply_mutation(%{type: :prompt_change, new_value: new_prompt}, params) do
     Map.put(params, :prompt_template, new_prompt)
   end
-  
+
   defp apply_mutation(_mutation, params), do: params
-  
+
   defp calculate_improvement_score(before, after_metrics) do
     # Simple scoring: fewer tokens and faster is better
     token_improvement = (before[:total_tokens] || 1000) / (after_metrics[:total_tokens] || 1000)
     latency_improvement = (before[:avg_latency] || 1000) / (after_metrics[:avg_latency] || 1000)
     success_improvement = (after_metrics[:success_rate] || 0.5) / (before[:success_rate] || 0.5)
-    
+
     # Weighted average
-    (token_improvement * 0.3 + latency_improvement * 0.3 + success_improvement * 0.4) - 1.0
+    token_improvement * 0.3 + latency_improvement * 0.3 + success_improvement * 0.4 - 1.0
   end
-  
+
   defp calculate_total_tokens(execution_result) do
     execution_result
     |> Map.get(:results, %{})
@@ -196,12 +197,12 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
       acc + tokens
     end)
   end
-  
+
   defp calculate_avg_latency(_execution_result) do
     # Placeholder - would calculate from telemetry data
     1500
   end
-  
+
   defp format_task_results(execution_result) do
     execution_result
     |> Map.get(:results, %{})
@@ -210,7 +211,7 @@ defmodule Singularity.Execution.Planning.HTDAGEvolution do
       "- #{task_id}: #{tokens} tokens"
     end)
   end
-  
+
   defp generate_run_id do
     "evolution-#{System.unique_integer([:positive])}"
   end

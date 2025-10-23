@@ -389,25 +389,28 @@ defmodule Singularity.Agents.CostOptimizedAgent do
   defp build_llm_prompt(task, rule_result, specialization) do
     # Use Lua script for context-aware prompt generation
     case Singularity.LLM.Service.call_with_script(
-      "agents/execute-task.lua",
-      %{
-        task: task,
-        rule_result: rule_result && elem(rule_result, 1),
-        specialization: to_string(specialization)
-      },
-      complexity: :simple,
-      task_type: :general
-    ) do
-      {:ok, %{text: prompt}} -> prompt
+           "agents/execute-task.lua",
+           %{
+             task: task,
+             rule_result: rule_result && elem(rule_result, 1),
+             specialization: to_string(specialization)
+           },
+           complexity: :simple,
+           task_type: :general
+         ) do
+      {:ok, %{text: prompt}} ->
+        prompt
+
       {:error, reason} ->
         # Fallback to inline prompt
         Logger.warning("Lua script failed, using fallback prompt: #{inspect(reason)}")
 
-        rule_context = if rule_result do
-          "\nRule-based analysis found:\n- Confidence: #{elem(rule_result, 1).confidence}\n- Reasoning: #{elem(rule_result, 1).reasoning}"
-        else
-          ""
-        end
+        rule_context =
+          if rule_result do
+            "\nRule-based analysis found:\n- Confidence: #{elem(rule_result, 1).confidence}\n- Reasoning: #{elem(rule_result, 1).reasoning}"
+          else
+            ""
+          end
 
         "You are a #{specialization} agent in a self-evolving AI system.\n\nTask: #{task.description}\n\n#{if task.acceptance_criteria, do: "Acceptance Criteria:\n#{Enum.join(task.acceptance_criteria, "\n")}", else: ""}#{rule_context}\n\nGenerate production-ready code following best practices."
     end

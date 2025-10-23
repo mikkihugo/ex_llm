@@ -1,7 +1,7 @@
 defmodule Singularity.Schemas.FileArchitecturePattern do
   @moduledoc """
   Schema for per-file architectural patterns detected during analysis.
-  
+
   Stores architectural patterns found in individual files, linked to both
   the file and the detection run that found them.
   """

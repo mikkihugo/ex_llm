@@ -154,10 +154,26 @@ defmodule Singularity.Dashboard.SystemHealthPage do
       title: "Codebase Health",
       icon: "📊",
       stats: [
-        %{label: "Overall Score", value: "#{round(metrics.overall_score * 100)}%", status: health_status(metrics.overall_score)},
-        %{label: "Test Coverage", value: "#{round(metrics.key_metrics.test_coverage * 100)}%", trend: :up},
-        %{label: "Documentation", value: "#{round(metrics.key_metrics.documentation * 100)}%", trend: :stable},
-        %{label: "Complexity", value: "#{Float.round(metrics.key_metrics.complexity, 1)}", trend: :down}
+        %{
+          label: "Overall Score",
+          value: "#{round(metrics.overall_score * 100)}%",
+          status: health_status(metrics.overall_score)
+        },
+        %{
+          label: "Test Coverage",
+          value: "#{round(metrics.key_metrics.test_coverage * 100)}%",
+          trend: :up
+        },
+        %{
+          label: "Documentation",
+          value: "#{round(metrics.key_metrics.documentation * 100)}%",
+          trend: :stable
+        },
+        %{
+          label: "Complexity",
+          value: "#{Float.round(metrics.key_metrics.complexity, 1)}",
+          trend: :down
+        }
       ],
       recommendations: metrics.recommendations |> Enum.take(2)
     }
@@ -168,10 +184,22 @@ defmodule Singularity.Dashboard.SystemHealthPage do
       title: "Search Performance",
       icon: "🔍",
       stats: [
-        %{label: "Avg Query Time", value: "#{metrics.avg_query_time_ms}ms", status: query_time_status(metrics.avg_query_time_ms)},
+        %{
+          label: "Avg Query Time",
+          value: "#{metrics.avg_query_time_ms}ms",
+          status: query_time_status(metrics.avg_query_time_ms)
+        },
         %{label: "Total Searches", value: format_number(metrics.total_searches), status: :good},
-        %{label: "User Satisfaction", value: "#{Float.round(metrics.avg_user_satisfaction, 1)}/5", trend: :up},
-        %{label: "Cache Hit Rate", value: "#{round(metrics.cache_hit_rate * 100)}%", trend: :stable}
+        %{
+          label: "User Satisfaction",
+          value: "#{Float.round(metrics.avg_user_satisfaction, 1)}/5",
+          trend: :up
+        },
+        %{
+          label: "Cache Hit Rate",
+          value: "#{round(metrics.cache_hit_rate * 100)}%",
+          trend: :stable
+        }
       ],
       trending: metrics.trending_searches |> Enum.take(3)
     }
@@ -184,8 +212,16 @@ defmodule Singularity.Dashboard.SystemHealthPage do
       stats: [
         %{label: "Total Artifacts", value: format_number(metrics.total_artifacts), status: :good},
         %{label: "Actively Learning", value: "#{metrics.actively_learning}", status: :good},
-        %{label: "Ready to Promote", value: "#{metrics.ready_to_promote}", status: quality_status(metrics.ready_to_promote)},
-        %{label: "Learning Rate", value: "#{Float.round(metrics.system_learning_rate, 1)}/day", trend: :up}
+        %{
+          label: "Ready to Promote",
+          value: "#{metrics.ready_to_promote}",
+          status: quality_status(metrics.ready_to_promote)
+        },
+        %{
+          label: "Learning Rate",
+          value: "#{Float.round(metrics.system_learning_rate, 1)}/day",
+          trend: :up
+        }
       ],
       actions: ["Review #{metrics.ready_to_promote} promotion candidates"]
     }
@@ -275,12 +311,12 @@ defmodule Singularity.Dashboard.SystemHealthPage do
 
   defp format_number(num) when is_integer(num) do
     num
-      |> Integer.to_string()
-      |> String.reverse()
-      |> String.graphemes()
-      |> Enum.chunk_every(3)
-      |> Enum.join(",")
-      |> String.reverse()
+    |> Integer.to_string()
+    |> String.reverse()
+    |> String.graphemes()
+    |> Enum.chunk_every(3)
+    |> Enum.join(",")
+    |> String.reverse()
   end
 
   defp format_number(num) when is_float(num) do

@@ -51,7 +51,10 @@ defmodule Singularity.TemplateMatcher do
         end
 
       {:error, reason} ->
-        Logger.warning("Template not found via dynamic discovery: #{language}_production, reason: #{reason}")
+        Logger.warning(
+          "Template not found via dynamic discovery: #{language}_production, reason: #{reason}"
+        )
+
         {:error, {:template_load_failed, reason}}
     end
   end
@@ -113,37 +116,42 @@ defmodule Singularity.TemplateMatcher do
 
   defp extract_section_patterns(section) when is_map(section) do
     patterns = []
-    
+
     # Extract patterns from section content
-    patterns = if Map.has_key?(section, "patterns") do
-      Map.get(section, "patterns", []) |> List.wrap() |> Enum.map(&normalize_pattern/1)
-    else
-      patterns
-    end
-    
+    patterns =
+      if Map.has_key?(section, "patterns") do
+        Map.get(section, "patterns", []) |> List.wrap() |> Enum.map(&normalize_pattern/1)
+      else
+        patterns
+      end
+
     # Extract patterns from section metadata
-    patterns = if Map.has_key?(section, "metadata") do
-      metadata_patterns = Map.get(section, "metadata", %{})
-      |> Map.get("patterns", [])
-      |> List.wrap()
-      |> Enum.map(&normalize_pattern/1)
-      
-      patterns ++ metadata_patterns
-    else
-      patterns
-    end
-    
+    patterns =
+      if Map.has_key?(section, "metadata") do
+        metadata_patterns =
+          Map.get(section, "metadata", %{})
+          |> Map.get("patterns", [])
+          |> List.wrap()
+          |> Enum.map(&normalize_pattern/1)
+
+        patterns ++ metadata_patterns
+      else
+        patterns
+      end
+
     # Extract patterns from section tags
-    patterns = if Map.has_key?(section, "tags") do
-      tag_patterns = Map.get(section, "tags", [])
-      |> List.wrap()
-      |> Enum.map(&normalize_pattern/1)
-      
-      patterns ++ tag_patterns
-    else
-      patterns
-    end
-    
+    patterns =
+      if Map.has_key?(section, "tags") do
+        tag_patterns =
+          Map.get(section, "tags", [])
+          |> List.wrap()
+          |> Enum.map(&normalize_pattern/1)
+
+        patterns ++ tag_patterns
+      else
+        patterns
+      end
+
     patterns |> Enum.uniq() |> Enum.reject(&is_nil/1)
   end
 
@@ -169,7 +177,6 @@ defmodule Singularity.TemplateMatcher do
   defp normalize_pattern(%{pattern: pattern}), do: normalize_pattern(pattern)
 
   defp normalize_pattern(_), do: nil
-
 
   defp build_response(match, template, user_tokens) do
     pattern = match.pattern

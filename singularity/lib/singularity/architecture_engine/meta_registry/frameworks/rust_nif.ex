@@ -1,7 +1,7 @@
 defmodule Singularity.MetaRegistry.Frameworks.RustNif do
   @moduledoc """
   Rust NIF framework learning patterns.
-  
+
   Learns from Rust NIF patterns to improve our NIF usage.
   """
 
@@ -9,9 +9,9 @@ defmodule Singularity.MetaRegistry.Frameworks.RustNif do
 
   @doc """
   Learn from Rust NIF patterns.
-  
+
   ## Examples
-  
+
       # Learn from our Rust NIFs
       learn_patterns(%{
         modules: ["ArchitectureEngine", "CodeEngine", "SemanticEngine"],
@@ -30,9 +30,9 @@ defmodule Singularity.MetaRegistry.Frameworks.RustNif do
 
   @doc """
   Get Rust NIF suggestions based on learned patterns.
-  
+
   ## Examples
-  
+
       # Get module suggestions
       get_suggestions("parser", "module")
       # Returns: ["ParserEngine", "CodeParser", "SyntaxParser"]
@@ -61,8 +61,12 @@ defmodule Singularity.MetaRegistry.Frameworks.RustNif do
       functions: ["analyze_architecture", "detect_patterns", "generate_embeddings"],
       types: ["Result<", "Option<", "Vec<", "HashMap<"],
       patterns: [
-        "pub fn", "use rustler", "rustler::init!",
-        "pub struct", "pub enum", "impl"
+        "pub fn",
+        "use rustler",
+        "rustler::init!",
+        "pub struct",
+        "pub enum",
+        "impl"
       ]
     })
   end

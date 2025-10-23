@@ -8,7 +8,8 @@ defmodule Singularity.Templates.RendererSolidTest do
       variables = %{
         module_name: "MyApp.TestModule",
         description: "A test module for Solid integration",
-        overview: "This module demonstrates Solid (Handlebars) template rendering with conditionals and loops.",
+        overview:
+          "This module demonstrates Solid (Handlebars) template rendering with conditionals and loops.",
         api_functions: [
           %{
             name: "test_function",
@@ -35,7 +36,8 @@ defmodule Singularity.Templates.RendererSolidTest do
         template_version: "2.1.0",
         applied_date: "2025-10-12",
         use_genserver: false,
-        content: "# Module implementation here\n\ndef test_function(arg1, arg2) do\n  # Implementation\n  {:ok, :result}\nend"
+        content:
+          "# Module implementation here\n\ndef test_function(arg1, arg2) do\n  # Implementation\n  {:ok, :result}\nend"
       }
 
       case Renderer.render("elixir-module", variables) do

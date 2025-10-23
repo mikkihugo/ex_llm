@@ -1,7 +1,7 @@
 defmodule Singularity.Schemas.T5ModelVersion do
   @moduledoc """
   T5 Model Version Schema
-  
+
   Tracks different versions of fine-tuned T5 models.
   Manages model deployment, performance metrics, and rollback capabilities.
   """
@@ -32,11 +32,22 @@ defmodule Singularity.Schemas.T5ModelVersion do
   def changeset(model_version, attrs) do
     model_version
     |> cast(attrs, [
-      :training_session_id, :version, :model_path, :base_model, :config,
-      :performance_metrics, :is_deployed, :is_active, :deployed_at,
-      :file_size_mb, :training_time_seconds, :evaluation_results
+      :training_session_id,
+      :version,
+      :model_path,
+      :base_model,
+      :config,
+      :performance_metrics,
+      :is_deployed,
+      :is_active,
+      :deployed_at,
+      :file_size_mb,
+      :training_time_seconds,
+      :evaluation_results
     ])
     |> validate_required([:training_session_id, :version, :model_path, :base_model])
-    |> validate_format(:version, ~r/^v\d+\.\d+\.\d+$/, message: "must be semantic version (e.g., v1.0.0)")
+    |> validate_format(:version, ~r/^v\d+\.\d+\.\d+$/,
+      message: "must be semantic version (e.g., v1.0.0)"
+    )
   end
 end

@@ -69,7 +69,8 @@ defmodule Singularity.BeamAnalysisEngine do
   end
 
   def analyze_beam_code(language, _code, _file_path) do
-    {:error, "Unsupported BEAM language: #{language}. Supported: #{Enum.join(@supported_beam_languages, ", ")}"}
+    {:error,
+     "Unsupported BEAM language: #{language}. Supported: #{Enum.join(@supported_beam_languages, ", ")}"}
   end
 
   @doc """
@@ -88,13 +89,13 @@ defmodule Singularity.BeamAnalysisEngine do
     try do
       # Parse the code using tree-sitter
       {:ok, ast} = parse_elixir_code(code)
-      
+
       # Perform comprehensive BEAM analysis
       beam_analysis = analyze_elixir_beam_patterns(ast, code, file_path)
-      
+
       # Extract language-specific features
       elixir_features = extract_elixir_features(ast, code, file_path)
-      
+
       # Combine results
       analysis_result = %{
         language: "elixir",
@@ -110,7 +111,7 @@ defmodule Singularity.BeamAnalysisEngine do
         },
         analysis_timestamp: DateTime.utc_now()
       }
-      
+
       {:ok, analysis_result}
     rescue
       error ->
@@ -123,13 +124,13 @@ defmodule Singularity.BeamAnalysisEngine do
     try do
       # Parse the code using tree-sitter
       {:ok, ast} = parse_erlang_code(code)
-      
+
       # Perform comprehensive BEAM analysis
       beam_analysis = analyze_erlang_beam_patterns(ast, code, file_path)
-      
+
       # Extract language-specific features
       erlang_features = extract_erlang_features(ast, code, file_path)
-      
+
       # Combine results
       analysis_result = %{
         language: "erlang",
@@ -145,7 +146,7 @@ defmodule Singularity.BeamAnalysisEngine do
         },
         analysis_timestamp: DateTime.utc_now()
       }
-      
+
       {:ok, analysis_result}
     rescue
       error ->
@@ -158,13 +159,13 @@ defmodule Singularity.BeamAnalysisEngine do
     try do
       # Parse the code using tree-sitter
       {:ok, ast} = parse_gleam_code(code)
-      
+
       # Perform comprehensive BEAM analysis
       beam_analysis = analyze_gleam_beam_patterns(ast, code, file_path)
-      
+
       # Extract language-specific features
       gleam_features = extract_gleam_features(ast, code, file_path)
-      
+
       # Combine results
       analysis_result = %{
         language: "gleam",
@@ -180,7 +181,7 @@ defmodule Singularity.BeamAnalysisEngine do
         },
         analysis_timestamp: DateTime.utc_now()
       }
-      
+
       {:ok, analysis_result}
     rescue
       error ->
@@ -660,7 +661,7 @@ defmodule Singularity.BeamAnalysisEngine do
         |> String.split(" ")
         |> List.first()
         |> String.trim()
-      
+
       String.contains?(line, "-behaviour(") ->
         line
         |> String.split("-behaviour(")
@@ -668,13 +669,13 @@ defmodule Singularity.BeamAnalysisEngine do
         |> String.split(")")
         |> List.first()
         |> String.trim()
-      
+
       String.contains?(line, "import ") ->
         line
         |> String.split("import ")
         |> List.last()
         |> String.trim()
-      
+
       true ->
         "Unknown"
     end
