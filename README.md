@@ -20,13 +20,59 @@ Autonomous agents, semantic code search, living knowledge base, and multi-AI orc
 
 ## Unified NATS Architecture
 
-**Single NATS Server**: Optimized architecture with intelligent subject routing:
-- `llm.*` subjects: Direct request/reply (no JetStream) for maximum LLM performance
-- `ai.events.*`, `agent.events.*`: JetStream for persistence and replay
-- `metrics.*`, `telemetry.*`: JetStream for monitoring and observability
+**Single NATS Server**: Streamlined architecture with hierarchical subject routing and multiple protocol support.
+
+### NATS Transport Protocols
+
+Singularity's NATS server supports multiple client protocols on a single server instance:
+
+| Protocol | Port | Use Case | Status |
+|----------|------|----------|--------|
+| **NATS** | 4222 | Elixir/Rust native clients (primary) | ✅ Enabled |
+| **WebSocket** | 4223 | Browser JS clients, web frontends | ✅ Enabled |
+| **TLS/Secure** | 4221 | Production secure connections | ⚠️ Disabled (set in flake.nix) |
+| **MQTT** | 1883 | IoT devices, edge computing | ⚠️ Disabled (set in flake.nix) |
+
+**Default Configuration (Dev):**
+- NATS: `localhost:4222` (Elixir/Rust clients)
+- WebSocket: `localhost:4223` (Browser clients)
+- TLS/MQTT: Disabled
+
+**To Enable Additional Protocols** (e.g., production TLS or IoT MQTT):
+
+Edit `flake.nix` in the `nats` service configuration:
+```nix
+nats = {
+  name = "NATS Message Bus";
+  protocols = {
+    nats = 4222;        # Core NATS (always enabled)
+    websocket = 4223;   # WebSocket (always enabled for browser support)
+    tls = 4221;         # Set port to enable TLS (null = disabled)
+    mqtt = 1883;        # Set port to enable MQTT (null = disabled)
+  };
+};
+```
+
+Then run `nix flake update` and `direnv reload` to apply changes.
+
+### Topic Hierarchy (Pattern: `{domain}.{subdomain}.{action}`)
+- **`llm.*`** - Direct request/reply (no JetStream) for maximum LLM performance
+- **`system.*`** - System discovery and health (mixed routing)
+- **`agent.*`** - Agent management (commands direct, events JetStream)
+- **`planning.*`** - Work planning and task management (direct)
+- **`knowledge.*`** - Knowledge and template management (direct)
+- **`analysis.*`** - Code analysis and processing (direct)
+- **`central.*`** - Central services and cross-cutting concerns (direct)
+- **`intelligence.*`** - AI intelligence and insights (direct)
+- **`patterns.*`** - Pattern mining and management (direct)
+- **`packages.*`** - Package registry and management (direct)
+
+### JetStream Streams
+- **`EVENTS`** - All `*.events.*` subjects (1 hour retention)
+- **`METRICS`** - All `*.metrics.*` subjects (24 hour retention)
 
 ```
-All Requests → nats.request → Single NATS Server → Route by subject pattern
+All Requests → Single NATS Server → Route by hierarchical subject pattern
 ```
 
 **Key Components:**

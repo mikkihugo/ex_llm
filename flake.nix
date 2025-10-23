@@ -126,7 +126,12 @@
             purpose = "Distributed messaging for LLM requests and service communication";
             ports = [4222];
             jetstream = true;
-            websocket = 4223;  # Alternate protocol on same server
+            protocols = {
+              nats = 4222;        # Core NATS protocol (primary)
+              websocket = 4223;   # WebSocket for browser/JS clients
+              mqtt = null;        # Disabled by default (set to 1883 if needed for IoT)
+              tls = null;         # Disabled by default (set to 4221 if production)
+            };
           };
 
           postgresql = {
@@ -500,8 +505,11 @@
               if serviceName == "nats" && lib.elem serviceName env.services then ''
               # NATS setup (single server with multiple protocol bindings)
               export NATS_URL="nats://localhost:${toString (builtins.head service.ports)}"
-              echo "📡 ${service.name} configured on port ${toString (builtins.head service.ports)}"
-              ${if service ? websocket then ''echo "   WebSocket available on port ${toString service.websocket}"'' else ""}
+              echo "📡 ${service.name}:"
+              echo "   NATS:      localhost:${toString service.protocols.nats}"
+              echo "   WebSocket: localhost:${toString service.protocols.websocket}"
+              ${if service.protocols.tls != null then ''echo "   TLS:       localhost:${toString service.protocols.tls}"'' else ''echo "   TLS:       (disabled)"''}
+              ${if service.protocols.mqtt != null then ''echo "   MQTT:      localhost:${toString service.protocols.mqtt}"'' else ''echo "   MQTT:      (disabled)"''}
               '' else if serviceName == "postgresql" && lib.elem serviceName env.services then ''
               # PostgreSQL setup
               export PGHOST="localhost"
