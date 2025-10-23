@@ -91,20 +91,23 @@ defmodule Singularity.Detection.FrameworkDetector do
     # Merge results and apply knowledge base context
     final_results = merge_detection_results(batch_results, knowledge_results)
 
+    # NEW: Enrich with CentralCloud patterns for low-confidence detections
+    enriched_results = enrich_with_centralcloud_patterns(final_results)
+
     # Cache successful results
-    if not Enum.empty?(final_results) do
-      Cachex.put(:framework_detection_cache, cache_key, final_results, ttl: :timer.minutes(30))
+    if not Enum.empty?(enriched_results) do
+      Cachex.put(:framework_detection_cache, cache_key, enriched_results, ttl: :timer.minutes(30))
     end
 
     # Store learned patterns in PostgreSQL and knowledge base
-    store_detected_patterns(final_results)
-    store_knowledge_base_patterns(final_results, patterns, context)
+    store_detected_patterns(enriched_results)
+    store_knowledge_base_patterns(enriched_results, patterns, context)
 
     # Update framework pattern store
-    update_framework_patterns(final_results)
+    update_framework_patterns(enriched_results)
 
-    Logger.info("✅ Detected #{length(final_results)} frameworks")
-    {:ok, final_results}
+    Logger.info("✅ Detected #{length(enriched_results)} frameworks")
+    {:ok, enriched_results}
   rescue
     error ->
       Logger.error("❌ Framework detection failed", error: error)
@@ -837,6 +840,106 @@ defmodule Singularity.Detection.FrameworkDetector do
     pattern_hash = :crypto.hash(:sha256, Enum.join(patterns, "|")) |> Base.encode16()
     context_hash = :crypto.hash(:sha256, context) |> Base.encode16()
     "framework_detection:#{pattern_hash}:#{context_hash}"
+  end
+
+  @doc """
+  Enrich framework detections with CentralCloud patterns.
+
+  Queries CentralCloud for frameworks with low confidence (< 0.7) to improve
+  detection accuracy using patterns learned by all Singularity instances.
+
+  ## Process
+
+  1. Identify low-confidence detections
+  2. Query CentralCloud for each framework
+  3. Boost confidence with cross-instance patterns
+  4. Return enriched results
+  """
+  @spec enrich_with_centralcloud_patterns(list(map())) :: list(map())
+  defp enrich_with_centralcloud_patterns(results) do
+    # Find low-confidence frameworks to enrich
+    low_confidence = Enum.filter(results, fn fw -> Map.get(fw, :confidence, 0.0) < 0.7 end)
+
+    if Enum.empty?(low_confidence) do
+      # No enrichment needed - all high confidence
+      results
+    else
+      # Query CentralCloud for each low-confidence framework
+      enriched =
+        Enum.map(results, fn fw ->
+          confidence = Map.get(fw, :confidence, 0.0)
+
+          if confidence < 0.7 do
+            case query_centralcloud_for_framework(fw.name) do
+              {:ok, cc_patterns} when is_list(cc_patterns) and length(cc_patterns) > 0 ->
+                # Boost confidence with CentralCloud data
+                cc_confidence = calculate_average_confidence(cc_patterns)
+                new_confidence = (confidence * 0.6) + (cc_confidence * 0.4)
+
+                fw
+                |> Map.put(:confidence, new_confidence)
+                |> Map.put(:enriched_from_centralcloud, true)
+                |> Map.put(:cc_patterns_count, length(cc_patterns))
+
+              _ ->
+                # No CentralCloud enrichment available
+                fw
+            end
+          else
+            # Already high confidence, no need to enrich
+            fw
+          end
+        end)
+
+      enriched
+    end
+  end
+
+  # Query CentralCloud for framework patterns
+  defp query_centralcloud_for_framework(framework_name) do
+    Logger.debug("Querying CentralCloud for framework patterns", framework: framework_name)
+
+    try do
+      request = %{"framework_name" => framework_name}
+
+      case Singularity.NatsOrchestrator.request("framework.pattern.query", request, timeout: 15_000) do
+        {:ok, response} ->
+          case response do
+            %{"status" => "found", "patterns" => patterns} when is_list(patterns) ->
+              Logger.debug("Found CentralCloud patterns for #{framework_name}")
+              {:ok, patterns}
+
+            %{"status" => "discovery_in_progress"} ->
+              Logger.info("Framework discovery in progress on CentralCloud: #{framework_name}")
+              {:ok, []}
+
+            _ ->
+              Logger.debug("No patterns found for #{framework_name}")
+              {:ok, []}
+          end
+
+        {:error, reason} ->
+          Logger.warning("Failed to query CentralCloud for #{framework_name}", reason: inspect(reason))
+          {:error, reason}
+      end
+    rescue
+      e ->
+        Logger.error("Error querying CentralCloud", error: inspect(e))
+        {:error, e}
+    end
+  end
+
+  defp calculate_average_confidence(patterns) when is_list(patterns) do
+    confidences =
+      patterns
+      |> Enum.map(&Map.get(&1, "confidence", 0.8))
+      |> Enum.filter(&is_number/1)
+
+    if Enum.empty?(confidences) do
+      0.8
+    else
+      Enum.sum(confidences) / length(confidences)
+    end
   end
 
   @doc """
