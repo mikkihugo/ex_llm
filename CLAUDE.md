@@ -855,24 +855,49 @@ Used by: `singularity` application
 - ✅ Simpler (one connection, one place for knowledge)
 - ✅ Living knowledge base learns everywhere
 
-#### Future: CentralCloud (For Multi-Instance Deployment)
-**NOT currently used** - Reserved for future architecture
+#### Detection & Intelligence Features (All Work Locally)
 
-- **Purpose:** Multi-instance Singularity scaling (run multiple instances, share knowledge)
-- **When:** Only needed if/when deploying multiple Singularity instances
-- **Until then:** Use single 'singularity' database for all instances
+**Does Singularity need CentralCloud to detect frameworks, languages, and patterns?**
 
-**Setup:**
+**NO** - All detection features are **fully implemented locally**:
+
+| Feature | Works Locally? | Implementation |
+|---------|---|---|
+| **Framework Detection** | ✅ Yes | Rust NIF + Knowledge Base |
+| **Language Detection** | ✅ Yes | Rust NIF (25+ languages) |
+| **Code Analysis** | ✅ Yes | Rust NIF (20 languages) |
+| **Pattern Extraction** | ✅ Yes | Rust NIF + PostgreSQL |
+| **Technology Detection** | ✅ Yes | Rust NIF + PostgreSQL |
+
+See **CENTRALCLOUD_DETECTION_ROLE.md** for complete details.
+
+#### Future: CentralCloud (For Cross-Instance Learning)
+
+**NOT currently needed** - but available for **multi-instance teams**
+
+- **Purpose:** Aggregate learnings across multiple Singularity instances
+- **When:** Only if/when you have multiple developers/instances
+- **What it adds:** Cross-instance insights, collective intelligence, shared patterns
+- **Current status:** Implemented but optional for single-instance development
+
+**CentralCloud Services:**
+- Analyze Codebase - Global perspective across all instances
+- Learn Patterns - Aggregate patterns from all developers
+- Train Models - Models trained on collective data
+- Get Cross-Instance Insights - Share knowledge between dev and prod
+
+**Setup (When Needed):**
 ```bash
 nix develop
-./scripts/setup-database.sh  # Creates 'singularity' DB (main)
+./scripts/setup-database.sh  # Creates singularity + centralcloud DBs
 cd singularity
-mix knowledge.migrate        # Import JSONs to singularity DB
-mix ecto.migrate             # Run migrations
+mix knowledge.migrate        # Import JSONs
+cd ../centralcloud
+mix ecto.migrate             # Setup CentralCloud
+# Now start both instances with NATS bridging
 ```
 
-**Note:** CentralCloud database support exists in setup script but is unused.
-When scaling to multiple instances, you'll enable CentralCloud as a knowledge authority.
+**Note:** Currently recommended to use **Option 1 (single database, no CentralCloud)** since it's a single-instance setup.
 
 ### Priority: Features over Speed/Security
 
