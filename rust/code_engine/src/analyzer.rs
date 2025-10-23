@@ -25,8 +25,61 @@ use parser_core::{CodeAnalysisEngine, UniversalDependencies, PolyglotCodeParserF
 
 /// Main codebase analyzer that orchestrates all analysis systems
 ///
-/// **Pure Analysis Library** - No cross-project caching, no sessions, no engine state
-/// Those belong in sparc-engine orchestration layer
+/// **Pure Analysis Library** - No cross-project caching, no sessions, no engine state.
+/// Those belong in sparc-engine orchestration layer.
+///
+/// ## Multi-Language Analysis Capabilities
+///
+/// This analyzer integrates all multilang analysis modules to provide comprehensive
+/// polyglot codebase understanding:
+///
+/// ### 1. Language Registry Integration
+/// Uses centralized `parser_core::language_registry::LanguageRegistry` to:
+/// - Detect language families (BEAM, Systems, Web, Scripting)
+/// - Track tool support (AST-Grep, RCA analysis capabilities)
+/// - Enable flexible language name matching (ID, alias, extension)
+/// - Automatically scale to new languages without code changes
+///
+/// ### 2. Language-Specific Analysis
+/// - `analyze_language()` - Semantic tokenization with complexity/quality metrics
+/// - `check_language_rules()` - Family-based coding rules (snake_case, PascalCase, etc.)
+/// - `supported_languages()` - List all 18+ supported languages
+/// - `languages_by_family()` - Group languages by family
+/// - `is_language_supported()` - Check language support
+///
+/// ### 3. Cross-Language Pattern Detection
+/// - `detect_cross_language_patterns()` - 8 pattern types:
+///   - API Integration (REST/HTTP: reqwest, requests, fetch)
+///   - Error Handling (try/catch vs Result/Option)
+///   - Logging (log::, logging., console., etc.)
+///   - Messaging (NATS, Kafka, RabbitMQ)
+///   - Testing, Configuration, Data Flow, Async patterns
+/// - Confidence scoring (0.0-1.0) for all detections
+/// - Language-aware pattern detection strategies
+///
+/// ### 4. Code Structure Analysis
+/// - `build_call_graph()` - Function call dependencies using import analysis
+/// - `build_import_graph()` - Module dependency structure
+/// - Call edge detection with confidence scoring
+/// - Circular dependency detection
+///
+/// ### 5. Parser Integration Points
+/// Uses singularity-code-analysis + parser_core to provide metrics for each language:
+/// - **Complexity (CC)**: Cyclomatic complexity from control flow
+/// - **Line Metrics**: SLOC, PLOC, LLOC, CLOC, BLANK
+/// - **Function Analysis**: NOM (number of methods), NARGS (arguments), NEXITS (exit points)
+/// - **Maintainability (MI)**: Composite score for code quality
+/// - **Halstead Metrics**: Effort, vocabulary, time to implement
+///
+/// These metrics can enhance call graph edge weighting and complexity scoring.
+///
+/// ## Design Pattern: Pure Computation
+///
+/// - All analysis is stateless and deterministic
+/// - No cross-project caching or session state
+/// - All data passed via parameters
+/// - All results returned to caller
+/// - External data stored in Elixir (PostgreSQL) via NATS
 pub struct CodebaseAnalyzer {
   // NOTE: storage removed - all data stored in Elixir (PostgreSQL), Rust does pure computation
   /// Performance tracker
