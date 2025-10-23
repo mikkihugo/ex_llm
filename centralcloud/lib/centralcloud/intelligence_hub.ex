@@ -121,6 +121,10 @@ defmodule Centralcloud.IntelligenceHub do
     NatsClient.subscribe("central.train_models", &handle_train_models/1)
     NatsClient.subscribe("central.get_cross_instance_insights", &handle_get_cross_instance_insights/1)
 
+    # NEW: Framework pattern discovery (for multi-system learning)
+    NatsClient.subscribe("framework.pattern.query", &handle_framework_pattern_query/1)
+    NatsClient.subscribe("framework.pattern.search", &handle_framework_pattern_search/1)
+
     :ok
   end
 
@@ -483,6 +487,243 @@ defmodule Centralcloud.IntelligenceHub do
         Logger.error("Failed to decode get_cross_instance_insights request: #{inspect(reason)}")
         send_error_response(msg, "Invalid request format")
     end
+  end
+
+  # ===========================
+  # NEW: Framework Pattern Handlers (Multi-System Learning)
+  # ===========================
+
+  # Handle framework pattern queries from Singularity instances
+  # Used when Singularity detects unknown framework and needs enrichment
+  defp handle_framework_pattern_query(msg) do
+    Logger.info("🔍 Framework pattern query from Singularity instance")
+
+    case Jason.decode(msg.payload) do
+      {:ok, query} ->
+        response = query_framework_patterns(query)
+        send_response(msg, response)
+
+      {:error, reason} ->
+        Logger.error("Failed to decode framework pattern query: #{inspect(reason)}")
+        send_error_response(msg, "Invalid query format")
+    end
+  end
+
+  # Handle framework pattern search requests
+  # Search across all known frameworks by name, category, or other criteria
+  defp handle_framework_pattern_search(msg) do
+    Logger.info("🔎 Framework pattern search from instance")
+
+    case Jason.decode(msg.payload) do
+      {:ok, search_params} ->
+        response = search_framework_patterns(search_params)
+        send_response(msg, response)
+
+      {:error, reason} ->
+        Logger.error("Failed to decode framework pattern search: #{inspect(reason)}")
+        send_error_response(msg, "Invalid search parameters")
+    end
+  end
+
+  defp query_framework_patterns(%{"framework_name" => name} = query) do
+    Logger.debug("Querying patterns for framework: #{name}")
+
+    # Query database for frameworks matching this name
+    pattern = "%#{name}%"
+
+    frameworks =
+      Repo.all(
+        from p in Centralcloud.Schemas.Package,
+          where: not is_nil(p.detected_framework),
+          where:
+            fragment(
+              "?->>'name' ILIKE ?",
+              p.detected_framework,
+              ^pattern
+            ),
+          select: {p.detected_framework, p.ecosystem},
+          limit: 20
+      )
+
+    if Enum.empty?(frameworks) do
+      Logger.info("No patterns found for framework: #{name}, will trigger LLM discovery")
+
+      # Trigger FrameworkLearningAgent to discover unknown framework
+      trigger_framework_discovery(name, query)
+
+      # Return placeholder while discovery is in progress
+      %{
+        "status" => "discovery_in_progress",
+        "framework" => name,
+        "message" => "Unknown framework - starting discovery via LLM",
+        "patterns" => [],
+        "confidence" => 0.0,
+        "discovery_timeout_seconds" => 120
+      }
+    else
+      # Found patterns - aggregate and return
+      aggregated = aggregate_framework_patterns(frameworks)
+
+      %{
+        "status" => "found",
+        "framework" => name,
+        "patterns" => aggregated,
+        "confidence" => calculate_pattern_confidence(aggregated),
+        "ecosystem_hints" => extract_ecosystems(frameworks),
+        "sources" => length(frameworks),
+        "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
+      }
+    end
+  end
+
+  defp query_framework_patterns(query) do
+    Logger.warning("Framework pattern query missing framework_name: #{inspect(query)}")
+
+    %{
+      "status" => "error",
+      "error" => "missing_framework_name",
+      "message" => "Query must include 'framework_name' parameter"
+    }
+  end
+
+  defp search_framework_patterns(%{"category" => category} = params) do
+    Logger.debug("Searching frameworks by category: #{category}")
+
+    limit = Map.get(params, "limit", 10)
+
+    frameworks =
+      Repo.all(
+        from p in Centralcloud.Schemas.Package,
+          where: not is_nil(p.detected_framework),
+          where:
+            fragment(
+              "?->>'category' = ?",
+              p.detected_framework,
+              ^category
+            ),
+          select: {p.detected_framework, p.name},
+          limit: ^limit
+      )
+
+    aggregated =
+      frameworks
+      |> Enum.map(&elem(&1, 0))
+      |> aggregate_framework_patterns()
+
+    %{
+      "status" => "ok",
+      "search_type" => "category",
+      "category" => category,
+      "results" => aggregated,
+      "count" => length(aggregated),
+      "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+  end
+
+  defp search_framework_patterns(%{"ecosystem" => ecosystem} = params) do
+    Logger.debug("Searching frameworks by ecosystem: #{ecosystem}")
+
+    limit = Map.get(params, "limit", 10)
+
+    frameworks =
+      Repo.all(
+        from p in Centralcloud.Schemas.Package,
+          where: p.ecosystem == ^ecosystem,
+          where: not is_nil(p.detected_framework),
+          select: p.detected_framework,
+          limit: ^limit
+      )
+
+    aggregated = aggregate_framework_patterns(frameworks)
+
+    %{
+      "status" => "ok",
+      "search_type" => "ecosystem",
+      "ecosystem" => ecosystem,
+      "results" => aggregated,
+      "count" => length(aggregated),
+      "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+  end
+
+  defp search_framework_patterns(_params) do
+    %{
+      "status" => "error",
+      "error" => "invalid_search_params",
+      "message" => "Search must include 'category' or 'ecosystem' parameter"
+    }
+  end
+
+  defp aggregate_framework_patterns(patterns) when is_list(patterns) do
+    patterns
+    |> Enum.filter(& &1)
+    |> Enum.group_by(fn p -> p["name"] || "unknown" end)
+    |> Enum.map(fn {name, group} ->
+      base = List.first(group)
+
+      %{
+        "name" => name,
+        "category" => base["category"],
+        "confidence" =>
+          group
+          |> Enum.map(& &1["confidence"])
+          |> Enum.filter(&is_number/1)
+          |> (fn confs ->
+            if Enum.empty?(confs), do: 0.8, else: Enum.sum(confs) / length(confs)
+          end).(),
+        "patterns" => consolidate_list_field(group, "patterns"),
+        "version_hints" => consolidate_list_field(group, "version_hints"),
+        "usage_patterns" => consolidate_list_field(group, "usage_patterns"),
+        "frequency" => length(group),
+        "seen_count" => sum_field(group, "seen_count")
+      }
+    end)
+  end
+
+  defp aggregate_framework_patterns({frameworks, _ecosystems}) when is_list(frameworks) do
+    aggregate_framework_patterns(frameworks)
+  end
+
+  defp extract_ecosystems(framework_ecosystem_tuples) do
+    framework_ecosystem_tuples
+    |> Enum.map(&elem(&1, 1))
+    |> Enum.uniq()
+  end
+
+  defp calculate_pattern_confidence(patterns) do
+    if Enum.empty?(patterns) do
+      0.0
+    else
+      patterns
+      |> Enum.map(& &1["confidence"])
+      |> Enum.filter(&is_number/1)
+      |> (fn confs -> Enum.sum(confs) / max(length(confs), 1) end).()
+    end
+  end
+
+  defp consolidate_list_field(group, field) do
+    group
+    |> Enum.map(& &1[field])
+    |> Enum.filter(&is_list/1)
+    |> Enum.concat()
+    |> Enum.uniq()
+  end
+
+  defp sum_field(group, field) do
+    group
+    |> Enum.map(& &1[field])
+    |> Enum.filter(&is_number/1)
+    |> Enum.sum()
+  end
+
+  # Trigger FrameworkLearningAgent to discover unknown framework via LLM
+  defp trigger_framework_discovery(framework_name, _query) do
+    # Publish event that triggers FrameworkLearningAgent
+    # In real implementation, this would call the learning agent or queue a job
+    Logger.info("Triggering framework discovery for: #{framework_name}")
+
+    # TODO: Call FrameworkLearningAgent or queue discovery job
+    # Centralcloud.FrameworkLearningAgent.discover_framework(package_id, code_samples)
   end
 
   # ===========================
