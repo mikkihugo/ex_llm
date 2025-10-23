@@ -106,6 +106,8 @@ config :oban,
      crontab: [
        # Metrics aggregation: every 5 minutes (feeds Feedback Analyzer)
        {"*/5 * * * *", Singularity.Jobs.MetricsAggregationWorker},
+       # Feedback analysis: every 30 minutes (feeds Agent Evolution)
+       {"*/30 * * * *", Singularity.Jobs.FeedbackAnalysisWorker},
        # Cache cleanup: every 15 minutes
        {"*/15 * * * *", Singularity.Jobs.CacheCleanupWorker},
        # Cache refresh: every hour
