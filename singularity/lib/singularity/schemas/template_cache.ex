@@ -13,7 +13,7 @@ defmodule Singularity.Schemas.TemplateCache do
 
   @primary_key {:id, :binary_id, autogenerate: true}
 
-  schema "template_cache" do
+  schema "template_caches" do
     field :artifact_id, :string
     field :version, :string
     field :content, :map

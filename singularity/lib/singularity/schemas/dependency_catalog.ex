@@ -16,7 +16,7 @@ defmodule Singularity.Schemas.DependencyCatalog do
   import Ecto.Changeset
 
   @primary_key {:id, :binary_id, autogenerate: true}
-  schema "dependency_catalog" do
+  schema "dependency_catalogs" do
     field :package_name, :string
     field :version, :string
     field :ecosystem, :string

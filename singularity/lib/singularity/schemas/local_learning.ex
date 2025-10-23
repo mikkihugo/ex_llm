@@ -11,7 +11,7 @@ defmodule Singularity.Schemas.LocalLearning do
 
   @primary_key {:id, :binary_id, autogenerate: true}
 
-  schema "local_learning" do
+  schema "local_learnings" do
     field :artifact_id, :string
     field :version, :string
 

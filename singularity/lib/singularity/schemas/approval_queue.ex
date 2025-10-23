@@ -26,7 +26,7 @@ defmodule Singularity.Schemas.ApprovalQueue do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "approval_queue" do
+  schema "approval_queues" do
     field :file_path, :string
     field :diff, :string
     field :description, :string
