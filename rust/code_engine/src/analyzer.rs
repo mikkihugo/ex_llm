@@ -112,6 +112,155 @@ impl CodebaseAnalyzer {
     self.performance_tracker.get_performance_report()
   }
 
+  // ===========================
+  // Multi-Language Analysis Methods
+  // ===========================
+
+  /// Analyze a single language file using language registry awareness
+  ///
+  /// Uses the centralized language registry to:
+  /// - Detect language capabilities (AST-Grep, RCA support)
+  /// - Perform semantic tokenization
+  /// - Calculate complexity and quality scores
+  /// - Extract common patterns
+  ///
+  /// # Arguments
+  /// * `code` - Source code to analyze
+  /// * `language_hint` - Language ID, alias, or file extension
+  ///
+  /// # Returns
+  /// Complete language analysis with registry-derived metadata
+  pub fn analyze_language(&self, code: &str, language_hint: &str) -> Option<LanguageAnalysis> {
+    let analyzer = LanguageAnalyzer::new();
+    analyzer.analyze_language(code, language_hint)
+  }
+
+  /// Check code against language-specific rules and best practices
+  ///
+  /// Applies family-based rules that automatically adapt to the language:
+  /// - BEAM languages: snake_case naming, module organization
+  /// - Systems languages: PascalCase types, Result<T>/Option<T> patterns
+  /// - Web languages: camelCase naming, async/await patterns
+  /// - Scripting languages: snake_case, type hints
+  ///
+  /// # Arguments
+  /// * `code` - Source code to check
+  /// * `language_hint` - Language ID, alias, or file extension
+  ///
+  /// # Returns
+  /// Vector of rule violations (empty if code is compliant)
+  pub fn check_language_rules(&self, code: &str, language_hint: &str) -> Vec<RuleViolation> {
+    let rule_analyzer = LanguageSpecificRulesAnalyzer::new();
+    let tokenizer = crate::analysis::semantic::custom_tokenizers::SemanticTokenizer::new(language_hint);
+    let tokens = tokenizer.tokenize(code).unwrap_or_default();
+    rule_analyzer.analyze_rules(code, language_hint, &tokens)
+  }
+
+  /// Detect cross-language patterns in polyglot codebases
+  ///
+  /// Analyzes multiple files to find patterns that span language boundaries:
+  /// - API Integration: REST/HTTP patterns (reqwest, requests, fetch)
+  /// - Error Handling: try/catch vs Result/Option patterns
+  /// - Logging: Structured logging across languages
+  /// - Messaging: NATS, Kafka, or queue patterns
+  /// - Testing: Common test patterns across boundaries
+  ///
+  /// # Arguments
+  /// * `files` - Vector of (language_hint, code) tuples
+  ///
+  /// # Returns
+  /// Detected cross-language patterns with confidence scores
+  pub fn detect_cross_language_patterns(&self, files: &[(String, String)]) -> Vec<CrossLanguageCodePattern> {
+    let detector = CrossLanguageCodePatternsDetector::new();
+
+    // Convert to token sequences using semantic tokenizers
+    let tokens_by_file: Vec<Vec<crate::analysis::semantic::custom_tokenizers::DataToken>> = files
+      .iter()
+      .map(|(hint, code)| {
+        let tokenizer = crate::analysis::semantic::custom_tokenizers::SemanticTokenizer::new(hint);
+        tokenizer.tokenize(code).unwrap_or_default()
+      })
+      .collect();
+
+    detector.detect_patterns(files, &tokens_by_file)
+  }
+
+  /// Analyze language support in the codebase
+  ///
+  /// Returns information about all supported languages:
+  /// - Language IDs and names
+  /// - Language families (BEAM, Systems, Web, etc.)
+  /// - Tool support (RCA, AST-Grep)
+  /// - Aliases for flexible matching
+  ///
+  /// # Returns
+  /// List of all supported language IDs
+  pub fn supported_languages(&self) -> Vec<String> {
+    let analyzer = LanguageAnalyzer::new();
+    analyzer.supported_languages()
+  }
+
+  /// Get languages grouped by family
+  ///
+  /// Useful for understanding language relationships and
+  /// determining which family-level rules apply.
+  ///
+  /// # Arguments
+  /// * `family` - Language family (e.g., "BEAM", "Systems", "Web")
+  ///
+  /// # Returns
+  /// Language IDs belonging to the specified family
+  pub fn languages_by_family(&self, family: &str) -> Vec<String> {
+    let analyzer = LanguageAnalyzer::new();
+    analyzer.languages_by_family(family)
+  }
+
+  /// Check if a language is supported by the analysis system
+  ///
+  /// # Arguments
+  /// * `language_id` - Language ID, alias, or file extension
+  ///
+  /// # Returns
+  /// True if language is recognized and supported
+  pub fn is_language_supported(&self, language_id: &str) -> bool {
+    let analyzer = LanguageAnalyzer::new();
+    analyzer.is_supported(language_id)
+  }
+
+  /// Build and analyze call graphs from code metadata
+  ///
+  /// Creates a directed graph of function calls with:
+  /// - Import-based call edge detection
+  /// - Function dependency analysis
+  /// - Call graph traversal APIs
+  ///
+  /// # Arguments
+  /// * `metadata_cache` - Vector of code metadata (files with AST info)
+  ///
+  /// # Returns
+  /// Built call graph ready for analysis
+  pub fn build_call_graph(&self, metadata_cache: &[CodeMetadata]) -> Result<crate::analysis::graph::code_graph::CodeGraph, String> {
+    let graph_builder = CodeGraphBuilder::new();
+    graph_builder.build_call_graph(metadata_cache)
+  }
+
+  /// Build import graph from code dependencies
+  ///
+  /// Creates a directed graph showing module/file imports:
+  /// - Import relationships between files
+  /// - Circular dependency detection
+  /// - Module structure visualization
+  ///
+  /// # Arguments
+  /// * `metadata_cache` - Vector of code metadata
+  ///
+  /// # Returns
+  /// Built import graph
+  pub fn build_import_graph(&self, metadata_cache: &[CodeMetadata]) -> Result<crate::analysis::graph::code_graph::CodeGraph, String> {
+    let graph_builder = CodeGraphBuilder::new();
+    graph_builder.build_import_graph(metadata_cache)
+  }
+
   // TODO: Remove global cache methods - belong in sparc-engine orchestration
   // These methods reference global_cache which is engine-specific, not pure analysis
   // Get global cache statistics
