@@ -500,7 +500,7 @@
               # NATS setup
               export NATS_URL="nats://localhost:${toString (builtins.head service.ports)}"
               export NATS_JETSTREAM_URL="nats://localhost:${toString (builtins.elemAt service.ports 1)}"
-              echo "📡 ${service.name} configured on ports ${lib.concatMapStringsSep "," toString service.ports}"
+              echo "📡 ${service.name} configured on port ${toString (builtins.head service.ports)} (client), ${toString (builtins.elemAt service.ports 1)} (websocket)"
               '' else if serviceName == "postgresql" && lib.elem serviceName env.services then ''
               # PostgreSQL setup
               export PGHOST="localhost"
