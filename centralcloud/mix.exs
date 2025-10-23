@@ -30,9 +30,6 @@ defmodule Centralcloud.MixProject do
       # Background Job Queue for aggregation, package sync, statistics
       {:oban, "~> 2.18"},
 
-      # Cron-like scheduler for periodic global tasks
-      {:quantum, "~> 3.5"},
-
       # Testing dependencies
       {:mox, "~> 1.0", only: :test},
       {:ex_machina, "~> 2.8", only: :test},
