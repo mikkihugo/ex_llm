@@ -13,7 +13,7 @@ defmodule Singularity.Knowledge.TemplateCache do
   require Logger
 
   alias Singularity.Repo
-  alias Singularity.Knowledge.KnowledgeArtifact
+  alias Singularity.Schemas.KnowledgeArtifact
 
   @table :template_cache
 

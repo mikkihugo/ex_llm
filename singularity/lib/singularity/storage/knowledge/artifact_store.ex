@@ -88,7 +88,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
 
   import Ecto.Query
   alias Singularity.Repo
-  alias Singularity.Knowledge.KnowledgeArtifact
+  alias Singularity.Schemas.KnowledgeArtifact
   # Single embedding source with auto-fallback
   alias Singularity.EmbeddingGenerator
 
