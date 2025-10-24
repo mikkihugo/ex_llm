@@ -419,9 +419,9 @@ pub enum CodeQualityIndicator {
   RecentlyRefactored,
 }
 
-/// Code analysis capabilities for agents
+/// Element analysis capabilities (what can be analyzed about a code element)
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CodeAnalysisCapabilities {
+pub struct ElementAnalysisCapabilities {
   /// Can detect duplicate field names
   pub duplicate_detection: bool,
   /// Can suggest better naming conventions

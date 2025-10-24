@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::types::{CodeComplexity, CodeElementCategory, CodeElementType, CodeLifecycleStage, CodeOwnership, CodeRiskLevel};
 
-pub struct CodeAnalysisCapabilities {
+pub struct AnalysisAgentCapabilities {
   /// Can detect duplicate field names
   pub duplicate_detection: bool,
   /// Can suggest better naming conventions

@@ -16,7 +16,20 @@ pub mod code_graph;
 pub mod code_insights;
 pub mod pagerank;
 
-// Re-export main types
-pub use code_graph::*;
-pub use code_insights::*;
-pub use pagerank::*;
+// Core code graph types
+pub use code_graph::{
+    CodeGraph, CodeGraphBuilder, CodeGraphAnalyzer, CodeGraphConfig,
+    CodeGraphMetrics, CodeGraphStatistics, CodeGraphEdge, CodeGraphNode,
+};
+
+// Code insights and analysis
+pub use code_insights::{
+    CodeInsightsEngine, IntelligentInsight, InsightType, ElementAnalysisCapabilities,
+    CodeInsightsResult,
+};
+
+// PageRank analysis types
+pub use pagerank::{
+    PageRankIntegration, PageRankConfig, PageRankMetrics, PageRankResult,
+    CentralPageRank,
+};

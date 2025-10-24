@@ -31,15 +31,46 @@ pub mod results;
 pub mod security;
 pub mod semantic;
 
-// Re-export main types
+// Re-export main types with careful grouping to avoid conflicts
+
+// Central heuristics and graph analysis
 pub use central_heuristics::*;
-pub use dag::*;
-pub use dependency::*;
+
+// DAG and graph analysis
+pub use dag::{PromptCoordinator, VectorIntegration};
 pub use graph::*;
+
+// Dependency analysis (excluding conflicts with security)
+pub use dependency::{
+    Dependency, DependencyAnalysis, DependencyHealthMetrics, DependencyNode, DependencyNodeType,
+    DependencyRecommendation, DependencySource, DependencyType, DependencyVulnerability,
+    CircularDependency, CircularDependencyImpact, CircularDependencySeverity,
+    CentralityMetrics as DependencyCentralityMetrics, DependencyEdge, DependencyEdgeType,
+    DependencyGraph, GraphMetrics as DependencyGraphMetrics,
+    CostLevel, CriticalityLevel, DependencyHealthAnalysis, DependencyHealthAnalyzer,
+};
+
+// Code metrics and analysis (exclude conflicting names)
 pub use metrics::*;
 pub use multilang::*;
-pub use performance::*;
+pub use performance::{
+    PerformanceAnalysis, PerformanceBottleneck, BottleneckType, PerformanceSeverity,
+    BottleneckLocation, PerformanceImpact, ScalabilityImpact, OptimizationOpportunity,
+    OptimizationType, ImplementationEffort, ResourceUsage, MemoryUsage, MemoryLeak,
+    CPUUsage, CPUIntensiveFunction, NetworkUsage, SlowRequest, NetworkBottleneck,
+    NetworkBottleneckType, DiskUsage, SlowIOOperation, IOOperationType,
+    PerformanceRecommendation, PerformanceRecommendationPriority, PerformanceCategory,
+    PerformanceMetadata, PerformanceDetectorTrait, PerformancePatternRegistry, PerformancePattern,
+    OptimizationAnalysis, Optimization, OptimizationLocation,
+    OptimizationRecommendation, OptimizationCategory as OptimizerCategory,
+    OptimizationMetadata, OptimizationPattern, PerformanceOptimizer,
+    ProfilingAnalysis, PerformanceMetrics, ProfilingMetadata, ProfilingPattern, PerformanceProfiler,
+};
 pub use refactoring_suggestions::*;
 pub use results::*;
+
+// Security analysis (primary source for RecommendationPriority and VulnerabilitySeverity)
 pub use security::*;
+
+// Semantic analysis
 pub use semantic::*;

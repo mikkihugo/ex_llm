@@ -18,6 +18,4 @@ pub mod types;
 // Re-export main types for easy access
 pub use cache_types::*;
 pub use trait_types::*;
-// Resolve ambiguous re-exports
-pub use types::CodeAnalysisCapabilities as TypesCodeAnalysisCapabilities;
 pub use types::*;

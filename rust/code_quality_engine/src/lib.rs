@@ -74,8 +74,13 @@ pub mod centralcloud;  // CentralCloud integration via NATS (CVEs, patterns, rul
 // Re-export storage for backward compatibility
 pub use codebase::storage as storage;
 
-// Re-export main types for easy access
-pub use domain::*;
+// Re-export main types for easy access (be explicit to avoid conflicts)
+// Domain exports (files, symbols, relationships, and domain metrics)
+pub use domain::files::*;
+pub use domain::symbols::*;
+pub use domain::relationships::*;
+pub use domain::metrics as domain_metrics;  // Qualified re-export to avoid conflict with analysis::metrics
+
 pub use graph::{Graph, GraphHandle, GraphNode, GraphEdge, GraphType};
 pub use vectors::*;
 pub use codebase::*;

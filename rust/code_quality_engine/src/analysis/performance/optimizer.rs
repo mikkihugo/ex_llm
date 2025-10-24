@@ -71,7 +71,7 @@ pub struct OptimizationLocation {
 /// Optimization recommendation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OptimizationRecommendation {
-    pub priority: RecommendationPriority,
+    pub priority: PerformanceRecommendationPriority,
     pub category: OptimizationCategory,
     pub title: String,
     pub description: String,
@@ -80,9 +80,9 @@ pub struct OptimizationRecommendation {
     pub effort_required: ImplementationEffort,
 }
 
-/// Recommendation priority
+/// Performance Recommendation priority
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum RecommendationPriority {
+pub enum PerformanceRecommendationPriority {
     Critical,
     High,
     Medium,
@@ -285,11 +285,11 @@ impl PerformanceOptimizer {
             // Prioritize based on improvement vs effort
             let priority = if optimization.potential_improvement > 0.5
                 && matches!(optimization.implementation_effort, ImplementationEffort::Low | ImplementationEffort::Medium) {
-                RecommendationPriority::High
+                PerformanceRecommendationPriority::High
             } else if optimization.potential_improvement > 0.3 {
-                RecommendationPriority::Medium
+                PerformanceRecommendationPriority::Medium
             } else {
-                RecommendationPriority::Low
+                PerformanceRecommendationPriority::Low
             };
 
             let category = match optimization.optimization_type {

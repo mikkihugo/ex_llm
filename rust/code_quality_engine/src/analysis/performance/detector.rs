@@ -232,7 +232,7 @@ pub enum IOOperationType {
 /// Performance recommendation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PerformanceRecommendation {
-    pub priority: RecommendationPriority,
+    pub priority: PerformanceRecommendationPriority,
     pub category: PerformanceCategory,
     pub title: String,
     pub description: String,
@@ -240,9 +240,9 @@ pub struct PerformanceRecommendation {
     pub expected_improvement: f64,
 }
 
-/// Recommendation priority
+/// Performance Recommendation priority
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum RecommendationPriority {
+pub enum PerformanceRecommendationPriority {
     Critical,
     High,
     Medium,

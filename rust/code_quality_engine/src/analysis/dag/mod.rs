@@ -30,5 +30,5 @@
 
 pub mod vector_integration;
 
-// Re-export graph types (moved from storage to crate::graph)
-pub use crate::graph::*;
+// Re-export vector integration types (analysis-specific DAG utilities)
+pub use vector_integration::{PromptCoordinator, VectorIntegration};

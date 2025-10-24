@@ -7,6 +7,25 @@ pub mod detector;
 pub mod optimizer;
 pub mod profiler;
 
-pub use detector::*;
-pub use optimizer::*;
-pub use profiler::*;
+// Core performance analysis (from detector)
+pub use detector::{
+    PerformanceAnalysis, PerformanceBottleneck, BottleneckType, PerformanceSeverity,
+    BottleneckLocation, PerformanceImpact, ScalabilityImpact, OptimizationOpportunity,
+    OptimizationType, ImplementationEffort, ResourceUsage, MemoryUsage, MemoryLeak,
+    CPUUsage, CPUIntensiveFunction, NetworkUsage, SlowRequest, NetworkBottleneck,
+    NetworkBottleneckType, DiskUsage, SlowIOOperation, IOOperationType,
+    PerformanceRecommendation, RecommendationPriority, PerformanceCategory,
+    PerformanceMetadata, PerformanceDetectorTrait, PerformancePatternRegistry, PerformancePattern,
+};
+
+// Optimization-specific types (from optimizer, excluding duplicates)
+pub use optimizer::{
+    OptimizationAnalysis, Optimization, OptimizationLocation,
+    OptimizationRecommendation, PerformanceRecommendationPriority, OptimizationCategory as OptimizerCategory,
+    OptimizationMetadata, OptimizationPattern, PerformanceOptimizer,
+};
+
+// Profiling-specific types (from profiler, excluding duplicates)
+pub use profiler::{
+    ProfilingAnalysis, PerformanceMetrics, ProfilingMetadata, ProfilingPattern, PerformanceProfiler,
+};
