@@ -203,57 +203,7 @@ defmodule Singularity.CodeSearch do
   @doc """
   Calculate PageRank scores for all nodes
   """
-  def calculate_pagerank(db_conn, iterations \\ 20, damping_factor \\ 0.85) do
-    # This is a simplified PageRank implementation
-    # In production, you'd want to use Apache AGE's built-in PageRank algorithm
-
-    Postgrex.query!(
-      db_conn,
-      """
-      WITH RECURSIVE pagerank_iteration AS (
-        -- Initialize PageRank scores
-        SELECT 
-          node_id,
-          1.0 / (SELECT COUNT(*) FROM graph_nodes) as pagerank_score,
-          0 as iteration
-        FROM graph_nodes
-        
-        UNION ALL
-        
-        -- Iterate PageRank calculation
-        SELECT 
-          gn.node_id,
-          (1 - $2) / (SELECT COUNT(*) FROM graph_nodes) + 
-          $2 * COALESCE(SUM(pr.pagerank_score / out_degree.out_count), 0) as pagerank_score,
-          pr.iteration + 1
-        FROM graph_nodes gn
-        JOIN pagerank_iteration pr ON pr.iteration < $1
-        LEFT JOIN graph_edges ge ON ge.to_node_id = gn.node_id
-        LEFT JOIN (
-          SELECT from_node_id, COUNT(*) as out_count
-          FROM graph_edges
-          GROUP BY from_node_id
-        ) out_degree ON out_degree.from_node_id = ge.from_node_id
-        WHERE pr.iteration = (
-          SELECT MAX(iteration) FROM pagerank_iteration
-        )
-        GROUP BY gn.node_id, pr.iteration
-      )
-      SELECT 
-        node_id,
-        pagerank_score
-      FROM pagerank_iteration
-      WHERE iteration = $1
-      ORDER BY pagerank_score DESC
-      """,
-      [iterations, damping_factor]
-    )
-    |> Map.get(:rows)
-    |> Enum.map(fn [node_id, pagerank_score] ->
-      %{
-        node_id: node_id,
-        pagerank_score: pagerank_score
-      }
-    end)
+  def calculate_pagerank(_db_conn, iterations \\ 20, damping_factor \\ 0.85) do
+    Singularity.CodeSearch.Ecto.calculate_pagerank(iterations, damping_factor)
   end
 end

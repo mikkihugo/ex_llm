@@ -559,7 +559,7 @@ defmodule Singularity.CodeSearch.Ecto do
   Finds nodes with similar embeddings to the query node, ordered by cosine similarity.
   Uses pgvector distance operator (<->) for fast approximate nearest neighbor search.
   """
-  @spec find_similar_nodes(String.t(), String.t(), String.t(), non_neg_integer()) :: [map()]
+  @spec find_similar_nodes(String.t(), String.t(), non_neg_integer()) :: [map()]
   def find_similar_nodes(codebase_id, query_node_id, top_k \\ 10) do
     # Get the query node's embedding
     query_node =
