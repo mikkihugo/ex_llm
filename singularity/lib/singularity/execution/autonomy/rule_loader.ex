@@ -38,6 +38,172 @@ defmodule Singularity.Execution.Autonomy.RuleLoader do
 
       RuleLoader.reload_rules()
       # Refreshes cache from database (called after rule consensus)
+
+  ---
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Execution.Autonomy.RuleLoader",
+    "purpose": "PostgreSQL-backed rule caching system with ETS for O(1) access and hot-reload capability",
+    "role": "cache_service",
+    "layer": "infrastructure",
+    "alternatives": {
+      "Singularity.Execution.Autonomy.Rule": "Use RuleLoader for querying rules; Rule is the Ecto schema",
+      "Singularity.Execution.Autonomy.RuleEngine": "RuleEngine evaluates rules; RuleLoader provides the rules",
+      "Direct DB Access": "RuleLoader provides caching, semantic search, and refresh mechanism"
+    },
+    "disambiguation": {
+      "vs_rule_schema": "RuleLoader is the SERVICE that loads/caches Rules (Ecto schema)",
+      "vs_rule_engine": "RuleLoader provides data; RuleEngine executes logic",
+      "vs_direct_db": "Adds ETS caching layer + pgvector semantic search + auto-refresh"
+    }
+  }
+  ```
+
+  ### Architecture (Mermaid)
+
+  ```mermaid
+  graph TB
+      Agent[Agent / RuleEngine] -->|1. get_rule/1| Loader[RuleLoader]
+      Loader -->|2. check| ETS[ETS Cache :rule_cache]
+      ETS -->|3a. hit| Loader
+      ETS -->|3b. miss| DB[PostgreSQL]
+      DB -->|4. fetch + embed| Loader
+      Loader -->|5. insert| ETS
+      Loader -->|6. return rule| Agent
+
+      Timer[5min Timer] -->|refresh| Loader
+      Evolution[Rule Evolution] -->|reload_rules/0| Loader
+      Loader -->|query| DB
+
+      style Loader fill:#90EE90
+      style ETS fill:#FFD700
+      style DB fill:#87CEEB
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.Repo
+      function: all/1
+      purpose: Load rules from PostgreSQL on startup and refresh
+      critical: true
+
+    - module: Singularity.Execution.Autonomy.Rule
+      function: Ecto queries
+      purpose: Query rules by ID, category, semantic similarity
+      critical: true
+
+    - module: :ets
+      function: lookup/2, insert/2, tab2list/1
+      purpose: Fast O(1) cache access with read concurrency
+      critical: true
+
+  called_by:
+    - module: Singularity.Execution.Autonomy.RuleEngine
+      purpose: Fetch rules for confidence-based evaluation
+      frequency: high
+
+    - module: Singularity.Agents.*
+      purpose: Get rules for autonomous decision making
+      frequency: high
+
+    - module: Evolution Consensus
+      purpose: Reload rules after agent voting updates
+      frequency: low
+
+  depends_on:
+    - Singularity.Repo (MUST start first - database access)
+    - PostgreSQL agent_behavior_confidence_rules table (MUST exist)
+    - ETS (built-in, always available)
+
+  supervision:
+    supervised: true
+    reason: "GenServer managing ETS cache lifecycle, must restart on crash to rebuild cache"
+  ```
+
+  ### Data Flow (Mermaid Sequence)
+
+  ```mermaid
+  sequenceDiagram
+      participant Agent
+      participant RuleLoader
+      participant ETS
+      participant DB as PostgreSQL
+
+      Note over RuleLoader: Startup
+      RuleLoader->>DB: load_all_rules()
+      DB-->>RuleLoader: [active rules]
+      RuleLoader->>ETS: insert all rules
+      RuleLoader->>RuleLoader: schedule_refresh()
+
+      Note over Agent: Runtime - Cache Hit
+      Agent->>RuleLoader: get_rule("quality-check")
+      RuleLoader->>ETS: lookup("quality-check")
+      ETS-->>RuleLoader: {:ok, cached_rule}
+      RuleLoader-->>Agent: {:ok, rule}
+
+      Note over Agent: Runtime - Cache Miss
+      Agent->>RuleLoader: get_rule("new-rule")
+      RuleLoader->>ETS: lookup("new-rule")
+      ETS-->>RuleLoader: []
+      RuleLoader->>DB: Repo.get(Rule, "new-rule")
+      DB-->>RuleLoader: rule struct
+      RuleLoader->>ETS: insert("new-rule", rule)
+      RuleLoader-->>Agent: {:ok, rule}
+
+      Note over Agent: After Evolution
+      Agent->>RuleLoader: reload_rules()
+      RuleLoader->>DB: query active rules
+      DB-->>RuleLoader: [updated rules]
+      RuleLoader->>ETS: update cache
+      RuleLoader-->>Agent: :ok
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT create "RuleCache" or "RuleFetcher" modules
+  **Why:** RuleLoader already provides caching AND fetching with ETS + PostgreSQL.
+  **Use instead:** Call RuleLoader.get_rule/1 directly.
+
+  #### ❌ DO NOT bypass cache and query database directly
+  ```elixir
+  # ❌ WRONG - Bypassing cache
+  rule = Repo.get(Rule, rule_id)
+
+  # ✅ CORRECT - Use cached access
+  {:ok, rule} = RuleLoader.get_rule(rule_id)
+  ```
+
+  #### ❌ DO NOT access ETS table directly
+  ```elixir
+  # ❌ WRONG - Direct ETS access
+  :ets.lookup(:rule_cache, rule_id)
+
+  # ✅ CORRECT - Use public API
+  RuleLoader.get_rule(rule_id)
+  ```
+
+  #### ❌ DO NOT forget to reload rules after evolution
+  ```elixir
+  # ❌ WRONG - Update DB but cache is stale
+  Repo.update!(rule_changeset)
+
+  # ✅ CORRECT - Update DB and reload cache
+  Repo.update!(rule_changeset)
+  RuleLoader.reload_rules()
+  ```
+
+  ### Search Keywords
+
+  rule loader, rule cache, ets cache, hot reload, evolvable rules,
+  agent autonomy, confidence rules, postgresql cache, semantic search,
+  pgvector, rule evolution, consensus voting, data not code, o1 access
   """
 
   use GenServer
@@ -89,13 +255,29 @@ defmodule Singularity.Execution.Autonomy.RuleLoader do
     # Create ETS table for rule cache
     :ets.new(@table, [:set, :public, :named_table, read_concurrency: true])
 
-    # Load all active rules
-    load_all_rules()
+    # Try to load rules, but gracefully degrade if database is unavailable
+    case load_all_rules_safely() do
+      :ok ->
+        Logger.info("Rules loaded successfully")
+        schedule_refresh()
+        {:ok, %{last_refresh: DateTime.utc_now()}}
 
-    # Schedule periodic refresh
-    schedule_refresh()
+      {:error, reason} ->
+        Logger.warning("Could not load rules from database (will retry): #{inspect(reason)}")
+        # Start with empty cache and schedule refresh to try again
+        schedule_refresh()
+        {:ok, %{last_refresh: DateTime.utc_now(), db_error: reason}}
+    end
+  end
 
-    {:ok, %{last_refresh: DateTime.utc_now()}}
+  defp load_all_rules_safely do
+    try do
+      load_all_rules()
+      :ok
+    rescue
+      e ->
+        {:error, "Failed to load rules: #{inspect(e.__struct__)}: #{Exception.message(e)}"}
+    end
   end
 
   @impl true

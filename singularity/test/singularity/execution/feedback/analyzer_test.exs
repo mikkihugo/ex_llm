@@ -182,7 +182,7 @@ defmodule Singularity.Execution.Feedback.AnalyzerTest do
     test "handles missing metrics gracefully" do
       result = Analyzer.analyze_agent("nonexistent-agent-xyz")
       # Should either return error or empty analysis
-      assert match?({:ok, _} | {:error, _}, result)
+      assert match?(({:ok, _} | {:error, _}), result)
     end
   end
 end

@@ -93,7 +93,7 @@ defmodule Singularity.Execution.Autonomy.Rule do
         # Default to elixir_patterns
         put_change(changeset, :execution_type, :elixir_patterns)
     end
-
+  end
 
   defp validate_lua_script(changeset) do
     case get_field(changeset, :lua_script) do

@@ -41,6 +41,163 @@ defmodule Singularity.Knowledge.TemplateService do
   {:ok, response} = Gnat.request(gnat, "template.get.framework.phoenix", "")
   {:ok, template} = Jason.decode(response.body)
   ```
+
+  ---
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Knowledge.TemplateService",
+    "purpose": "NATS-based template service with context-aware rendering and Package Intelligence integration",
+    "role": "service",
+    "layer": "domain_services",
+    "alternatives": {
+      "Singularity.TemplateStore": "Use TemplateService for NATS access; TemplateStore for local DB access",
+      "Singularity.Templates.Renderer": "TemplateService wraps Renderer with NATS + intelligence injection",
+      "Direct File Access": "TemplateService provides caching, semantic search, and version control"
+    },
+    "disambiguation": {
+      "vs_template_store": "TemplateService adds NATS interface + Package Intelligence context injection",
+      "vs_renderer": "TemplateService orchestrates rendering; Renderer handles Solid/Handlebars logic",
+      "vs_template_cache": "TemplateService is the API; TemplateCache is the storage backend"
+    }
+  }
+  ```
+
+  ### Architecture (Mermaid)
+
+  ```mermaid
+  graph TB
+      Client[Rust/Agent Client] -->|1. NATS request| Service[TemplateService]
+      Service -->|2. check| Cache[TemplateCache]
+      Cache -->|3a. hit| Service
+      Cache -->|3b. miss| DB[PostgreSQL]
+
+      Service -->|4. query intelligence| Intel[Package Intelligence]
+      Intel -->|5. framework hints| Service
+      Service -->|6. render| Renderer[Templates.Renderer]
+      Renderer -->|7. Solid/Handlebars| Service
+      Service -->|8. NATS response| Client
+
+      Service -->|track usage| Learning[Learning Loop]
+
+      style Service fill:#90EE90
+      style Cache fill:#FFD700
+      style Intel fill:#87CEEB
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.Knowledge.TemplateCache
+      function: get/2
+      purpose: Fast template retrieval with ETS caching
+      critical: true
+
+    - module: Singularity.Templates.Renderer
+      function: render/3
+      purpose: Render templates with Solid/Handlebars engine
+      critical: true
+
+    - module: Singularity.NatsClient
+      function: publish/2, subscribe/1
+      purpose: NATS messaging for template requests/responses
+      critical: true
+
+    - module: Package Intelligence (via NATS)
+      function: intelligence.query
+      purpose: Inject framework/quality context into templates
+      critical: false
+
+  called_by:
+    - module: Rust Prompt Engine
+      purpose: Fetch templates for code generation prompts
+      frequency: high
+
+    - module: CentralCloud Services
+      purpose: Request templates for cross-instance learning
+      frequency: medium
+
+    - module: Agents (via NATS)
+      purpose: Render code with best practices and patterns
+      frequency: high
+
+  depends_on:
+    - Singularity.NatsClient (MUST start first - NATS messaging)
+    - Singularity.Knowledge.TemplateCache (MUST start first - storage)
+    - PostgreSQL knowledge_artifacts table (MUST exist)
+
+  supervision:
+    supervised: true
+    reason: "GenServer managing NATS subscriptions, must restart to re-subscribe on crash"
+  ```
+
+  ### Data Flow (Mermaid Sequence)
+
+  ```mermaid
+  sequenceDiagram
+      participant Client
+      participant TemplateService
+      participant Cache
+      participant Intel as Package Intelligence
+      participant Renderer
+
+      Note over Client: Context-Aware Rendering
+      Client->>TemplateService: render_with_context("phoenix-liveview", vars)
+      TemplateService->>Intel: query(framework: "phoenix")
+      Intel-->>TemplateService: {best_practices, hints, snippets}
+      TemplateService->>TemplateService: compose_context(vars, intelligence)
+      TemplateService->>Renderer: render(template_id, enriched_vars)
+      Renderer-->>TemplateService: rendered_code
+      TemplateService->>TemplateService: track_template_usage(:success)
+      TemplateService-->>Client: {:ok, code_with_best_practices}
+
+      Note over Client: Simple Rendering
+      Client->>TemplateService: render_template_with_solid("elixir-module", vars)
+      TemplateService->>Cache: get("elixir-module")
+      Cache-->>TemplateService: {:ok, template}
+      TemplateService->>Renderer: render(template, vars)
+      Renderer-->>TemplateService: rendered_code
+      TemplateService-->>Client: {:ok, rendered_code}
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT create "TemplateManager" or "TemplateOrchestrator" modules
+  **Why:** TemplateService already orchestrates rendering, caching, and intelligence injection.
+  **Use instead:** Call TemplateService.render_with_context/3 directly.
+
+  #### ❌ DO NOT bypass TemplateService for rendering
+  ```elixir
+  # ❌ WRONG - Direct rendering without context
+  Renderer.render(template_id, vars)
+
+  # ✅ CORRECT - Use TemplateService for intelligence injection
+  TemplateService.render_with_context(template_id, vars, framework: "phoenix")
+  ```
+
+  #### ❌ DO NOT implement custom NATS template handlers
+  ```elixir
+  # ❌ WRONG - Custom NATS handler
+  NatsClient.subscribe("template.get.*", fn msg -> ... end)
+
+  # ✅ CORRECT - TemplateService handles all template.* subjects
+  # Just send requests to template.get.{type}.{id}
+  ```
+
+  #### ❌ DO NOT render without tracking usage
+  **Why:** Usage tracking feeds the learning loop for template quality improvement.
+  **Use instead:** Always use TemplateService public API (automatically tracks).
+
+  ### Search Keywords
+
+  template service, nats templates, code generation templates, handlebars rendering,
+  solid templates, package intelligence, framework hints, quality templates,
+  context injection, template caching, semantic search, learning loop, rust integration
   """
 
   use GenServer

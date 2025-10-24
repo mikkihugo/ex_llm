@@ -19,6 +19,132 @@ defmodule Singularity.Application do
 
   This application uses nested supervisors for better organization and fault isolation.
   See individual supervisor modules for details on what they manage.
+
+  ---
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Application",
+    "purpose": "OTP application entrypoint managing 6-layer supervision tree for autonomous AI development",
+    "role": "application",
+    "layer": "foundation",
+    "alternatives": {
+      "Individual Supervisors": "Use this as the single source of truth for supervision tree structure",
+      "Manual Process Management": "This handles automated supervision, restart strategies, and fault tolerance"
+    },
+    "disambiguation": {
+      "vs_individual_supervisors": "This is the root - orchestrates ALL supervisors in correct startup order",
+      "vs_domain_supervisors": "This starts domain supervisors; they manage their own child processes"
+    }
+  }
+  ```
+
+  ### Architecture (Mermaid)
+
+  ```mermaid
+  graph TB
+      VM[Erlang VM] -->|1. starts| App[Singularity.Application]
+      App -->|2. Layer 1| Repo[Repo + Telemetry + Registry]
+      App -->|3. Layer 2| Infra[Infrastructure.Supervisor]
+      App -->|4. Layer 2| NATS[NATS.Supervisor]
+      App -->|5. Layer 3| Domain[Domain Supervisors]
+      App -->|6. Layer 4| Agents[Agents.Supervisor]
+      App -->|7. Layer 5| Rules[RuleEngine + RuleLoader]
+
+      Domain --> LLM[LLM.Supervisor]
+      Domain --> Knowledge[Knowledge.Supervisor]
+      Domain --> Planning[Planning.Supervisor]
+      Domain --> SPARC[SPARC.Supervisor]
+
+      style App fill:#90EE90
+      style Repo fill:#87CEEB
+      style Domain fill:#FFD700
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Supervisor
+      function: start_link/2
+      purpose: Start OTP supervision tree with :one_for_one strategy
+      critical: true
+
+    - module: Singularity.Repo
+      function: start_link/1
+      purpose: Start PostgreSQL connection pool (Layer 1)
+      critical: true
+
+    - module: Singularity.NATS.Supervisor
+      function: start_link/1
+      purpose: Start NATS messaging infrastructure (Layer 2)
+      critical: false
+
+    - module: Singularity.Agents.Supervisor
+      function: start_link/1
+      purpose: Start dynamic agent supervision tree (Layer 4)
+      critical: true
+
+  called_by:
+    - module: Erlang VM
+      purpose: Application startup during beam initialization
+      frequency: once
+
+  depends_on:
+    - Elixir OTP Platform (MUST exist)
+    - PostgreSQL database (MUST be running)
+    - NATS server (optional - graceful degradation)
+
+  supervision:
+    supervised: false
+    reason: "Root application - supervised by Erlang VM itself"
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT create "Singularity.SupervisorManager" or wrapper modules
+  **Why:** This module IS the supervisor manager. All supervision starts here.
+  **Use instead:** Modify this file to add new supervisors to the tree.
+
+  #### ❌ DO NOT start supervised processes outside this tree
+  ```elixir
+  # ❌ WRONG - Starting GenServer outside supervision
+  {:ok, _} = MyService.start_link()
+
+  # ✅ CORRECT - Add to children list in this module
+  children = [
+    MyService,  # Add to appropriate layer
+    ...
+  ]
+  ```
+
+  #### ❌ DO NOT change layer ordering without understanding dependencies
+  ```elixir
+  # ❌ WRONG - NATS before Repo
+  children = [
+    Singularity.NATS.Supervisor,  # Needs DB!
+    Singularity.Repo
+  ]
+
+  # ✅ CORRECT - Repo first (Layer 1 before Layer 2)
+  children = [
+    Singularity.Repo,
+    Singularity.NATS.Supervisor
+  ]
+  ```
+
+  #### ❌ DO NOT use :one_for_all restart strategy
+  **Why:** Independent services should not restart each other. Use :one_for_one for fault isolation.
+
+  ### Search Keywords
+
+  application, supervision tree, otp, elixir application, nested supervisors,
+  layered architecture, fault tolerance, process management, autonomous agents,
+  startup ordering, dependency management, supervision strategy, one for one
   """
   use Application
 
