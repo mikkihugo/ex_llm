@@ -24,66 +24,37 @@ import { analyzeTaskComplexity, type TaskComplexity } from './task-complexity.js
 import { logger } from './logger.js';
 import { metrics } from './metrics.js';
 
-// --- Type Definitions ---
+// ── Type Safety & Error Handling ──
+import type {
+  LLMRequest,
+  LLMResponse,
+  LLMError,
+  TaskType,
+  ProviderKey,
+  CapabilityHint,
+  ErrorCode
+} from './types';
+import { isValidLLMRequest } from './types';
 
-/**
- * @typedef {'general' | 'architect' | 'coder' | 'qa'} TaskType
- * @description The type of task to be performed by the AI model.
- */
-type TaskType = 'general' | 'architect' | 'coder' | 'qa';
-/**
- * @typedef {'code' | 'reasoning' | 'creativity' | 'speed' | 'cost'} CapabilityHint
- * @description A hint to the model selection logic to prioritize a certain capability.
- */
-type CapabilityHint = 'code' | 'reasoning' | 'creativity' | 'speed' | 'cost';
+import {
+  StandardAPIError,
+  ValidationError as APIValidationError,
+  ProviderError,
+  TimeoutError,
+  formatError,
+  extractErrorCode as extractErrorCodeFromError
+} from './error-formatter';
 
-/**
- * @interface LLMRequest
- * @description Defines the structure of an incoming LLM request from NATS.
- */
-interface LLMRequest {
-  model?: string;
-  provider?: string;
-  messages: Array<{ role: string; content: string }>;
-  max_tokens?: number;
-  temperature?: number;
-  stream?: boolean;
-  correlation_id?: string;
-  tools?: OpenAITool[];
-  complexity?: TaskComplexity;
-  task_type?: string;
-  capabilities?: CapabilityHint[];
-}
+import { SafeNATSPublisher, createPublisher } from './nats-publisher';
 
-/**
- * @interface LLMResponse
- * @description Defines the structure of a successful LLM response published to NATS.
- */
-interface LLMResponse {
-  text: string;
-  model: string;
-  tokens_used?: number;
-  cost_cents?: number;
-  timestamp: string;
-  correlation_id?: string;
-}
+import {
+  isProviderAvailable,
+  getMissingCredentials,
+  logCredentialStatus
+} from './credential-validator';
 
-/**
- * @interface LLMError
- * @description Defines the structure of an error response published to NATS.
- */
-interface LLMError {
-  error: string;
-  error_code: string;
-  correlation_id?: string;
-  timestamp: string;
-}
-
-/**
- * @typedef {'claude' | 'gemini' | 'codex' | 'copilot' | 'github' | 'jules' | 'cursor' | 'openrouter'} ProviderKey
- * @description A key representing a supported AI provider.
- */
-type ProviderKey = 'claude' | 'gemini' | 'codex' | 'copilot' | 'github' | 'jules' | 'cursor' | 'openrouter';
+// Type definitions are now imported from ./types.ts
+// See: LLMRequest, LLMResponse, LLMError, TaskType, ProviderKey, CapabilityHint
 
 // --- Constants ---
 
@@ -114,55 +85,56 @@ const MODEL_SELECTION_MATRIX: Record<TaskType, Record<TaskComplexity, Array<{ pr
   }
 };
 
-/**
- * @class ValidationError
- * @extends Error
- * @description Custom error for request validation failures.
- */
-class ValidationError extends Error {
-  readonly code = 'VALIDATION_ERROR';
-  constructor(message: string) {
-    super(`validation error: ${message}`);
-    this.name = 'ValidationError';
-  }
-}
-
-/**
- * @class ProviderNotFoundError
- * @extends Error
- * @description Custom error for when a provider cannot be found.
- */
-class ProviderNotFoundError extends Error {
-  readonly code = 'PROVIDER_NOT_FOUND';
-  constructor(message: string) {
-    super(message);
-    this.name = 'ProviderNotFoundError';
-  }
-}
+// Error classes are now imported from ./error-formatter.ts
+// See: StandardAPIError, ValidationError, ProviderError, TimeoutError, etc.
 
 /**
  * @class NATSHandler
  * @description Manages the NATS connection, subscriptions, and message handling.
+ *
+ * Uses type-safe modules for:
+ * - Request validation (types.ts)
+ * - Error handling (error-formatter.ts)
+ * - NATS publishing (nats-publisher.ts)
+ * - Credential validation (credential-validator.ts)
  */
 class NATSHandler {
   private nc: NatsConnection | null = null;
+  private publisher: SafeNATSPublisher | null = null;
   private subscriptions: Subscription[] = [];
   private subscriptionTasks: Promise<void>[] = [];
   private processingCount: number = 0;
   private readonly MAX_CONCURRENT = 10;
 
   /**
-   * Connects to the NATS server.
+   * Connects to the NATS server and validates credentials.
+   *
+   * Logs credential status at startup so issues are visible immediately.
+   * Publisher is initialized for safe NATS message handling.
    */
   async connect() {
     try {
+      // Log credential status before connecting
+      logCredentialStatus();
+
+      const natsUrl = process.env.NATS_URL || 'nats://localhost:4222';
       this.nc = await connect({
-        servers: process.env.NATS_URL || 'nats://localhost:4222'
+        servers: natsUrl
       });
-      console.log('[NATS] Connected to NATS');
+
+      // Initialize safe NATS publisher
+      this.publisher = createPublisher(this.nc);
+
+      logger.info('[NATS] Connected to NATS server', {
+        url: natsUrl
+      });
+
       await this.subscribeToLLMRequests();
     } catch (error) {
-      console.error('[NATS] Failed to connect:', error);
+      logger.error('[NATS] Failed to connect to NATS', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     }
   }
@@ -197,56 +169,105 @@ class NATSHandler {
     }
   }
 
-  private async handleSingleLLMRequest(msg: any) {
+  /**
+   * Handle a single LLM request from NATS with full type safety and error handling.
+   *
+   * Flow:
+   * 1. Parse and validate JSON using type guards
+   * 2. Process with 30-second timeout
+   * 3. Publish response or error to NATS
+   * 4. Record metrics
+   *
+   * Never throws - all errors are caught and published to NATS.
+   */
+  private async handleSingleLLMRequest(msg: any): Promise<void> {
     let request: LLMRequest | null = null;
     const startTime = Date.now();
+
     try {
-      request = JSON.parse(msg.data.toString()) as LLMRequest;
-      this.validateRequest(request);
-      logger.info('[NATS] Received LLM request', { model: request.model, correlationId: request.correlation_id });
-      const response = await this.processLLMRequest(request);
-      
-      // Use NATS request/reply pattern - send response back to the reply subject
-      if (msg.reply) {
-        await this.publishResponseToReply(msg.reply, response);
-      } else {
-        await this.publishResponse(response);
+      // ──── Step 1: Parse JSON ────
+      let parsedData: unknown;
+      try {
+        parsedData = JSON.parse(msg.data.toString());
+      } catch (parseError) {
+        throw new APIValidationError(
+          `Invalid JSON in request: ${parseError instanceof Error ? parseError.message : 'parse error'}`
+        );
       }
-      
+
+      // ──── Step 2: Validate schema using type guards ────
+      if (!isValidLLMRequest(parsedData)) {
+        throw new APIValidationError('Request does not match LLMRequest schema');
+      }
+      request = parsedData;
+
+      logger.info('[NATS] Received LLM request', {
+        model: request.model,
+        taskType: request.task_type,
+        correlationId: request.correlation_id
+      });
+
+      // ──── Step 3: Process with timeout (30s max) ────
+      const response = await Promise.race([
+        this.processLLMRequest(request),
+        this.createTimeoutPromise(30000)
+      ]);
+
+      // ──── Step 4: Publish response safely ────
+      if (!this.publisher) {
+        logger.error('[NATS] Publisher not initialized when handling request', {
+          correlationId: request.correlation_id
+        });
+        return;
+      }
+
+      if (msg.reply) {
+        await this.publisher.publishToReply(msg.reply, response);
+      } else {
+        await this.publisher.publishResponse('llm.response', response);
+      }
+
+      // ──── Step 5: Record metrics ────
       const duration = Date.now() - startTime;
-      metrics.recordRequest('nats_llm_request', duration);
+      metrics.recordRequest('nats_llm_request', duration, false);
       if (response.model) {
         const [provider, model] = response.model.split(':');
         metrics.recordModelUsage(provider || 'unknown', model || response.model, response.tokens_used);
       }
-      logger.info('[NATS] LLM request completed', { model: response.model, duration: `${duration}ms`, correlationId: request.correlation_id });
+
+      logger.info('[NATS] LLM request completed successfully', {
+        model: response.model,
+        duration: `${duration}ms`,
+        correlationId: request.correlation_id
+      });
+
     } catch (error) {
+      // ──── Step 6: Handle errors safely ────
       const duration = Date.now() - startTime;
       metrics.recordRequest('nats_llm_request', duration, true);
-      logger.error('[NATS] Error processing LLM request', { error: error instanceof Error ? error.message : 'Unknown error', correlationId: request?.correlation_id });
-      const errorResponse: LLMError = {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        error_code: this.extractErrorCode(error),
-        correlation_id: request?.correlation_id,
-        timestamp: new Date().toISOString()
-      };
-      
-      // Use NATS request/reply pattern for errors too
-      if (msg.reply) {
-        await this.publishErrorToReply(msg.reply, errorResponse);
-      } else {
-        await this.publishError(errorResponse);
-      }
-    }
-  }
 
-  private validateRequest(request: LLMRequest) {
-    if (!request || typeof request !== 'object') throw new ValidationError('Request payload must be an object');
-    if (request.model !== undefined && typeof request.model !== 'string') throw new ValidationError('Model must be a string');
-    if (!Array.isArray(request.messages) || request.messages.length === 0) throw new ValidationError('Request must include at least one message');
-    for (let i = 0; i < request.messages.length; i++) {
-      const m = request.messages[i];
-      if (!m || typeof m !== 'object' || typeof m.role !== 'string' || typeof m.content !== 'string') throw new ValidationError(`Message at index ${i} is invalid`);
+      logger.error('[NATS] Error processing LLM request', {
+        error: error instanceof Error ? error.message : String(error),
+        correlationId: request?.correlation_id,
+        stack: error instanceof Error ? error.stack : undefined
+      });
+
+      // Format error consistently
+      const lmmError = formatError(error, request?.correlation_id);
+
+      // Publish error safely
+      if (!this.publisher) {
+        logger.error('[NATS] Cannot publish error - publisher not initialized', {
+          correlationId: request?.correlation_id
+        });
+        return;
+      }
+
+      if (msg.reply) {
+        await this.publisher.publishToReply(msg.reply, lmmError);
+      } else {
+        await this.publisher.publishError('llm.error', lmmError);
+      }
     }
   }
 
@@ -279,17 +300,44 @@ class NATSHandler {
 
   private resolveModelSelection(request: LLMRequest): { model: string; provider: ProviderKey; complexity: TaskComplexity } {
     const providerHint = request.provider ? this.normalizeProvider(request.provider) : null;
+
     if (request.model && request.model !== 'auto') {
       const provider = providerHint ?? this.getProviderFromModel(request.model);
-      if (!provider) throw new ProviderNotFoundError(`Unable to determine provider for model: ${request.model}`);
+      if (!provider) {
+        throw new ProviderError(
+          'model_selection',
+          `Unable to determine provider for model: ${request.model}`
+        );
+      }
+
+      // ← Check if provider has credentials
+      if (!isProviderAvailable(provider as ProviderKey)) {
+        const missing = getMissingCredentials(provider as ProviderKey);
+        throw new ProviderError(
+          provider,
+          `Provider ${provider} not available. Missing credentials: ${missing.join(', ')}`
+        );
+      }
+
       const complexity = request.complexity ?? this.inferComplexity(request, this.taskTypeFromRequest(request));
       return { model: request.model, provider: provider as ProviderKey, complexity };
     }
+
+    // For auto-selection, find an available provider
     const taskType = this.taskTypeFromRequest(request);
     const complexity = request.complexity ?? this.inferComplexity(request, taskType);
     const candidates = this.getModelCandidates(taskType, complexity, providerHint as ProviderKey | null, request.capabilities);
-    if (candidates.length === 0) throw new ProviderNotFoundError(`No models available for task_type=${taskType} complexity=${complexity}`);
-    const choice = candidates[0];
+
+    // Filter to only available providers
+    const available = candidates.filter(c => isProviderAvailable(c.provider));
+    if (available.length === 0) {
+      throw new ProviderError(
+        'auto_select',
+        `No models available for task_type=${taskType} complexity=${complexity}. Check credential status with logCredentialStatus().`
+      );
+    }
+
+    const choice = available[0];
     return { model: choice.model, provider: choice.provider, complexity };
   }
 
@@ -386,7 +434,7 @@ class NATSHandler {
       case 'openrouter': return this.callOpenRouter(model, messages, options, taskType || 'general', complexity || 'medium');
       case 'github': return this.callGitHubModels(model, messages, options);
       case 'jules': return this.callJules(model, messages, options);
-      default: throw new ProviderNotFoundError(`Unknown provider: ${provider}`);
+      default: throw new ProviderError(provider, `Unknown provider: ${provider}`);
     }
   }
 
@@ -432,6 +480,23 @@ class NATSHandler {
     return { text: result.text, tokens_used: result.usage.totalTokens, cost_cents: 0 };
   }
 
+  /**
+   * Create a promise that rejects after specified timeout.
+   *
+   * Used with Promise.race() to enforce maximum request duration.
+   * Prevents infinite hangs if provider becomes unresponsive.
+   *
+   * @param ms - Timeout in milliseconds
+   * @returns Promise that rejects with TimeoutError after ms
+   */
+  private createTimeoutPromise(ms: number): Promise<LLMResponse> {
+    return new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new TimeoutError(ms));
+      }, ms);
+    });
+  }
+
   private getProviderFromModel(model: string): string | null {
     if (model.startsWith('claude')) return 'claude';
     if (model.startsWith('gemini')) return 'gemini';
@@ -457,33 +522,8 @@ class NATSHandler {
     return 0; // Subscription-based
   }
 
-  private extractErrorCode(error: unknown): string {
-    return (error && typeof error === 'object' && 'code' in error && typeof (error as any).code === 'string') ? (error as any).code : 'LLM_ERROR';
-  }
-
-  private async publishResponse(response: LLMResponse) {
-    if (!this.nc) throw new Error('NATS not connected');
-    this.nc.publish('llm.response', JSON.stringify(response));
-    logger.info('[NATS] Published LLM response', { model: response.model, correlationId: response.correlation_id });
-  }
-
-  private async publishResponseToReply(replySubject: string, response: LLMResponse) {
-    if (!this.nc) throw new Error('NATS not connected');
-    this.nc.publish(replySubject, JSON.stringify(response));
-    logger.info('[NATS] Published LLM response to reply subject', { model: response.model, correlationId: response.correlation_id, replySubject });
-  }
-
-  private async publishError(error: LLMError) {
-    if (!this.nc) throw new Error('NATS not connected');
-    this.nc.publish('llm.error', JSON.stringify(error));
-    logger.error('[NATS] Published LLM error', { errorCode: error.error_code, correlationId: error.correlation_id });
-  }
-
-  private async publishErrorToReply(replySubject: string, error: LLMError) {
-    if (!this.nc) throw new Error('NATS not connected');
-    this.nc.publish(replySubject, JSON.stringify(error));
-    logger.error('[NATS] Published LLM error to reply subject', { errorCode: error.error_code, correlationId: error.correlation_id, replySubject });
-  }
+  // Publishing is now handled by SafeNATSPublisher (nats-publisher.ts)
+  // Error formatting is now handled by formatError() (error-formatter.ts)
 
   async close() {
     for (const sub of this.subscriptions) sub.unsubscribe();
