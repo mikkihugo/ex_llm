@@ -15,7 +15,7 @@ defmodule Singularity.NATS.Supervisor do
   ## Managed Processes
 
   - `Singularity.NatsClient` - GenServer providing client interface
-  - `Singularity.NatsServer` - GenServer managing NATS connection
+  - `Singularity.NATS.Server` - GenServer managing NATS connection
   - `Singularity.Embedding.Service` - Embedding service for CentralCloud
   - `Singularity.Tools.DatabaseToolsExecutor` - Database tool execution
 
@@ -94,7 +94,7 @@ defmodule Singularity.NATS.Supervisor do
       purpose: Start NATS client GenServer (first - others depend on it)
       critical: true
 
-    - module: Singularity.NatsServer
+    - module: Singularity.NATS.Server
       function: start_link/1
       purpose: Start NATS server connection (second)
       critical: true
@@ -213,8 +213,8 @@ defmodule Singularity.NATS.Supervisor do
 
       children = [
         # Order matters! Client must start before Server (Server subscribes to Client)
-        Singularity.NatsClient,
-        Singularity.NatsServer,
+        Singularity.NATS.Client,
+        Singularity.NATS.Server,
         # Embedding service for CentralCloud
         Singularity.Embedding.Service,
         # Database-first tool executor

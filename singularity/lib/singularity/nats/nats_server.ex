@@ -1,4 +1,4 @@
-defmodule Singularity.NatsServer do
+defmodule Singularity.NATS.Server do
   @moduledoc """
   NATS Server - Single entry point for all services.
 
@@ -396,4 +396,23 @@ defmodule Singularity.NatsServer do
   defp generate_correlation_id do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
   end
+end
+
+# Backward compatibility wrapper for old module name
+defmodule Singularity.NatsServer do
+  @moduledoc """
+  Compatibility wrapper for `Singularity.NATS.Server`.
+
+  This module will be removed after downstream call sites finish
+  migrating to the uppercase namespace.
+  """
+
+  alias Singularity.NATS.Server
+
+  defdelegate start_link(opts), to: Server
+  defdelegate handle_call(msg, from, state), to: Server
+  defdelegate handle_cast(msg, state), to: Server
+  defdelegate handle_info(msg, state), to: Server
+  defdelegate terminate(reason, state), to: Server
+  defdelegate code_change(old_vsn, state, extra), to: Server
 end
