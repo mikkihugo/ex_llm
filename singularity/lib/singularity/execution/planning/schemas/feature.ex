@@ -6,6 +6,31 @@ defmodule Singularity.Execution.Planning.Schemas.Feature do
   with acceptance criteria tracking and integration with capabilities
   for autonomous agent execution and work planning.
 
+  ## AI Navigation Metadata
+
+  ### Module Identity
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.Schemas.Feature",
+    "purpose": "Stores 1-3 month deliverables with TaskGraph integration",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "safe_methodology_features",
+    "framework": "SAFe 6.0 Essential with TaskGraph",
+    "relationships": ["belongs_to: Capability"]
+  }
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use Capability for short-term work - use Feature
+  - ❌ DO NOT skip acceptance criteria - required for validation
+  - ✅ DO use this for 1-3 month team deliverables
+  - ✅ DO link to TaskGraph for task decomposition
+
+  ### Search Keywords
+  feature, SAFe 6.0, team deliverable, acceptance criteria, TaskGraph,
+  1-3 month work, autonomous agent, task decomposition, user stories
+
   ## Integration Points
 
   This module integrates with:

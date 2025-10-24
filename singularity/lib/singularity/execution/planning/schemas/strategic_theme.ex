@@ -6,6 +6,31 @@ defmodule Singularity.Execution.Planning.Schemas.StrategicTheme do
   provide long-term vision direction for autonomous software development
   with BLOC (Business Value, Learning, Operations, Compliance) tracking.
 
+  ## AI Navigation Metadata
+
+  ### Module Identity
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.Schemas.StrategicTheme",
+    "purpose": "Stores 3-5 year strategic vision themes with BLOC tracking",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "strategic_themes",
+    "framework": "SAFe 6.0 Essential",
+    "relationships": ["has_many: Epic"]
+  }
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use Epic for long-term vision - use StrategicTheme
+  - ❌ DO NOT skip BLOC tracking - critical for value measurement
+  - ✅ DO use this for 3-5 year strategic objectives
+  - ✅ DO link epics to themes for proper hierarchy
+
+  ### Search Keywords
+  strategic theme, SAFe 6.0, long-term vision, BLOC tracking, epic planning,
+  strategic objectives, portfolio management, business value, 3-5 year planning
+
   ## Integration Points
 
   This module integrates with:

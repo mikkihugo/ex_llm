@@ -1,6 +1,42 @@
 defmodule Singularity.Schemas.Tools.ToolCall do
   @moduledoc """
   Represents a tool call emitted by a model.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.Tools.ToolCall",
+    "purpose": "Embedded schema for LLM tool call requests with streaming support",
+    "role": "schema",
+    "layer": "tools",
+    "relationships": {}
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - status: Tool call status (incomplete, complete)
+    - type: Call type (function)
+    - call_id: Unique call identifier from LLM
+    - name: Tool name to execute
+    - arguments: JSONB tool arguments (parsed from string or map)
+    - index: Tool call index in streaming response
+
+  relationships:
+    embedded: true
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT bypass argument parsing - handles both JSON strings and maps
+  - ✅ DO use merge/2 for streaming tool call assembly
+  - ✅ DO validate incomplete vs complete tool calls separately
+
+  ### Search Keywords
+  tool call, llm tool request, streaming tools, function calling,
+  tool arguments, incremental parsing
   """
 
   use Ecto.Schema

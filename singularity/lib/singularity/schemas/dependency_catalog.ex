@@ -11,6 +11,62 @@ defmodule Singularity.Schemas.DependencyCatalog do
   - Django, Flask (pypi)
 
   Your personal catalog of libraries you can depend on!
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.DependencyCatalog",
+    "purpose": "Stores external package metadata with dual embeddings and prompt intelligence",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "dependency_catalogs",
+    "relationships": {
+      "has_many": "PackageCodeExample - code examples for this package",
+      "has_many": "PackageUsagePattern - usage patterns learned",
+      "has_many": "PackageDependency - dependency relationships",
+      "has_many": "PackagePromptUsage - prompt usage tracking"
+    }
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - id: Primary key (binary_id)
+    - package_name: Package name (tokio, express, phoenix)
+    - version: Package version
+    - ecosystem: Package ecosystem (cargo, npm, hex, pypi)
+    - description: Package description
+    - documentation: Documentation text
+    - tags: Array of tags for categorization
+    - semantic_embedding: Vector for semantic search
+    - description_embedding: Vector for description search
+    - download_count: Popularity metric
+    - github_stars: Quality signal
+    - prompt_templates: JSONB with LLM prompt templates
+    - prompt_snippets: JSONB with common code snippets
+    - version_guidance: JSONB with version-specific guidance
+
+  indexes:
+    - unique: [package_name, version, ecosystem]
+    - ivfflat: semantic_embedding, description_embedding
+
+  relationships:
+    belongs_to: []
+    has_many: [PackageCodeExample, PackageUsagePattern, PackageDependency, PackagePromptUsage]
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT confuse DependencyCatalog (external packages) with CodeFile (your code)
+  - ❌ DO NOT use DependencyCatalog for semantic code search - use CodeChunk instead
+  - ✅ DO use DependencyCatalog for "what packages should I use?" queries
+  - ✅ DO use semantic_embedding for similarity search across packages
+
+  ### Search Keywords
+  dependency catalog, package metadata, npm, cargo, hex, pypi, semantic search,
+  package intelligence, prompt templates, version guidance, library search
   """
   use Ecto.Schema
   import Ecto.Changeset

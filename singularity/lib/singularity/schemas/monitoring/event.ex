@@ -5,17 +5,29 @@ defmodule Singularity.Metrics.Event do
   Stores individual metric measurements (latency, cost, success rate, etc.)
   from Telemetry, RateLimiter, ErrorRateTracker, and other sources.
 
-  ## Module Identity (JSON)
+  ## AI Navigation Metadata
 
+  ### Module Identity
   ```json
   {
     "module": "Singularity.Metrics.Event",
     "purpose": "Raw metrics event storage in unified system",
-    "layer": "metrics",
-    "status": "production",
-    "table": "metrics_events"
+    "role": "schema",
+    "layer": "monitoring",
+    "table": "metrics_events",
+    "features": ["telemetry", "measurement_validation", "tagged_events"]
   }
   ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use Metrics.AggregatedData for raw events - use this schema
+  - ❌ DO NOT allow NaN or Infinity measurements - validation prevents this
+  - ✅ DO use this for all raw metric measurements (latency, cost, success rate)
+  - ✅ DO tag events with contextual data for aggregation
+
+  ### Search Keywords
+  metrics event, telemetry, raw measurement, monitoring, observability,
+  event tracking, performance tracking, cost tracking, latency, tags
 
   ## Fields
 

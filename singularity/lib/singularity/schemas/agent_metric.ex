@@ -5,6 +5,30 @@ defmodule Singularity.Schemas.AgentMetric do
   Stores aggregated performance metrics for each agent per time window,
   enabling tracking of improvement over time and feedback for evolution.
 
+  ## AI Navigation Metadata
+
+  ### Module Identity
+  ```json
+  {
+    "module": "Singularity.Schemas.AgentMetric",
+    "purpose": "Stores time-series performance metrics for agent tracking",
+    "role": "schema",
+    "layer": "monitoring",
+    "table": "agent_metrics",
+    "features": ["time_series", "performance_tracking", "pattern_usage"]
+  }
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use Metrics.Event for aggregated agent data - use this schema
+  - ❌ DO NOT skip time_window - required for historical tracking
+  - ✅ DO use this for agent performance over time
+  - ✅ DO track patterns_used for learning
+
+  ### Search Keywords
+  agent metrics, performance tracking, time series, success rate, cost tracking,
+  latency monitoring, pattern usage, agent evolution, historical tracking
+
   ## Fields
 
   - `agent_id` - ID of the agent being tracked

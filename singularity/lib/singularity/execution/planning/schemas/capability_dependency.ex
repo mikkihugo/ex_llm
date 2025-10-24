@@ -6,6 +6,30 @@ defmodule Singularity.Execution.Planning.Schemas.CapabilityDependency do
   work ordering and prevent circular dependencies with self-reference validation
   and unique constraint enforcement.
 
+  ## AI Navigation Metadata
+
+  ### Module Identity
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.Schemas.CapabilityDependency",
+    "purpose": "Tracks dependencies between capabilities with validation",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "capability_dependencies",
+    "features": ["self_reference_prevention", "circular_dependency_prevention", "unique_constraints"]
+  }
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT allow self-referencing dependencies - validation prevents this
+  - ❌ DO NOT create duplicate dependencies - unique constraint prevents this
+  - ✅ DO use this for capability dependency tracking
+  - ✅ DO rely on validation for preventing invalid dependencies
+
+  ### Search Keywords
+  capability dependency, dependency tracking, work ordering, circular dependency,
+  self-reference prevention, SAFe 6.0, dependency validation, capability graph
+
   ## Integration Points
 
   This module integrates with:

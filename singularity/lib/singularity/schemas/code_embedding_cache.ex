@@ -5,16 +5,29 @@ defmodule Singularity.Schemas.CodeEmbeddingCache do
   Stores pre-computed embeddings with metadata for quick access without
   re-computing. Includes TTL support for cache expiration.
 
-  ## Module Identity (JSON)
+  ## AI Navigation Metadata
 
+  ### Module Identity
   ```json
   {
     "module": "Singularity.Schemas.CodeEmbeddingCache",
     "purpose": "Cache pre-computed code embeddings for fast retrieval",
-    "layer": "schema",
-    "status": "production"
+    "role": "schema",
+    "layer": "infrastructure",
+    "table": "code_embedding_cache",
+    "features": ["TTL_expiration", "hit_counting", "deduplication"]
   }
   ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT store without TTL - causes cache pollution
+  - ❌ DO NOT skip code_hash - required for deduplication
+  - ✅ DO use this for caching expensive embedding computations
+  - ✅ DO cleanup expired entries periodically
+
+  ### Search Keywords
+  embedding cache, code embeddings, TTL cache, cache expiration, hit counting,
+  pgvector cache, embedding deduplication, performance optimization
 
   ## Architecture
 

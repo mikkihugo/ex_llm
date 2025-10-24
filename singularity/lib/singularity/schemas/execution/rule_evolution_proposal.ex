@@ -3,6 +3,52 @@ defmodule Singularity.Execution.Autonomy.RuleEvolutionProposal do
   Consensus-based rule evolution proposals.
 
   Agents propose changes, other agents vote, changes applied if consensus reached.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Execution.Autonomy.RuleEvolutionProposal",
+    "purpose": "Tracks consensus-based rule evolution with voting and trial results",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "rule_evolution_proposals",
+    "relationships": {
+      "belongs_to": "Rule - the rule being evolved"
+    }
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - id: Primary key (binary_id)
+    - rule_id: Foreign key to rule being evolved
+    - proposer_agent_id: Agent proposing the evolution
+    - proposed_patterns: Array of proposed pattern changes
+    - proposed_threshold: Proposed confidence threshold
+    - evolution_reasoning: Why this evolution is needed
+    - trial_results: JSONB with trial execution results
+    - trial_confidence: Confidence from trial runs
+    - votes: JSONB mapping agent_id → {vote, confidence, voted_at}
+    - consensus_reached: Boolean - true if >= 3 agents, avg confidence > 0.85
+    - status: Enum (proposed, approved, rejected, expired)
+
+  relationships:
+    belongs_to: [Rule]
+    has_many: []
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT modify rules without RuleEvolutionProposal - bypasses governance
+  - ❌ DO NOT approve proposals without consensus (3+ votes, 0.85+ confidence)
+  - ✅ DO use RuleEvolutionProposal for all rule changes
+  - ✅ DO track trial_results before proposing evolution
+
+  ### Search Keywords
+  rule evolution, consensus voting, agent governance, rule proposals,
+  trial results, confidence voting, autonomous evolution, rule changes
   """
 
   use Ecto.Schema

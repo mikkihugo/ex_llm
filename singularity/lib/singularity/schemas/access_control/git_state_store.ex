@@ -3,6 +3,30 @@ defmodule Singularity.Git.GitStateStore do
   Persistence layer for git coordination state. Stores agent workspaces,
   pending merges, and merge history in PostgreSQL so coordination survives
   restarts and can be queried by other services.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity
+  ```json
+  {
+    "module": "Singularity.Git.GitStateStore",
+    "purpose": "Persists git agent coordination state across restarts",
+    "role": "schema",
+    "layer": "infrastructure",
+    "tables": ["git_agent_sessions", "git_pending_merges", "git_merge_history"],
+    "features": ["multi_schema", "upsert_helpers", "coordination_state"]
+  }
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT store in-memory only - use these schemas for persistence
+  - ❌ DO NOT manually manage conflicts - use upsert helpers
+  - ✅ DO use this for agent workspace coordination
+  - ✅ DO use this for merge tracking and history
+
+  ### Search Keywords
+  git coordination, agent workspace, merge tracking, pending merges,
+  merge history, git state persistence, branch coordination, multi-agent git
   """
 
   use Ecto.Schema

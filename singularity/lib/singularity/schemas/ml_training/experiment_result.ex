@@ -5,17 +5,30 @@ defmodule Singularity.Learning.ExperimentResult do
   Integration Point: Genesis publishes experiment results to NATS.
   Singularity records these results and learns from outcomes to improve future experiments.
 
-  ## Module Identity (JSON)
+  ## AI Navigation Metadata
 
+  ### Module Identity
   ```json
   {
     "module": "Singularity.Learning.ExperimentResult",
     "purpose": "Record and learn from Genesis experiment results",
-    "layer": "learning",
-    "status": "production",
-    "integration": "Genesis ↔ Singularity"
+    "role": "schema",
+    "layer": "ml_training",
+    "table": "experiment_results",
+    "integration": "Genesis ↔ Singularity via NATS",
+    "features": ["learning_from_outcomes", "success_rate_tracking", "insights_generation"]
   }
   ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use this for non-Genesis experiments - this is Genesis-specific
+  - ❌ DO NOT skip recording outcomes - needed for learning loop
+  - ✅ DO use this for all Genesis experiment results via NATS
+  - ✅ DO query insights for improving future experiments
+
+  ### Search Keywords
+  Genesis experiments, experiment results, learning loop, success rate,
+  experiment insights, recommendation engine, ML training, isolated testing
 
   ## Data Flow
 

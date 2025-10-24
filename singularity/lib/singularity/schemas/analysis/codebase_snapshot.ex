@@ -4,6 +4,30 @@ defmodule Singularity.CodebaseSnapshots do
   `codebase_snapshots` hypertable. Provides convenience wrappers around
   Ecto so other modules can upsert detections without worrying about
   conflict options or casting.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity
+  ```json
+  {
+    "module": "Singularity.CodebaseSnapshots",
+    "purpose": "Stores point-in-time technology detection snapshots for codebases",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "codebase_snapshots",
+    "features": ["hypertable", "upsert_helpers", "technology_detection"]
+  }
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use Singularity.Schemas.CodebaseSnapshot - this is for analysis snapshots
+  - ❌ DO NOT manually construct changeset - use upsert/1 helper
+  - ✅ DO use this for storing technology detection results over time
+  - ✅ DO use upsert/1 for conflict-safe inserts
+
+  ### Search Keywords
+  technology detection, snapshot, hypertable, timeseries, codebase analysis,
+  framework detection, upsert, conflict resolution, temporal data
   """
 
   use Ecto.Schema

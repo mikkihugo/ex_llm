@@ -1,6 +1,30 @@
 defmodule Singularity.Schemas.Analysis.Run do
   @moduledoc """
   Ecto schema representing a single quality tool execution (Sobelow, mix_audit, etc.).
+
+  ## AI Navigation Metadata
+
+  ### Module Identity
+  ```json
+  {
+    "module": "Singularity.Schemas.Analysis.Run",
+    "purpose": "Stores quality tool execution metadata and status",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "quality_runs",
+    "relationships": ["has_many: Finding"]
+  }
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT create runs without tool and status - both required
+  - ❌ DO NOT use this for agent executions - use AgentSession instead
+  - ✅ DO use this for tracking quality tool executions (Sobelow, Dialyzer, etc.)
+  - ✅ DO associate findings via has_many relationship
+
+  ### Search Keywords
+  quality run, tool execution, static analysis run, security scan execution,
+  sobelow run, dialyzer run, quality metrics, execution tracking
   """
 
   use Ecto.Schema

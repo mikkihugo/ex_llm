@@ -5,6 +5,55 @@ defmodule Singularity.Schemas.Template do
   Templates are loaded from /templates_data (JSON files) and
   stored in PostgreSQL with Qodo-Embed-1 embeddings for fast
   semantic search.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.Template",
+    "purpose": "Stores code generation templates with Qodo-Embed-1 embeddings and usage tracking",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "code_generation_templates",
+    "relationships": {
+      "related": "KnowledgeArtifact - separate storage for bidirectional learning"
+    }
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - id: Primary key (string) - template identifier
+    - version: Template version string
+    - type: Template type (code_pattern, quality_rule, workflow, snippet)
+    - metadata: JSONB with id, name, description, language, tags
+    - content: JSONB with code and template content
+    - quality: JSONB with quality score (>= 0.80 required for code_pattern)
+    - usage: JSONB tracking count, success_rate, last_used
+    - embedding: Qodo-Embed-1 vector (1536 dimensions) for semantic search
+
+  indexes:
+    - unique: id
+    - gin: metadata for JSONB queries
+    - ivfflat: embedding for similarity search
+
+  relationships:
+    belongs_to: []
+    has_many: []
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use Template for bidirectional learning - use KnowledgeArtifact instead
+  - ❌ DO NOT store embeddings other than 1536-D Qodo-Embed-1
+  - ❌ DO NOT bypass changeset validation - quality scores required
+  - ✅ DO use Template for code generation templates loaded from templates_data/
+  - ✅ DO use query helpers (by_language, by_type, by_tags, with_min_quality)
+
+  ### Search Keywords
+  template, code generation, qodo embed, semantic search, quality rule,
+  code pattern, workflow, snippet, template management, usage tracking
   """
 
   use Ecto.Schema

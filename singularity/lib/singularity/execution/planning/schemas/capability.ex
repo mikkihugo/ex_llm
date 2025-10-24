@@ -6,6 +6,31 @@ defmodule Singularity.Execution.Planning.Schemas.Capability do
   with dependency tracking, WSJF score inheritance from parent epic,
   and integration with features and other capabilities.
 
+  ## AI Navigation Metadata
+
+  ### Module Identity
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.Schemas.Capability",
+    "purpose": "Stores 3-6 month cross-team capabilities with dependency tracking",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "agent_capability_registry",
+    "framework": "SAFe 6.0 Essential with dependency management",
+    "relationships": ["belongs_to: Epic", "has_many: Feature", "has_many: CapabilityDependency"]
+  }
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT create circular dependencies - validation prevents this
+  - ❌ DO NOT use Feature for cross-team work - use Capability
+  - ✅ DO use this for 3-6 month cross-team capabilities
+  - ✅ DO track dependencies for proper work ordering
+
+  ### Search Keywords
+  capability, SAFe 6.0, cross-team feature, dependency tracking, WSJF inheritance,
+  3-6 month work, capability dependency, work ordering, capability registry
+
   ## Integration Points
 
   This module integrates with:

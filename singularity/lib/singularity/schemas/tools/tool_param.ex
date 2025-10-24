@@ -1,6 +1,47 @@
 defmodule Singularity.Schemas.Tools.ToolParam do
   @moduledoc """
   Defines the schema for tool parameters and converts them into JSON Schema maps.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.Tools.ToolParam",
+    "purpose": "Embedded schema for tool parameters with JSON Schema generation",
+    "role": "schema",
+    "layer": "tools",
+    "relationships": {
+      "used_by": "Tool - parameters field"
+    }
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - name: Parameter name
+    - type: Parameter type (string, integer, number, boolean, array, object)
+    - item_type: Array item type (for array parameters)
+    - enum: Allowed values (for enums)
+    - description: Parameter description
+    - required: Whether parameter is required
+    - object_properties: Nested properties (for object parameters)
+
+  relationships:
+    embedded: true
+    used_by: [Tool]
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use enum with non-primitive types
+  - ❌ DO NOT create object/array types without specifying properties
+  - ✅ DO use to_schema/1 for JSON Schema generation
+  - ✅ DO validate nested object_properties
+
+  ### Search Keywords
+  tool parameter, json schema, parameter validation, tool definition,
+  parameter types, nested objects, enum validation
   """
 
   use Ecto.Schema

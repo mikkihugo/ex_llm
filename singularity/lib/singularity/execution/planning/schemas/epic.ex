@@ -6,6 +6,31 @@ defmodule Singularity.Execution.Planning.Schemas.Epic do
   with automatic WSJF (Weighted Shortest Job First) calculation for
   prioritization and integration with strategic themes and capabilities.
 
+  ## AI Navigation Metadata
+
+  ### Module Identity
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.Schemas.Epic",
+    "purpose": "Stores 6-12 month initiatives with WSJF prioritization",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "safe_methodology_epics",
+    "framework": "SAFe 6.0 Essential with WSJF",
+    "relationships": ["belongs_to: StrategicTheme", "has_many: Capability"]
+  }
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use Feature for large initiatives - use Epic
+  - ❌ DO NOT manually calculate WSJF - changeset handles it
+  - ✅ DO use this for 6-12 month large-scale work
+  - ✅ DO rely on automatic WSJF calculation for prioritization
+
+  ### Search Keywords
+  epic, WSJF, weighted shortest job first, SAFe 6.0, prioritization,
+  large initiative, business value, time criticality, risk reduction, job size
+
   ## Integration Points
 
   This module integrates with:

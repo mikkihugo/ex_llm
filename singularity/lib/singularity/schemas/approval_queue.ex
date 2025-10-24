@@ -5,6 +5,30 @@ defmodule Singularity.Schemas.ApprovalQueue do
   Manages code changes that require human approval before execution.
   Integrated with Google Chat for interactive approval workflow.
 
+  ## AI Navigation Metadata
+
+  ### Module Identity
+  ```json
+  {
+    "module": "Singularity.Schemas.ApprovalQueue",
+    "purpose": "Manages HITL approval queue for code changes",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "approval_queues",
+    "features": ["google_chat_integration", "approval_workflow", "FIFO_queue"]
+  }
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT skip approval for production changes - use this queue
+  - ❌ DO NOT exceed max 3 pending approvals - agent blocks
+  - ✅ DO use this for all human-in-the-loop approval needs
+  - ✅ DO integrate with Google Chat for notifications
+
+  ### Search Keywords
+  approval queue, HITL, human in the loop, Google Chat integration,
+  approval workflow, code review, agent blocking, FIFO queue, interactive approval
+
   ## Queue Limits
   - Maximum 3 pending approvals at a time
   - Agent blocks when queue is full

@@ -21,6 +21,66 @@ defmodule Singularity.Execution.Todos.Todo do
   - simple: < 5 minutes, single LLM call
   - medium: 5-30 minutes, multiple steps
   - complex: > 30 minutes, multi-agent coordination
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Execution.Todos.Todo",
+    "purpose": "Task management with swarm-based execution, dependencies, and embeddings",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "todos",
+    "relationships": {
+      "self-referential": "parent_todo_id for task hierarchy",
+      "dependencies": "depends_on_ids array for task dependencies"
+    }
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - id: Primary key (binary_id)
+    - title: Todo title (required, max 500 chars)
+    - description: Detailed description (max 5000 chars)
+    - status: Status enum (pending, assigned, in_progress, completed, failed, blocked, cancelled)
+    - priority: Priority 1-5 (1=critical, 5=backlog)
+    - complexity: Complexity (simple, medium, complex)
+    - assigned_agent_id: Agent assigned to this todo
+    - parent_todo_id: Parent todo for hierarchy
+    - depends_on_ids: Array of todo_ids that must complete first
+    - tags: Array of tags for categorization
+    - context: JSONB with execution context
+    - result: JSONB with execution result
+    - error_message: Error message if failed
+    - started_at: When work started
+    - completed_at: When work completed
+    - failed_at: When failure occurred
+    - embedding: pgvector for semantic search
+    - estimated_duration_seconds: Estimated work time
+    - actual_duration_seconds: Actual work time
+    - retry_count: Number of retry attempts
+    - max_retries: Maximum retries allowed (default 3)
+
+  relationships:
+    belongs_to: [Todo (parent_todo_id)]
+    has_many: [Todo (children via parent_todo_id)]
+    depends_on: [Todo (via depends_on_ids array)]
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT bypass status validation - use status_changeset for transitions
+  - ❌ DO NOT exceed max_retries without increasing limit
+  - ❌ DO NOT create circular dependencies in depends_on_ids
+  - ✅ DO use Todo for swarm-based task management
+  - ✅ DO use embeddings for semantic todo search
+  - ✅ DO track actual vs estimated duration for learning
+
+  ### Search Keywords
+  todo, task management, swarm execution, task dependencies, pgvector,
+  semantic search, priority, complexity, retry logic, status transitions
   """
 
   use Ecto.Schema

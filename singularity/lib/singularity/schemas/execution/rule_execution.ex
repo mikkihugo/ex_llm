@@ -1,6 +1,52 @@
 defmodule Singularity.Execution.Autonomy.RuleExecution do
   @moduledoc """
   Time-series record of rule executions for learning and analysis.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Execution.Autonomy.RuleExecution",
+    "purpose": "Time-series tracking of rule executions with outcomes for learning",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "rule_executions",
+    "relationships": {
+      "belongs_to": "Rule - the rule that was executed"
+    }
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - id: Primary key (binary_id)
+    - rule_id: Foreign key to executed rule
+    - correlation_id: Links related executions across system
+    - confidence: Execution confidence score (0.0-1.0)
+    - decision: Decision type (autonomous, collaborative, escalated)
+    - reasoning: Explanation of why rule triggered
+    - execution_time_ms: Rule evaluation duration
+    - context: JSONB with execution context
+    - outcome: Result (success, failure, unknown) - recorded later
+    - outcome_recorded_at: When outcome was known
+    - executed_at: When rule was executed
+
+  relationships:
+    belongs_to: [Rule]
+    has_many: []
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT record executions without correlation_id - breaks traceability
+  - ❌ DO NOT skip outcome recording - needed for rule learning
+  - ✅ DO use RuleExecution for all rule evaluations
+  - ✅ DO record outcomes asynchronously via record_outcome/2
+
+  ### Search Keywords
+  rule execution, execution history, time series, rule learning,
+  outcome tracking, confidence scoring, autonomous decisions, rule analytics
   """
 
   use Ecto.Schema

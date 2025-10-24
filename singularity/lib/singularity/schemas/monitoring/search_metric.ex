@@ -7,6 +7,30 @@ defmodule Singularity.Search.SearchMetric do
   Stores metrics for each search query performed, including execution time,
   results returned, user satisfaction ratings, and caching information.
 
+  ## AI Navigation Metadata
+
+  ### Module Identity
+  ```json
+  {
+    "module": "Singularity.Search.SearchMetric",
+    "purpose": "Track search query performance and user satisfaction ratings",
+    "role": "schema",
+    "layer": "monitoring",
+    "table": "search_metrics",
+    "features": ["user_satisfaction", "cache_tracking", "performance_monitoring"]
+  }
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use Metrics.Event for search-specific metrics - use this schema
+  - ❌ DO NOT skip elapsed_ms tracking - required for performance analysis
+  - ✅ DO use this for all semantic search performance tracking
+  - ✅ DO record user satisfaction ratings when available
+
+  ### Search Keywords
+  search metrics, search performance, user satisfaction, query tracking,
+  cache hit rate, embedding model, search latency, semantic search monitoring
+
   ## Schema Fields
 
   - `query` - The search query text

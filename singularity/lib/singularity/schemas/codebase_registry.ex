@@ -7,6 +7,56 @@ defmodule Singularity.Schemas.CodebaseRegistry do
   - Description and language/framework info
   - Analysis status and timestamps
   - Flexible metadata storage
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.CodebaseRegistry",
+    "purpose": "Central registry of indexed codebases with analysis status tracking",
+    "role": "schema",
+    "layer": "infrastructure",
+    "table": "codebase_registry",
+    "relationships": {
+      "has_many": "CodeFile - via project_name matching codebase_id",
+      "has_many": "CodeChunk - via codebase_id",
+      "has_many": "AnalysisRun - analysis runs for this codebase"
+    }
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - id: Primary key (binary_id)
+    - codebase_id: Unique codebase identifier
+    - codebase_path: Filesystem path to codebase
+    - codebase_name: Human-readable name
+    - description: Codebase description
+    - language: Primary programming language
+    - framework: Primary framework detected
+    - last_analyzed: Timestamp of last analysis
+    - analysis_status: Status enum (pending, in_progress, completed, failed)
+    - metadata: JSONB for additional codebase metadata
+
+  indexes:
+    - unique: codebase_id
+
+  relationships:
+    belongs_to: []
+    has_many: [CodeFile, CodeChunk, AnalysisRun]
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT create multiple CodebaseRegistry entries for same codebase
+  - ❌ DO NOT bypass analysis_status validation - use enum values only
+  - ✅ DO use CodebaseRegistry as single source of truth for codebase metadata
+  - ✅ DO update analysis_status when running code analysis
+
+  ### Search Keywords
+  codebase registry, indexed codebases, analysis status, codebase metadata,
+  project tracking, codebase identification, language detection
   """
 
   use Ecto.Schema

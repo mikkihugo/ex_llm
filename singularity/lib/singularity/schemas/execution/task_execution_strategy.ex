@@ -44,6 +44,53 @@ defmodule Singularity.Execution.Planning.TaskExecutionStrategy do
   - Output: `{status: "completed"|"needs_rework", confidence: 0.0-1.0, reasoning: "..."}`
   - Purpose: Intelligent task completion validation
 
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.TaskExecutionStrategy",
+    "purpose": "Lua-powered TaskGraph execution strategies with hot-reload capabilities",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "task_graph_execution_strategies",
+    "relationships": {}
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - id: Primary key (binary_id)
+    - name: Unique strategy name
+    - description: Strategy description
+    - task_pattern: Regex pattern to match tasks
+    - decomposition_script: Lua script for task decomposition
+    - agent_spawning_script: Lua script for agent spawning
+    - orchestration_script: Lua script for coordination
+    - completion_script: Lua script for validation
+    - status: Strategy status (active, inactive)
+    - version: Version number for evolution tracking
+    - priority: Higher priority matched first
+    - usage_count: Times strategy was used
+    - success_rate: Success rate (0.0-1.0)
+    - avg_execution_time_ms: Average execution duration
+
+  relationships:
+    belongs_to: []
+    has_many: []
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT hardcode strategy logic in Elixir - use Lua scripts for hot-reload
+  - ❌ DO NOT create strategies without task_pattern - breaks matching
+  - ✅ DO use TaskExecutionStrategy for all TaskGraph execution
+  - ✅ DO version strategies when evolving them
+
+  ### Search Keywords
+  task execution strategy, lua scripts, hot reload, task decomposition,
+  agent spawning, task orchestration, completion validation, strategy matching
+
   ## Usage
 
       # Create new strategy

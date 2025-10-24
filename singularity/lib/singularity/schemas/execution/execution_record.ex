@@ -7,6 +7,55 @@ defmodule Singularity.Runner.ExecutionRecord do
   - Performance analytics
   - Failure analysis
   - Audit trails
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Runner.ExecutionRecord",
+    "purpose": "Records runner execution history with performance tracking and failure analysis",
+    "role": "schema",
+    "layer": "infrastructure",
+    "table": "runner_executions",
+    "relationships": {}
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - id: Primary key (binary_id)
+    - execution_id: Unique execution identifier (string)
+    - task_type: Type of task executed
+    - task_args: JSONB with task arguments
+    - status: Execution status (pending, running, completed, failed)
+    - started_at: Execution start timestamp
+    - completed_at: Execution end timestamp
+    - result: JSONB with execution result
+    - error: Error message if failed
+    - execution_time_ms: Duration in milliseconds
+    - metadata: JSONB for additional metadata
+
+  indexes:
+    - unique: execution_id
+    - btree: started_at for time-based queries
+    - btree: status for filtering
+
+  relationships:
+    belongs_to: []
+    has_many: []
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use ExecutionRecord for agent tasks - use execution/task.ex instead
+  - ❌ DO NOT bypass upsert for duplicate execution_id - it handles updates
+  - ✅ DO use ExecutionRecord for Runner-specific execution tracking
+  - ✅ DO use query helpers (get_history, get_stats, get_recent_by_status)
+
+  ### Search Keywords
+  execution record, runner execution, task tracking, performance analytics,
+  failure analysis, audit trail, execution history, monitoring
   """
 
   use Ecto.Schema

@@ -1,6 +1,57 @@
 defmodule Singularity.Schemas.Core.LLMCall do
   @moduledoc """
   Ecto schema for LLM call history and cost tracking.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.Core.LLMCall",
+    "purpose": "Tracks all LLM API calls with cost, duration, embeddings for analysis",
+    "role": "schema",
+    "layer": "infrastructure",
+    "table": "llm_calls",
+    "relationships": {}
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - id: Primary key (binary_id)
+    - provider: LLM provider (claude, gemini, openai, copilot)
+    - model: Specific model used
+    - prompt: User prompt text
+    - system_prompt: System prompt text
+    - response: LLM response text
+    - tokens_used: Total tokens consumed
+    - cost_usd: Cost in USD
+    - duration_ms: Call duration in milliseconds
+    - correlation_id: For tracking related calls
+    - prompt_embedding: Vector embedding of prompt
+    - response_embedding: Vector embedding of response
+    - called_at: Timestamp of call
+
+  indexes:
+    - btree: called_at for time-based queries
+    - btree: provider, model for cost analysis
+    - ivfflat: prompt_embedding, response_embedding for similarity
+
+  relationships:
+    belongs_to: []
+    has_many: []
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT call LLM APIs directly - use Singularity.LLM.Service via NATS
+  - ❌ DO NOT skip LLMCall tracking - essential for cost optimization
+  - ✅ DO use LLMCall for cost analysis and prompt optimization
+  - ✅ DO query by correlation_id to track multi-step agent workflows
+
+  ### Search Keywords
+  llm call, cost tracking, token usage, prompt history, llm analytics,
+  cost optimization, call duration, provider metrics, embedding search
   """
 
   use Ecto.Schema
