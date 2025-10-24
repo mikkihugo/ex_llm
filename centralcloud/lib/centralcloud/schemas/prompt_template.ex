@@ -1,4 +1,4 @@
-defmodule Centralcloud.Schemas.PromptTemplate do
+defmodule CentralCloud.Schemas.PromptTemplate do
   @moduledoc """
   Prompt template schema for LLM-generated templates.
   """
@@ -10,7 +10,7 @@ defmodule Centralcloud.Schemas.PromptTemplate do
   @foreign_key_type :binary_id
 
   schema "prompt_templates" do
-    belongs_to :package, Centralcloud.Schemas.Package
+    belongs_to :package, CentralCloud.Schemas.Package
 
     field :template_name, :string
     field :template_content, :string

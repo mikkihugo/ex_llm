@@ -25,11 +25,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Complete Documentation
 
+**Current System Status:** See **SYSTEM_STATE_OCTOBER_2025.md** - Comprehensive overview:
+- Current implementation status of all components
+- Recent changes (Instructor integration, 206 job tests)
+- System architecture and feature matrix
+- Deployment readiness checklist
+
 **Agent System:** See **AGENTS.md** - Complete agent documentation:
 - 6 agent types with specialized capabilities
 - Agent lifecycle and supervision
 - Flow tracking and cost optimization
-- 23 comprehensive tests
+- 95K+ lines of code (18 modules)
+
+**Deep Architecture Analysis:** See **AGENT_EXECUTION_ARCHITECTURE.md** (886 lines):
+- Complete agent and execution system breakdown
+- 50+ execution modules across 5 subsystems
+- Integration patterns and examples
+- Test coverage analysis and recommendations
+
+**Testing & Quality:** See **JOB_IMPLEMENTATION_TESTS_SUMMARY.md**:
+- 206 job implementation test cases (2,299 LOC)
+- Complete coverage of all critical background jobs
+- Production-ready error handling patterns
+
+**Instructor Integration:** See **INSTRUCTOR_INTEGRATION_GUIDE.md** and **AGENT_TOOL_VALIDATION_INTEGRATION.md**:
+- Complete structured output validation framework
+- 3-tier validation (parameters → execution → output)
+- Integrated across Elixir, TypeScript, and Rust
+- Zero breaking changes (opt-in per tool)
 
 **CentralCloud (Multi-Instance Learning):** See **CENTRALCLOUD_DETECTION_ROLE.md** and **CENTRALCLOUD_INTEGRATION_GUIDE.md**:
 - Optional service for aggregating learnings across multiple Singularity instances

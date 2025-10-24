@@ -1,4 +1,4 @@
-defmodule Centralcloud.PatternImporter do
+defmodule CentralCloud.PatternImporter do
   @moduledoc """
   Imports architecture pattern definitions from JSON files into database.
 
@@ -7,8 +7,8 @@ defmodule Centralcloud.PatternImporter do
   """
 
   require Logger
-  alias Centralcloud.Repo
-  alias Centralcloud.ArchitecturePattern
+  alias CentralCloud.Repo
+  alias CentralCloud.ArchitecturePattern
 
   @doc """
   Import all pattern definitions from directory.

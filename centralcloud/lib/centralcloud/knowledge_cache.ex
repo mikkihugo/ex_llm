@@ -1,4 +1,4 @@
-defmodule Centralcloud.KnowledgeCache do
+defmodule CentralCloud.KnowledgeCache do
   @moduledoc """
   Knowledge Cache - In-memory caching for templates, patterns, and knowledge assets
 
@@ -22,7 +22,7 @@ defmodule Centralcloud.KnowledgeCache do
   use GenServer
   require Logger
 
-  alias Centralcloud.NatsClient
+  alias CentralCloud.NatsClient
 
   @cache_table :central_knowledge_cache
 

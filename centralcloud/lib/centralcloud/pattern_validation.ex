@@ -1,4 +1,4 @@
-defmodule Centralcloud.PatternValidation do
+defmodule CentralCloud.PatternValidation do
   @moduledoc """
   Schema for pattern validation results from LLM Team.
 
@@ -15,7 +15,7 @@ defmodule Centralcloud.PatternValidation do
   schema "pattern_validations" do
     field :codebase_id, :string
 
-    belongs_to :pattern, Centralcloud.ArchitecturePattern
+    belongs_to :pattern, CentralCloud.ArchitecturePattern
 
     field :analyst_result, :map
     field :validator_result, :map

@@ -1,4 +1,4 @@
-defmodule Centralcloud.ArchitecturePattern do
+defmodule CentralCloud.ArchitecturePattern do
   @moduledoc """
   Schema for architecture pattern definitions.
 

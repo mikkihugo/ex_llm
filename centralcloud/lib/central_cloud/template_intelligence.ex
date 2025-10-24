@@ -59,7 +59,7 @@ defmodule CentralCloud.TemplateIntelligence do
   use GenServer
   require Logger
 
-  alias Centralcloud.Repo
+  alias CentralCloud.Repo
   alias CentralCloud.TemplateGenerationGlobal
 
   @nats_subject "centralcloud.template.generation"
@@ -217,19 +217,19 @@ defmodule CentralCloud.TemplateIntelligence do
       {:ok, %{"action" => "suggest_defaults", "template_id" => template_id}} ->
         {:ok, defaults} = calculate_smart_defaults(template_id)
         response = Jason.encode!(defaults)
-        Centralcloud.NatsClient.publish(reply_to, response)
+        CentralCloud.NatsClient.publish(reply_to, response)
         {:noreply, state}
 
       {:ok, %{"action" => "get_failure_patterns", "template_id" => template_id}} ->
         {:ok, patterns} = query_failure_patterns(template_id)
         response = Jason.encode!(patterns)
-        Centralcloud.NatsClient.publish(reply_to, response)
+        CentralCloud.NatsClient.publish(reply_to, response)
         {:noreply, state}
 
       {:ok, request} ->
         Logger.warning("Unknown NATS request action", action: Map.get(request, "action"))
         error_response = Jason.encode!(%{error: "Unknown action"})
-        Centralcloud.NatsClient.publish(reply_to, error_response)
+        CentralCloud.NatsClient.publish(reply_to, error_response)
         {:noreply, state}
 
       {:error, reason} ->
@@ -242,7 +242,7 @@ defmodule CentralCloud.TemplateIntelligence do
 
   defp subscribe_to_nats do
     # Subscribe to template generation events
-    case Centralcloud.NatsClient.subscribe(@nats_subject, self()) do
+    case CentralCloud.NatsClient.subscribe(@nats_subject, self()) do
       {:ok, subscription} ->
         Logger.info("Subscribed to #{@nats_subject}")
         {:ok, subscription}
@@ -259,7 +259,7 @@ defmodule CentralCloud.TemplateIntelligence do
 
   defp subscribe_to_requests do
     # Subscribe to request/response subject for queries
-    case Centralcloud.NatsClient.subscribe(@request_subject, self()) do
+    case CentralCloud.NatsClient.subscribe(@request_subject, self()) do
       {:ok, subscription} ->
         Logger.info("Subscribed to request subject #{@request_subject}")
         {:ok, subscription}

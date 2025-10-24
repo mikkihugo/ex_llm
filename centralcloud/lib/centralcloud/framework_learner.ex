@@ -1,4 +1,4 @@
-defmodule Centralcloud.FrameworkLearner do
+defmodule CentralCloud.FrameworkLearner do
   @moduledoc """
   Framework Learner Behavior - Contract for all framework learning strategies.
 
@@ -12,7 +12,7 @@ defmodule Centralcloud.FrameworkLearner do
 
   ```json
   {
-    "module": "Centralcloud.FrameworkLearner",
+    "module": "CentralCloud.FrameworkLearner",
     "purpose": "Behavior contract for config-driven framework learning orchestration",
     "type": "behavior/protocol",
     "layer": "framework_learning",
@@ -48,19 +48,19 @@ defmodule Centralcloud.FrameworkLearner do
   # centralcloud/config/config.exs
   config :centralcloud, :framework_learners,
     template_matcher: %{
-      module: Centralcloud.FrameworkLearners.TemplateMatcher,
+      module: CentralCloud.FrameworkLearners.TemplateMatcher,
       enabled: true,
       priority: 10,
       description: "Fast template-based framework matching"
     },
     llm_discovery: %{
-      module: Centralcloud.FrameworkLearners.LLMDiscovery,
+      module: CentralCloud.FrameworkLearners.LLMDiscovery,
       enabled: true,
       priority: 20,
       description: "LLM-based framework discovery for unknown frameworks"
     },
     signature_analyzer: %{
-      module: Centralcloud.FrameworkLearners.SignatureAnalyzer,
+      module: CentralCloud.FrameworkLearners.SignatureAnalyzer,
       enabled: false,
       priority: 5,
       description: "Analyze project signatures (package.json, Cargo.toml, etc.)"

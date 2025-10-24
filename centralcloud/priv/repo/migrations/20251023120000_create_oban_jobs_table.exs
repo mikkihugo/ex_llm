@@ -1,4 +1,4 @@
-defmodule Centralcloud.Repo.Migrations.CreateObanJobsTable do
+defmodule CentralCloud.Repo.Migrations.CreateObanJobsTable do
   use Ecto.Migration
 
   def up do

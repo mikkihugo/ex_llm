@@ -1,4 +1,4 @@
-defmodule Centralcloud.Jobs.PatternAggregationJob do
+defmodule CentralCloud.Jobs.PatternAggregationJob do
   @moduledoc """
   Oban job for global pattern aggregation.
 
@@ -29,8 +29,8 @@ defmodule Centralcloud.Jobs.PatternAggregationJob do
 
   require Logger
   import Ecto.Query
-  alias Centralcloud.{Repo, NatsClient}
-  alias Centralcloud.Schemas.Package
+  alias CentralCloud.{Repo, NatsClient}
+  alias CentralCloud.Schemas.Package
 
   @impl Oban.Worker
   def perform(%Oban.Job{}) do

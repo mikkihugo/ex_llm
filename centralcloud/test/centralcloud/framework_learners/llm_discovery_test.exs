@@ -1,4 +1,4 @@
-defmodule Centralcloud.FrameworkLearners.LLMDiscoveryTest do
+defmodule CentralCloud.FrameworkLearners.LLMDiscoveryTest do
   @moduledoc """
   Tests for LLMDiscovery - Intelligent LLM-based framework detection.
 
@@ -15,8 +15,8 @@ defmodule Centralcloud.FrameworkLearners.LLMDiscoveryTest do
 
   import Mox
 
-  alias Centralcloud.FrameworkLearners.LLMDiscovery
-  alias Centralcloud.NatsClient
+  alias CentralCloud.FrameworkLearners.LLMDiscovery
+  alias CentralCloud.NatsClient
 
   setup :verify_on_exit!
 

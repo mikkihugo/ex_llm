@@ -1,4 +1,4 @@
-defmodule Centralcloud.FrameworkLearningOrchestratorTest do
+defmodule CentralCloud.FrameworkLearningOrchestratorTest do
   @moduledoc """
   Tests for FrameworkLearningOrchestrator - config-driven framework learning.
 
@@ -14,8 +14,8 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
 
   import Mox
 
-  alias Centralcloud.FrameworkLearningOrchestrator
-  alias Centralcloud.FrameworkLearners.{TemplateMatcher, LLMDiscovery}
+  alias CentralCloud.FrameworkLearningOrchestrator
+  alias CentralCloud.FrameworkLearners.{TemplateMatcher, LLMDiscovery}
 
   # Setup mocks for learner modules
   setup :verify_on_exit!
@@ -34,9 +34,9 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
       }
 
       # Create a mock Package struct
-      with_mock Centralcloud.Repo, [:passthrough],
-        get: fn Centralcloud.Schemas.Package, ^package_id ->
-          %Centralcloud.Schemas.Package{
+      with_mock CentralCloud.Repo, [:passthrough],
+        get: fn CentralCloud.Schemas.Package, ^package_id ->
+          %CentralCloud.Schemas.Package{
             id: package_id,
             name: "react",
             ecosystem: "npm",
@@ -46,7 +46,7 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
           }
         end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn _subject, _payload, _opts ->
             {:ok, %{"templates" => []}}
           end do
@@ -65,10 +65,10 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
       code_samples = ["const app = createApp()"]
 
       # Mock TemplateMatcher to return :no_match
-      with_mock Centralcloud.Repo, [:passthrough],
-        get: fn Centralcloud.Schemas.Package, ^package_id -> nil end do
+      with_mock CentralCloud.Repo, [:passthrough],
+        get: fn CentralCloud.Schemas.Package, ^package_id -> nil end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn
             "central.template.search", _payload, _opts ->
               {:ok, %{"templates" => []}}
@@ -96,10 +96,10 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
       code_samples = ["console.log('test')"]
 
       # Mock both learners to return :no_match
-      with_mock Centralcloud.Repo, [:passthrough],
-        get: fn Centralcloud.Schemas.Package, ^package_id -> nil end do
+      with_mock CentralCloud.Repo, [:passthrough],
+        get: fn CentralCloud.Schemas.Package, ^package_id -> nil end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn
             "central.template.search", _payload, _opts ->
               {:ok, %{"templates" => []}}
@@ -119,10 +119,10 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
       code_samples = ["code"]
 
       # Mock TemplateMatcher to return error
-      with_mock Centralcloud.Repo, [:passthrough],
-        get: fn Centralcloud.Schemas.Package, ^package_id -> nil end do
+      with_mock CentralCloud.Repo, [:passthrough],
+        get: fn CentralCloud.Schemas.Package, ^package_id -> nil end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "central.template.search", _payload, _opts ->
             {:error, :database_error}
           end do
@@ -145,10 +145,10 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
       call_order = Agent.start_link(fn -> [] end)
       {:ok, pid} = call_order
 
-      with_mock Centralcloud.Repo, [:passthrough],
-        get: fn Centralcloud.Schemas.Package, ^package_id -> nil end do
+      with_mock CentralCloud.Repo, [:passthrough],
+        get: fn CentralCloud.Schemas.Package, ^package_id -> nil end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn subject, _payload, _opts ->
             case subject do
               "central.template.search" ->
@@ -176,10 +176,10 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
       code_samples = ["test"]
 
       # Only try LLM, skip template matcher
-      with_mock Centralcloud.Repo, [:passthrough],
-        get: fn Centralcloud.Schemas.Package, ^package_id -> nil end do
+      with_mock CentralCloud.Repo, [:passthrough],
+        get: fn CentralCloud.Schemas.Package, ^package_id -> nil end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "llm.request", _payload, _opts ->
             {:ok, %{
               "response" => Jason.encode!(%{
@@ -204,10 +204,10 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
       package_id = "npm:test"
       code_samples = ["test"]
 
-      with_mock Centralcloud.Repo, [:passthrough],
-        get: fn Centralcloud.Schemas.Package, ^package_id -> nil end do
+      with_mock CentralCloud.Repo, [:passthrough],
+        get: fn CentralCloud.Schemas.Package, ^package_id -> nil end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn _subject, _payload, _opts ->
             {:ok, %{"templates" => []}}
           end do
@@ -238,7 +238,7 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
       assert template_info.enabled == true
       assert template_info.priority == 10
       assert is_binary(template_info.description)
-      assert template_info.module == Centralcloud.FrameworkLearners.TemplateMatcher
+      assert template_info.module == CentralCloud.FrameworkLearners.TemplateMatcher
       assert is_list(template_info.capabilities)
 
       # Check llm_discovery info
@@ -247,7 +247,7 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
       assert llm_info.enabled == true
       assert llm_info.priority == 20
       assert is_binary(llm_info.description)
-      assert llm_info.module == Centralcloud.FrameworkLearners.LLMDiscovery
+      assert llm_info.module == CentralCloud.FrameworkLearners.LLMDiscovery
       assert is_list(llm_info.capabilities)
     end
 
@@ -297,12 +297,12 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
       code_samples = ["test"]
 
       # Mock to raise exception
-      with_mock Centralcloud.Repo, [:passthrough],
-        get: fn Centralcloud.Schemas.Package, ^package_id ->
+      with_mock CentralCloud.Repo, [:passthrough],
+        get: fn CentralCloud.Schemas.Package, ^package_id ->
           raise "Simulated error"
         end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "llm.request", _payload, _opts ->
             {:ok, %{"response" => "{}"}}
           end do
@@ -321,7 +321,7 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
       code_samples = ["test"]
 
       # Make load_learners_for_attempt crash
-      with_mock Centralcloud.FrameworkLearner, [:passthrough],
+      with_mock CentralCloud.FrameworkLearner, [:passthrough],
         load_enabled_learners: fn -> raise "Config error" end do
 
         result = FrameworkLearningOrchestrator.learn(package_id, code_samples)
@@ -342,7 +342,7 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
         "confidence" => 0.95
       }
 
-      mock_package = %Centralcloud.Schemas.Package{
+      mock_package = %CentralCloud.Schemas.Package{
         id: package_id,
         name: "react",
         ecosystem: "npm",
@@ -351,15 +351,15 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
         detected_framework: framework_result
       }
 
-      with_mock Centralcloud.Repo, [:passthrough],
+      with_mock CentralCloud.Repo, [:passthrough],
         get: fn
-          Centralcloud.Schemas.Package, ^package_id -> mock_package
+          CentralCloud.Schemas.Package, ^package_id -> mock_package
         end,
         update: fn _changeset ->
           {:ok, mock_package}
         end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn _subject, _payload, _opts ->
             {:ok, %{"templates" => []}}
           end do
@@ -369,7 +369,7 @@ defmodule Centralcloud.FrameworkLearningOrchestratorTest do
           assert {:ok, _framework, :template_matcher} = result
 
           # Verify Repo.update was called (record_success updates the package)
-          assert called(Centralcloud.Repo.update(:_))
+          assert called(CentralCloud.Repo.update(:_))
         end
       end
     end

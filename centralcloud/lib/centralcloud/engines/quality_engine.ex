@@ -1,4 +1,4 @@
-defmodule Centralcloud.Engines.QualityEngine do
+defmodule CentralCloud.Engines.QualityEngine do
   @moduledoc """
   Quality Engine - Delegates to Singularity via NATS.
 

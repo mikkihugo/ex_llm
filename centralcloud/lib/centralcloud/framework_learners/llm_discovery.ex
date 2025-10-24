@@ -1,4 +1,4 @@
-defmodule Centralcloud.FrameworkLearners.LLMDiscovery do
+defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
   @moduledoc """
   LLM Discovery - Framework detection using AI analysis.
 
@@ -34,29 +34,29 @@ defmodule Centralcloud.FrameworkLearners.LLMDiscovery do
   ❌ In offline environments
   """
 
-  @behaviour Centralcloud.FrameworkLearner
+  @behaviour CentralCloud.FrameworkLearner
 
   require Logger
-  alias Centralcloud.NatsClient
+  alias CentralCloud.NatsClient
 
   # ===========================
   # FrameworkLearner Behavior Callbacks
   # ===========================
 
-  @impl Centralcloud.FrameworkLearner
+  @impl CentralCloud.FrameworkLearner
   def learner_type, do: :llm_discovery
 
-  @impl Centralcloud.FrameworkLearner
+  @impl CentralCloud.FrameworkLearner
   def description do
     "Intelligent framework detection using LLM analysis of code"
   end
 
-  @impl Centralcloud.FrameworkLearner
+  @impl CentralCloud.FrameworkLearner
   def capabilities do
     ["llm_based", "thorough", "custom_frameworks", "reasoning", "code_analysis"]
   end
 
-  @impl Centralcloud.FrameworkLearner
+  @impl CentralCloud.FrameworkLearner
   def learn(package_id, code_samples) when is_list(code_samples) do
     Logger.info("LLM discovery: Starting framework discovery for #{package_id}")
 
@@ -82,7 +82,7 @@ defmodule Centralcloud.FrameworkLearners.LLMDiscovery do
     end
   end
 
-  @impl Centralcloud.FrameworkLearner
+  @impl CentralCloud.FrameworkLearner
   def record_success(_package_id, _framework) do
     # LLM discovery doesn't need additional recording beyond storage in orchestrator
     :ok

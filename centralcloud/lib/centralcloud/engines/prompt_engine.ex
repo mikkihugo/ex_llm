@@ -1,4 +1,4 @@
-defmodule Centralcloud.Engines.PromptEngine do
+defmodule CentralCloud.Engines.PromptEngine do
   @moduledoc """
   Prompt Engine - NATS Delegation to Singularity.
 
@@ -27,7 +27,7 @@ defmodule Centralcloud.Engines.PromptEngine do
   """
 
   require Logger
-  alias Centralcloud.NatsClient
+  alias CentralCloud.NatsClient
 
   @doc """
   Generate AI prompts using Singularity's Prompt Engine via NATS.

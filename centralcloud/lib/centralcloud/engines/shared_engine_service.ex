@@ -1,15 +1,15 @@
-defmodule Centralcloud.Engines.SharedEngineService do
+defmodule CentralCloud.Engines.SharedEngineService do
   @moduledoc """
-  Shared Engine Service - Unified engine access for Centralcloud, Singularity, and Genesis
+  Shared Engine Service - Unified engine access for CentralCloud, Singularity, and Genesis
   
   This service provides a unified interface to all Rust engines via NATS, allowing
-  any system (Centralcloud, Singularity, Genesis) to use the same engines without
+  any system (CentralCloud, Singularity, Genesis) to use the same engines without
   duplication or NIF dependencies.
   
   ## Architecture
   
   ```
-  Centralcloud/Genesis/Singularity
+  CentralCloud/Genesis/Singularity
            ↓ NATS
     Shared Engine Service
            ↓
@@ -36,7 +36,7 @@ defmodule Centralcloud.Engines.SharedEngineService do
   """
 
   require Logger
-  alias Centralcloud.NatsClient
+  alias CentralCloud.NatsClient
 
   @doc """
   Call the Architecture Engine via NATS.

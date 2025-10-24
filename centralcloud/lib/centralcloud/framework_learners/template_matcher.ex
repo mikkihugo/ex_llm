@@ -1,4 +1,4 @@
-defmodule Centralcloud.FrameworkLearners.TemplateMatcher do
+defmodule CentralCloud.FrameworkLearners.TemplateMatcher do
   @moduledoc """
   Template Matcher - Fast framework detection using predefined templates.
 
@@ -30,31 +30,31 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcher do
   ❌ When templates aren't available (needs LLM fallback)
   """
 
-  @behaviour Centralcloud.FrameworkLearner
+  @behaviour CentralCloud.FrameworkLearner
 
   require Logger
-  alias Centralcloud.Repo
-  alias Centralcloud.Schemas.Package
-  alias Centralcloud.NatsClient
+  alias CentralCloud.Repo
+  alias CentralCloud.Schemas.Package
+  alias CentralCloud.NatsClient
 
   # ===========================
   # FrameworkLearner Behavior Callbacks
   # ===========================
 
-  @impl Centralcloud.FrameworkLearner
+  @impl CentralCloud.FrameworkLearner
   def learner_type, do: :template_matcher
 
-  @impl Centralcloud.FrameworkLearner
+  @impl CentralCloud.FrameworkLearner
   def description do
     "Fast template-based framework matching using dependency signatures"
   end
 
-  @impl Centralcloud.FrameworkLearner
+  @impl CentralCloud.FrameworkLearner
   def capabilities do
     ["fast", "offline", "dependency_based", "high_confidence"]
   end
 
-  @impl Centralcloud.FrameworkLearner
+  @impl CentralCloud.FrameworkLearner
   def learn(package_id, _code_samples) do
     package = Repo.get(Package, package_id)
 
@@ -73,7 +73,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcher do
     end
   end
 
-  @impl Centralcloud.FrameworkLearner
+  @impl CentralCloud.FrameworkLearner
   def record_success(package_id, framework) do
     package = Repo.get(Package, package_id)
 

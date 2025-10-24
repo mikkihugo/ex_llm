@@ -1,4 +1,4 @@
-defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
+defmodule CentralCloud.FrameworkLearners.TemplateMatcherTest do
   @moduledoc """
   Tests for TemplateMatcher - Fast template-based framework detection.
 
@@ -13,11 +13,11 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
   use ExUnit.Case, async: false
 
   import Mox
-  import Centralcloud.TestHelper
+  import CentralCloud.TestHelper
 
-  alias Centralcloud.FrameworkLearners.TemplateMatcher
-  alias Centralcloud.Schemas.Package
-  alias Centralcloud.Repo
+  alias CentralCloud.FrameworkLearners.TemplateMatcher
+  alias CentralCloud.Schemas.Package
+  alias CentralCloud.Repo
 
   setup :verify_on_exit!
 
@@ -60,7 +60,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       package_id = "npm:nonexistent-package"
       code_samples = []
 
-      with_mock Centralcloud.Repo, [:passthrough],
+      with_mock CentralCloud.Repo, [:passthrough],
         get: fn Package, ^package_id -> nil end do
 
         result = TemplateMatcher.learn(package_id, code_samples)
@@ -123,7 +123,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       with_mock Repo, [:passthrough],
         get: fn Package, ^package_id -> mock_package end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "central.template.search", _payload, _opts ->
             {:ok, %{"templates" => framework_templates}}
           end do
@@ -170,7 +170,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       with_mock Repo, [:passthrough],
         get: fn Package, ^package_id -> mock_package end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "central.template.search", _payload, _opts ->
             {:ok, %{"templates" => framework_templates}}
           end do
@@ -196,7 +196,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       with_mock Repo, [:passthrough],
         get: fn Package, ^package_id -> mock_package end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "central.template.search", _payload, _opts ->
             {:error, :nats_timeout}
           end do
@@ -222,7 +222,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       with_mock Repo, [:passthrough],
         get: fn Package, ^package_id -> mock_package end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "central.template.search", _payload, _opts ->
             {:ok, %{"templates" => []}}
           end do
@@ -260,7 +260,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       with_mock Repo, [:passthrough],
         get: fn Package, ^package_id -> mock_package end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "central.template.search", _payload, _opts ->
             {:ok, %{"templates" => framework_templates}}
           end do
@@ -372,7 +372,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       with_mock Repo, [:passthrough],
         get: fn Package, ^package_id -> mock_package end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "central.template.search", _payload, _opts ->
             {:ok, %{"templates" => framework_templates}}
           end do
@@ -421,7 +421,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       with_mock Repo, [:passthrough],
         get: fn Package, ^package_id -> mock_package end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "central.template.search", _payload, _opts ->
             {:ok, %{"templates" => framework_templates}}
           end do
@@ -457,7 +457,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       with_mock Repo, [:passthrough],
         get: fn Package, ^package_id -> mock_package end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "central.template.search", _payload, _opts ->
             {:ok, %{"templates" => framework_templates}}
           end do
@@ -493,7 +493,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       with_mock Repo, [:passthrough],
         get: fn Package, ^package_id -> mock_package end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "central.template.search", _payload, _opts ->
             {:ok, %{"templates" => framework_templates}}
           end do
@@ -525,7 +525,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       with_mock Repo, [:passthrough],
         get: fn Package, ^package_id -> mock_package end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn "central.template.search", _payload, _opts ->
             Agent.update(pid, &(&1 + 1))
             {:ok, %{"templates" => []}}
@@ -556,7 +556,7 @@ defmodule Centralcloud.FrameworkLearners.TemplateMatcherTest do
       with_mock Repo, [:passthrough],
         get: fn Package, ^package_id -> mock_package end do
 
-        with_mock Centralcloud.NatsClient, [:passthrough],
+        with_mock CentralCloud.NatsClient, [:passthrough],
           request: fn subject, payload, opts ->
             # Verify request parameters
             assert subject == "central.template.search"

@@ -1,4 +1,4 @@
-defmodule Centralcloud.Jobs.StatisticsJob do
+defmodule CentralCloud.Jobs.StatisticsJob do
   @moduledoc """
   Oban job for global statistics generation.
 
@@ -28,8 +28,8 @@ defmodule Centralcloud.Jobs.StatisticsJob do
 
   require Logger
   import Ecto.Query
-  alias Centralcloud.{Repo, NatsClient}
-  alias Centralcloud.Schemas.Package
+  alias CentralCloud.{Repo, NatsClient}
+  alias CentralCloud.Schemas.Package
 
   @impl Oban.Worker
   def perform(%Oban.Job{}) do

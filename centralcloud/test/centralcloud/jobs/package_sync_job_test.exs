@@ -1,9 +1,9 @@
-defmodule Centralcloud.Jobs.PackageSyncJobTest do
+defmodule CentralCloud.Jobs.PackageSyncJobTest do
   use ExUnit.Case, async: true
-  import Centralcloud.TestHelper
+  import CentralCloud.TestHelper
 
-  alias Centralcloud.Jobs.PackageSyncJob
-  alias Centralcloud.Schemas.Package
+  alias CentralCloud.Jobs.PackageSyncJob
+  alias CentralCloud.Schemas.Package
 
   setup do
     setup_test_db()
@@ -64,12 +64,12 @@ defmodule Centralcloud.Jobs.PackageSyncJobTest do
         assert result > 0
 
         # Verify packages exist in database
-        react_package = Centralcloud.Repo.get_by(Package, name: "react", ecosystem: "npm")
+        react_package = CentralCloud.Repo.get_by(Package, name: "react", ecosystem: "npm")
         assert react_package != nil
         assert react_package.version == "18.2.0"
         assert react_package.description =~ "React is a JavaScript library"
 
-        tokio_package = Centralcloud.Repo.get_by(Package, name: "tokio", ecosystem: "cargo")
+        tokio_package = CentralCloud.Repo.get_by(Package, name: "tokio", ecosystem: "cargo")
         assert tokio_package != nil
         assert tokio_package.version == "1.0.0"
         assert tokio_package.description =~ "A runtime for writing reliable"
@@ -120,7 +120,7 @@ defmodule Centralcloud.Jobs.PackageSyncJobTest do
         PackageSyncJob.handle_dependency_report("test-instance", dependencies)
 
         # Verify dependencies were stored
-        result = Centralcloud.Repo.query!("""
+        result = CentralCloud.Repo.query!("""
         SELECT package_name, ecosystem FROM instance_dependencies 
         WHERE instance_id = 'test-instance'
         """)
@@ -162,10 +162,10 @@ defmodule Centralcloud.Jobs.PackageSyncJobTest do
       PackageSyncJob.cleanup_old_packages()
 
       # Verify old unused package was deleted
-      assert Centralcloud.Repo.get_by(Package, name: "old-unused") == nil
+      assert CentralCloud.Repo.get_by(Package, name: "old-unused") == nil
 
       # Verify recent dependency package was kept
-      assert Centralcloud.Repo.get_by(Package, name: "recent-dep") != nil
+      assert CentralCloud.Repo.get_by(Package, name: "recent-dep") != nil
     end
   end
 
@@ -182,7 +182,7 @@ defmodule Centralcloud.Jobs.PackageSyncJobTest do
 
       # The quality score calculation is private, but we can test it indirectly
       # by checking that packages get quality scores assigned
-      updated_package = Centralcloud.Repo.get!(Package, package.id)
+      updated_package = CentralCloud.Repo.get!(Package, package.id)
       assert updated_package.security_score != nil
       assert updated_package.security_score > 0
     end

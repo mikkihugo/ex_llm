@@ -1,4 +1,4 @@
-defmodule Centralcloud.Schemas.AnalysisResult do
+defmodule CentralCloud.Schemas.AnalysisResult do
   @moduledoc """
   Analysis result schema (timeseries) for package quality metrics.
   """
@@ -10,7 +10,7 @@ defmodule Centralcloud.Schemas.AnalysisResult do
   @foreign_key_type :binary_id
 
   schema "analysis_results" do
-    belongs_to :package, Centralcloud.Schemas.Package
+    belongs_to :package, CentralCloud.Schemas.Package
 
     field :analysis_type, :string
     field :score, :float

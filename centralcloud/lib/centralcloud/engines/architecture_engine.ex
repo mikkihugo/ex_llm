@@ -1,4 +1,4 @@
-defmodule Centralcloud.Engines.ArchitectureEngine do
+defmodule CentralCloud.Engines.ArchitectureEngine do
   @moduledoc """
   Architecture Engine - Delegates to Singularity via NATS.
 

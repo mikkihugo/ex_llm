@@ -1,4 +1,4 @@
-defmodule Centralcloud.TemplateLoader do
+defmodule CentralCloud.TemplateLoader do
   @moduledoc """
   Loads and renders Lua prompt templates from templates_data/.
 

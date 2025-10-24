@@ -1,4 +1,4 @@
-defmodule Centralcloud.MixProject do
+defmodule CentralCloud.MixProject do
   use Mix.Project
 
   def project do
@@ -14,7 +14,7 @@ defmodule Centralcloud.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Centralcloud.Application, []}
+      mod: {CentralCloud.Application, []}
     ]
   end
 

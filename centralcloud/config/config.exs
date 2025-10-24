@@ -1,7 +1,7 @@
 import Config
 
 # Configure the database
-config :centralcloud, Centralcloud.Repo,
+config :centralcloud, CentralCloud.Repo,
   database: "centralcloud",
   hostname: System.get_env("CENTRALCLOUD_DB_HOST", "localhost"),
   port: String.to_integer(System.get_env("CENTRALCLOUD_DB_PORT", "5432")),
@@ -10,18 +10,18 @@ config :centralcloud, Centralcloud.Repo,
   pool_size: 10
 
 # Configure NATS
-config :centralcloud, Centralcloud.NatsClient,
+config :centralcloud, CentralCloud.NatsClient,
   host: System.get_env("NATS_HOST", "localhost"),
   port: String.to_integer(System.get_env("NATS_PORT", "4222"))
 
 # Configure the application
 config :centralcloud,
-  ecto_repos: [Centralcloud.Repo]
+  ecto_repos: [CentralCloud.Repo]
 
 # Oban Background Job Queue Configuration
 # Pattern aggregation, package sync, statistics generation
 config :centralcloud, Oban,
-  repo: Centralcloud.Repo,
+  repo: CentralCloud.Repo,
   queues: [
     # Aggregation jobs (up to 2 concurrent)
     aggregation: [concurrency: 2],
@@ -39,11 +39,11 @@ config :centralcloud, Oban,
     {Oban.Plugins.Cron,
      crontab: [
        # Pattern aggregation: every 1 hour
-       {"0 * * * *", Centralcloud.Jobs.PatternAggregationJob},
+       {"0 * * * *", CentralCloud.Jobs.PatternAggregationJob},
        # Global statistics: every 1 hour
-       {"0 * * * *", Centralcloud.Jobs.StatisticsJob},
+       {"0 * * * *", CentralCloud.Jobs.StatisticsJob},
        # Package sync: daily at 2 AM
-       {"0 2 * * *", Centralcloud.Jobs.PackageSyncJob}
+       {"0 2 * * *", CentralCloud.Jobs.PackageSyncJob}
      ]}
   ]
 
@@ -51,13 +51,13 @@ config :centralcloud, Oban,
 # Defines which framework learning strategies are enabled and their execution priority
 config :centralcloud, :framework_learners,
   template_matcher: %{
-    module: Centralcloud.FrameworkLearners.TemplateMatcher,
+    module: CentralCloud.FrameworkLearners.TemplateMatcher,
     enabled: true,
     priority: 10,
     description: "Fast template-based framework matching using dependency signatures"
   },
   llm_discovery: %{
-    module: Centralcloud.FrameworkLearners.LLMDiscovery,
+    module: CentralCloud.FrameworkLearners.LLMDiscovery,
     enabled: true,
     priority: 20,
     description: "Intelligent framework detection using LLM analysis of code"

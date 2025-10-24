@@ -1,4 +1,4 @@
-defmodule Centralcloud.LLMTeamOrchestrator do
+defmodule CentralCloud.LLMTeamOrchestrator do
   @moduledoc """
   Orchestrates multi-agent LLM team for pattern validation.
 
@@ -14,9 +14,9 @@ defmodule Centralcloud.LLMTeamOrchestrator do
   """
 
   require Logger
-  alias Centralcloud.TemplateLoader
-  alias Centralcloud.Repo
-  alias Centralcloud.PatternValidation
+  alias CentralCloud.TemplateLoader
+  alias CentralCloud.Repo
+  alias CentralCloud.PatternValidation
 
   @doc """
   Run full LLM team validation on codebase.

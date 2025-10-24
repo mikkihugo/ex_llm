@@ -1,4 +1,4 @@
-defmodule Centralcloud.FrameworkLearningOrchestrator do
+defmodule CentralCloud.FrameworkLearningOrchestrator do
   @moduledoc """
   Framework Learning Orchestrator - Config-driven orchestration of framework learning strategies.
 
@@ -10,7 +10,7 @@ defmodule Centralcloud.FrameworkLearningOrchestrator do
 
   ```json
   {
-    "module": "Centralcloud.FrameworkLearningOrchestrator",
+    "module": "CentralCloud.FrameworkLearningOrchestrator",
     "purpose": "Config-driven orchestration of framework learning strategies",
     "layer": "framework_learning",
     "status": "production"
@@ -117,7 +117,7 @@ defmodule Centralcloud.FrameworkLearningOrchestrator do
   """
 
   require Logger
-  alias Centralcloud.FrameworkLearner
+  alias CentralCloud.FrameworkLearner
 
   @doc """
   Learn framework from package and code samples using enabled learners.

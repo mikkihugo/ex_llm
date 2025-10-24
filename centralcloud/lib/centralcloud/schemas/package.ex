@@ -1,4 +1,4 @@
-defmodule Centralcloud.Schemas.Package do
+defmodule CentralCloud.Schemas.Package do
   @moduledoc """
   Central package schema for package metadata from registries.
   Managed by centralcloud service.
@@ -40,11 +40,11 @@ defmodule Centralcloud.Schemas.Package do
     field :license_info, :map, default: %{}
     
     # Relationships (commented out until schemas are created)
-    # has_many :code_snippets, Centralcloud.Schemas.CodeSnippet
-    # has_many :security_advisories, Centralcloud.Schemas.SecurityAdvisory
-    # has_many :analysis_results, Centralcloud.Schemas.AnalysisResult
-    # has_many :package_examples, Centralcloud.Schemas.PackageExample
-    # has_many :prompt_templates, Centralcloud.Schemas.PromptTemplate
+    # has_many :code_snippets, CentralCloud.Schemas.CodeSnippet
+    # has_many :security_advisories, CentralCloud.Schemas.SecurityAdvisory
+    # has_many :analysis_results, CentralCloud.Schemas.AnalysisResult
+    # has_many :package_examples, CentralCloud.Schemas.PackageExample
+    # has_many :prompt_templates, CentralCloud.Schemas.PromptTemplate
     
     timestamps()
   end

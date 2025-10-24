@@ -1,7 +1,7 @@
-defmodule Centralcloud.FrameworkLearnerTest do
+defmodule CentralCloud.FrameworkLearnerTest do
   use ExUnit.Case
 
-  alias Centralcloud.FrameworkLearner
+  alias CentralCloud.FrameworkLearner
 
   describe "load_enabled_learners/0" do
     test "returns enabled learners sorted by priority ascending" do
@@ -68,12 +68,12 @@ defmodule Centralcloud.FrameworkLearnerTest do
   describe "get_learner_module/1" do
     test "returns module for template_matcher" do
       {:ok, module} = FrameworkLearner.get_learner_module(:template_matcher)
-      assert module == Centralcloud.FrameworkLearners.TemplateMatcher
+      assert module == CentralCloud.FrameworkLearners.TemplateMatcher
     end
 
     test "returns module for llm_discovery" do
       {:ok, module} = FrameworkLearner.get_learner_module(:llm_discovery)
-      assert module == Centralcloud.FrameworkLearners.LLMDiscovery
+      assert module == CentralCloud.FrameworkLearners.LLMDiscovery
     end
 
     test "returns error for nonexistent learner" do

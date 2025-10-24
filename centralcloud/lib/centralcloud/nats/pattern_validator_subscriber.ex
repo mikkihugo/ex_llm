@@ -1,4 +1,4 @@
-defmodule Centralcloud.NATS.PatternValidatorSubscriber do
+defmodule CentralCloud.NATS.PatternValidatorSubscriber do
   @moduledoc """
   NATS subscriber for pattern validation requests from Singularity instances.
 
@@ -32,7 +32,7 @@ defmodule Centralcloud.NATS.PatternValidatorSubscriber do
 
   use GenServer
   require Logger
-  alias Centralcloud.LLMTeamOrchestrator
+  alias CentralCloud.LLMTeamOrchestrator
 
   @subject "patterns.validate.request"
 

@@ -9,7 +9,7 @@ config :centralcloud, Oban, testing: :inline
 
 # Test NATS Configuration
 # Disable NATS subscribers in test mode to avoid connection errors
-config :centralcloud, Centralcloud.NatsClient,
+config :centralcloud, CentralCloud.NatsClient,
   host: "localhost",
   port: 4222,
   enable_subscribers: false

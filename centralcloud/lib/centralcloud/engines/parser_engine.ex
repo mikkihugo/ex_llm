@@ -1,4 +1,4 @@
-defmodule Centralcloud.Engines.ParserEngine do
+defmodule CentralCloud.Engines.ParserEngine do
   @moduledoc """
   Parser Engine - Delegates to Singularity via NATS.
 

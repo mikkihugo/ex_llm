@@ -1,4 +1,4 @@
-defmodule Centralcloud.Engines.EmbeddingEngine do
+defmodule CentralCloud.Engines.EmbeddingEngine do
   @moduledoc """
   Embedding Engine - Delegates to Singularity via NATS.
 
@@ -9,7 +9,7 @@ defmodule Centralcloud.Engines.EmbeddingEngine do
   """
 
   require Logger
-  alias Centralcloud.NATS.NatsClient
+  alias CentralCloud.NATS.NatsClient
 
   @doc """
   Request embedding from Singularity for a text query.

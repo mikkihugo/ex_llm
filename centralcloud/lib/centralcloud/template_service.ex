@@ -1,4 +1,4 @@
-defmodule Centralcloud.TemplateService do
+defmodule CentralCloud.TemplateService do
   @moduledoc """
   Global Template Service for Central Cloud
   
@@ -24,8 +24,8 @@ defmodule Centralcloud.TemplateService do
   require Logger
   import Ecto.Query
 
-  alias Centralcloud.{Repo, NatsClient}
-  alias Centralcloud.Schemas.PromptTemplate
+  alias CentralCloud.{Repo, NatsClient}
+  alias CentralCloud.Schemas.PromptTemplate
 
   # ===========================
   # Public API

@@ -1,4 +1,4 @@
-defmodule Centralcloud.IntelligenceHub do
+defmodule CentralCloud.IntelligenceHub do
   @moduledoc """
   Intelligence Hub - Aggregates intelligence from all Singularity instances
 
@@ -22,7 +22,7 @@ defmodule Centralcloud.IntelligenceHub do
   require Logger
   import Ecto.Query
 
-  alias Centralcloud.{Repo, NatsClient}
+  alias CentralCloud.{Repo, NatsClient}
 
   # ===========================
   # Public API
@@ -304,7 +304,7 @@ defmodule Centralcloud.IntelligenceHub do
 
   defp load_framework_metadata(framework, language) do
     # Query knowledge_artifacts for framework data
-    case Repo.get_by(Centralcloud.KnowledgeArtifact,
+    case Repo.get_by(CentralCloud.KnowledgeArtifact,
            artifact_type: "framework",
            name: framework
          ) do
@@ -340,7 +340,7 @@ defmodule Centralcloud.IntelligenceHub do
     # Query for quality standards
     artifact_id = "#{language}_#{quality_level}"
 
-    case Repo.get_by(Centralcloud.KnowledgeArtifact,
+    case Repo.get_by(CentralCloud.KnowledgeArtifact,
            artifact_type: "quality_standard",
            artifact_id: artifact_id
          ) do
@@ -378,7 +378,7 @@ defmodule Centralcloud.IntelligenceHub do
 
   defp get_relevant_prompts(task_type) do
     # Query prompt library for task-specific prompts
-    case Repo.get_by(Centralcloud.KnowledgeArtifact,
+    case Repo.get_by(CentralCloud.KnowledgeArtifact,
            artifact_type: "prompt",
            metadata: %{"use_case" => task_type}
          ) do
@@ -407,7 +407,7 @@ defmodule Centralcloud.IntelligenceHub do
     case Jason.decode(msg.payload) do
       {:ok, %{"instance_id" => instance_id, "dependencies" => dependencies}} ->
         # Forward to package sync job for processing
-        Centralcloud.Jobs.PackageSyncJob.handle_dependency_report(instance_id, dependencies)
+        CentralCloud.Jobs.PackageSyncJob.handle_dependency_report(instance_id, dependencies)
         Logger.debug("Processed dependency report from instance #{instance_id}")
 
       {:error, reason} ->
@@ -533,7 +533,7 @@ defmodule Centralcloud.IntelligenceHub do
 
     frameworks =
       Repo.all(
-        from p in Centralcloud.Schemas.Package,
+        from p in CentralCloud.Schemas.Package,
           where: not is_nil(p.detected_framework),
           where:
             fragment(
@@ -593,7 +593,7 @@ defmodule Centralcloud.IntelligenceHub do
 
     frameworks =
       Repo.all(
-        from p in Centralcloud.Schemas.Package,
+        from p in CentralCloud.Schemas.Package,
           where: not is_nil(p.detected_framework),
           where:
             fragment(
@@ -627,7 +627,7 @@ defmodule Centralcloud.IntelligenceHub do
 
     frameworks =
       Repo.all(
-        from p in Centralcloud.Schemas.Package,
+        from p in CentralCloud.Schemas.Package,
           where: p.ecosystem == ^ecosystem,
           where: not is_nil(p.detected_framework),
           select: p.detected_framework,
@@ -725,7 +725,7 @@ defmodule Centralcloud.IntelligenceHub do
     package_id = Map.get(query, "package_id", framework_name)
     code_samples = Map.get(query, "code_samples", [])
 
-    case Centralcloud.FrameworkLearningOrchestrator.learn(package_id, code_samples) do
+    case CentralCloud.FrameworkLearningOrchestrator.learn(package_id, code_samples) do
       {:ok, framework, learner_type} ->
         Logger.info("Framework discovered via #{learner_type}",
           framework_name: framework["name"],
@@ -747,7 +747,7 @@ defmodule Centralcloud.IntelligenceHub do
 
   # Store discovered framework in database
   defp store_discovered_framework(package_id, framework) do
-    case Repo.get_by(Centralcloud.Schemas.Package, package_name: package_id) do
+    case Repo.get_by(CentralCloud.Schemas.Package, package_name: package_id) do
       nil ->
         # Package not in DB yet, just log
         Logger.debug("Package not in DB yet", package_id: package_id)
@@ -828,7 +828,7 @@ defmodule Centralcloud.IntelligenceHub do
 
   defp detect_frameworks_with_architecture_engine(codebase_info) do
     # Use Architecture Engine NIF directly (same as Singularity)
-    case Centralcloud.Engines.ArchitectureEngine.detect_frameworks(codebase_info, 
+    case CentralCloud.Engines.ArchitectureEngine.detect_frameworks(codebase_info, 
       detection_type: "comprehensive",
       include_patterns: true,
       include_technologies: true
@@ -853,7 +853,7 @@ defmodule Centralcloud.IntelligenceHub do
 
   defp analyze_code_with_code_engine(codebase_info) do
     # Use Code Engine NIF directly (same as Singularity)
-    case Centralcloud.Engines.CodeEngine.analyze_codebase(codebase_info, 
+    case CentralCloud.Engines.CodeEngine.analyze_codebase(codebase_info, 
       analysis_types: ["business_domains", "patterns", "architecture"],
       include_embeddings: true
     ) do
@@ -876,7 +876,7 @@ defmodule Centralcloud.IntelligenceHub do
 
   defp analyze_quality_with_quality_engine(codebase_info) do
     # Use Quality Engine NIF directly (same as Singularity)
-    case Centralcloud.Engines.QualityEngine.analyze_quality(codebase_info, 
+    case CentralCloud.Engines.QualityEngine.analyze_quality(codebase_info, 
       quality_checks: ["maintainability", "performance", "security", "architecture"],
       include_metrics: true
     ) do
@@ -902,7 +902,7 @@ defmodule Centralcloud.IntelligenceHub do
 
   defp analyze_semantics_with_embedding_engine(codebase_info) do
     # Use Embedding Engine NIF directly (same as Singularity)
-    case Centralcloud.Engines.EmbeddingEngine.analyze_semantics(codebase_info, 
+    case CentralCloud.Engines.EmbeddingEngine.analyze_semantics(codebase_info, 
       analysis_type: "semantic_patterns",
       include_similarity: true
     ) do
@@ -1301,7 +1301,7 @@ defmodule Centralcloud.IntelligenceHub do
 
     # Query knowledge artifacts for framework data
     query_stmt =
-      from(ka in Centralcloud.KnowledgeArtifact,
+      from(ka in CentralCloud.KnowledgeArtifact,
         where: ka.artifact_type == "framework",
         where: fragment("?->>'language' = ?", ka.metadata, ^language),
         select: ka.content,
@@ -1326,7 +1326,7 @@ defmodule Centralcloud.IntelligenceHub do
     Logger.debug("Querying patterns: type=#{pattern_type}, language=#{language}")
 
     query_stmt =
-      from(ka in Centralcloud.KnowledgeArtifact,
+      from(ka in CentralCloud.KnowledgeArtifact,
         where: ka.artifact_type == "pattern",
         where: fragment("?->>'language' = ?", ka.metadata, ^language),
         select: %{
@@ -1356,7 +1356,7 @@ defmodule Centralcloud.IntelligenceHub do
     Logger.debug("Querying quality insights for #{language} at #{quality_level}")
 
     # Query quality standards
-    case Repo.get_by(Centralcloud.KnowledgeArtifact,
+    case Repo.get_by(CentralCloud.KnowledgeArtifact,
            artifact_type: "quality_standard",
            metadata: %{"language" => language, "quality_level" => quality_level}
          ) do
@@ -1378,7 +1378,7 @@ defmodule Centralcloud.IntelligenceHub do
 
     # Query package knowledge
     query_stmt =
-      from(ka in Centralcloud.KnowledgeArtifact,
+      from(ka in CentralCloud.KnowledgeArtifact,
         where: ka.artifact_type == "package",
         where: fragment("?->>'ecosystem' = ?", ka.metadata, ^ecosystem),
         where: fragment("?->>'language' = ?", ka.metadata, ^language),
@@ -1411,7 +1411,7 @@ defmodule Centralcloud.IntelligenceHub do
       "patterns" ->
         # Query all patterns across all instances
         Repo.all(
-          from(ka in Centralcloud.KnowledgeArtifact,
+          from(ka in CentralCloud.KnowledgeArtifact,
             where: ka.artifact_type == "pattern",
             select: ka.content,
             order_by: [desc: ka.inserted_at],
@@ -1426,12 +1426,12 @@ defmodule Centralcloud.IntelligenceHub do
             "type" => "cross_instance_stats",
             "total_patterns" =>
               Repo.aggregate(
-                from(ka in Centralcloud.KnowledgeArtifact, where: ka.artifact_type == "pattern"),
+                from(ka in CentralCloud.KnowledgeArtifact, where: ka.artifact_type == "pattern"),
                 :count
               ),
             "total_frameworks" =>
               Repo.aggregate(
-                from(ka in Centralcloud.KnowledgeArtifact, where: ka.artifact_type == "framework"),
+                from(ka in CentralCloud.KnowledgeArtifact, where: ka.artifact_type == "framework"),
                 :count
               ),
             "last_updated" => DateTime.utc_now()

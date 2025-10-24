@@ -1,4 +1,4 @@
-defmodule Centralcloud.Application do
+defmodule CentralCloud.Application do
   @moduledoc """
   Central Cloud Application
   
@@ -15,7 +15,7 @@ defmodule Centralcloud.Application do
 
     children = base_children() ++ optional_children()
 
-    opts = [strategy: :one_for_one, name: Centralcloud.Supervisor]
+    opts = [strategy: :one_for_one, name: CentralCloud.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
@@ -23,15 +23,15 @@ defmodule Centralcloud.Application do
   defp base_children do
     [
       # Foundation: Database
-      Centralcloud.Repo,
+      CentralCloud.Repo,
 
       # Infrastructure: Background jobs (Oban handles cron scheduling via plugin)
       {Oban, oban_config()},
 
       # Always-on services (don't depend on NATS)
-      Centralcloud.KnowledgeCache,      # ETS-based cache
-      Centralcloud.TemplateService,     # Template management
-      Centralcloud.TemplateLoader,      # Lua template loading and rendering
+      CentralCloud.KnowledgeCache,      # ETS-based cache
+      CentralCloud.TemplateService,     # Template management
+      CentralCloud.TemplateLoader,      # Lua template loading and rendering
     ]
   end
 
@@ -41,17 +41,17 @@ defmodule Centralcloud.Application do
       []
     else
       [
-        Centralcloud.NatsClient,          # NATS messaging (for subscriptions)
-        Centralcloud.FrameworkLearningAgent,  # Learn from external packages
-        Centralcloud.IntelligenceHub,     # Aggregate intelligence from all instances
+        CentralCloud.NatsClient,          # NATS messaging (for subscriptions)
+        CentralCloud.FrameworkLearningAgent,  # Learn from external packages
+        CentralCloud.IntelligenceHub,     # Aggregate intelligence from all instances
         CentralCloud.TemplateIntelligence,  # Template intelligence (Phase 3: cross-instance learning)
-        Centralcloud.NATS.PatternValidatorSubscriber,  # Pattern validation via NATS
+        CentralCloud.NATS.PatternValidatorSubscriber,  # Pattern validation via NATS
       ]
     end
   end
 
   defp oban_config do
     Application.fetch_env!(:centralcloud, Oban)
-    |> Keyword.put_new(:name, Centralcloud.Oban)
+    |> Keyword.put_new(:name, CentralCloud.Oban)
   end
 end

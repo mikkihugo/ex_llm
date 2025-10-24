@@ -1,4 +1,4 @@
-defmodule Centralcloud.Jobs.PackageSyncJob do
+defmodule CentralCloud.Jobs.PackageSyncJob do
   @moduledoc """
   Oban job for external package registry synchronization.
 
@@ -12,7 +12,7 @@ defmodule Centralcloud.Jobs.PackageSyncJob do
 
   ## Purpose
 
-  Keep Centralcloud's knowledge of external packages current:
+  Keep CentralCloud's knowledge of external packages current:
   - New package releases
   - Updated dependency information
   - Security advisories
@@ -33,8 +33,8 @@ defmodule Centralcloud.Jobs.PackageSyncJob do
 
   require Logger
   import Ecto.Query
-  alias Centralcloud.{Repo, NatsClient}
-  alias Centralcloud.Schemas.Package
+  alias CentralCloud.{Repo, NatsClient}
+  alias CentralCloud.Schemas.Package
 
   # Registry API endpoints
   @npm_registry "https://registry.npmjs.org"

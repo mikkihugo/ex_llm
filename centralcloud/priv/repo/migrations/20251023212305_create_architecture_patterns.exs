@@ -1,4 +1,4 @@
-defmodule Centralcloud.Repo.Migrations.CreateArchitecturePatterns do
+defmodule CentralCloud.Repo.Migrations.CreateArchitecturePatterns do
   use Ecto.Migration
 
   def change do

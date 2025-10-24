@@ -1,4 +1,4 @@
-defmodule Centralcloud.Engines.CodeEngine do
+defmodule CentralCloud.Engines.CodeEngine do
   @moduledoc """
   Code Engine - Delegates to Singularity via NATS.
 

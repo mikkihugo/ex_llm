@@ -1,4 +1,4 @@
-defmodule Centralcloud.Repo do
+defmodule CentralCloud.Repo do
   @moduledoc """
   Central Services Ecto repository for package data, code snippets, 
   security advisories, and analysis results.
