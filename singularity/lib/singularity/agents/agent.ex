@@ -56,11 +56,11 @@ defmodule Singularity.Agent do
     - module: Agents.Supervisor
       purpose: Dynamic supervision of agent instances
 
-    - module: NatsExecutionRouter
-      purpose: Task delegation from NATS
-
     - module: Runner
       purpose: Execution framework for agent work
+
+    - module: NATS subjects (async)
+      purpose: Task requests via messaging
   ```
 
   ### Anti-Patterns (Prevents Duplicates)

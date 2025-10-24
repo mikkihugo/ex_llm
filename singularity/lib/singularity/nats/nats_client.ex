@@ -26,8 +26,7 @@ defmodule Singularity.NatsClient do
       "JetStream operations"
     ],
     "alternatives": {
-      "Direct Gnat library": "Low-level wrapper - use NatsClient GenServer instead",
-      "NatsExecutionRouter": "Specialized for execution routing - use NatsClient for messaging"
+      "Direct Gnat library": "Low-level wrapper - use NatsClient GenServer instead"
     }
   }
   ```
@@ -94,8 +93,9 @@ defmodule Singularity.NatsClient do
       count: "3+"
       purpose: System event publishing
 
-    - module: Singularity.NatsExecutionRouter
-      purpose: Execution routing and delegation
+    - module: Singularity.Execution.Planning
+      count: "2+"
+      purpose: Task planning and execution
 
     - module: Singularity.Tools.*
       count: "10+"

@@ -45,7 +45,7 @@ defmodule Singularity.Application do
       # Layer 2: Infrastructure - Core services required by application layer
       # Moved to ApplicationSupervisor to avoid duplicate startup
       # Singularity.Infrastructure.Supervisor,
-      # Manages: NatsServer, NatsClient, NatsExecutionRouter
+      # Manages: NatsServer, NatsClient
       Singularity.NATS.Supervisor,
 
       # Layer 3: Domain Services - Business logic and domain-specific functionality

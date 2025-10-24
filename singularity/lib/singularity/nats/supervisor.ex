@@ -5,21 +5,19 @@ defmodule Singularity.NATS.Supervisor do
   Supervises all NATS-related processes in the correct startup order:
   1. NatsServer - Main NATS server connection
   2. NatsClient - Client interface for publishing/subscribing
-  3. NatsExecutionRouter - Routes NATS messages to appropriate handlers
 
   ## Restart Strategy
 
   Uses `:rest_for_one` because dependencies flow in order:
-  - If NatsServer crashes, restart Client and Router (they depend on it)
-  - If NatsClient crashes, restart Router (it depends on client)
-  - If NatsExecutionRouter crashes, only restart it
+  - If NatsServer crashes, restart Client and other services (they depend on it)
+  - If NatsClient crashes, restart other services (they depend on client)
 
   ## Managed Processes
 
   - `Singularity.NatsClient` - GenServer providing client interface
   - `Singularity.NatsServer` - GenServer managing NATS connection
-  - `Singularity.NatsExecutionRouter` - GenServer routing messages
   - `Singularity.Embedding.Service` - Embedding service for CentralCloud
+  - `Singularity.Tools.DatabaseToolsExecutor` - Database tool execution
 
   ## Dependencies
 
@@ -41,7 +39,6 @@ defmodule Singularity.NATS.Supervisor do
       # Order matters! Client must start before Server (Server subscribes to Client)
       Singularity.NatsClient,
       Singularity.NatsServer,
-      Singularity.NatsExecutionRouter,
       # Embedding service for CentralCloud
       Singularity.Embedding.Service,
       # Database-first tool executor

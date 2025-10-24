@@ -1,13 +1,27 @@
 defmodule Singularity.CodeGenerator do
   @moduledoc """
-  **UNIFIED Code Generation System** - Integrates RAG + Quality + T5/API
+  **High-Level Code Generation Orchestrator** - RAG + Quality + Execution Strategy
 
-  Combines 3 powerful systems into ONE:
-  1. **RAG** - Finds best examples from YOUR codebases (pgvector search)
-  2. **Quality Standards** - Enforces production-quality requirements
-  3. **Adaptive Execution** - T5 (local) or LLM API based on availability
+  ⚠️ **IMPORTANT ARCHITECTURE DISTINCTION:**
+  - This module (CodeGenerator) - ORCHESTRATION layer (what to generate)
+  - `CodeGeneration.InferenceEngine` - INFERENCE layer (how to generate tokens)
 
-  ## Complete Flow
+  ## Architecture Separation
+
+  ```
+  CodeGenerator (ORCHESTRATION)
+    ├─ RAG: Find examples from YOUR code (pgvector)
+    ├─ Quality: Enforce production standards
+    ├─ Strategy: Select T5 local vs API
+    └─ Inference: Call InferenceEngine for tokens
+      │
+      └─→ CodeGeneration.InferenceEngine (INFERENCE)
+            ├─ Token generation
+            ├─ Sampling (temperature, top-p, top-k)
+            └─ Constraints & streaming
+  ```
+
+  ## Orchestration Flow
 
   ```
   Task request
@@ -16,13 +30,15 @@ defmodule Singularity.CodeGenerator do
       ↓
   2. Quality: Load quality template for language
       ↓
-  3. Adaptive Execution:
-      Is T5 downloaded? → NO → LLM API
-      Is task simple/medium? → YES → T5 local
+  3. Strategy Selection:
+      Is T5 available? → NO → Use LLM API
+      Is task simple/medium? → YES → T5 local via InferenceEngine
       ↓
-  4. Validate against quality standards
+  4. InferenceEngine: Generate tokens with sampling strategy
       ↓
-  5. Return production-ready code
+  5. Validate against quality standards
+      ↓
+  6. Return production-ready code
   ```
 
   ## Usage
@@ -62,14 +78,27 @@ defmodule Singularity.CodeGenerator do
   - `:standard` - Good quality (docs, specs, basic tests)
   - `:draft` - Minimal quality (working code only)
 
-  ## Benefits of Unification
+  ## Benefits of Clear Architecture
 
-  - ✅ ONE entry point for ALL code generation
-  - ✅ RAG finds proven patterns from YOUR code
-  - ✅ Quality templates enforce standards
-  - ✅ Automatic method selection (T5 vs API)
-  - ✅ Validation and retries built-in
-  - ✅ No duplicate systems to maintain!
+  - ✅ ONE entry point (CodeGenerator) for high-level code generation
+  - ✅ RAG finds proven patterns from YOUR code (pgvector search)
+  - ✅ Quality templates enforce production standards
+  - ✅ Strategy selection: T5 local vs LLM API (cost-aware)
+  - ✅ InferenceEngine: Reusable token generation (sampling, constraints, streaming)
+  - ✅ Clean separation: Orchestration vs Inference (easy testing, maintenance)
+  - ✅ No duplicate systems!
+
+  ## When to Use Which Module
+
+  | Task | Use |
+  |------|-----|
+  | High-level code generation | `CodeGenerator.generate/2` ← Start here |
+  | Find examples from your code | `CodeGenerator.generate/2` with `use_rag: true` |
+  | Enforce quality standards | `CodeGenerator.generate/2` with `quality: :production` |
+  | Low-level token generation | `CodeGeneration.InferenceEngine.generate/4` |
+  | Token sampling strategies | `CodeGeneration.InferenceEngine.generate/4` with opts |
+  | Real-time streaming | `CodeGeneration.InferenceEngine.stream/4` |
+  | Constrained generation | `CodeGeneration.InferenceEngine.constrained_generate/5` |
 
   """
 

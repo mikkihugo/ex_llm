@@ -6,9 +6,14 @@ defmodule Singularity.Code.Analyzers.MicroserviceAnalyzer do
   provides heuristic discovery of service boundaries directly in Elixir. It inspects the
   repository layout and common build files to infer the presence of TypeScript, Rust, Python,
   and Go services.
+
+  ## Uses
+
+  - `Singularity.Shared.LanguageDetector` - Unified language detection
   """
 
   require Logger
+  alias Singularity.Shared.LanguageDetector
 
   @service_root_candidates ["apps", "services", "packages", "apps/services", "services/apps"]
 
@@ -148,23 +153,16 @@ defmodule Singularity.Code.Analyzers.MicroserviceAnalyzer do
   end
 
   defp detect_language(service_path) do
-    cond do
-      File.exists?(Path.join(service_path, "package.json")) && ts_sources?(service_path) ->
-        "typescript"
-
-      File.exists?(Path.join(service_path, "Cargo.toml")) ->
-        "rust"
-
-      File.exists?(Path.join(service_path, "pyproject.toml")) ||
-          File.exists?(Path.join(service_path, "requirements.txt")) ->
-        "python"
-
-      File.exists?(Path.join(service_path, "go.mod")) ->
-        "go"
-
-      true ->
-        nil
+    # Use unified LanguageDetector for all language detection
+    case LanguageDetector.detect(service_path) do
+      atom when is_atom(atom) -> atom_to_string(atom)
+      nil -> nil
     end
+  end
+
+  # Convert atoms from LanguageDetector to strings for compatibility
+  defp atom_to_string(atom) do
+    atom |> Atom.to_string()
   end
 
   defp detect_framework(service_path, "typescript") do
