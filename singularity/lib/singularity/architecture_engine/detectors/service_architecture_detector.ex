@@ -1,0 +1,232 @@
+defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
+  @moduledoc """
+  Service Architecture Pattern Detector - Detects microservice vs monolith patterns.
+
+  Implements `@behaviour PatternType` to detect architectural patterns in codebases.
+  Replaces the old `MicroserviceAnalyzer` module.
+
+  ## Detection Heuristics
+
+  - **Microservices**: 4+ independent services with separate build/deploy configs
+  - **Distributed**: 2-3 independent services
+  - **Modular**: 1 service with clear module boundaries
+  - **Monolith**: Single codebase without service separation
+  """
+
+  @behaviour Singularity.Architecture.PatternType
+  require Logger
+  alias Singularity.Shared.LanguageDetector
+
+  @impl true
+  def pattern_type, do: :service_architecture
+
+  @impl true
+  def description, do: "Detect microservice vs monolith architecture patterns"
+
+  @impl true
+  def supported_types do
+    [
+      "monolith",
+      "modular",
+      "distributed",
+      "microservices",
+      "service_mesh"
+    ]
+  end
+
+  @impl true
+  def detect(path, _opts \\ []) when is_binary(path) do
+    detect_architecture(path)
+  end
+
+  @impl true
+  def learn_pattern(result) do
+    # Update architecture confidence in PatternStore
+    case result do
+      %{name: name, success: true} ->
+        Singularity.Architecture.PatternStore.update_confidence(:service_architecture, name,
+          success: true
+        )
+
+      %{name: name, success: false} ->
+        Singularity.Architecture.PatternStore.update_confidence(:service_architecture, name,
+          success: false
+        )
+
+      _ ->
+        :ok
+    end
+  end
+
+  # Private: Architecture detection logic
+
+  defp detect_architecture(path) do
+    services = discover_services(path)
+
+    case {length(services), detect_service_mesh(path)} do
+      {count, true} when count >= 2 ->
+        [
+          %{
+            name: "microservices_with_service_mesh",
+            type: "service_mesh",
+            confidence: 0.95,
+            description: "Microservices with service mesh (Istio/Consul/Linkerd)",
+            metadata: %{service_count: count, services: services}
+          }
+        ]
+
+      {count, _} when count >= 4 ->
+        [
+          %{
+            name: "microservices",
+            type: "microservices",
+            confidence: 0.90,
+            description: "Microservice architecture",
+            metadata: %{service_count: count, services: services}
+          }
+        ]
+
+      {count, _} when count == 3 ->
+        [
+          %{
+            name: "distributed",
+            type: "distributed",
+            confidence: 0.85,
+            description: "Distributed system with multiple services",
+            metadata: %{service_count: count, services: services}
+          }
+        ]
+
+      {count, _} when count == 2 ->
+        [
+          %{
+            name: "distributed",
+            type: "distributed",
+            confidence: 0.75,
+            description: "Two-service distributed system",
+            metadata: %{service_count: count, services: services}
+          }
+        ]
+
+      {1, _} ->
+        [
+          %{
+            name: "modular",
+            type: "modular",
+            confidence: 0.80,
+            description: "Single service with clear module boundaries",
+            metadata: %{service_count: 1}
+          }
+        ]
+
+      {0, _} ->
+        [
+          %{
+            name: "monolith",
+            type: "monolith",
+            confidence: 0.70,
+            description: "Monolithic single codebase",
+            metadata: %{service_count: 0}
+          }
+        ]
+    end
+  end
+
+  defp discover_services(root_path) do
+    root_path
+    |> list_subdirs()
+    |> Enum.map(fn service_path ->
+      case detect_service(service_path) do
+        nil -> nil
+        service -> service
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp detect_service(service_path) do
+    # A service must have clear build/deploy markers
+    language = LanguageDetector.detect(service_path)
+
+    if language && has_build_config?(service_path, language) do
+      %{
+        path: service_path,
+        language: language_name(language),
+        build_system: detect_build_system(service_path)
+      }
+    else
+      nil
+    end
+  end
+
+  defp has_build_config?(service_path, language) do
+    case language do
+      :typescript -> has_any_file?(service_path, ["package.json", "tsconfig.json"])
+      :rust -> has_file?(service_path, "Cargo.toml")
+      :python -> has_any_file?(service_path, ["pyproject.toml", "setup.py", "requirements.txt"])
+      :go -> has_file?(service_path, "go.mod")
+      :java -> has_any_file?(service_path, ["pom.xml", "build.gradle"])
+      :elixir -> has_file?(service_path, "mix.exs")
+      _ -> false
+    end
+  end
+
+  defp detect_build_system(service_path) do
+    cond do
+      has_file?(service_path, "package.json") -> "npm"
+      has_file?(service_path, "Cargo.toml") -> "cargo"
+      has_file?(service_path, "pyproject.toml") -> "poetry"
+      has_file?(service_path, "requirements.txt") -> "pip"
+      has_file?(service_path, "setup.py") -> "setuptools"
+      has_file?(service_path, "go.mod") -> "go"
+      has_file?(service_path, "pom.xml") -> "maven"
+      has_file?(service_path, "build.gradle") -> "gradle"
+      has_file?(service_path, "mix.exs") -> "mix"
+      true -> "unknown"
+    end
+  end
+
+  defp detect_service_mesh(path) do
+    has_any_file?(path, [
+      "istio.yaml",
+      "istio.yml",
+      "consul.hcl",
+      "linkerd.yaml",
+      "linkerd.yml"
+    ])
+  end
+
+  # Helpers
+
+  defp list_subdirs(root) do
+    case File.ls(root) do
+      {:ok, entries} ->
+        entries
+        |> Enum.map(&Path.join(root, &1))
+        |> Enum.filter(&File.dir?/1)
+
+      {:error, _} ->
+        []
+    end
+  rescue
+    _ -> []
+  end
+
+  defp has_file?(path, filename) do
+    File.exists?(Path.join(path, filename))
+  end
+
+  defp has_any_file?(path, filenames) do
+    Enum.any?(filenames, fn f -> has_file?(path, f) end)
+  end
+
+  defp language_name(:typescript), do: "TypeScript"
+  defp language_name(:javascript), do: "JavaScript"
+  defp language_name(:rust), do: "Rust"
+  defp language_name(:python), do: "Python"
+  defp language_name(:go), do: "Go"
+  defp language_name(:elixir), do: "Elixir"
+  defp language_name(:java), do: "Java"
+  defp language_name(:ruby), do: "Ruby"
+  defp language_name(other), do: Atom.to_string(other)
+end

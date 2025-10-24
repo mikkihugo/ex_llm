@@ -129,3 +129,26 @@ config :oban,
   queues: [default: 10, ml_training: 5, pattern_mining: 3],
   # Enable verbose logging for job execution
   verbose: true
+
+# =============================================================================
+# Architecture Pattern Detection Configuration (Config-Driven)
+# =============================================================================
+# Defines which pattern detectors are enabled and their modules.
+# Add new pattern types here without changing code!
+
+config :singularity, :pattern_types,
+  framework: %{
+    module: Singularity.Architecture.Detectors.FrameworkDetector,
+    enabled: true,
+    description: "Detect web frameworks, build tools, and runtime frameworks"
+  },
+  technology: %{
+    module: Singularity.Architecture.Detectors.TechnologyDetector,
+    enabled: true,
+    description: "Detect programming languages, runtimes, and technology stack"
+  },
+  service_architecture: %{
+    module: Singularity.Architecture.Detectors.ServiceArchitectureDetector,
+    enabled: true,
+    description: "Detect microservice vs monolith architecture patterns"
+  }
