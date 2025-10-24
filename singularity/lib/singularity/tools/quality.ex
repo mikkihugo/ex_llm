@@ -3,7 +3,7 @@ defmodule Singularity.Tools.Quality do
   Tool definitions that expose quality checks (Sobelow, mix_audit) via the tool runner.
   """
 
-  alias Singularity.Quality
+  alias Singularity.Quality.Analyzer
   alias Singularity.Schemas.Tools.Tool
 
   @project_root Path.expand("../../..", __DIR__)
@@ -48,7 +48,7 @@ defmodule Singularity.Tools.Quality do
 
     finished = DateTime.utc_now()
 
-    case Quality.store_sobelow(%{
+    case Analyzer.store_sobelow(%{
            output: output,
            exit_status: status,
            started_at: start_time,
@@ -74,7 +74,7 @@ defmodule Singularity.Tools.Quality do
 
     finished = DateTime.utc_now()
 
-    case Quality.store_mix_audit(%{
+    case Analyzer.store_mix_audit(%{
            output: output,
            exit_status: status,
            started_at: start_time,
