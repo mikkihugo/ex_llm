@@ -551,38 +551,23 @@ defmodule Singularity.CodeSearch do
   @doc """
   Register a new codebase
   """
-  def register_codebase(db_conn, codebase_id, codebase_path, codebase_name, opts \\ []) do
+  def register_codebase(_db_conn, codebase_id, codebase_path, codebase_name, opts \\ []) do
     description = Keyword.get(opts, :description, "")
     language = Keyword.get(opts, :language, "unknown")
     framework = Keyword.get(opts, :framework, "unknown")
     metadata = Keyword.get(opts, :metadata, %{})
 
-    Postgrex.query!(
-      db_conn,
-      """
-      INSERT INTO codebase_registry (
-        codebase_id, codebase_path, codebase_name, description, 
-        language, framework, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (codebase_id) DO UPDATE SET
-        codebase_path = EXCLUDED.codebase_path,
-        codebase_name = EXCLUDED.codebase_name,
-        description = EXCLUDED.description,
-        language = EXCLUDED.language,
-        framework = EXCLUDED.framework,
-        metadata = EXCLUDED.metadata,
-        updated_at = NOW()
-      """,
-      [
-        codebase_id,
-        codebase_path,
-        codebase_name,
-        description,
-        language,
-        framework,
-        Jason.encode!(metadata)
-      ]
-    )
+    attrs = %{
+      codebase_id: codebase_id,
+      codebase_path: codebase_path,
+      codebase_name: codebase_name,
+      description: description,
+      language: language,
+      framework: framework,
+      metadata: metadata
+    }
+
+    Singularity.CodeSearch.Ecto.register_codebase(attrs)
   end
 
   @doc """
@@ -634,21 +619,9 @@ defmodule Singularity.CodeSearch do
   @doc """
   Update codebase analysis status
   """
-  def update_codebase_status(db_conn, codebase_id, status, opts \\ []) do
+  def update_codebase_status(_db_conn, codebase_id, status, opts \\ []) do
     last_analyzed = Keyword.get(opts, :last_analyzed, DateTime.utc_now())
-
-    Postgrex.query!(
-      db_conn,
-      """
-      UPDATE codebase_registry 
-      SET 
-        analysis_status = $2,
-        last_analyzed = $3,
-        updated_at = NOW()
-      WHERE codebase_id = $1
-      """,
-      [codebase_id, status, last_analyzed]
-    )
+    Singularity.CodeSearch.Ecto.update_codebase_status(codebase_id, status, last_analyzed)
   end
 
   @doc """
