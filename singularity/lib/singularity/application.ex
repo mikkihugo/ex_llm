@@ -61,6 +61,12 @@ defmodule Singularity.Application do
       Singularity.Learning.Supervisor,
 
       # Layer 4: Agents & Execution - Task execution and planning
+      # Autonomy Rules - Confidence-based autonomous decision making
+      # Used by: CostOptimizedAgent, SafeWorkPlanner
+      # Rules stored in PostgreSQL, cached in ETS, hot-reloadable via consensus evolution
+      Singularity.Execution.Autonomy.RuleEngine,
+      Singularity.Execution.Autonomy.RuleLoader,
+
       # Execution Planning - Work planning and task graphs
       Singularity.Execution.Planning.Supervisor,
 
@@ -116,29 +122,39 @@ defmodule Singularity.Application do
   Returns additional supervisors to load based on current environment.
   Most supervisors are now enabled in the main supervision tree.
 
-  ## Re-enabled Supervisors
+  ## Re-enabled Supervisors & Processes
 
-  As of this update, the following supervisors have been re-enabled in the main
-  supervision tree (Application.start/2):
+  As of this update, the following supervisors and processes have been re-enabled
+  in the main supervision tree (Application.start/2):
 
+  **Infrastructure**:
   - **Infrastructure.Supervisor** - Circuit breakers, error tracking, model loading
   - **NATS.Supervisor** - Message infrastructure (Server, Client, Embedding, Tools)
+
+  **Domain Services**:
   - **LLM.Supervisor** - LLM rate limiting and provider orchestration
   - **Knowledge.Supervisor** - Template and code store services
   - **Learning.Supervisor** - Genesis integration and learning loops
+
+  **Agents & Execution**:
+  - **Autonomy.RuleEngine** - Confidence-based autonomous decision making (Pure Elixir, no Gleam)
+  - **Autonomy.RuleLoader** - PostgreSQL-backed rule caching and evolution
   - **Execution.Planning.Supervisor** - Work planning and task DAG execution
   - **Execution.SPARC.Supervisor** - SPARC template-driven execution
   - **Execution.Todos.Supervisor** - Todo/work item coordination
   - **Agents.Supervisor** - Agent lifecycle management
+
+  **Domain Supervisors**:
   - **ArchitectureEngine.MetaRegistry.Supervisor** - Architecture analysis
   - **Git.Supervisor** - Git integration and repository management
+
+  **Total**: 13 supervisors/processes enabled ✅
 
   ## Future Re-enabling (Phase 2)
 
   The following components still need work before re-enabling:
 
-  - **Bootstrap.EvolutionStageController** - Bootstrap tracking (low priority)
-  - **Autonomy.RuleEngine** - Gleam integration (requires Gleam/Elixir bridge)
+  - **Bootstrap.EvolutionStageController** - Bootstrap tracking (low priority, unused)
   - **Engine.NifStatus** - NIF status checking (requires investigation)
 
   ## Environment-Specific Configuration

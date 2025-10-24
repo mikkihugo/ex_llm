@@ -1,8 +1,43 @@
 defmodule Singularity.Execution.Autonomy.RuleLoader do
   @moduledoc """
-  Loads rules from Postgres and converts to Gleam types.
+  Rule Loader - Loads evolvable rules from PostgreSQL with ETS caching.
 
-  OTP GenServer that caches active rules in ETS for fast access.
+  OTP GenServer that:
+  - Loads rules from `agent_behavior_confidence_rules` table in PostgreSQL
+  - Caches active rules in ETS for fast, lock-free access
+  - Periodically refreshes rules (every 5 minutes)
+  - Supports semantic similarity search via pgvector embeddings
+  - Handles rule reloading after evolution
+
+  ## Architecture
+
+  Rules are stored as **data, not code** in PostgreSQL. This enables:
+  - Agents to evolve rules through consensus voting
+  - Hot-reload of rule updates without recompiling Elixir
+  - Semantic search for similar rules via embeddings
+  - Full audit trail of rule changes and evolution
+
+  ## Usage
+
+  Rules are cached in ETS for O(1) lookup:
+
+      {:ok, rule} = RuleLoader.get_rule("quality-check")
+      # Looks up in ETS cache, falls back to DB if not cached
+
+  Get all rules by category:
+
+      rules = RuleLoader.get_rules_by_category(:code_quality)
+      # Returns all active rules for the category
+
+  Find similar rules by semantic embedding:
+
+      RuleLoader.find_similar_rules(embedding, limit: 5)
+      # Returns rules similar to the embedding vector
+
+  Reload rules after agent evolution:
+
+      RuleLoader.reload_rules()
+      # Refreshes cache from database (called after rule consensus)
   """
 
   use GenServer
