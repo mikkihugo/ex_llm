@@ -1,6 +1,6 @@
 {
   "name": "Elixir Production Quality",
-  "spec_version": "2.3.0",
+  "spec_version": "2.4.0",
   "capabilities": [
     "quality",
     "graph",
@@ -13,6 +13,15 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for Elixir code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.4.0": {
+      "date": "2025-10-24",
+      "changes": [
+        "Added interactive questions for 2-way template generation",
+        "Questions include: GenServer usage, supervisor strategy, ETS caching, telemetry, circuit breaker, documentation level",
+        "Enables answer tracking and CentralCloud intelligence gathering",
+        "Supports conditional questions (when clause) based on previous answers"
+      ]
+    },
     "2.3.0": {
       "date": "2025-01-15",
       "changes": [
@@ -281,6 +290,63 @@
       }
     }
   },
+  "questions": [
+    {
+      "name": "use_genserver",
+      "type": "boolean",
+      "prompt": "Should this be implemented as a GenServer (stateful process)?",
+      "default": false,
+      "hint": "Use GenServer for: state management, serialized operations, caching, resource pooling",
+      "validator": "{{#if use_genserver}}true{{else}}false{{/if}}"
+    },
+    {
+      "name": "supervisor_strategy",
+      "type": "choice",
+      "prompt": "What supervision strategy should be used?",
+      "choices": ["one_for_one", "rest_for_one", "one_for_all"],
+      "default": "one_for_one",
+      "when": "{{use_genserver}}",
+      "hint": "one_for_one: restart only failed child (most common). rest_for_one: restart failed + later siblings. one_for_all: restart all children"
+    },
+    {
+      "name": "use_ets",
+      "type": "boolean",
+      "prompt": "Include ETS table for caching?",
+      "default": false,
+      "when": "{{use_genserver}}",
+      "hint": "ETS provides fast in-memory lookups. Useful for caching, lookup tables, or shared state"
+    },
+    {
+      "name": "ets_ttl_minutes",
+      "type": "number",
+      "prompt": "Cache TTL in minutes?",
+      "default": 5,
+      "when": "{{use_ets}}",
+      "hint": "Time-to-live for cached entries (0 for no expiration)"
+    },
+    {
+      "name": "include_telemetry",
+      "type": "boolean",
+      "prompt": "Include telemetry instrumentation?",
+      "default": true,
+      "hint": "Telemetry events for monitoring, metrics, and observability"
+    },
+    {
+      "name": "include_circuit_breaker",
+      "type": "boolean",
+      "prompt": "Include circuit breaker for external calls?",
+      "default": false,
+      "hint": "Prevents cascading failures when calling external services or APIs"
+    },
+    {
+      "name": "documentation_level",
+      "type": "choice",
+      "prompt": "Documentation detail level?",
+      "choices": ["minimal", "standard", "comprehensive"],
+      "default": "comprehensive",
+      "hint": "minimal: basic @moduledoc + @doc. standard: + examples. comprehensive: + AI metadata (Mermaid, YAML)"
+    }
+  ],
   "prompts": {
     "code_generation": "Generate PRODUCTION-QUALITY Elixir code for: {task}\n\nREQUIREMENTS:\n- @moduledoc (100+ chars) with overview, examples, usage patterns\n- @doc for ALL public functions (50+ chars) with examples and edge cases\n- IMPORTANT: Use regular comments (# ...) for private functions, NOT @doc (causes warnings)\n- @typedoc for public types\n- @spec for ALL public functions, callbacks, and struct fields\n- Dialyzer-compatible types (strict mode)\n- Tagged tuple error handling {:ok, result} | {:error, reason}\n- NO raise in public API\n- with statements for error chains with else clause\n- Telemetry events for operations, errors, metrics\n- Logger with structured logging\n- Pattern matching required\n- Pipe operators for chains (2+ steps)\n- Tail recursion for recursive functions\n- Streams for large data\n- 85%+ test coverage target\n- Doctests for all public functions\n- RAG-optimized: semantic chunks, metadata tags, AI hints in moduledoc\n\nOUTPUT CODE ONLY.",
     "documentation": "Generate PRODUCTION-GRADE documentation for this Elixir code:\n\n```elixir\n{code}\n```\n\nINCLUDE @moduledoc with HUMAN CONTENT FIRST, then AI metadata:\n\n1. HUMAN CONTENT (top ~80 lines):\n   - Title: # ModuleName - Brief description\n   - Purpose: **What this module does** (bold, clear)\n   - Quick Start: Copy-paste examples showing common usage\n   - Public API: Bullet list of main functions\n   - Key Features: What makes this module valuable\n   - Complexity/Decision Guide: When to use what (if applicable)\n   - Error Handling: Common errors and solutions\n   - Examples: Real usage patterns with expected output\n\n2. SEPARATOR:\n   ---\n   ## AI Navigation Metadata\n   Brief explanation: \"The sections below provide structured metadata for AI assistants...\"\n\n3. AI METADATA (below separator):\n   - Module Identity (JSON): module, purpose, role, layer, alternatives, disambiguation\n   - Architecture Diagram (Mermaid): graph/sequence showing call flow\n   - Decision Tree (Mermaid): when/how to use different functions (if complex)\n   - Call Graph (YAML): calls_out, called_by, depends_on, supervision\n   - Data Flow (Mermaid sequence): if orchestrating components\n   - Anti-Patterns: what NOT to create, what NOT to call directly\n   - Search Keywords: 10+ keywords for vector search\n\nALSO INCLUDE:\n- @doc: Description, parameters, return values, examples, edge cases, errors\n- @typedoc: Type descriptions\n- Doctests for all public functions\n\nKEY: Human content at TOP (fast scanning), AI metadata BELOW (clear separation).\n\nOUTPUT DOCUMENTATION ONLY.",

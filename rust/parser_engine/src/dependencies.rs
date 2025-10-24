@@ -426,17 +426,7 @@ impl RustCodeAnalyzer {
     Ok(Self { _initialized: true })
   }
 
-  /// RCA disabled: placeholder implementation
-  #[allow(dead_code)]
-  fn calculate_technical_debt_ratio<T>(_space: &T) -> f64 { 0.0 }
-
-  /// RCA disabled: placeholder implementation
-  #[allow(dead_code)]
-  fn calculate_duplication_percentage<T>(_space: &T) -> f64 { 0.0 }
-
-  /// RCA disabled: placeholder implementation
-  #[allow(dead_code)]
-  fn extract_comprehensive_metrics<T>(_space: &T) -> HashMap<String, f64> { HashMap::new() }
+  // RCA placeholder functions removed - not used since RCA is disabled
 
   /// Analyze content (RCA disabled): return conservative fallback metrics
   pub async fn analyze(&self, _content: &str, language: ProgrammingLanguage) -> Result<(ComplexityMetrics, HalsteadMetrics, MaintainabilityMetrics)> {
@@ -456,8 +446,7 @@ impl RustCodeAnalyzer {
 
 /// Tree-sitter manager for AST parsing
 pub struct TreeSitterBackend {
-  #[allow(dead_code)]
-  parsers: DashMap<ProgrammingLanguage, tree_sitter::Parser>,
+  // Parsers field removed - not needed without active parser caching
 }
 
 impl TreeSitterBackend {
@@ -467,10 +456,99 @@ impl TreeSitterBackend {
   }
 
   /// Get or create parser for language
-  pub fn get_parser(&self, _language: ProgrammingLanguage) -> Result<tree_sitter::Parser> {
-    // Temporarily disabled due to tree-sitter version incompatibilities
-    // TODO: Fix tree-sitter Language type incompatibilities between different language crates
-    let parser = tree_sitter::Parser::new();
+  pub fn get_parser(&self, language: ProgrammingLanguage) -> Result<tree_sitter::Parser> {
+    // Create parser with language-specific configuration
+    let mut parser = tree_sitter::Parser::new();
+    
+    // Set language based on ProgrammingLanguage enum
+    let tree_sitter_language = match language {
+      ProgrammingLanguage::Elixir => {
+        use tree_sitter_elixir::language;
+        language()
+      },
+      ProgrammingLanguage::Erlang => {
+        use tree_sitter_erlang::language;
+        language()
+      },
+      ProgrammingLanguage::Gleam => {
+        use tree_sitter_gleam::language;
+        language()
+      },
+      ProgrammingLanguage::Rust => {
+        use tree_sitter_rust::language;
+        language()
+      },
+      ProgrammingLanguage::JavaScript => {
+        use tree_sitter_javascript::language;
+        language()
+      },
+      ProgrammingLanguage::TypeScript => {
+        use tree_sitter_typescript::language_typescript;
+        language_typescript()
+      },
+      ProgrammingLanguage::Python => {
+        use tree_sitter_python::language;
+        language()
+      },
+      ProgrammingLanguage::Go => {
+        use tree_sitter_go::language;
+        language()
+      },
+      ProgrammingLanguage::Java => {
+        use tree_sitter_java::language;
+        language()
+      },
+      ProgrammingLanguage::CSharp => {
+        use tree_sitter_c_sharp::language;
+        language()
+      },
+      ProgrammingLanguage::C => {
+        use tree_sitter_c::language;
+        language()
+      },
+      ProgrammingLanguage::Cpp => {
+        use tree_sitter_cpp::language;
+        language()
+      },
+      ProgrammingLanguage::Bash => {
+        use tree_sitter_bash::language;
+        language()
+      },
+      ProgrammingLanguage::Json => {
+        use tree_sitter_json::language;
+        language()
+      },
+      ProgrammingLanguage::Yaml => {
+        use tree_sitter_yaml::language;
+        language()
+      },
+      ProgrammingLanguage::Lua => {
+        use tree_sitter_lua::language;
+        language()
+      },
+      ProgrammingLanguage::Markdown => {
+        use tree_sitter_md::language;
+        language()
+      },
+      ProgrammingLanguage::Sql => {
+        use tree_sitter_sequel::language;
+        language()
+      },
+      ProgrammingLanguage::Dockerfile => {
+        use tree_sitter_dockerfile::language;
+        language()
+      },
+      ProgrammingLanguage::Toml => {
+        use tree_sitter_toml::language;
+        language()
+      },
+      _ => {
+        // Fallback to generic parser for unsupported languages
+        return Ok(parser);
+      }
+    };
+    
+    parser.set_language(tree_sitter_language)?;
     Ok(parser)
   }
 

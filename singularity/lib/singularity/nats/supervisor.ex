@@ -16,9 +16,10 @@ defmodule Singularity.NATS.Supervisor do
 
   ## Managed Processes
 
-  - `Singularity.NatsServer` - GenServer managing NATS connection
   - `Singularity.NatsClient` - GenServer providing client interface
+  - `Singularity.NatsServer` - GenServer managing NATS connection
   - `Singularity.NatsExecutionRouter` - GenServer routing messages
+  - `Singularity.Embedding.Service` - Embedding service for CentralCloud
 
   ## Dependencies
 
@@ -41,6 +42,8 @@ defmodule Singularity.NATS.Supervisor do
       Singularity.NatsClient,
       Singularity.NatsServer,
       Singularity.NatsExecutionRouter,
+      # Embedding service for CentralCloud
+      Singularity.Embedding.Service,
       # Database-first tool executor
       Singularity.Tools.DatabaseToolsExecutor
     ]

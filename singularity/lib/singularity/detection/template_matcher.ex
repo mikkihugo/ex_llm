@@ -26,6 +26,8 @@ defmodule Singularity.TemplateMatcher do
       }
   """
 
+  require Logger
+
   alias Singularity.CodePatternExtractor
   alias Singularity.Knowledge.TemplateService
 

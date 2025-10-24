@@ -612,9 +612,29 @@ defmodule Singularity.Tools.Knowledge do
   end
 
   defp get_api_examples_from_knowledge_base do
-    # TODO: Implement semantic search for API examples
-    # For now, return empty list as stub implementation
-    []
+    # Search knowledge artifacts for API examples using semantic search
+    alias Singularity.Knowledge.ArtifactStore
+
+    case ArtifactStore.search(
+           "API examples code snippets",
+           artifact_type: "code_template_api",
+           top_k: 10
+         ) do
+      {:ok, results} ->
+        # Extract examples from search results
+        Enum.map(results, fn artifact ->
+          %{
+            name: artifact.artifact_key,
+            code: get_in(artifact.content, ["code"]) || "",
+            description: get_in(artifact.content, ["description"]) || "",
+            language: get_in(artifact.content, ["language"]) || "unknown"
+          }
+        end)
+
+      {:error, reason} ->
+        Logger.debug("Failed to search API examples", reason: reason)
+        []
+    end
   end
 
   defp get_tutorial_patterns_from_knowledge_base(topic) do

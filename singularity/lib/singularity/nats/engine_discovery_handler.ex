@@ -38,13 +38,33 @@ defmodule Singularity.Nats.EngineDiscoveryHandler do
   Subscribe to engine discovery subjects using NatsClient (for use by NatsServer).
   """
   def subscribe() do
-    # TODO: Implement subscription using NatsClient
-    # For now, just log that we're subscribing
-    Logger.info(
-      "[EngineDiscovery] Engine discovery subscription initialized (NatsClient integration pending)"
-    )
+    # Subscribe to engine discovery subjects using NatsClient
+    subjects = [
+      "engine.discovery.request",
+      "engine.status.>",
+      "engine.capability.>"
+    ]
 
-    :ok
+    results = Enum.map(subjects, fn subject ->
+      case Singularity.NatsClient.subscribe(subject) do
+        {:ok, _subscription} ->
+          Logger.info("[EngineDiscovery] Subscribed to #{subject}")
+          {:ok, subject}
+
+        {:error, reason} ->
+          Logger.warning("[EngineDiscovery] Failed to subscribe to #{subject}: #{inspect(reason)}")
+          {:error, {subject, reason}}
+      end
+    end)
+
+    if Enum.all?(results, &match?({:ok, _}, &1)) do
+      Logger.info("[EngineDiscovery] All engine discovery subscriptions initialized")
+      :ok
+    else
+      failed = Enum.filter(results, &match?({:error, _}, &1))
+      Logger.error("[EngineDiscovery] Some subscriptions failed", failed: failed)
+      {:error, :partial_subscription_failure}
+    end
   end
 
   defp subscribe_to(conn, subject, handler) do

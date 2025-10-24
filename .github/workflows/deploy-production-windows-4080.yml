@@ -210,6 +210,7 @@ jobs:
             -e NATS_PORT=4222 `
             -e CENTRALCLOUD_URL=http://singularity-centralcloud:4000 `
             -e XLA_TARGET=cuda118 `
+            # Production uses StarCoder2-7B (~14GB VRAM) for RTX 4080 16GB
             ${{ needs.build.outputs.singularity-image }}
 
       - name: Start Reverse Proxy

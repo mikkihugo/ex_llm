@@ -1,0 +1,267 @@
+# Moon configuration for templates_data project
+# Data library containing prompt templates and architecture patterns
+
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+type: 'library'
+language: 'unknown'
+tags: ['templates', 'prompts', 'patterns', 'llm']
+
+tasks:
+  # Validate all JSON and Lua files
+  validate:
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Validating JSON files ==="
+        find architecture_patterns -name "*.json" -print0 | xargs -0 -I {} sh -c 'echo "Validating {}"; cat {} | jq . > /dev/null || exit 1'
+
+        echo "=== Validating Lua templates ==="
+        find prompt_library -name "*.lua" -print0 | xargs -0 -I {} sh -c 'echo "Checking {}"; test -f {} || exit 1'
+
+        echo "✅ All templates validated successfully"
+    options:
+      runInCI: true
+
+  # Sync templates to CentralCloud database
+  sync-to-db:
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Syncing templates to CentralCloud database ==="
+        cd ../central_cloud
+
+        # Import architecture patterns
+        echo "Importing architecture patterns..."
+        mix run -e 'CentralCloud.PatternImporter.import_patterns("../templates_data/architecture_patterns")'
+
+        # Import Lua templates
+        echo "Importing Lua prompt templates..."
+        mix run -e 'CentralCloud.TemplateImporter.import_templates("../templates_data/prompt_library")'
+
+        echo "✅ Templates synced to database"
+    deps:
+      - 'validate'
+
+  # Sync learned patterns from database back to Git
+  sync-from-db:
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Syncing learned patterns from CentralCloud database ==="
+        cd ../central_cloud
+
+        # Export learned patterns (high success rate)
+        echo "Exporting learned patterns..."
+        mix run -e 'CentralCloud.PatternExporter.export_learned_patterns("../templates_data/learned")'
+
+        echo "✅ Learned patterns exported to templates_data/learned/"
+        echo "Review and promote to curated if quality is high"
+
+  # Generate embeddings for all templates
+  embed-all:
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Generating embeddings for semantic search ==="
+        cd ../central_cloud
+
+        # Generate embeddings for patterns
+        echo "Embedding architecture patterns..."
+        mix run -e 'CentralCloud.EmbeddingGenerator.embed_patterns()'
+
+        # Generate embeddings for templates
+        echo "Embedding prompt templates..."
+        mix run -e 'CentralCloud.EmbeddingGenerator.embed_templates()'
+
+        echo "✅ Embeddings generated"
+    deps:
+      - 'sync-to-db'
+
+  # Show usage statistics
+  stats:
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Template Usage Statistics ==="
+        cd ../central_cloud
+        mix run -e 'CentralCloud.TemplateStats.show_stats()'
+
+  # List all available templates
+  list:
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Architecture Pattern Templates ==="
+        find prompt_library/architecture -name "*.lua" | sort
+
+        echo ""
+        echo "=== Quality Pattern Templates ==="
+        find prompt_library/quality -name "*.lua" | sort
+
+        echo ""
+        echo "=== LLM Team Templates ==="
+        find prompt_library/architecture/llm_team -name "*.lua" | sort
+
+        echo ""
+        echo "=== Pattern Definitions ==="
+        find architecture_patterns -name "*.json" | sort
+
+  # Test a specific template
+  test-template:
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        TEMPLATE=${1:-"architecture/detect-microservices.lua"}
+        echo "=== Testing template: $TEMPLATE ==="
+        cd ../central_cloud
+        mix run -e "CentralCloud.TemplateLoader.test_template(\"$TEMPLATE\")"
+
+  # Create new pattern template (interactive)
+  new-pattern:
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Create New Pattern Template ==="
+        read -p "Pattern name (e.g., detect-microservices): " pattern_name
+        read -p "Category (architecture/quality): " category
+
+        TEMPLATE_FILE="prompt_library/$category/$pattern_name.lua"
+
+        if [ -f "$TEMPLATE_FILE" ]; then
+          echo "❌ Template already exists: $TEMPLATE_FILE"
+          exit 1
+        fi
+
+        cat > "$TEMPLATE_FILE" << 'EOF'
+        -- Pattern Detection: ${pattern_name}
+        -- Analyzes codebase to detect pattern
+        --
+        -- Version: 1.0.0
+        -- Used by: Centralcloud.ArchitectureLLMTeam (Pattern Analyst agent)
+        -- Model: Claude Opus
+        --
+        -- Input variables:
+        --   codebase_id: string - Project identifier
+        --   project_root: string - Root directory path
+        --
+        -- Returns: Lua prompt string for LLM
+
+        local Prompt = require("prompt")
+        local prompt = Prompt.new()
+
+        local codebase_id = variables.codebase_id or "unknown"
+        local project_root = variables.project_root or "."
+
+        prompt:add("# Pattern Detection: ${pattern_name}")
+        prompt:add("")
+
+        prompt:section("ROLE", [[
+        You are the Pattern Analyst on the Architecture LLM Team.
+        Focus: Identifying ${pattern_name} patterns.
+        ]])
+
+        prompt:section("TASK", [[
+        Analyze this codebase and determine if it uses ${pattern_name}.
+
+        TODO: Add pattern indicators, benefits, concerns
+        ]])
+
+        prompt:section("OUTPUT_FORMAT", [[
+        Return ONLY valid JSON in this exact format:
+
+        {
+          "pattern_detected": true,
+          "pattern_name": "${pattern_name}",
+          "confidence": 0.85,
+          "indicators_found": [],
+          "llm_reasoning": "..."
+        }
+
+        Do NOT include markdown code fences or explanations.
+        Just raw JSON.
+        ]])
+
+        return prompt:render()
+        EOF
+
+        echo "✅ Created template: $TEMPLATE_FILE"
+        echo "Edit the file to add pattern-specific logic"
+
+  # Check template quality (linting)
+  lint:
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Linting Templates ==="
+
+        # Check for required sections
+        echo "Checking Lua templates for required sections..."
+        for template in $(find prompt_library -name "*.lua"); do
+          if ! grep -q "Version:" "$template"; then
+            echo "❌ Missing version in $template"
+            exit 1
+          fi
+          if ! grep -q "OUTPUT_FORMAT" "$template"; then
+            echo "❌ Missing OUTPUT_FORMAT section in $template"
+            exit 1
+          fi
+        done
+
+        # Check JSON patterns have required fields
+        echo "Checking JSON patterns for required fields..."
+        for pattern in $(find architecture_patterns -name "*.json"); do
+          if ! jq -e '.id and .name and .category and .version' "$pattern" > /dev/null; then
+            echo "❌ Missing required fields in $pattern"
+            exit 1
+          fi
+        done
+
+        echo "✅ All templates pass linting"
+
+  # Count templates and patterns
+  count:
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Template & Pattern Count ==="
+        echo ""
+        echo "Pattern Detection (Architecture):"
+        ls -1 prompt_library/architecture/detect-*.lua 2>/dev/null | wc -l | awk '{print "  " $1 " templates"}'
+
+        echo ""
+        echo "Quality Detection:"
+        ls -1 prompt_library/quality/detect-*.lua 2>/dev/null | wc -l | awk '{print "  " $1 " templates"}'
+
+        echo ""
+        echo "LLM Team Agents:"
+        ls -1 prompt_library/architecture/llm_team/*.lua 2>/dev/null | wc -l | awk '{print "  " $1 " templates"}'
+
+        echo ""
+        echo "Pattern JSON Definitions:"
+        ls -1 architecture_patterns/*.json 2>/dev/null | wc -l | awk '{print "  " $1 " patterns"}'
+
+        echo ""
+        echo "✅ All templates created successfully!"
+
+  # Export templates to different format (for external tools)
+  export:
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        FORMAT=${1:-"markdown"}
+        echo "=== Exporting templates to $FORMAT ==="
+        cd ../central_cloud
+        mix run -e "CentralCloud.TemplateExporter.export_all(\"$FORMAT\", \"../templates_data/exports\")"
+        echo "✅ Exported to templates_data/exports/"

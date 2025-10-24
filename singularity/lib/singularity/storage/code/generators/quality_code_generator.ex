@@ -36,6 +36,7 @@ defmodule Singularity.QualityCodeGenerator do
 
   require Logger
   alias Singularity.{RAGCodeGenerator, CodeModel}
+  alias Singularity.Knowledge.TemplateGeneration
 
   @templates_dir "priv/code_quality_templates"
   @supported_languages ~w(elixir erlang gleam rust go typescript python)
@@ -151,6 +152,7 @@ defmodule Singularity.QualityCodeGenerator do
   - `:quality` - Quality level (:production, :standard, :draft)
   - `:template` - Custom template path (optional)
   - `:use_rag` - Use RAG to find best examples (default: true)
+  - `:output_path` - File path where code will be written (for tracking)
   """
   @spec generate(keyword()) :: {:ok, generation_result()} | {:error, term()}
   def generate(opts) do
@@ -159,19 +161,27 @@ defmodule Singularity.QualityCodeGenerator do
     quality = Keyword.get(opts, :quality, :production)
     use_rag = Keyword.get(opts, :use_rag, true)
     template_path = Keyword.get(opts, :template)
+    output_path = Keyword.get(opts, :output_path)
 
     # Load quality template
     with {:ok, template} <- load_template(language, quality, template_path) do
-      generate_with_template(task, language, quality, use_rag, template)
+      generate_with_template(task, language, quality, use_rag, template, output_path)
     else
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp generate_with_template(task, language, quality, use_rag, template) do
+  defp generate_with_template(task, language, quality, use_rag, template, output_path \\ nil) do
     Logger.info("Generating #{quality} quality code: #{task}")
 
-    with {:ok, code} <- generate_implementation(task, language, quality, use_rag, template),
+    # NEW: Ask questions if template has them (Phase 2: 2-way templates)
+    answers = ask_template_questions(template, task, language, quality)
+    Logger.debug("Template answers: #{inspect(answers)}")
+
+    # Merge answers into template context for generation
+    template_with_answers = Map.put(template, "answers", answers)
+
+    with {:ok, code} <- generate_implementation(task, language, quality, use_rag, template_with_answers),
          {:ok, docs} <- generate_documentation(code, task, language, quality),
          {:ok, specs} <- generate_type_specs(code, language, quality),
          {:ok, tests} <- generate_tests(code, task, language, quality),
@@ -184,11 +194,102 @@ defmodule Singularity.QualityCodeGenerator do
         quality_score: score
       }
 
+      # Track this generation (Copier pattern) with answers
+      track_generation(template_with_answers, task, language, quality, output_path, score >= 0.7, score, answers)
+
       Logger.info("✅ Generated code with quality score: #{Float.round(score, 2)}")
       {:ok, result}
     else
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  @doc """
+  Ask template questions if they exist (Phase 2: 2-way templates).
+
+  Questions are inferred from LLM context based on the task.
+  """
+  defp ask_template_questions(template, task, language, quality) do
+    case Map.get(template, "questions") do
+      questions when is_list(questions) and length(questions) > 0 ->
+        Logger.info("Template has #{length(questions)} questions, asking via LLM context inference...")
+
+        # Use TemplateQuestion to ask questions via LLM
+        case Singularity.Knowledge.TemplateQuestion.ask_via_llm(
+               questions,
+               llm_context: "User task: #{task}. Language: #{language}. Quality: #{quality}.",
+               strategy: :infer_from_context,
+               template_id: "quality_template:#{language}-#{quality}"
+             ) do
+          {:ok, answers} ->
+            Logger.info("Got answers: #{inspect(Map.keys(answers))}")
+            answers
+
+          {:error, reason} ->
+            Logger.warning("Failed to get answers from LLM: #{inspect(reason)}, using defaults")
+            get_default_answers(questions)
+        end
+
+      _ ->
+        # No questions in template
+        Logger.debug("Template has no questions, skipping")
+        %{}
+    end
+  end
+
+  defp get_default_answers(questions) do
+    questions
+    |> Enum.map(fn q ->
+      name = Map.get(q, "name")
+      default = Map.get(q, "default")
+      {name, default}
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp track_generation(template, task, language, quality, output_path, success, score, question_answers \\ %{}) do
+    # Only track if output_path provided
+    if output_path do
+      template_id = "quality_template:#{language}-#{quality}"
+
+      # Read version from template, fallback to 1.0.0
+      # Check multiple possible version fields in order of preference
+      template_version =
+        case template do
+          %{"spec_version" => version} when is_binary(version) -> version
+          %{"version" => version} when is_binary(version) -> version
+          %{"metadata" => %{"version" => version}} when is_binary(version) -> version
+          %{"metadata" => %{"spec_version" => version}} when is_binary(version) -> version
+          _ -> "1.0.0"
+        end
+
+      # Merge basic answers with question answers
+      all_answers = Map.merge(
+        %{
+          task: task,
+          language: language,
+          quality: quality,
+          quality_score: score
+        },
+        question_answers
+      )
+
+      case TemplateGeneration.record(
+             template_id: template_id,
+             template_version: template_version,
+             file_path: output_path,
+             answers: all_answers,
+             success: success
+           ) do
+        {:ok, _} ->
+          Logger.debug("Tracked generation: #{template_id} v#{template_version} -> #{output_path}")
+
+        {:error, reason} ->
+          Logger.warning("Failed to track generation: #{inspect(reason)}")
+      end
+    end
+
+    :ok
   end
 
   @doc """

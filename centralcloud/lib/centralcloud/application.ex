@@ -17,9 +17,8 @@ defmodule Centralcloud.Application do
       # Foundation: Database
       Centralcloud.Repo,
 
-      # Infrastructure: Background jobs & scheduling
-      Oban,                             # Background job queue for aggregation, sync
-      Centralcloud.Scheduler,           # Quantum scheduler for periodic global tasks
+      # Infrastructure: Background jobs (Oban handles cron scheduling via plugin)
+      {Oban, oban_config()},
 
       # Global services
       Centralcloud.NatsClient,          # NATS messaging (for subscriptions)
@@ -27,9 +26,19 @@ defmodule Centralcloud.Application do
       Centralcloud.TemplateService,     # Template management
       Centralcloud.FrameworkLearningAgent,  # Learn from external packages
       Centralcloud.IntelligenceHub,     # Aggregate intelligence from all instances
+      CentralCloud.TemplateIntelligence,  # Template intelligence (Phase 3: cross-instance learning)
+
+      # Architecture LLM Team (new)
+      Centralcloud.TemplateLoader,      # Lua template loading and rendering
+      Centralcloud.NATS.PatternValidatorSubscriber,  # Pattern validation via NATS
     ]
 
     opts = [strategy: :one_for_one, name: Centralcloud.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp oban_config do
+    Application.fetch_env!(:centralcloud, Oban)
+    |> Keyword.put_new(:name, Centralcloud.Oban)
   end
 end

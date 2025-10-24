@@ -1,0 +1,80 @@
+{
+  "id": "layered",
+  "name": "Layered Architecture",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "Architecture pattern organizing code into horizontal layers with specific responsibilities. Dependencies flow downward (upper layers depend on lower layers).",
+  "aliases": ["N-Tier Architecture", "3-Tier", "Multi-Tier"],
+  "layers": [
+    {
+      "layer": "presentation",
+      "description": "UI, API controllers, HTTP handling",
+      "responsibilities": ["User input", "Request validation", "Response formatting"]
+    },
+    {
+      "layer": "business",
+      "description": "Business logic, domain models, use cases",
+      "responsibilities": ["Business rules", "Domain logic", "Workflows"]
+    },
+    {
+      "layer": "data",
+      "description": "Database access, persistence, ORM",
+      "responsibilities": ["Data persistence", "Queries", "Transactions"]
+    },
+    {
+      "layer": "infrastructure",
+      "description": "Cross-cutting concerns",
+      "responsibilities": ["Logging", "Caching", "Authentication"]
+    }
+  ],
+  "indicators": [
+    {
+      "name": "clear_layer_separation",
+      "description": "Distinct directories for presentation, business, data layers",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "downward_dependencies",
+      "description": "Dependencies flow downward (not upward or circular)",
+      "weight": 0.85,
+      "required": true
+    },
+    {
+      "name": "layer_isolation",
+      "description": "Each layer has distinct responsibilities",
+      "weight": 0.8,
+      "required": false
+    }
+  ],
+  "benefits": [
+    "Clear separation of concerns",
+    "Easy to understand structure",
+    "Replaceable layers",
+    "Good for team organization"
+  ],
+  "concerns": [
+    "Can become 'lasagna architecture' (too many layers)",
+    "Business logic can leak into other layers",
+    "Tight coupling between layers",
+    "Not suitable for complex domains"
+  ],
+  "anti_patterns": [
+    "Presentation layer bypassing business layer",
+    "Business logic in presentation layer",
+    "Circular dependencies between layers",
+    "Anemic domain models"
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 82,
+    "validated_by": ["claude-opus", "gpt-4.1", "gemini-2.5-pro", "claude-sonnet", "gpt-5-mini"],
+    "validation_date": "2025-10-23",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-23",
+    "version": "1.0.0",
+    "detection_template": "detect-layered-architecture.lua"
+  }
+}

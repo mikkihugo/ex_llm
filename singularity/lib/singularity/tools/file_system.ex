@@ -25,6 +25,7 @@ defmodule Singularity.Tools.FileSystem do
 
   alias Singularity.Tools.{Tool, Catalog}
   alias Singularity.HITL.ApprovalService
+  require Logger
   import Logger
 
   # 10MB max file size

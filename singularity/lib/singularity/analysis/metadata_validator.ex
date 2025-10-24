@@ -359,7 +359,24 @@ defmodule Singularity.Analysis.MetadataValidator do
   def mark_for_review(file_path, opts \\ []) do
     missing = Keyword.get(opts, :missing, [])
     Logger.info("Marking #{file_path} for review. Missing: #{inspect(missing)}")
-    # TODO: Store in database as TODO for SelfImprovingAgent
+
+    # Create TODO for SelfImprovingAgent to fix missing documentation
+    alias Singularity.Execution.Todos.Todo
+
+    {:ok, _todo} = Todo.create(%{
+      title: "Add missing AI documentation to #{Path.basename(file_path)}",
+      description: "Missing elements: #{Enum.join(missing, ", ")}",
+      status: "pending",
+      priority: 3,
+      complexity: "medium",
+      tags: ["documentation", "ai-metadata", "self-improvement"],
+      context: %{
+        file_path: file_path,
+        missing_elements: missing,
+        validator: "metadata_validator"
+      }
+    })
+
     {:ok, :marked}
   end
 
@@ -368,7 +385,21 @@ defmodule Singularity.Analysis.MetadataValidator do
   """
   def mark_as_legacy(file_path) do
     Logger.info("Marking #{file_path} as legacy (skip v2.2.0 validation)")
-    # TODO: Store in database
+
+    # Store in knowledge_artifacts as metadata
+    alias Singularity.Knowledge.ArtifactStore
+
+    ArtifactStore.put(
+      "validation_exception",
+      "legacy_#{Path.basename(file_path)}",
+      %{
+        file_path: file_path,
+        reason: "legacy_code",
+        validation_version_skip: "v2.2.0",
+        marked_at: DateTime.utc_now()
+      }
+    )
+
     {:ok, :legacy}
   end
 

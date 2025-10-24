@@ -10,6 +10,7 @@ defmodule Singularity.Tools.AgentRoles do
   """
 
   alias Singularity.Tools.Catalog
+  require Logger
   import Logger
 
   @agent_roles %{

@@ -90,7 +90,7 @@ defmodule Singularity.MixProject do
       # NIFs are compiled on-demand when modules are loaded, not via Mix dependency compilation
       {:architecture_engine, path: "../rust/architecture_engine", runtime: false, compile: false, app: false},
       {:code_engine, path: "../rust/code_engine", runtime: false, compile: false, app: false},
-      {:embedding_engine, path: "../rust/embedding_engine", runtime: false, compile: false, app: false},
+      # Embedding now uses pure Elixir (NxService) instead of Rust NIF
       # knowledge_engine consolidated into architecture_engine
       {:parser_engine, path: "../rust/parser_engine", runtime: false, compile: false, app: false, optional: true},
       {:prompt_engine, path: "../rust/prompt_engine", runtime: false, compile: false, app: false, optional: true},
@@ -106,13 +106,15 @@ defmodule Singularity.MixProject do
       # When luerl 2.0 releases, this will be merged into luerl directly
       {:lua, "~> 0.3.0"},
 
-      # T5 Training & LLM Integration
-      # TEMPORARILY DISABLED: Bumblebee and EXLA cause startup failures on macOS
-      # EXLA requires XLA C++ compilation which isn't available in this environment
-      # Can be re-enabled on Linux systems with proper build tools
-      # {:bumblebee, "~> 0.5"},
+      # ML/AI Framework - Pure Elixir Nx + Axon + EXLA
+      # Bumblebee for pre-trained models (optional, helps with HF integration)
+      {:bumblebee, "~> 0.5", optional: true},
+      # Core tensor operations (required)
       {:nx, "~> 0.6"},
-      # {:exla, "~> 0.6", optional: true, app: false},
+      # Neural network framework for fine-tuning (required for Axon)
+      {:axon, "~> 0.6", optional: true},
+      # GPU acceleration (CUDA/Metal) - RTX 4080 support (optional, required for GPU)
+      {:exla, "~> 0.6", optional: true, app: false},
       # {:kino, "~> 0.12"},
 
       # Distributed Systems

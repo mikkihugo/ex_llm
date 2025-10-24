@@ -2,9 +2,15 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
   use Ecto.Migration
 
   def up do
-    # Optimize embedding dimensions for specific use cases:
-    # - Code embeddings: 1536 dims (Qodo-Embed-1-1.5B) - richer representation for complex code
-    # - Text embeddings: 1024 dims (Jina v3) - sufficient for documents, faster inference
+    # Multi-vector concatenation for maximum quality:
+    # - Qodo-Embed-1-1.5B: 1536 dims (code-optimized)
+    # - Jina Embeddings v3: 1024 dims (general-purpose)
+    # - Total: 2560 dims (concatenated)
+    #
+    # Rationale: Combines strengths of both models
+    # - Qodo: excels at code semantics
+    # - Jina: excels at general text/documents
+    # - Together: best of both worlds for mixed codebase + documentation RAG
 
     # Only alter tables that exist. Check table existence before altering.
     # Tables from schema: code_embeddings, code_locations, rag_documents, rag_queries,
@@ -16,7 +22,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='code_embeddings' AND column_name='embedding') THEN
-        ALTER TABLE code_embeddings ALTER COLUMN embedding TYPE vector(1536);
+        ALTER TABLE code_embeddings ALTER COLUMN embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -26,18 +32,18 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='code_locations' AND column_name='embedding') THEN
-        ALTER TABLE code_locations ALTER COLUMN embedding TYPE vector(1536);
+        ALTER TABLE code_locations ALTER COLUMN embedding TYPE vector(2560);
       END IF;
     END $$;
     """
 
-    # TEXT EMBEDDINGS (1024 dims) - Jina v3 for documents and knowledge
+    # ALL TEXT/RAG EMBEDDINGS (1536 dims) - Qodo-Embed-1-1.5B for RAG documents, queries, and knowledge
     execute """
     DO $$
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='rag_documents' AND column_name='embedding') THEN
-        ALTER TABLE rag_documents ALTER COLUMN embedding TYPE vector(1024);
+        ALTER TABLE rag_documents ALTER COLUMN embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -47,7 +53,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='rag_queries' AND column_name='query_embedding') THEN
-        ALTER TABLE rag_queries ALTER COLUMN query_embedding TYPE vector(1024);
+        ALTER TABLE rag_queries ALTER COLUMN query_embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -57,7 +63,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='prompt_cache' AND column_name='query_embedding') THEN
-        ALTER TABLE prompt_cache ALTER COLUMN query_embedding TYPE vector(1024);
+        ALTER TABLE prompt_cache ALTER COLUMN query_embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -67,7 +73,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='rules' AND column_name='embedding') THEN
-        ALTER TABLE rules ALTER COLUMN embedding TYPE vector(1024);
+        ALTER TABLE rules ALTER COLUMN embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -77,7 +83,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='knowledge_artifacts' AND column_name='embedding') THEN
-        ALTER TABLE knowledge_artifacts ALTER COLUMN embedding TYPE vector(1024);
+        ALTER TABLE knowledge_artifacts ALTER COLUMN embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -87,7 +93,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='technology_patterns' AND column_name='embedding') THEN
-        ALTER TABLE technology_patterns ALTER COLUMN embedding TYPE vector(1024);
+        ALTER TABLE technology_patterns ALTER COLUMN embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -97,7 +103,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='framework_patterns' AND column_name='embedding') THEN
-        ALTER TABLE framework_patterns ALTER COLUMN embedding TYPE vector(1024);
+        ALTER TABLE framework_patterns ALTER COLUMN embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -107,7 +113,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='semantic_patterns' AND column_name='embedding') THEN
-        ALTER TABLE semantic_patterns ALTER COLUMN embedding TYPE vector(1024);
+        ALTER TABLE semantic_patterns ALTER COLUMN embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -117,7 +123,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='tool_knowledge' AND column_name='embeddings') THEN
-        ALTER TABLE tool_knowledge ALTER COLUMN embeddings TYPE vector(1024);
+        ALTER TABLE tool_knowledge ALTER COLUMN embeddings TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -127,7 +133,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='external_package_registry' AND column_name='semantic_embedding') THEN
-        ALTER TABLE external_package_registry ALTER COLUMN semantic_embedding TYPE vector(1024);
+        ALTER TABLE external_package_registry ALTER COLUMN semantic_embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -137,7 +143,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='external_package_registry' AND column_name='description_embedding') THEN
-        ALTER TABLE external_package_registry ALTER COLUMN description_embedding TYPE vector(1024);
+        ALTER TABLE external_package_registry ALTER COLUMN description_embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -148,7 +154,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='package_code_examples' AND column_name='code_embedding') THEN
-        ALTER TABLE package_code_examples ALTER COLUMN code_embedding TYPE vector(1536);
+        ALTER TABLE package_code_examples ALTER COLUMN code_embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -158,7 +164,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     BEGIN
       IF EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='package_usage_patterns' AND column_name='pattern_embedding') THEN
-        ALTER TABLE package_usage_patterns ALTER COLUMN pattern_embedding TYPE vector(1536);
+        ALTER TABLE package_usage_patterns ALTER COLUMN pattern_embedding TYPE vector(2560);
       END IF;
     END $$;
     """
@@ -188,7 +194,7 @@ defmodule Singularity.Repo.Migrations.StandardizeEmbeddingDimensions do
     END $$;
     """
 
-    # TEXT EMBEDDING INDEXES (1024 dims)
+    # RAG/TEXT EMBEDDING INDEXES (1536 dims, Qodo)
     execute "DROP INDEX IF EXISTS rag_documents_embedding_idx"
     execute """
     DO $$

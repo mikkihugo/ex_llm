@@ -38,7 +38,7 @@ defmodule Centralcloud.MixProject do
       {:rustler, "~> 0.37"},
       {:architecture_engine, path: "../rust/architecture_engine", runtime: false, app: false, compile: false},
       {:code_engine, path: "../rust/code_engine", runtime: false, app: false, compile: false},
-      {:embedding_engine, path: "../rust/embedding_engine", runtime: false, app: false, compile: false},
+      # Embedding calls Singularity via NATS (pure Elixir NxService)
       {:parser_engine, path: "../rust/parser_engine", runtime: false, app: false, compile: false, optional: true},
       {:prompt_engine, path: "../rust/prompt_engine", runtime: false, app: false, compile: false, optional: true},
       {:quality_engine, path: "../rust/quality_engine", runtime: false, app: false, compile: false}

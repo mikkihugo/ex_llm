@@ -200,15 +200,48 @@ defmodule Singularity.RefactoringAgent do
     end
   end
 
-  defp detect_performance_bottlenecks(_analysis) do
+  defp detect_performance_bottlenecks(analysis) do
     # TODO: Integrate with telemetry to detect slow endpoints
-    # For now, placeholder
-    nil
+    # Implementation plan:
+    # 1. Query telemetry events for slow endpoints (>100ms)
+    # 2. Correlate with code analysis for optimization opportunities
+    # 3. Use Singularity.Telemetry.get_slow_endpoints/0
+    # 4. Return optimization suggestions with performance impact
+    
+    # Placeholder implementation
+    case analysis do
+      %{endpoints: endpoints} when length(endpoints) > 10 ->
+        %{
+          type: :performance_bottleneck,
+          severity: :medium,
+          message: "High endpoint count detected - consider consolidation",
+          suggestions: ["Review endpoint design", "Consider API versioning"]
+        }
+      _ -> nil
+    end
   end
 
-  defp detect_schema_migrations_needed(_analysis) do
-    # TODO: Analyze database access patterns
-    # Detect N+1 queries via code analysis
-    nil
+  defp detect_schema_migrations_needed(analysis) do
+    # TODO: Implement N+1 query detection using CodeEngineNif
+    # Implementation plan:
+    # 1. Parse Ecto queries from code AST using CodeEngineNif.analyze_language/2
+    # 2. Detect repeated queries in loops (preload candidates)
+    # 3. Suggest schema changes or query optimization
+    # 4. Use Singularity.CodeEngineNif.analyze_language("elixir", code)
+    
+    case analysis do
+      %{queries: queries} when length(queries) > 5 ->
+        %{
+          type: :n_plus_one_queries,
+          severity: :high,
+          message: "Potential N+1 queries detected - #{length(queries)} queries found",
+          suggestions: [
+            "Add preload/join to reduce query count",
+            "Consider using Repo.preload/2",
+            "Review query patterns in loops"
+          ]
+        }
+      _ -> nil
+    end
   end
 end

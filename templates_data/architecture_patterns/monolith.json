@@ -1,0 +1,87 @@
+{
+  "id": "monolith",
+  "name": "Monolithic Architecture",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "Architecture pattern where entire application is built and deployed as single unit. All code resides in one codebase with shared database and in-process communication.",
+  "aliases": ["Traditional Monolith", "Modular Monolith", "Single-tier Application"],
+  "types": [
+    {
+      "type": "traditional",
+      "description": "Single codebase with poor modularity and tight coupling"
+    },
+    {
+      "type": "modular",
+      "description": "Single codebase with excellent modularity and clear boundaries"
+    },
+    {
+      "type": "distributed",
+      "description": "Multiple deployables but tightly coupled - ANTI-PATTERN"
+    }
+  ],
+  "indicators": [
+    {
+      "name": "single_deployment_unit",
+      "description": "One main application, one deployment artifact",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "shared_database",
+      "description": "All modules access same database",
+      "weight": 0.85,
+      "required": true
+    },
+    {
+      "name": "in_process_communication",
+      "description": "Modules call each other directly (no network)",
+      "weight": 0.8,
+      "required": false
+    },
+    {
+      "name": "single_technology_stack",
+      "description": "Entire codebase uses same language/framework",
+      "weight": 0.6,
+      "required": false
+    }
+  ],
+  "benefits": [
+    "Simple deployment (single unit)",
+    "Easy development (no distributed complexity)",
+    "Strong consistency (ACID transactions)",
+    "Fast in-process communication",
+    "Easier debugging (single codebase, single process)"
+  ],
+  "concerns": [
+    "All modules scale together (can't scale independently)",
+    "Single point of failure",
+    "Technology lock-in",
+    "Large team coordination challenges",
+    "Long deployment times as codebase grows"
+  ],
+  "when_to_use": [
+    "Small to medium teams (<50 developers)",
+    "Simple to moderate domain complexity",
+    "Don't need independent scaling",
+    "Strong consistency required everywhere",
+    "Limited DevOps resources"
+  ],
+  "when_not_to_use": [
+    "Large teams needing autonomy",
+    "Different scaling needs per module",
+    "Need for technology diversity",
+    "High deployment frequency requirements"
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 78,
+    "validated_by": ["claude-opus", "gpt-4.1", "gemini-2.5-pro", "claude-sonnet", "gpt-5-mini"],
+    "validation_date": "2025-10-23",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-23",
+    "version": "1.0.0",
+    "detection_template": "detect-monolith.lua"
+  }
+}

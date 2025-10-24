@@ -17,7 +17,6 @@ members = [
     "rust/prompt_engine",
     "centralcloud/rust/package_intelligence",
     "rust/template",
-    "rust/embedding_engine",
     "rust/architecture_engine",
 ]
 
@@ -151,3 +150,7 @@ criterion = "0.7.0"
 
 # Rustler (for NIFs)
 rustler = "0.37.0"
+
+
+[workspace]
+

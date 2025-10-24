@@ -482,7 +482,7 @@ defmodule Singularity.Agents.DeadCodeMonitor do
     # Publish to NATS (if available)
     case Process.whereis(Singularity.NATS.Client) do
       nil ->
-        Logger.warn("NATS not available, skipping report publish")
+        Logger.warning("NATS not available, skipping report publish")
         :ok
 
       _pid ->
@@ -497,11 +497,11 @@ defmodule Singularity.Agents.DeadCodeMonitor do
   end
 
   defp log_result(:warn, count, change) do
-    Logger.warn("⚠️ Dead code increased slightly: #{count} annotations (#{format_change(change)})")
+    Logger.warning("⚠️ Dead code increased slightly: #{count} annotations (#{format_change(change)})")
   end
 
   defp log_result(:alert, count, change) do
-    Logger.warn("🚨 Dead code increased: #{count} annotations (#{format_change(change)})")
+    Logger.warning("🚨 Dead code increased: #{count} annotations (#{format_change(change)})")
   end
 
   defp log_result(:critical, count, change) do

@@ -193,8 +193,9 @@ defmodule Singularity.BeamAnalysisEngine do
   # Elixir-specific analysis
 
   defp parse_elixir_code(code) do
-    # TODO: Use Rust NIF for tree-sitter parsing
-    # For now, return a mock AST
+    # TODO: Migrate to CodeEngineNif.analyze_language("elixir", code) for tree-sitter parsing
+    # Current: Using fallback mock AST (works but limited)
+    # Target: Full AST with tree-sitter via Rust NIF
     {:ok, %{content: code, tree: %{}}}
   end
 
@@ -290,8 +291,9 @@ defmodule Singularity.BeamAnalysisEngine do
   # Erlang-specific analysis
 
   defp parse_erlang_code(code) do
-    # TODO: Use Rust NIF for tree-sitter parsing
-    # For now, return a mock AST
+    # TODO: Migrate to CodeEngineNif.analyze_language("erlang", code) for tree-sitter parsing
+    # Current: Using fallback mock AST (works but limited)
+    # Target: Full AST with tree-sitter via Rust NIF
     {:ok, %{content: code, tree: %{}}}
   end
 
@@ -370,8 +372,9 @@ defmodule Singularity.BeamAnalysisEngine do
   # Gleam-specific analysis
 
   defp parse_gleam_code(code) do
-    # TODO: Use Rust NIF for tree-sitter parsing
-    # For now, return a mock AST
+    # TODO: Migrate to CodeEngineNif.analyze_language("gleam", code) for tree-sitter parsing
+    # Current: Using fallback mock AST (works but limited)
+    # Target: Full AST with tree-sitter via Rust NIF
     {:ok, %{content: code, tree: %{}}}
   end
 

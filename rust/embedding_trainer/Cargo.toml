@@ -1,0 +1,51 @@
+[package]
+name = "embedding_trainer"
+version = "0.1.0"
+edition = "2021"
+description = "Embedding model fine-tuning trainer using tch-rs (PyTorch bindings)"
+
+[[bin]]
+name = "train_embeddings"
+path = "src/main.rs"
+
+[dependencies]
+# PyTorch bindings for training
+tch = "0.14"
+
+# Model loading
+hf-hub = { version = "0.3", features = ["tokio"] }
+tokenizers = { version = "0.20", features = ["http"] }
+
+# Data handling
+ndarray = { version = "0.15", features = ["serde"] }
+ndarray-rand = "0.15"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# CLI arguments
+clap = { version = "4.0", features = ["derive"] }
+
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+
+# Progress bars
+indicatif = "0.17"
+
+# File operations
+std-fs = "0.1"
+dirs = "5.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

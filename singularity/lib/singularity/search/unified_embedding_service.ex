@@ -14,15 +14,16 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
 
   ## Two Embedding Strategies
 
-  1. **Rust NIF (Primary)** - Pure local ONNX, no API calls, works offline
+  1. **Rust NIF (Production)** - Pure local ONNX, no API calls, works offline
      - GPU: Qodo-Embed-1 (1536D) - Code-specialized via Candle (CUDA/Metal/ROCm)
      - GPU: Jina v3 (1024D) - General text via ONNX
-     - CPU: MiniLM-L6-v2 (384D) - Lightweight via ONNX Runtime
+     - CPU: Both models work on CPU/Metal/CUDA - no MiniLM needed
      - No API keys needed, deterministic, fast
 
-  2. **Bumblebee/Nx (Custom)** - Flexible, for experiments
-     - Any Hugging Face model
-     - GPU acceleration via EXLA
+  2. **Bumblebee/Nx (Environment-based)** - Real embeddings + code generation
+     - **Development**: CodeT5P-770M (770M params) - Fast, CPU-optimized
+     - **Production**: StarCoder2-7B (7B params, ~14GB VRAM) - Single model for RTX 4080 16GB
+     - **Memory Constraint**: Can't run multiple 7B+ models on 16GB VRAM
      - Training/fine-tuning capability
 
   ## Strategy Selection
@@ -30,9 +31,11 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   ```
   embed(text, strategy: :auto)
       ↓
-  Try Rust NIF (fast, local, offline, GPU-accelerated)
-      ↓ [if fails]
-  Try Bumblebee (flexible custom models)
+  Try Rust NIF (Jina v3/Qodo-Embed - works on CPU/Metal/CUDA)
+      ↓ [if fails - no Rust NIF]
+  Use Bumblebee (Environment-based):
+    - Dev: CodeT5P-770M (CPU, fast)
+    - Prod: StarCoder2-7B (GPU, single model for 16GB VRAM)
   ```
 
   ## Architecture Diagram
@@ -186,10 +189,10 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   def available_strategies do
     strategies = []
 
-    # Check Rust NIF (primary strategy)
-    strategies = if rust_available?(), do: [:rust | strategies], else: strategies
+    # Check Rust NIF (production strategy - GPU only)
+    strategies = if rust_available?() && gpu_available?(), do: [:rust | strategies], else: strategies
 
-    # Check Bumblebee (fallback)
+    # Check Bumblebee (development strategy - CPU with real embeddings)
     strategies = if bumblebee_available?(), do: [:bumblebee | strategies], else: strategies
 
     Enum.reverse(strategies)
@@ -210,6 +213,7 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   def recommended_strategy(content_type) do
     cond do
       rust_available?() && gpu_available?() ->
+        # Production: GPU with Jina v3/Qodo-Embed (real embeddings, high quality)
         model =
           case content_type do
             :code -> :qodo_embed
@@ -219,35 +223,63 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
 
         {:rust, model}
 
-      rust_available?() ->
-        # Fast CPU model (MiniLM is excellent even on CPU, 12x faster than Google AI)
-        {:rust, :minilm}
-
       bumblebee_available?() ->
-        {:bumblebee, :default}
+        # Environment-based model selection
+        model = get_bumblebee_model_for_environment(content_type)
+        {:bumblebee, model}
 
       true ->
         {:error, :no_strategy_available}
     end
   end
 
+  ## Private - Environment-based Model Selection
+
+  defp get_bumblebee_model_for_environment(_content_type) do
+    case Mix.env() do
+      :prod ->
+        # Production: Single optimal model for RTX 4080 16GB VRAM
+        # StarCoder2-7B (~14GB) is perfect for 16GB VRAM
+        # Can't run multiple 7B+ models simultaneously
+        # Use same model for all content types to avoid memory conflicts
+        :starcoder2_7b
+
+      _ ->
+        # Development: Use smaller T5 models for speed
+        :codet5p_770m
+    end
+  end
+
+  defp get_model_name_for_atom(model_atom) do
+    case model_atom do
+      :codet5p_770m -> "Salesforce/codet5p-770m"
+      :starcoder2_7b -> "bigcode/starcoder2-7b"
+      :starcoder2_3b -> "bigcode/starcoder2-3b"
+      :llama3_2_90b -> "meta/llama-3.2-90b-vision-instruct"
+      :deepseek_coder -> "deepseek-ai/deepseek-coder-1.3b-base"
+      _ -> "Salesforce/codet5p-770m" # fallback
+    end
+  end
+
   ## Private - Auto Strategy
 
   defp embed_auto(text, opts, fallback) do
-    # Try Rust NIF first (fastest, local ONNX, offline)
+    # Try Rust NIF first (GPU with Jina v3/Qodo-Embed)
     with {:error, _} <- embed_rust(text, opts, false),
          true <- fallback,
-         # Fallback to Bumblebee (flexible custom models)
+         # Fallback to Bumblebee (environment-based: T5 for dev, StarCoder/Llama for prod)
+         # Skip MiniLM - it returns fake embeddings
          {:error, _} <- embed_bumblebee(text, opts, false) do
       {:error, :all_strategies_failed}
     end
   end
 
   defp embed_batch_auto(texts, opts, fallback) do
-    # Try Rust NIF first (GPU batch processing, local ONNX)
+    # Try Rust NIF first (GPU batch processing with Jina v3/Qodo-Embed)
     with {:error, _} <- embed_batch_rust(texts, opts, false),
          true <- fallback,
-         # Fallback to Bumblebee (flexible custom models)
+         # Fallback to Bumblebee (environment-based: T5 for dev, StarCoder/Llama for prod)
+         # Skip MiniLM - it returns fake embeddings
          {:error, _} <- embed_batch_bumblebee(texts, opts, false) do
       {:error, :all_strategies_failed}
     end
@@ -294,8 +326,9 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   ## Private - Bumblebee Strategy
 
   defp embed_bumblebee(text, opts, fallback) do
-    # Extract options
-    model_name = Keyword.get(opts, :model_name, "sentence-transformers/all-MiniLM-L6-v2")
+    # Extract options - use environment-based model selection
+    model_atom = Keyword.get(opts, :model, :codet5p_770m)
+    model_name = get_model_name_for_atom(model_atom)
     max_length = Keyword.get(opts, :max_length, 512)
     normalize = Keyword.get(opts, :normalize, true)
     device = Keyword.get(opts, :device, :cpu)
@@ -347,8 +380,9 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   end
 
   defp embed_batch_bumblebee(texts, opts, fallback) do
-    # Extract options
-    model_name = Keyword.get(opts, :model_name, "sentence-transformers/all-MiniLM-L6-v2")
+    # Extract options - use environment-based model selection
+    model_atom = Keyword.get(opts, :model, :codet5p_770m)
+    model_name = get_model_name_for_atom(model_atom)
     max_length = Keyword.get(opts, :max_length, 512)
     normalize = Keyword.get(opts, :normalize, true)
     device = Keyword.get(opts, :device, :cpu)

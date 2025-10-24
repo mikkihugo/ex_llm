@@ -380,10 +380,20 @@ defmodule Singularity.Agents.CostOptimizedAgent do
     end
   end
 
-  defp check_prompt_cache(_task) do
-    # TODO: Use pgvector to find similar past LLM calls
-    # For now, simple exact match
-    :miss
+  defp check_prompt_cache(task) do
+    # Check for similar past LLM calls using pgvector similarity
+    alias Singularity.LLM.Prompt.Cache
+
+    prompt_text = task.description || task.title || ""
+
+    case Cache.find_similar(prompt_text, threshold: 0.92) do
+      {:hit, cached_response} ->
+        Logger.info("Cache hit for task", task_id: task.id, similarity: cached_response.similarity)
+        {:hit, cached_response.response}
+
+      :miss ->
+        :miss
+    end
   end
 
   defp build_llm_prompt(task, rule_result, specialization) do

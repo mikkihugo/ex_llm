@@ -122,33 +122,21 @@ impl PromptBitDSPyOptimizer {
         let mut variants = Vec::new();
 
         // Variant 1: More concise
-        variants.push(PromptBitVariant {
-            id: 1,
-            content: self.make_concise(&task.original_content),
-            rationale: "Made more concise".to_string(),
-        });
+        let concise = self.make_concise(&task.original_content);
+        variants.push(self.create_variant(1, &concise, "Made more concise"));
 
         // Variant 2: More detailed
-        variants.push(PromptBitVariant {
-            id: 2,
-            content: self.make_detailed(&task.original_content),
-            rationale: "Added more details".to_string(),
-        });
+        let detailed = self.make_detailed(&task.original_content);
+        variants.push(self.create_variant(2, &detailed, "Added more details"));
 
         // Variant 3: More actionable
-        variants.push(PromptBitVariant {
-            id: 3,
-            content: self.make_actionable(&task.original_content),
-            rationale: "Made more actionable with explicit steps".to_string(),
-        });
+        let actionable = self.make_actionable(&task.original_content);
+        variants.push(self.create_variant(3, &actionable, "Made more actionable with explicit steps"));
 
         // Variant 4: DSPy-generated based on training examples
         if !task.training_examples.is_empty() {
-            variants.push(PromptBitVariant {
-                id: 4,
-                content: self.learn_from_examples(task).await?,
-                rationale: "Learned from successful examples".to_string(),
-            });
+            let learned = self.learn_from_examples(task).await?;
+            variants.push(self.create_variant(4, &learned, "Learned from successful examples"));
         }
 
         Ok(variants)
@@ -343,13 +331,13 @@ impl PromptBitDSPyOptimizer {
         }
     }
 
-    /// Evaluate prompt variant with detailed metrics
-    #[allow(dead_code)]
-    fn evaluate_variant(&self, content: &str, rationale: &str) -> PromptBitVariant {
+    /// Create a prompt variant with given content and rationale
+    /// Helper to avoid repetitive struct construction
+    fn create_variant(&self, id: usize, content: &str, rationale: &str) -> PromptBitVariant {
         PromptBitVariant {
-            id: 1, // Add missing id field
+            id,
             content: content.to_string(),
-            rationale: rationale.to_string(), // Use rationale field
+            rationale: rationale.to_string(),
         }
     }
 

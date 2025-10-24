@@ -1,0 +1,171 @@
+{
+  "artifact_type": "quality_template",
+  "identifier": "elixir-otp-advanced",
+  "version": "2.0.0",
+  "language": "elixir",
+  "quality_level": "production",
+  "description": "Advanced Elixir OTP template showcasing Copier-inspired patterns",
+  "content": {
+    "template_name": "Elixir OTP Advanced (with Questions, Migrations, Bulk Generation)",
+
+    "questions": [
+      {
+        "var_name": "module_name",
+        "type": "str",
+        "help": "Name of the OTP module (e.g., MyApp.Worker)",
+        "validator": "{% if not (module_name | regex_search('^[A-Z][a-zA-Z0-9\\.]*$')) %}Module name must be PascalCase (e.g., MyApp.Worker){% endif %}"
+      },
+      {
+        "var_name": "otp_type",
+        "type": "str",
+        "help": "Type of OTP behavior",
+        "choices": ["GenServer", "GenStateMachine", "Task", "Agent"],
+        "default": "GenServer"
+      },
+      {
+        "var_name": "supervision",
+        "type": "bool",
+        "help": "Include in supervision tree?",
+        "default": true
+      },
+      {
+        "var_name": "test_framework",
+        "type": "str",
+        "help": "Testing approach",
+        "choices": {
+          "ExUnit only": "exunit",
+          "ExUnit + Mox": "mox",
+          "ExUnit + Hammox": "hammox"
+        },
+        "default": "mox",
+        "when": "{{ include_tests }}"
+      },
+      {
+        "var_name": "include_tests",
+        "type": "bool",
+        "help": "Generate test files?",
+        "default": true
+      },
+      {
+        "var_name": "features",
+        "type": "yaml",
+        "help": "Additional features (multiselect)",
+        "multiselect": true,
+        "choices": [
+          "telemetry",
+          "error_tracking",
+          "rate_limiting",
+          "circuit_breaker"
+        ],
+        "default": ["telemetry"]
+      }
+    ],
+
+    "migrations": [
+      {
+        "version": "1.5.0",
+        "before": [
+          "# Backup before migration",
+          "cp {{ _file_path }} {{ _file_path }}.v1.4.backup"
+        ],
+        "after": [
+          "mix format {{ _file_path }}",
+          "mix compile --warnings-as-errors"
+        ]
+      },
+      {
+        "version": "2.0.0",
+        "when": "{{#if (eq _stage 'before')}}true{{/if}}",
+        "command": [
+          "sed",
+          "-i",
+          "s/use GenServer, restart: :permanent/use GenServer/g",
+          "{{ _file_path }}"
+        ],
+        "working_directory": "."
+      },
+      {
+        "version": "2.0.0",
+        "when": "{{#if (eq _stage 'after')}}true{{/if}}",
+        "command": "mix test {{_test_file}}"
+      }
+    ],
+
+    "bulk_generation": {
+      "note": "Use {% yield %} for generating multiple files from one template",
+      "example": "lib/{% yield module from modules %}{{ module }}{% endyield %}/worker.ex"
+    },
+
+    "system_prompt": "You are an Elixir OTP expert generating production-quality code.\n\nTemplate: {{template_name}}\nVersion: 2.0.0\n\nAnswers:\n{{#each answers}}\n- {{@key}}: {{this}}\n{{/each}}\n\nGenerate an Elixir {{otp_type}} module following these guidelines:\n\n1. **Module Structure**\n   - Module name: {{module_name}}\n   - Behavior: use {{otp_type}}\n   {{#if supervision}}- Designed for supervision tree{{/if}}\n   - Complete @moduledoc with examples\n   - @doc for all public functions\n\n2. **OTP Patterns**\n   - Proper state management\n   - Handle all callbacks (init, handle_call, handle_cast, handle_info, terminate)\n   - Error handling with {:error, reason}\n   - Timeout handling\n\n3. **Production Features**\n   {{#if (includes features 'telemetry')}}- Telemetry events for observability{{/if}}\n   {{#if (includes features 'error_tracking')}}- Comprehensive error tracking{{/if}}\n   {{#if (includes features 'rate_limiting')}}- Rate limiting logic{{/if}}\n   {{#if (includes features 'circuit_breaker')}}- Circuit breaker pattern{{/if}}\n\n4. **Code Quality**\n   - Credo compliant\n   - Dialyzer specs on all public functions\n   - Pattern matching over conditionals\n   - Guard clauses\n   - No nested conditionals\n\n5. **Testing** (if include_tests)\n   {{#if (eq test_framework 'mox')}}- Use Mox for behavior mocking{{/if}}\n   {{#if (eq test_framework 'hammox')}}- Use Hammox for type-safe mocks{{/if}}\n   - Test concurrent scenarios\n   - Test failure cases\n   - Test timeouts\n\nGenerate ONLY the code, no explanations.",
+
+    "user_prompt": "Generate {{module_name}} as a {{otp_type}}.\n\n{{#if supervision}}Include start_link/1 and child_spec for supervision.{{/if}}\n{{#if include_tests}}Also generate comprehensive tests in test/{{underscore module_name}}_test.exs{{/if}}",
+
+    "validation_rules": [
+      {
+        "rule": "Must have @moduledoc",
+        "severity": "error"
+      },
+      {
+        "rule": "Must have @spec for all public functions",
+        "severity": "error"
+      },
+      {
+        "rule": "Must handle all {{ otp_type }} callbacks",
+        "severity": "error"
+      },
+      {
+        "rule": "Must compile without warnings",
+        "severity": "error"
+      },
+      {
+        "rule": "Must pass Credo --strict",
+        "severity": "warning"
+      }
+    ],
+
+    "example_answer_file": {
+      "_template_id": "quality_template:elixir-otp-advanced",
+      "_template_version": "2.0.0",
+      "_generated_at": "2025-01-10T12:00:00Z",
+      "module_name": "MyApp.Worker",
+      "otp_type": "GenServer",
+      "supervision": true,
+      "test_framework": "mox",
+      "include_tests": true,
+      "features": ["telemetry", "error_tracking"]
+    },
+
+    "usage_examples": [
+      {
+        "description": "Generate with default answers",
+        "code": "TemplateQuestion.ask_via_llm(template.questions) |> QualityCodeGenerator.generate(template)"
+      },
+      {
+        "description": "Upgrade to new version",
+        "code": "mix template.upgrade quality_template:elixir-otp-advanced --to 2.0.0"
+      },
+      {
+        "description": "Check what generated a file",
+        "code": "TemplateGeneration.find_by_file(\"lib/my_app/worker.ex\")"
+      }
+    ]
+  },
+
+  "metadata": {
+    "created_at": "2025-01-10T00:00:00Z",
+    "updated_at": "2025-01-10T00:00:00Z",
+    "source": "Copier patterns extraction",
+    "tags": ["elixir", "otp", "genserver", "production", "copier-patterns", "questions", "migrations"],
+    "success_rate": null,
+    "usage_count": 0,
+    "patterns_extracted": [
+      "Dynamic questionnaire with validation",
+      "Template versioning and migrations",
+      "Answer file tracking",
+      "Conditional questions (when clause)",
+      "Multiselect choices",
+      "Before/after migration hooks",
+      "Bulk file generation ({% yield %})"
+    ]
+  }
+}

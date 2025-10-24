@@ -64,6 +64,7 @@ defmodule Singularity.Search.PostgresVectorSearch do
 
   alias Singularity.Repo
   alias Singularity.Search.EmbeddingService
+  alias Singularity.Embedding.NxService
 
   @doc """
   Find similar code using PostgreSQL vector functions.
@@ -344,9 +345,9 @@ defmodule Singularity.Search.PostgresVectorSearch do
   # Private functions
 
   defp generate_embedding(text) do
-    case Singularity.EmbeddingGenerator.embed(text) do
+    case NxService.embed(text) do
       {:ok, embedding} -> {:ok, embedding}
-      {:error, reason} -> {:error, "Embedding generation failed: #{inspect(reason)}"}
+      {:error, reason} -> {:error, "Multi-vector embedding generation failed: #{inspect(reason)}"}
     end
   end
 end

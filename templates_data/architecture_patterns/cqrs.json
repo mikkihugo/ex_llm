@@ -1,0 +1,87 @@
+{
+  "id": "cqrs",
+  "name": "CQRS (Command Query Responsibility Segregation)",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "Architecture pattern separating read operations (queries) from write operations (commands). Different models optimized for reading vs writing.",
+  "aliases": ["Command Query Separation", "CQRS Pattern"],
+  "principle": "A method should either change state OR return data, never both (Bertrand Meyer)",
+  "variants": [
+    {
+      "variant": "simple",
+      "description": "Separate command/query methods, same database, same models"
+    },
+    {
+      "variant": "read_models",
+      "description": "Separate read/write models, same database (read model denormalized)"
+    },
+    {
+      "variant": "event_sourcing",
+      "description": "Commands create events, read models built from projections"
+    },
+    {
+      "variant": "full_separation",
+      "description": "Separate databases for read and write, eventual consistency"
+    }
+  ],
+  "indicators": [
+    {
+      "name": "separate_commands_queries",
+      "description": "Commands and queries in separate files/directories",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "command_handlers",
+      "description": "Handlers that process commands and modify state",
+      "weight": 0.85,
+      "required": true
+    },
+    {
+      "name": "query_handlers",
+      "description": "Handlers that fetch data without side effects",
+      "weight": 0.85,
+      "required": true
+    },
+    {
+      "name": "read_models",
+      "description": "Separate read models optimized for queries",
+      "weight": 0.8,
+      "required": false
+    }
+  ],
+  "benefits": [
+    "Performance (optimize read/write independently)",
+    "Scalability (scale read/write separately)",
+    "Flexibility (different models for different needs)",
+    "Security (separate read/write permissions)"
+  ],
+  "concerns": [
+    "Complexity (more moving parts)",
+    "Eventual consistency (read side may lag)",
+    "Code duplication (separate models)",
+    "Learning curve"
+  ],
+  "when_to_use": [
+    "Complex domains with different read/write patterns",
+    "High read-to-write ratio",
+    "Event-driven architecture",
+    "Need audit trail (with event sourcing)"
+  ],
+  "when_not_to_use": [
+    "Simple CRUD applications (overkill)",
+    "Strong consistency required everywhere"
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 87,
+    "validated_by": ["claude-opus", "gpt-4.1", "gemini-2.5-pro", "claude-sonnet", "gpt-5-mini"],
+    "validation_date": "2025-10-23",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-23",
+    "version": "1.0.0",
+    "detection_template": "detect-cqrs.lua"
+  }
+}

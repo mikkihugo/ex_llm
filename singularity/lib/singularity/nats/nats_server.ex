@@ -256,7 +256,7 @@ defmodule Singularity.NatsServer do
     patterns = request["data"]["patterns"] || []
     context = request["data"]["context"] || ""
 
-    case FrameworkDetector.detect_frameworks(patterns, context: context) do
+    case Singularity.Detection.FrameworkDetector.detect_frameworks(patterns, context: context) do
       {:ok, results} -> {:ok, results}
       {:error, reason} -> {:error, reason}
     end
@@ -290,7 +290,7 @@ defmodule Singularity.NatsServer do
     tool_name = request["data"]["tool_name"]
     arguments = request["data"]["arguments"] || %{}
 
-    case Runner.execute_tool(tool_name, arguments) do
+    case Singularity.Tools.execute_tool(tool_name, arguments) do
       {:ok, result} -> {:ok, result}
       {:error, reason} -> {:error, reason}
     end

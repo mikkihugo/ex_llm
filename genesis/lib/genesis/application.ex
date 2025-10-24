@@ -41,9 +41,8 @@ defmodule Genesis.Application do
       # Foundation: Database (isolated genesis_db)
       Genesis.Repo,
 
-      # Infrastructure: Background jobs & messaging
-      Oban,
-      Genesis.Scheduler,
+      # Infrastructure: Background jobs (Oban handles cron scheduling via plugin)
+      {Oban, name: Genesis.Oban, repo: Genesis.Repo},
 
       # Task supervision for timeout handling
       {Task.Supervisor, name: Genesis.TaskSupervisor},

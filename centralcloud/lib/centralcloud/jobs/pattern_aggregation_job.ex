@@ -1,11 +1,11 @@
 defmodule Centralcloud.Jobs.PatternAggregationJob do
   @moduledoc """
-  Global pattern aggregation job
+  Oban job for global pattern aggregation.
 
   Aggregates patterns learned by all Singularity instances into
   consolidated global insights.
 
-  Called every 1 hour via Quantum scheduler.
+  Runs every 1 hour via Oban Cron.
 
   ## Data Flow
 
@@ -22,15 +22,33 @@ defmodule Centralcloud.Jobs.PatternAggregationJob do
   - Knowledge sharing (instances download aggregate models)
   """
 
+  use Oban.Worker,
+    queue: :aggregation,
+    max_attempts: 3,
+    unique: [period: 3600]  # Only one job per hour
+
   require Logger
   import Ecto.Query
   alias Centralcloud.{Repo, NatsClient}
   alias Centralcloud.Schemas.Package
 
+  @impl Oban.Worker
+  def perform(%Oban.Job{}) do
+    Logger.info("Oban: Running pattern aggregation")
+
+    case aggregate_patterns() do
+      :ok ->
+        :ok
+      {:error, reason} ->
+        Logger.error("Pattern aggregation failed: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
   @doc """
   Aggregate patterns from all Singularity instances.
 
-  Called every 1 hour via Quantum scheduler.
+  Called every 1 hour via Oban Cron.
   """
   def aggregate_patterns do
     Logger.debug("📊 Starting pattern aggregation from all instances...")

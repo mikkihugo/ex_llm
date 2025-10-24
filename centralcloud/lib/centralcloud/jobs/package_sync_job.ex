@@ -1,6 +1,6 @@
 defmodule Centralcloud.Jobs.PackageSyncJob do
   @moduledoc """
-  External package registry synchronization job
+  Oban job for external package registry synchronization.
 
   Syncs package metadata from external registries:
   - npm (JavaScript ecosystem)
@@ -8,7 +8,7 @@ defmodule Centralcloud.Jobs.PackageSyncJob do
   - hex (Elixir ecosystem)
   - pypi (Python ecosystem)
 
-  Called once daily via Quantum scheduler.
+  Runs daily at 2 AM via Oban Cron.
 
   ## Purpose
 
@@ -26,6 +26,11 @@ defmodule Centralcloud.Jobs.PackageSyncJob do
   - "What do other teams use for this task?"
   """
 
+  use Oban.Worker,
+    queue: :sync,
+    max_attempts: 3,
+    unique: [period: 86_400]  # Only one job per day
+
   require Logger
   import Ecto.Query
   alias Centralcloud.{Repo, NatsClient}
@@ -37,10 +42,26 @@ defmodule Centralcloud.Jobs.PackageSyncJob do
   @hex_registry "https://hex.pm/api"
   @pypi_registry "https://pypi.org/pypi"
 
+  @impl Oban.Worker
+  def perform(%Oban.Job{}) do
+    Logger.info("Oban: Running package sync")
+
+    case sync_packages() do
+      count when is_integer(count) ->
+        Logger.info("Package sync completed: #{count} packages synced")
+        :ok
+      :ok ->
+        :ok
+      {:error, reason} ->
+        Logger.error("Package sync failed: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
   @doc """
   Sync external package registries based on actual usage from Singularity instances.
 
-  Called once daily (at 2 AM) via Quantum scheduler.
+  Called once daily (at 2 AM) via Oban Cron.
   """
   def sync_packages do
     Logger.debug("📦 Starting intelligent package registry sync...")

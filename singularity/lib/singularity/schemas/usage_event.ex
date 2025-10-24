@@ -99,12 +99,21 @@ defmodule Singularity.Schemas.UsageEvent do
       # => 0.75 (75% acceptance rate)
   """
   def acceptance_rate(category, codebase_id) do
-    # Calculate actual acceptance rate from database
-    # TODO: Implement with Repo when database schema is created
-    # For now, return placeholder that uses the parameters for logging
-    require Logger
-    Logger.debug("Calculating acceptance rate for category=#{category}, codebase=#{codebase_id}")
-    0.75
+    import Ecto.Query
+
+    query = from u in __MODULE__,
+      where: u.category == ^category and u.codebase_id == ^codebase_id,
+      select: %{
+        total: count(u.id),
+        accepted: sum(fragment("CASE WHEN ? THEN 1 ELSE 0 END", u.accepted))
+      }
+
+    case Singularity.Repo.one(query) do
+      %{total: 0} -> 0.0
+      %{total: total, accepted: accepted} when not is_nil(accepted) ->
+        accepted / total
+      _ -> 0.0
+    end
   end
 
   @doc """
@@ -116,16 +125,44 @@ defmodule Singularity.Schemas.UsageEvent do
       # => %{total_events: 100, acceptance_rate: 0.75, categories: %{...}}
   """
   def stats(codebase_id) do
-    # Get actual statistics from database
-    # TODO: Implement with Repo when database schema is created
-    # For now, return placeholder that uses the parameter for logging
-    require Logger
-    Logger.debug("Getting stats for codebase=#{codebase_id}")
+    import Ecto.Query
+
+    # Get overall stats
+    overall_query = from u in __MODULE__,
+      where: u.codebase_id == ^codebase_id,
+      select: %{
+        total_events: count(u.id),
+        accepted: sum(fragment("CASE WHEN ? THEN 1 ELSE 0 END", u.accepted))
+      }
+
+    overall = Singularity.Repo.one(overall_query) || %{total_events: 0, accepted: 0}
+
+    # Get per-category stats
+    category_query = from u in __MODULE__,
+      where: u.codebase_id == ^codebase_id,
+      group_by: u.category,
+      select: {u.category, %{
+        total: count(u.id),
+        accepted: sum(fragment("CASE WHEN ? THEN 1 ELSE 0 END", u.accepted))
+      }}
+
+    categories =
+      category_query
+      |> Singularity.Repo.all()
+      |> Enum.into(%{}, fn {cat, stats} -> {String.to_atom(cat), stats} end)
+
+    acceptance_rate =
+      case overall do
+        %{total_events: 0} -> 0.0
+        %{total_events: total, accepted: accepted} when not is_nil(accepted) ->
+          accepted / total
+        _ -> 0.0
+      end
 
     %{
-      total_events: 0,
-      acceptance_rate: 0.0,
-      categories: %{}
+      total_events: overall.total_events || 0,
+      acceptance_rate: acceptance_rate,
+      categories: categories
     }
   end
 end

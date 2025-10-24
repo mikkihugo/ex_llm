@@ -22,19 +22,19 @@ serde = { version = "1.0", features = ["derive"] }
 termcolor = "1.2"
 walkdir = "2.0"
 
-tree-sitter = "0.25"
-tree-sitter-java = "0.23"
-tree-sitter-typescript = "0.23"
-tree-sitter-javascript = "0.25"
-tree-sitter-python = "0.25"
-tree-sitter-rust = "0.24"
-tree-sitter-cpp = "0.23"
+tree-sitter = { workspace = true }
+tree-sitter-java = { workspace = true }
+tree-sitter-typescript = { workspace = true }
+tree-sitter-javascript = { workspace = true }
+tree-sitter-python = { workspace = true }
+tree-sitter-rust = { workspace = true }
+tree-sitter-cpp = { workspace = true }
 # BEAM languages
-tree-sitter-elixir = "0.3"
-tree-sitter-erlang = "0.15"
-tree-sitter-gleam = "1.0"
+tree-sitter-elixir = { workspace = true }
+tree-sitter-erlang = { workspace = true }
+tree-sitter-gleam = { workspace = true }
 # Lua
-tree-sitter-lua = "0.2.0"
+tree-sitter-lua = { workspace = true }
 num-traits = "0.2"
 
 [dev-dependencies]

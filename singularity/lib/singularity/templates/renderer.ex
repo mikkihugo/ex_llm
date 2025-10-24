@@ -307,7 +307,7 @@ defmodule Singularity.Templates.Renderer do
         {:ok, template}
 
       {:error, :not_found} = error ->
-        Logger.warn("Template not found: #{template_id}")
+        Logger.warning("Template not found: #{template_id}")
         error
 
       error ->
@@ -349,7 +349,7 @@ defmodule Singularity.Templates.Renderer do
             end
 
           _ ->
-            Logger.warn("Bit not found: #{bit_id}")
+            Logger.warning("Bit not found: #{bit_id}")
             ""
         end
       end)
@@ -529,12 +529,63 @@ defmodule Singularity.Templates.Renderer do
     end
   end
 
+  defp quality_check(code, %{"quality_standard" => standard_id, "language" => language})
+       when is_binary(standard_id) and is_binary(language) do
+    # Integrate with QualityEngine for quality validation
+    alias Singularity.Engines.QualityEngine
+
+    Logger.debug("Running quality check", standard: standard_id, language: language)
+
+    case QualityEngine.analyze_code_quality(code, language) do
+      {:ok, metrics} ->
+        # Check if code meets quality standard
+        if meets_quality_standard?(metrics, standard_id) do
+          Logger.info("Code passed quality check", standard: standard_id)
+          {:ok, code}
+        else
+          Logger.warning("Code failed quality check", standard: standard_id, metrics: metrics)
+          {:error, {:quality_check_failed, metrics}}
+        end
+
+      {:error, :nif_not_loaded} ->
+        # QualityEngine NIF not loaded - pass through with warning
+        Logger.warning("QualityEngine NIF not loaded, skipping quality check")
+        {:ok, code}
+
+      {:error, reason} ->
+        Logger.error("Quality check failed", reason: reason)
+        {:error, {:quality_check_error, reason}}
+    end
+  end
+
   defp quality_check(code, %{"quality_standard" => standard_id}) when is_binary(standard_id) do
-    # TODO: Integrate with QualityEngine
-    # For now, just pass through
-    Logger.debug("Quality check: #{standard_id}")
+    # No language specified - log and pass through
+    Logger.debug("Quality check skipped - no language specified", standard: standard_id)
     {:ok, code}
   end
 
   defp quality_check(code, _), do: {:ok, code}
+
+  defp meets_quality_standard?(metrics, standard_id) do
+    # Define quality thresholds for different standards
+    thresholds = %{
+      "production" => %{complexity: 10, maintainability: 70},
+      "high" => %{complexity: 15, maintainability: 60},
+      "medium" => %{complexity: 20, maintainability: 50},
+      "low" => %{complexity: 30, maintainability: 30}
+    }
+
+    case Map.get(thresholds, standard_id) do
+      nil ->
+        # Unknown standard - pass
+        true
+
+      threshold ->
+        # Check if metrics meet threshold
+        complexity = Map.get(metrics, :complexity, 0)
+        maintainability = Map.get(metrics, :maintainability, 100)
+
+        complexity <= threshold.complexity and maintainability >= threshold.maintainability
+    end
+  end
 end

@@ -202,13 +202,15 @@ defmodule Singularity.CentralCloud do
     # Store patterns in local database
     Enum.each(patterns, fn pattern ->
       Logger.debug("Storing pattern locally", pattern_type: pattern.type)
-      # TODO: Store in local database
+      # TODO: Store in Singularity.Schemas.TechnologyPattern or knowledge_artifacts table
+      # Decide: Use existing TechnologyPattern schema or new pattern type?
     end)
 
     # Store insights in local database
     Enum.each(insights, fn insight ->
       Logger.debug("Storing insight locally", insight_type: insight.type)
-      # TODO: Store in local database
+      # TODO: Create Singularity.Schemas.CodeInsight schema for storing insights
+      # Or: Store as JSONB in knowledge_artifacts with type: "code_insight"
     end)
 
     # Update central knowledge via NATS

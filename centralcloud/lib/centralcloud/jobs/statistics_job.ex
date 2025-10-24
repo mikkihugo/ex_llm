@@ -1,6 +1,6 @@
 defmodule Centralcloud.Jobs.StatisticsJob do
   @moduledoc """
-  Global statistics generation job
+  Oban job for global statistics generation.
 
   Generates global insights and statistics from all Singularity instances:
   - Which patterns are most common?
@@ -9,7 +9,7 @@ defmodule Centralcloud.Jobs.StatisticsJob do
   - What's the global learning efficiency?
   - How many instances are connected?
 
-  Called every 1 hour via Quantum scheduler.
+  Runs every 1 hour via Oban Cron.
 
   ## Metrics Generated
 
@@ -21,15 +21,33 @@ defmodule Centralcloud.Jobs.StatisticsJob do
   - Knowledge growth (new patterns discovered per hour)
   """
 
+  use Oban.Worker,
+    queue: :aggregation,
+    max_attempts: 3,
+    unique: [period: 3600]  # Only one job per hour
+
   require Logger
   import Ecto.Query
   alias Centralcloud.{Repo, NatsClient}
   alias Centralcloud.Schemas.Package
 
+  @impl Oban.Worker
+  def perform(%Oban.Job{}) do
+    Logger.info("Oban: Running statistics generation")
+
+    case generate_statistics() do
+      :ok ->
+        :ok
+      {:error, reason} ->
+        Logger.error("Statistics generation failed: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
   @doc """
   Generate global statistics from all instances.
 
-  Called every 1 hour via Quantum scheduler.
+  Called every 1 hour via Oban Cron.
   """
   def generate_statistics do
     Logger.debug("📈 Generating global statistics...")

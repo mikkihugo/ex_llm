@@ -74,7 +74,7 @@ regex = "1.0"
 
 # Logging
 tracing = "0.1"
-tree-sitter-mermaid = { git = "https://github.com/mikkihugo/tree-sitter-mermaid", version = "0.1.1" }
+tree-sitter-mermaid = { git = "https://github.com/mikkihugo/tree-sitter-mermaid", version = "0.25.10" }
 
 # Dependency parsing - DISABLED: path dependency causes Rustler issues
 # dependency_parser = { path = "../formats/dependency" }
