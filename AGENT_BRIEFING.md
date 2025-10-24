@@ -12,7 +12,13 @@
 
 Singularity has **18 agent modules implemented** (code exists, infrastructure ready) but currently **disabled** in supervision tree. The self-evolution system is architecturally complete and will be operational once NATS/Oban dependencies are fixed.
 
-Agents are designed to provide proper instructions for:
+**Critical Understanding:** The system requires ALL 18 modules working together:
+- **6 Primary Agents** perform high-level tasks (self-improvement, architecture, technology, refactoring, cost optimization, chat)
+- **12 Support Modules** provide essential infrastructure (metrics, quality, documentation, remediation, execution)
+
+These are **tightly interdependent** - you cannot run primary agents without their support infrastructure.
+
+The agent system is designed to provide proper instructions for:
 - Architecture decisions
 - Code generation patterns
 - Refactoring guidance

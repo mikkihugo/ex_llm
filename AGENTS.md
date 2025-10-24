@@ -11,6 +11,80 @@ Singularity includes 18 agent modules (6 primary agents + 12 support modules) th
 
 See [`AGENT_SYSTEM_FIX_CHECKLIST.md`](AGENT_SYSTEM_FIX_CHECKLIST.md) for re-enablement roadmap.
 
+## The Complete Agent System (18 Interdependent Modules)
+
+### 6 Primary Agent Roles
+These are the user-facing agent types that perform high-level tasks:
+
+1. **SelfImprovingAgent** (3291 LOC) - Core self-improvement and learning
+2. **ArchitectureAgent** - System architecture analysis and design
+3. **TechnologyAgent** - Technology detection and adoption
+4. **RefactoringAgent** - Code refactoring and optimization
+5. **CostOptimizedAgent** (551 LOC) - Cost optimization and performance
+6. **ChatConversationAgent** - User interaction and conversations
+
+### 12 Essential Support Modules
+These infrastructure modules are **REQUIRED** for the primary agents to function:
+
+**Metrics & Feedback Loop:**
+- **MetricsFeeder** - Feeds success/cost data to learning systems
+- **RealWorkloadFeeder** - Executes real LLM tasks for realistic metrics
+- **DeadCodeMonitor** (629 LOC) - Tracks dead code for improvement opportunities
+
+**Quality & Documentation System:**
+- **DocumentationUpgrader** (629 LOC) - Auto-upgrades code documentation
+- **DocumentationPipeline** (491 LOC) - Orchestrates documentation generation
+- **QualityEnforcer** (491 LOC) - Enforces quality standards before commits
+
+**Execution & Remediation:**
+- **RemediationEngine** (491 LOC) - Auto-fixes detected issues
+- **RuntimeBootstrapper** - Initializes agent system on startup
+
+**Agent Infrastructure:**
+- **Agent** (30K LOC) - Base GenServer for all agents
+- **AgentSpawner** (3.5K LOC) - Creates agents from Lua/config
+- **AgentSupervisor** - Manages agent processes (DynamicSupervisor)
+- **Agents.Supervisor** - Root supervisor for entire agent system
+
+### Dependency Map
+
+```
+PRIMARY AGENTS                SUPPORT INFRASTRUCTURE
+═══════════════════          ══════════════════════════
+
+SelfImprovingAgent ────────→ MetricsFeeder
+     ↓                              ↓
+  Learns & Improves        RealWorkloadFeeder
+                                    ↓
+                              Executes Real Work
+
+ArchitectureAgent ─────────→ DocumentationUpgrader
+     ↓                              ↓
+  Detects Patterns          QualityEnforcer
+                                    ↓
+                              Validates Quality
+
+RefactoringAgent ──────────→ RemediationEngine
+     ↓                              ↓
+  Refactors Code            DocumentationPipeline
+                                    ↓
+                              Generates Docs
+
+CostOptimizedAgent ────────→ MetricsFeeder
+     ↓                              ↓
+  Optimizes Costs           RealWorkloadFeeder
+                                    ↓
+                              Measures Performance
+
+ChatConversationAgent ──────→ Agent (base GenServer)
+     ↓                              ↓
+  User Interaction          AgentSpawner → Agents.Supervisor
+                                    ↓
+                              Manages All Agents
+```
+
+**CRITICAL:** All 18 modules must be operational for the system to work. The primary agents depend on support modules for metrics, quality enforcement, and execution.
+
 ## Architecture Overview
 
 All agents follow the same lifecycle pattern:

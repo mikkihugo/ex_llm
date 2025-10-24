@@ -4,7 +4,15 @@
 
 ## Overview
 
-The system is designed to use **6 Autonomous AI Agents** (+ 12 support modules) that would evolve and learn new capabilities naturally, rather than having separate self-improvement modules.
+The system is designed to use **18 Interdependent Agent Modules** (6 primary agents + 12 support modules) that evolve and learn new capabilities naturally, rather than having separate self-improvement modules.
+
+**Architecture Principle:** All 18 modules must work together:
+- **6 Primary Agents** - User-facing task executors
+- **12 Support Modules** - REQUIRED infrastructure
+  - Metrics feedback loop (MetricsFeeder, RealWorkloadFeeder)
+  - Quality enforcement (QualityEnforcer, DocumentationUpgrader)
+  - Issue remediation (RemediationEngine, DeadCodeMonitor)
+  - Agent execution (Agent base, AgentSpawner, Supervisors)
 
 **Current Reality:**
 - 18 agent modules implemented with full supervision/orchestration code
