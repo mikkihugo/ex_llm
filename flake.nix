@@ -212,14 +212,25 @@
         ];
 
         getDataServices = env: lib.optionals (lib.elem "postgresql" env.services) [
-          # PostgreSQL with extensions for vector search and time-series
+          # PostgreSQL 16 with extensions for search, time-series, and spatial queries
+          # Built-in extensions (from PostgreSQL): ltree, hstore, pg_trgm, uuid-ossp, fuzzystrmatch, etc
+          # Nix-packaged extensions below:
           (pkgs.postgresql_16.withPackages (ps:
             [
-              ps.pgvector      # Vector embeddings for semantic search
-              ps.postgis       # Geospatial queries
-              ps.timescaledb   # Time-series database
-              ps.pgtap         # PostgreSQL testing framework
-              ps.pg_cron       # Scheduled tasks
+              # Search & Vectors
+              ps.pgvector      # Vector embeddings for semantic search (2560-dim)
+
+              # Spatial & Geospatial
+              ps.postgis       # PostGIS 3.6.0 - full geospatial queries
+
+              # Time Series
+              ps.timescaledb   # TimescaleDB 2.22 - time-series optimization
+
+              # Testing
+              ps.pgtap         # PostgreSQL TAP testing framework
+
+              # Scheduling
+              ps.pg_cron       # Cron-like task scheduling
             ]
           ))
         ];
