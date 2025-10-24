@@ -1,6 +1,6 @@
 {
   "name": "Elixir Production Quality",
-  "spec_version": "2.4.0",
+  "spec_version": "2.5.0",
   "capabilities": [
     "quality",
     "graph",
@@ -13,6 +13,17 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for Elixir code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.5.0": {
+      "date": "2025-10-24",
+      "changes": [
+        "Added 8 production readiness sections for production operations knowledge",
+        "Sections: Performance Characteristics, Concurrency & Safety, Graceful Degradation, Version Compatibility, Configuration Guide, Observable Metrics, Troubleshooting, Architecture Decisions (ADR)",
+        "Added 5 new interactive questions: error_tracking_integration, otp_release_ready, performance_critical, multi_tenancy, backward_compatibility",
+        "Added 10 new scoring weights for production readiness assessment",
+        "Non-breaking: v2.4.0 modules remain valid, v2.5.0 sections are optional but recommended for production",
+        "Tier-based implementation: Tier 1 (Performance, Metrics, Troubleshooting, Safety), Tier 2 (Config, Degradation, Compatibility), Tier 3 (ADR, Decisions)"
+      ]
+    },
     "2.4.0": {
       "date": "2025-10-24",
       "changes": [
@@ -80,6 +91,16 @@
           "call_graph_metadata",
           "anti_patterns"
         ],
+        "should_include_v2_5_0": [
+          "performance_characteristics",
+          "concurrency_safety",
+          "observable_metrics",
+          "troubleshooting_guide",
+          "graceful_degradation",
+          "version_compatibility",
+          "configuration_guide",
+          "architecture_decisions"
+        ],
         "ai_navigation": {
           "module_identity": {
             "format": "json",
@@ -136,6 +157,103 @@
             "format": "text",
             "min_keywords": 10,
             "description": "Comma-separated keywords for vector DB semantic search optimization"
+          },
+          "performance_characteristics": {
+            "format": "markdown",
+            "when": "module has measurable computational behavior",
+            "should_include": [
+              "time_complexity",
+              "space_complexity",
+              "typical_latencies",
+              "benchmarks"
+            ],
+            "description": "Performance characteristics for production deployment decisions"
+          },
+          "concurrency_safety": {
+            "format": "markdown",
+            "when": "module has state or external calls",
+            "should_include": [
+              "process_safety",
+              "thread_safety",
+              "atomicity_guarantees",
+              "race_condition_risks",
+              "recommended_usage_patterns"
+            ],
+            "description": "Concurrency and thread safety guarantees for safe concurrent usage"
+          },
+          "observable_metrics": {
+            "format": "markdown",
+            "when": "module emits telemetry events",
+            "should_include": [
+              "complete_telemetry_event_list",
+              "measurement_values",
+              "metadata_included",
+              "example_handlers",
+              "dashboard_suggestions"
+            ],
+            "description": "Documented telemetry events and monitoring guidance"
+          },
+          "troubleshooting_guide": {
+            "format": "markdown",
+            "when": "module might encounter runtime issues",
+            "should_include": [
+              "common_problems",
+              "root_causes",
+              "diagnostic_steps",
+              "solutions",
+              "monitoring_commands",
+              "prevention_strategies"
+            ],
+            "description": "Common issues, diagnostics, and solutions for production debugging"
+          },
+          "graceful_degradation": {
+            "format": "markdown",
+            "when": "module has external dependencies or caching",
+            "should_include": [
+              "failure_scenarios",
+              "fallback_behavior",
+              "user_impact",
+              "recovery_mechanism",
+              "testing_guidance"
+            ],
+            "description": "Failure modes and degradation patterns for fault tolerance"
+          },
+          "version_compatibility": {
+            "format": "markdown",
+            "when": "module has dependencies or breaking history",
+            "should_include": [
+              "elixir_versions_supported",
+              "otp_versions_supported",
+              "key_dependencies",
+              "breaking_changes_history",
+              "deprecation_timeline"
+            ],
+            "description": "Version compatibility matrix and breaking changes documentation"
+          },
+          "configuration_guide": {
+            "format": "markdown",
+            "when": "module has configurable behavior",
+            "should_include": [
+              "environment_variables",
+              "runtime_options",
+              "tuning_recommendations",
+              "impact_of_each_setting",
+              "safety_constraints"
+            ],
+            "description": "Configuration options and runtime tuning guidance"
+          },
+          "architecture_decisions": {
+            "format": "markdown",
+            "when": "module has non-obvious design choices",
+            "should_include": [
+              "decision_id",
+              "problem_statement",
+              "alternatives_considered",
+              "chosen_solution_and_rationale",
+              "consequences",
+              "related_decisions"
+            ],
+            "description": "Architecture Decision Records (ADR) explaining design rationale"
           }
         }
       },
@@ -345,6 +463,42 @@
       "choices": ["minimal", "standard", "comprehensive"],
       "default": "comprehensive",
       "hint": "minimal: basic @moduledoc + @doc. standard: + examples. comprehensive: + AI metadata (Mermaid, YAML)"
+    },
+    {
+      "name": "error_tracking_integration",
+      "type": "choice",
+      "prompt": "Error tracking integration for production monitoring?",
+      "choices": ["none", "sentry", "custom"],
+      "default": "none",
+      "hint": "Sentry integration for automatic error tracking and alerting in production"
+    },
+    {
+      "name": "otp_release_ready",
+      "type": "boolean",
+      "prompt": "Target OTP release (production deployment)?",
+      "default": true,
+      "hint": "Ensures compatibility with hot code reloading, distributed tracing, release packaging"
+    },
+    {
+      "name": "performance_critical",
+      "type": "boolean",
+      "prompt": "Is this performance-critical code?",
+      "default": false,
+      "hint": "Triggers: tail recursion requirements, stream usage, benchmarking, latency documentation"
+    },
+    {
+      "name": "multi_tenancy",
+      "type": "boolean",
+      "prompt": "Multi-tenant environment?",
+      "default": false,
+      "hint": "Triggers: isolation checks, tenant-specific caching, audit logging, data separation"
+    },
+    {
+      "name": "backward_compatibility",
+      "type": "boolean",
+      "prompt": "Must maintain backward compatibility?",
+      "default": true,
+      "hint": "Triggers: deprecation warnings, migration guides, version matrix documentation"
     }
   ],
   "prompts": {
@@ -381,6 +535,16 @@
     "clear_separation": 0.85,
     "ai_metadata_explained": 0.8,
     "graph_db_ready": 0.9,
-    "vector_db_optimized": 0.9
+    "vector_db_optimized": 0.9,
+    "has_performance_characteristics": 0.9,
+    "has_concurrency_safety_docs": 0.85,
+    "has_degradation_patterns": 0.8,
+    "has_version_compatibility": 0.85,
+    "has_configuration_guide": 0.8,
+    "has_observable_metrics": 0.9,
+    "has_troubleshooting_guide": 0.75,
+    "has_architecture_decisions": 0.7,
+    "production_deployment_ready": 0.95,
+    "security_reviewed": 0.95
   }
 }
