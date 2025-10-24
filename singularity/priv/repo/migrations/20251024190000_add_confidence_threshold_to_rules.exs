@@ -5,7 +5,7 @@ defmodule Singularity.Repo.Migrations.AddConfidenceThresholdToRules do
     alter table(:agent_behavior_confidence_rules) do
       add :confidence_threshold, :float, default: 0.7, null: false
       add :patterns, {:array, :map}, default: []
-      add :embedding, Singularity.Pgvector.Vector
+      add :embedding, :vector
       add :version, :integer, default: 1
       add :created_by_agent_id, :string
       add :evolution_count, :integer, default: 0

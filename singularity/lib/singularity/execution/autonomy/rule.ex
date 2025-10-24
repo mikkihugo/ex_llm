@@ -14,22 +14,18 @@ defmodule Singularity.Execution.Autonomy.Rule do
   schema "agent_behavior_confidence_rules" do
     field :name, :string
     field :description, :string
+    field :category, :string
 
-    field :category, Ecto.Enum,
-      values: [
-        :code_quality,
-        :performance,
-        :security,
-        :refactoring,
-        :vision,
-        :epic,
-        :feature,
-        :capability,
-        :story
-      ]
+    # Rule definition (stored as JSON in DB)
+    field :condition, :map
+    field :action, :map
+    field :metadata, :map
 
+    # Configuration
     field :confidence_threshold, :float
-    field :patterns, {:array, :map}
+    field :priority, :integer
+
+    # Semantic search
     field :embedding, Pgvector.Ecto.Vector
 
     # Lua script support (hot-reload business logic!)
@@ -39,20 +35,10 @@ defmodule Singularity.Execution.Autonomy.Rule do
 
     field :lua_script, :string
 
-    # Evolution
+    # Evolution & Governance
     field :version, :integer
-    belongs_to :parent_rule, __MODULE__, foreign_key: :parent_rule_id
-    field :created_by_agent_id, :string
-    field :evolution_count, :integer
-
-    # Performance
-    field :execution_count, :integer
-    field :avg_execution_time_ms, :float
-    field :success_rate, :float
-
-    # Governance
-    field :status, :string
-    field :requires_consensus, :boolean
+    belongs_to :parent_rule, __MODULE__, foreign_key: :parent_id
+    field :active, :boolean, default: true
 
     timestamps(type: :utc_datetime_usec)
 
@@ -68,12 +54,14 @@ defmodule Singularity.Execution.Autonomy.Rule do
       :description,
       :category,
       :confidence_threshold,
-      :patterns,
+      :condition,
+      :action,
+      :metadata,
+      :priority,
       :embedding,
-      :created_by_agent_id,
-      :requires_consensus,
       :execution_type,
-      :lua_script
+      :lua_script,
+      :active
     ])
     |> validate_required([:name, :category])
     |> validate_execution_type()
@@ -87,9 +75,8 @@ defmodule Singularity.Execution.Autonomy.Rule do
   @doc "Changeset for evolving a rule"
   def evolution_changeset(rule, attrs) do
     rule
-    |> cast(attrs, [:patterns, :confidence_threshold, :embedding])
-    |> validate_required([:patterns])
-    |> validate_patterns()
+    |> cast(attrs, [:condition, :action, :metadata, :confidence_threshold, :embedding])
+    |> validate_required([:condition])
     |> increment_evolution_count()
   end
 
@@ -97,35 +84,16 @@ defmodule Singularity.Execution.Autonomy.Rule do
   defp validate_execution_type(changeset) do
     case get_field(changeset, :execution_type) do
       :elixir_patterns ->
-        validate_patterns(changeset)
+        changeset
 
       :lua_script ->
         validate_lua_script(changeset)
 
       nil ->
         # Default to elixir_patterns
-        changeset
-        |> put_change(:execution_type, :elixir_patterns)
-        |> validate_patterns()
+        put_change(changeset, :execution_type, :elixir_patterns)
     end
-  end
 
-  defp validate_patterns(changeset) do
-    case get_field(changeset, :patterns) do
-      nil ->
-        add_error(changeset, :patterns, "cannot be nil for elixir_patterns execution type")
-
-      [] ->
-        add_error(changeset, :patterns, "must have at least one pattern")
-
-      patterns ->
-        if Enum.all?(patterns, &valid_pattern?/1) do
-          changeset
-        else
-          add_error(changeset, :patterns, "contains invalid pattern format")
-        end
-    end
-  end
 
   defp validate_lua_script(changeset) do
     case get_field(changeset, :lua_script) do

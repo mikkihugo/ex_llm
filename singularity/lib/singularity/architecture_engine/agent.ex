@@ -95,7 +95,7 @@ defmodule Singularity.ArchitectureEngine.Agent do
     analyze_codebase/2: [ArchitectureEngine.analyze/2]
     detect_frameworks/2: [FrameworkRegistry.detect/2]
     assess_quality/2: [QualityEngine.assess/2]
-    semantic_search/3: [SemanticEngine.search/3]
+    semantic_search/3: [EmbeddingEngine.search/3]
   ```
 
   ## Anti-Patterns

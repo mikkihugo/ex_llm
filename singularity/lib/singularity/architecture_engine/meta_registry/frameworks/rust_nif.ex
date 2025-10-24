@@ -14,7 +14,7 @@ defmodule Singularity.MetaRegistry.Frameworks.RustNif do
 
       # Learn from our Rust NIFs
       learn_patterns(%{
-        modules: ["ArchitectureEngine", "CodeEngine", "SemanticEngine"],
+        modules: ["ArchitectureEngine", "CodeEngine", "EmbeddingEngine"],
         functions: ["analyze_architecture", "detect_patterns", "generate_embeddings"],
         types: ["Result<", "Option<", "Vec<", "HashMap<"],
         patterns: ["pub fn", "use rustler", "rustler::init!"]
@@ -57,7 +57,7 @@ defmodule Singularity.MetaRegistry.Frameworks.RustNif do
   """
   def initialize_patterns do
     learn_patterns(%{
-      modules: ["ArchitectureEngine", "CodeEngine", "SemanticEngine"],
+      modules: ["ArchitectureEngine", "CodeEngine", "EmbeddingEngine"],
       functions: ["analyze_architecture", "detect_patterns", "generate_embeddings"],
       types: ["Result<", "Option<", "Vec<", "HashMap<"],
       patterns: [

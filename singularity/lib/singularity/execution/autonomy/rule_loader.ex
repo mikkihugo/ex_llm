@@ -143,7 +143,7 @@ defmodule Singularity.Execution.Autonomy.RuleLoader do
   ## Private Functions
 
   defp load_all_rules do
-    from(r in Rule, where: r.status == "active")
+    from(r in Rule, where: r.active == true)
     |> Repo.all()
     |> Enum.each(fn rule ->
       gleam_rule = to_gleam_rule(rule)
