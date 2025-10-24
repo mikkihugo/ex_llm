@@ -5,12 +5,68 @@ defmodule Singularity.Architecture.Detectors.FrameworkDetector do
   Implements `@behaviour PatternType` to detect framework patterns in codebases.
   Uses configuration-driven approach via PatternDetector.
 
+  ## Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Architecture.Detectors.FrameworkDetector",
+    "type": "detector",
+    "purpose": "Detect web frameworks, build tools, and runtime frameworks",
+    "layer": "architecture_engine",
+    "behavior": "PatternType",
+    "registered_in": "config :singularity, :pattern_types, framework: ...",
+    "scope": "Framework detection via package managers, config files, imports"
+  }
+  ```
+
+  ## Architecture Diagram
+
+  ```mermaid
+  graph TD
+      A[detect/2] --> B[detect_frameworks]
+      B --> C[check package.json]
+      B --> D[check pom.xml]
+      B --> E[check Gemfile]
+      B --> F[check requirements.txt]
+      C --> G[extract framework names]
+      D --> G
+      E --> G
+      F --> G
+      G --> H[uniq by name]
+      H --> I[return results]
+  ```
+
+  ## Call Graph (YAML)
+
+  ```yaml
+  calls:
+    - Singularity.Architecture.PatternStore (confidence tracking)
+    - Logger (error handling)
+
+  called_by:
+    - Singularity.Architecture.PatternDetector (orchestrator)
+    - Architecture analysis pipelines
+    - Technology assessment tools
+  ```
+
+  ## Anti-Patterns
+
+  - ❌ `FrameworkDetectorUtil` - Use FrameworkDetector behavior
+  - ❌ `FrameworkRegistry` - Use PatternStore for persistence
+  - ✅ Use PatternDetector for discovery
+  - ✅ Learn patterns via `learn_pattern/1` callback
+
   ## Detected Frameworks
 
   - **Web UI**: React, Vue, Angular, Svelte, Next.js
   - **Web Servers**: Express, Rails, Django, FastAPI, Laravel
   - **Build Tools**: Webpack, Vite, Maven, Gradle, Cargo
   - **Other**: NestJS, Remix, Sails.js, etc.
+
+  ## Search Keywords
+
+  framework detection, pattern detection, web frameworks, build tools,
+  technology detection, package detection, dependency analysis
   """
 
   @behaviour Singularity.Architecture.PatternType

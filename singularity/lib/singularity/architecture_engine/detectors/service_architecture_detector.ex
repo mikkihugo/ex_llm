@@ -5,12 +5,69 @@ defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
   Implements `@behaviour PatternType` to detect architectural patterns in codebases.
   Replaces the old `MicroserviceAnalyzer` module.
 
+  ## Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Architecture.Detectors.ServiceArchitectureDetector",
+    "type": "detector",
+    "purpose": "Detect microservice vs monolith architecture patterns",
+    "layer": "architecture_engine",
+    "behavior": "PatternType",
+    "registered_in": "config :singularity, :pattern_types, service_architecture: ...",
+    "scope": "Service boundary detection, architecture classification, deployment patterns"
+  }
+  ```
+
+  ## Architecture Diagram
+
+  ```mermaid
+  graph TD
+      A[detect/2] --> B[detect_architecture]
+      B --> C[discover_services]
+      B --> D[detect_service_mesh]
+      C --> E[language detection]
+      C --> F[build config check]
+      E --> G[classify_architecture]
+      F --> G
+      D --> G
+      G --> H[return pattern type]
+      H --> I[monolith/modular/distributed/microservices]
+  ```
+
+  ## Call Graph (YAML)
+
+  ```yaml
+  calls:
+    - Singularity.LanguageDetection (service language detection)
+    - Singularity.Architecture.PatternStore (confidence tracking)
+    - Logger (error handling)
+
+  called_by:
+    - Singularity.Architecture.PatternDetector (orchestrator)
+    - Architecture assessment pipelines
+    - Microservice migration analysis
+    - Service boundary discovery
+  ```
+
+  ## Anti-Patterns
+
+  - ❌ `MicroserviceAnalyzer` - Use ServiceArchitectureDetector (consolidated)
+  - ❌ `ServiceBoundaryDetector` - Use service_architecture detector
+  - ✅ Use PatternDetector for discovery
+  - ✅ Learn patterns via `learn_pattern/1` callback
+
   ## Detection Heuristics
 
   - **Microservices**: 4+ independent services with separate build/deploy configs
   - **Distributed**: 2-3 independent services
   - **Modular**: 1 service with clear module boundaries
   - **Monolith**: Single codebase without service separation
+
+  ## Search Keywords
+
+  service architecture, microservices, monolith detection, service boundaries,
+  distributed systems, architecture patterns, deployment patterns, build systems
   """
 
   @behaviour Singularity.Architecture.PatternType

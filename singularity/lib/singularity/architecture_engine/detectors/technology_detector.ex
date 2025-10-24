@@ -5,12 +5,67 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
   Implements `@behaviour PatternType` to detect technology patterns in codebases.
   Uses `LanguageDetector` under the hood for consistent language detection.
 
+  ## Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Architecture.Detectors.TechnologyDetector",
+    "type": "detector",
+    "purpose": "Detect programming languages, runtimes, and technology stack",
+    "layer": "architecture_engine",
+    "behavior": "PatternType",
+    "registered_in": "config :singularity, :pattern_types, technology: ...",
+    "scope": "Language detection, runtime identification, technology stack analysis"
+  }
+  ```
+
+  ## Architecture Diagram
+
+  ```mermaid
+  graph TD
+      A[detect/2] --> B[detect_technologies]
+      B --> C[LanguageDetection]
+      B --> D[database detection]
+      B --> E[messaging detection]
+      C --> F[extract tech info]
+      D --> F
+      E --> F
+      F --> G[uniq by name]
+      G --> H[return results]
+  ```
+
+  ## Call Graph (YAML)
+
+  ```yaml
+  calls:
+    - Singularity.LanguageDetection (language detection)
+    - Singularity.Architecture.PatternStore (confidence tracking)
+    - Logger (error handling)
+
+  called_by:
+    - Singularity.Architecture.PatternDetector (orchestrator)
+    - Technology stack analysis
+    - Codebase assessment pipelines
+  ```
+
+  ## Anti-Patterns
+
+  - ❌ `TechStackDetector` - Use TechnologyDetector for tech detection
+  - ❌ `LanguageRegistry` - Use PatternStore for persistence
+  - ✅ Use PatternDetector for discovery
+  - ✅ Leverage LanguageDetection for consistent language detection
+
   ## Detected Technologies
 
   - **Languages**: TypeScript, Rust, Python, Go, Elixir, Java, Ruby, PHP, C/C++
   - **Runtimes**: Node.js, JVM, CPython, Go Runtime
   - **Databases**: PostgreSQL, MongoDB, Redis, MySQL
   - **Messaging**: RabbitMQ, Kafka, NATS
+
+  ## Search Keywords
+
+  technology detection, language detection, tech stack, runtime detection,
+  database detection, programming language, technology assessment
   """
 
   @behaviour Singularity.Architecture.PatternType
