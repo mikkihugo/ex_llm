@@ -72,6 +72,8 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   use GenServer
   require Logger
 
+  alias Singularity.Agents.Agent
+  alias Singularity.AgentSupervisor
   alias Singularity.Conversation.{GoogleChat, Slack}
 
   @conversation_types [
@@ -509,7 +511,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   defp pause_autonomous_actions do
     try do
       # Pause all autonomous agents
-      Singularity.Agent.Supervisor.pause_all_agents()
+      AgentSupervisor.pause_all_agents()
 
       # Update state to reflect paused status
       state = %{autonomous_enabled: false, paused_at: DateTime.utc_now()}
@@ -527,7 +529,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   defp resume_autonomous_actions do
     try do
       # Resume all autonomous agents
-      Singularity.Agent.Supervisor.resume_all_agents()
+      AgentSupervisor.resume_all_agents()
 
       # Update state to reflect resumed status
       state = %{autonomous_enabled: true, resumed_at: DateTime.utc_now()}
@@ -545,7 +547,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   defp execute_recommendation(recommendation) do
     try do
       # Execute recommendation via Agent.improve
-      case Singularity.Agent.improve(recommendation) do
+      case Agent.improve(recommendation) do
         {:ok, result} ->
           GoogleChat.notify("✅ Executed recommendation: #{recommendation.description}")
           Logger.info("Recommendation executed successfully: #{inspect(result)}")

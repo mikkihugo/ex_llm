@@ -10,7 +10,7 @@ defmodule Singularity.Agents.DeadCodeMonitor do
     "layer": "Agents",
     "purpose": "Monitor and report on dead code annotations in Rust codebase",
     "related_modules": [
-      "Singularity.Agent",
+      "Singularity.Agents.Agent",
       "Singularity.NATS.ExecutionRouter"
     ],
     "duplicate_prevention": [

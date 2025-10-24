@@ -5,6 +5,8 @@ defmodule Singularity.AgentImprovementBroadcaster do
   Cluster-native broadcasting without external transports (NATS-free).
   """
 
+  alias Singularity.Agents.Agent
+
   @group :singularity_control
 
   @doc """
@@ -22,7 +24,7 @@ defmodule Singularity.AgentImprovementBroadcaster do
     members = :pg.get_members(@group)
 
     if members == [] do
-      _ = Singularity.Agent.improve(agent_id, payload)
+      _ = Agent.improve(agent_id, payload)
     else
       Enum.each(members, &send(&1, message))
     end
@@ -38,7 +40,7 @@ defmodule Singularity.AgentImprovementBroadcaster do
   def request_improvement(agent_id, payload) when is_map(payload) do
     agent_id = to_string(agent_id)
 
-    case Singularity.Agent.improve(agent_id, payload) do
+    case Agent.improve(agent_id, payload) do
       :ok -> :ok
       {:error, :not_found} -> forward_to_cluster(agent_id, payload)
     end
@@ -48,7 +50,7 @@ defmodule Singularity.AgentImprovementBroadcaster do
     Node.list()
     |> Enum.shuffle()
     |> Enum.reduce_while({:error, :not_found}, fn node, _acc ->
-      case :rpc.call(node, Singularity.Agent, :improve, [agent_id, payload]) do
+      case :rpc.call(node, Singularity.Agents.Agent, :improve, [agent_id, payload]) do
         :ok -> {:halt, :ok}
         {:error, :not_found} -> {:cont, {:error, :not_found}}
         {:badrpc, _} -> {:cont, {:error, :not_found}}

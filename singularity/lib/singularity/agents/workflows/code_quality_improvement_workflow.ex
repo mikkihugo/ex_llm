@@ -39,7 +39,7 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
     - Singularity.CodeQuality.AstSecurityScanner (security scanning)
     - Singularity.CodeQuality.AstQualityAnalyzer (quality analysis)
     - Singularity.ParserEngine (AST operations)
-    - Singularity.Agent (agent orchestration)
+    - Singularity.Agents.Agent (agent orchestration)
 
   called_by:
     - Scheduled jobs (daily quality checks)
@@ -62,7 +62,7 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   alias Singularity.CodeQuality.AstSecurityScanner
   alias Singularity.CodeQuality.AstQualityAnalyzer
   alias Singularity.ParserEngine
-  alias Singularity.Agent
+  alias Singularity.Agents.Agent
 
   require Logger
 

@@ -11,7 +11,7 @@ defmodule Singularity.Agents.AgentSpawner do
     "module": "Singularity.Agents.AgentSpawner",
     "purpose": "Spawn agents from Lua strategy configurations",
     "layer": "Agents & Execution",
-    "dependencies": ["Singularity.Agent"],
+    "dependencies": ["Singularity.Agents.Agent"],
     "used_by": ["TaskGraphExecutor"]
   }
   ```
@@ -90,7 +90,7 @@ defmodule Singularity.Agents.AgentSpawner do
     case DynamicSupervisor.start_child(
            Singularity.AgentSupervisor,
            {
-             Singularity.Agent,
+             Singularity.Agents.Agent,
              [
                id: agent_id,
                role: role,

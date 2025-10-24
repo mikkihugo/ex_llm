@@ -8,6 +8,8 @@ defmodule Singularity.Control.Listener do
 
   require Logger
 
+  alias Singularity.Agents.Agent
+
   @group :singularity_control
 
   def start_link(opts) do
@@ -24,7 +26,7 @@ defmodule Singularity.Control.Listener do
 
   @impl true
   def handle_info({:improve, agent_id, payload}, state) do
-    case Singularity.Agent.improve(agent_id, payload) do
+    case Agent.improve(agent_id, payload) do
       :ok -> :ok
       {:error, :not_found} -> :ok
     end

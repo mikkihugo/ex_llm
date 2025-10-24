@@ -359,7 +359,7 @@ defmodule Singularity.LLM.Service do
   - **Calls:** Singularity.Engines.PromptEngine.optimize_prompt/2 - Prompt optimization
   - **Calls:** Logger.info/2, Logger.error/2 - Structured logging
   - **Calls:** :telemetry.execute/2 - Metrics collection
-  - **Called by:** Singularity.Agent, Singularity.Engines.ArchitectureEngine - AI operations
+  - **Called by:** Singularity.Agents.Agent, Singularity.Engines.ArchitectureEngine - AI operations
   - **Depends on:** Singularity.NATS.Client - Message transport
   - **Depends on:** Singularity.Engines.PromptEngine - Prompt optimization
   - **Used by:** All AI-powered features in the system

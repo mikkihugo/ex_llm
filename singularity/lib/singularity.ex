@@ -6,9 +6,6 @@ defmodule Singularity do
   alias Singularity.Agents.Agent
   alias Singularity.AgentSupervisor
 
-  # Backwards compatibility alias
-  alias Singularity.Agents.Agent, as: SingularityAgent
-
   @doc """
   Start a new agent process with the provided context map.
   """

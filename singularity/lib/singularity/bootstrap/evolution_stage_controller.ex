@@ -72,7 +72,7 @@ defmodule Singularity.Bootstrap.EvolutionStageController do
   ## Integration Points
 
   - `Singularity.Code.StartupCodeIngestion` - Respects stage boundaries
-  - `Singularity.Agent` - Scope limited by current stage
+  - `Singularity.Agents.Agent` - Scope limited by current stage
   - `Singularity.CodeStore` - Enforces codebase type restrictions
   """
 

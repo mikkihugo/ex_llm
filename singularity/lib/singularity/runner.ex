@@ -53,6 +53,8 @@ defmodule Singularity.Runner do
   use GenServer
   require Logger
   import Ecto.Query
+
+  alias Singularity.Agents.Agent
   alias Singularity.Code.Analyzers.MicroserviceAnalyzer
 
   @type execution_id :: String.t()
@@ -568,7 +570,7 @@ defmodule Singularity.Runner do
 
   defp execute_agent_task(task) do
     # Execute agent task with full orchestration
-    case Singularity.Agent.execute_task(
+    case Agent.execute_task(
            task.args.agent_id,
            task.args.task,
            task.args.context || %{}

@@ -16,7 +16,7 @@ defmodule Singularity.Agents.SelfImprovingAgent do
 
   ## Examples
 
-      {:ok, result} = Singularity.Agent.execute_task(agent_id, "self_improve", %{metrics: ...})
+      {:ok, result} = Singularity.Agents.Agent.execute_task(agent_id, "self_improve", %{metrics: ...})
   """
 
   require Logger

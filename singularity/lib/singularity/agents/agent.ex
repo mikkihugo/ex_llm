@@ -7,11 +7,11 @@ defmodule Singularity.Agents.Agent do
   manager. External systems can still push improvements, but they are no longer
   required for the agent to progress.
 
-  ## Namespace Note
+  ## Module Naming
 
   This module is defined as `Singularity.Agents.Agent` (matching file location
-  `agents/agent.ex`), but is aliased as `Singularity.Agent` at the application
-  level for backwards compatibility.
+  `agents/agent.ex` in the agents directory). All code should import and use
+  this canonical name for clarity and self-documenting architecture.
 
   ## AI Navigation Metadata
 
