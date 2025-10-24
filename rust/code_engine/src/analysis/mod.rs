@@ -15,7 +15,9 @@
 //! - **graph/**: Code graph construction and analysis
 //! - **dag/**: Directed Acyclic Graph for file relationships
 //! - **multilang/**: Cross-language analysis
+//! - **central_heuristics**: Universal scoring (PageRank, file importance)
 
+pub mod central_heuristics;
 pub mod control_flow;
 pub mod dag;
 pub mod dependency;
@@ -28,6 +30,7 @@ pub mod security;
 pub mod semantic;
 
 // Re-export main types
+pub use central_heuristics::*;
 pub use dag::*;
 pub use dependency::*;
 pub use graph::*;
