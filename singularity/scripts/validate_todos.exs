@@ -54,8 +54,8 @@ defmodule TodoValidator do
       name: "Code Analysis",
       modules: [
         "lib/singularity/code_analyzer.ex",
-        "lib/singularity/engines/code_engine_nif.ex",
-        "rust/code_engine/"
+        "lib/singularity/engines/code_quality_engine_nif.ex",
+        "rust/code_quality_engine/"
       ],
       keywords: ["code analysis", "parser", "ast", "tree-sitter"]
     },

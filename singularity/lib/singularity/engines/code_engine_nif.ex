@@ -2,7 +2,7 @@ defmodule Singularity.CodeEngineNif do
   @moduledoc """
   Code Engine NIF - Direct bindings to Rust multi-language code analysis engine.
 
-  This module loads the Rust NIF from `rust/code_engine` which provides:
+  This module loads the Rust NIF from `rust/code_quality_engine` which provides:
   - Multi-language code analysis (20+ languages)
   - Code parsing via tree-sitter
   - Quality metrics calculation (RCA, Halstead, etc.)
@@ -16,8 +16,8 @@ defmodule Singularity.CodeEngineNif do
   {
     "module": "Singularity.CodeEngineNif",
     "type": "NIF wrapper",
-    "purpose": "Elixir bindings to Rust code_engine NIF for multi-language analysis",
-    "rust_crate": "code_engine",
+    "purpose": "Elixir bindings to Rust code_quality_engine NIF for multi-language analysis",
+    "rust_crate": "code_quality_engine",
     "analyzes": "All languages (Elixir, Rust, Python, JS, TypeScript, Go, Java, etc.)",
     "capabilities": [
       "Multi-language analysis (20+ languages)",
@@ -61,7 +61,7 @@ defmodule Singularity.CodeEngineNif do
 
   ## NIF Loading
 
-  The NIF is loaded from `priv/native/libcode_engine.so` (compiled from rust/code_engine).
+  The NIF is loaded from `priv/native/libcode_quality_engine.so` (compiled from rust/code_quality_engine).
   If the NIF fails to load, functions will return `:nif_not_loaded` errors.
 
   ## Examples
@@ -101,8 +101,8 @@ defmodule Singularity.CodeEngineNif do
 
   use Rustler,
     otp_app: :singularity,
-    crate: "code_engine",
-    path: "../rust/code_engine"
+    crate: "code_quality_engine",
+    path: "../rust/code_quality_engine"
 
   # ===========================
   # Multi-Language Analysis NIFs (NEW - CodebaseAnalyzer)

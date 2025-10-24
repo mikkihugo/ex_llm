@@ -9,7 +9,7 @@ defmodule Singularity.LanguageDetection do
     "module_name": "Singularity.LanguageDetection",
     "purpose": "Unified language detection for files and projects",
     "type": "Detection service (Rust NIF backed)",
-    "data_sources": ["Rust code_engine NIFs", "File extensions", "Manifest files"],
+    "data_sources": ["Rust code_quality_engine NIFs", "File extensions", "Manifest files"],
     "supports": "25+ programming languages"
   }
   ```
@@ -19,7 +19,7 @@ defmodule Singularity.LanguageDetection do
   ```mermaid
   graph TD
       A[Elixir Code] -->|call| B[LanguageDetection]
-      B -->|NIF| C[Rust code_engine]
+      B -->|NIF| C[Rust code_quality_engine]
       C -->|by_extension| D[Extension Registry]
       C -->|by_manifest| E[Manifest Analyzer]
       D --> F[Language + Confidence]

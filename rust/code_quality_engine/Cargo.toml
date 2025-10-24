@@ -1,17 +1,17 @@
 [package]
-name = "code_engine"
+name = "code_quality_engine"
 version = "0.1.0"
 edition = "2021"
-description = "Code analysis engine for metrics, performance, security, and semantic search"
+description = "Code quality engine for metrics, complexity analysis, maintainability scoring, and semantic search"
 authors = ["Singularity Team"]
 license = "MIT"
 repository = "https://github.com/singularity/singularity"
 readme = "README.md"
-keywords = ["code-analysis", "naming", "quality", "metrics", "patterns"]
+keywords = ["code-quality", "metrics", "complexity", "maintainability", "patterns"]
 categories = ["development-tools", "text-processing"]
 
 [lib]
-name = "code_engine"
+name = "code_quality_engine"
 path = "src/lib.rs"
 crate-type = ["cdylib"]  # Pure NIF - other crates use parser_core for parsing
 
@@ -84,7 +84,7 @@ thiserror = { workspace = true }
 tantivy = { version = "0.25.0", optional = true }
 
 # Internal SPARC crates
-quality = { path = "../quality_engine", package = "quality_engine" }
+quality = { path = "../linting_engine", package = "linting_engine" }
 
 # Parser dependencies - use parser_core library (shared types, no NIF conflicts)
 # Individual language parsers are accessed via parser_engine NIF, not directly by code_engine
@@ -92,7 +92,8 @@ parser_core = { path = "../parser_engine/core" }  # Core parser library (no NIF,
 
 # Missing dependencies (commented out - directories don't exist)
 prompt = { path = "../prompt_engine", package = "prompt_engine" }
-# linting_engine = { path = "../linting" }  # Does not exist - quality_lib doesn't have LintingEngine
+# Additional validation crates
+# validator = { path = "../linting_engine", optional = true }  # Use indirectly via quality module
 # sparc_methodology = { path = "../methodology" }  # Does not exist
 
 # NATS for context queries

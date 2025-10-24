@@ -8,9 +8,9 @@ defmodule Singularity.ParserEngine do
   Uses Rust NIF from rust/parser/polyglot/ for high-performance parsing.
   """
 
-  # NOTE: parser-code is BOTH a library (used by code_engine) AND a standalone NIF
+  # NOTE: parser-code is BOTH a library (used by code_quality_engine) AND a standalone NIF
   # ParserEngine exports: parse_file_nif, parse_tree_nif, supported_languages
-  # Uses default features (includes "nif" feature) - code_engine disables "nif" via default-features = false
+  # Uses default features (includes "nif" feature) - code_quality_engine disables "nif" via default-features = false
   # Standalone Cargo.toml (no workspace dependencies) to avoid Rustler conflicts
 
   # Match exact crate name from Cargo.toml (parser-code with dash)

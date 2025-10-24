@@ -12,7 +12,7 @@ defmodule Singularity.Engine.Registry do
     Singularity.ArchitectureEngine,
     Singularity.CodeEngine,
     Singularity.PromptEngine,
-    Singularity.QualityEngine,
+    Singularity.LintingEngine,
     Singularity.GeneratorEngine
   ]
 

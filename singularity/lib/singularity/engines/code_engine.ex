@@ -1,6 +1,6 @@
 defmodule Singularity.CodeEngine do
   @moduledoc """
-  Elixir wrapper for Rust code_engine NIF (via RustAnalyzer).
+  Elixir wrapper for Rust code_quality_engine NIF (via RustAnalyzer).
 
   Provides high-performance code parsing and analysis via Rust + tree-sitter.
 
@@ -24,7 +24,7 @@ defmodule Singularity.CodeEngine do
       }}
   """
 
-  # The NIF is actually loaded via Singularity.RustAnalyzer (from rust/code_engine)
+  # The NIF is actually loaded via Singularity.RustAnalyzer (from rust/code_quality_engine)
   # We wrap it here for convenience
   # NOTE: Rust functions keep _nif suffix, so we call them with suffix but provide cleaner API
 

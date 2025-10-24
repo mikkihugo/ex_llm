@@ -3,7 +3,7 @@ defmodule Singularity.CodeAnalyzer do
   Multi-Language Code Analyzer - Wrapper for Rust CodebaseAnalyzer NIF
 
   Provides comprehensive code analysis for 20 languages using the language registry
-  and CodebaseAnalyzer from rust/code_engine.
+  and CodebaseAnalyzer from rust/code_quality_engine.
 
   ## Module Identity (JSON)
 

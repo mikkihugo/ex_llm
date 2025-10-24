@@ -1,5 +1,5 @@
 # Quick test script for CodeEngine NIF
-# Run with: mix run test_code_engine.exs
+# Run with: mix run test_code_quality_engine.exs
 
 IO.puts("Testing CodeEngine NIF integration...")
 IO.puts("")
@@ -15,7 +15,7 @@ case Singularity.RustAnalyzer.supported_languages() do
 end
 
 # Test 2: Parse a simple file
-test_file = "lib/singularity/code_engine.ex"
+test_file = "lib/singularity/code_quality_engine.ex"
 IO.puts("\nTest 2: Parsing file: #{test_file}")
 
 case Singularity.CodeEngine.parse_file(test_file) do

@@ -216,7 +216,7 @@ defmodule Singularity.Web.HealthController do
       last_run: nil,
       capabilities: %{
         parser_engine: Code.ensure_loaded?(Singularity.ParserEngine),
-        code_engine: Code.ensure_loaded?(Singularity.CodeEngine),
+        code_quality_engine: Code.ensure_loaded?(Singularity.CodeEngine),
         quality_enforcer: Code.ensure_loaded?(Singularity.Agents.QualityEnforcer),
         documentation_upgrader: Code.ensure_loaded?(Singularity.Agents.DocumentationUpgrader),
         emergency_claude: Code.ensure_loaded?(Singularity.Integration.Claude)

@@ -1,17 +1,20 @@
-defmodule CentralCloud.Engines.QualityEngine do
+defmodule CentralCloud.Engines.LintingEngine do
   @moduledoc """
-  Quality Engine - Delegates to Singularity via NATS.
+  Linting Engine - Delegates to Singularity via NATS.
 
   CentralCloud doesn't compile Rust NIFs directly (compile: false in mix.exs).
-  Instead, this module delegates quality analysis requests to Singularity
-  via NATS, which has the compiled quality_engine NIF.
+  Instead, this module delegates linting & quality gate requests to Singularity
+  via NATS, which has the compiled linting_engine NIF.
+
+  This module provides linting integration, quality gate enforcement, and external
+  linter coordination (ESLint, Clippy, Credo, etc.).
   """
 
   # Note: Rustler bindings disabled - NIFs compiled only in Singularity
   # use Rustler,
   #   otp_app: :centralcloud,
-  #   crate: :quality_engine,
-  #   path: "../../../../rust/quality_engine"
+  #   crate: :linting_engine,
+  #   path: "../../../../rust/linting_engine"
 
   require Logger
 
@@ -28,16 +31,16 @@ defmodule CentralCloud.Engines.QualityEngine do
       "include_metrics" => include_metrics
     }
 
-    case quality_engine_call("analyze_quality", request) do
+    case linting_engine_call("analyze_quality", request) do
       {:ok, results} ->
-        Logger.debug("Quality engine analysis completed",
+        Logger.debug("Linting engine quality analysis completed",
           overall_score: Map.get(results, "overall_score", 0.0),
           checks_performed: length(Map.get(results, "quality_checks", []))
         )
         {:ok, results}
 
       {:error, reason} ->
-        Logger.error("Quality engine failed", reason: reason)
+        Logger.error("Linting engine failed", reason: reason)
         {:error, reason}
     end
   end
@@ -55,19 +58,19 @@ defmodule CentralCloud.Engines.QualityEngine do
       "strict_mode" => strict_mode
     }
 
-    case quality_engine_call("run_linting", request) do
+    case linting_engine_call("run_linting", request) do
       {:ok, results} ->
-        Logger.debug("Quality engine linting completed",
+        Logger.debug("Linting engine linting completed",
           issues_found: length(Map.get(results, "issues", []))
         )
         {:ok, results}
 
       {:error, reason} ->
-        Logger.error("Quality engine failed", reason: reason)
+        Logger.error("Linting engine failed", reason: reason)
         {:error, reason}
     end
   end
 
   # NIF function (loaded from shared Rust crate)
-  defp quality_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
+  defp linting_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
 end

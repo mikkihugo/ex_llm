@@ -1,7 +1,7 @@
 #!/usr/bin/env elixir
 
 # Test script for CodeEngineNif - tests that the NIF loads and all functions work
-# Run with: elixir test_code_engine_nif.exs
+# Run with: elixir test_code_quality_engine_nif.exs
 
 Mix.install([])
 

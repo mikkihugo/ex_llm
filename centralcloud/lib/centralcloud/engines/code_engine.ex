@@ -4,14 +4,14 @@ defmodule CentralCloud.Engines.CodeEngine do
 
   CentralCloud doesn't compile Rust NIFs directly (compile: false in mix.exs).
   Instead, this module delegates code analysis requests to Singularity
-  via NATS, which has the compiled code_engine NIF.
+  via NATS, which has the compiled code_quality_engine NIF.
   """
 
   # Note: Rustler bindings disabled - NIFs compiled only in Singularity
   # use Rustler,
   #   otp_app: :centralcloud,
-  #   crate: :code_engine,
-  #   path: "../../../../rust/code_engine"
+  #   crate: :code_quality_engine,
+  #   path: "../../../../rust/code_quality_engine"
 
   require Logger
 
@@ -30,7 +30,7 @@ defmodule CentralCloud.Engines.CodeEngine do
       "include_embeddings" => include_embeddings
     }
 
-    case code_engine_call("analyze_codebase", request) do
+    case code_quality_engine_call("analyze_codebase", request) do
       {:ok, results} ->
         Logger.debug("Code engine analysis completed",
           business_domains: length(Map.get(results, "business_domains", [])),
@@ -53,7 +53,7 @@ defmodule CentralCloud.Engines.CodeEngine do
       "confidence_threshold" => Keyword.get(opts, :confidence_threshold, 0.7)
     }
 
-    case code_engine_call("detect_business_domains", request) do
+    case code_quality_engine_call("detect_business_domains", request) do
       {:ok, results} ->
         Logger.debug("Code engine detected business domains",
           domains: length(Map.get(results, "business_domains", []))
@@ -67,5 +67,5 @@ defmodule CentralCloud.Engines.CodeEngine do
   end
 
   # NIF function (loaded from shared Rust crate)
-  defp code_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
+  defp code_quality_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
 end

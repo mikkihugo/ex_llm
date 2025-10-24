@@ -631,7 +631,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1d728cc89cf3aee9ff92b05e62b19ee65a02b5702cff7d5a377e32c6ae29d8d"
 
 [[package]]
-name = "code_engine"
+name = "code_quality_engine"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -646,12 +646,12 @@ dependencies = [
  "glob",
  "hf-hub",
  "ignore",
+ "linting_engine",
  "memory-stats",
  "ndarray",
  "parser_core",
  "petgraph",
  "prompt_engine",
- "quality_engine",
  "regex",
  "rustler",
  "seahash",
@@ -2614,6 +2614,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "linting_engine"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "regex",
+ "rustler",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "walkdir",
+]
+
+[[package]]
 name = "linux-raw-sys"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3616,21 +3631,6 @@ dependencies = [
  "serde_json",
  "tree-sitter",
  "tree-sitter-python",
-]
-
-[[package]]
-name = "quality_engine"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "regex",
- "rustler",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "walkdir",
 ]
 
 [[package]]

@@ -4,9 +4,9 @@ defmodule Singularity.Engine.NifLoader do
 
   Centralizes NIF loading, health checks, and error handling for:
   - parser_engine (polyglot parser)
-  - code_engine (code analysis)
+  - code_quality_engine (code analysis)
   - architecture_engine (architecture patterns)
-  - quality_engine (quality analysis)
+  - linting_engine (linting & quality gates)
   - embedding_engine (vector embeddings)
   - prompt_engine (prompt optimization)
 
@@ -24,7 +24,7 @@ defmodule Singularity.Engine.NifLoader do
       iex> NifLoader.health_check_all()
       %{
         parser_engine: :ok,
-        code_engine: :ok,
+        code_quality_engine: :ok,
         architecture_engine: {:error, :nif_not_loaded},
         ...
       }
@@ -37,9 +37,9 @@ defmodule Singularity.Engine.NifLoader do
 
   @type nif_name ::
           :parser_engine
-          | :code_engine
+          | :code_quality_engine
           | :architecture_engine
-          | :quality_engine
+          | :linting_engine
           | :embedding_engine
           | :prompt_engine
   @type health_status :: :ok | {:error, term()}
@@ -47,9 +47,9 @@ defmodule Singularity.Engine.NifLoader do
   # Map of NIF name to its Elixir module
   @nif_modules %{
     parser_engine: Singularity.ParserEngine,
-    code_engine: Singularity.CodeEngineNif,
+    code_quality_engine: Singularity.CodeEngineNif,
     architecture_engine: Singularity.ArchitectureEngine,
-    quality_engine: Singularity.QualityEngine,
+    linting_engine: Singularity.LintingEngine,
     embedding_engine: Singularity.EmbeddingEngine,
     prompt_engine: Singularity.PromptEngine.Native
   }

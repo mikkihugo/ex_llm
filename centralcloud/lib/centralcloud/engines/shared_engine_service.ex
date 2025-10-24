@@ -17,21 +17,21 @@ defmodule CentralCloud.Engines.SharedEngineService do
   ```
   
   ## Available Engines
-  
+
   - **Architecture Engine**: Framework detection, pattern analysis, technology detection
-  - **Code Engine**: Business domain analysis, code patterns, semantic analysis  
-  - **Quality Engine**: Code quality metrics, linting, performance analysis
+  - **Code Quality Engine**: Code quality metrics, complexity analysis, maintainability scoring
+  - **Linting Engine**: Linting integration, quality gates, external linter coordination
   - **Embedding Engine**: Semantic embeddings, similarity analysis
   - **Parser Engine**: Multi-language parsing, AST analysis
   - **Prompt Engine**: AI prompt generation and optimization
-  
+
   ## Usage
-  
+
   ```elixir
   # Any system can call engines via NATS
   {:ok, result} = SharedEngineService.call_architecture_engine("detect_frameworks", request)
-  {:ok, result} = SharedEngineService.call_code_engine("analyze_business_domains", request)
-  {:ok, result} = SharedEngineService.call_quality_engine("analyze_quality", request)
+  {:ok, result} = SharedEngineService.call_code_quality_engine("analyze_codebase", request)
+  {:ok, result} = SharedEngineService.call_linting_engine("run_linting", request)
   ```
   """
 
@@ -70,7 +70,7 @@ defmodule CentralCloud.Engines.SharedEngineService do
   - analyze_patterns
   - generate_embeddings
   """
-  def call_code_engine(operation, request, opts \\ []) do
+  def call_code_quality_engine(operation, request, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 30_000)
     
     case NatsClient.request("engines.code.#{operation}", request, timeout: timeout) do
@@ -85,24 +85,24 @@ defmodule CentralCloud.Engines.SharedEngineService do
   end
 
   @doc """
-  Call the Quality Engine via NATS.
-  
+  Call the Linting Engine via NATS.
+
   Operations:
-  - analyze_quality
   - run_linting
-  - calculate_metrics
-  - security_scan
+  - analyze_quality
+  - quality_gates
+  - external_linters
   """
-  def call_quality_engine(operation, request, opts \\ []) do
+  def call_linting_engine(operation, request, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 30_000)
-    
-    case NatsClient.request("engines.quality.#{operation}", request, timeout: timeout) do
+
+    case NatsClient.request("engines.linting.#{operation}", request, timeout: timeout) do
       {:ok, response} ->
-        Logger.debug("Quality engine call successful", operation: operation)
+        Logger.debug("Linting engine call successful", operation: operation)
         {:ok, response}
-      
+
       {:error, reason} ->
-        Logger.error("Quality engine call failed", operation: operation, reason: reason)
+        Logger.error("Linting engine call failed", operation: operation, reason: reason)
         {:error, reason}
     end
   end
@@ -189,8 +189,8 @@ defmodule CentralCloud.Engines.SharedEngineService do
       Task.async(fn ->
         case engine do
           :architecture -> call_architecture_engine(operation, request, opts)
-          :code -> call_code_engine(operation, request, opts)
-          :quality -> call_quality_engine(operation, request, opts)
+          :code -> call_code_quality_engine(operation, request, opts)
+          :linting -> call_linting_engine(operation, request, opts)
           :embedding -> call_embedding_engine(operation, request, opts)
           :parser -> call_parser_engine(operation, request, opts)
           :prompt -> call_prompt_engine(operation, request, opts)
@@ -213,7 +213,7 @@ defmodule CentralCloud.Engines.SharedEngineService do
   Get engine health status for all engines.
   """
   def get_engine_health do
-    engines = [:architecture, :code, :quality, :embedding, :parser, :prompt]
+    engines = [:architecture, :code, :linting, :embedding, :parser, :prompt]
     
     health_checks = Enum.map(engines, fn engine ->
       case NatsClient.request("engines.#{engine}.health", %{}, timeout: 5_000) do

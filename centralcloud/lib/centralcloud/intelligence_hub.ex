@@ -790,7 +790,7 @@ defmodule CentralCloud.IntelligenceHub do
     framework_analysis = detect_frameworks_with_architecture_engine(codebase_info)
     
     # 2. Use Code Engine for business domain analysis and pattern detection
-    code_analysis = analyze_code_with_code_engine(codebase_info)
+    code_analysis = analyze_code_with_code_quality_engine(codebase_info)
     
     # 3. Use Quality Engine for code quality metrics
     quality_metrics = analyze_quality_with_quality_engine(codebase_info)
@@ -816,7 +816,7 @@ defmodule CentralCloud.IntelligenceHub do
       "analysis_metadata" => %{
         "analyzed_at" => DateTime.utc_now(),
         "instance_id" => instance_id,
-        "engines_used" => ["architecture_engine", "code_engine", "quality_engine", "embedding_engine"],
+        "engines_used" => ["architecture_engine", "code_quality_engine", "quality_engine", "embedding_engine"],
         "analysis_version" => "1.0.0"
       }
     }
@@ -851,7 +851,7 @@ defmodule CentralCloud.IntelligenceHub do
     end
   end
 
-  defp analyze_code_with_code_engine(codebase_info) do
+  defp analyze_code_with_code_quality_engine(codebase_info) do
     # Use Code Engine NIF directly (same as Singularity)
     case CentralCloud.Engines.CodeEngine.analyze_codebase(codebase_info, 
       analysis_types: ["business_domains", "patterns", "architecture"],
@@ -875,8 +875,8 @@ defmodule CentralCloud.IntelligenceHub do
   end
 
   defp analyze_quality_with_quality_engine(codebase_info) do
-    # Use Quality Engine NIF directly (same as Singularity)
-    case CentralCloud.Engines.QualityEngine.analyze_quality(codebase_info, 
+    # Use Linting Engine NIF directly (same as Singularity)
+    case CentralCloud.Engines.LintingEngine.analyze_quality(codebase_info,
       quality_checks: ["maintainability", "performance", "security", "architecture"],
       include_metrics: true
     ) do

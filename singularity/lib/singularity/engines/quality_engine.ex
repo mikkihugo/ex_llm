@@ -1,20 +1,20 @@
-defmodule Singularity.QualityEngine do
+defmodule Singularity.LintingEngine do
   @moduledoc """
-  Quality engine with multi-language linting and quality analysis.
+  Linting Engine - Multi-language linting and quality gates.
 
-  This module wraps the Rust NIF from rust/quality_engine which provides:
-  - Code quality analysis
+  This module wraps the Rust NIF from rust/linting_engine which provides:
+  - Multi-language linting integration (ESLint, Clippy, Credo, etc.)
   - Quality gate enforcement
-  - AI pattern detection
+  - External linter coordination
   - Multi-language support (Elixir, Rust, TypeScript, Python, etc.)
 
-  The Rust NIF handles heavy analysis work while Elixir coordinates workflows.
+  The Rust NIF handles heavy linting work while Elixir coordinates workflows.
   """
 
   use Rustler,
     otp_app: :singularity,
-    crate: :quality_engine,
-    path: "../rust/quality_engine",
+    crate: :linting_engine,
+    path: "../rust/linting_engine",
     # Temporarily skip compilation to fix hot reload
     skip_compilation?: true
 

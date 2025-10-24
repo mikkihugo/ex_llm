@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "code_engine",
-    "quality_engine",
+    "code_quality_engine",
+    "linting_engine",
     "parser_engine/core",
     "parser_engine",  # NIF wrapper - Rustler builds this separately
     # "parser_engine/polyglot",  # Excluded: Built separately as NIF by Rustler (causes workspace conflicts)
