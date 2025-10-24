@@ -63,15 +63,32 @@ pub struct MermaidEdge {
     pub properties: HashMap<String, String>,
 }
 
-/// Diagram metadata
+/// Diagram metadata (enriched from AST)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MermaidMetadata {
     /// Total node count
     pub node_count: usize,
     /// Total edge count
     pub edge_count: usize,
-    /// Diagram configuration
+    /// Diagram title (extracted from title directive or first line comment)
+    pub title: Option<String>,
+    /// Diagram description (from comments)
+    pub description: Option<String>,
+    /// Diagram configuration (theme, direction, etc. from %%config blocks)
     pub config: HashMap<String, Value>,
+    /// Special nodes (start, end, decision points, etc.)
+    pub special_nodes: Vec<SpecialNode>,
+    /// Complexity level based on structure
+    pub complexity_score: f32,
+}
+
+/// Special nodes in a diagram (start/end points, decision nodes, etc.)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpecialNode {
+    /// Node ID
+    pub node_id: String,
+    /// Type of special node
+    pub node_type: String, // "start", "end", "decision", "process", etc.
 }
 
 impl Default for MermaidMetadata {
@@ -79,7 +96,11 @@ impl Default for MermaidMetadata {
         Self {
             node_count: 0,
             edge_count: 0,
+            title: None,
+            description: None,
             config: HashMap::new(),
+            special_nodes: Vec::new(),
+            complexity_score: 0.0,
         }
     }
 }
@@ -114,8 +135,15 @@ pub fn parse_mermaid(diagram_text: &str) -> Result<MermaidDiagram, String> {
             // Extract diagram type from AST root
             diagram.diagram_type = extract_diagram_type_from_ast(root);
 
+            // Extract metadata (title, description, config)
+            extract_diagram_metadata(&mut diagram, diagram_text);
+
             // Traverse AST to extract nodes and edges
             traverse_ast_and_extract(&mut diagram, root, diagram_text);
+
+            // Identify special nodes and calculate complexity
+            identify_special_nodes(&mut diagram);
+            calculate_complexity(&mut diagram);
 
             diagram.parsed = !diagram.errors.is_empty() || root.has_error();
         }
@@ -485,6 +513,156 @@ fn extract_data_entry_from_ast(node: Node, diagram: &mut MermaidDiagram, source:
             });
         }
     }
+}
+
+/// Extract metadata from diagram text (title, description, config)
+fn extract_diagram_metadata(diagram: &mut MermaidDiagram, text: &str) {
+    for line in text.lines() {
+        let trimmed = line.trim();
+
+        // Extract title from title directive
+        if trimmed.starts_with("title ") {
+            diagram.metadata.title = Some(
+                trimmed
+                    .strip_prefix("title ")
+                    .unwrap_or("")
+                    .trim()
+                    .to_string(),
+            );
+        }
+
+        // Extract description from comments (lines starting with %%)
+        if trimmed.starts_with("%%") && trimmed.len() > 2 {
+            let comment = trimmed
+                .strip_prefix("%%")
+                .unwrap_or("")
+                .trim()
+                .to_string();
+
+            if let Some(existing) = &diagram.metadata.description {
+                // Append to existing description
+                diagram.metadata.description =
+                    Some(format!("{}\n{}", existing, comment));
+            } else {
+                diagram.metadata.description = Some(comment);
+            }
+        }
+
+        // Extract configuration from %%config blocks
+        if trimmed.starts_with("%%{") || trimmed.starts_with("%%config") {
+            if let Some(config_str) = trimmed.strip_prefix("%%{").or_else(|| {
+                trimmed
+                    .strip_prefix("%%config")
+                    .and_then(|s| s.strip_prefix("%%"))
+            }) {
+                // Try to parse as JSON configuration
+                if let Ok(json_value) = serde_json::from_str::<Value>(config_str) {
+                    if let Value::Object(map) = json_value {
+                        for (key, value) in map {
+                            diagram.metadata.config.insert(key, value);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Identify special nodes based on diagram type and node characteristics
+fn identify_special_nodes(diagram: &mut MermaidDiagram) {
+    match diagram.diagram_type.as_str() {
+        "flowchart" | "graph" => {
+            // In flowcharts, identify start/end/decision nodes by shape
+            for node in &diagram.nodes {
+                let special_type = match node.shape.as_str() {
+                    "circle" => "start", // [*] or circle
+                    "diamond" => "decision",
+                    "box" => "process",
+                    "parallelogram" => "io",
+                    "trapezoid" => "data",
+                    _ => continue,
+                };
+
+                diagram.metadata.special_nodes.push(SpecialNode {
+                    node_id: node.id.clone(),
+                    node_type: special_type.to_string(),
+                });
+            }
+        }
+        "sequenceDiagram" => {
+            // Sequence diagrams: all participants are special
+            for node in &diagram.nodes {
+                if node.shape == "participant" {
+                    diagram.metadata.special_nodes.push(SpecialNode {
+                        node_id: node.id.clone(),
+                        node_type: "participant".to_string(),
+                    });
+                }
+            }
+        }
+        "classDiagram" => {
+            // Class diagrams: all classes are special
+            for node in &diagram.nodes {
+                if node.shape == "class" {
+                    diagram.metadata.special_nodes.push(SpecialNode {
+                        node_id: node.id.clone(),
+                        node_type: "class".to_string(),
+                    });
+                }
+            }
+        }
+        "stateDiagram" => {
+            // State diagrams: identify start/end states
+            for node in &diagram.nodes {
+                let special_type = if node.id == "[*]" || node.label == "[*]" {
+                    "terminal"
+                } else {
+                    continue;
+                };
+
+                diagram.metadata.special_nodes.push(SpecialNode {
+                    node_id: node.id.clone(),
+                    node_type: special_type.to_string(),
+                });
+            }
+        }
+        _ => {
+            // For other diagram types, mark first and last nodes as special
+            if !diagram.nodes.is_empty() {
+                if let Some(first) = diagram.nodes.first() {
+                    diagram.metadata.special_nodes.push(SpecialNode {
+                        node_id: first.id.clone(),
+                        node_type: "start".to_string(),
+                    });
+                }
+                if diagram.nodes.len() > 1 {
+                    if let Some(last) = diagram.nodes.last() {
+                        diagram.metadata.special_nodes.push(SpecialNode {
+                            node_id: last.id.clone(),
+                            node_type: "end".to_string(),
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Calculate diagram complexity score based on structure
+fn calculate_complexity(diagram: &mut MermaidDiagram) {
+    // Complexity formula: (nodes + edges) / nodes (measures branch factor)
+    let nodes = diagram.nodes.len() as f32;
+    let edges = diagram.edges.len() as f32;
+
+    diagram.metadata.complexity_score = if nodes > 0.0 {
+        (nodes + edges) / nodes
+    } else {
+        0.0
+    };
+
+    // Clamp to 0.0-10.0 range
+    diagram.metadata.complexity_score =
+        diagram.metadata.complexity_score.min(10.0).max(0.0);
 }
 
 
