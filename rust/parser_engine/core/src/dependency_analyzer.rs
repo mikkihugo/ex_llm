@@ -5,6 +5,7 @@
 
 use std::path::{Path, PathBuf};
 use anyhow::Result;
+use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 
 /// A detected dependency
@@ -20,8 +21,8 @@ pub struct Dependency {
     pub dependency_type: String,
 }
 
-/// A detected framework
-#[derive(Debug, Clone)]
+/// A detected framework (populated by CentralCloud pattern lookup)
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Framework {
     /// Framework name
     pub name: String,
@@ -73,38 +74,40 @@ impl DependencyAnalyzer {
         };
 
         // Try different manifest files in order of preference
+        // NOTE: Framework detection happens in Elixir via CentralCloud pattern lookup,
+        // not in Rust. This allows patterns to be updated without recompiling Rust.
         if let Ok(deps) = Self::analyze_cargo_toml(&project_root) {
             result.dependencies = deps.clone();
             result.manifest_found = Some("Cargo.toml".to_string());
-            result.frameworks = Self::detect_frameworks_from_deps(&deps);
+            // Framework detection will be done in Elixir via CentralCloud
             return Ok(result);
         }
 
         if let Ok(deps) = Self::analyze_package_json(&project_root) {
             result.dependencies = deps.clone();
             result.manifest_found = Some("package.json".to_string());
-            result.frameworks = Self::detect_frameworks_from_deps(&deps);
+            // Framework detection will be done in Elixir via CentralCloud
             return Ok(result);
         }
 
         if let Ok(deps) = Self::analyze_mix_exs(&project_root) {
             result.dependencies = deps.clone();
             result.manifest_found = Some("mix.exs".to_string());
-            result.frameworks = Self::detect_frameworks_from_deps(&deps);
+            // Framework detection will be done in Elixir via CentralCloud
             return Ok(result);
         }
 
         if let Ok(deps) = Self::analyze_requirements_txt(&project_root) {
             result.dependencies = deps.clone();
             result.manifest_found = Some("requirements.txt".to_string());
-            result.frameworks = Self::detect_frameworks_from_deps(&deps);
+            // Framework detection will be done in Elixir via CentralCloud
             return Ok(result);
         }
 
         if let Ok(deps) = Self::analyze_go_mod(&project_root) {
             result.dependencies = deps.clone();
             result.manifest_found = Some("go.mod".to_string());
-            result.frameworks = Self::detect_frameworks_from_deps(&deps);
+            // Framework detection will be done in Elixir via CentralCloud
             return Ok(result);
         }
 
@@ -402,151 +405,6 @@ impl DependencyAnalyzer {
         }
 
         Ok(deps)
-    }
-
-    /// Detect frameworks from dependencies
-    fn detect_frameworks_from_deps(deps: &[Dependency]) -> Vec<Framework> {
-        let mut frameworks = Vec::new();
-        let dep_names: Vec<String> = deps.iter().map(|d| d.name.clone()).collect();
-
-        // Web frameworks
-        if Self::has_dep(&dep_names, "react") {
-            frameworks.push(Framework {
-                name: "React".to_string(),
-                version: Self::get_version(&dep_names, "react"),
-                framework_type: "web_ui".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        if Self::has_dep(&dep_names, "vue") {
-            frameworks.push(Framework {
-                name: "Vue".to_string(),
-                version: Self::get_version(&dep_names, "vue"),
-                framework_type: "web_ui".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        if Self::has_dep(&dep_names, "angular") {
-            frameworks.push(Framework {
-                name: "Angular".to_string(),
-                version: Self::get_version(&dep_names, "@angular/core"),
-                framework_type: "web_ui".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        if Self::has_dep(&dep_names, "express") {
-            frameworks.push(Framework {
-                name: "Express".to_string(),
-                version: Self::get_version(&dep_names, "express"),
-                framework_type: "web_server".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        if Self::has_dep(&dep_names, "django") {
-            frameworks.push(Framework {
-                name: "Django".to_string(),
-                version: Self::get_version(&dep_names, "django"),
-                framework_type: "web_server".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        if Self::has_dep(&dep_names, "fastapi") {
-            frameworks.push(Framework {
-                name: "FastAPI".to_string(),
-                version: Self::get_version(&dep_names, "fastapi"),
-                framework_type: "web_server".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        if Self::has_dep(&dep_names, "phoenix") {
-            frameworks.push(Framework {
-                name: "Phoenix".to_string(),
-                version: Self::get_version(&dep_names, "phoenix"),
-                framework_type: "web_server".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        if Self::has_dep(&dep_names, "actix") || Self::has_dep(&dep_names, "actix-web") {
-            frameworks.push(Framework {
-                name: "Actix-web".to_string(),
-                version: Self::get_version(&dep_names, "actix-web"),
-                framework_type: "web_server".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        if Self::has_dep(&dep_names, "gin") {
-            frameworks.push(Framework {
-                name: "Gin".to_string(),
-                version: Self::get_version(&dep_names, "github.com/gin-gonic/gin"),
-                framework_type: "web_server".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        // ORM frameworks
-        if Self::has_dep(&dep_names, "sqlalchemy") {
-            frameworks.push(Framework {
-                name: "SQLAlchemy".to_string(),
-                version: Self::get_version(&dep_names, "sqlalchemy"),
-                framework_type: "orm".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        if Self::has_dep(&dep_names, "ecto") {
-            frameworks.push(Framework {
-                name: "Ecto".to_string(),
-                version: Self::get_version(&dep_names, "ecto"),
-                framework_type: "orm".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        // Build tools
-        if Self::has_dep(&dep_names, "webpack") {
-            frameworks.push(Framework {
-                name: "Webpack".to_string(),
-                version: Self::get_version(&dep_names, "webpack"),
-                framework_type: "build_tool".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        if Self::has_dep(&dep_names, "vite") {
-            frameworks.push(Framework {
-                name: "Vite".to_string(),
-                version: Self::get_version(&dep_names, "vite"),
-                framework_type: "build_tool".to_string(),
-                confidence: 0.95,
-            });
-        }
-
-        frameworks
-    }
-
-    /// Helper: Check if dependency exists (case-insensitive)
-    fn has_dep(deps: &[String], name: &str) -> bool {
-        deps.iter()
-            .any(|d| d.to_lowercase().contains(&name.to_lowercase()))
-    }
-
-    /// Helper: Get version of a dependency
-    fn get_version(deps: &[String], name: &str) -> Option<String> {
-        // This is a simplified version - in a real implementation,
-        // we'd look up the actual Dependency struct
-        if Self::has_dep(deps, name) {
-            Some("*".to_string()) // Placeholder
-        } else {
-            None
-        }
     }
 }
 
