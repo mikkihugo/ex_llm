@@ -1,7 +1,8 @@
-# Complete TODO Items - All Priority Levels
+# Complete TODO Items - All Priority Levels (43 Items)
 
 **Generated:** October 24, 2025
-**Scope:** All tasks from documentation review, code review, and architecture analysis
+**Updated:** October 25, 2025 (Added 7 critical/missing items)
+**Scope:** All tasks from documentation review, code review, architecture analysis, debt audit, observability, testing
 
 ---
 
@@ -9,12 +10,21 @@
 
 | Priority | Count | Effort | Impact |
 |----------|-------|--------|--------|
-| **CRITICAL** | 3 | 2-4 hours | Blocks production use |
-| **HIGH** | 8 | 10-15 hours | Important for coherence |
-| **MEDIUM** | 12 | 15-25 hours | Nice to have, improves quality |
-| **LOW** | 9 | 10-20 hours | Polish and optimization |
-| **BACKLOG** | 5 | 20+ hours | Future enhancements |
-| **TOTAL** | **37 items** | **~80-90 hours** | |
+| **CRITICAL** | 3 | 5-9 hours | Blocks production use |
+| **HIGH** | 11 | 25-40 hours | Important for coherence, production-ready |
+| **MEDIUM** | 14 | 35-50 hours | Nice to have, improves quality |
+| **LOW** | 11 | 18-30 hours | Polish and optimization |
+| **BACKLOG** | 4 | 50+ hours | Future enhancements |
+| **TOTAL** | **43 items** | **~150-180 hours** | **4-6 weeks full-time** |
+
+**Key Additions:**
+- NEW #37: Resolve 86 embedded TODOs (debt triage)
+- NEW #38: Observability for 72 GenServers/Agents (production-ready)
+- NEW #39: TypeScript test coverage for AI server (reliability)
+- NEW #40: Comment 4,751 private functions (maintainability)
+- NEW #41: Complete Rust NIF stubs (architecture analysis)
+- NEW #42: Test coverage dashboard (visibility)
+- NEW #43: LLM-assisted comment generation (acceleration)
 
 ---
 
@@ -158,6 +168,76 @@
 - **Blockers:** None
 - **Benefit:** Can call code_engine from distributed services
 
+### 37. Resolve 86 Embedded TODOs/FIXMEs in Elixir Code
+- **Status:** 86 TODO/FIXME comments scattered across singularity/lib
+- **Files:** All `*.ex` files in `singularity/lib`
+- **What:** Audit, classify, and prioritize all embedded work comments
+- **Current state:** No visibility into scattered work items
+- **Process:**
+  1. Extract all TODO/FIXME/XXX/HACK comments:
+     ```bash
+     grep -r "TODO\|FIXME\|XXX\|HACK" singularity/lib --include="*.ex" | tee TODO_AUDIT.txt
+     ```
+  2. Classify by severity:
+     - CRITICAL (5-10 items): Production blockers
+     - HIGH (20-30 items): Important features
+     - MEDIUM (30-40 items): Improvements
+     - LOW (10-15 items): Informational/future
+  3. Move CRITICAL items → COMPLETE_TODO_ITEMS.md
+  4. Archive MEDIUM/LOW → separate `TECHNICAL_DEBT.md` reference doc
+- **Effort:** 2-3 hours (audit + triage)
+- **Priority:** HIGH (blocks visibility)
+- **Benefit:** Single source of truth for all work items
+- **Blocker:** None
+
+### 38. Add Observability/Telemetry to 72 GenServers/Agents
+- **Status:** 72 processes exist (GenServers, Agents, DynamicSupervisors), telemetry incomplete
+- **Files:**
+  - `lib/singularity/**/*supervisor.ex` (6+ supervisors)
+  - `lib/singularity/jobs/*.ex` (GenServer jobs)
+  - `lib/singularity/*orchestrator.ex` (5+ orchestrators)
+- **What:** Instrument all processes with observability metrics
+- **Metrics per process:**
+  - Process startup/shutdown events
+  - Message queue depth
+  - Error rates and types
+  - Execution time per operation
+  - Memory usage trends
+- **Template:** Extend existing telemetry patterns from `lib/singularity/telemetry.ex`
+- **Implementation:**
+  ```elixir
+  # In each GenServer:
+  :telemetry.execute([:process, :started], %{pid: self(), module: __MODULE__})
+  # On handle_call:
+  :telemetry.execute([:process, :operation], %{time: time_ms, status: status})
+  # On error:
+  :telemetry.execute([:process, :error], %{error: error, severity: severity})
+  ```
+- **Effort:** 5-8 hours (systematic instrumentation)
+- **Priority:** HIGH → CRITICAL (production readiness)
+- **Benefit:** Observability for distributed debugging, performance bottleneck identification
+- **Blocker:** None (framework exists in `lib/singularity/telemetry.ex`)
+
+### 39. Add TypeScript/Bun Test Coverage for AI Server
+- **Status:** 35 TypeScript source files, 0 tests
+- **Files:** `llm-server/src/*.ts` all untested
+- **What:** Create comprehensive test suite for AI provider integration
+- **Current gaps:**
+  - No unit tests for provider abstraction
+  - No integration tests for NATS communication
+  - No mock tests for LLM provider responses
+- **Test areas:**
+  1. Provider selection logic (model routing)
+  2. NATS message handling (subscribe/publish)
+  3. LLM provider integration (Claude, Gemini, OpenAI, Copilot)
+  4. Error handling and retries
+  5. Cost optimization logic
+- **Framework:** Vitest or Bun's native test runner
+- **Effort:** 4-6 hours (test setup + core coverage)
+- **Priority:** HIGH (AI server is critical path)
+- **Benefit:** Catch AI integration bugs before production, ensure provider reliability
+- **Blocker:** None
+
 ---
 
 ## MEDIUM (Nice to Have) 🟡
@@ -286,6 +366,28 @@
 - **Blockers:** None
 - **Benefit:** Security analysis faster
 
+### 41. Complete Rust NIF Stubs in Architecture Engine
+- **Status:** Architecture engine has 20+ TODO stubs, partially implemented
+- **Files:**
+  - `rust/architecture_engine/src/patterns/*.rs` (4 stubs)
+  - `rust/architecture_engine/src/architecture/*.rs` (3 stubs)
+  - `rust/architecture_engine/src/code_evolution/*.rs` (3 stubs)
+- **What:** Implement stubbed functions currently marked TODO
+- **Stubs to complete:**
+  1. `naming_patterns.rs::detect_naming_patterns()` - Identify naming convention violations
+  2. `anti_pattern_detector.rs::detect_anti_patterns()` - Find architectural anti-patterns
+  3. `pattern_detector.rs::detect_patterns()` - General pattern detection
+  4. `component_analysis.rs::analyze_components()` - Component boundary analysis
+  5. `architectural_patterns.rs::detect_architectural_patterns()` - Microservice/layered/etc patterns
+  6. `layer_analysis.rs::analyze_layers()` - Vertical architecture layer detection
+  7. `naming_evolution.rs::track_naming_evolution()` - Module naming changes over time
+  8. `deprecated_detector.rs::detect_deprecated_code()` - Find deprecated modules/functions
+  9. `change_analyzer.rs::analyze_changes()` - Code change impact analysis
+- **Effort:** 6-8 hours (implement 9 functions)
+- **Priority:** MEDIUM (improves architecture analysis)
+- **Benefit:** Complete architecture engine capabilities, full feature parity with code_engine
+- **Blocker:** None (but depends on #3 for production use)
+
 ---
 
 ## LOW (Polish & Optimization) 🟢
@@ -369,6 +471,84 @@
 - **Blockers:** None
 - **Benefit:** Faster onboarding for new devs
 
+### 40. Add Comments to 4,751 Private Functions
+- **Status:** Private functions (defp/defmacrop) largely undocumented
+- **Files:** All `singularity/lib/**/*.ex` files with `defp` definitions
+- **What:** Add concise comments explaining purpose and invariants
+- **Approach:**
+  1. Identify all `defp` and `defmacrop` definitions (4,751 found)
+  2. Add 1-3 line comment per function explaining:
+     - Purpose (what does this do?)
+     - Key invariants (pre-conditions)
+     - Error conditions (when does this fail?)
+  3. Template:
+     ```elixir
+     # Validates input format and returns normalized tuple.
+     # Raises ArgumentError if input is malformed.
+     defp validate_and_normalize(input) do
+       ...
+     end
+     ```
+- **Note:** Use comments (not @doc) for private functions to avoid compilation warnings
+- **Effort:** 8-12 hours (comment-only, systematic pass through codebase)
+- **Priority:** LOW (documentation, not blocking functionality)
+- **Benefit:** Better code maintainability, AI comprehension, faster debugging
+- **Blocker:** None
+
+### 42. Create Test Coverage Report Dashboard
+- **Status:** 96 test files exist (Elixir), coverage not visualized
+- **Files:** `lib/singularity/dashboard/test_coverage.ex` (new)
+- **What:** Create dashboard showing test coverage metrics
+- **Features:**
+  - Overall coverage % (current: unknown)
+  - Module-by-module coverage breakdown
+  - Low-coverage modules (< 70%) highlighted
+  - Coverage trends over time
+  - Test execution time per module
+- **Implementation:**
+  1. Configure ExCoveralls in mix.exs
+  2. Generate HTML coverage report
+  3. Create dashboard parsing ExCoveralls JSON output
+  4. Display in web interface or text format
+- **Effort:** 2-3 hours
+- **Priority:** LOW (nice-to-have visibility)
+- **Benefit:** Visibility into test health, identify gaps in coverage
+- **Blocker:** None
+
+### 43. Add LLM-Assisted Code Comment Generation
+- **Status:** 4,751 private functions need comments (item #40 above)
+- **Files:** Create `lib/singularity/tools/comment_generator.ex` (new)
+- **What:** Tool to batch-generate comments for private functions using LLM
+- **How it works:**
+  1. Parse module AST to extract all `defp` functions
+  2. For each function: call `LLM.Service(:simple, prompt)`
+  3. Prompt asks LLM to generate 1-3 line comment explaining function
+  4. Return suggestions for human review
+  5. Optionally auto-insert into source
+- **Implementation:**
+  ```elixir
+  defmodule Singularity.Tools.CommentGenerator do
+    def generate_comments_for_module(module_path) do
+      # 1. Parse module AST
+      # 2. Extract all defp functions with current comments
+      # 3. For each missing comment:
+      #    - call LLM.Service(:simple, "Add comment to: #{code}")
+      #    - return {function_name, suggested_comment}
+      # 4. Display suggestions for review
+    end
+
+    def generate_comments_for_codebase(codebase_path) do
+      # Batch process all modules in parallel
+      # Generate 4,751 comments in ~2-3 hours instead of 40-60 hours
+    end
+  end
+  ```
+- **Effort:** 3-4 hours (tool implementation)
+- **Priority:** MEDIUM → LOW (accelerates item #40 by 10x)
+- **Benefit:** 10x faster comment generation (30 min per module → 3 min per module)
+- **Blocker:** None (LLM.Service ready)
+- **Note:** Accelerator tool for item #40, not required but highly recommended
+
 ---
 
 ## BACKLOG (Future Enhancements) 📋
@@ -407,47 +587,85 @@
 
 ## Implementation Order (Recommended)
 
-### Week 1 (Critical - 5-9 hours)
-1. ✅ Wire PageRank to Elixir (#1)
-2. ✅ Store PageRank in AGE (#2)
-3. ✅ Complete code_engine NIF bridge (#3)
+### Week 1 (Critical Path - 5-9 hours)
+1. ⭐ Wire PageRank to Elixir (#1)
+2. ⭐ Store PageRank in AGE (#2)
+3. ⭐ Complete code_engine NIF bridge (#3)
 
-### Week 2 (High - 10-15 hours)
-4. ✅ Convert Parser RCA metrics (#4)
-5. ✅ Move Parser intelligence modules (#5)
-6. ✅ Auto-fix missing AI metadata (#8)
-7. ✅ Wire Instructor to generators (#7)
+### Week 2 (Debt & Production-Ready - 12-16 hours)
+4. ⭐ Resolve 86 embedded TODOs (#37) - Highest ROI, unblocks hidden work
+5. ⭐ Add observability to 72 GenServers (#38) - Production-ready instrumentation
+6. ⭐ TypeScript test coverage for AI server (#39) - Critical path reliability
+7. Convert Parser RCA metrics (#4)
+8. Move Parser intelligence modules (#5)
 
-### Week 3-4 (High continuation - 8-12 hours)
-8. ✅ Add graph edge metadata (#9)
-9. ✅ Complete AI metadata for modules (#6)
-10. ✅ Create dashboard (#10)
-11. ✅ NATS integration (#11)
+### Week 3 (High Priority - 15-20 hours)
+9. Auto-fix missing AI metadata (#8)
+10. Wire Instructor to generators (#7)
+11. Add graph edge metadata (#9)
+12. Complete AI metadata for modules (#6) - Can parallelize with #43 (LLM-assisted)
+13. Create dashboard (#10)
+
+### Week 4 (High + Early Medium - 12-15 hours)
+14. NATS integration (#11)
+15. Add comments to 4,751 private functions (#40) - Use #43 (LLM tool) to accelerate
+16. LLM-assisted comment generation tool (#43) - Implement FIRST to accelerate #40
+17. Complete Rust NIF stubs (#41) - Architecture engine completion
 
 ### Week 5+ (Medium & Low - As time permits)
-12. ✅ Implement centrality measures (#12-14)
-13. ✅ Add performance tracking (#24-28)
-14. ✅ Implement security search (#23)
-15. ✅ Evolution timeline (#18)
+18. Implement centrality measures (#12-14)
+19. Add performance tracking (#24-28)
+20. Implement security search (#23)
+21. Evolution timeline (#18)
+22. Additional items as needed
+
+**Note:** New items #37-43 prioritized for debt reduction and production-readiness
+- Item #37 (TODO audit) should be FIRST to uncover any hidden blockers
+- Items #38-39 improve production reliability significantly
+- Item #43 (LLM tool) should be done BEFORE #40 (comments) to achieve 10x speedup
 
 ---
 
-## Effort Estimation
+## Effort Estimation (Updated with 7 New Items)
 
 | Phase | Items | Effort | Timeline |
 |-------|-------|--------|----------|
-| **Critical** | 3 | 5-9 hours | 1-2 days |
-| **High** | 8 | 18-25 hours | 1 week |
-| **Medium** | 12 | 30-40 hours | 1-2 weeks |
-| **Low** | 9 | 15-25 hours | 1-2 weeks |
+| **Critical** | 3 | 5-9 hours | 1 day |
+| **High** | 11 | 40-55 hours | 2 weeks (includes new debt items) |
+| **Medium** | 14 | 42-62 hours | 2-3 weeks |
+| **Low** | 11 | 21-33 hours | 1-2 weeks |
 | **Backlog** | 4 | 50+ hours | Q4 2025+ |
-| **TOTAL** | **36** | **~120-140 hours** | **4-6 weeks** |
+| **TOTAL** | **43** | **~150-180 hours** | **4-6 weeks full-time** |
+
+**Breakdown of New Items:**
+- #37 (TODO audit): 2-3 hours
+- #38 (Observability): 5-8 hours
+- #39 (TypeScript tests): 4-6 hours
+- #40 (Private function comments): 8-12 hours (or 1-2 hours with #43)
+- #41 (Rust stubs): 6-8 hours
+- #42 (Coverage dashboard): 2-3 hours
+- #43 (LLM comment tool): 3-4 hours
+
+**Strategic Approach:**
+- If doing #40 manually: +40-48 hours (8-12 hours × multiple modules)
+- If doing #43 first: -35 hours (tool generates most comments, only review needed)
+- Net gain from #43: ~35 hours saved (70% efficiency improvement)
 
 *Note: Neo4j (#33) removed - PostgreSQL + AGE + Rust algorithms provide all needed functionality*
 
 ---
 
 ## Quick Reference by Category
+
+### Critical Path (Week 1 - Do First!)
+- #1: Wire PageRank to Elixir ⭐ CRITICAL
+- #2: Store PageRank in AGE ⭐ CRITICAL
+- #3: Code engine NIF bridge ⭐ CRITICAL
+
+### Debt & Production-Ready (Week 2 - New Priority!)
+- #37: Resolve 86 embedded TODOs ⭐ HIGH (highest ROI)
+- #38: Observability for 72 GenServers ⭐ HIGH (production-ready)
+- #39: TypeScript test coverage for AI ⭐ HIGH (reliability)
 
 ### Graph & Centrality
 - #1: Wire PageRank to Elixir ⭐ CRITICAL
@@ -459,11 +677,15 @@
 
 ### Code Quality & Analysis
 - #6: Complete AI metadata 🟠
+- #8: Auto-fix missing metadata 🟠
 - #15-16: Embedding standardization 🟡
 - #18: Evolution timeline 🟡
 - #20: Health score dashboard 🟡
 - #21: Performance regression 🟡
 - #30: Code smell trends 🟢
+- #40: Comments for private functions 🟢 (accelerated by #43)
+- #42: Test coverage dashboard 🟢
+- #43: LLM-assisted comment generation 🟢 (do BEFORE #40)
 
 ### Architecture & Design
 - #4: Parser RCA metrics 🟠
@@ -471,55 +693,165 @@
 - #9: Graph edge metadata 🟠
 - #22: Dependency constraints 🟡
 - #23: Security-aware search 🟡
+- #41: Complete Rust NIF stubs 🟡
 
 ### Tooling & Infrastructure
 - #3: Code engine NIF bridge 🔴
 - #7: Instructor validation 🟠
-- #8: Auto-fix metadata 🟠
 - #10: Dependency dashboard 🟠
 - #11: NATS integration 🟠
 - #24: NIF performance metrics 🟢
 - #25: NIF caching 🟢
+- #26: Rust documentation 🟢
 - #27: Integration tests 🟢
 - #28: Batch calculation 🟢
 - #31: Error recovery 🟢
+- #32: Developer onboarding 🟢
 
 ---
 
 ## Dependencies
 
 ```
+🔴 CRITICAL PATH (Blocking):
 #1 (PageRank Elixir)
   ↓ (required by)
-#2 (Store in AGE)
-#9 (Edge metadata)
-#12-14 (Centrality measures)
-#28 (Batch calculation)
+  ├─ #2 (Store in AGE)
+  ├─ #9 (Edge metadata)
+  ├─ #12-14 (Centrality measures)
+  └─ #28 (Batch calculation)
 
+⭐ HIGHEST ROI (Do Early):
+#37 (TODO Audit) → Uncovers hidden blockers
+#38 (Observability) → Enables production use
+#39 (TypeScript Tests) → Improves AI server reliability
+
+🎯 ACCELERATION CHAIN (Do in Order):
+#43 (LLM Comment Tool)
+  ↓ (accelerates by 10x)
+  #40 (Private Function Comments)
+
+📊 QUALITY CHAIN:
 #6 (AI Metadata)
   ↓ (enhanced by)
-#8 (Auto-fix)
+  #8 (Auto-fix)
 
+⏱️ TIME-SERIES CHAIN:
 #18 (Evolution Timeline)
   ↓ (required by)
-#21 (Performance regression)
-#30 (Smell trends)
+  ├─ #21 (Performance regression)
+  └─ #30 (Smell trends)
 
+🏗️ ARCHITECTURE CHAIN:
 #4 (Parser Metrics)
-  ↓ (prerequisite for)
-#6 (AI Metadata)
+  ↓ (prerequisite for better)
+  #6 (AI Metadata)
+
+#3 (Code Engine Bridge)
+  ↓ (enables)
+  #41 (Rust NIF Stubs - optional)
+
+📝 NOTE: No blocking dependencies between most items - highly parallelizable!
+Maximum concurrency: weeks 2-4 can run 3-4 items simultaneously
 ```
 
 ---
 
 ## Success Metrics
 
-After completing all items:
-- ✅ 100% of modules have AI metadata
-- ✅ PageRank scores queryable via AGE
-- ✅ All centrality measures calculated
-- ✅ Dashboard showing dependencies + health
-- ✅ Automatic code quality monitoring
-- ✅ Performance regression detection
-- ✅ Security-aware code search
-- ✅ 5-10x faster metadata calculation (caching)
+**After completing all 43 items:**
+
+### Architecture & Code Understanding
+- ✅ 100% of critical modules have AI metadata (v2.5.0 complete)
+- ✅ PageRank scores queryable and visible via AGE/Cypher
+- ✅ All centrality measures calculated (PageRank, Betweenness, Closeness, Degree)
+- ✅ Codebase communities detected (microservice boundary identification)
+- ✅ 4,751 private functions documented with comments
+- ✅ All 86+ embedded TODOs triaged and prioritized
+
+### Production Readiness
+- ✅ 72 GenServers/Agents fully observable (telemetry instrumentation)
+- ✅ AI server (35 TS files) fully tested and reliable
+- ✅ Comprehensive error recovery across codebase
+- ✅ NIF engines (parser, code_engine, architecture) fully bridged to Elixir
+- ✅ All Rust stubs completed (architecture engine feature parity)
+- ✅ Integration tests covering parser → code_engine pipeline
+
+### Quality & Monitoring
+- ✅ Dashboard showing dependencies + health + coverage
+- ✅ Automatic code quality monitoring (health scores)
+- ✅ Performance regression detection enabled
+- ✅ Code smell trend analysis operational
+- ✅ Security-aware code search functional
+- ✅ Evolution timeline tracking codebase maturity
+
+### Performance
+- ✅ 5-10x faster metadata calculation via caching
+- ✅ NIF performance metrics instrumented and visible
+- ✅ Batch metadata calculation optimized
+- ✅ Embedding quality metrics tracked
+
+### Debt & Technical Health
+- ✅ Zero scattered TODOs (all consolidated)
+- ✅ Full observability into process health
+- ✅ Comprehensive test coverage reported
+- ✅ Developer onboarding guide complete
+
+---
+
+## Implementation Strategy
+
+### Phase 1: Unblock Production (Week 1-2, 17-25 hours)
+**Goal:** Get PageRank working + fix critical issues + reduce technical debt
+
+1. Week 1 (5-9 hours):
+   - #1 Wire PageRank to Elixir
+   - #2 Store PageRank in AGE
+   - #3 Code engine NIF bridge
+
+2. Week 2 (12-16 hours):
+   - #37 Resolve TODOs (highest ROI)
+   - #38 Observability (production-ready)
+   - #39 TypeScript tests (reliability)
+   - #4-5 Architecture cleanup
+
+**Parallelization:** Items #37, #38, #39 can run in parallel - assign to different developers/streams
+
+### Phase 2: Quality Foundation (Week 3-4, 27-35 hours)
+**Goal:** Complete AI metadata + improve code quality + create dashboards
+
+1. #43 LLM Comment Tool (FIRST - accelerates #40 by 10x)
+2. #6 AI Metadata completion (can parallelize with #8)
+3. #8 Auto-fix metadata
+4. #40 Private function comments (accelerated by #43)
+5. #9 Graph edge metadata
+6. #10 Dependency dashboard
+
+**Parallelization:** #6/#8, #43/#40, and #9/#10 can run in parallel
+
+### Phase 3: Full Capabilities (Week 5+, 80+ hours)
+**Goal:** Complete graph analysis, monitoring, and nice-to-haves
+
+- Centrality measures (#12-14, #17)
+- Evolution timeline (#18)
+- Performance monitoring (#21, #24-28)
+- Security analysis (#23)
+- Rust stubs (#41)
+
+**Recommended:** Do #43 first if doing #40 (saves 35+ hours)
+
+---
+
+## New Item Summary (Items #37-43)
+
+| # | Item | Why Added | Impact |
+|---|------|-----------|--------|
+| 37 | Resolve 86 TODOs | Scattered work items, no visibility | HIGH - Uncovers hidden work |
+| 38 | 72 GenServer observability | Not instrumented, can't debug production | HIGH - Production-ready |
+| 39 | TS test coverage | 35 files, 0 tests, critical path | HIGH - Reliability |
+| 40 | Comment 4,751 functions | Undocumented private code | LOW - Maintainability |
+| 41 | Complete Rust stubs | 20+ unfinished functions | MEDIUM - Feature completeness |
+| 42 | Coverage dashboard | Can't see test health | LOW - Visibility |
+| 43 | LLM comment tool | Accelerates #40 by 10x | MEDIUM - Force multiplier |
+
+**Total New Effort:** 30-44 hours, but enables 150-180 total hours of work to be done efficiently
