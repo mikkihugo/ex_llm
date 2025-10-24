@@ -227,7 +227,7 @@
 
               # Time Series
               ps.timescaledb        # TimescaleDB 2.22 - time-series optimization
-              ps.timescaledb_toolkit # TimescaleDB analytics extension
+              # ps.timescaledb_toolkit # TimescaleDB analytics extension (broken in nixpkgs-unstable)
 
               # Graph Database
               ps.age                # Apache AGE - graph database extension (supported on PG17)
