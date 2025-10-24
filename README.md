@@ -96,43 +96,191 @@ All Requests → Single NATS Server → Route by hierarchical subject pattern
 - `detector.analyze` - Framework detection
 - `llm.request` - LLM requests
 
-## Architecture (Clean & Consolidated)
+## Architecture (Unified Config-Driven Orchestration)
 
-**Status:** ✅ **DUPLICATES REMOVED** - Clean, consolidated architecture
+**Status:** ✅ **7 MAJOR SYSTEMS UNIFIED** - Single orchestration pattern for patterns, analyzers, scanners, generators, validators, extractors, and execution
+
+### Unified Orchestration Pattern
+
+All major subsystems follow the same proven architecture:
+
+```
+1. Create Behavior Contract (@behaviour XyzType)
+   ↓
+2. Create Config-Driven Orchestrator (XyzOrchestrator)
+   ↓
+3. Implement Concrete Types (as needed)
+   ↓
+4. Register in config.exs (:xyz_types)
+   ↓
+5. Unified, Extensible, Self-Documenting System
+```
+
+### Consolidated Systems
+
+| System | Behavior | Orchestrator | Config Key | Status |
+|--------|----------|--------------|-----------|--------|
+| **Language Detection** | — | LanguageDetection (Rust NIF) | — | ✅ Single source of truth |
+| **Pattern Detection** | PatternType | PatternDetector | `:pattern_types` | ✅ Config-driven |
+| **Code Analysis** | AnalyzerType | AnalysisOrchestrator | `:analyzer_types` | ✅ Config-driven |
+| **Code Scanning** | ScannerType | ScanOrchestrator | `:scanner_types` | ✅ Config-driven |
+| **Code Generation** | GeneratorType | GenerationOrchestrator | `:generator_types` | ✅ Config-driven |
+| **Validation** | ValidatorType | — | `:validator_types` | ✅ Config-ready |
+| **Data Extraction** | ExtractorType | — | `:extractor_types` | ✅ Config-ready |
+| **Task Execution** | Strategy Pattern | ExecutionOrchestrator | — | ✅ Unified strategy-based |
+
+### Architecture Layers
 
 ```
 Elixir/BEAM (Local)
-  ├─ Agents (GenServers)
-  │   ├─ Singularity.Agent (self-improving loop)
-  │   └─ Singularity.Agents.CostOptimizedAgent (rules/cache/LLM)
-  ├─ Autonomy
-  │   ├─ RuleEngine (GenServer + Cachex + Repo)
-  │   └─ Planner / Decider / Limiter
-  ├─ Embeddings
-  │   ├─ Bumblebee (microsoft/codebert-base) + Jinja3 preprocessing
-  │   └─ Google Fallback (text-embedding-004 API)
-  ├─ Messaging
+  ├─ Foundation
+  │   ├─ PostgreSQL (with pgvector)
   │   ├─ NATS (Gnat) - Real distributed messaging
-  │   └─ Control System (Event broadcasting)
-  ├─ Hot Reload (validation + activation)
-  ├─ Tools (domain tools used by agents)
+  │   └─ Telemetry
+  ├─ Infrastructure
+  │   ├─ CircuitBreaker, ErrorRateTracker, EmbeddingModelLoader
+  │   └─ NATS.Supervisor (NatsServer, NatsClient, NatsRouter)
+  ├─ Unified Orchestrators (Config-Driven)
+  │   ├─ PatternDetector (Framework, Technology, ServiceArchitecture patterns)
+  │   ├─ AnalysisOrchestrator (Feedback, Quality, Refactoring, Microservice analyzers)
+  │   ├─ ScanOrchestrator (Quality, Security scanners)
+  │   ├─ GenerationOrchestrator (7 generators unified)
+  │   ├─ ExecutionOrchestrator (TaskDAG, SPARC, Methodology strategies)
+  │   └─ Validators & Extractors (config-driven discovery)
+  ├─ Domain Services
+  │   ├─ LLM.Supervisor (RateLimiter)
+  │   ├─ Knowledge.Supervisor (ArtifactStore, CodeStore)
+  │   └─ Planning.Supervisor (HTDAG, SafeWorkPlanner)
+  ├─ Agents & Execution
+  │   ├─ Agents.Supervisor (AgentSupervisor)
+  │   └─ ApplicationSupervisor (Control, Runner)
   └─ Interfaces (MCP + NATS)
 
 Gleam
-  ├─ singularity/htdag.gleam
-  └─ singularity/rule_engine.gleam
+  ├─ singularity/htdag.gleam (Hierarchical Temporal DAG)
+  └─ singularity/rule_engine.gleam (Confidence-based rules)
 ```
+
+### Key Features of Unified Architecture
+
+✅ **Config-Driven Extensibility**
+- Add new analyzer: Config + implement `AnalyzerType` behavior
+- Add new scanner: Config + implement `ScannerType` behavior
+- Add new generator: Config + implement `GeneratorType` behavior
+- **No changes to orchestrators!**
+
+✅ **Single Source of Truth**
+- Language detection from Rust parser only
+- Patterns, Analyzers, Scanners registered in config
+- No duplicate implementations
+
+✅ **Parallel Execution**
+- All orchestrators support parallel execution via `Task.async/await`
+- Learning callbacks for continuous improvement
+- Built-in result limiting and severity filtering
+
+✅ **Self-Documenting**
+- Module locations make purpose clear
+- Behavior contracts define expectations
+- Config files show what's enabled/disabled
 
 ## Repo Layout
 
 ```
 singularity/
-├── lib/singularity/           # Agents, autonomy, tools, interfaces
+├── lib/singularity/
+│   ├── analysis/
+│   │   ├── extractor_type.ex              # Data extraction behavior
+│   │   ├── extractors/                    # Concrete extractors (PatternExtractor, etc.)
+│   │   ├── pattern_detector.ex            # Pattern detection orchestrator
+│   │   ├── analyzer_type.ex               # Code analysis behavior
+│   │   ├── analysis_orchestrator.ex       # Analysis orchestrator
+│   │   └── analyzers/                     # Concrete analyzers (Quality, Feedback, etc.)
+│   ├── code_analysis/
+│   │   ├── scanner_type.ex                # Code scanning behavior
+│   │   ├── scan_orchestrator.ex           # Scanning orchestrator
+│   │   └── scanners/                      # Concrete scanners (Quality, Security, etc.)
+│   ├── code_generation/
+│   │   ├── generator_type.ex              # Code generation behavior
+│   │   ├── generation_orchestrator.ex     # Generation orchestrator
+│   │   └── generators/                    # Concrete generators (Quality, RAG, etc.)
+│   ├── execution/
+│   │   ├── execution_orchestrator.ex      # Unified strategy-based execution (TaskDAG, SPARC, Methodology)
+│   │   └── strategies/                    # Execution strategies
+│   ├── validation/
+│   │   ├── validator_type.ex              # Validation behavior
+│   │   └── validators/                    # Concrete validators (Template, Code, Metadata, etc.)
+│   ├── language_detection.ex              # Single source of truth (Rust NIF bridge)
+│   ├── agents/                            # Autonomous agents
+│   ├── autonomy/                          # Rule engine, planners
+│   ├── llm/                               # LLM provider integration
+│   ├── knowledge/                         # Living knowledge base
+│   └── nats_orchestrator.ex               # NATS messaging hub
 ├── src/                       # Gleam modules (compiled via mix_gleam)
-├── config/                    # Mix configs
+│   ├── singularity/htdag.gleam            # Hierarchical Temporal DAG
+│   └── singularity/rule_engine.gleam      # Confidence-based rule evaluation
+├── config/
+│   └── config.exs            # Unified orchestrator configs (:pattern_types, :analyzer_types, etc.)
 ├── test/                      # ExUnit tests
 ├── mix.exs                    # Mix project (mix_gleam enabled)
 └── gleam.toml                 # Gleam config
+```
+
+### Using the Unified Orchestrators
+
+**Pattern Detection:**
+```elixir
+alias Singularity.Analysis.PatternDetector
+
+# Detect all registered patterns in code
+{:ok, patterns} = PatternDetector.detect(code_string)
+
+# Or detect specific pattern types
+{:ok, frameworks} = PatternDetector.detect(code_string, types: [:framework])
+```
+
+**Code Analysis:**
+```elixir
+alias Singularity.Analysis.AnalysisOrchestrator
+
+# Run all registered analyzers
+{:ok, results} = AnalysisOrchestrator.analyze(code_string)
+
+# Run specific analyzer with options
+{:ok, results} = AnalysisOrchestrator.analyze(code_string, analyzers: [:quality], severity: :high)
+```
+
+**Code Scanning:**
+```elixir
+alias Singularity.CodeAnalysis.ScanOrchestrator
+
+# Scan file path with all registered scanners
+{:ok, issues} = ScanOrchestrator.scan("lib/my_module.ex")
+
+# Scan with specific scanners and min severity
+{:ok, issues} = ScanOrchestrator.scan("lib/", scanners: [:security], min_severity: :warning)
+```
+
+**Code Generation:**
+```elixir
+alias Singularity.CodeGeneration.GenerationOrchestrator
+
+# Generate code with all registered generators
+{:ok, code} = GenerationOrchestrator.generate(spec)
+
+# Generate with specific generator
+{:ok, code} = GenerationOrchestrator.generate(spec, generators: [:quality])
+```
+
+**Unified Execution:**
+```elixir
+alias Singularity.Execution.ExecutionOrchestrator
+
+# Execute with auto-detected strategy
+{:ok, results} = ExecutionOrchestrator.execute(goal)
+
+# Execute with specific strategy
+{:ok, results} = ExecutionOrchestrator.execute(goal, strategy: :task_dag, timeout: 30000)
 ```
 
 ## Quick Start (Nix-only)

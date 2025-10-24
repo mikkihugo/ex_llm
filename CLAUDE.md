@@ -209,12 +209,59 @@ cargo audit
 
 ## Architecture Overview
 
+### Unified Config-Driven Orchestration
+
+Singularity uses a **single, reusable orchestration pattern** applied to 7 major systems:
+
+| System | Behavior | Orchestrator | Config Key | Location |
+|--------|----------|--------------|-----------|----------|
+| **Language Detection** | — | LanguageDetection (Rust NIF) | — | `lib/language_detection.ex` |
+| **Pattern Detection** | PatternType | PatternDetector | `:pattern_types` | `lib/analysis/` |
+| **Code Analysis** | AnalyzerType | AnalysisOrchestrator | `:analyzer_types` | `lib/analysis/` |
+| **Code Scanning** | ScannerType | ScanOrchestrator | `:scanner_types` | `lib/code_analysis/` |
+| **Code Generation** | GeneratorType | GenerationOrchestrator | `:generator_types` | `lib/code_generation/` |
+| **Validation** | ValidatorType | — | `:validator_types` | `lib/validation/` |
+| **Data Extraction** | ExtractorType | — | `:extractor_types` | `lib/analysis/extractors/` |
+| **Task Execution** | Strategy Pattern | ExecutionOrchestrator | — | `lib/execution/` |
+
+**The Pattern:**
+```
+1. Create Behavior Contract (@behaviour XyzType)
+2. Create Config-Driven Orchestrator (XyzOrchestrator)
+3. Implement Concrete Types (as needed, registered in config)
+4. Orchestrator discovers and manages all implementations
+5. Fully extensible without code changes to orchestrator
+```
+
 ### Core Modules
 
 **Orchestration Layer** (`singularity/lib/singularity/`)
 - `application.ex`: Main OTP application supervisor
 - `nats_orchestrator.ex`: NATS messaging integration, handles AI provider requests
-- `agent.ex` + `agent_supervisor.ex`: Agent lifecycle management
+- `language_detection.ex`: Single source of truth for language detection (Rust NIF bridge)
+
+**Analysis & Code Operations**
+- `analysis/analyzer_type.ex`: Behavior contract for code analysis
+- `analysis/analysis_orchestrator.ex`: Orchestrator managing registered analyzers
+- `analysis/analyzers/`: Concrete implementations (Quality, Feedback, Refactoring, Microservice)
+- `analysis/extractor_type.ex`: Behavior contract for data extraction
+- `analysis/extractors/`: Concrete implementations (PatternExtractor, etc.)
+- `analysis/pattern_detector.ex`: Orchestrator managing pattern detectors (Framework, Technology, ServiceArchitecture)
+
+**Code Quality & Scanning**
+- `code_analysis/scanner_type.ex`: Behavior contract for code scanning
+- `code_analysis/scan_orchestrator.ex`: Orchestrator managing registered scanners
+- `code_analysis/scanners/`: Concrete implementations (QualityScanner, SecurityScanner)
+
+**Code Generation**
+- `code_generation/generator_type.ex`: Behavior contract for code generation
+- `code_generation/generation_orchestrator.ex`: Orchestrator managing registered generators
+- `code_generation/generators/`: Concrete implementations (Quality, RAG, Pseudocode, etc.)
+
+**Execution & Validation**
+- `execution/execution_orchestrator.ex`: Unified strategy-based execution (TaskDAG, SPARC, Methodology)
+- `validation/validator_type.ex`: Behavior contract for validation
+- `validation/validators/`: Concrete implementations (Template, Code, Metadata)
 
 **AI/LLM Integration**
 - `singularity/lib/singularity/llm/`: Provider abstraction for Claude, Gemini, OpenAI, Copilot
@@ -222,6 +269,11 @@ cargo audit
 - **NATS-based LLM calls**: ALL Elixir code uses NATS (no direct HTTP to LLM APIs)
 - MCP (Model Context Protocol) federation via `hermes_mcp`
 - Jules AI agent integration for specialized tasks
+
+**Agents**
+- `agents/`: Autonomous agents (Self-Improving, Cost-Optimized, Architecture, Technology, Refactoring, Chat)
+- Each agent leverages the unified orchestrators for analysis, scanning, generation, and execution
+- See [AGENTS.md](AGENTS.md) for complete agent documentation
 
 ### LLM Usage Guidelines (IMPORTANT!)
 
@@ -275,6 +327,114 @@ LLM Provider APIs (Claude, Gemini, etc.)
 AI Server
     ↓ NATS subject: llm.response
 Elixir Code
+```
+
+### Using the Unified Orchestrators
+
+The unified orchestration system provides consistent APIs for code analysis, scanning, generation, and execution. All orchestrators are configured via `config.exs` and support parallel execution.
+
+**Pattern Detection (Framework, Technology, ServiceArchitecture):**
+```elixir
+alias Singularity.Analysis.PatternDetector
+
+# Detect all registered patterns
+{:ok, patterns} = PatternDetector.detect(code_path)
+
+# Detect specific patterns
+{:ok, frameworks} = PatternDetector.detect(code_path, types: [:framework])
+```
+
+**Code Analysis (Quality, Feedback, Refactoring, Microservice):**
+```elixir
+alias Singularity.Analysis.AnalysisOrchestrator
+
+# Run all registered analyzers
+{:ok, results} = AnalysisOrchestrator.analyze(code_path)
+
+# Run specific analyzers with options
+{:ok, results} = AnalysisOrchestrator.analyze(code_path,
+  analyzers: [:quality],
+  severity: :high,
+  limit: 50
+)
+```
+
+**Code Scanning (Quality, Security):**
+```elixir
+alias Singularity.CodeAnalysis.ScanOrchestrator
+
+# Scan with all registered scanners
+{:ok, issues} = ScanOrchestrator.scan("lib/my_module.ex")
+
+# Scan with specific scanners and severity filter
+{:ok, issues} = ScanOrchestrator.scan("lib/",
+  scanners: [:security],
+  min_severity: :warning
+)
+```
+
+**Code Generation (Quality, RAG, Pseudocode, etc.):**
+```elixir
+alias Singularity.CodeGeneration.GenerationOrchestrator
+
+# Generate with all registered generators
+{:ok, code} = GenerationOrchestrator.generate(%{spec: "user authentication"})
+
+# Generate with specific generator
+{:ok, code} = GenerationOrchestrator.generate(%{spec: "..."},
+  generators: [:quality]
+)
+```
+
+**Unified Execution (TaskDAG, SPARC, Methodology):**
+```elixir
+alias Singularity.Execution.ExecutionOrchestrator
+
+# Execute with auto-detected strategy
+{:ok, results} = ExecutionOrchestrator.execute(goal)
+
+# Execute with specific strategy
+{:ok, results} = ExecutionOrchestrator.execute(goal,
+  strategy: :task_dag,
+  timeout: 30000,
+  parallel: true
+)
+```
+
+### Configuring Orchestrators
+
+All orchestrators are configured in `config/config.exs` with enable/disable flags:
+
+```elixir
+# Pattern detection configuration
+config :singularity, :pattern_types,
+  framework: %{module: Singularity.ArchitectureEngine.Detectors.FrameworkDetector, enabled: true},
+  technology: %{module: Singularity.ArchitectureEngine.Detectors.TechnologyDetector, enabled: true},
+  service_architecture: %{module: Singularity.ArchitectureEngine.Detectors.ServiceArchitectureDetector, enabled: true}
+
+# Code analysis configuration
+config :singularity, :analyzer_types,
+  feedback: %{module: Singularity.Execution.Feedback.Analyzer, enabled: true},
+  quality: %{module: Singularity.Storage.Code.Analyzers.QualityAnalyzer, enabled: true},
+  refactoring: %{module: Singularity.Refactoring.Analyzer, enabled: true},
+  microservice: %{module: Singularity.Storage.Code.Analyzers.MicroserviceAnalyzer, enabled: true}
+
+# Code scanning configuration
+config :singularity, :scanner_types,
+  quality: %{module: Singularity.CodeAnalysis.Scanners.QualityScanner, enabled: true},
+  security: %{module: Singularity.CodeAnalysis.Scanners.SecurityScanner, enabled: true}
+
+# Code generation configuration
+config :singularity, :generator_types,
+  quality: %{module: Singularity.CodeGeneration.Generators.QualityGenerator, enabled: true}
+
+# Validation configuration
+config :singularity, :validator_types,
+  template: %{module: Singularity.Validation.Validators.TemplateValidator, enabled: false}
+
+# Extraction configuration
+config :singularity, :extractor_types,
+  pattern: %{module: Singularity.Analysis.Extractors.PatternExtractor, enabled: false}
 ```
 
 **Semantic Code Search**
