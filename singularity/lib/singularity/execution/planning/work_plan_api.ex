@@ -50,6 +50,313 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       # Get next work item
       Gnat.request(conn, "planning.next_work.get", "{}")
       # => {:ok, %{"status" => "ok", "next_work" => %{...}}}
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.WorkPlanAPI",
+    "purpose": "NATS-based API for SAFe work item management with conflict detection and TaskGraph prioritization",
+    "role": "api_gateway",
+    "layer": "execution_planning",
+    "key_responsibilities": [
+      "Listen on NATS planning.* subjects for work item creation requests",
+      "Parse and validate JSON payloads for work items (themes, epics, capabilities, features)",
+      "Route requests to SafeWorkPlanner for persistence and hierarchy management",
+      "Synchronize task updates from self-improvement agents",
+      "Detect and flag task conflicts and redundancies",
+      "Apply TaskGraph-based prioritization (WSJF: value/effort calculation)",
+      "Return JSON responses with status, IDs, and conflict information",
+      "Provide helpful error messages and subject suggestions"
+    ],
+    "prevents_duplicates": ["PlanningAPI", "WorkPlanService", "SAFeAPI", "TaskCreationService"],
+    "uses": ["SafeWorkPlanner", "Gnat", "Jason", "Logger", "Ecto.Changeset"],
+    "nats_subjects": {
+      "create": ["planning.strategic_theme.create", "planning.epic.create", "planning.capability.create", "planning.feature.create"],
+      "query": ["planning.hierarchy.get", "planning.progress.get", "planning.next_work.get"]
+    },
+    "process_type": "GenServer (named, singleton)"
+  }
+  ```
+
+  ### Architecture Diagram (Mermaid)
+
+  ```mermaid
+  graph TB
+    NatsIn["NATS Listener<br/>planning.* subjects"]
+
+    NatsIn -->|handle_info| MsgHandler["handle_message/2<br/>(topic, body)"]
+
+    MsgHandler -->|validate JSON| Validate["Validation<br/>Non-empty<br/>Valid JSON<br/>Is Map"]
+
+    Validate -->|success| Route["route_message/2<br/>(topic, attrs)"]
+    Validate -->|error| ErrorResp["Error Response<br/>code: INVALID_*<br/>message: reason"]
+
+    Route -->|planning.*.create| CreatePath["Create Route<br/>add_chunk/2"]
+    Route -->|planning.*.get| QueryPath["Query Route<br/>get_hierarchy/progress/next"]
+
+    CreatePath -->|create work item| SafeWP["SafeWorkPlanner<br/>add_chunk/2"]
+    QueryPath -->|query state| SafeWP
+
+    SafeWP -->|success| OKResp["Success Response<br/>{status: ok, id, message}"]
+    SafeWP -->|db error| DBError["DB Error<br/>{status: error, errors}"]
+
+    OKResp -->|check conflicts| Conflicts["check_task_conflicts/1<br/>find_similar_tasks"]
+    Conflicts -->|conflicts found| ConflictResp["Conflict Response<br/>{status: ok, conflicts}"]
+    Conflicts -->|no conflicts| PriorityResp["Priority Response<br/>apply_task_graph_prioritization"]
+
+    PriorityResp -->|calc priority| Priority["calculate_task_graph_priority/1<br/>WSJF scoring"]
+    Priority -->|return prioritized| FinalResp["Final Response<br/>{status: ok, priority_score}"]
+
+    FinalResp -->|reply_to| NatsOut["NATS Reply<br/>via Gnat.pub"]
+    ErrorResp -->|reply_to| NatsOut
+
+    SyncAgents["Self-Improvement Agents<br/>send updates"]
+    SyncAgents -->|sync_task_updates| Sync["sync_task_updates/1<br/>process_task_update/1"]
+    Sync -->|update task| SafeWP
+
+    style SafeWP fill:#E8F4F8
+    style NatsIn fill:#D0E8F2
+    style Route fill:#B8DCEC
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Gnat
+      function: sub/3, pub/3
+      purpose: Subscribe to planning.* subjects, publish JSON responses
+      critical: true
+      pattern: "GenServer receives :msg, replies via pub/3"
+
+    - module: SafeWorkPlanner
+      function: add_chunk/2, get_hierarchy/0, get_progress/0, get_next_work/0, update_task/2, find_similar_tasks/1
+      purpose: Core work planning operations (CRUD on SAFe hierarchy)
+      critical: true
+      frequency: per_api_call
+
+    - module: Jason
+      function: encode!/1, decode/1
+      purpose: JSON serialization for NATS payloads
+      critical: true
+
+    - module: Logger
+      function: debug/2, info/2, warning/2
+      purpose: Log API calls, validation errors, conflict detection
+      critical: false
+
+    - module: Ecto.Changeset
+      function: traverse_errors/2
+      purpose: Format validation errors from database
+      critical: false
+
+  called_by:
+    - module: Singularity.Execution.Planning.Supervisor
+      function: init/1
+      purpose: Supervise WorkPlanAPI GenServer
+      frequency: on_startup
+
+    - module: External NATS clients
+      function: Gnat.request on planning.* subjects
+      purpose: Submit work items, query hierarchy, get next work
+      frequency: on_demand
+
+    - module: Singularity.Agents.SelfImprovementAgent
+      function: sync_task_updates/1
+      purpose: Notify API of task completions for conflict detection
+      frequency: per_task_completion
+
+  state_transitions:
+    - name: startup
+      from: idle
+      to: listening
+      trigger: start_link/1, init/1 called
+      actions:
+        - Connect to NATS server
+        - Subscribe to all 7 planning.* subjects
+        - Log subscription information
+        - Return {:ok, %{gnat: gnat}}
+
+    - name: receive_request
+      from: listening
+      to: processing
+      trigger: handle_info({:msg, msg}) fires
+      actions:
+        - Extract topic, body, reply_to from message
+        - Log message metadata
+        - Call handle_message/2
+
+    - name: validate_json
+      from: processing
+      to: validated
+      trigger: handle_message/2 called
+      guards:
+        - body not empty (byte_size > 0)
+        - Valid JSON syntax
+        - Decoded value is Map
+      actions:
+        - Return parsed attrs map
+        - Route to handle_message continuation
+
+    - name: json_error
+      from: processing
+      to: error_response
+      trigger: JSON parse fails OR body empty OR not a map
+      actions:
+        - Create error response with specific code
+        - Return error details (position, token, type)
+
+    - name: route_to_handler
+      from: validated
+      to: executing
+      trigger: route_message/2 called
+      actions:
+        - Match topic against 7 known subjects
+        - Dispatch to appropriate handler
+        - Execute SafeWorkPlanner operations
+
+    - name: create_work_item
+      from: executing
+      to: item_created
+      trigger: route_message for planning.*.create
+      actions:
+        - Call SafeWorkPlanner.add_chunk/2
+        - Optionally sync task updates
+        - Check for conflicts with existing tasks
+        - Calculate TaskGraph priority score
+        - Return response with id, status, conflicts, priority
+
+    - name: query_hierarchy
+      from: executing
+      to: queried
+      trigger: route_message for planning.hierarchy.get
+      actions:
+        - Call SafeWorkPlanner.get_hierarchy/0
+        - Return full SAFe hierarchy view
+
+    - name: query_progress
+      from: executing
+      to: queried
+      trigger: route_message for planning.progress.get
+      actions:
+        - Call SafeWorkPlanner.get_progress/0
+        - Return progress summary (completion %, burndown)
+
+    - name: query_next_work
+      from: executing
+      to: queried
+      trigger: route_message for planning.next_work.get
+      actions:
+        - Call SafeWorkPlanner.get_next_work/0
+        - Return highest-priority task (WSJF calculated)
+
+    - name: unknown_subject
+      from: executing
+      to: error_response
+      trigger: route_message for unknown topic
+      actions:
+        - Log warning with topic
+        - Generate similar_topics suggestions
+        - List all available subjects
+        - Return error with helpful suggestions
+
+    - name: send_response
+      from: [item_created, queried, error_response]
+      to: listening
+      trigger: reply_to present in original message
+      actions:
+        - Encode response to JSON
+        - Publish via Gnat.pub(gnat, reply_to, json)
+        - Return {:noreply, state}
+
+  depends_on:
+    - Singularity.Execution.Planning.SafeWorkPlanner (MUST be available)
+    - Gnat NATS client (MUST be started)
+    - NATS server on localhost:4222 (MUST be running)
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT create PlanningAPI, WorkPlanService, or SAFeAPI duplicates
+  **Why:** WorkPlanAPI is the single canonical NATS gateway for work planning operations.
+
+  ```elixir
+  # ❌ WRONG - Duplicate planning API
+  defmodule MyApp.PlanningAPI do
+    def create_feature(name, description) do
+      # Re-implementing what WorkPlanAPI already does
+    end
+  end
+
+  # ✅ CORRECT - Use WorkPlanAPI via NATS
+  Gnat.request(conn, "planning.feature.create", Jason.encode!(%{
+    "name" => name,
+    "description" => description
+  }))
+  ```
+
+  #### ❌ DO NOT bypass conflict detection when creating work items
+  **Why:** Undetected conflicts lead to redundant work and wasted effort.
+
+  ```elixir
+  # ❌ WRONG - Create without checking conflicts
+  SafeWorkPlanner.add_chunk(description, type: :feature)
+
+  # ✅ CORRECT - Route through WorkPlanAPI for conflict detection
+  # check_task_conflicts/1 automatically runs after creation
+  {:ok, %{status: :updated_with_conflicts, conflicts: [...]}}
+  ```
+
+  #### ❌ DO NOT apply task updates without syncing to SafeWorkPlanner
+  **Why:** Out-of-sync state causes cascading failures and duplicate work.
+
+  ```elixir
+  # ❌ WRONG - Update task state outside SafeWorkPlanner
+  my_task_store.update(task_id, status: :completed)
+
+  # ✅ CORRECT - Sync via process_task_update which updates SafeWorkPlanner
+  sync_task_updates([%{task_id: task_id, status: :completed, changes: [...]}])
+  # This calls SafeWorkPlanner.update_task, then checks conflicts
+  ```
+
+  #### ❌ DO NOT ignore error responses from SafeWorkPlanner
+  **Why:** Silent failures leave work items in inconsistent state.
+
+  ```elixir
+  # ❌ WRONG - Don't check result
+  SafeWorkPlanner.add_chunk(description, type: :epic)
+  # What if it failed?
+
+  # ✅ CORRECT - Handle both success and error cases
+  case SafeWorkPlanner.add_chunk(description, type: :epic) do
+    {:ok, id} -> %{status: "ok", id: id}
+    {:error, %Ecto.Changeset{} = cs} -> %{status: "error", errors: format_changeset_errors(cs)}
+  end
+  ```
+
+  #### ❌ DO NOT hardcode TaskGraph priority calculation
+  **Why:** Priority formulas should be centralized and updatable.
+
+  ```elixir
+  # ❌ WRONG - Inline priority calculation
+  priority = task.value * task.priority / task.effort
+
+  # ✅ CORRECT - Use calculate_task_graph_priority/1
+  priority_score = calculate_task_graph_priority(task).priority_score
+  # Encapsulates WSJF (value/(effort * dependencies)) formula
+  ```
+
+  ### Search Keywords
+
+  work plan API, NATS gateway, SAFe work items, task creation, conflict detection,
+  task synchronization, WSJF prioritization (Weighted Shortest Job First), hierarchy management,
+  strategic theme, epic, capability, feature, request/reply pattern, JSON validation,
+  error handling, task redundancy, dependency calculation, self-improvement agent sync,
+  work item routing, feature composition, automated planning, intelligent task distribution,
+  real-time planning API
   """
 
   use GenServer

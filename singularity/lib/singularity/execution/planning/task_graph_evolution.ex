@@ -1,42 +1,188 @@
 defmodule Singularity.Execution.Planning.TaskGraphEvolution do
   @moduledoc """
-  Self-evolution module for TaskGraph using context-aware Lua scripts for critique and optimization.
+  TaskGraph Self-Evolution Engine - Autonomous improvement via LLM-driven mutation and critique.
 
   Enables autonomous improvement of TaskGraph execution by analyzing performance metrics,
   searching git history for successful patterns, and applying mutations to operation
-  parameters, model selection, and prompt templates.
+  parameters, model selection, and prompt templates using context-aware Lua scripts.
+
+  ## Evolution Workflow
+
+  1. **Critique** - Analyze execution metrics and history (Lua script)
+  2. **Propose Mutations** - Suggest improvements (model, parameters, prompts)
+  3. **Apply Mutations** - Update graph parameters
+  4. **Track History** - Log all mutations to PostgreSQL
+
+  ## Mutation Types
+
+  - **Model Selection** - Change LLM model based on performance/cost analysis
+  - **Parameter Tuning** - Adjust temperature, max_tokens, top_p, etc.
+  - **Prompt Engineering** - Refine system/user prompts
+  - **Decomposition Strategy** - Improve task breakdown and dependencies
 
   ## Integration Points
 
   This module integrates with:
   - `Singularity.LLM.Service` - Lua-based critique (Service.call_with_script/3)
-  - `:telemetry` - Performance metrics (telemetry events for execution analysis)
-  - PostgreSQL table: `task_graph_evolution_logs` (stores mutation history and results)
+  - `:telemetry` - Performance metrics for execution analysis
+  - PostgreSQL table: `task_graph_evolution_logs` (mutation history and results)
+  - Git history - Pattern matching for successful TaskGraph configurations
 
   ## Lua-Based Critique
 
   Uses `templates_data/prompt_library/execution/critique-task_graph-run.lua` which:
-  - Analyzes execution metrics (completed, failed, tokens, latency)
+  - Analyzes execution metrics (completed, failed, tokens, latency, cost)
   - Searches git history for successful TaskGraph patterns
   - Checks recent model configuration changes
-  - Proposes mutations based on cost/quality tradeoffs
-
-  ## Evolution Types
-
-  1. **Model Selection Mutation** - Change model_id based on performance
-  2. **Parameter Tuning** - Adjust temperature, max_tokens, etc.
-  3. **Prompt Engineering** - Improve prompt templates
-  4. **Decomposition Strategy** - Better task breakdown
+  - Proposes mutations ranked by confidence and expected impact
+  - Provides cost/quality tradeoff recommendations
 
   ## Usage
 
-      # Evolve based on execution results (uses Lua script)
+      # Critique execution results and get mutations
       {:ok, mutations} = TaskGraphEvolution.critique_and_mutate(execution_result)
-      # => {:ok, [%{type: :model_change, target: "task-123", new_value: "claude-sonnet-4.5"}]}
+      # => {:ok, [
+      #   %{type: :model_change, target: "task-123", old_value: "claude-3-5-sonnet", new_value: "claude-opus"},
+      #   %{type: :param_change, target: "temperature", old_value: 0.7, new_value: 0.5}
+      # ]}
 
       # Apply mutations to parameters
       improved_params = TaskGraphEvolution.apply_mutations(mutations, original_params)
-      # => %{model_id: "claude-sonnet-4.5", temperature: 0.3, ...}
+      # => %{model_id: "claude-opus", temperature: 0.5, ...}
+
+      # Evolution feedback loop
+      {:ok, mutations} = TaskGraphEvolution.critique_and_mutate(result)
+      improved = TaskGraphEvolution.apply_mutations(mutations, graph.params)
+      # Rerun TaskGraph with improved_params for next iteration
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.TaskGraphEvolution",
+    "purpose": "Autonomous TaskGraph self-improvement via LLM critique and mutation",
+    "role": "optimizer",
+    "layer": "execution_planning",
+    "key_responsibilities": [
+      "Analyze TaskGraph execution metrics and performance",
+      "Search git history for successful patterns",
+      "Propose mutations (model, parameters, prompts, decomposition)",
+      "Track evolution history for learning"
+    ],
+    "prevents_duplicates": ["GraphOptimizer", "AutoTuner", "EvolutionEngine"],
+    "uses": ["LLM.Service", "Logger", "telemetry"],
+    "mutation_types": ["model_selection", "parameter_tuning", "prompt_engineering", "decomposition_strategy"]
+  }
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.LLM.Service
+      function: call_with_script/3
+      purpose: Execute Lua critique script for mutation proposals
+      critical: true
+      script: "execution/critique-task_graph-run.lua"
+
+    - module: Logger
+      function: debug/2, info/2, error/2
+      purpose: Log mutations and evolution progress
+      critical: false
+
+  called_by:
+    - module: Singularity.Execution.Planning.TaskGraph
+      function: evolve/1
+      purpose: Auto-improve graph after execution
+      frequency: post_execution_optional
+
+    - module: Singularity.Agents.OptimizationAgent
+      function: improve_graph/1
+      purpose: Systematic graph optimization
+      frequency: periodic
+
+  state_transitions:
+    - name: critique_execution
+      from: idle
+      to: critiqued
+      trigger: critique_and_mutate/1 called
+      actions:
+        - Collect execution metrics
+        - Call LLM with Lua critique script
+        - Parse mutation proposals
+        - Return mutations list
+
+    - name: apply_mutations
+      from: critiqued
+      to: evolved
+      trigger: apply_mutations/2 called
+      actions:
+        - Merge mutations into parameters
+        - Log mutation history
+        - Return improved parameters
+
+  depends_on:
+    - Singularity.LLM.Service (MUST be available)
+    - templates_data/prompt_library/execution/critique-*.lua (MUST exist)
+    - :telemetry for metrics (MUST be configured)
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT create GraphOptimizer, AutoTuner, or EvolutionEngine duplicates
+  **Why:** TaskGraphEvolution is the canonical graph self-improvement module.
+
+  ```elixir
+  # ❌ WRONG - Duplicate evolution engine
+  defmodule MyApp.GraphOptimizer do
+    def optimize(graph) do
+      # Re-implementing mutation logic
+    end
+  end
+
+  # ✅ CORRECT - Use TaskGraphEvolution
+  {:ok, mutations} = TaskGraphEvolution.critique_and_mutate(result)
+  evolved = TaskGraphEvolution.apply_mutations(mutations, graph.params)
+  ```
+
+  #### ❌ DO NOT skip critique phase or apply arbitrary mutations
+  **Why:** LLM critique provides confidence scores and reasoning; arbitrary changes risk regression.
+
+  ```elixir
+  # ❌ WRONG - Apply mutations without critique
+  mutations = [%{type: :model_change, target: "task-1", new_value: "gpt-4"}]
+  evolved = TaskGraphEvolution.apply_mutations(mutations, params)
+
+  # ✅ CORRECT - Critique execution first
+  {:ok, mutations} = TaskGraphEvolution.critique_and_mutate(execution)
+  evolved = TaskGraphEvolution.apply_mutations(mutations, params)
+  ```
+
+  #### ❌ DO NOT apply all mutations immediately without validation
+  **Why:** Mutations should be tested incrementally; applying all at once risks cascading failures.
+
+  ```elixir
+  # ❌ WRONG - Apply all mutations at once
+  {:ok, mutations} = TaskGraphEvolution.critique_and_mutate(result)
+  evolved = TaskGraphEvolution.apply_mutations(mutations, params)
+  # Rerun with all changes - unknown combined effect!
+
+  # ✅ CORRECT - Apply mutations incrementally
+  {:ok, mutations} = TaskGraphEvolution.critique_and_mutate(result)
+  Enum.each(mutations, fn mutation ->
+    evolved = TaskGraphEvolution.apply_mutations([mutation], current_params)
+    # Test evolved graph with single mutation
+    # Track success rate before applying next
+  end)
+  ```
+
+  ### Search Keywords
+
+  TaskGraph evolution, self-improvement, mutation proposal, LLM critique, parameter tuning,
+  model selection, prompt optimization, decomposition strategy, git history patterns,
+  performance analysis, autonomous optimization, feedback loop, Lua scripting
   """
 
   require Logger

@@ -146,8 +146,12 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     case strategy do
       :auto -> embed_auto(text, opts, fallback)
       :rust -> embed_rust(text, opts, fallback)
-      :bumblebee -> embed_bumblebee(text, opts, fallback)
-      _ -> {:error, "Unknown strategy: #{strategy}"}
+      :bumblebee ->
+        Logger.warning("Bumblebee strategy is deprecated - use Rust NIF instead")
+        {:error, :bumblebee_deprecated}
+
+      _ ->
+        {:error, "Unknown strategy: #{strategy}"}
     end
   end
 
@@ -172,8 +176,12 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     case strategy do
       :auto -> embed_batch_auto(texts, opts, fallback)
       :rust -> embed_batch_rust(texts, opts, fallback)
-      :bumblebee -> embed_batch_bumblebee(texts, opts, fallback)
-      _ -> {:error, "Unknown strategy: #{strategy}"}
+      :bumblebee ->
+        Logger.warning("Bumblebee strategy is deprecated - use Rust NIF instead")
+        {:error, :bumblebee_deprecated}
+
+      _ ->
+        {:error, "Unknown strategy: #{strategy}"}
     end
   end
 

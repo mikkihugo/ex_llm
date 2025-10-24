@@ -50,6 +50,306 @@ defmodule Singularity.LLM.NatsOperation do
     "done": false
   }
   ```
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.LLM.NatsOperation",
+    "purpose": "DSPy-like operation interface for distributed LLM calls via NATS messaging",
+    "role": "operation_executor",
+    "layer": "llm_operations",
+    "key_responsibilities": [
+      "Compile operation parameters (model, prompt, hyperparameters)",
+      "Execute LLM operations via NATS request/reply pattern",
+      "Apply circuit breaking for fault tolerance",
+      "Apply rate limiting for cost/quota management",
+      "Stream tokens in real-time via NATS subscriptions",
+      "Emit telemetry for tracing and observability",
+      "Handle timeouts and error responses gracefully"
+    ],
+    "prevents_duplicates": ["DirectLLMCaller", "NatsClient", "LLMService", "RemoteOperation"],
+    "uses": ["NatsClient", "RateLimiter", "CircuitBreaker", "Logger", "telemetry"],
+    "operation_phases": ["compile/2", "run/3"],
+    "nats_subjects": {
+      "request": "llm.req.{model_id}",
+      "response": "llm.resp.{run_id}.{node_id}",
+      "tokens": "llm.tokens.{run_id}.{node_id}",
+      "health": "llm.health"
+    }
+  }
+  ```
+
+  ### Architecture Diagram (Mermaid)
+
+  ```mermaid
+  graph TB
+    Compile["compile/2<br/>(params, ctx)"]
+    Params["Compiled Params<br/>model_id<br/>prompt_template<br/>temperature<br/>max_tokens<br/>stream"]
+
+    Compile -->|validate & normalize| Params
+
+    Run["run/3<br/>(compiled, inputs, ctx)"]
+    Circuit["CircuitBreaker<br/>.call"]
+    RateLimit["RateLimiter<br/>.with_limit"]
+
+    Params -->|execute| Run
+    Run -->|check health| Circuit
+    Circuit -->|check rate quota| RateLimit
+
+    RateLimit -->|estimate cost| CostCalc["estimate_cost/1<br/>(model, tokens)"]
+
+    CostCalc -->|OK| NatsReq["NATS Request<br/>llm.req.model_id"]
+    NatsReq -->|send JSON| LLMWorker["LLM Worker<br/>(NATS listener)"]
+
+    LLMWorker -->|complete| NatsResp["NATS Response<br/>llm.resp.run_id.node_id"]
+    NatsResp -->|parse JSON| Parse["Parse Response<br/>(output, usage, finish_reason)"]
+
+    Stream{{"Stream?"}}
+    Parse -->|if stream=true| Stream
+    Stream -->|yes| TokenSub["Subscribe<br/>llm.tokens.run_id.node_id"]
+    Stream -->|no| Result
+
+    TokenSub -->|collect tokens| Tokens["Token Buffer<br/>(Agent)"]
+    Tokens -->|finalize| Result["llm_result<br/>(text, usage, tokens, finish_reason)"]
+
+    Telemetry["emit_telemetry<br/>(success/error)"]
+    Result -->|track metrics| Telemetry
+
+    style Params fill:#E8F4F8
+    style Result fill:#D0E8F2
+    style LLMWorker fill:#B8DCEC
+    style NatsReq fill:#A0D0E6
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: NatsClient
+      function: request/3
+      purpose: Send LLM request to worker pool via NATS
+      critical: true
+      pattern: "Request/reply pattern with timeout"
+      timeout: compiled.timeout_ms
+
+    - module: NatsClient
+      function: subscribe/1
+      purpose: Subscribe to token stream (optional)
+      critical: false
+      pattern: "Subscription-based token streaming"
+
+    - module: CircuitBreaker
+      function: call/3
+      purpose: Protect against cascading failures in LLM service
+      critical: true
+      pattern: "Wrap operation with circuit breaking"
+
+    - module: RateLimiter
+      function: with_limit/2
+      purpose: Enforce cost and quota limits
+      critical: true
+      pattern: "Estimate cost, check availability, rate limit"
+
+    - module: Agent
+      function: start_link/1
+      purpose: Create token buffer for streaming collection
+      critical: false
+      pattern: "Per-operation buffer for token accumulation"
+
+    - module: Logger
+      function: warning/2, error/2
+      purpose: Log circuit breaks, timeouts, decode errors
+      critical: false
+
+    - module: Jason
+      function: encode!/1, decode/1
+      purpose: JSON serialization for NATS payloads
+      critical: true
+
+    - module: telemetry
+      function: execute/3
+      purpose: Emit metrics for request lifecycle
+      critical: true
+      events: ["[:llm_operation, :request, :start/stop/exception]"]
+
+  called_by:
+    - module: Singularity.Execution.Planning.TaskGraph
+      function: evolve/1
+      purpose: Propose mutations via LLM critique
+      frequency: per_execution
+
+    - module: Singularity.Planning.SafeWorkPlanner
+      function: refine_work_plan/1
+      purpose: Refine work plan via LLM suggestions
+      frequency: per_planning_iteration
+
+    - module: Singularity.Execution.Planning.StoryDecomposer
+      function: generate_* phases
+      purpose: Execute SPARC decomposition phases
+      frequency: per_story_decomposition
+
+    - module: Singularity.LLM.Service
+      function: call_with_script/3
+      purpose: Distributed execution of LLM calls
+      frequency: per_llm_request
+
+  state_transitions:
+    - name: operation_compile
+      from: idle
+      to: compiled
+      trigger: compile/2 called
+      actions:
+        - Validate required parameters (model_id, prompt_template)
+        - Extract optional parameters (temperature, max_tokens, stream, timeout)
+        - Normalize values with defaults
+        - Return compiled operation struct
+
+    - name: circuit_check
+      from: compiled
+      to: circuit_checked
+      trigger: run/3 called
+      guards:
+        - Circuit breaker not open
+      actions:
+        - Check circuit status for model
+        - Proceed if available (closed or half-open)
+        - Return error if open
+        - Log circuit status
+
+    - name: rate_limit_check
+      from: circuit_checked
+      to: rate_limited
+      trigger: CircuitBreaker.call wrapper
+      actions:
+        - Estimate cost from model_id and max_tokens
+        - Check RateLimiter quota
+        - Wait if needed (or return error)
+        - Proceed with operation
+
+    - name: nats_request
+      from: rate_limited
+      to: awaiting_response
+      trigger: do_run_nats/3 called
+      actions:
+        - Generate unique correlation ID
+        - Render prompt with inputs
+        - Build NATS request payload
+        - Emit telemetry START event
+        - Subscribe to token stream (if stream=true)
+        - Send request via NatsClient.request/3
+
+    - name: awaiting_response
+      from: awaiting_response
+      to: response_received
+      trigger: NATS response arrives
+      timeout: compiled.timeout_ms
+      guards:
+        - Response has corr_id matching request
+        - Response is valid JSON
+      actions:
+        - Decode JSON response
+        - Check for errors
+        - Extract output, usage, finish_reason
+        - Calculate operation duration
+        - Emit telemetry STOP event
+
+    - name: token_collection
+      from: response_received
+      to: tokens_collected
+      trigger: stream=true AND tokens available
+      actions:
+        - Collect accumulated tokens from buffer
+        - Finalize token stream
+        - Return with token array
+
+    - name: result_return
+      from: tokens_collected
+      to: idle
+      trigger: All processing complete
+      actions:
+        - Build llm_result struct
+        - Log success metrics
+        - Return {:ok, result}
+
+    - name: error_handling
+      from: [circuit_checked, rate_limited, awaiting_response]
+      to: error_state
+      trigger: Any error occurs
+      actions:
+        - Log error with context (model_id, run_id, reason)
+        - Emit telemetry EXCEPTION event
+        - Return {:error, reason}
+
+  depends_on:
+    - Singularity.NatsClient (MUST be available)
+    - Singularity.LLM.RateLimiter (MUST be available)
+    - Singularity.Infrastructure.CircuitBreaker (MUST be available)
+    - NATS server (MUST have listeners on llm.req.* subjects)
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT bypass CircuitBreaker or RateLimiter
+  **Why:** These protections prevent cascading failures and cost overruns.
+
+  ```elixir
+  # ❌ WRONG - Direct NATS call, no protection
+  NatsClient.request("llm.req.claude-sonnet", payload)
+
+  # ✅ CORRECT - Use compile/run with built-in protections
+  {:ok, compiled} = NatsOperation.compile(params, ctx)
+  {:ok, result} = NatsOperation.run(compiled, inputs, ctx)
+  ```
+
+  #### ❌ DO NOT ignore token streaming setup errors
+  **Why:** Silent failures leave token_buffer nil, losing real-time feedback.
+
+  ```elixir
+  # ❌ WRONG - Ignore subscription errors
+  start_token_stream(ctx, corr_id)  # Returns nil on error, silently
+
+  # ✅ CORRECT - Log and handle gracefully
+  token_buffer = if compiled.stream, do: start_token_stream(ctx, corr_id), else: nil
+  # If stream failed, token_buffer is nil, collect_tokens returns nil (safe)
+  ```
+
+  #### ❌ DO NOT send requests without timeout protection
+  **Why:** Hanging requests can exhaust connection pools and memory.
+
+  ```elixir
+  # ❌ WRONG - No timeout specified
+  NatsClient.request(subject, payload)
+
+  # ✅ CORRECT - Always specify timeout
+  NatsClient.request(subject, payload, timeout: compiled.timeout_ms)
+  # Default 30s prevents indefinite waits
+  ```
+
+  #### ❌ DO NOT use hardcoded cost estimates
+  **Why:** Cost estimates should reflect current model pricing.
+
+  ```elixir
+  # ❌ WRONG - Hardcoded values
+  base_cost = 0.015  # What if Sonnet becomes cheaper?
+
+  # ✅ CORRECT - Dynamic estimation with model lookup
+  base_cost = case model_id do
+    "claude-sonnet-4.5" -> 0.015
+    "gemini-2.5-pro" -> 0.01
+    _ -> 0.005  # Conservative default
+  end
+  ```
+
+  ### Search Keywords
+
+  NATS operation, DSPy-like, distributed LLM calls, request/reply pattern, token streaming,
+  circuit breaker pattern, rate limiting, cost estimation, telemetry instrumentation,
+  correlation ID, NATS subjects, LLM worker pool, fault tolerance, backpressure,
+  concurrent requests, timeout handling, error recovery, observable operations,
+  autonomous LLM execution, streaming tokens, distributed computing
   """
 
   require Logger

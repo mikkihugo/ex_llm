@@ -42,6 +42,237 @@ defmodule Singularity.Execution.Planning.TaskGraphCore do
       # Mark as completed
       dag = TaskGraphCore.mark_completed(dag, task.id)
       # => %{root_id: "root-goal", tasks: %{...}, completed_tasks: ["goal-task-123"]}
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.TaskGraphCore",
+    "purpose": "Pure hierarchical DAG (Directed Acyclic Graph) for task decomposition with dependency resolution",
+    "role": "data_structure",
+    "layer": "execution_planning",
+    "key_responsibilities": [
+      "Maintain immutable hierarchical task DAG structure",
+      "Manage task statuses and dependencies",
+      "Provide dependency resolution and task readiness checking",
+      "Support complexity-based decomposition decisions",
+      "Track execution history (completed, failed tasks)"
+    ],
+    "prevents_duplicates": ["TaskDAG", "GraphStructure", "HierarchicalPlan", "DependencyResolver"],
+    "uses": ["Logger", "Map", "Enum"],
+    "data_structures": ["task", "task_graph", "task_type", "task_status", "sparc_phase"],
+    "complexity_constraints": "Atomic if complexity < 5.0 AND depth > 0"
+  }
+  ```
+
+  ### Architecture Diagram (Mermaid)
+
+  ```mermaid
+  graph TB
+    New["new/1<br/>(create empty DAG)"] -->|returns| DAG["TaskGraph struct<br/>tasks: Map<br/>dependencies: Map<br/>completed: List"]
+
+    AddTask["add_task/2"] -->|tasks + dep_graph| DAG
+    MarkProgress["mark_in_progress/2"] -->|status: :active| DAG
+    MarkDone["mark_completed/2"] -->|status: :completed<br/>track in list| DAG
+    MarkFail["mark_failed/2<br/>(reason)"] -->|status: :failed<br/>track in list| DAG
+
+    GetReady["get_ready_tasks/1"] -->|filters| ReadyTasks["Tasks with<br/>status: :pending<br/>AND deps met"]
+
+    SelectNext["select_next_task/1"] -->|sort by<br/>depth, complexity| NextTask["Single task<br/>for execution"]
+
+    Decompose["decompose_if_needed/3<br/>(task, max_depth)"] -->|if complex &<br/>depth < max| Updated["Mark :blocked<br/>needs decomposition"]
+
+    ReadyTasks -->|executed by| Executor["TaskGraphExecutor"]
+    NextTask -->|executed by| Executor
+    Executor -->|feedback| DAG
+
+    style DAG fill:#E8F4F8
+    style ReadyTasks fill:#D0E8F2
+    style NextTask fill:#B8DCEC
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - function: generate_task_id/1
+      purpose: Create unique task identifier with monotonic counter
+      pattern: "prefix-task-{unique_integer}"
+
+    - module: Enum
+      function: filter/2, sort_by/2, all?/2, map/2
+      purpose: Functional list operations for task filtering and selection
+      critical: true
+
+    - module: Map
+      function: put/3, get/3
+      purpose: Immutable task and dependency storage
+      critical: true
+
+  called_by:
+    - module: Singularity.Execution.Planning.TaskGraphExecutor
+      function: execute_task/2
+      purpose: Use DAG for task status tracking and dependency resolution
+      frequency: per_task_execution
+
+    - module: Singularity.Planning.SafeWorkPlanner
+      function: plan/1
+      purpose: Build initial task DAG from work plan
+      frequency: per_planning_session
+
+    - module: Singularity.Execution.Planning.StoryDecomposer
+      function: generate_completion_tasks/2
+      purpose: Structure decomposed tasks as DAG
+      frequency: per_story_decomposition
+
+  state_transitions:
+    - name: task_created
+      from: idle
+      to: dag_initialized
+      trigger: new/1 called
+      actions:
+        - Create root_id
+        - Initialize empty tasks map
+        - Initialize empty dependency_graph
+        - Set completed_tasks, failed_tasks to []
+
+    - name: add_task_to_dag
+      from: dag_initialized
+      to: dag_modified
+      trigger: add_task/2 called
+      actions:
+        - Validate task structure
+        - Insert into tasks map
+        - Add dependencies to dependency_graph if any
+        - Return updated DAG
+
+    - name: task_ready_check
+      from: dag_modified
+      to: dag_queried
+      trigger: get_ready_tasks/1 called
+      guards:
+        - task.status == :pending
+        - all dependencies in completed_tasks
+      actions:
+        - Filter ready tasks
+        - Return list (may be empty)
+
+    - name: task_selection
+      from: dag_modified
+      to: task_selected
+      trigger: select_next_task/1 called
+      actions:
+        - Get ready tasks (must have met dependencies)
+        - Sort by (depth ASC, complexity ASC)
+        - Return first task or nil
+
+    - name: mark_in_progress
+      from: task_selected
+      to: task_active
+      trigger: mark_in_progress/2 called
+      actions:
+        - Update task status to :active
+        - Return modified DAG
+
+    - name: mark_completed
+      from: task_active
+      to: task_done
+      trigger: mark_completed/2 called
+      actions:
+        - Update task status to :completed
+        - Add task_id to completed_tasks list
+        - Return modified DAG (unblocks dependents)
+
+    - name: mark_failed
+      from: task_active
+      to: task_failed
+      trigger: mark_failed/2 called
+      args: [task_id, reason]
+      actions:
+        - Update task status to :failed
+        - Add task_id to failed_tasks list
+        - Return modified DAG
+
+    - name: decompose_if_needed
+      from: task_selected
+      to: task_decomposed
+      trigger: decompose_if_needed/3 called
+      guards:
+        - NOT is_atomic (complexity >= 5.0 OR depth == 0)
+        - depth < max_depth
+      actions:
+        - Mark task status as :blocked
+        - LLM.Service would decompose (external)
+        - Return DAG with blocked task
+      else:
+        - Return DAG unchanged (atomic or at max depth)
+
+  depends_on:
+    - Elixir stdlib (Map, Enum, List functions)
+    - Singularity.Execution.Planning.TaskGraphExecutor (for execution feedback)
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT create TaskDAG, GraphStructure, or HierarchicalPlan duplicates
+  **Why:** TaskGraphCore is the single canonical DAG data structure for all task decomposition.
+
+  ```elixir
+  # ❌ WRONG - Duplicate DAG implementation
+  defmodule MyApp.TaskDAG do
+    def new(root_id) do
+      %{tasks: %{}, dependencies: %{}}
+    end
+  end
+
+  # ✅ CORRECT - Use TaskGraphCore
+  dag = TaskGraphCore.new("root-goal")
+  dag = TaskGraphCore.add_task(dag, task)
+  ```
+
+  #### ❌ DO NOT mutate DAG in place - DAGs must be immutable
+  **Why:** Immutable DAGs enable replay, debugging, and proper dependency tracking.
+
+  ```elixir
+  # ❌ WRONG - Attempting mutation (not possible in Elixir, but wrong pattern)
+  dag.tasks |> Map.put(task_id, updated_task)  # Returns new map, doesn't update dag
+
+  # ✅ CORRECT - Return updated DAG
+  dag = TaskGraphCore.mark_completed(dag, task_id)
+  # dag now has updated task and completed_tasks list
+  ```
+
+  #### ❌ DO NOT skip dependency checking when selecting tasks
+  **Why:** Task ordering is critical; selecting tasks without met dependencies causes failures.
+
+  ```elixir
+  # ❌ WRONG - Ignore dependencies
+  next_task = dag.tasks |> Map.values() |> List.first()
+
+  # ✅ CORRECT - Use dependency-aware selection
+  next_task = TaskGraphCore.select_next_task(dag)
+  # Ensures: 1) All dependencies completed, 2) Sorted by depth/complexity
+  ```
+
+  #### ❌ DO NOT decompose tasks without respecting max_depth
+  **Why:** Unbounded decomposition leads to infinite recursion and overdecomposition.
+
+  ```elixir
+  # ❌ WRONG - No depth limit
+  TaskGraphCore.decompose_if_needed(dag, task)
+
+  # ✅ CORRECT - Provide max_depth constraint
+  TaskGraphCore.decompose_if_needed(dag, task, max_depth: 5)
+  ```
+
+  ### Search Keywords
+
+  task graph, DAG, directed acyclic graph, hierarchical tasks, dependency resolution,
+  task decomposition, complexity estimation, task status tracking, work plan structure,
+  autonomous planning, task readiness, dependency graph, immutable DAG, task ordering,
+  depth-first decomposition, atomic tasks, goal hierarchy, milestone tracking, implementation tasks
   """
 
   @type task_type :: :goal | :milestone | :implementation

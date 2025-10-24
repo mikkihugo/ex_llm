@@ -27,6 +27,258 @@ defmodule Singularity.Execution.Todos.TodoSwarmCoordinator do
   # Check swarm status
   TodoSwarmCoordinator.get_status()
   ```
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Execution.Todos.TodoSwarmCoordinator",
+    "purpose": "GenServer-based swarm orchestrator for distributed todo execution across worker pools",
+    "role": "orchestrator",
+    "layer": "execution_todos",
+    "key_responsibilities": [
+      "Maintain GenServer state for active worker pool",
+      "Poll TodoStore for ready todos periodically",
+      "Spawn TodoWorkerAgent processes with load balancing",
+      "Monitor worker process lifecycle and handle crashes",
+      "Track worker status, completions, and failures",
+      "Coordinate dependency-aware todo execution"
+    ],
+    "prevents_duplicates": ["WorkerPool", "TodoExecutor", "SwarmManager", "WorkerCoordinator"],
+    "uses": ["TodoStore", "TodoWorkerAgent", "Logger", "Process", "GenServer"],
+    "capabilities": ["spawn_swarm/1", "get_status/0", "worker_completed/3", "worker_failed/3"],
+    "process_type": "GenServer (named, singleton)",
+    "constraints": "max_concurrent_workers (default 10), poll_interval_ms (default 5000)"
+  }
+  ```
+
+  ### Architecture Diagram (Mermaid)
+
+  ```mermaid
+  graph TB
+    TodoStore["TodoStore<br/>(ready todos)"]
+
+    Coordinator["TodoSwarmCoordinator<br/>(GenServer)"]
+
+    Coordinator -->|periodic poll<br/>every 5s| TodoStore
+    TodoStore -->|get_ready_todos/1| ReadyList["Ready Todos<br/>(pending, deps met)"]
+
+    ReadyList -->|spawn worker per todo| SpawnWorker["spawn_worker_for_todo/1<br/>(start agent)"]
+
+    SpawnWorker -->|start_link| Agent["TodoWorkerAgent #1<br/>(AI solver)"]
+    SpawnWorker -->|start_link| Agent2["TodoWorkerAgent #2<br/>(AI solver)"]
+    SpawnWorker -->|start_link| Agent3["TodoWorkerAgent #3<br/>(AI solver)"]
+
+    Agent -->|worker_completed| Coordinator
+    Agent2 -->|worker_failed| Coordinator
+    Agent3 -->|process crash| Coordinator
+
+    Coordinator -->|load balance| LoadCheck{{"Active < Max?"}}
+
+    LoadCheck -->|yes| SpawnWorker
+    LoadCheck -->|no| Wait["Wait for slot"]
+
+    Wait -->|worker finishes| SpawnWorker
+
+    Coordinator -->|maintain state| State["state struct<br/>active_workers: Map<br/>completed_count: int<br/>failed_count: int"]
+
+    style Coordinator fill:#E8F4F8
+    style State fill:#D0E8F2
+    style Agent fill:#B8DCEC
+    style ReadyList fill:#D0E8F2
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: TodoStore
+      function: get_ready_todos/1
+      purpose: Fetch pending todos with dependencies met
+      critical: true
+      pattern: "Periodic polling via handle_info(:poll_todos)"
+
+    - module: TodoWorkerAgent
+      function: start_link/1
+      purpose: Spawn worker process to solve individual todo
+      critical: true
+      pattern: "One agent per todo, with process monitoring"
+
+    - module: Process
+      function: monitor/1, send_after/2
+      purpose: Monitor worker crashes, schedule periodic polls
+      critical: true
+      pattern: "Process.monitor(pid), Process.send_after(self(), :poll_todos, interval)"
+
+    - module: Logger
+      function: info/2, warning/2, error/2
+      purpose: Log swarm events and worker status
+      critical: false
+
+    - module: Enum
+      function: filter/2, map/2, take/2, find/2, each/2
+      purpose: Work with worker lists and todos
+      critical: true
+
+  called_by:
+    - module: Singularity.Execution.Todos.Supervisor
+      function: init/1
+      purpose: Manage coordinator lifecycle in supervision tree
+      frequency: on_startup
+
+    - module: Singularity.Agents.RuntimeBootstrapper
+      function: start_todos_worker_pool/1
+      purpose: Bootstrap todo execution swarm
+      frequency: on_agent_startup
+
+    - module: External clients
+      function: spawn_swarm/1, get_status/0, stop_all_workers/0
+      purpose: Manual swarm control
+      frequency: on_demand
+
+  state_transitions:
+    - name: startup
+      from: idle
+      to: polling
+      trigger: start_link/1 called
+      actions:
+        - Create GenServer state with counters
+        - Schedule first poll via schedule_poll/1
+        - Log startup with configuration
+        - Return {:ok, state}
+
+    - name: poll_and_spawn
+      from: polling
+      to: workers_active
+      trigger: handle_info(:poll_todos) fires every poll_interval_ms
+      guards:
+        - map_size(active_workers) < max_concurrent_workers
+      actions:
+        - Call TodoStore.get_ready_todos/1
+        - Filter by complexity if specified
+        - For each todo: spawn_worker_for_todo/1
+        - Add new worker info to active_workers map
+        - Update last_poll_at
+        - Reschedule next poll
+        - Return {:noreply, new_state}
+
+    - name: worker_completion
+      from: workers_active
+      to: workers_active
+      trigger: handle_cast({:worker_completed, worker_id, todo_id, result})
+      actions:
+        - Log worker completion
+        - Remove worker from active_workers
+        - Increment completed_count
+        - Call maybe_spawn_more_workers/1 to fill slots
+        - Return {:noreply, new_state}
+
+    - name: worker_failure
+      from: workers_active
+      to: workers_active
+      trigger: handle_cast({:worker_failed, worker_id, todo_id, reason})
+      actions:
+        - Log worker failure with reason
+        - Remove worker from active_workers
+        - Increment failed_count
+        - Call maybe_spawn_more_workers/1 to fill slots
+        - Return {:noreply, new_state}
+
+    - name: worker_crash
+      from: workers_active
+      to: workers_active
+      trigger: handle_info({:DOWN, ref, :process, pid, reason}) from Process.monitor
+      actions:
+        - Find worker by pid
+        - Log process crash
+        - Update TodoStore to mark todo as failed
+        - Remove worker from active_workers
+        - Increment failed_count
+        - Call maybe_spawn_more_workers/1
+        - Return {:noreply, new_state}
+
+    - name: manual_stop
+      from: workers_active
+      to: all_workers_stopped
+      trigger: handle_cast(:stop_all_workers)
+      actions:
+        - Iterate active_workers
+        - Call TodoWorkerAgent.stop/1 on each
+        - Clear active_workers map
+        - Return {:noreply, state}
+
+  depends_on:
+    - Singularity.Execution.Todos.TodoStore (MUST be available)
+    - Singularity.Execution.Todos.TodoWorkerAgent (MUST be available)
+    - Process monitoring (built-in, no dependency)
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT create WorkerPool, SwarmManager, or TodoExecutor duplicates
+  **Why:** TodoSwarmCoordinator is the single canonical swarm orchestrator for todo execution.
+
+  ```elixir
+  # ❌ WRONG - Duplicate swarm manager
+  defmodule MyApp.WorkerPool do
+    def spawn_workers(count) do
+      # Re-implementing TodoSwarmCoordinator logic
+    end
+  end
+
+  # ✅ CORRECT - Use TodoSwarmCoordinator
+  TodoSwarmCoordinator.spawn_swarm(swarm_size: count)
+  ```
+
+  #### ❌ DO NOT spawn workers without capacity checks
+  **Why:** Unbounded worker spawning causes resource exhaustion and coordination chaos.
+
+  ```elixir
+  # ❌ WRONG - Spawn without checking capacity
+  todos |> Enum.each(&spawn_worker_for_todo/1)
+
+  # ✅ CORRECT - Respect max_concurrent_workers limit
+  # TodoSwarmCoordinator.spawn_workers/2 checks available_slots
+  available_slots = state.max_concurrent_workers - map_size(state.active_workers)
+  if available_slots > 0 do
+    # Spawn up to available_slots workers
+  end
+  ```
+
+  #### ❌ DO NOT miss process monitoring on spawned workers
+  **Why:** Unmonitored workers can crash silently, leaving coordinator unaware of failures.
+
+  ```elixir
+  # ❌ WRONG - Spawn without monitoring
+  {:ok, pid} = TodoWorkerAgent.start_link(...)
+  # Coordinator won't know if process crashes!
+
+  # ✅ CORRECT - Monitor process lifecycle
+  {:ok, pid} = TodoWorkerAgent.start_link(...)
+  Process.monitor(pid)  # Will trigger handle_info({:DOWN, ...})
+  ```
+
+  #### ❌ DO NOT ignore worker failures - mark todos as failed
+  **Why:** Silent failures leave todos in limbo, blocking dependent work.
+
+  ```elixir
+  # ❌ WRONG - Just remove worker, leave todo hanging
+  {:noreply, %{state | active_workers: Map.delete(...)}}
+
+  # ✅ CORRECT - Update TodoStore to mark todo as failed
+  with {:ok, todo} <- TodoStore.get(worker.todo_id) do
+    TodoStore.fail(todo, "Worker process crashed")
+  end
+  ```
+
+  ### Search Keywords
+
+  todo swarm, worker pool, task orchestration, GenServer coordinator, concurrent execution,
+  load balancing, worker spawning, swarm intelligence, distributed todos, process monitoring,
+  worker lifecycle, task distribution, todo store polling, failure handling, worker capacity,
+  autonomous agents, parallel execution, swarm coordination, periodic polling, resource management
   """
 
   use GenServer
