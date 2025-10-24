@@ -16,6 +16,7 @@
 //! - **dag/**: Directed Acyclic Graph for file relationships
 //! - **multilang/**: Cross-language analysis
 //! - **central_heuristics**: Universal scoring (PageRank, file importance)
+//! - **refactoring_suggestions**: Universal refactoring engine
 
 pub mod central_heuristics;
 pub mod control_flow;
@@ -25,6 +26,7 @@ pub mod graph;
 pub mod metrics;
 pub mod multilang;
 pub mod performance;
+pub mod refactoring_suggestions;
 pub mod results;
 pub mod security;
 pub mod semantic;
@@ -37,6 +39,7 @@ pub use graph::*;
 pub use metrics::*;
 pub use multilang::*;
 pub use performance::*;
+pub use refactoring_suggestions::*;
 pub use results::*;
 pub use security::*;
 pub use semantic::*;
