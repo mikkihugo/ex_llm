@@ -12,46 +12,55 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   }
   ```
 
-  ## Two Embedding Strategies
+  ## Embedding Implementation (Nx/Axon Only)
 
-  1. **Rust NIF (Production)** - Pure local ONNX, no API calls, works offline
-     - GPU: Qodo-Embed-1 (1536D) - Code-specialized via Candle (CUDA/Metal/ROCm)
-     - GPU: Jina v3 (1024D) - General text via ONNX
-     - CPU: Both models work on CPU/Metal/CUDA - no MiniLM needed
-     - No API keys needed, deterministic, fast
+  **REALITY CHECK:** System uses Nx/Axon, not Rust NIF or Bumblebee.
+  - Bumblebee/Exla: Not available (deprecated, removed)
+  - Rust NIF: Not currently integrated
+  - **Actual System:** Pure Elixir Nx/Axon with CPU inference
 
-  2. **Bumblebee/Nx (Environment-based)** - Real embeddings + code generation
-     - **Development**: CodeT5P-770M (770M params) - Fast, CPU-optimized
-     - **Production**: StarCoder2-7B (7B params, ~14GB VRAM) - Single model for RTX 4080 16GB
-     - **Memory Constraint**: Can't run multiple 7B+ models on 16GB VRAM
-     - Training/fine-tuning capability
+  ### Actual Models Available
+
+  1. **Qodo-Embed-1 (1536-dim)** - Code-specialized embeddings
+     - Via Nx/Axon pure Elixir implementation
+     - Fine-tunable for code semantics
+     - Concatenated with Jina v3
+
+  2. **Jina Embeddings v3 (1024-dim)** - General-purpose text embeddings
+     - Via Nx/Axon pure Elixir implementation
+     - Reference implementation (frozen, not fine-tuned)
+     - Concatenated with Qodo
+
+  3. **Combined 2560-dim vectors** - Concatenated output
+     - [Qodo (1536) || Jina v3 (1024)] = 2560-dim
+     - For semantic search and similarity
+     - Used in all downstream systems
 
   ## Strategy Selection
 
   ```
   embed(text, strategy: :auto)
       ↓
-  Try Rust NIF (Jina v3/Qodo-Embed - works on CPU/Metal/CUDA)
-      ↓ [if fails - no Rust NIF]
-  Use Bumblebee (Environment-based):
-    - Dev: CodeT5P-770M (CPU, fast)
-    - Prod: StarCoder2-7B (GPU, single model for 16GB VRAM)
+  Use Nx/Axon Implementation:
+    - Load Qodo tokenizer (1536-dim model)
+    - Load Jina v3 tokenizer (1024-dim model)
+    - Compute both embeddings
+    - Concatenate → 2560-dim output
+    - Or fail explicitly if inference fails
   ```
 
   ## Architecture Diagram
   ```mermaid
   graph TD
-      A[Text Input] --> B{Strategy}
-      B -->|:rust| C[Rust NIF]
-      B -->|:bumblebee| E[Bumblebee/Nx]
-      B -->|:auto| F[Auto-Select]
-
-      F --> G{Rust NIF Available?}
-      G -->|Yes| C
-      G -->|No| E
-
-      C --> I[Vector Embedding]
-      E --> I
+      A[Text Input] --> B[NxService]
+      B --> C[Tokenize with Qodo]
+      C --> D[Compute Qodo Embedding<br/>1536-dim]
+      B --> E[Tokenize with Jina v3]
+      E --> F[Compute Jina Embedding<br/>1024-dim]
+      D --> G[Concatenate]
+      F --> G
+      G --> H[Normalize to Unit Length]
+      H --> I[2560-dim Output]
       I --> J[Store in pgvector]
   ```
 
