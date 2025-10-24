@@ -250,4 +250,59 @@ defmodule Singularity.EmbeddingEngine do
   """
   @spec dimension() :: pos_integer()
   def dimension, do: 2560
+
+  @doc """
+  Check if GPU is available for acceleration.
+
+  Returns true if CUDA, Metal, or ROCm environment is detected.
+  """
+  @spec gpu_available?() :: boolean()
+  def gpu_available? do
+    case {System.get_env("CUDA_VISIBLE_DEVICES"), System.get_env("HIP_VISIBLE_DEVICES")} do
+      {nil, nil} -> false
+      _ -> true
+    end
+  end
+
+  @doc """
+  Preload embedding models into memory for faster inference.
+
+  Models are cached in memory after first use. This function forces loading
+  them on startup for better performance.
+
+  ## Options
+
+  - `:qodo_embed` - Qodo-Embed-1 model (1536-dim)
+  - `:jina_v3` - Jina v3 model (1024-dim)
+
+  ## Examples
+
+      iex> EmbeddingEngine.preload_models([:qodo_embed, :jina_v3])
+      :ok
+  """
+  @spec preload_models([atom()]) :: :ok | {:error, term()}
+  def preload_models(models) do
+    NxService.preload_models(models)
+  end
+
+  @doc false
+  def id, do: "embedding_engine"
+
+  @doc false
+  def label, do: "EmbeddingEngine"
+
+  @doc false
+  def description, do: "Local ONNX embedding service (Qodo + Jina v3)"
+
+  @doc false
+  def capabilities, do: [:embed, :batch_embed, :similarity, :finetune]
+
+  @doc false
+  def health do
+    if gpu_available?() do
+      {:ok, %{status: "healthy", device: "gpu"}}
+    else
+      {:ok, %{status: "healthy", device: "cpu"}}
+    end
+  end
 end

@@ -239,6 +239,29 @@ config :singularity, :generator_types,
   }
 
 # =============================================================================
+# Extractor Configuration (Config-Driven)
+# =============================================================================
+# Defines which extractors are enabled for unified metadata extraction
+# All extractors implement ExtractorType behavior for consistent interface
+
+config :singularity, :extractor_types,
+  ai_metadata: %{
+    module: Singularity.Analysis.Extractors.AIMetadataExtractorImpl,
+    enabled: true,
+    description: "Extract AI navigation metadata (JSON/YAML/Mermaid/Markdown) from @moduledoc"
+  },
+  ast: %{
+    module: Singularity.Analysis.Extractors.AstExtractorImpl,
+    enabled: true,
+    description: "Extract code structure (dependencies, calls, types, docs) from tree-sitter AST"
+  },
+  pattern: %{
+    module: Singularity.Analysis.Extractors.PatternExtractor,
+    enabled: true,
+    description: "Extract code patterns and architectural keywords"
+  }
+
+# =============================================================================
 # Search Configuration (Config-Driven)
 # =============================================================================
 # Defines which search types are enabled (Semantic, Hybrid, AST, Package, etc.)
