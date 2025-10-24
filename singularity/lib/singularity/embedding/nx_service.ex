@@ -77,14 +77,19 @@ defmodule Singularity.Embedding.NxService do
   }
 
   @doc """
-  Generate embedding for a single text
+  Generate embedding for a single text.
+
+  Always returns 2560-dimensional concatenated embeddings:
+  - Qodo (1536-dim) + Jina v3 (1024-dim) = 2560-dim
+
+  Note: The :model option is ignored; both models always used for maximum quality.
   """
   def embed(text, opts \\ []) when is_binary(text) do
-    model = Keyword.get(opts, :model, :qodo)
     device = Keyword.get(opts, :device, :cpu)
 
-    with {:ok, model_state} <- ModelLoader.load_model(model, device),
-         {:ok, embedding} <- run_inference(text, model_state, model) do
+    # Always use concatenation: Qodo + Jina v3 = 2560-dim
+    with {:ok, model_state} <- ModelLoader.load_model(:qodo, device),
+         {:ok, embedding} <- run_inference(text, model_state, :concatenated) do
       {:ok, embedding}
     else
       error -> error
@@ -92,14 +97,19 @@ defmodule Singularity.Embedding.NxService do
   end
 
   @doc """
-  Generate embeddings for multiple texts (batch)
+  Generate embeddings for multiple texts (batch).
+
+  Always returns 2560-dimensional concatenated embeddings for each text:
+  - Qodo (1536-dim) + Jina v3 (1024-dim) = 2560-dim per embedding
+
+  Note: The :model option is ignored; both models always used for maximum quality.
   """
   def embed_batch(texts, opts \\ []) when is_list(texts) do
-    model = Keyword.get(opts, :model, :qodo)
     device = Keyword.get(opts, :device, :cpu)
 
-    with {:ok, model_state} <- ModelLoader.load_model(model, device),
-         {:ok, embeddings} <- run_batch_inference(texts, model_state, model) do
+    # Always use concatenation for all texts in batch
+    with {:ok, model_state} <- ModelLoader.load_model(:qodo, device),
+         {:ok, embeddings} <- run_batch_inference(texts, model_state, :concatenated) do
       {:ok, embeddings}
     else
       error -> error
@@ -107,14 +117,12 @@ defmodule Singularity.Embedding.NxService do
   end
 
   @doc """
-  Calculate similarity between two texts
+  Calculate similarity between two texts using 2560-dim concatenated embeddings.
   """
   def similarity(text1, text2, opts \\ []) do
-    model = Keyword.get(opts, :model, :qodo)
-
     with {:ok, emb1} <- embed(text1, opts),
          {:ok, emb2} <- embed(text2, opts) do
-      # Cosine similarity
+      # Cosine similarity using concatenated vectors
       similarity = cosine_similarity(emb1, emb2)
       {:ok, similarity}
     else

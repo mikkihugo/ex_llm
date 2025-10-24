@@ -244,9 +244,12 @@ defmodule Singularity.EmbeddingEngine do
   end
 
   @doc """
-  Get dimension of the combined embedding vector.
+  Get dimension of the embedding vector.
 
-  Returns 2560 (Qodo 1536 + Jina v3 1024).
+  Returns 2560 (Qodo 1536-dim + Jina v3 1024-dim concatenated).
+
+  All embeddings from EmbeddingEngine are 2560-dimensional concatenated vectors
+  combining code semantics (Qodo) with general text understanding (Jina v3).
   """
   @spec dimension() :: pos_integer()
   def dimension, do: 2560
