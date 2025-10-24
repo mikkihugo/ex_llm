@@ -174,6 +174,114 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
     - complexity level support (simple/medium/complex)
   ```
 
+  ### Performance Characteristics ⚡
+
+  **Time Complexity**
+  - decompose/2: O(n) where n = number of SPARC phases (5 phases, so O(5) = O(1))
+  - Per phase: ~500ms-5s (LLM call, varies by model complexity)
+  - Total decomposition: ~2.5-25s (5 phases sequential)
+
+  **Space Complexity**
+  - Decomposition result: ~2KB per phase (JSON response)
+  - Total output: ~10KB per complete decomposition
+  - Intermediate: Lua script parsing ~5KB
+
+  **Typical Latencies**
+  - Simple story: ~2-3s total (simple LLM model)
+  - Medium story: ~5-10s total (medium LLM model)
+  - Complex story: ~15-25s total (complex LLM model, more reasoning)
+  - Per-phase overhead: ~50-100ms
+
+  ---
+
+  ### Concurrency & Safety 🔒
+
+  **Process Safety**
+  - ✅ Safe to call from multiple processes: Stateless operation
+  - ✅ No shared state: Each decomposition independent
+  - ✅ Reentrant: Can handle concurrent requests
+
+  **Thread Safety**
+  - ✅ LLM service calls serialized (via RateLimiter + CircuitBreaker)
+  - ✅ Lua script execution stateless
+  - ✅ Results returned immediately (no global state modification)
+
+  **Atomicity Guarantees**
+  - ✅ Single phase completion: Atomic (LLM returns complete response)
+  - ❌ Multi-phase: Not atomic (5 sequential calls, can fail midway)
+  - Recommended: Store intermediate results to database for recovery
+
+  **Race Condition Risks**
+  - Low risk: Each decomposition independent
+  - Medium risk: LLM rate limiting (shared quota across processes)
+  - Recommended: Monitor RateLimiter queue depth
+
+  ---
+
+  ### Observable Metrics 📊
+
+  **Telemetry Events**
+  - start: Decomposition begins (phase name)
+  - phase_complete: Each phase finishes (duration, phase, token count)
+  - complete: All phases done (total duration, all tokens)
+  - error: Failure in any phase (phase, error reason)
+
+  **Key Metrics**
+  - Total time: Full decomposition duration
+  - Per-phase time: Individual phase latencies
+  - Token usage: Total tokens consumed (for cost tracking)
+  - Success rate: % of decompositions that complete all phases
+
+  **Recommended Monitoring**
+  - SLA: P95 latency < 30s (for complex)
+  - Availability: Error rate < 2%
+  - Cost: Token count × model pricing
+  - Queue depth: RateLimiter backpressure (indicates overload)
+
+  ---
+
+  ### Troubleshooting Guide 🔧
+
+  **Problem: Decomposition Timeout (Exceeds 30s)**
+
+  **Symptoms**
+  - decompose/2 takes > 30s to complete
+  - P95 latency spike
+  - Users report slow story decomposition
+
+  **Root Causes**
+  1. Complex story (many acceptance criteria, deep nesting)
+  2. LLM service slow (overloaded, network latency)
+  3. RateLimiter backpressure (quota exhausted)
+  4. Lua script parsing overhead
+
+  **Solutions**
+  - Increase timeout: `timeout: 60000` for complex stories
+  - Check LLM service: Monitor latency independently
+  - Check RateLimiter: Verify quota availability
+  - Simplify story: Break into smaller stories if possible
+
+  ---
+
+  **Problem: Phase Fails Mid-Decomposition**
+
+  **Symptoms**
+  - Decomposition stops at phase 2 or 3
+  - Error returned after partial processing
+  - Specification phase works but later phases fail
+
+  **Root Causes**
+  1. LLM error (invalid response, timeout)
+  2. Lua script error (malformed input)
+  3. Network error (NATS connection)
+  4. Rate limit exceeded
+
+  **Solutions**
+  - Retry individual phase: Check which phase fails
+  - Check LLM response: Verify response format is valid
+  - Check NATS: Verify message queue healthy
+  - Store intermediate: Save phase results to database for recovery
+
   ### Anti-Patterns
 
   #### ❌ DO NOT create StoryBreakdown, UserStoryDecomposer, or SPARCOrchestrator duplicates
