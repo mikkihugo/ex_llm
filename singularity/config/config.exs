@@ -404,3 +404,25 @@ config :singularity, :validators,
     priority: 20,
     description: "Validates data structures against schema templates"
   }
+
+# Config-Driven Task Execution System
+# Unified task adapter orchestration with priority-ordered execution
+config :singularity, :task_adapters,
+  oban_adapter: %{
+    module: Singularity.Adapters.ObanAdapter,
+    enabled: true,
+    priority: 10,
+    description: "Background job execution via Oban"
+  },
+  nats_adapter: %{
+    module: Singularity.Adapters.NatsAdapter,
+    enabled: true,
+    priority: 15,
+    description: "Async task execution via NATS messaging"
+  },
+  genserver_adapter: %{
+    module: Singularity.Adapters.GenServerAdapter,
+    enabled: true,
+    priority: 20,
+    description: "Synchronous task execution via GenServer agents"
+  }

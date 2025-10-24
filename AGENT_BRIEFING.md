@@ -1,14 +1,18 @@
 # Agent Briefing Document - Current System State
 
-**Last Updated**: 2025-10-23
+**Last Updated**: 2025-10-24
 **Maintained By**: Claude Code
 **Purpose**: Comprehensive briefing for all AI agents on what has been implemented
+
+⚠️ **REALITY CHECK**: Agents are currently **disabled** due to cascading Oban/NATS config failures. See [`AGENT_SYSTEM_CURRENT_STATE.md`](AGENT_SYSTEM_CURRENT_STATE.md) for actual status.
 
 ---
 
 ## Executive Summary
 
-Singularity has a **complete self-evolution system** that agents must understand to give proper instructions for:
+Singularity has **18 agent modules implemented** (code exists, infrastructure ready) but currently **disabled** in supervision tree. The self-evolution system is architecturally complete and will be operational once NATS/Oban dependencies are fixed.
+
+Agents are designed to provide proper instructions for:
 - Architecture decisions
 - Code generation patterns
 - Refactoring guidance

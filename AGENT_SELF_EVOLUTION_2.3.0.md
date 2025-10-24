@@ -1,8 +1,16 @@
-# Agent Self-Evolution System 2.3.0
+# Agent Self-Evolution System 2.3.0 - DESIGN DOCUMENT
 
-## **Core Principle: 6 Agents = Self-Evolution with Self-Awareness**
+⚠️ **This is an aspirational design document.** Current system status: See [`AGENT_SYSTEM_CURRENT_STATE.md`](AGENT_SYSTEM_CURRENT_STATE.md).
 
-The 6 autonomous agents ARE the self-evolution system. Quality 2.3.0 means these agents must be self-aware before evolving.
+## **Core Principle (When Operational): 6 Agents = Self-Evolution with Self-Awareness**
+
+The 6 autonomous agents are designed to be the self-evolution system. Quality 2.3.0 means these agents would be self-aware before evolving.
+
+**Current Status:**
+- Code: ✅ All 18 agent modules implemented with full self-awareness checks
+- Infrastructure: ✅ Supervisors, GenServers, config all ready
+- Status: ❌ Disabled in `application.ex` due to cascading NATS/Oban failures
+- Timeline: 2-4 weeks to re-enable (see [`AGENT_SYSTEM_FIX_CHECKLIST.md`](AGENT_SYSTEM_FIX_CHECKLIST.md))
 
 ## **The 6 Self-Evolution Agents**
 

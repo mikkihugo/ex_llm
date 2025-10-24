@@ -1,8 +1,15 @@
-# Agent Evolution Strategy
+# Agent Evolution Strategy - DESIGN DOCUMENT
+
+⚠️ **This is an aspirational design document.** Current system status: See [`AGENT_SYSTEM_CURRENT_STATE.md`](AGENT_SYSTEM_CURRENT_STATE.md).
 
 ## Overview
 
-The system uses **6 Autonomous AI Agents** that evolve and learn new capabilities naturally, rather than having separate self-improvement modules.
+The system is designed to use **6 Autonomous AI Agents** (+ 12 support modules) that would evolve and learn new capabilities naturally, rather than having separate self-improvement modules.
+
+**Current Reality:**
+- 18 agent modules implemented with full supervision/orchestration code
+- Agents disabled in `application.ex` due to Oban/NATS configuration issues
+- Timeline to re-enable: 2-4 weeks (see [`AGENT_SYSTEM_FIX_CHECKLIST.md`](AGENT_SYSTEM_FIX_CHECKLIST.md))
 
 ## The 6 Autonomous AI Agents
 

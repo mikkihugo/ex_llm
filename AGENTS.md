@@ -1,6 +1,15 @@
 # Agents - Autonomous Development System
 
-Singularity includes 6 specialized autonomous agents that leverage the unified orchestration framework for code analysis, generation, and execution.
+⚠️ **STATUS: CURRENTLY DISABLED** - See [`AGENT_SYSTEM_CURRENT_STATE.md`](AGENT_SYSTEM_CURRENT_STATE.md) for detailed reality check.
+
+Singularity includes 18 agent modules (6 primary agents + 12 support modules) that leverage the unified orchestration framework for code analysis, generation, and execution.
+
+**Current Reality:**
+- Code: ✅ All 18 agent modules implemented (95K+ lines)
+- Supervision: ❌ Disabled in `application.ex` (cascading Oban config failures)
+- Status: Can be re-enabled in 2-4 weeks once dependencies fixed
+
+See [`AGENT_SYSTEM_FIX_CHECKLIST.md`](AGENT_SYSTEM_FIX_CHECKLIST.md) for re-enablement roadmap.
 
 ## Architecture Overview
 

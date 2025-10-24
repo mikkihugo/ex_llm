@@ -1,8 +1,15 @@
-# Agent Documentation System 2.3.0
+# Agent Documentation System 2.3.0 - DESIGN DOCUMENT
 
-## **Core Principle: 6 Agents = Universal Documentation Upgrader**
+⚠️ **This is an aspirational design document.** Current system status: See [`AGENT_SYSTEM_CURRENT_STATE.md`](AGENT_SYSTEM_CURRENT_STATE.md).
 
-The 6 autonomous agents ARE the documentation system. They automatically scan, analyze, and upgrade ALL source code to meet quality 2.2.0+ standards.
+## **Core Principle (When Operational): 6 Agents = Universal Documentation Upgrader**
+
+The 6 autonomous agents are designed to be the documentation system. They would automatically scan, analyze, and upgrade ALL source code to meet quality 2.2.0+ standards.
+
+**Current Status:**
+- Code: ✅ All agent modules implemented (DocumentationUpgrader, QualityEnforcer, etc.)
+- Status: ❌ Disabled in `application.ex`
+- Target: Will be operational once NATS/Oban dependencies fixed
 
 ## **Agent Documentation Responsibilities**
 
