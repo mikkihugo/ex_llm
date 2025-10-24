@@ -233,3 +233,30 @@ config :singularity, :extractor_types,
     enabled: false,
     description: "Extract code patterns and structures"
   }
+
+# =============================================================================
+# Search Configuration (Config-Driven)
+# =============================================================================
+# Defines which search types are enabled (Semantic, Hybrid, AST, Package, etc.)
+
+config :singularity, :search_types,
+  semantic: %{
+    module: Singularity.Search.Searchers.SemanticSearch,
+    enabled: true,
+    description: "Semantic search using embeddings and pgvector similarity"
+  },
+  hybrid: %{
+    module: Singularity.Search.Searchers.HybridSearch,
+    enabled: true,
+    description: "Hybrid search combining full-text search and semantic similarity"
+  },
+  ast: %{
+    module: Singularity.Search.Searchers.AstSearch,
+    enabled: false,
+    description: "AST-based structural code search using tree-sitter"
+  },
+  package: %{
+    module: Singularity.Search.Searchers.PackageSearch,
+    enabled: true,
+    description: "Package registry search combined with RAG codebase discovery"
+  }
