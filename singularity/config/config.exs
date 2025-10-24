@@ -382,3 +382,25 @@ config :singularity, :job_types,
     max_attempts: 1,
     description: "Train T5 model (on demand)"
   }
+
+# Config-Driven Validation System
+# Unified validator orchestration with priority-ordered execution
+config :singularity, :validators,
+  type_checker: %{
+    module: Singularity.Validators.TypeChecker,
+    enabled: true,
+    priority: 10,
+    description: "Validates type specifications and type safety"
+  },
+  security_validator: %{
+    module: Singularity.Validators.SecurityValidator,
+    enabled: true,
+    priority: 15,
+    description: "Enforces security policies and access control"
+  },
+  schema_validator: %{
+    module: Singularity.Validators.SchemaValidator,
+    enabled: true,
+    priority: 20,
+    description: "Validates data structures against schema templates"
+  }
