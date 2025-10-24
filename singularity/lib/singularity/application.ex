@@ -197,8 +197,12 @@ defmodule Singularity.Application do
   # Helper function to conditionally add optional children
   # Checks application config for enabled flag, defaults to true
   defp add_optional_child(children, config_key, child_factory) do
-    case Application.get_env(:singularity, config_key, true) do
+    enabled = Application.get_env(:singularity, config_key, true)
+    Logger.info("Checking config for #{config_key}: #{inspect(enabled)}")
+
+    case enabled do
       true ->
+        Logger.info("Adding child for #{config_key}")
         children ++ [child_factory.()]
 
       false ->

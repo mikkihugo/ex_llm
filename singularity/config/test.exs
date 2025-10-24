@@ -15,16 +15,14 @@ config :singularity, Singularity.Repo,
   database: "singularity",
   pool: Ecto.Adapters.SQL.Sandbox
 
-# Disable Oban in tests (not needed, can cause configuration issues)
+# Disable Oban in tests - it's not needed and causes initialization issues
 config :singularity, :oban_enabled, false
 
-# Still need to provide valid Oban config even though we skip it in supervision tree
-# Use testing mode for inline job execution if Oban somehow tries to start
-config :oban, testing: :inline
-
-# Test Quantum Configuration
-# Disable Quantum scheduler during tests to avoid side effects
-config :singularity, Singularity.Scheduler, debug: false
+# Oban configuration for test mode
+# Using `testing: :inline` prevents Oban from trying to connect to the database
+# The dispatcher runs jobs immediately in the same process instead of enqueueing them
+config :oban,
+  testing: :inline
 
 # Test NATS Configuration
 # Disable NATS for unit tests to avoid connectivity requirements

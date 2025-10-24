@@ -8,7 +8,7 @@ defmodule Singularity.Jobs.CacheMaintenanceJob do
   - Prewarm cache with hot data (every 6 hours)
   - Report cache statistics
 
-  This module provides static functions that are scheduled via Quantum.
+  This module provides static functions that are scheduled via Oban jobs.
   Previously implemented as a GenServer with timers in CacheJanitor.
   """
 
@@ -18,7 +18,7 @@ defmodule Singularity.Jobs.CacheMaintenanceJob do
   @doc """
   Clean up expired cache entries.
 
-  Called every 15 minutes via Quantum scheduler.
+  Called every 15 minutes via Oban scheduler.
 
   Returns `:ok` for successful cleanup (even if 0 entries), or logs error.
   """
@@ -38,7 +38,7 @@ defmodule Singularity.Jobs.CacheMaintenanceJob do
 
         {:error, reason} ->
           Logger.error("❌ Cache cleanup failed", reason: inspect(reason))
-          # Return :ok so Quantum doesn't retry - this is maintenance
+          # Return :ok so Oban doesn't retry - this is maintenance
           :ok
       end
     rescue
@@ -52,7 +52,7 @@ defmodule Singularity.Jobs.CacheMaintenanceJob do
   @doc """
   Refresh hot packages materialized view.
 
-  Called every 1 hour via Quantum scheduler.
+  Called every 1 hour via Oban scheduler.
   """
   def refresh do
     Logger.debug("🔄 Refreshing hot packages materialized view...")
@@ -78,7 +78,7 @@ defmodule Singularity.Jobs.CacheMaintenanceJob do
   @doc """
   Prewarm cache with hot data.
 
-  Called every 6 hours via Quantum scheduler.
+  Called every 6 hours via Oban scheduler.
   """
   def prewarm do
     Logger.debug("🔥 Prewarming cache with hot data...")

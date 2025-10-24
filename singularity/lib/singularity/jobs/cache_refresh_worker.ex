@@ -2,7 +2,7 @@ defmodule Singularity.Jobs.CacheRefreshWorker do
   @moduledoc """
   Oban Worker for refreshing hot packages materialized view (every 1 hour).
 
-  Replaces Quantum scheduler with Oban's persistent job queue.
+  Uses Oban's persistent job queue for reliable scheduling.
   """
 
   use Oban.Worker, queue: :default, max_attempts: 2

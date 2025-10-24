@@ -2,7 +2,7 @@ defmodule Singularity.Jobs.CachePrewarmWorker do
   @moduledoc """
   Oban Worker for prewarming cache with hot data (every 6 hours).
 
-  Replaces Quantum scheduler with Oban's persistent job queue.
+  Uses Oban's persistent job queue for reliable scheduling.
   """
 
   use Oban.Worker, queue: :default, max_attempts: 2

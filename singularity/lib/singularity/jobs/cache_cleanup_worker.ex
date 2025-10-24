@@ -2,7 +2,7 @@ defmodule Singularity.Jobs.CacheCleanupWorker do
   @moduledoc """
   Oban Worker for PostgreSQL cache cleanup (every 15 minutes).
 
-  Replaces Quantum scheduler for cache maintenance with Oban's persistent job queue.
+  Uses Oban's persistent job queue for reliable scheduling.
   """
 
   use Oban.Worker, queue: :default, max_attempts: 3

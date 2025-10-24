@@ -8,7 +8,7 @@ defmodule Singularity.Jobs.PatternSyncWorker do
   - NATS (distribute to SPARC fact system)
   - JSON Export (for Rust detector to read)
 
-  Replaces Quantum scheduler with Oban's persistent job queue.
+  Uses Oban's persistent job queue for reliable scheduling.
   """
 
   use Oban.Worker, queue: :default, max_attempts: 2
