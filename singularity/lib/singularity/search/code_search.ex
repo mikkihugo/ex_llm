@@ -586,97 +586,47 @@ defmodule Singularity.CodeSearch do
   end
 
   @doc """
-  Get codebase registry entry
+  Get codebase registry entry (converted to Ecto)
   """
-  def get_codebase_registry(db_conn, codebase_id) do
-    Postgrex.query!(
-      db_conn,
-      """
-      SELECT 
-        codebase_id, codebase_path, codebase_name, description,
-        language, framework, last_analyzed, analysis_status, metadata,
-        created_at, updated_at
-      FROM codebase_registry 
-      WHERE codebase_id = $1
-      """,
-      [codebase_id]
-    )
-    |> Map.get(:rows)
-    |> case do
-      [] ->
+  def get_codebase_registry(_db_conn, codebase_id) do
+    case Singularity.CodeSearch.Ecto.get_codebase_registry(codebase_id) do
+      nil ->
         nil
 
-      [
-        [
-          codebase_id,
-          codebase_path,
-          codebase_name,
-          description,
-          language,
-          framework,
-          last_analyzed,
-          analysis_status,
-          metadata,
-          created_at,
-          updated_at
-        ]
-      ] ->
+      registry ->
         %{
-          codebase_id: codebase_id,
-          codebase_path: codebase_path,
-          codebase_name: codebase_name,
-          description: description,
-          language: language,
-          framework: framework,
-          last_analyzed: last_analyzed,
-          analysis_status: analysis_status,
-          metadata: Jason.decode!(metadata),
-          created_at: created_at,
-          updated_at: updated_at
+          codebase_id: registry.codebase_id,
+          codebase_path: registry.codebase_path,
+          codebase_name: registry.codebase_name,
+          description: registry.description,
+          language: registry.language,
+          framework: registry.framework,
+          last_analyzed: registry.last_analyzed,
+          analysis_status: registry.analysis_status,
+          metadata: registry.metadata,
+          created_at: registry.inserted_at,
+          updated_at: registry.updated_at
         }
     end
   end
 
   @doc """
-  List all registered codebases
+  List all registered codebases (converted to Ecto)
   """
-  def list_codebases(db_conn) do
-    Postgrex.query!(
-      db_conn,
-      """
-      SELECT 
-        codebase_id, codebase_path, codebase_name, description,
-        language, framework, last_analyzed, analysis_status,
-        created_at, updated_at
-      FROM codebase_registry 
-      ORDER BY created_at DESC
-      """,
-      []
-    )
-    |> Map.get(:rows)
-    |> Enum.map(fn [
-                     codebase_id,
-                     codebase_path,
-                     codebase_name,
-                     description,
-                     language,
-                     framework,
-                     last_analyzed,
-                     analysis_status,
-                     created_at,
-                     updated_at
-                   ] ->
+  def list_codebases(_db_conn) do
+    Singularity.CodeSearch.Ecto.list_codebases()
+    |> Enum.map(fn registry ->
       %{
-        codebase_id: codebase_id,
-        codebase_path: codebase_path,
-        codebase_name: codebase_name,
-        description: description,
-        language: language,
-        framework: framework,
-        last_analyzed: last_analyzed,
-        analysis_status: analysis_status,
-        created_at: created_at,
-        updated_at: updated_at
+        codebase_id: registry.codebase_id,
+        codebase_path: registry.codebase_path,
+        codebase_name: registry.codebase_name,
+        description: registry.description,
+        language: registry.language,
+        framework: registry.framework,
+        last_analyzed: registry.last_analyzed,
+        analysis_status: registry.analysis_status,
+        created_at: registry.inserted_at,
+        updated_at: registry.updated_at
       }
     end)
   end
