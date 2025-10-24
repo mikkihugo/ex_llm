@@ -180,3 +180,56 @@ config :singularity, :analyzer_types,
     enabled: true,
     description: "Detect microservice vs monolith architecture patterns"
   }
+
+# =============================================================================
+# Code Scanning Configuration (Config-Driven)
+# =============================================================================
+# Defines which scanners are enabled (Quality, Security, Performance, etc.)
+
+config :singularity, :scanner_types,
+  quality: %{
+    module: Singularity.CodeAnalysis.Scanners.QualityScanner,
+    enabled: true,
+    description: "Detect code quality issues and violations"
+  },
+  security: %{
+    module: Singularity.CodeAnalysis.Scanners.SecurityScanner,
+    enabled: true,
+    description: "Detect code security vulnerabilities"
+  }
+
+# =============================================================================
+# Code Generation Configuration (Config-Driven)
+# =============================================================================
+# Defines which code generators are enabled (RAG, Quality, Pseudocode, etc.)
+
+config :singularity, :generator_types,
+  quality: %{
+    module: Singularity.CodeGeneration.Generators.QualityGenerator,
+    enabled: true,
+    description: "Generate high-quality, production-ready code"
+  }
+
+# =============================================================================
+# Validation Configuration (Config-Driven)
+# =============================================================================
+# Defines which validators are enabled
+
+config :singularity, :validator_types,
+  template: %{
+    module: Singularity.Validation.Validators.TemplateValidator,
+    enabled: false,
+    description: "Validate template structure and content"
+  }
+
+# =============================================================================
+# Extraction Configuration (Config-Driven)
+# =============================================================================
+# Defines which extractors are enabled
+
+config :singularity, :extractor_types,
+  pattern: %{
+    module: Singularity.Analysis.Extractors.PatternExtractor,
+    enabled: false,
+    description: "Extract code patterns and structures"
+  }
