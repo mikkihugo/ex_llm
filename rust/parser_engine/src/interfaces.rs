@@ -545,12 +545,27 @@ impl PolyglotCodeParser for UniversalProgrammingLanguageParser {
   }
 
   fn get_metadata(&self) -> ParserMetadata {
+    let capabilities = match self.language {
+      ProgrammingLanguage::Mermaid => ParserCapabilities {
+        // Mermaid: Diagram parsing and structure extraction
+        symbol_extraction: true,  // Extract nodes
+        dependency_analysis: true, // Extract edges/relationships
+        architecture_analysis: true, // Diagram type detection
+        graph_integration: true,  // Built-in graph structure
+        documentation_extraction: true, // Mermaid is documentation
+        vector_integration: true, // Can embed diagram semantics
+        heuristic_scoring: true,  // Score diagram complexity
+        ..ParserCapabilities::default()
+      },
+      _ => ParserCapabilities::default(),
+    };
+
     ParserMetadata {
       parser_name: format!("Universal {} Parser", self.language),
       version: env!("CARGO_PKG_VERSION").to_string(),
       supported_languages: vec![self.language],
       supported_extensions: self.supported_extensions(),
-      capabilities: ParserCapabilities::default(),
+      capabilities,
       performance: PerformanceCharacteristics::default(),
     }
   }
