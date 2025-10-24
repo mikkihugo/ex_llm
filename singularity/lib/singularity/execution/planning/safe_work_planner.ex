@@ -6,37 +6,188 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
   vision chunk analysis, intelligent classification, and WSJF-based prioritization
   for strategic themes, epics, capabilities, and features.
 
+  ## Quick Start
+
+  ```elixir
+  # Add vision chunk (auto-classifies level)
+  {:ok, analysis} = SafeWorkPlanner.add_chunk("Build world-class observability platform (3 BLOC)")
+
+  # Get next work item (WSJF prioritized)
+  next_work = SafeWorkPlanner.get_next_work()
+  # => %{id: "feat-abc123", name: "Distributed Tracing", wsjf_score: 8.5}
+
+  # Get full hierarchy
+  hierarchy = SafeWorkPlanner.get_hierarchy()
+  ```
+
+  ## Public API
+
+  - `add_chunk(text, opts)` - Add vision chunk with auto-classification
+  - `get_next_work/0` - Get highest WSJF priority work item
+  - `get_hierarchy/0` - Get full SAFe hierarchy tree
+  - `get_progress/0` - Get completion statistics
+  - `complete_item(item_id, level)` - Mark item as done
+
+  ## SAFe Hierarchy
+
+  Strategic Themes (3-5 year vision areas)
+    └─ Epics (6-12 month initiatives - Business or Enabler)
+        └─ Capabilities (3-6 month cross-team features)
+            └─ Features (1-3 month team deliverables)
+                └─ TaskGraph breakdown → Stories → Tasks
+
   ## Integration Points
 
-  This module integrates with:
-  - `Singularity.CodeStore` - Vision persistence (CodeStore.save_vision/1, load_vision/0)
-  - `Singularity.Conversation` - Notifications (Conversation.GoogleChat.notify/1)
-  - `Singularity.Execution.Autonomy.RuleEngine` - Validation (RuleEngine.validate_epic_wsjf/1, validate_feature_readiness/1)
-  - `Singularity.LLM.Service` - Classification (Service.call/3 for intelligent analysis)
-  - `Singularity.EmbeddingEngine` - Semantic search (EmbeddingEngine.embed/1 for parent finding)
-  - PostgreSQL table: `safe_work_items` (stores work item hierarchy)
+  - `Singularity.CodeStore` - Vision persistence
+  - `Singularity.Execution.Autonomy.RuleEngine` - Epic/feature validation
+  - `Singularity.LLM.Service` - Vision chunk classification
+  - `Singularity.EmbeddingEngine` - Semantic parent finding
+  - `Singularity.Conversation.GoogleChat` - Notifications
+  - PostgreSQL table: `safe_work_items`
 
-  ## Hierarchy
+  ## Error Handling
 
-    Strategic Themes (3-5 year vision areas)
-      └─ Epics (6-12 month initiatives - Business or Enabler)
-          └─ Capabilities (3-6 month cross-team features)
-              └─ Features (1-3 month team deliverables)
-                  └─ TaskGraph breakdown → Stories → Tasks
+  Returns `{:ok, analysis} | {:needs_approval, result} | {:escalated, result}`:
+  - `:ok` - High confidence, item added automatically
+  - `:needs_approval` - Medium confidence, requires human approval
+  - `:escalated` - Low confidence, human decision required
 
-  ## Usage
+  ---
 
-      # Add vision chunk (auto-classifies level)
-      {:ok, analysis} = SafeWorkPlanner.add_chunk("Build world-class observability platform (3 BLOC)")
-      # => {:ok, %{level: :strategic_theme, name: "Observability Platform", ...}}
+  ## AI Navigation Metadata
 
-      # Get next work item (WSJF prioritized)
-      next_work = SafeWorkPlanner.get_next_work()
-      # => %{id: "feat-abc123", name: "Distributed Tracing", wsjf_score: 8.5}
+  ### Module Identity (JSON)
 
-      # Get full hierarchy
-      hierarchy = SafeWorkPlanner.get_hierarchy()
-      # => [%{theme: %{...}, epics: [%{epic: %{...}, capabilities: [...]}]}]
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.SafeWorkPlanner",
+    "purpose": "SAFe 6.0 work planning with autonomous vision chunk classification and WSJF prioritization",
+    "role": "planner",
+    "layer": "domain_services",
+    "alternatives": {
+      "Manual SAFe planning": "Spreadsheets and docs - use SafeWorkPlanner for automated planning",
+      "Generic task manager": "Flat task lists - use SafeWorkPlanner for SAFe hierarchy",
+      "Jira/VersionOne": "Enterprise tools - SafeWorkPlanner is internal AI-powered alternative"
+    },
+    "disambiguation": {
+      "vs_task_graph": "SafeWorkPlanner handles SAFe strategic planning; TaskGraph executes individual features",
+      "vs_methodology_executor": "SafeWorkPlanner creates work items; MethodologyExecutor runs workflows",
+      "vs_jira": "SafeWorkPlanner is AI-powered with autonomous classification; Jira requires manual input"
+    }
+  }
+  ```
+
+  ### Architecture (Mermaid)
+
+  ```mermaid
+  graph TB
+      Vision[Vision Chunk Text]
+      Planner[SafeWorkPlanner<br/>GenServer]
+      LLM[LLM.Service]
+      Embedding[EmbeddingEngine]
+      RuleEngine[RuleEngine]
+      Store[CodeStore]
+
+      Vision -->|1. add_chunk| Planner
+      Planner -->|2. classify| LLM
+      LLM -->|3. analysis| Planner
+      Planner -->|4. find parent| Embedding
+      Embedding -->|5. parent_id| Planner
+      Planner -->|6. validate| RuleEngine
+      RuleEngine -->|7. confidence| Decision{Confidence?}
+
+      Decision -->|autonomous| Planner
+      Decision -->|collaborative| Approval[Needs Approval]
+      Decision -->|escalated| Human[Human Decision]
+
+      Planner -->|8. persist| Store
+      Store -->|9. save| DB[(CodeStore JSON)]
+
+      Planner -->|10. return| Result[Analysis Result]
+
+      style Planner fill:#90EE90
+      style Decision fill:#FFD700
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.LLM.Service
+      function: call/3
+      purpose: Classify vision chunks and extract metadata
+      critical: true
+
+    - module: Singularity.EmbeddingEngine
+      function: embed/1
+      purpose: Generate embeddings for semantic parent finding
+      critical: false
+
+    - module: Singularity.Execution.Autonomy.RuleEngine
+      function: "[validate_epic_wsjf|validate_feature_readiness]/1"
+      purpose: Validate work items with confidence scoring
+      critical: true
+
+    - module: Singularity.CodeStore
+      function: "[save_vision|load_vision]/0"
+      purpose: Persist SAFe hierarchy to disk
+      critical: true
+
+    - module: Singularity.Conversation.GoogleChat
+      function: notify/1
+      purpose: Send notifications for approvals and escalations
+      critical: false
+
+  called_by:
+    - module: Singularity.CLI.Vision
+      purpose: CLI commands for vision management
+      frequency: medium
+
+    - module: Singularity.NATS.PlanningRouter
+      purpose: NATS-based vision chunk submission
+      frequency: low
+
+    - module: Singularity.Agents.PlanningAgent
+      purpose: Autonomous vision chunk processing
+      frequency: medium
+
+  depends_on:
+    - CodeStore (MUST exist for persistence)
+    - RuleEngine (MUST be started for validation)
+    - LLM.Service (MUST be available for classification)
+    - EmbeddingEngine (optional - graceful degradation)
+
+  supervision:
+    supervised: true
+    reason: "GenServer maintaining SAFe hierarchy state with persistence"
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT bypass RuleEngine validation
+  **Why:** RuleEngine provides confidence-based routing for autonomous/collaborative/escalated decisions.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG - skip validation
+  add_epic_directly(epic)
+
+  # ✅ CORRECT - use add_chunk with validation
+  SafeWorkPlanner.add_chunk(epic_text)
+  ```
+
+  #### ❌ DO NOT hardcode WSJF calculations
+  **Why:** SafeWorkPlanner calculates WSJF from stored business_value, time_criticality, risk_reduction, job_size.
+  **Use instead:** Let SafeWorkPlanner manage WSJF scoring.
+
+  #### ❌ DO NOT create separate SAFe planners
+  **Why:** SafeWorkPlanner already provides complete SAFe 6.0 hierarchy!
+  **Use instead:** Extend SafeWorkPlanner with new capabilities.
+
+  ### Search Keywords
+
+  safe work planner, safe 6.0, epic management, wsjf prioritization,
+  strategic themes, capabilities, features, work hierarchy, autonomous planning,
+  vision chunk processing, llm classification, rule engine validation
   """
 
   use GenServer

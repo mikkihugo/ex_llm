@@ -132,11 +132,44 @@ defmodule Singularity.Architecture.PatternDetector do
 
   ## Anti-Patterns (Prevents Duplicates)
 
-  - ❌ **DO NOT** create new hardcoded detector modules (FrameworkDetector, TechnologyDetector, etc.)
-  - ❌ **DO NOT** call individual detectors directly
-  - ✅ **DO** always use `PatternDetector.detect/2` which routes through config
-  - ✅ **DO** add new pattern types only via config, not code
-  - ✅ **DO** implement detectors as `@behaviour PatternType` modules
+  ### ❌ DO NOT create new hardcoded detector modules
+  **Why:** Config-driven discovery already handles all pattern detectors.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG - new hardcoded detector
+  defmodule MyPatternDetector do
+    def detect(path), do: # ...
+  end
+
+  # ✅ CORRECT - add to config
+  config :singularity, :pattern_types,
+    my_pattern: %{
+      module: Singularity.Architecture.Detectors.MyPatternDetector,
+      enabled: true,
+      description: "Detect my patterns"
+    }
+  ```
+
+  ### ❌ DO NOT call individual detectors directly
+  **Why:** PatternDetector provides unified orchestration.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG
+  FrameworkDetector.detect(path)
+
+  # ✅ CORRECT
+  PatternDetector.detect(path, pattern_types: [:framework])
+  ```
+
+  ### ❌ DO NOT hardcode pattern type lists
+  **Why:** Config enables dynamic pattern discovery.
+  **Use instead:** Let PatternDetector load from config.
+
+  ### Search Keywords
+
+  pattern detector, framework detection, technology detection, architecture patterns,
+  config driven detection, pattern orchestrator, service architecture, pattern discovery,
+  parallel detection, pattern learning, pattern types
   """
 
   require Logger

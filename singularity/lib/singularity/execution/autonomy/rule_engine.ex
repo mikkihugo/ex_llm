@@ -7,10 +7,205 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
   **Pure Elixir execution** - migrated from Gleam for simplicity.
   **Correlation tracking** - via OTP process dictionary.
 
-  Architecture:
+  ## Quick Start
+
+  ```elixir
+  # Execute a rule by ID
+  {:autonomous, result} = RuleEngine.execute_by_id("rule-123", %{epic_id: "epic-1", metrics: %{...}})
+
+  # Execute all rules for a category
+  {:autonomous, result} = RuleEngine.execute_category(:epic, %{epic_id: "epic-1"})
+
+  # Validate epic WSJF
+  {:autonomous, result} = RuleEngine.validate_epic_wsjf(%{wsjf_score: 8.5, ...})
+  ```
+
+  ## Public API
+
+  - `execute_by_id(rule_id, context)` - Execute single rule
+  - `execute_category(category, context)` - Execute all rules in category
+  - `validate_epic_wsjf(epic)` - Validate epic using WSJF rules
+  - `validate_feature_readiness(feature)` - Validate feature readiness
+
+  ## Key Features
+
+  - **Autonomous decisions** - High-confidence rules auto-execute
+  - **Collaborative mode** - Medium-confidence requires approval
+  - **Escalation** - Low-confidence escalates to humans
+  - **Performance tracking** - PostgreSQL timeseries for learning
+  - **Caching** - High-confidence results cached in Cachex
+
+  ## Architecture
+
   - RuleLoader (GenServer) - caches rules from Postgres in ETS
   - RuleEngine (this module) - executes rules via RuleEngineCore
   - RuleEvolutionManager (GenServer) - handles consensus voting
+
+  ## Error Handling
+
+  Returns `{:autonomous, result} | {:collaborative, result} | {:escalated, result} | {:error, reason}`:
+  - `:autonomous` - High confidence (>=0.9), auto-execute
+  - `:collaborative` - Medium confidence (0.7-0.9), needs approval
+  - `:escalated` - Low confidence (<0.7), human decision required
+
+  ---
+
+  ## AI Navigation Metadata
+
+  The sections below provide structured metadata for AI assistants,
+  graph databases (Neo4j), and vector databases (pgvector).
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Execution.Autonomy.RuleEngine",
+    "purpose": "Autonomous decision-making engine with confidence-based routing",
+    "role": "decision_engine",
+    "layer": "domain_services",
+    "alternatives": {
+      "RuleEngineCore": "Internal execution logic - use RuleEngine as public API",
+      "RuleLoader": "Internal rule caching - accessed via RuleEngine",
+      "Manual decision logic": "Hardcoded decisions - use RuleEngine for evolvable rules"
+    },
+    "disambiguation": {
+      "vs_rule_core": "RuleEngine is GenServer with caching/tracking; RuleEngineCore is stateless executor",
+      "vs_rule_loader": "RuleEngine executes rules; RuleLoader caches rules from database",
+      "vs_hardcoded": "RuleEngine enables rule evolution via Postgres; hardcoded logic doesn't learn"
+    }
+  }
+  ```
+
+  ### Architecture (Mermaid)
+
+  ```mermaid
+  graph TB
+      Request[Decision Request]
+      RuleEngine[RuleEngine<br/>GenServer]
+      Cache[Cachex Cache]
+      Loader[RuleLoader<br/>ETS]
+      Core[RuleEngineCore]
+      DB[(PostgreSQL<br/>rules + executions)]
+
+      Request -->|1. execute_by_id| RuleEngine
+      RuleEngine -->|2. check cache| Cache
+      Cache -.->|cache miss| RuleEngine
+      RuleEngine -->|3. load rule| Loader
+      Loader -->|4. query if not in ETS| DB
+      DB -->|5. rule| Loader
+      Loader -->|6. rule| RuleEngine
+      RuleEngine -->|7. execute| Core
+      Core -->|8. result + confidence| RuleEngine
+      RuleEngine -->|9. record execution| DB
+      RuleEngine -->|10. cache if high confidence| Cache
+      RuleEngine -->|11. classify| Decision{Confidence?}
+
+      Decision -->|>=0.9| Autonomous[Autonomous]
+      Decision -->|0.7-0.9| Collaborative[Collaborative]
+      Decision -->|<0.7| Escalated[Escalated]
+
+      style RuleEngine fill:#90EE90
+      style Core fill:#FFD700
+      style Autonomous fill:#90EE90
+      style Collaborative fill:#FFD700
+      style Escalated fill:#FF6B6B
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.Execution.Autonomy.RuleLoader
+      function: get_rule/1
+      purpose: Load rule from ETS cache or database
+      critical: true
+
+    - module: Singularity.Execution.Autonomy.RuleEngineCore
+      function: execute_rule/2
+      purpose: Execute rule logic and return confidence score
+      critical: true
+
+    - module: Cachex
+      function: "[get|put]/3"
+      purpose: Cache high-confidence rule results
+      critical: false
+
+    - module: Singularity.Repo
+      function: insert/1
+      purpose: Record rule execution for learning
+      critical: true
+
+    - module: Logger
+      function: "[debug|info|error]/2"
+      purpose: Log rule execution and decisions
+      critical: false
+
+  called_by:
+    - module: Singularity.Execution.Planning.SafeWorkPlanner
+      purpose: Validate epics and features before creation
+      frequency: high
+
+    - module: Singularity.Agents.*
+      purpose: Agent decision-making during execution
+      frequency: medium
+
+    - module: Singularity.Planning.*
+      purpose: Planning validation and approval routing
+      frequency: high
+
+  depends_on:
+    - RuleLoader (MUST be started in supervision tree)
+    - RuleEngineCore (stateless module)
+    - PostgreSQL tables: rules, rule_executions
+    - Cachex (optional - graceful degradation)
+
+  supervision:
+    supervised: true
+    reason: "GenServer maintaining rule execution state and performance tracking"
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT hardcode decision logic
+  **Why:** RuleEngine enables rule evolution via database consensus.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG - hardcoded decision
+  if epic.wsjf_score > 8.0 do
+    {:ok, :approved}
+  else
+    {:error, :rejected}
+  end
+
+  # ✅ CORRECT - use rule engine
+  RuleEngine.validate_epic_wsjf(epic)
+  ```
+
+  #### ❌ DO NOT bypass confidence classification
+  **Why:** Confidence levels enable autonomous, collaborative, and escalated workflows.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG - ignoring confidence
+  {:autonomous, result} = RuleEngine.execute_by_id(rule_id, context)
+  # Always assumes autonomous!
+
+  # ✅ CORRECT - handle all cases
+  case RuleEngine.execute_by_id(rule_id, context) do
+    {:autonomous, result} -> auto_execute(result)
+    {:collaborative, result} -> request_approval(result)
+    {:escalated, result} -> escalate_to_human(result)
+  end
+  ```
+
+  #### ❌ DO NOT create separate rule execution modules
+  **Why:** RuleEngine already provides unified rule execution!
+  **Use instead:** Add rules to database via migrations or admin UI.
+
+  ### Search Keywords
+
+  rule engine, autonomous decisions, decision making, confidence scoring,
+  rule execution, postgres rules, rule evolution, consensus voting,
+  autonomous collaborative escalated, rule caching, decision engine
   """
 
   use GenServer

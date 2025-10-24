@@ -3189,7 +3189,7 @@ dependencies = [
  "toml 0.8.23",
  "tracing",
  "tree-sitter",
- "tree-sitter-mermaid",
+ "tree-sitter-little-mermaid",
  "typescript_parser",
  "yaml_parser",
 ]
@@ -5464,6 +5464,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4013970217383f67b18aef68f6fb2e8d409bc5755227092d32efb0422ba24b8"
 
 [[package]]
+name = "tree-sitter-little-mermaid"
+version = "0.9.0"
+source = "git+https://github.com/mikkihugo/tree-sitter-mermaid#08031b4fe0b07d63479b95619e104ac42807fcec"
+dependencies = [
+ "cc",
+ "tree-sitter",
+]
+
+[[package]]
 name = "tree-sitter-lua"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5481,15 +5490,6 @@ dependencies = [
  "cc",
  "tree-sitter",
  "tree-sitter-language",
-]
-
-[[package]]
-name = "tree-sitter-mermaid"
-version = "0.25.10"
-source = "git+https://github.com/mikkihugo/tree-sitter-mermaid#a274754b586a4ab101f673512c0623910f03df94"
-dependencies = [
- "cc",
- "tree-sitter",
 ]
 
 [[package]]

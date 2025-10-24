@@ -78,6 +78,9 @@ pub enum ProgrammingLanguage {
   Toml,
   Xml,
 
+  // Diagram languages
+  Mermaid,
+
   // Language not recognized or not supported by the parser
   LanguageNotSupported,
 }
@@ -145,6 +148,7 @@ impl fmt::Display for ProgrammingLanguage {
             ProgrammingLanguage::Yaml => write!(f, "yaml"),
             ProgrammingLanguage::Toml => write!(f, "toml"),
             ProgrammingLanguage::Xml => write!(f, "xml"),
+            ProgrammingLanguage::Mermaid => write!(f, "mermaid"),
             ProgrammingLanguage::LanguageNotSupported => write!(f, "unsupported"),
         }
     }
@@ -205,6 +209,9 @@ impl ProgrammingLanguage {
       "toml" => ProgrammingLanguage::Toml,
       "xml" | "xhtml" => ProgrammingLanguage::Xml,
 
+      // Diagram languages
+      "mmd" | "mermaid" => ProgrammingLanguage::Mermaid,
+
       // Shell / scripting
       "sh" | "bash" => ProgrammingLanguage::Bash,
 
@@ -236,6 +243,7 @@ impl ProgrammingLanguage {
       ProgrammingLanguage::Yaml => &["yaml", "yml"],
       ProgrammingLanguage::Toml => &["toml"],
       ProgrammingLanguage::Xml => &["xml", "xhtml", "html", "htm"],
+      ProgrammingLanguage::Mermaid => &["mmd", "mermaid"],
       ProgrammingLanguage::Unknown => &[],
       ProgrammingLanguage::LanguageNotSupported => &[],
       _ => &[], // Default for all other languages
@@ -298,6 +306,7 @@ impl ProgrammingLanguage {
         | ProgrammingLanguage::Bash
         | ProgrammingLanguage::Html
         | ProgrammingLanguage::Css
+        | ProgrammingLanguage::Mermaid
     )
   }
 
@@ -326,6 +335,7 @@ impl ProgrammingLanguage {
       ProgrammingLanguage::Bash => Some("tree_sitter_bash"),
       ProgrammingLanguage::Html => Some("tree_sitter_html"),
       ProgrammingLanguage::Css => Some("tree_sitter_css"),
+      ProgrammingLanguage::Mermaid => Some("tree_sitter_little_mermaid"),
       _ => None,
     }
   }
@@ -458,6 +468,8 @@ mod tests {
     assert_eq!(ProgrammingLanguage::from_extension("go"), ProgrammingLanguage::Go);
     assert_eq!(ProgrammingLanguage::from_extension("java"), ProgrammingLanguage::Java);
     assert_eq!(ProgrammingLanguage::from_extension("cpp"), ProgrammingLanguage::Cpp);
+    assert_eq!(ProgrammingLanguage::from_extension("mmd"), ProgrammingLanguage::Mermaid);
+    assert_eq!(ProgrammingLanguage::from_extension("mermaid"), ProgrammingLanguage::Mermaid);
     assert_eq!(ProgrammingLanguage::from_extension("unknown"), ProgrammingLanguage::LanguageNotSupported);
   }
 
@@ -467,6 +479,8 @@ mod tests {
     assert!(ProgrammingLanguage::Python.extensions().contains(&"py"));
     assert!(ProgrammingLanguage::JavaScript.extensions().contains(&"js"));
     assert!(ProgrammingLanguage::Cpp.extensions().contains(&"cpp"));
+    assert!(ProgrammingLanguage::Mermaid.extensions().contains(&"mmd"));
+    assert!(ProgrammingLanguage::Mermaid.extensions().contains(&"mermaid"));
   }
 
   #[test]
@@ -481,6 +495,7 @@ mod tests {
     assert!(ProgrammingLanguage::Rust.supports_tree_sitter());
     assert!(ProgrammingLanguage::Python.supports_tree_sitter());
     assert!(ProgrammingLanguage::Java.supports_tree_sitter());
+    assert!(ProgrammingLanguage::Mermaid.supports_tree_sitter());
     assert!(!ProgrammingLanguage::LanguageNotSupported.supports_tree_sitter());
   }
 
@@ -490,6 +505,8 @@ mod tests {
     assert_eq!(LanguageDetector::detect_from_path("main.go"), ProgrammingLanguage::Go);
     assert_eq!(LanguageDetector::detect_from_path("App.java"), ProgrammingLanguage::Java);
     assert_eq!(LanguageDetector::detect_from_path("Cargo.toml"), ProgrammingLanguage::Toml);
+    assert_eq!(LanguageDetector::detect_from_path("diagram.mmd"), ProgrammingLanguage::Mermaid);
+    assert_eq!(LanguageDetector::detect_from_path("flowchart.mermaid"), ProgrammingLanguage::Mermaid);
   }
 
   #[test]

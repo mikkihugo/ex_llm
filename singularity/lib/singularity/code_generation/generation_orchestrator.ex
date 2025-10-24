@@ -5,16 +5,95 @@ defmodule Singularity.CodeGeneration.GenerationOrchestrator do
   Unifies scattered code generators (RAGCodeGenerator, QualityCodeGenerator,
   PseudocodeGenerator, etc.) into a single, config-driven system.
 
-  ## Usage
+  ## Quick Start
 
   ```elixir
-  {:ok, results} = GenerationOrchestrator.generate(spec)
-  # => %{
-  #   rag: {:ok, \"...generated code...\"},
-  #   quality: {:ok, \"...generated code...\"},
-  #   pseudocode: {:ok, \"...pseudocode...\"}
-  # }
+  # Generate with all enabled generators
+  {:ok, results} = GenerationOrchestrator.generate(%{
+    spec: "Create a GenServer for user management",
+    language: "elixir"
+  })
+
+  # Generate with specific generator
+  {:ok, results} = GenerationOrchestrator.generate(spec,
+    generator_types: [:quality]
+  )
   ```
+
+  ## Public API
+
+  - `generate(spec, opts)` - Generate code with all/specified generators
+  - `learn_from_generation(generator_type, result)` - Learn from generation results
+
+  ## Key Features
+
+  - **Config-driven discovery** - Generators auto-registered from config
+  - **Parallel execution** - All generators run concurrently
+  - **Multiple strategies** - RAG, quality, pseudocode, etc.
+  - **Learning capability** - Optional feedback from generation results
+
+  ## Error Handling
+
+  Returns `{:ok, %{generator_type => result}}` or `{:error, reason}`.
+
+  ---
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.CodeGeneration.GenerationOrchestrator",
+    "purpose": "Config-driven orchestration of all code generators (RAG, quality, pseudocode)",
+    "role": "orchestrator",
+    "layer": "domain_services",
+    "alternatives": {
+      "GeneratorType": "Internal behavior contract - use GenerationOrchestrator as public API",
+      "Individual generators": "Specific generator implementations - managed by GenerationOrchestrator",
+      "Direct LLM calls": "Manual generation - use GenerationOrchestrator for unified generation"
+    },
+    "disambiguation": {
+      "vs_generator_type": "GenerationOrchestrator orchestrates; GeneratorType defines behavior contract",
+      "vs_individual_generators": "GenerationOrchestrator manages all generators; individual generators implement specific strategies",
+      "vs_manual_llm": "GenerationOrchestrator provides config-driven parallel generation vs single LLM call"
+    }
+  }
+  ```
+
+  ### Anti-Patterns
+
+  ### ❌ DO NOT call individual generators directly
+  **Why:** GenerationOrchestrator provides unified generation with parallel execution.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG
+  QualityGenerator.generate(spec)
+
+  # ✅ CORRECT
+  GenerationOrchestrator.generate(spec, generator_types: [:quality])
+  ```
+
+  ### ❌ DO NOT create new generation orchestrators
+  **Why:** GenerationOrchestrator already exists!
+  **Use instead:** Add generator to config:
+  ```elixir
+  config :singularity, :generator_types,
+    my_generator: %{
+      module: Singularity.CodeGeneration.Generators.MyGenerator,
+      enabled: true
+    }
+  ```
+
+  ### ❌ DO NOT hardcode generator selection
+  **Why:** Config-driven discovery enables better generator evolution.
+  **Use instead:** Let GenerationOrchestrator load from config.
+
+  ### Search Keywords
+
+  generation orchestrator, code generation, rag generator, quality generator, pseudocode,
+  config driven generation, parallel generation, code synthesis, template generation,
+  llm code generation, ai code generation
   """
 
   require Logger

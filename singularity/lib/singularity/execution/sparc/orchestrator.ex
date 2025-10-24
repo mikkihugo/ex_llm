@@ -6,11 +6,160 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
   - Template Performance DAG (top) - Selects best templates via ML
   - SPARC TaskGraph (bottom) - Executes tasks hierarchically
 
-  Creates a feedback loop:
+  ## Quick Start
+
+  ```elixir
+  # Execute with optimal template selection
+  {:ok, results, metrics} = SPARC.Orchestrator.execute(goal)
+
+  # Get execution statistics
+  stats = SPARC.Orchestrator.get_stats()
+  # => %{total_executions: 42, success_rate: 0.95, ...}
+  ```
+
+  ## Public API
+
+  - `execute(goal, opts)` - Execute goal with template selection and TaskGraph
+  - `get_stats/0` - Get execution statistics and performance history
+
+  ## Key Features
+
+  - **Dual DAG architecture** - Template selection + task execution
+  - **Performance feedback** - Metrics flow back to template selector
+  - **Quality evaluation** - Auto-scores generated code
+  - **Template learning** - Improves template selection over time
+
+  ## Feedback Loop
+
   1. Template DAG selects optimal template
   2. SPARC TaskGraph executes with that template
   3. Performance metrics flow back to Template DAG
   4. Template DAG learns and improves selection
+
+  ## Error Handling
+
+  Returns `{:ok, results, metrics}` on success or `{:error, reason}` on failure.
+
+  ---
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Execution.SPARC.Orchestrator",
+    "purpose": "Dual-DAG orchestration of template selection and SPARC task execution",
+    "role": "orchestrator",
+    "layer": "domain_services",
+    "alternatives": {
+      "MethodologyExecutor": "Generic methodology execution - use SPARC.Orchestrator for SPARC-specific",
+      "TaskGraph": "Task decomposition only - SPARC.Orchestrator adds template selection",
+      "TemplatePerformanceTracker": "Template metrics only - SPARC.Orchestrator adds execution"
+    },
+    "disambiguation": {
+      "vs_methodology": "SPARC.Orchestrator is specialized for SPARC methodology with dual DAGs",
+      "vs_task_graph": "SPARC.Orchestrator wraps TaskGraph with template selection layer",
+      "vs_template_tracker": "SPARC.Orchestrator executes + tracks; TemplatePerformanceTracker only tracks"
+    }
+  }
+  ```
+
+  ### Architecture (Mermaid)
+
+  ```mermaid
+  graph TB
+      Goal[Goal Input]
+      Orchestrator[SPARC.Orchestrator]
+      TemplateDAG[Template Performance DAG]
+      TaskGraph[SPARC TaskGraph]
+      Executor[MethodologyExecutor]
+
+      Goal -->|1. execute| Orchestrator
+      Orchestrator -->|2. get best template| TemplateDAG
+      TemplateDAG -->|3. template_id| Orchestrator
+      Orchestrator -->|4. decompose| TaskGraph
+      TaskGraph -->|5. tasks| Orchestrator
+      Orchestrator -->|6. execute with template| Executor
+      Executor -->|7. results| Orchestrator
+      Orchestrator -->|8. evaluate quality| Metrics[Quality Metrics]
+      Metrics -->|9. feedback| TemplateDAG
+      Orchestrator -->|10. return| Results[Results + Metrics]
+
+      style Orchestrator fill:#90EE90
+      style TemplateDAG fill:#FFD700
+      style TaskGraph fill:#87CEEB
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.TemplatePerformanceTracker
+      function: get_best_template/2
+      purpose: Select optimal template based on ML performance history
+      critical: true
+
+    - module: Singularity.Execution.Planning.TaskGraph
+      function: decompose/1
+      purpose: Break goal into hierarchical task DAG
+      critical: true
+
+    - module: Singularity.MethodologyExecutor
+      function: execute_phase_only/3
+      purpose: Execute individual tasks with selected template
+      critical: true
+
+    - module: Singularity.TemplatePerformanceTracker
+      function: record_usage/3
+      purpose: Record performance metrics for template learning
+      critical: true
+
+  called_by:
+    - module: Singularity.Execution.ExecutionOrchestrator
+      purpose: SPARC strategy execution
+      frequency: medium
+
+    - module: Singularity.Agents.*
+      purpose: Agent task execution with SPARC methodology
+      frequency: medium
+
+  depends_on:
+    - TemplatePerformanceTracker (MUST be started for template selection)
+    - TaskGraph (stateless module)
+    - MethodologyExecutor (stateless module)
+
+  supervision:
+    supervised: true
+    reason: "GenServer maintaining execution state and performance history"
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT bypass template selection
+  **Why:** Template DAG learns and improves template selection over time.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG - hardcoded template
+  execute_with_template(goal, "my-favorite-template")
+
+  # ✅ CORRECT - let orchestrator select
+  SPARC.Orchestrator.execute(goal)
+  ```
+
+  #### ❌ DO NOT skip performance recording
+  **Why:** Metrics enable template learning and selection improvement.
+  **Use instead:** Always use `execute/2` which records metrics automatically.
+
+  #### ❌ DO NOT create separate SPARC executors
+  **Why:** SPARC.Orchestrator already provides complete SPARC execution!
+  **Use instead:** Extend SPARC.Orchestrator with new capabilities.
+
+  ### Search Keywords
+
+  sparc orchestrator, template selection, dual dag, task graph execution,
+  performance feedback, template learning, sparc methodology, quality evaluation,
+  methodology executor, task decomposition, performance tracking
   """
 
   use GenServer

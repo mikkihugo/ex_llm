@@ -134,11 +134,44 @@ defmodule Singularity.Architecture.AnalysisOrchestrator do
 
   ## Anti-Patterns (Prevents Duplicates)
 
-  - ❌ **DO NOT** create new hardcoded analyzer lists
-  - ❌ **DO NOT** call individual analyzers directly
-  - ✅ **DO** always use `AnalysisOrchestrator.analyze/2` which routes through config
-  - ✅ **DO** add new analyzers only via config, not code
-  - ✅ **DO** implement analyzers as `@behaviour AnalyzerType` modules
+  ### ❌ DO NOT create new hardcoded analyzer lists
+  **Why:** Config-driven discovery already handles all analyzers.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG - hardcoded analyzer list
+  analyzers = [FeedbackAnalyzer, QualityAnalyzer, RefactoringAnalyzer]
+
+  # ✅ CORRECT - load from config
+  AnalysisOrchestrator.analyze(input)
+  ```
+
+  ### ❌ DO NOT call individual analyzers directly
+  **Why:** AnalysisOrchestrator provides unified analysis with parallel execution.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG
+  FeedbackAnalyzer.analyze(input)
+
+  # ✅ CORRECT
+  AnalysisOrchestrator.analyze(input, analyzer_types: [:feedback])
+  ```
+
+  ### ❌ DO NOT hardcode analyzer selection
+  **Why:** Config-driven discovery enables better analyzer evolution.
+  **Use instead:** Add analyzer to config:
+  ```elixir
+  config :singularity, :analyzer_types,
+    my_analyzer: %{
+      module: Singularity.Architecture.Analyzers.MyAnalyzer,
+      enabled: true
+    }
+  ```
+
+  ### Search Keywords
+
+  analysis orchestrator, code analysis, feedback analyzer, quality analyzer, refactoring analyzer,
+  config driven analysis, parallel analysis, analyzer orchestration, system analysis,
+  analyzer types, analysis results, microservice analyzer
   """
 
   require Logger

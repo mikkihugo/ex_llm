@@ -17,16 +17,11 @@ defmodule Singularity.CodeAnalysis.ScanOrchestrator do
   }
   ```
 
-  ## Usage Examples
+  ## Quick Start
 
   ```elixir
   # Scan with ALL enabled scanners
   {:ok, results} = ScanOrchestrator.scan("/path/to/code")
-  # => %{
-  #   quality: [%{type: \"duplication\", severity: \"high\"}, ...],
-  #   security: [%{type: \"sql_injection\", severity: \"critical\"}, ...],
-  #   performance: [%{type: \"n_plus_one\", severity: \"medium\"}, ...]
-  # }
 
   # Scan with specific scanners only
   {:ok, results} = ScanOrchestrator.scan(
@@ -37,10 +32,87 @@ defmodule Singularity.CodeAnalysis.ScanOrchestrator do
   # Filter by severity
   {:ok, results} = ScanOrchestrator.scan(
     "/path/to/code",
-    min_severity: \"high\",
+    min_severity: "high",
     limit: 20
   )
   ```
+
+  ## Public API
+
+  - `scan(path, opts)` - Scan code with all/specified scanners
+  - `learn_from_scan(scanner_type, result)` - Learn from scan results
+  - `get_scanner_types_info/0` - List all configured scanner types
+
+  ## Key Features
+
+  - **Config-driven discovery** - Scanners auto-registered from config
+  - **Parallel execution** - All scanners run concurrently
+  - **Severity filtering** - Filter by low/medium/high/critical
+  - **Result limiting** - Control output size per scanner
+  - **Learning capability** - Optional feedback from scan results
+
+  ## Error Handling
+
+  Returns `{:ok, %{scanner_type => [issues]}}` or `{:error, reason}`.
+
+  ---
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.CodeAnalysis.ScanOrchestrator",
+    "purpose": "Config-driven orchestration of all code scanners (quality, security, performance)",
+    "role": "orchestrator",
+    "layer": "domain_services",
+    "alternatives": {
+      "ScannerType": "Internal behavior contract - use ScanOrchestrator as public API",
+      "Individual scanners": "Specific scanner implementations - managed by ScanOrchestrator",
+      "Direct AST analysis": "Manual scanning - use ScanOrchestrator for unified scanning"
+    },
+    "disambiguation": {
+      "vs_scanner_type": "ScanOrchestrator orchestrates; ScannerType defines behavior contract",
+      "vs_individual_scanners": "ScanOrchestrator manages all scanners; individual scanners implement specific checks",
+      "vs_manual": "ScanOrchestrator provides config-driven parallel scanning vs manual sequential scanning"
+    }
+  }
+  ```
+
+  ### Anti-Patterns
+
+  ### ❌ DO NOT call individual scanners directly
+  **Why:** ScanOrchestrator provides unified scanning with parallel execution.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG
+  QualityScanner.scan(path)
+
+  # ✅ CORRECT
+  ScanOrchestrator.scan(path, scanner_types: [:quality])
+  ```
+
+  ### ❌ DO NOT create new scanner orchestrators
+  **Why:** ScanOrchestrator already exists!
+  **Use instead:** Add scanner to config:
+  ```elixir
+  config :singularity, :scanner_types,
+    my_scanner: %{
+      module: Singularity.CodeAnalysis.Scanners.MyScanner,
+      enabled: true
+    }
+  ```
+
+  ### ❌ DO NOT hardcode scanner selection
+  **Why:** Config-driven discovery enables better scanner evolution.
+  **Use instead:** Let ScanOrchestrator load from config.
+
+  ### Search Keywords
+
+  scan orchestrator, code scanning, quality scanner, security scanner, performance scanner,
+  config driven scanning, parallel scanning, severity filtering, issue detection,
+  ast analysis, code quality, security analysis
   """
 
   require Logger
