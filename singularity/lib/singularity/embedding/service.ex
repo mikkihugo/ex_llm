@@ -83,7 +83,7 @@ defmodule Singularity.Embedding.Service do
       purpose: Generate embeddings using ONNX runtime with GPU acceleration
       critical: true
 
-    - module: Singularity.NatsClient
+    - module: Singularity.NATS.Client
       function: subscribe/2, publish/2
       purpose: NATS messaging for embedding requests/responses
       critical: true
@@ -107,7 +107,7 @@ defmodule Singularity.Embedding.Service do
       frequency: medium
 
   depends_on:
-    - Singularity.NatsClient (MUST start first - NATS messaging)
+    - Singularity.NATS.Client (MUST start first - NATS messaging)
     - Singularity.Embedding.NxService (MUST load models first)
     - ONNX Runtime (Qodo, Jina, MiniLM models)
 
@@ -148,7 +148,7 @@ defmodule Singularity.Embedding.Service do
   #### ❌ DO NOT call NxService directly from NATS handlers
   ```elixir
   # ❌ WRONG - Bypassing Embedding.Service
-  NatsClient.subscribe("embedding.request", fn msg ->
+  NATS.Client.subscribe("embedding.request", fn msg ->
     NxService.embed(msg)
   end)
 
@@ -199,7 +199,7 @@ defmodule Singularity.Embedding.Service do
 
   defp subscribe_to_requests do
     Task.start_link(fn ->
-      case NatsClient.subscribe("embedding.request", &handle_request/2) do
+      case NATS.Client.subscribe("embedding.request", &handle_request/2) do
         :ok ->
           Logger.info("✅ Embedding Service subscribed to embedding.request")
 
@@ -265,7 +265,7 @@ defmodule Singularity.Embedding.Service do
       status: "success"
     }
 
-    NatsClient.publish("embedding.response", Jason.encode!(response))
+    NATS.Client.publish("embedding.response", Jason.encode!(response))
   end
 
   defp send_error_response(_msg, reason) do
@@ -275,6 +275,6 @@ defmodule Singularity.Embedding.Service do
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    NatsClient.publish("embedding.response", Jason.encode!(error_response))
+    NATS.Client.publish("embedding.response", Jason.encode!(error_response))
   end
 end
