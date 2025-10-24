@@ -19,6 +19,16 @@ defmodule Singularity.NATS.Supervisor do
   - `Singularity.Embedding.Service` - Embedding service for CentralCloud
   - `Singularity.Tools.DatabaseToolsExecutor` - Database tool execution
 
+  ## Test Mode
+
+  NATS can be disabled in test mode by setting:
+  ```elixir
+  config :singularity, :nats, enabled: false
+  ```
+
+  When disabled, returns `:ignore` to prevent supervisor startup,
+  allowing tests to run without requiring a live NATS server.
+
   ## Dependencies
 
   None - NATS infrastructure is self-contained and starts early.
@@ -33,18 +43,26 @@ defmodule Singularity.NATS.Supervisor do
 
   @impl true
   def init(_opts) do
-    Logger.info("Starting NATS Supervisor...")
+    # Check if NATS is enabled (for test mode graceful degradation)
+    nats_enabled = Application.get_env(:singularity, :nats, %{})[:enabled] != false
 
-    children = [
-      # Order matters! Client must start before Server (Server subscribes to Client)
-      Singularity.NatsClient,
-      Singularity.NatsServer,
-      # Embedding service for CentralCloud
-      Singularity.Embedding.Service,
-      # Database-first tool executor
-      Singularity.Tools.DatabaseToolsExecutor
-    ]
+    if not nats_enabled do
+      Logger.info("NATS Supervisor disabled via configuration (test mode)")
+      :ignore
+    else
+      Logger.info("Starting NATS Supervisor...")
 
-    Supervisor.init(children, strategy: :rest_for_one)
+      children = [
+        # Order matters! Client must start before Server (Server subscribes to Client)
+        Singularity.NatsClient,
+        Singularity.NatsServer,
+        # Embedding service for CentralCloud
+        Singularity.Embedding.Service,
+        # Database-first tool executor
+        Singularity.Tools.DatabaseToolsExecutor
+      ]
+
+      Supervisor.init(children, strategy: :rest_for_one)
+    end
   end
 end
