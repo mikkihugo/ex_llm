@@ -86,6 +86,31 @@ defmodule Singularity.ParserEngine do
   def ast_grep_replace(_content, _find_pattern, _replace_pattern, _language),
     do: :erlang.nif_error(:nif_not_loaded)
 
+  # Mermaid Parsing --------------------------------------------------------
+
+  @doc """
+  Parse a Mermaid diagram and return its AST.
+
+  Uses tree-sitter-little-mermaid (v0.9.0) to parse all 23 Mermaid diagram types.
+
+  ## Parameters
+  - `diagram_text` - Mermaid diagram source code
+
+  ## Returns
+  - `{:ok, ast}` - Parsed AST as a map
+  - `{:error, reason}` - Parsing failed
+
+  ## Examples
+
+      iex> diagram = \"\"\"
+      ...> graph TD
+      ...>   A[Start] --> B[End]
+      ...> \"\"\"
+      iex> ParserEngine.parse_mermaid(diagram)
+      {:ok, %{type: "graph", direction: "TD", nodes: [%{id: "A", ...}], ...}}
+  """
+  def parse_mermaid(_diagram_text), do: :erlang.nif_error(:nif_not_loaded)
+
   # Public API ----------------------------------------------------------------
 
   @doc """

@@ -298,6 +298,27 @@ pub fn ast_grep_replace(
     Ok(transformed)
 }
 
+// Mermaid Parsing NIF -------------------------------------------------------
+
+#[rustler::nif(schedule = "DirtyCpu")]
+pub fn parse_mermaid(diagram_text: String) -> Result<String, String> {
+    use serde_json::json;
+
+    // TODO: Implement full tree-sitter-little-mermaid parsing
+    // For now, return a basic AST structure that preserves the diagram text
+    // This allows the Elixir code to compile and work with diagram text extraction
+
+    let ast = json!({
+        "type": "mermaid_diagram",
+        "text": diagram_text,
+        "parsed": false,
+        "note": "Full Mermaid AST parsing will be implemented in parser_engine v2"
+    });
+
+    serde_json::to_string(&ast)
+        .map_err(|e| format!("Failed to serialize Mermaid diagram: {}", e))
+}
+
 // Rustler initialization
 rustler::init!(
     "Elixir.Singularity.ParserEngine",
@@ -307,6 +328,7 @@ rustler::init!(
         supported_languages,
         ast_grep_search,
         ast_grep_match,
-        ast_grep_replace
+        ast_grep_replace,
+        parse_mermaid
     ]
 );

@@ -161,10 +161,17 @@ defmodule Singularity.Code.AIMetadataExtractor do
   require Logger
 
   @type source :: String.t()
+
+  @type diagram :: %{
+          type: atom(),
+          text: String.t(),
+          ast: map() | nil
+        }
+
   @type metadata :: %{
           module_identity: map() | nil,
           call_graph: map() | nil,
-          diagrams: [String.t()],
+          diagrams: [diagram()],
           anti_patterns: String.t() | nil,
           search_keywords: String.t() | nil
         }
@@ -316,8 +323,56 @@ defmodule Singularity.Code.AIMetadataExtractor do
     regex = ~r/```mermaid\s*\n(.*?)\n\s*```/s
 
     Regex.scan(regex, moduledoc)
-    |> Enum.map(fn [_, diagram] -> String.trim(diagram) end)
+    |> Enum.map(fn [_, diagram_text] ->
+      diagram_text = String.trim(diagram_text)
+
+      # Try to parse the diagram with tree-sitter-little-mermaid
+      ast = parse_mermaid_diagram(diagram_text)
+
+      %{
+        type: :mermaid,
+        text: diagram_text,
+        ast: ast
+      }
+    end)
   end
+
+  @doc false
+  @spec parse_mermaid_diagram(String.t()) :: map() | nil
+  defp parse_mermaid_diagram(diagram_text) when is_binary(diagram_text) do
+    # Attempt to parse Mermaid diagram with Rust NIF via ParserEngine
+    # If not available or fails, returns nil (diagram text still preserved)
+    case Singularity.ParserEngine.parse_mermaid(diagram_text) do
+      {:ok, json_string} ->
+        # JSON string returned from Rust NIF
+        case Jason.decode(json_string) do
+          {:ok, ast_data} -> normalize_mermaid_ast(ast_data)
+          {:error, _} -> nil
+        end
+
+      {:error, _reason} ->
+        Logger.debug("Failed to parse Mermaid diagram, storing text only")
+        nil
+
+      _ ->
+        nil
+    end
+  rescue
+    _ ->
+      # If ParserEngine not available or NIF call fails, gracefully degrade
+      Logger.debug("Mermaid parsing unavailable, storing text only")
+      nil
+  end
+
+  @doc false
+  @spec normalize_mermaid_ast(map() | String.t()) :: map() | nil
+  defp normalize_mermaid_ast(ast_data) when is_map(ast_data) do
+    # Normalize raw AST to consistent format
+    # AST structure: %{"type" => string, "text" => string, "children" => [...]
+    ast_data
+  end
+
+  defp normalize_mermaid_ast(_), do: nil
 
   defp extract_code_block(moduledoc, section_name, language) do
     # Find section heading
