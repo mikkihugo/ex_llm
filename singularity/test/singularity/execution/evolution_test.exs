@@ -90,8 +90,8 @@ defmodule Singularity.Execution.EvolutionTest do
 
     test "handles agents with no metrics" do
       # Agent with no performance history
-      assert (({:ok, _result} | {:error, :no_baseline_metrics}) =
-        Evolution.evolve_agent("no-metrics-agent"))
+      result = Evolution.evolve_agent("no-metrics-agent")
+      assert (match?({:ok, _}, result) or match?({:error, :no_baseline_metrics}, result))
     end
 
     test "handles missing agents gracefully" do
@@ -99,7 +99,7 @@ defmodule Singularity.Execution.EvolutionTest do
       result = Evolution.evolve_agent("nonexistent-agent-xyz")
 
       # Should either error or return no improvement (depends on metrics)
-      assert match?(({:ok, _} | {:error, _}), result)
+      assert (match?({:ok, _}, result) or match?({:error, _}, result))
     end
   end
 
@@ -134,7 +134,7 @@ defmodule Singularity.Execution.EvolutionTest do
       # Database error scenario
       result = Evolution.get_evolution_status("any-agent")
 
-      assert match?(({:ok, _} | {:error, _}), result)
+      assert (match?({:ok, _}, result) or match?({:error, _}, result))
     end
   end
 
@@ -245,7 +245,7 @@ defmodule Singularity.Execution.EvolutionTest do
       result = Evolution.evolve_agent("no-data-agent")
 
       # Should either error or return no improvement
-      assert match?(({:ok, _} | {:error, _}), result)
+      assert (match?({:ok, _}, result) or match?({:error, _}, result))
     end
 
     test "handles agent not found" do
@@ -253,13 +253,13 @@ defmodule Singularity.Execution.EvolutionTest do
       result = Evolution.evolve_agent("phantom-agent")
 
       # Should handle gracefully
-      assert match?(({:ok, _} | {:error, _}), result)
+      assert (match?({:ok, _}, result) or match?({:error, _}, result))
     end
 
     test "handles analyzer errors" do
       # Analyzer fails to analyze agent
-      assert (({:ok, _result} | {:error, _reason}) =
-        Evolution.evolve_agent("error-agent"))
+      result = Evolution.evolve_agent("error-agent")
+      assert (match?({:ok, _}, result) or match?({:error, _}, result))
     end
 
     test "continues on individual agent failures" do
