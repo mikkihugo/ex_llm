@@ -12,6 +12,41 @@ defmodule Singularity.Schemas.PackagePromptUsage do
   Stores performance metrics for prompt templates/snippets when used to generate code
   that depends on specific packages. Enables feedback loop for improving prompts based
   on success/failure rates.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.PackagePromptUsage",
+    "purpose": "Prompt performance metrics for package-specific code generation",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "dependency_catalog_prompt_usage",
+    "features": ["prompt_performance", "feedback_tracking", "improvement_loop"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - package_name: Package code was generated for
+    - prompt_id: Which prompt was used
+    - success: Whether generation was successful
+    - usage_count: Times this prompt was used with this package
+    - success_rate: Percentage of successful generations
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use for general prompt performance - use TemplatePerformance
+  - ❌ DO NOT duplicate package-specific metrics
+  - ✅ DO use for package-specific prompt tuning
+  - ✅ DO rely on success_rate for prompt selection
+
+  ### Search Keywords
+  prompt_usage, prompt_performance, package_prompts, code_generation, feedback,
+  template_performance, success_tracking, improvement_loop
+  ```
   """
 
   use Ecto.Schema

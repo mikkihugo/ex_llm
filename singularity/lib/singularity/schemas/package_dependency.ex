@@ -9,6 +9,42 @@ defmodule Singularity.Schemas.PackageDependency do
   - Module: singular (`PackageDependency` - represents ONE dependency)
   - Table: plural (`dependency_catalog_deps` - collection of dependencies)
   - This is the Elixir/Ecto standard pattern
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.PackageDependency",
+    "purpose": "Dependency relationships between packages from registries",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "dependency_catalog_deps",
+    "features": ["dependency_tracking", "version_constraints", "dependency_resolution"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - package_name: Package with the dependency
+    - dependency_name: The required package
+    - dependency_version: Version constraint (e.g., ^1.0.0)
+    - dependency_type: runtime, dev, peer, optional
+    - is_optional: Whether this is optional
+    - registry: npm, cargo, hex, pypi
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use for project dependencies - use codebase dependency catalog
+  - ❌ DO NOT duplicate across registries
+  - ✅ DO use for package resolution and compatibility analysis
+  - ✅ DO rely on version constraints for version selection
+
+  ### Search Keywords
+  package_dependencies, dependency_resolution, version_constraints, packages,
+  registry_dependencies, compatibility, dependency_tracking, package_registry
+  ```
   """
   use Ecto.Schema
   import Ecto.Changeset

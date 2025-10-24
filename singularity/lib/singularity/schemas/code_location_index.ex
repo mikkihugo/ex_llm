@@ -9,6 +9,46 @@ defmodule Singularity.Schemas.CodeLocationIndex do
   - "What frameworks are used?" → List with files
   - "Where are NATS microservices?" → Filtered list
   - "What does this file do?" → Pattern summary
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.CodeLocationIndex",
+    "purpose": "Fast location index for code artifacts and patterns",
+    "role": "schema",
+    "layer": "infrastructure",
+    "table": "code_location_index",
+    "features": ["pattern_search", "framework_detection", "microservice_location"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - id: Primary key (binary_id)
+    - filepath: File path relative to codebase root
+    - patterns: Array of detected code patterns
+    - language: Programming language
+    - file_hash: Content hash for deduplication
+    - lines_of_code: LOC count for size analysis
+    - metadata: JSONB with exports, imports, summary
+    - frameworks: Detected frameworks and versions
+    - microservice: Microservice type and routing info
+    - last_indexed: Timestamp of last indexing
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use CodeChunk for location queries - use this index instead
+  - ❌ DO NOT store raw code content here - reference CodeFile instead
+  - ✅ DO use for answering "where is X?" queries
+  - ✅ DO rely on metadata field for dynamic data
+
+  ### Search Keywords
+  code_location, index, pattern_search, file_location, frameworks, microservice,
+  fast_lookup, navigation, artifact_location, pattern_detection
+  ```
   """
 
   use Ecto.Schema

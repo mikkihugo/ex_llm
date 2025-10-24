@@ -2,6 +2,40 @@ defmodule Singularity.Schemas.TechnologyPattern do
   @moduledoc """
   Ecto schema for technology_patterns table (formerly framework_detection_patterns).
   Stores technology detection patterns for frameworks, languages, and tools.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.TechnologyPattern",
+    "purpose": "Detection patterns for technologies (frameworks, languages, tools)",
+    "role": "schema",
+    "layer": "infrastructure",
+    "table": "technology_patterns",
+    "features": ["pattern_detection", "version_detection", "technology_identification"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - technology_name: Technology identifier (react, express, tokio, etc.)
+    - technology_type: Type (framework, language, database, etc.)
+    - version_pattern: Regex for detecting versions
+    - detection_patterns: Array of JSONB patterns for matching
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use for storing detected technologies - use TechnologyDetection
+  - ❌ DO NOT duplicate patterns from package metadata
+  - ✅ DO use for defining detection logic
+  - ✅ DO rely on version_pattern for version identification
+
+  ### Search Keywords
+  technology_patterns, detection_patterns, framework_detection, language_detection,
+  version_detection, technology_identification, pattern_matching
+  ```
   """
 
   use Ecto.Schema

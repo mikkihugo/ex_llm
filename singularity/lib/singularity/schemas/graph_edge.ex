@@ -6,6 +6,43 @@ defmodule Singularity.Schemas.GraphEdge do
   Used to model relationships between functions, modules, and other code entities.
 
   Compatible with Apache AGE if you enable it later.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.GraphEdge",
+    "purpose": "Relationships between code nodes (calls, imports, dependencies)",
+    "role": "schema",
+    "layer": "infrastructure",
+    "table": "graph_edges",
+    "features": ["dependency_tracking", "call_graph", "import_relationships", "relationship_queries"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - from_node_id: Source code entity
+    - to_node_id: Target code entity
+    - edge_type: calls, imports, depends_on, references, etc.
+    - weight: Strength of relationship (0.0-1.0)
+    - metadata: JSONB with edge details
+  indexes:
+    - gin: [dependency_node_ids] for fast lookups
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use Node schema for storing relationships - use this instead
+  - ❌ DO NOT duplicate relationships across tables
+  - ✅ DO use for building call graphs and dependency analysis
+  - ✅ DO rely on edge_type for relationship classification
+
+  ### Search Keywords
+  graph_edges, relationships, dependencies, call_graph, imports, code_relationships,
+  graph_analysis, call_chains, dependency_tracking, graph_queries
+  ```
   """
 
   use Ecto.Schema

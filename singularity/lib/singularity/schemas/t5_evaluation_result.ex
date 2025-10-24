@@ -4,6 +4,41 @@ defmodule Singularity.Schemas.T5EvaluationResult do
 
   Stores evaluation results for T5 model versions including BLEU scores,
   ROUGE scores, code quality metrics, and other evaluation data.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.T5EvaluationResult",
+    "purpose": "Evaluation metrics for T5 model versions (BLEU, ROUGE, quality)",
+    "role": "schema",
+    "layer": "ml_training",
+    "table": "t5_evaluation_results",
+    "features": ["model_evaluation", "metric_tracking", "quality_assessment"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - model_version_id: Reference to T5 model version
+    - bleu_score: BLEU metric for translation quality
+    - rouge_score: ROUGE metric for summarization
+    - code_quality_score: Custom code quality metric
+    - evaluation_date: When evaluation was run
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use for training data - use T5TrainingExample
+  - ❌ DO NOT duplicate evaluation runs
+  - ✅ DO use for tracking model performance over time
+  - ✅ DO rely on scores for model selection
+
+  ### Search Keywords
+  evaluation, metrics, bleu_score, rouge_score, quality_assessment, model_evaluation,
+  t5_model, machine_learning, evaluation_results
+  ```
   """
 
   use Ecto.Schema

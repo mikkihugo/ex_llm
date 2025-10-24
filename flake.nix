@@ -214,7 +214,7 @@
         getDataServices = env: lib.optionals (lib.elem "postgresql" env.services) [
           # PostgreSQL 17 with 20+ extensions for search, time-series, spatial, graph, security, and messaging
           # Built-in extensions (from PostgreSQL): ltree, hstore, pg_trgm, uuid-ossp, fuzzystrmatch, etc
-          # Nix-packaged extensions below:
+          # Nix-packaged extensions below (including AGE which is in nixpkgs for PG17):
           (pkgs.postgresql_17.withPackages (ps:
             [
               # Search & Vectors

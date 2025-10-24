@@ -13,6 +13,41 @@ defmodule Singularity.Schemas.UserPreferences do
   - **Semantic Search**: Vector embeddings for preference discovery
   - **Validation**: Type-safe preference validation with custom rules
 
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.UserPreferences",
+    "purpose": "User-specific settings, preferences, and configurations",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "user_preferences",
+    "features": ["user_settings", "preference_management", "flexible_storage"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - user_id: User owning these preferences
+    - preferences: JSONB with flexible preference structure
+    - embedding: Vector for semantic preference search
+    - version: Preference schema version
+    - updated_at: Last modification timestamp
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use for multi-user settings - this is per-user
+  - ❌ DO NOT store sensitive data here - use vault
+  - ✅ DO use for extensible user configuration
+  - ✅ DO rely on JSONB for schema flexibility
+
+  ### Search Keywords
+  user_preferences, settings, configuration, user_settings, customization,
+  flexible_storage, jsonb, user_experience
+  ```
+
   ## Usage
 
       # Create user preferences

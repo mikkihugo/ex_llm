@@ -1,5 +1,45 @@
 defmodule Singularity.Schemas.TechnologyTemplate do
-  @moduledoc false
+  @moduledoc """
+  Technology Templates - Configuration templates for frameworks and tools.
+
+  Stores technology-specific templates for code generation, configuration, and best practices.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.TechnologyTemplate",
+    "purpose": "Technology-specific templates for generation and configuration",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "technology_templates",
+    "features": ["technology_templates", "code_generation", "best_practices"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - identifier: Template identifier (e.g., react-18-tsx)
+    - category: Category (web_framework, async_runtime, database, etc.)
+    - version: Template version
+    - template: JSONB with template content
+    - metadata: Additional metadata (author, deprecated, etc.)
+    - checksum: Content verification hash
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT store code here - use Knowledge Artifacts instead
+  - ❌ DO NOT duplicate across categories
+  - ✅ DO use for technology-specific generation
+  - ✅ DO rely on checksum for change detection
+
+  ### Search Keywords
+  templates, technology_templates, code_generation, configuration, best_practices,
+  framework_templates, technology_specific, template_management
+  ```
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

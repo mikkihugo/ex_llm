@@ -9,6 +9,42 @@ defmodule Singularity.Schemas.DeadCodeHistory do
   - Alerting on significant changes
   - Historical comparison (what changed since last week/month)
   - Reporting for audits
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.DeadCodeHistory",
+    "purpose": "Historical tracking of dead code annotations and removal",
+    "role": "schema",
+    "layer": "monitoring",
+    "table": "dead_code_history",
+    "features": ["dead_code_tracking", "trend_analysis", "historical_comparison"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - file_path: Code file with dead code
+    - language: Programming language
+    - dead_code_count: Number of dead code occurrences
+    - total_lines: Total lines at measurement time
+    - identified_date: When dead code was identified
+    - removal_status: pending, in_progress, removed, ignored
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use to store current dead code - use analyzer output
+  - ❌ DO NOT update constantly - aggregate and store snapshots
+  - ✅ DO use for trend analysis over weeks/months
+  - ✅ DO rely on snapshots for audit trails
+
+  ### Search Keywords
+  dead_code, code_cleanup, technical_debt, history, trending, code_quality,
+  monitoring, audit, removal_tracking, code_maintenance
+  ```
   """
 
   use Ecto.Schema

@@ -6,6 +6,42 @@ defmodule Singularity.Schemas.TemplateCache do
   - Fast access (no NATS round-trip)
   - Offline capability
   - Usage tracking
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.TemplateCache",
+    "purpose": "Local cache of templates from CentralCloud for fast offline access",
+    "role": "schema",
+    "layer": "domain_services",
+    "table": "template_caches",
+    "features": ["template_caching", "offline_capability", "usage_tracking"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - template_id: Central template identifier
+    - content: Template content (JSONB)
+    - cached_at: When template was cached locally
+    - last_accessed: Last access timestamp
+    - hit_count: Cache hit counter
+    - version: Central template version
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT store new templates here - use central first
+  - ❌ DO NOT duplicate template definitions
+  - ✅ DO use for fast local access
+  - ✅ DO rely on hit_count for cache efficiency metrics
+
+  ### Search Keywords
+  template_cache, caching, offline, local_cache, template_distribution,
+  cache_management, centralized_templates, fast_access
+  ```
   """
 
   use Ecto.Schema

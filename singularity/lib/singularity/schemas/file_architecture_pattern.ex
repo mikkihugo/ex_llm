@@ -4,6 +4,42 @@ defmodule Singularity.Schemas.FileArchitecturePattern do
 
   Stores architectural patterns found in individual files, linked to both
   the file and the detection run that found them.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.FileArchitecturePattern",
+    "purpose": "Per-file architectural patterns detected and their confidence scores",
+    "role": "schema",
+    "layer": "analysis",
+    "table": "file_architecture_patterns",
+    "features": ["pattern_detection", "confidence_scoring", "architectural_analysis"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - file_id: Reference to code file
+    - detection_id: Reference to detection run
+    - pattern_type: Type of architectural pattern (MVC, CQRS, etc.)
+    - pattern_data: JSONB with pattern details
+    - confidence: Confidence score (0.0-1.0)
+    - line_number: Where pattern starts in file
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT store raw patterns - use codebase-level summaries
+  - ❌ DO NOT duplicate TechnologyPattern data
+  - ✅ DO use for fine-grained per-file pattern tracking
+  - ✅ DO rely on this for architecture visualization
+
+  ### Search Keywords
+  architecture, patterns, architectural_analysis, design_patterns, pattern_detection,
+  file_analysis, confidence_scoring, pattern_type, code_structure
+  ```
   """
 
   use Ecto.Schema

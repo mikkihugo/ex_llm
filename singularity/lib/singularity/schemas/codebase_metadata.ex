@@ -15,6 +15,47 @@ defmodule Singularity.Schemas.CodebaseMetadata do
   - Semantic features (domains, patterns, features, business context)
   - Dependencies and relationships (imports, exports, related files)
   - Vector embeddings for semantic search
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.CodebaseMetadata",
+    "purpose": "Comprehensive metrics, analysis results, and quality scores for files",
+    "role": "schema",
+    "layer": "infrastructure",
+    "table": "codebase_metadata",
+    "features": ["code_metrics", "complexity_analysis", "quality_scoring", "semantic_features"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  metrics:
+    - cyclomatic_complexity: Decision path complexity
+    - cognitive_complexity: Mental burden to understand code
+    - halstead_volume: Size of implementation
+    - technical_debt: Maintenance cost indicator
+    - test_coverage: Line/branch coverage percentage
+    - quality_score: Overall code quality (0-100)
+  semantic:
+    - domains: Business domains touched
+    - patterns: Design patterns detected
+    - features: Implementation features
+    - embedding: Vector for semantic search
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT store raw code here - use CodeFile schema
+  - ❌ DO NOT use for code location - use CodeLocationIndex
+  - ✅ DO use for metrics aggregation across large codebases
+  - ✅ DO rely on this for quality dashboards
+
+  ### Search Keywords
+  metrics, complexity, quality, analysis, code_quality, technical_debt, coverage,
+  halstead, cyclomatic, performance, maintainability, code_metrics
+  ```
   """
 
   use Ecto.Schema

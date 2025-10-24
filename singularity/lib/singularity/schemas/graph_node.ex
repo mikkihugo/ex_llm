@@ -6,6 +6,47 @@ defmodule Singularity.Schemas.GraphNode do
   Used for call graph, import graph, and semantic relationships.
 
   Compatible with Apache AGE if you enable it later.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.GraphNode",
+    "purpose": "Code entities (functions, modules, classes) in dependency graph",
+    "role": "schema",
+    "layer": "infrastructure",
+    "table": "graph_nodes",
+    "features": ["call_graph", "dependency_analysis", "semantic_search", "architecture_analysis"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - codebase_id: Codebase identifier (singularity, central_cloud, etc.)
+    - node_id: Unique identifier within codebase
+    - node_type: function, module, class, struct, interface
+    - name: Code entity name
+    - file_path: Location in codebase
+    - vector_embedding: pgvector for semantic search (1536D or 384D)
+    - dependency_node_ids: Integer array for fast GIN lookups
+    - dependent_node_ids: Reverse dependency array
+  indexes:
+    - gin: [dependency_node_ids, dependent_node_ids] for fast graph queries
+    - hnsw: [vector_embedding] for semantic search
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT duplicate nodes across codebases
+  - ❌ DO NOT use for storing code content - reference CodeFile
+  - ✅ DO use for call graph analysis and dependency queries
+  - ✅ DO rely on intarray fields for 10-100x query speedup
+
+  ### Search Keywords
+  graph_nodes, code_entities, call_graph, dependency_graph, functions, modules,
+  semantic_search, architecture_analysis, code_structure, graph_analysis
+  ```
   """
 
   use Ecto.Schema

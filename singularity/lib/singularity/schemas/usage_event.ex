@@ -12,6 +12,42 @@ defmodule Singularity.Schemas.UsageEvent do
   - Build confidence scores for different suggestion types
   - Identify patterns that work well for specific codebases
 
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.UsageEvent",
+    "purpose": "User interaction tracking for suggestion feedback and learning",
+    "role": "schema",
+    "layer": "monitoring",
+    "table": "usage_events",
+    "features": ["usage_tracking", "feedback_collection", "behavior_learning"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - event_type: suggestion_accepted, suggestion_rejected, suggestion_modified
+    - suggestion_id: What suggestion was given
+    - accepted: Whether user accepted the suggestion
+    - context: JSONB with context data
+    - timestamp: When interaction happened
+    - codebase_id: Which codebase this happened in
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use for general analytics - use Analytics schema
+  - ❌ DO NOT log raw code - only metadata and context
+  - ✅ DO use for improving suggestion quality
+  - ✅ DO rely on feedback for confidence scoring
+
+  ### Search Keywords
+  usage_events, user_interactions, feedback, learning, acceptance_tracking,
+  suggestion_quality, behavior_patterns, user_behavior
+  ```
+
   ## Usage:
 
       # Record a usage event

@@ -4,6 +4,42 @@ defmodule Singularity.Schemas.T5ModelVersion do
 
   Tracks different versions of fine-tuned T5 models.
   Manages model deployment, performance metrics, and rollback capabilities.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.T5ModelVersion",
+    "purpose": "Version management for fine-tuned T5 models",
+    "role": "schema",
+    "layer": "ml_training",
+    "table": "t5_model_versions",
+    "features": ["model_versioning", "deployment_tracking", "rollback_capability"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - training_session_id: Reference to training session
+    - version: Version identifier (semantic versioning)
+    - status: deployed, staging, archived
+    - model_path: Where model file is stored
+    - performance_score: Overall performance metric
+    - deployment_date: When deployed to production
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use for training data - use T5TrainingSession
+  - ❌ DO NOT create versions without evaluation
+  - ✅ DO use for model rollback capability
+  - ✅ DO rely on status field for deployment tracking
+
+  ### Search Keywords
+  model_versions, model_versioning, deployment, t5_models, machine_learning,
+  model_management, rollback, production_models
+  ```
   """
 
   use Ecto.Schema

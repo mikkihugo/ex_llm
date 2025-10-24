@@ -4,6 +4,42 @@ defmodule Singularity.Schemas.FileNamingViolation do
 
   Stores naming convention violations found in individual files, linked to both
   the file and the detection run that found them.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.FileNamingViolation",
+    "purpose": "Naming convention violations and style deviations per file",
+    "role": "schema",
+    "layer": "analysis",
+    "table": "file_naming_violations",
+    "features": ["naming_analysis", "style_checking", "consistency_tracking"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - file_id: Reference to code file
+    - detection_id: Reference to detection run
+    - violation_type: Type of naming violation
+    - expected_format: What naming should be
+    - actual_format: What naming currently is
+    - suggestion: Recommended fix
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use for style issues - that's different
+  - ❌ DO NOT duplicate code quality findings
+  - ✅ DO use for naming consistency tracking
+  - ✅ DO rely on this for code standard enforcement
+
+  ### Search Keywords
+  naming_violations, naming_conventions, code_style, consistency, naming_standards,
+  file_naming, convention_checking, quality_assurance, code_standards
+  ```
   """
 
   use Ecto.Schema

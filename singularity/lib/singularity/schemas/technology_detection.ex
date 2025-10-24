@@ -13,6 +13,44 @@ defmodule Singularity.Schemas.TechnologyDetection do
   - **TechnologyDetection**: YOUR code analysis (what you're using, how it's structured)
   - **DependencyCatalog**: External package metadata (npm/cargo/hex/pypi)
 
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.TechnologyDetection",
+    "purpose": "Snapshot of your codebase's technology stack and architecture",
+    "role": "schema",
+    "layer": "analysis",
+    "table": "technology_detections",
+    "features": ["technology_stack", "architecture_detection", "service_analysis"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - codebase_id: Your codebase identifier
+    - detection_time: When this snapshot was taken
+    - languages: Detected languages and versions
+    - frameworks: Web/ML/async frameworks
+    - databases: Data stores used
+    - messaging: Message brokers (NATS, RabbitMQ, etc.)
+    - services: Service names and types
+    - architecture: Detected architecture pattern
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT use DependencyCatalog schemas for your codebase
+  - ❌ DO NOT confuse with external package metadata
+  - ✅ DO use for codebase comprehension and AI context
+  - ✅ DO rely on snapshots for architecture tracking
+
+  ### Search Keywords
+  technology_stack, architecture_detection, codebase_analysis, frameworks,
+  languages, databases, services, messaging, technology_snapshot, architecture
+  ```
+
   ## Usage:
 
       # Detect technologies in your codebase

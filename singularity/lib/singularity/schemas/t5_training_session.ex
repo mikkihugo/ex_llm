@@ -4,6 +4,43 @@ defmodule Singularity.Schemas.T5TrainingSession do
 
   Tracks T5 fine-tuning sessions in the database.
   Stores training configuration, data sources, and results.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+  ```json
+  {
+    "module": "Singularity.Schemas.T5TrainingSession",
+    "purpose": "Training session metadata for T5 fine-tuning runs",
+    "role": "schema",
+    "layer": "ml_training",
+    "table": "t5_training_sessions",
+    "features": ["session_tracking", "training_configuration", "experiment_management"]
+  }
+  ```
+
+  ### Key Fields (YAML)
+  ```yaml
+  fields:
+    - name: Session identifier
+    - description: Training session purpose
+    - config: JSONB with hyperparameters (batch_size, lr, epochs, etc.)
+    - data_source: Where training data came from
+    - status: active, completed, failed, paused
+    - started_at: Training start time
+    - completed_at: Training completion time
+  ```
+
+  ### Anti-Patterns
+  - ❌ DO NOT duplicate session configs - normalize to single version
+  - ❌ DO NOT use for training examples - use T5TrainingExample
+  - ✅ DO use for tracking training runs and experiments
+  - ✅ DO rely on status field for run management
+
+  ### Search Keywords
+  training_sessions, training_runs, t5_training, machine_learning, experiments,
+  fine_tuning, session_tracking, training_configuration
+  ```
   """
 
   use Ecto.Schema
