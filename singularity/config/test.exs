@@ -15,8 +15,11 @@ config :singularity, Singularity.Repo,
   database: "singularity",
   pool: Ecto.Adapters.SQL.Sandbox
 
-# Test Oban Configuration
-# Run jobs inline for deterministic testing
+# Disable Oban in tests (not needed, can cause configuration issues)
+config :singularity, :oban_enabled, false
+
+# Still need to provide valid Oban config even though we skip it in supervision tree
+# Use testing mode for inline job execution if Oban somehow tries to start
 config :oban, testing: :inline
 
 # Test Quantum Configuration
