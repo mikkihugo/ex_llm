@@ -14,7 +14,8 @@ defmodule Singularity.Tools.Deployment do
   Essential for autonomous deployment management and DevOps operations.
   """
 
-  alias Singularity.Tools.{Tool, Catalog}
+  alias Singularity.Tools.Catalog
+  alias Singularity.Schemas.Tools.Tool
 
   def register(provider) do
     Catalog.add_tools(provider, [

@@ -23,7 +23,8 @@ defmodule Singularity.Interfaces.NATS do
       {:ok, result} = Singularity.Interfaces.Protocol.execute_tool(interface, tool_call)
   """
 
-  alias Singularity.Tools.{Runner, ToolCall}
+  alias Singularity.Tools.Runner
+  alias Singularity.Schemas.Tools.ToolCall
 
   @enforce_keys [:reply_to]
   defstruct [
@@ -46,7 +47,8 @@ defmodule Singularity.Interfaces.NATS do
 end
 
 defimpl Singularity.Interfaces.Protocol, for: Singularity.Interfaces.NATS do
-  alias Singularity.Tools.{Runner, ToolCall}
+  alias Singularity.Tools.Runner
+  alias Singularity.Schemas.Tools.ToolCall
 
   @doc """
   Execute a tool call via NATS interface.

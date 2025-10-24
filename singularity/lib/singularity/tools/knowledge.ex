@@ -11,7 +11,7 @@ defmodule Singularity.Tools.Knowledge do
 
   require Logger
 
-  alias Singularity.Tools.Tool
+  alias Singularity.Schemas.Tools.Tool
   alias Singularity.ArchitectureEngine.PackageRegistryKnowledge
   alias Singularity.Code.Patterns.PatternMiner
   alias Singularity.Architecture.PatternStore

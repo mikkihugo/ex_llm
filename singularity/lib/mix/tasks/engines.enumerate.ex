@@ -39,7 +39,7 @@ defmodule Mix.Tasks.Engines.Enumerate do
   end
 
   defp show_all_engines(opts) do
-    engines = Singularity.Engine.Registry.all()
+    engines = Singularity.Infrastructure.Engine.Registry.all()
 
     if opts[:json] do
       engines |> Jason.encode!(pretty: true) |> IO.puts()
@@ -56,7 +56,7 @@ defmodule Mix.Tasks.Engines.Enumerate do
   end
 
   defp show_engine(identifier, opts) do
-    case Singularity.Engine.Registry.fetch(String.to_existing_atom(identifier)) do
+    case Singularity.Infrastructure.Engine.Registry.fetch(String.to_existing_atom(identifier)) do
       {:ok, engine} ->
         if opts[:json] do
           engine |> Jason.encode!(pretty: true) |> IO.puts()
@@ -75,7 +75,7 @@ defmodule Mix.Tasks.Engines.Enumerate do
   end
 
   defp show_capabilities(opts) do
-    capabilities = Singularity.Engine.Registry.capabilities_index()
+    capabilities = Singularity.Infrastructure.Engine.Registry.capabilities_index()
 
     if opts[:json] do
       capabilities |> Jason.encode!(pretty: true) |> IO.puts()

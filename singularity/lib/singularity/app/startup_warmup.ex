@@ -49,7 +49,7 @@ defmodule Singularity.StartupWarmup do
     Logger.info("Loading top-performing templates...")
 
     try do
-      case Singularity.Singularity.TemplatePerformanceTracker.analyze_performance() do
+      case Singularity.Quality.TemplateTracker.analyze_performance() do
         {:ok, %{top_performers: performers}} ->
           Enum.each(Enum.take(performers, 10), fn perf ->
             # Cache the template

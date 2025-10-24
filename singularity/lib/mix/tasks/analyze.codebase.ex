@@ -1,10 +1,10 @@
 defmodule Mix.Tasks.Analyze.Codebase do
-  @shortdoc "Analyze entire codebase using CodeAnalyzer with 20-language support"
+  @shortdoc "Analyze entire codebase using CodeAnalysis.Analyzer with 20-language support"
 
   @moduledoc """
   Analyzes an entire codebase with multi-language support.
 
-  Uses Singularity.CodeAnalyzer to analyze all files in a codebase from the database.
+  Uses Singularity.CodeAnalysis.Analyzer to analyze all files in a codebase from the database.
 
   ## Usage
 
@@ -43,7 +43,7 @@ defmodule Mix.Tasks.Analyze.Codebase do
   use Mix.Task
   require Logger
 
-  alias Singularity.CodeAnalyzer
+  alias Singularity.CodeAnalysis.Analyzer
   alias Singularity.Repo
   alias Singularity.Schemas.CodeFile
   import Ecto.Query
@@ -143,11 +143,11 @@ defmodule Mix.Tasks.Analyze.Codebase do
           end
         end
 
-        analysis_result = CodeAnalyzer.analyze_language(file.content, file.language)
+        analysis_result = Analyzer.analyze_language(file.content, file.language)
 
         rca_result =
-          if include_rca && CodeAnalyzer.has_rca_support?(file.language) do
-            CodeAnalyzer.get_rca_metrics(file.content, file.language)
+          if include_rca && Analyzer.has_rca_support?(file.language) do
+            Analyzer.get_rca_metrics(file.content, file.language)
           else
             nil
           end
@@ -251,7 +251,7 @@ defmodule Mix.Tasks.Analyze.Codebase do
           {:ok, analysis} ->
             duration_ms = if result[:duration_ms], do: result.duration_ms, else: nil
 
-            case CodeAnalyzer.store_result(result.file_id, analysis, duration_ms: duration_ms) do
+            case Analyzer.store_result(result.file_id, analysis, duration_ms: duration_ms) do
               {:ok, _stored} ->
                 :ok
 
@@ -265,7 +265,7 @@ defmodule Mix.Tasks.Analyze.Codebase do
 
           {:error, reason} ->
             # Store error result
-            case CodeAnalyzer.store_error(result.file_id, result.language, reason) do
+            case Analyzer.store_error(result.file_id, result.language, reason) do
               {:ok, _stored} ->
                 :ok
 

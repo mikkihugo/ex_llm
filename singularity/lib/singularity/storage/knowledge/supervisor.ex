@@ -8,7 +8,7 @@ defmodule Singularity.Knowledge.Supervisor do
   ## Managed Processes
 
   - `Singularity.Knowledge.TemplateService` - GenServer managing template loading/caching
-  - `Singularity.TemplatePerformanceTracker` - GenServer tracking template usage/performance
+  - `Singularity.Quality.TemplateTracker` - GenServer tracking template usage/performance
   - `Singularity.CodeStore` - GenServer managing code chunk storage
 
   ## Living Knowledge Base
@@ -38,7 +38,7 @@ defmodule Singularity.Knowledge.Supervisor do
 
     children = [
       Singularity.Knowledge.TemplateService,
-      Singularity.TemplatePerformanceTracker,
+      Singularity.Quality.TemplateTracker,
       Singularity.CodeStore
     ]
 

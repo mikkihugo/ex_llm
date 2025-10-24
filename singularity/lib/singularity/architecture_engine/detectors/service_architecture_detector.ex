@@ -39,7 +39,7 @@ defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
 
   ```yaml
   calls:
-    - Singularity.LanguageDetection (service language detection)
+    - Singularity.CodeAnalysis.LanguageDetection (service language detection)
     - Singularity.Architecture.PatternStore (confidence tracking)
     - Logger (error handling)
 
@@ -72,7 +72,7 @@ defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
 
   @behaviour Singularity.Architecture.PatternType
   require Logger
-  alias Singularity.LanguageDetection
+  alias Singularity.CodeAnalysis.LanguageDetection
 
   @impl true
   def pattern_type, do: :service_architecture

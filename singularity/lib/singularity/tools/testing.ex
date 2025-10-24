@@ -12,7 +12,8 @@ defmodule Singularity.Tools.Testing do
   Supports multiple test frameworks and languages.
   """
 
-  alias Singularity.Tools.{Tool, Catalog}
+  alias Singularity.Tools.Catalog
+  alias Singularity.Schemas.Tools.Tool
 
   def register(provider) do
     Catalog.add_tools(provider, [

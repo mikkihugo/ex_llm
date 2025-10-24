@@ -143,7 +143,8 @@ defmodule Singularity.Tools.ValidationMiddleware do
 
   require Logger
 
-  alias Singularity.Tools.{Tool, InstructorAdapter, InstructorSchemas}
+  alias Singularity.Tools.{InstructorAdapter, InstructorSchemas}
+  alias Singularity.Schemas.Tools.Tool
 
   @type validation_option ::
           {:validate_parameters, boolean()}

@@ -25,7 +25,7 @@ defmodule Singularity.Web.HealthRouter do
   Deep health check with system status.
   """
   get "/health/deep" do
-    status = Singularity.Health.deep_health()
+    status = Singularity.Monitoring.Health.deep_health()
     send_resp(conn, status.http_status, Jason.encode!(status.body))
   end
 
@@ -33,7 +33,7 @@ defmodule Singularity.Web.HealthRouter do
   Prometheus metrics endpoint.
   """
   get "/metrics" do
-    metrics = Singularity.PrometheusExporter.render()
+    metrics = Singularity.Monitoring.PrometheusExporter.render()
     send_resp(conn, 200, metrics)
   end
 

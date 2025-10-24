@@ -9,7 +9,7 @@ defmodule Singularity.Tools.Basic do
   • Descriptions should tell the model *when* to use the tool and note any safety steps (e.g. “call read_file first, overwrite requires explicit opt-in”).
   """
 
-  alias Singularity.Tools.Tool
+  alias Singularity.Schemas.Tools.Tool
 
   @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http]
   @workspace_root File.cwd!()

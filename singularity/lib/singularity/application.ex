@@ -158,7 +158,7 @@ defmodule Singularity.Application do
     children = [
       # Layer 1: Foundation - Database and metrics MUST start first
       Singularity.Repo,
-      Singularity.Telemetry,
+      Singularity.Infrastructure.Telemetry,
       Singularity.ProcessRegistry,
 
       # HTTP endpoint for dashboard and health checks

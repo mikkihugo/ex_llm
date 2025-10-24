@@ -1,4 +1,4 @@
-defmodule Singularity.Engine do
+defmodule Singularity.Infrastructure.Engine do
   @moduledoc """
   Behaviour implemented by each runtime engine (architecture, code, prompt, etc.).
 

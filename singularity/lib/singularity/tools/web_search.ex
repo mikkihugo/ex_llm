@@ -13,7 +13,7 @@ defmodule Singularity.Tools.WebSearch do
   """
 
   alias Singularity.LLM.Service
-  alias Singularity.Tools.Tool
+  alias Singularity.Schemas.Tools.Tool
 
   @doc """
   Register web search tool.

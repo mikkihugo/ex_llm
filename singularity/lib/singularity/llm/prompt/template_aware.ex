@@ -136,7 +136,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   defp generate_prompt_legacy(task, language, opts) do
     # 1. Ask TaskGraph for best template based on history
     {:ok, template_id} =
-      Singularity.TemplatePerformanceTracker.get_best_template(task.type, language)
+      Singularity.Quality.TemplateTracker.get_best_template(task.type, language)
 
     # 2. Load the selected template
     template = TechnologyTemplateLoader.template(template_id)
@@ -210,7 +210,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
             }
 
             # Record in TaskGraph for learning
-            Singularity.TemplatePerformanceTracker.record_usage(
+            Singularity.Quality.TemplateTracker.record_usage(
               prompt_data.template_id,
               task,
               metrics
@@ -223,7 +223,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
 
           {:error, reason} ->
             # Record failure
-            Singularity.TemplatePerformanceTracker.record_usage(
+            Singularity.Quality.TemplateTracker.record_usage(
               prompt_data.template_id,
               task,
               %{success: false, error: reason}
@@ -404,7 +404,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   Get prompt optimization suggestions from TaskGraph analysis
   """
   def get_optimization_suggestions do
-    {:ok, analysis} = Singularity.TemplatePerformanceTracker.analyze_performance()
+    {:ok, analysis} = Singularity.Quality.TemplateTracker.analyze_performance()
 
     suggestions = [
       "Top performing templates: #{inspect(Enum.take(analysis.top_performers, 3))}",

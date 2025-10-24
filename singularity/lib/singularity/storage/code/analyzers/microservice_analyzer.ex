@@ -13,7 +13,7 @@ defmodule Singularity.Code.Analyzers.MicroserviceAnalyzer do
   """
 
   require Logger
-  alias Singularity.LanguageDetection
+  alias Singularity.CodeAnalysis.LanguageDetection
 
   @service_root_candidates ["apps", "services", "packages", "apps/services", "services/apps"]
 

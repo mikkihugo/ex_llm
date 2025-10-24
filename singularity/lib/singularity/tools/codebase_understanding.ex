@@ -9,7 +9,8 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
   - TechnologyAgent - Tech stack detection
   """
 
-  alias Singularity.Tools.{Catalog, Tool}
+  alias Singularity.Tools.Catalog
+  alias Singularity.Schemas.Tools.Tool
   alias Singularity.{CodeSearch, CodeEngine}
   alias Singularity.Analysis.DetectionOrchestrator
   alias Singularity.CodeAnalysis.DependencyMapper

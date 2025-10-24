@@ -32,7 +32,7 @@ defmodule Singularity.Tools.EmergencyLLM do
   """
 
   alias Singularity.Integration.Claude
-  alias Singularity.Tools.Tool
+  alias Singularity.Schemas.Tools.Tool
 
   @doc "Register LLM emergency tools for a provider."
   @spec register(term()) :: :ok

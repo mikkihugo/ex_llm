@@ -10,7 +10,7 @@ defmodule Singularity.Tools.Planning do
   """
 
   require Logger
-  alias Singularity.Tools.Tool
+  alias Singularity.Schemas.Tools.Tool
   alias Singularity.Execution.Planning.{SafeWorkPlanner, TaskGraphCore}
   alias Singularity.Execution.Autonomy.Planner
   alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator

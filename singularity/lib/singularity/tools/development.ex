@@ -15,7 +15,8 @@ defmodule Singularity.Tools.Development do
   Essential for autonomous development environment and workflow management operations.
   """
 
-  alias Singularity.Tools.{Tool, Catalog}
+  alias Singularity.Tools.Catalog
+  alias Singularity.Schemas.Tools.Tool
 
   def register(provider) do
     Catalog.add_tools(provider, [

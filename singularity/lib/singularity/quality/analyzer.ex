@@ -1,4 +1,4 @@
-defmodule Singularity.Quality do
+defmodule Singularity.Quality.Analyzer do
   @moduledoc """
   Helpers for persisting and querying static analysis tool results (Sobelow, mix_audit).
   """
@@ -6,7 +6,7 @@ defmodule Singularity.Quality do
   import Ecto.Query
 
   alias Singularity.Repo
-  alias Singularity.Quality.{Finding, Run}
+  alias Singularity.Schemas.Analysis.{Finding, Run}
 
   @type tool :: Run.tool()
   @type status :: Run.status()

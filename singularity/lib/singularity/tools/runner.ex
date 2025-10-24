@@ -3,7 +3,8 @@ defmodule Singularity.Tools.Runner do
   Executes registered tools and normalizes responses into ToolResult structs.
   """
 
-  alias Singularity.Tools.{Basic, Default, Tool, ToolCall, ToolResult}
+  alias Singularity.Tools.{Basic, Default}
+  alias Singularity.Schemas.Tools.{Tool, ToolCall, ToolResult}
 
   @provider_aliases %{
     "claude_cli" => :claude_cli,

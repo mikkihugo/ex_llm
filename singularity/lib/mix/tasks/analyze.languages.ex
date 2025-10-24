@@ -22,7 +22,7 @@ defmodule Mix.Tasks.Analyze.Languages do
   """
 
   use Mix.Task
-  alias Singularity.CodeAnalyzer
+  alias Singularity.CodeAnalysis.Analyzer
 
   @requirements ["app.start"]
 
@@ -39,9 +39,9 @@ defmodule Mix.Tasks.Analyze.Languages do
     rca_only = opts[:rca_only] || false
     detailed = opts[:detailed] || false
 
-    all_languages = CodeAnalyzer.supported_languages()
-    rca_languages = CodeAnalyzer.rca_supported_languages()
-    ast_grep_languages = CodeAnalyzer.ast_grep_supported_languages()
+    all_languages = Analyzer.supported_languages()
+    rca_languages = Analyzer.rca_supported_languages()
+    ast_grep_languages = Analyzer.ast_grep_supported_languages()
 
     languages_to_show =
       if rca_only do

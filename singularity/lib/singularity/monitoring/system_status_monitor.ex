@@ -1,4 +1,4 @@
-defmodule Singularity.SystemStatusMonitor do
+defmodule Singularity.Monitoring.SystemStatusMonitor do
   @moduledoc """
   System manager for queue and resource management.
   """

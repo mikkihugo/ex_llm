@@ -1,4 +1,4 @@
-defmodule Singularity.Health do
+defmodule Singularity.Monitoring.Health do
   @moduledoc false
 
   defstruct [:http_status, :body]
@@ -28,7 +28,7 @@ defmodule Singularity.Health do
 
   defp safe_queue_depth do
     try do
-      Singularity.SystemStatusMonitor.queue_depth()
+      Singularity.Monitoring.SystemStatusMonitor.queue_depth()
     catch
       :exit, _ -> 0
     end

@@ -1,6 +1,6 @@
-defmodule Singularity.CodeAnalyzer.Cache do
+defmodule Singularity.CodeAnalysis.Analyzer.Cache do
   @moduledoc """
-  Analysis Result Caching Layer for CodeAnalyzer
+  Analysis Result Caching Layer for CodeAnalysis.Analyzer
 
   Provides in-memory caching of code analysis results to avoid re-analyzing
   unchanged code. Uses ETS for fast lookups.
@@ -9,7 +9,7 @@ defmodule Singularity.CodeAnalyzer.Cache do
 
   ```json
   {
-    "module_name": "Singularity.CodeAnalyzer.Cache",
+    "module_name": "Singularity.CodeAnalysis.Analyzer.Cache",
     "purpose": "Cache code analysis results to avoid redundant computation",
     "type": "GenServer with ETS-backed cache",
     "operates_on": "Analysis results keyed by content hash",
@@ -28,19 +28,19 @@ defmodule Singularity.CodeAnalyzer.Cache do
 
   ```elixir
   # Start the cache
-  {:ok, _pid} = CodeAnalyzer.Cache.start_link(max_size: 1000, ttl: 3600)
+  {:ok, _pid} = CodeAnalysis.Analyzer.Cache.start_link(max_size: 1000, ttl: 3600)
 
   # Get cached result or analyze
-  {:ok, analysis} = CodeAnalyzer.Cache.get_or_analyze(code, "elixir", fn ->
-    CodeAnalyzer.analyze_language(code, "elixir")
+  {:ok, analysis} = CodeAnalysis.Analyzer.Cache.get_or_analyze(code, "elixir", fn ->
+    CodeAnalysis.Analyzer.analyze_language(code, "elixir")
   end)
 
   # Check cache stats
-  stats = CodeAnalyzer.Cache.stats()
+  stats = CodeAnalysis.Analyzer.Cache.stats()
   # => %{hits: 150, misses: 50, hit_rate: 0.75, size: 200}
 
   # Clear cache
-  :ok = CodeAnalyzer.Cache.clear()
+  :ok = CodeAnalysis.Analyzer.Cache.clear()
   ```
 
   ## Call Graph (YAML)
@@ -50,9 +50,9 @@ defmodule Singularity.CodeAnalyzer.Cache do
     calls:
       - :ets (cache storage)
       - :crypto.hash/2 (content hashing)
-      - CodeAnalyzer (on cache miss)
+      - CodeAnalysis.Analyzer (on cache miss)
     called_by:
-      - CodeAnalyzer (wrapper functions)
+      - CodeAnalysis.Analyzer (wrapper functions)
       - StartupCodeIngestion (module reanalysis)
   ```
 
@@ -211,7 +211,7 @@ defmodule Singularity.CodeAnalyzer.Cache do
     # Create ETS table
     :ets.new(@table_name, [:named_table, :set, :public, read_concurrency: true])
 
-    Logger.info("CodeAnalyzer.Cache started with max_size=#{max_size}, ttl=#{ttl}s")
+    Logger.info("CodeAnalysis.Analyzer.Cache started with max_size=#{max_size}, ttl=#{ttl}s")
 
     state = %{
       max_size: max_size,
@@ -269,7 +269,7 @@ defmodule Singularity.CodeAnalyzer.Cache do
   @impl true
   def handle_call(:clear, _from, state) do
     :ets.delete_all_objects(@table_name)
-    Logger.info("CodeAnalyzer.Cache cleared")
+    Logger.info("CodeAnalysis.Analyzer.Cache cleared")
 
     # Reset stats
     state = %{state | hits: 0, misses: 0}

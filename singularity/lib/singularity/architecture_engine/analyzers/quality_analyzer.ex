@@ -7,12 +7,64 @@ defmodule Singularity.Architecture.Analyzers.QualityAnalyzer do
 
   Implements `@behaviour AnalyzerType` for config-driven orchestration.
 
+  ## Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Architecture.Analyzers.QualityAnalyzer",
+    "type": "analyzer",
+    "purpose": "Detect and report code quality issues",
+    "layer": "architecture_engine",
+    "behavior": "AnalyzerType",
+    "registered_in": "config :singularity, :analyzer_types, quality: ..."
+  }
+  ```
+
+  ## Architecture Diagram
+
+  ```mermaid
+  graph TD
+      A[analyze/2] --> B[AstQualityAnalyzer]
+      B --> C[duplication]
+      B --> D[complexity]
+      B --> E[style issues]
+      B --> F[documentation]
+      C --> G[format results]
+      D --> G
+      E --> G
+      F --> G
+  ```
+
+  ## Call Graph (YAML)
+
+  ```yaml
+  calls:
+    - Singularity.CodeQuality.AstQualityAnalyzer (quality checks)
+    - Logger (error handling)
+
+  called_by:
+    - Singularity.Architecture.AnalysisOrchestrator
+    - Quality pipelines
+    - CI/CD quality gates
+  ```
+
+  ## Anti-Patterns
+
+  - ❌ `DuplicateDetector` - Use quality analyzer
+  - ❌ `StyleChecker` - Use quality analyzer
+  - ✅ Use AnalysisOrchestrator for discovery
+
   ## Quality Checks
 
   - **Duplication**: Detects code duplication patterns
   - **Complexity**: Identifies overly complex functions
   - **Style**: Checks code style violations
   - **Documentation**: Validates code documentation
+
+  ## Search Keywords
+
+  code quality, quality checks, analyzer, orchestration, duplication,
+  complexity, style violations, code smells, technical debt
   """
 
   @behaviour Singularity.Architecture.AnalyzerType

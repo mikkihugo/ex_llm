@@ -1,11 +1,11 @@
-defmodule Singularity.PrometheusExporter do
+defmodule Singularity.Monitoring.PrometheusExporter do
   @moduledoc false
 
   @doc """
   Render a minimal Prometheus text exposition with a few runtime metrics.
   """
   def render do
-    stats = Singularity.Telemetry.snapshot()
+    stats = Singularity.Infrastructure.Telemetry.snapshot()
 
     memory = Map.get(stats, :memory, 0)
     runq = Map.get(stats, :run_queue, 0)

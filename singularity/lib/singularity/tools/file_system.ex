@@ -23,7 +23,8 @@ defmodule Singularity.Tools.FileSystem do
   - `file_exists` - Check if file exists
   """
 
-  alias Singularity.Tools.{Tool, Catalog}
+  alias Singularity.Tools.Catalog
+  alias Singularity.Schemas.Tools.Tool
   alias Singularity.HITL.ApprovalService
   require Logger
   import Logger

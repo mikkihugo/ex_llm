@@ -38,7 +38,7 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
 
   ```yaml
   calls:
-    - Singularity.LanguageDetection (language detection)
+    - Singularity.CodeAnalysis.LanguageDetection (language detection)
     - Singularity.Architecture.PatternStore (confidence tracking)
     - Logger (error handling)
 
@@ -70,7 +70,7 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
 
   @behaviour Singularity.Architecture.PatternType
   require Logger
-  alias Singularity.LanguageDetection
+  alias Singularity.CodeAnalysis.LanguageDetection
 
   @impl true
   def pattern_type, do: :technology

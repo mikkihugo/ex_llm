@@ -17,7 +17,8 @@ defmodule Singularity.Tools.CodeNaming do
   - `code_naming_patterns` - Get naming patterns for framework/language
   """
 
-  alias Singularity.Tools.{Tool, Catalog}
+  alias Singularity.Tools.Catalog
+  alias Singularity.Schemas.Tools.Tool
   alias Singularity.{RAGCodeGenerator, TechnologyAgent}
 
   @doc "Register code naming tools with the shared registry."

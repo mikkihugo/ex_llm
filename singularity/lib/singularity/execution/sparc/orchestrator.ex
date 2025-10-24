@@ -95,7 +95,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
 
   ```yaml
   calls_out:
-    - module: Singularity.TemplatePerformanceTracker
+    - module: Singularity.Quality.TemplateTracker
       function: get_best_template/2
       purpose: Select optimal template based on ML performance history
       critical: true
@@ -110,7 +110,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
       purpose: Execute individual tasks with selected template
       critical: true
 
-    - module: Singularity.TemplatePerformanceTracker
+    - module: Singularity.Quality.TemplateTracker
       function: record_usage/3
       purpose: Record performance metrics for template learning
       critical: true
@@ -224,7 +224,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
     language = Keyword.get(opts, :language, "elixir")
 
     {:ok, template_id} =
-      Singularity.TemplatePerformanceTracker.get_best_template(task_type, language)
+      Singularity.Quality.TemplateTracker.get_best_template(task_type, language)
 
     Logger.info("Template DAG selected: #{template_id}")
 
@@ -249,7 +249,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
       feedback: %{source: "orchestrator", auto_evaluated: true}
     }
 
-    Singularity.TemplatePerformanceTracker.record_usage(
+    Singularity.Quality.TemplateTracker.record_usage(
       template_id,
       %{type: task_type, language: language, description: goal.description},
       metrics

@@ -1,4 +1,4 @@
-defmodule Singularity.AnalysisRunner do
+defmodule Singularity.CodeAnalysis.Runner do
   @moduledoc """
   Runs comprehensive codebase analysis and returns structured results.
   """

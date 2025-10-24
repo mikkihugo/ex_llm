@@ -1,8 +1,8 @@
 defmodule Mix.Tasks.Analyze.Cache do
-  @shortdoc "Manage the CodeAnalyzer cache"
+  @shortdoc "Manage the CodeAnalysis.Analyzer cache"
 
   @moduledoc """
-  Manage the CodeAnalyzer cache for analysis results.
+  Manage the CodeAnalysis.Analyzer cache for analysis results.
 
   ## Usage
 
@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Analyze.Cache do
   """
 
   use Mix.Task
-  alias Singularity.CodeAnalyzer.Cache
+  alias Singularity.CodeAnalysis.Analyzer.Cache
 
   @requirements ["app.start"]
 
@@ -59,7 +59,7 @@ defmodule Mix.Tasks.Analyze.Cache do
         System.halt(1)
 
       _pid ->
-        Mix.shell().info("Clearing CodeAnalyzer cache...")
+        Mix.shell().info("Clearing CodeAnalysis.Analyzer cache...")
         :ok = Cache.clear()
         Mix.shell().info("✓ Cache cleared successfully")
     end
@@ -74,7 +74,7 @@ defmodule Mix.Tasks.Analyze.Cache do
 
   defp print_help do
     Mix.shell().info("")
-    Mix.shell().info("CodeAnalyzer Cache Management")
+    Mix.shell().info("CodeAnalysis.Analyzer Cache Management")
     Mix.shell().info("")
     Mix.shell().info("Usage:")
     Mix.shell().info("  mix analyze.cache stats   # Show cache statistics")

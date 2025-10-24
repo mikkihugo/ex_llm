@@ -17,7 +17,7 @@ defmodule Singularity.NATS.EngineDiscoveryHandler do
   """
 
   require Logger
-  alias Singularity.Engine.Registry
+  alias Singularity.Infrastructure.Engine.Registry
 
   @doc """
   Subscribe to all engine discovery subjects when NATS connection is established.

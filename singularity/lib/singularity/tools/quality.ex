@@ -4,7 +4,7 @@ defmodule Singularity.Tools.Quality do
   """
 
   alias Singularity.Quality
-  alias Singularity.Tools.Tool
+  alias Singularity.Schemas.Tools.Tool
 
   @project_root Path.expand("../../..", __DIR__)
 

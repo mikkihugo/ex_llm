@@ -47,7 +47,7 @@ defmodule Singularity.Architecture.Analyzers.MicroserviceAnalyzer do
 
   ```yaml
   calls:
-    - Singularity.LanguageDetection (language detection)
+    - Singularity.CodeAnalysis.LanguageDetection (language detection)
     - File system inspection (build config detection)
     - Logger (error handling and learning)
 
@@ -152,7 +152,7 @@ defmodule Singularity.Architecture.Analyzers.MicroserviceAnalyzer do
   end
 
   defp detect_language(service_path) do
-    case Singularity.LanguageDetection.detect(service_path) do
+    case Singularity.CodeAnalysis.LanguageDetection.detect(service_path) do
       {:ok, lang} when is_atom(lang) -> lang
       {:error, _} -> nil
     end

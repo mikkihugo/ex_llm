@@ -105,7 +105,8 @@ defmodule Singularity.Tools.CodeGeneration do
   - `code_iterate` - Iteratively improve until quality threshold met
   """
 
-  alias Singularity.Tools.{Tool, Catalog}
+  alias Singularity.Tools.Catalog
+  alias Singularity.Schemas.Tools.Tool
   alias Singularity.{MethodologyExecutor, RAGCodeGenerator, QualityCodeGenerator, CodeGenerator}
 
   @doc "Register code generation tools with the shared registry."

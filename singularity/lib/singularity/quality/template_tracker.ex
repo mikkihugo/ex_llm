@@ -1,4 +1,4 @@
-defmodule Singularity.TemplatePerformanceTracker do
+defmodule Singularity.Quality.TemplateTracker do
   @moduledoc """
   Template Performance Tracker using TaskGraph for ML-driven template selection.
 

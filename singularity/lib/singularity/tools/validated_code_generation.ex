@@ -159,7 +159,8 @@ defmodule Singularity.Tools.ValidatedCodeGeneration do
 
   require Logger
 
-  alias Singularity.Tools.{Tool, ValidationMiddleware, CodeGeneration}
+  alias Singularity.Tools.{ValidationMiddleware, CodeGeneration}
+  alias Singularity.Schemas.Tools.Tool
 
   @supported_languages ["elixir", "rust", "typescript", "python", "go", "java", "c++"]
   @supported_qualities ["production", "prototype", "quick"]

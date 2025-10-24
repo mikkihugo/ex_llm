@@ -1,4 +1,4 @@
-defmodule Singularity.LanguageDetection do
+defmodule Singularity.CodeAnalysis.LanguageDetection do
   @moduledoc """
   Language detection using Rust NIF backend - Single source of truth.
 
@@ -6,7 +6,7 @@ defmodule Singularity.LanguageDetection do
 
   ```json
   {
-    "module_name": "Singularity.LanguageDetection",
+    "module_name": "Singularity.CodeAnalysis.LanguageDetection",
     "purpose": "Unified language detection for files and projects",
     "type": "Detection service (Rust NIF backed)",
     "data_sources": ["Rust code_quality_engine NIFs", "File extensions", "Manifest files"],

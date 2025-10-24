@@ -1,4 +1,4 @@
-defmodule Singularity.Telemetry do
+defmodule Singularity.Infrastructure.Telemetry do
   @moduledoc false
   use Supervisor
 

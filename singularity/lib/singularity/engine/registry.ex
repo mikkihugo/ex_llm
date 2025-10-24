@@ -1,4 +1,4 @@
-defmodule Singularity.Engine.Registry do
+defmodule Singularity.Infrastructure.Engine.Registry do
   @moduledoc """
   Central registry for engine implementations. Provides discovery helpers so the
   prototype can enumerate engines and their capabilities without hard-coded
@@ -30,7 +30,7 @@ defmodule Singularity.Engine.Registry do
 
   Additional engines can be appended with the `:engine_modules` config key:
 
-      config :singularity, Singularity.Engine.Registry,
+      config :singularity, Singularity.Infrastructure.Engine.Registry,
         engine_modules: [My.CustomEngine]
   """
   @spec modules() :: [module()]

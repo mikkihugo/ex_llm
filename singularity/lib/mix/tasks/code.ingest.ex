@@ -259,7 +259,7 @@ defmodule Mix.Tasks.Code.Ingest do
 
   defp detect_primary_language(path) do
     # Use authoritative LanguageDetection (Rust parser registry)
-    case Singularity.LanguageDetection.detect(path) do
+    case Singularity.CodeAnalysis.LanguageDetection.detect(path) do
       {:ok, lang} when is_atom(lang) -> Atom.to_string(lang)
       {:error, _} -> "unknown"
     end

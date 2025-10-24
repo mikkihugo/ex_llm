@@ -6,7 +6,7 @@ defmodule Singularity.Tools.Default do
   @compile {:no_warn_undefined, {Singularity.Tools.Catalog, :add_tools, 2}}
   @compile {:no_warn_undefined, {Singularity.Tools.Tool, :new!, 1}}
 
-  alias Singularity.Tools.Tool
+  alias Singularity.Schemas.Tools.Tool
 
   @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http]
   @defaults_key {:singularity, :tools, :defaults_loaded}

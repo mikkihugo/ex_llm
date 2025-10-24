@@ -1,4 +1,4 @@
-defmodule Singularity.CodeAnalyzer do
+defmodule Singularity.CodeAnalysis.Analyzer do
   @moduledoc """
   Multi-Language Code Analyzer - Wrapper for Rust CodebaseAnalyzer NIF
 
@@ -9,7 +9,7 @@ defmodule Singularity.CodeAnalyzer do
 
   ```json
   {
-    "module_name": "Singularity.CodeAnalyzer",
+    "module_name": "Singularity.CodeAnalysis.Analyzer",
     "purpose": "Multi-language code analysis with 20-language support",
     "type": "NIF wrapper module",
     "operates_on": "Code strings with language hints",
@@ -159,7 +159,7 @@ defmodule Singularity.CodeAnalyzer do
     use_cache = Keyword.get(opts, :cache, cache_enabled?())
 
     if use_cache do
-      Singularity.CodeAnalyzer.Cache.get_or_analyze(code, language_hint, fn ->
+      Singularity.CodeAnalysis.Analyzer.Cache.get_or_analyze(code, language_hint, fn ->
         do_analyze_language(code, language_hint)
       end)
     else
@@ -179,7 +179,7 @@ defmodule Singularity.CodeAnalyzer do
   end
 
   defp cache_enabled? do
-    Process.whereis(Singularity.CodeAnalyzer.Cache) != nil
+    Process.whereis(Singularity.CodeAnalysis.Analyzer.Cache) != nil
   end
 
   @doc """

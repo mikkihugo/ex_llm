@@ -10,12 +10,65 @@ defmodule Singularity.Architecture.Analyzers.RefactoringAnalyzer do
 
   Implements `@behaviour AnalyzerType` for config-driven orchestration.
 
+  ## Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Architecture.Analyzers.RefactoringAnalyzer",
+    "type": "analyzer",
+    "purpose": "Identify refactoring opportunities and quality issues",
+    "layer": "architecture_engine",
+    "behavior": "AnalyzerType",
+    "registered_in": "config :singularity, :analyzer_types, refactoring: ..."
+  }
+  ```
+
+  ## Architecture Diagram
+
+  ```mermaid
+  graph TD
+      A[analyze/2] --> B[Refactoring.Analyzer]
+      B --> C[complexity analysis]
+      B --> D[quality violations]
+      B --> E[duplication]
+      C --> F[format results]
+      D --> F
+      E --> F
+      F --> G[return sorted needs]
+  ```
+
+  ## Call Graph (YAML)
+
+  ```yaml
+  calls:
+    - Singularity.Refactoring.Analyzer (implementation)
+    - Singularity.CodeQuality.RefactoringAnalyzer (actual analysis)
+    - Logger (error handling)
+
+  called_by:
+    - Singularity.Architecture.AnalysisOrchestrator (analyzer discovery)
+    - Config-driven analysis pipelines
+    - Refactoring agents
+  ```
+
+  ## Anti-Patterns
+
+  **DO NOT** create duplicates:
+  - ❌ `QualityAnalyzer` - Already exists separately
+  - ❌ `RefactoringDetector` - Use this analyzer
+  - ❌ Direct calls - Use AnalysisOrchestrator
+
   ## Refactoring Categories
 
   - **Duplication**: Repeated code patterns that should be extracted
   - **Complexity**: Functions/modules with high cyclomatic complexity
   - **Quality**: Violations of code quality standards
   - **Style**: Inconsistencies in coding style
+
+  ## Search Keywords
+
+  refactoring, code quality, complexity hotspots, duplication detection,
+  technical debt, code smells, style violations, analyzer, orchestration
   """
 
   @behaviour Singularity.Architecture.AnalyzerType

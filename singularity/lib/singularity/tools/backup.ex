@@ -8,7 +8,7 @@ defmodule Singularity.Tools.Backup do
   tool that simply reports a friendly message.
   """
 
-  alias Singularity.Tools.Tool
+  alias Singularity.Schemas.Tools.Tool
   require Logger
 
   @doc """

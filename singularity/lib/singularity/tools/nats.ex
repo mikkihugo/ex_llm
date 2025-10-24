@@ -13,7 +13,8 @@ defmodule Singularity.Tools.NATS do
   Essential for distributed system observability and debugging.
   """
 
-  alias Singularity.Tools.{Tool, Catalog}
+  alias Singularity.Tools.Catalog
+  alias Singularity.Schemas.Tools.Tool
 
   def register(provider) do
     Catalog.add_tools(provider, [

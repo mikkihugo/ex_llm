@@ -13,7 +13,8 @@ defmodule Singularity.Tools.Documentation do
   Essential for maintaining comprehensive project documentation.
   """
 
-  alias Singularity.Tools.{Tool, Catalog}
+  alias Singularity.Tools.Catalog
+  alias Singularity.Schemas.Tools.Tool
 
   def register(provider) do
     Catalog.add_tools(provider, [
