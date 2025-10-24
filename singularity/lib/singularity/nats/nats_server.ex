@@ -25,7 +25,7 @@ defmodule Singularity.NatsServer do
 
   use GenServer
   require Logger
-  alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
+  alias Singularity.Execution.ExecutionOrchestrator
   @type complexity :: :simple | :medium | :complex
   @type service :: :detection | :llm | :templates | :tools | :prompts
   @type request_type ::
@@ -275,12 +275,19 @@ defmodule Singularity.NatsServer do
   end
 
   defp route_to_service(:templates, request, complexity) do
-    # Use template orchestrator
+    # Use execution orchestrator with template goal
     task = request["data"]["task"] || ""
     language = request["data"]["language"] || "auto"
 
-    case SparcOrchestrator.optimize_template(task, language, complexity) do
-      {:ok, template} -> {:ok, %{template: template}}
+    goal = %{
+      type: :template_optimization,
+      task: task,
+      language: language,
+      strategy: :sparc
+    }
+
+    case ExecutionOrchestrator.execute(goal, complexity: complexity) do
+      {:ok, result} -> {:ok, %{template: result}}
       {:error, reason} -> {:error, reason}
     end
   end

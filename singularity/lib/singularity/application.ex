@@ -38,78 +38,20 @@ defmodule Singularity.Application do
       # HTTP endpoint for dashboard and health checks
       {Bandit, plug: Singularity.Web.Endpoint, port: 4000},
 
-      # Background Job Queue & Scheduling (before domain services)
-      # Background job queue for ML training, pattern mining, cron jobs
-      # TODO: Fix Oban configuration (currently using both :singularity and :oban keys causing nil.config/0 error)
-      # Temporarily disabled for Metrics Phase 3 testing - will re-enable after config consolidation
-      # Oban,
-
       # Layer 2: Infrastructure - Core services required by application layer
       # Moved to ApplicationSupervisor to avoid duplicate startup
       # Singularity.Infrastructure.Supervisor,
-      # Manages: NatsServer, NatsClient
-      # TODO: Re-enable after fixing Oban configuration and ensuring NATS is available in tests
-      # Temporarily disabled for Metrics Phase 3 testing
-      # Singularity.NATS.Supervisor,
 
       # Layer 3: Domain Services - Business logic and domain-specific functionality
-      # Manages: LLM.RateLimiter
-      # TODO: Re-enable after fixing NATS
-      # Singularity.LLM.Supervisor,
-      # Manages: TemplateService, TemplatePerformanceTracker, CodeStore
-      # TODO: Re-enable after fixing NATS
-      # Singularity.Knowledge.Supervisor,
-      # Genesis Integration - Learning system consuming Genesis experiment results
-      # TODO: Re-enable after fixing NATS
-      # Singularity.Learning.Supervisor,
       # Unified Metrics - Collection, aggregation, and querying service
-      Singularity.Metrics.Supervisor,
-      # Code Analyzer Cache - Analysis result caching for performance
-      # TODO: Re-enable after fixing Knowledge supervisor dependencies
-      # {Singularity.CodeAnalyzer.Cache, [max_size: 1000, ttl: 3600]},
-      # Manages: StartupCodeIngestion, SafeWorkPlanner, WorkPlanAPI
-      # TODO: Re-enable after fixing Knowledge dependencies
-      # Singularity.Execution.Planning.Supervisor,
-      # Manages: SPARC.Orchestrator, TemplateSparcOrchestrator
-      # TODO: Re-enable after fixing dependencies
-      # Singularity.Execution.SPARC.Supervisor,
-      # Manages: TodoSwarmCoordinator
-      # TODO: Re-enable after fixing dependencies
-      # Singularity.Execution.Todos.Supervisor,
-      # Tracks bootstrap progression across evolutionary stages
-      # TODO: Re-enable after fixing dependencies
-      # Singularity.Bootstrap.EvolutionStageController,
-
-      # Layer 4: Agents & Execution - Dynamic agent management and task execution
-      # Manages: RuntimeBootstrapper, AgentSupervisor (DynamicSupervisor)
-      # TODO: Re-enable after fixing NATS and Knowledge dependencies
-      # Singularity.Agents.Supervisor,
-      # Manages: Control, Runner (moved from ApplicationSupervisor in future refactor)
-      # TODO: Re-enable after fixing dependencies
-      # Singularity.ApplicationSupervisor,
-
-      # Real Workload Feeder - Executes real LLM tasks and measures actual performance metrics
-      # TODO: Re-enable after fixing dependencies
-      # Singularity.Agents.RealWorkloadFeeder,
-
-      # Documentation System - Multi-language quality enforcement and upgrades
-      # Manages: DocumentationUpgrader, QualityEnforcer, DocumentationPipeline
-      # TODO: Re-enable after fixing NATS and other dependencies
-      # Singularity.Agents.DocumentationUpgrader,
-      # Singularity.Agents.QualityEnforcer,
-      # Singularity.Agents.DocumentationPipeline,
-
-      # Layer 5: Singletons - Standalone services that don't fit in other categories
-      # TODO: Re-enable after fixing Gleam/Elixir integration issues
-      # Singularity.Execution.Autonomy.RuleEngine,
-
-      # Layer 6: Existing Domain Supervisors - Domain-specific supervision trees
-      # Git.Supervisor moved to ApplicationSupervisor to avoid duplication
-
-      # Layer 7: Startup Tasks - One-time tasks that run and exit
-      # TODO: Re-enable after fixing NIF loading issues
-      # Singularity.Engine.NifStatus
+      Singularity.Metrics.Supervisor
     ]
+    |> Kernel.++(optional_children())
+
+    Logger.info("Starting Singularity supervision tree",
+      child_count: length(children),
+      environment: Mix.env()
+    )
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
@@ -134,6 +76,58 @@ defmodule Singularity.Application do
 
       error ->
         error
+    end
+  end
+
+  @doc """
+  Optional child processes based on environment and configuration.
+
+  These supervisors are intentionally disabled in test mode to avoid
+  NATS connection failures and other environment-specific issues.
+
+  ## Disabled Supervisors (Migration Status)
+
+  The following supervisors were disabled during architectural consolidation
+  and are awaiting migration to config-driven pattern or dependency resolution:
+
+  - **Oban** - Background job scheduling (depends on Oban config consolidation)
+  - **Infrastructure.Supervisor** - NATS services (depends on test mode handling)
+  - **LLM.Supervisor** - LLM rate limiting (depends on NATS/Infrastructure)
+  - **Knowledge.Supervisor** - Template and code store (depends on Infrastructure)
+  - **Learning.Supervisor** - Genesis integration (depends on Knowledge)
+  - **Execution.Planning.Supervisor** - Work planning (depends on Knowledge)
+  - **Execution.SPARC.Supervisor** - SPARC orchestration (depends on planning)
+  - **Execution.Todos.Supervisor** - Task coordination (depends on SPARC)
+  - **Bootstrap.EvolutionStageController** - Bootstrap tracking (depends on others)
+  - **Agents.Supervisor** - Agent management (depends on Infrastructure/Knowledge)
+  - **ApplicationSupervisor** - Control and runner (should be merged into main tree)
+  - **Agents.RealWorkloadFeeder** - Performance measurement (needs configuration)
+  - **Documentation system** - Documentation pipelines (needs NATS)
+  - **Autonomy.RuleEngine** - Gleam integration (needs Gleam/Elixir bridge)
+  - **Engine.NifStatus** - NIF status checking (needs investigation)
+
+  ## Plan for Re-enabling
+
+  These supervisors should be re-enabled once:
+  1. NATS is available and properly configured
+  2. Config-driven patterns are applied to remaining hardcoded systems
+  3. Test mode handling is properly implemented
+  4. Dependencies are clearly mapped and validated
+
+  See CLAUDE.md OTP Supervision Patterns section for refactoring guidelines.
+  """
+  defp optional_children do
+    # Only enable infrastructure services in production/dev (not test mode)
+    if Mix.env() in [:prod, :dev] do
+      [
+        # Background Job Queue & Scheduling
+        # Oban,
+        # Note: Temporarily disabled due to dual config (Oban vs Singularity namespace)
+        # See: Fix issue in config/config.exs before re-enabling
+      ]
+    else
+      # Test mode: skip NATS and other infrastructure to avoid connection failures
+      []
     end
   end
 end

@@ -203,37 +203,27 @@ config :singularity, :scanner_types,
 # =============================================================================
 # Code Generation Configuration (Config-Driven)
 # =============================================================================
-# Defines which code generators are enabled (RAG, Quality, Pseudocode, etc.)
+# Defines which code generators are enabled.
+#
+# Currently Implemented:
+# - QualityGenerator: High-quality production-ready code generation
+#
+# Future Generators (Not Yet Implemented):
+# - RAG Generator: Retrieval-Augmented Generation using code embeddings
+# - Pseudocode Generator: High-level algorithm specification
+# - Template Generator: Template-based code generation
+#
+# To add a new generator:
+# 1. Create module at singularity/lib/singularity/code_generation/generators/
+# 2. Implement @behaviour Singularity.CodeGeneration.GeneratorType
+# 3. Add to config below with enabled: true
+# 4. GenerationOrchestrator will automatically discover and use it
 
 config :singularity, :generator_types,
   quality: %{
     module: Singularity.CodeGeneration.Generators.QualityGenerator,
     enabled: true,
     description: "Generate high-quality, production-ready code"
-  }
-
-# =============================================================================
-# Validation Configuration (Config-Driven)
-# =============================================================================
-# Defines which validators are enabled
-
-config :singularity, :validator_types,
-  template: %{
-    module: Singularity.Validation.Validators.TemplateValidator,
-    enabled: false,
-    description: "Validate template structure and content"
-  }
-
-# =============================================================================
-# Extraction Configuration (Config-Driven)
-# =============================================================================
-# Defines which extractors are enabled
-
-config :singularity, :extractor_types,
-  pattern: %{
-    module: Singularity.Analysis.Extractors.PatternExtractor,
-    enabled: false,
-    description: "Extract code patterns and structures"
   }
 
 # =============================================================================
