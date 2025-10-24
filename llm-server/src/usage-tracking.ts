@@ -86,14 +86,30 @@ export interface UsageTracker {
 /**
  * @class PostgresUsageTracker
  * @implements {UsageTracker}
- * @description An implementation of the UsageTracker interface that uses PostgreSQL for storage.
- * @todo Implement the PostgreSQL queries for all methods.
+ * @description Stub implementation of UsageTracker with PostgreSQL storage.
+ *
+ * This class is a planned feature for persistent usage tracking. Currently returns
+ * default/empty values. When implemented, it will integrate with the Singularity
+ * PostgreSQL database using the llm_server service for tracking.
+ *
+ * Implementation Status:
+ * - recordUsage() - Deferred (planned for v2.0)
+ * - getStats() - Deferred (planned for v2.0)
+ * - getTopModels() - Deferred (planned for v2.0)
+ * - getCostBreakdown() - Deferred (planned for v2.0)
+ * - getPerformanceTrends() - Deferred (planned for v2.0)
+ *
+ * For now, use InMemoryUsageTracker for development and testing.
  */
 export class PostgresUsageTracker implements UsageTracker {
   constructor() {}
 
+  /**
+   * Logs usage events. Persists to PostgreSQL when implemented.
+   * Currently a stub - use InMemoryUsageTracker for development.
+   */
   async recordUsage(event: UsageEvent): Promise<void> {
-    // TODO: Implement PostgreSQL INSERT statement.
+    // Planned: INSERT INTO llm_server.usage_events (provider, model_id, ...)
     console.log('[UsageTracker] Recording usage (PostgreSQL):', {
       provider: event.provider,
       model: event.modelId,
@@ -101,8 +117,11 @@ export class PostgresUsageTracker implements UsageTracker {
     });
   }
 
+  /**
+   * Aggregates usage statistics over a time period.
+   * When implemented: SELECT *, percentile_cont() FROM usage_events WHERE provider=? AND model_id=?
+   */
   async getStats(provider: string, modelId: string, startDate: Date, endDate: Date): Promise<UsageStats> {
-    // TODO: Implement PostgreSQL aggregation query.
     console.log('[UsageTracker] Getting stats (PostgreSQL):', { provider, modelId, startDate, endDate });
     return {
       provider, modelId, totalRequests: 0, successfulRequests: 0, failedRequests: 0,
@@ -112,20 +131,27 @@ export class PostgresUsageTracker implements UsageTracker {
     };
   }
 
+  /**
+   * Gets top N models by usage. When implemented: SELECT model_id, COUNT(*) FROM usage_events
+   * WHERE start_date >= ? GROUP BY model_id ORDER BY count DESC LIMIT ?
+   */
   async getTopModels(limit: number, startDate: Date, endDate: Date): Promise<UsageStats[]> {
-    // TODO: Implement PostgreSQL query to get top models.
     console.log('[UsageTracker] Getting top models (PostgreSQL):', { limit, startDate, endDate });
     return [];
   }
 
+  /**
+   * Breaks down costs by provider/model/tier. When implemented: GROUP BY provider, model_id, cost_tier
+   */
   async getCostBreakdown(startDate: Date, endDate: Date) {
-    // TODO: Implement PostgreSQL query for cost breakdown.
     console.log('[UsageTracker] Getting cost breakdown (PostgreSQL):', { startDate, endDate });
     return { byProvider: {}, byModel: {}, byTier: { free: 0, limited: 0, 'pay-per-use': 0 }, total: 0 };
   }
 
+  /**
+   * Gets performance trends over time. When implemented: time-series query with percentile aggregation
+   */
   async getPerformanceTrends(provider: string, modelId: string, days: number) {
-    // TODO: Implement PostgreSQL query for performance trends.
     console.log('[UsageTracker] Getting performance trends (PostgreSQL):', { provider, modelId, days });
     return [];
   }
@@ -283,10 +309,21 @@ export async function trackModelUsage(
 
 /**
  * Calculates the estimated cost of a request based on token usage.
+ *
+ * Implementation Status:
+ * - Free models (Gemini, Claude Pro): Returns 0 immediately
+ * - Limited/Pay-per-use models: Deferred - requires pricing data in ModelInfo
+ *
+ * To implement full cost calculation, ModelInfo needs:
+ * - promptPricePerMillionTokens: number ($/1M input tokens)
+ * - completionPricePerMillionTokens: number ($/1M output tokens)
+ * - minimumCost?: number (minimum charge per request, if any)
+ *
+ * Then calculate:
+ * cost = (promptTokens * inputPrice / 1000000) + (completionTokens * outputPrice / 1000000)
+ *
  * @private
  * @param {ModelInfo} model The model used for the request.
- * @param {number} promptTokens The number of tokens in the prompt.
- * @param {number} completionTokens The number of tokens in the completion.
  * @returns {number | undefined} The estimated cost, or undefined if pricing data is unavailable.
  */
 function calculateCost(
@@ -295,6 +332,7 @@ function calculateCost(
   if (model.cost === 'free') {
     return 0;
   }
-  // TODO: Add pricing data to ModelInfo to enable cost calculation.
+  // Deferred: Requires pricing data in ModelInfo (planned for v2.0)
+  // For now, return undefined for non-free models
   return undefined;
 }

@@ -169,10 +169,20 @@ export class JulesProvider {
     });
   }
 
-  // TODO: Implement the following methods which are referenced but not defined.
-  async submitTask(_task: any): Promise<any> { throw new Error("Not implemented"); }
-  async getTaskStatus(_taskId: any): Promise<any> { throw new Error("Not implemented"); }
-  async *streamTaskProgress(_taskId: any): AsyncIterableIterator<any> { throw new Error("Not implemented"); }
+  /**
+   * Task submission and monitoring - deferred implementation.
+   *
+   * These methods are defined in the interface but not yet implemented.
+   * They will enable:
+   * - submitTask: Submit work to Claude Projects or similar task service
+   * - getTaskStatus: Poll for task completion status
+   * - streamTaskProgress: Stream real-time task progress updates
+   *
+   * Planned for: When Claude Projects API becomes available
+   */
+  async submitTask(_task: any): Promise<any> { throw new Error("Task submission not yet implemented (planned for Claude Projects API)"); }
+  async getTaskStatus(_taskId: any): Promise<any> { throw new Error("Task status polling not yet implemented"); }
+  async *streamTaskProgress(_taskId: any): AsyncIterableIterator<any> { throw new Error("Task progress streaming not yet implemented"); }
 }
 
 export const jules = new JulesProvider();

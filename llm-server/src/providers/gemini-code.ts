@@ -99,13 +99,26 @@ export interface GeminiProvider extends BaseGeminiProvider {
 
 /**
  * Creates a Gemini provider instance, extended with a `listModels` method.
+ *
+ * Authentication Status:
+ * - API Key Authentication: ✅ Working (current method)
+ * - OAuth Flow: Deferred (planned for future implementation)
+ *
+ * OAuth Implementation Notes:
+ * - Will require similar flow to GitHub Copilot (auth code → access token)
+ * - Needs to integrate with Google Cloud OAuth 2.0 consent screen
+ * - Should handle token refresh for long-running processes
+ * - User will authenticate once, tokens stored securely
+ *
+ * Current workaround: Uses GOOGLE_CLOUD_PROJECT env var or default project ID
+ *
  * @param {GeminiProviderOptions} [options] Configuration options for the Gemini provider.
  * @returns {GeminiProvider} A configured Gemini provider instance.
  */
 export function createGeminiProvider(options?: any): GeminiProvider {
-  // TODO: The personal OAuth flow for Gemini is not yet implemented.
-  // This will likely involve a similar process to the GitHub Copilot OAuth flow.
-  // For now, the provider defaults to using an API key.
+  // Current: API key authentication (set via GOOGLE_API_KEY env var)
+  // Planned: OAuth flow for user-specific authentication (planned for v2.0)
+
   // Set a default Google Cloud Project ID if not provided in the environment.
   if (!process.env.GOOGLE_CLOUD_PROJECT) {
     process.env.GOOGLE_CLOUD_PROJECT = 'gemini-code-473918';

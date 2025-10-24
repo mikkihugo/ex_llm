@@ -1,19 +1,22 @@
 /**
  * Auto-generates MODEL_CAPABILITIES matrix by analyzing model documentation
  *
- * 🤝 Multi-Model Consensus (AutoGen-style meeting) - IN PROGRESS
+ * 🤝 Multi-Model Consensus (AutoGen-style meeting)
  *
- * Currently uses Gemini Flash (FREE unlimited) for analysis.
- * TODO: Add consensus from:
- * - cursor-agent CLI (cheetah model)
- * - gh copilot (gpt-4o model)
+ * Implementation Status:
+ * Phase 1 (CURRENT): Single-model analysis
+ * - Uses Gemini Flash (FREE unlimited) for initial capability scoring
  *
- * Planned consensus algorithm:
- * - Averages scores from multiple models
- * - Calculates variance to measure agreement
- * - High confidence if variance < 0.5 (strong consensus)
- * - Medium confidence if variance < 2.0 (some disagreement)
- * - Low confidence if variance >= 2.0 (significant disagreement)
+ * Phase 2 (PLANNED): Multi-model consensus
+ * - Add analysis from:
+ *   - Cursor CLI (cheetah model)
+ *   - GitHub Copilot (gpt-4o model)
+ * - Implement consensus algorithm:
+ *   - Average scores from multiple models
+ *   - Calculate variance to measure agreement
+ *   - High confidence: variance < 0.5 (strong consensus)
+ *   - Medium confidence: variance < 2.0 (some disagreement)
+ *   - Low confidence: variance >= 2.0 (significant disagreement)
  *
  * Scores 5 capability dimensions (1-10):
  * - code: Code generation quality

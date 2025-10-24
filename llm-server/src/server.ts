@@ -495,10 +495,28 @@ function convertOpenAIToolsToAISDK(openaiTools: Tool[]) {
     tools[tool.function.name] = {
       description: tool.function.description || '',
       parameters: tool.function.parameters || {},
+      /**
+       * Tool execution stub - deferred feature.
+       *
+       * Implementation Status:
+       * Tool execution framework is in place, but individual tool handlers need implementation.
+       *
+       * To implement:
+       * 1. Create tool handler registry mapping tool names to handler functions
+       * 2. Implement handlers that can:
+       *    - Validate input parameters against tool schema
+       *    - Route to appropriate service (external API, local function, etc.)
+       *    - Handle errors and timeouts gracefully
+       *    - Return structured results
+       * 3. Examples:
+       *    - web_search: Query Bing/Google Search API
+       *    - code_execution: Route to sandboxed code executor
+       *    - database_query: Execute queries on appropriate database
+       *    - file_operations: Handle file I/O (with permission checks)
+       *
+       * Planned for: v2.0 (AI server phase 2)
+       */
       execute: async (params: any) => {
-        // TODO: Implement the actual tool execution logic. This is currently a stub.
-        // The logic should handle the execution of the tool and return the result.
-        // This may involve calling external APIs or running local functions.
         console.log(`OpenAI tool '${tool.function.name}' called (stubbed):`, params);
         return { result: `OpenAI tool '${tool.function.name}' is currently stubbed out - functionality not implemented` };
       }

@@ -14,6 +14,7 @@ import { logger } from './logger.js';
 interface MetricData {
   count: number;
   totalTime?: number;
+  totalTokens?: number;
   errors?: number;
   lastUpdated: number;
 }
@@ -65,16 +66,14 @@ class MetricsCollector {
    */
   recordModelUsage(provider: string, model: string, tokens?: number): void {
     const key = `model.${provider}.${model}`;
-    const metric = this.metrics.get(key) || { count: 0, totalTime: 0, lastUpdated: Date.now() };
-    
+    const metric = this.metrics.get(key) || { count: 0, totalTokens: 0, lastUpdated: Date.now() };
+
     metric.count++;
-    // TODO: The `totalTime` property is being reused to store token count.
-    // This is not ideal and should be refactored to use a more appropriate data structure.
     if (tokens !== undefined) {
-      metric.totalTime = (metric.totalTime || 0) + tokens;
+      metric.totalTokens = (metric.totalTokens || 0) + tokens;
     }
     metric.lastUpdated = Date.now();
-    
+
     this.metrics.set(key, metric);
     
     logger.metric(`${key}.count`, metric.count);
@@ -116,7 +115,7 @@ class MetricsCollector {
         const modelName = key.replace('model.', '');
         result.models[modelName] = {
           count: metric.count,
-          totalTokens: metric.totalTime || 0
+          totalTokens: metric.totalTokens || 0
         };
       }
     }
