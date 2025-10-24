@@ -24,6 +24,7 @@ defmodule Singularity.Schemas.GraphNode do
     field :vector_embedding, Pgvector.Ecto.Vector
     field :vector_magnitude, :float
     field :metadata, :map, default: %{}
+    field :pagerank_score, :float, default: 0.0
 
     field :created_at, :utc_datetime
   end
@@ -40,7 +41,8 @@ defmodule Singularity.Schemas.GraphNode do
       :line_number,
       :vector_embedding,
       :vector_magnitude,
-      :metadata
+      :metadata,
+      :pagerank_score
     ])
     |> validate_required([:codebase_id, :node_id, :node_type, :name, :file_path])
     |> unique_constraint([:codebase_id, :node_id])

@@ -18,6 +18,11 @@ config :logger,
 config :libcluster,
   topologies: []
 
+config :singularity, Singularity.Bootstrap.PageRankBootstrap,
+  enabled: true,
+  refresh_schedule: "0 4 * * *",  # 4 AM UTC daily (after midnight backups)
+  auto_init: true                 # Calculate on startup if scores are missing
+
 config :singularity, :git_coordinator,
   enabled:
     System.get_env("GIT_COORDINATOR_ENABLED", "false")
@@ -123,7 +128,9 @@ config :oban,
        # Dead code monitoring: daily at 9am
        {"0 9 * * *", Singularity.Jobs.DeadCodeDailyCheck},
        # Dead code summary: every Monday at 9am
-       {"0 9 * * 1", Singularity.Jobs.DeadCodeWeeklySummary}
+       {"0 9 * * 1", Singularity.Jobs.DeadCodeWeeklySummary},
+       # PageRank recalculation: daily at 4am UTC
+       {"0 4 * * *", Singularity.Jobs.PageRankCalculationJob}
      ]}
   ],
   # Enable verbose logging for job execution

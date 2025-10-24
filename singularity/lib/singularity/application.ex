@@ -241,6 +241,11 @@ defmodule Singularity.Application do
           Task.start(fn ->
             Singularity.Startup.DocumentationBootstrap.bootstrap_documentation_system()
           end)
+
+          # Initialize PageRank calculation on startup
+          Task.start(fn ->
+            Singularity.Bootstrap.PageRankBootstrap.ensure_initialized()
+          end)
         end
 
         {:ok, pid}
