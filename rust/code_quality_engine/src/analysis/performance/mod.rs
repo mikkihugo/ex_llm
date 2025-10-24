@@ -21,7 +21,7 @@ pub use detector::{
 // Optimization-specific types (from optimizer, excluding duplicates)
 pub use optimizer::{
     OptimizationAnalysis, Optimization, OptimizationLocation,
-    OptimizationRecommendation, PerformanceRecommendationPriority, OptimizationCategory as OptimizerCategory,
+    OptimizationRecommendation, OptimizationCategory as OptimizerCategory,
     OptimizationMetadata, OptimizationPattern, PerformanceOptimizer,
 };
 
