@@ -1,6 +1,12 @@
 defmodule Singularity.TechnologyAgent do
   @moduledoc """
+  ⚠️ DEPRECATED - Use Singularity.Analysis.DetectionOrchestrator instead
+
   Technology Agent - Detects and analyzes technology stacks in codebases.
+
+  This module is maintained for backwards compatibility but all calls are routed to
+  `DetectionOrchestrator` which provides unified detection with caching, persistence,
+  and config-driven extensibility.
 
   ## Overview
 
@@ -115,6 +121,8 @@ defmodule Singularity.TechnologyAgent do
   @doc """
   Detect technologies in a codebase using pattern matching and templates.
 
+  ⚠️ DEPRECATED - Delegates to Singularity.Analysis.DetectionOrchestrator
+
   ## Options
     - `:cache` - Use cached results (default: true)
     - `:categories` - Filter by categories: :language, :framework, :tool, :database (default: all)
@@ -131,33 +139,12 @@ defmodule Singularity.TechnologyAgent do
     - ecosystem: string (elixir, javascript, python, etc.)
   """
   def detect_technologies(codebase_path, opts \\ []) do
-    start_time = System.monotonic_time(:millisecond)
+    # Delegate to unified orchestrator
+    alias Singularity.Analysis.DetectionOrchestrator
 
-    with :ok <- validate_codebase_path(codebase_path),
-         {:ok, patterns} <- extract_patterns(codebase_path),
-         {:ok, frameworks} <-
-           FrameworkDetector.detect_frameworks(patterns, context: codebase_path),
-         {:ok, technologies} <- detect_technologies_from_patterns(patterns, opts),
-         detected = merge_detections(frameworks, technologies, opts) do
-      elapsed = System.monotonic_time(:millisecond) - start_time
-
-      # Track metrics
-      :telemetry.execute(
-        [:singularity, :technology_detection, :completed],
-        %{duration_ms: elapsed, technologies_found: length(detected)},
-        %{codebase: codebase_path, patterns_count: length(patterns)}
-      )
-
-      Logger.info("Technology detection completed",
-        codebase: codebase_path,
-        technologies: length(detected),
-        elapsed_ms: elapsed
-      )
-
-      # Publish to CentralCloud's IntelligenceHub for collective learning
-      publish_to_intelligence_hub(codebase_path, detected)
-
-      {:ok, detected}
+    with {:ok, detections} <- DetectionOrchestrator.detect(codebase_path, opts) do
+      # Maintain backwards compatibility with old API format
+      {:ok, detections}
     else
       {:error, reason} ->
         Logger.warning("Technology detection failed",

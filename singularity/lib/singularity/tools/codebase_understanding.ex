@@ -10,7 +10,8 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
   """
 
   alias Singularity.Tools.{Catalog, Tool}
-  alias Singularity.{CodeSearch, TechnologyAgent, CodeEngine}
+  alias Singularity.{CodeSearch, CodeEngine}
+  alias Singularity.Analysis.DetectionOrchestrator
   alias Singularity.CodeAnalysis.DependencyMapper
   alias Singularity.Code.Analyzers.MicroserviceAnalyzer
 
@@ -223,19 +224,21 @@ defmodule Singularity.Tools.CodebaseUnderstanding do
   def codebase_technologies(%{"codebase_path" => path} = args, _ctx) do
     include_patterns = Map.get(args, "include_patterns", true)
 
-    case TechnologyAgent.analyze_code_patterns(path, include_patterns: include_patterns) do
-      {:ok, technologies} ->
+    case DetectionOrchestrator.detect(path, cache: true) do
+      {:ok, detections} ->
+        # Organize detections by type for backwards compatibility
+        grouped =
+          detections
+          |> Enum.group_by(& &1.type)
+          |> Enum.into(%{}, fn {type, items} -> {type, Enum.map(items, & &1.name)} end)
+
         {:ok,
          %{
            codebase_path: path,
-           frameworks: technologies.frameworks,
-           databases: technologies.databases,
-           messaging: technologies.messaging,
-           monitoring: technologies.monitoring,
-           security: technologies.security,
-           ai_frameworks: technologies.ai_frameworks,
-           cloud_platforms: technologies.cloud_platforms,
-           architecture_patterns: technologies.architecture_patterns
+           frameworks: Map.get(grouped, :framework, []),
+           technologies: Map.get(grouped, :technology, []),
+           architecture_patterns: Map.get(grouped, :service_architecture, []),
+           all_detections: detections
          }}
 
       {:error, reason} ->
