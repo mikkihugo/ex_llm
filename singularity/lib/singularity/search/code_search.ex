@@ -625,217 +625,37 @@ defmodule Singularity.CodeSearch do
   end
 
   @doc """
-  Insert codebase metadata (matches analysis-suite CodebaseMetadata)
+  Insert codebase metadata (converted to Ecto)
   """
-  def insert_codebase_metadata(db_conn, codebase_id, codebase_path, metadata) do
-    Postgrex.query!(
-      db_conn,
-      """
-      INSERT INTO codebase_metadata (
-        codebase_id, codebase_path, path, size, lines, language, last_modified, file_type,
-        cyclomatic_complexity, cognitive_complexity, maintainability_index, nesting_depth,
-        function_count, class_count, struct_count, enum_count, trait_count, interface_count,
-        total_lines, code_lines, comment_lines, blank_lines,
-        halstead_vocabulary, halstead_length, halstead_volume, halstead_difficulty, halstead_effort,
-        pagerank_score, centrality_score, dependency_count, dependent_count,
-        technical_debt_ratio, code_smells_count, duplication_percentage,
-        security_score, vulnerability_count,
-        quality_score, test_coverage, documentation_coverage,
-        domains, patterns, features, business_context, performance_characteristics, security_characteristics,
-        dependencies, related_files, imports, exports,
-        functions, classes, structs, enums, traits,
-        vector_embedding
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8,
-        $9, $10, $11, $12,
-        $13, $14, $15, $16, $17, $18,
-        $19, $20, $21, $22,
-        $23, $24, $25, $26, $27,
-        $28, $29, $30, $31,
-        $32, $33, $34,
-        $35, $36,
-        $37, $38, $39,
-        $40, $41, $42, $43, $44, $45,
-        $46, $47, $48, $49,
-        $50, $51, $52, $53, $54,
-        $55
-      )
-      ON CONFLICT (codebase_id, path) DO UPDATE SET
-        size = EXCLUDED.size,
-        lines = EXCLUDED.lines,
-        language = EXCLUDED.language,
-        last_modified = EXCLUDED.last_modified,
-        file_type = EXCLUDED.file_type,
-        cyclomatic_complexity = EXCLUDED.cyclomatic_complexity,
-        cognitive_complexity = EXCLUDED.cognitive_complexity,
-        maintainability_index = EXCLUDED.maintainability_index,
-        nesting_depth = EXCLUDED.nesting_depth,
-        function_count = EXCLUDED.function_count,
-        class_count = EXCLUDED.class_count,
-        struct_count = EXCLUDED.struct_count,
-        enum_count = EXCLUDED.enum_count,
-        trait_count = EXCLUDED.trait_count,
-        interface_count = EXCLUDED.interface_count,
-        total_lines = EXCLUDED.total_lines,
-        code_lines = EXCLUDED.code_lines,
-        comment_lines = EXCLUDED.comment_lines,
-        blank_lines = EXCLUDED.blank_lines,
-        halstead_vocabulary = EXCLUDED.halstead_vocabulary,
-        halstead_length = EXCLUDED.halstead_length,
-        halstead_volume = EXCLUDED.halstead_volume,
-        halstead_difficulty = EXCLUDED.halstead_difficulty,
-        halstead_effort = EXCLUDED.halstead_effort,
-        pagerank_score = EXCLUDED.pagerank_score,
-        centrality_score = EXCLUDED.centrality_score,
-        dependency_count = EXCLUDED.dependency_count,
-        dependent_count = EXCLUDED.dependent_count,
-        technical_debt_ratio = EXCLUDED.technical_debt_ratio,
-        code_smells_count = EXCLUDED.code_smells_count,
-        duplication_percentage = EXCLUDED.duplication_percentage,
-        security_score = EXCLUDED.security_score,
-        vulnerability_count = EXCLUDED.vulnerability_count,
-        quality_score = EXCLUDED.quality_score,
-        test_coverage = EXCLUDED.test_coverage,
-        documentation_coverage = EXCLUDED.documentation_coverage,
-        domains = EXCLUDED.domains,
-        patterns = EXCLUDED.patterns,
-        features = EXCLUDED.features,
-        business_context = EXCLUDED.business_context,
-        performance_characteristics = EXCLUDED.performance_characteristics,
-        security_characteristics = EXCLUDED.security_characteristics,
-        dependencies = EXCLUDED.dependencies,
-        related_files = EXCLUDED.related_files,
-        imports = EXCLUDED.imports,
-        exports = EXCLUDED.exports,
-        functions = EXCLUDED.functions,
-        classes = EXCLUDED.classes,
-        structs = EXCLUDED.structs,
-        enums = EXCLUDED.enums,
-        traits = EXCLUDED.traits,
-        vector_embedding = EXCLUDED.vector_embedding,
-        updated_at = NOW()
-      """,
-      [
-        codebase_id,
-        codebase_path,
-        metadata.path,
-        metadata.size,
-        metadata.lines,
-        metadata.language,
-        metadata.last_modified,
-        metadata.file_type,
-        metadata.cyclomatic_complexity,
-        metadata.cognitive_complexity,
-        metadata.maintainability_index,
-        metadata.nesting_depth,
-        metadata.function_count,
-        metadata.class_count,
-        metadata.struct_count,
-        metadata.enum_count,
-        metadata.trait_count,
-        metadata.interface_count,
-        metadata.total_lines,
-        metadata.code_lines,
-        metadata.comment_lines,
-        metadata.blank_lines,
-        metadata.halstead_vocabulary,
-        metadata.halstead_length,
-        metadata.halstead_volume,
-        metadata.halstead_difficulty,
-        metadata.halstead_effort,
-        metadata.pagerank_score,
-        metadata.centrality_score,
-        metadata.dependency_count,
-        metadata.dependent_count,
-        metadata.technical_debt_ratio,
-        metadata.code_smells_count,
-        metadata.duplication_percentage,
-        metadata.security_score,
-        metadata.vulnerability_count,
-        metadata.quality_score,
-        metadata.test_coverage,
-        metadata.documentation_coverage,
-        Jason.encode!(metadata.domains),
-        Jason.encode!(metadata.patterns),
-        Jason.encode!(metadata.features),
-        Jason.encode!(metadata.business_context),
-        Jason.encode!(metadata.performance_characteristics),
-        Jason.encode!(metadata.security_characteristics),
-        Jason.encode!(metadata.dependencies),
-        Jason.encode!(metadata.related_files),
-        Jason.encode!(metadata.imports),
-        Jason.encode!(metadata.exports),
-        Jason.encode!(metadata.functions),
-        Jason.encode!(metadata.classes),
-        Jason.encode!(metadata.structs),
-        Jason.encode!(metadata.enums),
-        Jason.encode!(metadata.traits),
-        metadata.vector_embedding
-      ]
-    )
+  def insert_codebase_metadata(_db_conn, codebase_id, codebase_path, metadata) do
+    attrs =
+      metadata
+      |> Map.put(:codebase_id, codebase_id)
+      |> Map.put(:codebase_path, codebase_path)
+
+    Singularity.CodeSearch.Ecto.upsert_metadata(attrs)
   end
 
   @doc """
-  Insert graph node (for Apache AGE compatibility)
+  Insert graph node (converted to Ecto)
   """
-  def insert_graph_node(db_conn, codebase_id, node) do
-    Postgrex.query!(
-      db_conn,
-      """
-      INSERT INTO graph_nodes (
-        codebase_id, node_id, node_type, name, file_path, line_number, 
-        vector_embedding, vector_magnitude, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      ON CONFLICT (codebase_id, node_id) DO UPDATE SET
-        node_type = EXCLUDED.node_type,
-        name = EXCLUDED.name,
-        file_path = EXCLUDED.file_path,
-        line_number = EXCLUDED.line_number,
-        vector_embedding = EXCLUDED.vector_embedding,
-        vector_magnitude = EXCLUDED.vector_magnitude,
-        metadata = EXCLUDED.metadata
-      """,
-      [
-        codebase_id,
-        node.node_id,
-        node.node_type,
-        node.name,
-        node.file_path,
-        node.line_number,
-        node.vector_embedding,
-        node.vector_magnitude,
-        Jason.encode!(node.metadata)
-      ]
-    )
+  def insert_graph_node(_db_conn, codebase_id, node) do
+    attrs =
+      node
+      |> Map.put(:codebase_id, codebase_id)
+
+    Singularity.CodeSearch.Ecto.upsert_graph_node(attrs)
   end
 
   @doc """
-  Insert graph edge (for Apache AGE compatibility)
+  Insert graph edge (converted to Ecto)
   """
-  def insert_graph_edge(db_conn, codebase_id, edge) do
-    Postgrex.query!(
-      db_conn,
-      """
-      INSERT INTO graph_edges (
-        codebase_id, edge_id, from_node_id, to_node_id, edge_type, weight, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (codebase_id, edge_id) DO UPDATE SET
-        from_node_id = EXCLUDED.from_node_id,
-        to_node_id = EXCLUDED.to_node_id,
-        edge_type = EXCLUDED.edge_type,
-        weight = EXCLUDED.weight,
-        metadata = EXCLUDED.metadata
-      """,
-      [
-        codebase_id,
-        edge.edge_id,
-        edge.from_node_id,
-        edge.to_node_id,
-        edge.edge_type,
-        edge.weight,
-        Jason.encode!(edge.metadata)
-      ]
-    )
+  def insert_graph_edge(_db_conn, codebase_id, edge) do
+    attrs =
+      edge
+      |> Map.put(:codebase_id, codebase_id)
+
+    Singularity.CodeSearch.Ecto.upsert_graph_edge(attrs)
   end
 
   @doc """
