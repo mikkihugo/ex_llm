@@ -212,25 +212,51 @@
         ];
 
         getDataServices = env: lib.optionals (lib.elem "postgresql" env.services) [
-          # PostgreSQL 16 with stable extensions
+          # PostgreSQL 17 with 20+ extensions for search, time-series, spatial, graph, security, and messaging
           # Built-in extensions (from PostgreSQL): ltree, hstore, pg_trgm, uuid-ossp, fuzzystrmatch, etc
-          # Nix-packaged extensions (verified stable):
-          (pkgs.postgresql_16.withPackages (ps:
+          # Nix-packaged extensions below:
+          (pkgs.postgresql_17.withPackages (ps:
             [
-              # Search & Vectors (STABLE)
+              # Search & Vectors
               ps.pgvector           # Vector embeddings for semantic search (2560-dim)
+              ps.lantern            # Alternative vector search engine with HNSW indexes
 
-              # Spatial & Geospatial (STABLE)
+              # Spatial & Geospatial
               ps.postgis            # PostGIS 3.6.0 - full geospatial queries
+              ps.h3-pg              # Hexagonal hierarchical geospatial indexing
 
-              # Time Series (STABLE)
+              # Time Series
               ps.timescaledb        # TimescaleDB 2.22 - time-series optimization
+              ps.timescaledb_toolkit # TimescaleDB analytics extension
 
-              # Testing (STABLE)
+              # Graph Database
+              ps.age                # Apache AGE - graph database extension (supported on PG17)
+
+              # Distributed IDs & ULIDs (future PostgreSQL 18 migration path: UUIDv7)
+              ps.pgx_ulid           # ULID generation - sortable, monotonic IDs for distributed systems
+
+              # Security & Encryption
+              ps.pgsodium           # Modern encryption & hashing (libsodium binding)
+
+              # Messaging & Message Queue
+              ps.pgmq               # In-database message queue (alternative to external queues)
+              ps.wal2json           # JSON WAL decoding for event streaming
+
+              # HTTP & External APIs
+              ps.pg_net             # HTTP client from SQL for calling external APIs
+
+              # Testing
               ps.pgtap              # PostgreSQL TAP testing framework
 
-              # Scheduling (STABLE)
+              # Scheduling
               ps.pg_cron            # Cron-like task scheduling
+
+              # Metrics & Monitoring
+              ps.pg_stat_statements # Query performance statistics
+
+              # Advanced Querying
+              ps.plpgsql_check      # PL/pgSQL function validation
+              ps.pg_repack          # Online defragmentation and reordering
             ]
           ))
         ];
