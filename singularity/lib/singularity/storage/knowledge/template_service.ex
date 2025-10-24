@@ -687,7 +687,7 @@ defmodule Singularity.Knowledge.TemplateService do
       template_data: template_data
     }
 
-    case Singularity.NatsClient.publish("knowledge.template.store", Jason.encode!(request)) do
+    case Singularity.NatsClient.publish(Singularity.Nats.RegistryClient.subject(:knowledge_template_store), Jason.encode!(request)) do
       :ok ->
         :ok
 
@@ -710,7 +710,7 @@ defmodule Singularity.Knowledge.TemplateService do
       id: "#{template_type}-#{template_id}"
     }
 
-    case Singularity.NatsClient.request("knowledge.template.get", Jason.encode!(request),
+    case Singularity.NatsClient.request(Singularity.Nats.RegistryClient.subject(:knowledge_template_get), Jason.encode!(request),
            timeout: 5000
          ) do
       {:ok, response} ->
@@ -737,7 +737,7 @@ defmodule Singularity.Knowledge.TemplateService do
       limit: limit
     }
 
-    case Singularity.NatsClient.request("knowledge.template.list", Jason.encode!(request),
+    case Singularity.NatsClient.request(Singularity.Nats.RegistryClient.subject(:knowledge_template_list), Jason.encode!(request),
            timeout: 5000
          ) do
       {:ok, response} ->

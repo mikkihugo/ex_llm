@@ -516,6 +516,53 @@ defmodule CentralCloud.NatsRegistry do
         durable: false,
         retention: 604800
       }
+    },
+    knowledge_template_store: %{
+      subject: "knowledge.template.store",
+      description: "Store template in knowledge base",
+      handler: Singularity.Knowledge.NatsHandler,
+      pattern: "knowledge.template.store",
+      request_reply: false,
+      timeout: nil,
+      complexity: nil,
+      jetstream: %{
+        stream: "knowledge_requests",
+        consumer: "knowledge_template_store_consumer",
+        durable: false,
+        retention: 604800
+      }
+    },
+    knowledge_template_get: %{
+      subject: "knowledge.template.get",
+      description: "Fetch template from knowledge base",
+      handler: Singularity.Knowledge.NatsHandler,
+      pattern: "knowledge.template.get",
+      request_reply: true,
+      timeout: 5000,
+      complexity: :simple,
+      jetstream: %{
+        stream: "knowledge_requests",
+        consumer: "knowledge_template_get_consumer",
+        durable: true,
+        max_deliver: 1,
+        retention: 3600
+      }
+    },
+    knowledge_template_list: %{
+      subject: "knowledge.template.list",
+      description: "List templates in knowledge base",
+      handler: Singularity.Knowledge.NatsHandler,
+      pattern: "knowledge.template.list",
+      request_reply: true,
+      timeout: 5000,
+      complexity: :simple,
+      jetstream: %{
+        stream: "knowledge_requests",
+        consumer: "knowledge_template_list_consumer",
+        durable: true,
+        max_deliver: 1,
+        retention: 3600
+      }
     }
   }
 
