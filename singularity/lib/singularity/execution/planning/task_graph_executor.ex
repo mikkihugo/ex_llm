@@ -73,12 +73,12 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
       purpose: "Execute LLM operations for tasks"
       critical: true
 
-    - module: Singularity.RAGCodeGenerator
+    - module: Singularity.CodeGeneration.Implementations.RAGCodeGenerator
       function: find_similar/2, generate/1
       purpose: "Find similar code patterns for tasks"
       critical: false
 
-    - module: Singularity.QualityCodeGenerator
+    - module: Singularity.CodeGeneration.Implementations.QualityCodeGenerator
       function: generate/2, validate/1
       purpose: "Enforce quality standards on generated code"
       critical: false
@@ -207,7 +207,8 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
   # INTEGRATION: LLM execution (NATS-based operations)
   # INTEGRATION: Code generation and quality enforcement
-  alias Singularity.{RAGCodeGenerator, QualityCodeGenerator, Store}
+  alias Singularity.CodeGeneration.Implementations.{RAGCodeGenerator, QualityCodeGenerator}
+  alias Singularity.Store
 
   # INTEGRATION: Self-improvement (learning from execution)
   # INTEGRATION: Agent spawning from Lua configurations

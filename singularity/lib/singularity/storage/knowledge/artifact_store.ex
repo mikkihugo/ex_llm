@@ -90,7 +90,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
   alias Singularity.Repo
   alias Singularity.Schemas.KnowledgeArtifact
   # Single embedding source with auto-fallback
-  alias Singularity.EmbeddingGenerator
+  alias Singularity.CodeGeneration.Implementations.EmbeddingGenerator
 
   require Logger
 

@@ -1,9 +1,9 @@
-defmodule Singularity.GeneratorEngine.Code do
+defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Code do
   @moduledoc false
 
   require Logger
-  alias Singularity.GeneratorEngine.Util
-  alias Singularity.RAGCodeGenerator
+  alias Singularity.CodeGeneration.Implementations.GeneratorEngine.Util
+  alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
 
   @spec generate_clean_code(String.t(), String.t()) :: {:ok, String.t()}
   def generate_clean_code(description, language) do

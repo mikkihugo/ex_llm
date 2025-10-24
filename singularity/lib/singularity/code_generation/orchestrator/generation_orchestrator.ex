@@ -1,4 +1,4 @@
-defmodule Singularity.CodeGeneration.GenerationOrchestrator do
+defmodule Singularity.CodeGeneration.Orchestrator.GenerationOrchestrator do
   @moduledoc """
   Generation Orchestrator - Config-driven code generation orchestration.
 
@@ -97,7 +97,7 @@ defmodule Singularity.CodeGeneration.GenerationOrchestrator do
   """
 
   require Logger
-  alias Singularity.CodeGeneration.GeneratorType
+  alias Singularity.CodeGeneration.Orchestrator.GeneratorType
 
   @doc """
   Generate code using all enabled generators or specified ones.

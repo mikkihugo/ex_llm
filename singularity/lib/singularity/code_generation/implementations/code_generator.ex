@@ -1,4 +1,4 @@
-defmodule Singularity.CodeGenerator do
+defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
   @moduledoc """
   **High-Level Code Generation Orchestrator** - RAG + Quality + Execution Strategy
 
@@ -103,7 +103,8 @@ defmodule Singularity.CodeGenerator do
   """
 
   require Logger
-  alias Singularity.{RAGCodeGenerator, EmbeddingEngine, CodeModel}
+  alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
+  alias Singularity.CodeModel
   @type generation_method :: :t5_local | :api | :auto
   @type complexity :: :simple | :medium | :complex
   @type quality_level :: :production | :standard | :draft

@@ -1,4 +1,4 @@
-defmodule Singularity.RAGCodeGenerator do
+defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
   @moduledoc """
   RAG-powered Code Generation - Find and use the BEST code from all codebases
 

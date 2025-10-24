@@ -797,4 +797,100 @@ defmodule Singularity.CodeSearch.Ecto do
         raise "calculate_pagerank failed: #{inspect(reason)}"
     end
   end
+
+  @doc """
+  Calculate and persist PageRank scores to graph_nodes table.
+
+  Calculates PageRank for all nodes and updates the pagerank_score column
+  in the graph_nodes table. This allows queries to find high-importance nodes.
+
+  ## Parameters
+  - `iterations` - Number of PageRank iterations (default: 20)
+  - `damping_factor` - Damping factor for PageRank (default: 0.85)
+
+  ## Returns
+  - `{:ok, count}` - Number of nodes updated
+  - `{:error, reason}` - Update failed
+
+  ## Examples
+
+      iex> CodeSearch.Ecto.persist_pagerank_scores()
+      {:ok, 147}
+
+      iex> CodeSearch.Ecto.persist_pagerank_scores(30, 0.85)
+      {:ok, 147}
+  """
+  @spec persist_pagerank_scores(non_neg_integer(), float()) :: {:ok, non_neg_integer()} | {:error, term()}
+  def persist_pagerank_scores(iterations \\ 20, damping_factor \\ 0.85) do
+    try do
+      # Calculate PageRank scores
+      scores = calculate_pagerank(iterations, damping_factor)
+
+      # Update each node with its PageRank score
+      updated_count =
+        Enum.reduce(scores, 0, fn %{node_id: node_id, pagerank_score: score}, count ->
+          case Repo.update_all(
+            from(gn in GraphNode, where: gn.node_id == ^node_id),
+            set: [pagerank_score: score]
+          ) do
+            {1, _} -> count + 1
+            _ -> count
+          end
+        end)
+
+      {:ok, updated_count}
+    rescue
+      e ->
+        Logger.error("Failed to persist PageRank scores", error: inspect(e))
+        {:error, {:persist_failed, inspect(e)}}
+    end
+  end
+
+  @doc """
+  Get nodes sorted by PageRank score (most important first).
+
+  Returns nodes ordered by PageRank score in descending order.
+
+  ## Parameters
+  - `codebase_id` - Codebase to query (optional, all if not specified)
+  - `limit` - Maximum number of results (default: 10)
+
+  ## Returns
+  - List of nodes with highest PageRank scores
+
+  ## Examples
+
+      iex> CodeSearch.Ecto.get_top_nodes_by_pagerank("my-codebase", 5)
+      [
+        %{node_id: "123", name: "main", pagerank_score: 0.89},
+        %{node_id: "456", name: "init", pagerank_score: 0.67},
+        ...
+      ]
+  """
+  @spec get_top_nodes_by_pagerank(String.t() | nil, non_neg_integer()) :: [map()]
+  def get_top_nodes_by_pagerank(codebase_id \\ nil, limit \\ 10) do
+    query =
+      GraphNode
+      |> where([gn], gn.pagerank_score > 0.0)
+
+    query =
+      if codebase_id do
+        where(query, [gn], gn.codebase_id == ^codebase_id)
+      else
+        query
+      end
+
+    query
+    |> order_by([gn], desc: gn.pagerank_score)
+    |> limit(^limit)
+    |> select([gn], %{
+      node_id: gn.node_id,
+      name: gn.name,
+      file_path: gn.file_path,
+      node_type: gn.node_type,
+      pagerank_score: gn.pagerank_score,
+      codebase_id: gn.codebase_id
+    })
+    |> Repo.all()
+  end
 end

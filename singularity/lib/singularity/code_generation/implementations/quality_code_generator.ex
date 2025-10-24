@@ -1,4 +1,4 @@
-defmodule Singularity.QualityCodeGenerator do
+defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
   @moduledoc """
   High-Quality Code Generation with enforced standards
 

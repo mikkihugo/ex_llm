@@ -24,7 +24,7 @@ defmodule Singularity.GeneratorEngine do
       {:ok, structure} = GeneratorEngine.suggest_microservice_structure("user-service", "elixir")
   """
 
-  alias Singularity.GeneratorEngine.{Code, Naming, Pseudocode, Structure}
+  alias Singularity.CodeGeneration.Implementations.GeneratorEngine.{Code, Naming, Pseudocode, Structure}
 
   @behaviour Singularity.Engine
 

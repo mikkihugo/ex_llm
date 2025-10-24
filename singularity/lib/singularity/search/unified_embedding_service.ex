@@ -109,7 +109,7 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
 
   require Logger
   alias Singularity.EmbeddingEngine
-  alias Singularity.EmbeddingGenerator
+  alias Singularity.CodeGeneration.Implementations.EmbeddingGenerator
 
   @type embedding :: [float()] | Pgvector.t()
   @type strategy :: :auto | :rust | :bumblebee

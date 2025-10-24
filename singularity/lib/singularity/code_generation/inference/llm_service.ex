@@ -1,4 +1,4 @@
-defmodule Singularity.CodeGeneration.LLMService do
+defmodule Singularity.CodeGeneration.Inference.LLMService do
   @moduledoc """
   Code Generation LLM Service - Pure Elixir using Nx + Ortex for inference
 

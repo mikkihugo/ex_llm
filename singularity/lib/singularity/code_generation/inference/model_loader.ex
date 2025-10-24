@@ -1,4 +1,4 @@
-defmodule Singularity.CodeGeneration.ModelLoader do
+defmodule Singularity.CodeGeneration.Inference.ModelLoader do
   @moduledoc """
   Model Loader for Code Generation - Download and load LLMs using Nx
 
@@ -21,7 +21,7 @@ defmodule Singularity.CodeGeneration.ModelLoader do
   """
 
   require Logger
-  alias Singularity.CodeGeneration.LLMService
+  alias Singularity.CodeGeneration.Inference.LLMService
 
   @doc """
   Load model with specified device

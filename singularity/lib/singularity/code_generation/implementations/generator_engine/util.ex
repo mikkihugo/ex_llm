@@ -1,4 +1,4 @@
-defmodule Singularity.GeneratorEngine.Util do
+defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Util do
   @moduledoc false
 
   @spec slug(String.t()) :: String.t()

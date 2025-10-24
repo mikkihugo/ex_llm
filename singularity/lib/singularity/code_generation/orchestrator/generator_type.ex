@@ -1,4 +1,4 @@
-defmodule Singularity.CodeGeneration.GeneratorType do
+defmodule Singularity.CodeGeneration.Orchestrator.GeneratorType do
   @moduledoc """
   Generator Type Behavior - Contract for all code generation strategies.
 

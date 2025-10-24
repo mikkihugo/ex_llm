@@ -112,7 +112,7 @@ defmodule Mix.Tasks.Rag.Setup do
 
     Try it:
       iex -S mix
-      alias Singularity.RAGCodeGenerator
+      alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
       {:ok, code} = RAGCodeGenerator.generate(
         task: "Parse JSON with error handling",
         language: "elixir",

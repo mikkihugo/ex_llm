@@ -23,7 +23,7 @@ defmodule Singularity.CodeGeneration.Generators.GeneratorEngineImpl do
       {:ok, %{generator_engine: {:ok, "code here" }}}
   """
 
-  @behaviour Singularity.CodeGeneration.GeneratorType
+  @behaviour Singularity.CodeGeneration.Orchestrator.GeneratorType
   require Logger
   alias Singularity.Engines.GeneratorEngine
 

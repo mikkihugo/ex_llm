@@ -87,7 +87,7 @@ defmodule Mix.Tasks.Rag.Test do
     Max Retries: #{retries}
     """)
 
-    alias Singularity.RAGCodeGenerator
+    alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
 
     start_time = System.monotonic_time(:millisecond)
 

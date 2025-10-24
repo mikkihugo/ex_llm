@@ -1,7 +1,7 @@
-defmodule Singularity.GeneratorEngine.Naming do
+defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Naming do
   @moduledoc false
 
-  alias Singularity.GeneratorEngine.Util
+  alias Singularity.CodeGeneration.Implementations.GeneratorEngine.Util
 
   @spec validate_naming_compliance(String.t(), atom()) :: boolean()
   def validate_naming_compliance(name, element_type) do

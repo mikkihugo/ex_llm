@@ -5,9 +5,9 @@ defmodule Singularity.CodeGeneration.Generators.QualityGenerator do
   Wraps QualityCodeGenerator into unified GeneratorType behavior.
   """
 
-  @behaviour Singularity.CodeGeneration.GeneratorType
+  @behaviour Singularity.CodeGeneration.Orchestrator.GeneratorType
   require Logger
-  alias Singularity.QualityCodeGenerator
+  alias Singularity.CodeGeneration.Implementations.QualityCodeGenerator
 
   @impl true
   def generator_type, do: :quality

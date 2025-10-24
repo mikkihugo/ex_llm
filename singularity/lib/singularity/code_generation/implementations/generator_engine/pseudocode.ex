@@ -1,4 +1,4 @@
-defmodule Singularity.GeneratorEngine.Pseudocode do
+defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Pseudocode do
   @moduledoc """
   Pseudocode Generation Engine.
 

@@ -78,9 +78,13 @@ defmodule Singularity.Bootstrap.PageRankBootstrap do
 
     unless enabled do
       Logger.info("PageRank bootstrap disabled in configuration")
-      return :ok
+      :ok
+    else
+      do_initialize(auto_init, config)
     end
+  end
 
+  defp do_initialize(auto_init, config) do
     Logger.info("🚀 PageRank Bootstrap: Checking initialization status...")
 
     try do

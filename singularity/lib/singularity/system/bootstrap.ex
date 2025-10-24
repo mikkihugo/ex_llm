@@ -47,6 +47,7 @@ defmodule Singularity.System.Bootstrap do
   alias Singularity.{Store, SelfImprovingAgent}
 
   # INTEGRATION: Code generation and quality enforcement
+  alias Singularity.CodeGeneration.Implementations.{RAGCodeGenerator, QualityCodeGenerator}
   # INTEGRATION: SPARC methodology and hierarchical planning
   alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
 

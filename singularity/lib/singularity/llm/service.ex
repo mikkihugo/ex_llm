@@ -211,7 +211,7 @@ defmodule Singularity.LLM.Service do
       purpose: Code refactoring operations
       frequency: medium
 
-    - module: Singularity.QualityCodeGenerator
+    - module: Singularity.CodeGeneration.Implementations.QualityCodeGenerator
       purpose: Quality-assured code generation
       frequency: medium
 

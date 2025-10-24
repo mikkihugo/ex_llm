@@ -1,7 +1,7 @@
-defmodule Singularity.GeneratorEngine.Structure do
+defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Structure do
   @moduledoc false
 
-  alias Singularity.GeneratorEngine.Util
+  alias Singularity.CodeGeneration.Implementations.GeneratorEngine.Util
 
   @spec suggest_microservice_structure(String.t(), String.t()) :: {:ok, map()}
   def suggest_microservice_structure(domain, language) do

@@ -1,4 +1,4 @@
-defmodule Singularity.CodeGeneration.InferenceEngine do
+defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   @moduledoc """
   Code Generation Inference Engine - Low-level token generation for code LLMs.
 
@@ -67,7 +67,7 @@ defmodule Singularity.CodeGeneration.InferenceEngine do
   """
 
   require Logger
-  alias Singularity.CodeGeneration.LLMService
+  alias Singularity.CodeGeneration.Inference.LLMService
 
   @doc """
   Generate code from prompt with sampling strategy.

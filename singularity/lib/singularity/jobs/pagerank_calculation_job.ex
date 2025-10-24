@@ -195,33 +195,33 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
 
     if node_count == 0 do
       Logger.warning("⚠️  No graph nodes found for codebase: #{codebase_id}")
-      return {:error, :no_nodes_found}
-    end
+      {:error, :no_nodes_found}
+    else
+      # Calculate PageRank scores
+      case calculate_and_store_pagerank(codebase_id, iterations, damping_factor) do
+        {:ok, stats} ->
+          elapsed = System.monotonic_time(:millisecond) - start_time
 
-    # Calculate PageRank scores
-    case calculate_and_store_pagerank(codebase_id, iterations, damping_factor) do
-      {:ok, stats} ->
-        elapsed = System.monotonic_time(:millisecond) - start_time
+          Logger.info("✅ PageRank calculation complete", %{
+            codebase_id: codebase_id,
+            nodes_updated: stats.nodes_updated,
+            avg_score: stats.avg_score,
+            max_score: stats.max_score,
+            min_score: stats.min_score,
+            elapsed_ms: elapsed
+          })
 
-        Logger.info("✅ PageRank calculation complete", %{
-          codebase_id: codebase_id,
-          nodes_updated: stats.nodes_updated,
-          avg_score: stats.avg_score,
-          max_score: stats.max_score,
-          min_score: stats.min_score,
-          elapsed_ms: elapsed
-        })
+          log_top_nodes(codebase_id, 10)
+          {:ok, stats}
 
-        log_top_nodes(codebase_id, 10)
-        {:ok, stats}
+        {:error, reason} ->
+          Logger.error("❌ PageRank calculation failed", %{
+            codebase_id: codebase_id,
+            error: inspect(reason)
+          })
 
-      {:error, reason} ->
-        Logger.error("❌ PageRank calculation failed", %{
-          codebase_id: codebase_id,
-          error: inspect(reason)
-        })
-
-        {:error, reason}
+          {:error, reason}
+      end
     end
   end
 

@@ -13,7 +13,7 @@ defmodule Singularity.Engine.Registry do
     Singularity.CodeEngine,
     Singularity.PromptEngine,
     Singularity.LintingEngine,
-    Singularity.GeneratorEngine
+    Singularity.CodeGeneration.Implementations.GeneratorEngine
   ]
 
   @type engine_summary :: %{

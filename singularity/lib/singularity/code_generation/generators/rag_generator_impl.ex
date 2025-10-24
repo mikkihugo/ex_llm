@@ -22,9 +22,9 @@ defmodule Singularity.CodeGeneration.Generators.RAGGeneratorImpl do
       {:ok, %{rag: {:ok, "defmodule ..." }}}
   """
 
-  @behaviour Singularity.CodeGeneration.GeneratorType
+  @behaviour Singularity.CodeGeneration.Orchestrator.GeneratorType
   require Logger
-  alias Singularity.RAGCodeGenerator
+  alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
 
   @impl true
   def generator_type, do: :rag

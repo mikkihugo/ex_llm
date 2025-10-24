@@ -48,7 +48,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
   require Logger
   alias Singularity.ArchitectureEngine.PackageRegistryKnowledge
   alias Singularity.CodeSearch
-  alias Singularity.EmbeddingGenerator
+  alias Singularity.CodeGeneration.Implementations.EmbeddingGenerator
   alias Singularity.Repo
 
   @doc """

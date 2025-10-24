@@ -90,7 +90,7 @@ defmodule Singularity.Learning.PatternMiner do
     top_k = Keyword.get(opts, :top_k, 5)
 
     # Generate embedding for task
-    case Singularity.EmbeddingGenerator.embed(task_description) do
+    case Singularity.CodeGeneration.Implementations.EmbeddingGenerator.embed(task_description) do
       {:ok, task_embedding} ->
         # Query semantic_patterns table
         query = """
@@ -151,7 +151,7 @@ defmodule Singularity.Learning.PatternMiner do
     top_k = Keyword.get(opts, :top_k, 5)
 
     # Generate embedding for task
-    case Singularity.EmbeddingGenerator.embed(task_description) do
+    case Singularity.CodeGeneration.Implementations.EmbeddingGenerator.embed(task_description) do
       {:ok, task_embedding} ->
         # Query codebase_metadata table for high-quality code patterns
         query = """
@@ -486,7 +486,7 @@ defmodule Singularity.Learning.PatternMiner do
     pattern_embeddings =
       patterns
       |> Enum.map(fn pattern ->
-        case Singularity.EmbeddingEngine.embed(pattern.description || pattern.name) do
+        case Singularity.CodeGeneration.Implementations.EmbeddingGenerator.embed(pattern.description || pattern.name) do
           {:ok, embedding} ->
             {pattern, embedding}
 
@@ -703,7 +703,7 @@ defmodule Singularity.Learning.PatternMiner do
       # Generate embedding for the cluster
       cluster_description = build_cluster_description(cluster)
 
-      case Singularity.EmbeddingEngine.embed(cluster_description) do
+      case Singularity.CodeGeneration.Implementations.EmbeddingGenerator.embed(cluster_description) do
         {:ok, embedding} ->
           # Store in database
           pattern_data = %{

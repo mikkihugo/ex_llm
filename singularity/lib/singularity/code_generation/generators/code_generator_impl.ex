@@ -23,9 +23,9 @@ defmodule Singularity.CodeGeneration.Generators.CodeGeneratorImpl do
       {:ok, %{code_generator: {:ok, "defmodule ..." }}}
   """
 
-  @behaviour Singularity.CodeGeneration.GeneratorType
+  @behaviour Singularity.CodeGeneration.Orchestrator.GeneratorType
   require Logger
-  alias Singularity.CodeGenerator
+  alias Singularity.CodeGeneration.Implementations.CodeGenerator
 
   @impl true
   def generator_type, do: :code_generator

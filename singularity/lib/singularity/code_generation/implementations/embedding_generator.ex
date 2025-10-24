@@ -1,4 +1,4 @@
-defmodule Singularity.EmbeddingGenerator do
+defmodule Singularity.CodeGeneration.Implementations.EmbeddingGenerator do
   @moduledoc """
   Embedding Generator - Local ONNX embeddings with multi-vector concatenation.
 
