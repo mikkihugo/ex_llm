@@ -53,6 +53,8 @@ defmodule Singularity.Application do
       Singularity.LLM.Supervisor,
       # Manages: TemplateService, TemplatePerformanceTracker, CodeStore
       Singularity.Knowledge.Supervisor,
+      # Genesis Integration - Learning system consuming Genesis experiment results
+      Singularity.Learning.Supervisor,
       # Code Analyzer Cache - Analysis result caching for performance
       {Singularity.CodeAnalyzer.Cache, [max_size: 1000, ttl: 3600]},
       # Manages: StartupCodeIngestion, SafeWorkPlanner, WorkPlanAPI
