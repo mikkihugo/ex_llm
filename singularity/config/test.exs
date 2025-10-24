@@ -21,8 +21,11 @@ config :singularity, :oban_enabled, false
 # Oban configuration for test mode
 # Using `testing: :inline` prevents Oban from trying to connect to the database
 # The dispatcher runs jobs immediately in the same process instead of enqueueing them
+# NOTE: Even though oban_enabled is false above, we still provide config for if it's explicitly started
 config :oban,
-  testing: :inline
+  engine: Oban.Engines.Inline,
+  queues: [],
+  repo: Singularity.Repo
 
 # Test NATS Configuration
 # Disable NATS for unit tests to avoid connectivity requirements

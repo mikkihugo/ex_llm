@@ -140,18 +140,16 @@ defmodule Singularity.Nats.RegistryClient do
   end
 
   @doc """
-  Get handler module name for subject string.
+  Get handler module atom for subject string.
 
-  The handler is returned as a string, not a module atom, since it's defined in
-  Singularity and this client lives in the same codebase. You can convert to
-  module using String.to_atom/1 if needed, or pass directly to dynamic module calls.
+  Returns the handler module as an atom, ready for dynamic calls or delegation.
 
   ## Examples
 
       iex> Singularity.Nats.RegistryClient.handler("llm.provider.claude")
-      {:ok, "Singularity.LLM.NatsHandler"}
+      {:ok, Singularity.LLM.NatsHandler}
   """
-  @spec handler(String.t()) :: {:ok, String.t()} | {:error, atom()}
+  @spec handler(String.t()) :: {:ok, module()} | {:error, atom()}
   def handler(subject_string) when is_binary(subject_string) do
     NatsRegistry.handler(subject_string)
   end

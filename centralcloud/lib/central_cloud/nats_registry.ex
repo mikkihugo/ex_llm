@@ -182,7 +182,7 @@ defmodule CentralCloud.NatsRegistry do
     provider_claude: %{
       subject: "llm.provider.claude",
       description: "Request to Claude API via AI Server",
-      handler: "Singularity.LLM.NatsHandler",
+      handler: Singularity.LLM.NatsHandler,
       pattern: "llm.provider.claude",
       request_reply: true,
       timeout: 30000,
@@ -198,7 +198,7 @@ defmodule CentralCloud.NatsRegistry do
     provider_gemini: %{
       subject: "llm.provider.gemini",
       description: "Request to Gemini API via AI Server",
-      handler: "Singularity.LLM.NatsHandler",
+      handler: Singularity.LLM.NatsHandler,
       pattern: "llm.provider.gemini",
       request_reply: true,
       timeout: 30000,
@@ -214,7 +214,7 @@ defmodule CentralCloud.NatsRegistry do
     provider_openai: %{
       subject: "llm.provider.openai",
       description: "Request to OpenAI API via AI Server",
-      handler: "Singularity.LLM.NatsHandler",
+      handler: Singularity.LLM.NatsHandler,
       pattern: "llm.provider.openai",
       request_reply: true,
       timeout: 30000,
@@ -230,7 +230,7 @@ defmodule CentralCloud.NatsRegistry do
     provider_copilot: %{
       subject: "llm.provider.copilot",
       description: "Request to Copilot API via AI Server",
-      handler: "Singularity.LLM.NatsHandler",
+      handler: Singularity.LLM.NatsHandler,
       pattern: "llm.provider.copilot",
       request_reply: true,
       timeout: 30000,
@@ -253,7 +253,7 @@ defmodule CentralCloud.NatsRegistry do
     code_parse: %{
       subject: "analysis.code.parse",
       description: "Parse code and extract AST",
-      handler: "Singularity.CodeAnalysis.NatsHandler",
+      handler: Singularity.CodeAnalysis.NatsHandler,
       pattern: "analysis.code.parse",
       request_reply: true,
       timeout: 10000,
@@ -269,7 +269,7 @@ defmodule CentralCloud.NatsRegistry do
     code_analyze: %{
       subject: "analysis.code.analyze",
       description: "Analyze code quality and patterns",
-      handler: "Singularity.CodeAnalysis.NatsHandler",
+      handler: Singularity.CodeAnalysis.NatsHandler,
       pattern: "analysis.code.analyze",
       request_reply: true,
       timeout: 15000,
@@ -285,7 +285,7 @@ defmodule CentralCloud.NatsRegistry do
     code_embed: %{
       subject: "analysis.code.embed",
       description: "Generate embeddings for code",
-      handler: "Singularity.CodeAnalysis.NatsHandler",
+      handler: Singularity.CodeAnalysis.NatsHandler,
       pattern: "analysis.code.embed",
       request_reply: true,
       timeout: 20000,
@@ -301,7 +301,7 @@ defmodule CentralCloud.NatsRegistry do
     code_search: %{
       subject: "analysis.code.search",
       description: "Search code semantically",
-      handler: "Singularity.CodeAnalysis.NatsHandler",
+      handler: Singularity.CodeAnalysis.NatsHandler,
       pattern: "analysis.code.search",
       request_reply: true,
       timeout: 10000,
@@ -317,7 +317,7 @@ defmodule CentralCloud.NatsRegistry do
     code_detect_frameworks: %{
       subject: "analysis.code.detect.frameworks",
       description: "Detect frameworks and technologies",
-      handler: "Singularity.CodeAnalysis.NatsHandler",
+      handler: Singularity.CodeAnalysis.NatsHandler,
       pattern: "analysis.code.detect.frameworks",
       request_reply: true,
       timeout: 10000,
@@ -340,7 +340,7 @@ defmodule CentralCloud.NatsRegistry do
     agent_spawn: %{
       subject: "agents.spawn",
       description: "Spawn new autonomous agent",
-      handler: "Singularity.Agents.NatsHandler",
+      handler: Singularity.Agents.NatsHandler,
       pattern: "agents.spawn",
       request_reply: true,
       timeout: 5000,
@@ -356,7 +356,7 @@ defmodule CentralCloud.NatsRegistry do
     agent_status: %{
       subject: "agents.status",
       description: "Check agent status",
-      handler: "Singularity.Agents.NatsHandler",
+      handler: Singularity.Agents.NatsHandler,
       pattern: "agents.status",
       request_reply: true,
       timeout: 5000,
@@ -372,7 +372,7 @@ defmodule CentralCloud.NatsRegistry do
     agent_pause: %{
       subject: "agents.pause",
       description: "Pause running agent",
-      handler: "Singularity.Agents.NatsHandler",
+      handler: Singularity.Agents.NatsHandler,
       pattern: "agents.pause",
       request_reply: true,
       timeout: 5000,
@@ -388,7 +388,7 @@ defmodule CentralCloud.NatsRegistry do
     agent_resume: %{
       subject: "agents.resume",
       description: "Resume paused agent",
-      handler: "Singularity.Agents.NatsHandler",
+      handler: Singularity.Agents.NatsHandler,
       pattern: "agents.resume",
       request_reply: true,
       timeout: 5000,
@@ -404,7 +404,7 @@ defmodule CentralCloud.NatsRegistry do
     agent_improve: %{
       subject: "agents.improve",
       description: "Request agent self-improvement",
-      handler: "Singularity.Agents.NatsHandler",
+      handler: Singularity.Agents.NatsHandler,
       pattern: "agents.improve",
       request_reply: true,
       timeout: 60000,
@@ -420,7 +420,7 @@ defmodule CentralCloud.NatsRegistry do
     agent_result: %{
       subject: "agents.result",
       description: "Publish agent execution result",
-      handler: "Singularity.Agents.NatsHandler",
+      handler: Singularity.Agents.NatsHandler,
       pattern: "agents.result",
       request_reply: false,
       timeout: nil,
@@ -441,7 +441,7 @@ defmodule CentralCloud.NatsRegistry do
     templates_technology_fetch: %{
       subject: "templates.technology.fetch",
       description: "Fetch technology templates",
-      handler: "Singularity.Knowledge.NatsHandler",
+      handler: Singularity.Knowledge.NatsHandler,
       pattern: "templates.technology.fetch",
       request_reply: true,
       timeout: 5000,
@@ -457,7 +457,7 @@ defmodule CentralCloud.NatsRegistry do
     templates_quality_fetch: %{
       subject: "templates.quality.fetch",
       description: "Fetch quality templates",
-      handler: "Singularity.Knowledge.NatsHandler",
+      handler: Singularity.Knowledge.NatsHandler,
       pattern: "templates.quality.fetch",
       request_reply: true,
       timeout: 5000,
@@ -473,7 +473,7 @@ defmodule CentralCloud.NatsRegistry do
     knowledge_search: %{
       subject: "knowledge.search",
       description: "Search knowledge base semantically",
-      handler: "Singularity.Knowledge.NatsHandler",
+      handler: Singularity.Knowledge.NatsHandler,
       pattern: "knowledge.search",
       request_reply: true,
       timeout: 10000,
@@ -489,7 +489,7 @@ defmodule CentralCloud.NatsRegistry do
     knowledge_learn: %{
       subject: "knowledge.learn",
       description: "Store learned pattern in knowledge base",
-      handler: "Singularity.Knowledge.NatsHandler",
+      handler: Singularity.Knowledge.NatsHandler,
       pattern: "knowledge.learn",
       request_reply: false,
       timeout: nil,
@@ -510,7 +510,7 @@ defmodule CentralCloud.NatsRegistry do
     meta_registry_naming: %{
       subject: "analysis.meta.registry.naming",
       description: "Query naming patterns from meta-registry",
-      handler: "Singularity.ArchitectureEngine.MetaRegistry.NatsHandler",
+      handler: Singularity.ArchitectureEngine.MetaRegistry.NatsHandler,
       pattern: "analysis.meta.registry.naming",
       request_reply: true,
       timeout: 5000,
@@ -526,7 +526,7 @@ defmodule CentralCloud.NatsRegistry do
     meta_registry_architecture: %{
       subject: "analysis.meta.registry.architecture",
       description: "Query architecture patterns from meta-registry",
-      handler: "Singularity.ArchitectureEngine.MetaRegistry.NatsHandler",
+      handler: Singularity.ArchitectureEngine.MetaRegistry.NatsHandler,
       pattern: "analysis.meta.registry.architecture",
       request_reply: true,
       timeout: 5000,
@@ -542,7 +542,7 @@ defmodule CentralCloud.NatsRegistry do
     meta_registry_quality: %{
       subject: "analysis.meta.registry.quality",
       description: "Query quality patterns from meta-registry",
-      handler: "Singularity.ArchitectureEngine.MetaRegistry.NatsHandler",
+      handler: Singularity.ArchitectureEngine.MetaRegistry.NatsHandler,
       pattern: "analysis.meta.registry.quality",
       request_reply: true,
       timeout: 5000,
@@ -565,7 +565,7 @@ defmodule CentralCloud.NatsRegistry do
     system_health: %{
       subject: "system.health",
       description: "Health check and monitoring",
-      handler: "Singularity.System.NatsHandler",
+      handler: Singularity.System.NatsHandler,
       pattern: "system.health",
       request_reply: true,
       timeout: 5000,
@@ -581,7 +581,7 @@ defmodule CentralCloud.NatsRegistry do
     system_metrics: %{
       subject: "system.metrics",
       description: "Publish system metrics",
-      handler: "Singularity.System.NatsHandler",
+      handler: Singularity.System.NatsHandler,
       pattern: "system.metrics",
       request_reply: false,
       timeout: nil,
@@ -623,7 +623,7 @@ defmodule CentralCloud.NatsRegistry do
       iex> CentralCloud.NatsRegistry.get(:provider_claude)
       {:ok, %{
         subject: "llm.provider.claude",
-        handler: "Singularity.LLM.NatsHandler",
+        handler: Singularity.LLM.NatsHandler,
         request_reply: true,
         timeout: 30000,
         complexity: :complex,
@@ -661,20 +661,19 @@ defmodule CentralCloud.NatsRegistry do
   end
 
   @doc """
-  Get handler module name for subject string.
+  Get handler module atom for subject string.
 
-  Note: Returns handler as string, not module, since this is in CentralCloud
-  and may not have all handler modules loaded. Singularity can resolve to actual module.
+  Returns the handler module as an atom, ready for dynamic calls or delegation.
 
   ## Examples
 
       iex> CentralCloud.NatsRegistry.handler("llm.provider.claude")
-      {:ok, "Singularity.LLM.NatsHandler"}
+      {:ok, Singularity.LLM.NatsHandler}
 
       iex> CentralCloud.NatsRegistry.handler("unknown.subject")
       {:error, :not_found}
   """
-  @spec handler(String.t()) :: {:ok, String.t()} | {:error, :not_found}
+  @spec handler(String.t()) :: {:ok, module()} | {:error, :not_found}
   def handler(subject_string) when is_binary(subject_string) do
     case find_by_subject(subject_string) do
       nil -> {:error, :not_found}
