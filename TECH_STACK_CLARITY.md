@@ -131,27 +131,40 @@ Combined Output: 2560-dim (1536 + 1024 concatenated)
 
 ---
 
-### GRAPH PAGERANK - Rust NIF ✅
+### CENTRALITY MEASURES - Rust Code Analyzer Engine ✅
+
+**Status:** PageRank fully implemented; other centrality measures not yet implemented.
+
+**Part of:** Singularity Code Analyzer (code_engine Rust NIF)
+
+#### PageRank Centrality (Implemented) ✅
 
 **Implementation:**
 - `rust/code_engine/src/analysis/graph/pagerank.rs` - Rust algorithm
-- `rust/code_engine/src/graph/pagerank.rs` - Alternate location (same code)
+- `rust/code_engine/src/graph/pagerank.rs` - Duplicate/alternate location (same code)
+- `rust/code_engine/src/codebase/metadata.rs` - CodebaseMetadata struct (lines 70-78) stores scores
+- `rust/code_engine/src/domain/files.rs` - FileNode struct stores scores
+
+**What it measures:**
+- **Node importance** based on incoming link count
+- **Iterative voting** where high-score nodes vote more heavily
+- **Suitable for:** Finding critical modules, most-depended-on functions
 
 **Features:**
 ```rust
 pub struct CentralPageRank {
   graph: HashMap<String, Vec<String>>,      // Adjacency matrix
-  scores: HashMap<String, f64>,             // PageRank scores
+  scores: HashMap<String, f64>,             // PageRank scores (0.0-1.0)
   config: PageRankConfig,                   // Damping factor, convergence
   cache: RefCell<HashMap<String, f64>>,    // Performance cache
 }
 ```
 
-**Algorithm:**
-- Damping factor: 0.85 (configurable)
-- Convergence threshold: 1e-6
-- Max iterations: 100
-- Handles dangling nodes (nodes with no outgoing links)
+**Algorithm Configuration:**
+- **Damping factor:** 0.85 (configurable) - probability of following a link
+- **Convergence threshold:** 1e-6 - stop when scores stabilize
+- **Max iterations:** 100 - prevent infinite loops
+- **Dangling nodes:** Handled (nodes with no outgoing links)
 
 **Available Methods:**
 ```rust
@@ -160,16 +173,92 @@ pub fn get_score(&self, node_id: &str) -> f64
 pub fn get_top_nodes(&self, n: usize) -> Vec<PageRankResult>
 pub fn get_all_results(&self) -> Vec<PageRankResult>
 pub fn export_dot(&self) -> String  // Graphviz format
+
+// Integration trait for Elixir
+pub trait PageRankIntegration {
+  async fn calculate_centrality_score(&self, file_path: &Path, pagerank: &CentralPageRank) -> Result<f64>
+  async fn get_file_importance_rank(&self, file_path: &Path, pagerank: &CentralPageRank) -> Result<Option<usize>>
+}
 ```
 
 **Test Coverage:**
 - `test_pagerank_basic()` - Simple graph with 3 nodes
-- `test_pagerank_top_nodes()` - Star topology
+- `test_pagerank_top_nodes()` - Star topology (central node)
 - `test_pagerank_dependencies()` - File dependency graph
+
+**Returns:**
+```rust
+pub struct PageRankResult {
+  pub node_id: String,          // Module/function name
+  pub score: f64,               // Raw PageRank score
+  pub normalized_score: f64,    // 0.0-1.0 normalized
+  pub rank: usize,              // 1 = highest, n = lowest
+}
+
+pub struct PageRankMetrics {
+  pub total_nodes: usize,
+  pub total_edges: usize,
+  pub average_degree: f64,
+  pub density: f64,
+  pub iterations_to_converge: usize,
+  pub converged: bool,
+}
+```
 
 **Status:** ✅ Fully implemented, needs Elixir bridge for production use.
 
-**Next Steps:** Wire into Elixir for AGE integration (2-3 hours).
+**Storage:** Centrality scores stored in:
+- `CodebaseMetadata` struct: `pagerank_score` and `centrality_score` fields (line 72-74)
+- `FileNode` struct: `pagerank_score` and `centrality_score` fields
+- **Note:** Fields initialized to 0.0, need calculation/population in analysis pipeline
+
+#### Betweenness Centrality (Not Implemented) ❌
+
+**What it measures:** How often a node lies on shortest paths between other nodes
+- **Use case:** Finding bottlenecks or critical intermediaries
+- **Example:** A module that is a bridge between two subsystems
+- **Status:** NOT implemented
+
+#### Closeness Centrality (Not Implemented) ❌
+
+**What it measures:** Average distance from a node to all other nodes
+- **Use case:** Finding "hubs" that are close to everything
+- **Example:** A utility module used by many others
+- **Status:** NOT implemented
+
+#### Degree Centrality (Partially Implemented) 🔶
+
+**What it measures:** Simple in-degree + out-degree count
+- **In-degree:** How many modules depend on this
+- **Out-degree:** How many modules this depends on
+- **Current status:** Used in code_graph.rs for filtering (see lines 193-211)
+- **Missing:** Formal centrality calculation (not normalized, no ranking)
+
+---
+
+### Next Steps: Wire PageRank to Elixir
+
+**Goal:** Store PageRank scores in PostgreSQL, query via AGE.
+
+**Steps:**
+```
+1. Create Elixir wrapper for Rust PageRank
+   └─ singularity/lib/singularity/graph/pagerank_calculator.ex
+
+2. Build call graph from graph_edges
+   └─ Load edges, convert to HashMap
+
+3. Calculate PageRank scores
+   └─ Call Rust NIF, get Vec<PageRankResult>
+
+4. Store in graph_nodes or codebase_metadata
+   └─ Add pagerank_score column
+
+5. Query via AGE
+   └─ MATCH (n:Function) RETURN n.name, n.pagerank_score ORDER BY n.pagerank_score DESC
+```
+
+**Estimated effort:** 2-3 hours (NIF bridge + integration)
 
 ---
 
