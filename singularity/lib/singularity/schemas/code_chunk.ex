@@ -36,11 +36,13 @@ defmodule Singularity.Schemas.CodeChunk do
       - file_path: string
       - language: string
       - content: text
-      - embedding: vector(2560)
+      - embedding: halfvec(2560)  # Half-precision pgvector for high-dimensional embeddings
       - metadata: jsonb
     indexes:
-      - pgvector IVFFlat on embedding
+      - HNSW with halfvec_cosine_ops on embedding (supports up to 4000 dimensions)
       - btree on (codebase_id, file_path)
+      - btree on (language)
+      - unique btree on (codebase_id, content_hash)
     used_by:
       - SemanticCodeSearch
       - HybridCodeSearch

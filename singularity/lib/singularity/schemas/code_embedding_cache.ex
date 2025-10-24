@@ -20,12 +20,32 @@ defmodule Singularity.Schemas.CodeEmbeddingCache do
 
   ```mermaid
   graph TD
-      A[Compute Request] --> B{In Cache?}
-      B -->|Yes| C[Return Cached]
-      B -->|No| D[Compute Embedding]
-      D --> E[Store in Cache]
+      A[Embedding Request] --> B{In Cache?}
+      B -->|Yes, not expired| C[Return Cached + Increment Hit]
+      B -->|No or expired| D[Compute Embedding]
+      D --> E[Store in Cache with TTL]
       E --> F[Return Result]
       C --> F
+      G[Cleanup Job] -->|Periodic| H[Delete Expired Entries]
+  ```
+
+  ## Database Schema
+
+  ```yaml
+  code_embedding_cache table:
+    fields:
+      - id: uuid (primary key)
+      - code_hash: string (part of unique constraint)
+      - language: string (part of unique constraint)
+      - embedding: halfvec(2560)  # Half-precision pgvector for high-dimensional embeddings
+      - metadata: jsonb
+      - expires_at: timestamp
+      - hit_count: integer
+    indexes:
+      - HNSW with halfvec_cosine_ops on embedding (supports up to 4000 dimensions)
+      - btree on (expires_at) - for TTL cleanup queries
+      - btree on (language) - for language-specific cache lookups
+      - unique btree on (code_hash, language)
   ```
 
   ## Usage
