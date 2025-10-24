@@ -1,0 +1,27 @@
+defmodule Singularity.Repo.Migrations.CreateGraphTypes do
+  use Ecto.Migration
+
+  def change do
+    create table(:graph_types, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :graph_type, :string, null: false
+      add :description, :text
+
+      timestamps()
+    end
+
+    # Indexes
+    create unique_index(:graph_types, [:graph_type])
+
+    # Insert default graph types
+    execute("""
+    INSERT INTO graph_types (id, graph_type, description, inserted_at, updated_at)
+    VALUES
+      (gen_random_uuid(), 'CallGraph', 'Function call dependencies (DAG)', NOW(), NOW()),
+      (gen_random_uuid(), 'ImportGraph', 'Module import dependencies (DAG)', NOW(), NOW()),
+      (gen_random_uuid(), 'SemanticGraph', 'Conceptual relationships (General Graph)', NOW(), NOW()),
+      (gen_random_uuid(), 'DataFlowGraph', 'Variable and data dependencies (DAG)', NOW(), NOW())
+    ON CONFLICT (graph_type) DO NOTHING
+    """)
+  end
+end
