@@ -1,4 +1,4 @@
-defmodule Singularity.Nats.EngineDiscoveryHandler do
+defmodule Singularity.NATS.EngineDiscoveryHandler do
   @moduledoc """
   NATS handler for engine discovery and capability enumeration.
 

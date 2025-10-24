@@ -85,7 +85,7 @@ defmodule Singularity.NatsServer do
 
     # Subscribe to engine discovery subjects (for introspection/autonomy)
     # EngineDiscoveryHandler should use NatsClient internally
-    Singularity.Nats.EngineDiscoveryHandler.subscribe()
+    Singularity.NATS.EngineDiscoveryHandler.subscribe()
 
     Logger.info("🚀 NATS Server started - Single entry point for all services")
 

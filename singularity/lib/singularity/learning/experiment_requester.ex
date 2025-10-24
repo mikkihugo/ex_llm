@@ -74,7 +74,7 @@ defmodule Singularity.Learning.ExperimentRequester do
   """
 
   require Logger
-  alias Singularity.Nats.Client
+  alias Singularity.NATS.Client
   alias Singularity.Learning.ExperimentResult
 
   @default_timeout_ms 65_000  # Genesis timeout is 3,600,000ms (1 hour), wait 65 seconds

@@ -250,7 +250,7 @@ defmodule Singularity.Web.HealthController do
   end
 
   defp check_nats do
-    case Process.whereis(Singularity.Nats.Client) do
+    case Process.whereis(Singularity.NATS.Client) do
       nil -> "down"
       pid when is_pid(pid) -> if Process.alive?(pid), do: "up", else: "down"
     end

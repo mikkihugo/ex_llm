@@ -174,7 +174,7 @@ defmodule Singularity.Learning.ExperimentResultConsumer do
 
   use GenServer
   require Logger
-  alias Singularity.Nats.Client
+  alias Singularity.NATS.Client
   alias Singularity.Learning.ExperimentResult
 
   def start_link(opts \\ []) do

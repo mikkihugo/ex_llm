@@ -816,7 +816,7 @@ defmodule Singularity.LLM.Service do
   # @error_flow: :json_decode_error -> Response parsing failed
   # @error_flow: :timeout -> Request exceeded timeout threshold
   defp dispatch_request(request, opts) do
-    subject = Singularity.Nats.RegistryClient.subject(:llm_request)
+    subject = Singularity.NATS.RegistryClient.subject(:llm_request)
     timeout = Keyword.get(opts, :timeout, 30_000)
     requested_model = Map.get(request, :model, "auto")
 

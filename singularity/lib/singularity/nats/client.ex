@@ -1,4 +1,4 @@
-defmodule Singularity.Nats.Client do
+defmodule Singularity.NATS.Client do
   @moduledoc """
   Modern NATS client for communicating with the AI server and other services.
 
@@ -14,7 +14,7 @@ defmodule Singularity.Nats.Client do
 
   ```json
   {
-    "module": "Singularity.Nats.Client",
+    "module": "Singularity.NATS.Client",
     "purpose": "GenServer providing NATS messaging for distributed inter-service communication",
     "role": "genserver",
     "layer": "infrastructure",
@@ -26,7 +26,7 @@ defmodule Singularity.Nats.Client do
       "JetStream operations"
     ],
     "alternatives": {
-      "Direct Gnat library": "Low-level wrapper - use Nats.Client GenServer instead"
+      "Direct Gnat library": "Low-level wrapper - use NATS.Client GenServer instead"
     }
   }
   ```
@@ -36,7 +36,7 @@ defmodule Singularity.Nats.Client do
   ```mermaid
   graph TB
       Module["Other Modules"]
-      Client["Nats.Client GenServer"]
+      Client["NATS.Client GenServer"]
       Gnat["Gnat NATS Library"]
       NATS["NATS Server"]
       Services["AI Server / Other Services"]
@@ -108,9 +108,9 @@ defmodule Singularity.Nats.Client do
 
   ### Anti-Patterns (Prevents Duplicates)
 
-  - ❌ **DO NOT** use Gnat library directly - wrap through Nats.Client
-  - ❌ **DO NOT** create another NATS connection - reuse Nats.Client
-  - ❌ **DO NOT** bypass Nats.Client with raw TCP connections
+  - ❌ **DO NOT** use Gnat library directly - wrap through NATS.Client
+  - ❌ **DO NOT** create another NATS connection - reuse NATS.Client
+  - ❌ **DO NOT** bypass NATS.Client with raw TCP connections
   - ✅ **DO** use for all NATS pub/sub/request operations
   - ✅ **DO** use for inter-service communication patterns
 
@@ -151,7 +151,7 @@ defmodule Singularity.Nats.Client do
 
   ## Examples
 
-      iex> Singularity.Nats.Client.publish("llm.request", "Hello world")
+      iex> Singularity.NATS.Client.publish("llm.request", "Hello world")
       :ok
   """
   @spec publish(String.t(), binary(), keyword()) :: :ok | {:error, term()}
@@ -164,7 +164,7 @@ defmodule Singularity.Nats.Client do
 
   ## Examples
 
-      iex> Singularity.Nats.Client.request("llm.request", "Generate code", timeout: 5000)
+      iex> Singularity.NATS.Client.request("llm.request", "Generate code", timeout: 5000)
       {:ok, %{data: "def hello, do: :world", ...}}
   """
   @spec request(String.t(), binary(), keyword()) :: {:ok, nats_response()} | {:error, term()}
@@ -180,7 +180,7 @@ defmodule Singularity.Nats.Client do
 
   ## Examples
 
-      iex> Singularity.Nats.Client.subscribe("llm.>")
+      iex> Singularity.NATS.Client.subscribe("llm.>")
       {:ok, subscription_id}
   """
   @spec subscribe(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
@@ -193,7 +193,7 @@ defmodule Singularity.Nats.Client do
 
   ## Examples
 
-      iex> Singularity.Nats.Client.unsubscribe(subscription_id)
+      iex> Singularity.NATS.Client.unsubscribe(subscription_id)
       :ok
   """
   @spec unsubscribe(String.t()) :: :ok | {:error, term()}

@@ -284,7 +284,7 @@ defmodule Singularity.Web.Endpoint do
 
   defp check_nats do
     # Check if NATS client process is alive
-    case Process.whereis(Singularity.Nats.Client) do
+    case Process.whereis(Singularity.NATS.Client) do
       nil -> "down"
       pid when is_pid(pid) -> if Process.alive?(pid), do: "up", else: "down"
     end

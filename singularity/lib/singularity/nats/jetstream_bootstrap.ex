@@ -1,4 +1,4 @@
-defmodule Singularity.Nats.JetStreamBootstrap do
+defmodule Singularity.NATS.JetStreamBootstrap do
   @moduledoc """
   JetStream Bootstrap - Automatically creates streams and consumers from NATS Registry.
 
@@ -71,8 +71,8 @@ defmodule Singularity.Nats.JetStreamBootstrap do
   Call on application startup:
 
   ```elixir
-  # In Singularity.Application or Singularity.Nats.Supervisor
-  case Singularity.Nats.JetStreamBootstrap.ensure_streams() do
+  # In Singularity.Application or Singularity.NATS.Supervisor
+  case Singularity.NATS.JetStreamBootstrap.ensure_streams() do
     :ok ->
       Logger.info("JetStream streams bootstrapped successfully")
 
@@ -85,11 +85,11 @@ defmodule Singularity.Nats.JetStreamBootstrap do
   Or within a GenServer/Supervisor:
 
   ```elixir
-  defmodule Singularity.Nats.Supervisor do
+  defmodule Singularity.NATS.Supervisor do
     def init(_opts) do
       children = [
-        Singularity.Nats.Server,
-        Singularity.Nats.Client,
+        Singularity.NATS.Server,
+        Singularity.NATS.Client,
         {Task, fn -> JetStreamBootstrap.ensure_streams() end}
       ]
 
@@ -140,15 +140,15 @@ defmodule Singularity.Nats.JetStreamBootstrap do
 
   ```elixir
   # Get JetStream info
-  Singularity.Nats.JetStreamBootstrap.stream_info(:llm_requests)
+  Singularity.NATS.JetStreamBootstrap.stream_info(:llm_requests)
   # => {:ok, %{subjects: [...], consumers: 4, ...}}
 
   # Verify consumer health
-  Singularity.Nats.JetStreamBootstrap.consumer_info(:llm_requests, :llm_claude_consumer)
+  Singularity.NATS.JetStreamBootstrap.consumer_info(:llm_requests, :llm_claude_consumer)
   # => {:ok, %{pending: 0, redelivered: 3, ...}}
 
   # List all streams
-  Singularity.Nats.JetStreamBootstrap.list_streams()
+  Singularity.NATS.JetStreamBootstrap.list_streams()
   # => {:ok, ["llm_requests", "analysis_requests", ...]}
   ```
 
@@ -163,23 +163,23 @@ defmodule Singularity.Nats.JetStreamBootstrap do
   ## Module Identity (JSON)
   ```json
   {
-    "module_name": "Singularity.Nats.JetStreamBootstrap",
+    "module_name": "Singularity.NATS.JetStreamBootstrap",
     "purpose": "jetstream_stream_consumer_bootstrap",
     "domain": "messaging",
-    "depends_on": ["CentralCloud.NatsRegistry", "Singularity.Nats.Client"],
+    "depends_on": ["CentralCloud.NatsRegistry", "Singularity.NATS.Client"],
     "capabilities": ["stream_creation", "consumer_creation", "idempotent_bootstrap"]
   }
   ```
 
   ## Call Graph (YAML)
   ```yaml
-  Singularity.Nats.JetStreamBootstrap:
-    ensure_streams/0: [Singularity.Nats.RegistryClient.all_subjects/0]
-    create_stream/2: [Singularity.Nats.Client.jetstream_add_stream/2]
-    create_consumer/3: [Singularity.Nats.Client.jetstream_add_consumer/3]
-    stream_info/1: [Singularity.Nats.Client.jetstream_stream_info/1]
-    consumer_info/2: [Singularity.Nats.Client.jetstream_consumer_info/2]
-    list_streams/0: [Singularity.Nats.Client.jetstream_list_streams/0]
+  Singularity.NATS.JetStreamBootstrap:
+    ensure_streams/0: [Singularity.NATS.RegistryClient.all_subjects/0]
+    create_stream/2: [Singularity.NATS.Client.jetstream_add_stream/2]
+    create_consumer/3: [Singularity.NATS.Client.jetstream_add_consumer/3]
+    stream_info/1: [Singularity.NATS.Client.jetstream_stream_info/1]
+    consumer_info/2: [Singularity.NATS.Client.jetstream_consumer_info/2]
+    list_streams/0: [Singularity.NATS.Client.jetstream_list_streams/0]
   ```
 
   ## Anti-Patterns
@@ -195,7 +195,7 @@ defmodule Singularity.Nats.JetStreamBootstrap do
   """
 
   require Logger
-  alias Singularity.Nats.RegistryClient
+  alias Singularity.NATS.RegistryClient
   alias CentralCloud.NatsRegistry
 
   @doc """
@@ -206,10 +206,10 @@ defmodule Singularity.Nats.JetStreamBootstrap do
 
   ## Examples
 
-      iex> Singularity.Nats.JetStreamBootstrap.ensure_streams()
+      iex> Singularity.NATS.JetStreamBootstrap.ensure_streams()
       :ok
 
-      iex> Singularity.Nats.JetStreamBootstrap.ensure_streams()
+      iex> Singularity.NATS.JetStreamBootstrap.ensure_streams()
       :ok  # Returns immediately if already created
   """
   @spec ensure_streams() :: :ok | {:error, term()}
@@ -257,12 +257,12 @@ defmodule Singularity.Nats.JetStreamBootstrap do
 
   ## Examples
 
-      iex> Singularity.Nats.JetStreamBootstrap.create_stream("llm_requests", [
+      iex> Singularity.NATS.JetStreamBootstrap.create_stream("llm_requests", [
       ...>   %{subject: "llm.provider.claude", retention: 86400}
       ...> ])
       :ok
 
-      iex> Singularity.Nats.JetStreamBootstrap.create_stream("unknown", [])
+      iex> Singularity.NATS.JetStreamBootstrap.create_stream("unknown", [])
       {:error, :invalid_configuration}
   """
   @spec create_stream(String.t(), list(map())) :: :ok | {:error, term()}
@@ -294,7 +294,7 @@ defmodule Singularity.Nats.JetStreamBootstrap do
 
   ## Examples
 
-      iex> Singularity.Nats.JetStreamBootstrap.create_consumer("llm_requests", "llm_claude_consumer", %{
+      iex> Singularity.NATS.JetStreamBootstrap.create_consumer("llm_requests", "llm_claude_consumer", %{
       ...>   durable: true,
       ...>   max_deliver: 3
       ...> })
@@ -330,10 +330,10 @@ defmodule Singularity.Nats.JetStreamBootstrap do
 
   ## Examples
 
-      iex> Singularity.Nats.JetStreamBootstrap.stream_info("llm_requests")
+      iex> Singularity.NATS.JetStreamBootstrap.stream_info("llm_requests")
       {:ok, %{consumers: 4, messages: 1234, bytes: 98765}}
 
-      iex> Singularity.Nats.JetStreamBootstrap.stream_info("unknown")
+      iex> Singularity.NATS.JetStreamBootstrap.stream_info("unknown")
       {:error, :not_found}
   """
   @spec stream_info(String.t()) :: {:ok, map()} | {:error, term()}
@@ -350,10 +350,10 @@ defmodule Singularity.Nats.JetStreamBootstrap do
 
   ## Examples
 
-      iex> Singularity.Nats.JetStreamBootstrap.consumer_info("llm_requests", "llm_claude_consumer")
+      iex> Singularity.NATS.JetStreamBootstrap.consumer_info("llm_requests", "llm_claude_consumer")
       {:ok, %{pending: 10, delivered: 5000, redelivered: 3}}
 
-      iex> Singularity.Nats.JetStreamBootstrap.consumer_info("unknown", "unknown")
+      iex> Singularity.NATS.JetStreamBootstrap.consumer_info("unknown", "unknown")
       {:error, :not_found}
   """
   @spec consumer_info(String.t(), String.t()) :: {:ok, map()} | {:error, term()}
@@ -370,7 +370,7 @@ defmodule Singularity.Nats.JetStreamBootstrap do
 
   ## Examples
 
-      iex> Singularity.Nats.JetStreamBootstrap.list_streams()
+      iex> Singularity.NATS.JetStreamBootstrap.list_streams()
       {:ok, ["llm_requests", "analysis_requests", "agent_management"]}
   """
   @spec list_streams() :: {:ok, list(String.t())} | {:error, term()}

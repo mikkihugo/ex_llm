@@ -52,7 +52,7 @@ defmodule Singularity.Adapters.NatsAdapter do
     }
 
     # Publish to NATS
-    case Singularity.Nats.Client.publish("task.#{task_type}", Jason.encode!(message)) do
+    case Singularity.NATS.Client.publish("task.#{task_type}", Jason.encode!(message)) do
       :ok ->
         Logger.debug("NATS adapter: Task published",
           task_type: task_type,

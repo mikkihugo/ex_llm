@@ -1,4 +1,4 @@
-defmodule Singularity.Nats.RegistryClient do
+defmodule Singularity.NATS.RegistryClient do
   @moduledoc """
   NATS Registry Client - Lightweight client for accessing CentralCloud NATS Registry.
 
@@ -20,7 +20,7 @@ defmodule Singularity.Nats.RegistryClient do
   ```
   Singularity Code
        ↓
-  Singularity.Nats.RegistryClient (this module)
+  Singularity.NATS.RegistryClient (this module)
        ↓
   Optional local cache (ETS)
        ↓
@@ -31,7 +31,7 @@ defmodule Singularity.Nats.RegistryClient do
 
   ### Basic Subject Lookup
   ```elixir
-  alias Singularity.Nats.RegistryClient
+  alias Singularity.NATS.RegistryClient
 
   {:ok, subject} = RegistryClient.subject(:provider_claude)
   # => {:ok, "llm.provider.claude"}
@@ -42,8 +42,8 @@ defmodule Singularity.Nats.RegistryClient do
 
   ### With NatsClient
   ```elixir
-  alias Singularity.Nats.RegistryClient
-  alias Singularity.Nats.NatsClient
+  alias Singularity.NATS.RegistryClient
+  alias Singularity.NATS.NatsClient
 
   {:ok, subject} = RegistryClient.subject(:provider_claude)
   {:ok, config} = RegistryClient.get(:provider_claude)
@@ -66,7 +66,7 @@ defmodule Singularity.Nats.RegistryClient do
   ## Module Identity (JSON)
   ```json
   {
-    "module_name": "Singularity.Nats.RegistryClient",
+    "module_name": "Singularity.NATS.RegistryClient",
     "purpose": "centralcloud_nats_registry_client",
     "domain": "messaging",
     "location": "singularity",
@@ -77,7 +77,7 @@ defmodule Singularity.Nats.RegistryClient do
 
   ## Call Graph (YAML)
   ```yaml
-  Singularity.Nats.RegistryClient:
+  Singularity.NATS.RegistryClient:
     get/1: [CentralCloud.NatsRegistry.get/1]
     subject/1: [get/1]
     handler/1: [CentralCloud.NatsRegistry.handler/1]
@@ -111,7 +111,7 @@ defmodule Singularity.Nats.RegistryClient do
 
   ## Examples
 
-      iex> Singularity.Nats.RegistryClient.get(:provider_claude)
+      iex> Singularity.NATS.RegistryClient.get(:provider_claude)
       {:ok, %{
         subject: "llm.provider.claude",
         handler: "Singularity.LLM.NatsHandler",
@@ -131,7 +131,7 @@ defmodule Singularity.Nats.RegistryClient do
 
   ## Examples
 
-      iex> Singularity.Nats.RegistryClient.subject(:provider_claude)
+      iex> Singularity.NATS.RegistryClient.subject(:provider_claude)
       {:ok, "llm.provider.claude"}
   """
   @spec subject(atom()) :: {:ok, String.t()} | {:error, atom()}
@@ -146,7 +146,7 @@ defmodule Singularity.Nats.RegistryClient do
 
   ## Examples
 
-      iex> Singularity.Nats.RegistryClient.handler("llm.provider.claude")
+      iex> Singularity.NATS.RegistryClient.handler("llm.provider.claude")
       {:ok, Singularity.LLM.NatsHandler}
   """
   @spec handler(String.t()) :: {:ok, module()} | {:error, atom()}
@@ -159,10 +159,10 @@ defmodule Singularity.Nats.RegistryClient do
 
   ## Examples
 
-      iex> Singularity.Nats.RegistryClient.exists?("llm.provider.claude")
+      iex> Singularity.NATS.RegistryClient.exists?("llm.provider.claude")
       true
 
-      iex> Singularity.Nats.RegistryClient.exists?("unknown.subject")
+      iex> Singularity.NATS.RegistryClient.exists?("unknown.subject")
       false
   """
   @spec exists?(String.t()) :: boolean()
@@ -175,7 +175,7 @@ defmodule Singularity.Nats.RegistryClient do
 
   ## Examples
 
-      iex> Singularity.Nats.RegistryClient.for_service(:llm)
+      iex> Singularity.NATS.RegistryClient.for_service(:llm)
       {:ok, [
         %{subject: "llm.provider.claude", ...},
         %{subject: "llm.provider.gemini", ...},
@@ -193,7 +193,7 @@ defmodule Singularity.Nats.RegistryClient do
 
   ## Examples
 
-      iex> Singularity.Nats.RegistryClient.all_subjects() |> length()
+      iex> Singularity.NATS.RegistryClient.all_subjects() |> length()
       26
   """
   @spec all_subjects() :: list(String.t())
@@ -206,7 +206,7 @@ defmodule Singularity.Nats.RegistryClient do
 
   ## Examples
 
-      iex> Singularity.Nats.RegistryClient.jetstream_config(:provider_claude)
+      iex> Singularity.NATS.RegistryClient.jetstream_config(:provider_claude)
       {:ok, %{
         stream: "llm_requests",
         consumer: "llm_claude_consumer",
@@ -225,10 +225,10 @@ defmodule Singularity.Nats.RegistryClient do
 
   ## Examples
 
-      iex> Singularity.Nats.RegistryClient.validate("llm.provider.claude")
+      iex> Singularity.NATS.RegistryClient.validate("llm.provider.claude")
       :ok
 
-      iex> Singularity.Nats.RegistryClient.validate("llm.provider.claud")
+      iex> Singularity.NATS.RegistryClient.validate("llm.provider.claud")
       {:error, "Subject not found. Did you mean: [llm.provider.claude, llm.provider.gemini]?"}
   """
   @spec validate(String.t()) :: :ok | {:error, String.t()}
@@ -241,7 +241,7 @@ defmodule Singularity.Nats.RegistryClient do
 
   ## Examples
 
-      iex> Singularity.Nats.RegistryClient.pattern(:provider_claude)
+      iex> Singularity.NATS.RegistryClient.pattern(:provider_claude)
       {:ok, "llm.provider.claude"}
   """
   @spec pattern(atom()) :: {:ok, String.t()} | {:error, atom()}
