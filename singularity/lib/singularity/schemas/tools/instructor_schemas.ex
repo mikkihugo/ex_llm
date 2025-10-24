@@ -104,6 +104,13 @@ defmodule Singularity.Tools.InstructorSchemas do
     """
     @estimated_lines_doc "Approximate number of code lines"
 
+    @doc "Cast and validate raw data against GeneratedCode schema."
+    def cast_and_validate(data) do
+      %__MODULE__{}
+      |> cast(data, [:code, :language, :quality_level, :has_docs, :has_tests, :has_error_handling, :estimated_lines])
+      |> validate_changeset()
+    end
+
     def validate_changeset(changeset) do
       changeset
       |> validate_required([:code, :language, :quality_level])
@@ -160,6 +167,13 @@ defmodule Singularity.Tools.InstructorSchemas do
       field :errors, {:array, :string}
     end
 
+    @doc "Cast and validate raw data against ToolParameters schema."
+    def cast_and_validate(data) do
+      %__MODULE__{}
+      |> cast(data, [:tool_name, :parameters, :valid, :errors])
+      |> validate_changeset()
+    end
+
     def validate_changeset(changeset) do
       changeset
       |> validate_required([:tool_name, :parameters, :valid])
@@ -198,6 +212,13 @@ defmodule Singularity.Tools.InstructorSchemas do
       field :passing, :boolean
     end
 
+    @doc "Cast and validate raw data against CodeQualityResult schema."
+    def cast_and_validate(data) do
+      %__MODULE__{}
+      |> cast(data, [:score, :issues, :suggestions, :passing])
+      |> validate_changeset()
+    end
+
     def validate_changeset(changeset) do
       changeset
       |> validate_required([:score, :issues, :suggestions, :passing])
@@ -233,6 +254,13 @@ defmodule Singularity.Tools.InstructorSchemas do
       field :specific_issues, {:array, :string}
       field :improvement_suggestions, {:array, :string}
       field :effort_estimate, :string
+    end
+
+    @doc "Cast and validate raw data against RefinementFeedback schema."
+    def cast_and_validate(data) do
+      %__MODULE__{}
+      |> cast(data, [:focus_area, :specific_issues, :improvement_suggestions, :effort_estimate])
+      |> validate_changeset()
     end
 
     def validate_changeset(changeset) do

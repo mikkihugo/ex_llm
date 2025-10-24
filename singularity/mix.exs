@@ -114,6 +114,9 @@ defmodule Singularity.MixProject do
       # NATS messaging
       {:gnat, "~> 1.8"},
 
+      # Structured LLM outputs with validation (Instructor)
+      {:instructor, "~> 0.1"},
+
       # File watching for real-time code ingestion
       {:file_system, "~> 1.0"},
 
