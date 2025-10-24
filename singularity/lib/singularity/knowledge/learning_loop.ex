@@ -143,14 +143,139 @@ defmodule Singularity.Knowledge.LearningLoop do
 
   ## Anti-Patterns
 
-  - DO NOT skip usage recording
-  - DO NOT manually promote artifacts (use auto-promotion)
-  - DO NOT modify promotion thresholds without analysis
-  - DO NOT export without human review
+  #### ❌ DO NOT skip usage recording for "obvious" patterns
+  **Why:** Statistics are the only truth. Low-probability failures destroy promotion eligibility.
+  ```elixir
+  # ❌ WRONG - Only record when surprising
+  if result != expected, do: LearningLoop.record_usage(artifact_id, :failure)
 
-  ## Search Keywords
+  # ✅ CORRECT - Always record, even "expected" successes
+  LearningLoop.record_usage(artifact_id, :success, feedback_score: 4)
+  ```
 
-  learning, feedback, metrics, quality-tracking, auto-promotion, knowledge-evolution, artifact-lifecycle
+  #### ❌ DO NOT manually promote artifacts bypassing thresholds
+  **Why:** Thresholds exist for quality. Manual promotion corrupts statistics.
+  ```elixir
+  # ❌ WRONG - Bypass analysis and directly promote
+  ArtifactStore.mark_curated(artifact_id)
+
+  # ✅ CORRECT - Use auto-promotion with analysis
+  {:ok, analysis} = LearningLoop.analyze_quality(artifact_id)
+  if analysis.ready_to_promote, do: LearningLoop.promote_artifacts([artifact_id])
+  ```
+
+  #### ❌ DO NOT modify promotion thresholds without understanding impact
+  **Why:** Thresholds directly control knowledge quality. Lowering = lower quality promoted.
+  ```elixir
+  # ❌ WRONG - Lower threshold to promote faster
+  @promotion_success_threshold 0.80  # Was 0.95!
+
+  # ✅ CORRECT - Analyze impact before changing
+  # Document why: "Lowered to 0.90 after 3-month analysis shows 0.95 too strict"
+  @promotion_success_threshold 0.90
+  ```
+
+  #### ❌ DO NOT export learned artifacts without human review
+  **Why:** Learned patterns might encode bugs or edge cases not yet understood.
+  ```elixir
+  # ❌ WRONG - Auto-export without review
+  LearningLoop.export_learned_to_git(auto_review: true)
+
+  # ✅ CORRECT - Requires explicit human approval
+  {:ok, exported} = LearningLoop.export_learned_to_git()
+  # => User reviews files in templates_data/learned/
+  # => User approves and moves to templates_data/patterns/
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.Knowledge.ArtifactStore
+      function: get_artifact/1, update_artifact/2
+      purpose: Retrieve and update artifact usage statistics
+      critical: true
+
+    - module: Singularity.Repo
+      function: query/1, insert/1, update/1
+      purpose: PostgreSQL access for usage events
+      critical: true
+
+    - module: File
+      function: write/2
+      purpose: Export learned patterns to Git
+      critical: false
+
+    - module: Logger
+      function: info/2, warn/2
+      purpose: Log promotion events and milestones
+      critical: false
+
+  called_by:
+    - module: Singularity.Knowledge.TemplateService
+      function: use_template/2
+      purpose: Record usage after template applied
+      frequency: per_template_use
+
+    - module: Singularity.CodeGeneration.RAGCodeGenerator
+      function: generate/1
+      purpose: Record usage of generated code patterns
+      frequency: per_generation
+
+    - module: Singularity.Tools.CodeQuality
+      function: (analysis functions)
+      purpose: Record quality scores for learned patterns
+      frequency: per_analysis
+
+    - module: Periodically (via Job)
+      function: analyze_and_promote/0
+      purpose: Daily/weekly promotion cycle
+      frequency: scheduled
+
+  state_transitions:
+    - name: record_usage
+      from: idle
+      to: tracking
+      increments: usage_count, success_count (if success: true)
+      updates: last_used timestamp, feedback_sentiment
+
+    - name: analyze_quality
+      from: tracking
+      to: idle
+      checks:
+        - usage_count >= 100
+        - success_rate >= 0.95
+        - quality_score >= 0.85
+        - feedback_sentiment >= 0.7
+        - no unresolved bugs
+      outputs: ready_to_promote flag
+
+    - name: promote_artifacts
+      from: idle
+      to: promoted
+      actions:
+        - Mark artifact as curated
+        - Log promotion event
+        - Update Git repository
+        - Notify subscribers
+
+    - name: export_learned_to_git
+      from: idle
+      to: idle
+      writes: templates_data/learned/ directory
+      outputs: list of exported artifacts for human review
+
+  depends_on:
+    - PostgreSQL database (MUST be available)
+    - ArtifactStore module (MUST be functional)
+    - Git repository (for exports)
+  ```
+
+  ### Search Keywords
+
+  learning, feedback, metrics, quality-tracking, auto-promotion, knowledge-evolution, artifact-lifecycle,
+  usage-statistics, success-rate, promotion-criteria, autonomous-learning, artifact-curation,
+  learning-loop, self-improvement, pattern-discovery, knowledge-base-evolution, feedback-integration
   """
 
   require Logger

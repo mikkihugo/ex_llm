@@ -56,6 +56,147 @@ defmodule Singularity.Knowledge.TemplateGeneration do
     to_version: "2.1.0"
   )
   ```
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Knowledge.TemplateGeneration",
+    "purpose": "Track template-based code generation with Copier-inspired answer files",
+    "role": "knowledge_service",
+    "layer": "domain_services",
+    "key_responsibilities": [
+      "Record template-generated code with answers",
+      "Track template version history and evolution",
+      "Provide generation analytics and success rates",
+      "Support auto-regeneration when templates evolve"
+    ],
+    "prevents_duplicates": ["CodeGenerator", "TemplateOrchestrator", "GenerationTracker"],
+    "uses": ["Repo", "LLM.Service", "File", "Logger"]
+  }
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.Repo
+      function: insert/1, update/1, query/1
+      purpose: Store/retrieve generation records
+      critical: true
+
+    - module: Singularity.LLM.Service
+      function: call/3, call_with_prompt/3
+      purpose: Optional AI enhancement of generated code
+      critical: false
+
+    - module: File
+      function: write/2, read/2
+      purpose: Write generated code to disk
+      critical: true
+
+    - module: Logger
+      function: info/2, warn/2
+      purpose: Log generation events and errors
+      critical: false
+
+  called_by:
+    - module: Singularity.Knowledge.TemplateService
+      function: apply_template/2
+      purpose: Record generation results after template application
+      frequency: per_template_use
+
+    - module: Singularity.Agents.SelfImprovingAgent
+      function: improve_code/1
+      purpose: Track AI-enhanced code generation
+      frequency: per_improvement
+
+    - module: Singularity.CodeGeneration.RAGCodeGenerator
+      function: generate/1
+      purpose: Track RAG-generated code with template source
+      frequency: per_generation
+
+  state_transitions:
+    - name: record
+      from: idle
+      to: idle
+      increments: generation_count, success_count (if success: true)
+      updates: last_generated timestamp
+
+    - name: regenerate_from_template
+      from: idle
+      to: idle
+      actions:
+        - Find all generations from old template version
+        - Re-apply template with new version
+        - Update generation records
+        - Log regeneration events
+
+  depends_on:
+    - PostgreSQL database (MUST be available)
+    - Singularity.Repo (MUST be functional)
+    - File system write access (MUST be available)
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT create TemplateOrchestrator or CodeGenerator duplicates
+  **Why:** TemplateGeneration is the single source of truth for template-based code generation.
+  ```elixir
+  # ❌ WRONG - Duplicate module
+  defmodule MyApp.TemplateOrchestrator do
+    def apply_and_track(template_id, answers) do
+      # Re-implementing what TemplateGeneration does
+    end
+  end
+
+  # ✅ CORRECT - Use TemplateGeneration
+  TemplateGeneration.record(template_id, file_path, answers)
+  ```
+
+  #### ❌ DO NOT bypass generation tracking for "obvious" templates
+  **Why:** All generations must be tracked for analytics and learning loop.
+  ```elixir
+  # ❌ WRONG - Skip tracking for "simple" templates
+  if is_complex_template(template), do: TemplateGeneration.record(...)
+
+  # ✅ CORRECT - Always track, regardless of complexity
+  TemplateGeneration.record(template_id, file_path, answers)
+  ```
+
+  #### ❌ DO NOT hardcode template answers
+  **Why:** Answers must be parameterized for different contexts.
+  ```elixir
+  # ❌ WRONG - Hardcoded answers
+  answers = %{"language" => "elixir", "quality_level" => "production"}
+
+  # ✅ CORRECT - Parameterized from context
+  answers = build_answers_from_context(template_id, context)
+  TemplateGeneration.record(template_id, file_path, answers)
+  ```
+
+  #### ❌ DO NOT regenerate without version tracking
+  **Why:** Version history is critical for tracking template evolution.
+  ```elixir
+  # ❌ WRONG - Ignore template version changes
+  TemplateGeneration.regenerate_from_template(template_id)
+
+  # ✅ CORRECT - Track version changes explicitly
+  TemplateGeneration.regenerate_from_template(
+    template_id,
+    from_version: "2.0.0",
+    to_version: "2.1.0"
+  )
+  ```
+
+  ### Search Keywords
+
+  template generation, code generation from templates, Copier pattern, template answers,
+  template tracking, template versioning, generation analytics, template evolution,
+  code generation tracking, template-based code, template performance, generation history,
+  answer files, template application, generation success rate, template usage patterns
   """
 
   use Ecto.Schema

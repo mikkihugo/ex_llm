@@ -8,6 +8,168 @@ defmodule Singularity.LLM.RateLimiter do
   - Concurrent request overload
 
   Uses OTP GenServer + ETS for fast, distributed limiting.
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.LLM.RateLimiter",
+    "purpose": "GenServer-based rate limiter and budget controller for LLM API calls",
+    "role": "infrastructure",
+    "layer": "domain_services",
+    "prevents_duplicates": ["LLMRateLimiter", "APIRateLimiter", "BudgetController"],
+    "uses": ["GenServer", "OTP", "System.monotonic_time"],
+    "alternatives": {
+      "Expensive call without limits": "This prevents runaway costs",
+      "Manual budget tracking": "This automates budget enforcement",
+      "Synchronous blocking": "Allows queuing instead of immediate rejection"
+    }
+  }
+  ```
+
+  ### Architecture Diagram (Mermaid)
+
+  ```mermaid
+  graph TB
+      Client["LLM Client (Service.call)"]
+      RL["RateLimiter GenServer"]
+      State["State: Limits & Budget"]
+      Queue["Waiting Queue"]
+      Reset["Daily Reset Timer"]
+
+      Client -->|acquire(cost)| RL
+      RL -->|check| State
+      State -->|concurrent?| RL
+      State -->|rate limit?| RL
+      State -->|budget?| RL
+      RL -->|full| Queue
+      RL -->|ok| Client
+      Queue -->|process_waiting| RL
+      Reset -->|:daily_reset| RL
+      RL -->|release(cost)| State
+
+      style RL fill:#90EE90
+      style State fill:#87CEEB
+      style Queue fill:#FFD700
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: GenServer
+      function: start_link/2
+      purpose: Start rate limiter as OTP process
+      critical: true
+
+    - module: System
+      function: monotonic_time/1
+      purpose: Track minute boundaries for rate limits
+      critical: true
+
+    - module: DateTime
+      function: utc_now/0
+      purpose: Calculate daily reset schedule
+      critical: false
+
+    - module: Logger
+      function: error/2, warning/2, info/2
+      purpose: Track budget/rate limit events
+      critical: false
+
+  called_by:
+    - module: Singularity.LLM.Service
+      function: call/3, call_with_prompt/3
+      purpose: Every LLM call acquires before execution
+      frequency: per_llm_call
+
+    - module: Singularity.Agents
+      function: (any LLM-using agent)
+      purpose: All agents use LLM through rate limiter
+      frequency: per_task
+
+  state_transitions:
+    - name: acquire
+      from: idle
+      to: limited (if max reached)
+      to: acquired (otherwise)
+      conditions:
+        - daily_spend + cost <= budget
+        - current_concurrent < max_concurrent
+        - minute_counter < max_per_minute
+
+    - name: release
+      from: acquired
+      to: idle
+      updates:
+        - daily_spend += actual_cost
+        - current_concurrent -= 1
+      triggers: process_waiting_queue
+
+    - name: daily_reset
+      from: any
+      to: idle (counters reset)
+      triggers: Process.send_after (scheduled midnight)
+
+  depends_on:
+    - Erlang OTP (MUST exist)
+    - GenServer behavior (MUST exist)
+    - System clock (MUST be accurate)
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT create per-model rate limiters
+  **Why:** Single global limiter prevents cascading failures.
+  ```elixir
+  # ❌ WRONG - Separate limiters per model
+  OpenAI.RateLimiter.acquire()
+  Claude.RateLimiter.acquire()
+  Gemini.RateLimiter.acquire()
+
+  # ✅ CORRECT - Use single unified limiter
+  RateLimiter.acquire(estimated_cost)
+  ```
+
+  #### ❌ DO NOT bypass rate limiter for "quick" calls
+  **Why:** "Quick" calls add up; budget enforcement must be consistent.
+  ```elixir
+  # ❌ WRONG - Direct call without limiting
+  LLM.Service.direct_call(messages)
+
+  # ✅ CORRECT - Always use with_limit
+  RateLimiter.with_limit(fn -> LLM.Service.call(...) end)
+  ```
+
+  #### ❌ DO NOT use hardcoded budget limits
+  **Why:** Limits should be configurable per environment.
+  ```elixir
+  # ❌ WRONG - Hardcoded budget
+  daily_budget: 100.00
+
+  # ✅ CORRECT - Use configuration
+  daily_budget: Application.get_env(:singularity, :llm_daily_budget)
+  ```
+
+  #### ❌ DO NOT accumulate costs without actual LLM response
+  **Why:** Estimated cost ≠ actual cost; must use actual when available.
+  ```elixir
+  # ❌ WRONG - Only tracking estimated
+  release(estimated_cost)
+
+  # ✅ CORRECT - Use actual when available
+  actual_cost = Map.get(response, :cost_usd, estimated_cost)
+  release(actual_cost)
+  ```
+
+  ### Search Keywords
+
+  rate limiting, budget control, llm api costs, concurrent requests, cost management,
+  api quota enforcement, daily budgets, request queuing, genserver, otp patterns,
+  cost optimization, concurrent limits, rate limits, api throttling, budget exhaustion,
+  waiting queue, distributed rate limiting, cost tracking
   """
 
   use GenServer
