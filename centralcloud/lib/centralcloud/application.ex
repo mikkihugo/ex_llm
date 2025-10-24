@@ -13,28 +13,41 @@ defmodule Centralcloud.Application do
   def start(_type, _args) do
     Logger.info("Starting Central Cloud Application...")
 
-    children = [
+    children = base_children() ++ optional_children()
+
+    opts = [strategy: :one_for_one, name: Centralcloud.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  # Base children that start in all environments
+  defp base_children do
+    [
       # Foundation: Database
       Centralcloud.Repo,
 
       # Infrastructure: Background jobs (Oban handles cron scheduling via plugin)
       {Oban, oban_config()},
 
-      # Global services
-      Centralcloud.NatsClient,          # NATS messaging (for subscriptions)
+      # Always-on services (don't depend on NATS)
       Centralcloud.KnowledgeCache,      # ETS-based cache
       Centralcloud.TemplateService,     # Template management
-      Centralcloud.FrameworkLearningAgent,  # Learn from external packages
-      Centralcloud.IntelligenceHub,     # Aggregate intelligence from all instances
-      CentralCloud.TemplateIntelligence,  # Template intelligence (Phase 3: cross-instance learning)
-
-      # Architecture LLM Team (new)
       Centralcloud.TemplateLoader,      # Lua template loading and rendering
-      Centralcloud.NATS.PatternValidatorSubscriber,  # Pattern validation via NATS
     ]
+  end
 
-    opts = [strategy: :one_for_one, name: Centralcloud.Supervisor]
-    Supervisor.start_link(children, opts)
+  # Optional children that require NATS (skip in test mode)
+  defp optional_children do
+    if Mix.env() == :test do
+      []
+    else
+      [
+        Centralcloud.NatsClient,          # NATS messaging (for subscriptions)
+        Centralcloud.FrameworkLearningAgent,  # Learn from external packages
+        Centralcloud.IntelligenceHub,     # Aggregate intelligence from all instances
+        CentralCloud.TemplateIntelligence,  # Template intelligence (Phase 3: cross-instance learning)
+        Centralcloud.NATS.PatternValidatorSubscriber,  # Pattern validation via NATS
+      ]
+    end
   end
 
   defp oban_config do
