@@ -24,7 +24,7 @@ defmodule Singularity.CodeGeneration.Generators.RAGGeneratorImpl do
 
   @behaviour Singularity.CodeGeneration.GeneratorType
   require Logger
-  alias Singularity.Storage.Code.Generators.RAGCodeGenerator
+  alias Singularity.RAGCodeGenerator
 
   @impl true
   def generator_type, do: :rag

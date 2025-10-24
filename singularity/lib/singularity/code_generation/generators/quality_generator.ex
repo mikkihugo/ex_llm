@@ -7,7 +7,7 @@ defmodule Singularity.CodeGeneration.Generators.QualityGenerator do
 
   @behaviour Singularity.CodeGeneration.GeneratorType
   require Logger
-  alias Singularity.Storage.Code.Generators.QualityCodeGenerator
+  alias Singularity.QualityCodeGenerator
 
   @impl true
   def generator_type, do: :quality

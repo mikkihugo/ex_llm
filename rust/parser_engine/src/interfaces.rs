@@ -577,6 +577,7 @@ impl PolyglotCodeParser for UniversalProgrammingLanguageParser {
       ProgrammingLanguage::Yaml => vec!["yaml".to_string(), "yml".to_string()],
       ProgrammingLanguage::Toml => vec!["toml".to_string()],
       ProgrammingLanguage::Xml => vec!["xml".to_string()],
+      ProgrammingLanguage::Mermaid => vec!["mermaid".to_string(), "mmd".to_string()],
       ProgrammingLanguage::Unknown | ProgrammingLanguage::LanguageNotSupported => vec![],
       _ => vec![], // Default for all other languages
     }
