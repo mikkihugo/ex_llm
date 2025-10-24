@@ -25,13 +25,185 @@ defmodule Singularity.Execution.Planning.TaskGraph do
       # => %{root_id: "goal-123", tasks: %{...}}
 
       # Execute with self-improvement enabled
-      {:ok, result} = TaskGraph.execute_with_nats(dag, 
+      {:ok, result} = TaskGraph.execute_with_nats(dag,
         run_id: "run-123",
         evolve: true,
         use_rag: true,
         use_quality_templates: true
       )
       # => {:ok, %{completed_tasks: [...], mutations_applied: [...]}}
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.TaskGraph",
+    "purpose": "DAG orchestrator for hierarchical task decomposition and execution",
+    "role": "orchestrator",
+    "layer": "execution_core",
+    "key_responsibilities": [
+      "Decompose complex goals into hierarchical task DAGs",
+      "Orchestrate task execution with LLM integration",
+      "Manage task state and dependencies",
+      "Integrate with self-improvement via TaskGraphEvolution"
+    ],
+    "prevents_duplicates": ["DAGExecutor", "WorkflowEngine", "TaskOrchestrator", "TaskManager"],
+    "uses": ["TaskGraphCore", "TaskGraphExecutor", "TaskGraphEvolution", "SafeWorkPlanner", "LLM.Service", "NATS"],
+    "architecture_pattern": "Delegation: TaskGraph (orchestrator) → TaskGraphCore (data) + TaskGraphExecutor (engine)"
+  }
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.Execution.Planning.TaskGraphCore
+      function: new/1, add_task/2, select_next_task/1, mark_completed/2, mark_failed/3
+      purpose: "Core DAG operations (data structures)"
+      critical: true
+
+    - module: Singularity.Execution.Planning.TaskGraphExecutor
+      function: execute/3, execute_with_streaming/4
+      purpose: "Execute tasks with parallel/sequential strategies"
+      critical: true
+
+    - module: Singularity.Execution.Planning.TaskGraphEvolution
+      function: critique_and_mutate/2
+      purpose: "Self-improvement through evolution"
+      critical: false
+
+    - module: Singularity.Execution.Planning.SafeWorkPlanner
+      function: integrate_with_safe_planner/2
+      purpose: "Hierarchical SAFe planning integration"
+      critical: false
+
+    - module: Singularity.LLM.Service
+      function: call/3, call_with_prompt/3
+      purpose: "Task decomposition via LLM"
+      critical: true
+
+    - module: Singularity.NATS.NatsClient
+      function: publish/2, subscribe/1
+      purpose: "Publish execution requests, subscribe to responses"
+      critical: false
+
+    - module: Logger
+      function: info/2, warn/2, error/2
+      purpose: "Log decomposition and execution events"
+      critical: false
+
+  called_by:
+    - module: Singularity.Agents.Agent
+      function: (any agent using task decomposition)
+      purpose: "Agents decompose goals into task DAGs"
+      frequency: per_goal
+
+    - module: Singularity.Execution.Planning.SafeWorkPlanner
+      function: (orchestration layer)
+      purpose: "SafeWorkPlanner creates TaskGraphs for features"
+      frequency: per_feature
+
+    - module: Singularity.Execution.SPARC.Orchestrator
+      function: (SPARC execution)
+      purpose: "SPARC decomposes stories into TaskGraphs"
+      frequency: per_story
+
+  state_transitions:
+    - name: decompose
+      from: idle
+      to: decomposed
+      increments: task_count
+      outputs: root_task_id, task_tree
+
+    - name: select_next_task
+      from: decomposed
+      to: decomposed
+      outputs: next_task_id (or nil if all done)
+
+    - name: mark_completed
+      from: decomposed
+      to: decomposed
+      increments: completed_count
+      may_trigger: select_next_task (cascade)
+
+    - name: mark_failed
+      from: decomposed
+      to: decomposed
+      records: failure_reason
+      may_trigger: evolve (if evolution enabled)
+
+    - name: execute_with_nats
+      from: decomposed
+      to: executing
+      publishes: task_graph.execute.* (NATS subjects)
+      subscribes: task_graph.result.* (NATS subjects)
+      transitions_to: completed (when all tasks done)
+
+  depends_on:
+    - TaskGraphCore (MUST be functional)
+    - TaskGraphExecutor (MUST be available for execution)
+    - LLM.Service (MUST be available for decomposition)
+    - PostgreSQL (for execution history)
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT create DAGExecutor, WorkflowEngine, or TaskOrchestrator duplicates
+  **Why:** TaskGraph IS the canonical DAG orchestrator for Singularity.
+  ```elixir
+  # ❌ WRONG - Duplicate module
+  defmodule MyApp.DAGExecutor do
+    def execute_dag(tasks) do
+      # Re-implementing what TaskGraph does
+    end
+  end
+
+  # ✅ CORRECT - Use TaskGraph
+  dag = TaskGraph.decompose(goal)
+  {:ok, result} = TaskGraph.execute_with_nats(dag, opts)
+  ```
+
+  #### ❌ DO NOT use TaskGraphCore directly for execution
+  **Why:** TaskGraph is the orchestrator; TaskGraphCore is data structures only.
+  ```elixir
+  # ❌ WRONG - Bypass orchestrator
+  core = TaskGraphCore.new("goal")
+  result = execute_direct(core)
+
+  # ✅ CORRECT - Use TaskGraph orchestrator
+  dag = TaskGraph.decompose(%{description: "goal"})
+  result = TaskGraph.execute_with_nats(dag, opts)
+  ```
+
+  #### ❌ DO NOT bypass TaskGraphExecutor for task execution
+  **Why:** Execution strategies (parallel/sequential) are owned by TaskGraphExecutor.
+  ```elixir
+  # ❌ WRONG - Inline task execution
+  Enum.each(tasks, &execute_task/1)
+
+  # ✅ CORRECT - Delegate to TaskGraphExecutor
+  TaskGraphExecutor.execute(dag, strategy: :parallel, opts)
+  ```
+
+  #### ❌ DO NOT skip integration with SafeWorkPlanner for SAFe projects
+  **Why:** TaskGraph should integrate with hierarchical planning via SafeWorkPlanner.
+  ```elixir
+  # ❌ WRONG - Ignore SAFe hierarchy
+  dag = TaskGraph.decompose(goal)
+
+  # ✅ CORRECT - Integrate with SafeWorkPlanner
+  dag = TaskGraph.decompose(goal)
+  {:ok, result} = TaskGraph.execute_with_nats(dag, safe_planning: true)
+  ```
+
+  ### Search Keywords
+
+  task graph, DAG execution, hierarchical decomposition, goal decomposition, task orchestration,
+  task scheduling, dependency management, parallel execution, task lifecycle, execution strategies,
+  LLM decomposition, NATS integration, self-improvement, autonomous planning, task coordination,
+  deep agent, task hierarchy, work breakdown structure, execution orchestrator, autonomous execution
   """
 
   require Logger

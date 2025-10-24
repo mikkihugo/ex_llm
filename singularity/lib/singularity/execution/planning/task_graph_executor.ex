@@ -30,11 +30,173 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
       # Create executor
       {:ok, executor} = TaskGraphExecutor.start_link(run_id: "run-123")
-      
+
       # Execute DAG
       dag = TaskGraph.decompose(%{description: "Build user auth"})
       {:ok, result} = TaskGraphExecutor.execute(executor, dag)
       # => {:ok, %{completed: 5, failed: 0, results: %{...}}}
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Execution.Planning.TaskGraphExecutor",
+    "purpose": "Execution engine for task DAGs with NATS LLM integration",
+    "role": "execution_engine",
+    "layer": "execution_core",
+    "key_responsibilities": [
+      "Execute individual tasks from DAG",
+      "Manage parallel/sequential execution strategies",
+      "Integrate with NATS for async LLM operations",
+      "Handle task streaming and real-time feedback",
+      "Support self-improvement via evolution feedback"
+    ],
+    "prevents_duplicates": ["TaskExecutor", "ExecutionEngine", "TaskRunner"],
+    "uses": ["TaskGraphCore", "LLM.NatsOperation", "RAGCodeGenerator", "QualityCodeGenerator", "GenServer"],
+    "architecture_pattern": "GenServer-based execution engine delegated to by TaskGraph orchestrator"
+  }
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.Execution.Planning.TaskGraphCore
+      function: select_next_task/1, mark_completed/2, mark_failed/3
+      purpose: "Select and update task status in DAG"
+      critical: true
+
+    - module: Singularity.LLM.NatsOperation
+      function: compile/2, run/3, run_streaming/4
+      purpose: "Execute LLM operations for tasks"
+      critical: true
+
+    - module: Singularity.RAGCodeGenerator
+      function: find_similar/2, generate/1
+      purpose: "Find similar code patterns for tasks"
+      critical: false
+
+    - module: Singularity.QualityCodeGenerator
+      function: generate/2, validate/1
+      purpose: "Enforce quality standards on generated code"
+      critical: false
+
+    - module: Singularity.Store
+      function: search_knowledge/2, store/1
+      purpose: "Search knowledge base and store results"
+      critical: false
+
+    - module: Task
+      function: async/1, await/1
+      purpose: "Parallel task execution via Erlang tasks"
+      critical: false
+
+    - module: Logger
+      function: info/2, warn/2, error/2
+      purpose: "Log execution events and errors"
+      critical: false
+
+  called_by:
+    - module: Singularity.Execution.Planning.TaskGraph
+      function: execute_with_nats/2
+      purpose: "TaskGraph delegates execution to TaskGraphExecutor"
+      frequency: per_execution
+
+    - module: Singularity.Agents.Agent
+      function: (any agent using task execution)
+      purpose: "Agents execute decomposed task DAGs"
+      frequency: per_goal
+
+  state_transitions:
+    - name: start_link
+      from: null
+      to: idle
+      creates: GenServer with run_id
+
+    - name: execute
+      from: idle
+      to: executing
+      publishes: task_graph.execute.* (NATS)
+      subscribes: task_graph.result.* (NATS)
+
+    - name: execute_task (internal)
+      from: executing
+      to: executing
+      increments: executing_tasks map
+      may_transition: task_complete (when done)
+
+    - name: task_complete
+      from: executing
+      to: executing
+      updates: results map
+      decrements: executing_tasks
+      may_transition: all_done (when no more tasks)
+
+    - name: all_done
+      from: executing
+      to: idle
+      returns: {:ok, final_results}
+
+  depends_on:
+    - TaskGraphCore (MUST be functional)
+    - LLM.NatsOperation (MUST be available for task execution)
+    - GenServer behavior (MUST be supported by Erlang VM)
+    - PostgreSQL (for execution history storage)
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT use TaskGraphExecutor directly - use TaskGraph orchestrator
+  **Why:** TaskGraphExecutor is an implementation detail; TaskGraph is the public API.
+  ```elixir
+  # ❌ WRONG - Direct executor access
+  TaskGraphExecutor.start_link(run_id: "run-123")
+  TaskGraphExecutor.execute(executor, dag)
+
+  # ✅ CORRECT - Use TaskGraph orchestrator
+  dag = TaskGraph.decompose(goal)
+  {:ok, result} = TaskGraph.execute_with_nats(dag, run_id: "run-123")
+  ```
+
+  #### ❌ DO NOT bypass LLM.NatsOperation for task execution
+  **Why:** NATS operations handle circuit breaking, streaming, and rate limiting.
+  ```elixir
+  # ❌ WRONG - Direct LLM call
+  LLM.Service.call(:complex, messages)
+
+  # ✅ CORRECT - Use NatsOperation via TaskGraphExecutor
+  LLM.NatsOperation.run(operation, task_context, opts)
+  ```
+
+  #### ❌ DO NOT inline parallel execution logic
+  **Why:** TaskGraphExecutor owns execution strategies (parallel/sequential).
+  ```elixir
+  # ❌ WRONG - Inline parallel execution
+  Task.async_stream(tasks, &execute_task/1) |> Enum.to_list()
+
+  # ✅ CORRECT - Use TaskGraphExecutor strategies
+  TaskGraphExecutor.execute(executor, dag, strategy: :parallel)
+  ```
+
+  #### ❌ DO NOT skip integration with quality enforcement
+  **Why:** Tasks should use quality templates and RAG patterns when available.
+  ```elixir
+  # ❌ WRONG - Generate without quality checks
+  LLM.Service.call(:complex, task_prompt)
+
+  # ✅ CORRECT - Integrate quality enforcement
+  # TaskGraphExecutor internally uses QualityCodeGenerator when enabled
+  TaskGraphExecutor.execute(executor, dag, use_quality_templates: true)
+  ```
+
+  ### Search Keywords
+
+  task executor, execution engine, DAG execution, parallel execution, task execution strategy,
+  NATS LLM integration, task streaming, execution feedback, self-improvement, task lifecycle,
+  GenServer executor, async execution, execution orchestration, task coordination, execution monitoring,
+  circuit breaking, rate limiting, task scheduling, work execution, autonomous execution
   """
 
   use GenServer

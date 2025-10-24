@@ -101,12 +101,12 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
 
   @type detection_type :: :framework | :technology | :service_architecture
   @type detection_result :: %{
+          optional(:version) => String.t() | nil,
+          optional(:ecosystem) => String.t() | nil,
           name: String.t(),
           type: detection_type(),
           confidence: float(),
-          location: String.t(),
-          optional(:version) => String.t(),
-          optional(:ecosystem) => String.t()
+          location: String.t()
         }
 
   @doc """
