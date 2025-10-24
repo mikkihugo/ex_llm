@@ -1,4 +1,4 @@
-defmodule Singularity.Control do
+defmodule Singularity.Execution.Runners.Control do
   @moduledoc """
   Modern control system for coordinating agent improvements and system events.
 

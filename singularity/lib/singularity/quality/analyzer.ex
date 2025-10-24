@@ -1,6 +1,72 @@
 defmodule Singularity.Quality.Analyzer do
   @moduledoc """
-  Helpers for persisting and querying static analysis tool results (Sobelow, mix_audit).
+  Quality Analyzer - Persistence and querying for static analysis results.
+
+  Stores results from security and dependency analysis tools:
+  - Sobelow (security scanner)
+  - mix_audit (dependency vulnerability scanner)
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Quality.Analyzer",
+    "purpose": "Store and query static analysis tool results (Sobelow, mix_audit)",
+    "role": "persistence_layer",
+    "layer": "infrastructure",
+    "location": "lib/singularity/quality/analyzer.ex"
+  }
+  ```
+
+  ### Call Graph (YAML)
+
+  ```yaml
+  calls_out:
+    - module: Singularity.Repo
+      function: insert/1, one/1, transaction/1
+      purpose: Database operations
+      critical: true
+
+    - module: Singularity.Schemas.Analysis.Run
+      function: changeset/2
+      purpose: Run schema changesets
+      critical: true
+
+    - module: Singularity.Schemas.Analysis.Finding
+      function: changeset/2
+      purpose: Finding schema changesets
+      critical: true
+
+  called_by:
+    - module: Mix.Tasks.Quality
+      purpose: Store quality check results
+      frequency: medium
+
+    - module: Singularity.Jobs.*
+      purpose: Background job quality analysis
+      frequency: low
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT call this module for running analysis tools
+  **Why:** This module only STORES results, doesn't run tools.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG - This module doesn't run tools
+  Quality.Analyzer.run_sobelow()
+
+  # ✅ CORRECT - Run tool first, then store results
+  result = run_sobelow_externally()
+  Quality.Analyzer.store_sobelow(result)
+  ```
+
+  ### Search Keywords
+
+  quality analyzer, sobelow, mix audit, security analysis, dependency vulnerabilities,
+  static analysis results, quality findings, security findings
   """
 
   import Ecto.Query

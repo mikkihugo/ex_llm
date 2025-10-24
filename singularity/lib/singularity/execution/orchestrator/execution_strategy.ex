@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.ExecutionStrategy do
+defmodule Singularity.Execution.Orchestrator.ExecutionStrategy do
   @moduledoc """
   Execution Strategy Behavior - Contract for all execution strategies.
 
@@ -11,10 +11,11 @@ defmodule Singularity.Execution.ExecutionStrategy do
 
   ```json
   {
-    "module": "Singularity.Execution.ExecutionStrategy",
+    "module": "Singularity.Execution.Orchestrator.ExecutionStrategy",
     "purpose": "Behavior contract for config-driven execution strategy orchestration",
     "type": "behavior/protocol",
     "layer": "execution",
+    "location": "lib/singularity/execution/orchestrator/execution_strategy.ex",
     "status": "production"
   }
   ```

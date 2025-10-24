@@ -23,6 +23,10 @@ defmodule Singularity.Schemas.CodeFile do
     # Metadata (stores functions, imports, exports, etc.)
     field :metadata, :map, default: %{}
 
+    # intarray fields for fast module import lookups with GIN indexes
+    field :imported_module_ids, {:array, :integer}, default: []
+    field :importing_module_ids, {:array, :integer}, default: []
+
     timestamps()
   end
 
@@ -37,7 +41,9 @@ defmodule Singularity.Schemas.CodeFile do
       :size_bytes,
       :line_count,
       :hash,
-      :metadata
+      :metadata,
+      :imported_module_ids,
+      :importing_module_ids
     ])
     |> validate_required([:project_name, :file_path])
     |> unique_constraint([:project_name, :file_path])

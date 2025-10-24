@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.ExecutionStrategyOrchestrator do
+defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
   @moduledoc """
   Execution Strategy Orchestrator - Config-driven orchestration of execution strategies.
 
@@ -17,7 +17,7 @@ defmodule Singularity.Execution.ExecutionStrategyOrchestrator do
   """
 
   require Logger
-  alias Singularity.Execution.ExecutionStrategy
+  alias Singularity.Execution.Orchestrator.ExecutionStrategy
 
   @doc """
   Execute a goal with automatic strategy detection.

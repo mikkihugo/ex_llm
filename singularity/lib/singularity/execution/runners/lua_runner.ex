@@ -1,4 +1,4 @@
-defmodule Singularity.LuaRunner do
+defmodule Singularity.Execution.Runners.LuaRunner do
   @moduledoc """
   Lua script executor using ergonomic Lua wrapper over Luerl.
 

@@ -20,7 +20,7 @@ defmodule Singularity.ApplicationSupervisor do
   def init(_init_arg) do
     children = [
       # Control plane and execution
-      Singularity.Control,
+      Singularity.Execution.Runners.Control,
 
       # Core engines
       # Singularity.Engine,  # Plain module, not a process

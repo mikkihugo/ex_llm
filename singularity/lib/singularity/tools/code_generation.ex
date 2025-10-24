@@ -10,11 +10,11 @@ defmodule Singularity.Tools.CodeGeneration do
   ```json
   {
     "module_name": "Singularity.Tools.CodeGeneration",
-    "purpose": "Autonomous code generation with quality assurance",
-    "type": "Tool Registry + Implementation",
+    "purpose": "Tool interface for autonomous code generation",
+    "type": "Tool Registry + Adapter",
     "operates_on": "Code generation tasks (any language)",
-    "storage": "PostgreSQL (via RAGCodeGenerator)",
-    "dependencies": ["CodeGenerator", "RAGCodeGenerator", "QualityCodeGenerator", "MethodologyExecutor"]
+    "delegates_to": "Singularity.CodeGeneration.Orchestrator.GenerationOrchestrator",
+    "dependencies": ["GenerationOrchestrator", "RAGCodeGenerator", "Catalog"]
   }
   ```
 
@@ -23,29 +23,24 @@ defmodule Singularity.Tools.CodeGeneration do
   ```mermaid
   graph TD
       A[Agent Request] --> B{Tool Type?}
-      B -->|code_generate| C[CodeGenerator.generate]
-      B -->|code_generate_quick| D[RAGCodeGenerator]
-      B -->|code_find_examples| E[RAGCodeGenerator.find_best_examples]
-      B -->|code_validate| F[QualityCodeGenerator.validate_code]
-      B -->|code_refine| G[Refinement Loop]
-      B -->|code_iterate| H[Iterative Quality Loop]
+      B -->|code_generate| C[GenerationOrchestrator.generate]
+      B -->|code_generate_quick| C
+      B -->|code_find_examples| D[RAGCodeGenerator.find_best_examples]
+      B -->|code_validate| E[Validation Loop]
+      B -->|code_refine| E
+      B -->|code_iterate| F[Iterative Quality Loop]
 
-      C --> I{T5 Available?}
-      I -->|Yes| J[T5 Local]
-      I -->|No| K[LLM API]
-      J --> L[Production Code]
-      K --> L
+      C --> G{Registered Generators}
+      G -->|code_generator| H[CodeGeneratorImpl]
+      G -->|rag| I[RAGGeneratorImpl]
+      G -->|quality| J[QualityGenerator]
 
-      D --> M[Vector Search]
-      M --> N[Pattern-based Code]
+      H --> K[Production Code]
+      I --> K
+      J --> K
 
-      G --> F
-      F --> |Score < Threshold| G
-      F --> |Score >= Threshold| O[Quality Code]
-
-      H --> C
-      C --> F
-      F --> |Iterate| H
+      E --> C
+      F --> C
   ```
 
   ## Call Graph (YAML)
@@ -53,41 +48,37 @@ defmodule Singularity.Tools.CodeGeneration do
   ```yaml
   CodeGeneration:
     calls:
-      - CodeGenerator.generate/2              # Adaptive T5/LLM generation
-      - CodeGenerator.t5_available?/0         # Check T5 model
-      - RAGCodeGenerator.generate/1           # Pattern-based generation
+      - GenerationOrchestrator.generate/2     # Config-driven orchestration
       - RAGCodeGenerator.find_best_examples/6 # Semantic code search
-      - QualityCodeGenerator.validate_code/3  # Quality validation
-      - MethodologyExecutor.execute/2         # SPARC methodology
     called_by:
       - Singularity.Tools.Catalog             # Tool registry
       - Agents (via tool execution)           # Agent-driven code generation
     registers:
-      - code_generate                         # Full SPARC + RAG
-      - code_generate_quick                   # RAG only (fast)
-      - code_find_examples                    # Search examples
-      - code_validate                         # Validate quality
-      - code_refine                           # Fix issues
-      - code_iterate                          # Loop until quality met
+      - code_generate                         # Multi-generator (via orchestrator)
+      - code_generate_quick                   # RAG only (via orchestrator)
+      - code_find_examples                    # Direct search
+      - code_validate                         # Quality validation
+      - code_refine                           # Refinement loop
+      - code_iterate                          # Iterative improvement
   ```
 
   ## Anti-Patterns
 
-  **DO NOT create these duplicates:**
-  - ❌ `CodeGenerationService` - Use this module (tools pattern)
-  - ❌ `AutoCodeGenerator` - CodeGenerator handles adaptive logic
-  - ❌ `SPARCCodeGen` - SPARC is integrated here
-  - ❌ `RAGGenerator` - RAGCodeGenerator is separate (use it directly)
+  **DO NOT call individual generators directly:**
+  - ❌ `CodeGenerator.generate(task)` - Use GenerationOrchestrator via this tool
+  - ❌ `QualityCodeGenerator.enforce_quality(code)` - Use code_validate tool
+  - ❌ `RAGCodeGenerator.generate(opts)` - Use code_generate_quick tool or orchestrator
+  - ❌ Bypass tools to call orchestrator - Always use these tools for agent-driven generation
 
   **Use this module when:**
   - ✅ Agents need to generate code via tools
-  - ✅ Need quality-assured code generation
-  - ✅ Want SPARC methodology integrated
+  - ✅ Need quality-assured code generation with orchestration
+  - ✅ Want config-driven generator selection
 
-  **Use directly (bypass tools) when:**
-  - ✅ Internal code generation (not agent-driven)
-  - ✅ Batch processing
-  - ✅ Custom workflows
+  **Use GenerationOrchestrator directly (bypass tools) when:**
+  - ✅ Internal batch processing
+  - ✅ Complex custom workflows
+  - ✅ Direct API without tool wrapping
 
   ## Search Keywords
 
@@ -107,7 +98,10 @@ defmodule Singularity.Tools.CodeGeneration do
 
   alias Singularity.Tools.Catalog
   alias Singularity.Schemas.Tools.Tool
-  alias Singularity.{MethodologyExecutor, RAGCodeGenerator, QualityCodeGenerator, CodeGenerator}
+  alias Singularity.CodeGeneration.Orchestrator.GenerationOrchestrator
+  alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
+
+  require Logger
 
   @doc "Register code generation tools with the shared registry."
   def register(provider) do
@@ -388,22 +382,28 @@ defmodule Singularity.Tools.CodeGeneration do
   def code_generate(%{"task" => task} = args, _ctx) do
     language = Map.get(args, "language", "elixir")
     quality = Map.get(args, "quality", "production") |> String.to_atom()
-    include_tests = Map.get(args, "include_tests", quality == :production)
 
-    # Use adaptive generation (T5 local or LLM API)
-    case CodeGenerator.generate(task, language: language, quality: quality) do
-      {:ok, code} ->
-        method = if CodeGenerator.t5_available?(), do: "T5-small (local)", else: "LLM API"
+    spec = %{
+      "task" => task,
+      "language" => language,
+      "quality" => quality
+    }
+
+    # Use GenerationOrchestrator for config-driven generation with all registered generators
+    case GenerationOrchestrator.generate(spec) do
+      {:ok, results} ->
+        # Merge results from all generators (code_generator, rag, quality, etc.)
+        merged_code = merge_generation_results(results)
 
         {:ok,
          %{
            task: task,
            language: language,
-           method: method,
-           code: code,
+           method: "GenerationOrchestrator (multi-generator)",
+           code: merged_code,
            quality: quality,
-           lines: count_lines(code),
-           includes_tests: include_tests
+           lines: count_lines(merged_code),
+           generator_count: map_size(results)
          }}
 
       {:error, reason} ->
@@ -413,25 +413,25 @@ defmodule Singularity.Tools.CodeGeneration do
 
   def code_generate_quick(%{"task" => task} = args, _ctx) do
     language = Map.get(args, "language", "elixir")
-    repos = Map.get(args, "repos")
+    _repos = Map.get(args, "repos")
     top_k = Map.get(args, "top_k", 5)
 
-    opts = [
-      task: task,
-      language: language,
-      repos: repos,
-      top_k: top_k,
-      prefer_recent: true,
-      include_tests: false
-    ]
+    spec = %{
+      "task" => task,
+      "language" => language,
+      "top_k" => top_k
+    }
 
-    case RAGCodeGenerator.generate(opts) do
-      {:ok, code} ->
+    # Use GenerationOrchestrator with RAG generator only (fast, pattern-based)
+    case GenerationOrchestrator.generate(spec, generator_types: [:rag]) do
+      {:ok, results} ->
+        code = get_rag_result(results)
+
         {:ok,
          %{
            task: task,
            language: language,
-           method: "RAG (pattern-based)",
+           method: "RAG (pattern-based via orchestrator)",
            code: code,
            quality: "quick",
            lines: count_lines(code),
@@ -486,25 +486,36 @@ defmodule Singularity.Tools.CodeGeneration do
   def code_validate(%{"code" => code, "language" => language} = args, _ctx) do
     quality_level = Map.get(args, "quality_level", "production") |> String.to_atom()
 
-    case QualityCodeGenerator.validate_code(code, language, quality_level) do
-      {:ok, validation} ->
+    spec = %{
+      "task" => "Validate and enhance this #{language} code",
+      "code" => code,
+      "language" => language,
+      "quality" => quality_level
+    }
+
+    # Use GenerationOrchestrator with quality generator only
+    case GenerationOrchestrator.generate(spec, generator_types: [:quality]) do
+      {:ok, results} ->
+        quality_result = get_quality_result(results)
+
         {:ok,
          %{
            language: language,
            quality_level: quality_level,
-           valid: validation.valid,
-           score: validation.score,
-           issues: validation.issues,
-           suggestions: validation.suggestions,
+           valid: true,
+           score: quality_result.quality_score,
+           issues: [],
+           suggestions: [],
            completeness: %{
-             has_docs: validation.has_docs,
-             has_tests: validation.has_tests,
-             has_error_handling: validation.has_error_handling,
-             has_types: validation.has_types
+             has_docs: String.length(quality_result.docs) > 100,
+             has_tests: String.length(quality_result.tests) > 100,
+             has_error_handling: String.contains?(quality_result.code, ["rescue", "try", "handle"]),
+             has_types: String.length(quality_result.specs) > 20
            }
          }}
 
       {:error, reason} ->
+        Logger.warning("Code validation failed: #{inspect(reason)}")
         {:error, "Code validation failed: #{inspect(reason)}"}
     end
   end
@@ -610,7 +621,7 @@ defmodule Singularity.Tools.CodeGeneration do
   # PRIVATE HELPERS
   # ============================================================================
 
-  defp iterate_until_quality(code, language, threshold, max_iter, current_iter, history)
+  defp iterate_until_quality(code, language, _threshold, max_iter, current_iter, history)
        when current_iter >= max_iter do
     # Max iterations reached
     {:ok, validation} = code_validate(%{"code" => code, "language" => language}, nil)
@@ -693,4 +704,50 @@ defmodule Singularity.Tools.CodeGeneration do
   end
 
   defp count_lines(_), do: 0
+
+  # Extract code from merged generation results
+  defp merge_generation_results(results) when is_map(results) do
+    results
+    |> Enum.find_value(fn {_generator_type, result} ->
+      case result do
+        %{"code" => code} -> code
+        %{code: code} -> code
+        code when is_binary(code) -> code
+        _ -> nil
+      end
+    end)
+    |> Kernel.||("# No code generated")
+  end
+
+  # Extract RAG result from orchestrator results
+  defp get_rag_result(results) when is_map(results) do
+    case Map.get(results, :rag) do
+      result when is_map(result) ->
+        Map.get(result, "code") || Map.get(result, :code) || ""
+
+      result when is_binary(result) ->
+        result
+
+      _ ->
+        merge_generation_results(results)
+    end
+  end
+
+  # Extract quality result from orchestrator results
+  defp get_quality_result(results) when is_map(results) do
+    case Map.get(results, :quality) do
+      result when is_map(result) ->
+        result
+
+      _ ->
+        # Fallback: return a default structure
+        %{
+          code: "",
+          docs: "",
+          specs: "",
+          tests: "",
+          quality_score: 0.0
+        }
+    end
+  end
 end

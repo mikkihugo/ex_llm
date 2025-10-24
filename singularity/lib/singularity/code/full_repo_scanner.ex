@@ -49,7 +49,9 @@ defmodule Singularity.Code.FullRepoScanner do
   require Logger
 
   # INTEGRATION: Knowledge search and code generation
-  alias Singularity.{Store, RAGCodeGenerator, QualityCodeGenerator, HotReload.SafeCodeChangeDispatcher}
+  alias Singularity.Store
+  alias Singularity.CodeGeneration.Implementations.{RAGCodeGenerator, QualityCodeGenerator}
+  alias Singularity.HotReload.SafeCodeChangeDispatcher
 
   # INTEGRATION: TaskGraph planning and tracing
   alias Singularity.Execution.Planning.{TaskGraph, SystemBootstrap, ExecutionTracer}

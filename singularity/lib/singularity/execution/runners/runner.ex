@@ -1,4 +1,4 @@
-defmodule Singularity.Runner do
+defmodule Singularity.Execution.Runners.Runner do
   @moduledoc """
   High-performance execution engine using Elixir's native concurrency model.
 

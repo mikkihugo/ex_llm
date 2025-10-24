@@ -26,6 +26,10 @@ defmodule Singularity.Schemas.GraphNode do
     field :metadata, :map, default: %{}
     field :pagerank_score, :float, default: 0.0
 
+    # intarray fields for fast dependency lookups with GIN indexes
+    field :dependency_node_ids, {:array, :integer}, default: []
+    field :dependent_node_ids, {:array, :integer}, default: []
+
     field :created_at, :utc_datetime
   end
 
@@ -42,7 +46,9 @@ defmodule Singularity.Schemas.GraphNode do
       :vector_embedding,
       :vector_magnitude,
       :metadata,
-      :pagerank_score
+      :pagerank_score,
+      :dependency_node_ids,
+      :dependent_node_ids
     ])
     |> validate_required([:codebase_id, :node_id, :node_type, :name, :file_path])
     |> unique_constraint([:codebase_id, :node_id])

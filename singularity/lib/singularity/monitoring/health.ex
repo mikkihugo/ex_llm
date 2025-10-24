@@ -1,5 +1,46 @@
 defmodule Singularity.Monitoring.Health do
-  @moduledoc false
+  @moduledoc """
+  Health Check Module - Provides deep health status for Singularity system.
+
+  Returns health status including:
+  - HTTP status (200 for healthy, 503 for degraded)
+  - Queue depth and queue status
+  - Memory information
+  - Cluster node information
+  - System timestamp
+
+  ## AI Navigation Metadata
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Monitoring.Health",
+    "purpose": "System health monitoring and status reporting",
+    "role": "monitoring",
+    "layer": "infrastructure",
+    "location": "lib/singularity/monitoring/health.ex"
+  }
+  ```
+
+  ### Anti-Patterns
+
+  #### ❌ DO NOT call this module directly for routine health checks
+  **Why:** Use Phoenix health check endpoint instead.
+  **Use instead:**
+  ```elixir
+  # ❌ WRONG
+  Singularity.Monitoring.Health.deep_health()
+
+  # ✅ CORRECT
+  # GET /health endpoint (Phoenix)
+  ```
+
+  ### Search Keywords
+
+  health check, system monitoring, queue depth, memory monitoring, cluster health,
+  degraded status, health status, system metrics
+  """
 
   defstruct [:http_status, :body]
   @max_queue_depth 100
