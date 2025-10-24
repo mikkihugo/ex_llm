@@ -101,17 +101,62 @@ pub fn parse_mermaid(diagram_text: &str) -> Result<MermaidDiagram, String> {
 
     // Parse based on diagram type
     match diagram.diagram_type.as_str() {
-        "flowchart" | "graph" => {
+        // Graph/Flow diagrams
+        "flowchart" | "graph" | "block" => {
             parse_flowchart(&mut diagram);
         }
-        "sequenceDiagram" => {
+        // Relationship/Structure diagrams
+        "sequenceDiagram" | "zenuml" => {
             parse_sequence(&mut diagram);
         }
         "classDiagram" => {
             parse_class(&mut diagram);
         }
+        "erDiagram" => {
+            parse_entity_relationship(&mut diagram);
+        }
+        "requirementDiagram" => {
+            parse_requirement(&mut diagram);
+        }
+        "packet" => {
+            parse_packet(&mut diagram);
+        }
+        // State/Time diagrams
         "stateDiagram" => {
             parse_state(&mut diagram);
+        }
+        "timeline" => {
+            parse_timeline(&mut diagram);
+        }
+        "gitgraph" => {
+            parse_gitgraph(&mut diagram);
+        }
+        // Chart/Data diagrams
+        "pie" => {
+            parse_pie(&mut diagram);
+        }
+        "gantt" => {
+            parse_gantt(&mut diagram);
+        }
+        "xychart" => {
+            parse_xychart(&mut diagram);
+        }
+        "quadrant" => {
+            parse_quadrant(&mut diagram);
+        }
+        "sankey" => {
+            parse_sankey(&mut diagram);
+        }
+        // Mind/Journey maps
+        "mindmap" => {
+            parse_mindmap(&mut diagram);
+        }
+        "journey" => {
+            parse_journey(&mut diagram);
+        }
+        // Architecture
+        "c4" => {
+            parse_c4(&mut diagram);
         }
         _ => {
             // Generic diagram parsing
@@ -130,20 +175,55 @@ pub fn parse_mermaid(diagram_text: &str) -> Result<MermaidDiagram, String> {
 fn extract_diagram_type(first_line: &str) -> Option<&str> {
     let line = first_line.trim();
 
+    // Graph/Flow diagrams
     if line.starts_with("flowchart") {
         Some("flowchart")
     } else if line.starts_with("graph") {
         Some("graph")
+    } else if line.starts_with("block") {
+        Some("block")
+    } else if line.starts_with("block-beta") {
+        Some("block")
+    // Relationship/Structure diagrams
     } else if line.starts_with("sequenceDiagram") {
         Some("sequenceDiagram")
+    } else if line.starts_with("zenuml") {
+        Some("zenuml")
     } else if line.starts_with("classDiagram") {
         Some("classDiagram")
+    } else if line.starts_with("erDiagram") {
+        Some("erDiagram")
+    } else if line.starts_with("requirementDiagram") {
+        Some("requirementDiagram")
+    } else if line.starts_with("packet-beta") {
+        Some("packet")
+    // State/Time diagrams
     } else if line.starts_with("stateDiagram") {
         Some("stateDiagram")
+    } else if line.starts_with("timeline") {
+        Some("timeline")
+    } else if line.starts_with("gitGraph") || line.starts_with("gitgraph") {
+        Some("gitgraph")
+    // Chart/Data diagrams
     } else if line.starts_with("pie") {
         Some("pie")
     } else if line.starts_with("gantt") {
         Some("gantt")
+    } else if line.starts_with("xychart-beta") {
+        Some("xychart")
+    } else if line.starts_with("quadrant-chart") {
+        Some("quadrant")
+    } else if line.starts_with("sankey-beta") {
+        Some("sankey")
+    // Mind/Journey maps
+    } else if line.starts_with("mindmap") {
+        Some("mindmap")
+    } else if line.starts_with("journey") {
+        Some("journey")
+    // Architecture
+    } else if line.starts_with("c4Diagram") || line.starts_with("C4Context") ||
+              line.contains("C4_") {
+        Some("c4")
     } else {
         None
     }
@@ -283,6 +363,336 @@ fn parse_state(diagram: &mut MermaidDiagram) {
                     properties: HashMap::new(),
                 });
             }
+        }
+    }
+}
+
+/// Parse entity relationship diagram
+fn parse_entity_relationship(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") {
+            continue;
+        }
+
+        // Entity: ENTITY_NAME { attributes }
+        if let Some(entity) = trimmed.strip_prefix("ENTITY ") {
+            let name = entity.split_whitespace().next().unwrap_or(entity);
+            diagram.nodes.push(MermaidNode {
+                id: name.to_string(),
+                label: name.to_string(),
+                shape: "entity".to_string(),
+                properties: HashMap::new(),
+            });
+        }
+
+        // Relationship: ENTITY1 ||--o{ ENTITY2
+        if trimmed.contains("||") || trimmed.contains("o{") {
+            if let Some((from, rest)) = trimmed.split_once("||") {
+                let to = rest.split_whitespace().last().unwrap_or("");
+                if !from.is_empty() && !to.is_empty() {
+                    diagram.edges.push(MermaidEdge {
+                        from: from.trim().to_string(),
+                        to: to.to_string(),
+                        label: None,
+                        edge_type: "relationship".to_string(),
+                        properties: HashMap::new(),
+                    });
+                }
+            }
+        }
+    }
+}
+
+/// Parse requirement diagram
+fn parse_requirement(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") {
+            continue;
+        }
+
+        // Requirement: requirement : REQ001 : text
+        if trimmed.starts_with("requirement") {
+            if let Some(rest) = trimmed.strip_prefix("requirement").map(|s| s.trim()) {
+                let id = rest.split(':').nth(1).map(|s| s.trim()).unwrap_or(rest);
+                diagram.nodes.push(MermaidNode {
+                    id: id.to_string(),
+                    label: id.to_string(),
+                    shape: "requirement".to_string(),
+                    properties: HashMap::new(),
+                });
+            }
+        }
+    }
+}
+
+/// Parse packet diagram
+fn parse_packet(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") {
+            continue;
+        }
+
+        // Packet structure: name bytes
+        if !trimmed.starts_with("packet-beta") && !trimmed.is_empty() {
+            diagram.nodes.push(MermaidNode {
+                id: trimmed.to_string(),
+                label: trimmed.to_string(),
+                shape: "packet".to_string(),
+                properties: HashMap::new(),
+            });
+        }
+    }
+}
+
+/// Parse timeline diagram
+fn parse_timeline(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") || trimmed.starts_with("timeline") {
+            continue;
+        }
+
+        // Timeline event: time : event
+        if trimmed.contains(':') {
+            if let Some((time, event)) = trimmed.split_once(':') {
+                diagram.nodes.push(MermaidNode {
+                    id: time.trim().to_string(),
+                    label: event.trim().to_string(),
+                    shape: "event".to_string(),
+                    properties: HashMap::new(),
+                });
+            }
+        }
+    }
+}
+
+/// Parse git graph diagram
+fn parse_gitgraph(diagram: &mut MermaidDiagram) {
+    let mut current_branch = "main".to_string();
+
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") {
+            continue;
+        }
+
+        // Branch: branch branch_name
+        if trimmed.starts_with("branch ") {
+            if let Some(name) = trimmed.strip_prefix("branch ").map(|s| s.trim()) {
+                current_branch = name.to_string();
+                diagram.nodes.push(MermaidNode {
+                    id: name.to_string(),
+                    label: name.to_string(),
+                    shape: "branch".to_string(),
+                    properties: HashMap::new(),
+                });
+            }
+        }
+
+        // Commit: commit id: "message"
+        if trimmed.starts_with("commit") {
+            diagram.nodes.push(MermaidNode {
+                id: format!("commit-{}", diagram.nodes.len()),
+                label: trimmed.to_string(),
+                shape: "commit".to_string(),
+                properties: HashMap::new(),
+            });
+        }
+    }
+}
+
+/// Parse pie chart
+fn parse_pie(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") || trimmed.starts_with("pie") {
+            continue;
+        }
+
+        // Pie data: label : value
+        if trimmed.contains(':') {
+            if let Some((label, value)) = trimmed.split_once(':') {
+                diagram.nodes.push(MermaidNode {
+                    id: label.trim().to_string(),
+                    label: format!("{} ({})", label.trim(), value.trim()),
+                    shape: "pie_slice".to_string(),
+                    properties: HashMap::new(),
+                });
+            }
+        }
+    }
+}
+
+/// Parse gantt chart
+fn parse_gantt(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") || trimmed.starts_with("gantt") {
+            continue;
+        }
+
+        // Gantt task: task_name : a, 2014-01-01, 30d
+        if trimmed.contains(':') && !trimmed.starts_with("title") {
+            if let Some((name, _)) = trimmed.split_once(':') {
+                diagram.nodes.push(MermaidNode {
+                    id: name.trim().to_string(),
+                    label: name.trim().to_string(),
+                    shape: "task".to_string(),
+                    properties: HashMap::new(),
+                });
+            }
+        }
+    }
+}
+
+/// Parse XY chart
+fn parse_xychart(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") {
+            continue;
+        }
+
+        // Data points
+        if trimmed.contains(",") && !trimmed.starts_with("x") && !trimmed.starts_with("y") {
+            diagram.nodes.push(MermaidNode {
+                id: format!("point-{}", diagram.nodes.len()),
+                label: trimmed.to_string(),
+                shape: "point".to_string(),
+                properties: HashMap::new(),
+            });
+        }
+    }
+}
+
+/// Parse quadrant chart
+fn parse_quadrant(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") || trimmed.contains("quadrant") {
+            continue;
+        }
+
+        // Quadrant point: name: (x, y)
+        if trimmed.contains(':') {
+            if let Some((name, _)) = trimmed.split_once(':') {
+                diagram.nodes.push(MermaidNode {
+                    id: name.trim().to_string(),
+                    label: name.trim().to_string(),
+                    shape: "point".to_string(),
+                    properties: HashMap::new(),
+                });
+            }
+        }
+    }
+}
+
+/// Parse sankey diagram
+fn parse_sankey(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") || trimmed.starts_with("sankey") {
+            continue;
+        }
+
+        // Sankey flow: source --> target : value
+        if trimmed.contains("-->") {
+            if let Some((from, rest)) = trimmed.split_once("-->") {
+                let to = rest.split(':').next().unwrap_or(rest).trim();
+                diagram.edges.push(MermaidEdge {
+                    from: from.trim().to_string(),
+                    to: to.to_string(),
+                    label: rest.split(':').nth(1).map(|v| v.trim().to_string()),
+                    edge_type: "flow".to_string(),
+                    properties: HashMap::new(),
+                });
+            }
+        }
+    }
+}
+
+/// Parse mindmap
+fn parse_mindmap(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") || trimmed.starts_with("mindmap") {
+            continue;
+        }
+
+        // Count indentation to determine hierarchy
+        let indent = line.len() - line.trim_start().len();
+        let text = trimmed.trim_start_matches('-').trim_start_matches('*').trim();
+
+        if !text.is_empty() {
+            diagram.nodes.push(MermaidNode {
+                id: text.to_string(),
+                label: text.to_string(),
+                shape: "node".to_string(),
+                properties: {
+                    let mut props = HashMap::new();
+                    props.insert("level".to_string(), (indent / 2).to_string());
+                    props
+                },
+            });
+        }
+    }
+}
+
+/// Parse journey/user journey map
+fn parse_journey(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") || trimmed.starts_with("journey") {
+            continue;
+        }
+
+        // Journey task: task : actor : score
+        if trimmed.contains(':') {
+            let parts: Vec<&str> = trimmed.split(':').map(|s| s.trim()).collect();
+            if parts.len() >= 2 {
+                diagram.nodes.push(MermaidNode {
+                    id: parts[0].to_string(),
+                    label: parts[0].to_string(),
+                    shape: "task".to_string(),
+                    properties: HashMap::new(),
+                });
+            }
+        }
+    }
+}
+
+/// Parse C4 architecture diagram
+fn parse_c4(diagram: &mut MermaidDiagram) {
+    for line in diagram.text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("%%") {
+            continue;
+        }
+
+        // C4 container: Container(identifier, "name", "description")
+        if trimmed.contains("(") && trimmed.contains(")") {
+            if let Some(name) = trimmed.split('"').nth(1) {
+                diagram.nodes.push(MermaidNode {
+                    id: name.to_string(),
+                    label: name.to_string(),
+                    shape: "container".to_string(),
+                    properties: HashMap::new(),
+                });
+            }
+        }
+
+        // C4 relationship: Rel(from, to, "label")
+        if trimmed.starts_with("Rel") {
+            diagram.edges.push(MermaidEdge {
+                from: "system1".to_string(),
+                to: "system2".to_string(),
+                label: None,
+                edge_type: "relationship".to_string(),
+                properties: HashMap::new(),
+            });
         }
     }
 }
