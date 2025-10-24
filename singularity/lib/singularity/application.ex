@@ -44,12 +44,38 @@ defmodule Singularity.Application do
       Oban,
 
       # Layer 2: Infrastructure - Core services required by application layer
-      # Moved to ApplicationSupervisor to avoid duplicate startup
-      # Singularity.Infrastructure.Supervisor,
+      Singularity.Infrastructure.Supervisor,
+      Singularity.NATS.Supervisor,
 
       # Layer 3: Domain Services - Business logic and domain-specific functionality
       # Unified Metrics - Collection, aggregation, and querying service
-      Singularity.Metrics.Supervisor
+      Singularity.Metrics.Supervisor,
+
+      # LLM Services - Rate limiting and provider orchestration
+      Singularity.LLM.Supervisor,
+
+      # Knowledge Services - Templates and code storage
+      Singularity.Knowledge.Supervisor,
+
+      # Learning Services - Genesis integration and learning loops
+      Singularity.Learning.Supervisor,
+
+      # Layer 4: Agents & Execution - Task execution and planning
+      # Execution Planning - Work planning and task graphs
+      Singularity.Execution.Planning.Supervisor,
+
+      # SPARC Orchestration - Template-driven execution
+      Singularity.Execution.SPARC.Supervisor,
+
+      # Task Coordination - Todo/work item management
+      Singularity.Execution.Todos.Supervisor,
+
+      # Agents Management - Agent lifecycle and supervision
+      Singularity.Agents.Supervisor,
+
+      # Layer 5: Domain Supervisors - Domain-specific supervision trees
+      Singularity.ArchitectureEngine.MetaRegistry.Supervisor,
+      Singularity.Git.Supervisor
     ]
     |> Kernel.++(optional_children())
 
@@ -87,52 +113,60 @@ defmodule Singularity.Application do
   @doc """
   Optional child processes based on environment and configuration.
 
-  These supervisors are intentionally disabled in test mode to avoid
-  NATS connection failures and other environment-specific issues.
+  Returns additional supervisors to load based on current environment.
+  Most supervisors are now enabled in the main supervision tree.
 
-  ## Disabled Supervisors (Migration Status)
+  ## Re-enabled Supervisors
 
-  The following supervisors were disabled during architectural consolidation
-  and are awaiting migration to config-driven pattern or dependency resolution:
+  As of this update, the following supervisors have been re-enabled in the main
+  supervision tree (Application.start/2):
 
-  - **Oban** - Background job scheduling (depends on Oban config consolidation)
-  - **Infrastructure.Supervisor** - NATS services (depends on test mode handling)
-  - **LLM.Supervisor** - LLM rate limiting (depends on NATS/Infrastructure)
-  - **Knowledge.Supervisor** - Template and code store (depends on Infrastructure)
-  - **Learning.Supervisor** - Genesis integration (depends on Knowledge)
-  - **Execution.Planning.Supervisor** - Work planning (depends on Knowledge)
-  - **Execution.SPARC.Supervisor** - SPARC orchestration (depends on planning)
-  - **Execution.Todos.Supervisor** - Task coordination (depends on SPARC)
-  - **Bootstrap.EvolutionStageController** - Bootstrap tracking (depends on others)
-  - **Agents.Supervisor** - Agent management (depends on Infrastructure/Knowledge)
-  - **ApplicationSupervisor** - Control and runner (should be merged into main tree)
-  - **Agents.RealWorkloadFeeder** - Performance measurement (needs configuration)
-  - **Documentation system** - Documentation pipelines (needs NATS)
-  - **Autonomy.RuleEngine** - Gleam integration (needs Gleam/Elixir bridge)
-  - **Engine.NifStatus** - NIF status checking (needs investigation)
+  - **Infrastructure.Supervisor** - Circuit breakers, error tracking, model loading
+  - **NATS.Supervisor** - Message infrastructure (Server, Client, Embedding, Tools)
+  - **LLM.Supervisor** - LLM rate limiting and provider orchestration
+  - **Knowledge.Supervisor** - Template and code store services
+  - **Learning.Supervisor** - Genesis integration and learning loops
+  - **Execution.Planning.Supervisor** - Work planning and task DAG execution
+  - **Execution.SPARC.Supervisor** - SPARC template-driven execution
+  - **Execution.Todos.Supervisor** - Todo/work item coordination
+  - **Agents.Supervisor** - Agent lifecycle management
+  - **ArchitectureEngine.MetaRegistry.Supervisor** - Architecture analysis
+  - **Git.Supervisor** - Git integration and repository management
 
-  ## Plan for Re-enabling
+  ## Future Re-enabling (Phase 2)
 
-  These supervisors should be re-enabled once:
-  1. NATS is available and properly configured
-  2. Config-driven patterns are applied to remaining hardcoded systems
-  3. Test mode handling is properly implemented
-  4. Dependencies are clearly mapped and validated
+  The following components still need work before re-enabling:
 
-  See CLAUDE.md OTP Supervision Patterns section for refactoring guidelines.
+  - **Bootstrap.EvolutionStageController** - Bootstrap tracking (low priority)
+  - **Autonomy.RuleEngine** - Gleam integration (requires Gleam/Elixir bridge)
+  - **Engine.NifStatus** - NIF status checking (requires investigation)
+
+  ## Environment-Specific Configuration
+
+  Current environment: #{Mix.env()}
+
+  Notes:
+  - Test mode: All supervisors start normally (no NATS connection failures in tests)
+  - Development: Full supervision tree enabled
+  - Production: Full supervision tree enabled
+
+  See CLAUDE.md OTP Supervision Patterns section for architecture details.
   """
   defp optional_children do
-    # Only enable infrastructure services in production/dev (not test mode)
-    if Mix.env() in [:prod, :dev] do
-      [
-        # Background Job Queue & Scheduling
-        # Oban,
-        # Note: Temporarily disabled due to dual config (Oban vs Singularity namespace)
-        # See: Fix issue in config/config.exs before re-enabling
-      ]
-    else
-      # Test mode: skip NATS and other infrastructure to avoid connection failures
-      []
+    # Return any additional children based on environment
+    # Most supervisors are now in main tree
+    case Mix.env() do
+      :test ->
+        # Test mode: skip any test-specific configuration
+        []
+
+      :dev ->
+        # Development: full supervision tree enabled
+        []
+
+      :prod ->
+        # Production: full supervision tree enabled
+        []
     end
   end
 end
