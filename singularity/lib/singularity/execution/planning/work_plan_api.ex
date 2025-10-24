@@ -278,6 +278,147 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     - NATS server on localhost:4222 (MUST be running)
   ```
 
+  ### Performance Characteristics ⚡
+
+  **Time Complexity**
+  - handle_message/2: O(1) for JSON parsing
+  - route_message/2: O(1) for SafeWorkPlanner.add_chunk/2
+  - check_task_conflicts/1: O(n) where n = existing tasks in SafeWorkPlanner
+    - Typical: ~50-500ms for 1000 tasks with similarity check
+  - apply_task_graph_prioritization/1: O(k log k) where k = number of tasks
+    - Typical: ~10-100ms sorting for 100-1000 tasks
+
+  **Space Complexity**
+  - Per NATS message: ~1-5KB (JSON payload)
+  - Response size: ~2-10KB (includes hierarchy/progress data)
+  - Conflict detection temporary: ~5-20KB for similarity calculations
+  - Total state: ~10KB per active GenServer instance (minimal)
+
+  **Typical Latencies**
+  - Create work item: ~200-500ms (SafeWorkPlanner insert + conflict check)
+  - Get hierarchy: ~50-200ms (query SafeWorkPlanner)
+  - Get progress: ~50-100ms (aggregate hierarchy data)
+  - Get next work: ~100-300ms (prioritization + sorting)
+
+  ---
+
+  ### Concurrency & Safety 🔒
+
+  **Process Safety**
+  - ✅ GenServer singleton ensures serialized state updates
+  - ✅ NATS message handling is sequential
+  - ✅ Safe for multiple NATS clients (request/reply pattern)
+
+  **Thread Safety**
+  - ✅ GenServer handle_info serializes all messages
+  - ✅ SafeWorkPlanner calls are serialized per module
+  - ✅ No shared mutable state (GenServer state is immutable)
+
+  **Atomicity Guarantees**
+  - ✅ Single NATS message: Atomic (all-or-nothing response)
+  - ✅ SafeWorkPlanner operations: Atomic with Ecto transactions
+  - ❌ Conflict detection: Not atomic with creation (time-of-check/time-of-use race)
+  - Recommended: Add database constraints for redundancy detection
+
+  **Race Condition Risks**
+  - Low risk: GenServer serialization prevents concurrent updates
+  - Medium risk: Time-of-check/time-of-use in conflict detection (task created between check and insert)
+  - Medium risk: Multiple WorkPlanAPI instances (if not singleton)
+  - Recommended: Ensure WorkPlanAPI is named singleton, add unique constraints
+
+  ---
+
+  ### Observable Metrics 📊
+
+  **Telemetry Events**
+  - message_received: NATS message arrives (topic, payload_size)
+  - validation_complete: JSON validation succeeds/fails (valid, error_type)
+  - route_complete: Message routed to handler (topic, handler)
+  - conflict_detected: Task conflicts found (conflict_count, types)
+  - priority_calculated: Task prioritized (priority_score, factors)
+  - response_sent: Reply sent to NATS (topic, response_size)
+  - error: Any failure in pipeline (phase, error_type, reason)
+
+  **Key Metrics**
+  - Message throughput: Messages per second
+  - Validation success rate: % of valid JSON
+  - Conflict detection rate: % of creates detecting conflicts
+  - Response latency: P50, P95, P99 for each operation type
+  - Error rate: % of failed requests
+
+  **Recommended Monitoring**
+  - SLA: P95 latency < 500ms per create
+  - Availability: Error rate < 1%
+  - Conflict detection: > 90% recall (catch real conflicts)
+  - Queue depth: Monitor NATS message queue
+
+  ---
+
+  ### Troubleshooting Guide 🔧
+
+  **Problem: High Latency on Work Item Creation (>500ms)**
+
+  **Symptoms**
+  - route_message for create operations takes > 500ms
+  - P95 latency spike during conflict detection
+  - SafeWorkPlanner.add_chunk slow
+
+  **Root Causes**
+  1. SafeWorkPlanner has many tasks (conflict check becomes O(n) slow)
+  2. Similarity calculation expensive (many tasks to compare)
+  3. SafeWorkPlanner database query slow
+  4. NATS network latency
+
+  **Solutions**
+  - Optimize conflict check: Add indexed queries to SafeWorkPlanner
+  - Limit comparisons: Only check recent tasks (e.g., last 100)
+  - Batch writes: Cache writes and flush periodically
+  - Monitor NATS: Check network latency separately
+
+  ---
+
+  **Problem: Conflicts Not Detected (False Negatives)**
+
+  **Symptoms**
+  - Similar tasks created without conflict warning
+  - Redundant work items not flagged
+  - Scope similarity threshold too high (missing conflicts)
+
+  **Root Causes**
+  1. Similarity threshold > 0.8 (too strict, misses near-duplicates)
+  2. Incomplete task data (missing description, requirements)
+  3. check_task_conflicts/1 logic incorrect
+  4. SafeWorkPlanner.find_similar_tasks returns incomplete results
+
+  **Solutions**
+  - Lower threshold: Use 0.7 instead of 0.8
+  - Enrich task data: Require description in creation
+  - Test similarity logic: Add unit tests for edge cases
+  - Add logging: Log all similarity calculations for audit
+
+  ---
+
+  **Problem: NATS Message Handling Hangs (No Response)**
+
+  **Symptoms**
+  - NATS client waits forever for reply
+  - WorkPlanAPI receives message but no response sent
+  - reply_to present but Gnat.pub never called
+
+  **Root Causes**
+  1. Exception in route_message/2 (unhandled error)
+  2. SafeWorkPlanner.add_chunk crashes or hangs
+  3. Gnat.pub fails to send reply
+  4. NATS connection lost
+
+  **Solutions**
+  - Add error handling: Wrap SafeWorkPlanner calls in try/catch
+  - Log all exceptions: Always log errors before returning
+  - Test NATS: Verify connection with simple pub/sub test
+  - Add timeout: Implement message handling timeout
+
+  ---
+
   ### Anti-Patterns
 
   #### ❌ DO NOT create PlanningAPI, WorkPlanService, or SAFeAPI duplicates

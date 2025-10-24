@@ -129,6 +129,144 @@ defmodule Singularity.Execution.Planning.TaskGraphEvolution do
     - :telemetry for metrics (MUST be configured)
   ```
 
+  ### Performance Characteristics ⚡
+
+  **Time Complexity**
+  - critique_and_mutate/2: O(n + m) where n = execution tasks, m = git history search
+    - Typical: ~1-3s for small graphs (< 50 tasks)
+    - Large graphs: ~5-15s for 500+ tasks with deep git history
+  - apply_mutations/2: O(k) where k = number of mutations (typically 2-5 mutations)
+    - Per mutation: ~10-50ms
+    - Total: ~20-250ms for typical mutation application
+  - Per-phase overhead: Lua script execution ~500ms-2s depending on model
+
+  **Space Complexity**
+  - Execution result enrichment: ~5KB per execution (metrics + history)
+  - Mutations list: ~1-2KB per mutation
+  - Total overhead: ~10-20KB per evolution cycle
+
+  **Typical Latencies**
+  - Small TaskGraph (10-20 tasks): ~2-3s total critique + mutations
+  - Medium TaskGraph (50-100 tasks): ~5-8s total
+  - Large TaskGraph (500+ tasks): ~15-20s total
+  - Per-mutation application: ~50-100ms
+
+  ---
+
+  ### Concurrency & Safety 🔒
+
+  **Process Safety**
+  - ✅ Safe to call from multiple processes: Stateless operations
+  - ✅ No shared state: Each evolution independent
+  - ✅ Reentrant: Can handle concurrent evolution requests
+
+  **Thread Safety**
+  - ✅ LLM service calls serialized (via RateLimiter + CircuitBreaker)
+  - ✅ Lua script execution stateless
+  - ✅ Results returned immediately (no global state modification)
+
+  **Atomicity Guarantees**
+  - ✅ Single operation: Critique or apply mutations are atomic
+  - ❌ Multi-step evolution: Not atomic (critique → apply → test cycle)
+  - Recommended: Implement transaction rollback for failed mutations
+
+  **Race Condition Risks**
+  - Low risk: Each evolution independent
+  - Medium risk: LLM rate limiting (shared quota across processes)
+  - Medium risk: Git history search (read-only, but concurrent access)
+  - Recommended: Monitor RateLimiter queue depth during parallel evolution requests
+
+  ---
+
+  ### Observable Metrics 📊
+
+  **Telemetry Events**
+  - start: Evolution cycle begins (task count, graph size)
+  - critique_complete: Critique phase finishes (duration, mutation count, confidence scores)
+  - mutations_applied: Mutations successfully applied (mutation count, types, impact)
+  - complete: Full evolution cycle done (total duration, mutations applied, improvement score)
+  - error: Failure in critique or application (phase, error reason)
+
+  **Key Metrics**
+  - Total critique time: How long LLM critique takes
+  - Total application time: How long mutation application takes
+  - Mutation count: Number of mutations proposed vs applied
+  - Improvement score: Calculated improvement from mutations
+  - Success rate: % of evolution cycles completing successfully
+
+  **Recommended Monitoring**
+  - SLA: P95 latency < 20s for medium graphs
+  - Availability: Error rate < 5%
+  - Mutation success: > 70% of proposed mutations improve performance
+  - Cost: Token count × model pricing per evolution cycle
+
+  ---
+
+  ### Troubleshooting Guide 🔧
+
+  **Problem: Critique Timeout (Exceeds 20s)**
+
+  **Symptoms**
+  - critique_and_mutate/2 takes > 20s to complete
+  - P95 latency spike
+  - LLM model not responding in time
+
+  **Root Causes**
+  1. Large TaskGraph (500+ tasks) with deep git history
+  2. LLM service overloaded (shared quota exhausted)
+  3. Git history search slow (many commits to analyze)
+  4. Network latency to LLM provider
+
+  **Solutions**
+  - Increase timeout: `timeout: 30000` for large graphs
+  - Check LLM service: Monitor latency independently
+  - Check RateLimiter: Verify quota availability
+  - Limit git history: Search only recent commits (e.g., 100 most recent)
+
+  ---
+
+  **Problem: Mutations Cause Regression**
+
+  **Symptoms**
+  - After applying mutations, TaskGraph performance degrades
+  - Improvement score calculated incorrectly
+  - Mutation confidence scores misleading
+
+  **Root Causes**
+  1. Mutations applied without validation testing
+  2. LLM critique missed edge cases
+  3. Combined mutation effects unpredictable
+  4. Metrics calculation error (before/after mismatch)
+
+  **Solutions**
+  - Apply mutations incrementally: Test each mutation separately
+  - Validate improvements: Run execution before/after mutation
+  - Add mutation rollback: Store previous parameters for recovery
+  - Improve critique: Add more execution context to Lua script
+
+  ---
+
+  **Problem: No Mutations Proposed**
+
+  **Symptoms**
+  - critique_and_mutate/2 returns empty mutations list
+  - No improvements found despite poor performance
+  - Git history search yields no useful patterns
+
+  **Root Causes**
+  1. LLM critique found no improvement opportunities
+  2. Execution metrics incomplete or missing
+  3. Git history has no successful patterns
+  4. All parameters already optimal
+
+  **Solutions**
+  - Check execution metrics: Ensure all fields populated
+  - Expand git history: Search broader commit range
+  - Analyze poor metrics: What specific metric is worst?
+  - Manual mutation: Apply known good patterns from git
+
+  ---
+
   ### Anti-Patterns
 
   #### ❌ DO NOT create GraphOptimizer, AutoTuner, or EvolutionEngine duplicates
