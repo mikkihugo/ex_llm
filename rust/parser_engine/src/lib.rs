@@ -5,6 +5,9 @@
 
 use std::path::Path;
 
+// Module declarations
+mod mermaid_parser;
+
 // Re-export parser_core types with NIF attributes
 pub use parser_core::{PolyglotCodeParser, PolyglotCodeParserFrameworkConfig};
 
@@ -302,21 +305,15 @@ pub fn ast_grep_replace(
 
 #[rustler::nif(schedule = "DirtyCpu")]
 pub fn parse_mermaid(diagram_text: String) -> Result<String, String> {
-    use serde_json::json;
-
-    // TODO: Implement full tree-sitter-little-mermaid parsing
-    // For now, return a basic AST structure that preserves the diagram text
-    // This allows the Elixir code to compile and work with diagram text extraction
-
-    let ast = json!({
-        "type": "mermaid_diagram",
-        "text": diagram_text,
-        "parsed": false,
-        "note": "Full Mermaid AST parsing will be implemented in parser_engine v2"
-    });
-
-    serde_json::to_string(&ast)
-        .map_err(|e| format!("Failed to serialize Mermaid diagram: {}", e))
+    // Parse Mermaid diagram using our parser module
+    match mermaid_parser::parse_mermaid(&diagram_text) {
+        Ok(diagram) => {
+            // Serialize to JSON for Elixir
+            serde_json::to_string(&diagram)
+                .map_err(|e| format!("Failed to serialize Mermaid diagram: {}", e))
+        }
+        Err(e) => Err(format!("Mermaid parsing error: {}", e)),
+    }
 }
 
 // Rustler initialization
