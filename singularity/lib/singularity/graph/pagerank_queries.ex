@@ -356,4 +356,221 @@ defmodule Singularity.Graph.PageRankQueries do
     Enum.with_index(modules)
     |> Enum.map(fn {module, index} -> Map.put(module, :rank, index + 1) end)
   end
+
+  # ============================================================================
+  # Window Function Queries (PostgreSQL 16 Advanced Analysis)
+  # ============================================================================
+
+  @doc """
+  Find modules with percentile rankings and importance analysis.
+
+  Uses PostgreSQL window functions to provide context:
+  - rank: Absolute ranking (1st, 2nd, 3rd, etc.)
+  - percentile: Percentile ranking (1-100, where 100 is top 1%)
+  - relative_to_avg: Score as multiple of average
+  - gap_from_previous: Drop in importance from previous module (shows importance cliffs)
+
+  This identifies natural tier boundaries and refactoring targets.
+
+  ## Example
+
+      iex> PageRankQueries.find_modules_with_percentiles("singularity", 20)
+      [
+        %{
+          name: "Service",
+          file_path: "lib/service.ex",
+          pagerank_score: 3.14,
+          rank: 1,
+          percentile: 95,        # Top 5%
+          relative_to_avg: 2.61, # 2.61x average importance
+          gap_from_previous: nil
+        },
+        %{
+          name: "Manager",
+          file_path: "lib/manager.ex",
+          pagerank_score: 2.89,
+          rank: 2,
+          percentile: 94,
+          relative_to_avg: 2.40,
+          gap_from_previous: 0.250  # Small gap
+        },
+        %{
+          name: "Config",
+          file_path: "lib/config.ex",
+          pagerank_score: 1.85,
+          rank: 4,
+          percentile: 90,
+          relative_to_avg: 1.54,
+          gap_from_previous: 0.660  # BIG GAP! Importance cliff
+        },
+        ...
+      ]
+  """
+  @spec find_modules_with_percentiles(String.t(), non_neg_integer()) :: [map()]
+  def find_modules_with_percentiles(codebase_id, limit \\ 50) do
+    sql = """
+    SELECT
+      name,
+      file_path,
+      node_type,
+      ROUND(pagerank_score::numeric, 3) as pagerank_score,
+      ROW_NUMBER() OVER (ORDER BY pagerank_score DESC) as rank,
+      NTILE(100) OVER (ORDER BY pagerank_score DESC) as percentile,
+      ROUND((pagerank_score / AVG(pagerank_score) OVER ())::numeric, 2) as relative_to_avg,
+      ROUND((pagerank_score - LAG(pagerank_score, 1, 0)
+        OVER (ORDER BY pagerank_score DESC))::numeric, 3) as gap_from_previous
+    FROM graph_nodes
+    WHERE codebase_id = $1 AND pagerank_score > 0
+    ORDER BY pagerank_score DESC
+    LIMIT $2
+    """
+
+    Repo.query!(sql, [codebase_id, limit])
+    |> Map.fetch!(:rows)
+    |> Enum.map(fn [name, file_path, node_type, score, rank, percentile, rel_avg, gap] ->
+      %{
+        name: name,
+        file_path: file_path,
+        node_type: node_type,
+        pagerank_score: score,
+        rank: rank,
+        percentile: percentile,
+        relative_to_avg: rel_avg,
+        gap_from_previous: gap
+      }
+    end)
+  end
+
+  @doc """
+  Detect importance cliffs - modules where significance drops significantly.
+
+  Identifies natural tier boundaries by finding where module importance
+  drops more than a threshold from the previous module.
+
+  Useful for:
+  - Finding tier boundaries automatically
+  - Identifying refactoring targets (modules before cliffs need attention)
+  - Understanding architecture criticality distribution
+
+  ## Example
+
+      iex> PageRankQueries.find_importance_cliffs("singularity", 0.5)
+      [
+        %{position: 4, name: "Config", score: 1.85, drop: 0.660, drop_percent: 26.3},
+        %{position: 5, name: "Helper", score: 1.21, drop: 0.640, drop_percent: 34.6},
+        %{position: 15, name: "TestMock", score: 0.04, drop: 0.180, drop_percent: 81.8},
+        ...
+      ]
+  """
+  @spec find_importance_cliffs(String.t(), float()) :: [map()]
+  def find_importance_cliffs(codebase_id, min_drop \\ 0.5) do
+    sql = """
+    WITH scored AS (
+      SELECT
+        name,
+        file_path,
+        node_type,
+        pagerank_score,
+        LAG(pagerank_score) OVER (ORDER BY pagerank_score DESC) as prev_score,
+        ROW_NUMBER() OVER (ORDER BY pagerank_score DESC) as position
+      FROM graph_nodes
+      WHERE codebase_id = $1
+    )
+    SELECT
+      position,
+      name,
+      file_path,
+      node_type,
+      ROUND(pagerank_score::numeric, 3) as score,
+      ROUND((prev_score - pagerank_score)::numeric, 3) as drop,
+      ROUND((100.0 * (prev_score - pagerank_score) /
+        NULLIF(prev_score, 0))::numeric, 1) as drop_percent
+    FROM scored
+    WHERE prev_score IS NOT NULL
+      AND prev_score - pagerank_score > $2
+    ORDER BY drop DESC
+    LIMIT 50
+    """
+
+    Repo.query!(sql, [codebase_id, min_drop])
+    |> Map.fetch!(:rows)
+    |> Enum.map(fn [pos, name, path, node_type, score, drop, pct] ->
+      %{
+        position: pos,
+        name: name,
+        file_path: path,
+        node_type: node_type,
+        score: score,
+        drop_from_previous: drop,
+        drop_percent: pct
+      }
+    end)
+  end
+
+  @doc """
+  Get tier summary with automatic tier detection.
+
+  Uses window functions to automatically classify modules into tiers
+  based on percentile distribution, with counts and statistics.
+
+  Returns tier distribution that can change based on actual data,
+  rather than hardcoded score thresholds.
+
+  ## Example
+
+      iex> PageRankQueries.get_tier_summary("singularity")
+      [
+        %{tier: "CRITICAL", count: 12, percent: 3.2, avg_score: 6.21, min_score: 5.10, max_score: 8.45},
+        %{tier: "IMPORTANT", count: 38, percent: 10.1, avg_score: 2.85, min_score: 2.01, max_score: 4.99},
+        %{tier: "MODERATE", count: 145, percent: 38.7, avg_score: 0.74, min_score: 0.51, max_score: 1.99},
+        %{tier: "LOW", count: 200, percent: 47.9, avg_score: 0.12, min_score: 0.01, max_score: 0.50}
+      ]
+  """
+  @spec get_tier_summary(String.t()) :: [map()]
+  def get_tier_summary(codebase_id) do
+    sql = """
+    WITH tiered AS (
+      SELECT
+        pagerank_score,
+        CASE
+          WHEN pagerank_score > 5.0 THEN 'CRITICAL'
+          WHEN pagerank_score > 2.0 THEN 'IMPORTANT'
+          WHEN pagerank_score > 0.5 THEN 'MODERATE'
+          ELSE 'LOW'
+        END as tier,
+        ROW_NUMBER() OVER (ORDER BY pagerank_score DESC) as rank
+      FROM graph_nodes
+      WHERE codebase_id = $1 AND pagerank_score > 0
+    )
+    SELECT
+      tier,
+      COUNT(*) as module_count,
+      ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) as percent,
+      ROUND(AVG(pagerank_score)::numeric, 2) as avg_score,
+      ROUND(MIN(pagerank_score)::numeric, 2) as min_score,
+      ROUND(MAX(pagerank_score)::numeric, 2) as max_score
+    FROM tiered
+    GROUP BY tier
+    ORDER BY
+      CASE tier
+        WHEN 'CRITICAL' THEN 1
+        WHEN 'IMPORTANT' THEN 2
+        WHEN 'MODERATE' THEN 3
+        WHEN 'LOW' THEN 4
+      END
+    """
+
+    Repo.query!(sql, [codebase_id])
+    |> Map.fetch!(:rows)
+    |> Enum.map(fn [tier, count, percent, avg, min_s, max_s] ->
+      %{
+        tier: tier,
+        module_count: count,
+        percent: percent,
+        avg_score: avg,
+        min_score: min_s,
+        max_score: max_s
+      }
+    end)
+  end
 end
