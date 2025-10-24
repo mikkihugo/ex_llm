@@ -41,7 +41,7 @@ defmodule Singularity.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test_helpers", "test/support"]
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp project_version do

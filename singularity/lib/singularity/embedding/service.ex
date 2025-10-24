@@ -44,8 +44,17 @@ defmodule Singularity.Embedding.Service do
   @impl GenServer
   def init(_opts) do
     Logger.info("Starting Embedding Service")
-    subscribe_to_requests()
-    {:ok, %{}}
+
+    # Check if NATS is enabled before subscribing
+    nats_enabled = Application.get_env(:singularity, :nats, %{})[:enabled] != false
+
+    if nats_enabled do
+      subscribe_to_requests()
+    else
+      Logger.info("Embedding Service running in local-only mode (NATS disabled)")
+    end
+
+    {:ok, %{nats_enabled: nats_enabled}}
   end
 
   defp subscribe_to_requests do

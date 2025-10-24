@@ -43,7 +43,8 @@ defmodule Singularity.Execution.Autonomy.RuleLoader do
   use GenServer
   require Logger
 
-  alias Singularity.{Repo, Autonomy.Rule}
+  alias Singularity.{Repo}
+  alias Singularity.Execution.Autonomy.Rule
   import Ecto.Query
 
   @table :rule_cache

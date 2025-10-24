@@ -57,18 +57,26 @@ defmodule Singularity.Learning.ExperimentResultConsumer do
   def init(_opts) do
     Logger.info("Starting ExperimentResultConsumer...")
 
-    # Subscribe to Genesis experiment completions
-    case subscribe_to_results() do
-      :ok ->
-        Logger.info("Subscribed to Genesis experiment results",
-          subject: "agent.events.experiment.completed.>"
-        )
+    # Check if NATS is enabled before subscribing
+    nats_enabled = Application.get_env(:singularity, :nats, %{})[:enabled] != false
 
-        {:ok, %{subscriptions: []}}
+    if nats_enabled do
+      # Subscribe to Genesis experiment completions
+      case subscribe_to_results() do
+        :ok ->
+          Logger.info("Subscribed to Genesis experiment results",
+            subject: "agent.events.experiment.completed.>"
+          )
 
-      {:error, reason} ->
-        Logger.error("Failed to subscribe to Genesis results", reason: inspect(reason))
-        {:backoff, 5000, %{subscriptions: []}}
+          {:ok, %{subscriptions: [], nats_enabled: true}}
+
+        {:error, reason} ->
+          Logger.error("Failed to subscribe to Genesis results", reason: inspect(reason))
+          {:backoff, 5000, %{subscriptions: [], nats_enabled: true}}
+      end
+    else
+      Logger.info("ExperimentResultConsumer running in local-only mode (NATS disabled)")
+      {:ok, %{subscriptions: [], nats_enabled: false}}
     end
   end
 

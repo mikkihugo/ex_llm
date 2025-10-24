@@ -171,7 +171,7 @@ defmodule Singularity.TechnologyTemplateLoader do
   defp compile_pattern(_), do: {:error, :invalid_pattern}
 
   defp fetch_from_nats(identifier, opts) do
-    subject = opts[:nats_subject] || "system.tech.templates"
+    subject = opts[:nats_subject] || "templates.technology.fetch"
     payload = %{identifier: identifier}
 
     case NatsConnector.fetch_template(subject, payload) do

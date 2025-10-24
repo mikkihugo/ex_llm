@@ -5,7 +5,7 @@ defmodule Singularity.Tools.Knowledge do
   Wraps existing knowledge capabilities:
   - PackageRegistryKnowledge - Package ecosystem search
   - PatternMiner - Code pattern search
-  - FrameworkPatternStore - Framework patterns
+  - PatternStore - Framework and technology patterns
   - CodeDeduplicator - Duplicate detection
   """
 
@@ -14,7 +14,7 @@ defmodule Singularity.Tools.Knowledge do
   alias Singularity.Tools.Tool
   alias Singularity.ArchitectureEngine.PackageRegistryKnowledge
   alias Singularity.Code.Patterns.PatternMiner
-  alias Singularity.ArchitectureEngine.FrameworkPatternStore
+  alias Singularity.Architecture.PatternStore
   alias Singularity.Code.Quality.CodeDeduplicator
 
   @doc "Register knowledge tools with the shared registry."
@@ -285,7 +285,7 @@ defmodule Singularity.Tools.Knowledge do
     category = Map.get(args, "category")
     limit = Map.get(args, "limit", 5)
 
-    case FrameworkPatternStore.search_similar_patterns(query, top_k: limit) do
+    case PatternStore.search_similar_patterns(:framework, query, top_k: limit) do
       {:ok, patterns} ->
         filtered_patterns =
           patterns
@@ -605,7 +605,7 @@ defmodule Singularity.Tools.Knowledge do
   # Helper functions for knowledge base queries
   defp get_api_patterns_from_knowledge_base do
     # Query existing knowledge base for API patterns
-    case Singularity.ArchitectureEngine.FrameworkPatternStore.search("API patterns", %{top_k: 10}) do
+    case PatternStore.search_similar_patterns(:framework, "API patterns", top_k: 10) do
       {:ok, results} -> results
       _ -> []
     end
@@ -639,9 +639,10 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_tutorial_patterns_from_knowledge_base(topic) do
     # Query existing knowledge base for tutorial patterns
-    case Singularity.ArchitectureEngine.FrameworkPatternStore.search(
+    case PatternStore.search_similar_patterns(
+           :framework,
            "tutorial patterns #{topic}",
-           %{top_k: 8}
+           top_k: 8
          ) do
       {:ok, results} -> results
       _ -> []
@@ -656,9 +657,10 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_reference_patterns_from_knowledge_base(reference_type) do
     # Query existing knowledge base for reference patterns
-    case Singularity.ArchitectureEngine.FrameworkPatternStore.search(
+    case PatternStore.search_similar_patterns(
+           :framework,
            "reference patterns #{reference_type}",
-           %{top_k: 8}
+           top_k: 8
          ) do
       {:ok, results} -> results
       _ -> []
@@ -673,9 +675,10 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_guide_patterns_from_knowledge_base(guide_type) do
     # Query existing knowledge base for guide patterns
-    case Singularity.ArchitectureEngine.FrameworkPatternStore.search(
+    case PatternStore.search_similar_patterns(
+           :framework,
            "guide patterns #{guide_type}",
-           %{top_k: 8}
+           top_k: 8
          ) do
       {:ok, results} -> results
       _ -> []
@@ -690,9 +693,10 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_architecture_patterns_from_knowledge_base(architecture_type) do
     # Query existing knowledge base for architecture patterns
-    case Singularity.ArchitectureEngine.FrameworkPatternStore.search(
+    case PatternStore.search_similar_patterns(
+           :framework,
            "architecture patterns #{architecture_type}",
-           %{top_k: 8}
+           top_k: 8
          ) do
       {:ok, results} -> results
       _ -> []
@@ -707,9 +711,10 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_patterns_from_knowledge_base(pattern_type) do
     # Query existing knowledge base for patterns
-    case Singularity.ArchitectureEngine.FrameworkPatternStore.search(
+    case PatternStore.search_similar_patterns(
+           :framework,
            "patterns #{pattern_type}",
-           %{top_k: 10}
+           top_k: 10
          ) do
       {:ok, results} -> results
       _ -> []
@@ -724,9 +729,10 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_frameworks_from_knowledge_base(framework_type) do
     # Query existing knowledge base for frameworks
-    case Singularity.ArchitectureEngine.FrameworkPatternStore.search(
+    case PatternStore.search_similar_patterns(
+           :framework,
            "frameworks #{framework_type}",
-           %{top_k: 10}
+           top_k: 10
          ) do
       {:ok, results} -> results
       _ -> []
@@ -741,9 +747,10 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_generic_patterns_from_knowledge_base(knowledge_type) do
     # Query existing knowledge base for generic patterns
-    case Singularity.ArchitectureEngine.FrameworkPatternStore.search(
+    case PatternStore.search_similar_patterns(
+           :framework,
            "patterns #{knowledge_type}",
-           %{top_k: 8}
+           top_k: 8
          ) do
       {:ok, results} -> results
       _ -> []

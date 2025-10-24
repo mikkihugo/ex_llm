@@ -61,24 +61,31 @@ defmodule Singularity.Knowledge.TemplateService do
     # Use the default Gnat connection
     gnat_name = :nats_client
 
-    # Subscribe to template requests using Singularity.NatsClient
-    Enum.each(
-      [
-        "template.get.>",
-        "template.search.>"
-      ],
-      fn subject ->
-        case Singularity.NatsClient.subscribe(subject) do
-          {:ok, _subscription_id} -> Logger.info("TemplateService subscribed to: #{subject}")
-          {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
+    # Check if NATS is enabled before subscribing
+    nats_enabled = Application.get_env(:singularity, :nats, %{})[:enabled] != false
+
+    if nats_enabled do
+      # Subscribe to template requests using Singularity.NatsClient
+      Enum.each(
+        [
+          "template.get.>",
+          "template.search.>"
+        ],
+        fn subject ->
+          case Singularity.NatsClient.subscribe(subject) do
+            {:ok, _subscription_id} -> Logger.info("TemplateService subscribed to: #{subject}")
+            {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
+          end
         end
-      end
-    )
+      )
 
-    Logger.info("Template NATS service started")
-    Logger.info("  Listening on: template.get.*, template.search.*")
+      Logger.info("Template NATS service started")
+      Logger.info("  Listening on: template.get.*, template.search.*")
+    else
+      Logger.info("Template NATS service running in local-only mode (NATS disabled)")
+    end
 
-    {:ok, %{gnat: gnat_name, requests_handled: 0}}
+    {:ok, %{gnat: gnat_name, requests_handled: 0, nats_enabled: nats_enabled}}
   end
 
   @impl true
