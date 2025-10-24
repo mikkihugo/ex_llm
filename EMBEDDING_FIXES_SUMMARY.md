@@ -114,6 +114,36 @@ mock_triplets = generate_mock_triplets(100)
 
 ---
 
+## Newly Discovered: Missing Ecto Schemas for Embedding Storage ⏳
+
+**File:** `singularity/lib/singularity/storage/cache.ex` and others
+**Effort:** 4-6 hours
+**Critical Issue:** System uses raw SQL instead of Ecto schemas
+
+Current problem:
+```elixir
+# Current (WRONG):
+Repo.insert_all("cache_code_embeddings", [changeset])  # Raw table name!
+
+# Should be:
+Repo.insert(%CodeEmbedding{...})  # Proper schema
+```
+
+Missing schemas:
+- `CodeChunk` - No schema for code_chunks table with pgvector embedding field
+- `CodeEmbeddingCache` - No schema for cache_code_embeddings table
+- `code_chunks` table referenced but never defined in schemas/
+
+**Fix Required:**
+1. Create CodeChunk schema with pgvector field
+2. Create embedding cache schemas
+3. Replace all `Repo.insert_all("table_name", ...)` with proper schemas
+4. Add pgvector type definitions
+
+This prevents proper type safety and validation!
+
+---
+
 ## Remaining Critical Embedding Issues (5/8)
 
 ### ⏳ CRITICAL #2: Model Training Evaluation Not Implemented
