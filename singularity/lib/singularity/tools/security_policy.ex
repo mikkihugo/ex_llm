@@ -48,6 +48,8 @@ defmodule Singularity.Tools.SecurityPolicy do
   """
 
   require Logger
+  alias Singularity.Repo
+  alias Singularity.Schemas.UserCodebasePermission
 
   ## Deny lists
 
@@ -226,20 +228,76 @@ defmodule Singularity.Tools.SecurityPolicy do
     end)
   end
 
+  defp validate_codebase_access(%{"codebase_id" => codebase_id, "user_id" => user_id})
+       when is_binary(codebase_id) and is_binary(user_id) do
+    check_user_permission(user_id, codebase_id)
+  end
+
   defp validate_codebase_access(%{"codebase_id" => codebase_id}) when is_binary(codebase_id) do
-    # TODO: Check user permissions for codebase
-    # For now, allow all internal codebases
+    # If no user_id provided, check if this is an internal codebase with default access
+    # (used for internal tools like code analysis)
     if codebase_id in ["singularity", "centralcloud"] do
       :ok
     else
-      {:error, "Access denied: codebase not accessible"}
+      {:error, "Access denied: user_id required for non-default codebase"}
     end
   end
 
   defp validate_codebase_access(_request) do
-    # Default to "singularity" if not specified
+    # Default to "singularity" if codebase not specified (internal default)
     :ok
   end
+
+  @doc """
+  Check if user has permission to access codebase.
+
+  Returns `:ok` if user has access, `{:error, reason}` otherwise.
+  """
+  def check_user_permission(user_id, codebase_id) when is_binary(user_id) and is_binary(codebase_id) do
+    case Repo.get_by(UserCodebasePermission, user_id: user_id, codebase_id: codebase_id) do
+      nil ->
+        Logger.warn("Unauthorized codebase access attempt",
+          user: user_id,
+          codebase: codebase_id
+        )
+
+        {:error, "Access denied: no permission for codebase"}
+
+      _permission ->
+        :ok
+    end
+  end
+
+  def check_user_permission(_user_id, _codebase_id) do
+    {:error, "Invalid user_id or codebase_id type"}
+  end
+
+  @doc """
+  Check if user can perform specific action on codebase.
+
+  Action can be `:read`, `:write`, or `:delete`.
+  Returns true if allowed, false otherwise.
+  """
+  def action_allowed?(user_id, codebase_id, action)
+      when is_binary(user_id) and is_binary(codebase_id) and is_atom(action) do
+    case Repo.get_by(UserCodebasePermission, user_id: user_id, codebase_id: codebase_id) do
+      nil ->
+        false
+
+      perm ->
+        check_action_permission(perm.permission, action)
+    end
+  end
+
+  def action_allowed?(_user_id, _codebase_id, _action) do
+    false
+  end
+
+  # Permission level checks
+  defp check_action_permission(:owner, _action), do: true
+  defp check_action_permission(:write, action) when action in [:read, :write], do: true
+  defp check_action_permission(:read, :read), do: true
+  defp check_action_permission(_permission, _action), do: false
 
   defp validate_query_length(query) when is_binary(query) do
     if String.length(query) <= @max_query_length do
