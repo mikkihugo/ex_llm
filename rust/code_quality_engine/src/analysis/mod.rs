@@ -62,7 +62,7 @@ pub use performance::{
     PerformanceRecommendation, PerformanceRecommendationPriority, PerformanceCategory,
     PerformanceMetadata, PerformanceDetectorTrait, PerformancePatternRegistry, PerformancePattern,
     OptimizationAnalysis, Optimization, OptimizationLocation,
-    OptimizationRecommendation, OptimizationCategory as OptimizerCategory,
+    OptimizationRecommendation,
     OptimizationMetadata, OptimizationPattern, PerformanceOptimizer,
     ProfilingAnalysis, PerformanceMetrics, ProfilingMetadata, ProfilingPattern, PerformanceProfiler,
 };

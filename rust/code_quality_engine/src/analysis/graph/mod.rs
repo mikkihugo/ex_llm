@@ -18,13 +18,13 @@ pub mod pagerank;
 
 // Core code graph types
 pub use code_graph::{
-    CodeGraph, CodeGraphBuilder, CodeGraphAnalyzer, CodeGraphConfig,
-    CodeGraphMetrics, CodeGraphStatistics, CodeGraphEdge, CodeGraphNode,
+    CodeDependencyGraph as CodeGraph, CodeGraphBuilder, GraphType, GraphNode, GraphEdge,
+    GraphMetrics, CodebaseCodePatterns, NamingCodePattern,
 };
 
 // Code insights and analysis
 pub use code_insights::{
-    CodeInsightsEngine, IntelligentInsight, InsightType, ElementAnalysisCapabilities,
+    CodeInsightsEngine, IntelligentInsight, InsightType,
     CodeInsightsResult,
 };
 

@@ -14,7 +14,7 @@ pub use detector::{
     OptimizationType, ImplementationEffort, ResourceUsage, MemoryUsage, MemoryLeak,
     CPUUsage, CPUIntensiveFunction, NetworkUsage, SlowRequest, NetworkBottleneck,
     NetworkBottleneckType, DiskUsage, SlowIOOperation, IOOperationType,
-    PerformanceRecommendation, RecommendationPriority, PerformanceCategory,
+    PerformanceRecommendation, PerformanceRecommendationPriority, PerformanceCategory,
     PerformanceMetadata, PerformanceDetectorTrait, PerformancePatternRegistry, PerformancePattern,
 };
 
