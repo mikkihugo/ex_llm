@@ -46,6 +46,10 @@ if pgrep -f "elixir.*centralcloud" > /dev/null || pgrep -f "beam.*centralcloud" 
     existing_processes+=("Centralcloud")
 fi
 
+if pgrep -f "elixir.*genesis" > /dev/null || pgrep -f "beam.*genesis" > /dev/null; then
+    existing_processes+=("Genesis")
+fi
+
 if [ ${#existing_processes[@]} -gt 0 ]; then
     echo -e "${YELLOW}⚠️  Found existing processes:${NC}"
     for process in "${existing_processes[@]}"; do
@@ -72,7 +76,7 @@ else
 fi
 
 # 2. Check PostgreSQL
-echo -e "\n${YELLOW}[2/5] Checking PostgreSQL...${NC}"
+echo -e "\n${YELLOW}[2/6] Checking PostgreSQL...${NC}"
 if pg_isready -h localhost -p 5432 -q; then
     echo "✅ PostgreSQL is running"
 else
@@ -84,7 +88,7 @@ else
 fi
 
 # 3. Start Centralcloud
-echo -e "\n${YELLOW}[3/5] Starting Centralcloud...${NC}"
+echo -e "\n${YELLOW}[3/6] Starting Centralcloud...${NC}"
 
 # Check for existing Centralcloud processes
 if pgrep -f "elixir.*centralcloud" > /dev/null || pgrep -f "beam.*centralcloud" > /dev/null; then
@@ -104,9 +108,19 @@ else
         mix compile
     fi
 
-    # Start the application
-    echo "Starting Centralcloud application..."
-    MIX_ENV=dev elixir --name centralcloud@127.0.0.1 --cookie singularity-secret -S mix run > ../logs/centralcloud.log 2>&1 &
+    # Run migrations
+    echo "Running Centralcloud database migrations..."
+    mix ecto.migrate
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ Centralcloud migrations failed${NC}"
+        echo "Check that PostgreSQL is running and centralcloud database exists"
+        exit 1
+    fi
+    echo "✅ Centralcloud migrations up to date"
+
+    # Start the application with hot reload
+    echo "Starting Centralcloud application (with hot reload)..."
+    MIX_ENV=dev iex --name centralcloud@127.0.0.1 --cookie singularity-secret -S mix > ../logs/centralcloud.log 2>&1 &
     sleep 3
 
     if pgrep -f "elixir.*centralcloud" > /dev/null; then
@@ -118,16 +132,57 @@ else
     cd ..
 fi
 
-# 4. Start Elixir Application
-echo -e "\n${YELLOW}[4/5] Starting Elixir Application...${NC}"
+# 4. Start Genesis
+echo -e "\n${YELLOW}[4/6] Starting Genesis...${NC}"
 
-# Check for existing Elixir processes
+# Check for existing Genesis processes
+if pgrep -f "elixir.*genesis" > /dev/null || pgrep -f "beam.*genesis" > /dev/null; then
+    echo "✅ Genesis already running"
+else
+    cd genesis
+
+    # Install dependencies if needed
+    if [ ! -d "deps" ]; then
+        echo "Installing Genesis dependencies..."
+        mix deps.get
+    fi
+
+    # Compile if needed
+    if [ ! -d "_build" ]; then
+        echo "Compiling Genesis application..."
+        mix compile
+    fi
+
+    # Run migrations
+    echo "Running Genesis database migrations..."
+    mix ecto.migrate
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ Genesis migrations failed${NC}"
+        echo "Check that PostgreSQL is running and genesis_db database exists"
+        exit 1
+    fi
+    echo "✅ Genesis migrations up to date"
+
+    # Start the application with hot reload
+    echo "Starting Genesis application (with hot reload)..."
+    MIX_ENV=dev iex --name genesis@127.0.0.1 --cookie singularity-secret -S mix > ../logs/genesis.log 2>&1 &
+    sleep 3
+
+    if pgrep -f "elixir.*genesis" > /dev/null; then
+        echo "✅ Genesis started"
+    else
+        echo -e "${YELLOW}⚠️  Genesis may have failed to start${NC}"
+        echo "Check logs/genesis.log for details"
+    fi
+    cd ..
+fi
+
+# 5. Start Singularity Application
+echo -e "\n${YELLOW}[5/6] Starting Singularity Application...${NC}"
+
+# Check for existing Singularity processes
 if pgrep -f "elixir.*singularity" > /dev/null || pgrep -f "beam.*singularity" > /dev/null; then
-    echo -e "${RED}❌ Elixir app is already running!${NC}"
-    echo -e "${YELLOW}Please stop existing processes first:${NC}"
-    echo "  ./stop-all.sh"
-    echo "  or: pkill -f 'elixir.*singularity'"
-    exit 1
+    echo "✅ Singularity already running"
 else
     cd singularity
 
@@ -143,22 +198,32 @@ else
         mix compile
     fi
 
-    # Start the application
-    echo "Starting Elixir application..."
-    MIX_ENV=dev elixir --name singularity@127.0.0.1 --cookie singularity-secret -S mix run > ../logs/elixir.log 2>&1 &
+    # Run migrations
+    echo "Running Singularity database migrations..."
+    mix ecto.migrate
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ Singularity migrations failed${NC}"
+        echo "Check that PostgreSQL is running and singularity database exists"
+        exit 1
+    fi
+    echo "✅ Singularity migrations up to date"
+
+    # Start the application with hot reload
+    echo "Starting Singularity application (with hot reload)..."
+    MIX_ENV=dev iex --name singularity@127.0.0.1 --cookie singularity-secret -S mix phx.server > ../logs/singularity.log 2>&1 &
     sleep 5
 
-    if pgrep -f "beam.*singularity" > /dev/null; then
-        echo "✅ Elixir app started"
+    if pgrep -f "elixir.*singularity" > /dev/null || pgrep -f "beam.*singularity" > /dev/null; then
+        echo "✅ Singularity started"
     else
-        echo -e "${YELLOW}⚠️  Elixir app may have failed to start${NC}"
-        echo "Check logs/elixir.log for details"
+        echo -e "${YELLOW}⚠️  Singularity may have failed to start${NC}"
+        echo "Check logs/singularity.log for details"
     fi
     cd ..
 fi
 
-# 5. Start AI Server (TypeScript)
-echo -e "\n${YELLOW}[5/5] Starting AI Server...${NC}"
+# 6. Start AI Server (TypeScript)
+echo -e "\n${YELLOW}[6/6] Starting AI Server...${NC}"
 
 # Check for existing AI Server processes
 if pgrep -f "bun.*server" > /dev/null || lsof -i:3000 > /dev/null 2>&1; then
@@ -185,8 +250,8 @@ else
         export $(cat ../.env | grep -v '^#' | xargs)
     fi
 
-    echo "Starting AI Server..."
-    bun run src/server.ts > ../logs/llm-server.log 2>&1 &
+    echo "Starting AI Server (with hot reload)..."
+    bun --hot run src/server.ts > ../logs/llm-server.log 2>&1 &
     sleep 3
 
     if lsof -i:3000 > /dev/null 2>&1; then
@@ -208,7 +273,8 @@ services=(
     "nats-server:4222:NATS"
     "postgres:N/A:PostgreSQL"
     "elixir.*centralcloud:N/A:Centralcloud"
-    "beam.*singularity:N/A:Elixir App"
+    "elixir.*genesis:N/A:Genesis"
+    "elixir.*singularity:N/A:Singularity"
     "bun:3000:AI Server"
 )
 

@@ -433,8 +433,8 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     execute """
     CREATE OR REPLACE FUNCTION find_package_dependencies(package_name TEXT, ecosystem TEXT)
     RETURNS TABLE(
-      package_name TEXT,
-      ecosystem TEXT,
+      dep_name TEXT,
+      dep_ecosystem TEXT,
       dependency_path LTREE,
       depth INTEGER
     ) AS $$
@@ -444,9 +444,9 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
         SELECT p.name, p.ecosystem, p.dependency_path, 0 as depth
         FROM packages p
         WHERE p.name = package_name AND p.ecosystem = ecosystem
-        
+
         UNION ALL
-        
+
         SELECT p.name, p.ecosystem, p.dependency_path, d.depth + 1
         FROM packages p
         JOIN deps d ON p.dependency_path <@ d.dependency_path
@@ -534,17 +534,17 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     SELECT
       'Shared Buffer Hit Ratio' as metric,
       round(
-        (sum(blks_hit)::float / (sum(blks_hit) + sum(blks_read))) * 100, 2
+        ((sum(blks_hit)::float / (sum(blks_hit) + sum(blks_read))) * 100)::numeric, 2
       ) as value
     FROM pg_stat_database
     WHERE datname = current_database()
-    
+
     UNION ALL
-    
+
     SELECT
       'Cache Hit Ratio' as metric,
       round(
-        (sum(access_count)::float / count(*)) * 100, 2
+        ((sum(access_count)::float / count(*)) * 100)::numeric, 2
       ) as value
     FROM pg_cache
     WHERE expires_at IS NULL OR expires_at > NOW();

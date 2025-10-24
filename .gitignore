@@ -98,59 +98,12 @@ erl_crash.dump
 .hex/
 **/mix.lock
 
-# Temporary documentation files
-*_SUMMARY.md
-*_COMPLETE.md
-*_FINAL.md
-*_PLAN.md
-*_STATUS.md
-*_FIXES.md
-*_ANALYSIS.md
-*_REPORT.md
-*_CHECKLIST.md
-*_SETUP.md
-*_INTEGRATION.md
-*_FLOW.md
-*_RENAMES.md
-*_CONSOLIDATION.md
-*_FIXED.md
-*_OPTIMIZER.md
-*_SIMPLIFIED.md
-*_UPDATE.md
-*_SAFETY.md
-*_MIGRATION.md
-*_PATTERNS.md
-*_KNOWLEDGE.md
-*_BASE.md
-*_REGISTRY.md
-*_SEARCH.md
-*_ARCHITECTURE.md
-*_INTERFACE.md
-*_AUDIT.md
-*_ORGANIZATION.md
-*_REORGANIZATION.md
-*_COMPILATION.md
-*_CURRENT.md
-*_SERVICE.md
-*_REMOVAL.md
-*_EXECUTION.md
-*_COORDINATOR.md
-*_FILENAME.md
-*_JINA.md
-*_MIX.md
-*_GLEAM.md
-*_NIX.md
-*_PRE.md
-*_RUST.md
-*_SCHEMA.md
-*_SEMANTIC.md
-*_TEMPLATE.md
-*_TOOL.md
-*_IMPLEMENTATION_STATUS.md
-
-# EXCEPTION: Allow SELFEVOLVE.md (core evolution system doc)
-!SELFEVOLVE.md
-!SELFEVOLVE_TOP5.md
+# Temporary documentation files (only in logs/ directory to avoid blocking real docs)
+logs/*_SUMMARY.md
+logs/*_COMPLETE.md
+logs/*_FINAL.md
+logs/*_PLAN.md
+logs/*_STATUS.md
 
 # Gleam build artifacts (NOT source files!)
 /singularity_app/build/

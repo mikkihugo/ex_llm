@@ -21,47 +21,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Distributed Messaging** (NATS with JetStream)
 - **Multi-System Architecture** (Multiple Singularity instances ←→ Shared CentralCloud knowledge)
 
-**Environment:** Nix-based (dev/test/prod) with PostgreSQL. Supports **multiple Singularity instances** learning collectively through a centralized CentralCloud service.
-
-### Multi-System Architecture
-
-Singularity supports **distributed learning across multiple instances** via CentralCloud:
-
-```
-Singularity Instance 1 ─────┐
-Singularity Instance 2 ─────┤
-Singularity Instance N ─────┴──→ CentralCloud (Knowledge Authority)
-                                  ↓
-                         PostgreSQL (Shared KB)
-```
-
-**Pattern:** Framework Discovery & Enrichment
-
-1. **Singularity discovers unknown framework** → Queries CentralCloud API
-2. **CentralCloud looks it up** → Checks local database for known patterns
-3. **CentralCloud enriches patterns** → Uses Rust engines (if enabled) to analyze
-4. **Stores in shared database** → All Singularity instances benefit immediately
-5. **Singularity uses enriched data** → Gets full framework context
-
-**Benefits:**
-- ✅ No duplicate learning across instances (collective intelligence)
-- ✅ Constant knowledge improvement (patterns learned by one help all)
-- ✅ Zero Singularity ←→ Singularity coupling (only via CentralCloud)
-- ✅ CentralCloud independent of any Singularity (can run standalone)
-- ✅ Flexible engine usage (use only engines that add value)
+**Environment:** Nix-based (dev/test/prod) with PostgreSQL.
 
 ## Complete Documentation
-
-**Visual Architecture:** See **SYSTEM_FLOWS.md** - 22 comprehensive Mermaid diagrams covering:
-- Application flows (10 diagrams)
-- Database flows (8 diagrams)
-- Agent flows (4 diagrams)
-
-**Rust Architecture:** See **RUST_ENGINES_INVENTORY.md** - Complete NIF and service inventory:
-- 8 NIF modules (loaded into Singularity via Rustler)
-- 3 Central_cloud services (Framework, Package Intel, Knowledge Cache)
-- NIF function mapping (Elixir → Rust)
-- Reorganization plan with feature preservation
 
 **Agent System:** See **AGENTS.md** - Complete agent documentation:
 - 6 agent types with specialized capabilities
@@ -69,31 +31,28 @@ Singularity Instance N ─────┴──→ CentralCloud (Knowledge Autho
 - Flow tracking and cost optimization
 - 23 comprehensive tests
 
-**Production Ready:** See **PRODUCTION_FIXES_IMPLEMENTED.md**:
-- AI server error handling (NATS safety, timeouts, backpressure)
-- File logging and metrics collection
-- Enhanced health endpoints
+**CentralCloud (Multi-Instance Learning):** See **CENTRALCLOUD_DETECTION_ROLE.md** and **CENTRALCLOUD_INTEGRATION_GUIDE.md**:
+- Optional service for aggregating learnings across multiple Singularity instances
+- Not required for single-instance development
+- Available when you need cross-instance knowledge sharing
 
 ## Technology Stack
 
-- **Elixir 1.18.4** with mix_gleam for Gleam integration
-- **Gleam 1.12.0** for type-safe BEAM modules
-- **Rust** for high-performance parsing and analysis tools
+- **Elixir 1.18.4** for the main application
+- **Rust** for high-performance parsing and analysis tools via Rustler NIFs
 - **NATS** for distributed messaging
 - **PostgreSQL 17** with pgvector, timescaledb, postgis
-- **Bun** for TypeScript/JavaScript runtime
+- **Bun** for TypeScript/JavaScript runtime (AI server)
 - **Nix** for reproducible development environment
 
 ## AI Provider Policy
 
 **CRITICAL:** This project uses ONLY subscription-based or FREE AI providers. Never enable pay-per-use API billing.
 
-See [AI_PROVIDER_POLICY.md](AI_PROVIDER_POLICY.md) for full details.
-
 **Approved providers:**
 - Gemini (FREE via gemini-cli-core + ADC)
 - Claude (Claude Pro/Max subscription via claude-code SDK)
-- Codex (ChatGPT Plus/Pro subscription via CLI)
+- Codex (subscription-based via CLI)
 - Copilot (GitHub Copilot subscription)
 - Cursor (Cursor subscription)
 
@@ -109,25 +68,27 @@ nix develop
 direnv allow
 
 # 2. Setup databases
-./scripts/setup-database.sh  # Creates 'singularity' DB (main) and 'central_services' DB (central_cloud)
+./scripts/setup-database.sh  # Creates 'singularity' DB (main) and 'central_services' DB (for CentralCloud)
 
 # 3. Install dependencies
 cd singularity
-mix setup  # Installs Elixir + Gleam deps
+mix setup  # Installs Elixir dependencies
 
 # 4. Import knowledge artifacts (JSON → PostgreSQL)
 mix knowledge.migrate        # Imports templates_data/**/*.json
 moon run templates_data:embed-all  # Generates embeddings
 ```
 
-**Note:** Uses **TWO databases**:
-1. **`singularity`** - Main application (singularity) - shared across dev/test/prod
-   - Dev: Direct access
-   - Test: Sandboxed transactions (Ecto.Sandbox)
-   - Prod: Same DB (internal tooling, no separation needed)
-2. **`central_services`** - Central_cloud application - separate, independent database
-   - Used by: Framework Learning Agent, Package Intelligence, Knowledge Cache
-   - Completely separate from singularity database
+**Single Database for Single-Instance Development:**
+- **`singularity`** - Main application database (shared across dev/test/prod)
+  - Dev: Direct access
+  - Test: Sandboxed transactions (Ecto.Sandbox)
+  - Prod: Same DB (internal tooling, no separation needed)
+
+**Optional:** If using CentralCloud for multi-instance learning:
+- **`central_services`** - CentralCloud application database (separate, independent)
+  - Used by: Framework Learning Agent, Package Intelligence, Knowledge Cache
+  - Only needed when aggregating learnings across multiple Singularity instances
 
 ### Running the Application
 ```bash
@@ -265,10 +226,9 @@ Singularity uses a **single, reusable orchestration pattern** applied to 7 major
 
 **AI/LLM Integration**
 - `singularity/lib/singularity/llm/`: Provider abstraction for Claude, Gemini, OpenAI, Copilot
-- **Model Selection**: Multi-dimensional capability-based ranking (see [MODEL_CAPABILITY_MATRIX.md](MODEL_CAPABILITY_MATRIX.md))
 - **NATS-based LLM calls**: ALL Elixir code uses NATS (no direct HTTP to LLM APIs)
+- Model selection via complexity levels (simple, medium, complex)
 - MCP (Model Context Protocol) federation via `hermes_mcp`
-- Jules AI agent integration for specialized tasks
 
 **Agents**
 - `agents/`: Autonomous agents (Self-Improving, Cost-Optimized, Architecture, Technology, Refactoring, Chat)
@@ -282,45 +242,46 @@ Singularity uses a **single, reusable orchestration pattern** applied to 7 major
 ```elixir
 alias Singularity.LLM.Service
 
-# ✅ CORRECT - Uses NATS with complexity level
+# ✅ CORRECT - Provide task_type for intelligent model selection
 Service.call(:complex, messages, task_type: :architect)
-Service.call_with_prompt(:simple, prompt, task_type: :classifier)
+Service.call_with_prompt(:medium, "Your question", task_type: :planning)
+
+# Or let Elixir auto-determine complexity from task_type
+complexity = Service.determine_complexity_for_task(:code_generation)
+Service.call(complexity, messages)
 
 # ❌ WRONG - Direct HTTP calls forbidden
 Provider.call(:claude, %{prompt: prompt})  # Module doesn't exist!
 HTTPoison.post("https://api.anthropic.com/...")  # Never do this!
 ```
 
-**Complexity Level Selection:**
+**Complexity Levels & Auto-Scoring:**
 
-- **`:simple`** - Classification, parsing, simple Q&A (< 1000 tokens)
-  - Task types: `:classifier`, `:parser`, `:simple_chat`, `:web_search`
-  - Uses: Gemini Flash, GPT-4o-mini
-  - Cost: ~$0.001 per call
+Singularity uses **two-tier model selection**:
 
-- **`:medium`** - Standard code tasks, decomposition, planning
-  - Task types: `:coder`, `:decomposition`, `:planning`, `:pseudocode`
-  - Uses: Claude Sonnet, GPT-4o
-  - Cost: ~$0.01-0.05 per call
+1. **Elixir Side** - Maps task types to broad complexity levels:
+   - `:simple` → `:classifier`, `:parser`, `:simple_chat`, `:web_search`
+   - `:medium` → `:coder`, `:decomposition`, `:planning`, `:pseudocode`, `:chat`
+   - `:complex` → `:architect`, `:code_generation`, `:pattern_analyzer`, `:refactoring`, `:code_analysis`, `:qa`
 
-- **`:complex`** - Architecture, refactoring, multi-step reasoning
-  - Task types: `:architect`, `:pattern_analyzer`, `:refactoring`, `:code_analysis`, `:qa`
-  - Uses: Claude Opus, GPT-4-turbo, o1
-  - Cost: ~$0.10-0.50 per call
+2. **AI Server Side** (TypeScript) - Analyzes task for refined model selection:
+   - Scores task based on: keywords ("architecture", "design", "refactor"), code generation needs, reasoning requirements, context window, task length
+   - Keywords like "architecture", "design", "refactor", "optimize" boost complexity score
+   - Final score maps to available models with cost optimization
+   - Returns specific model recommendation with reasoning
 
-**Auto-determine complexity:**
+**Model Examples by Complexity:**
 
-```elixir
-complexity = Service.determine_complexity_for_task(:code_generation)  # => :complex
-Service.call(complexity, messages)
-```
+- `:simple` (score < 4) - Gemini Flash, GPT-4o-mini (~$0.001 per call)
+- `:medium` (score 4-7) - Claude Sonnet, GPT-4o (~$0.01-0.05 per call)
+- `:complex` (score ≥ 8) - Claude Opus, GPT-5-Codex, o3 (~$0.10-0.50+ per call)
 
 **NATS Communication Flow:**
 
 ```
 Elixir Code
     ↓ NATS subject: llm.request
-AI Server (TypeScript)
+AI Server (TypeScript/Bun)
     ↓ HTTP
 LLM Provider APIs (Claude, Gemini, etc.)
     ↓
@@ -408,16 +369,16 @@ All orchestrators are configured in `config/config.exs` with enable/disable flag
 ```elixir
 # Pattern detection configuration
 config :singularity, :pattern_types,
-  framework: %{module: Singularity.ArchitectureEngine.Detectors.FrameworkDetector, enabled: true},
-  technology: %{module: Singularity.ArchitectureEngine.Detectors.TechnologyDetector, enabled: true},
-  service_architecture: %{module: Singularity.ArchitectureEngine.Detectors.ServiceArchitectureDetector, enabled: true}
+  framework: %{module: Singularity.Architecture.Detectors.FrameworkDetector, enabled: true},
+  technology: %{module: Singularity.Architecture.Detectors.TechnologyDetector, enabled: true},
+  service_architecture: %{module: Singularity.Architecture.Detectors.ServiceArchitectureDetector, enabled: true}
 
 # Code analysis configuration
 config :singularity, :analyzer_types,
-  feedback: %{module: Singularity.Execution.Feedback.Analyzer, enabled: true},
-  quality: %{module: Singularity.Storage.Code.Analyzers.QualityAnalyzer, enabled: true},
-  refactoring: %{module: Singularity.Refactoring.Analyzer, enabled: true},
-  microservice: %{module: Singularity.Storage.Code.Analyzers.MicroserviceAnalyzer, enabled: true}
+  feedback: %{module: Singularity.Architecture.Analyzers.FeedbackAnalyzer, enabled: true},
+  quality: %{module: Singularity.Architecture.Analyzers.QualityAnalyzer, enabled: true},
+  refactoring: %{module: Singularity.Architecture.Analyzers.RefactoringAnalyzer, enabled: true},
+  microservice: %{module: Singularity.Architecture.Analyzers.MicroserviceAnalyzer, enabled: true}
 
 # Code scanning configuration
 config :singularity, :scanner_types,
@@ -485,46 +446,6 @@ Uses PostgreSQL with:
 - `templates`: Technology templates
 - `agent_sessions`: Agent execution history
 
-### Gleam Integration
-
-**Setup:** Uses `mix_gleam` for seamless Elixir + Gleam compilation.
-
-Gleam modules in `singularity/src/`:
-- `singularity/htdag.gleam`: Hierarchical temporal DAG for task decomposition
-- `singularity/rule_engine.gleam`: Confidence-based rule evaluation
-- `seed/improver.gleam`: Agent improvement logic
-
-**Dependencies:**
-- `gleam.toml`: Gleam package configuration (gleam_stdlib ~> 0.65.0)
-- `mix.exs`: Includes `{:mix_gleam, "~> 0.6.2"}` and `:gleam` compiler
-
-**Common Commands:**
-```bash
-# Compile Gleam code via Mix
-mix compile            # Compiles both Elixir and Gleam
-mix compile.gleam      # Compile only Gleam modules
-gleam check            # Type-check Gleam without building
-
-# Gleam dependencies
-mix setup              # Gets Mix AND Gleam deps
-gleam deps download    # Just Gleam deps
-
-# Testing
-mix test               # Runs Elixir tests
-gleam test             # Runs Gleam tests
-mix gleam.test         # Runs both
-```
-
-**Calling Between Languages:**
-```elixir
-# From Elixir → Gleam
-dag = :singularity@htdag.new("goal-id")
-task = :singularity@htdag.create_goal_task("Build feature", 0, :none)
-
-# From Gleam → Elixir
-@external(erlang, "Elixir.MyModule", "my_function")
-fn my_function(arg: String) -> String
-```
 
 ## Key Files & Directories
 
@@ -600,8 +521,6 @@ Singularity separates **WHAT** (tools) from **HOW** (interfaces):
 
 
 **No External REST API**: External clients use MCP or NATS.
-
-See [INTERFACE_ARCHITECTURE.md](../../INTERFACE_ARCHITECTURE.md) for full details.
 
 ## Development Tips
 
@@ -1004,28 +923,9 @@ moon run templates_data:embed-all      # Generate embeddings
 moon run templates_data:stats          # Usage statistics
 ```
 
-### Database (Internal Tooling - Single Database Strategy)
+### Detection & Intelligence Features (All Work Locally)
 
-**Currently: One `singularity` database (all environments)**
-
-#### Current: `singularity` - Universal Database
-Used by: `singularity` application
-
-- **Dev:** Direct access
-- **Test:** Sandboxed (Ecto.Adapters.SQL.Sandbox)
-- **Prod:** Same DB (internal tooling, no isolation needed)
-
-**Why single DB?**
-- ✅ Internal use only (no multi-tenancy needed)
-- ✅ Learning across environments (dev experiments → test validation)
-- ✅ Simpler (one connection, one place for knowledge)
-- ✅ Living knowledge base learns everywhere
-
-#### Detection & Intelligence Features (All Work Locally)
-
-**Does Singularity need CentralCloud to detect frameworks, languages, and patterns?**
-
-**NO** - All detection features are **fully implemented locally**:
+**Singularity does NOT require CentralCloud** - All detection features are fully implemented locally:
 
 | Feature | Works Locally? | Implementation |
 |---------|---|---|
@@ -1035,35 +935,18 @@ Used by: `singularity` application
 | **Pattern Extraction** | ✅ Yes | Rust NIF + PostgreSQL |
 | **Technology Detection** | ✅ Yes | Rust NIF + PostgreSQL |
 
-See **CENTRALCLOUD_DETECTION_ROLE.md** for complete details.
+See **CENTRALCLOUD_DETECTION_ROLE.md** for details on how CentralCloud (optional multi-instance feature) relates to these local capabilities.
 
-#### Future: CentralCloud (For Cross-Instance Learning)
+### Future: CentralCloud (For Cross-Instance Learning)
 
-**NOT currently needed** - but available for **multi-instance teams**
+**Optional multi-instance feature** - enables aggregating learnings across multiple Singularity instances:
 
 - **Purpose:** Aggregate learnings across multiple Singularity instances
 - **When:** Only if/when you have multiple developers/instances
 - **What it adds:** Cross-instance insights, collective intelligence, shared patterns
 - **Current status:** Implemented but optional for single-instance development
 
-**CentralCloud Services:**
-- Analyze Codebase - Global perspective across all instances
-- Learn Patterns - Aggregate patterns from all developers
-- Train Models - Models trained on collective data
-- Get Cross-Instance Insights - Share knowledge between dev and prod
-
-**Setup (When Needed):**
-```bash
-nix develop
-./scripts/setup-database.sh  # Creates singularity + centralcloud DBs
-cd singularity
-mix knowledge.migrate        # Import JSONs
-cd ../centralcloud
-mix ecto.migrate             # Setup CentralCloud
-# Now start both instances with NATS bridging
-```
-
-**Note:** Currently recommended to use **Option 1 (single database, no CentralCloud)** since it's a single-instance setup.
+See **CENTRALCLOUD_INTEGRATION_GUIDE.md** for setup details.
 
 ### Priority: Features over Speed/Security
 
@@ -1225,7 +1108,7 @@ grep "use GenServer\|use Supervisor\|use Agent" lib/path/to/module.ex
 - `LLM.Service` - Plain module (no supervision needed)
 - `LLM.RateLimiter` - GenServer (needs supervision)
 
-### Follow central_cloud Pattern
+### Follow CentralCloud Pattern
 
 The `central_cloud` application demonstrates clean supervision for internal tooling:
 

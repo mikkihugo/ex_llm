@@ -716,14 +716,61 @@ defmodule Centralcloud.IntelligenceHub do
     |> Enum.sum()
   end
 
-  # Trigger FrameworkLearningAgent to discover unknown framework via LLM
-  defp trigger_framework_discovery(framework_name, _query) do
-    # Publish event that triggers FrameworkLearningAgent
-    # In real implementation, this would call the learning agent or queue a job
+  # Trigger FrameworkLearningOrchestrator to discover unknown framework
+  # Uses config-driven learners (template matcher → LLM discovery → custom strategies)
+  defp trigger_framework_discovery(framework_name, query) do
     Logger.info("Triggering framework discovery for: #{framework_name}")
 
-    # TODO: Call FrameworkLearningAgent or queue discovery job
-    # Centralcloud.FrameworkLearningAgent.discover_framework(package_id, code_samples)
+    # Extract discovery parameters from query
+    package_id = Map.get(query, "package_id", framework_name)
+    code_samples = Map.get(query, "code_samples", [])
+
+    case Centralcloud.FrameworkLearningOrchestrator.learn(package_id, code_samples) do
+      {:ok, framework, learner_type} ->
+        Logger.info("Framework discovered via #{learner_type}",
+          framework_name: framework["name"],
+          package_id: package_id
+        )
+
+        # Store the discovered framework in the database
+        store_discovered_framework(package_id, framework)
+
+      {:error, :no_framework_found} ->
+        Logger.warn("Could not determine framework for #{package_id}")
+
+      {:error, reason} ->
+        Logger.error("Framework discovery failed for #{package_id}",
+          reason: inspect(reason)
+        )
+    end
+  end
+
+  # Store discovered framework in database
+  defp store_discovered_framework(package_id, framework) do
+    case Repo.get_by(Centralcloud.Schemas.Package, package_name: package_id) do
+      nil ->
+        # Package not in DB yet, just log
+        Logger.debug("Package not in DB yet", package_id: package_id)
+
+      package ->
+        # Update package with discovered framework
+        import Ecto.Changeset
+
+        package
+        |> change(detected_framework: framework)
+        |> change(last_updated: DateTime.utc_now())
+        |> Repo.update()
+        |> case do
+          {:ok, _} ->
+            Logger.debug("Stored discovered framework for #{package_id}")
+
+          {:error, reason} ->
+            Logger.error("Failed to store discovered framework",
+              package_id: package_id,
+              reason: inspect(reason)
+            )
+        end
+    end
   end
 
   # ===========================

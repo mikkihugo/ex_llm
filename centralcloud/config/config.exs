@@ -47,4 +47,20 @@ config :centralcloud, Oban,
      ]}
   ]
 
+# Framework Learning Configuration (Config-Driven)
+# Defines which framework learning strategies are enabled and their execution priority
+config :centralcloud, :framework_learners,
+  template_matcher: %{
+    module: Centralcloud.FrameworkLearners.TemplateMatcher,
+    enabled: true,
+    priority: 10,
+    description: "Fast template-based framework matching using dependency signatures"
+  },
+  llm_discovery: %{
+    module: Centralcloud.FrameworkLearners.LLMDiscovery,
+    enabled: true,
+    priority: 20,
+    description: "Intelligent framework detection using LLM analysis of code"
+  }
+
 import_config "#{config_env()}.exs"

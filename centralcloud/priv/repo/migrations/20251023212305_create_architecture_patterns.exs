@@ -53,8 +53,8 @@ defmodule Centralcloud.Repo.Migrations.CreateArchitecturePatterns do
     create index(:pattern_validations, [:consensus_score])
     create index(:pattern_validations, [:approved])
 
-    # Prompt templates table
-    create table(:prompt_templates, primary_key: false) do
+    # Lua prompt templates table (renamed to avoid conflict with existing prompt_templates)
+    create table(:lua_prompt_templates, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :template_path, :string, null: false
       add :template_name, :string, null: false
@@ -70,9 +70,9 @@ defmodule Centralcloud.Repo.Migrations.CreateArchitecturePatterns do
       timestamps()
     end
 
-    create unique_index(:prompt_templates, [:template_path])
-    create index(:prompt_templates, [:category])
-    create index(:prompt_templates, [:template_name])
-    create index(:prompt_templates, :embedding, using: "ivfflat")
+    create unique_index(:lua_prompt_templates, [:template_path])
+    create index(:lua_prompt_templates, [:category])
+    create index(:lua_prompt_templates, [:template_name])
+    create index(:lua_prompt_templates, :embedding, using: "ivfflat")
   end
 end
