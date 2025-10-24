@@ -624,6 +624,11 @@
           prod = buildDevShell environments.prod;
         };
 
+        # Apache AGE - Graph database extension for PostgreSQL
+        # NOTE: Not currently packaged in nixpkgs for ARM64
+        # Install separately via: CREATE EXTENSION age;
+        # Or download prebuilt: https://github.com/apache/age/releases
+
         # LLM-Friendly: Remote deployment scripts
         # These can be used to deploy environments to remote servers or K8s
         packages = {
