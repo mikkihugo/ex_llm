@@ -3,14 +3,18 @@ defmodule Singularity do
   Public API for interacting with self-improving agents.
   """
 
-  alias Singularity.{Agent, AgentSupervisor}
+  alias Singularity.Agents.Agent
+  alias Singularity.AgentSupervisor
+
+  # Backwards compatibility alias
+  alias Singularity.Agents.Agent, as: SingularityAgent
 
   @doc """
   Start a new agent process with the provided context map.
   """
   @spec start_agent(map()) :: DynamicSupervisor.on_start_child()
   def start_agent(opts) when is_map(opts) do
-    DynamicSupervisor.start_child(AgentSupervisor, {Singularity.Agent, opts})
+    DynamicSupervisor.start_child(AgentSupervisor, {Agent, opts})
   end
 
   @doc """

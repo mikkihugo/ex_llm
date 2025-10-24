@@ -36,53 +36,61 @@ defmodule Singularity.Application do
       Singularity.ProcessRegistry,
 
       # HTTP endpoint for dashboard and health checks
-      {Bandit, plug: Singularity.Web.Endpoint, port: 4000},
-
-      # Background Job Queue & Scheduling
-      # Oban processes background jobs with cron-like scheduling
-      # Config consolidated to :oban namespace (fixed dual-config issue)
-      Oban,
-
-      # Layer 2: Infrastructure - Core services required by application layer
-      Singularity.Infrastructure.Supervisor,
-      Singularity.NATS.Supervisor,
-
-      # Layer 3: Domain Services - Business logic and domain-specific functionality
-      # Unified Metrics - Collection, aggregation, and querying service
-      Singularity.Metrics.Supervisor,
-
-      # LLM Services - Rate limiting and provider orchestration
-      Singularity.LLM.Supervisor,
-
-      # Knowledge Services - Templates and code storage
-      Singularity.Knowledge.Supervisor,
-
-      # Learning Services - Genesis integration and learning loops
-      Singularity.Learning.Supervisor,
-
-      # Layer 4: Agents & Execution - Task execution and planning
-      # Autonomy Rules - Confidence-based autonomous decision making
-      # Used by: CostOptimizedAgent, SafeWorkPlanner
-      # Rules stored in PostgreSQL, cached in ETS, hot-reloadable via consensus evolution
-      Singularity.Execution.Autonomy.RuleEngine,
-      Singularity.Execution.Autonomy.RuleLoader,
-
-      # Execution Planning - Work planning and task graphs
-      Singularity.Execution.Planning.Supervisor,
-
-      # SPARC Orchestration - Template-driven execution
-      Singularity.Execution.SPARC.Supervisor,
-
-      # Task Coordination - Todo/work item management
-      Singularity.Execution.Todos.Supervisor,
-
-      # Agents Management - Agent lifecycle and supervision
-      Singularity.Agents.Supervisor,
-
-      # Layer 5: Domain Supervisors - Domain-specific supervision trees
-      Singularity.ArchitectureEngine.MetaRegistry.Supervisor,
-      Singularity.Git.Supervisor
+      {Bandit, plug: Singularity.Web.Endpoint, port: 4000}
     ]
+    # Background Job Queue & Scheduling (optional)
+    # Oban processes background jobs with cron-like scheduling
+    # Config consolidated to :oban namespace (fixed dual-config issue)
+    # Can be disabled with: config :singularity, oban_enabled: false
+    |> add_optional_child(:oban_enabled, &oban_child/0)
+    |> Kernel.++(
+      # Layer 2: Infrastructure - Core services required by application layer
+      [
+        Singularity.Infrastructure.Supervisor
+      ]
+    )
+    # NATS Supervisor (optional)
+    # Can be disabled with: config :singularity, nats_enabled: false
+    |> add_optional_child(:nats_enabled, &nats_child/0)
+    |> Kernel.++(
+      [
+        # Layer 3: Domain Services - Business logic and domain-specific functionality
+        # Unified Metrics - Collection, aggregation, and querying service
+        Singularity.Metrics.Supervisor,
+
+        # LLM Services - Rate limiting and provider orchestration
+        Singularity.LLM.Supervisor,
+
+        # Knowledge Services - Templates and code storage
+        Singularity.Knowledge.Supervisor,
+
+        # Learning Services - Genesis integration and learning loops
+        Singularity.Learning.Supervisor,
+
+        # Layer 4: Agents & Execution - Task execution and planning
+        # Autonomy Rules - Confidence-based autonomous decision making
+        # Used by: CostOptimizedAgent, SafeWorkPlanner
+        # Rules stored in PostgreSQL, cached in ETS, hot-reloadable via consensus evolution
+        Singularity.Execution.Autonomy.RuleEngine,
+        Singularity.Execution.Autonomy.RuleLoader,
+
+        # Execution Planning - Work planning and task graphs
+        Singularity.Execution.Planning.Supervisor,
+
+        # SPARC Orchestration - Template-driven execution
+        Singularity.Execution.SPARC.Supervisor,
+
+        # Task Coordination - Todo/work item management
+        Singularity.Execution.Todos.Supervisor,
+
+        # Agents Management - Agent lifecycle and supervision
+        Singularity.Agents.Supervisor,
+
+        # Layer 5: Domain Supervisors - Domain-specific supervision trees
+        Singularity.ArchitectureEngine.MetaRegistry.Supervisor,
+        Singularity.Git.Supervisor
+      ]
+    )
     |> Kernel.++(optional_children())
 
     Logger.info("Starting Singularity supervision tree",
@@ -184,5 +192,30 @@ defmodule Singularity.Application do
         # Production: full supervision tree enabled
         []
     end
+  end
+
+  # Helper function to conditionally add optional children
+  # Checks application config for enabled flag, defaults to true
+  defp add_optional_child(children, config_key, child_factory) do
+    case Application.get_env(:singularity, config_key, true) do
+      true ->
+        children ++ [child_factory.()]
+
+      false ->
+        Logger.info("Skipping #{config_key} - disabled in config")
+        children
+    end
+  end
+
+  # Returns Oban child spec if enabled
+  # Can be disabled with: config :singularity, oban_enabled: false
+  defp oban_child do
+    Oban
+  end
+
+  # Returns NATS.Supervisor child spec if enabled
+  # Can be disabled with: config :singularity, nats_enabled: false
+  defp nats_child do
+    Singularity.NATS.Supervisor
   end
 end

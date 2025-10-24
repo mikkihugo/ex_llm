@@ -1,4 +1,4 @@
-defmodule Singularity.Agent do
+defmodule Singularity.Agents.Agent do
   @moduledoc """
   Core GenServer representing a self-improving agent instance.
 
@@ -7,13 +7,19 @@ defmodule Singularity.Agent do
   manager. External systems can still push improvements, but they are no longer
   required for the agent to progress.
 
+  ## Namespace Note
+
+  This module is defined as `Singularity.Agents.Agent` (matching file location
+  `agents/agent.ex`), but is aliased as `Singularity.Agent` at the application
+  level for backwards compatibility.
+
   ## AI Navigation Metadata
 
   ### Module Identity (JSON)
 
   ```json
   {
-    "module": "Singularity.Agent",
+    "module": "Singularity.Agents.Agent",
     "purpose": "GenServer for autonomous self-improving AI agent with feedback loop and evolution",
     "role": "genserver",
     "layer": "agents",

@@ -343,9 +343,9 @@ defmodule Singularity.Agents.DocumentationUpgrader do
       Logger.info("Found #{missing_count} modules needing documentation upgrade")
 
       # Use SelfImprovingAgent for continuous learning (if available)
-      if agent_available?(SelfImprovingAgent) do
+      if agent_available?(Singularity.SelfImprovingAgent) do
         Logger.info("Triggering SelfImprovingAgent for documentation analysis")
-        SelfImprovingAgent.upgrade_documentation(File.cwd!(), %{scope: :documentation})
+        Singularity.SelfImprovingAgent.upgrade_documentation(File.cwd!(), %{scope: :documentation})
       end
 
       # Log upgrade coordination completion
