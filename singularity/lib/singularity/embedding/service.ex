@@ -175,7 +175,7 @@ defmodule Singularity.Embedding.Service do
   require Logger
 
   alias Singularity.Embedding.NxService
-  alias Singularity.NatsClient
+  alias Singularity.Nats.Client
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
