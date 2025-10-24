@@ -22,10 +22,12 @@ Scores available immediately after job completes
 
 ### 2. **Daily Refresh** ✅
 ```
-Oban Scheduler
+PostgreSQL pg_cron Extension
   ↓
 Every day at 4:00 AM UTC
-  ├─ Enqueue PageRank.CalculationJob
+  ├─ pg_cron triggers pagerank_daily_refresh() SQL function
+  ├─ Function inserts job into oban_jobs table
+  ├─ PageRankCalculationJob worker processes it
   ├─ Job runs in background
   └─ Scores updated automatically
   ↓
@@ -69,18 +71,34 @@ end)
 ```
 
 #### 3. **Modified**: `config.exs`
-Added three sections:
+Added bootstrap configuration:
 
 ```elixir
-# Configuration
+# Bootstrap configuration
 config :singularity, Singularity.Bootstrap.PageRankBootstrap,
   enabled: true,
   refresh_schedule: "0 4 * * *",  # Daily at 4 AM UTC
   auto_init: true                 # Calculate on startup
-
-# Scheduled job in Oban crontab
-{"0 4 * * *", Singularity.Jobs.PageRankCalculationJob}
 ```
+
+**Note**: Daily refresh is now handled by pg_cron (database-native scheduling)
+See migration: `add_pagerank_pg_cron_schedule.exs`
+
+#### 4. **New Migration**: `add_pagerank_pg_cron_schedule.exs`
+Sets up pg_cron scheduled job:
+
+```sql
+-- Creates daily PageRank refresh at 4:00 AM UTC
+SELECT cron.schedule('pagerank-daily', '0 4 * * *',
+  'SELECT pagerank_daily_refresh();');
+```
+
+**Why pg_cron instead of Oban?**
+- ✅ Database-native scheduling (independent of app state)
+- ✅ Guaranteed execution (persists across restarts)
+- ✅ Simple SQL-based management
+- ✅ Already installed in PostgreSQL 16
+- ✅ Idempotent operations (safe to retry)
 
 ---
 
@@ -138,11 +156,13 @@ config :singularity, Singularity.Bootstrap.PageRankBootstrap,
 ```
 Every day at 4:00 AM UTC
   ↓
-Oban scheduler triggers
-  ├─ Enqueue PageRankCalculationJob
+PostgreSQL pg_cron triggers
+  ├─ Executes pagerank_daily_refresh() SQL function
+  ├─ Function inserts job into oban_jobs table
   └─ No blocking, no manual action
   ↓
-Job runs in background
+Oban JobQueue worker processes the job
+  ├─ PageRankCalculationJob runs
   ├─ Recalculate PageRank (20 iterations)
   ├─ Update all scores
   └─ Log: "PageRank recalculation complete"
@@ -150,6 +170,8 @@ Job runs in background
 By morning (4:05 AM)
   └─ New scores ready for dashboards
 ```
+
+**Advantage of pg_cron**: Scheduling persists at database level, independent of app state. Even if app restarts at 4:00 AM, pg_cron still triggers the job insertion into the queue.
 
 ### Manual Override (If Needed)
 

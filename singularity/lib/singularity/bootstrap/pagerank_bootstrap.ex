@@ -6,7 +6,7 @@ defmodule Singularity.Bootstrap.PageRankBootstrap do
 
   Ensures PageRank scores are always available for module importance queries.
   - Calculates on application startup (background job)
-  - Refreshes daily via Oban scheduler
+  - Refreshes daily via pg_cron (database-native scheduling)
   - No manual intervention needed
 
   ## Automatic Flow
@@ -17,11 +17,13 @@ defmodule Singularity.Bootstrap.PageRankBootstrap do
   PageRankBootstrap.ensure_initialized()
     ├─ Check if pagerank_score column exists
     ├─ If no scores exist, enqueue calculation job
-    └─ Schedule daily refresh (via Oban)
+    └─ Log bootstrap info
     ↓
-  Daily Refresh (4:00 AM UTC)
-    ├─ Recalculate PageRank scores
-    └─ Log results for monitoring
+  Daily Refresh (4:00 AM UTC via pg_cron)
+    ├─ PostgreSQL pg_cron extension triggers job insertion
+    ├─ PageRankCalculationJob processes the queued job
+    ├─ Recalculates PageRank scores
+    └─ Logs results for monitoring
   ```
 
   ## Configuration
