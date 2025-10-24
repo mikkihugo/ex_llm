@@ -319,6 +319,7 @@ impl PolyglotCodeParser {
         // Other Languages - Special purpose and ecosystem languages
         self.language_cache.insert("go".to_string(), unsafe { tree_sitter_go::LANGUAGE.clone().into() });
         self.language_cache.insert("java".to_string(), unsafe { tree_sitter_java::LANGUAGE.clone().into() });
+        self.language_cache.insert("csharp".to_string(), unsafe { tree_sitter_c_sharp::LANGUAGE.clone().into() });
         self.language_cache.insert("yaml".to_string(), unsafe { tree_sitter_yaml::LANGUAGE.clone().into() });
         self.language_cache.insert("sql".to_string(), unsafe { tree_sitter_sequel::LANGUAGE.clone().into() });
         self.language_cache.insert("dockerfile".to_string(), unsafe { tree_sitter_dockerfile_updated::language() });
