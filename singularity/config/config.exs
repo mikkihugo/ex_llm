@@ -119,7 +119,7 @@ config :oban,
        # Cache prewarm: every 6 hours
        {"0 */6 * * *", Singularity.Jobs.CachePrewarmWorker},
        # Pattern sync: every 5 minutes
-       {"*/5 * * * *", Singularity.Jobs.PatternSyncWorker},
+       {"*/5 * * * *", Singularity.Jobs.PatternSyncJob},
        # Dead code monitoring: daily at 9am
        {"0 9 * * *", Singularity.Jobs.DeadCodeDailyCheck},
        # Dead code summary: every Monday at 9am

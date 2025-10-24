@@ -1,6 +1,6 @@
 defmodule Singularity.Jobs.PatternSyncJob do
   @moduledoc """
-  Background job for syncing framework patterns across the system.
+  Oban background job for syncing framework patterns across the system.
 
   Syncs framework patterns through:
   - PostgreSQL (source of truth, self-learning)
@@ -8,24 +8,35 @@ defmodule Singularity.Jobs.PatternSyncJob do
   - NATS (distribute to SPARC fact system)
   - JSON Export (for Rust detector to read)
 
-  This module provides static functions that are scheduled via Quantum.
-  Previously implemented as timer logic within FrameworkPatternSync GenServer.
+  ## Scheduling
+
+  Configured via Oban cron in config.exs:
+  ```elixir
+  crontab: [
+    # Pattern sync: every 5 minutes
+    {"*/5 * * * *", Singularity.Jobs.PatternSyncWorker}
+  ]
+  ```
+
+  ## Manual Triggering
+
+  ```elixir
+  Oban.Job.new(%{})
+  |> Oban.insert!()
+  ```
   """
+
+  use Oban.Worker, queue: :default, max_attempts: 2
 
   require Logger
+  alias Singularity.ArchitectureEngine.FrameworkPatternSync
 
-  @doc """
-  Refresh pattern cache and sync to NATS/JSON.
-
-  Called every 5 minutes via Quantum scheduler.
-
-  Syncs patterns from PostgreSQL → ETS → NATS → JSON file.
-  """
-  def sync do
+  @impl Oban.Worker
+  def perform(%Oban.Job{}) do
     Logger.debug("🔄 Syncing framework patterns...")
 
     try do
-      case Singularity.ArchitectureEngine.FrameworkPatternSync.refresh_cache() do
+      case FrameworkPatternSync.refresh_cache() do
         :ok ->
           Logger.info("✅ Framework patterns synced to ETS/NATS/JSON")
           :ok
@@ -38,8 +49,17 @@ defmodule Singularity.Jobs.PatternSyncJob do
     rescue
       e in Exception ->
         Logger.error("❌ Pattern sync exception", error: inspect(e))
-        # Log but don't crash the scheduler
-        :ok
+        # Log but don't crash the job
+        {:error, e}
     end
+  end
+
+  @doc """
+  Manually trigger pattern synchronization (for testing).
+  """
+  def trigger_now do
+    __MODULE__
+    |> Oban.Job.new(%{})
+    |> Oban.insert()
   end
 end
