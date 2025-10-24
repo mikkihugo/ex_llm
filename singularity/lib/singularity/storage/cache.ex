@@ -106,6 +106,7 @@ defmodule Singularity.Cache do
   require Logger
   import Ecto.Query
   alias Singularity.Repo
+  alias Singularity.Schemas.CodeEmbeddingCache
 
   @type cache_type :: :llm | :embeddings | :semantic | :memory
   @type cache_key :: String.t()
@@ -228,21 +229,28 @@ defmodule Singularity.Cache do
   end
 
   def put(:embeddings, key, value, opts) do
-    changeset = %{
-      content_hash: key,
-      content: opts[:content] || "",
+    # Use proper Ecto schema instead of raw SQL
+    attrs = %{
+      code_hash: key,
+      language: opts[:language] || "unknown",
       embedding: opts[:embedding] || value,
-      model_type: opts[:model_type] || "candle-transformer",
-      language: opts[:language],
-      file_path: opts[:file_path]
+      metadata: %{
+        "content" => opts[:content] || "",
+        "model_type" => opts[:model_type] || "candle-transformer",
+        "file_path" => opts[:file_path]
+      },
+      expires_at: opts[:expires_at] || DateTime.add(DateTime.utc_now(), 86400)  # 24 hours default
     }
 
-    Repo.insert_all("cache_code_embeddings", [changeset],
-      on_conflict: {:replace, [:embedding, :content]},
-      conflict_target: [:content_hash]
-    )
-
-    :ok
+    %CodeEmbeddingCache{}
+    |> CodeEmbeddingCache.changeset(attrs)
+    |> Repo.insert(on_conflict: {:replace, [:embedding, :metadata]}, conflict_target: [:code_hash, :language])
+    |> case do
+      {:ok, _} -> :ok
+      {:error, reason} ->
+        Logger.error("Failed to cache embedding: #{inspect(reason)}")
+        :error
+    end
   end
 
   def put(:semantic, key, value, opts) do
