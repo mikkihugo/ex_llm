@@ -189,28 +189,11 @@ defmodule Singularity.Embedding.NxService do
            {:ok, tokenizer_jina} <- Tokenizer.load(:jina_v3),
            {:ok, token_ids_qodo} <- Tokenizer.tokenize(tokenizer_qodo, text),
            {:ok, token_ids_jina} <- Tokenizer.tokenize(tokenizer_jina, text) do
-        # Step 2: Generate embeddings using real model or fallback
-        qodo_result =
-          if use_real_inference?(model_state, :qodo) do
-            compute_real_embedding(:qodo, token_ids_qodo, model_state)
-          else
-            # Fallback to hash-based embedding
-            text_hash = :erlang.phash2(text)
-            {:ok, generate_embedding(text_hash, 1536, "qodo")}
-          end
-
-        jina_result =
-          if use_real_inference?(model_state, :jina_v3) do
-            compute_real_embedding(:jina_v3, token_ids_jina, model_state)
-          else
-            # Fallback to hash-based embedding
-            text_hash = :erlang.phash2(text)
-            {:ok, generate_embedding(text_hash, 1024, "jina")}
-          end
-
-        # Step 3: Combine results
-        with {:ok, qodo_embedding} <- qodo_result,
-             {:ok, jina_embedding} <- jina_result do
+        # Step 2: Generate embeddings using real model inference only
+        # NO FALLBACK: Must use real inference or fail explicitly
+        with {:ok, qodo_embedding} <- compute_real_embedding(:qodo, token_ids_qodo, model_state),
+             {:ok, jina_embedding} <- compute_real_embedding(:jina_v3, token_ids_jina, model_state) do
+          # Step 3: Combine results
           # Concatenate: [1536 || 1024] = 2560
           concatenated = Nx.concatenate([qodo_embedding, jina_embedding], axis: 0)
 
@@ -221,13 +204,8 @@ defmodule Singularity.Embedding.NxService do
           {:ok, normalized}
         else
           error ->
-            Logger.warning("Real inference failed, falling back to hash-based: #{inspect(error)}")
-            # Final fallback: use hash-based embeddings
-            text_hash = :erlang.phash2(text)
-            qodo_embedding = generate_embedding(text_hash, 1536, "qodo")
-            jina_embedding = generate_embedding(text_hash, 1024, "jina")
-            concatenated = Nx.concatenate([qodo_embedding, jina_embedding], axis: 0)
-            {:ok, normalize_vector(concatenated)}
+            Logger.error("Real inference failed - rejecting request: #{inspect(error)}")
+            {:error, {:inference_failed, error}}
         end
       else
         {:error, reason} ->
@@ -236,13 +214,8 @@ defmodule Singularity.Embedding.NxService do
       end
     rescue
       e ->
-        Logger.error("Inference error: #{inspect(e)}, using hash-based fallback")
-        # Ultimate fallback
-        text_hash = :erlang.phash2(text)
-        qodo_embedding = generate_embedding(text_hash, 1536, "qodo")
-        jina_embedding = generate_embedding(text_hash, 1024, "jina")
-        concatenated = Nx.concatenate([qodo_embedding, jina_embedding], axis: 0)
-        {:ok, normalize_vector(concatenated)}
+        Logger.error("Inference error: #{inspect(e)}")
+        {:error, {:inference_error, e}}
     end
   end
 

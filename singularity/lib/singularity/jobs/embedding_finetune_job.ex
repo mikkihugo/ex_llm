@@ -116,23 +116,17 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
       triplets = create_contrastive_triplets(snippets)
       Logger.info("Created #{length(triplets)} training triplets")
 
-      if length(triplets) < 10 do
-        Logger.warning("Not enough real triplets (#{length(triplets)}), augmenting with mock data")
-        # Fallback if not enough real data
-        mock_count = 100 - length(triplets)
-        mock_data = generate_mock_triplets(mock_count)
-        triplets = triplets ++ mock_data
-        Logger.info("Augmented with #{mock_count} mock triplets, total: #{length(triplets)}")
+      if length(triplets) < 100 do
+        Logger.error("Insufficient real training data: #{length(triplets)} triplets (need ≥100)")
+        {:error, :insufficient_training_data}
+      else
+        Logger.info("Fine-tuning with #{length(triplets)} real training triplets")
+        {:ok, triplets}
       end
-
-      {:ok, triplets}
     rescue
       e ->
         Logger.error("Error collecting training data: #{inspect(e)}")
-        # Fallback to mock data if real collection fails
-        mock_triplets = generate_mock_triplets(100)
-        Logger.info("Using #{length(mock_triplets)} mock triplets as fallback")
-        {:ok, mock_triplets}
+        {:error, {:data_collection_error, e}}
     end
   end
 
