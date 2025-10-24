@@ -405,6 +405,50 @@ config :singularity, :validators,
     description: "Validates data structures against schema templates"
   }
 
+# Config-Driven Build Tool System
+# Unified build tool orchestration with priority-ordered execution
+config :singularity, :build_tools,
+  bazel: %{
+    module: Singularity.BuildTools.BazelTool,
+    enabled: true,
+    priority: 10,
+    description: "Bazel build system integration"
+  },
+  nx: %{
+    module: Singularity.BuildTools.NxTool,
+    enabled: true,
+    priority: 20,
+    description: "NX monorepo build system"
+  },
+  moon: %{
+    module: Singularity.BuildTools.MoonTool,
+    enabled: true,
+    priority: 30,
+    description: "Moon build orchestration"
+  }
+
+# Config-Driven Execution Strategy System
+# Unified execution strategy orchestration with priority-ordered execution
+config :singularity, :execution_strategies,
+  task_dag: %{
+    module: Singularity.ExecutionStrategies.TaskDagStrategy,
+    enabled: true,
+    priority: 10,
+    description: "Task DAG based execution with dependency tracking"
+  },
+  sparc: %{
+    module: Singularity.ExecutionStrategies.SparcStrategy,
+    enabled: true,
+    priority: 20,
+    description: "SPARC template-driven execution"
+  },
+  methodology: %{
+    module: Singularity.ExecutionStrategies.MethodologyStrategy,
+    enabled: true,
+    priority: 30,
+    description: "Methodology-based execution (SAFe, etc.)"
+  }
+
 # Config-Driven Task Execution System
 # Unified task adapter orchestration with priority-ordered execution
 config :singularity, :task_adapters,
