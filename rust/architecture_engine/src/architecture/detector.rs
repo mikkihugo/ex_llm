@@ -398,29 +398,33 @@ impl ArchitecturePatternRegistry {
         matches as f64 / total_patterns as f64
     }
 
-    /// Assess implementation quality
+    /// Assess pattern implementation quality (0.0 = not implemented, 1.0 = fully implemented)
+    ///
+    /// Measures how well the detected pattern follows its own implementation guidelines.
+    /// This is PATTERN QUALITY, not CODE QUALITY - see code_quality_engine for code metrics.
     fn assess_implementation_quality(
         &self,
         content: &str,
         pattern_def: &ArchitecturePatternDefinition,
     ) -> f64 {
-        let mut quality_score: f64 = 0.0;
+        if pattern_def.implementation_guidelines.is_empty() {
+            return 0.5; // Neutral score if no guidelines defined
+        }
 
-        // Check for implementation guidelines
+        let mut matched_guidelines = 0;
+
+        // Count how many implementation guidelines are followed in the content
         for guideline in &pattern_def.implementation_guidelines {
             if content.contains(guideline) {
-                quality_score += 0.1;
+                matched_guidelines += 1;
             }
         }
 
-        // Check for implementation guidelines
-        for guideline in &pattern_def.implementation_guidelines {
-            if content.contains(guideline) {
-                quality_score += 0.2;
-            }
-        }
+        // Calculate pattern implementation ratio
+        let implementation_ratio = matched_guidelines as f64 / pattern_def.implementation_guidelines.len() as f64;
 
-        quality_score.min(1.0)
+        // Return clamped ratio (0.0 to 1.0)
+        implementation_ratio.min(1.0)
     }
 
     /// Detect component pattern in content
