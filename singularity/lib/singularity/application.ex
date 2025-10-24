@@ -55,6 +55,8 @@ defmodule Singularity.Application do
       Singularity.Knowledge.Supervisor,
       # Genesis Integration - Learning system consuming Genesis experiment results
       Singularity.Learning.Supervisor,
+      # Unified Metrics - Collection, aggregation, and querying service
+      Singularity.Metrics.Supervisor,
       # Code Analyzer Cache - Analysis result caching for performance
       {Singularity.CodeAnalyzer.Cache, [max_size: 1000, ttl: 3600]},
       # Manages: StartupCodeIngestion, SafeWorkPlanner, WorkPlanAPI

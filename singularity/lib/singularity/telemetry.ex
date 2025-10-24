@@ -10,11 +10,31 @@ defmodule Singularity.Telemetry do
 
   @impl true
   def init(_arg) do
+    # Attach Metrics.EventCollector handler for unified metrics collection
+    attach_metrics_handlers()
+
     children =
       [poller_child()]
       |> Enum.reject(&is_nil/1)
 
     Supervisor.init(children, strategy: :one_for_one)
+  end
+
+  # Attach Telemetry handlers for metrics collection
+  defp attach_metrics_handlers do
+    # Attach EventCollector to handle telemetry events
+    # This bridges Telemetry events to unified Metrics system
+    :telemetry.attach_many(
+      "singularity-metrics-collector",
+      [
+        [:singularity, :llm, :request, :stop],
+        [:singularity, :agent, :task, :stop],
+        [:singularity, :tool, :execution, :stop],
+        [:singularity, :search, :completed]
+      ],
+      &Singularity.Metrics.EventCollector.handle_telemetry_event/4,
+      nil
+    )
   end
 
   def metrics do
