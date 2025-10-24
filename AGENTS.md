@@ -17,11 +17,25 @@ See [`AGENT_SYSTEM_FIX_CHECKLIST.md`](AGENT_SYSTEM_FIX_CHECKLIST.md) for re-enab
 These are the user-facing agent types that perform high-level tasks:
 
 1. **SelfImprovingAgent** (3291 LOC) - Core self-improvement and learning
-2. **ArchitectureAgent** - System architecture analysis and design
-3. **TechnologyAgent** - Technology detection and adoption
-4. **RefactoringAgent** - Code refactoring and optimization
+
+2. **ArchitectureAgent** (157 LOC) - System architecture analysis and design
+   - Real implementation: `Singularity.ArchitectureEngine.Agent`
+   - Analyzes codebase architecture, detects patterns, assesses quality
+
+3. **TechnologyAgent** (665 LOC) - Technology detection and adoption
+   - Real implementation: `Singularity.Detection.TechnologyAgent`
+   - Detects frameworks, evaluates technology stacks, recommends packages
+
+4. **RefactoringAgent** (247 LOC) - Code refactoring and optimization
+   - Real implementation: `Singularity.Storage.Code.Quality.RefactoringAgent`
+   - Analyzes refactoring needs, executes patterns, assesses impact
+
 5. **CostOptimizedAgent** (551 LOC) - Cost optimization and performance
-6. **ChatConversationAgent** - User interaction and conversations
+   - Optimizes resource usage and costs across agents
+
+6. **ChatConversationAgent** (664 LOC) - User interaction and conversations
+   - Real implementation: `Singularity.Conversation.ChatConversationAgent`
+   - Multi-turn conversations, context awareness, intent extraction
 
 ### 12 Essential Support Modules
 These infrastructure modules are **REQUIRED** for the primary agents to function:
