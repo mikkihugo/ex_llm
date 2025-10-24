@@ -29,4 +29,4 @@ config :singularity, Singularity.Repo, database: "singularity"
 
 # Development Oban Configuration
 # Run jobs inline for easier debugging
-config :singularity, Oban, testing: :inline
+config :oban, testing: :inline

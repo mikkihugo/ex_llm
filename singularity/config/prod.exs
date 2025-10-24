@@ -17,7 +17,8 @@ config :singularity, :http_server_enabled, true
 
 # Production Oban Configuration
 # Persistent job queue with proper error handling
-config :singularity, Oban,
+# Note: Merge with base config in config.exs - only override production-specific settings
+config :oban,
   queues: [
     # Override dev defaults for production
     training: [concurrency: 1],

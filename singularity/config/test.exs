@@ -18,7 +18,6 @@ config :singularity, Singularity.Repo,
 # Test Oban Configuration
 # Run jobs inline for deterministic testing
 config :oban, testing: :inline
-config :singularity, Oban, testing: :inline
 
 # Test Quantum Configuration
 # Disable Quantum scheduler during tests to avoid side effects
