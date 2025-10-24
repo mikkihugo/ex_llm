@@ -373,10 +373,15 @@
 
 ## BACKLOG (Future Enhancements) 📋
 
-### 33. Implement Neo4j as Secondary Graph DB
-- **Status:** PostgreSQL + AGE sufficient, Neo4j optional
-- **Effort:** 8-10 hours
-- **Decision:** Only if AGE becomes insufficient
+### 33. ~~Implement Neo4j as Secondary Graph DB~~ ❌ NOT NEEDED
+- **Status:** REMOVED - PostgreSQL + AGE is sufficient for all use cases
+- **Why:**
+  - PageRank, Centrality, Community Detection all implementable in PostgreSQL
+  - No unique Neo4j capability we need
+  - Additional database = operational overhead
+  - Same effort (~20-30 hours) to implement all Neo4j algorithms in Rust
+- **Alternative:** See items #12-14, #17, #9 (implement algorithms in Rust instead)
+- **Decision:** SKIP - focus on PostgreSQL/Rust implementations instead
 
 ### 34. Add Machine Learning for Code Generation
 - **Status:** LLM-based generation working
@@ -435,8 +440,10 @@
 | **High** | 8 | 18-25 hours | 1 week |
 | **Medium** | 12 | 30-40 hours | 1-2 weeks |
 | **Low** | 9 | 15-25 hours | 1-2 weeks |
-| **Backlog** | 5 | 60+ hours | Q4 2025+ |
-| **TOTAL** | **37** | **~130-150 hours** | **4-6 weeks** |
+| **Backlog** | 4 | 50+ hours | Q4 2025+ |
+| **TOTAL** | **36** | **~120-140 hours** | **4-6 weeks** |
+
+*Note: Neo4j (#33) removed - PostgreSQL + AGE + Rust algorithms provide all needed functionality*
 
 ---
 
