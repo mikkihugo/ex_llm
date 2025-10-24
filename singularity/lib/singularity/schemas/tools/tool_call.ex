@@ -1,4 +1,4 @@
-defmodule Singularity.Tools.ToolCall do
+defmodule Singularity.Schemas.Tools.ToolCall do
   @moduledoc """
   Represents a tool call emitted by a model.
   """

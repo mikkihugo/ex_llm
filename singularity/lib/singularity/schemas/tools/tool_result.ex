@@ -1,4 +1,4 @@
-defmodule Singularity.Tools.ToolResult do
+defmodule Singularity.Schemas.Tools.ToolResult do
   @moduledoc """
   Represents the result returned to the model after executing a tool.
   """

@@ -1,4 +1,4 @@
-defmodule Singularity.LLM.Call do
+defmodule Singularity.Schemas.Core.LLMCall do
   @moduledoc """
   Ecto schema for LLM call history and cost tracking.
   """
