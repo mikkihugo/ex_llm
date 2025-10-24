@@ -220,6 +220,7 @@
               ps.timescaledb   # Time-series database
               ps.pgtap         # PostgreSQL testing framework
               ps.pg_cron       # Scheduled tasks
+              ps.apache-age    # Graph database (call graphs, dependencies)
             ]
           ))
         ];
