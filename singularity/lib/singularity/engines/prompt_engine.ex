@@ -7,7 +7,7 @@ defmodule Singularity.PromptEngine do
   """
 
   require Logger
-  alias Singularity.NatsClient
+  alias Singularity.NATS.Client, as: NatsClient
 
   @behaviour Singularity.Engine
 
@@ -352,7 +352,7 @@ defmodule Singularity.PromptEngine do
 
   defp nats_generate_prompt(request) do
     with {:ok, response} <-
-           NatsClient.request("prompt.generate.request", Jason.encode!(request), timeout: 15_000),
+           Singularity.NATS.Client.request("prompt.generate.request", Jason.encode!(request), timeout: 15_000),
          {:ok, data} <- Jason.decode(response.data) do
       {:ok, data}
     end
@@ -360,7 +360,7 @@ defmodule Singularity.PromptEngine do
 
   defp nats_optimize_prompt(request) do
     with {:ok, response} <-
-           NatsClient.request("prompt.optimize.request", Jason.encode!(request), timeout: 15_000),
+           Singularity.NATS.Client.request("prompt.optimize.request", Jason.encode!(request), timeout: 15_000),
          {:ok, data} <- Jason.decode(response.data) do
       {:ok, data}
     end

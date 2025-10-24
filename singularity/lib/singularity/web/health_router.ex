@@ -41,7 +41,7 @@ defmodule Singularity.Web.HealthRouter do
   NATS connection status.
   """
   get "/status/nats" do
-    case Singularity.NatsClient.status() do
+    case Singularity.NATS.Client.status() do
       status when is_map(status) ->
         send_resp(conn, 200, Jason.encode!(status))
 

@@ -16,7 +16,7 @@ defmodule Singularity.CentralCloud do
   """
 
   require Logger
-  alias Singularity.NatsClient
+  alias Singularity.NATS.Client, as: NatsClient
 
   @doc """
   Analyze codebase with central cloud processing.
@@ -162,7 +162,7 @@ defmodule Singularity.CentralCloud do
     # Call central cloud via NATS
     subject = "central.#{operation}"
 
-    case NatsClient.request(subject, request, timeout: 30_000) do
+    case Singularity.NATS.Client.request(subject, request, timeout: 30_000) do
       {:ok, response} ->
         {:ok, response}
 
@@ -226,7 +226,7 @@ defmodule Singularity.CentralCloud do
       updated_at: DateTime.utc_now()
     }
 
-    case NatsClient.publish("central.knowledge.update", knowledge_update) do
+    case Singularity.NATS.Client.publish("central.knowledge.update", knowledge_update) do
       :ok ->
         Logger.debug("Updated central knowledge")
 

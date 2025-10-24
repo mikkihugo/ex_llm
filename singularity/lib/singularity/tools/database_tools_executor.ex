@@ -155,7 +155,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
     ]
 
     Enum.each(subjects, fn subject ->
-      case NatsClient.subscribe(subject) do
+      case Singularity.NATS.Client.subscribe(subject) do
         {:ok, _sid} ->
           Logger.info("[DatabaseToolsExecutor] Subscribed to #{subject}")
 
@@ -188,7 +188,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
     # Send response
     response_json = Jason.encode!(response)
 
-    case NatsClient.publish(reply_to, response_json) do
+    case Singularity.NATS.Client.publish(reply_to, response_json) do
       :ok ->
         duration = System.monotonic_time(:millisecond) - start_time
         log_tool_execution(topic, decoded_request, :success, duration)

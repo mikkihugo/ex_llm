@@ -662,7 +662,7 @@ defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Code do
 
   defp generate_with_rust_elixir_t5(prompt, language) do
     # Hook up real T5 model generation via NATS
-    case Singularity.NatsClient.request(
+    case Singularity.NATS.Client.request(
            "code.t5.generate",
            Jason.encode!(%{
              prompt: prompt,
@@ -751,7 +751,7 @@ defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Code do
     external_prompt = build_external_llm_prompt(prompt, language)
 
     # Request external LLM via NATS
-    case Singularity.NatsClient.request(
+    case Singularity.NATS.Client.request(
            Singularity.NATS.RegistryClient.subject(:llm_request),
            Jason.encode!(%{
              prompt: external_prompt,

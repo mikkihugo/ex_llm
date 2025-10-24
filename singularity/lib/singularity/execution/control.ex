@@ -12,7 +12,7 @@ defmodule Singularity.Control do
   use GenServer
   require Logger
 
-  alias Singularity.NatsClient
+  alias Singularity.NATS.Client, as: NatsClient
 
   @type improvement_event :: %{
           agent_id: String.t(),
@@ -83,7 +83,7 @@ defmodule Singularity.Control do
   """
   @spec subscribe_to_agent(String.t()) :: :ok | {:error, term()}
   def subscribe_to_agent(agent_id) when is_binary(agent_id) do
-    NatsClient.subscribe("agent_improvements.#{agent_id}")
+    Singularity.NATS.Client.subscribe("agent_improvements.#{agent_id}")
   end
 
   @doc """
@@ -91,7 +91,7 @@ defmodule Singularity.Control do
   """
   @spec subscribe_to_system_events() :: :ok | {:error, term()}
   def subscribe_to_system_events do
-    NatsClient.subscribe("system_events")
+    Singularity.NATS.Client.subscribe("system_events")
   end
 
   ## GenServer Callbacks
@@ -120,13 +120,13 @@ defmodule Singularity.Control do
   @impl true
   def handle_cast({:publish_improvement, event}, state) do
     # Publish to agent-specific NATS subject
-    NatsClient.publish(
+    Singularity.NATS.Client.publish(
       "agent_improvements.#{event.agent_id}",
       Jason.encode!(%{improvement: event})
     )
 
     # Publish to general improvements NATS subject
-    NatsClient.publish("improvements", Jason.encode!(%{improvement: event}))
+    Singularity.NATS.Client.publish("improvements", Jason.encode!(%{improvement: event}))
 
     # Update metrics
     new_metrics = Map.update!(state.metrics, :improvements_published, &(&1 + 1))
@@ -151,7 +151,7 @@ defmodule Singularity.Control do
   @impl true
   def handle_cast({:broadcast_event, event}, state) do
     # Broadcast to system events NATS subject
-    NatsClient.publish("system_events", Jason.encode!(%{system_event: event}))
+    Singularity.NATS.Client.publish("system_events", Jason.encode!(%{system_event: event}))
 
     # Update metrics
     new_metrics = Map.update!(state.metrics, :system_events_broadcast, &(&1 + 1))

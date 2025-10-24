@@ -48,7 +48,7 @@ defmodule Singularity.NATS.RegistryClient do
   {:ok, subject} = RegistryClient.subject(:provider_claude)
   {:ok, config} = RegistryClient.get(:provider_claude)
 
-  NatsClient.request(subject, payload, timeout: config.timeout)
+  Singularity.NATS.Client.request(subject, payload, timeout: config.timeout)
   ```
 
   ### Service Discovery

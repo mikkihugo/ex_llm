@@ -46,7 +46,7 @@ defmodule Singularity.NATS.EngineDiscoveryHandler do
     ]
 
     results = Enum.map(subjects, fn subject ->
-      case Singularity.NatsClient.subscribe(subject) do
+      case Singularity.NATS.Client.subscribe(subject) do
         {:ok, _subscription} ->
           Logger.info("[EngineDiscovery] Subscribed to #{subject}")
           {:ok, subject}

@@ -19,7 +19,7 @@ defmodule Singularity.LintingEngine do
     skip_compilation?: true
 
   require Logger
-  alias Singularity.NatsClient
+  alias Singularity.NATS.Client, as: NatsClient
 
   @behaviour Singularity.Engine
 
@@ -109,7 +109,7 @@ defmodule Singularity.LintingEngine do
       include_patterns: true
     }
 
-    case NatsClient.request("central.quality.rules", Jason.encode!(request), timeout: 5000) do
+    case Singularity.NATS.Client.request("central.quality.rules", Jason.encode!(request), timeout: 5000) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data["rules"] || []}
@@ -131,7 +131,7 @@ defmodule Singularity.LintingEngine do
       timestamp: DateTime.utc_now()
     }
 
-    case NatsClient.publish("central.quality.analytics", Jason.encode!(request)) do
+    case Singularity.NATS.Client.publish("central.quality.analytics", Jason.encode!(request)) do
       :ok -> :ok
       {:error, reason} -> {:error, "Failed to send quality analytics: #{reason}"}
     end
@@ -148,7 +148,7 @@ defmodule Singularity.LintingEngine do
       include_examples: true
     }
 
-    case NatsClient.request("central.quality.recommendations", Jason.encode!(request),
+    case Singularity.NATS.Client.request("central.quality.recommendations", Jason.encode!(request),
            timeout: 3000
          ) do
       {:ok, response} ->

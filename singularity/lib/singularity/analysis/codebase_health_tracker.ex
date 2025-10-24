@@ -97,7 +97,7 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
 
   require Logger
   alias Singularity.Repo
-  alias Singularity.NatsClient
+  alias Singularity.NATS.Client, as: NatsClient
 
   # Ecto.Query is imported locally in functions that need it
   # to avoid compile-time circular dependency issues
@@ -617,7 +617,7 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case NatsClient.publish("intelligence_hub.codebase_health", Jason.encode!(message)) do
+    case Singularity.NATS.Client.publish("intelligence_hub.codebase_health", Jason.encode!(message)) do
       :ok ->
         Logger.debug("Published codebase health to IntelligenceHub")
 

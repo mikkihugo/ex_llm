@@ -76,7 +76,7 @@ defmodule Singularity.NatsServer do
         "nats.request.complex"
       ],
       fn subject ->
-        case Singularity.NatsClient.subscribe(subject) do
+        case Singularity.NATS.Client.subscribe(subject) do
           {:ok, _subscription_id} -> Logger.info("NatsServer subscribed to: #{subject}")
           {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
         end
@@ -141,7 +141,7 @@ defmodule Singularity.NatsServer do
           })
 
         # Send response back via NATS
-        Singularity.NatsClient.publish(reply_to, Jason.encode!(response))
+        Singularity.NATS.Client.publish(reply_to, Jason.encode!(response))
       end
     rescue
       error ->
@@ -154,12 +154,12 @@ defmodule Singularity.NatsServer do
           correlation_id: nil
         }
 
-        Singularity.NatsClient.publish(reply_to, Jason.encode!(error_response))
+        Singularity.NATS.Client.publish(reply_to, Jason.encode!(error_response))
     end
   end
 
   @doc """
-  Handle engine discovery requests using NatsClient.
+  Handle engine discovery requests using Singularity.NATS.Client.
   """
   def handle_engine_discovery_request(topic, body, reply_to) do
     # Try to decode JSON payload (optional)
@@ -191,7 +191,7 @@ defmodule Singularity.NatsServer do
       end
 
     # Send response back via NATS
-    Singularity.NatsClient.publish(reply_to, Jason.encode!(response))
+    Singularity.NATS.Client.publish(reply_to, Jason.encode!(response))
   end
 
   # Engine discovery handlers (simplified versions without direct Gnat usage)
@@ -310,7 +310,7 @@ defmodule Singularity.NatsServer do
     prompt_type = request["data"]["prompt_type"] || "general"
 
     # Call prompt engine via NATS
-    case Singularity.NatsClient.request(
+    case Singularity.NATS.Client.request(
            "prompt.generate",
            Jason.encode!(%{
              context: context,
@@ -379,7 +379,7 @@ defmodule Singularity.NatsServer do
         :complex -> "nats.request.complex"
       end
 
-    case Singularity.NatsClient.request("nats.request.direct", Jason.encode!(request),
+    case Singularity.NATS.Client.request("nats.request.direct", Jason.encode!(request),
            timeout: timeout
          ) do
       {:ok, response} ->

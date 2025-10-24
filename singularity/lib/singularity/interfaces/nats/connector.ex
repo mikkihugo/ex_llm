@@ -88,7 +88,7 @@ defmodule Singularity.PlatformIntegration.NatsConnector do
 
     try do
       # Use the existing NATS client from NatsClient
-      case Singularity.NatsClient.request(subject, Jason.encode!(payload), timeout: 5000) do
+      case Singularity.NATS.Client.request(subject, Jason.encode!(payload), timeout: 5000) do
         {:ok, response} ->
           case Jason.decode(response.body) do
             {:ok, template} ->

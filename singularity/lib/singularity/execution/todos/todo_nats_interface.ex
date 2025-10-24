@@ -88,7 +88,7 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
     # Use Singularity.NatsClient for NATS operations
     # Subscribe to all todo subjects
     Enum.each(@subjects, fn {_key, subject} ->
-      case Singularity.NatsClient.subscribe(subject) do
+      case Singularity.NATS.Client.subscribe(subject) do
         :ok -> Logger.info("TodoNatsInterface subscribed to: #{subject}")
         {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
       end
@@ -108,7 +108,7 @@ defmodule Singularity.Execution.Todos.TodoNatsInterface do
 
     # Send reply if reply_to is present
     if reply_to do
-      Singularity.NatsClient.publish(reply_to, Jason.encode!(response))
+      Singularity.NATS.Client.publish(reply_to, Jason.encode!(response))
     end
 
     {:noreply, state}

@@ -387,7 +387,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
         timestamp: DateTime.utc_now()
       })
 
-    case NatsClient.publish("patterns.mined.completed", payload) do
+    case Singularity.NATS.Client.publish("patterns.mined.completed", payload) do
       :ok ->
         Logger.info("Published pattern mining completion to NATS",
           codebase_path: codebase_path
@@ -418,7 +418,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
           timestamp: DateTime.utc_now()
         })
 
-      NatsClient.publish("patterns.cluster.updated", payload)
+      Singularity.NATS.Client.publish("patterns.cluster.updated", payload)
     end)
   rescue
     exception ->
@@ -436,7 +436,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
         timestamp: DateTime.utc_now()
       })
 
-    case NatsClient.publish("patterns.mined.failed", payload) do
+    case Singularity.NATS.Client.publish("patterns.mined.failed", payload) do
       :ok ->
         Logger.info("Published pattern mining failure to NATS", codebase_path: codebase_path)
 

@@ -225,7 +225,7 @@ defmodule Singularity.MetaRegistry.QuerySystem do
     # Publish to NATS for real-time learning
     subject = NatsSubjects.usage(category)
 
-    case Singularity.NatsClient.publish(subject, Jason.encode!(usage_event)) do
+    case Singularity.NATS.Client.publish(subject, Jason.encode!(usage_event)) do
       :ok ->
         Logger.debug("Published usage event to NATS: #{subject}")
 

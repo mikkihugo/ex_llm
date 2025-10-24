@@ -112,7 +112,7 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
 
   require Logger
   alias Singularity.Repo
-  alias Singularity.NatsClient
+  alias Singularity.NATS.Client, as: NatsClient
   @dedup_similarity_threshold 0.85
   @quality_threshold_for_promotion 0.75
 
@@ -508,7 +508,7 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case NatsClient.publish("intelligence_hub.pattern_consolidation", Jason.encode!(message)) do
+    case Singularity.NATS.Client.publish("intelligence_hub.pattern_consolidation", Jason.encode!(message)) do
       :ok ->
         Logger.debug("Published consolidation report to IntelligenceHub")
 

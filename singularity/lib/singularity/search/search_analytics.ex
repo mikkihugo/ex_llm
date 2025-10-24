@@ -157,7 +157,7 @@ defmodule Singularity.Search.SearchAnalytics do
   import Ecto.Query
   alias Singularity.Repo
   alias Singularity.Search.SearchMetric
-  alias Singularity.NatsClient
+  alias Singularity.NATS.Client, as: NatsClient
 
   @doc """
   Record a search query and its performance metrics.
@@ -600,7 +600,7 @@ defmodule Singularity.Search.SearchAnalytics do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case NatsClient.publish("knowledge_cache.search_analytics", Jason.encode!(message)) do
+    case Singularity.NATS.Client.publish("knowledge_cache.search_analytics", Jason.encode!(message)) do
       :ok ->
         Logger.debug("Published search analytics to KnowledgeCache",
           query: query,

@@ -302,7 +302,7 @@ defmodule Singularity.LLM.NatsOperation do
         - Build NATS request payload
         - Emit telemetry START event
         - Subscribe to token stream (if stream=true)
-        - Send request via NatsClient.request/3
+        - Send request via Singularity.NATS.Client.request/3
 
     - name: awaiting_response
       from: awaiting_response
@@ -551,7 +551,7 @@ defmodule Singularity.LLM.NatsOperation do
        end, [])
 
   # 3. Check NATS connectivity
-  iex> NatsClient.health()
+  iex> Singularity.NATS.Client.health()
   {:ok, %{connected: true, subject_count: 42}}
 
   # 4. Verify LLM worker availability
@@ -625,7 +625,7 @@ defmodule Singularity.LLM.NatsOperation do
 
   ```elixir
   # ❌ WRONG - Direct NATS call, no protection
-  NatsClient.request("llm.req.claude-sonnet", payload)
+  Singularity.NATS.Client.request("llm.req.claude-sonnet", payload)
 
   # ✅ CORRECT - Use compile/run with built-in protections
   {:ok, compiled} = NatsOperation.compile(params, ctx)
@@ -649,10 +649,10 @@ defmodule Singularity.LLM.NatsOperation do
 
   ```elixir
   # ❌ WRONG - No timeout specified
-  NatsClient.request(subject, payload)
+  Singularity.NATS.Client.request(subject, payload)
 
   # ✅ CORRECT - Always specify timeout
-  NatsClient.request(subject, payload, timeout: compiled.timeout_ms)
+  Singularity.NATS.Client.request(subject, payload, timeout: compiled.timeout_ms)
   # Default 30s prevents indefinite waits
   ```
 
@@ -681,7 +681,7 @@ defmodule Singularity.LLM.NatsOperation do
   """
 
   require Logger
-  alias Singularity.NatsClient
+  alias Singularity.NATS.Client, as: NatsClient
   alias Singularity.LLM.RateLimiter
   alias Singularity.Infrastructure.CircuitBreaker
 
@@ -829,7 +829,7 @@ defmodule Singularity.LLM.NatsOperation do
     subject = "llm.req.#{compiled.model_id}"
     reply_subject = "llm.resp.#{ctx.run_id}.#{ctx.node_id}"
 
-    case NatsClient.request(subject, Jason.encode!(request),
+    case Singularity.NATS.Client.request(subject, Jason.encode!(request),
            timeout: compiled.timeout_ms,
            headers: %{"reply_to" => reply_subject}
          ) do
@@ -899,7 +899,7 @@ defmodule Singularity.LLM.NatsOperation do
     buffer = Agent.start_link(fn -> [] end)
 
     # Subscribe and forward tokens to buffer
-    case NatsClient.subscribe(subject) do
+    case Singularity.NATS.Client.subscribe(subject) do
       {:ok, _sub_id} ->
         # Store subscription metadata
         buffer

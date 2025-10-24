@@ -116,7 +116,7 @@ defmodule Singularity.TechnologyAgent do
   alias Singularity.TechnologyTemplateLoader
   alias Singularity.Storage.Store
   alias Singularity.Knowledge.ArtifactStore
-  alias Singularity.NatsClient
+  alias Singularity.NATS.Client, as: NatsClient
 
   @doc """
   Detect technologies in a codebase using pattern matching and templates.
@@ -629,7 +629,7 @@ defmodule Singularity.TechnologyAgent do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case NatsClient.publish("intelligence_hub.technology_detection", Jason.encode!(message)) do
+    case Singularity.NATS.Client.publish("intelligence_hub.technology_detection", Jason.encode!(message)) do
       :ok ->
         Logger.debug("Published technology detection to IntelligenceHub",
           codebase: codebase_path,

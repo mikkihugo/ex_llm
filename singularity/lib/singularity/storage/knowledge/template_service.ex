@@ -183,7 +183,7 @@ defmodule Singularity.Knowledge.TemplateService do
   #### ❌ DO NOT implement custom NATS template handlers
   ```elixir
   # ❌ WRONG - Custom NATS handler
-  NatsClient.subscribe("template.get.*", fn msg -> ... end)
+  Singularity.NATS.Client.subscribe("template.get.*", fn msg -> ... end)
 
   # ✅ CORRECT - TemplateService handles all template.* subjects
   # Just send requests to template.get.{type}.{id}
@@ -229,7 +229,7 @@ defmodule Singularity.Knowledge.TemplateService do
           "template.search.>"
         ],
         fn subject ->
-          case Singularity.NatsClient.subscribe(subject) do
+          case Singularity.NATS.Client.subscribe(subject) do
             {:ok, _subscription_id} -> Logger.info("TemplateService subscribed to: #{subject}")
             {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
           end
@@ -284,23 +284,23 @@ defmodule Singularity.Knowledge.TemplateService do
         # Encode as JSON
         case Jason.encode(template) do
           {:ok, json} ->
-            Singularity.NatsClient.publish(reply_to, json)
+            Singularity.NATS.Client.publish(reply_to, json)
             emit_telemetry(:success, artifact_type, start_time)
 
           {:error, reason} ->
             error_msg = Jason.encode!(%{error: "encoding_failed", reason: inspect(reason)})
-            Singularity.NatsClient.publish(reply_to, error_msg)
+            Singularity.NATS.Client.publish(reply_to, error_msg)
             emit_telemetry(:error, artifact_type, start_time)
         end
 
       {:error, :not_found} ->
         error_msg = Jason.encode!(%{error: "not_found", type: artifact_type, id: artifact_id})
-        Singularity.NatsClient.publish(reply_to, error_msg)
+        Singularity.NATS.Client.publish(reply_to, error_msg)
         emit_telemetry(:not_found, artifact_type, start_time)
 
       {:error, reason} ->
         error_msg = Jason.encode!(%{error: "internal_error", reason: inspect(reason)})
-        Singularity.NatsClient.publish(reply_to, error_msg)
+        Singularity.NATS.Client.publish(reply_to, error_msg)
         emit_telemetry(:error, artifact_type, start_time)
     end
   end
@@ -335,7 +335,7 @@ defmodule Singularity.Knowledge.TemplateService do
             count: length(formatted_results)
           })
 
-        Singularity.NatsClient.publish(reply_to, response)
+        Singularity.NATS.Client.publish(reply_to, response)
 
       {:error, reason} ->
         Logger.error("Semantic search failed: #{inspect(reason)}")
@@ -351,7 +351,7 @@ defmodule Singularity.Knowledge.TemplateService do
 
   defp send_error(_gnat, reply_to, message) when is_binary(reply_to) do
     error_msg = Jason.encode!(%{error: message})
-    Singularity.NatsClient.publish(reply_to, error_msg)
+    Singularity.NATS.Client.publish(reply_to, error_msg)
   end
 
   defp send_error(_gnat, nil, _message), do: :ok
@@ -687,7 +687,7 @@ defmodule Singularity.Knowledge.TemplateService do
       template_data: template_data
     }
 
-    case Singularity.NatsClient.publish(Singularity.NATS.RegistryClient.subject(:knowledge_template_store), Jason.encode!(request)) do
+    case Singularity.NATS.Client.publish(Singularity.NATS.RegistryClient.subject(:knowledge_template_store), Jason.encode!(request)) do
       :ok ->
         :ok
 
@@ -710,7 +710,7 @@ defmodule Singularity.Knowledge.TemplateService do
       id: "#{template_type}-#{template_id}"
     }
 
-    case Singularity.NatsClient.request(Singularity.NATS.RegistryClient.subject(:knowledge_template_get), Jason.encode!(request),
+    case Singularity.NATS.Client.request(Singularity.NATS.RegistryClient.subject(:knowledge_template_get), Jason.encode!(request),
            timeout: 5000
          ) do
       {:ok, response} ->
@@ -737,7 +737,7 @@ defmodule Singularity.Knowledge.TemplateService do
       limit: limit
     }
 
-    case Singularity.NatsClient.request(Singularity.NATS.RegistryClient.subject(:knowledge_template_list), Jason.encode!(request),
+    case Singularity.NATS.Client.request(Singularity.NATS.RegistryClient.subject(:knowledge_template_list), Jason.encode!(request),
            timeout: 5000
          ) do
       {:ok, response} ->
@@ -836,7 +836,7 @@ defmodule Singularity.Knowledge.TemplateService do
     }
 
     # Publish to NATS for Central Cloud aggregation
-    case Singularity.NatsClient.publish(
+    case Singularity.NATS.Client.publish(
            "template.usage.#{template_id}",
            Jason.encode!(usage_event)
          ) do
@@ -875,7 +875,7 @@ defmodule Singularity.Knowledge.TemplateService do
     }
 
     # Query via NATS with timeout
-    case Singularity.NatsClient.request(
+    case Singularity.NATS.Client.request(
            "intelligence.query",
            Jason.encode!(query),
            timeout: 2000

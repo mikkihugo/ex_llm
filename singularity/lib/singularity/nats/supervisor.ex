@@ -176,7 +176,7 @@ defmodule Singularity.NATS.Supervisor do
   #### ❌ DO NOT start NATS processes outside this supervisor
   ```elixir
   # ❌ WRONG - Starting NatsClient elsewhere
-  {:ok, _} = NatsClient.start_link()
+  {:ok, _} = Singularity.NATS.Client.start_link()
 
   # ✅ CORRECT - Let NATS.Supervisor manage lifecycle
   # Add to children list in NATS.Supervisor.init/1

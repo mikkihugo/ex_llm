@@ -42,7 +42,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
 
   require Logger
   alias Singularity.RustElixirT5Trainer
-  alias Singularity.NatsClient
+  alias Singularity.NATS.Client, as: NatsClient
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: args}) do
@@ -157,7 +157,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
         timestamp: DateTime.utc_now()
       })
 
-    case NatsClient.publish("ml.training.t5.completed", payload) do
+    case Singularity.NATS.Client.publish("ml.training.t5.completed", payload) do
       :ok ->
         Logger.info("Published training completion to NATS",
           session_id: session_id,
@@ -188,7 +188,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
         timestamp: DateTime.utc_now()
       })
 
-    case NatsClient.publish("ml.training.t5.failed", payload) do
+    case Singularity.NATS.Client.publish("ml.training.t5.failed", payload) do
       :ok ->
         Logger.info("Published training failure to NATS", training_name: training_name)
 

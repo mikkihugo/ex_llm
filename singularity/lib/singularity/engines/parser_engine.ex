@@ -20,7 +20,7 @@ defmodule Singularity.ParserEngine do
     path: "../rust/parser_engine"
 
   require Logger
-  alias Singularity.NatsClient
+  alias Singularity.NATS.Client, as: NatsClient
   alias Singularity.BeamAnalysisEngine
 
   alias Singularity.Repo
@@ -618,7 +618,7 @@ defmodule Singularity.ParserEngine do
       include_performance: true
     }
 
-    case NatsClient.request("central.parser.capabilities", Jason.encode!(request), timeout: 5000) do
+    case Singularity.NATS.Client.request("central.parser.capabilities", Jason.encode!(request), timeout: 5000) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data}
@@ -640,7 +640,7 @@ defmodule Singularity.ParserEngine do
       timestamp: DateTime.utc_now()
     }
 
-    case NatsClient.publish("central.parser.analytics", Jason.encode!(request)) do
+    case Singularity.NATS.Client.publish("central.parser.analytics", Jason.encode!(request)) do
       :ok -> :ok
       {:error, reason} -> {:error, "Failed to send parsing analytics: #{reason}"}
     end
@@ -657,7 +657,7 @@ defmodule Singularity.ParserEngine do
       include_optimizations: true
     }
 
-    case NatsClient.request("central.parser.recommendations", Jason.encode!(request),
+    case Singularity.NATS.Client.request("central.parser.recommendations", Jason.encode!(request),
            timeout: 3000
          ) do
       {:ok, response} ->
