@@ -1,29 +1,28 @@
 defmodule Singularity.EmbeddingGenerator do
   @moduledoc """
-  Embedding Generator - Pure local ONNX embeddings via Rust NIF.
+  Embedding Generator - Local ONNX embeddings with multi-vector concatenation.
 
-  Uses optimized ONNX models with automatic device selection:
-  - **GPU Available**: Qodo-Embed-1 via Candle (CUDA, Metal, ROCm) - 1536D, ~15ms
-  - **CPU Only**: MiniLM-L6-v2 via ONNX Runtime - 384D, ~40ms
+  Always generates 2560-dimensional concatenated embeddings:
+  - **Qodo-Embed-1** (1536-dim): Code semantics, specialized for source code
+  - **Jina v3** (1024-dim): General text understanding
+  - **Concatenated**: 2560-dim combining both models for maximum quality
 
   ## Key Benefits
   - ✅ Local inference (no API calls, works offline)
-  - ✅ Fast (ONNX optimized, GPU accelerated when available)
+  - ✅ Dual-model strength (code + text understanding)
   - ✅ No API keys needed
   - ✅ No quota limits
   - ✅ Deterministic (same input = same embedding every time)
-
-  For code-specific tasks with GPU, automatically selects Qodo-Embed.
-  For general text on CPU, automatically selects MiniLM (384D is still excellent).
+  - ✅ Consistent 2560-dim output (no dimension variance)
 
   ## Usage
 
-      # Generate embedding (auto-selects best model based on context)
-      {:ok, embedding} = EmbeddingGenerator.embed("some text")
-      # => %Pgvector{} (1536 dims on GPU, 384 dims on CPU)
+      # Generate embedding - always 2560-dim
+      {:ok, embedding} = EmbeddingGenerator.embed("def hello do :ok end")
+      # => %Pgvector{} with 2560 dimensions
 
-      # Force specific model
-      {:ok, embedding} = EmbeddingGenerator.embed("some text", model: :qodo_embed)
+      # The :model option is ignored; both models always used for quality
+      {:ok, embedding} = EmbeddingGenerator.embed("some text", model: :ignored)
 
   ## AI Navigation Metadata
 
@@ -36,18 +35,19 @@ defmodule Singularity.EmbeddingGenerator do
     "role": "service",
     "layer": "llm_services",
     "key_responsibilities": [
-      "Provide simple embed/2 API for text-to-vector conversion",
-      "Auto-detect GPU availability and select appropriate model",
-      "Fall back gracefully from Qodo-Embed (GPU) to MiniLM (CPU)",
+      "Provide embed/2 API for 2560-dim concatenated embeddings",
+      "Delegate to EmbeddingEngine for Qodo + Jina v3 concatenation",
+      "Ensure consistent 2560-dimensional output for all texts",
       "Return pgvector format for PostgreSQL storage"
     ],
     "prevents_duplicates": ["EmbeddingService", "LocalEmbeddingGenerator", "Vectorizer"],
     "uses": ["EmbeddingEngine", "Logger", "Pgvector"],
-    "models_supported": {
-      "qodo_embed": "1536-dim code-optimized (GPU)",
-      "minilm": "384-dim lightweight (CPU)",
-      "jina_v3": "1024-dim general purpose"
-    }
+    "embedding_strategy": "Concatenated multi-vector (always 2560-dim)",
+    "models_used": {
+      "qodo_embed": "1536-dim code-optimized",
+      "jina_v3": "1024-dim general-purpose"
+    },
+    "output": "2560-dim concatenated vector (1536 + 1024)"
   }
   ```
 
@@ -56,21 +56,17 @@ defmodule Singularity.EmbeddingGenerator do
   ```mermaid
   graph TB
     User["User Code"] -->|1. embed/2| Gen["EmbeddingGenerator"]
-    Gen -->|2. detect hardware| Detect{GPU Available?}
+    Gen -->|2. always concatenate| Engine["EmbeddingEngine"]
 
-    Detect -->|GPU found| SelectQodo["Select Qodo-Embed<br/>(1536-dim)"]
-    Detect -->|No GPU| SelectMini["Select MiniLM<br/>(384-dim)"]
+    Engine -->|3a. Qodo inference| Qodo["Qodo-Embed<br/>(1536-dim)"]
+    Engine -->|3b. Jina inference| Jina["Jina v3<br/>(1024-dim)"]
 
-    SelectQodo -->|3. delegate| Engine["EmbeddingEngine"]
-    SelectMini -->|3. delegate| Engine
+    Qodo -->|combine| Concat["Concatenate<br/>[1536 || 1024]"]
+    Jina -->|combine| Concat
 
-    Engine -->|4. call| ONNX["ONNX Runtime<br/>(Rust NIF)"]
+    Concat -->|normalize| Norm["Normalize to<br/>unit length"]
 
-    ONNX -->|Qodo| Qodo["Qodo-Embed inference"]
-    ONNX -->|MiniLM| MiniLM["MiniLM inference"]
-
-    Qodo -->|1536-dim| PGVec["Pgvector format"]
-    MiniLM -->|384-dim| PGVec
+    Norm -->|4. convert| PGVec["Pgvector<br/>(2560-dim)"]
 
     PGVec -->|5. return| Gen
     Gen -->|6. {:ok, embedding}| User
