@@ -38,6 +38,11 @@ defmodule Singularity.Application do
       # HTTP endpoint for dashboard and health checks
       {Bandit, plug: Singularity.Web.Endpoint, port: 4000},
 
+      # Background Job Queue & Scheduling
+      # Oban processes background jobs with cron-like scheduling
+      # Config consolidated to :oban namespace (fixed dual-config issue)
+      Oban,
+
       # Layer 2: Infrastructure - Core services required by application layer
       # Moved to ApplicationSupervisor to avoid duplicate startup
       # Singularity.Infrastructure.Supervisor,

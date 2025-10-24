@@ -75,9 +75,14 @@ config :singularity, Singularity.Repo,
 
 config :singularity, ecto_repos: [Singularity.Repo]
 
-# Oban Background Job Queue Configuration
-# ML training, pattern mining, and maintenance tasks
-config :singularity, Oban,
+# =============================================================================
+# Oban Background Job Queue & Cron Configuration (Consolidated)
+# =============================================================================
+# Background job processing with cron-like scheduling for periodic tasks.
+# ML training, pattern mining, maintenance, and utility jobs.
+#
+# Note: Using :oban namespace (not :singularity, Oban) for official Oban config
+config :oban,
   repo: Singularity.Repo,
   queues: [
     # ML training jobs (GPU constraint - only 1 at a time)
@@ -87,22 +92,15 @@ config :singularity, Oban,
     # Metrics aggregation tasks (hourly aggregation)
     metrics: [concurrency: 1],
     # Default queue for general background work
-    default: [concurrency: 10]
+    default: [concurrency: 10],
+    # Pattern mining jobs
+    pattern_mining: [concurrency: 3]
   ],
   plugins: [
     # Prune completed/discarded jobs after 7 days
     {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
     # Periodically check for stalled jobs
-    {Oban.Plugins.Stalled, interval: 60}
-  ]
-
-# Oban Job Queue & Cron Configuration
-# Background job processing with cron-like scheduling for periodic tasks
-config :oban,
-  repo: Singularity.Repo,
-  plugins: [
-    Oban.Plugins.Pruner,
-    Oban.Plugins.Repeater,
+    {Oban.Plugins.Stalled, interval: 60},
     # Cron plugin for scheduled jobs
     {Oban.Plugins.Cron,
      crontab: [
@@ -128,7 +126,6 @@ config :oban,
        {"0 9 * * 1", Singularity.Jobs.DeadCodeWeeklySummary}
      ]}
   ],
-  queues: [default: 10, ml_training: 5, pattern_mining: 3, metrics: 1],
   # Enable verbose logging for job execution
   verbose: true
 
