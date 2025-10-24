@@ -1,9 +1,13 @@
 defmodule Singularity.CodeGraph.Queries do
   @moduledoc """
-  Graph Queries - Fast structural analysis using PostgreSQL recursive CTEs.
+  Graph Queries - Fast structural analysis using PostgreSQL ltree + recursive CTEs.
 
   Provides functions for traversing code call graphs without external graph databases.
-  Uses recursive Common Table Expressions (CTEs) for instant relationship queries.
+  Leverages PostgreSQL's powerful native extensions:
+  - ltree: Hierarchical path queries for dependency chains
+  - pg_trgm: Fuzzy matching for module/pattern search
+  - hstore: Flexible metadata storage
+  - Recursive CTEs: Instant relationship queries
 
   ## Architecture
 
