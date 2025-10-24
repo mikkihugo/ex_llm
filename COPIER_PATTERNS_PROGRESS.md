@@ -280,21 +280,35 @@ cd centralcloud
 
 ### Immediate: Start Testing
 ```bash
-# 1. Start NATS server
-nats-server -js
+# 1. Start NATS with JetStream (persistence layer)
+nats-server -js  # -js enables JetStream for reliable message delivery
 
-# 2. Start all three applications
+# 2. Start all FOUR applications (order matters!)
 ./start-all.sh
 # Or manually:
-# Terminal 1: cd singularity && iex -S mix
-# Terminal 2: cd centralcloud && iex -S mix
-# Terminal 3: cd genesis && iex -S mix      # Improvement sandbox (REQUIRED for Phase 4)
+# Terminal 1: cd llm-server && bun run src/server.ts          # AI provider bridge (START FIRST!)
+# Terminal 2: cd singularity && iex -S mix                    # Main application
+# Terminal 3: cd centralcloud && iex -S mix                   # Intelligence hub
+# Terminal 4: cd genesis && iex -S mix                        # Improvement sandbox (Phase 4)
 
 # 3. Run integration tests (see PHASE_45_DEPLOYMENT_COMPLETE.md)
 ```
 
-**Why Genesis is Required:**
-Genesis safely tests template improvements in an isolated sandbox before deploying to production. Phase 4 (Self-Improvement) sends improved templates to Genesis for validation, preventing breaking changes from reaching Singularity.
+**Why Each Service is Required:**
+
+1. **llm-server (TypeScript/Bun):** AI provider bridge
+   - ALL LLM calls from Elixir apps route through NATS to llm-server
+   - Without it: No template improvements, no question inference, no code generation
+
+2. **Genesis (Elixir):** Improvement sandbox
+   - Safely tests template improvements in isolated environment
+   - Phase 4 sends improved templates to Genesis for validation
+   - Prevents breaking changes from reaching production
+
+3. **CentralCloud (Elixir):** Intelligence hub
+   - Aggregates template usage across all Singularity instances
+   - Provides smart defaults and failure pattern analysis
+   - Enables cross-instance learning
 
 ### Optional Enhancements
 1. Fix CentralCloud migration SQL syntax error (20250109000001)

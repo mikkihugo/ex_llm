@@ -152,3 +152,31 @@ config :singularity, :pattern_types,
     enabled: true,
     description: "Detect microservice vs monolith architecture patterns"
   }
+
+# =============================================================================
+# Code Analysis Configuration (Config-Driven)
+# =============================================================================
+# Defines which analyzers are enabled and their modules.
+# Add new analyzer types here without changing code!
+
+config :singularity, :analyzer_types,
+  feedback: %{
+    module: Singularity.Architecture.Analyzers.FeedbackAnalyzer,
+    enabled: true,
+    description: "Identify agent improvement opportunities from metrics"
+  },
+  quality: %{
+    module: Singularity.Architecture.Analyzers.QualityAnalyzer,
+    enabled: true,
+    description: "Analyze code quality issues and violations"
+  },
+  refactoring: %{
+    module: Singularity.Architecture.Analyzers.RefactoringAnalyzer,
+    enabled: true,
+    description: "Identify refactoring needs and opportunities"
+  },
+  microservice: %{
+    module: Singularity.Architecture.Analyzers.MicroserviceAnalyzer,
+    enabled: true,
+    description: "Detect microservice vs monolith architecture patterns"
+  }
