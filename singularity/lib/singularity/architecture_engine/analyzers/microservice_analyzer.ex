@@ -13,12 +13,71 @@ defmodule Singularity.Architecture.Analyzers.MicroserviceAnalyzer do
   Note: This consolidates service analysis from the storage layer into the
   architecture engine for unified orchestration.
 
+  ## Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Architecture.Analyzers.MicroserviceAnalyzer",
+    "type": "analyzer",
+    "purpose": "Detect microservice vs monolith architecture patterns",
+    "layer": "architecture_engine",
+    "behavior": "AnalyzerType",
+    "registered_in": "config :singularity, :analyzer_types, microservice: ...",
+    "scope": "Repository structure, service boundaries, deployment patterns"
+  }
+  ```
+
+  ## Architecture Diagram
+
+  ```mermaid
+  graph TD
+      A[analyze/2] --> B[discover_services]
+      B --> C[detect_language]
+      B --> D[detect_build_config]
+      B --> E[detect_build_system]
+      C --> F[classify_architecture]
+      D --> F
+      E --> F
+      F --> G[detect_service_mesh]
+      G --> H[return architecture type]
+      H --> I[service_count + pattern]
+  ```
+
+  ## Call Graph (YAML)
+
+  ```yaml
+  calls:
+    - Singularity.LanguageDetection (language detection)
+    - File system inspection (build config detection)
+    - Logger (error handling and learning)
+
+  called_by:
+    - Singularity.Architecture.AnalysisOrchestrator
+    - Architecture assessment pipelines
+    - Service boundary analyzers
+    - Migration planning tools
+  ```
+
+  ## Anti-Patterns
+
+  - ❌ `ServiceDetector` - Use MicroserviceAnalyzer for service discovery
+  - ❌ `ArchitectureClassifier` - Use microservice analyzer for classification
+  - ❌ `DeploymentAnalyzer` - Use build config detection from MicroserviceAnalyzer
+  - ✅ Use AnalysisOrchestrator for discovery
+  - ✅ Pair with language detection results
+
   ## Architecture Patterns Detected
 
   - **Microservices**: 4+ independent services with separate build/deploy configs
   - **Distributed**: 2-3 independent services
   - **Modular**: 1 service with clear module boundaries
   - **Monolith**: Single codebase without service separation
+
+  ## Search Keywords
+
+  microservices, architecture patterns, monolith detection, service boundaries,
+  distributed systems, service mesh, build configuration, deployment patterns,
+  service discovery, architecture analysis
   """
 
   @behaviour Singularity.Architecture.AnalyzerType

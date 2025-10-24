@@ -7,6 +7,58 @@ defmodule Singularity.Architecture.Analyzers.FeedbackAnalyzer do
 
   Implements `@behaviour AnalyzerType` for config-driven orchestration.
 
+  ## Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.Architecture.Analyzers.FeedbackAnalyzer",
+    "type": "analyzer",
+    "purpose": "Identify agent improvement opportunities from execution metrics",
+    "layer": "architecture_engine",
+    "behavior": "AnalyzerType",
+    "registered_in": "config :singularity, :analyzer_types, feedback: ...",
+    "scope": "Agent performance metrics (success rate, cost, latency, errors)"
+  }
+  ```
+
+  ## Architecture Diagram
+
+  ```mermaid
+  graph TD
+      A[analyze/2] --> B[Execution.Feedback.Analyzer]
+      B --> C[success_rate analysis]
+      B --> D[cost analysis]
+      B --> E[latency analysis]
+      B --> F[error patterns]
+      C --> G[format results]
+      D --> G
+      E --> G
+      F --> G
+      G --> H[severity classification]
+      H --> I[return improvements]
+  ```
+
+  ## Call Graph (YAML)
+
+  ```yaml
+  calls:
+    - Singularity.Execution.Feedback.Analyzer (metrics analysis)
+    - Logger (error handling and learning)
+
+  called_by:
+    - Singularity.Architecture.AnalysisOrchestrator
+    - Agent evolution system
+    - Cost optimization pipelines
+    - Performance monitoring
+  ```
+
+  ## Anti-Patterns
+
+  - ❌ `MetricsAnalyzer` - Use FeedbackAnalyzer for agent improvements
+  - ❌ `PerformanceOptimizer` - Use feedback for optimization suggestions
+  - ✅ Use AnalysisOrchestrator for discovery
+  - ✅ Pair with agents.supervisor for feedback loop
+
   ## Analysis Rules
 
   ### Success Rate Issues
@@ -23,6 +75,11 @@ defmodule Singularity.Architecture.Analyzers.FeedbackAnalyzer do
   - **Threshold**: > 2000ms per task
   - **Cause**: Slow execution, cache misses, network delays
   - **Suggestion**: Improve caching strategy, parallelize work
+
+  ## Search Keywords
+
+  feedback analysis, agent metrics, performance improvement, cost optimization,
+  latency analysis, success rate, error patterns, evolution system, agent feedback
   """
 
   @behaviour Singularity.Architecture.AnalyzerType
