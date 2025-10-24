@@ -260,3 +260,123 @@ config :singularity, :search_types,
     enabled: true,
     description: "Package registry search combined with RAG codebase discovery"
   }
+
+# =============================================================================
+# Job Configuration (Config-Driven)
+# =============================================================================
+# Defines which background jobs (Oban workers) are enabled and their configuration
+
+config :singularity, :job_types,
+  metrics_aggregation: %{
+    module: Singularity.Jobs.MetricsAggregationWorker,
+    enabled: true,
+    queue: :default,
+    max_attempts: 2,
+    description: "Aggregate agent metrics for feedback loop (every 5 minutes)"
+  },
+  pattern_miner: %{
+    module: Singularity.Jobs.PatternMinerJob,
+    enabled: true,
+    queue: :pattern_mining,
+    max_attempts: 3,
+    priority: 2,
+    description: "Mine code patterns from codebase (daily)"
+  },
+  agent_evolution: %{
+    module: Singularity.Jobs.AgentEvolutionWorker,
+    enabled: true,
+    queue: :default,
+    max_attempts: 2,
+    description: "Apply agent improvements (hourly)"
+  },
+  cache_refresh: %{
+    module: Singularity.Jobs.CacheRefreshWorker,
+    enabled: true,
+    queue: :maintenance,
+    max_attempts: 1,
+    description: "Refresh embedding cache (every 30 minutes)"
+  },
+  cache_cleanup: %{
+    module: Singularity.Jobs.CacheCleanupWorker,
+    enabled: true,
+    queue: :maintenance,
+    max_attempts: 1,
+    description: "Clean old cache entries (every 4 hours)"
+  },
+  cache_prewarm: %{
+    module: Singularity.Jobs.CachePrewarmWorker,
+    enabled: false,
+    queue: :maintenance,
+    max_attempts: 1,
+    description: "Pre-warm frequently used models (hourly)"
+  },
+  cache_maintenance: %{
+    module: Singularity.Jobs.CacheMaintenanceJob,
+    enabled: true,
+    queue: :maintenance,
+    max_attempts: 1,
+    description: "Cache maintenance tasks (hourly)"
+  },
+  feedback_analysis: %{
+    module: Singularity.Jobs.FeedbackAnalysisWorker,
+    enabled: true,
+    queue: :default,
+    max_attempts: 2,
+    description: "Analyze agent feedback (every 30 minutes)"
+  },
+  pattern_sync: %{
+    module: Singularity.Jobs.PatternSyncWorker,
+    enabled: true,
+    queue: :default,
+    max_attempts: 2,
+    description: "Sync patterns to DB (hourly)"
+  },
+  pattern_sync_job: %{
+    module: Singularity.Jobs.PatternSyncJob,
+    enabled: false,
+    queue: :pattern_mining,
+    max_attempts: 2,
+    description: "Full pattern sync (daily)"
+  },
+  domain_vocabulary_trainer: %{
+    module: Singularity.Jobs.DomainVocabularyTrainerJob,
+    enabled: true,
+    queue: :training,
+    max_attempts: 1,
+    description: "Train domain vocabulary (daily)"
+  },
+  embedding_finetune: %{
+    module: Singularity.Jobs.EmbeddingFinetuneJob,
+    enabled: false,
+    queue: :training,
+    max_attempts: 1,
+    description: "Fine-tune embeddings (nightly)"
+  },
+  knowledge_export: %{
+    module: Singularity.Jobs.KnowledgeExportWorker,
+    enabled: true,
+    queue: :default,
+    max_attempts: 2,
+    description: "Export knowledge to Git (weekly)"
+  },
+  dead_code_daily_check: %{
+    module: Singularity.Jobs.DeadCodeDailyCheck,
+    enabled: true,
+    queue: :default,
+    max_attempts: 2,
+    description: "Check dead code (daily)"
+  },
+  dead_code_weekly_summary: %{
+    module: Singularity.Jobs.DeadCodeWeeklySummary,
+    enabled: true,
+    queue: :default,
+    max_attempts: 2,
+    description: "Dead code summary (weekly)"
+  },
+  train_t5_model: %{
+    module: Singularity.Jobs.TrainT5ModelJob,
+    enabled: false,
+    queue: :training,
+    max_attempts: 1,
+    description: "Train T5 model (on demand)"
+  }
