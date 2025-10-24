@@ -8,7 +8,7 @@ use std::{collections::HashMap, fmt::Debug};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::PolyglotCodeParserError, languages::ProgrammingLanguage};
+use parser_core::ProgrammingLanguage;
 
 /// Universal refactoring engine
 pub struct EngineRefactoring {
@@ -378,7 +378,7 @@ impl EngineRefactoring {
 
   /// Analyze content for refactoring opportunities
   pub async fn analyze_refactoring(&self, content: &str, file_path: &str, language: ProgrammingLanguage) -> Result<RefactoringAnalysis> {
-    let provider = self.providers.get(&language).ok_or_else(|| PolyglotCodeParserError::UnsupportedLanguage { language: language.to_string() })?;
+    let provider = self.providers.get(&language).ok_or_else(|| anyhow::anyhow!("Unsupported language: {}", language.to_string()))?;
 
     // Get language-specific suggestions
     let mut all_suggestions = provider.get_refactoring_suggestions(content, file_path, &self.config)?;
@@ -490,7 +490,7 @@ impl EngineRefactoring {
 
   /// Apply automated fixes
   pub async fn apply_automated_fixes(&self, content: &str, suggestions: &[RefactoringSuggestion], language: ProgrammingLanguage) -> Result<String> {
-    let provider = self.providers.get(&language).ok_or_else(|| PolyglotCodeParserError::UnsupportedLanguage { language: language.to_string() })?;
+    let provider = self.providers.get(&language).ok_or_else(|| anyhow::anyhow!("Unsupported language: {}", language.to_string()))?;
 
     let mut modified_content = content.to_string();
 

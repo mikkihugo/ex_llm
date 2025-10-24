@@ -484,6 +484,50 @@ defmodule Singularity.CodeSearch.Ecto do
   # ============================================================================
 
   @doc """
+  Get dependencies of a node (outgoing edges).
+
+  Returns list of nodes that this node points to, ordered by edge weight.
+  """
+  @spec get_dependencies(String.t()) :: [map()]
+  def get_dependencies(from_node_id) do
+    GraphEdge
+    |> where(from_node_id: ^from_node_id)
+    |> join(:inner, [ge], gn in GraphNode, on: ge.to_node_id == gn.node_id)
+    |> select([ge, gn], %{
+      node_id: gn.node_id,
+      name: gn.name,
+      file_path: gn.file_path,
+      node_type: gn.node_type,
+      edge_type: ge.edge_type,
+      weight: ge.weight
+    })
+    |> order_by([ge], desc: ge.weight)
+    |> Repo.all()
+  end
+
+  @doc """
+  Get dependents of a node (incoming edges).
+
+  Returns list of nodes that point to this node, ordered by edge weight.
+  """
+  @spec get_dependents(String.t()) :: [map()]
+  def get_dependents(to_node_id) do
+    GraphEdge
+    |> where(to_node_id: ^to_node_id)
+    |> join(:inner, [ge], gn in GraphNode, on: ge.from_node_id == gn.node_id)
+    |> select([ge, gn], %{
+      node_id: gn.node_id,
+      name: gn.name,
+      file_path: gn.file_path,
+      node_type: gn.node_type,
+      edge_type: ge.edge_type,
+      weight: ge.weight
+    })
+    |> order_by([ge], desc: ge.weight)
+    |> Repo.all()
+  end
+
+  @doc """
   Count files in a codebase.
   """
   @spec count_files(String.t()) :: non_neg_integer()
@@ -507,5 +551,250 @@ defmodule Singularity.CodeSearch.Ecto do
       avg_quality_score: if(length(metadata_list) > 0, do: Enum.sum(Enum.map(metadata_list, & &1.quality_score)) / length(metadata_list), else: 0.0),
       avg_complexity: if(length(metadata_list) > 0, do: Enum.sum(Enum.map(metadata_list, & &1.cyclomatic_complexity)) / length(metadata_list), else: 0.0)
     }
+  end
+
+  @doc """
+  Find similar nodes using vector similarity.
+
+  Finds nodes with similar embeddings to the query node, ordered by cosine similarity.
+  Uses pgvector distance operator (<->) for fast approximate nearest neighbor search.
+  """
+  @spec find_similar_nodes(String.t(), String.t(), String.t(), non_neg_integer()) :: [map()]
+  def find_similar_nodes(codebase_id, query_node_id, top_k \\ 10) do
+    # Get the query node's embedding
+    query_node =
+      GraphNode
+      |> where(codebase_id: ^codebase_id, node_id: ^query_node_id)
+      |> select([gn], gn.vector_embedding)
+      |> Repo.one()
+
+    case query_node do
+      nil ->
+        []
+
+      query_vector ->
+        # Find similar nodes using vector distance
+        GraphNode
+        |> where(codebase_id: ^codebase_id)
+        |> where([gn], gn.node_id != ^query_node_id)
+        |> where([gn], not is_nil(gn.vector_embedding))
+        |> select([gn], %{
+          node_id: gn.node_id,
+          name: gn.name,
+          file_path: gn.file_path,
+          node_type: gn.node_type,
+          cosine_similarity: fragment("1 - (? <-> ?)", gn.vector_embedding, ^query_vector),
+          combined_similarity: fragment("1 - (? <-> ?)", gn.vector_embedding, ^query_vector)
+        })
+        |> order_by([gn], desc: fragment("1 - (? <-> ?)", gn.vector_embedding, ^query_vector))
+        |> limit(^top_k)
+        |> Repo.all()
+    end
+  end
+
+  @doc """
+  Perform semantic search using vector similarity.
+
+  Searches for files with similar embeddings to the query vector.
+  Uses pgvector distance operator (<->) for fast approximate nearest neighbor search.
+  """
+  @spec semantic_search(String.t(), binary(), non_neg_integer()) :: [map()]
+  def semantic_search(codebase_id, query_vector, limit \\ 10) do
+    CodebaseMetadata
+    |> where(codebase_id: ^codebase_id)
+    |> where([cm], not is_nil(cm.vector_embedding))
+    |> select([cm], %{
+      path: cm.path,
+      language: cm.language,
+      file_type: cm.file_type,
+      quality_score: cm.quality_score,
+      maintainability_index: cm.maintainability_index,
+      distance: fragment("? <-> ?", cm.vector_embedding, ^query_vector),
+      similarity_score: fragment("1 - (? <-> ?)", cm.vector_embedding, ^query_vector)
+    })
+    |> order_by([cm], fragment("? <-> ?", cm.vector_embedding, ^query_vector))
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
+  @doc """
+  Search across multiple codebases using vector similarity.
+
+  Searches for similar files across multiple codebases efficiently.
+  Uses Ecto.Adapters.SQL for raw SQL support while maintaining connection pooling.
+  """
+  @spec multi_codebase_search([String.t()], binary(), non_neg_integer()) :: [map()]
+  def multi_codebase_search(codebase_ids, query_vector, limit \\ 10) when is_list(codebase_ids) do
+    placeholders = Enum.map(1..length(codebase_ids), fn i -> "$#{i}" end) |> Enum.join(",")
+
+    query = """
+    SELECT
+      codebase_id,
+      path,
+      language,
+      file_type,
+      quality_score,
+      maintainability_index,
+      vector_embedding <-> $#{length(codebase_ids) + 1} as distance,
+      1 - (vector_embedding <-> $#{length(codebase_ids) + 1}) as similarity_score
+    FROM codebase_metadata
+    WHERE codebase_id IN (#{placeholders}) AND vector_embedding IS NOT NULL
+    ORDER BY vector_embedding <-> $#{length(codebase_ids) + 1}
+    LIMIT $#{length(codebase_ids) + 2}
+    """
+
+    params = codebase_ids ++ [query_vector, limit]
+
+    case Ecto.Adapters.SQL.query(Repo, query, params) do
+      {:ok, %{rows: rows}} ->
+        Enum.map(rows, fn [
+                            codebase_id,
+                            path,
+                            language,
+                            file_type,
+                            quality_score,
+                            maintainability_index,
+                            _distance,
+                            similarity_score
+                          ] ->
+          %{
+            codebase_id: codebase_id,
+            path: path,
+            language: language,
+            file_type: file_type,
+            quality_score: quality_score,
+            maintainability_index: maintainability_index,
+            similarity_score: similarity_score
+          }
+        end)
+
+      {:error, reason} ->
+        raise "multi_codebase_search failed: #{inspect(reason)}"
+    end
+  end
+
+  @doc """
+  Detect circular dependencies using recursive graph traversal.
+
+  Uses PostgreSQL recursive CTE to find circular dependencies.
+  Uses Ecto.Adapters.SQL for raw SQL support while maintaining connection pooling.
+  """
+  @spec detect_circular_dependencies() :: [map()]
+  def detect_circular_dependencies do
+    query = """
+    WITH RECURSIVE dependency_path AS (
+      -- Base case: all edges
+      SELECT
+        from_node_id as start_node,
+        to_node_id as end_node,
+        from_node_id,
+        to_node_id,
+        edge_type,
+        weight,
+        1 as depth,
+        ARRAY[from_node_id, to_node_id] as path
+      FROM graph_edges
+
+      UNION ALL
+
+      -- Recursive case: extend paths
+      SELECT
+        dp.start_node,
+        ge.to_node_id as end_node,
+        dp.from_node_id,
+        ge.to_node_id,
+        ge.edge_type,
+        ge.weight,
+        dp.depth + 1,
+        dp.path || ge.to_node_id
+      FROM dependency_path dp
+      JOIN graph_edges ge ON dp.to_node_id = ge.from_node_id
+      WHERE dp.depth < 10
+        AND NOT ge.to_node_id = ANY(dp.path)
+    )
+    SELECT DISTINCT
+      start_node,
+      end_node,
+      path,
+      depth
+    FROM dependency_path
+    WHERE start_node = end_node
+    ORDER BY depth
+    """
+
+    case Ecto.Adapters.SQL.query(Repo, query, []) do
+      {:ok, %{rows: rows}} ->
+        Enum.map(rows, fn [start_node, end_node, path, depth] ->
+          %{
+            start_node: start_node,
+            end_node: end_node,
+            path: path,
+            depth: depth
+          }
+        end)
+
+      {:error, reason} ->
+        raise "detect_circular_dependencies failed: #{inspect(reason)}"
+    end
+  end
+
+  @doc """
+  Calculate PageRank scores for all nodes using iterative algorithm.
+
+  Simplified PageRank implementation using recursive CTE.
+  Uses Ecto.Adapters.SQL for raw SQL support while maintaining connection pooling.
+  """
+  @spec calculate_pagerank(non_neg_integer(), float()) :: [map()]
+  def calculate_pagerank(iterations \\ 20, damping_factor \\ 0.85) do
+    query = """
+    WITH RECURSIVE pagerank_iteration AS (
+      -- Initialize PageRank scores
+      SELECT
+        node_id,
+        1.0 / (SELECT COUNT(*) FROM graph_nodes) as pagerank_score,
+        0 as iteration
+      FROM graph_nodes
+
+      UNION ALL
+
+      -- Iterate PageRank calculation
+      SELECT
+        gn.node_id,
+        (1 - $2) / (SELECT COUNT(*) FROM graph_nodes) +
+        $2 * COALESCE(SUM(pr.pagerank_score / out_degree.out_count), 0) as pagerank_score,
+        pr.iteration + 1
+      FROM graph_nodes gn
+      JOIN pagerank_iteration pr ON pr.iteration < $1
+      LEFT JOIN graph_edges ge ON ge.to_node_id = gn.node_id
+      LEFT JOIN (
+        SELECT from_node_id, COUNT(*) as out_count
+        FROM graph_edges
+        GROUP BY from_node_id
+      ) out_degree ON out_degree.from_node_id = ge.from_node_id
+      WHERE pr.iteration = (
+        SELECT MAX(iteration) FROM pagerank_iteration
+      )
+      GROUP BY gn.node_id, pr.iteration
+    )
+    SELECT
+      node_id,
+      pagerank_score
+    FROM pagerank_iteration
+    WHERE iteration = $1
+    ORDER BY pagerank_score DESC
+    """
+
+    case Ecto.Adapters.SQL.query(Repo, query, [iterations, damping_factor]) do
+      {:ok, %{rows: rows}} ->
+        Enum.map(rows, fn [node_id, pagerank_score] ->
+          %{
+            node_id: node_id,
+            pagerank_score: pagerank_score
+          }
+        end)
+
+      {:error, reason} ->
+        raise "calculate_pagerank failed: #{inspect(reason)}"
+    end
   end
 end

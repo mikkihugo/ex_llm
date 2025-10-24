@@ -155,299 +155,49 @@ defmodule Singularity.CodeSearch do
   @doc """
   Perform semantic search using vector similarity
 
-  Accepts either an Ecto.Repo module or a raw Postgrex connection.
-  Using Repo (recommended) leverages connection pooling for better performance.
+  Leverages connection pooling for better performance.
 
   ## Examples
 
-      # With Ecto.Repo (recommended - uses connection pooling)
       CodeSearch.semantic_search(Singularity.Repo, "my-codebase", vector, 10)
-
-      # With raw Postgrex connection (for backwards compatibility)
-      {:ok, conn} = Postgrex.start_link(...)
-      CodeSearch.semantic_search(conn, "my-codebase", vector, 10)
   """
-  def semantic_search(repo_or_conn, codebase_id, query_vector, limit \\ 10) do
-    query = """
-    SELECT
-      path,
-      language,
-      file_type,
-      quality_score,
-      maintainability_index,
-      vector_embedding <-> $2 as distance,
-      1 - (vector_embedding <-> $2) as similarity_score
-    FROM codebase_metadata
-    WHERE codebase_id = $1 AND vector_embedding IS NOT NULL
-    ORDER BY vector_embedding <-> $2
-    LIMIT $3
-    """
-
-    params = [codebase_id, query_vector, limit]
-
-    rows =
-      case repo_or_conn do
-        # Ecto.Repo module (connection pooling)
-        repo when is_atom(repo) ->
-          case Ecto.Adapters.SQL.query!(repo, query, params) do
-            %{rows: rows} -> rows
-          end
-
-        # Raw Postgrex connection (backwards compatibility)
-        conn ->
-          case Postgrex.query!(conn, query, params) do
-            %{rows: rows} -> rows
-          end
-      end
-
-    Enum.map(rows, fn [
-                        path,
-                        language,
-                        file_type,
-                        quality_score,
-                        maintainability_index,
-                        _distance,
-                        similarity_score
-                      ] ->
-      %{
-        path: path,
-        language: language,
-        file_type: file_type,
-        quality_score: quality_score,
-        maintainability_index: maintainability_index,
-        similarity_score: similarity_score
-      }
-    end)
+  def semantic_search(_repo_or_conn, codebase_id, query_vector, limit \\ 10) do
+    Singularity.CodeSearch.Ecto.semantic_search(codebase_id, query_vector, limit)
   end
 
   @doc """
   Find similar nodes using graph and vector similarity
   """
-  def find_similar_nodes(db_conn, codebase_id, query_node_id, top_k \\ 10) do
-    Postgrex.query!(
-      db_conn,
-      """
-      WITH query_node AS (
-        SELECT vector_embedding, vector_magnitude
-        FROM graph_nodes 
-        WHERE codebase_id = $1 AND node_id = $2
-      ),
-      similarities AS (
-        SELECT 
-          gn.node_id,
-          gn.name,
-          gn.file_path,
-          gn.node_type,
-          1 - (gn.vector_embedding <-> qn.vector_embedding) as cosine_similarity,
-          gn.vector_magnitude,
-          qn.vector_magnitude as query_magnitude
-        FROM graph_nodes gn
-        CROSS JOIN query_node qn
-        WHERE gn.codebase_id = $1 
-          AND gn.node_id != $2 
-          AND gn.vector_embedding IS NOT NULL
-          AND qn.vector_embedding IS NOT NULL
-      )
-      SELECT 
-        node_id,
-        name,
-        file_path,
-        node_type,
-        cosine_similarity,
-        cosine_similarity as combined_similarity
-      FROM similarities
-      ORDER BY cosine_similarity DESC
-      LIMIT $3
-      """,
-      [codebase_id, query_node_id, top_k]
-    )
-    |> Map.get(:rows)
-    |> Enum.map(fn [node_id, name, file_path, node_type, cosine_similarity, combined_similarity] ->
-      %{
-        node_id: node_id,
-        name: name,
-        file_path: file_path,
-        node_type: node_type,
-        cosine_similarity: cosine_similarity,
-        combined_similarity: combined_similarity
-      }
-    end)
+  def find_similar_nodes(_db_conn, codebase_id, query_node_id, top_k \\ 10) do
+    Singularity.CodeSearch.Ecto.find_similar_nodes(codebase_id, query_node_id, top_k)
   end
 
   @doc """
   Search across multiple codebases using vector similarity
   """
-  def multi_codebase_search(db_conn, codebase_ids, query_vector, limit \\ 10) do
-    # Convert codebase_ids list to SQL IN clause
-    placeholders = Enum.map(1..length(codebase_ids), fn i -> "$#{i}" end) |> Enum.join(",")
-
-    Postgrex.query!(
-      db_conn,
-      """
-      SELECT 
-        codebase_id,
-        path,
-        language,
-        file_type,
-        quality_score,
-        maintainability_index,
-        vector_embedding <-> $#{length(codebase_ids) + 1} as distance,
-        1 - (vector_embedding <-> $#{length(codebase_ids) + 1}) as similarity_score
-      FROM codebase_metadata 
-      WHERE codebase_id IN (#{placeholders}) AND vector_embedding IS NOT NULL
-      ORDER BY vector_embedding <-> $#{length(codebase_ids) + 1}
-      LIMIT $#{length(codebase_ids) + 2}
-      """,
-      codebase_ids ++ [query_vector, limit]
-    )
-    |> Map.get(:rows)
-    |> Enum.map(fn [
-                     codebase_id,
-                     path,
-                     language,
-                     file_type,
-                     quality_score,
-                     maintainability_index,
-                     _distance,
-                     similarity_score
-                   ] ->
-      %{
-        codebase_id: codebase_id,
-        path: path,
-        language: language,
-        file_type: file_type,
-        quality_score: quality_score,
-        maintainability_index: maintainability_index,
-        similarity_score: similarity_score
-      }
-    end)
+  def multi_codebase_search(_db_conn, codebase_ids, query_vector, limit \\ 10) do
+    Singularity.CodeSearch.Ecto.multi_codebase_search(codebase_ids, query_vector, limit)
   end
 
   @doc """
-  Get graph dependencies (outgoing edges)
+  Get graph dependencies (outgoing edges) (converted to Ecto)
   """
-  def get_dependencies(db_conn, node_id) do
-    Postgrex.query!(
-      db_conn,
-      """
-      SELECT 
-        gn.node_id,
-        gn.name,
-        gn.file_path,
-        gn.node_type,
-        ge.edge_type,
-        ge.weight
-      FROM graph_edges ge
-      JOIN graph_nodes gn ON ge.to_node_id = gn.node_id
-      WHERE ge.from_node_id = $1
-      ORDER BY ge.weight DESC
-      """,
-      [node_id]
-    )
-    |> Map.get(:rows)
-    |> Enum.map(fn [node_id, name, file_path, node_type, edge_type, weight] ->
-      %{
-        node_id: node_id,
-        name: name,
-        file_path: file_path,
-        node_type: node_type,
-        edge_type: edge_type,
-        weight: weight
-      }
-    end)
+  def get_dependencies(_db_conn, node_id) do
+    Singularity.CodeSearch.Ecto.get_dependencies(node_id)
   end
 
   @doc """
   Get graph dependents (incoming edges)
   """
-  def get_dependents(db_conn, node_id) do
-    Postgrex.query!(
-      db_conn,
-      """
-      SELECT 
-        gn.node_id,
-        gn.name,
-        gn.file_path,
-        gn.node_type,
-        ge.edge_type,
-        ge.weight
-      FROM graph_edges ge
-      JOIN graph_nodes gn ON ge.from_node_id = gn.node_id
-      WHERE ge.to_node_id = $1
-      ORDER BY ge.weight DESC
-      """,
-      [node_id]
-    )
-    |> Map.get(:rows)
-    |> Enum.map(fn [node_id, name, file_path, node_type, edge_type, weight] ->
-      %{
-        node_id: node_id,
-        name: name,
-        file_path: file_path,
-        node_type: node_type,
-        edge_type: edge_type,
-        weight: weight
-      }
-    end)
+  def get_dependents(_db_conn, node_id) do
+    Singularity.CodeSearch.Ecto.get_dependents(node_id)
   end
 
   @doc """
   Detect circular dependencies using recursive CTE
   """
-  def detect_circular_dependencies(db_conn) do
-    Postgrex.query!(
-      db_conn,
-      """
-      WITH RECURSIVE dependency_path AS (
-        -- Base case: all edges
-        SELECT 
-          from_node_id as start_node,
-          to_node_id as end_node,
-          from_node_id,
-          to_node_id,
-          edge_type,
-          weight,
-          1 as depth,
-          ARRAY[from_node_id, to_node_id] as path
-        FROM graph_edges
-        
-        UNION ALL
-        
-        -- Recursive case: extend paths
-        SELECT 
-          dp.start_node,
-          ge.to_node_id as end_node,
-          dp.from_node_id,
-          ge.to_node_id,
-          ge.edge_type,
-          ge.weight,
-          dp.depth + 1,
-          dp.path || ge.to_node_id
-        FROM dependency_path dp
-        JOIN graph_edges ge ON dp.to_node_id = ge.from_node_id
-        WHERE dp.depth < 10  -- Prevent infinite recursion
-          AND NOT ge.to_node_id = ANY(dp.path)  -- Prevent cycles in path
-      )
-      SELECT DISTINCT
-        start_node,
-        end_node,
-        path,
-        depth
-      FROM dependency_path
-      WHERE start_node = end_node  -- Circular dependency detected
-      ORDER BY depth
-      """,
-      []
-    )
-    |> Map.get(:rows)
-    |> Enum.map(fn [start_node, end_node, path, depth] ->
-      %{
-        start_node: start_node,
-        end_node: end_node,
-        path: path,
-        depth: depth
-      }
-    end)
+  def detect_circular_dependencies(_db_conn) do
+    Singularity.CodeSearch.Ecto.detect_circular_dependencies()
   end
 
   @doc """
