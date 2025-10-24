@@ -340,9 +340,40 @@ defmodule Singularity.NATS.JetStreamBootstrap do
   def stream_info(stream_name) when is_binary(stream_name) do
     Logger.debug("Getting stream info: #{stream_name}")
 
-    # TODO: Implement via NATS client JetStream API
-    # For now, return not found (allows graceful fallback)
-    {:error, :not_found}
+    try do
+      case get_jetstream_connection() do
+        {:ok, conn} ->
+          # Use Gnat to query JetStream stream info
+          case Gnat.request(conn, "$JS.API.STREAM.INFO.#{stream_name}", "", timeout: 5000) do
+            {:ok, message} ->
+              case Jason.decode(message.body) do
+                {:ok, %{"stream" => info}} ->
+                  {:ok, format_stream_info(info)}
+
+                {:ok, %{"error" => error}} ->
+                  Logger.warning("Stream not found: #{stream_name} - #{error["description"]}")
+                  {:error, :not_found}
+
+                {:error, _} ->
+                  {:error, :invalid_response}
+              end
+
+            {:error, _timeout} ->
+              {:error, :timeout}
+
+            {:error, reason} ->
+              Logger.warning("Failed to get stream info: #{inspect(reason)}")
+              {:error, reason}
+          end
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    rescue
+      e ->
+        Logger.error("Stream info error: #{inspect(e)}")
+        {:error, :error}
+    end
   end
 
   @doc """
@@ -361,8 +392,48 @@ defmodule Singularity.NATS.JetStreamBootstrap do
       when is_binary(stream_name) and is_binary(consumer_name) do
     Logger.debug("Getting consumer info: #{stream_name}/#{consumer_name}")
 
-    # TODO: Implement via NATS client JetStream API
-    {:error, :not_found}
+    try do
+      case get_jetstream_connection() do
+        {:ok, conn} ->
+          # Use Gnat to query JetStream consumer info
+          api_subject = "$JS.API.CONSUMER.INFO.#{stream_name}.#{consumer_name}"
+
+          case Gnat.request(conn, api_subject, "", timeout: 5000) do
+            {:ok, message} ->
+              case Jason.decode(message.body) do
+                {:ok, %{"consumerInfo" => info}} ->
+                  {:ok, format_consumer_info(info)}
+
+                {:ok, %{"error" => error}} ->
+                  Logger.warning(
+                    "Consumer not found: #{stream_name}/#{consumer_name} - #{error["description"]}"
+                  )
+
+                  {:error, :not_found}
+
+                {:error, _} ->
+                  {:error, :invalid_response}
+              end
+
+            {:error, _timeout} ->
+              {:error, :timeout}
+
+            {:error, reason} ->
+              Logger.warning(
+                "Failed to get consumer info: #{stream_name}/#{consumer_name} - #{inspect(reason)}"
+              )
+
+              {:error, reason}
+          end
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    rescue
+      e ->
+        Logger.error("Consumer info error: #{inspect(e)}")
+        {:error, :error}
+    end
   end
 
   @doc """
@@ -377,8 +448,40 @@ defmodule Singularity.NATS.JetStreamBootstrap do
   def list_streams do
     Logger.debug("Listing JetStream streams")
 
-    # TODO: Implement via NATS client JetStream API
-    {:error, :not_available}
+    try do
+      case get_jetstream_connection() do
+        {:ok, conn} ->
+          # Use Gnat to list JetStream streams
+          case Gnat.request(conn, "$JS.API.STREAM.NAMES", "", timeout: 5000) do
+            {:ok, message} ->
+              case Jason.decode(message.body) do
+                {:ok, %{"streams" => streams}} ->
+                  {:ok, streams}
+
+                {:ok, %{"error" => error}} ->
+                  Logger.warning("Failed to list streams - #{error["description"]}")
+                  {:error, :list_failed}
+
+                {:error, _} ->
+                  {:error, :invalid_response}
+              end
+
+            {:error, _timeout} ->
+              {:error, :timeout}
+
+            {:error, reason} ->
+              Logger.warning("Failed to list streams: #{inspect(reason)}")
+              {:error, reason}
+          end
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    rescue
+      e ->
+        Logger.error("List streams error: #{inspect(e)}")
+        {:error, :error}
+    end
   end
 
   # ============================================================================
@@ -458,5 +561,54 @@ defmodule Singularity.NATS.JetStreamBootstrap do
         _ -> nil
       end
     end)
+  end
+
+  # ============================================================================
+  # JetStream Connection & Helper Functions
+  # ============================================================================
+
+  @doc """
+  Get active JetStream connection from NATS.Client.
+
+  Returns connection that can be used with Gnat for JetStream operations.
+  """
+  defp get_jetstream_connection do
+    if Singularity.NATS.Client.connected?() do
+      case Singularity.NATS.Client.status() do
+        %{connection: conn} when not is_nil(conn) ->
+          {:ok, conn}
+
+        _ ->
+          {:error, :no_connection}
+      end
+    else
+      {:error, :not_connected}
+    end
+  end
+
+  defp format_stream_info(info) do
+    %{
+      name: Map.get(info, "config", %{}) |> Map.get("name"),
+      messages: Map.get(info, "state", %{}) |> Map.get("messages", 0),
+      bytes: Map.get(info, "state", %{}) |> Map.get("bytes", 0),
+      consumers: Map.get(info, "state", %{}) |> Map.get("consumer_count", 0),
+      created: Map.get(info, "created"),
+      first_seq: Map.get(info, "state", %{}) |> Map.get("first_seq", 0),
+      last_seq: Map.get(info, "state", %{}) |> Map.get("last_seq", 0)
+    }
+  end
+
+  defp format_consumer_info(info) do
+    state = Map.get(info, "state", %{})
+
+    %{
+      name: Map.get(info, "name"),
+      stream: Map.get(info, "stream_name"),
+      pending: Map.get(state, "num_pending", 0),
+      delivered: Map.get(state, "num_ack", 0),
+      redelivered: Map.get(state, "num_redelivered", 0),
+      created: Map.get(info, "created"),
+      push_bound: Map.get(info, "push_bound", false)
+    }
   end
 end
