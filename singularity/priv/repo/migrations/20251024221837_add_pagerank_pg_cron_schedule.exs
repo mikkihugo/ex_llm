@@ -82,6 +82,22 @@ defmodule Singularity.Repo.Migrations.AddPageRankPgCronSchedule do
     $$ LANGUAGE plpgsql;
     """)
 
+    # Create function to refresh materialized view (called after PageRank calculation)
+    execute("""
+    CREATE OR REPLACE FUNCTION refresh_importance_tiers()
+    RETURNS void AS $$
+    BEGIN
+      -- Refresh materialized view without blocking queries
+      -- CONCURRENTLY allows old data to be read during refresh
+      REFRESH MATERIALIZED VIEW CONCURRENTLY module_importance_tiers;
+      RAISE NOTICE 'Refreshed module_importance_tiers view at %', now();
+    EXCEPTION WHEN OTHERS THEN
+      -- If view doesn't exist yet (first run before migration), silently continue
+      RAISE NOTICE 'module_importance_tiers view refresh skipped (may not exist yet)';
+    END;
+    $$ LANGUAGE plpgsql;
+    """)
+
     # Schedule the job to run daily at 4:00 AM UTC
     execute("""
     SELECT cron.schedule(
