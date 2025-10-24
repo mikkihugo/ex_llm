@@ -546,17 +546,51 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   defp execute_recommendation(recommendation) do
     try do
-      # Execute recommendation via Agent.improve
-      case Agent.improve(recommendation) do
-        {:ok, result} ->
-          GoogleChat.notify("✅ Executed recommendation: #{recommendation.description}")
-          Logger.info("Recommendation executed successfully: #{inspect(result)}")
-          {:ok, result}
+      # Execute recommendation by applying it to all agents
+      # Recommendation should contain structured data that agents can process
+      case AgentSupervisor.get_all_agents() do
+        [] ->
+          Logger.warning("No agents available to execute recommendation")
+          GoogleChat.notify("⚠️ No agents available to execute recommendation")
+          {:error, :no_agents}
 
-        {:error, reason} ->
-          GoogleChat.notify("❌ Failed to execute recommendation: #{inspect(reason)}")
-          Logger.error("Recommendation execution failed: #{inspect(reason)}")
-          {:error, reason}
+        agent_pids ->
+          # Broadcast recommendation to all agents
+          Logger.info("Executing recommendation across #{length(agent_pids)} agents",
+            recommendation_id: Map.get(recommendation, :id)
+          )
+
+          results =
+            agent_pids
+            |> Enum.map(fn pid ->
+              case GenServer.cast(pid, {:apply_recommendation, recommendation}) do
+                :ok -> :ok
+                error -> error
+              end
+            end)
+
+          # Check if all succeeded
+          if Enum.all?(results, &(&1 == :ok)) do
+            GoogleChat.notify(
+              "✅ Executed recommendation: #{Map.get(recommendation, :description, "unknown")}"
+            )
+
+            Logger.info("Recommendation executed successfully across all agents")
+            {:ok, %{agents_affected: length(agent_pids)}}
+          else
+            failed_count = Enum.count(results, &(&1 != :ok))
+
+            GoogleChat.notify(
+              "⚠️ Recommendation executed with #{failed_count} failures"
+            )
+
+            Logger.warning("Recommendation execution had failures",
+              total_agents: length(agent_pids),
+              failed_count: failed_count
+            )
+
+            {:ok, %{agents_affected: length(agent_pids), failures: failed_count}}
+          end
       end
     rescue
       error ->

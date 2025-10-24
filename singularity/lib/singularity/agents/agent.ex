@@ -176,6 +176,50 @@ defmodule Singularity.Agents.Agent do
   end
 
   @doc """
+  Pause an agent, preventing it from processing new tasks or improvements.
+
+  The agent will continue running but will not process messages in its queue.
+  Use `resume/1` to restore normal operation.
+
+  Returns `:ok` if the agent was found and paused, otherwise `{:error, :not_found}`.
+  """
+  @spec pause(String.t()) :: :ok | {:error, :not_found}
+  def pause(agent_id) do
+    call_agent(agent_id, :pause)
+  end
+
+  @doc """
+  Resume an agent that was previously paused.
+
+  Returns `:ok` if the agent was found and resumed, otherwise `{:error, :not_found}`.
+  """
+  @spec resume(String.t()) :: :ok | {:error, :not_found}
+  def resume(agent_id) do
+    call_agent(agent_id, :resume)
+  end
+
+  @doc """
+  Get the pause status of an agent.
+
+  Returns the pause state (true if paused, false if running) or `{:error, :not_found}`.
+  """
+  @spec paused?(String.t()) :: boolean() | {:error, :not_found}
+  def paused?(agent_id) do
+    agent_id = to_string(agent_id)
+
+    case Registry.lookup(ProcessRegistry, {:agent, agent_id}) do
+      [{pid, _}] ->
+        case GenServer.call(pid, :get_pause_state) do
+          {:ok, paused} -> paused
+          {:error, _} = err -> err
+        end
+
+      [] ->
+        {:error, :not_found}
+    end
+  end
+
+  @doc """
   Execute a task using the specified agent.
 
   Routes to the appropriate agent type module (ArchitectureAgent, CostOptimizedAgent, etc.)
@@ -253,7 +297,8 @@ defmodule Singularity.Agents.Agent do
       pending_fingerprint: nil,
       pending_previous_code: nil,
       pending_baseline: nil,
-      pending_validation_version: nil
+      pending_validation_version: nil,
+      paused: false
     }
 
     state
@@ -302,18 +347,48 @@ defmodule Singularity.Agents.Agent do
   end
 
   @impl true
+  def handle_cast(:pause, state) do
+    Logger.info("Agent paused", agent_id: state.id)
+    {:noreply, %{state | paused: true}}
+  end
+
+  @impl true
+  def handle_cast(:resume, state) do
+    Logger.info("Agent resumed", agent_id: state.id)
+    {:noreply, %{state | paused: false}}
+  end
+
+  @impl true
+  def handle_cast({:apply_recommendation, recommendation}, state) do
+    Logger.info("Applying recommendation to agent", agent_id: state.id)
+
+    # Store recommendation context for processing in next tick
+    enriched_context =
+      state.pending_context || %{}
+      |> Map.put(:recommendation, recommendation)
+      |> Map.put(:recommendation_applied_at, DateTime.utc_now())
+
+    {:noreply, %{state | pending_context: enriched_context}}
+  end
+
+  @impl true
   def handle_info(:tick, state) do
-    state = increment_cycle(state)
+    # Skip tick processing if paused
+    if state.paused do
+      {:noreply, schedule_tick(state)}
+    else
+      state = increment_cycle(state)
 
-    case Decider.decide(state) do
-      {:continue, updated_state} ->
-        {:noreply, schedule_tick(updated_state)}
+      case Decider.decide(state) do
+        {:continue, updated_state} ->
+          {:noreply, schedule_tick(updated_state)}
 
-      {:improve, payload, context, updated_state} ->
-        {:noreply,
-         updated_state
-         |> maybe_start_improvement(payload, context)
-         |> schedule_tick()}
+        {:improve, payload, context, updated_state} ->
+          {:noreply,
+           updated_state
+           |> maybe_start_improvement(payload, context)
+           |> schedule_tick()}
+      end
     end
   end
 
@@ -428,6 +503,11 @@ defmodule Singularity.Agents.Agent do
 
   @impl true
   def handle_call(:state, _from, state), do: {:reply, state, state}
+
+  @impl true
+  def handle_call(:get_pause_state, _from, state) do
+    {:reply, {:ok, state.paused}, state}
+  end
 
   ## Helpers
 

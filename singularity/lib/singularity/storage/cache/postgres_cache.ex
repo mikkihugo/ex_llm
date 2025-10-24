@@ -240,4 +240,21 @@ defmodule Singularity.Storage.Cache.PostgresCache do
       {:error, reason} -> {:error, reason}
     end
   end
+
+  @doc """
+  Prewarm the entire cache by refreshing hot packages view and loading into cache.
+
+  Called by CachePrewarmWorker every 6 hours.
+  Combines refresh_hot_packages and prewarm_hot_packages operations.
+
+  Returns `{:ok, count}` with number of cache entries prewarmed.
+  """
+  def prewarm_cache do
+    with :ok <- refresh_hot_packages(),
+         {:ok, count} <- prewarm_hot_packages() do
+      {:ok, count}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
 end
