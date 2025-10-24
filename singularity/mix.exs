@@ -9,15 +9,6 @@ defmodule Singularity.MixProject do
       version: project_version(),
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
-      # mix_gleam integration (disabled)
-      # archives: [mix_gleam: "~> 0.6.2"],
-      erlc_paths: [
-        "build/#{Mix.env()}/erlang/#{@app}/_gleam_artefacts",
-        # For Gleam < v0.25.0 (kept for compatibility)
-        "build/#{Mix.env()}/erlang/#{@app}/build"
-      ],
-      erlc_include_path: "build/#{Mix.env()}/erlang/#{@app}/include",
-      # compilers: [:gleam | Mix.compilers()],  # Gleam disabled
       compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       prune_code_paths: false,
@@ -50,7 +41,7 @@ defmodule Singularity.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test_helpers"]
+  defp elixirc_paths(:test), do: ["lib", "test_helpers", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp project_version do
@@ -161,10 +152,6 @@ defmodule Singularity.MixProject do
       {:ex_machina, "~> 2.7", only: :test},
       # Mocks
       {:mox, "~> 1.1", only: :test}
-
-      # Gleam integration
-      # {:mix_gleam, "~> 0.6", runtime: false},  # Gleam disabled
-      # {:gleam_stdlib, "~> 0.65", app: false, override: true}
     ]
   end
 

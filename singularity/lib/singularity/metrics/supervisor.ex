@@ -4,7 +4,7 @@ defmodule Singularity.Metrics.Supervisor do
 
   OTP supervisor for metrics-related processes:
   - QueryCache (GenServer) - ETS-backed caching with TTL
-  - AggregationJob (Oban Worker) - Periodic aggregation of events
+  - AggregationJob (Oban Worker) - Periodic aggregation of events (scheduled via Oban)
 
   ## Module Identity (JSON)
 
@@ -24,24 +24,22 @@ defmodule Singularity.Metrics.Supervisor do
      - Automatic TTL cleanup (5 second default)
      - Eliminates repeated database queries
 
-  2. **Metrics.AggregationJob** (Oban Worker)
-     - Hourly background job
-     - Aggregates metrics_events → metrics_aggregated
-     - Idempotent (safe to re-run)
-
   ## Restart Strategy
 
-  Uses `:one_for_one` because each child is independent:
-  - QueryCache failure doesn't require job restart (cache is optional, degrades gracefully)
-  - AggregationJob failure doesn't affect query cache
-  - Each restarts independently on failure
+  Uses `:one_for_one` because each child is independent.
+  QueryCache failure doesn't require restart of other services.
 
   ## Dependencies
 
   Depends on:
   - Repo - Database for Event and AggregatedData queries
   - EventCollector - Produces raw events for aggregation
-  - Oban - Background job queue
+  - Oban - Background job queue (AggregationJob scheduled via Oban, not supervised here)
+
+  ## Note on AggregationJob
+
+  AggregationJob is an Oban.Worker and is scheduled via Oban config, not added to this supervisor.
+  It runs as a background job when Oban is enabled.
   """
 
   use Supervisor
@@ -57,10 +55,9 @@ defmodule Singularity.Metrics.Supervisor do
 
     children = [
       # Query result cache (ETS with TTL)
-      {Singularity.Metrics.QueryCache, []},
+      {Singularity.Metrics.QueryCache, []}
 
-      # Hourly metrics aggregation job
-      Singularity.Metrics.AggregationJob
+      # Note: AggregationJob is an Oban worker, scheduled via Oban config, not supervised here
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

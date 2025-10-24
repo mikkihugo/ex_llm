@@ -84,6 +84,8 @@ config :singularity, Oban,
     training: [concurrency: 1, rate_limit: [allowed: 1, period: 60]],
     # Maintenance tasks (cache cleanup, pattern sync - up to 3 concurrent)
     maintenance: [concurrency: 3],
+    # Metrics aggregation tasks (hourly aggregation)
+    metrics: [concurrency: 1],
     # Default queue for general background work
     default: [concurrency: 10]
   ],
@@ -126,7 +128,7 @@ config :oban,
        {"0 9 * * 1", Singularity.Jobs.DeadCodeWeeklySummary}
      ]}
   ],
-  queues: [default: 10, ml_training: 5, pattern_mining: 3],
+  queues: [default: 10, ml_training: 5, pattern_mining: 3, metrics: 1],
   # Enable verbose logging for job execution
   verbose: true
 

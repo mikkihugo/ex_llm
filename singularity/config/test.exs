@@ -17,8 +17,13 @@ config :singularity, Singularity.Repo,
 
 # Test Oban Configuration
 # Run jobs inline for deterministic testing
+config :oban, testing: :inline
 config :singularity, Oban, testing: :inline
 
 # Test Quantum Configuration
 # Disable Quantum scheduler during tests to avoid side effects
 config :singularity, Singularity.Scheduler, debug: false
+
+# Test NATS Configuration
+# Disable NATS for unit tests to avoid connectivity requirements
+config :singularity, :nats, enabled: false
