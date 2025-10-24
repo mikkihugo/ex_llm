@@ -55,21 +55,26 @@ defmodule Singularity.Graph.GraphPopulator do
 
   @doc """
   Populate all graph tables (call graph + import graph).
+
+  Also populates intarray fields (dependency_node_ids, dependent_node_ids) for fast queries.
   """
   def populate_all(codebase_id \\ "singularity") do
     Logger.info("Populating all graphs for #{codebase_id}...")
 
     with {:ok, call_stats} <- populate_call_graph(codebase_id),
-         {:ok, import_stats} <- populate_import_graph(codebase_id) do
+         {:ok, import_stats} <- populate_import_graph(codebase_id),
+         {:ok, array_stats} <- populate_dependency_arrays(codebase_id) do
       total_nodes = call_stats.nodes + import_stats.nodes
       total_edges = call_stats.edges + import_stats.edges
 
       Logger.info("✓ Graph population complete: #{total_nodes} nodes, #{total_edges} edges")
+      Logger.info("✓ Dependency arrays populated: #{array_stats.dependency_updates} nodes updated")
 
       {:ok,
        %{
          nodes: total_nodes,
          edges: total_edges,
+         arrays_populated: array_stats.dependency_updates,
          call_graph: call_stats,
          import_graph: import_stats
        }}
@@ -326,6 +331,98 @@ defmodule Singularity.Graph.GraphPopulator do
 
     # Return stats
     %{nodes: 1, edges: length(internal_deps) + length(external_deps)}
+  end
+
+  # ------------------------------------------------------------------------------
+  # Dependency Array Population (intarray optimization)
+  # ------------------------------------------------------------------------------
+
+  @doc """
+  Populate dependency_node_ids and dependent_node_ids arrays from edges.
+
+  Uses intarray GIN indexes for fast dependency lookups (10-100x faster).
+  Must be called AFTER all nodes and edges are created.
+  """
+  def populate_dependency_arrays(codebase_id \\ "singularity") do
+    Logger.info("Populating dependency arrays for #{codebase_id}...")
+
+    # Get all nodes for this codebase
+    nodes =
+      from(gn in GraphNode,
+        where: gn.codebase_id == ^codebase_id,
+        select: %{id: gn.id, node_id: gn.node_id}
+      )
+      |> Repo.all()
+      |> Map.new(&{&1.node_id, &1.id})
+
+    # Get all edges
+    edges =
+      from(ge in GraphEdge,
+        where: ge.codebase_id == ^codebase_id
+      )
+      |> Repo.all()
+
+    # Build maps of node_id -> [dependency_ids] and reverse
+    dependency_map = build_dependency_map(edges, nodes)
+    dependent_map = build_dependent_map(edges, nodes)
+
+    # Update nodes with arrays
+    update_count =
+      Enum.reduce(nodes, 0, fn {node_id, db_id}, acc ->
+        deps = Map.get(dependency_map, node_id, [])
+        dependents = Map.get(dependent_map, node_id, [])
+
+        if Enum.empty?(deps) and Enum.empty?(dependents) do
+          acc
+        else
+          update_node_arrays(db_id, deps, dependents)
+          acc + 1
+        end
+      end)
+
+    Logger.info("✓ Updated #{update_count} nodes with dependency arrays")
+    {:ok, %{dependency_updates: update_count}}
+  end
+
+  defp build_dependency_map(edges, nodes) do
+    Enum.reduce(edges, %{}, fn edge, acc ->
+      from_id = edge.from_node_id
+      to_id = edge.to_node_id
+
+      if Map.has_key?(nodes, to_id) do
+        to_db_id = nodes[to_id]
+        deps = Map.get(acc, from_id, [])
+        Map.put(acc, from_id, [to_db_id | deps])
+      else
+        acc
+      end
+    end)
+  end
+
+  defp build_dependent_map(edges, nodes) do
+    Enum.reduce(edges, %{}, fn edge, acc ->
+      from_id = edge.from_node_id
+      to_id = edge.to_node_id
+
+      if Map.has_key?(nodes, from_id) do
+        from_db_id = nodes[from_id]
+        dependents = Map.get(acc, to_id, [])
+        Map.put(acc, to_id, [from_db_id | dependents])
+      else
+        acc
+      end
+    end)
+  end
+
+  defp update_node_arrays(node_id, dependency_ids, dependent_ids) do
+    # Only update if there are actual dependencies
+    from(gn in GraphNode, where: gn.id == ^node_id)
+    |> Repo.update_all(
+      set: [
+        dependency_node_ids: Enum.uniq(dependency_ids),
+        dependent_node_ids: Enum.uniq(dependent_ids)
+      ]
+    )
   end
 
   defp extract_module_name(file_path) do

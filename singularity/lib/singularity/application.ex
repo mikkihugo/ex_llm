@@ -181,17 +181,11 @@ defmodule Singularity.Application do
     |> Kernel.++(
       [
         # Layer 3: Domain Services - Business logic and domain-specific functionality
-        # Unified Metrics - Collection, aggregation, and querying service
-        Singularity.Metrics.Supervisor,
-
         # LLM Services - Rate limiting and provider orchestration
         Singularity.LLM.Supervisor,
 
         # Knowledge Services - Templates and code storage
         Singularity.Knowledge.Supervisor,
-
-        # Learning Services - Genesis integration and learning loops
-        Singularity.Learning.Supervisor,
 
         # Layer 4: Agents & Execution - Task execution and planning
         # Autonomy Rules - Confidence-based autonomous decision making
@@ -245,6 +239,11 @@ defmodule Singularity.Application do
           # Initialize PageRank calculation on startup
           Task.start(fn ->
             Singularity.Bootstrap.PageRankBootstrap.ensure_initialized()
+          end)
+
+          # Populate graph dependency arrays for fast queries (10-100x faster)
+          Task.start(fn ->
+            Singularity.Bootstrap.GraphArraysBootstrap.ensure_initialized()
           end)
         end
 

@@ -212,10 +212,10 @@
         ];
 
         getDataServices = env: lib.optionals (lib.elem "postgresql" env.services) [
-          # PostgreSQL 16 with extensions for search, time-series, and spatial queries
+          # PostgreSQL 17 with extensions for search, time-series, spatial, and graph queries
           # Built-in extensions (from PostgreSQL): ltree, hstore, pg_trgm, uuid-ossp, fuzzystrmatch, etc
           # Nix-packaged extensions below:
-          (pkgs.postgresql_16.withPackages (ps:
+          (pkgs.postgresql_17.withPackages (ps:
             [
               # Search & Vectors
               ps.pgvector      # Vector embeddings for semantic search (2560-dim)
@@ -225,6 +225,9 @@
 
               # Time Series
               ps.timescaledb   # TimescaleDB 2.22 - time-series optimization
+
+              # Graph Database
+              ps.age           # Apache AGE - graph database extension (supported on PG17)
 
               # Testing
               ps.pgtap         # PostgreSQL TAP testing framework
