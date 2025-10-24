@@ -1,4 +1,4 @@
-defmodule Singularity.Quality.Run do
+defmodule Singularity.Schemas.Analysis.Run do
   @moduledoc """
   Ecto schema representing a single quality tool execution (Sobelow, mix_audit, etc.).
   """
@@ -6,7 +6,7 @@ defmodule Singularity.Quality.Run do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Singularity.Quality.Finding
+  alias Singularity.Schemas.Analysis.Finding
 
   @type tool :: :sobelow | :mix_audit | :dialyzer | :custom
   @type status :: :ok | :warning | :error

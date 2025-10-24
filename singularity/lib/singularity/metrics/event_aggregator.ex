@@ -72,8 +72,8 @@ defmodule Singularity.Metrics.EventAggregator do
   require Logger
   import Ecto.Query
 
-  alias Singularity.Metrics.Event
-  alias Singularity.Metrics.AggregatedData
+  alias Singularity.Schemas.Monitoring.Event
+  alias Singularity.Schemas.Monitoring.AggregatedData
   alias Singularity.Repo
 
   @doc """

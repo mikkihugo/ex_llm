@@ -57,7 +57,7 @@ defmodule Singularity.Metrics.EventCollector do
   """
 
   require Logger
-  alias Singularity.Metrics.Event
+  alias Singularity.Schemas.Monitoring.Event
   alias Singularity.Repo
 
   @doc """

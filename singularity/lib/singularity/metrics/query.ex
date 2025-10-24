@@ -69,7 +69,7 @@ defmodule Singularity.Metrics.Query do
   require Logger
   import Ecto.Query
 
-  alias Singularity.Metrics.AggregatedData
+  alias Singularity.Schemas.Monitoring.AggregatedData
   alias Singularity.Repo
 
   @cache_ttl_ms 5000  # Cache results for 5 seconds

@@ -1,4 +1,4 @@
-defmodule Singularity.Tools.Tool do
+defmodule Singularity.Schemas.Tools.Tool do
   @moduledoc """
   Defines a callable tool, including metadata, parameter schema, and execution function.
 
@@ -36,7 +36,7 @@ defmodule Singularity.Tools.Tool do
   import Ecto.Changeset
   require Logger
 
-  alias Singularity.Tools.ToolParam
+  alias Singularity.Schemas.Tools.ToolParam
 
   @primary_key false
   embedded_schema do

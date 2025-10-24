@@ -1,4 +1,4 @@
-defmodule Singularity.Quality.Finding do
+defmodule Singularity.Schemas.Analysis.Finding do
   @moduledoc """
   Individual finding emitted by a quality tool run (e.g. a Sobelow warning).
   """
@@ -6,7 +6,7 @@ defmodule Singularity.Quality.Finding do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Singularity.Quality.Run
+  alias Singularity.Schemas.Analysis.Run
 
   schema "quality_findings" do
     belongs_to(:run, Run)

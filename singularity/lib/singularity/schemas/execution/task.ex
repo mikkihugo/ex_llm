@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Planning.Task do
+defmodule Singularity.Schemas.Execution.Task do
   @moduledoc """
   Task - Represents a work item for code generation or modification.
 

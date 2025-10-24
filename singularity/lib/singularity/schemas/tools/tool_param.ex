@@ -1,4 +1,4 @@
-defmodule Singularity.Tools.ToolParam do
+defmodule Singularity.Schemas.Tools.ToolParam do
   @moduledoc """
   Defines the schema for tool parameters and converts them into JSON Schema maps.
   """
