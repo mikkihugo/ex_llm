@@ -30,6 +30,10 @@ use tree_sitter::{Language, Parser};
 // Singularity rust-code-analysis for comprehensive complexity metrics
 use singularity_code_analysis as rca;
 
+// Module declarations
+mod dependency_analyzer;
+pub use dependency_analyzer::{Dependency, Framework, DependencyAnalyzer, DependencyAnalysisResult};
+
 /// Universal parser framework configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PolyglotCodeParserFrameworkConfig {
@@ -165,6 +169,19 @@ pub struct DependencyAnalysis {
     pub total_dependencies: u64,
     pub outdated_dependencies: Vec<String>,
     pub security_vulnerabilities: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frameworks: Option<Vec<FrameworkInfo>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub manifest_file: Option<String>,
+}
+
+/// Framework information detected from dependencies
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FrameworkInfo {
+    pub name: String,
+    pub version: Option<String>,
+    pub framework_type: String,
+    pub confidence: f32,
 }
 
 /// Universal parser framework with production-grade caching
@@ -462,15 +479,56 @@ impl PolyglotCodeParser {
         })
     }
 
-    /// Analyze dependencies
-    fn analyze_dependencies(&self, _file_path: &Path) -> Result<DependencyAnalysis> {
-        // TODO: Implement dependency analysis
+    /// Analyze dependencies from manifest files (Cargo.toml, package.json, mix.exs, etc.)
+    fn analyze_dependencies(&self, file_path: &Path) -> Result<DependencyAnalysis> {
+        // Get the project root (parent directory of the file being analyzed)
+        let project_root = file_path
+            .parent()
+            .unwrap_or_else(|| Path::new("."));
+
+        // Use DependencyAnalyzer to extract dependencies and frameworks
+        let analysis_result = DependencyAnalyzer::analyze(project_root)?;
+
+        // Separate dev and regular dependencies, convert to string names
+        let mut dependencies = Vec::new();
+        let mut dev_dependencies = Vec::new();
+
+        for dep in &analysis_result.dependencies {
+            if dep.is_dev {
+                dev_dependencies.push(format!("{}@{}", dep.name, dep.version));
+            } else {
+                dependencies.push(format!("{}@{}", dep.name, dep.version));
+            }
+        }
+
+        let total_dependencies = (dependencies.len() + dev_dependencies.len()) as u64;
+
+        // Convert Framework structs to FrameworkInfo
+        let frameworks = if !analysis_result.frameworks.is_empty() {
+            Some(
+                analysis_result
+                    .frameworks
+                    .into_iter()
+                    .map(|f| FrameworkInfo {
+                        name: f.name,
+                        version: f.version,
+                        framework_type: f.framework_type,
+                        confidence: f.confidence,
+                    })
+                    .collect(),
+            )
+        } else {
+            None
+        };
+
         Ok(DependencyAnalysis {
-            dependencies: vec![],
-            dev_dependencies: vec![],
-            total_dependencies: 0,
+            dependencies,
+            dev_dependencies,
+            total_dependencies,
             outdated_dependencies: vec![],
             security_vulnerabilities: vec![],
+            frameworks,
+            manifest_file: analysis_result.manifest_found,
         })
     }
 

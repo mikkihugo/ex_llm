@@ -16,7 +16,7 @@ use parser_core::{
     AnalysisResult as CoreAnalysisResult, ClassInfo as CoreClassInfo,
     CodeMetrics as CoreCodeMetrics, DependencyAnalysis as CoreDependencyAnalysis,
     FunctionInfo as CoreFunctionInfo, RcaMetrics as CoreRcaMetrics,
-    TreeSitterAnalysis as CoreTreeSitterAnalysis,
+    TreeSitterAnalysis as CoreTreeSitterAnalysis, FrameworkInfo as CoreFrameworkInfo,
 };
 
 // NIF-specific wrappers with rustler::NifStruct
@@ -96,6 +96,17 @@ pub struct DependencyAnalysis {
     pub total_dependencies: u64,
     pub outdated_dependencies: Vec<String>,
     pub security_vulnerabilities: Vec<String>,
+    pub frameworks: Option<Vec<FrameworkInfo>>,
+    pub manifest_file: Option<String>,
+}
+
+#[derive(Debug, Clone, rustler::NifStruct)]
+#[module = "ParserCode.FrameworkInfo"]
+pub struct FrameworkInfo {
+    pub name: String,
+    pub version: Option<String>,
+    pub framework_type: String,
+    pub confidence: f32,
 }
 
 // Conversion functions from parser_core types to NIF types
@@ -165,6 +176,17 @@ impl From<CoreTreeSitterAnalysis> for TreeSitterAnalysis {
     }
 }
 
+impl From<CoreFrameworkInfo> for FrameworkInfo {
+    fn from(core: CoreFrameworkInfo) -> Self {
+        Self {
+            name: core.name,
+            version: core.version,
+            framework_type: core.framework_type,
+            confidence: core.confidence,
+        }
+    }
+}
+
 impl From<CoreDependencyAnalysis> for DependencyAnalysis {
     fn from(core: CoreDependencyAnalysis) -> Self {
         Self {
@@ -173,6 +195,10 @@ impl From<CoreDependencyAnalysis> for DependencyAnalysis {
             total_dependencies: core.total_dependencies,
             outdated_dependencies: core.outdated_dependencies,
             security_vulnerabilities: core.security_vulnerabilities,
+            frameworks: core.frameworks.map(|frameworks| {
+                frameworks.into_iter().map(|f| f.into()).collect()
+            }),
+            manifest_file: core.manifest_file,
         }
     }
 }

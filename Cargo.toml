@@ -151,6 +151,3 @@ criterion = "0.7.0"
 # Rustler (for NIFs)
 rustler = "0.37.0"
 
-
-[workspace]
-
