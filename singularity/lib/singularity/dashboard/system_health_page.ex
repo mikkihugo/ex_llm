@@ -50,7 +50,7 @@ defmodule Singularity.Dashboard.SystemHealthPage do
   alias Singularity.Search.SearchAnalytics
   alias Singularity.Knowledge.LearningLoop
   alias Singularity.Agents.RemediationEngine
-  alias Singularity.Detection.TechnologyAgent
+  alias Singularity.TechnologyAgent
 
   @impl true
   def menu_link(_, _) do

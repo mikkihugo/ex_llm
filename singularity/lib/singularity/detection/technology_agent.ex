@@ -106,7 +106,7 @@ defmodule Singularity.TechnologyAgent do
 
   require Logger
 
-  alias Singularity.Detection.FrameworkDetector
+  alias Singularity.Architecture.Detectors.FrameworkDetector
   alias Singularity.TechnologyTemplateLoader
   alias Singularity.Storage.Store
   alias Singularity.Knowledge.ArtifactStore

@@ -217,6 +217,21 @@ config :singularity, :scanner_types,
 # 4. GenerationOrchestrator will automatically discover and use it
 
 config :singularity, :generator_types,
+  code_generator: %{
+    module: Singularity.CodeGeneration.Generators.CodeGeneratorImpl,
+    enabled: true,
+    description: "Generate code with RAG + Quality + Strategy selection (T5 local vs LLM API)"
+  },
+  rag: %{
+    module: Singularity.CodeGeneration.Generators.RAGGeneratorImpl,
+    enabled: true,
+    description: "Generate code using Retrieval-Augmented Generation (RAG) from your codebase"
+  },
+  generator_engine: %{
+    module: Singularity.CodeGeneration.Generators.GeneratorEngineImpl,
+    enabled: true,
+    description: "Generate code using Rust NIF-backed engine with intelligent naming"
+  },
   quality: %{
     module: Singularity.CodeGeneration.Generators.QualityGenerator,
     enabled: true,

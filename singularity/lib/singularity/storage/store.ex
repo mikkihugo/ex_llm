@@ -94,10 +94,10 @@ defmodule Singularity.Store do
 
   ### Before (Scattered)
       alias Singularity.Engine.CodebaseStore
-      alias Singularity.CodeStore  
+      alias Singularity.CodeStore
       alias Singularity.Knowledge.ArtifactStore
       alias Singularity.TechnologyTemplateStore
-      alias Singularity.Detection.FrameworkPatternStore
+      alias Singularity.ArchitectureEngine.FrameworkPatternStore
       alias Singularity.Git.GitStateStore
       
       CodebaseStore.all_services()

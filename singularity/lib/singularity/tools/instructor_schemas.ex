@@ -40,7 +40,9 @@ defmodule Singularity.Tools.InstructorSchemas do
   - ✅ DO include range/regex validation where applicable
   """
 
-  use Instructor.Schema
+  # Note: Instructor.Schema would be used here with the actual Instructor hex package
+  # For now, using Ecto.Schema as the validation foundation
+  # # use Instructor.Schema (requires hex dependency)
 
   @doc """
   Schema for generated code with quality validation.
@@ -52,15 +54,55 @@ defmodule Singularity.Tools.InstructorSchemas do
   - Includes error handling
   """
   defmodule GeneratedCode do
-    use Instructor.Schema
+    # use Instructor.Schema (requires hex dependency)
+    use Ecto.Schema
+    import Ecto.Changeset
 
-    field :code, :string, llm_doc: "The generated source code"
-    field :language, :string, llm_doc: "Programming language (elixir, rust, typescript, python)"
-    field :quality_level, :string, llm_doc: "Quality level: production, prototype, or quick"
-    field :has_docs, :boolean, llm_doc: "Code includes documentation/comments"
-    field :has_tests, :boolean, llm_doc: "Code includes test cases"
-    field :has_error_handling, :boolean, llm_doc: "Code handles errors appropriately"
-    field :estimated_lines, :integer, llm_doc: "Approximate number of code lines"
+    embedded_schema do
+      field :code, :string
+      field :language, :string
+      field :quality_level, :string
+      field :has_docs, :boolean
+      field :has_tests, :boolean
+      field :has_error_handling, :boolean
+      field :estimated_lines, :integer
+    end
+
+    # Documentation fields would be in comments since Instructor not available
+    @doc """
+    The generated source code
+    """
+    @code_doc "The generated source code"
+
+    @doc """
+    Programming language (elixir, rust, typescript, python)
+    """
+    @language_doc "Programming language (elixir, rust, typescript, python)"
+
+    @doc """
+    Quality level: production, prototype, or quick
+    """
+    @quality_level_doc "Quality level: production, prototype, or quick"
+
+    @doc """
+    Code includes documentation/comments
+    """
+    @has_docs_doc "Code includes documentation/comments"
+
+    @doc """
+    Code includes test cases
+    """
+    @has_tests_doc "Code includes test cases"
+
+    @doc """
+    Code handles errors appropriately
+    """
+    @has_error_handling_doc "Code handles errors appropriately"
+
+    @doc """
+    Approximate number of code lines
+    """
+    @estimated_lines_doc "Approximate number of code lines"
 
     def validate_changeset(changeset) do
       changeset
@@ -107,12 +149,16 @@ defmodule Singularity.Tools.InstructorSchemas do
   Ensures all required parameters are present and have valid types.
   """
   defmodule ToolParameters do
-    use Instructor.Schema
+    # use Instructor.Schema (requires hex dependency)
+    use Ecto.Schema
+    import Ecto.Changeset
 
-    field :tool_name, :string, llm_doc: "Name of the tool being called"
-    field :parameters, :map, llm_doc: "Map of parameter names to values"
-    field :valid, :boolean, llm_doc: "Whether all parameters are valid"
-    field :errors, {:array, :string}, llm_doc: "List of validation errors, if any"
+    embedded_schema do
+      field :tool_name, :string
+      field :parameters, :map
+      field :valid, :boolean
+      field :errors, {:array, :string}
+    end
 
     def validate_changeset(changeset) do
       changeset
@@ -141,12 +187,16 @@ defmodule Singularity.Tools.InstructorSchemas do
   Provides detailed feedback on code quality with specific improvements needed.
   """
   defmodule CodeQualityResult do
-    use Instructor.Schema
+    # use Instructor.Schema (requires hex dependency)
+    use Ecto.Schema
+    import Ecto.Changeset
 
-    field :score, :float, llm_doc: "Quality score from 0.0 to 1.0"
-    field :issues, {:array, :string}, llm_doc: "List of identified quality issues"
-    field :suggestions, {:array, :string}, llm_doc: "Suggestions for improvement"
-    field :passing, :boolean, llm_doc: "Whether code passes minimum quality threshold"
+    embedded_schema do
+      field :score, :float
+      field :issues, {:array, :string}
+      field :suggestions, {:array, :string}
+      field :passing, :boolean
+    end
 
     def validate_changeset(changeset) do
       changeset
@@ -174,12 +224,16 @@ defmodule Singularity.Tools.InstructorSchemas do
   Used when code needs improvement; guides the refinement process.
   """
   defmodule RefinementFeedback do
-    use Instructor.Schema
+    # use Instructor.Schema (requires hex dependency)
+    use Ecto.Schema
+    import Ecto.Changeset
 
-    field :focus_area, :string, llm_doc: "What to focus on: docs, tests, error_handling, or all"
-    field :specific_issues, {:array, :string}, llm_doc: "Exact issues to fix"
-    field :improvement_suggestions, {:array, :string}, llm_doc: "How to improve"
-    field :effort_estimate, :string, llm_doc: "Effort needed: quick, moderate, or extensive"
+    embedded_schema do
+      field :focus_area, :string
+      field :specific_issues, {:array, :string}
+      field :improvement_suggestions, {:array, :string}
+      field :effort_estimate, :string
+    end
 
     def validate_changeset(changeset) do
       changeset
@@ -207,13 +261,17 @@ defmodule Singularity.Tools.InstructorSchemas do
   Ensures code generation tasks are properly specified with context.
   """
   defmodule CodeGenerationTask do
-    use Instructor.Schema
+    # use Instructor.Schema (requires hex dependency)
+    use Ecto.Schema
+    import Ecto.Changeset
 
-    field :task_description, :string, llm_doc: "What code to generate"
-    field :language, :string, llm_doc: "Target programming language"
-    field :quality_requirement, :string, llm_doc: "Quality level required: production, prototype, quick"
-    field :context, :string, llm_doc: "Additional context or constraints"
-    field :example_patterns, {:array, :string}, llm_doc: "Example code patterns to follow"
+    embedded_schema do
+      field :task_description, :string
+      field :language, :string
+      field :quality_requirement, :string
+      field :context, :string
+      field :example_patterns, {:array, :string}
+    end
 
     def validate_changeset(changeset) do
       changeset
@@ -239,13 +297,17 @@ defmodule Singularity.Tools.InstructorSchemas do
   When LLM output fails validation, captures what's wrong and how to fix it.
   """
   defmodule ValidationError do
-    use Instructor.Schema
+    # use Instructor.Schema (requires hex dependency)
+    use Ecto.Schema
+    import Ecto.Changeset
 
-    field :field_name, :string, llm_doc: "Which field failed validation"
-    field :current_value, :string, llm_doc: "The invalid value provided"
-    field :error_reason, :string, llm_doc: "Why the value is invalid"
-    field :expected_format, :string, llm_doc: "What format is expected"
-    field :correction_example, :string, llm_doc: "Example of a valid value"
+    embedded_schema do
+      field :field_name, :string
+      field :current_value, :string
+      field :error_reason, :string
+      field :expected_format, :string
+      field :correction_example, :string
+    end
 
     def validate_changeset(changeset) do
       changeset
