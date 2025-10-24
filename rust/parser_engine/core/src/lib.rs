@@ -313,35 +313,34 @@ impl PolyglotCodeParser {
         // See: https://github.com/tree-sitter/tree-sitter/tree/master/lib/binding_rust
 
         // BEAM Languages - Functional, immutable, built on BEAM VM
-        // Safety: tree_sitter_elixir::LANGUAGE is a stable FFI constant
-        self.language_cache.insert("elixir".to_string(), unsafe { tree_sitter_elixir::LANGUAGE.clone().into() });
-        self.language_cache.insert("erlang".to_string(), unsafe { tree_sitter_erlang::LANGUAGE.clone().into() });
-        self.language_cache.insert("gleam".to_string(), unsafe { tree_sitter_gleam::LANGUAGE.clone().into() });
+        self.language_cache.insert("elixir".to_string(), tree_sitter_elixir::LANGUAGE.clone().into());
+        self.language_cache.insert("erlang".to_string(), tree_sitter_erlang::LANGUAGE.clone().into());
+        self.language_cache.insert("gleam".to_string(), tree_sitter_gleam::LANGUAGE.clone().into());
 
         // Systems Programming Languages - For performance-critical code
-        self.language_cache.insert("rust".to_string(), unsafe { tree_sitter_rust::LANGUAGE.clone().into() });
-        self.language_cache.insert("c".to_string(), unsafe { tree_sitter_c::LANGUAGE.clone().into() });
-        self.language_cache.insert("cpp".to_string(), unsafe { tree_sitter_cpp::LANGUAGE.clone().into() });
+        self.language_cache.insert("rust".to_string(), tree_sitter_rust::LANGUAGE.clone().into());
+        self.language_cache.insert("c".to_string(), tree_sitter_c::LANGUAGE.clone().into());
+        self.language_cache.insert("cpp".to_string(), tree_sitter_cpp::LANGUAGE.clone().into());
 
         // Web Languages - Client & server-side JavaScript ecosystem
-        self.language_cache.insert("javascript".to_string(), unsafe { tree_sitter_javascript::LANGUAGE.clone().into() });
-        self.language_cache.insert("typescript".to_string(), unsafe { tree_sitter_typescript::LANGUAGE_TYPESCRIPT.clone().into() });
-        self.language_cache.insert("json".to_string(), unsafe { tree_sitter_json::LANGUAGE.clone().into() });
+        self.language_cache.insert("javascript".to_string(), tree_sitter_javascript::LANGUAGE.clone().into());
+        self.language_cache.insert("typescript".to_string(), tree_sitter_typescript::LANGUAGE_TYPESCRIPT.clone().into());
+        self.language_cache.insert("json".to_string(), tree_sitter_json::LANGUAGE.clone().into());
 
         // Dynamic Languages - Interpreted, flexible, rapid prototyping
-        self.language_cache.insert("python".to_string(), unsafe { tree_sitter_python::LANGUAGE.clone().into() });
-        self.language_cache.insert("lua".to_string(), unsafe { tree_sitter_lua::LANGUAGE.clone().into() });
-        self.language_cache.insert("bash".to_string(), unsafe { tree_sitter_bash::LANGUAGE.clone().into() });
+        self.language_cache.insert("python".to_string(), tree_sitter_python::LANGUAGE.clone().into());
+        self.language_cache.insert("lua".to_string(), tree_sitter_lua::LANGUAGE.clone().into());
+        self.language_cache.insert("bash".to_string(), tree_sitter_bash::LANGUAGE.clone().into());
 
         // Other Languages - Special purpose and ecosystem languages
-        self.language_cache.insert("go".to_string(), unsafe { tree_sitter_go::LANGUAGE.clone().into() });
-        self.language_cache.insert("java".to_string(), unsafe { tree_sitter_java::LANGUAGE.clone().into() });
-        self.language_cache.insert("csharp".to_string(), unsafe { tree_sitter_c_sharp::LANGUAGE.clone().into() });
-        self.language_cache.insert("yaml".to_string(), unsafe { tree_sitter_yaml::LANGUAGE.clone().into() });
-        self.language_cache.insert("sql".to_string(), unsafe { tree_sitter_sequel::LANGUAGE.clone().into() });
-        self.language_cache.insert("dockerfile".to_string(), unsafe { tree_sitter_dockerfile_updated::language() });
-        self.language_cache.insert("toml".to_string(), unsafe { tree_sitter_toml_ng::LANGUAGE.clone().into() });
-        self.language_cache.insert("markdown".to_string(), unsafe { tree_sitter_md::LANGUAGE.clone().into() });
+        self.language_cache.insert("go".to_string(), tree_sitter_go::LANGUAGE.clone().into());
+        self.language_cache.insert("java".to_string(), tree_sitter_java::LANGUAGE.clone().into());
+        self.language_cache.insert("csharp".to_string(), tree_sitter_c_sharp::LANGUAGE.clone().into());
+        self.language_cache.insert("yaml".to_string(), tree_sitter_yaml::LANGUAGE.clone().into());
+        self.language_cache.insert("sql".to_string(), tree_sitter_sequel::LANGUAGE.clone().into());
+        self.language_cache.insert("dockerfile".to_string(), tree_sitter_dockerfile_updated::language());
+        self.language_cache.insert("toml".to_string(), tree_sitter_toml_ng::LANGUAGE.clone().into());
+        self.language_cache.insert("markdown".to_string(), tree_sitter_md::LANGUAGE.clone().into());
 
         tracing::info!("Initialized {} tree-sitter language parsers", self.language_cache.len());
         Ok(())
