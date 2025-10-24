@@ -240,7 +240,7 @@ defmodule Centralcloud.FrameworkLearningAgent do
 
     Logger.info("Calling LLM for #{package.name}, request_id=#{request_id}")
 
-    case NatsClient.request("llm.request", %{
+    case NatsClient.request(CentralCloud.NatsRegistry.subject(:llm_request), %{
       request_id: request_id,
       complexity: "complex",
       type: "framework_discovery",

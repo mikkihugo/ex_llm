@@ -137,7 +137,7 @@ defmodule Centralcloud.FrameworkLearners.LLMDiscovery do
       samples_count: length(code_samples)
     )
 
-    case NatsClient.request("llm.request", %{
+    case NatsClient.request(CentralCloud.NatsRegistry.subject(:llm_request), %{
       request_id: request_id,
       complexity: "complex",
       type: "framework_discovery",

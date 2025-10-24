@@ -752,7 +752,7 @@ defmodule Singularity.GeneratorEngine.Code do
 
     # Request external LLM via NATS
     case Singularity.NatsClient.request(
-           "llm.request",
+           Singularity.Nats.RegistryClient.subject(:llm_request),
            Jason.encode!(%{
              prompt: external_prompt,
              language: language,

@@ -29,7 +29,8 @@ defmodule CentralCloud.NatsRegistry do
 
   ## Subject Categories
 
-  ### LLM Subjects (4)
+  ### LLM Subjects (5)
+  - `llm.request` - LLM request orchestration point
   - `llm.provider.claude` - Request to Claude API
   - `llm.provider.gemini` - Request to Gemini API
   - `llm.provider.openai` - Request to OpenAI API
@@ -179,6 +180,22 @@ defmodule CentralCloud.NatsRegistry do
   # ============================================================================
 
   @llm_subjects %{
+    llm_request: %{
+      subject: "llm.request",
+      description: "LLM request orchestration point (routed by AI Server to specific providers)",
+      handler: Singularity.LLM.NatsHandler,
+      pattern: "llm.request",
+      request_reply: true,
+      timeout: 30000,
+      complexity: :complex,
+      jetstream: %{
+        stream: "llm_requests",
+        consumer: "llm_request_orchestration_consumer",
+        durable: true,
+        max_deliver: 3,
+        retention: 86400
+      }
+    },
     provider_claude: %{
       subject: "llm.provider.claude",
       description: "Request to Claude API via AI Server",
