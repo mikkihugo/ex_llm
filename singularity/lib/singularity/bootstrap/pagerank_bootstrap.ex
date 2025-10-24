@@ -166,8 +166,9 @@ defmodule Singularity.Bootstrap.PageRankBootstrap do
 
     Logger.info("📅 PageRank daily refresh scheduled: #{schedule}")
 
-    # Note: Oban scheduler configuration happens in config.exs
-    # This is just for logging purposes
+    # Note: Daily refresh is handled by pg_cron (database-native scheduling)
+    # See migration: add_pagerank_pg_cron_schedule.exs
+    # This is just for logging/documentation purposes
   end
 
   @doc """

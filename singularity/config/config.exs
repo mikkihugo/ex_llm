@@ -128,9 +128,9 @@ config :oban,
        # Dead code monitoring: daily at 9am
        {"0 9 * * *", Singularity.Jobs.DeadCodeDailyCheck},
        # Dead code summary: every Monday at 9am
-       {"0 9 * * 1", Singularity.Jobs.DeadCodeWeeklySummary},
-       # PageRank recalculation: daily at 4am UTC
-       {"0 4 * * *", Singularity.Jobs.PageRankCalculationJob}
+       {"0 9 * * 1", Singularity.Jobs.DeadCodeWeeklySummary}
+       # PageRank recalculation: scheduled via pg_cron (database-native scheduling)
+       # See migration: add_pagerank_pg_cron_schedule.exs
      ]}
   ],
   # Enable verbose logging for job execution
