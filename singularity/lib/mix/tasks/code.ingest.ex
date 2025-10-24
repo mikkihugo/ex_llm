@@ -258,13 +258,10 @@ defmodule Mix.Tasks.Code.Ingest do
   end
 
   defp detect_primary_language(path) do
-    cond do
-      File.exists?(Path.join(path, "mix.exs")) -> "elixir"
-      File.exists?(Path.join(path, "Cargo.toml")) -> "rust"
-      File.exists?(Path.join(path, "package.json")) -> "typescript"
-      File.exists?(Path.join(path, "go.mod")) -> "go"
-      File.exists?(Path.join(path, "requirements.txt")) -> "python"
-      true -> "unknown"
+    # Use authoritative LanguageDetection (Rust parser registry)
+    case Singularity.LanguageDetection.detect(path) do
+      {:ok, lang} when is_atom(lang) -> Atom.to_string(lang)
+      {:error, _} -> "unknown"
     end
   end
 

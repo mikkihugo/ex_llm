@@ -15,7 +15,7 @@ defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
 
   @behaviour Singularity.Architecture.PatternType
   require Logger
-  alias Singularity.Shared.LanguageDetector
+  alias Singularity.LanguageDetection
 
   @impl true
   def pattern_type, do: :service_architecture
@@ -146,16 +146,20 @@ defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
 
   defp detect_service(service_path) do
     # A service must have clear build/deploy markers
-    language = LanguageDetector.detect(service_path)
+    case LanguageDetection.detect(service_path) do
+      {:ok, language} ->
+        if has_build_config?(service_path, language) do
+          %{
+            path: service_path,
+            language: language_name(language),
+            build_system: detect_build_system(service_path)
+          }
+        else
+          nil
+        end
 
-    if language && has_build_config?(service_path, language) do
-      %{
-        path: service_path,
-        language: language_name(language),
-        build_system: detect_build_system(service_path)
-      }
-    else
-      nil
+      {:error, _} ->
+        nil
     end
   end
 

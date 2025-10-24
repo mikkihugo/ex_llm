@@ -64,6 +64,65 @@ defmodule Singularity.LanguageDetection do
   require Logger
 
   @doc """
+  Detect primary language of a directory by scanning for manifest files.
+
+  Scans a directory for language marker files (Cargo.toml, package.json, mix.exs, etc.)
+  and returns the detected language. Useful for determining a service's primary language.
+
+  Returns just the language atom (`:rust`, `:elixir`, etc.) or nil if no language detected.
+
+  ## Examples
+
+      iex> LanguageDetection.detect("/path/to/rust/project")
+      {:ok, :rust}
+
+      iex> LanguageDetection.detect("/path/to/elixir/project")
+      {:ok, :elixir}
+
+      iex> LanguageDetection.detect("/path/with/no/markers")
+      {:error, :unknown_language}
+  """
+  def detect(dir_path) when is_binary(dir_path) do
+    case detect_from_manifest(dir_path) do
+      {:ok, lang_atom} -> {:ok, lang_atom}
+      {:error, _} -> {:error, :unknown_language}
+    end
+  end
+
+  defp detect_from_manifest(dir_path) do
+    # Check for manifest files in order of confidence
+    manifests = [
+      {"Cargo.toml", "rust"},
+      {"mix.exs", "elixir"},
+      {"go.mod", "go"},
+      {"package.json", "javascript"},
+      {"pyproject.toml", "python"},
+      {"setup.py", "python"},
+      {"requirements.txt", "python"},
+      {"pom.xml", "java"},
+      {"build.gradle", "java"},
+      {"Gemfile", "ruby"},
+      {"composer.json", "php"}
+    ]
+
+    Enum.find_value(manifests, {:error, :no_manifest}, fn {manifest, _lang} ->
+      manifest_path = Path.join(dir_path, manifest)
+
+      if File.exists?(manifest_path) do
+        case by_manifest(manifest_path) do
+          {:ok, %{language: lang}} ->
+            {:ok, String.to_atom(lang)}
+
+          {:error, _} ->
+            nil
+        end
+      else
+        nil
+      end
+    end)
+  end
+
+  @doc """
   Detect language from a file path using file extension.
 
   Uses the Rust language registry for accuracy across 25+ languages.

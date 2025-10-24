@@ -283,11 +283,18 @@ cd centralcloud
 # 1. Start NATS server
 nats-server -js
 
-# 2. Start all services
+# 2. Start all three applications
 ./start-all.sh
+# Or manually:
+# Terminal 1: cd singularity && iex -S mix
+# Terminal 2: cd centralcloud && iex -S mix
+# Terminal 3: cd genesis && iex -S mix      # Improvement sandbox (REQUIRED for Phase 4)
 
 # 3. Run integration tests (see PHASE_45_DEPLOYMENT_COMPLETE.md)
 ```
+
+**Why Genesis is Required:**
+Genesis safely tests template improvements in an isolated sandbox before deploying to production. Phase 4 (Self-Improvement) sends improved templates to Genesis for validation, preventing breaking changes from reaching Singularity.
 
 ### Optional Enhancements
 1. Fix CentralCloud migration SQL syntax error (20250109000001)

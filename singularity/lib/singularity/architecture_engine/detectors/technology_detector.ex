@@ -15,7 +15,7 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
 
   @behaviour Singularity.Architecture.PatternType
   require Logger
-  alias Singularity.Shared.LanguageDetector
+  alias Singularity.LanguageDetection
 
   @impl true
   def pattern_type, do: :technology
@@ -78,9 +78,9 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
   end
 
   defp detect_languages(path) do
-    # Use unified LanguageDetector
-    case LanguageDetector.detect(path) do
-      lang when is_atom(lang) ->
+    # Use authoritative LanguageDetection (Rust NIF-backed registry)
+    case LanguageDetection.detect(path) do
+      {:ok, lang} when is_atom(lang) ->
         [
           %{
             name: language_name(lang),
@@ -90,7 +90,7 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
           }
         ]
 
-      nil ->
+      {:error, _} ->
         []
     end
   end

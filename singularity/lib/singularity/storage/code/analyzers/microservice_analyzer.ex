@@ -9,11 +9,11 @@ defmodule Singularity.Code.Analyzers.MicroserviceAnalyzer do
 
   ## Uses
 
-  - `Singularity.Shared.LanguageDetector` - Unified language detection
+  - `Singularity.LanguageDetection` - Authoritative language detection via Rust parser registry
   """
 
   require Logger
-  alias Singularity.Shared.LanguageDetector
+  alias Singularity.LanguageDetection
 
   @service_root_candidates ["apps", "services", "packages", "apps/services", "services/apps"]
 
@@ -153,10 +153,10 @@ defmodule Singularity.Code.Analyzers.MicroserviceAnalyzer do
   end
 
   defp detect_language(service_path) do
-    # Use unified LanguageDetector for all language detection
-    case LanguageDetector.detect(service_path) do
-      atom when is_atom(atom) -> atom_to_string(atom)
-      nil -> nil
+    # Use authoritative LanguageDetection (Rust parser registry)
+    case LanguageDetection.detect(service_path) do
+      {:ok, atom} when is_atom(atom) -> atom_to_string(atom)
+      {:error, _} -> nil
     end
   end
 
