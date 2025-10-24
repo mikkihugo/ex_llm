@@ -20,7 +20,7 @@ defmodule Singularity.Architecture.Analyzers.RefactoringAnalyzer do
 
   @behaviour Singularity.Architecture.AnalyzerType
   require Logger
-  alias Singularity.Refactoring.Analyzer
+  alias Singularity.CodeQuality.RefactoringAnalyzer, as: Analyzer
 
   @impl true
   def analyzer_type, do: :refactoring
