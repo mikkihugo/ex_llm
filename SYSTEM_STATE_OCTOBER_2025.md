@@ -9,7 +9,8 @@
 
 Singularity is a comprehensive AI development environment with:
 - ✅ **6 Autonomous Agents** (code implemented, supervision pending)
-- ✅ **8 Rust NIF Engines** (production-ready)
+- ✅ **Rust NIF Engines** (Architecture, Code Analysis, Parser, Quality, Language Detection, Graph PageRank)
+- ✅ **Pure Elixir ML via Nx** (Qodo + Jina v3 embeddings, 2560-dim multi-vector)
 - ✅ **Complete Instructor Integration** (Elixir, TypeScript, Rust)
 - ✅ **206+ Job Implementation Tests** (2,299 LOC)
 - ✅ **Comprehensive Documentation** (50+ guides)
@@ -127,8 +128,9 @@ Deep analysis of agent and execution system:
                │
 ┌──────────────▼──────────────────────────┐
 │      Infrastructure Layer               │
-│   (NATS, PostgreSQL, Rust NIFs)        │
-│   - 8 Rust NIF Engines                 │
+│   (NATS, PostgreSQL, Rust NIFs, Nx ML) │
+│   - Rust NIF Engines                   │
+│   - Pure Elixir ML (Nx/Ortex)          │
 │   - Distributed Messaging              │
 │   - Knowledge Base                      │
 └─────────────────────────────────────────┘
@@ -144,7 +146,8 @@ Deep analysis of agent and execution system:
 | **Execution** | ✅ Complete | Multiple strategies implemented |
 | **NATS** | ✅ Working | Graceful degradation in test mode |
 | **Database** | ✅ Working | PostgreSQL with pgvector |
-| **Rust NIFs** | ✅ Working | 8 engines, pure local inference |
+| **Rust NIFs** | ✅ Working | Architecture, Code Analysis, Parser, Quality, Language Detection, PageRank |
+| **Embeddings** | ✅ Working | Pure Elixir Nx (Qodo 1536 + Jina 1024 = 2560-dim concatenated) |
 | **Knowledge Base** | ✅ Working | Git ↔ DB bidirectional learning |
 
 ---

@@ -13,7 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **What it does:**
 - **6 Autonomous AI Agents** (Self-Improving, Cost-Optimized, Architecture, Technology, Refactoring, Chat)
-- **8 Rust NIF Engines** via Rustler (Architecture, Code Analysis, Parser, Quality, Knowledge, Embedding, Semantic, Prompt)
+- **Rust NIF Engines** via Rustler (Architecture, Code Analysis, Parser, Quality, Language Detection, Graph PageRank)
+- **Pure Elixir ML** (Embeddings via Nx: Qodo + Jina v3 multi-vector 2560-dim)
 - **3 Central_Cloud Services** (Framework Learning Agent, Package Intelligence, Knowledge Cache)
 - **GPU-Accelerated Search** (RTX 4080 + pgvector for semantic code search)
 - **Living Knowledge Base** (Git ←→ PostgreSQL bidirectional learning)
@@ -423,8 +424,9 @@ config :singularity, :extractor_types,
 
 **Semantic Code Search**
 - `semantic_code_search.ex`: Main search interface
-- `embedding_generator.ex`: Pure local ONNX embeddings via Rust NIF (GPU/CPU auto-detection)
-- `embedding_model_loader.ex`: Model lifecycle management (Jina v3, Qodo-Embed, MiniLM)
+- `embedding/nx_service.ex`: Pure Elixir embeddings via Nx (Qodo + Jina v3 concatenated, 2560-dim)
+- `embedding_generator.ex`: High-level API delegating to NxService for embedding generation
+- `embedding_model_loader.ex`: Model lifecycle management (Jina v3, Qodo-Embed)
 - `code_store.ex`: Code chunk storage with pgvector
 - `polyglot_code_parser.ex`: Multi-language parsing
 
@@ -496,10 +498,10 @@ Optional (with defaults):
   - Start NATS with: `nats-server -js`
 
 **Note on Embeddings:**
-- ✅ Pure local ONNX inference (no API keys required)
-- Auto-detects GPU (CUDA/Metal/ROCm) and uses appropriate model
-- `CUDA_VISIBLE_DEVICES` or `HIP_VISIBLE_DEVICES` set → Qodo-Embed (1536D)
-- No GPU detected → MiniLM-L6-v2 (384D) on CPU
+- ✅ Pure local Nx/Ortex inference (no API keys required)
+- Always generates 2560-dimensional concatenated embeddings (Qodo 1536-dim + Jina v3 1024-dim)
+- Auto-detects GPU (CUDA/Metal/ROCm) for inference acceleration
+- Falls back to CPU inference if no GPU detected
 
 ## Troubleshooting
 
@@ -957,6 +959,8 @@ moon run templates_data:stats          # Usage statistics
 | **Code Analysis** | ✅ Yes | Rust NIF (20 languages) |
 | **Pattern Extraction** | ✅ Yes | Rust NIF + PostgreSQL |
 | **Technology Detection** | ✅ Yes | Rust NIF + PostgreSQL |
+| **Semantic Embeddings** | ✅ Yes | Pure Elixir Nx (Qodo + Jina v3, 2560-dim) |
+| **Graph PageRank** | ✅ Yes | Rust NIF (CentralPageRank algorithm) |
 
 See **CENTRALCLOUD_DETECTION_ROLE.md** for details on how CentralCloud (optional multi-instance feature) relates to these local capabilities.
 

@@ -1,6 +1,6 @@
 # Pure Elixir ML Architecture
 
-**Status**: Framework complete, inference/training implementations are TODO stubs
+**Status**: Embedding service fully implemented and operational. Multi-vector inference (Qodo + Jina v3) running on Nx.
 
 ## Overview
 
