@@ -1,0 +1,3 @@
+[submodule "packages/ex_pgflow"]
+	path = packages/ex_pgflow
+	url = git@github.com:mikkihugo/ex_pgflow.git
