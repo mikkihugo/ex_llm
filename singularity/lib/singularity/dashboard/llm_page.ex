@@ -19,7 +19,7 @@ defmodule Singularity.Dashboard.LLMPage do
 
   @impl true
   def render_page(_assigns) do
-    metrics = Singularity.Telemetry.get_metrics()
+    metrics = Singularity.Infrastructure.Telemetry.get_metrics()
     llm_metrics = metrics.llm
 
     %{

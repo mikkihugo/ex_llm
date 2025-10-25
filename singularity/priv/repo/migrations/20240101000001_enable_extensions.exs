@@ -9,6 +9,9 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
     # Vector and similarity search (pgvector configured in Nix)
     execute "CREATE EXTENSION IF NOT EXISTS vector"
 
+    # Case-insensitive text (citext)
+    execute "CREATE EXTENSION IF NOT EXISTS citext"
+
     # Text search and fuzzy matching
     execute "CREATE EXTENSION IF NOT EXISTS pg_trgm"
     execute "CREATE EXTENSION IF NOT EXISTS fuzzystrmatch CASCADE"
@@ -35,7 +38,8 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
     execute "CREATE EXTENSION IF NOT EXISTS postgis"
 
     # Scheduled tasks (pg_cron - configured in setup-database.sh via cron.database_name)
-    execute "CREATE EXTENSION IF NOT EXISTS pg_cron"
+    # Disabled for now - requires postgresql.conf configuration
+    # execute "CREATE EXTENSION IF NOT EXISTS pg_cron"
 
     # PostgreSQL testing (optional - skip for now)
     # execute "CREATE EXTENSION IF NOT EXISTS pgtap"
@@ -43,7 +47,7 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
 
   def down do
     # execute "DROP EXTENSION IF EXISTS pgtap"
-    execute "DROP EXTENSION IF EXISTS pg_cron"
+    # execute "DROP EXTENSION IF EXISTS pg_cron"  # Disabled - not created in up migration
     execute "DROP EXTENSION IF EXISTS postgis"
     # execute "DROP EXTENSION IF EXISTS timescaledb"  # Disabled - not created in up migration
     execute "DROP EXTENSION IF EXISTS ltree"
@@ -56,6 +60,7 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
     execute "DROP EXTENSION IF EXISTS unaccent"
     execute "DROP EXTENSION IF EXISTS fuzzystrmatch"
     execute "DROP EXTENSION IF EXISTS pg_trgm"
+    execute "DROP EXTENSION IF EXISTS citext"
     execute "DROP EXTENSION IF EXISTS vector"
     execute ~s(DROP EXTENSION IF EXISTS "uuid-ossp")
     execute "DROP EXTENSION IF EXISTS pgcrypto"

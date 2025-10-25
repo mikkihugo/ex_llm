@@ -497,7 +497,7 @@ defmodule Singularity.SelfImprovingAgent do
 
   def handle_info({:validate_improvement, version}, state) do
     baseline = state.pending_baseline
-    current = Singularity.Telemetry.snapshot()
+    current = Singularity.Infrastructure.Telemetry.snapshot()
 
     if regression?(baseline, current) do
       QueueCrdt.release(state.id, state.pending_fingerprint)
@@ -808,7 +808,7 @@ defmodule Singularity.SelfImprovingAgent do
         Map.put(base_metadata(context), :source, :direct)
       )
 
-      baseline = Singularity.Telemetry.snapshot()
+      baseline = Singularity.Infrastructure.Telemetry.snapshot()
       previous_code = read_active_code(state.id)
 
       Control.publish_improvement(state.id, payload)
@@ -934,7 +934,7 @@ defmodule Singularity.SelfImprovingAgent do
 
   defp process_available_entry(state, entry, rest, fingerprint) do
     if QueueCrdt.reserve(state.id, fingerprint) do
-      baseline = Singularity.Telemetry.snapshot()
+      baseline = Singularity.Infrastructure.Telemetry.snapshot()
       previous_code = read_active_code(state.id)
 
       Control.publish_improvement(state.id, entry.payload)
@@ -1131,7 +1131,7 @@ defmodule Singularity.SelfImprovingAgent do
         _ = HotReload.ModuleReloader.enqueue(state.id, payload)
         Limiter.reset(state.id)
 
-        baseline = Singularity.Telemetry.snapshot()
+        baseline = Singularity.Infrastructure.Telemetry.snapshot()
 
         state
         |> Map.put(:status, :updating)

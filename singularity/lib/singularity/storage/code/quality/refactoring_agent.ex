@@ -205,7 +205,7 @@ defmodule Singularity.RefactoringAgent do
     # Implementation plan:
     # 1. Query telemetry events for slow endpoints (>100ms)
     # 2. Correlate with code analysis for optimization opportunities
-    # 3. Use Singularity.Telemetry.get_slow_endpoints/0
+    # 3. Use Singularity.Infrastructure.Telemetry.get_slow_endpoints/0
     # 4. Return optimization suggestions with performance impact
     
     # Placeholder implementation
