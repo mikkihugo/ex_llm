@@ -1,0 +1,68 @@
+defmodule Singularity.Repo.Migrations.CreateJobResultsTable do
+  use Ecto.Migration
+
+  @moduledoc """
+  Create job_results table for workflow execution tracking and result storage.
+
+  This table stores the results of all workflow executions via Pgflow.Executor,
+  enabling:
+  - Result persistence and querying
+  - Workflow execution history
+  - Cost tracking (tokens used, cost in cents)
+  - Result aggregation for CentralCloud learning
+  - Debugging and monitoring
+
+  ## Schema
+
+  - `id` (uuid) - Primary key
+  - `workflow` (string) - Workflow module name (e.g., "Singularity.Workflows.LlmRequest")
+  - `instance_id` (uuid) - Which instance executed this job
+  - `job_id` (uuid) - Oban job ID (reference to oban_jobs table)
+  - `status` (enum: success, failed, timeout) - Execution outcome
+  - `input` (jsonb) - Input parameters
+  - `output` (jsonb) - Execution result
+  - `error` (text) - Error message if failed
+  - `tokens_used` (integer) - LLM tokens if applicable
+  - `cost_cents` (integer) - Execution cost in cents
+  - `duration_ms` (integer) - Execution time in milliseconds
+  - `created_at` (timestamp) - When job started
+  - `completed_at` (timestamp) - When job completed
+  """
+
+  def change do
+    create table(:job_results, primary_key: false) do
+      add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
+
+      add :workflow, :string, null: false
+      add :instance_id, :uuid, null: true
+      add :job_id, :bigint, null: true
+
+      add :status, :string, null: false
+      add :input, :map, null: true, default: %{}
+      add :output, :map, null: true, default: %{}
+      add :error, :text, null: true
+
+      add :tokens_used, :integer, default: 0, null: false
+      add :cost_cents, :integer, default: 0, null: false
+      add :duration_ms, :integer, null: true
+
+      timestamps(type: :utc_datetime_usec)
+      add :completed_at, :utc_datetime_usec, null: true
+    end
+
+    create index(:job_results, [:workflow])
+    create index(:job_results, [:instance_id])
+    create index(:job_results, [:status])
+    create index(:job_results, [:job_id])
+    create index(:job_results, [:inserted_at])
+    create index(:job_results, [:completed_at])
+
+    # Composite index for common queries (workflow + status + date)
+    create index(:job_results, [:workflow, :status, :inserted_at])
+
+    # Foreign key reference to pgflow_instances
+    alter table(:job_results) do
+      modify :instance_id, references(:pgflow_instances, column: :instance_id, type: :uuid, on_delete: :nilify_all)
+    end
+  end
+end

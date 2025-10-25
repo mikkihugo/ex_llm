@@ -28,8 +28,6 @@ defmodule Singularity.Workflows.Embedding do
       }
   """
 
-  use Singularity.Workflow
-
   require Logger
 
   def __workflow_steps__ do
@@ -40,8 +38,6 @@ defmodule Singularity.Workflows.Embedding do
       {:publish_embedding, &__MODULE__.publish_embedding/1}
     ]
   end
-
-  def __workflow_name__, do: "embedding_request"
 
   # ============================================================================
   # Step 1: Receive Query

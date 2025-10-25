@@ -163,6 +163,9 @@ defmodule Singularity.Application do
       |> Kernel.++(
         # Layer 2: Infrastructure - Core services required by application layer
         [
+          # Pgflow Instance Registry - Tracks which instances are online for multi-BEAM setups
+          Pgflow.Instance.Registry,
+
           Singularity.Infrastructure.Supervisor
         ]
       )

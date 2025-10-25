@@ -32,8 +32,6 @@ defmodule Singularity.Workflows.LlmRequest do
       }
   """
 
-  use Singularity.Workflow
-
   require Logger
 
   def __workflow_steps__ do
@@ -44,8 +42,6 @@ defmodule Singularity.Workflows.LlmRequest do
       {:publish_result, &__MODULE__.publish_result/1}
     ]
   end
-
-  def __workflow_name__, do: "llm_request"
 
   # ============================================================================
   # Step 1: Receive and Validate Request
@@ -101,7 +97,7 @@ defmodule Singularity.Workflows.LlmRequest do
       request_id: prev.request_id
     )
 
-    case LLM.Service.call_with_prompt(
+    case Singularity.LLM.Service.call_with_prompt(
       prev.complexity,
       format_prompt(prev.messages),
       task_type: prev.task_type

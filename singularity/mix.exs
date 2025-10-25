@@ -119,6 +119,9 @@ defmodule Singularity.MixProject do
       # Background Job Queue for ML training, maintenance tasks, and cron scheduling
       {:oban, "~> 2.18"},
 
+      # Workflow Orchestration (ExPgflow)
+      {:ex_pgflow, path: "../ex_pgflow"},
+
       # MoonShine-style Rule Engine
       # Fast caching for rule results
       {:cachex, "~> 3.6"},

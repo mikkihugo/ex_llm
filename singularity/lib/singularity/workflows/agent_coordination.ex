@@ -31,8 +31,6 @@ defmodule Singularity.Workflows.AgentCoordination do
       }
   """
 
-  use Singularity.Workflow
-
   require Logger
 
   def __workflow_steps__ do
@@ -43,8 +41,6 @@ defmodule Singularity.Workflows.AgentCoordination do
       {:acknowledge, &__MODULE__.acknowledge/1}
     ]
   end
-
-  def __workflow_name__, do: "agent_coordination"
 
   # ============================================================================
   # Step 1: Receive Message

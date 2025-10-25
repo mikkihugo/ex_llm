@@ -12,12 +12,10 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
   - Agent coordination signals
   """
 
-  use Oban.Worker,
-    queue: :default,
-    max_attempts: 3,
-    priority: 5
+  use Pgflow.Worker, queue: :default, max_attempts: 3
 
   require Logger
+  alias Singularity.Workflows.AgentCoordination
 
   @doc """
   Enqueue agent coordination message.
@@ -41,61 +39,68 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
   end
 
   @impl Oban.Worker
-  def perform(%Oban.Job{
-        args: %{
-          "source_agent" => source_agent,
-          "message_type" => message_type,
-          "payload" => payload
-        } = args
-      }) do
-    target_agent = Map.get(args, "target_agent")
+  def perform(%Oban.Job{args: args, id: job_id}) do
+    message_id = args["message_id"] || Ecto.UUID.generate()
+    start_time = System.monotonic_time(:millisecond)
 
-    Logger.debug("Processing agent coordination message",
-      source: source_agent,
-      target: target_agent,
-      type: message_type
+    Logger.debug("Processing agent coordination message via workflow",
+      source: args["source_agent"],
+      target: args["target_agent"],
+      type: args["message_type"]
     )
 
-    case message_type do
-      "status" ->
-        handle_status_update(source_agent, payload)
+    input = %{
+      "message_id" => message_id,
+      "source_agent" => args["source_agent"],
+      "target_agent" => args["target_agent"],
+      "message_type" => args["message_type"],
+      "payload" => args["payload"] || %{}
+    }
 
-      "result" ->
-        handle_result_broadcast(source_agent, target_agent, payload)
+    case Pgflow.Executor.execute(AgentCoordination, input, timeout: 30000) do
+      {:ok, result} ->
+        duration_ms = System.monotonic_time(:millisecond) - start_time
 
-      "request" ->
-        handle_coordination_request(source_agent, target_agent, payload)
+        Logger.info("Agent coordination workflow completed",
+          message_id: result["message_id"],
+          source: result["source_agent"],
+          target: result["target_agent"],
+          duration_ms: duration_ms
+        )
 
-      _ ->
-        Logger.warning("Unknown agent message type", type: message_type)
+        # Record result for tracking
+        Singularity.Schemas.Execution.JobResult.record_success(
+          workflow: "Singularity.Workflows.AgentCoordination",
+          instance_id: Pgflow.Instance.Registry.instance_id(),
+          job_id: job_id,
+          input: input,
+          output: result,
+          duration_ms: duration_ms
+        )
+
         :ok
+
+      {:error, reason} ->
+        duration_ms = System.monotonic_time(:millisecond) - start_time
+
+        Logger.error("Agent coordination workflow failed",
+          message_id: message_id,
+          reason: inspect(reason),
+          duration_ms: duration_ms
+        )
+
+        # Record failure for tracking
+        Singularity.Schemas.Execution.JobResult.record_failure(
+          workflow: "Singularity.Workflows.AgentCoordination",
+          instance_id: Pgflow.Instance.Registry.instance_id(),
+          job_id: job_id,
+          input: input,
+          error: inspect(reason),
+          duration_ms: duration_ms
+        )
+
+        # Oban will retry automatically (max_attempts: 3)
+        {:error, reason}
     end
-  end
-
-  defp handle_status_update(agent_id, payload) do
-    Logger.info("Agent status update",
-      agent_id: agent_id,
-      status: Map.get(payload, "status"),
-      progress: Map.get(payload, "progress")
-    )
-    :ok
-  end
-
-  defp handle_result_broadcast(source_agent, target_agent, payload) do
-    Logger.info("Agent result broadcast",
-      source: source_agent,
-      target: target_agent,
-      result: Map.get(payload, "result")
-    )
-    :ok
-  end
-
-  defp handle_coordination_request(source_agent, target_agent, payload) do
-    Logger.info("Agent coordination request",
-      source: source_agent,
-      target: target_agent,
-      request: Map.get(payload, "request_type")
-    )
-    :ok
   end
 end

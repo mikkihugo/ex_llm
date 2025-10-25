@@ -18,13 +18,9 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   - ✅ Single language ecosystem
   """
 
-  use Oban.Worker,
-    queue: :default,
-    max_attempts: 3,
-    priority: 5
+  use Pgflow.Worker, queue: :default, max_attempts: 3
 
   require Logger
-  alias Singularity.Workflow.Executor
   alias Singularity.Workflows.LlmRequest
 
   @doc """
@@ -73,31 +69,57 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   end
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: args}) do
+  def perform(%Oban.Job{args: args, id: job_id}) do
     request_id = args["request_id"]
+    start_time = System.monotonic_time(:millisecond)
 
     Logger.info("Executing LLM workflow",
       request_id: request_id,
       task_type: args["task_type"]
     )
 
-    # Execute the LLM workflow directly (no network overhead!)
-    case Executor.execute(LlmRequest, args, max_attempts: 1, timeout: 30000) do
+    # Execute the LLM workflow directly via ExPgflow (no network overhead!)
+    case Pgflow.Executor.execute(LlmRequest, args, timeout: 30000) do
       {:ok, result} ->
+        duration_ms = System.monotonic_time(:millisecond) - start_time
+
         Logger.info("LLM workflow completed",
           request_id: request_id,
-          cost_cents: result["cost_cents"]
+          cost_cents: result["cost_cents"],
+          duration_ms: duration_ms
         )
 
-        # TODO: Store result in database for agents to consume
-        # Or: Publish to event log for interested parties
+        # Record result in database for tracking and CentralCloud learning
+        Singularity.Schemas.Execution.JobResult.record_success(
+          workflow: "Singularity.Workflows.LlmRequest",
+          instance_id: Pgflow.Instance.Registry.instance_id(),
+          job_id: job_id,
+          input: args,
+          output: result,
+          tokens_used: result["tokens_used"] || 0,
+          cost_cents: result["cost_cents"] || 0,
+          duration_ms: duration_ms
+        )
 
         :ok
 
       {:error, reason} ->
+        duration_ms = System.monotonic_time(:millisecond) - start_time
+
         Logger.error("LLM workflow failed",
           request_id: request_id,
-          reason: inspect(reason)
+          reason: inspect(reason),
+          duration_ms: duration_ms
+        )
+
+        # Record failure for tracking
+        Singularity.Schemas.Execution.JobResult.record_failure(
+          workflow: "Singularity.Workflows.LlmRequest",
+          instance_id: Pgflow.Instance.Registry.instance_id(),
+          job_id: job_id,
+          input: args,
+          error: inspect(reason),
+          duration_ms: duration_ms
         )
 
         # Oban will retry automatically (max_attempts: 3)
