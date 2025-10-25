@@ -250,9 +250,9 @@ defmodule Singularity.Database.PatternSimilaritySearch do
   # ============================================================================
 
   defp search_by_embedding(embedding, limit, threshold, agent_id) do
-    query_sql =
+    result =
       if agent_id do
-        """
+        query_sql = """
         SELECT id, code_snippet, pattern_type, agent_id,
           l2_distance(embedding, $1) as distance
         FROM learned_patterns
@@ -264,7 +264,7 @@ defmodule Singularity.Database.PatternSimilaritySearch do
 
         Repo.query(query_sql, [embedding, agent_id, threshold, limit])
       else
-        """
+        query_sql = """
         SELECT id, code_snippet, pattern_type, agent_id,
           l2_distance(embedding, $1) as distance
         FROM learned_patterns
@@ -276,7 +276,7 @@ defmodule Singularity.Database.PatternSimilaritySearch do
         Repo.query(query_sql, [embedding, threshold, limit])
       end
 
-    case query_sql do
+    case result do
       {:ok, %{rows: rows}} ->
         results =
           Enum.map(rows, fn [id, snippet, type, agent_id, distance] ->

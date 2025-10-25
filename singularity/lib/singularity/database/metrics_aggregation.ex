@@ -103,9 +103,9 @@ defmodule Singularity.Database.MetricsAggregation do
     limit = Keyword.get(opts, :limit, 1000)
     agent_id = Keyword.get(opts, :agent_id)
 
-    query =
+    result =
       if agent_id do
-        """
+        query = """
         SELECT recorded_at, value, labels
         FROM metrics_events
         WHERE metric_name = $1
@@ -117,7 +117,7 @@ defmodule Singularity.Database.MetricsAggregation do
 
         Repo.query(query, [to_string(metric_name), to_string(agent_id), last_seconds, limit])
       else
-        """
+        query = """
         SELECT recorded_at, value, labels
         FROM metrics_events
         WHERE metric_name = $1
@@ -129,7 +129,7 @@ defmodule Singularity.Database.MetricsAggregation do
         Repo.query(query, [to_string(metric_name), last_seconds, limit])
       end
 
-    case query do
+    case result do
       {:ok, %{rows: rows}} ->
         metrics =
           Enum.map(rows, fn [timestamp, value, labels] ->
@@ -162,9 +162,9 @@ defmodule Singularity.Database.MetricsAggregation do
     last_seconds = Keyword.get(opts, :last, 86400)
     agent_id = Keyword.get(opts, :agent_id)
 
-    query =
+    result =
       if agent_id do
-        """
+        query = """
         SELECT
           time_bucket($1, recorded_at) as bucket,
           AVG(value) as avg_value,
@@ -181,7 +181,7 @@ defmodule Singularity.Database.MetricsAggregation do
 
         Repo.query(query, [window, to_string(metric_name), to_string(agent_id), last_seconds])
       else
-        """
+        query = """
         SELECT
           time_bucket($1, recorded_at) as bucket,
           AVG(value) as avg_value,
@@ -198,7 +198,7 @@ defmodule Singularity.Database.MetricsAggregation do
         Repo.query(query, [window, to_string(metric_name), last_seconds])
       end
 
-    case query do
+    case result do
       {:ok, %{rows: rows}} ->
         buckets =
           Enum.map(rows, fn [timestamp, avg, min, max, count] ->

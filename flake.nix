@@ -47,6 +47,8 @@
     # Binary cache for faster package downloads
     extra-substituters = ["https://mikkihugo.cachix.org"];
     extra-trusted-public-keys = ["mikkihugo.cachix.org-1:dxqCDAvMSMefAFwSnXYvUdPnHJYq+pqF8tul8bih9Po="];
+    # Allow broken packages (pgx_ulid is marked broken in nixpkgs)
+    allowBroken = true;
   };
 
   outputs = { self, nixpkgs, flake-utils }:
@@ -183,7 +185,10 @@
         # Base package imports
         pkgs = import nixpkgs {
           inherit system;
-          config.allowUnfree = true;
+          config = {
+            allowUnfree = true;
+            allowBroken = true;  # Allow broken packages like pgx_ulid
+          };
         };
         lib = nixpkgs.lib;
         beamPackages = pkgs.beam.packages.erlang_28;
@@ -233,7 +238,7 @@
               ps.age                # Apache AGE - graph database extension (supported on PG17)
 
               # Distributed IDs & ULIDs (future PostgreSQL 18 migration path: UUIDv7)
-              ps.pgx_ulid           # ULID generation - sortable, monotonic IDs for distributed systems
+              # ps.pgx_ulid           # ULID generation - broken in nixpkgs (use UUID v7 / TimescaleDB hypertables instead)
 
               # Security & Encryption
               ps.pgsodium           # Modern encryption & hashing (libsodium binding)
