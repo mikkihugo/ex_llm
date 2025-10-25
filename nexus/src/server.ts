@@ -15,8 +15,10 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
-import { ApprovalWebSocketBridge } from './approval-websocket-bridge.js';
-import { NATSHandler } from './nats-handler.js';
+// import { ApprovalWebSocketBridge } from './approval-websocket-bridge.js';
+// import { NATSHandler } from './nats-handler.js';
+import { initializeDatabase } from './db.js';
+import { getSharedQueueHandler } from './shared-queue-handler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,41 +35,57 @@ console.log('\n🚀 Initializing Nexus Unified Server...\n');
 console.log('━'.repeat(60));
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 1. Initialize LLM Router (NATS Handler for Elixir)
+// 0. Initialize Database (PostgreSQL for HITL history)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-console.log('📡 Starting LLM Router (NATS Handler)...');
-const llmHandler = new NATSHandler();
+console.log('💾 Starting PostgreSQL Database Connection...');
+let db = null;
 try {
-  await llmHandler.connect();
-  console.log('✅ LLM Router initialized\n');
+  db = await initializeDatabase();
+  console.log('✅ Database initialized\n');
 } catch (error) {
-  console.error('❌ Failed to initialize LLM Router:', error);
-  console.error('   Continuing without LLM Router. HITL only.\n');
+  console.error('❌ Failed to initialize database:', error);
+  console.error('   Continuing without database. NATS/HITL only.\n');
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 1. Initialize LLM Router (NATS Handler for Elixir)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// NOTE: NATS removed from system. LLM routing pending pgmq integration.
+
+console.log('⏸️  LLM Router (NATS removed, pending pgmq integration)...');
+// const llmHandler = new NATSHandler();
+// try {
+//   await llmHandler.connect();
+//   console.log('✅ LLM Router initialized\n');
+// } catch (error) {
+//   console.error('❌ Failed to initialize LLM Router:', error);
+//   console.error('   Continuing without LLM Router. HITL only.\n');
+// }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 2. Initialize HITL Approval Bridge (WebSocket Bridge)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// NOTE: NATS removed from system. HITL approvals pending pgmq integration.
 
-console.log('🌐 Starting HITL WebSocket Bridge...');
-const bridge = new ApprovalWebSocketBridge();
-const natsConnected = await bridge.connect();
-
-if (!natsConnected) {
-  console.warn('⚠️  Warning: NATS not available, approval bridge will not receive messages');
-} else {
-  console.log('✅ HITL WebSocket Bridge initialized\n');
-}
-
-// Subscribe to NATS topics
-bridge.subscribeToApprovalRequests().catch(err => {
-  console.error('Error subscribing to approval requests:', err);
-});
-
-bridge.subscribeToQuestionRequests().catch(err => {
-  console.error('Error subscribing to question requests:', err);
-});
+console.log('⏸️  HITL WebSocket Bridge (NATS removed, pending pgmq integration)...');
+// const bridge = new ApprovalWebSocketBridge();
+// const natsConnected = await bridge.connect();
+//
+// if (!natsConnected) {
+//   console.warn('⚠️  Warning: NATS not available, approval bridge will not receive messages');
+// } else {
+//   console.log('✅ HITL WebSocket Bridge initialized\n');
+// }
+//
+// // Subscribe to NATS topics
+// bridge.subscribeToApprovalRequests().catch(err => {
+//   console.error('Error subscribing to approval requests:', err);
+// });
+//
+// bridge.subscribeToQuestionRequests().catch(err => {
+//   console.error('Error subscribing to question requests:', err);
+// });
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 3. Setup Remix UI Server
@@ -153,9 +171,13 @@ server.listen(PORT, () => {
   console.log(`📊 UI: http://localhost:${PORT}/approvals`);
   console.log(`🌐 WebSocket: ws://localhost:${PORT}/ws/approval`);
   console.log(`\n✨ Components:`);
+  console.log(`  ✅ PostgreSQL Database - HITL history, metrics, decisions`);
   console.log(`  ✅ LLM Router - Routes agent requests to AI providers`);
   console.log(`  ✅ HITL Bridge - Approval/question human-in-the-loop`);
   console.log(`  ✅ Remix UI - Control panel dashboard`);
+  console.log(`\n📬 Message Queues:`);
+  console.log(`  ✅ NATS - Legacy messaging (backward compatible)`);
+  console.log(`  ✅ shared_queue - pgmq (CentralCloud managed, optional)`);
   console.log('');
 
   if (MODE === 'development') {
@@ -168,5 +190,8 @@ process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down Nexus...');
   await bridge.close();
   await llmHandler.close?.();
+  if (db) {
+    await db.close();
+  }
   process.exit(0);
 });

@@ -24,7 +24,7 @@ defmodule Genesis.MetricsCollector do
 
   ## Storage
 
-  All metrics stored in genesis_db for:
+  All metrics stored in genesis for:
   - Historical tracking
   - Trend analysis
   - Regression detection

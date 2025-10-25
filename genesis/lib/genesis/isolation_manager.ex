@@ -7,7 +7,7 @@ defmodule Genesis.IsolationManager do
   Each experiment gets:
   - Isolated filesystem (copy of relevant code directories in ~/.genesis/sandboxes/)
   - Isolated hotreload context (separate BEAM process)
-  - Isolated database (genesis_db with transaction isolation)
+  - Isolated database (genesis with transaction isolation)
   - Production-safe isolation (never modifies main repository)
 
   ## Isolation Strategy (Monorepo-Based)

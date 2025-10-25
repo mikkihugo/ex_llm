@@ -1,6 +1,6 @@
 defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
   @moduledoc """
-  Sync framework patterns: PostgreSQL → ETS → NATS → Rust
+  Sync framework patterns: PostgreSQL → ETS → JSON Export
 
   ## Architecture
 
@@ -9,8 +9,6 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
     ↓
   ETS Cache (hot patterns, <5ms reads)
     ↓
-  NATS Publish (distribute to SPARC fact system)
-    ↓
   Export JSON (Rust detector reads)
   ```
 
@@ -18,8 +16,7 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
 
   1. **Learn** - Pattern detected, stored in PG
   2. **Cache** - Load to ETS for fast access
-  3. **Publish** - Broadcast via NATS to fact system
-  4. **Export** - Write JSON for Rust to read
+  3. **Export** - Write JSON for Rust to read
   """
 
   use GenServer
@@ -28,7 +25,6 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
   @ets_table :framework_patterns_cache
   # 5 minutes
   @refresh_interval 5 * 60 * 1000
-  @nats_subject "knowledge.facts.framework_patterns"
   @json_export_path "rust/package_registry_indexer/framework_patterns.json"
 
   ## Client API
@@ -85,7 +81,7 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
     # Schedule periodic refresh
     schedule_refresh()
 
-    Logger.info("✅ Framework pattern sync started (ETS + NATS)")
+    Logger.info("✅ Framework pattern sync started (ETS + JSON export)")
 
     {:ok, %{last_refresh: System.monotonic_time(:millisecond)}}
   end
@@ -98,10 +94,7 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
         # 2. Update ETS cache
         cache_pattern(detection_result.framework_name, detection_result)
 
-        # 3. Publish to NATS
-        publish_to_nats(detection_result)
-
-        # 4. Export to JSON for Rust
+        # 3. Export to JSON for Rust
         spawn(fn -> export_to_json() end)
 
         Logger.info("Learned and synced pattern: #{detection_result.framework_name}")
@@ -176,25 +169,6 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
 
   defp cache_pattern(framework_name, pattern) do
     :ets.insert(@ets_table, {framework_name, pattern, System.os_time(:second)})
-  end
-
-  defp publish_to_nats(pattern) do
-    # Publish to NATS for SPARC fact system
-    _message = %{
-      type: "framework_pattern",
-      framework: pattern.framework_name,
-      data: pattern,
-      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
-    }
-
-    # Publish to NATS for distribution to SPARC fact system
-    case Singularity.NATS.Client.publish(@nats_subject, Jason.encode!(_message)) do
-      :ok ->
-        Logger.debug("Published pattern to NATS: #{@nats_subject}")
-
-      {:error, reason} ->
-        Logger.warning("Failed to publish pattern to NATS: #{inspect(reason)}")
-    end
   end
 
   defp export_to_json do

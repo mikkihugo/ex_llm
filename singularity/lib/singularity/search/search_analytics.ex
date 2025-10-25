@@ -157,7 +157,6 @@ defmodule Singularity.Search.SearchAnalytics do
   import Ecto.Query
   alias Singularity.Repo
   alias Singularity.Search.SearchMetric
-  alias Singularity.NATS.Client, as: NatsClient
 
   @doc """
   Record a search query and its performance metrics.
@@ -587,40 +586,12 @@ defmodule Singularity.Search.SearchAnalytics do
   end
 
   defp publish_to_knowledge_cache(query, metric) do
-    # Publish search analytics to CentralCloud's KnowledgeCache
-    # This enables collective learning about what searches work best across all codebases
-    message = %{
-      "event" => "search_performed",
-      "query" => query,
-      "elapsed_ms" => metric.elapsed_ms,
-      "results_count" => metric.results_count,
-      "embedding_model" => metric.embedding_model,
-      "cache_hit" => metric.cache_hit,
-      "fallback_used" => metric.fallback_used,
-      "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
-    }
-
-    case Singularity.NATS.Client.publish(
-           "knowledge_cache.search_analytics",
-           Jason.encode!(message)
-         ) do
-      :ok ->
-        Logger.debug("Published search analytics to KnowledgeCache",
-          query: query,
-          elapsed_ms: metric.elapsed_ms
-        )
-
-      {:error, reason} ->
-        Logger.warning("Failed to publish to KnowledgeCache",
-          query: query,
-          reason: reason
-        )
-    end
-  rescue
-    e ->
-      Logger.error("Exception publishing to KnowledgeCache",
-        query: query,
-        error: inspect(e)
-      )
+    Logger.debug("Search analytics recorded",
+      query: query,
+      elapsed_ms: metric.elapsed_ms,
+      results_count: metric.results_count,
+      embedding_model: metric.embedding_model,
+      cache_hit: metric.cache_hit
+    )
   end
 end

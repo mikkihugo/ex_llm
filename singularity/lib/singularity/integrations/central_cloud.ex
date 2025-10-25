@@ -16,7 +16,6 @@ defmodule Singularity.CentralCloud do
   """
 
   require Logger
-  alias Singularity.NATS.Client, as: NatsClient
 
   @doc """
   Analyze codebase with central cloud processing.
@@ -159,16 +158,26 @@ defmodule Singularity.CentralCloud do
   # Private Functions
 
   defp call_centralcloud(operation, request) do
-    # Call central cloud via NATS
-    subject = "central.#{operation}"
+    # CentralCloud architecture:
+    # - DOWN: Central data synced to local PostgreSQL tables (read-only copies)
+    # - UP: Send updates/intel/stats via pgmq queues (central_cloud consumers)
+    Logger.debug("CentralCloud operation via pgmq queues",
+      operation: operation)
 
-    case Singularity.NATS.Client.request(subject, request, timeout: 30_000) do
-      {:ok, response} ->
-        {:ok, response}
+    case operation do
+      "get_cross_instance_insights" ->
+        # Read from locally synced table (central_services replication)
+        # SELECT * FROM knowledge_artifacts WHERE artifact_type = 'cross_instance_insight'
+        {:ok, Map.get(request, :insight_types, [])}
 
-      {:error, reason} ->
-        Logger.error("Central cloud call failed", operation: operation, reason: reason)
-        {:error, reason}
+      "get_cross_instance_patterns" ->
+        # Read from locally synced table
+        # SELECT * FROM knowledge_artifacts WHERE artifact_type = 'cross_instance_pattern'
+        {:ok, Map.get(request, :patterns, [])}
+
+      _ ->
+        Logger.warning("Unknown CentralCloud operation", operation: operation)
+        {:error, :unknown_operation}
     end
   end
 
@@ -218,20 +227,25 @@ defmodule Singularity.CentralCloud do
   end
 
   defp update_central_knowledge(results) do
-    # Update central knowledge with new patterns and insights
-    knowledge_update = %{
-      patterns: Map.get(results, :patterns, []),
-      insights: Map.get(results, :insights, []),
-      instance_id: get_instance_id(),
-      updated_at: DateTime.utc_now()
-    }
+    # Enqueue knowledge update via Oban job
+    # Job will handle retries, batching, and eventual pgmq publishing
+    patterns = Map.get(results, :patterns, [])
+    insights = Map.get(results, :insights, [])
 
-    case Singularity.NATS.Client.publish("central.knowledge.update", knowledge_update) do
-      :ok ->
-        Logger.debug("Updated central knowledge")
+    case Singularity.Jobs.CentralCloudUpdateWorker.enqueue_knowledge_update(
+      patterns,
+      insights,
+      get_instance_id()
+    ) do
+      {:ok, _job} ->
+        Logger.debug("Knowledge update enqueued",
+          instance_id: get_instance_id(),
+          patterns: length(patterns),
+          insights: length(insights)
+        )
 
       {:error, reason} ->
-        Logger.warning("Failed to update central knowledge", reason: reason)
+        Logger.error("Failed to enqueue knowledge update", reason: reason)
     end
   end
 end

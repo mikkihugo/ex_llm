@@ -103,8 +103,6 @@ defmodule Singularity.MixProject do
       # Distributed Systems
       {:libcluster, "~> 3.3"},
       {:delta_crdt, "~> 0.6"},
-      # NATS messaging
-      {:gnat, "~> 1.8"},
 
       # Structured LLM outputs with validation (Instructor)
       {:instructor, "~> 0.1"},

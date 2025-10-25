@@ -12,7 +12,6 @@ defmodule Singularity.TechnologyTemplateLoader do
 
   require Logger
 
-  alias Singularity.PlatformIntegration.NatsConnector
   alias Singularity.TemplateStore
 
   @doc "Return decoded template map (or nil if missing)"
@@ -169,21 +168,6 @@ defmodule Singularity.TechnologyTemplateLoader do
   defp compile_pattern(pattern) when is_binary(pattern), do: Regex.compile(pattern, "i")
   defp compile_pattern(%Regex{} = regex), do: {:ok, regex}
   defp compile_pattern(_), do: {:error, :invalid_pattern}
-
-  defp fetch_from_nats(identifier, opts) do
-    subject = opts[:nats_subject] || "templates.technology.fetch"
-    payload = %{identifier: identifier}
-
-    case NatsConnector.fetch_template(subject, payload) do
-      {:error, reason} ->
-        Logger.debug("NATS template fetch failed",
-          identifier: inspect(identifier),
-          reason: inspect(reason)
-        )
-
-        {:error, reason}
-    end
-  end
 
   defp persist_template(identifier, %{} = template, source, opts) do
     if Keyword.get(opts, :persist, true) do

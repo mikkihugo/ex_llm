@@ -158,7 +158,7 @@ else
     mix ecto.migrate
     if [ $? -ne 0 ]; then
         echo -e "${RED}❌ Genesis migrations failed${NC}"
-        echo "Check that PostgreSQL is running and genesis_db database exists"
+        echo "Check that PostgreSQL is running and genesis database exists"
         exit 1
     fi
     echo "✅ Genesis migrations up to date"

@@ -42,7 +42,6 @@ defmodule Singularity.Tools.Default do
     Singularity.Tools.Git.register(provider)
     Singularity.Tools.Database.register(provider)
     Singularity.Tools.Testing.register(provider)
-    Singularity.Tools.NATS.register(provider)
     Singularity.Tools.ProcessSystem.register(provider)
     Singularity.Tools.Documentation.register(provider)
     Singularity.Tools.Monitoring.register(provider)

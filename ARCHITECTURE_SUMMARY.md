@@ -1,328 +1,290 @@
-# Singularity Architecture Summary
+# 5-Database Architecture Summary
 
-## Quick Reference: What Runs Where?
+**Complete data isolation with pgmq-based inter-service communication (NOT Ecto)**
 
-### Layer 1: GPU & Embeddings (Independent Systems)
+## Overview
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ TRAINING (EXLA + Nx)                                            │
-│ Purpose: Model training (CodeT5p, StarCoder2-7B, Embeddings)   │
-│ Control: XLA_TARGET env var                                     │
-├─────────────────────────────────────────────────────────────────┤
-│ macOS dev:      XLA_TARGET=metal → EXLA CPU (no Metal support) │
-│ RTX 4080 prod:  XLA_TARGET=cuda118 → EXLA CUDA (fast!)        │
-│ Linux no GPU:   XLA_TARGET=cpu → EXLA CPU                      │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│ EMBEDDINGS (ONNX Runtime + Rust NIF)                            │
-│ Purpose: Vector generation (inference only)                     │
-│ Control: ONNX auto-detection (independent of XLA_TARGET)       │
-├─────────────────────────────────────────────────────────────────┤
-│ macOS dev:      Metal GPU (Jina v3 + Qodo-Embed-1, 5-10ms)    │
-│ RTX 4080 prod:  CUDA GPU (Jina v3 + Qodo-Embed-1, 5-10ms)    │
-│ Linux no GPU:   CPU (10-20ms)                                  │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│ DATABASE (PostgreSQL + pgvector)                                │
-│ Purpose: Store vectors + metadata                              │
-│ Control: Nix auto-startup                                      │
-├─────────────────────────────────────────────────────────────────┤
-│ Dev:    PostgreSQL localhost:5432 (auto-started)              │
-│ Prod:   PostgreSQL localhost:5432 (same DB as dev)           │
-│ Test:   PostgreSQL sandboxed (Ecto.Sandbox)                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Key Points:**
-- EXLA and ONNX are **independent** (different GPU systems)
-- ONNX embeddings use Metal on macOS (great for dev!)
-- EXLA uses CPU on macOS (limitation of XLA, not Metal)
-- Database is **shared** across environments (living knowledge base)
-- All auto-detected - no manual configuration needed
-
----
-
-## Layer 2: Detection & Analysis (All Local)
-
-### Singularity (Fully Functional Standalone)
+Singularity ecosystem uses **5 separate PostgreSQL databases** with **complete data isolation** and **inter-service communication via pgmq** (PostgreSQL Message Queue - native extension, not ORM).
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│ SINGULARITY APPLICATION                                      │
-│ Single-instance, full detection & analysis                   │
-├──────────────────────────────────────────────────────────────┤
-│ ✅ Framework Detection (Rust NIF)                            │
-│   └─ Detects: Phoenix, Ash, Rails, Django, etc.            │
-│   └─ Method: Config files + code patterns + AI analysis     │
-│                                                              │
-│ ✅ Language Detection (Rust NIF)                            │
-│   └─ Supports: 25+ languages (Elixir, Rust, Python, etc.)  │
-│   └─ Method: File extensions + manifest analysis            │
-│                                                              │
-│ ✅ Code Analysis (Rust NIF)                                 │
-│   └─ Supports: 20 languages                                 │
-│   └─ Metrics: Complexity, quality, RCA, AST extraction     │
-│                                                              │
-│ ✅ Pattern Extraction (Rust NIF)                            │
-│   └─ Finds: API patterns, error handling, logging, etc.    │
-│   └─ Storage: PostgreSQL + pgvector                         │
-│                                                              │
-│ ✅ Technology Detection (Rust NIF)                          │
-│   └─ Framework stacks, tech combinations, best practices   │
-│   └─ Storage: PostgreSQL + embeddings                       │
-│                                                              │
-│ ✅ Local Semantic Search                                    │
-│   └─ pgvector for 1536-dim embeddings                      │
-│   └─ Fast, no network required                              │
-└──────────────────────────────────────────────────────────────┘
+CentralCloud (Elixir + Ecto)
+│
+├─ OWNS: shared_queue database (pgmq - native)
+│        90-day message retention
+│
+├─ MANAGES: All queue initialization and pruning
+│
+└─ READS: Archive tables for analytics (read-only)
+
+
+ ┌──────────┬─────────────┬────────────┬───────────────┐
+ │          │             │            │               │
+singularity genesis       nexus     centralcloud      (consumers)
+(Ecto)     (Ecto)        (Drizzle)   (Ecto - RO)
+
+   ↓          ↓             ↓            ↓
+shared_queue (pgmq - 8 queues)
+   ↓          ↓             ↓            ↓
+LLM requests, job requests, approvals, questions
 ```
 
-**All detection features work standalone - NO CentralCloud needed!**
+## The 3 ORM Types (Hybrid Approach)
 
----
+| ORM | Database | Language | Purpose |
+|-----|----------|----------|---------|
+| **Ecto Repo** | singularity | Elixir | Application data (Agent execution, tasks) |
+| **Ecto Repo** | genesis | Elixir | Application data (Code execution results) |
+| **Ecto Repo** | centralcloud | Elixir | Application data (Learning, intelligence) |
+| **Ecto Repo** | shared_queue | Elixir | Read-only analytics on message archives |
+| **pgmq** | shared_queue | Native SQL | Message queue pub/sub (high-performance) |
+| **Drizzle ORM** | nexus | TypeScript | Configuration (Models, providers) |
 
-## Layer 3: Multi-Instance Intelligence (Optional, Future)
+**Terminology Note:** "Repo" = Ecto Database Repository (NOT Git repository). Standard Elixir naming.
 
-### CentralCloud (For Teams with Multiple Developers)
+**shared_queue uses BOTH:**
+- **pgmq functions** for publish/subscribe (high-performance messaging)
+- **Ecto schemas** for querying archived messages (type-safe analytics)
 
-```
-Singularity Instance 1    Singularity Instance 2
-(macOS dev)               (Another dev machine)
-        │                         │
-        └──────────────┬──────────┘
-                       │
-                    NATS
-                       │
-        ┌──────────────────────────────┐
-        │ CENTRAL CLOUD                │
-        │ (Knowledge Authority)        │
-        ├──────────────────────────────┤
-        │ ✅ Analyze Codebase          │
-        │ ✅ Learn Patterns            │
-        │ ✅ Train Models              │
-        │ ✅ Get Cross-Instance        │
-        │    Insights                  │
-        └──────────────────────────────┘
-                       │
-            PostgreSQL (centralcloud DB)
-```
+## The 5 Databases
 
-**CentralCloud Adds:**
-- Aggregated pattern detection from all instances
-- Cross-instance learning (dev learns from prod learnings)
-- Collective intelligence (team patterns recognized globally)
-- Shared model training (models trained on all instance data)
+### 1. **singularity** (Elixir + Ecto)
+- **Ownership:** Each instance (separate DB per instance)
+- **Purpose:** Agent execution, task planning, reasoning
+- **ORM:** Ecto (schema-based)
+- **Access:** Own database + shared_queue (pgmq)
+- **Size:** Variable (agents, tasks, learning)
 
-**CentralCloud Does NOT Provide:**
-- Local framework detection (Singularity has it already)
-- Local language detection (Singularity has it already)
-- Local code analysis (Singularity has it already)
-- Local pattern extraction (Singularity has it already)
+### 2. **genesis** (Elixir + Ecto)
+- **Ownership:** Single Genesis instance
+- **Purpose:** Code execution, validation, linting
+- **ORM:** Ecto
+- **Access:** Own database + shared_queue (pgmq)
+- **Size:** Small (ephemeral results)
 
----
+### 3. **centralcloud** (Elixir + Ecto)
+- **Ownership:** CentralCloud application
+- **Purpose:** Framework learning, intelligence, analytics
+- **ORM:** Ecto
+- **Access:** Own database (RW) + shared_queue (RO archives only)
+- **Size:** Grows with patterns
 
-## Databases
+### 4. **nexus** (TypeScript + Drizzle ORM)
+- **Ownership:** Nexus application
+- **Purpose:** LLM routing, HITL approval UI
+- **ORM:** Drizzle (TypeScript, SQL-first)
+- **Access:** Own database + shared_queue (pgmq)
+- **Size:** Small (config) + optional logs
 
-### Two Independent Databases
+### 5. **shared_queue** (PostgreSQL + pgmq + Ecto)
+- **Ownership:** CentralCloud EXCLUSIVELY (creates & manages)
+- **Extension:** pgmq (native PostgreSQL message queue)
+- **Purpose:** Central durable message hub
+- **Access:**
+  - **pgmq functions** for publish/subscribe (all services)
+  - **Ecto schemas** (SharedQueueRepo) for read-only archive queries (CentralCloud analytics)
+- **Retention:** 90 days (auto-pruned)
+- **Hybrid Approach:** pgmq for performance + Ecto for type-safe queries
 
-#### 1. `singularity` (Main Application)
-- **Used by:** Singularity application
-- **Contents:** Code patterns, templates, embeddings, detection results
-- **Access:** Dev (direct), Test (sandboxed), Prod (shared)
-- **Learning:** All environments contribute to same KB
-- **Status:** ✅ **Currently in use**
+## Hybrid: pgmq + Ecto (Best of Both)
 
-#### 2. `centralcloud` (Optional, Multi-Instance)
-- **Used by:** CentralCloud application (future)
-- **Contents:** Aggregated patterns, cross-instance insights, global statistics
-- **Access:** Only when multiple Singularity instances are running
-- **Learning:** Aggregates learnings from all instances
-- **Status:** 🔨 **Implemented but optional** (single-instance setup doesn't need it)
+✅ **pgmq for publishing/subscribing:**
+- Native PostgreSQL message queue (efficient)
+- ACID-compliant transactions
+- Automatic archival and retention
+- Language-agnostic (Elixir, TypeScript, Rust)
+- High-throughput messaging
+- No ORM overhead
 
----
+✅ **Ecto for analytics on archives:**
+- Type-safe queries on archived messages
+- Read-only access to SharedQueueRepo
+- Standard Ecto query syntax
+- CentralCloud can aggregate learnings from message patterns
+- Beautiful integration with existing Ecto code
 
-## Current Architecture (Recommended)
+**Why both?**
+- pgmq is optimized for messaging (performance)
+- Ecto is optimized for analytics (type safety + convenience)
+- Each tool does what it does best
 
-### Option 1: Single Instance (Current)
+## Queue Architecture
 
-```
-Dev MacBook
-├─ PostgreSQL (singularity DB)
-├─ Singularity (all features working)
-│  ├─ Framework detection ✅
-│  ├─ Language detection ✅
-│  ├─ Code analysis ✅
-│  ├─ Pattern extraction ✅
-│  └─ Local semantic search ✅
-├─ NATS (for LLM calls, optional)
-└─ No CentralCloud needed ✓
-```
+### 8 Message Types (pgmq queues)
 
-**What you get:**
-- Fast local detection and analysis
-- Rich pattern extraction
-- Semantic code search
-- Living knowledge base (learns from code)
+| Queue | Publisher | Consumers | Data | Flow |
+|-------|-----------|-----------|------|------|
+| `llm_requests` | Singularity | Nexus | {agent_id, task_type, messages} | → |
+| `llm_results` | Nexus | Singularity | {request_id, result, model} | ← |
+| `approval_requests` | Singularity | Nexus, Browser | {id, file_path, diff} | → |
+| `approval_responses` | Browser | Singularity | {request_id, approved} | ← |
+| `question_requests` | Singularity | Nexus, Browser | {id, question} | → |
+| `question_responses` | Browser | Singularity | {request_id, response} | ← |
+| `job_requests` | Singularity | Genesis | {id, code, language} | → |
+| `job_results` | Genesis | Singularity | {request_id, output, error} | ← |
 
-**What you don't get:**
-- Cross-instance intelligence (not needed for single instance)
+Each queue has `_archive` table (kept 90 days for analysis).
 
----
+## Configuration
 
-## Future Architecture (When You Scale)
-
-### Option 2: Multi-Instance with CentralCloud (Later)
-
-```
-Dev MacBook                  RTX 4080 Prod
-├─ Singularity             ├─ Singularity
-│  ├─ Detect ✅             │  ├─ Detect ✅
-│  ├─ Analyze ✅            │  ├─ Analyze ✅
-│  └─ Learn locally ✅      │  └─ Learn locally ✅
-└─ NATS ──────────┬─────────────── NATS
-                  │
-         ┌────────────────┐
-         │ CentralCloud   │
-         │ - Aggregates   │
-         │ - Cross-train  │
-         │ - Insights     │
-         └────────────────┘
-              │
-         PostgreSQL
-         (centralcloud DB)
-```
-
-**When to switch:**
-- Multiple developers on same project
-- Want shared learnings across instances
-- Production needs to teach dev new patterns
-- Team wants collective intelligence
-
----
-
-## Performance Targets
-
-### Development (macOS + Metal GPU)
-| Task | Latency | Throughput |
-|------|---------|-----------|
-| Embedding inference (Metal) | 5-10ms | 100+ emb/sec |
-| Vector search (1536-dim) | 10-50ms | 20-100 queries/sec |
-| Framework detection | 100-500ms | 10-20 analyses/sec |
-| Code analysis (20 langs) | 50-200ms | 20-50 analyses/sec |
-| Pattern extraction | 100-500ms | 10-20 analyses/sec |
-
-### Production (RTX 4080 + CUDA GPU)
-| Task | Latency | Throughput |
-|------|---------|-----------|
-| Embedding inference (CUDA) | 5-10ms | 100+ emb/sec |
-| Vector search (1536-dim) | 5-20ms | 50-200 queries/sec |
-| CodeT5p training | N/A | 1-5 tokens/sec |
-| Embedding fine-tuning | N/A | 50-100k tokens/sec |
-| Code analysis (20 langs) | 20-100ms | 50-100 analyses/sec |
-
----
-
-## Configuration: Zero Manual Setup
-
-All three layers **auto-detect**:
+### Environment Variables
 
 ```bash
-# Just enter Nix shell
-nix develop
-# ↓ PostgreSQL auto-starts
-# ↓ XLA_TARGET auto-detected (CUDA → Metal → CPU)
-# ↓ ONNX auto-selects GPU (Metal/CUDA/CPU)
-# ↓ All detection features ready to use
-
-# Start NATS (optional, for LLM calls)
-nats-server -js
-
-# Start Singularity
-cd singularity && mix phx.server
-# All detection features working ✅
+# Shared Queue (CentralCloud owns this)
+SHARED_QUEUE_ENABLED=true
+SHARED_QUEUE_DB_URL="postgresql://localhost/shared_queue"
+SHARED_QUEUE_RETENTION_DAYS=90
 ```
 
----
+### Singularity Config
 
-## Key Insights
+```elixir
+config :singularity, :shared_queue,
+  enabled: true,
+  database_url: System.get_env("SHARED_QUEUE_DB_URL"),
+  poll_interval_ms: 1000,
+  batch_size: 10
+```
 
-### 1. ONNX Embeddings Work Independently
-- **macOS:** Metal GPU (independent of EXLA)
-- **RTX 4080:** CUDA GPU (independent of EXLA)
-- **No config needed:** ONNX auto-detects best GPU
+### CentralCloud Config
 
-### 2. EXLA Training is Separate
-- **macOS:** CPU only (XLA doesn't support Metal)
-- **RTX 4080:** CUDA (fast training)
-- **Future:** StarCoder2-7B fine-tuning on RTX 4080
+```elixir
+config :centralcloud, :shared_queue,
+  enabled: true,
+  database_url: System.get_env("SHARED_QUEUE_DB_URL"),
+  auto_initialize: true,
+  retention_days: 90
+```
 
-### 3. Database Strategy
-- **Single shared database:** All environments learn together
-- **Internal tooling:** No multi-tenancy
-- **Living knowledge base:** Code → DB bidirectional learning
+## Data Isolation
 
-### 4. Detection Features are Local
-- **NO CentralCloud needed** for detection to work
-- All detection features fully implemented in Singularity
-- CentralCloud is for **multiplying** value via cross-instance learning, not enabling it
+### What Each Service Can Access
 
----
+| Service | Own DB | shared_queue | Others' DBs |
+|---------|--------|--------------|------------|
+| Singularity | ✅ RW | ✅ RW (pgmq) | ❌ No |
+| Genesis | ✅ RW | ✅ RW (pgmq) | ❌ No |
+| Nexus | ✅ RW | ✅ RW (pgmq) | ❌ No |
+| CentralCloud | ✅ RW | ✅ RO (pgmq) | ❌ No |
 
-## Files to Read
+**Guarantees:**
+- ✅ No cross-instance data leakage
+- ✅ No unauthorized database access
+- ✅ Config isolation (Nexus secrets private)
+- ✅ Learning privacy (CentralCloud intelligence not shared)
 
-**Architecture & Design:**
-- `CLAUDE.md` - Main developer guide
-- `GPU_EMBEDDING_ARCHITECTURE.md` - GPU layer details
-- `DEPLOYMENT_GUIDE.md` - Deployment walkthrough
-- `DATABASE_STRATEGY_OPTIONS.md` - Database architecture choices
-- `CENTRALCLOUD_DETECTION_ROLE.md` - CentralCloud explanation
+## Setup Steps
 
-**Configuration:**
-- `.envrc` - Environment auto-detection
-- `singularity/config/runtime.exs` - EXLA/ONNX configuration
-- `singularity/config/config.exs` - Database configuration
-- `scripts/setup-database.sh` - Database initialization
+```bash
+# 1. Create databases
+createdb singularity genesis centralcloud nexus shared_queue
 
-**Code:**
-- `singularity/lib/singularity/detection/` - Detection modules
-- `singularity/lib/singularity/code_analyzer.ex` - Code analysis
-- `singularity/lib/singularity/central_cloud.ex` - CentralCloud client
-- `centralcloud/lib/centralcloud/` - CentralCloud services
+# 2. CentralCloud initializes shared_queue at startup
+# (via SharedQueueManager - creates pgmq extension)
 
----
+# 3. Run migrations
+cd singularity && mix ecto.migrate
+cd genesis && mix ecto.migrate
+cd centralcloud && mix ecto.migrate
+cd nexus && bunx drizzle-kit push
 
-## TL;DR
+# 4. Verify
+psql shared_queue -c "SELECT * FROM pgmq.queue_list();"
+```
 
-| Question | Answer |
-|----------|--------|
-| **Do I need CentralCloud?** | No - detection works locally ✅ |
-| **Where do embeddings run?** | Metal (macOS) or CUDA (prod), via ONNX ✅ |
-| **Can I search code locally?** | Yes - pgvector + 1536-dim embeddings ✅ |
-| **Is the database shared?** | Yes - dev and prod share one DB ✅ |
-| **When do I use CentralCloud?** | When you have multiple developers/instances |
-| **How do I start?** | `nix develop && ./scripts/setup-database.sh` ✅ |
+## Multi-Instance Singularity
 
----
+When running multiple Singularity instances:
 
-## Next Steps
+```
+Instance 1 DB    Instance 2 DB    Instance 3 DB
+(singularity_1)  (singularity_2)  (singularity_3)
+      ↓                ↓                ↓
+    ╚══════════════ shared_queue ═══════╝
+              (pgmq - CentralCloud owned)
+                        ↓
+            CentralCloud + learning
+```
 
-### Immediate (Option 1 - Current)
-1. ✅ Keep current single-instance setup
-2. ✅ All detection features work locally
-3. ✅ No CentralCloud needed
-4. ✅ Development and learning is fast
+Each instance is completely isolated. They coordinate ONLY through pgmq messages.
 
-### Later (Option 2 - When You Scale)
-- [ ] Multiple developers on same project
-- [ ] Deploy CentralCloud on RTX 4080
-- [ ] Enable NATS bridging between instances
-- [ ] Start using cross-instance intelligence
-- [ ] Share learnings across team
+## Access Patterns
 
----
+### Singularity (Ecto + pgmq)
+```elixir
+# Own data - use Ecto
+Singularity.Repo.insert!(agent)
 
-**Current Status:** ✅ **Option 1** - Single instance, fully functional
-**Future Status:** Ready for **Option 2** whenever multi-instance scaling is needed
+# Shared queue - use pgmq
+SharedQueuePublisher.publish_llm_request(request)
+SharedQueuePublisher.read_llm_results()
+```
+
+### Nexus (Drizzle + pgmq)
+```typescript
+// Own config - use Drizzle
+await db.insert(models).values(config)
+
+// Shared queue - use pgmq client
+await sharedQueue.read('llm_requests')
+```
+
+### CentralCloud (Ecto + pgmq + SharedQueueRepo)
+```elixir
+# Own data - use CentralCloud.Repo
+CentralCloud.Repo.all(Pattern)
+
+# Archive queries - use SharedQueueRepo with schemas
+import Ecto.Query
+
+# Type-safe query on LLM request archives
+from(msg in CentralCloud.SharedQueueSchemas.LLMRequestArchive,
+  where: msg.enqueued_at > ago(7, "day"),
+  select: msg.msg
+) |> CentralCloud.SharedQueueRepo.all()
+
+# Count approvals from last 30 days
+CentralCloud.SharedQueueSchemas.ApprovalRequestArchive
+|> where([m], m.enqueued_at > ago(30, "day"))
+|> CentralCloud.SharedQueueRepo.aggregate(:count)
+
+# Analyze question response patterns
+CentralCloud.SharedQueueSchemas.QuestionResponseArchive
+|> CentralCloud.SharedQueueRepo.all()
+|> Enum.group_by(& &1.msg["agent_id"])
+```
+
+
+## Files
+
+**Documentation:**
+- `DATABASE_ARCHITECTURE.md` - Complete reference
+- `ARCHITECTURE_SUMMARY.md` - This file (quick overview)
+- `shared_queue/README.md` - Setup guide
+
+**CentralCloud (Owner):**
+- `centralcloud/lib/centralcloud/shared_queue_manager.ex` - pgmq initialization
+- `centralcloud/lib/centralcloud/shared_queue_repo.ex` - Ecto repository for querying
+- `centralcloud/lib/centralcloud/shared_queue_schemas.ex` - Ecto schemas (16 tables)
+- `centralcloud/config/config.exs` - Database + Manager configuration
+
+**Singularity (Producer):**
+- `singularity/lib/singularity/shared_queue_publisher.ex` - Publish to pgmq
+- `singularity/config/config.exs` - Configuration
+
+**Nexus (Consumer):**
+- `nexus/src/shared-queue-handler.ts` - Consume from pgmq
+
+## Summary
+
+| Aspect | Details |
+|--------|---------|
+| **Total Databases** | 5 (singularity, genesis, centralcloud, nexus, shared_queue) |
+| **Queue System** | pgmq (PostgreSQL native) |
+| **Analytics Queries** | Ecto schemas + SharedQueueRepo |
+| **Message Types** | 8 (LLM, approvals, questions, jobs) |
+| **Archive Tables** | 16 (8 active + 8 archives) |
+| **Retention** | 90 days (auto-archived and pruned) |
+| **Owner of shared_queue** | CentralCloud (exclusive) |
+| **Data Isolation** | Complete (no cross-service access) |
+| **Configuration** | Environment variables + config.exs |
+| **ORMs Used** | Ecto (3 DBs), Drizzle (1 DB), pgmq (1 DB) |

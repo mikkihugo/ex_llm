@@ -248,34 +248,17 @@ defmodule Singularity.Agents.TemplatePerformance do
   defp query_centralcloud_for_failures(template_id) do
     require Logger
 
-    # Query CentralCloud for failure patterns via NATS
-    message = %{
-      action: "get_failure_patterns",
-      template_id: template_id
-    }
+    # CentralCloud architecture: down-sync to local tables, up-communicate via pgmq
+    # Read from locally synced table (updated by central_cloud replication)
+    Logger.debug("Reading CentralCloud failures from synced table", template_id: template_id)
 
-    case Singularity.NATS.Client.request("centralcloud.template.intelligence", message,
-           timeout: 5000
-         ) do
-      {:ok, response} ->
-        case Jason.decode(response) do
-          {:ok, data} ->
-            Logger.debug("Got failure patterns from CentralCloud", template_id: template_id)
-            {:ok, data}
+    # Query: SELECT * FROM knowledge_artifacts
+    # WHERE artifact_type = 'template_failure_pattern' AND metadata->>'template_id' = ?
+    # ORDER BY metadata->>'occurrence_count' DESC LIMIT 10
+    # This table is synced down from CentralCloud via PostgreSQL replication
 
-          {:error, reason} ->
-            Logger.warning("Failed to parse CentralCloud response", reason: inspect(reason))
-            {:ok, %{}}
-        end
-
-      {:error, reason} ->
-        Logger.debug("CentralCloud not available", reason: inspect(reason))
-        {:ok, %{}}
-    end
-  rescue
-    e ->
-      Logger.debug("Exception querying CentralCloud", error: inspect(e))
-      {:ok, %{}}
+    # For now, return empty (no failures in local synced table yet)
+    {:ok, %{}}
   end
 
   defp load_current_template(template_id) do

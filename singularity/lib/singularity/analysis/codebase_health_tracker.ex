@@ -97,7 +97,6 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
 
   require Logger
   alias Singularity.Repo
-  alias Singularity.NATS.Client, as: NatsClient
 
   # Ecto.Query is imported locally in functions that need it
   # to avoid compile-time circular dependency issues
@@ -142,9 +141,6 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
         loc: snapshot.lines_of_code,
         modules: snapshot.modules_count
       )
-
-      # Publish to CentralCloud for collective analysis
-      publish_snapshot_to_central(snapshot)
 
       {:ok, snapshot}
     else
@@ -604,30 +600,4 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
        }}
   end
 
-  defp publish_snapshot_to_central(snapshot) do
-    message = %{
-      "event" => "codebase_health_snapshot",
-      "codebase" => snapshot.codebase_path,
-      "metrics" => %{
-        "loc" => snapshot.lines_of_code,
-        "modules" => snapshot.modules_count,
-        "test_coverage" => snapshot.documentation_coverage,
-        "violations" => snapshot.violations_count
-      },
-      "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
-    }
-
-    case Singularity.NATS.Client.publish(
-           "intelligence_hub.codebase_health",
-           Jason.encode!(message)
-         ) do
-      :ok ->
-        Logger.debug("Published codebase health to IntelligenceHub")
-
-      {:error, reason} ->
-        Logger.warning("Failed to publish codebase health", reason: reason)
-    end
-  rescue
-    _ -> :ok
-  end
 end

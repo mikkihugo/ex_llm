@@ -25,9 +25,6 @@ defmodule Genesis.MixProject do
       {:postgrex, "~> 0.17"},
       {:jason, "~> 1.4"},
 
-      # Messaging (gnat is the Elixir NATS client)
-      {:gnat, "~> 1.7"},
-
       # Background Jobs (Oban handles scheduling via Cron plugin)
       {:oban, "~> 2.18"},
 

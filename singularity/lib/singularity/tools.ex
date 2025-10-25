@@ -156,10 +156,6 @@ defmodule Singularity.Tools do
       String.starts_with?(tool_name, "deploy_") ->
         {:ok, Singularity.Tools.Deployment}
 
-      # NATS domain
-      String.starts_with?(tool_name, "nats_") ->
-        {:ok, Singularity.Tools.NATS}
-
       # Default: tool not found
       true ->
         {:error, "Tool not found: #{tool_name}"}

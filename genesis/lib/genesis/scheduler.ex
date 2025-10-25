@@ -180,22 +180,45 @@ defmodule Genesis.Scheduler do
   end
 
   defp publish_metrics_to_nats(report) do
-    subject = "system.metrics.genesis"
+    # Publish aggregated metrics to CentralCloud via pgmq
+    publish_metrics_to_pgmq(report)
+  end
+
+  defp publish_metrics_to_pgmq(report) do
+    require Logger
+    alias Genesis.Repo
 
     try do
-      case Genesis.NatsClient.publish(subject, Jason.encode!(report)) do
-        :ok ->
-          Logger.info("Published metrics to #{subject}")
+      metrics = report["metrics"]
+
+      # Prepare aggregated metrics message for genesis_metrics_published queue
+      aggregated_msg = %{
+        type: "genesis_metrics_published",
+        jobs_completed: metrics["total_experiments"],
+        jobs_failed: metrics["total_experiments"] - metrics["successful_experiments"],
+        success_rate: metrics["success_rate"],
+        avg_execution_time_ms: 0,  # Would calculate from experiment records
+        total_memory_used_mb: 0,    # Would sum from experiment records
+        timestamp: metrics["generated_at"]
+      }
+
+      # Publish to shared_queue execution_metrics_aggregated queue
+      case Repo.query(
+        "SELECT pgmq.send($1, $2::jsonb)",
+        ["execution_metrics_aggregated", Jason.encode!(aggregated_msg)]
+      ) do
+        {:ok, _result} ->
+          Logger.info("Genesis.Scheduler: Published aggregated metrics to genesis_metrics_published queue")
           :ok
 
         {:error, reason} ->
-          Logger.error("Failed to publish metrics to NATS: #{inspect(reason)}")
+          Logger.error("Genesis.Scheduler: Failed to publish metrics to pgmq", %{error: inspect(reason)})
           {:error, reason}
       end
     rescue
       e ->
-        Logger.error("Exception while publishing metrics: #{inspect(e)}")
-        {:error, e}
+        Logger.error("Genesis.Scheduler: Exception publishing metrics to pgmq", %{error: inspect(e)})
+        {:error, "Failed to publish metrics: #{inspect(e)}"}
     end
   end
 

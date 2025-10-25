@@ -101,27 +101,22 @@ defmodule CentralCloud.IntelligenceHub do
   # ===========================
 
   defp subscribe_to_subjects do
-    # Subscribe to all intelligence subjects
-    NatsClient.subscribe("intelligence.code.pattern.learned", &handle_code_pattern/1)
-    NatsClient.subscribe("intelligence.architecture.pattern.learned", &handle_arch_pattern/1)
-    NatsClient.subscribe("intelligence.data.schema.learned", &handle_data_schema/1)
+    # TODO: Convert one-way broadcasts to pgmq consumers via Oban:
+    # - intelligence.code.pattern.learned → pgmq: patterns_learned_published
+    # - intelligence.architecture.pattern.learned → pgmq: patterns_learned_published
+    # - intelligence.data.schema.learned → pgmq: patterns_learned_published
+    # - intelligence.quality.aggregate → pgmq: execution_metrics_aggregated
+    # - system.instance.dependencies.report → pgmq: pattern_discoveries_published
+
+    # KEEP: Request-reply patterns on NATS (need synchronous responses)
+    # TODO: Decide if these should move to HTTP endpoints or async pgmq + client polling
     NatsClient.subscribe("intelligence.insights.query", &handle_insights_query/1)
-    NatsClient.subscribe("intelligence.quality.aggregate", &handle_quality_report/1)
-
-    # NEW: Template context queries
     NatsClient.subscribe("intelligence.query.request", &handle_intelligence_query/1)
-
-    # NEW: Dependency reports from instances
-    NatsClient.subscribe("system.instance.dependencies.report", &handle_dependency_report/1)
-
-    # CRITICAL: The API that Singularity actually calls!
     NatsClient.subscribe("central.analyze_codebase", &handle_analyze_codebase/1)
     NatsClient.subscribe("central.learn_patterns", &handle_learn_patterns/1)
     NatsClient.subscribe("central.get_global_stats", &handle_get_global_stats/1)
     NatsClient.subscribe("central.train_models", &handle_train_models/1)
     NatsClient.subscribe("central.get_cross_instance_insights", &handle_get_cross_instance_insights/1)
-
-    # NEW: Framework pattern discovery (for multi-system learning)
     NatsClient.subscribe("framework.pattern.query", &handle_framework_pattern_query/1)
     NatsClient.subscribe("framework.pattern.search", &handle_framework_pattern_search/1)
 

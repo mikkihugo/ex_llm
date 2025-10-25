@@ -1,0 +1,21 @@
+{
+  "name": "ai-server",
+  "version": "0.1.0",
+  "description": "PostgreSQL-native AI workflow orchestration using pgflow",
+  "type": "module",
+  "scripts": {
+    "dev": "NODE_ENV=development bun run src/index.ts",
+    "start": "NODE_ENV=production bun run src/index.ts",
+    "migrations": "pgflow migrate",
+    "setup": "bun install && pgflow setup"
+  },
+  "dependencies": {
+    "pgflow": "^0.1.0",
+    "pg": "^8.11.3",
+    "postgres": "^3.4.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.3.3"
+  }
+}

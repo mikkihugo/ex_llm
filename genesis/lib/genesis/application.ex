@@ -9,8 +9,9 @@ defmodule Genesis.Application do
   ## Architecture
 
   Genesis runs with complete isolation:
-  - Separate PostgreSQL database (genesis_db)
-  - Separate NATS subscriptions (genesis.* subjects)
+  - Separate PostgreSQL database (genesis)
+  - Reads job requests from CentralCloud's shared_queue (pgmq) database
+  - Publishes job results back to shared_queue
   - Separate Git history
   - Aggressive hotreload (can safely test breaking changes)
   - Auto-rollback on regression detection
@@ -22,9 +23,8 @@ defmodule Genesis.Application do
 
   ## Key Services
 
-  - Genesis.Repo - Isolated database connection
-  - Genesis.NatsClient - NATS messaging subscriber
-  - Genesis.ExperimentRunner - Receives and executes experiment requests
+  - Genesis.Repo - Isolated database connection (experiments, isolation)
+  - Genesis.SharedQueueConsumer - Polls shared_queue for job_requests, publishes job_results
   - Genesis.IsolationManager - Manages sandboxed environments
   - Genesis.RollbackManager - Handles git-based rollback
   - Genesis.MetricsCollector - Tracks experiment outcomes
@@ -38,7 +38,7 @@ defmodule Genesis.Application do
     Logger.info("Starting Genesis Application (Improvement Sandbox)...")
 
     children = [
-      # Foundation: Database (isolated genesis_db)
+      # Foundation: Database (isolated genesis)
       Genesis.Repo,
 
       # Infrastructure: Background jobs (Oban handles cron scheduling via plugin)
@@ -47,12 +47,12 @@ defmodule Genesis.Application do
       # Task supervision for timeout handling
       {Task.Supervisor, name: Genesis.TaskSupervisor},
 
-      # Services: Experiment execution and isolation
-      Genesis.NatsClient,
+      # Services: Job execution and isolation
+      # SharedQueueConsumer polls pgmq for job_requests and publishes results
+      Genesis.SharedQueueConsumer,
       Genesis.IsolationManager,
       Genesis.RollbackManager,
-      Genesis.MetricsCollector,
-      Genesis.ExperimentRunner
+      Genesis.MetricsCollector
     ]
 
     opts = [strategy: :one_for_one, name: Genesis.Supervisor]

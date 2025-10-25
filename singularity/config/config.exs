@@ -3,6 +3,17 @@ import Config
 config :singularity,
   namespace: Singularity
 
+# Shared Queue Configuration (pgmq - central message hub managed by CentralCloud)
+# Provides inter-service communication for LLM requests, approvals, questions, job requests
+config :singularity, :shared_queue,
+  enabled: System.get_env("SHARED_QUEUE_ENABLED", "true") == "true",
+  database_url: System.get_env("SHARED_QUEUE_DB_URL"),
+  poll_interval_ms: String.to_integer(System.get_env("SHARED_QUEUE_POLL_MS", "1000")),
+  batch_size: String.to_integer(System.get_env("SHARED_QUEUE_BATCH_SIZE", "100")),
+  # Separate configuration for LLM request polling (more frequent for lower latency)
+  llm_request_poll_ms: String.to_integer(System.get_env("SHARED_QUEUE_LLM_POLL_MS", "100")),
+  llm_batch_size: String.to_integer(System.get_env("SHARED_QUEUE_LLM_BATCH_SIZE", "50"))
+
 config :singularity, Singularity.Telemetry, metrics: []
 
 config :logger, level: :info
@@ -119,12 +130,6 @@ config :oban,
        {"0 * * * *", Singularity.Jobs.AgentEvolutionWorker},
        # Knowledge export: every day at midnight (promotes learned patterns to Git)
        {"0 0 * * *", Singularity.Jobs.KnowledgeExportWorker},
-       # Cache cleanup: every 15 minutes
-       {"*/15 * * * *", Singularity.Jobs.CacheCleanupWorker},
-       # Cache refresh: every hour
-       {"0 * * * *", Singularity.Jobs.CacheRefreshWorker},
-       # Cache prewarm: every 6 hours
-       {"0 */6 * * *", Singularity.Jobs.CachePrewarmWorker},
        # Pattern sync: every 5 minutes
        {"*/5 * * * *", Singularity.Jobs.PatternSyncJob},
        # Dead code monitoring: daily at 9am
@@ -142,9 +147,22 @@ config :oban,
        # Registry sync: daily at 4:00 AM (was: mix registry.sync)
        {"0 4 * * *", Singularity.Jobs.RegistrySyncWorker},
        # Template embed: weekly on Sundays at 5:00 AM (was: mix templates.embed --missing)
-       {"0 5 * * 0", Singularity.Jobs.TemplateEmbedWorker}
-       # PageRank recalculation: scheduled via pg_cron (database-native scheduling)
-       # See migration: add_pagerank_pg_cron_schedule.exs
+       {"0 5 * * 0", Singularity.Jobs.TemplateEmbedWorker},
+       # Code re-ingest: weekly on Sundays at 6:00 AM (re-index code for semantic search)
+       {"0 6 * * 0", Singularity.Jobs.CodeIngestWorker}
+       # NOTE: Moved to pg_cron (pure SQL - more efficient):
+       # - Planning Seed: Runs once via pg_cron stored procedure
+       #   Migration: 20251025000020_move_tasks_to_pgcron.exs
+       # - Graph Populate: Runs weekly + startup via pg_cron
+       #   Migration: 20251025000020_move_tasks_to_pgcron.exs
+       # - Cache Cleanup: Runs every 15 min via pg_cron
+       #   Migration: 20251025000030_move_cache_tasks_to_pgcron.exs
+       # - Cache Refresh: Runs hourly via pg_cron
+       #   Migration: 20251025000030_move_cache_tasks_to_pgcron.exs
+       # - Cache Prewarm: Runs every 6 hours via pg_cron
+       #   Migration: 20251025000030_move_cache_tasks_to_pgcron.exs
+       # - PageRank Recalculation: Daily 3 AM via pg_cron
+       #   Migration: 20251025000010_add_comprehensive_pgcron_maintenance.exs
      ]}
   ],
   # Enable verbose logging for job execution
@@ -498,12 +516,6 @@ config :singularity, :task_adapters,
     enabled: true,
     priority: 10,
     description: "Background job execution via Oban"
-  },
-  nats_adapter: %{
-    module: Singularity.Adapters.NatsAdapter,
-    enabled: true,
-    priority: 15,
-    description: "Async task execution via NATS messaging"
   },
   genserver_adapter: %{
     module: Singularity.Adapters.GenServerAdapter,

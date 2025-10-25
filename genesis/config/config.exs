@@ -8,7 +8,7 @@ config :logger, level: :info
 
 # Configure Ecto repository
 config :genesis, Genesis.Repo,
-  database: "genesis_db",
+  database: "genesis",
   username: System.get_env("DB_USER", System.get_env("USER", "postgres")),
   password: System.get_env("DB_PASSWORD", ""),
   hostname: System.get_env("DB_HOST", "localhost"),
@@ -34,10 +34,13 @@ config :genesis, Oban,
     ]}
   ]
 
-# Configure NATS
-config :genesis,
-  nats_host: System.get_env("NATS_HOST", "127.0.0.1"),
-  nats_port: System.get_env("NATS_PORT", "4222") |> String.to_integer()
+# Configure Shared Queue (pgmq - central message hub, owned by CentralCloud)
+# Genesis reads job_requests and publishes job_results
+config :genesis, :shared_queue,
+  enabled: true,
+  database_url: "postgresql://postgres:@localhost:5432/shared_queue",
+  poll_interval_ms: 1000,
+  batch_size: 100
 
 # Genesis-specific configuration
 config :genesis,

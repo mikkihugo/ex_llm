@@ -7,7 +7,7 @@ defmodule Singularity.Application do
   ## Supervision Layers
 
   1. **Foundation** (Repo, Telemetry) - Database and metrics
-  2. **Infrastructure** (Infrastructure.Supervisor, NATS.Supervisor) - Core services
+  2. **Infrastructure** (Infrastructure.Supervisor) - Core services
   3. **Domain Services** (LLM, Knowledge, Planning, SPARC, Todos) - Business logic
   4. **Agents & Execution** (Agents.Supervisor, ApplicationSupervisor) - Task execution
   5. **Singletons** (RuleEngine) - Standalone services
@@ -50,10 +50,9 @@ defmodule Singularity.Application do
       VM[Erlang VM] -->|1. starts| App[Singularity.Application]
       App -->|2. Layer 1| Repo[Repo + Telemetry + Registry]
       App -->|3. Layer 2| Infra[Infrastructure.Supervisor]
-      App -->|4. Layer 2| NATS[NATS.Supervisor]
-      App -->|5. Layer 3| Domain[Domain Supervisors]
-      App -->|6. Layer 4| Agents[Agents.Supervisor]
-      App -->|7. Layer 5| Rules[RuleEngine + RuleLoader]
+      App -->|4. Layer 3| Domain[Domain Supervisors]
+      App -->|5. Layer 4| Agents[Agents.Supervisor]
+      App -->|6. Layer 5| Rules[RuleEngine + RuleLoader]
 
       Domain --> LLM[LLM.Supervisor]
       Domain --> Knowledge[Knowledge.Supervisor]
@@ -79,11 +78,6 @@ defmodule Singularity.Application do
       purpose: Start PostgreSQL connection pool (Layer 1)
       critical: true
 
-    - module: Singularity.NATS.Supervisor
-      function: start_link/1
-      purpose: Start NATS messaging infrastructure (Layer 2)
-      critical: false
-
     - module: Singularity.Agents.Supervisor
       function: start_link/1
       purpose: Start dynamic agent supervision tree (Layer 4)
@@ -97,7 +91,6 @@ defmodule Singularity.Application do
   depends_on:
     - Elixir OTP Platform (MUST exist)
     - PostgreSQL database (MUST be running)
-    - NATS server (optional - graceful degradation)
 
   supervision:
     supervised: false
@@ -124,16 +117,16 @@ defmodule Singularity.Application do
 
   #### ❌ DO NOT change layer ordering without understanding dependencies
   ```elixir
-  # ❌ WRONG - NATS before Repo
+  # ❌ WRONG - Infrastructure before Repo
   children = [
-    Singularity.NATS.Supervisor,  # Needs DB!
+    Singularity.Infrastructure.Supervisor,  # Needs DB!
     Singularity.Repo
   ]
 
   # ✅ CORRECT - Repo first (Layer 1 before Layer 2)
   children = [
     Singularity.Repo,
-    Singularity.NATS.Supervisor
+    Singularity.Infrastructure.Supervisor
   ]
   ```
 
@@ -173,9 +166,6 @@ defmodule Singularity.Application do
           Singularity.Infrastructure.Supervisor
         ]
       )
-      # NATS Supervisor (optional)
-      # Can be disabled with: config :singularity, nats_enabled: false
-      |> add_optional_child(:nats_enabled, &nats_child/0)
       |> Kernel.++([
         # Layer 3: Domain Services - Business logic and domain-specific functionality
         # LLM Services - Rate limiting and provider orchestration
@@ -264,7 +254,6 @@ defmodule Singularity.Application do
 
   **Infrastructure**:
   - **Infrastructure.Supervisor** - Circuit breakers, error tracking, model loading
-  - **NATS.Supervisor** - Message infrastructure (Server, Client, Embedding, Tools)
 
   **Domain Services**:
   - **LLM.Supervisor** - LLM rate limiting and provider orchestration
@@ -283,7 +272,7 @@ defmodule Singularity.Application do
   - **ArchitectureEngine.MetaRegistry.Supervisor** - Architecture analysis
   - **Git.Supervisor** - Git integration and repository management
 
-  **Total**: 13 supervisors/processes enabled ✅
+  **Total**: 12 supervisors/processes enabled ✅
 
   ## Future Re-enabling (Phase 2)
 
@@ -297,7 +286,7 @@ defmodule Singularity.Application do
   Current environment: #{Mix.env()}
 
   Notes:
-  - Test mode: All supervisors start normally (no NATS connection failures in tests)
+  - Test mode: All supervisors start normally
   - Development: Full supervision tree enabled
   - Production: Full supervision tree enabled
 
@@ -312,12 +301,12 @@ defmodule Singularity.Application do
         []
 
       :dev ->
-        # Development: full supervision tree enabled
-        []
+        # Development: run one-time setup jobs on startup
+        [Singularity.Bootstrap.SetupBootstrap]
 
       :prod ->
-        # Production: full supervision tree enabled
-        []
+        # Production: run one-time setup jobs on startup
+        [Singularity.Bootstrap.SetupBootstrap]
     end
   end
 
@@ -342,11 +331,5 @@ defmodule Singularity.Application do
   # Can be disabled with: config :singularity, oban_enabled: false
   defp oban_child do
     Oban
-  end
-
-  # Returns NATS.Supervisor child spec if enabled
-  # Can be disabled with: config :singularity, nats_enabled: false
-  defp nats_child do
-    Singularity.NATS.Supervisor
   end
 end

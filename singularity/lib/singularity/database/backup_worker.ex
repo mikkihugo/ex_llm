@@ -2,7 +2,7 @@ defmodule Singularity.Database.BackupWorker do
   @moduledoc """
   Database Backup Worker - Automated backups via Oban
 
-  Scheduled backups of singularity, centralcloud, and genesis_db databases.
+  Scheduled backups of singularity, centralcloud, and genesis databases.
 
   ## Scheduling
 
@@ -29,7 +29,7 @@ defmodule Singularity.Database.BackupWorker do
   require Logger
 
   @backup_dir ".db-backup"
-  @databases ["singularity", "centralcloud", "genesis_db"]
+  @databases ["singularity", "centralcloud", "genesis", "nexus"]
   @db_user System.get_env("DB_USER", "mhugo")
 
   @impl Oban.Worker
@@ -139,10 +139,20 @@ defmodule Singularity.Database.BackupWorker do
 
   defp format_size(bytes) do
     cond do
-      bytes >= 1_000_000_000 -> Float.round(bytes / 1_000_000_000, 2) |> to_string() <> " GB"
-      bytes >= 1_000_000 -> Float.round(bytes / 1_000_000, 2) |> to_string() <> " MB"
-      bytes >= 1_000 -> Float.round(bytes / 1_000, 2) |> to_string() <> " KB"
-      true -> "#{bytes} B"
+      bytes >= 1_000_000_000 ->
+        size = Float.round(bytes / 1_000_000_000, 2)
+        "#{size} GB"
+
+      bytes >= 1_000_000 ->
+        size = Float.round(bytes / 1_000_000, 2)
+        "#{size} MB"
+
+      bytes >= 1_000 ->
+        size = Float.round(bytes / 1_000, 2)
+        "#{size} KB"
+
+      true ->
+        "#{bytes} B"
     end
   end
 end

@@ -26,7 +26,3 @@ config :oban,
   engine: Oban.Engines.Inline,
   queues: [],
   repo: Singularity.Repo
-
-# Test NATS Configuration
-# Disable NATS for unit tests to avoid connectivity requirements
-config :singularity, :nats, enabled: false

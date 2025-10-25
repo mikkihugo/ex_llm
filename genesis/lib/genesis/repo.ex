@@ -2,7 +2,7 @@ defmodule Genesis.Repo do
   @moduledoc """
   Genesis Ecto Repository - Isolated Database
 
-  Connects to the separate `genesis_db` PostgreSQL database.
+  Connects to the separate `genesis` PostgreSQL database.
   This is completely isolated from the main `singularity` database.
 
   Genesis stores:

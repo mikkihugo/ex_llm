@@ -9,14 +9,27 @@ config :centralcloud, CentralCloud.Repo,
   password: System.get_env("CENTRALCLOUD_DB_PASSWORD", ""),
   pool_size: 10
 
-# Configure NATS
-config :centralcloud, CentralCloud.NatsClient,
-  host: System.get_env("NATS_HOST", "localhost"),
-  port: String.to_integer(System.get_env("NATS_PORT", "4222"))
+# Configure Shared Queue Ecto Repository (for querying archived messages)
+# Connects to the shared_queue database which uses pgmq extension
+config :centralcloud, CentralCloud.SharedQueueRepo,
+  database: System.get_env("SHARED_QUEUE_DB", "shared_queue"),
+  hostname: System.get_env("SHARED_QUEUE_HOST", "localhost"),
+  port: String.to_integer(System.get_env("SHARED_QUEUE_PORT", "5432")),
+  username: System.get_env("SHARED_QUEUE_USER", "postgres"),
+  password: System.get_env("SHARED_QUEUE_PASSWORD", ""),
+  pool_size: 5
+
+# Configure Shared Queue Manager (pgmq initialization and retention)
+# Central message hub for all services (Singularity, Genesis, Nexus)
+config :centralcloud, :shared_queue,
+  enabled: System.get_env("SHARED_QUEUE_ENABLED", "true") == "true",
+  database_url: System.get_env("SHARED_QUEUE_DB_URL"),
+  auto_initialize: true,
+  retention_days: String.to_integer(System.get_env("SHARED_QUEUE_RETENTION_DAYS", "90"))
 
 # Configure the application
 config :centralcloud,
-  ecto_repos: [CentralCloud.Repo]
+  ecto_repos: [CentralCloud.Repo, CentralCloud.SharedQueueRepo]
 
 # Oban Background Job Queue Configuration
 # Pattern aggregation, package sync, statistics generation

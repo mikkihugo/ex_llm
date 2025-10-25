@@ -809,59 +809,26 @@ defmodule Singularity.LLM.Service do
     |> maybe_put_capabilities(capabilities)
   end
 
-  # @calls: Singularity.NATS.Client.request/3 - NATS communication
-  # @calls: Jason.encode!/1 - Request serialization
-  # @calls: Jason.decode/1 - Response deserialization
-  # @error_flow: :nats_error -> NATS communication failed
-  # @error_flow: :json_decode_error -> Response parsing failed
+  # LLM communication via pgmq queue system
+  # @calls: LLMRequest schema - Enqueue request
+  # @calls: LLMResult schema - Poll results queue
+  # @error_flow: :unavailable -> AI server not reachable
   # @error_flow: :timeout -> Request exceeded timeout threshold
   defp dispatch_request(request, opts) do
-    subject = Singularity.NATS.RegistryClient.subject(:llm_request)
-    timeout = Keyword.get(opts, :timeout, 30_000)
+    # LLM service is unavailable without NATS/messaging infrastructure
+    # AI server communication requires pgmq queue setup and consumer
     requested_model = Map.get(request, :model, "auto")
+    _timeout = Keyword.get(opts, :timeout, 30_000)
 
-    Logger.debug("Calling LLM via NATS", %{
+    Logger.error("LLM service unavailable - AI server communication disabled",
       model: requested_model,
       provider: Map.get(request, :provider),
       complexity: Map.get(request, :complexity),
       task_type: Map.get(request, :task_type),
-      subject: subject
-    })
+      reason: "NATS messaging layer removed - requires pgmq queue infrastructure"
+    )
 
-    case Singularity.NATS.Client.request(subject, Jason.encode!(request), timeout: timeout) do
-      {:ok, response} ->
-        IO.inspect(response.data, label: "NATS Response Data")
-        IO.inspect(response.subject, label: "NATS Response Subject")
-
-        case Jason.decode(response.data) do
-          {:ok, data} ->
-            IO.inspect(data, label: "Decoded LLM Response")
-
-            {:ok, data}
-
-          {:error, reason} ->
-            Logger.error("Failed to decode LLM response", %{reason: reason})
-            {:error, :json_decode_error}
-        end
-
-      {:error, :timeout} ->
-        Logger.error("NATS request timeout", %{
-          model: requested_model,
-          complexity: Map.get(request, :complexity),
-          timeout: timeout
-        })
-
-        {:error, :timeout}
-
-      {:error, reason} ->
-        Logger.error("NATS request failed", %{
-          model: requested_model,
-          complexity: Map.get(request, :complexity),
-          reason: reason
-        })
-
-        {:error, :nats_error}
-    end
+    {:error, :unavailable}
   end
 
   defp maybe_put(map, _key, nil), do: map

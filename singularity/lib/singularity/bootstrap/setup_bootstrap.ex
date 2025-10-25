@@ -1,0 +1,110 @@
+defmodule Singularity.Bootstrap.SetupBootstrap do
+  @moduledoc """
+  Bootstrap one-time setup tasks on application startup
+
+  Runs all one-time setup jobs (knowledge migration, RAG setup, etc.)
+  using Oban with unique constraints to ensure they only run once.
+
+  ## Setup Jobs
+
+  1. **Knowledge Migration** - Load JSON templates to database
+  2. **Templates Data Load** - Load templates_data/ to JSONB
+  3. **Planning Seed** - Seed work plan roadmap
+  4. **Graph Populate** - Optimize dependency queries
+  5. **Code Ingest** - Parse codebase for semantic search
+  6. **RAG Setup** - Full RAG system initialization
+
+  ## How It Works
+
+  - Runs when application starts
+  - Uses Oban with `unique_for: :infinity` to run only once
+  - Gracefully handles idempotent operations
+  - Logs progress to application logs
+  """
+
+  use GenServer
+  require Logger
+
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @impl GenServer
+  def init(_opts) do
+    Logger.info("Scheduling one-time setup jobs...")
+
+    # Schedule all setup jobs with unique constraints
+    # They will run in order of queue priority
+    schedule_setup_jobs()
+
+    {:ok, %{}}
+  end
+
+  defp schedule_setup_jobs do
+    jobs = [
+      # 1. Load knowledge artifacts from JSON
+      %{
+        module: Singularity.Jobs.KnowledgeMigrateWorker,
+        args: %{},
+        unique_key: "setup:knowledge_migrate",
+        priority: 100
+      },
+      # 2. Load templates_data/ into PostgreSQL
+      %{
+        module: Singularity.Jobs.TemplatesDataLoadWorker,
+        args: %{},
+        unique_key: "setup:templates_data_load",
+        priority: 95
+      },
+      # NOTE: Planning Seed moved to pg_cron (seed_work_plan stored procedure)
+      # - More efficient: Pure SQL, no Elixir overhead
+      # - Idempotent: Uses ON CONFLICT DO NOTHING
+      # - Scheduled: Runs automatically via pg_cron
+
+      # NOTE: Graph Populate moved to pg_cron (populate_graph_dependencies stored procedure)
+      # - More efficient: Pure SQL array aggregation
+      # - Recursive: Can traverse graph dependencies directly in SQL
+      # - Scheduled: Runs on startup + weekly via pg_cron
+
+      # 3. Ingest codebase for semantic search
+      %{
+        module: Singularity.Jobs.CodeIngestWorker,
+        args: %{},
+        unique_key: "setup:code_ingest",
+        priority: 85
+      },
+      # 4. Full RAG setup (runs last - depends on templates and code)
+      %{
+        module: Singularity.Jobs.RagSetupWorker,
+        args: %{},
+        unique_key: "setup:rag_setup",
+        priority: 70
+      }
+    ]
+
+    Enum.each(jobs, fn job_spec ->
+      insert_unique_job(job_spec)
+    end)
+  end
+
+  defp insert_unique_job(spec) do
+    %{
+      module: module,
+      args: args,
+      unique_key: unique_key,
+      priority: priority
+    } = spec
+
+    case module.new(args, unique_for: :infinity, priority: priority)
+         |> Oban.insert() do
+      {:ok, job} ->
+        Logger.info("Scheduled setup job: #{unique_key} (job_id: #{job.id})")
+
+      {:error, :unique_constraint_violation} ->
+        Logger.info("Setup job already exists: #{unique_key}")
+
+      {:error, reason} ->
+        Logger.warning("Failed to schedule #{unique_key}: #{inspect(reason)}")
+    end
+  end
+end

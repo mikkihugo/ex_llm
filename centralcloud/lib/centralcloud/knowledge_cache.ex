@@ -9,20 +9,19 @@ defmodule CentralCloud.KnowledgeCache do
   ## Features
 
   - Fast in-memory caching (ETS provides ~1 microsecond lookups)
-  - Distributed cache updates via NATS
   - Asset types: patterns, templates, intelligence, prompts
   - Cache statistics and monitoring
 
-  ## NATS Subjects
+  ## Architecture
 
-  - `knowledge.cache.update.*` - Cache updates from this instance
-  - `knowledge.cache.sync.*` - Cache sync requests from other instances
+  - Internal to CentralCloud (no NATS/pgmq broadcasting)
+  - Loads initial data from database on startup
+  - Caches in ETS for fast access
+  - Used by IntelligenceHub and FrameworkLearningAgent
   """
 
   use GenServer
   require Logger
-
-  alias CentralCloud.NatsClient
 
   @cache_table :central_knowledge_cache
 
@@ -45,15 +44,12 @@ defmodule CentralCloud.KnowledgeCache do
   end
 
   @doc """
-  Save asset to cache and broadcast update
+  Save asset to cache (internal only, no broadcasting)
   """
   def save_asset(asset) when is_map(asset) do
     asset_with_id = ensure_id(asset)
     :ets.insert(@cache_table, {asset_with_id.id, asset_with_id})
-
-    # Broadcast update to other instances
-    broadcast_update(asset_with_id)
-
+    Logger.debug("Cached asset: #{asset_with_id.id}")
     {:ok, asset_with_id.id}
   end
 
@@ -111,20 +107,11 @@ defmodule CentralCloud.KnowledgeCache do
       write_concurrency: true
     ])
 
-    # Subscribe to cache updates from other instances
-    :ok = subscribe_to_updates()
-
-    # Load initial data from templates_data if needed
-    # TODO: Implement initial load
+    # Load initial data from database if needed
+    # TODO: Implement database load for persistence across restarts
 
     Logger.info("KnowledgeCache ready - using ETS table :#{@cache_table}")
-    {:ok, %{updates_received: 0, updates_sent: 0}}
-  end
-
-  @impl true
-  def handle_info({:nats_msg, msg}, state) do
-    handle_cache_update(msg)
-    {:noreply, Map.update!(state, :updates_received, &(&1 + 1))}
+    {:ok, %{entries: 0}}
   end
 
   # ===========================
@@ -143,60 +130,6 @@ defmodule CentralCloud.KnowledgeCache do
     :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
   end
 
-  defp subscribe_to_updates do
-    # Subscribe to cache updates from other instances
-    NatsClient.subscribe("knowledge.cache.update.>", fn msg ->
-      send(self(), {:nats_msg, msg})
-    end)
-
-    # Subscribe to cache sync requests
-    NatsClient.subscribe("knowledge.cache.sync.request", fn msg ->
-      handle_sync_request(msg)
-    end)
-
-    :ok
-  end
-
-  defp handle_cache_update(msg) do
-    case Jason.decode(msg.payload) do
-      {:ok, asset} when is_map(asset) ->
-        asset_id = asset["id"] || asset[:id]
-
-        if asset_id do
-          :ets.insert(@cache_table, {asset_id, asset})
-          Logger.debug("Updated cache with asset: #{asset_id}")
-        else
-          Logger.warn("Received asset without ID, skipping")
-        end
-
-      {:error, reason} ->
-        Logger.error("Failed to decode cache update: #{inspect(reason)}")
-    end
-  end
-
-  defp handle_sync_request(msg) do
-    # Send all cache entries to requester
-    all_assets =
-      :ets.tab2list(@cache_table)
-      |> Enum.map(fn {_id, asset} -> asset end)
-
-    response = %{
-      assets: all_assets,
-      count: length(all_assets),
-      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
-    }
-
-    if msg.reply_to do
-      NatsClient.publish(msg.reply_to, Jason.encode!(response))
-      Logger.info("Sent cache sync with #{length(all_assets)} assets")
-    end
-  end
-
-  defp broadcast_update(asset) do
-    payload = Jason.encode!(asset)
-    subject = "knowledge.cache.update.#{asset.id}"
-    NatsClient.publish(subject, payload)
-  end
 
   defp count_by_type(type) do
     # Build pattern dynamically to match asset_type

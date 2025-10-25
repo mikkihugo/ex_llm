@@ -112,7 +112,7 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
 
   require Logger
   alias Singularity.Repo
-  alias Singularity.NATS.Client, as: NatsClient
+
   @dedup_similarity_threshold 0.85
   @quality_threshold_for_promotion 0.75
 
@@ -499,26 +499,11 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
   end
 
   defp publish_consolidation_report(report) do
-    message = %{
-      "event" => "patterns_consolidated",
-      "input_count" => report.input_patterns,
-      "output_count" => report.consolidated_count,
-      "consolidation_ratio" => report.consolidation_ratio,
-      "promoted_count" => report.promoted_to_templates,
-      "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
-    }
-
-    case Singularity.NATS.Client.publish(
-           "intelligence_hub.pattern_consolidation",
-           Jason.encode!(message)
-         ) do
-      :ok ->
-        Logger.debug("Published consolidation report to IntelligenceHub")
-
-      {:error, reason} ->
-        Logger.warning("Failed to publish consolidation report", reason: reason)
-    end
-  rescue
-    _ -> :ok
+    Logger.debug("Pattern consolidation report",
+      input_count: report.input_patterns,
+      output_count: report.consolidated_count,
+      consolidation_ratio: report.consolidation_ratio,
+      promoted_count: report.promoted_to_templates
+    )
   end
 end

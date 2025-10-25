@@ -23,7 +23,6 @@ defmodule Singularity.MetaRegistry.QuerySystem do
   """
 
   alias Singularity.Schemas.TechnologyDetection
-  alias Singularity.MetaRegistry.NatsSubjects
   require Logger
 
   @doc """
@@ -221,17 +220,6 @@ defmodule Singularity.MetaRegistry.QuerySystem do
       accepted: accepted,
       timestamp: DateTime.utc_now()
     }
-
-    # Publish to NATS for real-time learning
-    subject = NatsSubjects.usage(category)
-
-    case Singularity.NATS.Client.publish(subject, Jason.encode!(usage_event)) do
-      :ok ->
-        Logger.debug("Published usage event to NATS: #{subject}")
-
-      {:error, reason} ->
-        Logger.warning("Failed to publish usage event to NATS: #{inspect(reason)}")
-    end
 
     # Store in database for persistence
     case store_usage_event(usage_event) do
