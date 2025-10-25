@@ -532,7 +532,7 @@ defmodule Singularity.CodeStore do
 
   defp analyze_technologies(codebase_path) do
     # Use advanced technology detection with confidence scoring
-    detection_result = Singularity.TechnologyDetector.detect_technologies(codebase_path)
+    detection_result = Singularity.ArchitectureEngine.Detectors.TechnologyDetector.detect_technologies(codebase_path)
 
     case detection_result do
       {:ok, result} ->
