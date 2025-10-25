@@ -170,14 +170,27 @@
 ## What We COULD Have Added But Explicitly Did NOT
 
 ### Full-Text Search Extensions
-- `pg_search` (BM25 algorithm)
+- `pg_search` (BM25 algorithm via Tantivy/ParadeDB)
 - `pgroonga` (Japanese text search)
 - `postgres-specific-fts`
 
 **Why Skipped**:
-- pgvector + semantic embeddings > keyword search
-- Code search is semantic, not keyword-based
-- pg_trgm (built-in) handles fuzzy matching if needed
+- **DECISION RATIONALE**: pgvector + semantic embeddings > BM25 keyword search FOR CODE
+- Code search is semantic (meaning) not keyword-based (text matching)
+- pg_search is optimized for documents/articles/logs, NOT code
+- pg_trgm (built-in) handles fuzzy matching for identifier matching if needed
+- **ALSO**: pg_search NOT available in nixpkgs (ParadeDB package not in nixpkgs-unstable)
+
+**Trade-off Analysis**:
+- With pgvector: "Find code with async patterns" = <50ms, semantic match ✅
+- With pg_search: "Find code containing 'asyncio'" = fast keyword match ✅
+- We optimized for semantic search, not keyword search
+
+**Could We Add pg_search?**
+- Yes, IF we need keyword search (e.g., "find all occurrences of 'TODO'")
+- Yes, IF we build ParadeDB from source for Nix
+- But: For code analysis, semantic (pgvector) > keywords (pg_search)
+- Decision: Semantic first, keyword search as fallback (pg_trgm)
 
 ### Replication Extensions
 - `logical_ddl` (DDL replication)
