@@ -323,7 +323,8 @@ defmodule Singularity.Search.CodeSearchStack do
 
     # Combine results: ast-grep has higher weight (95% precise)
     combined =
-      (ast_results |> Enum.map(&Map.put(&1, :score, &1.score * 1.5)))
+      ast_results
+      |> Enum.map(&Map.put(&1, :score, &1.score * 1.5))
       |> Kernel.++(vec_results)
       |> deduplicate_results()
       |> sort_by_score()

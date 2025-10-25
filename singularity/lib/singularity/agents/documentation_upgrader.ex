@@ -345,6 +345,7 @@ defmodule Singularity.Agents.DocumentationUpgrader do
       # Use SelfImprovingAgent for continuous learning (if available)
       if agent_available?(Singularity.SelfImprovingAgent) do
         Logger.info("Triggering SelfImprovingAgent for documentation analysis")
+
         Singularity.SelfImprovingAgent.upgrade_documentation(File.cwd!(), %{scope: :documentation})
       end
 

@@ -360,21 +360,13 @@ defmodule Singularity.Agents.TemplatePerformance do
 
     ## Failure Patterns from CentralCloud
     #{if Enum.any?(common_failures) do
-      "Common Failures:\n" <>
-        (common_failures
-         |> Enum.map(fn failure -> "- #{inspect(failure)}" end)
-         |> Enum.join("\n"))
+      "Common Failures:\n" <> (common_failures |> Enum.map(fn failure -> "- #{inspect(failure)}" end) |> Enum.join("\n"))
     else
       "No failure patterns available"
     end}
 
     #{if Enum.any?(worst_combinations) do
-      "Worst Answer Combinations:\n" <>
-        (worst_combinations
-         |> Enum.map(fn combo ->
-           "- Answers: #{inspect(combo["answers"])}, Success Rate: #{Float.round(combo["success_rate"] * 100, 1)}%"
-         end)
-         |> Enum.join("\n"))
+      "Worst Answer Combinations:\n" <> (worst_combinations |> Enum.map(fn combo -> "- Answers: #{inspect(combo["answers"])}, Success Rate: #{Float.round(combo["success_rate"] * 100, 1)}%" end) |> Enum.join("\n"))
     else
       ""
     end}
@@ -478,7 +470,8 @@ defmodule Singularity.Agents.TemplatePerformance do
         :ok
 
       _ ->
-        {:error, {:version_not_incremented, %{improved: improved_version, original: original_version}}}
+        {:error,
+         {:version_not_incremented, %{improved: improved_version, original: original_version}}}
     end
   rescue
     _ ->

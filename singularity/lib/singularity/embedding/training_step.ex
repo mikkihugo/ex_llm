@@ -51,17 +51,27 @@ defmodule Singularity.Embedding.TrainingStep do
       # Try Nx.Defn automatic differentiation first (fast and accurate)
       case try_automatic_differentiation(loss_fn, params, batch_token_ids) do
         {:ok, {loss, grads}} ->
-          Logger.debug("Computed gradients via Nx.Defn: loss=#{Float.round(Nx.to_number(loss), 4)}")
+          Logger.debug(
+            "Computed gradients via Nx.Defn: loss=#{Float.round(Nx.to_number(loss), 4)}"
+          )
+
           {:ok, {loss, grads}}
 
         {:error, defn_error} ->
           # Fallback to finite differences if Nx.Defn fails
-          Logger.debug("Nx.Defn failed, falling back to finite differences: #{inspect(defn_error)}")
+          Logger.debug(
+            "Nx.Defn failed, falling back to finite differences: #{inspect(defn_error)}"
+          )
+
           # Create a wrapper for finite differences (takes only params)
           loss_fn_fd = fn p -> loss_fn.(p, batch_token_ids) end
           baseline_loss = loss_fn_fd.(params)
           grads = compute_finite_difference_gradients(params, loss_fn_fd)
-          Logger.debug("Computed gradients via finite differences: loss=#{Float.round(Nx.to_number(baseline_loss), 4)}")
+
+          Logger.debug(
+            "Computed gradients via finite differences: loss=#{Float.round(Nx.to_number(baseline_loss), 4)}"
+          )
+
           {:ok, {baseline_loss, grads}}
       end
     rescue
@@ -289,7 +299,8 @@ defmodule Singularity.Embedding.TrainingStep do
     updated_param = Nx.subtract(param, update_step)
 
     # Update state with new m and v estimates
-    updated_state = state
+    updated_state =
+      state
       |> Map.update(:m, %{}, &Map.put(&1, param_key, m_t))
       |> Map.update(:v, %{}, &Map.put(&1, param_key, v_t))
 

@@ -153,9 +153,9 @@ defmodule Singularity.Bootstrap.PageRankBootstrap do
   @doc false
   defp enqueue_calculation(context) do
     case JobOrchestrator.enqueue(:pagerank_calculation, %{
-      "codebase_id" => "singularity",
-      "context" => context
-    }) do
+           "codebase_id" => "singularity",
+           "context" => context
+         }) do
       {:ok, job} ->
         Logger.info("✅ PageRank calculation job enqueued (ID: #{job.id})")
         {:ok, job}

@@ -58,6 +58,7 @@ defmodule Singularity.Adapters.NatsAdapter do
           task_type: task_type,
           task_id: task_id
         )
+
         {:ok, "nats:#{task_id}"}
 
       {:error, reason} ->

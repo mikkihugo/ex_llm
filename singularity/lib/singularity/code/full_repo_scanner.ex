@@ -54,7 +54,7 @@ defmodule Singularity.Code.FullRepoScanner do
   alias Singularity.HotReload.SafeCodeChangeDispatcher
 
   # INTEGRATION: TaskGraph planning and tracing
-  alias Singularity.Execution.Planning.{TaskGraph, SystemBootstrap, ExecutionTracer}
+  alias Singularity.Execution.Planning.{TaskGraph, ExecutionTracer}
 
   # INTEGRATION: Self-improvement (learning from execution)
   alias Singularity.SelfImprovingAgent
@@ -187,7 +187,9 @@ defmodule Singularity.Code.FullRepoScanner do
     Logger.info("Phase 2: Runtime tracing...")
 
     {:ok, trace_analysis} =
-      ExecutionTracer.full_analysis(trace_duration_ms: Keyword.get(opts, :trace_duration_ms, 10_000))
+      ExecutionTracer.full_analysis(
+        trace_duration_ms: Keyword.get(opts, :trace_duration_ms, 10_000)
+      )
 
     # Step 3: Merge insights
     Logger.info("Phase 3: Merging insights...")

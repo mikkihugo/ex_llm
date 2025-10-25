@@ -233,9 +233,11 @@ defmodule Singularity.CodeGraph.Queries do
 
     case Repo.query(query, [module_id, max_depth]) do
       {:ok, %{rows: rows}} ->
-        result = Enum.map(rows, fn [target_id, depth] ->
-          %{target_id: target_id, depth: depth}
-        end)
+        result =
+          Enum.map(rows, fn [target_id, depth] ->
+            %{target_id: target_id, depth: depth}
+          end)
+
         {:ok, result}
 
       error ->
@@ -285,9 +287,11 @@ defmodule Singularity.CodeGraph.Queries do
 
     case Repo.query(query, [module_id, max_depth]) do
       {:ok, %{rows: rows}} ->
-        result = Enum.map(rows, fn [source_id, depth] ->
-          %{source_id: source_id, depth: depth}
-        end)
+        result =
+          Enum.map(rows, fn [source_id, depth] ->
+            %{source_id: source_id, depth: depth}
+          end)
+
         {:ok, result}
 
       error ->
@@ -392,9 +396,11 @@ defmodule Singularity.CodeGraph.Queries do
 
     case Repo.query(query, [max_depth]) do
       {:ok, %{rows: rows}} ->
-        result = Enum.map(rows, fn [_source_id, cycle] ->
-          %{cycle: cycle}
-        end)
+        result =
+          Enum.map(rows, fn [_source_id, cycle] ->
+            %{cycle: cycle}
+          end)
+
         {:ok, result}
 
       error ->
@@ -446,14 +452,16 @@ defmodule Singularity.CodeGraph.Queries do
 
     case Repo.query(query, [module_id, max_depth]) do
       {:ok, %{rows: rows}} ->
-        result = Enum.map(rows, fn [target_id, depth, pagerank, name] ->
-          %{
-            target_id: target_id,
-            depth: depth,
-            pagerank_score: pagerank,
-            name: name
-          }
-        end)
+        result =
+          Enum.map(rows, fn [target_id, depth, pagerank, name] ->
+            %{
+              target_id: target_id,
+              depth: depth,
+              pagerank_score: pagerank,
+              name: name
+            }
+          end)
+
         {:ok, result}
 
       error ->
@@ -518,17 +526,20 @@ defmodule Singularity.CodeGraph.Queries do
     FROM callers
     """
 
-    with {:ok, %{rows: [[forward_count, forward_depth]]}} <- Repo.query(forward_query, [module_id, max_depth]),
-         {:ok, %{rows: [[reverse_count, reverse_depth]]}} <- Repo.query(reverse_query, [module_id, max_depth]) do
-      {:ok, %{
-        forward_count: forward_count || 0,
-        reverse_count: reverse_count || 0,
-        max_forward_depth: forward_depth || 0,
-        max_reverse_depth: reverse_depth || 0,
-        is_leaf: (reverse_count || 0) > 0 and (forward_count || 0) == 0,
-        is_root: (forward_count || 0) > 0 and (reverse_count || 0) == 0,
-        is_isolated: (forward_count || 0) == 0 and (reverse_count || 0) == 0
-      }}
+    with {:ok, %{rows: [[forward_count, forward_depth]]}} <-
+           Repo.query(forward_query, [module_id, max_depth]),
+         {:ok, %{rows: [[reverse_count, reverse_depth]]}} <-
+           Repo.query(reverse_query, [module_id, max_depth]) do
+      {:ok,
+       %{
+         forward_count: forward_count || 0,
+         reverse_count: reverse_count || 0,
+         max_forward_depth: forward_depth || 0,
+         max_reverse_depth: reverse_depth || 0,
+         is_leaf: (reverse_count || 0) > 0 and (forward_count || 0) == 0,
+         is_root: (forward_count || 0) > 0 and (reverse_count || 0) == 0,
+         is_isolated: (forward_count || 0) == 0 and (reverse_count || 0) == 0
+       }}
     else
       error ->
         Logger.error("Dependency stats query failed: #{inspect(error)}")

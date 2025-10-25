@@ -27,7 +27,7 @@ defmodule Singularity.Web.HealthController do
   alias Singularity.Agents.DocumentationPipeline
   alias Singularity.Agents.QualityEnforcer
   alias Singularity.SelfImprovingAgent
-  alias Singularity.Telemetry
+  alias Singularity.Infrastructure.Telemetry
 
   @doc """
   Check overall system health.

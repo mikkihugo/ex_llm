@@ -509,7 +509,11 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.NatsSubscriptionRouter do
   # Utility helpers
   # ---------------------------------------------------------------------------
 
-  defp normalize_payload(payload, required_keys, optional_keys \\ []) when is_map(payload) do
+  # Header with default values (when multiple clauses exist, defaults go in header only)
+  defp normalize_payload(payload, required_keys, optional_keys \\ [])
+
+  # Implementation clause with guard
+  defp normalize_payload(payload, required_keys, optional_keys) when is_map(payload) do
     keys = required_keys ++ optional_keys
 
     normalized =
@@ -529,6 +533,7 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.NatsSubscriptionRouter do
     end
   end
 
+  # Fallback clause for non-maps
   defp normalize_payload(_payload, _required, _optional), do: {:error, :invalid_payload}
 
   defp fallback_if_empty(nil, fallback_fun), do: fallback_fun.()

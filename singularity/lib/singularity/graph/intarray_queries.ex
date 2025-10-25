@@ -181,7 +181,9 @@ defmodule Singularity.Graph.IntarrayQueries do
     )
     |> Repo.one()
     |> case do
-      nil -> {:error, :node_a_not_found}
+      nil ->
+        {:error, :node_a_not_found}
+
       deps_a when is_list(deps_a) ->
         from(gn in GraphNode,
           where: gn.id == ^node_b_id and gn.codebase_id == ^codebase_id,
@@ -189,7 +191,9 @@ defmodule Singularity.Graph.IntarrayQueries do
         )
         |> Repo.one()
         |> case do
-          nil -> {:error, :node_b_not_found}
+          nil ->
+            {:error, :node_b_not_found}
+
           deps_b when is_list(deps_b) ->
             # Return the intersection using SQL
             common =
@@ -200,8 +204,11 @@ defmodule Singularity.Graph.IntarrayQueries do
               |> List.first()
               |> Tuple.to_list()
               |> List.first()
+
             {:ok, common || []}
-          _empty -> {:ok, []}
+
+          _empty ->
+            {:ok, []}
         end
     end
   end
@@ -229,7 +236,8 @@ defmodule Singularity.Graph.IntarrayQueries do
     end
   end
 
-  defp follow_dependencies(_dep_ids, depth, max_depth, _codebase_id, acc) when depth > max_depth do
+  defp follow_dependencies(_dep_ids, depth, max_depth, _codebase_id, acc)
+       when depth > max_depth do
     Enum.reverse(acc)
   end
 
@@ -269,7 +277,11 @@ defmodule Singularity.Graph.IntarrayQueries do
           fragment("array_length(?, 1) > 0", gn.dependency_node_ids),
       order_by: [desc: fragment("array_length(?, 1)", gn.dependency_node_ids)],
       limit: ^limit,
-      select: %{id: gn.id, name: gn.name, dep_count: fragment("array_length(?, 1)", gn.dependency_node_ids)}
+      select: %{
+        id: gn.id,
+        name: gn.name,
+        dep_count: fragment("array_length(?, 1)", gn.dependency_node_ids)
+      }
     )
     |> Repo.all()
   end
@@ -286,7 +298,11 @@ defmodule Singularity.Graph.IntarrayQueries do
           fragment("array_length(?, 1) > 0", gn.dependent_node_ids),
       order_by: [desc: fragment("array_length(?, 1)", gn.dependent_node_ids)],
       limit: ^limit,
-      select: %{id: gn.id, name: gn.name, dependent_count: fragment("array_length(?, 1)", gn.dependent_node_ids)}
+      select: %{
+        id: gn.id,
+        name: gn.name,
+        dependent_count: fragment("array_length(?, 1)", gn.dependent_node_ids)
+      }
     )
     |> Repo.all()
   end

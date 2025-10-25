@@ -33,7 +33,10 @@ defmodule Singularity.Schemas.VectorSimilarityCache do
       :similarity_score
     ])
     |> validate_required([:codebase_id, :query_vector_hash, :target_file_path, :similarity_score])
-    |> validate_number(:similarity_score, greater_than_or_equal_to: -1.0, less_than_or_equal_to: 1.0)
+    |> validate_number(:similarity_score,
+      greater_than_or_equal_to: -1.0,
+      less_than_or_equal_to: 1.0
+    )
     |> unique_constraint([:codebase_id, :query_vector_hash, :target_file_path])
   end
 end

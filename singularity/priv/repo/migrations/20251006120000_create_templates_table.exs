@@ -3,7 +3,7 @@ defmodule Singularity.Repo.Migrations.CreateTemplatesTable do
 
   def up do
     # Create templates table
-    create table(:templates, primary_key: false) do
+    create_if_not_exists table(:templates, primary_key: false) do
       add :id, :text, primary_key: true
       add :version, :text, null: false
       add :type, :text, null: false
@@ -32,10 +32,16 @@ defmodule Singularity.Repo.Migrations.CreateTemplatesTable do
     """
 
     # Type filter
-    create index(:templates, [:type])
+    execute("""
+      CREATE INDEX IF NOT EXISTS templates_type_index
+      ON templates (type)
+    """, "")
 
     # Language filter (JSONB)
-    create index(:templates, ["(metadata->>'language')"])
+    execute("""
+      CREATE INDEX IF NOT EXISTS templates_"(metadata->>'language')"_index
+      ON templates ("(metadata->>'language')")
+    """, "")
 
     # Tags search (JSONB array contains)
     execute "CREATE INDEX templates_tags_idx ON templates USING gin((metadata->'tags'));"
@@ -56,7 +62,10 @@ defmodule Singularity.Repo.Migrations.CreateTemplatesTable do
     """
 
     # Composite index for common queries
-    create index(:templates, [:type, "(metadata->>'language')"])
+    execute("""
+      CREATE INDEX IF NOT EXISTS templates_type_"(metadata->>'language')"_index
+      ON templates (type, "(metadata->>'language')")
+    """, "")
   end
 
   def down do

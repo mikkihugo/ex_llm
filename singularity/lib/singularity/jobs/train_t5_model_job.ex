@@ -41,7 +41,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
     priority: 1
 
   require Logger
-  alias Singularity.RustElixirT5Trainer
+  alias Singularity.MultiLanguageT5Trainer
   alias Singularity.NATS.Client, as: NatsClient
 
   @impl Oban.Worker
@@ -87,7 +87,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
       max_examples: max_examples
     )
 
-    case RustElixirT5Trainer.prepare_multi_language_training(
+    case MultiLanguageT5Trainer.prepare_multi_language_training(
            name: name,
            languages: languages,
            max_examples: max_examples,
@@ -112,7 +112,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
       batch_size: batch_size
     )
 
-    case RustElixirT5Trainer.fine_tune(session_id,
+    case MultiLanguageT5Trainer.fine_tune(session_id,
            epochs: epochs,
            learning_rate: learning_rate,
            batch_size: batch_size,
@@ -131,7 +131,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
   defp evaluate_model(model_id) do
     Logger.info("Evaluating T5 model", model_id: model_id)
 
-    case RustElixirT5Trainer.evaluate_rust_elixir_performance(model_id) do
+    case MultiLanguageT5Trainer.evaluate_rust_elixir_performance(model_id) do
       {:ok, eval_results} ->
         Logger.info("Model evaluation completed",
           model_id: model_id,

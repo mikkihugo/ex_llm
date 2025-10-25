@@ -64,8 +64,8 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJobTest do
       }
 
       assert capture_log([level: :info], fn ->
-        DomainVocabularyTrainerJob.perform(job)
-      end) =~ "Starting"
+               DomainVocabularyTrainerJob.perform(job)
+             end) =~ "Starting"
     end
   end
 
@@ -322,9 +322,10 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJobTest do
         }
       }
 
-      log = capture_log([level: :info], fn ->
-        DomainVocabularyTrainerJob.perform(job)
-      end)
+      log =
+        capture_log([level: :info], fn ->
+          DomainVocabularyTrainerJob.perform(job)
+        end)
 
       # May log vocabulary size
       assert String.length(log) >= 0
@@ -419,9 +420,10 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJobTest do
         }
       }
 
-      _log = capture_log([level: :error], fn ->
-        DomainVocabularyTrainerJob.perform(job)
-      end)
+      _log =
+        capture_log([level: :error], fn ->
+          DomainVocabularyTrainerJob.perform(job)
+        end)
 
       :ok
     end
@@ -592,8 +594,8 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJobTest do
       }
 
       assert capture_log([level: :info], fn ->
-        DomainVocabularyTrainerJob.perform(job)
-      end) =~ "Starting"
+               DomainVocabularyTrainerJob.perform(job)
+             end) =~ "Starting"
     end
 
     test "logs completion with vocab ID and size" do
@@ -601,9 +603,10 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJobTest do
         args: %{"source" => "templates"}
       }
 
-      _log = capture_log([level: :info], fn ->
-        DomainVocabularyTrainerJob.perform(job)
-      end)
+      _log =
+        capture_log([level: :info], fn ->
+          DomainVocabularyTrainerJob.perform(job)
+        end)
 
       :ok
     end
@@ -613,9 +616,10 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJobTest do
         args: %{}
       }
 
-      _log = capture_log([level: :error], fn ->
-        DomainVocabularyTrainerJob.perform(job)
-      end)
+      _log =
+        capture_log([level: :error], fn ->
+          DomainVocabularyTrainerJob.perform(job)
+        end)
 
       :ok
     end

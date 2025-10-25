@@ -19,7 +19,8 @@ defmodule Singularity.Tools.CodeNaming do
 
   alias Singularity.Tools.Catalog
   alias Singularity.Schemas.Tools.Tool
-  alias Singularity.{RAGCodeGenerator, TechnologyAgent}
+  alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
+  alias Singularity.TechnologyAgent
 
   @doc "Register code naming tools with the shared registry."
   def register(provider) do

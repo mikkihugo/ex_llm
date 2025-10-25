@@ -71,12 +71,14 @@ defmodule Singularity.Architecture.Detectors.FrameworkDetector do
 
   @behaviour Singularity.Architecture.PatternType
   require Logger
+  alias Singularity.Architecture.PatternStore
+  alias Singularity.Repo
 
   @impl true
   def pattern_type, do: :framework
 
   @impl true
-  def description, do: "Detect web frameworks, build tools, and runtime frameworks"
+  def description, do: "Detect web frameworks, build tools, and runtime frameworks (with learned patterns)"
 
   @impl true
   def supported_types do
@@ -91,9 +93,22 @@ defmodule Singularity.Architecture.Detectors.FrameworkDetector do
 
   @impl true
   def detect(path, _opts \\ []) when is_binary(path) do
-    path
-    |> detect_frameworks()
+    # Step 1: Run hardcoded detectors
+    hardcoded_results = detect_frameworks(path)
+
+    # Step 2: Fetch learned patterns from database
+    learned_patterns = fetch_learned_patterns()
+
+    # Step 3: Enhance results with learned pattern confidence
+    enhanced_results = enhance_with_learned_patterns(hardcoded_results, learned_patterns)
+
+    # Step 4: Apply learned patterns not yet detected
+    all_results = apply_learned_patterns(enhanced_results, learned_patterns, path)
+
+    # Return unique results
+    all_results
     |> Enum.uniq_by(& &1.name)
+    |> Enum.sort_by(& &1.confidence, :desc)
   end
 
   @impl true
@@ -109,6 +124,61 @@ defmodule Singularity.Architecture.Detectors.FrameworkDetector do
       _ ->
         :ok
     end
+  end
+
+  # Private: Pattern learning integration
+
+  defp fetch_learned_patterns do
+    case PatternStore.list_patterns(:framework, limit: 100) do
+      {:ok, patterns} ->
+        Enum.filter(patterns, &(&1.confidence > 0.5))
+
+      {:error, reason} ->
+        Logger.warning("Failed to fetch learned patterns: #{inspect(reason)}")
+        []
+    end
+  end
+
+  defp enhance_with_learned_patterns(hardcoded_results, learned_patterns) do
+    Enum.map(hardcoded_results, fn result ->
+      # Look up pattern in learned patterns
+      case Enum.find(learned_patterns, &(&1.name == result.name)) do
+        nil ->
+          result
+
+        learned ->
+          # Use learned confidence if it's higher
+          %{
+            result
+            | confidence: max(result.confidence, learned.confidence),
+              learned: true
+          }
+      end
+    end)
+  end
+
+  defp apply_learned_patterns(results, learned_patterns, path) do
+    # Find learned patterns that match the path but weren't detected
+    new_detections =
+      learned_patterns
+      |> Enum.reject(&Enum.any?(results, fn r -> r.name == &1.name end))
+      |> Enum.filter(&pattern_matches_path?(&1, path))
+
+    results ++ new_detections
+  end
+
+  defp pattern_matches_path?(_pattern, ""), do: false
+
+  defp pattern_matches_path?(pattern, path) do
+    # Try to match file patterns from the learned pattern
+    file_patterns = Map.get(pattern, :file_patterns, [])
+    directory_patterns = Map.get(pattern, :directory_patterns, [])
+    config_files = Map.get(pattern, :config_files, [])
+
+    all_patterns = (file_patterns ++ directory_patterns ++ config_files) |> Enum.uniq()
+
+    # Check if any patterns match files in the path
+    Enum.any?(all_patterns, &has_file?(path, &1))
   end
 
   # Private: Framework detection logic
@@ -149,7 +219,8 @@ defmodule Singularity.Architecture.Detectors.FrameworkDetector do
   end
 
   defp detect_vue(path) do
-    if has_file?(path, "vue.config.js") || (has_file?(path, "package.json") && has_file?(path, "src/App.vue")) do
+    if has_file?(path, "vue.config.js") ||
+         (has_file?(path, "package.json") && has_file?(path, "src/App.vue")) do
       %{
         name: "Vue",
         type: "web_ui_framework",

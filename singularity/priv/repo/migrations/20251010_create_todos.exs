@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateTodos do
   use Ecto.Migration
 
   def up do
-    create table(:todos, primary_key: false) do
+    create_if_not_exists table(:todos, primary_key: false) do
       add :id, :uuid, primary_key: true
       add :title, :text, null: false
       add :description, :text
@@ -29,12 +29,30 @@ defmodule Singularity.Repo.Migrations.CreateTodos do
     end
 
     # Indexes for queries
-    create index(:todos, [:status])
-    create index(:todos, [:priority])
-    create index(:todos, [:assigned_agent_id])
-    create index(:todos, [:parent_todo_id])
-    create index(:todos, [:tags], using: :gin)
-    create index(:todos, [:context], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS todos_status_index
+      ON todos (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS todos_priority_index
+      ON todos (priority)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS todos_assigned_agent_id_index
+      ON todos (assigned_agent_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS todos_parent_todo_id_index
+      ON todos (parent_todo_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS todos_tags_index
+      ON todos (tags)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS todos_context_index
+      ON todos (context)
+    """, "")
 
     # Vector similarity search index
     execute """

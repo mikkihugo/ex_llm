@@ -21,7 +21,7 @@ defmodule Singularity.Repo.Migrations.CreateTechnologyDetectionTables do
   def up do
     # ===== TECHNOLOGY PATTERNS TABLE =====
     # Technology detection patterns (formerly framework_detection_patterns)
-    create table(:technology_patterns) do
+    create_if_not_exists table(:technology_patterns) do
       # Technology identification
       add :technology_name, :string, null: false
       add :technology_type, :string, null: false  # framework, language, tool, runtime
@@ -58,17 +58,38 @@ defmodule Singularity.Repo.Migrations.CreateTechnologyDetectionTables do
     end
 
     # Indexes for technology_patterns
-    create index(:technology_patterns, [:technology_name])
-    create index(:technology_patterns, [:technology_type])
-    create unique_index(:technology_patterns, [:technology_name, :technology_type])
-    create index(:technology_patterns, [:detection_count])
-    create index(:technology_patterns, [:success_rate])
-    create index(:technology_patterns, [:last_detected_at])
-    create index(:technology_patterns, [:extended_metadata], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_patterns_technology_name_index
+      ON technology_patterns (technology_name)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_patterns_technology_type_index
+      ON technology_patterns (technology_type)
+    """, "")
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS technology_patterns_technology_name_technology_type_key
+      ON technology_patterns (technology_name, technology_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_patterns_detection_count_index
+      ON technology_patterns (detection_count)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_patterns_success_rate_index
+      ON technology_patterns (success_rate)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_patterns_last_detected_at_index
+      ON technology_patterns (last_detected_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_patterns_extended_metadata_index
+      ON technology_patterns (extended_metadata)
+    """, "")
 
     # ===== TECHNOLOGY TEMPLATES TABLE =====
     # Code generation templates for technologies
-    create table(:technology_templates) do
+    create_if_not_exists table(:technology_templates) do
       # Template identification
       add :identifier, :string, null: false
       add :category, :string, null: false
@@ -86,10 +107,22 @@ defmodule Singularity.Repo.Migrations.CreateTechnologyDetectionTables do
     end
 
     # Indexes for technology_templates
-    create unique_index(:technology_templates, [:identifier])
-    create index(:technology_templates, [:category])
-    create index(:technology_templates, [:version])
-    create index(:technology_templates, [:category, :version])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS technology_templates_identifier_key
+      ON technology_templates (identifier)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_templates_category_index
+      ON technology_templates (category)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_templates_version_index
+      ON technology_templates (version)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_templates_category_version_index
+      ON technology_templates (category, version)
+    """, "")
 
     # Drop old technology_knowledge table if it exists
     # This table was created in migration 20240101000003 but is being replaced
@@ -103,7 +136,7 @@ defmodule Singularity.Repo.Migrations.CreateTechnologyDetectionTables do
     drop table(:technology_patterns)
 
     # Recreate technology_knowledge table from original migration
-    create table(:technology_knowledge, primary_key: false) do
+    create_if_not_exists table(:technology_knowledge, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :technology, :string, null: false
       add :category, :string, null: false
@@ -118,7 +151,13 @@ defmodule Singularity.Repo.Migrations.CreateTechnologyDetectionTables do
       timestamps()
     end
 
-    create index(:technology_knowledge, [:technology, :category])
-    create index(:technology_knowledge, [:name])
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_knowledge_technology_category_index
+      ON technology_knowledge (technology, category)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_knowledge_name_index
+      ON technology_knowledge (name)
+    """, "")
   end
 end

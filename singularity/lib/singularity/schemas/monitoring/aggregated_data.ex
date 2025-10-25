@@ -88,7 +88,8 @@ defmodule Singularity.Metrics.AggregatedData do
 
   schema "metrics_aggregated" do
     field :event_name, :string
-    field :period, :string  # "hour" or "day"
+    # "hour" or "day"
+    field :period, :string
     field :period_start, :utc_datetime_usec
 
     # Statistics
@@ -108,7 +109,18 @@ defmodule Singularity.Metrics.AggregatedData do
   @doc false
   def changeset(data, attrs) do
     data
-    |> cast(attrs, [:event_name, :period, :period_start, :count, :sum, :avg, :min, :max, :stddev, :tags])
+    |> cast(attrs, [
+      :event_name,
+      :period,
+      :period_start,
+      :count,
+      :sum,
+      :avg,
+      :min,
+      :max,
+      :stddev,
+      :tags
+    ])
     |> validate_required([:event_name, :period, :period_start, :count])
     |> validate_inclusion(:period, ["hour", "day"])
     |> validate_statistics()

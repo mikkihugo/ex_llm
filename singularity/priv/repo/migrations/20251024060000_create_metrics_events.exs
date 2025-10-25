@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateMetricsEvents do
   use Ecto.Migration
 
   def change do
-    create table(:metrics_events, primary_key: false) do
+    create_if_not_exists table(:metrics_events, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :event_name, :string, null: false
       add :measurement, :float, null: false
@@ -14,14 +14,23 @@ defmodule Singularity.Repo.Migrations.CreateMetricsEvents do
     end
 
     # Query indexes - most common access patterns
-    create index(:metrics_events, [:event_name, :recorded_at],
+    execute("""
+      CREATE INDEX IF NOT EXISTS metrics_events_event_name_recorded_at_index
+      ON metrics_events (event_name, recorded_at)
+    """, "")
       name: "metrics_events_event_time_idx")
 
-    create index(:metrics_events, [:recorded_at],
+    execute("""
+      CREATE INDEX IF NOT EXISTS metrics_events_recorded_at_index
+      ON metrics_events (recorded_at)
+    """, "")
       name: "metrics_events_recorded_at_idx")
 
     # GIN index for JSONB tag queries
-    create index(:metrics_events, [:tags],
+    execute("""
+      CREATE INDEX IF NOT EXISTS metrics_events_tags_index
+      ON metrics_events (tags)
+    """, "")
       name: "metrics_events_tags_idx",
       using: :gin)
   end

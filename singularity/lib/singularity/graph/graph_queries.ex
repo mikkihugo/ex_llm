@@ -320,11 +320,11 @@ defmodule Singularity.Graph.GraphQueries do
   def find_callers_intarray(function_name, codebase_id \\ "singularity") do
     # Get target node and its dependent_node_ids (functions that call it)
     case Repo.one(
-      from(gn in GraphNode,
-        where: gn.name == ^function_name and gn.codebase_id == ^codebase_id,
-        select: gn.dependent_node_ids
-      )
-    ) do
+           from(gn in GraphNode,
+             where: gn.name == ^function_name and gn.codebase_id == ^codebase_id,
+             select: gn.dependent_node_ids
+           )
+         ) do
       nil ->
         []
 
@@ -357,11 +357,11 @@ defmodule Singularity.Graph.GraphQueries do
   def find_callees_intarray(function_name, codebase_id \\ "singularity") do
     # Get target node and its dependency_node_ids (functions it calls)
     case Repo.one(
-      from(gn in GraphNode,
-        where: gn.name == ^function_name and gn.codebase_id == ^codebase_id,
-        select: gn.dependency_node_ids
-      )
-    ) do
+           from(gn in GraphNode,
+             where: gn.name == ^function_name and gn.codebase_id == ^codebase_id,
+             select: gn.dependency_node_ids
+           )
+         ) do
       nil ->
         []
 
@@ -395,11 +395,11 @@ defmodule Singularity.Graph.GraphQueries do
     target_node_id = "module::#{module_name}"
 
     case Repo.one(
-      from(gn in GraphNode,
-        where: gn.node_id == ^target_node_id and gn.codebase_id == ^codebase_id,
-        select: gn.dependent_node_ids
-      )
-    ) do
+           from(gn in GraphNode,
+             where: gn.node_id == ^target_node_id and gn.codebase_id == ^codebase_id,
+             select: gn.dependent_node_ids
+           )
+         ) do
       nil ->
         []
 
@@ -430,11 +430,11 @@ defmodule Singularity.Graph.GraphQueries do
     source_node_id = "module::#{module_name}"
 
     case Repo.one(
-      from(gn in GraphNode,
-        where: gn.node_id == ^source_node_id and gn.codebase_id == ^codebase_id,
-        select: gn.dependency_node_ids
-      )
-    ) do
+           from(gn in GraphNode,
+             where: gn.node_id == ^source_node_id and gn.codebase_id == ^codebase_id,
+             select: gn.dependency_node_ids
+           )
+         ) do
       nil ->
         []
 

@@ -81,6 +81,7 @@ defmodule Singularity.CodeAnalysis.ScanOrchestratorTest do
           assert is_map(results)
           # Results should have entries for each enabled scanner
           scanners = ScanOrchestrator.get_scanner_types_info()
+
           Enum.each(scanners, fn scanner ->
             assert Map.has_key?(results, scanner.name)
             assert is_list(results[scanner.name])
@@ -498,10 +499,11 @@ defmodule Singularity.CodeAnalysis.ScanOrchestratorTest do
     end
 
     test "logs scanning attempts" do
-      log = capture_log(fn ->
-        path = "lib"
-        ScanOrchestrator.scan(path)
-      end)
+      log =
+        capture_log(fn ->
+          path = "lib"
+          ScanOrchestrator.scan(path)
+        end)
 
       # Should contain some logs or be empty
       assert is_binary(log)

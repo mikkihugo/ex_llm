@@ -3,7 +3,7 @@ defmodule Singularity.Repo.Migrations.CreateT5TrainingTables do
 
   def change do
     # T5 Training Sessions table
-    create table(:t5_training_sessions, primary_key: false) do
+    create_if_not_exists table(:t5_training_sessions, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
       add :description, :text
@@ -25,12 +25,21 @@ defmodule Singularity.Repo.Migrations.CreateT5TrainingTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:t5_training_sessions, [:language])
-    create index(:t5_training_sessions, [:status])
-    create index(:t5_training_sessions, [:is_active])
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_training_sessions_language_index
+      ON t5_training_sessions (language)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_training_sessions_status_index
+      ON t5_training_sessions (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_training_sessions_is_active_index
+      ON t5_training_sessions (is_active)
+    """, "")
 
     # T5 Training Examples table
-    create table(:t5_training_examples, primary_key: false) do
+    create_if_not_exists table(:t5_training_examples, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :training_session_id, references(:t5_training_sessions, type: :binary_id, on_delete: :delete_all)
       add :code_chunk_id, references(:codebase_chunks, type: :binary_id, on_delete: :nilify_all)
@@ -47,13 +56,25 @@ defmodule Singularity.Repo.Migrations.CreateT5TrainingTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:t5_training_examples, [:training_session_id])
-    create index(:t5_training_examples, [:language])
-    create index(:t5_training_examples, [:is_validation])
-    create index(:t5_training_examples, [:quality_score])
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_training_examples_training_session_id_index
+      ON t5_training_examples (training_session_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_training_examples_language_index
+      ON t5_training_examples (language)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_training_examples_is_validation_index
+      ON t5_training_examples (is_validation)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_training_examples_quality_score_index
+      ON t5_training_examples (quality_score)
+    """, "")
 
     # T5 Model Versions table
-    create table(:t5_model_versions, primary_key: false) do
+    create_if_not_exists table(:t5_model_versions, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :training_session_id, references(:t5_training_sessions, type: :binary_id, on_delete: :delete_all)
       add :version, :string, null: false
@@ -71,13 +92,25 @@ defmodule Singularity.Repo.Migrations.CreateT5TrainingTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:t5_model_versions, [:training_session_id])
-    create index(:t5_model_versions, [:version])
-    create index(:t5_model_versions, [:is_deployed])
-    create index(:t5_model_versions, [:is_active])
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_model_versions_training_session_id_index
+      ON t5_model_versions (training_session_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_model_versions_version_index
+      ON t5_model_versions (version)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_model_versions_is_deployed_index
+      ON t5_model_versions (is_deployed)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_model_versions_is_active_index
+      ON t5_model_versions (is_active)
+    """, "")
 
     # T5 Training Progress table (for real-time monitoring)
-    create table(:t5_training_progress, primary_key: false) do
+    create_if_not_exists table(:t5_training_progress, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :training_session_id, references(:t5_training_sessions, type: :binary_id, on_delete: :delete_all)
       add :epoch, :integer, null: false
@@ -93,12 +126,21 @@ defmodule Singularity.Repo.Migrations.CreateT5TrainingTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:t5_training_progress, [:training_session_id])
-    create index(:t5_training_progress, [:epoch])
-    create index(:t5_training_progress, [:inserted_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_training_progress_training_session_id_index
+      ON t5_training_progress (training_session_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_training_progress_epoch_index
+      ON t5_training_progress (epoch)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_training_progress_inserted_at_index
+      ON t5_training_progress (inserted_at)
+    """, "")
 
     # T5 Evaluation Results table
-    create table(:t5_evaluation_results, primary_key: false) do
+    create_if_not_exists table(:t5_evaluation_results, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :model_version_id, references(:t5_model_versions, type: :binary_id, on_delete: :delete_all)
       add :test_dataset_id, :binary_id
@@ -114,8 +156,17 @@ defmodule Singularity.Repo.Migrations.CreateT5TrainingTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:t5_evaluation_results, [:model_version_id])
-    create index(:t5_evaluation_results, [:bleu_score])
-    create index(:t5_evaluation_results, [:code_quality_score])
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_evaluation_results_model_version_id_index
+      ON t5_evaluation_results (model_version_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_evaluation_results_bleu_score_index
+      ON t5_evaluation_results (bleu_score)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS t5_evaluation_results_code_quality_score_index
+      ON t5_evaluation_results (code_quality_score)
+    """, "")
   end
 end

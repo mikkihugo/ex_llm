@@ -1689,5 +1689,4 @@ defmodule Singularity.SelfImprovingAgent do
   defp generate_fix_diff(fix) do
     "Fix: #{fix.description}\nType: #{fix.type}\nPriority: #{fix.priority}\nFiles affected: #{fix.files_affected}"
   end
-
 end

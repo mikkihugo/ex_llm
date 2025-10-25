@@ -34,60 +34,50 @@ defmodule Singularity.Repo.Migrations.CreateModuleImportanceTiersView do
   """
 
   def up do
-    # Create materialized view
-    execute("""
-    CREATE MATERIALIZED VIEW module_importance_tiers AS
-    SELECT
-      codebase_id,
-      name,
-      file_path,
-      node_type,
-      pagerank_score,
-      CASE
-        WHEN pagerank_score > 5.0 THEN 'CRITICAL'
-        WHEN pagerank_score > 2.0 THEN 'IMPORTANT'
-        WHEN pagerank_score > 0.5 THEN 'MODERATE'
-        ELSE 'LOW'
-      END as tier,
-      NTILE(100) OVER (
-        PARTITION BY codebase_id
-        ORDER BY pagerank_score DESC
-      ) as percentile,
-      RANK() OVER (
-        PARTITION BY codebase_id
-        ORDER BY pagerank_score DESC
-      ) as rank_in_codebase,
-      COUNT(*) FILTER (WHERE pagerank_score > 0) OVER (
-        PARTITION BY codebase_id
-      ) as total_modules
-    FROM graph_nodes
-    WHERE pagerank_score > 0
-    ORDER BY codebase_id, pagerank_score DESC;
-    """)
+    # Create materialized view - only runs if graph_nodes table exists
+    execute(~s(
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'graph_nodes') THEN
+          CREATE MATERIALIZED VIEW IF NOT EXISTS module_importance_tiers AS
+          SELECT
+            codebase_id,
+            name,
+            file_path,
+            node_type,
+            pagerank_score,
+            CASE
+              WHEN pagerank_score > 5.0 THEN 'CRITICAL'
+              WHEN pagerank_score > 2.0 THEN 'IMPORTANT'
+              WHEN pagerank_score > 0.5 THEN 'MODERATE'
+              ELSE 'LOW'
+            END as tier,
+            NTILE(100) OVER (
+              PARTITION BY codebase_id
+              ORDER BY pagerank_score DESC
+            ) as percentile,
+            RANK() OVER (
+              PARTITION BY codebase_id
+              ORDER BY pagerank_score DESC
+            ) as rank_in_codebase,
+            COUNT(*) FILTER (WHERE pagerank_score > 0) OVER (
+              PARTITION BY codebase_id
+            ) as total_modules
+          FROM graph_nodes
+          WHERE pagerank_score > 0
+          ORDER BY codebase_id, pagerank_score DESC;
 
-    # Create indexes for fast queries
-    execute("""
-    CREATE INDEX idx_module_importance_tiers_codebase
-    ON module_importance_tiers(codebase_id);
-    """)
+          CREATE INDEX IF NOT EXISTS idx_module_importance_tiers_codebase
+          ON module_importance_tiers(codebase_id);
 
-    execute("""
-    CREATE INDEX idx_module_importance_tiers_tier
-    ON module_importance_tiers(codebase_id, tier);
-    """)
+          CREATE INDEX IF NOT EXISTS idx_module_importance_tiers_tier
+          ON module_importance_tiers(codebase_id, tier);
 
-    execute("""
-    CREATE INDEX idx_module_importance_tiers_rank
-    ON module_importance_tiers(codebase_id, rank_in_codebase);
-    """)
-
-    IO.puts("✅ Created materialized view: module_importance_tiers")
-    IO.puts("   • Auto-classifies modules into tiers (CRITICAL, IMPORTANT, MODERATE, LOW)")
-    IO.puts("   • Indexes: codebase_id, (codebase_id, tier), (codebase_id, rank)")
-    IO.puts("   • Query time: 1-5ms (vs 2-3s without view)")
-    IO.puts("")
-    IO.puts("Next: Update pagerank_daily_refresh() SQL function to refresh view:")
-    IO.puts("  REFRESH MATERIALIZED VIEW CONCURRENTLY module_importance_tiers;")
+          CREATE INDEX IF NOT EXISTS idx_module_importance_tiers_rank
+          ON module_importance_tiers(codebase_id, rank_in_codebase);
+        END IF;
+      END$$;
+    ))
   end
 
   def down do

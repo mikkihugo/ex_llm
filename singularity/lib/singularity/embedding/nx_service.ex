@@ -64,7 +64,7 @@ defmodule Singularity.Embedding.NxService do
       embedding_dim: 1536,
       hidden_dim: 1536,
       framework: :safetensors,
-      type: :code,
+      type: :code
     },
     jina_v3: %{
       name: "Jina Embeddings v3",
@@ -72,8 +72,8 @@ defmodule Singularity.Embedding.NxService do
       embedding_dim: 1024,
       hidden_dim: 768,
       framework: :onnx,
-      type: :general,
-    },
+      type: :general
+    }
   }
 
   @doc """
@@ -142,7 +142,12 @@ defmodule Singularity.Embedding.NxService do
     Logger.info("Starting fine-tuning for #{inspect(model)}")
 
     with {:ok, trainer} <- Trainer.new(model, opts),
-         {:ok, _} <- Trainer.train(trainer, training_data, epochs: epochs, learning_rate: learning_rate, batch_size: batch_size) do
+         {:ok, _} <-
+           Trainer.train(trainer, training_data,
+             epochs: epochs,
+             learning_rate: learning_rate,
+             batch_size: batch_size
+           ) do
       Logger.info("✅ Fine-tuning completed for #{inspect(model)}")
       {:ok, %{model: model, epochs: epochs, samples: length(training_data)}}
     else
@@ -200,7 +205,8 @@ defmodule Singularity.Embedding.NxService do
         # Step 2: Generate embeddings using real model inference only
         # NO FALLBACK: Must use real inference or fail explicitly
         with {:ok, qodo_embedding} <- compute_real_embedding(:qodo, token_ids_qodo, model_state),
-             {:ok, jina_embedding} <- compute_real_embedding(:jina_v3, token_ids_jina, model_state) do
+             {:ok, jina_embedding} <-
+               compute_real_embedding(:jina_v3, token_ids_jina, model_state) do
           # Step 3: Combine results
           # Concatenate: [1536 || 1024] = 2560
           concatenated = Nx.concatenate([qodo_embedding, jina_embedding], axis: 0)
@@ -273,10 +279,12 @@ defmodule Singularity.Embedding.NxService do
   defp normalize_vector(vector) do
     # L2 normalization
     norm = Nx.sqrt(Nx.sum(Nx.multiply(vector, vector)))
+    norm_val = Nx.to_number(norm)
 
-    case Nx.to_number(norm) do
-      0.0 -> vector
-      norm_val -> Nx.divide(vector, norm_val)
+    if abs(norm_val) < 1.0e-10 do
+      vector
+    else
+      Nx.divide(vector, norm_val)
     end
   end
 
@@ -302,8 +310,11 @@ defmodule Singularity.Embedding.NxService do
     norm1 = Nx.sqrt(Nx.sum(Nx.multiply(vec1, vec1))) |> Nx.to_number()
     norm2 = Nx.sqrt(Nx.sum(Nx.multiply(vec2, vec2))) |> Nx.to_number()
 
-    if norm1 == 0.0 or norm2 == 0.0 do
-      0.0
+    # Check for zero vectors using abs/epsilon comparison (OTP 28 compatible)
+    epsilon = 1.0e-10
+
+    if abs(norm1) < epsilon or abs(norm2) < epsilon do
+      +0.0
     else
       dot_product / (norm1 * norm2)
     end
@@ -331,6 +342,7 @@ defmodule Singularity.Embedding.NxService do
         _ -> Logger.warning("Unknown model: #{inspect(model)}")
       end
     end)
+
     :ok
   end
 

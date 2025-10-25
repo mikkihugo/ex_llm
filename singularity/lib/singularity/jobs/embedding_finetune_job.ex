@@ -54,11 +54,12 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
     with {:ok, training_data} <- collect_training_data(),
          {:ok, _} <- validate_training_data(training_data),
          {:ok, trainer} <- Trainer.new(model, device: device),
-         {:ok, metrics} <- Trainer.train(trainer, training_data,
-           epochs: epochs,
-           learning_rate: learning_rate,
-           batch_size: batch_size
-         ),
+         {:ok, metrics} <-
+           Trainer.train(trainer, training_data,
+             epochs: epochs,
+             learning_rate: learning_rate,
+             batch_size: batch_size
+           ),
          :ok <- NxService.reload_model(model, models_dir()),
          :ok <- verify_embeddings(model) do
       Logger.info("✅ Fine-tuning completed successfully")
@@ -88,7 +89,7 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
       "model" => Atom.to_string(model),
       "epochs" => epochs,
       "learning_rate" => learning_rate,
-      "batch_size" => batch_size,
+      "batch_size" => batch_size
     }
 
     Logger.info("Scheduling fine-tuning job: #{inspect(job_args)}")
@@ -138,6 +139,7 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
     code_dirs
     |> Enum.flat_map(fn dir ->
       path = Path.join(File.cwd!(), dir)
+
       case File.dir?(path) do
         true ->
           path
@@ -182,11 +184,16 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
     # Split content by function/method definitions
     # Simple approach: split by common patterns
     patterns = [
-      ~r/def\s+\w+[^}]*(?:\{|do)[^}]*/,  # Elixir/Ruby functions
-      ~r/fn[^}]*/,                         # Anonymous functions
-      ~r/class\s+\w+[^}]*/,                # Classes
-      ~r/async\s+fn[^}]*/,                 # Async functions
-      ~r/\w+\([^)]*\)\s*\{/,              # Generic function signatures
+      # Elixir/Ruby functions
+      ~r/def\s+\w+[^}]*(?:\{|do)[^}]*/,
+      # Anonymous functions
+      ~r/fn[^}]*/,
+      # Classes
+      ~r/class\s+\w+[^}]*/,
+      # Async functions
+      ~r/async\s+fn[^}]*/,
+      # Generic function signatures
+      ~r/\w+\([^)]*\)\s*\{/
     ]
 
     Enum.flat_map(patterns, fn pattern ->
@@ -220,7 +227,7 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
       %{
         anchor: anchor,
         positive: positive,
-        negative: negative,
+        negative: negative
       }
     end)
     |> Enum.filter(fn triplet ->
@@ -259,7 +266,8 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
       similarity = jaccard_similarity(anchor, snippet)
       {snippet, similarity}
     end)
-    |> Enum.sort_by(fn {_snippet, sim} -> sim end)  # Sort ascending (dissimilar first)
+    # Sort ascending (dissimilar first)
+    |> Enum.sort_by(fn {_snippet, sim} -> sim end)
     |> Enum.take(10)
     |> Enum.random()
     |> elem(0)
@@ -303,12 +311,12 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
     test_texts = [
       "def calculate(x): return x * 2",
       "async fn fetch() {}",
-      "class MyClass: pass",
+      "class MyClass: pass"
     ]
 
     case Enum.map(test_texts, fn text ->
-      {:ok, _emb} = NxService.embed(text, model: model)
-    end) do
+           {:ok, _emb} = NxService.embed(text, model: model)
+         end) do
       [_ | _] ->
         Logger.info("✅ Embeddings verified successfully")
         :ok
@@ -319,7 +327,8 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
   rescue
     _e ->
       Logger.warning("⚠️  Could not fully verify embeddings (model may not be loaded yet)")
-      :ok  # Don't fail the job if verification has issues
+      # Don't fail the job if verification has issues
+      :ok
   end
 
   # Data generation
@@ -335,7 +344,7 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
       {"try: pass except", "try: do_something except", "if condition"},
       {"for item in list", "while running", "if ready"},
       {"@decorator\ndef func", "@wrapper\ndef method", "return value"},
-      {"const API_URL", "const CONFIG", "const { x } = obj"},
+      {"const API_URL", "const CONFIG", "const { x } = obj"}
     ]
 
     1..count
@@ -345,7 +354,7 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
       %{
         anchor: anchor <> "_#{i}",
         positive: positive <> "_#{i}",
-        negative: negative <> "_#{i}",
+        negative: negative <> "_#{i}"
       }
     end)
   end
@@ -364,7 +373,8 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
         case :os.type() do
           {:unix, :darwin} ->
             Logger.info("macOS detected, using Metal (or CPU fallback)")
-            :cpu  # Metal support requires additional setup
+            # Metal support requires additional setup
+            :cpu
 
           _ ->
             Logger.info("No GPU detected, using CPU")

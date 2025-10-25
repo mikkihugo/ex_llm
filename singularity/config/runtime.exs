@@ -165,35 +165,29 @@ if config_env() != :test do
   end
 end
 
-# Embedding service configuration (Inference - ONNX Runtime)
-# Pure local ONNX inference, no API calls, works offline
+# Embedding service configuration (Pure Elixir Nx/Axon)
+# Pure local tensor operations, no external inference APIs, works offline
 config :singularity,
-  # Embedding strategy: Pure local ONNX via Rust NIF
-  # - GPU available (CUDA/Metal/ROCm): Qodo-Embed-1 (1536D) - code-specialized, ~15ms
-  # - CPU only: MiniLM-L6-v2 (384D) - lightweight but excellent, ~40ms
+  # Embedding models: Pure Elixir Nx implementation
+  # Downloads safetensors/ONNX weights from HuggingFace and runs inference locally
+  #
+  # Models:
+  # - Qodo-Embed-1: 1536 dims, code-specialized, safetensors format
+  # - Jina v3: 1024 dims, general-purpose text, ONNX format
+  # - Concatenated: 2560 dims = Qodo (1536) + Jina (1024)
   #
   # Benefits:
-  # ✅ Works offline (no internet required)
+  # ✅ Works offline (weights cached locally after download)
   # ✅ No API keys needed
   # ✅ No rate limits or quotas
   # ✅ Deterministic (same input = same embedding always)
-  # ✅ GPU-accelerated on available hardware (CUDA/Metal/ROCm)
-  # ✅ Auto device detection
-  embedding_provider: :rustler,
-
-  # Rust NIF embedding models (GPU-accelerated ONNX inference)
-  # - Jina v3: 1024 dims, general text (8192 tokens) - ONNX Runtime
-  # - Qodo-Embed-1: 1536 dims, code-specialized (32k tokens) - Candle backend
-  # - MiniLM-L6-v2: 384D dims, lightweight CPU model - ONNX Runtime
+  # ✅ GPU support via EXLA backend (CUDA/Metal)
+  # ✅ Pure Elixir, no Rust dependencies for inference
   #
-  # Device detection is automatic:
-  # - CUDA_VISIBLE_DEVICES set → Use GPU model
-  # - No GPU → Fall back to MiniLM
-  rustler_models: [
-    jina_v3: "jina-embeddings-v3",
-    qodo_embed: "qodo-embed-1-1.5b",
-    minilm: "sentence-transformers/all-MiniLM-L6-v2"
-  ],
+  # Implementation: Singularity.Embedding.NxService
+  # - Loads safetensors weights via Singularity.Embedding.ModelLoader
+  # - Builds Axon models via Singularity.Embedding.Model
+  # - Inference via Nx tensor operations (EXLA-accelerated if available)
 
   # Code generation model configuration
   code_generation: [

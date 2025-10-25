@@ -1058,8 +1058,14 @@ defmodule Singularity.Tools.Knowledge do
       ],
       execute: fn params ->
         query = Map.get(params, "query", "")
-        ecosystem = Map.get(params, "ecosystem", "all") |> String.to_atom()
+        ecosystem_str = Map.get(params, "ecosystem", "all")
         limit = Map.get(params, "limit", 10)
+
+        # Whitelist valid ecosystems before converting to atom
+        valid_ecosystems = ["npm", "cargo", "hex", "pypi", "all"]
+
+        ecosystem =
+          if ecosystem_str in valid_ecosystems, do: String.to_atom(ecosystem_str), else: :all
 
         case Singularity.Tools.PackageSearch.search_packages(query, ecosystem, limit) do
           {:ok, results} -> {:ok, results}

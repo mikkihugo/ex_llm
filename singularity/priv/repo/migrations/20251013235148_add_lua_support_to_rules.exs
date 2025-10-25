@@ -18,6 +18,9 @@ defmodule Singularity.Repo.Migrations.AddLuaSupportToRules do
     end
 
     # Add index for faster queries by execution type
-    create index(:agent_behavior_confidence_rules, [:execution_type])
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_behavior_confidence_rules_execution_type_index
+      ON agent_behavior_confidence_rules (execution_type)
+    """, "")
   end
 end

@@ -66,7 +66,7 @@ defmodule Singularity.Web.Router do
     pipe_through(:browser)
 
     live_dashboard("/dashboard",
-      metrics: Singularity.Telemetry,
+      metrics: Singularity.Infrastructure.Telemetry,
       custom_pages: [
         {Singularity.Dashboard.SystemHealthPage, "System"},
         {Singularity.Dashboard.AgentsPage, "Agents"},

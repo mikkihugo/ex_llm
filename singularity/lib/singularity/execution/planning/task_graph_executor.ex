@@ -203,12 +203,18 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   require Logger
 
   # INTEGRATION: DAG operations (task selection and status updates)
-  alias Singularity.Execution.Planning.{TaskGraph, TaskGraphCore, StrategyLoader, LuaStrategyExecutor}
+  alias Singularity.Execution.Planning.{
+    TaskGraph,
+    TaskGraphCore,
+    StrategyLoader,
+    LuaStrategyExecutor
+  }
 
   # INTEGRATION: LLM execution (NATS-based operations)
   # INTEGRATION: Code generation and quality enforcement
   alias Singularity.CodeGeneration.Implementations.{RAGCodeGenerator, QualityCodeGenerator}
   alias Singularity.Store
+  alias Singularity.Agents.AgentSpawner
 
   # INTEGRATION: Self-improvement (learning from execution)
   # INTEGRATION: Agent spawning from Lua configurations

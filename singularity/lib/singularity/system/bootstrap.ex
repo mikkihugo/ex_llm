@@ -41,7 +41,12 @@ defmodule Singularity.System.Bootstrap do
   require Logger
 
   # INTEGRATION: TaskGraph planning and execution
-  alias Singularity.Execution.Planning.{TaskGraph, TaskGraphExecutor, TaskGraphEvolution, FullRepoScanner}
+  alias Singularity.Execution.Planning.{
+    TaskGraph,
+    TaskGraphExecutor,
+    TaskGraphEvolution,
+    FullRepoScanner
+  }
 
   # INTEGRATION: Knowledge storage and self-improvement
   alias Singularity.{Store, SelfImprovingAgent}

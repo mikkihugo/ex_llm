@@ -141,7 +141,11 @@ defmodule Singularity.Schemas.CodeChunk do
         changeset
 
       %Pgvector{data: data} ->
-        add_error(changeset, :embedding, "must be 2560-dimensional vector, got #{tuple_size(data)}")
+        add_error(
+          changeset,
+          :embedding,
+          "must be 2560-dimensional vector, got #{tuple_size(data)}"
+        )
 
       _other ->
         changeset

@@ -364,9 +364,10 @@ defmodule Singularity.Agents.Agent do
 
     # Store recommendation context for processing in next tick
     enriched_context =
-      state.pending_context || %{}
-      |> Map.put(:recommendation, recommendation)
-      |> Map.put(:recommendation_applied_at, DateTime.utc_now())
+      state.pending_context ||
+        %{}
+        |> Map.put(:recommendation, recommendation)
+        |> Map.put(:recommendation_applied_at, DateTime.utc_now())
 
     {:noreply, %{state | pending_context: enriched_context}}
   end

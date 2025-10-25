@@ -55,8 +55,8 @@ defmodule Singularity.Jobs.TrainT5ModelJobTest do
       }
 
       assert capture_log([level: :info], fn ->
-        TrainT5ModelJob.perform(job)
-      end) =~ "Starting"
+               TrainT5ModelJob.perform(job)
+             end) =~ "Starting"
     end
   end
 
@@ -213,10 +213,10 @@ defmodule Singularity.Jobs.TrainT5ModelJobTest do
       }
 
       assert capture_log([level: :info], fn ->
-        TrainT5ModelJob.perform(job)
-      end) =~ "Preparing" or
-             TrainT5ModelJob.perform(job) == :ok or
-             match?({:ok, _}, TrainT5ModelJob.perform(job))
+               TrainT5ModelJob.perform(job)
+             end) =~ "Preparing" or
+               TrainT5ModelJob.perform(job) == :ok or
+               match?({:ok, _}, TrainT5ModelJob.perform(job))
     end
 
     test "handles session preparation errors" do
@@ -241,10 +241,10 @@ defmodule Singularity.Jobs.TrainT5ModelJobTest do
       }
 
       assert capture_log([level: :info], fn ->
-        TrainT5ModelJob.perform(job)
-      end) =~ "Fine-tun" or
-             TrainT5ModelJob.perform(job) == :ok or
-             match?({:ok, _}, TrainT5ModelJob.perform(job))
+               TrainT5ModelJob.perform(job)
+             end) =~ "Fine-tun" or
+               TrainT5ModelJob.perform(job) == :ok or
+               match?({:ok, _}, TrainT5ModelJob.perform(job))
     end
 
     test "handles fine-tuning errors gracefully" do
@@ -268,10 +268,10 @@ defmodule Singularity.Jobs.TrainT5ModelJobTest do
       }
 
       assert capture_log([level: :info], fn ->
-        TrainT5ModelJob.perform(job)
-      end) =~ "Evaluat" or
-             TrainT5ModelJob.perform(job) == :ok or
-             match?({:ok, _}, TrainT5ModelJob.perform(job))
+               TrainT5ModelJob.perform(job)
+             end) =~ "Evaluat" or
+               TrainT5ModelJob.perform(job) == :ok or
+               match?({:ok, _}, TrainT5ModelJob.perform(job))
     end
 
     test "handles evaluation errors" do
@@ -389,9 +389,10 @@ defmodule Singularity.Jobs.TrainT5ModelJobTest do
         }
       }
 
-      _log = capture_log([level: :error], fn ->
-        TrainT5ModelJob.perform(job)
-      end)
+      _log =
+        capture_log([level: :error], fn ->
+          TrainT5ModelJob.perform(job)
+        end)
 
       :ok
     end
@@ -453,9 +454,10 @@ defmodule Singularity.Jobs.TrainT5ModelJobTest do
         }
       }
 
-      log = capture_log([level: :info], fn ->
-        TrainT5ModelJob.perform(job)
-      end)
+      log =
+        capture_log([level: :info], fn ->
+          TrainT5ModelJob.perform(job)
+        end)
 
       # Should have some logging
       assert String.length(log) >= 0
@@ -532,9 +534,10 @@ defmodule Singularity.Jobs.TrainT5ModelJobTest do
         max_attempts: 3
       }
 
-      _log = capture_log([level: :info], fn ->
-        TrainT5ModelJob.perform(job)
-      end)
+      _log =
+        capture_log([level: :info], fn ->
+          TrainT5ModelJob.perform(job)
+        end)
 
       :ok
     end

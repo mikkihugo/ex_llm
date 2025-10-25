@@ -14,7 +14,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
     drop_if_exists table(:vector_similarity_cache)
 
     # Create unified cache schema
-    create table(:cache_llm_responses, primary_key: false) do
+    create_if_not_exists table(:cache_llm_responses, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :cache_key, :string, null: false
       add :prompt, :text, null: false
@@ -31,7 +31,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       timestamps()
     end
 
-    create table(:cache_code_embeddings, primary_key: false) do
+    create_if_not_exists table(:cache_code_embeddings, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :content_hash, :string, null: false
       add :content, :text, null: false
@@ -42,7 +42,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       add :created_at, :utc_datetime, default: fragment("NOW()")
     end
 
-    create table(:cache_semantic_similarity, primary_key: false) do
+    create_if_not_exists table(:cache_semantic_similarity, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :query_hash, :string, null: false
       add :target_hash, :string, null: false
@@ -51,7 +51,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       add :created_at, :utc_datetime, default: fragment("NOW()")
     end
 
-    create table(:cache_memory, primary_key: false) do
+    create_if_not_exists table(:cache_memory, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :cache_key, :string, null: false
       add :value, :text, null: false
@@ -78,7 +78,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
     drop_if_exists table(:knowledge_artifacts)
 
     # Create unified store schema
-    create table(:store_codebase_services, primary_key: false) do
+    create_if_not_exists table(:store_codebase_services, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :codebase_id, :string, null: false
       add :service_name, :string, null: false
@@ -91,7 +91,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       timestamps()
     end
 
-    create table(:store_code_artifacts, primary_key: false) do
+    create_if_not_exists table(:store_code_artifacts, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :agent_id, :string, null: false
       add :version, :string, null: false
@@ -104,7 +104,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       timestamps()
     end
 
-    create table(:store_knowledge_artifacts, primary_key: false) do
+    create_if_not_exists table(:store_knowledge_artifacts, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :artifact_type, :string, null: false
       add :artifact_id, :string, null: false
@@ -120,7 +120,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       timestamps()
     end
 
-    create table(:store_templates, primary_key: false) do
+    create_if_not_exists table(:store_templates, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :template_type, :string, null: false  # "technology" | "framework" | "pattern"
       add :technology, :string, null: false
@@ -134,7 +134,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       timestamps()
     end
 
-    create table(:store_packages, primary_key: false) do
+    create_if_not_exists table(:store_packages, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :package_name, :string, null: false
       add :version, :string, null: false
@@ -152,7 +152,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       timestamps()
     end
 
-    create table(:store_git_state, primary_key: false) do
+    create_if_not_exists table(:store_git_state, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :session_id, :string, null: false
       add :agent_id, :string
@@ -173,7 +173,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
     drop_if_exists table(:llm_calls)
 
     # Create unified runner schema
-    create table(:runner_analysis_executions, primary_key: false) do
+    create_if_not_exists table(:runner_analysis_executions, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :codebase_id, :string, null: false
       add :analysis_type, :string, null: false  # "full" | "incremental" | "quality"
@@ -187,7 +187,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       timestamps()
     end
 
-    create table(:runner_tool_executions, primary_key: false) do
+    create_if_not_exists table(:runner_tool_executions, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :tool_name, :string, null: false
       add :tool_args, :map, default: %{}
@@ -200,7 +200,7 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       timestamps()
     end
 
-    create table(:runner_rust_operations, primary_key: false) do
+    create_if_not_exists table(:runner_rust_operations, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :operation_type, :string, null: false  # "parsing" | "embedding" | "semantic_search"
       add :input_hash, :string, null: false
@@ -218,57 +218,168 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
     # ============================================================================
 
     # Cache indexes
-    create unique_index(:cache_llm_responses, [:cache_key])
-    create index(:cache_llm_responses, [:last_accessed])
-    create index(:cache_llm_responses, [:hit_count])
-    create index(:cache_llm_responses, [:provider, :model])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS cache_llm_responses_cache_key_key
+      ON cache_llm_responses (cache_key)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS cache_llm_responses_last_accessed_index
+      ON cache_llm_responses (last_accessed)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS cache_llm_responses_hit_count_index
+      ON cache_llm_responses (hit_count)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS cache_llm_responses_provider_model_index
+      ON cache_llm_responses (provider, model)
+    """, "")
 
-    create unique_index(:cache_code_embeddings, [:content_hash])
-    create index(:cache_code_embeddings, [:language])
-    create index(:cache_code_embeddings, [:file_path])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS cache_code_embeddings_content_hash_key
+      ON cache_code_embeddings (content_hash)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS cache_code_embeddings_language_index
+      ON cache_code_embeddings (language)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS cache_code_embeddings_file_path_index
+      ON cache_code_embeddings (file_path)
+    """, "")
 
-    create unique_index(:cache_semantic_similarity, [:query_hash, :target_hash])
-    create index(:cache_semantic_similarity, [:query_type])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS cache_semantic_similarity_query_hash_target_hash_key
+      ON cache_semantic_similarity (query_hash, target_hash)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS cache_semantic_similarity_query_type_index
+      ON cache_semantic_similarity (query_type)
+    """, "")
 
-    create unique_index(:cache_memory, [:cache_key])
-    create index(:cache_memory, [:expires_at])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS cache_memory_cache_key_key
+      ON cache_memory (cache_key)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS cache_memory_expires_at_index
+      ON cache_memory (expires_at)
+    """, "")
 
     # Store indexes
-    create unique_index(:store_codebase_services, [:codebase_id, :service_name])
-    create index(:store_codebase_services, [:service_type])
-    create index(:store_codebase_services, [:health_status])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS store_codebase_services_codebase_id_service_name_key
+      ON store_codebase_services (codebase_id, service_name)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_codebase_services_service_type_index
+      ON store_codebase_services (service_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_codebase_services_health_status_index
+      ON store_codebase_services (health_status)
+    """, "")
 
-    create index(:store_code_artifacts, [:agent_id])
-    create index(:store_code_artifacts, [:is_active])
-    create index(:store_code_artifacts, [:artifact_type])
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_code_artifacts_agent_id_index
+      ON store_code_artifacts (agent_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_code_artifacts_is_active_index
+      ON store_code_artifacts (is_active)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_code_artifacts_artifact_type_index
+      ON store_code_artifacts (artifact_type)
+    """, "")
 
-    create unique_index(:store_knowledge_artifacts, [:artifact_type, :artifact_id])
-    create index(:store_knowledge_artifacts, [:language])
-    create index(:store_knowledge_artifacts, [:usage_count])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS store_knowledge_artifacts_artifact_type_artifact_id_key
+      ON store_knowledge_artifacts (artifact_type, artifact_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_knowledge_artifacts_language_index
+      ON store_knowledge_artifacts (language)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_knowledge_artifacts_usage_count_index
+      ON store_knowledge_artifacts (usage_count)
+    """, "")
 
-    create unique_index(:store_templates, [:template_type, :technology, :category, :template_name])
-    create index(:store_templates, [:technology, :category])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS store_templates_template_type_technology_category_template_name_key
+      ON store_templates (template_type, technology, category, template_name)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_templates_technology_category_index
+      ON store_templates (technology, category)
+    """, "")
 
-    create unique_index(:store_packages, [:package_name, :version, :ecosystem])
-    create index(:store_packages, [:ecosystem])
-    create index(:store_packages, [:github_stars])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS store_packages_package_name_version_ecosystem_key
+      ON store_packages (package_name, version, ecosystem)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_packages_ecosystem_index
+      ON store_packages (ecosystem)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_packages_github_stars_index
+      ON store_packages (github_stars)
+    """, "")
 
-    create unique_index(:store_git_state, [:session_id])
-    create index(:store_git_state, [:agent_id])
-    create index(:store_git_state, [:status])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS store_git_state_session_id_key
+      ON store_git_state (session_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_git_state_agent_id_index
+      ON store_git_state (agent_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS store_git_state_status_index
+      ON store_git_state (status)
+    """, "")
 
     # Runner indexes
-    create index(:runner_analysis_executions, [:codebase_id])
-    create index(:runner_analysis_executions, [:status])
-    create index(:runner_analysis_executions, [:started_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS runner_analysis_executions_codebase_id_index
+      ON runner_analysis_executions (codebase_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS runner_analysis_executions_status_index
+      ON runner_analysis_executions (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS runner_analysis_executions_started_at_index
+      ON runner_analysis_executions (started_at)
+    """, "")
 
-    create index(:runner_tool_executions, [:tool_name])
-    create index(:runner_tool_executions, [:status])
-    create index(:runner_tool_executions, [:started_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS runner_tool_executions_tool_name_index
+      ON runner_tool_executions (tool_name)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS runner_tool_executions_status_index
+      ON runner_tool_executions (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS runner_tool_executions_started_at_index
+      ON runner_tool_executions (started_at)
+    """, "")
 
-    create index(:runner_rust_operations, [:operation_type])
-    create index(:runner_rust_operations, [:input_hash])
-    create index(:runner_rust_operations, [:created_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS runner_rust_operations_operation_type_index
+      ON runner_rust_operations (operation_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS runner_rust_operations_input_hash_index
+      ON runner_rust_operations (input_hash)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS runner_rust_operations_created_at_index
+      ON runner_rust_operations (created_at)
+    """, "")
 
     # ============================================================================
     # VECTOR INDEXES FOR SEMANTIC SEARCH

@@ -7,7 +7,7 @@ defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Pseudocode 
 
   require Logger
   alias Singularity.LLM.Service
-  alias Singularity.Util
+  alias Singularity.CodeGeneration.Implementations.GeneratorEngine.Util
 
   @doc """
   Generate pseudocode from a natural language description.

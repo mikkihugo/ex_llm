@@ -16,7 +16,7 @@ defmodule Singularity.Repo.Migrations.CreateAgentFlowTrackingTables do
 
   def up do
     # 1. Agent execution sessions (main sessions)
-    create table(:agent_execution_sessions, primary_key: false) do
+    create_if_not_exists table(:agent_execution_sessions, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
 
       # Which agent?
@@ -59,16 +59,37 @@ defmodule Singularity.Repo.Migrations.CreateAgentFlowTrackingTables do
       timestamps(type: :timestamptz)
     end
 
-    create index(:agent_execution_sessions, [:agent_id])
-    create index(:agent_execution_sessions, [:agent_type])
-    create index(:agent_execution_sessions, [:status])
-    create index(:agent_execution_sessions, [:parent_session_id])
-    create index(:agent_execution_sessions, [:root_session_id])
-    create index(:agent_execution_sessions, [:started_at])
-    create index(:agent_execution_sessions, [:trace_id])
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_sessions_agent_id_index
+      ON agent_execution_sessions (agent_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_sessions_agent_type_index
+      ON agent_execution_sessions (agent_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_sessions_status_index
+      ON agent_execution_sessions (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_sessions_parent_session_id_index
+      ON agent_execution_sessions (parent_session_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_sessions_root_session_id_index
+      ON agent_execution_sessions (root_session_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_sessions_started_at_index
+      ON agent_execution_sessions (started_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_sessions_trace_id_index
+      ON agent_execution_sessions (trace_id)
+    """, "")
 
     # 2. State transitions (workflow steps)
-    create table(:agent_execution_state_transitions, primary_key: false) do
+    create_if_not_exists table(:agent_execution_state_transitions, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
       add :session_id, references(:agent_execution_sessions, type: :uuid, on_delete: :delete_all), null: false
 
@@ -98,12 +119,21 @@ defmodule Singularity.Repo.Migrations.CreateAgentFlowTrackingTables do
       add :created_at, :timestamptz, default: fragment("NOW()")
     end
 
-    create index(:agent_execution_state_transitions, [:session_id, :state_sequence])
-    create index(:agent_execution_state_transitions, [:to_state])
-    create index(:agent_execution_state_transitions, [:entered_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_state_transitions_session_id_state_sequence_index
+      ON agent_execution_state_transitions (session_id, state_sequence)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_state_transitions_to_state_index
+      ON agent_execution_state_transitions (to_state)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_state_transitions_entered_at_index
+      ON agent_execution_state_transitions (entered_at)
+    """, "")
 
     # 3. Actions (what agents DO)
-    create table(:agent_execution_actions, primary_key: false) do
+    create_if_not_exists table(:agent_execution_actions, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
       add :session_id, references(:agent_execution_sessions, type: :uuid, on_delete: :delete_all), null: false
       add :state_transition_id, references(:agent_execution_state_transitions, type: :uuid, on_delete: :nilify_all)
@@ -145,13 +175,25 @@ defmodule Singularity.Repo.Migrations.CreateAgentFlowTrackingTables do
       add :created_at, :timestamptz, default: fragment("NOW()")
     end
 
-    create index(:agent_execution_actions, [:session_id, :action_sequence])
-    create index(:agent_execution_actions, [:action_type])
-    create index(:agent_execution_actions, [:status])
-    create index(:agent_execution_actions, [:started_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_actions_session_id_action_sequence_index
+      ON agent_execution_actions (session_id, action_sequence)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_actions_action_type_index
+      ON agent_execution_actions (action_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_actions_status_index
+      ON agent_execution_actions (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_actions_started_at_index
+      ON agent_execution_actions (started_at)
+    """, "")
 
     # 4. Decision points (agent reasoning)
-    create table(:agent_execution_decision_points, primary_key: false) do
+    create_if_not_exists table(:agent_execution_decision_points, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
       add :session_id, references(:agent_execution_sessions, type: :uuid, on_delete: :delete_all), null: false
       add :action_id, references(:agent_execution_actions, type: :uuid, on_delete: :nilify_all)
@@ -182,12 +224,21 @@ defmodule Singularity.Repo.Migrations.CreateAgentFlowTrackingTables do
       add :decided_at, :timestamptz, null: false, default: fragment("NOW()")
     end
 
-    create index(:agent_execution_decision_points, [:session_id])
-    create index(:agent_execution_decision_points, [:decision_type])
-    create index(:agent_execution_decision_points, [:confidence_score])
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_decision_points_session_id_index
+      ON agent_execution_decision_points (session_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_decision_points_decision_type_index
+      ON agent_execution_decision_points (decision_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_decision_points_confidence_score_index
+      ON agent_execution_decision_points (confidence_score)
+    """, "")
 
     # 5. Agent communications (multi-agent flows)
-    create table(:agent_execution_communications, primary_key: false) do
+    create_if_not_exists table(:agent_execution_communications, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
 
       # Who?
@@ -217,13 +268,25 @@ defmodule Singularity.Repo.Migrations.CreateAgentFlowTrackingTables do
       add :created_at, :timestamptz, default: fragment("NOW()")
     end
 
-    create index(:agent_execution_communications, [:from_session_id])
-    create index(:agent_execution_communications, [:to_session_id])
-    create index(:agent_execution_communications, [:message_type])
-    create index(:agent_execution_communications, [:request_id])
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_communications_from_session_id_index
+      ON agent_execution_communications (from_session_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_communications_to_session_id_index
+      ON agent_execution_communications (to_session_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_communications_message_type_index
+      ON agent_execution_communications (message_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_execution_communications_request_id_index
+      ON agent_execution_communications (request_id)
+    """, "")
 
     # 6. Workflow pattern definitions (expected agent workflows)
-    create table(:agent_workflow_pattern_definitions, primary_key: false) do
+    create_if_not_exists table(:agent_workflow_pattern_definitions, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
 
       # Workflow identity
@@ -250,11 +313,17 @@ defmodule Singularity.Repo.Migrations.CreateAgentFlowTrackingTables do
       timestamps(type: :timestamptz)
     end
 
-    create unique_index(:agent_workflow_pattern_definitions, [:workflow_name])
-    create index(:agent_workflow_pattern_definitions, [:workflow_category])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS agent_workflow_pattern_definitions_workflow_name_key
+      ON agent_workflow_pattern_definitions (workflow_name)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_workflow_pattern_definitions_workflow_category_index
+      ON agent_workflow_pattern_definitions (workflow_category)
+    """, "")
 
     # 7. Completeness analysis
-    create table(:agent_workflow_completeness_analysis, primary_key: false) do
+    create_if_not_exists table(:agent_workflow_completeness_analysis, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
 
       # What are we analyzing?
@@ -294,9 +363,18 @@ defmodule Singularity.Repo.Migrations.CreateAgentFlowTrackingTables do
       add :analyzed_at, :timestamptz, null: false, default: fragment("NOW()")
     end
 
-    create index(:agent_workflow_completeness_analysis, [:session_id])
-    create index(:agent_workflow_completeness_analysis, [:completeness_score])
-    create index(:agent_workflow_completeness_analysis, [:is_complete])
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_workflow_completeness_analysis_session_id_index
+      ON agent_workflow_completeness_analysis (session_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_workflow_completeness_analysis_completeness_score_index
+      ON agent_workflow_completeness_analysis (completeness_score)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_workflow_completeness_analysis_is_complete_index
+      ON agent_workflow_completeness_analysis (is_complete)
+    """, "")
   end
 
   def down do

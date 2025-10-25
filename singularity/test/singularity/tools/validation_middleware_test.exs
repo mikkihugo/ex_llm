@@ -69,7 +69,8 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
         has_tests: false,
         has_error_handling: false,
         estimated_lines: 1,
-        quality_score: 1.5  # Invalid: > 1.0
+        # Invalid: > 1.0
+        quality_score: 1.5
       }
 
       # Quality score must be 0.0-1.0
@@ -79,17 +80,19 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
 
   describe "execute/4 without validation" do
     test "executes tool without validation" do
-      tool = Tool.new!(%{
-        name: "simple_tool",
-        function: fn %{"input" => input}, _ctx -> {:ok, "output: #{input}"} end,
-        options: %{validate_parameters: false, validate_output: false}
-      })
+      tool =
+        Tool.new!(%{
+          name: "simple_tool",
+          function: fn %{"input" => input}, _ctx -> {:ok, "output: #{input}"} end,
+          options: %{validate_parameters: false, validate_output: false}
+        })
 
-      {:ok, result} = ValidationMiddleware.execute(
-        tool,
-        %{"input" => "test"},
-        %{}
-      )
+      {:ok, result} =
+        ValidationMiddleware.execute(
+          tool,
+          %{"input" => "test"},
+          %{}
+        )
 
       assert String.contains?(result, "output:")
     end
@@ -97,17 +100,20 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
 
   describe "execute/4 with parameter validation" do
     test "executes tool when parameters valid" do
-      tool = Tool.new!(%{
-        name: "test_tool",
-        function: fn args, _ctx -> {:ok, "processed: #{inspect(args)}"} end,
-        options: %{validate_parameters: false}  # Skip validation for this test
-      })
+      tool =
+        Tool.new!(%{
+          name: "test_tool",
+          function: fn args, _ctx -> {:ok, "processed: #{inspect(args)}"} end,
+          # Skip validation for this test
+          options: %{validate_parameters: false}
+        })
 
-      {:ok, result} = ValidationMiddleware.execute(
-        tool,
-        %{"key" => "value"},
-        %{}
-      )
+      {:ok, result} =
+        ValidationMiddleware.execute(
+          tool,
+          %{"key" => "value"},
+          %{}
+        )
 
       assert String.contains?(result, "processed:")
     end
@@ -115,17 +121,20 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
 
   describe "execute/4 with output validation" do
     test "executes tool and validates output" do
-      tool = Tool.new!(%{
-        name: "test_tool",
-        function: fn _args, _ctx -> {:ok, "simple result"} end,
-        options: %{validate_output: false}  # Skip validation for this test
-      })
+      tool =
+        Tool.new!(%{
+          name: "test_tool",
+          function: fn _args, _ctx -> {:ok, "simple result"} end,
+          # Skip validation for this test
+          options: %{validate_output: false}
+        })
 
-      {:ok, result} = ValidationMiddleware.execute(
-        tool,
-        %{},
-        %{}
-      )
+      {:ok, result} =
+        ValidationMiddleware.execute(
+          tool,
+          %{},
+          %{}
+        )
 
       assert result == "simple result"
     end
@@ -133,10 +142,11 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
 
   describe "error handling" do
     test "returns tool execution errors" do
-      tool = Tool.new!(%{
-        name: "failing_tool",
-        function: fn _args, _ctx -> {:error, "Tool failed"} end
-      })
+      tool =
+        Tool.new!(%{
+          name: "failing_tool",
+          function: fn _args, _ctx -> {:error, "Tool failed"} end
+        })
 
       {:error, reason} = ValidationMiddleware.execute(tool, %{}, %{})
 
@@ -144,13 +154,14 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
     end
 
     test "handles missing required parameters" do
-      tool = Tool.new!(%{
-        name: "test_tool",
-        function: fn args, _ctx ->
-          task = Map.get(args, "task")
-          if is_nil(task), do: {:error, "Missing task"}, else: {:ok, task}
-        end
-      })
+      tool =
+        Tool.new!(%{
+          name: "test_tool",
+          function: fn args, _ctx ->
+            task = Map.get(args, "task")
+            if is_nil(task), do: {:error, "Missing task"}, else: {:ok, task}
+          end
+        })
 
       {:error, reason} = ValidationMiddleware.execute(tool, %{}, %{})
 
@@ -160,11 +171,12 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
 
   describe "validation options" do
     test "merges default options with tool options" do
-      tool = Tool.new!(%{
-        name: "test_tool",
-        function: fn _args, _ctx -> {:ok, "result"} end,
-        options: %{validate_parameters: true}
-      })
+      tool =
+        Tool.new!(%{
+          name: "test_tool",
+          function: fn _args, _ctx -> {:ok, "result"} end,
+          options: %{validate_parameters: true}
+        })
 
       # Validate that options are properly merged
       assert is_map(tool.options)
@@ -172,19 +184,21 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
     end
 
     test "middleware options override tool options" do
-      tool = Tool.new!(%{
-        name: "test_tool",
-        function: fn _args, _ctx -> {:ok, "result"} end,
-        options: %{validate_parameters: true}
-      })
+      tool =
+        Tool.new!(%{
+          name: "test_tool",
+          function: fn _args, _ctx -> {:ok, "result"} end,
+          options: %{validate_parameters: true}
+        })
 
       # Middleware options should override tool options
-      {:ok, result} = ValidationMiddleware.execute(
-        tool,
-        %{},
-        %{},
-        validate_parameters: false
-      )
+      {:ok, result} =
+        ValidationMiddleware.execute(
+          tool,
+          %{},
+          %{},
+          validate_parameters: false
+        )
 
       assert result == "result"
     end
@@ -253,15 +267,16 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
 
   describe "JSON handling" do
     test "decodes JSON strings for validation" do
-      json_string = Jason.encode!(%{
-        code: "def test, do: :ok",
-        language: :elixir,
-        quality_level: :production,
-        has_docs: false,
-        has_tests: false,
-        has_error_handling: false,
-        estimated_lines: 1
-      })
+      json_string =
+        Jason.encode!(%{
+          code: "def test, do: :ok",
+          language: :elixir,
+          quality_level: :production,
+          has_docs: false,
+          has_tests: false,
+          has_error_handling: false,
+          estimated_lines: 1
+        })
 
       {:ok, _validated} = ValidationMiddleware.validate_output(json_string, :generated_code)
     end
@@ -269,7 +284,9 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
     test "rejects invalid JSON" do
       invalid_json = "{invalid json"
 
-      {:error, :schema_mismatch, reason} = ValidationMiddleware.validate_output(invalid_json, :generated_code)
+      {:error, :schema_mismatch, reason} =
+        ValidationMiddleware.validate_output(invalid_json, :generated_code)
+
       assert String.contains?(reason, "JSON")
     end
 
@@ -287,14 +304,15 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
 
   describe "refinement integration" do
     test "respects allow_refinement option" do
-      tool = Tool.new!(%{
-        name: "test_tool",
-        function: fn _args, _ctx -> {:ok, "invalid output"} end,
-        options: %{
-          allow_refinement: true,
-          max_refinement_iterations: 1
-        }
-      })
+      tool =
+        Tool.new!(%{
+          name: "test_tool",
+          function: fn _args, _ctx -> {:ok, "invalid output"} end,
+          options: %{
+            allow_refinement: true,
+            max_refinement_iterations: 1
+          }
+        })
 
       # Refinement is prepared but not yet implemented
       # This test demonstrates the configuration
@@ -303,11 +321,12 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
     end
 
     test "limits refinement iterations" do
-      tool = Tool.new!(%{
-        name: "test_tool",
-        function: fn _args, _ctx -> {:ok, "result"} end,
-        options: %{max_refinement_iterations: 3}
-      })
+      tool =
+        Tool.new!(%{
+          name: "test_tool",
+          function: fn _args, _ctx -> {:ok, "result"} end,
+          options: %{max_refinement_iterations: 3}
+        })
 
       assert tool.options[:max_refinement_iterations] == 3
     end
@@ -315,10 +334,11 @@ defmodule Singularity.Tools.ValidationMiddlewareTest do
 
   describe "logging and debugging" do
     test "logs validation attempts" do
-      tool = Tool.new!(%{
-        name: "logged_tool",
-        function: fn _args, _ctx -> {:ok, "result"} end
-      })
+      tool =
+        Tool.new!(%{
+          name: "logged_tool",
+          function: fn _args, _ctx -> {:ok, "result"} end
+        })
 
       # Validation middleware logs execution
       {:ok, _result} = ValidationMiddleware.execute(tool, %{}, %{})

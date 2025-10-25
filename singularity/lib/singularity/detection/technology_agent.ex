@@ -629,7 +629,10 @@ defmodule Singularity.TechnologyAgent do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case Singularity.NATS.Client.publish("intelligence_hub.technology_detection", Jason.encode!(message)) do
+    case Singularity.NATS.Client.publish(
+           "intelligence_hub.technology_detection",
+           Jason.encode!(message)
+         ) do
       :ok ->
         Logger.debug("Published technology detection to IntelligenceHub",
           codebase: codebase_path,

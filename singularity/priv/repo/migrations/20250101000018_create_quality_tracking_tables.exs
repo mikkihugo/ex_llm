@@ -16,7 +16,7 @@ defmodule Singularity.Repo.Migrations.CreateQualityTrackingTables do
   def up do
     # ===== QUALITY RUNS TABLE =====
     # Tracks individual quality tool executions
-    create table(:quality_runs) do
+    create_if_not_exists table(:quality_runs) do
       # Tool identification
       add :tool, :string, null: false  # sobelow, mix_audit, dialyzer, custom
 
@@ -33,16 +33,34 @@ defmodule Singularity.Repo.Migrations.CreateQualityTrackingTables do
     end
 
     # Indexes for quality_runs
-    create index(:quality_runs, [:tool])
-    create index(:quality_runs, [:status])
-    create index(:quality_runs, [:tool, :status])
-    create index(:quality_runs, [:inserted_at])
-    create index(:quality_runs, [:started_at])
-    create index(:quality_runs, [:metadata], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_runs_tool_index
+      ON quality_runs (tool)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_runs_status_index
+      ON quality_runs (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_runs_tool_status_index
+      ON quality_runs (tool, status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_runs_inserted_at_index
+      ON quality_runs (inserted_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_runs_started_at_index
+      ON quality_runs (started_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_runs_metadata_index
+      ON quality_runs (metadata)
+    """, "")
 
     # ===== QUALITY FINDINGS TABLE =====
     # Individual findings emitted by quality tool runs
-    create table(:quality_findings) do
+    create_if_not_exists table(:quality_findings) do
       add :run_id, references(:quality_runs, on_delete: :delete_all), null: false
 
       # Finding details
@@ -60,16 +78,40 @@ defmodule Singularity.Repo.Migrations.CreateQualityTrackingTables do
     end
 
     # Indexes for quality_findings
-    create index(:quality_findings, [:run_id])
-    create index(:quality_findings, [:category])
-    create index(:quality_findings, [:severity])
-    create index(:quality_findings, [:file])
-    create index(:quality_findings, [:run_id, :severity])
-    create index(:quality_findings, [:category, :severity])
-    create index(:quality_findings, [:extra], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_findings_run_id_index
+      ON quality_findings (run_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_findings_category_index
+      ON quality_findings (category)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_findings_severity_index
+      ON quality_findings (severity)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_findings_file_index
+      ON quality_findings (file)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_findings_run_id_severity_index
+      ON quality_findings (run_id, severity)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_findings_category_severity_index
+      ON quality_findings (category, severity)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_findings_extra_index
+      ON quality_findings (extra)
+    """, "")
 
     # Composite index for common queries
-    create index(:quality_findings, [:run_id, :category, :severity])
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_findings_run_id_category_severity_index
+      ON quality_findings (run_id, category, severity)
+    """, "")
   end
 
   def down do

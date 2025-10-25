@@ -363,19 +363,20 @@ defmodule Singularity.Analysis.MetadataValidator do
     # Create TODO for SelfImprovingAgent to fix missing documentation
     alias Singularity.Execution.Todos.Todo
 
-    {:ok, _todo} = Todo.create(%{
-      title: "Add missing AI documentation to #{Path.basename(file_path)}",
-      description: "Missing elements: #{Enum.join(missing, ", ")}",
-      status: "pending",
-      priority: 3,
-      complexity: "medium",
-      tags: ["documentation", "ai-metadata", "self-improvement"],
-      context: %{
-        file_path: file_path,
-        missing_elements: missing,
-        validator: "metadata_validator"
-      }
-    })
+    {:ok, _todo} =
+      Todo.create(%{
+        title: "Add missing AI documentation to #{Path.basename(file_path)}",
+        description: "Missing elements: #{Enum.join(missing, ", ")}",
+        status: "pending",
+        priority: 3,
+        complexity: "medium",
+        tags: ["documentation", "ai-metadata", "self-improvement"],
+        context: %{
+          file_path: file_path,
+          missing_elements: missing,
+          validator: "metadata_validator"
+        }
+      })
 
     {:ok, :marked}
   end

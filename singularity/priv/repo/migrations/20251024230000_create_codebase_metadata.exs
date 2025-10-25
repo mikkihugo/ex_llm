@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateCodebaseMetadata do
   use Ecto.Migration
 
   def change do
-    create table(:codebase_metadata, primary_key: false) do
+    create_if_not_exists table(:codebase_metadata, primary_key: false) do
       add :id, :binary_id, primary_key: true
 
       # === CODEBASE IDENTIFICATION ===
@@ -92,23 +92,57 @@ defmodule Singularity.Repo.Migrations.CreateCodebaseMetadata do
       timestamps()
     end
 
-    # Indexes for performance
-    create index(:codebase_metadata, [:codebase_id])
-    create index(:codebase_metadata, [:codebase_path])
-    create index(:codebase_metadata, [:codebase_id, :path])
-    create index(:codebase_metadata, [:codebase_id, :language])
-    create index(:codebase_metadata, [:codebase_id, :file_type])
-    create index(:codebase_metadata, [:codebase_id, :quality_score])
-    create index(:codebase_metadata, [:codebase_id, :cyclomatic_complexity, :cognitive_complexity])
-    create index(:codebase_metadata, [:codebase_id, :pagerank_score])
-
-    # Vector index for similarity search
+    # Indexes for performance - using CREATE INDEX IF NOT EXISTS to handle idempotent runs
     execute("""
-    CREATE INDEX idx_codebase_metadata_vector
-    ON codebase_metadata USING ivfflat (vector_embedding vector_cosine_ops)
-    """)
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_index
+      ON codebase_metadata (codebase_id)
+    """, "")
+
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_path_index
+      ON codebase_metadata (codebase_path)
+    """, "")
+
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_path_index
+      ON codebase_metadata (codebase_id, path)
+    """, "")
+
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_language_index
+      ON codebase_metadata (codebase_id, language)
+    """, "")
+
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_file_type_index
+      ON codebase_metadata (codebase_id, file_type)
+    """, "")
+
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_quality_score_index
+      ON codebase_metadata (codebase_id, quality_score)
+    """, "")
+
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_complexity_index
+      ON codebase_metadata (codebase_id, cyclomatic_complexity, cognitive_complexity)
+    """, "")
+
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_pagerank_score_index
+      ON codebase_metadata (codebase_id, pagerank_score)
+    """, "")
+
+    # Vector index for similarity search (using HNSW instead of ivfflat for better performance)
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_vector_index
+      ON codebase_metadata USING hnsw (vector_embedding vector_cosine_ops)
+    """, "")
 
     # Unique constraint
-    create unique_index(:codebase_metadata, [:codebase_id, :path])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS codebase_metadata_codebase_id_path_key
+      ON codebase_metadata (codebase_id, path)
+    """, "")
   end
 end

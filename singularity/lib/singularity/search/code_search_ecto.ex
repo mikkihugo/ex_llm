@@ -28,6 +28,7 @@ defmodule Singularity.CodeSearch.Ecto do
 
   require Logger
   alias Singularity.Repo
+
   alias Singularity.Schemas.{
     CodebaseMetadata,
     CodebaseRegistry,
@@ -63,7 +64,17 @@ defmodule Singularity.CodeSearch.Ecto do
     %CodebaseRegistry{}
     |> CodebaseRegistry.changeset(attrs_with_defaults)
     |> Repo.insert(
-      on_conflict: {:replace, [:codebase_path, :codebase_name, :description, :language, :framework, :metadata, :updated_at]},
+      on_conflict:
+        {:replace,
+         [
+           :codebase_path,
+           :codebase_name,
+           :description,
+           :language,
+           :framework,
+           :metadata,
+           :updated_at
+         ]},
       conflict_target: [:codebase_id]
     )
   end
@@ -100,7 +111,8 @@ defmodule Singularity.CodeSearch.Ecto do
   @doc """
   Update codebase analysis status.
   """
-  @spec update_codebase_status(String.t(), String.t(), DateTime.t() | nil) :: {:ok, CodebaseRegistry.t()} | {:error, term()}
+  @spec update_codebase_status(String.t(), String.t(), DateTime.t() | nil) ::
+          {:ok, CodebaseRegistry.t()} | {:error, term()}
   def update_codebase_status(codebase_id, status, last_analyzed \\ nil) do
     case get_codebase_registry(codebase_id) do
       nil ->
@@ -146,23 +158,63 @@ defmodule Singularity.CodeSearch.Ecto do
     %CodebaseMetadata{}
     |> CodebaseMetadata.changeset(attrs)
     |> Repo.insert(
-      on_conflict: {:replace, [
-        :size, :lines, :language, :last_modified, :file_type,
-        :cyclomatic_complexity, :cognitive_complexity, :maintainability_index,
-        :nesting_depth, :function_count, :class_count, :struct_count,
-        :enum_count, :trait_count, :interface_count, :total_lines,
-        :code_lines, :comment_lines, :blank_lines, :halstead_vocabulary,
-        :halstead_length, :halstead_volume, :halstead_difficulty,
-        :halstead_effort, :pagerank_score, :centrality_score,
-        :dependency_count, :dependent_count, :technical_debt_ratio,
-        :code_smells_count, :duplication_percentage, :security_score,
-        :vulnerability_count, :quality_score, :test_coverage,
-        :documentation_coverage, :domains, :patterns, :features,
-        :business_context, :performance_characteristics,
-        :security_characteristics, :dependencies, :related_files,
-        :imports, :exports, :functions, :classes, :structs, :enums,
-        :traits, :vector_embedding, :updated_at
-      ]},
+      on_conflict:
+        {:replace,
+         [
+           :size,
+           :lines,
+           :language,
+           :last_modified,
+           :file_type,
+           :cyclomatic_complexity,
+           :cognitive_complexity,
+           :maintainability_index,
+           :nesting_depth,
+           :function_count,
+           :class_count,
+           :struct_count,
+           :enum_count,
+           :trait_count,
+           :interface_count,
+           :total_lines,
+           :code_lines,
+           :comment_lines,
+           :blank_lines,
+           :halstead_vocabulary,
+           :halstead_length,
+           :halstead_volume,
+           :halstead_difficulty,
+           :halstead_effort,
+           :pagerank_score,
+           :centrality_score,
+           :dependency_count,
+           :dependent_count,
+           :technical_debt_ratio,
+           :code_smells_count,
+           :duplication_percentage,
+           :security_score,
+           :vulnerability_count,
+           :quality_score,
+           :test_coverage,
+           :documentation_coverage,
+           :domains,
+           :patterns,
+           :features,
+           :business_context,
+           :performance_characteristics,
+           :security_characteristics,
+           :dependencies,
+           :related_files,
+           :imports,
+           :exports,
+           :functions,
+           :classes,
+           :structs,
+           :enums,
+           :traits,
+           :vector_embedding,
+           :updated_at
+         ]},
       conflict_target: [:codebase_id, :path]
     )
   end
@@ -248,7 +300,11 @@ defmodule Singularity.CodeSearch.Ecto do
   """
   @spec get_vector_search(String.t(), String.t(), String.t()) :: VectorSearch.t() | nil
   def get_vector_search(codebase_id, file_path, content_type) do
-    Repo.get_by(VectorSearch, codebase_id: codebase_id, file_path: file_path, content_type: content_type)
+    Repo.get_by(VectorSearch,
+      codebase_id: codebase_id,
+      file_path: file_path,
+      content_type: content_type
+    )
   end
 
   @doc """
@@ -279,7 +335,8 @@ defmodule Singularity.CodeSearch.Ecto do
   @doc """
   Delete vector search entry.
   """
-  @spec delete_vector_search(String.t(), String.t(), String.t()) :: {:ok, VectorSearch.t()} | {:error, term()}
+  @spec delete_vector_search(String.t(), String.t(), String.t()) ::
+          {:ok, VectorSearch.t()} | {:error, term()}
   def delete_vector_search(codebase_id, file_path, content_type) do
     case get_vector_search(codebase_id, file_path, content_type) do
       nil ->
@@ -299,7 +356,8 @@ defmodule Singularity.CodeSearch.Ecto do
 
   Uses upsert to handle updates.
   """
-  @spec cache_similarity(String.t(), String.t(), String.t(), float()) :: {:ok, VectorSimilarityCache.t()} | {:error, term()}
+  @spec cache_similarity(String.t(), String.t(), String.t(), float()) ::
+          {:ok, VectorSimilarityCache.t()} | {:error, term()}
   def cache_similarity(codebase_id, query_vector_hash, target_file_path, similarity_score) do
     attrs = %{
       codebase_id: codebase_id,
@@ -319,7 +377,8 @@ defmodule Singularity.CodeSearch.Ecto do
   @doc """
   Get cached similarity score.
   """
-  @spec get_cached_similarity(String.t(), String.t(), String.t()) :: VectorSimilarityCache.t() | nil
+  @spec get_cached_similarity(String.t(), String.t(), String.t()) ::
+          VectorSimilarityCache.t() | nil
   def get_cached_similarity(codebase_id, query_vector_hash, target_file_path) do
     Repo.get_by(VectorSimilarityCache,
       codebase_id: codebase_id,
@@ -366,7 +425,18 @@ defmodule Singularity.CodeSearch.Ecto do
     %GraphNode{}
     |> GraphNode.changeset(attrs)
     |> Repo.insert(
-      on_conflict: {:replace, [:node_type, :name, :file_path, :line_number, :vector_embedding, :vector_magnitude, :metadata, :updated_at]},
+      on_conflict:
+        {:replace,
+         [
+           :node_type,
+           :name,
+           :file_path,
+           :line_number,
+           :vector_embedding,
+           :vector_magnitude,
+           :metadata,
+           :updated_at
+         ]},
       conflict_target: [:codebase_id, :node_id]
     )
   end
@@ -410,7 +480,8 @@ defmodule Singularity.CodeSearch.Ecto do
     %GraphEdge{}
     |> GraphEdge.changeset(attrs)
     |> Repo.insert(
-      on_conflict: {:replace, [:from_node_id, :to_node_id, :edge_type, :weight, :metadata, :updated_at]},
+      on_conflict:
+        {:replace, [:from_node_id, :to_node_id, :edge_type, :weight, :metadata, :updated_at]},
       conflict_target: [:codebase_id, :edge_id]
     )
   end
@@ -548,8 +619,17 @@ defmodule Singularity.CodeSearch.Ecto do
       total_files: length(metadata_list),
       total_lines: Enum.sum(Enum.map(metadata_list, & &1.total_lines)),
       total_functions: Enum.sum(Enum.map(metadata_list, & &1.function_count)),
-      avg_quality_score: if(length(metadata_list) > 0, do: Enum.sum(Enum.map(metadata_list, & &1.quality_score)) / length(metadata_list), else: 0.0),
-      avg_complexity: if(length(metadata_list) > 0, do: Enum.sum(Enum.map(metadata_list, & &1.cyclomatic_complexity)) / length(metadata_list), else: 0.0)
+      avg_quality_score:
+        if(length(metadata_list) > 0,
+          do: Enum.sum(Enum.map(metadata_list, & &1.quality_score)) / length(metadata_list),
+          else: 0.0
+        ),
+      avg_complexity:
+        if(length(metadata_list) > 0,
+          do:
+            Enum.sum(Enum.map(metadata_list, & &1.cyclomatic_complexity)) / length(metadata_list),
+          else: 0.0
+        )
     }
   end
 
@@ -820,7 +900,8 @@ defmodule Singularity.CodeSearch.Ecto do
       iex> CodeSearch.Ecto.persist_pagerank_scores(30, 0.85)
       {:ok, 147}
   """
-  @spec persist_pagerank_scores(non_neg_integer(), float()) :: {:ok, non_neg_integer()} | {:error, term()}
+  @spec persist_pagerank_scores(non_neg_integer(), float()) ::
+          {:ok, non_neg_integer()} | {:error, term()}
   def persist_pagerank_scores(iterations \\ 20, damping_factor \\ 0.85) do
     try do
       # Calculate PageRank scores
@@ -830,9 +911,9 @@ defmodule Singularity.CodeSearch.Ecto do
       updated_count =
         Enum.reduce(scores, 0, fn %{node_id: node_id, pagerank_score: score}, count ->
           case Repo.update_all(
-            from(gn in GraphNode, where: gn.node_id == ^node_id),
-            set: [pagerank_score: score]
-          ) do
+                 from(gn in GraphNode, where: gn.node_id == ^node_id),
+                 set: [pagerank_score: score]
+               ) do
             {1, _} -> count + 1
             _ -> count
           end

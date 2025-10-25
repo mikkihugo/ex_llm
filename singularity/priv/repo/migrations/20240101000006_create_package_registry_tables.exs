@@ -3,7 +3,7 @@ defmodule Singularity.Repo.Migrations.CreatePackageRegistryTables do
 
   def change do
     # Package Registry Knowledge - Main package metadata table
-    create table(:tools, primary_key: false) do
+    create_if_not_exists table(:tools, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :package_name, :string, null: false
       add :version, :string, null: false
@@ -39,14 +39,32 @@ defmodule Singularity.Repo.Migrations.CreatePackageRegistryTables do
     end
 
     # Unique constraint on package_name, version, ecosystem
-    create unique_index(:tools, [:package_name, :version, :ecosystem], name: :tools_unique_identifier)
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS tools_package_name_version_ecosystem_key
+      ON tools (package_name, version, ecosystem)
+    """, "")
 
     # Performance indexes
-    create index(:tools, [:package_name])
-    create index(:tools, [:ecosystem])
-    create index(:tools, [:github_stars])
-    create index(:tools, [:download_count])
-    create index(:tools, [:last_release_date])
+    execute("""
+      CREATE INDEX IF NOT EXISTS tools_package_name_index
+      ON tools (package_name)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS tools_ecosystem_index
+      ON tools (ecosystem)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS tools_github_stars_index
+      ON tools (github_stars)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS tools_download_count_index
+      ON tools (download_count)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS tools_last_release_date_index
+      ON tools (last_release_date)
+    """, "")
 
     # Vector similarity index (ivfflat for faster approximate search)
     execute """
@@ -58,7 +76,7 @@ defmodule Singularity.Repo.Migrations.CreatePackageRegistryTables do
     """
 
     # Package Code Examples - Code examples from package documentation
-    create table(:tool_examples, primary_key: false) do
+    create_if_not_exists table(:tool_examples, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :tool_id, references(:tools, type: :binary_id, on_delete: :delete_all), null: false
 
@@ -73,9 +91,18 @@ defmodule Singularity.Repo.Migrations.CreatePackageRegistryTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:tool_examples, [:tool_id])
-    create index(:tool_examples, [:language])
-    create index(:tool_examples, [:example_order])
+    execute("""
+      CREATE INDEX IF NOT EXISTS tool_examples_tool_id_index
+      ON tool_examples (tool_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS tool_examples_language_index
+      ON tool_examples (language)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS tool_examples_example_order_index
+      ON tool_examples (example_order)
+    """, "")
 
     # Vector similarity index for code examples
     execute """
@@ -87,7 +114,7 @@ defmodule Singularity.Repo.Migrations.CreatePackageRegistryTables do
     """
 
     # Package Usage Patterns - Best practices and patterns
-    create table(:tool_patterns, primary_key: false) do
+    create_if_not_exists table(:tool_patterns, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :tool_id, references(:tools, type: :binary_id, on_delete: :delete_all), null: false
 
@@ -101,8 +128,14 @@ defmodule Singularity.Repo.Migrations.CreatePackageRegistryTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:tool_patterns, [:tool_id])
-    create index(:tool_patterns, [:pattern_type])
+    execute("""
+      CREATE INDEX IF NOT EXISTS tool_patterns_tool_id_index
+      ON tool_patterns (tool_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS tool_patterns_pattern_type_index
+      ON tool_patterns (pattern_type)
+    """, "")
 
     # Vector similarity index for patterns
     execute """
@@ -114,7 +147,7 @@ defmodule Singularity.Repo.Migrations.CreatePackageRegistryTables do
     """
 
     # Package Dependencies - Package dependency information
-    create table(:tool_dependencies, primary_key: false) do
+    create_if_not_exists table(:tool_dependencies, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :tool_id, references(:tools, type: :binary_id, on_delete: :delete_all), null: false
 
@@ -126,8 +159,17 @@ defmodule Singularity.Repo.Migrations.CreatePackageRegistryTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:tool_dependencies, [:tool_id])
-    create index(:tool_dependencies, [:dependency_name])
-    create index(:tool_dependencies, [:dependency_type])
+    execute("""
+      CREATE INDEX IF NOT EXISTS tool_dependencies_tool_id_index
+      ON tool_dependencies (tool_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS tool_dependencies_dependency_name_index
+      ON tool_dependencies (dependency_name)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS tool_dependencies_dependency_type_index
+      ON tool_dependencies (dependency_type)
+    """, "")
   end
 end

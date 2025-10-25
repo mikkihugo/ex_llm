@@ -388,7 +388,11 @@ defmodule Singularity.Agents.CostOptimizedAgent do
 
     case Cache.find_similar(prompt_text, threshold: 0.92) do
       {:hit, cached_response} ->
-        Logger.info("Cache hit for task", task_id: task.id, similarity: cached_response.similarity)
+        Logger.info("Cache hit for task",
+          task_id: task.id,
+          similarity: cached_response.similarity
+        )
+
         {:hit, cached_response.response}
 
       :miss ->

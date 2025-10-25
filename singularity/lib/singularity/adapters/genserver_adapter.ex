@@ -65,6 +65,7 @@ defmodule Singularity.Adapters.GenServerAdapter do
             Logger.error("GenServer adapter: Task execution failed",
               reason: inspect(reason)
             )
+
             {:error, reason}
         end
 
@@ -72,6 +73,7 @@ defmodule Singularity.Adapters.GenServerAdapter do
         Logger.error("GenServer adapter: Failed to get/create agent",
           reason: inspect(reason)
         )
+
         {:error, reason}
     end
   end

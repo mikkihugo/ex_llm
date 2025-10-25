@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateCodeChunks do
   use Ecto.Migration
 
   def change do
-    create table(:code_chunks, primary_key: false) do
+    create_if_not_exists table(:code_chunks, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :codebase_id, :string, null: false
       add :file_path, :string, null: false
@@ -22,12 +22,21 @@ defmodule Singularity.Repo.Migrations.CreateCodeChunks do
     execute("CREATE INDEX code_chunks_embedding_hnsw ON code_chunks USING hnsw (embedding halfvec_cosine_ops)")
 
     # Index for fast lookups by codebase and file
-    create index(:code_chunks, [:codebase_id, :file_path])
+    execute("""
+      CREATE INDEX IF NOT EXISTS code_chunks_codebase_id_file_path_index
+      ON code_chunks (codebase_id, file_path)
+    """, "")
 
     # Index for language-specific queries
-    create index(:code_chunks, [:language])
+    execute("""
+      CREATE INDEX IF NOT EXISTS code_chunks_language_index
+      ON code_chunks (language)
+    """, "")
 
     # Unique constraint: each codebase+content_hash combination is unique
-    create unique_index(:code_chunks, [:codebase_id, :content_hash])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS code_chunks_codebase_id_content_hash_key
+      ON code_chunks (codebase_id, content_hash)
+    """, "")
   end
 end

@@ -130,7 +130,6 @@ defmodule Singularity.Agents.RemediationEngine do
   """
 
   require Logger
-  alias Singularity.Storage.{RAGCodeGenerator, Store}
 
   @doc """
   Remediate all issues in a file.
@@ -232,7 +231,10 @@ defmodule Singularity.Agents.RemediationEngine do
       |> Task.async_stream(
         fn file_path ->
           remediate_file(file_path, opts)
-        end, max_concurrency: 5, timeout: 30_000)
+        end,
+        max_concurrency: 5,
+        timeout: 30_000
+      )
       |> Enum.map(fn
         {:ok, result} -> result
         {:exit, reason} -> {:error, reason}

@@ -234,23 +234,25 @@ defmodule Singularity.Embedding.AutomaticDifferentiation do
 
       defn_time = System.monotonic_time(:millisecond) - start_time
 
-      grad_count = try do
-        map_size(grads_defn)
-      rescue
-        _ -> 1
-      end
+      grad_count =
+        try do
+          map_size(grads_defn)
+        rescue
+          _ -> 1
+        end
 
       Logger.info("Gradient Computation Benchmark")
       Logger.info("  Nx.Defn time: #{defn_time} ms")
       Logger.info("  Loss: #{Nx.to_number(loss_defn)}")
       Logger.info("  Gradients computed: #{grad_count}")
 
-      {:ok, %{
-        method: :defn,
-        time_ms: defn_time,
-        loss: loss_defn,
-        gradients: grads_defn
-      }}
+      {:ok,
+       %{
+         method: :defn,
+         time_ms: defn_time,
+         loss: loss_defn,
+         gradients: grads_defn
+       }}
     rescue
       e ->
         Logger.error("Benchmark failed: #{inspect(e)}")

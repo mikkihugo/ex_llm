@@ -8,7 +8,8 @@ defmodule Singularity.Jobs.DeadCodeDailyCheck do
   use Oban.Worker,
     queue: :maintenance,
     max_attempts: 3,
-    unique: [period: 21_600]  # Only one job per 6 hours
+    # Only one job per 6 hours
+    unique: [period: 21_600]
 
   require Logger
 

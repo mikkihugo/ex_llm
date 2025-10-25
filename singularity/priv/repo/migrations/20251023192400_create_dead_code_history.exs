@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateDeadCodeHistory do
   use Ecto.Migration
 
   def change do
-    create table(:dead_code_history, primary_key: false) do
+    create_if_not_exists table(:dead_code_history, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :check_date, :utc_datetime_usec, null: false
       add :total_count, :integer, null: false
@@ -25,9 +25,15 @@ defmodule Singularity.Repo.Migrations.CreateDeadCodeHistory do
     end
 
     # Index for querying by date range
-    create index(:dead_code_history, [:check_date])
+    execute("""
+      CREATE INDEX IF NOT EXISTS dead_code_history_check_date_index
+      ON dead_code_history (check_date)
+    """, "")
 
     # Index for trend analysis
-    create index(:dead_code_history, [:total_count, :check_date])
+    execute("""
+      CREATE INDEX IF NOT EXISTS dead_code_history_total_count_check_date_index
+      ON dead_code_history (total_count, check_date)
+    """, "")
   end
 end

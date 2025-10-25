@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateHtdagExecutionStrategies do
   use Ecto.Migration
 
   def change do
-    create table(:htdag_execution_strategies, primary_key: false) do
+    create_if_not_exists table(:htdag_execution_strategies, primary_key: false) do
       add :id, :binary_id, primary_key: true
 
       # Identity
@@ -30,9 +30,21 @@ defmodule Singularity.Repo.Migrations.CreateHtdagExecutionStrategies do
     end
 
     # Indexes for fast lookups
-    create unique_index(:htdag_execution_strategies, [:name])
-    create index(:htdag_execution_strategies, [:status])
-    create index(:htdag_execution_strategies, [:priority])
-    create index(:htdag_execution_strategies, [:task_pattern])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS htdag_execution_strategies_name_key
+      ON htdag_execution_strategies (name)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS htdag_execution_strategies_status_index
+      ON htdag_execution_strategies (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS htdag_execution_strategies_priority_index
+      ON htdag_execution_strategies (priority)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS htdag_execution_strategies_task_pattern_index
+      ON htdag_execution_strategies (task_pattern)
+    """, "")
   end
 end

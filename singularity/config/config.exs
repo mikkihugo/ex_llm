@@ -20,8 +20,10 @@ config :libcluster,
 
 config :singularity, Singularity.Bootstrap.PageRankBootstrap,
   enabled: true,
-  refresh_schedule: "0 4 * * *",  # 4 AM UTC daily (after midnight backups)
-  auto_init: true                 # Calculate on startup if scores are missing
+  # 4 AM UTC daily (after midnight backups)
+  refresh_schedule: "0 4 * * *",
+  # Calculate on startup if scores are missing
+  auto_init: true
 
 config :singularity, :git_coordinator,
   enabled:

@@ -178,7 +178,10 @@ defmodule Singularity.Architecture.PatternStore do
           {:ok, build_pattern_map(row)}
 
         {:error, reason} ->
-          Logger.error("Failed to store #{pattern_type} pattern: #{name}", reason: inspect(reason))
+          Logger.error("Failed to store #{pattern_type} pattern: #{name}",
+            reason: inspect(reason)
+          )
+
           {:error, :storage_failed}
       end
     end
@@ -187,7 +190,8 @@ defmodule Singularity.Architecture.PatternStore do
   @doc """
   Get a specific pattern by name.
   """
-  def get_pattern(pattern_type, name) when pattern_type in [:framework, :technology] and is_binary(name) do
+  def get_pattern(pattern_type, name)
+      when pattern_type in [:framework, :technology] and is_binary(name) do
     table = table_for(pattern_type)
     name_col = name_column(pattern_type)
 
@@ -256,6 +260,7 @@ defmodule Singularity.Architecture.PatternStore do
         Logger.error("Failed to update confidence for #{pattern_type}: #{name}",
           reason: inspect(reason)
         )
+
         {:error, :update_failed}
     end
   end
@@ -358,7 +363,18 @@ defmodule Singularity.Architecture.PatternStore do
 
   # Private helpers
 
-  defp build_pattern_map([id, name, type, category, description, embedding, confidence, usage, created, updated | _]) do
+  defp build_pattern_map([
+         id,
+         name,
+         type,
+         category,
+         description,
+         embedding,
+         confidence,
+         usage,
+         created,
+         updated | _
+       ]) do
     %{
       id: id,
       name: name,
@@ -375,7 +391,10 @@ defmodule Singularity.Architecture.PatternStore do
 
   defp build_pattern_map(_), do: %{}
 
-  defp build_export_map([name, category, description, confidence, usage, created, updated | _], _type) do
+  defp build_export_map(
+         [name, category, description, confidence, usage, created, updated | _],
+         _type
+       ) do
     %{
       name: name,
       category: category,
@@ -396,11 +415,24 @@ defmodule Singularity.Architecture.PatternStore do
   defp known_extension?(ext, :technology) do
     # Known technology extensions
     known = [
-      "js", "ts", "tsx", "jsx",
-      "py", "rb", "go", "rs",
-      "java", "kt", "scala",
-      "php", "c", "cpp", "h",
-      "cs", "swift", "m"
+      "js",
+      "ts",
+      "tsx",
+      "jsx",
+      "py",
+      "rb",
+      "go",
+      "rs",
+      "java",
+      "kt",
+      "scala",
+      "php",
+      "c",
+      "cpp",
+      "h",
+      "cs",
+      "swift",
+      "m"
     ]
 
     String.downcase(String.trim_leading(ext, ".")) in known

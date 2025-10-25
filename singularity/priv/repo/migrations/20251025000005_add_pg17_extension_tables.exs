@@ -5,7 +5,7 @@ defmodule Singularity.Repo.Migrations.AddPg17ExtensionTables do
     # =========================================================================
     # pg_net: Package registry caching for external package data
     # =========================================================================
-    create table(:package_registry) do
+    create_if_not_exists table(:package_registry) do
       add :ecosystem, :string, null: false, comment: "npm, cargo, hex, pypi"
       add :package_name, :string, null: false
       add :metadata, :jsonb, null: false, comment: "Full package metadata from registry"
@@ -15,14 +15,23 @@ defmodule Singularity.Repo.Migrations.AddPg17ExtensionTables do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:package_registry, [:ecosystem, :package_name])
-    create index(:package_registry, [:refresh_needed])
-    create index(:package_registry, [:cached_at])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS package_registry_ecosystem_package_name_key
+      ON package_registry (ecosystem, package_name)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS package_registry_refresh_needed_index
+      ON package_registry (refresh_needed)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS package_registry_cached_at_index
+      ON package_registry (cached_at)
+    """, "")
 
     # =========================================================================
     # timescaledb_toolkit: Time-series metrics aggregation
     # =========================================================================
-    create table(:metrics_events) do
+    create_if_not_exists table(:metrics_events) do
       add :metric_name, :string, null: false, comment: "agent_cpu, pattern_learned, etc"
       add :value, :float, null: false, comment: "Metric value"
       add :labels, :jsonb, null: false, comment: "agent_id, pattern_type, etc"
@@ -36,13 +45,19 @@ defmodule Singularity.Repo.Migrations.AddPg17ExtensionTables do
       SELECT create_hypertable('metrics_events', 'recorded_at', if_not_exists => true)
     """)
 
-    create index(:metrics_events, [:metric_name, :recorded_at])
-    create index(:metrics_events, [:recorded_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS metrics_events_metric_name_recorded_at_index
+      ON metrics_events (metric_name, recorded_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS metrics_events_recorded_at_index
+      ON metrics_events (recorded_at)
+    """, "")
 
     # =========================================================================
     # lantern: Vector embeddings for pattern similarity search
     # =========================================================================
-    create table(:code_embeddings) do
+    create_if_not_exists table(:code_embeddings) do
       add :source_text, :text, null: false, comment: "Original code snippet or query"
       add :embedding, {:array, :float}, null: false, comment: "1536-dim Qodo-Embed vector"
       add :embedding_model, :string, default: "qodo-embed", comment: "Model used for embedding"
@@ -51,7 +66,10 @@ defmodule Singularity.Repo.Migrations.AddPg17ExtensionTables do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:code_embeddings, [:source_text])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS code_embeddings_source_text_key
+      ON code_embeddings (source_text)
+    """, "")
 
     # Create Lantern index on embeddings
     execute("""
@@ -70,8 +88,14 @@ defmodule Singularity.Repo.Migrations.AddPg17ExtensionTables do
       add :location_updated_at, :utc_datetime, comment: "When location was last set"
     end
 
-    create index(:agents, [:h3_cell])
-    create index(:agents, [:latitude, :longitude])
+    execute("""
+      CREATE INDEX IF NOT EXISTS agents_h3_cell_index
+      ON agents (h3_cell)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS agents_latitude_longitude_index
+      ON agents (latitude, longitude)
+    """, "")
 
     # =========================================================================
     # wal2json: Change Data Capture schema
@@ -130,9 +154,18 @@ defmodule Singularity.Repo.Migrations.AddPg17ExtensionTables do
       WITH DATA
     """)
 
-    create index(:metrics_5min, [:time])
-    create index(:metrics_1h, [:time])
-    create index(:metrics_1d, [:time])
+    execute("""
+      CREATE INDEX IF NOT EXISTS metrics_5min_time_index
+      ON metrics_5min (time)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS metrics_1h_time_index
+      ON metrics_1h (time)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS metrics_1d_time_index
+      ON metrics_1d (time)
+    """, "")
   end
 
   def down do

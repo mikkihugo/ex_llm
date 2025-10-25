@@ -301,7 +301,7 @@ defmodule Singularity.Repo.Migrations.CreateAutonomousStoredProcedures do
     """)
 
     # Log table for tracking syncs
-    create table(:learning_sync_log, primary_key: false) do
+    create_if_not_exists table(:learning_sync_log, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_ulid()::uuid")
       add :batch_id, :string
       add :pattern_count, :integer
@@ -310,9 +310,18 @@ defmodule Singularity.Repo.Migrations.CreateAutonomousStoredProcedures do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:learning_sync_log, [:batch_id])
-    create index(:learning_sync_log, [:status])
-    create index(:learning_sync_log, [:synced_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS learning_sync_log_batch_id_index
+      ON learning_sync_log (batch_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS learning_sync_log_status_index
+      ON learning_sync_log (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS learning_sync_log_synced_at_index
+      ON learning_sync_log (synced_at)
+    """, "")
   end
 
   def down do

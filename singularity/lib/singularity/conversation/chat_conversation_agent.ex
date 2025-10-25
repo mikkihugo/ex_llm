@@ -580,9 +580,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           else
             failed_count = Enum.count(results, &(&1 != :ok))
 
-            GoogleChat.notify(
-              "⚠️ Recommendation executed with #{failed_count} failures"
-            )
+            GoogleChat.notify("⚠️ Recommendation executed with #{failed_count} failures")
 
             Logger.warning("Recommendation execution had failures",
               total_agents: length(agent_pids),

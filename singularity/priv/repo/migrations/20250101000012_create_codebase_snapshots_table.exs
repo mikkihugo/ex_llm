@@ -15,7 +15,7 @@ defmodule Singularity.Repo.Migrations.CreateCodebaseSnapshotsTable do
   def up do
     # ===== CODEBASE SNAPSHOTS TABLE =====
     # Stores detected technology snapshots from TechnologyDetector
-    create table(:codebase_snapshots) do
+    create_if_not_exists table(:codebase_snapshots) do
       # Codebase identification
       add :codebase_id, :string, null: false
       add :snapshot_id, :integer, null: false
@@ -31,13 +31,34 @@ defmodule Singularity.Repo.Migrations.CreateCodebaseSnapshotsTable do
     end
 
     # Indexes for codebase_snapshots
-    create unique_index(:codebase_snapshots, [:codebase_id, :snapshot_id])
-    create index(:codebase_snapshots, [:codebase_id])
-    create index(:codebase_snapshots, [:snapshot_id])
-    create index(:codebase_snapshots, [:inserted_at])
-    create index(:codebase_snapshots, [:detected_technologies], using: :gin)
-    create index(:codebase_snapshots, [:metadata], using: :gin)
-    create index(:codebase_snapshots, [:features], using: :gin)
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS codebase_snapshots_codebase_id_snapshot_id_key
+      ON codebase_snapshots (codebase_id, snapshot_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_snapshots_codebase_id_index
+      ON codebase_snapshots (codebase_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_snapshots_snapshot_id_index
+      ON codebase_snapshots (snapshot_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_snapshots_inserted_at_index
+      ON codebase_snapshots (inserted_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_snapshots_detected_technologies_index
+      ON codebase_snapshots (detected_technologies)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_snapshots_metadata_index
+      ON codebase_snapshots (metadata)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_snapshots_features_index
+      ON codebase_snapshots (features)
+    """, "")
 
     # Drop old detection_events table if it exists
     # Created in migration 20240101000004_create_code_analysis_tables.exs
@@ -50,7 +71,7 @@ defmodule Singularity.Repo.Migrations.CreateCodebaseSnapshotsTable do
     drop table(:codebase_snapshots)
 
     # Recreate detection_events table from original migration
-    create table(:detection_events, primary_key: false) do
+    create_if_not_exists table(:detection_events, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :event_type, :string, null: false
       add :detector, :string, null: false
@@ -60,8 +81,17 @@ defmodule Singularity.Repo.Migrations.CreateCodebaseSnapshotsTable do
       timestamps()
     end
 
-    create index(:detection_events, [:event_type])
-    create index(:detection_events, [:detector])
-    create index(:detection_events, [:inserted_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS detection_events_event_type_index
+      ON detection_events (event_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS detection_events_detector_index
+      ON detection_events (detector)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS detection_events_inserted_at_index
+      ON detection_events (inserted_at)
+    """, "")
   end
 end

@@ -115,14 +115,16 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   def generate_samples(prompt, model_state, model, num_samples \\ 3, opts \\ []) do
     Logger.info("Generating #{num_samples} samples with #{inspect(model)}")
 
-    samples = 1..num_samples
-    |> Enum.map(fn i ->
-      Logger.info("  Sample #{i}/#{num_samples}")
-      case generate(prompt, model_state, model, opts) do
-        {:ok, code} -> code
-        {:error, _} -> "# Generation failed"
-      end
-    end)
+    samples =
+      1..num_samples
+      |> Enum.map(fn i ->
+        Logger.info("  Sample #{i}/#{num_samples}")
+
+        case generate(prompt, model_state, model, opts) do
+          {:ok, code} -> code
+          {:error, _} -> "# Generation failed"
+        end
+      end)
 
     {:ok, samples}
   end

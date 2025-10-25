@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateTemplateCache do
   use Ecto.Migration
 
   def change do
-    create table(:template_cache, primary_key: false) do
+    create_if_not_exists table(:template_cache, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
 
       add :artifact_id, :text, null: false
@@ -22,12 +22,24 @@ defmodule Singularity.Repo.Migrations.CreateTemplateCache do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:template_cache, [:artifact_id, :version])
-    create index(:template_cache, [:downloaded_at])
-    create index(:template_cache, [:last_used_at])
-    create index(:template_cache, [:content], using: :gin)
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS template_cache_artifact_id_version_key
+      ON template_cache (artifact_id, version)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS template_cache_downloaded_at_index
+      ON template_cache (downloaded_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS template_cache_last_used_at_index
+      ON template_cache (last_used_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS template_cache_content_index
+      ON template_cache (content)
+    """, "")
 
-    create table(:local_learning, primary_key: false) do
+    create_if_not_exists table(:local_learning, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
 
       add :artifact_id, :text, null: false
@@ -44,8 +56,17 @@ defmodule Singularity.Repo.Migrations.CreateTemplateCache do
       add :inserted_at, :utc_datetime, null: false, default: fragment("NOW()")
     end
 
-    create index(:local_learning, [:artifact_id])
-    create index(:local_learning, [:synced_to_central])
-    create index(:local_learning, [:synced_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS local_learning_artifact_id_index
+      ON local_learning (artifact_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS local_learning_synced_to_central_index
+      ON local_learning (synced_to_central)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS local_learning_synced_at_index
+      ON local_learning (synced_at)
+    """, "")
   end
 end

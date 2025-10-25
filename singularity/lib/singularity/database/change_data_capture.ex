@@ -65,15 +65,15 @@ defmodule Singularity.Database.ChangeDataCapture do
   """
   def init_slot do
     case Repo.query(
-      "SELECT slot_name FROM pg_replication_slots WHERE slot_name = $1",
-      [@slot_name]
-    ) do
+           "SELECT slot_name FROM pg_replication_slots WHERE slot_name = $1",
+           [@slot_name]
+         ) do
       {:ok, %{rows: []}} ->
         # Slot doesn't exist, create it
         case Repo.query(
-          "SELECT * FROM pg_create_logical_replication_slot($1, $2)",
-          [@slot_name, @plugin]
-        ) do
+               "SELECT * FROM pg_create_logical_replication_slot($1, $2)",
+               [@slot_name, @plugin]
+             ) do
           {:ok, _} ->
             Logger.info("Created CDC slot: #{@slot_name}")
             {:ok, :created}
@@ -100,9 +100,9 @@ defmodule Singularity.Database.ChangeDataCapture do
   """
   def get_changes do
     case Repo.query(
-      "SELECT lsn, data FROM pg_logical_slot_peek_changes($1, NULL, NULL)",
-      [@slot_name]
-    ) do
+           "SELECT lsn, data FROM pg_logical_slot_peek_changes($1, NULL, NULL)",
+           [@slot_name]
+         ) do
       {:ok, %{rows: rows}} ->
         changes =
           Enum.map(rows, fn [lsn, json_data] ->
@@ -127,9 +127,9 @@ defmodule Singularity.Database.ChangeDataCapture do
   """
   def get_changes_since(since_lsn) when is_binary(since_lsn) do
     case Repo.query(
-      "SELECT lsn, data FROM pg_logical_slot_peek_changes($1, $2, NULL)",
-      [@slot_name, since_lsn]
-    ) do
+           "SELECT lsn, data FROM pg_logical_slot_peek_changes($1, $2, NULL)",
+           [@slot_name, since_lsn]
+         ) do
       {:ok, %{rows: rows}} ->
         changes =
           Enum.map(rows, fn [lsn, json_data] ->
@@ -157,9 +157,9 @@ defmodule Singularity.Database.ChangeDataCapture do
   """
   def confirm_processed(lsn) when is_binary(lsn) do
     case Repo.query(
-      "SELECT pg_logical_slot_get_changes($1, NULL, NULL)",
-      [@slot_name]
-    ) do
+           "SELECT pg_logical_slot_get_changes($1, NULL, NULL)",
+           [@slot_name]
+         ) do
       {:ok, _} ->
         Logger.debug("CDC changes confirmed up to LSN: #{lsn}")
         :ok
@@ -173,26 +173,30 @@ defmodule Singularity.Database.ChangeDataCapture do
   Get CDC slot status (lag, memory usage, etc).
   """
   def slot_status do
-    case Repo.query("""
-      SELECT
-        slot_name,
-        slot_type,
-        active,
-        COALESCE(flush_lsn::text, 'N/A') as flush_lsn,
-        (pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) / 1024 / 1024)::bigint as lag_mb,
-        pg_size_pretty(pg_total_relation_size('pg_replslot')) as slot_size
-      FROM pg_replication_slots
-      WHERE slot_name = $1
-    """, [@slot_name]) do
+    case Repo.query(
+           """
+             SELECT
+               slot_name,
+               slot_type,
+               active,
+               COALESCE(flush_lsn::text, 'N/A') as flush_lsn,
+               (pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) / 1024 / 1024)::bigint as lag_mb,
+               pg_size_pretty(pg_total_relation_size('pg_replslot')) as slot_size
+             FROM pg_replication_slots
+             WHERE slot_name = $1
+           """,
+           [@slot_name]
+         ) do
       {:ok, %{rows: [[name, type, active, flush_lsn, lag_mb, slot_size]]}} ->
-        {:ok, %{
-          name: name,
-          type: type,
-          active: active,
-          flush_lsn: flush_lsn,
-          lag_mb: lag_mb,
-          slot_size: slot_size
-        }}
+        {:ok,
+         %{
+           name: name,
+           type: type,
+           active: active,
+           flush_lsn: flush_lsn,
+           lag_mb: lag_mb,
+           slot_size: slot_size
+         }}
 
       {:ok, %{rows: []}} ->
         {:error, "CDC slot not found"}
@@ -209,9 +213,9 @@ defmodule Singularity.Database.ChangeDataCapture do
   """
   def drop_slot do
     case Repo.query(
-      "SELECT pg_drop_replication_slot($1)",
-      [@slot_name]
-    ) do
+           "SELECT pg_drop_replication_slot($1)",
+           [@slot_name]
+         ) do
       {:ok, _} ->
         Logger.info("Dropped CDC slot: #{@slot_name}")
         {:ok, :dropped}
@@ -228,7 +232,13 @@ defmodule Singularity.Database.ChangeDataCapture do
   defp parse_wal_event(lsn, %{"change" => changes} = data) when is_list(changes) do
     # wal2json emits "change" array with one entry per affected row
     case List.first(changes) do
-      %{"kind" => kind, "schema" => schema, "table" => table, "columnnames" => cols, "columnvalues" => values} = change ->
+      %{
+        "kind" => kind,
+        "schema" => schema,
+        "table" => table,
+        "columnnames" => cols,
+        "columnvalues" => values
+      } = change ->
         %{
           lsn: lsn,
           kind: kind,

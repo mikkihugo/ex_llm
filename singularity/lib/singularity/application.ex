@@ -155,31 +155,31 @@ defmodule Singularity.Application do
     # Create ETS table for runner executions
     :ets.new(:runner_executions, [:named_table, :public, :set])
 
-    children = [
-      # Layer 1: Foundation - Database and metrics MUST start first
-      Singularity.Repo,
-      Singularity.Infrastructure.Telemetry,
-      Singularity.ProcessRegistry,
+    children =
+      [
+        # Layer 1: Foundation - Database and metrics MUST start first
+        Singularity.Repo,
+        Singularity.Infrastructure.Telemetry,
+        Singularity.ProcessRegistry,
 
-      # HTTP endpoint for dashboard and health checks
-      {Bandit, plug: Singularity.Web.Endpoint, port: 4000}
-    ]
-    # Background Job Queue & Scheduling (optional)
-    # Oban processes background jobs with cron-like scheduling
-    # Config consolidated to :oban namespace (fixed dual-config issue)
-    # Can be disabled with: config :singularity, oban_enabled: false
-    |> add_optional_child(:oban_enabled, &oban_child/0)
-    |> Kernel.++(
-      # Layer 2: Infrastructure - Core services required by application layer
-      [
-        Singularity.Infrastructure.Supervisor
+        # HTTP endpoint for dashboard and health checks
+        {Bandit, plug: Singularity.Web.Endpoint, port: 4000}
       ]
-    )
-    # NATS Supervisor (optional)
-    # Can be disabled with: config :singularity, nats_enabled: false
-    |> add_optional_child(:nats_enabled, &nats_child/0)
-    |> Kernel.++(
-      [
+      # Background Job Queue & Scheduling (optional)
+      # Oban processes background jobs with cron-like scheduling
+      # Config consolidated to :oban namespace (fixed dual-config issue)
+      # Can be disabled with: config :singularity, oban_enabled: false
+      |> add_optional_child(:oban_enabled, &oban_child/0)
+      |> Kernel.++(
+        # Layer 2: Infrastructure - Core services required by application layer
+        [
+          Singularity.Infrastructure.Supervisor
+        ]
+      )
+      # NATS Supervisor (optional)
+      # Can be disabled with: config :singularity, nats_enabled: false
+      |> add_optional_child(:nats_enabled, &nats_child/0)
+      |> Kernel.++([
         # Layer 3: Domain Services - Business logic and domain-specific functionality
         # LLM Services - Rate limiting and provider orchestration
         Singularity.LLM.Supervisor,
@@ -209,9 +209,8 @@ defmodule Singularity.Application do
         # Layer 5: Domain Supervisors - Domain-specific supervision trees
         Singularity.ArchitectureEngine.MetaRegistry.Supervisor,
         Singularity.Git.Supervisor
-      ]
-    )
-    |> Kernel.++(optional_children())
+      ])
+      |> Kernel.++(optional_children())
 
     Logger.info("Starting Singularity supervision tree",
       child_count: length(children),
@@ -228,8 +227,9 @@ defmodule Singularity.Application do
         # (not supervised - runs once and exits)
         # Skip during tests to avoid sandbox database access issues
         # Check if :ex_unit application is loaded (indicates we're running under ExUnit/mix test)
-        is_test = Application.loaded_applications()
-                  |> Enum.any?(fn {app, _, _} -> app == :ex_unit end)
+        is_test =
+          Application.loaded_applications()
+          |> Enum.any?(fn {app, _, _} -> app == :ex_unit end)
 
         unless is_test do
           Task.start(fn ->

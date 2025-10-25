@@ -18,10 +18,13 @@ defmodule Singularity.Repo.Migrations.AddFileReferencesToTechnologyDetections202
     end
 
     # Create index for analyzed_files
-    create index(:technology_detections, [:analyzed_files], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS technology_detections_analyzed_files_index
+      ON technology_detections (analyzed_files)
+    """, "")
 
     # Create file_architecture_patterns table for per-file analysis
-    create table(:file_architecture_patterns, primary_key: false) do
+    create_if_not_exists table(:file_architecture_patterns, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :file_id, references(:codebase_chunks, type: :binary_id, on_delete: :delete_all), null: false
       add :detection_id, references(:technology_detections, type: :id, on_delete: :delete_all), null: false
@@ -36,14 +39,29 @@ defmodule Singularity.Repo.Migrations.AddFileReferencesToTechnologyDetections202
     end
 
     # Create indexes for file_architecture_patterns
-    create index(:file_architecture_patterns, [:file_id])
-    create index(:file_architecture_patterns, [:detection_id])
-    create index(:file_architecture_patterns, [:pattern_type])
-    create index(:file_architecture_patterns, [:confidence])
-    create unique_index(:file_architecture_patterns, [:file_id, :detection_id, :pattern_type])
+    execute("""
+      CREATE INDEX IF NOT EXISTS file_architecture_patterns_file_id_index
+      ON file_architecture_patterns (file_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS file_architecture_patterns_detection_id_index
+      ON file_architecture_patterns (detection_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS file_architecture_patterns_pattern_type_index
+      ON file_architecture_patterns (pattern_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS file_architecture_patterns_confidence_index
+      ON file_architecture_patterns (confidence)
+    """, "")
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS file_architecture_patterns_file_id_detection_id_pattern_type_key
+      ON file_architecture_patterns (file_id, detection_id, pattern_type)
+    """, "")
 
     # Create file_naming_violations table for per-file naming issues
-    create table(:file_naming_violations, primary_key: false) do
+    create_if_not_exists table(:file_naming_violations, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :file_id, references(:codebase_chunks, type: :binary_id, on_delete: :delete_all), null: false
       add :detection_id, references(:technology_detections, type: :id, on_delete: :delete_all), null: false
@@ -60,11 +78,26 @@ defmodule Singularity.Repo.Migrations.AddFileReferencesToTechnologyDetections202
     end
 
     # Create indexes for file_naming_violations
-    create index(:file_naming_violations, [:file_id])
-    create index(:file_naming_violations, [:detection_id])
-    create index(:file_naming_violations, [:violation_type])
-    create index(:file_naming_violations, [:severity])
-    create index(:file_naming_violations, [:line_number])
+    execute("""
+      CREATE INDEX IF NOT EXISTS file_naming_violations_file_id_index
+      ON file_naming_violations (file_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS file_naming_violations_detection_id_index
+      ON file_naming_violations (detection_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS file_naming_violations_violation_type_index
+      ON file_naming_violations (violation_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS file_naming_violations_severity_index
+      ON file_naming_violations (severity)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS file_naming_violations_line_number_index
+      ON file_naming_violations (line_number)
+    """, "")
   end
 
   def down do

@@ -181,7 +181,8 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
     # Merge answers into template context for generation
     template_with_answers = Map.put(template, "answers", answers)
 
-    with {:ok, code} <- generate_implementation(task, language, quality, use_rag, template_with_answers),
+    with {:ok, code} <-
+           generate_implementation(task, language, quality, use_rag, template_with_answers),
          {:ok, docs} <- generate_documentation(code, task, language, quality),
          {:ok, specs} <- generate_type_specs(code, language, quality),
          {:ok, tests} <- generate_tests(code, task, language, quality),
@@ -195,7 +196,16 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
       }
 
       # Track this generation (Copier pattern) with answers
-      track_generation(template_with_answers, task, language, quality, output_path, score >= 0.7, score, answers)
+      track_generation(
+        template_with_answers,
+        task,
+        language,
+        quality,
+        output_path,
+        score >= 0.7,
+        score,
+        answers
+      )
 
       Logger.info("✅ Generated code with quality score: #{Float.round(score, 2)}")
       {:ok, result}
@@ -212,7 +222,9 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
   defp ask_template_questions(template, task, language, quality) do
     case Map.get(template, "questions") do
       questions when is_list(questions) and length(questions) > 0 ->
-        Logger.info("Template has #{length(questions)} questions, asking via LLM context inference...")
+        Logger.info(
+          "Template has #{length(questions)} questions, asking via LLM context inference..."
+        )
 
         # Use TemplateQuestion to ask questions via LLM
         case Singularity.Knowledge.TemplateQuestion.ask_via_llm(
@@ -247,7 +259,16 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
     |> Enum.into(%{})
   end
 
-  defp track_generation(template, task, language, quality, output_path, success, score, question_answers \\ %{}) do
+  defp track_generation(
+         template,
+         task,
+         language,
+         quality,
+         output_path,
+         success,
+         score,
+         question_answers \\ %{}
+       ) do
     # Only track if output_path provided
     if output_path do
       template_id = "quality_template:#{language}-#{quality}"
@@ -264,15 +285,16 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
         end
 
       # Merge basic answers with question answers
-      all_answers = Map.merge(
-        %{
-          task: task,
-          language: language,
-          quality: quality,
-          quality_score: score
-        },
-        question_answers
-      )
+      all_answers =
+        Map.merge(
+          %{
+            task: task,
+            language: language,
+            quality: quality,
+            quality_score: score
+          },
+          question_answers
+        )
 
       case TemplateGeneration.record(
              template_id: template_id,
@@ -282,7 +304,9 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
              success: success
            ) do
         {:ok, _} ->
-          Logger.debug("Tracked generation: #{template_id} v#{template_version} -> #{output_path}")
+          Logger.debug(
+            "Tracked generation: #{template_id} v#{template_version} -> #{output_path}"
+          )
 
         {:error, reason} ->
           Logger.warning("Failed to track generation: #{inspect(reason)}")

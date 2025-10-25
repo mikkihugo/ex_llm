@@ -509,7 +509,8 @@ defmodule Singularity.Tools.CodeGeneration do
            completeness: %{
              has_docs: String.length(quality_result.docs) > 100,
              has_tests: String.length(quality_result.tests) > 100,
-             has_error_handling: String.contains?(quality_result.code, ["rescue", "try", "handle"]),
+             has_error_handling:
+               String.contains?(quality_result.code, ["rescue", "try", "handle"]),
              has_types: String.length(quality_result.specs) > 20
            }
          }}

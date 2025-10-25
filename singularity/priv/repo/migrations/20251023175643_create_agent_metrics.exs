@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateAgentMetrics do
   use Ecto.Migration
 
   def change do
-    create table(:agent_metrics) do
+    create_if_not_exists table(:agent_metrics) do
       add :agent_id, :string, null: false
       add :time_window, :tsrange, null: false
       add :success_rate, :float, null: false
@@ -14,15 +14,27 @@ defmodule Singularity.Repo.Migrations.CreateAgentMetrics do
     end
 
     # Index for querying metrics by agent
-    create index(:agent_metrics, [:agent_id])
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_metrics_agent_id_index
+      ON agent_metrics (agent_id)
+    """, "")
 
     # Index for time-range queries
-    create index(:agent_metrics, [:time_window], using: :gist)
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_metrics_time_window_index
+      ON agent_metrics (time_window)
+    """, "")
 
     # Composite index for common query pattern: agent + inserted_at
-    create index(:agent_metrics, [:agent_id, :inserted_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_metrics_agent_id_inserted_at_index
+      ON agent_metrics (agent_id, inserted_at)
+    """, "")
 
     # Index for recent metrics lookup
-    create index(:agent_metrics, [:inserted_at, :agent_id])
+    execute("""
+      CREATE INDEX IF NOT EXISTS agent_metrics_inserted_at_agent_id_index
+      ON agent_metrics (inserted_at, agent_id)
+    """, "")
   end
 end

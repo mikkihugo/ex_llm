@@ -33,7 +33,7 @@ defmodule Singularity.Web.Endpoint do
 
   # Metrics endpoint (simple JSON)
   get "/metrics" do
-    metrics = Singularity.Telemetry.get_metrics()
+    metrics = Singularity.Infrastructure.Telemetry.get_metrics()
 
     conn
     |> put_resp_content_type("application/json")

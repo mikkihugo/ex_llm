@@ -55,18 +55,19 @@ defmodule Singularity.CodeGeneration.Generators.CodeGeneratorImpl do
       task = spec[:spec] || spec[:task] || ""
 
       # Extract CodeGenerator-specific options
-      code_opts = [
-        language: spec[:language] || opts[:language],
-        method: opts[:method],
-        quality: opts[:quality],
-        use_rag: opts[:use_rag],
-        top_k: opts[:top_k],
-        repos: opts[:repos],
-        validate: opts[:validate],
-        max_retries: opts[:max_retries],
-        complexity: opts[:complexity]
-      ]
-      |> Enum.filter(fn {_k, v} -> v != nil end)
+      code_opts =
+        [
+          language: spec[:language] || opts[:language],
+          method: opts[:method],
+          quality: opts[:quality],
+          use_rag: opts[:use_rag],
+          top_k: opts[:top_k],
+          repos: opts[:repos],
+          validate: opts[:validate],
+          max_retries: opts[:max_retries],
+          complexity: opts[:complexity]
+        ]
+        |> Enum.filter(fn {_k, v} -> v != nil end)
 
       Logger.debug("CodeGeneratorImpl: generating for task", task: task, opts: code_opts)
       CodeGenerator.generate(task, code_opts)

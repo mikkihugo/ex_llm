@@ -76,6 +76,7 @@ defmodule Singularity.Architecture.AnalysisOrchestratorTest do
           assert is_map(results)
           # Results should have entries for each enabled analyzer
           analyzers = AnalysisOrchestrator.get_analyzer_types_info()
+
           Enum.each(analyzers, fn analyzer ->
             assert Map.has_key?(results, analyzer.name)
             assert is_list(results[analyzer.name])
@@ -506,10 +507,11 @@ defmodule Singularity.Architecture.AnalysisOrchestratorTest do
     end
 
     test "logs analysis attempts" do
-      log = capture_log(fn ->
-        input = %{type: :log_test, data: %{}}
-        AnalysisOrchestrator.analyze(input)
-      end)
+      log =
+        capture_log(fn ->
+          input = %{type: :log_test, data: %{}}
+          AnalysisOrchestrator.analyze(input)
+        end)
 
       # Should contain some logs or be empty
       assert is_binary(log)

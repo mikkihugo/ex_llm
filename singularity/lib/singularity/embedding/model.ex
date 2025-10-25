@@ -41,7 +41,9 @@ defmodule Singularity.Embedding.Model do
     hidden_dim = Keyword.get(opts, :hidden_dim, 768)
     output_dim = Keyword.get(opts, :output_dim, 1536)
 
-    Logger.info("Building Qodo model: vocab=#{vocab_size}, hidden=#{hidden_dim}, output=#{output_dim}")
+    Logger.info(
+      "Building Qodo model: vocab=#{vocab_size}, hidden=#{hidden_dim}, output=#{output_dim}"
+    )
 
     # Input: token IDs shape {batch_size, sequence_length}
     input = Axon.input("token_ids", shape: {nil, nil})
@@ -76,7 +78,9 @@ defmodule Singularity.Embedding.Model do
     hidden_dim = Keyword.get(opts, :hidden_dim, 512)
     output_dim = Keyword.get(opts, :output_dim, 1024)
 
-    Logger.info("Building Jina v3 model: vocab=#{vocab_size}, hidden=#{hidden_dim}, output=#{output_dim}")
+    Logger.info(
+      "Building Jina v3 model: vocab=#{vocab_size}, hidden=#{hidden_dim}, output=#{output_dim}"
+    )
 
     input = Axon.input("token_ids", shape: {nil, nil})
 

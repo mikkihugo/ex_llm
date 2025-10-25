@@ -67,7 +67,8 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   require Logger
 
   @workflow_name "code_quality_improvement"
-  @test_timeout 120_000  # 2 minutes for tests
+  # 2 minutes for tests
+  @test_timeout 120_000
 
   # ============================================================================
   # Public API - Workflow Execution
@@ -139,7 +140,10 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
          {:ok, state} <- commit_improvements_if_approved(state) do
       report = generate_comprehensive_workflow_report(state)
 
-      Logger.info("Quality improvement workflow complete: #{report.summary.issues_fixed} fixes applied")
+      Logger.info(
+        "Quality improvement workflow complete: #{report.summary.issues_fixed} fixes applied"
+      )
+
       {:ok, report}
     else
       {:error, reason} = error ->
@@ -168,7 +172,9 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   @spec execute_refactoring_improvement_workflow(String.t(), keyword()) ::
           {:ok, map()} | {:error, String.t()}
   def execute_refactoring_improvement_workflow(codebase_path, opts \\ []) do
-    opts = Keyword.merge(opts, categories: [:long_functions, :duplicate_code, :nested_conditionals])
+    opts =
+      Keyword.merge(opts, categories: [:long_functions, :duplicate_code, :nested_conditionals])
+
     execute_quality_improvement_workflow(codebase_path, opts)
   end
 
@@ -247,7 +253,8 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
       |> Enum.sort_by(fn issue ->
         severity_score = get_severity_numeric_score(issue.severity)
         fixable_bonus = if Map.has_key?(issue, :auto_fix), do: 100, else: 0
-        -(severity_score + fixable_bonus)  # Negative for descending order
+        # Negative for descending order
+        -(severity_score + fixable_bonus)
       end)
 
     # Group into fixable vs manual review needed
@@ -263,7 +270,10 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
         manual_review_issues: manual_review
       })
 
-    Logger.info("Categorized: #{length(auto_fixable)} auto-fixable, #{length(manual_review)} need manual review")
+    Logger.info(
+      "Categorized: #{length(auto_fixable)} auto-fixable, #{length(manual_review)} need manual review"
+    )
+
     {:ok, state}
   end
 

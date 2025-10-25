@@ -256,7 +256,9 @@ defmodule Singularity.NATS.Server do
     patterns = request["data"]["patterns"] || []
     context = request["data"]["context"] || ""
 
-    case Singularity.Architecture.Detectors.FrameworkDetector.detect_frameworks(patterns, context: context) do
+    case Singularity.Architecture.Detectors.FrameworkDetector.detect_frameworks(patterns,
+           context: context
+         ) do
       {:ok, results} -> {:ok, results}
       {:error, reason} -> {:error, reason}
     end
@@ -317,7 +319,9 @@ defmodule Singularity.NATS.Server do
              language: language,
              prompt_type: prompt_type,
              complexity: complexity
-           }), timeout: 10_000) do
+           }),
+           timeout: 10_000
+         ) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} ->

@@ -33,31 +33,31 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJobTest do
     test "schedules job with default parameters" do
       # Should create an Oban job with default model (qodo)
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.schedule_now()
-      end) =~ "Scheduling"
+               EmbeddingFinetuneJob.schedule_now()
+             end) =~ "Scheduling"
     end
 
     test "schedules job with custom model" do
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.schedule_now(model: :jina)
-      end) =~ "Scheduling"
+               EmbeddingFinetuneJob.schedule_now(model: :jina)
+             end) =~ "Scheduling"
     end
 
     test "schedules job with custom epochs" do
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.schedule_now(epochs: 5)
-      end) =~ "Scheduling"
+               EmbeddingFinetuneJob.schedule_now(epochs: 5)
+             end) =~ "Scheduling"
     end
 
     test "schedules job with multiple custom parameters" do
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.schedule_now(
-          model: :qodo,
-          epochs: 3,
-          learning_rate: 1.0e-4,
-          batch_size: 32
-        )
-      end) =~ "Scheduling"
+               EmbeddingFinetuneJob.schedule_now(
+                 model: :qodo,
+                 epochs: 3,
+                 learning_rate: 1.0e-4,
+                 batch_size: 32
+               )
+             end) =~ "Scheduling"
     end
   end
 
@@ -73,8 +73,8 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJobTest do
       }
 
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.perform(job)
-      end) =~ "Starting"
+               EmbeddingFinetuneJob.perform(job)
+             end) =~ "Starting"
     end
 
     test "job execution handles default arguments" do
@@ -115,21 +115,21 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJobTest do
     test "finds code files in standard directories" do
       # Helper function to test file discovery
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.perform(%Oban.Job{args: %{}})
-      end) =~ "code file" or
-             capture_log([level: :info], fn ->
                EmbeddingFinetuneJob.perform(%Oban.Job{args: %{}})
-             end) =~ "Collecting"
+             end) =~ "code file" or
+               capture_log([level: :info], fn ->
+                 EmbeddingFinetuneJob.perform(%Oban.Job{args: %{}})
+               end) =~ "Collecting"
     end
 
     test "handles case when code files are not found" do
       # Should fall back to mock data
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.perform(%Oban.Job{args: %{}})
-      end) =~ "mock" or
-             capture_log([level: :info], fn ->
                EmbeddingFinetuneJob.perform(%Oban.Job{args: %{}})
-             end) =~ "Collecting"
+             end) =~ "mock" or
+               capture_log([level: :info], fn ->
+                 EmbeddingFinetuneJob.perform(%Oban.Job{args: %{}})
+               end) =~ "Collecting"
     end
 
     test "filters out invalid snippets" do
@@ -148,12 +148,12 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJobTest do
     test "augments data with mock triplets when needed" do
       # If real data is insufficient, should augment with mocks
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.perform(%Oban.Job{args: %{}})
-      end) =~ "train" or
-             capture_log([level: :info], fn ->
                EmbeddingFinetuneJob.perform(%Oban.Job{args: %{}})
-             end) =~ "mock" or
-             EmbeddingFinetuneJob.perform(%Oban.Job{args: %{}}) == :ok
+             end) =~ "train" or
+               capture_log([level: :info], fn ->
+                 EmbeddingFinetuneJob.perform(%Oban.Job{args: %{}})
+               end) =~ "mock" or
+               EmbeddingFinetuneJob.perform(%Oban.Job{args: %{}}) == :ok
     end
   end
 
@@ -200,14 +200,14 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJobTest do
       job = %Oban.Job{args: %{}}
 
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.perform(job)
-      end) =~ "GPU" or
-             capture_log([level: :info], fn ->
                EmbeddingFinetuneJob.perform(job)
-             end) =~ "CPU" or
-             capture_log([level: :info], fn ->
-               EmbeddingFinetuneJob.perform(job)
-             end) =~ "device"
+             end) =~ "GPU" or
+               capture_log([level: :info], fn ->
+                 EmbeddingFinetuneJob.perform(job)
+               end) =~ "CPU" or
+               capture_log([level: :info], fn ->
+                 EmbeddingFinetuneJob.perform(job)
+               end) =~ "device"
     end
 
     test "handles missing nvidia-smi gracefully" do
@@ -249,9 +249,9 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJobTest do
       job = %Oban.Job{args: %{}}
 
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.perform(job)
-      end) =~ "mock" or
-             EmbeddingFinetuneJob.perform(job) == :ok
+               EmbeddingFinetuneJob.perform(job)
+             end) =~ "mock" or
+               EmbeddingFinetuneJob.perform(job) == :ok
     end
 
     test "handles model trainer initialization errors" do
@@ -288,30 +288,30 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJobTest do
       }
 
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.perform(job)
-      end) =~ "Starting"
+               EmbeddingFinetuneJob.perform(job)
+             end) =~ "Starting"
     end
 
     test "logs timestamp on execution" do
       job = %Oban.Job{args: %{}}
 
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.perform(job)
-      end) =~ "Timestamp" or
-             capture_log([level: :info], fn ->
                EmbeddingFinetuneJob.perform(job)
-             end) =~ "🚀"
+             end) =~ "Timestamp" or
+               capture_log([level: :info], fn ->
+                 EmbeddingFinetuneJob.perform(job)
+               end) =~ "🚀"
     end
 
     test "logs data collection progress" do
       job = %Oban.Job{args: %{}}
 
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.perform(job)
-      end) =~ "Collecting" or
-             capture_log([level: :info], fn ->
                EmbeddingFinetuneJob.perform(job)
-             end) =~ "data"
+             end) =~ "Collecting" or
+               capture_log([level: :info], fn ->
+                 EmbeddingFinetuneJob.perform(job)
+               end) =~ "data"
     end
 
     test "logs completion with metrics" do
@@ -339,10 +339,10 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJobTest do
       job = %Oban.Job{args: %{}}
 
       assert capture_log([level: :info], fn ->
-        EmbeddingFinetuneJob.perform(job)
-      end) =~ "mock" or
-             EmbeddingFinetuneJob.perform(job) == :ok or
-             EmbeddingFinetuneJob.perform(job) == {:ok, _}
+               EmbeddingFinetuneJob.perform(job)
+             end) =~ "mock" or
+               EmbeddingFinetuneJob.perform(job) == :ok or
+               EmbeddingFinetuneJob.perform(job) == {:ok, _}
     end
 
     test "augments with mocks maintains triplet structure" do

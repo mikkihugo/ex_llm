@@ -71,12 +71,13 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
   @behaviour Singularity.Architecture.PatternType
   require Logger
   alias Singularity.CodeAnalysis.LanguageDetection
+  alias Singularity.Architecture.PatternStore
 
   @impl true
   def pattern_type, do: :technology
 
   @impl true
-  def description, do: "Detect programming languages, runtimes, and technology stack"
+  def description, do: "Detect programming languages, runtimes, and technology stack (with learned patterns)"
 
   @impl true
   def supported_types do
@@ -93,9 +94,22 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
 
   @impl true
   def detect(path, _opts \\ []) when is_binary(path) do
-    path
-    |> detect_technologies()
+    # Step 1: Run hardcoded detectors
+    hardcoded_results = detect_technologies(path)
+
+    # Step 2: Fetch learned patterns from database
+    learned_patterns = fetch_learned_patterns()
+
+    # Step 3: Enhance results with learned pattern confidence
+    enhanced_results = enhance_with_learned_patterns(hardcoded_results, learned_patterns)
+
+    # Step 4: Apply learned patterns not yet detected
+    all_results = apply_learned_patterns(enhanced_results, learned_patterns, path)
+
+    # Return unique results sorted by confidence
+    all_results
     |> Enum.uniq_by(& &1.name)
+    |> Enum.sort_by(& &1.confidence, :desc)
   end
 
   @impl true
@@ -103,18 +117,69 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
     # Update technology confidence in PatternStore
     case result do
       %{name: name, success: true} ->
-        Singularity.Architecture.PatternStore.update_confidence(:technology, name,
-          success: true
-        )
+        Singularity.Architecture.PatternStore.update_confidence(:technology, name, success: true)
 
       %{name: name, success: false} ->
-        Singularity.Architecture.PatternStore.update_confidence(:technology, name,
-          success: false
-        )
+        Singularity.Architecture.PatternStore.update_confidence(:technology, name, success: false)
 
       _ ->
         :ok
     end
+  end
+
+  # Private: Pattern learning integration
+
+  defp fetch_learned_patterns do
+    case PatternStore.list_patterns(:technology, limit: 100) do
+      {:ok, patterns} ->
+        Enum.filter(patterns, &(&1.confidence > 0.5))
+
+      {:error, reason} ->
+        Logger.warning("Failed to fetch learned technology patterns: #{inspect(reason)}")
+        []
+    end
+  end
+
+  defp enhance_with_learned_patterns(hardcoded_results, learned_patterns) do
+    Enum.map(hardcoded_results, fn result ->
+      # Look up pattern in learned patterns
+      case Enum.find(learned_patterns, &(&1.name == result.name)) do
+        nil ->
+          result
+
+        learned ->
+          # Use learned confidence if it's higher
+          %{
+            result
+            | confidence: max(result.confidence, learned.confidence),
+              learned: true
+          }
+      end
+    end)
+  end
+
+  defp apply_learned_patterns(results, learned_patterns, path) do
+    # Find learned patterns that match the path but weren't detected
+    new_detections =
+      learned_patterns
+      |> Enum.reject(&Enum.any?(results, fn r -> r.name == &1.name end))
+      |> Enum.filter(&pattern_matches_path?(&1, path))
+
+    results ++ new_detections
+  end
+
+  defp pattern_matches_path?(_pattern, ""), do: false
+
+  defp pattern_matches_path?(pattern, path) do
+    # Try to match file patterns from the learned pattern
+    file_patterns = Map.get(pattern, :file_patterns, [])
+    directory_patterns = Map.get(pattern, :directory_patterns, [])
+    config_files = Map.get(pattern, :config_files, [])
+
+    all_patterns = (file_patterns ++ directory_patterns ++ config_files) |> Enum.uniq()
+
+    # Check if any patterns match files in the path
+    Enum.any?(all_patterns, &has_file?(path, &1))
   end
 
   # Private: Technology detection logic
@@ -217,12 +282,14 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
   defp detect_caching(path) do
     [
       if(contains_dependency?(path, "redis"), do: detect_redis(path)),
-      if(contains_dependency?(path, "memcached"), do: %{
-        name: "Memcached",
-        type: "cache",
-        confidence: 0.85,
-        description: "Memcached cache"
-      })
+      if(contains_dependency?(path, "memcached"),
+        do: %{
+          name: "Memcached",
+          type: "cache",
+          confidence: 0.85,
+          description: "Memcached cache"
+        }
+      )
     ]
     |> Enum.reject(&is_nil/1)
   end
@@ -230,11 +297,14 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
   defp detect_messaging(path) do
     [
       if(has_file?(path, "nats.js"),
-        do: %{name: "NATS", type: "messaging", confidence: 0.90, description: "NATS messaging"}),
+        do: %{name: "NATS", type: "messaging", confidence: 0.90, description: "NATS messaging"}
+      ),
       if(contains_dependency?(path, "amqp"),
-        do: %{name: "RabbitMQ", type: "messaging", confidence: 0.75, description: "RabbitMQ"}),
+        do: %{name: "RabbitMQ", type: "messaging", confidence: 0.75, description: "RabbitMQ"}
+      ),
       if(contains_dependency?(path, "kafka"),
-        do: %{name: "Kafka", type: "messaging", confidence: 0.80, description: "Apache Kafka"})
+        do: %{name: "Kafka", type: "messaging", confidence: 0.80, description: "Apache Kafka"}
+      )
     ]
     |> Enum.reject(&is_nil/1)
   end
@@ -242,13 +312,22 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
   defp detect_ci_cd(path) do
     [
       if(has_file?(path, ".github/workflows"),
-        do: %{name: "GitHub Actions", type: "ci_cd", confidence: 0.95, description: "GitHub Actions CI/CD"}),
+        do: %{
+          name: "GitHub Actions",
+          type: "ci_cd",
+          confidence: 0.95,
+          description: "GitHub Actions CI/CD"
+        }
+      ),
       if(has_file?(path, ".gitlab-ci.yml"),
-        do: %{name: "GitLab CI", type: "ci_cd", confidence: 0.98, description: "GitLab CI/CD"}),
+        do: %{name: "GitLab CI", type: "ci_cd", confidence: 0.98, description: "GitLab CI/CD"}
+      ),
       if(has_file?(path, ".circleci/config.yml"),
-        do: %{name: "CircleCI", type: "ci_cd", confidence: 0.98, description: "CircleCI"}),
+        do: %{name: "CircleCI", type: "ci_cd", confidence: 0.98, description: "CircleCI"}
+      ),
       if(has_file?(path, "Jenkinsfile"),
-        do: %{name: "Jenkins", type: "ci_cd", confidence: 0.95, description: "Jenkins CI/CD"})
+        do: %{name: "Jenkins", type: "ci_cd", confidence: 0.95, description: "Jenkins CI/CD"}
+      )
     ]
     |> Enum.reject(&is_nil/1)
   end
@@ -256,11 +335,29 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
   defp detect_containers(path) do
     [
       if(has_file?(path, "Dockerfile"),
-        do: %{name: "Docker", type: "container", confidence: 0.99, description: "Docker containerization"}),
+        do: %{
+          name: "Docker",
+          type: "container",
+          confidence: 0.99,
+          description: "Docker containerization"
+        }
+      ),
       if(has_file?(path, "docker-compose.yml") || has_file?(path, "docker-compose.yaml"),
-        do: %{name: "Docker Compose", type: "container", confidence: 0.99, description: "Docker Compose"}),
+        do: %{
+          name: "Docker Compose",
+          type: "container",
+          confidence: 0.99,
+          description: "Docker Compose"
+        }
+      ),
       if(has_file?(path, "k8s") || has_file?(path, "kubernetes"),
-        do: %{name: "Kubernetes", type: "container", confidence: 0.90, description: "Kubernetes orchestration"})
+        do: %{
+          name: "Kubernetes",
+          type: "container",
+          confidence: 0.90,
+          description: "Kubernetes orchestration"
+        }
+      )
     ]
     |> Enum.reject(&is_nil/1)
   end

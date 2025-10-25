@@ -82,7 +82,8 @@ defmodule Singularity.Search.CodeSearchStackTest do
       assert {:ok, results} = result
       # Results should come from multiple layers
       layers = results |> Enum.map(& &1[:layer]) |> Enum.uniq()
-      assert length(layers) >= 2  # Multiple layers used
+      # Multiple layers used
+      assert length(layers) >= 2
     end
   end
 
@@ -175,8 +176,8 @@ defmodule Singularity.Search.CodeSearchStackTest do
 
       # ast-grep results should have position info
       assert Enum.all?(ast_matches, fn r ->
-        r[:line_number] != nil or r[:column] != nil
-      end)
+               r[:line_number] != nil or r[:column] != nil
+             end)
     end
   end
 
@@ -193,15 +194,16 @@ defmodule Singularity.Search.CodeSearchStackTest do
 
       # Results should have similarity scores 0.0-1.0
       assert Enum.all?(results, fn r ->
-        is_float(r[:score]) and r[:score] >= 0.0 and r[:score] <= 1.0
-      end)
+               is_float(r[:score]) and r[:score] >= 0.0 and r[:score] <= 1.0
+             end)
     end
 
     test "handles low-confidence gracefully" do
       # If pgvector returns low-confidence results,
       # ast-grep should kick in as fallback
 
-      {:ok, results} = CodeSearchStack.search("very specific obscure pattern", strategy: :semantic)
+      {:ok, results} =
+        CodeSearchStack.search("very specific obscure pattern", strategy: :semantic)
 
       # Should still return results (not error)
       # May use ast-grep fallback if pgvector is uncertain
@@ -234,8 +236,8 @@ defmodule Singularity.Search.CodeSearchStackTest do
 
       # Each match should have line_number from git grep output
       assert Enum.all?(git_matches, fn r ->
-        r[:line_number] != nil
-      end)
+               r[:line_number] != nil
+             end)
     end
 
     test "provides context from git grep" do
@@ -248,8 +250,8 @@ defmodule Singularity.Search.CodeSearchStackTest do
 
       # Results should have context
       assert Enum.all?(git_results, fn r ->
-        r[:file_path] != nil and r[:line_number] != nil and r[:context] != nil
-      end)
+               r[:file_path] != nil and r[:line_number] != nil and r[:context] != nil
+             end)
     end
   end
 
@@ -287,8 +289,8 @@ defmodule Singularity.Search.CodeSearchStackTest do
 
       # All results should be TODO-related
       assert Enum.all?(results, fn r ->
-        String.contains?(r[:content], ["TODO", "todo"])
-      end)
+               String.contains?(r[:content], ["TODO", "todo"])
+             end)
     end
   end
 

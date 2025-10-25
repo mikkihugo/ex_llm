@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateGraphTypes do
   use Ecto.Migration
 
   def change do
-    create table(:graph_types, primary_key: false) do
+    create_if_not_exists table(:graph_types, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :graph_type, :string, null: false
       add :description, :text
@@ -11,7 +11,10 @@ defmodule Singularity.Repo.Migrations.CreateGraphTypes do
     end
 
     # Indexes
-    create unique_index(:graph_types, [:graph_type])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS graph_types_graph_type_key
+      ON graph_types (graph_type)
+    """, "")
 
     # Insert default graph types
     execute("""

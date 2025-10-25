@@ -38,6 +38,7 @@ defmodule Singularity.Validation.ValidationOrchestratorTest do
 
       # Verify validators are sorted by priority (ascending)
       priorities = Enum.map(validators, & &1.priority)
+
       assert priorities == Enum.sort(priorities),
              "Validators should be sorted by priority (lowest first)"
     end
@@ -109,7 +110,9 @@ defmodule Singularity.Validation.ValidationOrchestratorTest do
       result = ValidationOrchestrator.validate(input)
       # All-must-pass means if any fails, return error with ALL violations
       case result do
-        :ok -> assert true
+        :ok ->
+          assert true
+
         {:error, violations} ->
           # Should collect violations from all validators, not just first
           assert is_list(violations)
@@ -133,8 +136,10 @@ defmodule Singularity.Validation.ValidationOrchestratorTest do
       # Input with multiple issues
       input = %{
         type: :multi_issue,
-        code: "def x do x = 1 y = 2 end",  # Malformed code
-        data: nil  # Missing data
+        # Malformed code
+        code: "def x do x = 1 y = 2 end",
+        # Missing data
+        data: nil
       }
 
       result = ValidationOrchestrator.validate(input)
@@ -143,6 +148,7 @@ defmodule Singularity.Validation.ValidationOrchestratorTest do
         {:error, violations} ->
           # Should have violations from multiple validators
           assert is_list(violations)
+
           Enum.each(violations, fn violation ->
             assert is_map(violation) or is_atom(violation)
           end)
@@ -195,10 +201,11 @@ defmodule Singularity.Validation.ValidationOrchestratorTest do
     end
 
     test "logs validation attempts" do
-      log = capture_log(fn ->
-        input = %{type: :test, data: %{}}
-        ValidationOrchestrator.validate(input)
-      end)
+      log =
+        capture_log(fn ->
+          input = %{type: :test, data: %{}}
+          ValidationOrchestrator.validate(input)
+        end)
 
       # Should contain validation logs
       assert log =~ "Validating" or log =~ "validator" or log == ""
@@ -222,6 +229,7 @@ defmodule Singularity.Validation.ValidationOrchestratorTest do
       Enum.each(validators, fn validator ->
         capabilities = ValidationOrchestrator.get_capabilities(validator.name)
         assert is_list(capabilities)
+
         assert length(capabilities) > 0,
                "Validator #{validator.name} should have at least one capability"
       end)
@@ -373,6 +381,7 @@ defmodule Singularity.Validation.ValidationOrchestratorTest do
 
       # While duplicates are allowed, clear ordering is preferred
       unique_priorities = Enum.uniq(priorities)
+
       assert length(priorities) == length(unique_priorities),
              "Validators should have unique priorities for clear ordering"
     end
@@ -462,6 +471,7 @@ defmodule Singularity.Validation.ValidationOrchestratorTest do
         {:error, violations} ->
           # Violations should indicate which validators failed
           assert is_list(violations)
+
           Enum.each(violations, fn v ->
             # Each violation should be describable
             assert is_map(v) or is_atom(v) or is_binary(v)

@@ -1,8 +1,8 @@
-defmodule Singularity.RustElixirT5Trainer do
+defmodule Singularity.MultiLanguageT5Trainer do
   @moduledoc """
-  Specialized T5 Trainer for Rust and Elixir Code Generation
+  Multi-Language T5 Trainer for Code Generation
 
-  Optimized training pipeline specifically for Rust and Elixir code patterns.
+  Pure Elixir training pipeline for Rust and Elixir code patterns.
   Includes language-specific preprocessing, quality scoring, and evaluation metrics.
 
   ## Features:
@@ -15,14 +15,14 @@ defmodule Singularity.RustElixirT5Trainer do
   ## Usage:
 
       # Train on both Rust and Elixir
-      {:ok, session_id} = RustElixirT5Trainer.prepare_multi_language_training(
+      {:ok, session_id} = MultiLanguageT5Trainer.prepare_multi_language_training(
         name: "rust_elixir_v1",
         languages: ["rust", "elixir"],
         max_examples: 20000
       )
-      
+
       # Fine-tune with specialized config
-      {:ok, model_id} = RustElixirT5Trainer.fine_tune(session_id, 
+      {:ok, model_id} = MultiLanguageT5Trainer.fine_tune(session_id,
         epochs: 12,
         cross_language_learning: true
       )
@@ -1356,13 +1356,30 @@ defmodule Singularity.RustElixirT5Trainer do
     |> Enum.frequencies()
   end
 
-  defp calculate_pattern_overlap(patterns1, patterns2) do
-    # Calculate overlap between pattern sets
+  defp extract_patterns(examples) do
+    # Extract common patterns from examples
+    examples
+    |> Enum.flat_map(fn example ->
+      extract_concepts(example.input || "") ++ extract_concepts(example.output || "")
+    end)
+    |> Enum.uniq()
+  end
+
+  defp calculate_pattern_overlap(patterns1, patterns2) when is_map(patterns1) do
+    # Calculate overlap between pattern sets (map version)
     keys1 = Map.keys(patterns1) |> MapSet.new()
     keys2 = Map.keys(patterns2) |> MapSet.new()
 
     intersection = MapSet.intersection(keys1, keys2) |> MapSet.size()
     union = MapSet.union(keys1, keys2) |> MapSet.size()
+
+    if union > 0, do: intersection / union, else: 0.0
+  end
+
+  defp calculate_pattern_overlap(patterns1, patterns2) when is_list(patterns1) do
+    # Calculate overlap between two pattern sets (list version)
+    intersection = length(patterns1 -- patterns2)
+    union = length(patterns1) + length(patterns2) - intersection
 
     if union > 0, do: intersection / union, else: 0.0
   end
@@ -1422,23 +1439,6 @@ defmodule Singularity.RustElixirT5Trainer do
     elixir_matches = Regex.scan(elixir_concepts, text) |> List.flatten() |> Enum.uniq()
 
     concepts ++ rust_matches ++ elixir_matches
-  end
-
-  defp extract_patterns(examples) do
-    # Extract common patterns from examples
-    examples
-    |> Enum.flat_map(fn example ->
-      extract_concepts(example.input || "") ++ extract_concepts(example.output || "")
-    end)
-    |> Enum.uniq()
-  end
-
-  defp calculate_pattern_overlap(patterns1, patterns2) do
-    # Calculate overlap between two pattern sets
-    intersection = length(patterns1 -- patterns2)
-    union = length(patterns1) + length(patterns2) - intersection
-
-    if union > 0, do: intersection / union, else: 0.0
   end
 
   defp generate_rust_elixir_version do

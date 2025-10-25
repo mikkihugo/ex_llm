@@ -14,17 +14,18 @@
 
 **Key:** Metal is NOT supported by XLA upstream, so macOS uses CPU for training.
 
-### 2. EMBEDDINGS (ONNX Runtime + Rust NIF)
-**Purpose:** Vector generation (inference only, not training)
-**Control:** ONNX auto-detection (independent of XLA_TARGET)
+### 2. EMBEDDINGS (Pure Elixir Nx/Axon)
+**Purpose:** Vector generation via Axon models + Nx tensor operations (inference + fine-tuning)
+**Control:** EXLA backend (same as training, via XLA_TARGET)
+**Models:** Qodo-Embed-1 (safetensors) + Jina v3 (ONNX format)
 
 | Platform | GPU Available | Speed | Latency |
 |----------|---|--------|---------|
-| macOS dev | Metal GPU | Fast | 5-10ms |
-| RTX 4080 prod | CUDA GPU | Fast | 5-10ms |
-| Linux no GPU | None | Moderate | 10-20ms |
+| macOS dev | Metal GPU (via EXLA) | Moderate | 15-50ms |
+| RTX 4080 prod | CUDA GPU (via EXLA) | Fast | 5-15ms |
+| Linux no GPU | CPU only | Slow | 100-200ms |
 
-**Key:** ONNX independently detects and uses available GPU. Metal works great for embeddings!
+**Key:** Uses EXLA backend (same as training) for GPU acceleration. GPU support depends on XLA_TARGET configuration.
 
 ### 3. DATABASE (PostgreSQL + pgvector)
 **Purpose:** Store vectors + metadata (all environments share same DB)
@@ -50,16 +51,16 @@
      │           │           │
      ▼           ▼           ▼
 ┌────────────┐ ┌──────────┐ ┌────────────┐
-│   EXLA     │ │  ONNX    │ │PostgreSQL  │
+│   EXLA     │ │  EXLA    │ │PostgreSQL  │
 │ (Training) │ │(Embeddings)│ (Storage)  │
 └─────┬──────┘ └────┬─────┘ └────────────┘
       │             │
-      ├─XLA_TARGET  ├─Auto-detect (independent)
-      │             │
-   macOS: CPU    macOS: Metal GPU ✓
-   Prod: CUDA    Prod: CUDA GPU ✓
-      │             │
-      └─EXLA CPU    └─5-10ms fast inference
+      └─────┬───────┘
+            │
+       XLA_TARGET (unified)
+            │
+   macOS: :host (CPU)
+   Prod: :cuda (CUDA)
 ```
 
 ## Execution Flow
@@ -68,16 +69,17 @@
 ```
 nix develop
   ├─ PostgreSQL starts (localhost:5432)
-  ├─ XLA_TARGET detected → metal
-  │  ├─ EXLA configured with CPU (:host)
+  ├─ XLA_TARGET detected → metal → EXLA uses CPU (:host)
   │  ├─ CodeT5p training: Slow (CPU only)
-  │  └─ Embedding fine-tuning: Disabled (production only on RTX 4080)
-  └─ ONNX detects Metal GPU
-     └─ Jina v3/Qodo embeddings: Fast inference (Metal GPU - 5-10ms)
+  │  └─ Embedding inference + fine-tuning: Slow (CPU only via Nx/Axon)
+  │     └─ Both use same EXLA backend
+  │     └─ Models: Qodo-Embed-1 + Jina v3 (2560-dim concatenated)
+  └─ Result: Pure Elixir Nx tensor operations (no external inference APIs)
 
-Result:
-- Fast inference embeddings (Metal GPU)
-- Slow training (CPU only - not suitable for production)
+Performance:
+- Embedding inference: ~15-50ms per text (CPU only)
+- Embedding fine-tuning: Supported but slow (CPU only)
+- Training: CPU only (not suitable for production)
 - Shared database with prod (learning across environments)
 ```
 
@@ -85,31 +87,28 @@ Result:
 ```
 nix develop
   ├─ PostgreSQL starts (localhost:5432)
-  ├─ XLA_TARGET detected → cuda118 (via nvidia-smi)
-  │  ├─ EXLA configured with CUDA (:cuda)
+  ├─ XLA_TARGET detected → cuda118 (via nvidia-smi) → EXLA uses CUDA (:cuda)
   │  ├─ CodeT5p training: Fast (CUDA GPU - 1-5 tokens/sec)
-  │  └─ Embedding fine-tuning: Fast (CUDA GPU - full training on RTX 4080)
-  └─ ONNX detects CUDA GPU
-     └─ Jina v3/Qodo embeddings: Fast inference + training (CUDA GPU)
+  │  └─ Embedding inference + fine-tuning: Fast (CUDA GPU via Nx/Axon)
+  │     └─ Both CodeT5p and embeddings use same CUDA backend
+  │     └─ Models: Qodo-Embed-1 + Jina v3 (2560-dim concatenated)
+  └─ Result: Pure Elixir Nx tensor operations with GPU acceleration
 
-Result:
-- Fast inference embeddings (CUDA GPU - 5-10ms)
-- Fast training (CUDA GPU - both CodeT5p + embeddings)
+Performance:
+- Embedding inference: ~5-15ms per text (CUDA GPU)
+- Embedding fine-tuning: Fast (CUDA GPU - RTX 4080)
+- Training: Fast (CUDA GPU - both CodeT5p + embeddings)
 - Shared database with dev (living knowledge base)
 ```
 
 ## Key Insights
 
-### ONNX Embeddings Work Independently
-- **macOS:** Uses Metal GPU automatically (Metal ≠ Metal for XLA)
-- **RTX 4080:** Uses CUDA GPU automatically
-- **No config needed:** ONNX Runtime detects best GPU
-- **Speed:** 5-10ms per embedding (both platforms)
-
-### EXLA Training is Separate
-- **macOS:** Limited to CPU (XLA doesn't support Metal upstream)
-- **RTX 4080:** Uses CUDA for fast training
-- **Future:** StarCoder2-7B fine-tuning ready on RTX 4080
+### Unified Nx/EXLA Backend (Training + Embeddings)
+- **Single backend:** Both CodeT5p training and Qodo/Jina embeddings use EXLA
+- **macOS:** Limited to CPU (:host) because XLA doesn't support Metal upstream
+- **RTX 4080:** Uses CUDA (:cuda) for both training and embedding inference/fine-tuning
+- **Models:** Pure Elixir Axon models with safetensors/ONNX weight loading
+- **Result:** Consistent device handling, simplified configuration
 
 ### Database Strategy
 - **Single shared database:** All environments learn together
@@ -143,41 +142,48 @@ export SINGULARITY_DB_HOST=remotedb  # Use external database
 
 ## Performance Targets
 
-### Development (macOS + Metal)
+### Development (macOS + Nx CPU)
 | Task | Latency | Throughput | Notes |
 |------|---------|-----------|-------|
-| Embedding inference | 5-10ms | 100+ emb/sec | Metal GPU (Jina v3) |
-| Vector search (1536-dim) | 10-50ms | 20-100 queries/sec | pgvector + Metal |
+| Embedding inference | 15-50ms | 20-65 emb/sec | Qodo (1536) + Jina v3 (1024) concatenated |
+| Vector search (2560-dim) | 10-50ms | 20-100 queries/sec | pgvector |
 | CodeT5p training | Slow | <1 token/sec | CPU only - not for prod |
-| Embedding fine-tuning | N/A | Disabled | Production only |
+| Embedding fine-tuning | Supported | Very slow | CPU only - not recommended |
 
-### Production (RTX 4080 + CUDA)
+### Production (RTX 4080 + EXLA CUDA)
 | Task | Latency | Throughput | Notes |
 |------|---------|-----------|-------|
-| Embedding inference | 5-10ms | 100+ emb/sec | CUDA GPU (Jina v3) |
-| Vector search (1536-dim) | 5-20ms | 50-200 queries/sec | pgvector + CUDA |
-| CodeT5p training | N/A | 1-5 tokens/sec | CUDA GPU |
-| Embedding fine-tuning | N/A | 50-100k tokens/sec | CUDA GPU (Q1 2026) |
+| Embedding inference | 5-15ms | 65-200 emb/sec | Qodo (1536) + Jina v3 (1024) concatenated |
+| Vector search (2560-dim) | 5-20ms | 50-200 queries/sec | pgvector |
+| CodeT5p training | N/A | 1-5 tokens/sec | EXLA CUDA GPU |
+| Embedding fine-tuning | Supported | Fast | EXLA CUDA GPU (available now) |
 
 ## Deployment Checklist
 
 - [ ] `nix develop` enters shell
 - [ ] PostgreSQL auto-starts
-- [ ] XLA_TARGET auto-detected correctly
-- [ ] ONNX embeddings run on GPU (Metal/CUDA)
+- [ ] XLA_TARGET auto-detected correctly (CUDA on RTX 4080, :host on macOS)
+- [ ] Nx/EXLA embeddings run (Axon models via Nx tensor operations)
+- [ ] Embedding service online (NxService.embed/1)
 - [ ] Vector search returns results
-- [ ] Same database as dev (learning across environments)
+- [ ] Same database as dev (living knowledge base)
 
 ## Next Steps
 
-1. **Current:** Jina v3 embeddings on Metal/CUDA (5-10ms fast!)
-2. **3-6 months:** Collect Rust/Elixir training data
+1. **Current:** Qodo + Jina v3 embeddings (2560-dim concatenated) via pure Elixir Nx
+2. **Now available:** Embedding fine-tuning on RTX 4080 (EXLA CUDA)
 3. **Q1 2026:** Fine-tune StarCoder2-7B on RTX 4080
-4. **Optional:** Explore MLX embeddings on Metal for even faster dev
+4. **Optional:** Optimize macOS inference via Nx native backend or explore accelerators
 
 ## References
 
 - `DEPLOYMENT_GUIDE.md` - Full deployment instructions
-- `singularity/config/runtime.exs` - EXLA configuration
+- `singularity/config/runtime.exs` - EXLA and embedding configuration
 - `.envrc` - Environment auto-detection
+- `singularity/lib/singularity/embedding/` - Pure Elixir embedding modules
+  - `nx_service.ex` - Main embedding service API
+  - `model.ex` - Axon model definitions
+  - `model_loader.ex` - Weight loading (safetensors/ONNX)
+  - `trainer.ex` - Fine-tuning support
+  - `tokenizer.ex` - Text tokenization
 - `singularity/config/config.exs` - Database configuration

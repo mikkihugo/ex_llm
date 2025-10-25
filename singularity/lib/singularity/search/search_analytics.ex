@@ -600,7 +600,10 @@ defmodule Singularity.Search.SearchAnalytics do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case Singularity.NATS.Client.publish("knowledge_cache.search_analytics", Jason.encode!(message)) do
+    case Singularity.NATS.Client.publish(
+           "knowledge_cache.search_analytics",
+           Jason.encode!(message)
+         ) do
       :ok ->
         Logger.debug("Published search analytics to KnowledgeCache",
           query: query,

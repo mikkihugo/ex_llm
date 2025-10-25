@@ -24,7 +24,7 @@ defmodule Singularity.Learning.GenesisIntegrationTest do
           "success_rate" => 0.95,
           "llm_reduction" => 0.38,
           "regression" => 0.02,
-          "runtime_ms" => 3600000
+          "runtime_ms" => 3_600_000
         },
         "recommendation" => "merge_with_adaptations",
         "risk_level" => "medium",
@@ -78,7 +78,8 @@ defmodule Singularity.Learning.GenesisIntegrationTest do
       experiment_id = "exp-invalid-#{System.unique_integer()}"
 
       genesis_result = %{
-        "status" => "invalid_status",  # Invalid status
+        # Invalid status
+        "status" => "invalid_status",
         "metrics" => %{},
         "recommendation" => "merge",
         "timestamp" => DateTime.utc_now()
@@ -94,7 +95,8 @@ defmodule Singularity.Learning.GenesisIntegrationTest do
       genesis_result = %{
         "status" => "success",
         "metrics" => %{},
-        "recommendation" => "invalid_recommendation",  # Invalid recommendation
+        # Invalid recommendation
+        "recommendation" => "invalid_recommendation",
         "timestamp" => DateTime.utc_now()
       }
 
@@ -126,9 +128,9 @@ defmodule Singularity.Learning.GenesisIntegrationTest do
 
       # All should have matching description
       assert Enum.all?(results, fn r ->
-        String.contains?(r.changes_description || "", "pattern cache") or
-          String.contains?(r.changes_description || "", "pattern miner")
-      end)
+               String.contains?(r.changes_description || "", "pattern cache") or
+                 String.contains?(r.changes_description || "", "pattern miner")
+             end)
     end
   end
 

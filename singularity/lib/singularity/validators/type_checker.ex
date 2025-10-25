@@ -73,9 +73,10 @@ defmodule Singularity.Validators.TypeChecker do
         spec_count = length(Regex.scan(~r/@spec/, code))
 
         if spec_count < length(functions) do
-          violations ++ [
-            "Not all functions have @spec declarations (#{spec_count}/#{length(functions)} declared)"
-          ]
+          violations ++
+            [
+              "Not all functions have @spec declarations (#{spec_count}/#{length(functions)} declared)"
+            ]
         else
           violations
         end

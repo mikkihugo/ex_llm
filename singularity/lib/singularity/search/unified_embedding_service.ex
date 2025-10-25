@@ -153,8 +153,12 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     fallback = Keyword.get(opts, :fallback, true)
 
     case strategy do
-      :auto -> embed_auto(text, opts, fallback)
-      :rust -> embed_rust(text, opts, fallback)
+      :auto ->
+        embed_auto(text, opts, fallback)
+
+      :rust ->
+        embed_rust(text, opts, fallback)
+
       :bumblebee ->
         Logger.warning("Bumblebee strategy is deprecated - use Rust NIF instead")
         {:error, :bumblebee_deprecated}
@@ -183,8 +187,12 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     fallback = Keyword.get(opts, :fallback, true)
 
     case strategy do
-      :auto -> embed_batch_auto(texts, opts, fallback)
-      :rust -> embed_batch_rust(texts, opts, fallback)
+      :auto ->
+        embed_batch_auto(texts, opts, fallback)
+
+      :rust ->
+        embed_batch_rust(texts, opts, fallback)
+
       :bumblebee ->
         Logger.warning("Bumblebee strategy is deprecated - use Rust NIF instead")
         {:error, :bumblebee_deprecated}
@@ -207,7 +215,8 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
     strategies = []
 
     # Check Rust NIF (production strategy - GPU only)
-    strategies = if rust_available?() && gpu_available?(), do: [:rust | strategies], else: strategies
+    strategies =
+      if rust_available?() && gpu_available?(), do: [:rust | strategies], else: strategies
 
     # Check Bumblebee (development strategy - CPU with real embeddings)
     strategies = if bumblebee_available?(), do: [:bumblebee | strategies], else: strategies
@@ -274,7 +283,8 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
       :starcoder2_3b -> "bigcode/starcoder2-3b"
       :llama3_2_90b -> "meta/llama-3.2-90b-vision-instruct"
       :deepseek_coder -> "deepseek-ai/deepseek-coder-1.3b-base"
-      _ -> "Salesforce/codet5p-770m" # fallback
+      # fallback
+      _ -> "Salesforce/codet5p-770m"
     end
   end
 
@@ -336,7 +346,9 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
           if fallback, do: embed_batch_bumblebee(texts, opts, false), else: {:error, reason}
       end
     else
-      if fallback, do: embed_batch_bumblebee(texts, opts, false), else: {:error, :rust_unavailable}
+      if fallback,
+        do: embed_batch_bumblebee(texts, opts, false),
+        else: {:error, :rust_unavailable}
     end
   end
 

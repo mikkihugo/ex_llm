@@ -21,7 +21,7 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
   def up do
     # ===== CODEBASE METADATA TABLE =====
     # Main table matching analysis-suite CodebaseMetadata structure
-    create table(:codebase_metadata) do
+    create_if_not_exists table(:codebase_metadata) do
       # === CODEBASE IDENTIFICATION ===
       add :codebase_id, :string, null: false, size: 255
       add :codebase_path, :string, null: false, size: 500
@@ -110,16 +110,40 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
     end
 
     # Unique constraint on codebase_id + path
-    create unique_index(:codebase_metadata, [:codebase_id, :path])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS codebase_metadata_codebase_id_path_key
+      ON codebase_metadata (codebase_id, path)
+    """, "")
 
     # Performance indexes
-    create index(:codebase_metadata, [:codebase_id])
-    create index(:codebase_metadata, [:codebase_path])
-    create index(:codebase_metadata, [:codebase_id, :language])
-    create index(:codebase_metadata, [:codebase_id, :file_type])
-    create index(:codebase_metadata, [:codebase_id, :quality_score])
-    create index(:codebase_metadata, [:codebase_id, :cyclomatic_complexity, :cognitive_complexity])
-    create index(:codebase_metadata, [:codebase_id, :pagerank_score])
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_index
+      ON codebase_metadata (codebase_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_path_index
+      ON codebase_metadata (codebase_path)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_language_index
+      ON codebase_metadata (codebase_id, language)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_file_type_index
+      ON codebase_metadata (codebase_id, file_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_quality_score_index
+      ON codebase_metadata (codebase_id, quality_score)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_cyclomatic_complexity_cognitive_complexity_index
+      ON codebase_metadata (codebase_id, cyclomatic_complexity, cognitive_complexity)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_metadata_codebase_id_pagerank_score_index
+      ON codebase_metadata (codebase_id, pagerank_score)
+    """, "")
 
     # Vector index for similarity search (ivfflat for cosine similarity)
     execute """
@@ -130,7 +154,7 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
 
     # ===== CODEBASE REGISTRY TABLE =====
     # Tracks codebase paths and analysis status
-    create table(:codebase_registry) do
+    create_if_not_exists table(:codebase_registry) do
       add :codebase_id, :string, null: false, size: 255
       add :codebase_path, :string, null: false, size: 500
       add :codebase_name, :string, null: false, size: 255
@@ -144,13 +168,22 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
       timestamps(default: fragment("NOW()"))
     end
 
-    create unique_index(:codebase_registry, [:codebase_id])
-    create index(:codebase_registry, [:codebase_path])
-    create index(:codebase_registry, [:analysis_status])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS codebase_registry_codebase_id_key
+      ON codebase_registry (codebase_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_registry_codebase_path_index
+      ON codebase_registry (codebase_path)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_registry_analysis_status_index
+      ON codebase_registry (analysis_status)
+    """, "")
 
     # ===== GRAPH NODES TABLE =====
     # For Apache AGE compatibility and graph analysis
-    create table(:graph_nodes) do
+    create_if_not_exists table(:graph_nodes) do
       add :codebase_id, :string, null: false, size: 255
       add :node_id, :string, null: false, size: 255
       add :node_type, :string, null: false, size: 100
@@ -164,9 +197,18 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
       add :created_at, :utc_datetime, default: fragment("NOW()")
     end
 
-    create unique_index(:graph_nodes, [:codebase_id, :node_id])
-    create index(:graph_nodes, [:codebase_id])
-    create index(:graph_nodes, [:codebase_id, :node_type])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS graph_nodes_codebase_id_node_id_key
+      ON graph_nodes (codebase_id, node_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS graph_nodes_codebase_id_index
+      ON graph_nodes (codebase_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS graph_nodes_codebase_id_node_type_index
+      ON graph_nodes (codebase_id, node_type)
+    """, "")
 
     # Vector index for graph node embeddings
     execute """
@@ -177,7 +219,7 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
 
     # ===== GRAPH EDGES TABLE =====
     # Graph edges for relationships (supports DAG)
-    create table(:graph_edges) do
+    create_if_not_exists table(:graph_edges) do
       add :codebase_id, :string, null: false, size: 255
       add :edge_id, :string, null: false, size: 255
       add :from_node_id, :string, null: false, size: 255
@@ -189,24 +231,42 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
       add :created_at, :utc_datetime, default: fragment("NOW()")
     end
 
-    create unique_index(:graph_edges, [:codebase_id, :edge_id])
-    create index(:graph_edges, [:codebase_id])
-    create index(:graph_edges, [:from_node_id])
-    create index(:graph_edges, [:to_node_id])
-    create index(:graph_edges, [:edge_type])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS graph_edges_codebase_id_edge_id_key
+      ON graph_edges (codebase_id, edge_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS graph_edges_codebase_id_index
+      ON graph_edges (codebase_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS graph_edges_from_node_id_index
+      ON graph_edges (from_node_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS graph_edges_to_node_id_index
+      ON graph_edges (to_node_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS graph_edges_edge_type_index
+      ON graph_edges (edge_type)
+    """, "")
 
     # Note: Foreign key constraints are intentionally omitted to allow flexible node references
 
     # ===== GRAPH TYPES TABLE =====
     # Predefined graph types
-    create table(:graph_types) do
+    create_if_not_exists table(:graph_types) do
       add :graph_type, :string, null: false, size: 100
       add :description, :text
 
       add :created_at, :utc_datetime, default: fragment("NOW()")
     end
 
-    create unique_index(:graph_types, [:graph_type])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS graph_types_graph_type_key
+      ON graph_types (graph_type)
+    """, "")
 
     # Insert default graph types
     execute """
@@ -220,7 +280,7 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
 
     # ===== VECTOR SEARCH TABLE =====
     # Semantic search with vector embeddings
-    create table(:vector_search) do
+    create_if_not_exists table(:vector_search) do
       add :codebase_id, :string, null: false, size: 255
       add :file_path, :string, null: false, size: 500
       add :content_type, :string, null: false, size: 100
@@ -231,8 +291,14 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
       add :created_at, :utc_datetime, default: fragment("NOW()")
     end
 
-    create unique_index(:vector_search, [:codebase_id, :file_path, :content_type])
-    create index(:vector_search, [:codebase_id])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS vector_search_codebase_id_file_path_content_type_key
+      ON vector_search (codebase_id, file_path, content_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS vector_search_codebase_id_index
+      ON vector_search (codebase_id)
+    """, "")
 
     # Vector index for semantic search
     execute """
@@ -243,7 +309,7 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
 
     # ===== VECTOR SIMILARITY CACHE TABLE =====
     # Performance cache for similarity scores
-    create table(:vector_similarity_cache) do
+    create_if_not_exists table(:vector_similarity_cache) do
       add :codebase_id, :string, null: false, size: 255
       add :query_vector_hash, :string, null: false, size: 64
       add :target_file_path, :string, null: false, size: 500
@@ -252,9 +318,18 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
       add :created_at, :utc_datetime, default: fragment("NOW()")
     end
 
-    create unique_index(:vector_similarity_cache, [:codebase_id, :query_vector_hash, :target_file_path])
-    create index(:vector_similarity_cache, [:codebase_id])
-    create index(:vector_similarity_cache, [:query_vector_hash])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS vector_similarity_cache_codebase_id_query_vector_hash_target_file_path_key
+      ON vector_similarity_cache (codebase_id, query_vector_hash, target_file_path)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS vector_similarity_cache_codebase_id_index
+      ON vector_similarity_cache (codebase_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS vector_similarity_cache_query_vector_hash_index
+      ON vector_similarity_cache (query_vector_hash)
+    """, "")
   end
 
   def down do

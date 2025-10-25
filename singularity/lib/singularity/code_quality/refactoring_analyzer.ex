@@ -77,14 +77,14 @@ defmodule Singularity.CodeQuality.RefactoringAnalyzer do
   require Logger
 
   @type refactoring_need :: %{
-    type: String.t(),
-    severity: String.t(),
-    description: String.t(),
-    file: String.t() | nil,
-    location: non_neg_integer() | nil,
-    estimated_effort: String.t(),
-    timestamp: DateTime.t()
-  }
+          type: String.t(),
+          severity: String.t(),
+          description: String.t(),
+          file: String.t() | nil,
+          location: non_neg_integer() | nil,
+          estimated_effort: String.t(),
+          timestamp: DateTime.t()
+        }
 
   # ============================================================================
   # Public API

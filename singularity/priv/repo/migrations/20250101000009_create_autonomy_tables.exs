@@ -16,7 +16,7 @@ defmodule Singularity.Repo.Migrations.CreateAutonomyTables do
   def up do
     # ===== RULE EXECUTIONS TABLE =====
     # Time-series record of rule executions for learning and analysis
-    create table(:rule_executions, primary_key: false) do
+    create_if_not_exists table(:rule_executions, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :rule_id, references(:rules, type: :binary_id, on_delete: :delete_all), null: false
       add :correlation_id, :binary_id, null: false
@@ -39,17 +39,38 @@ defmodule Singularity.Repo.Migrations.CreateAutonomyTables do
     end
 
     # Indexes for rule_executions
-    create index(:rule_executions, [:rule_id])
-    create index(:rule_executions, [:correlation_id])
-    create index(:rule_executions, [:executed_at])
-    create index(:rule_executions, [:decision])
-    create index(:rule_executions, [:outcome])
-    create index(:rule_executions, [:rule_id, :executed_at])
-    create index(:rule_executions, [:context], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_executions_rule_id_index
+      ON rule_executions (rule_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_executions_correlation_id_index
+      ON rule_executions (correlation_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_executions_executed_at_index
+      ON rule_executions (executed_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_executions_decision_index
+      ON rule_executions (decision)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_executions_outcome_index
+      ON rule_executions (outcome)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_executions_rule_id_executed_at_index
+      ON rule_executions (rule_id, executed_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_executions_context_index
+      ON rule_executions (context)
+    """, "")
 
     # ===== RULE EVOLUTION PROPOSALS TABLE =====
     # Consensus-based rule evolution proposals
-    create table(:rule_evolution_proposals, primary_key: false) do
+    create_if_not_exists table(:rule_evolution_proposals, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :rule_id, references(:rules, type: :binary_id, on_delete: :delete_all), null: false
       add :proposer_agent_id, :string, null: false
@@ -72,16 +93,40 @@ defmodule Singularity.Repo.Migrations.CreateAutonomyTables do
     end
 
     # Indexes for rule_evolution_proposals
-    create index(:rule_evolution_proposals, [:rule_id])
-    create index(:rule_evolution_proposals, [:proposer_agent_id])
-    create index(:rule_evolution_proposals, [:status])
-    create index(:rule_evolution_proposals, [:consensus_reached])
-    create index(:rule_evolution_proposals, [:inserted_at])
-    create index(:rule_evolution_proposals, [:votes], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_evolution_proposals_rule_id_index
+      ON rule_evolution_proposals (rule_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_evolution_proposals_proposer_agent_id_index
+      ON rule_evolution_proposals (proposer_agent_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_evolution_proposals_status_index
+      ON rule_evolution_proposals (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_evolution_proposals_consensus_reached_index
+      ON rule_evolution_proposals (consensus_reached)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_evolution_proposals_inserted_at_index
+      ON rule_evolution_proposals (inserted_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_evolution_proposals_votes_index
+      ON rule_evolution_proposals (votes)
+    """, "")
 
     # Composite indexes for common queries
-    create index(:rule_evolution_proposals, [:rule_id, :status])
-    create index(:rule_evolution_proposals, [:status, :consensus_reached])
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_evolution_proposals_rule_id_status_index
+      ON rule_evolution_proposals (rule_id, status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rule_evolution_proposals_status_consensus_reached_index
+      ON rule_evolution_proposals (status, consensus_reached)
+    """, "")
   end
 
   def down do

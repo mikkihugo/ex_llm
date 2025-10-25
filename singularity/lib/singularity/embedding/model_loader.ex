@@ -174,7 +174,10 @@ defmodule Singularity.Embedding.ModelLoader do
                 model_size: byte_size(data) / (1024 * 1024)
               }
 
-              Logger.info("✅ Loaded #{model}: #{length(Map.keys(tensors))} tensors, #{Float.round(state.model_size, 2)} MB")
+              Logger.info(
+                "✅ Loaded #{model}: #{length(Map.keys(tensors))} tensors, #{Float.round(state.model_size, 2)} MB"
+              )
+
               {:ok, state}
 
             {:error, reason} ->
@@ -290,6 +293,7 @@ defmodule Singularity.Embedding.ModelLoader do
         %{"data_offsets" => [start_offset, end_offset], "dtype" => dtype, "shape" => shape} ->
           # Extract binary data for this tensor
           data_len = end_offset - start_offset
+
           if byte_size(tensor_data) >= end_offset do
             <<_::binary-size(start_offset), tensor_binary::binary-size(data_len), _::binary>> =
               tensor_data
@@ -324,7 +328,6 @@ defmodule Singularity.Embedding.ModelLoader do
                 # Unsupported dtype - return metadata only
                 {:ok, tensor_info}
             end
-
           else
             {:error, "Tensor offset out of bounds"}
           end

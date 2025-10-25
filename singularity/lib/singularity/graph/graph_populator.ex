@@ -68,7 +68,10 @@ defmodule Singularity.Graph.GraphPopulator do
       total_edges = call_stats.edges + import_stats.edges
 
       Logger.info("✓ Graph population complete: #{total_nodes} nodes, #{total_edges} edges")
-      Logger.info("✓ Dependency arrays populated: #{array_stats.dependency_updates} nodes updated")
+
+      Logger.info(
+        "✓ Dependency arrays populated: #{array_stats.dependency_updates} nodes updated"
+      )
 
       {:ok,
        %{

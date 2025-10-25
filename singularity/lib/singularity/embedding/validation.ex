@@ -42,19 +42,25 @@ defmodule Singularity.Embedding.Validation do
       # Test Qodo loading
       Logger.info("\n📦 Testing Qodo-Embed-1 loading...")
       qodo_data = test_model_loading(:qodo)
-      {qodo_result, qodo_status} = case qodo_data do
-        {:ok, data} -> {data, :success}
-        {:error, _reason} -> {%{status: :error}, :error}
-      end
+
+      {qodo_result, qodo_status} =
+        case qodo_data do
+          {:ok, data} -> {data, :success}
+          {:error, _reason} -> {%{status: :error}, :error}
+        end
+
       results1 = Map.put(results1, :qodo, qodo_result)
 
       # Test Jina loading
       Logger.info("\n📦 Testing Jina v3 loading...")
       jina_data = test_model_loading(:jina_v3)
-      {jina_result, jina_status} = case jina_data do
-        {:ok, data} -> {data, :success}
-        {:error, _reason} -> {%{status: :error}, :error}
-      end
+
+      {jina_result, jina_status} =
+        case jina_data do
+          {:ok, data} -> {data, :success}
+          {:error, _reason} -> {%{status: :error}, :error}
+        end
+
       results1 = Map.put(results1, :jina_v3, jina_result)
 
       # Summary
@@ -90,26 +96,30 @@ defmodule Singularity.Embedding.Validation do
             Logger.info("   Tensors: #{map_size(state.tensors)}")
           end
 
-          {:ok, %{
-            status: :success,
-            model: model,
-            load_time_ms: load_time,
-            has_weights: Map.has_key?(state, :tensors),
-            tensor_count: try do
-              map_size(state.tensors)
-            rescue
-              _ -> 0
-            end
-          }}
+          {:ok,
+           %{
+             status: :success,
+             model: model,
+             load_time_ms: load_time,
+             has_weights: Map.has_key?(state, :tensors),
+             tensor_count:
+               try do
+                 map_size(state.tensors)
+               rescue
+                 _ -> 0
+               end
+           }}
 
         {:error, reason} ->
           Logger.warning("⚠️  Model loading failed: #{inspect(reason)}")
-          {:ok, %{
-            status: :fallback,
-            model: model,
-            reason: reason,
-            uses_mock: true
-          }}
+
+          {:ok,
+           %{
+             status: :fallback,
+             model: model,
+             reason: reason,
+             uses_mock: true
+           }}
       end
     rescue
       e ->
@@ -132,7 +142,7 @@ defmodule Singularity.Embedding.Validation do
         "async fn fetch_data() {}",
         "class MyClass: pass",
         "SELECT * FROM users WHERE id = 1",
-        "const API_URL = 'https://api.example.com'",
+        "const API_URL = 'https://api.example.com'"
       ]
 
       Logger.info("\n🧬 Generating embeddings for #{length(test_texts)} test texts...")
@@ -153,15 +163,19 @@ defmodule Singularity.Embedding.Validation do
 
               Logger.debug("      Shape: #{inspect(shape)}")
               Logger.debug("      Norm: #{Float.round(norm, 4)}")
-              Logger.debug("      Min/Max: #{Float.round(min_val, 4)} / #{Float.round(max_val, 4)}")
 
-              {:ok, %{
-                text: String.slice(text, 0..30),
-                shape: shape,
-                norm: norm,
-                min: min_val,
-                max: max_val
-              }}
+              Logger.debug(
+                "      Min/Max: #{Float.round(min_val, 4)} / #{Float.round(max_val, 4)}"
+              )
+
+              {:ok,
+               %{
+                 text: String.slice(text, 0..30),
+                 shape: shape,
+                 norm: norm,
+                 min: min_val,
+                 max: max_val
+               }}
 
             {:error, reason} ->
               Logger.warning("      ❌ Failed: #{inspect(reason)}")
@@ -182,10 +196,11 @@ defmodule Singularity.Embedding.Validation do
             )
           end)
 
-          {:ok, %{
-            embeddings: results,
-            similarities: sims
-          }}
+          {:ok,
+           %{
+             embeddings: results,
+             similarities: sims
+           }}
 
         {:error, reason} ->
           Logger.warning("⚠️  Similarity test failed: #{inspect(reason)}")
@@ -263,7 +278,7 @@ defmodule Singularity.Embedding.Validation do
           anchor: "@decorator",
           positive: "@wrapper",
           negative: "import module"
-        },
+        }
       ]
 
       Logger.info("✅ Created #{length(training_data)} training triplets")
@@ -308,17 +323,20 @@ defmodule Singularity.Embedding.Validation do
               Logger.info("   First loss: #{Float.round(first_loss, 4)}")
               Logger.info("   Last loss:  #{Float.round(last_loss, 4)}")
               Logger.info("   Improved:   #{improved}")
-              Logger.info("   Improvement: #{Float.round((first_loss - last_loss) * 100 / first_loss, 1)}%")
 
-              {:ok, %{
-                status: :success,
-                model: model,
-                epochs: 3,
-                losses: losses,
-                converged: improved,
-                improvement_percent:
-                  Float.round((first_loss - last_loss) * 100 / first_loss, 1)
-              }}
+              Logger.info(
+                "   Improvement: #{Float.round((first_loss - last_loss) * 100 / first_loss, 1)}%"
+              )
+
+              {:ok,
+               %{
+                 status: :success,
+                 model: model,
+                 epochs: 3,
+                 losses: losses,
+                 converged: improved,
+                 improvement_percent: Float.round((first_loss - last_loss) * 100 / first_loss, 1)
+               }}
 
             {:error, reason} ->
               Logger.error("Fine-tuning failed: #{inspect(reason)}")
@@ -389,7 +407,7 @@ defmodule Singularity.Embedding.Validation do
         "async fn fetch_data() {}",
         "class MyClass: pass",
         "SELECT * FROM users",
-        "const API_URL = 'https://api.example.com'",
+        "const API_URL = 'https://api.example.com'"
       ]
 
       iterations = 10
@@ -441,12 +459,13 @@ defmodule Singularity.Embedding.Validation do
       # Test Nx.Defn
       start = System.monotonic_time(:millisecond)
 
-      defn_available = try do
-        Singularity.Embedding.AutomaticDifferentiation.validate_defn_compatibility(loss_fn)
-        true
-      rescue
-        _ -> false
-      end
+      defn_available =
+        try do
+          Singularity.Embedding.AutomaticDifferentiation.validate_defn_compatibility(loss_fn)
+          true
+        rescue
+          _ -> false
+        end
 
       defn_time = System.monotonic_time(:millisecond) - start
 
@@ -474,7 +493,9 @@ defmodule Singularity.Embedding.Validation do
 
     results1 =
       case test_real_model_loading() do
-        {:ok, loading_results} -> %{model_loading: loading_results}
+        {:ok, loading_results} ->
+          %{model_loading: loading_results}
+
         {:error, e} ->
           Logger.error("Model loading test failed: #{inspect(e)}")
           %{}
@@ -485,7 +506,9 @@ defmodule Singularity.Embedding.Validation do
 
     results2 =
       case verify_inference_quality(:qodo) do
-        {:ok, quality} -> %{inference_quality: quality}
+        {:ok, quality} ->
+          %{inference_quality: quality}
+
         {:error, e} ->
           Logger.error("Inference quality test failed: #{inspect(e)}")
           %{}
@@ -496,7 +519,9 @@ defmodule Singularity.Embedding.Validation do
 
     results3 =
       case test_convergence(:qodo) do
-        {:ok, convergence} -> %{convergence: convergence}
+        {:ok, convergence} ->
+          %{convergence: convergence}
+
         {:error, e} ->
           Logger.error("Convergence test failed: #{inspect(e)}")
           %{}
@@ -507,7 +532,9 @@ defmodule Singularity.Embedding.Validation do
 
     results4 =
       case benchmark_complete_system() do
-        {:ok, benchmarks} -> %{benchmarks: benchmarks}
+        {:ok, benchmarks} ->
+          %{benchmarks: benchmarks}
+
         {:error, e} ->
           Logger.error("Benchmark test failed: #{inspect(e)}")
           %{}
@@ -535,29 +562,36 @@ defmodule Singularity.Embedding.Validation do
 
       # Test 1: Empty string
       Logger.info("\n📝 Testing empty string...")
-      results1 = case NxService.embed("", model: :qodo) do
-        {:ok, _embedding} ->
-          Logger.info("✅ Empty string handled")
-          Map.put(results1, :empty_string, :success)
-        {:error, reason} ->
-          Logger.warning("⚠️  Empty string failed: #{inspect(reason)}")
-          Map.put(results1, :empty_string, :error)
-      end
+
+      results1 =
+        case NxService.embed("", model: :qodo) do
+          {:ok, _embedding} ->
+            Logger.info("✅ Empty string handled")
+            Map.put(results1, :empty_string, :success)
+
+          {:error, reason} ->
+            Logger.warning("⚠️  Empty string failed: #{inspect(reason)}")
+            Map.put(results1, :empty_string, :error)
+        end
 
       # Test 2: Very long string (10KB)
       Logger.info("\n📝 Testing very long input...")
       long_text = String.duplicate("def long_function(): pass\n", 400)
-      results2 = case NxService.embed(long_text, model: :qodo) do
-        {:ok, _embedding} ->
-          Logger.info("✅ Long string handled: #{byte_size(long_text)} bytes")
-          Map.put(results1, :long_string, :success)
-        {:error, reason} ->
-          Logger.warning("⚠️  Long string failed: #{inspect(reason)}")
-          Map.put(results1, :long_string, :error)
-      end
+
+      results2 =
+        case NxService.embed(long_text, model: :qodo) do
+          {:ok, _embedding} ->
+            Logger.info("✅ Long string handled: #{byte_size(long_text)} bytes")
+            Map.put(results1, :long_string, :success)
+
+          {:error, reason} ->
+            Logger.warning("⚠️  Long string failed: #{inspect(reason)}")
+            Map.put(results1, :long_string, :error)
+        end
 
       # Test 3: Special characters and Unicode
       Logger.info("\n📝 Testing special characters...")
+
       special_texts = [
         "code with emoji 🚀 🎉",
         "unicode: Ñoño, Čeština, 中文",
@@ -565,7 +599,8 @@ defmodule Singularity.Embedding.Validation do
         "tabs\tand\nnewlines\rhere"
       ]
 
-      special_results = special_texts
+      special_results =
+        special_texts
         |> Enum.map(fn text ->
           case NxService.embed(text, model: :qodo) do
             {:ok, _emb} -> :ok
@@ -599,36 +634,45 @@ defmodule Singularity.Embedding.Validation do
 
       # Test Qodo-specific behavior
       Logger.info("\n📦 Testing Qodo-Embed-1...")
-      results2 = case NxService.embed(test_text, model: :qodo) do
-        {:ok, _emb} ->
-          Logger.info("✅ Qodo embedding: shape={2560}")
-          Map.put(results1, :qodo, :ok)
-        {:error, e} ->
-          Logger.warning("⚠️  Qodo failed: #{inspect(e)}")
-          Map.put(results1, :qodo, :error)
-      end
+
+      results2 =
+        case NxService.embed(test_text, model: :qodo) do
+          {:ok, _emb} ->
+            Logger.info("✅ Qodo embedding: shape={2560}")
+            Map.put(results1, :qodo, :ok)
+
+          {:error, e} ->
+            Logger.warning("⚠️  Qodo failed: #{inspect(e)}")
+            Map.put(results1, :qodo, :error)
+        end
 
       # Test Jina-specific behavior
       Logger.info("\n📦 Testing Jina v3...")
-      results3 = case NxService.embed(test_text, model: :jina_v3) do
-        {:ok, _emb} ->
-          Logger.info("✅ Jina embedding: shape={2560}")
-          Map.put(results2, :jina_v3, :ok)
-        {:error, e} ->
-          Logger.warning("⚠️  Jina failed: #{inspect(e)}")
-          Map.put(results2, :jina_v3, :error)
-      end
+
+      results3 =
+        case NxService.embed(test_text, model: :jina_v3) do
+          {:ok, _emb} ->
+            Logger.info("✅ Jina embedding: shape={2560}")
+            Map.put(results2, :jina_v3, :ok)
+
+          {:error, e} ->
+            Logger.warning("⚠️  Jina failed: #{inspect(e)}")
+            Map.put(results2, :jina_v3, :error)
+        end
 
       # Test cross-model consistency with same text
       Logger.info("\n📏 Testing cross-model consistency...")
-      results4 = case NxService.similarity(test_text, test_text, model: :qodo) do
-        {:ok, sim} ->
-          Logger.info("✅ Same text consistency: #{Float.round(sim, 4)}")
-          Map.put(results3, :consistency, :ok)
-        {:error, e} ->
-          Logger.warning("⚠️  Consistency test failed: #{inspect(e)}")
-          Map.put(results3, :consistency, :error)
-      end
+
+      results4 =
+        case NxService.similarity(test_text, test_text, model: :qodo) do
+          {:ok, sim} ->
+            Logger.info("✅ Same text consistency: #{Float.round(sim, 4)}")
+            Map.put(results3, :consistency, :ok)
+
+          {:error, e} ->
+            Logger.warning("⚠️  Consistency test failed: #{inspect(e)}")
+            Map.put(results3, :consistency, :error)
+        end
 
       {:ok, results4}
     rescue
@@ -652,43 +696,52 @@ defmodule Singularity.Embedding.Validation do
       # Test 1: Identical texts (should have sim ≈ 1.0)
       Logger.info("\n🔄 Testing identical text similarity...")
       text = "def process_data(): return transformed"
-      results2 = case NxService.similarity(text, text, model: :qodo) do
-        {:ok, sim} ->
-          Logger.info("✅ Identical texts: similarity=#{Float.round(sim, 4)}")
-          identical_ok = sim > 0.99
-          Map.put(results1, :identical, identical_ok)
-        {:error, e} ->
-          Logger.warning("⚠️  Identical test failed: #{inspect(e)}")
-          Map.put(results1, :identical, false)
-      end
+
+      results2 =
+        case NxService.similarity(text, text, model: :qodo) do
+          {:ok, sim} ->
+            Logger.info("✅ Identical texts: similarity=#{Float.round(sim, 4)}")
+            identical_ok = sim > 0.99
+            Map.put(results1, :identical, identical_ok)
+
+          {:error, e} ->
+            Logger.warning("⚠️  Identical test failed: #{inspect(e)}")
+            Map.put(results1, :identical, false)
+        end
 
       # Test 2: Completely different texts (should have low sim)
       Logger.info("\n🔄 Testing very different text similarity...")
       text1 = "def hello_world(): return 42"
       text2 = "SELECT COUNT(*) FROM users WHERE id > 100"
-      results3 = case NxService.similarity(text1, text2, model: :qodo) do
-        {:ok, sim} ->
-          Logger.info("✅ Different texts: similarity=#{Float.round(sim, 4)}")
-          different_ok = sim < 0.5
-          Map.put(results2, :different, different_ok)
-        {:error, e} ->
-          Logger.warning("⚠️  Different test failed: #{inspect(e)}")
-          Map.put(results2, :different, false)
-      end
+
+      results3 =
+        case NxService.similarity(text1, text2, model: :qodo) do
+          {:ok, sim} ->
+            Logger.info("✅ Different texts: similarity=#{Float.round(sim, 4)}")
+            different_ok = sim < 0.5
+            Map.put(results2, :different, different_ok)
+
+          {:error, e} ->
+            Logger.warning("⚠️  Different test failed: #{inspect(e)}")
+            Map.put(results2, :different, false)
+        end
 
       # Test 3: Similar but not identical (should be medium-high)
       Logger.info("\n🔄 Testing similar text similarity...")
       text1 = "def calculate_sum(): return sum"
       text2 = "def compute_total(): return total"
-      results4 = case NxService.similarity(text1, text2, model: :qodo) do
-        {:ok, sim} ->
-          Logger.info("✅ Similar texts: similarity=#{Float.round(sim, 4)}")
-          similar_ok = 0.5 < sim and sim < 0.99
-          Map.put(results3, :similar, similar_ok)
-        {:error, e} ->
-          Logger.warning("⚠️  Similar test failed: #{inspect(e)}")
-          Map.put(results3, :similar, false)
-      end
+
+      results4 =
+        case NxService.similarity(text1, text2, model: :qodo) do
+          {:ok, sim} ->
+            Logger.info("✅ Similar texts: similarity=#{Float.round(sim, 4)}")
+            similar_ok = 0.5 < sim and sim < 0.99
+            Map.put(results3, :similar, similar_ok)
+
+          {:error, e} ->
+            Logger.warning("⚠️  Similar test failed: #{inspect(e)}")
+            Map.put(results3, :similar, false)
+        end
 
       {:ok, results4}
     rescue
@@ -720,13 +773,15 @@ defmodule Singularity.Embedding.Validation do
 
       Logger.info("\n🔄 Processing #{length(texts)} texts...")
 
-      embeddings = texts
+      embeddings =
+        texts
         |> Enum.with_index(1)
         |> Enum.map(fn {text, idx} ->
           case NxService.embed(text, model: :qodo) do
             {:ok, emb} ->
               Logger.debug("  [#{idx}] ✅ Embedded")
               {:ok, emb}
+
             {:error, reason} ->
               Logger.debug("  [#{idx}] ❌ Failed: #{inspect(reason)}")
               {:error, reason}
@@ -738,7 +793,9 @@ defmodule Singularity.Embedding.Validation do
 
       # Verify batch consistency
       Logger.info("\n📊 Verifying embeddings consistency...")
-      batch_results = embeddings
+
+      batch_results =
+        embeddings
         |> Enum.filter(&match?({:ok, _}, &1))
         |> Enum.map(fn {:ok, emb} ->
           shape = Nx.shape(emb)
@@ -747,8 +804,8 @@ defmodule Singularity.Embedding.Validation do
         end)
 
       if Enum.all?(batch_results, fn {shape, norm} ->
-        shape == {2560} and abs(norm - 1.0) < 0.01
-      end) do
+           shape == {2560} and abs(norm - 1.0) < 0.01
+         end) do
         Logger.info("✅ All embeddings consistent")
         {:ok, %{batch_size: ok_count, consistency: :ok}}
       else
@@ -775,15 +832,17 @@ defmodule Singularity.Embedding.Validation do
 
       # Test that embedding always returns a valid result
       Logger.info("\n⚙️  Testing fallback resilience...")
+
       test_texts = [
         "",
         "normal code",
-        String.duplicate("x", 100000),
+        String.duplicate("x", 100_000),
         "👨‍💻🎉📚",
         nil
       ]
 
-      results_list = test_texts
+      results_list =
+        test_texts
         |> Enum.filter(&(&1 != nil))
         |> Enum.map(fn text ->
           case NxService.embed(text, model: :qodo) do
@@ -802,9 +861,11 @@ defmodule Singularity.Embedding.Validation do
 
       # Test that fallback produces valid embeddings
       Logger.info("\n⚙️  Testing fallback output quality...")
+
       case NxService.embed("test", model: :qodo) do
         {:ok, emb} ->
           shape = Nx.shape(emb)
+
           if shape == {2560} do
             Logger.info("✅ Fallback produces valid 2560D embeddings")
             results = Map.put(results, :fallback_quality, :valid)
@@ -812,6 +873,7 @@ defmodule Singularity.Embedding.Validation do
             Logger.warning("⚠️  Fallback produces wrong shape: #{inspect(shape)}")
             results = Map.put(results, :fallback_quality, :invalid)
           end
+
         {:error, e} ->
           Logger.error("Failed to embed: #{inspect(e)}")
           results = Map.put(results, :fallback_quality, :failed)
@@ -838,12 +900,14 @@ defmodule Singularity.Embedding.Validation do
 
       Logger.info("\n🔄 Running 5 iterations of same embedding...")
 
-      embeddings = 1..5
+      embeddings =
+        1..5
         |> Enum.map(fn i ->
           case NxService.embed(test_text, model: :qodo) do
             {:ok, emb} ->
               Logger.debug("  [#{i}] ✅ Generated")
               emb
+
             {:error, e} ->
               Logger.debug("  [#{i}] ❌ Failed: #{inspect(e)}")
               nil
@@ -859,7 +923,8 @@ defmodule Singularity.Embedding.Validation do
         first = List.first(embeddings)
         rest = Enum.drop(embeddings, 1)
 
-        identical_count = rest
+        identical_count =
+          rest
           |> Enum.count(fn emb ->
             case Nx.allclose(first, emb, atol: 1.0e-5) do
               {:ok, true} -> true
@@ -870,7 +935,10 @@ defmodule Singularity.Embedding.Validation do
         reproducible = identical_count == length(rest)
 
         if reproducible do
-          Logger.info("✅ Embeddings are reproducible (#{identical_count}/#{length(rest)} identical)")
+          Logger.info(
+            "✅ Embeddings are reproducible (#{identical_count}/#{length(rest)} identical)"
+          )
+
           {:ok, %{reproducible: true, identical_runs: identical_count}}
         else
           Logger.warning("⚠️  Embeddings vary across runs")
@@ -902,16 +970,19 @@ defmodule Singularity.Embedding.Validation do
 
       Logger.info("\n📊 Checking numerical stability...")
 
-      stability_results = test_texts
+      stability_results =
+        test_texts
         |> Enum.map(fn text ->
           case NxService.embed(text, model: :qodo) do
             {:ok, emb} ->
               # Check for NaN and Inf
               flat = Nx.flatten(emb) |> Nx.to_flat_list()
               has_nan = Enum.any?(flat, &:math.is_nan/1)
-              has_inf = Enum.any?(flat, fn x ->
-                x == :infinity or x == :neg_infinity
-              end)
+
+              has_inf =
+                Enum.any?(flat, fn x ->
+                  x == :infinity or x == :neg_infinity
+                end)
 
               if has_nan or has_inf do
                 Logger.warning("⚠️  Found NaN/Inf in embedding")
@@ -919,6 +990,7 @@ defmodule Singularity.Embedding.Validation do
               else
                 :stable
               end
+
             {:error, _} ->
               :error
           end
@@ -935,7 +1007,8 @@ defmodule Singularity.Embedding.Validation do
       if unstable_count == 0 do
         {:ok, %{stable: stable_count, unstable: unstable_count}}
       else
-        {:ok, %{stable: stable_count, unstable: unstable_count, warning: "Found numerical issues"}}
+        {:ok,
+         %{stable: stable_count, unstable: unstable_count, warning: "Found numerical issues"}}
       end
     rescue
       e ->
@@ -956,64 +1029,92 @@ defmodule Singularity.Embedding.Validation do
 
     # Test 1: Edge cases
     Logger.info("\n[1/6] Testing edge cases...")
-    results1 = case test_edge_cases() do
-      {:ok, r} -> %{edge_cases: r}
-      {:error, e} ->
-        Logger.error("Edge cases test failed: #{inspect(e)}")
-        %{}
-    end
+
+    results1 =
+      case test_edge_cases() do
+        {:ok, r} ->
+          %{edge_cases: r}
+
+        {:error, e} ->
+          Logger.error("Edge cases test failed: #{inspect(e)}")
+          %{}
+      end
 
     # Test 2: Model specifics
     Logger.info("\n[2/6] Testing model-specific behavior...")
-    results2 = case test_model_specifics() do
-      {:ok, r} -> %{model_specifics: r}
-      {:error, e} ->
-        Logger.error("Model specifics test failed: #{inspect(e)}")
-        %{}
-    end
+
+    results2 =
+      case test_model_specifics() do
+        {:ok, r} ->
+          %{model_specifics: r}
+
+        {:error, e} ->
+          Logger.error("Model specifics test failed: #{inspect(e)}")
+          %{}
+      end
 
     # Test 3: Similarity edge cases
     Logger.info("\n[3/6] Testing similarity edge cases...")
-    results3 = case test_similarity_edge_cases() do
-      {:ok, r} -> %{similarity_edge_cases: r}
-      {:error, e} ->
-        Logger.error("Similarity edge cases test failed: #{inspect(e)}")
-        %{}
-    end
+
+    results3 =
+      case test_similarity_edge_cases() do
+        {:ok, r} ->
+          %{similarity_edge_cases: r}
+
+        {:error, e} ->
+          Logger.error("Similarity edge cases test failed: #{inspect(e)}")
+          %{}
+      end
 
     # Test 4: Batch processing
     Logger.info("\n[4/6] Testing batch processing...")
-    results4 = case test_batch_processing() do
-      {:ok, r} -> %{batch_processing: r}
-      {:error, e} ->
-        Logger.error("Batch processing test failed: #{inspect(e)}")
-        %{}
-    end
+
+    results4 =
+      case test_batch_processing() do
+        {:ok, r} ->
+          %{batch_processing: r}
+
+        {:error, e} ->
+          Logger.error("Batch processing test failed: #{inspect(e)}")
+          %{}
+      end
 
     # Test 5: Fallback mechanisms
     Logger.info("\n[5/6] Testing fallback mechanisms...")
-    results5 = case test_fallback_mechanisms() do
-      {:ok, r} -> %{fallback_mechanisms: r}
-      {:error, e} ->
-        Logger.error("Fallback mechanisms test failed: #{inspect(e)}")
-        %{}
-    end
+
+    results5 =
+      case test_fallback_mechanisms() do
+        {:ok, r} ->
+          %{fallback_mechanisms: r}
+
+        {:error, e} ->
+          Logger.error("Fallback mechanisms test failed: #{inspect(e)}")
+          %{}
+      end
 
     # Test 6: Extended tests
     Logger.info("\n[6/6] Testing reproducibility and stability...")
-    results6_repro = case test_reproducibility() do
-      {:ok, r} -> r
-      {:error, e} ->
-        Logger.error("Reproducibility test failed: #{inspect(e)}")
-        %{}
-    end
 
-    results6_stable = case test_numerical_stability() do
-      {:ok, r} -> r
-      {:error, e} ->
-        Logger.error("Numerical stability test failed: #{inspect(e)}")
-        %{}
-    end
+    results6_repro =
+      case test_reproducibility() do
+        {:ok, r} ->
+          r
+
+        {:error, e} ->
+          Logger.error("Reproducibility test failed: #{inspect(e)}")
+          %{}
+      end
+
+    results6_stable =
+      case test_numerical_stability() do
+        {:ok, r} ->
+          r
+
+        {:error, e} ->
+          Logger.error("Numerical stability test failed: #{inspect(e)}")
+          %{}
+      end
+
     results6 = %{reproducibility: results6_repro, numerical_stability: results6_stable}
 
     # Final summary
@@ -1021,15 +1122,27 @@ defmodule Singularity.Embedding.Validation do
     Logger.info("✨ EXTENDED TEST SUITE COMPLETE ✨")
     Logger.info(String.duplicate("✨", 40))
 
-    merged_results = Map.merge(results1, Map.merge(results2, Map.merge(results3, Map.merge(results4, Map.merge(results5, results6)))))
+    merged_results =
+      Map.merge(
+        results1,
+        Map.merge(
+          results2,
+          Map.merge(results3, Map.merge(results4, Map.merge(results5, results6)))
+        )
+      )
+
     {:ok, merged_results}
   end
 
   @doc false
   defp generate_pairs(list) do
     case list do
-      [] -> []
-      [_head] -> []
+      [] ->
+        []
+
+      [_head] ->
+        []
+
       [head | tail] ->
         Enum.map(tail, &[head, &1]) ++ generate_pairs(tail)
     end

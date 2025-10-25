@@ -85,9 +85,12 @@ defmodule Singularity.Agents.DeadCodeMonitor do
   alias Singularity.Schemas.DeadCodeHistory
 
   @baseline_count 35
-  @warn_threshold 2  # Warn if increases by 2
-  @alert_threshold 3  # Alert if increases by 3
-  @fail_threshold 10  # Fail release if increases by 10
+  # Warn if increases by 2
+  @warn_threshold 2
+  # Alert if increases by 3
+  @alert_threshold 3
+  # Fail release if increases by 10
+  @fail_threshold 10
 
   @scan_script "rust/scripts/scan_dead_code.sh"
   @analyze_script "rust/scripts/analyze_dead_code.sh"
@@ -175,17 +178,19 @@ defmodule Singularity.Agents.DeadCodeMonitor do
          change <- calculate_change(count, previous),
          status <- determine_status_from_change(change),
          {:ok, history} <- store_in_database(count, change, status, output, "daily_schedule") do
-
       # Only alert if significant change (threshold exceeded)
       if should_alert?(change, status) do
         report = generate_alert_report(count, change, status, output, previous)
         publish_report("code_quality.dead_code.alert", report)
         log_result(status, count, change)
       else
-        Logger.info("Daily check: #{count} annotations (#{format_change(change)}) - no alert needed")
+        Logger.info(
+          "Daily check: #{count} annotations (#{format_change(change)}) - no alert needed"
+        )
       end
 
-      {:ok, %{count: count, change: change, status: status, alerted: should_alert?(change, status)}}
+      {:ok,
+       %{count: count, change: change, status: status, alerted: should_alert?(change, status)}}
     else
       {:error, reason} ->
         Logger.error("DeadCodeMonitor daily check failed: #{inspect(reason)}")
@@ -200,7 +205,6 @@ defmodule Singularity.Agents.DeadCodeMonitor do
     with {:ok, count, _output} <- run_scan(),
          {:ok, stats} <- DeadCodeHistory.stats([days: 7], Repo),
          {:ok, trend_data} <- DeadCodeHistory.trend([days: 7], Repo) do
-
       report = generate_weekly_summary(count, stats, trend_data)
       publish_report("code_quality.dead_code.weekly", report)
 
@@ -365,7 +369,8 @@ defmodule Singularity.Agents.DeadCodeMonitor do
       count: count,
       baseline: @baseline_count,
       change: change,
-      trend: if(change > 0, do: "increasing", else: if(change < 0, do: "decreasing", else: "stable")),
+      trend:
+        if(change > 0, do: "increasing", else: if(change < 0, do: "decreasing", else: "stable")),
       output: output,
       markdown: format_weekly_markdown(count, change, status)
     }
@@ -497,7 +502,9 @@ defmodule Singularity.Agents.DeadCodeMonitor do
   end
 
   defp log_result(:warn, count, change) do
-    Logger.warning("⚠️ Dead code increased slightly: #{count} annotations (#{format_change(change)})")
+    Logger.warning(
+      "⚠️ Dead code increased slightly: #{count} annotations (#{format_change(change)})"
+    )
   end
 
   defp log_result(:alert, count, change) do
@@ -505,7 +512,9 @@ defmodule Singularity.Agents.DeadCodeMonitor do
   end
 
   defp log_result(:critical, count, change) do
-    Logger.error("❌ Dead code increased significantly: #{count} annotations (#{format_change(change)})")
+    Logger.error(
+      "❌ Dead code increased significantly: #{count} annotations (#{format_change(change)})"
+    )
   end
 
   # New Report Generators
@@ -570,11 +579,12 @@ defmodule Singularity.Agents.DeadCodeMonitor do
   end
 
   defp format_weekly_summary_markdown(count, stats, trend_data) do
-    trend_emoji = case stats.trend do
-      "increasing" -> "📈"
-      "decreasing" -> "📉"
-      _ -> "➡️"
-    end
+    trend_emoji =
+      case stats.trend do
+        "increasing" -> "📈"
+        "decreasing" -> "📉"
+        _ -> "➡️"
+      end
 
     """
     # Dead Code Monitor - Weekly Summary
@@ -619,7 +629,8 @@ defmodule Singularity.Agents.DeadCodeMonitor do
 
   defp format_trend_data(trend_data) do
     trend_data
-    |> Enum.take(-7)  # Last 7 days
+    # Last 7 days
+    |> Enum.take(-7)
     |> Enum.map(fn {date, count} ->
       date_str = date |> DateTime.to_date() |> Date.to_string()
       "  - #{date_str}: #{count} annotations"

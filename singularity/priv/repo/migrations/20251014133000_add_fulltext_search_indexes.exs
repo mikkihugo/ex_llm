@@ -68,7 +68,10 @@ defmodule Singularity.Repo.Migrations.AddFulltextSearchIndexes do
       """
 
       # GIN index for fast FTS on code_files
-      create index(:code_files, [:search_vector], using: :gin, name: :code_files_search_vector_idx)
+      execute("""
+        CREATE INDEX IF NOT EXISTS code_files_search_vector_index
+        ON code_files (search_vector)
+      """, "")
 
       # Trigram index for fuzzy search on code_files content
       execute """

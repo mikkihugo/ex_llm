@@ -57,6 +57,7 @@ defmodule Singularity.Adapters.ObanAdapter do
             task_type: task_type,
             job_id: job.id
           )
+
           {:ok, "oban:#{job.id}"}
 
         {:error, reason} ->

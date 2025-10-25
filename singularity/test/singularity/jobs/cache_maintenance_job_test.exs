@@ -47,17 +47,17 @@ defmodule Singularity.Jobs.CacheMaintenanceJobTest do
     test "logs successful cleanup with count" do
       # Cleanup should log the number of entries cleaned
       assert capture_log([level: :info], fn ->
-        CacheMaintenanceJob.cleanup()
-      end) =~ "cache cleanup" or
-             capture_log([level: :info], fn ->
                CacheMaintenanceJob.cleanup()
-             end) =~ "🧹"
+             end) =~ "cache cleanup" or
+               capture_log([level: :info], fn ->
+                 CacheMaintenanceJob.cleanup()
+               end) =~ "🧹"
     end
 
     test "doesn't crash on database errors" do
       # Database errors should be caught and logged
       assert catch_error(CacheMaintenanceJob.cleanup()) == nil or
-             CacheMaintenanceJob.cleanup() == :ok
+               CacheMaintenanceJob.cleanup() == :ok
     end
   end
 
@@ -75,11 +75,11 @@ defmodule Singularity.Jobs.CacheMaintenanceJobTest do
 
     test "logs refresh operation" do
       assert capture_log([level: :info], fn ->
-        CacheMaintenanceJob.refresh()
-      end) =~ "hot packages" or
-             capture_log([level: :info], fn ->
                CacheMaintenanceJob.refresh()
-             end) =~ "🔄"
+             end) =~ "hot packages" or
+               capture_log([level: :info], fn ->
+                 CacheMaintenanceJob.refresh()
+               end) =~ "🔄"
     end
 
     test "handles database connection errors" do
@@ -103,11 +103,11 @@ defmodule Singularity.Jobs.CacheMaintenanceJobTest do
 
     test "logs prewarm operation with entry count" do
       assert capture_log([level: :info], fn ->
-        CacheMaintenanceJob.prewarm()
-      end) =~ "warm" or
-             capture_log([level: :info], fn ->
                CacheMaintenanceJob.prewarm()
-             end) =~ "🔥"
+             end) =~ "warm" or
+               capture_log([level: :info], fn ->
+                 CacheMaintenanceJob.prewarm()
+               end) =~ "🔥"
     end
 
     test "continues even if some entries fail to prewarm" do
@@ -138,11 +138,11 @@ defmodule Singularity.Jobs.CacheMaintenanceJobTest do
 
     test "logs statistics retrieval" do
       assert capture_log([level: :info], fn ->
-        CacheMaintenanceJob.get_stats()
-      end) =~ "Cache stats" or
-             capture_log([level: :info], fn ->
                CacheMaintenanceJob.get_stats()
-             end) =~ "📊"
+             end) =~ "Cache stats" or
+               capture_log([level: :info], fn ->
+                 CacheMaintenanceJob.get_stats()
+               end) =~ "📊"
     end
 
     test "handles missing statistics gracefully" do

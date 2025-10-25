@@ -491,8 +491,14 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
       score: score,
       summary: %{
         total: length(filtered_issues),
-        by_severity: Enum.group_by(filtered_issues, & &1.severity) |> Enum.map(fn {k, v} -> {k, length(v)} end) |> Map.new(),
-        by_category: Enum.group_by(filtered_issues, & &1.category) |> Enum.map(fn {k, v} -> {k, length(v)} end) |> Map.new()
+        by_severity:
+          Enum.group_by(filtered_issues, & &1.severity)
+          |> Enum.map(fn {k, v} -> {k, length(v)} end)
+          |> Map.new(),
+        by_category:
+          Enum.group_by(filtered_issues, & &1.category)
+          |> Enum.map(fn {k, v} -> {k, length(v)} end)
+          |> Map.new()
       },
       refactoring_suggestions: suggestions,
       analyzed_at: DateTime.utc_now()

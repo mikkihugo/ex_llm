@@ -484,13 +484,15 @@ defmodule Singularity.Jobs.JobOrchestratorTest do
     test "high-priority jobs have explicit queue assignment" do
       jobs = JobOrchestrator.get_job_types_info()
 
-      training_jobs = Enum.filter(jobs, fn job ->
-        job.queue == :training
-      end)
+      training_jobs =
+        Enum.filter(jobs, fn job ->
+          job.queue == :training
+        end)
 
-      pattern_jobs = Enum.filter(jobs, fn job ->
-        job.queue == :pattern_mining
-      end)
+      pattern_jobs =
+        Enum.filter(jobs, fn job ->
+          job.queue == :pattern_mining
+        end)
 
       # Training and pattern jobs should have dedicated queues
       assert length(training_jobs) >= 0 or length(pattern_jobs) >= 0
@@ -512,9 +514,10 @@ defmodule Singularity.Jobs.JobOrchestratorTest do
       jobs = JobOrchestrator.get_job_types_info()
 
       # Find critical jobs and verify they have retries
-      critical_jobs = Enum.filter(jobs, fn job ->
-        job.name in [:metrics_aggregation, :agent_evolution]
-      end)
+      critical_jobs =
+        Enum.filter(jobs, fn job ->
+          job.name in [:metrics_aggregation, :agent_evolution]
+        end)
 
       Enum.each(critical_jobs, fn job ->
         assert job.max_attempts >= 2
@@ -545,17 +548,18 @@ defmodule Singularity.Jobs.JobOrchestratorTest do
     end
 
     test "logs job operations" do
-      log = capture_log(fn ->
-        jobs = JobOrchestrator.get_job_types_info()
+      log =
+        capture_log(fn ->
+          jobs = JobOrchestrator.get_job_types_info()
 
-        case jobs do
-          [%{name: first_job} | _] ->
-            JobOrchestrator.enqueue(first_job, %{test: "data"})
+          case jobs do
+            [%{name: first_job} | _] ->
+              JobOrchestrator.enqueue(first_job, %{test: "data"})
 
-          _ ->
-            :ok
-        end
-      end)
+            _ ->
+              :ok
+          end
+        end)
 
       # Should contain some logs
       assert is_binary(log)

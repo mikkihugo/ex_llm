@@ -1234,7 +1234,10 @@ defmodule Singularity.Tools.ProcessSystem do
   defp check_thresholds(current_data, thresholds, alerts) when is_map(thresholds) do
     new_alerts =
       Enum.reduce(thresholds, alerts, fn {metric, threshold}, acc ->
-        case Map.get(current_data, String.to_atom(metric)) do
+        # Safe lookup using atom_to_key helper
+        metric_key = metric_name_to_atom(metric)
+
+        case Map.get(current_data, metric_key) do
           %{usage_percent: usage} when usage > threshold ->
             [
               %{
@@ -1478,4 +1481,15 @@ defmodule Singularity.Tools.ProcessSystem do
 
   defp parse_float(num) when is_float(num), do: num
   defp parse_float(_), do: 0.0
+
+  # Safe conversion from metric name string to atom
+  # Only allows known metric names
+  defp metric_name_to_atom("cpu"), do: :cpu
+  defp metric_name_to_atom("memory"), do: :memory
+  defp metric_name_to_atom("disk"), do: :disk
+  defp metric_name_to_atom("network"), do: :network
+  defp metric_name_to_atom("processes"), do: :processes
+  defp metric_name_to_atom("threads"), do: :threads
+  defp metric_name_to_atom("file_descriptors"), do: :file_descriptors
+  defp metric_name_to_atom(_), do: nil
 end

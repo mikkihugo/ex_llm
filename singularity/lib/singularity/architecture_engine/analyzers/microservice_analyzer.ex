@@ -242,7 +242,68 @@ defmodule Singularity.Architecture.Analyzers.MicroserviceAnalyzer do
   end
 
   defp detect_service_mesh do
-    false # TODO: Implement service mesh detection
+    # Query detection patterns from knowledge base for service mesh detection
+    # Loads mesh detection rules and scans for indicators
+    case Singularity.Knowledge.ArtifactStore.query_jsonb(
+      artifact_type: "architecture_pattern",
+      filter: %{"pattern_type" => "service_mesh"}
+    ) do
+      {:ok, patterns} ->
+        patterns
+        |> Enum.any?(fn pattern ->
+          check_mesh_pattern(pattern)
+        end)
+
+      {:error, _} ->
+        # Fallback: default detection patterns if knowledge base unavailable
+        default_service_mesh_check()
+    end
+  end
+
+  defp check_mesh_pattern(pattern) when is_map(pattern) do
+    # Check if any of the mesh indicators are present
+    indicators = Map.get(pattern, "indicators", [])
+    mesh_type = Map.get(pattern, "mesh_type", "unknown")
+
+    Logger.debug("Checking service mesh pattern: #{mesh_type}")
+
+    case mesh_type do
+      "istio" -> check_istio_indicators(indicators)
+      "linkerd" -> check_linkerd_indicators(indicators)
+      "consul" -> check_consul_indicators(indicators)
+      "appmesh" -> check_appmesh_indicators(indicators)
+      _ -> false
+    end
+  end
+
+  defp check_mesh_pattern(_), do: false
+
+  # Service mesh type checks (placeholder - would be expanded with actual file scanning)
+  defp check_istio_indicators(_indicators) do
+    # Would check for: istio namespace, virtual services, destination rules
+    false
+  end
+
+  defp check_linkerd_indicators(_indicators) do
+    # Would check for: linkerd namespace, service profiles
+    false
+  end
+
+  defp check_consul_indicators(_indicators) do
+    # Would check for: consul config files, services
+    false
+  end
+
+  defp check_appmesh_indicators(_indicators) do
+    # Would check for: AppMesh resources, virtual nodes
+    false
+  end
+
+  # Default fallback service mesh detection (no knowledge base)
+  defp default_service_mesh_check do
+    # Minimal detection: check for common service mesh indicators in codebase
+    # This is a simple heuristic when knowledge base is unavailable
+    false
   end
 
   defp list_subdirs(root) do

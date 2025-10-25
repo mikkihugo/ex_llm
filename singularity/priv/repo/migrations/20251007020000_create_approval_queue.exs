@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateApprovalQueue do
   use Ecto.Migration
 
   def change do
-    create table(:approval_queue, primary_key: false) do
+    create_if_not_exists table(:approval_queue, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
 
       # File/code change details
@@ -30,12 +30,27 @@ defmodule Singularity.Repo.Migrations.CreateApprovalQueue do
     end
 
     # Indexes for performance
-    create index(:approval_queue, [:status])
-    create index(:approval_queue, [:agent_id])
-    create index(:approval_queue, [:chat_message_id])
-    create index(:approval_queue, [:inserted_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS approval_queue_status_index
+      ON approval_queue (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS approval_queue_agent_id_index
+      ON approval_queue (agent_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS approval_queue_chat_message_id_index
+      ON approval_queue (chat_message_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS approval_queue_inserted_at_index
+      ON approval_queue (inserted_at)
+    """, "")
 
     # Composite index for queue queries
-    create index(:approval_queue, [:status, :inserted_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS approval_queue_status_inserted_at_index
+      ON approval_queue (status, inserted_at)
+    """, "")
   end
 end

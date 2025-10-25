@@ -987,7 +987,10 @@ defmodule Singularity.Execution.Runners.Runner do
                content:
                  "Analyze this codebase semantic data: #{inspect(semantic)}#{if include_recommendations, do: " Include specific recommendations for improvement.", else: ""}"
              }
-           ], task_type: "code_analysis", capabilities: [:analysis, :reasoning]) do
+           ],
+           task_type: "code_analysis",
+           capabilities: [:analysis, :reasoning]
+         ) do
       {:ok, %{text: insights}} ->
         {:ok,
          %{

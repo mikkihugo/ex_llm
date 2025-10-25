@@ -55,7 +55,7 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
       framework: :safetensors,
       quantization: :fp16,
       env: :production,
-      device_memory_gb: 14,
+      device_memory_gb: 14
     },
     starcoder_1b: %{
       name: "StarCoder 1B",
@@ -64,8 +64,8 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
       framework: :safetensors,
       quantization: :fp16,
       env: :dev,
-      device_memory_gb: 2,
-    },
+      device_memory_gb: 2
+    }
   }
 
   @doc """
@@ -88,7 +88,8 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
     top_p = Keyword.get(opts, :top_p, 0.9)
 
     with {:ok, model_state} <- ModelLoader.load_model(model, device),
-         {:ok, generated} <- run_generation(prompt, model_state, model, max_tokens, temperature, top_p) do
+         {:ok, generated} <-
+           run_generation(prompt, model_state, model, max_tokens, temperature, top_p) do
       {:ok, generated}
     else
       error -> error
@@ -105,7 +106,8 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
     temperature = Keyword.get(opts, :temperature, 0.7)
 
     with {:ok, model_state} <- ModelLoader.load_model(model, device),
-         {:ok, results} <- run_batch_generation(prompts, model_state, model, max_tokens, temperature) do
+         {:ok, results} <-
+           run_batch_generation(prompts, model_state, model, max_tokens, temperature) do
       {:ok, results}
     else
       error -> error
@@ -180,9 +182,10 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
     Logger.info("  Max tokens: #{max_tokens}")
 
     # Mock batch generation for now
-    results = Enum.map(prompts, fn prompt ->
-      "# Generated from: #{String.slice(prompt, 0..50)}\ndef generated_function():\n    pass"
-    end)
+    results =
+      Enum.map(prompts, fn prompt ->
+        "# Generated from: #{String.slice(prompt, 0..50)}\ndef generated_function():\n    pass"
+      end)
 
     {:ok, results}
   end

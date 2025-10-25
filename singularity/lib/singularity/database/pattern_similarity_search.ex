@@ -99,15 +99,18 @@ defmodule Singularity.Database.PatternSimilaritySearch do
   Useful for finding related patterns and detecting duplicates.
   """
   def search_similar_to_pattern(pattern_id, limit \\ 5) when is_integer(pattern_id) do
-    case Repo.query("""
-      SELECT p1.id, p1.code_snippet, p1.pattern_type,
-        l2_distance(p1.embedding, p2.embedding) as distance
-      FROM learned_patterns p1
-      JOIN learned_patterns p2 ON p1.id != p2.id
-      WHERE p2.id = $1
-      ORDER BY l2_distance(p1.embedding, p2.embedding) ASC
-      LIMIT $2
-    """, [pattern_id, limit]) do
+    case Repo.query(
+           """
+             SELECT p1.id, p1.code_snippet, p1.pattern_type,
+               l2_distance(p1.embedding, p2.embedding) as distance
+             FROM learned_patterns p1
+             JOIN learned_patterns p2 ON p1.id != p2.id
+             WHERE p2.id = $1
+             ORDER BY l2_distance(p1.embedding, p2.embedding) ASC
+             LIMIT $2
+           """,
+           [pattern_id, limit]
+         ) do
       {:ok, %{rows: rows}} ->
         results =
           Enum.map(rows, fn [id, snippet, type, distance] ->
@@ -116,7 +119,8 @@ defmodule Singularity.Database.PatternSimilaritySearch do
               code_snippet: snippet,
               pattern_type: type,
               distance: distance,
-              similarity_score: 1.0 - (distance / 2.0)  # Normalize to 0-1
+              # Normalize to 0-1
+              similarity_score: 1.0 - distance / 2.0
             }
           end)
 
@@ -132,7 +136,8 @@ defmodule Singularity.Database.PatternSimilaritySearch do
 
   Agent learns patterns over time - find similar ones to avoid relearning.
   """
-  def search_agent_patterns(agent_id, query, opts \\ []) when is_integer(agent_id) and is_binary(query) do
+  def search_agent_patterns(agent_id, query, opts \\ [])
+      when is_integer(agent_id) and is_binary(query) do
     limit = Keyword.get(opts, :limit, 10)
     threshold = Keyword.get(opts, :distance_threshold, 1.0)
 
@@ -152,21 +157,25 @@ defmodule Singularity.Database.PatternSimilaritySearch do
   Helps avoid redundant pattern learning.
   """
   def find_duplicate_patterns(min_similarity \\ 0.95) do
-    max_distance = 2.0 * (1.0 - min_similarity)  # Convert similarity to distance
+    # Convert similarity to distance
+    max_distance = 2.0 * (1.0 - min_similarity)
 
-    case Repo.query("""
-      SELECT
-        p1.id as pattern_1_id,
-        p1.code_snippet as pattern_1_snippet,
-        p2.id as pattern_2_id,
-        p2.code_snippet as pattern_2_snippet,
-        l2_distance(p1.embedding, p2.embedding) as distance
-      FROM learned_patterns p1
-      JOIN learned_patterns p2 ON p1.id < p2.id
-      WHERE l2_distance(p1.embedding, p2.embedding) < $1
-      ORDER BY distance ASC
-      LIMIT 100
-    """, [max_distance]) do
+    case Repo.query(
+           """
+             SELECT
+               p1.id as pattern_1_id,
+               p1.code_snippet as pattern_1_snippet,
+               p2.id as pattern_2_id,
+               p2.code_snippet as pattern_2_snippet,
+               l2_distance(p1.embedding, p2.embedding) as distance
+             FROM learned_patterns p1
+             JOIN learned_patterns p2 ON p1.id < p2.id
+             WHERE l2_distance(p1.embedding, p2.embedding) < $1
+             ORDER BY distance ASC
+             LIMIT 100
+           """,
+           [max_distance]
+         ) do
       {:ok, %{rows: rows}} ->
         results =
           Enum.map(rows, fn [id1, snippet1, id2, snippet2, distance] ->
@@ -174,7 +183,7 @@ defmodule Singularity.Database.PatternSimilaritySearch do
               pattern_1: %{id: id1, snippet: snippet1},
               pattern_2: %{id: id2, snippet: snippet2},
               distance: distance,
-              similarity: 1.0 - (distance / 2.0)
+              similarity: 1.0 - distance / 2.0
             }
           end)
 
@@ -201,15 +210,15 @@ defmodule Singularity.Database.PatternSimilaritySearch do
   """
   def index_stats do
     case Repo.query("""
-      SELECT
-        schemaname,
-        tablename,
-        indexname,
-        pg_size_pretty(pg_relation_size(indexrelid)) as index_size
-      FROM pg_indexes
-      WHERE schemaname = 'public'
-        AND indexname LIKE '%lantern%'
-    """) do
+           SELECT
+             schemaname,
+             tablename,
+             indexname,
+             pg_size_pretty(pg_relation_size(indexrelid)) as index_size
+           FROM pg_indexes
+           WHERE schemaname = 'public'
+             AND indexname LIKE '%lantern%'
+         """) do
       {:ok, %{rows: rows}} ->
         stats =
           Enum.map(rows, fn [schema, table, index, size] ->
@@ -286,7 +295,7 @@ defmodule Singularity.Database.PatternSimilaritySearch do
               pattern_type: type,
               agent_id: agent_id,
               distance: distance,
-              similarity_score: 1.0 - (distance / 2.0)
+              similarity_score: 1.0 - distance / 2.0
             }
           end)
 
@@ -300,9 +309,9 @@ defmodule Singularity.Database.PatternSimilaritySearch do
   defp get_or_embed(text) when is_binary(text) do
     # Try to get cached embedding, otherwise generate
     case Repo.query(
-      "SELECT embedding FROM code_embeddings WHERE source_text = $1 LIMIT 1",
-      [text]
-    ) do
+           "SELECT embedding FROM code_embeddings WHERE source_text = $1 LIMIT 1",
+           [text]
+         ) do
       {:ok, %{rows: [[embedding]]}} ->
         {:ok, embedding}
 
@@ -315,6 +324,7 @@ defmodule Singularity.Database.PatternSimilaritySearch do
               "INSERT INTO code_embeddings (source_text, embedding) VALUES ($1, $2)",
               [text, embedding]
             )
+
             {:ok, embedding}
 
           error ->

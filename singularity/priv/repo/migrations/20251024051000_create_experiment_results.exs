@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateExperimentResults do
   use Ecto.Migration
 
   def change do
-    create table(:experiment_results, primary_key: false) do
+    create_if_not_exists table(:experiment_results, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :experiment_id, :string, null: false
       add :status, :string, null: false  # success, timeout, failed
@@ -16,18 +16,33 @@ defmodule Singularity.Repo.Migrations.CreateExperimentResults do
     end
 
     # Index for querying by experiment_id
-    create unique_index(:experiment_results, [:experiment_id])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS experiment_results_experiment_id_key
+      ON experiment_results (experiment_id)
+    """, "")
 
     # Index for querying by status
-    create index(:experiment_results, [:status])
+    execute("""
+      CREATE INDEX IF NOT EXISTS experiment_results_status_index
+      ON experiment_results (status)
+    """, "")
 
     # Index for querying by recommendation
-    create index(:experiment_results, [:recommendation])
+    execute("""
+      CREATE INDEX IF NOT EXISTS experiment_results_recommendation_index
+      ON experiment_results (recommendation)
+    """, "")
 
     # Index for recent results (for learning queries)
-    create index(:experiment_results, [:recorded_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS experiment_results_recorded_at_index
+      ON experiment_results (recorded_at)
+    """, "")
 
     # JSONB index for metrics queries
-    create index(:experiment_results, ["(metrics)"], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS experiment_results_"(metrics)"_index
+      ON experiment_results ("(metrics)")
+    """, "")
   end
 end

@@ -617,7 +617,10 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case Singularity.NATS.Client.publish("intelligence_hub.codebase_health", Jason.encode!(message)) do
+    case Singularity.NATS.Client.publish(
+           "intelligence_hub.codebase_health",
+           Jason.encode!(message)
+         ) do
       :ok ->
         Logger.debug("Published codebase health to IntelligenceHub")
 

@@ -115,6 +115,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
             task_type: task[:type],
             task_id: task_id
           )
+
           {:ok, task_id}
 
         {:error, :no_adapter_found} ->
@@ -122,6 +123,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
             task_type: task[:type],
             tried_adapters: Enum.map(adapters, fn {type, _priority, _config} -> type end)
           )
+
           {:error, :no_adapter_found}
 
         error ->
@@ -133,6 +135,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
           error: inspect(e),
           stacktrace: inspect(__STACKTRACE__)
         )
+
         {:error, :execution_failed}
     end
   end
@@ -212,6 +215,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
               task_type: task[:type],
               task_id: task_id
             )
+
             {:ok, task_id}
 
           {:error, :not_suitable} ->
@@ -225,6 +229,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
               reason: inspect(reason),
               task_type: task[:type]
             )
+
             {:error, reason}
         end
       else

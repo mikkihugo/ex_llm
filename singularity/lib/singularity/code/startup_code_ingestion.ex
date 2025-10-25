@@ -290,7 +290,11 @@ defmodule Singularity.Code.StartupCodeIngestion do
     start_time = System.monotonic_time()
 
     # TELEMETRY: Bootstrap started
-    :telemetry.execute([:task_graph, :auto_bootstrap, :start], %{timestamp: DateTime.utc_now()}, %{})
+    :telemetry.execute(
+      [:task_graph, :auto_bootstrap, :start],
+      %{timestamp: DateTime.utc_now()},
+      %{}
+    )
 
     new_state = %{state | status: :running, started_at: DateTime.utc_now()}
 

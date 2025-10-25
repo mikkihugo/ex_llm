@@ -38,6 +38,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestratorTest do
 
       # Verify adapters are sorted by priority (ascending)
       priorities = Enum.map(adapters, & &1.priority)
+
       assert priorities == Enum.sort(priorities),
              "Adapters should be sorted by priority (lowest first)"
     end
@@ -165,10 +166,11 @@ defmodule Singularity.Execution.TaskAdapterOrchestratorTest do
 
     test "logs execution attempts" do
       # Capture logs
-      log = capture_log(fn ->
-        task = %{type: :test_task, data: %{}}
-        TaskAdapterOrchestrator.execute(task)
-      end)
+      log =
+        capture_log(fn ->
+          task = %{type: :test_task, data: %{}}
+          TaskAdapterOrchestrator.execute(task)
+        end)
 
       # Should contain orchestration logs
       assert log =~ "TaskAdapterOrchestrator" or log =~ "adapter"
@@ -192,6 +194,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestratorTest do
       Enum.each(adapters, fn adapter ->
         capabilities = TaskAdapterOrchestrator.get_capabilities(adapter.name)
         assert is_list(capabilities)
+
         assert length(capabilities) > 0,
                "Adapter #{adapter.name} should have at least one capability"
       end)
@@ -337,6 +340,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestratorTest do
       # While duplicates are technically allowed, it's usually a mistake
       # This documents the expectation
       unique_priorities = Enum.uniq(priorities)
+
       assert length(priorities) == length(unique_priorities),
              "Adapters should have unique priorities to ensure clear ordering"
     end

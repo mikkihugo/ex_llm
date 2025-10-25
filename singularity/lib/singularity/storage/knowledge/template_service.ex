@@ -687,7 +687,10 @@ defmodule Singularity.Knowledge.TemplateService do
       template_data: template_data
     }
 
-    case Singularity.NATS.Client.publish(Singularity.NATS.RegistryClient.subject(:knowledge_template_store), Jason.encode!(request)) do
+    case Singularity.NATS.Client.publish(
+           Singularity.NATS.RegistryClient.subject(:knowledge_template_store),
+           Jason.encode!(request)
+         ) do
       :ok ->
         :ok
 
@@ -710,7 +713,9 @@ defmodule Singularity.Knowledge.TemplateService do
       id: "#{template_type}-#{template_id}"
     }
 
-    case Singularity.NATS.Client.request(Singularity.NATS.RegistryClient.subject(:knowledge_template_get), Jason.encode!(request),
+    case Singularity.NATS.Client.request(
+           Singularity.NATS.RegistryClient.subject(:knowledge_template_get),
+           Jason.encode!(request),
            timeout: 5000
          ) do
       {:ok, response} ->
@@ -737,7 +742,9 @@ defmodule Singularity.Knowledge.TemplateService do
       limit: limit
     }
 
-    case Singularity.NATS.Client.request(Singularity.NATS.RegistryClient.subject(:knowledge_template_list), Jason.encode!(request),
+    case Singularity.NATS.Client.request(
+           Singularity.NATS.RegistryClient.subject(:knowledge_template_list),
+           Jason.encode!(request),
            timeout: 5000
          ) do
       {:ok, response} ->

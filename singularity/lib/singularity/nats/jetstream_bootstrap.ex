@@ -240,13 +240,18 @@ defmodule Singularity.NATS.JetStreamBootstrap do
         Logger.info("Successfully bootstrapped all JetStream streams")
         :ok
       else
-        Logger.warning("Bootstrap completed with #{length(failures)} errors: #{inspect(failures)}")
-        :ok  # Still return :ok to allow application startup
+        Logger.warning(
+          "Bootstrap completed with #{length(failures)} errors: #{inspect(failures)}"
+        )
+
+        # Still return :ok to allow application startup
+        :ok
       end
     rescue
       e ->
         Logger.error("JetStream bootstrap failed: #{inspect(e)}")
-        :ok  # Continue anyway
+        # Continue anyway
+        :ok
     end
   end
 

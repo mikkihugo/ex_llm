@@ -50,7 +50,11 @@ defmodule Singularity.Jobs.FeedbackAnalysisWorker do
       end
     rescue
       e in Exception ->
-        Logger.error("❌ Feedback analysis exception", error: inspect(e), stacktrace: __STACKTRACE__)
+        Logger.error("❌ Feedback analysis exception",
+          error: inspect(e),
+          stacktrace: __STACKTRACE__
+        )
+
         {:error, e}
     end
   end

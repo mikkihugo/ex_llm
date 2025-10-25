@@ -3,7 +3,7 @@ defmodule Singularity.Repo.Migrations.CreateCoreTables do
 
   def change do
     # Rules and Decision Engine
-    create table(:rules, primary_key: false) do
+    create_if_not_exists table(:rules, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
       add :description, :text
@@ -19,16 +19,37 @@ defmodule Singularity.Repo.Migrations.CreateCoreTables do
       timestamps()
     end
 
-    create index(:rules, [:name])
-    create index(:rules, [:category])
-    create index(:rules, [:active])
-    create index(:rules, [:priority])
-    create index(:rules, [:parent_id])
-    create index(:rules, [:condition], using: :gin)
-    create index(:rules, [:metadata], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS rules_name_index
+      ON rules (name)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rules_category_index
+      ON rules (category)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rules_active_index
+      ON rules (active)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rules_priority_index
+      ON rules (priority)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rules_parent_id_index
+      ON rules (parent_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rules_condition_index
+      ON rules (condition)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS rules_metadata_index
+      ON rules (metadata)
+    """, "")
 
     # LLM Calls Tracking
-    create table(:llm_calls, primary_key: false) do
+    create_if_not_exists table(:llm_calls, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :provider, :string, null: false
       add :model, :string, null: false
@@ -43,13 +64,25 @@ defmodule Singularity.Repo.Migrations.CreateCoreTables do
       timestamps()
     end
 
-    create index(:llm_calls, [:provider, :model])
-    create index(:llm_calls, [:success])
-    create index(:llm_calls, [:inserted_at])
-    create index(:llm_calls, [:metadata], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS llm_calls_provider_model_index
+      ON llm_calls (provider, model)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS llm_calls_success_index
+      ON llm_calls (success)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS llm_calls_inserted_at_index
+      ON llm_calls (inserted_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS llm_calls_metadata_index
+      ON llm_calls (metadata)
+    """, "")
 
     # Quality Metrics
-    create table(:quality_metrics, primary_key: false) do
+    create_if_not_exists table(:quality_metrics, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :entity_type, :string, null: false
       add :entity_id, :string, null: false
@@ -59,8 +92,17 @@ defmodule Singularity.Repo.Migrations.CreateCoreTables do
       timestamps()
     end
 
-    create index(:quality_metrics, [:entity_type, :entity_id])
-    create index(:quality_metrics, [:metric_type])
-    create index(:quality_metrics, [:inserted_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_metrics_entity_type_entity_id_index
+      ON quality_metrics (entity_type, entity_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_metrics_metric_type_index
+      ON quality_metrics (metric_type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS quality_metrics_inserted_at_index
+      ON quality_metrics (inserted_at)
+    """, "")
   end
 end

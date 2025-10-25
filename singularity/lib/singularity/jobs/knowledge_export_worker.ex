@@ -98,10 +98,10 @@ defmodule Singularity.Jobs.KnowledgeExportWorker do
     Logger.info("📊 Analyzing learned artifacts for export...")
 
     case LearningLoop.export_learned_to_git(
-      min_usage_count: 100,
-      min_success_rate: 0.95,
-      min_quality_score: 0.85
-    ) do
+           min_usage_count: 100,
+           min_success_rate: 0.95,
+           min_quality_score: 0.85
+         ) do
       {:ok, result} ->
         Logger.info("📦 Found #{map_size(result.exported_artifacts)} exportable artifacts")
         {:ok, Map.merge(result, %{count: map_size(result.exported_artifacts)})}
@@ -206,7 +206,9 @@ defmodule Singularity.Jobs.KnowledgeExportWorker do
   # ============================================================================
 
   defp generate_branch_name(exported) do
-    date = DateTime.utc_now() |> DateTime.to_date() |> Date.to_iso8601() |> String.replace("-", "")
+    date =
+      DateTime.utc_now() |> DateTime.to_date() |> Date.to_iso8601() |> String.replace("-", "")
+
     "feature/learned-patterns-#{date}-#{exported.count}"
   end
 

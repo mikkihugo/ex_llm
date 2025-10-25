@@ -329,7 +329,8 @@ defmodule Singularity.Execution.Feedback.Analyzer do
               type: :improve_cache,
               issue_type: :high_latency,
               confidence: calculate_confidence(:improve_cache, latency),
-              expected_improvement: "-#{min(60, round((latency - 1000) / latency * 100))}% latency",
+              expected_improvement:
+                "-#{min(60, round((latency - 1000) / latency * 100))}% latency",
               description: "Improve caching strategy to reduce execution time",
               estimated_effort: :medium
             }

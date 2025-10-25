@@ -58,12 +58,13 @@ defmodule Singularity.Embedding.Tokenizer do
   Tokenize multiple texts in batch.
   """
   def tokenize_batch(tokenizer, texts) when is_list(texts) do
-    token_ids = Enum.map(texts, fn text ->
-      case tokenize(tokenizer, text) do
-        {:ok, ids} -> ids
-        {:error, _} -> []
-      end
-    end)
+    token_ids =
+      Enum.map(texts, fn text ->
+        case tokenize(tokenizer, text) do
+          {:ok, ids} -> ids
+          {:error, _} -> []
+        end
+      end)
 
     {:ok, token_ids}
   end
@@ -81,22 +82,24 @@ defmodule Singularity.Embedding.Tokenizer do
   defp get_tokenizer_config(model) do
     case model do
       :qodo ->
-        {:ok, %{
-          "vocab_size" => 50257,
-          "model_type" => "qodo-embed",
-          "max_position_embeddings" => 32768,
-          "hidden_size" => 1536,
-          "tokenizer_type" => "bpe"
-        }}
+        {:ok,
+         %{
+           "vocab_size" => 50257,
+           "model_type" => "qodo-embed",
+           "max_position_embeddings" => 32768,
+           "hidden_size" => 1536,
+           "tokenizer_type" => "bpe"
+         }}
 
       :jina_v3 ->
-        {:ok, %{
-          "vocab_size" => 32000,
-          "model_type" => "jina-v3",
-          "max_position_embeddings" => 8192,
-          "hidden_size" => 1024,
-          "tokenizer_type" => "bpe"
-        }}
+        {:ok,
+         %{
+           "vocab_size" => 32000,
+           "model_type" => "jina-v3",
+           "max_position_embeddings" => 8192,
+           "hidden_size" => 1024,
+           "tokenizer_type" => "bpe"
+         }}
 
       _ ->
         {:error, "Unknown model: #{model}"}

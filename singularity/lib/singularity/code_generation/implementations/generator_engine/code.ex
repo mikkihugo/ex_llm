@@ -670,7 +670,9 @@ defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Code do
              model: "rust_elixir_t5",
              max_length: 512,
              temperature: 0.7
-           }), timeout: 30_000) do
+           }),
+           timeout: 30_000
+         ) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, %{"generated_code" => code}} ->
@@ -760,7 +762,9 @@ defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Code do
              complexity: "medium",
              temperature: 0.1,
              max_tokens: 512
-           }), timeout: 30_000) do
+           }),
+           timeout: 30_000
+         ) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, %{"code" => code}} ->

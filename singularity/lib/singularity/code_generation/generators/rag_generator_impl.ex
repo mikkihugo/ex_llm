@@ -53,14 +53,15 @@ defmodule Singularity.CodeGeneration.Generators.RAGGeneratorImpl do
       task = spec[:spec] || spec[:task] || ""
 
       # Extract RAG-specific options
-      rag_opts = [
-        language: spec[:language] || opts[:language],
-        top_k: opts[:top_k] || 5,
-        repos: opts[:repos],
-        quality_level: opts[:quality],
-        complexity: opts[:complexity]
-      ]
-      |> Enum.filter(fn {_k, v} -> v != nil end)
+      rag_opts =
+        [
+          language: spec[:language] || opts[:language],
+          top_k: opts[:top_k] || 5,
+          repos: opts[:repos],
+          quality_level: opts[:quality],
+          complexity: opts[:complexity]
+        ]
+        |> Enum.filter(fn {_k, v} -> v != nil end)
 
       Logger.debug("RAGGeneratorImpl: generating with RAG", task: task, opts: rag_opts)
       RAGCodeGenerator.generate(task, rag_opts)

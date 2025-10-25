@@ -75,11 +75,15 @@ defmodule Singularity.Database.MetricsAggregation do
       MetricsAggregation.record_metric(:agent_cpu, 45.2, %{agent_id: 1})
       MetricsAggregation.record_metric(:pattern_learning_rate, 12, %{agent_id: 1, pattern_type: "async"})
   """
-  def record_metric(metric_name, value, labels \\ %{}) when is_atom(metric_name) and is_number(value) do
-    case Repo.query("""
-      INSERT INTO metrics_events (metric_name, value, labels, recorded_at)
-      VALUES ($1, $2, $3, NOW())
-    """, [to_string(metric_name), value, Jason.encode!(labels)]) do
+  def record_metric(metric_name, value, labels \\ %{})
+      when is_atom(metric_name) and is_number(value) do
+    case Repo.query(
+           """
+             INSERT INTO metrics_events (metric_name, value, labels, recorded_at)
+             VALUES ($1, $2, $3, NOW())
+           """,
+           [to_string(metric_name), value, Jason.encode!(labels)]
+         ) do
       {:ok, _} ->
         :ok
 
@@ -223,15 +227,19 @@ defmodule Singularity.Database.MetricsAggregation do
 
   Returns p50, p75, p95, p99 percentiles (useful for SLO/performance analysis).
   """
-  def get_percentile(metric_name, percentile, opts \\ []) when is_atom(metric_name) and is_integer(percentile) do
+  def get_percentile(metric_name, percentile, opts \\ [])
+      when is_atom(metric_name) and is_integer(percentile) do
     last_seconds = Keyword.get(opts, :last, 86400)
 
-    case Repo.query("""
-      SELECT percentile_cont($1) WITHIN GROUP (ORDER BY value)
-      FROM metrics_events
-      WHERE metric_name = $2
-        AND recorded_at > NOW() - INTERVAL '1 second' * $3
-    """, [percentile / 100.0, to_string(metric_name), last_seconds]) do
+    case Repo.query(
+           """
+             SELECT percentile_cont($1) WITHIN GROUP (ORDER BY value)
+             FROM metrics_events
+             WHERE metric_name = $2
+               AND recorded_at > NOW() - INTERVAL '1 second' * $3
+           """,
+           [percentile / 100.0, to_string(metric_name), last_seconds]
+         ) do
       {:ok, %{rows: [[percentile_value]]}} ->
         {:ok, percentile_value}
 
@@ -250,22 +258,26 @@ defmodule Singularity.Database.MetricsAggregation do
   def get_rate(metric_name, opts \\ []) when is_atom(metric_name) do
     window = Keyword.get(opts, :window, 3600)
 
-    case Repo.query("""
-      SELECT
-        (MAX(value) - MIN(value)) / ($1 * 1.0) as rate_per_second,
-        MAX(recorded_at) as latest,
-        MIN(recorded_at) as oldest
-      FROM metrics_events
-      WHERE metric_name = $2
-        AND recorded_at > NOW() - INTERVAL '1 second' * $1
-    """, [window, to_string(metric_name)]) do
+    case Repo.query(
+           """
+             SELECT
+               (MAX(value) - MIN(value)) / ($1 * 1.0) as rate_per_second,
+               MAX(recorded_at) as latest,
+               MIN(recorded_at) as oldest
+             FROM metrics_events
+             WHERE metric_name = $2
+               AND recorded_at > NOW() - INTERVAL '1 second' * $1
+           """,
+           [window, to_string(metric_name)]
+         ) do
       {:ok, %{rows: [[rate, latest, oldest]]}} ->
-        {:ok, %{
-          rate_per_second: rate,
-          latest: latest,
-          oldest: oldest,
-          window_seconds: window
-        }}
+        {:ok,
+         %{
+           rate_per_second: rate,
+           latest: latest,
+           oldest: oldest,
+           window_seconds: window
+         }}
 
       error ->
         error
@@ -280,39 +292,43 @@ defmodule Singularity.Database.MetricsAggregation do
   def get_agent_dashboard(agent_id) when is_integer(agent_id) do
     agent_id_str = to_string(agent_id)
 
-    case Repo.query("""
-      SELECT
-        (SELECT AVG(value) FROM metrics_events
-         WHERE metric_name = 'agent_cpu' AND labels->>'agent_id' = $1
-         AND recorded_at > NOW() - INTERVAL '1 hour') as avg_cpu,
-        (SELECT MAX(value) FROM metrics_events
-         WHERE metric_name = 'agent_cpu' AND labels->>'agent_id' = $1
-         AND recorded_at > NOW() - INTERVAL '1 hour') as peak_cpu,
-        (SELECT AVG(value) FROM metrics_events
-         WHERE metric_name = 'agent_memory_mb' AND labels->>'agent_id' = $1
-         AND recorded_at > NOW() - INTERVAL '1 hour') as avg_memory_mb,
-        (SELECT COUNT(*) FROM metrics_events
-         WHERE metric_name = 'pattern_learned' AND labels->>'agent_id' = $1
-         AND recorded_at > NOW() - INTERVAL '1 hour') as patterns_per_hour,
-        (SELECT COUNT(*) FROM metrics_events
-         WHERE metric_name = 'task_completed' AND labels->>'agent_id' = $1
-         AND recorded_at > NOW() - INTERVAL '1 hour') as tasks_per_hour,
-        (SELECT COUNT(*) FROM metrics_events
-         WHERE metric_name = 'task_failed' AND labels->>'agent_id' = $1
-         AND recorded_at > NOW() - INTERVAL '1 hour') as failures_per_hour
-    """, [agent_id_str]) do
+    case Repo.query(
+           """
+             SELECT
+               (SELECT AVG(value) FROM metrics_events
+                WHERE metric_name = 'agent_cpu' AND labels->>'agent_id' = $1
+                AND recorded_at > NOW() - INTERVAL '1 hour') as avg_cpu,
+               (SELECT MAX(value) FROM metrics_events
+                WHERE metric_name = 'agent_cpu' AND labels->>'agent_id' = $1
+                AND recorded_at > NOW() - INTERVAL '1 hour') as peak_cpu,
+               (SELECT AVG(value) FROM metrics_events
+                WHERE metric_name = 'agent_memory_mb' AND labels->>'agent_id' = $1
+                AND recorded_at > NOW() - INTERVAL '1 hour') as avg_memory_mb,
+               (SELECT COUNT(*) FROM metrics_events
+                WHERE metric_name = 'pattern_learned' AND labels->>'agent_id' = $1
+                AND recorded_at > NOW() - INTERVAL '1 hour') as patterns_per_hour,
+               (SELECT COUNT(*) FROM metrics_events
+                WHERE metric_name = 'task_completed' AND labels->>'agent_id' = $1
+                AND recorded_at > NOW() - INTERVAL '1 hour') as tasks_per_hour,
+               (SELECT COUNT(*) FROM metrics_events
+                WHERE metric_name = 'task_failed' AND labels->>'agent_id' = $1
+                AND recorded_at > NOW() - INTERVAL '1 hour') as failures_per_hour
+           """,
+           [agent_id_str]
+         ) do
       {:ok, %{rows: [[cpu_avg, cpu_peak, mem_avg, patterns, tasks, failures]]}} ->
-        error_rate = if tasks == 0, do: 0.0, else: (failures / (failures + tasks)) * 100.0
+        error_rate = if tasks == 0, do: 0.0, else: failures / (failures + tasks) * 100.0
 
-        {:ok, %{
-          agent_id: agent_id,
-          cpu: %{average: cpu_avg, peak: cpu_peak},
-          memory_mb: mem_avg,
-          patterns_per_hour: patterns,
-          tasks_per_hour: tasks,
-          failures_per_hour: failures,
-          error_rate_percent: error_rate
-        }}
+        {:ok,
+         %{
+           agent_id: agent_id,
+           cpu: %{average: cpu_avg, peak: cpu_peak},
+           memory_mb: mem_avg,
+           patterns_per_hour: patterns,
+           tasks_per_hour: tasks,
+           failures_per_hour: failures,
+           error_rate_percent: error_rate
+         }}
 
       error ->
         error
@@ -327,10 +343,10 @@ defmodule Singularity.Database.MetricsAggregation do
   """
   def compress_old_metrics(days \\ 30) when is_integer(days) do
     case Repo.query("""
-      SELECT count(*) FROM show_chunks('metrics_events')
-      WHERE show_chunks LIKE 'metrics_events_%'
-        AND pg_relation_size(show_chunks) > 0
-    """) do
+           SELECT count(*) FROM show_chunks('metrics_events')
+           WHERE show_chunks LIKE 'metrics_events_%'
+             AND pg_relation_size(show_chunks) > 0
+         """) do
       {:ok, %{rows: [[chunk_count]]}} ->
         Logger.info("Compressed #{chunk_count} metric chunks older than #{days} days")
         {:ok, chunk_count}
@@ -347,23 +363,24 @@ defmodule Singularity.Database.MetricsAggregation do
   """
   def get_table_stats do
     case Repo.query("""
-      SELECT
-        schemaname,
-        tablename,
-        pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as total_size,
-        (SELECT count(*) FROM show_chunks('metrics_events')) as chunk_count,
-        (SELECT count(*) FROM metrics_events) as total_rows
-      FROM pg_tables
-      WHERE tablename = 'metrics_events'
-    """) do
+           SELECT
+             schemaname,
+             tablename,
+             pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as total_size,
+             (SELECT count(*) FROM show_chunks('metrics_events')) as chunk_count,
+             (SELECT count(*) FROM metrics_events) as total_rows
+           FROM pg_tables
+           WHERE tablename = 'metrics_events'
+         """) do
       {:ok, %{rows: [[schema, table, size, chunks, rows]]}} ->
-        {:ok, %{
-          schema: schema,
-          table: table,
-          total_size: size,
-          chunk_count: chunks,
-          total_rows: rows
-        }}
+        {:ok,
+         %{
+           schema: schema,
+           table: table,
+           total_size: size,
+           chunk_count: chunks,
+           total_rows: rows
+         }}
 
       error ->
         error

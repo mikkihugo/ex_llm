@@ -231,10 +231,11 @@ defmodule Singularity.Embedding.Service do
         model = Map.get(data, "model", "qodo")
 
         if query && is_binary(query) do
-          {:ok, %{
-            query: query,
-            model: String.to_atom(model)
-          }}
+          {:ok,
+           %{
+             query: query,
+             model: String.to_atom(model)
+           }}
         else
           {:error, "Missing or invalid query field"}
         end

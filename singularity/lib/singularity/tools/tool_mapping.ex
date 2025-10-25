@@ -87,7 +87,8 @@ defmodule Singularity.Tools.ToolMapping do
     },
     "planning_decompose" => %{
       category: "planning",
-      description: "Break down a high-level task into smaller, manageable subtasks using TaskGraph",
+      description:
+        "Break down a high-level task into smaller, manageable subtasks using TaskGraph",
       performance: "medium"
     },
     "planning_prioritize" => %{

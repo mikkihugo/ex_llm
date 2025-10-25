@@ -222,125 +222,6 @@ defmodule Singularity.CodeStore do
   end
 
   @impl true
-  def handle_cast({:save_vision, vision_data}, state) do
-    vision_path = Path.join(state.root, "vision.json")
-
-    json = Jason.encode!(vision_data, pretty: true)
-    File.write!(vision_path, json)
-
-    {:noreply, state}
-  end
-
-  @impl true
-  def handle_cast({:save_queue, agent_id, entries}, state) when is_list(entries) do
-    queue_path = queue_path(state.queues, agent_id)
-
-    if entries == [] do
-      File.rm(queue_path)
-      {:noreply, state}
-    else
-      payload =
-        entries
-        |> Enum.map(&queue_entry_to_map/1)
-        |> Enum.reject(&is_nil/1)
-        |> Jason.encode!()
-
-      :ok = File.write(queue_path, payload)
-      {:noreply, state}
-    end
-  end
-
-  @impl true
-  def handle_info(:cleanup_old_versions, state) do
-    cleanup_old_versions(state.versions)
-    schedule_cleanup()
-    {:noreply, state}
-  end
-
-  defp queue_path(dir, agent_id), do: Path.join(dir, "#{agent_id}.json")
-
-  defp queue_entry_to_map(%{payload: payload, context: context, inserted_at: inserted_at} = entry) do
-    %{
-      "payload" => payload,
-      "context" => context,
-      "inserted_at" => inserted_at,
-      "fingerprint" => Map.get(entry, :fingerprint)
-    }
-  end
-
-  defp queue_entry_to_map(_), do: nil
-
-  defp map_to_queue_entry(
-         %{"payload" => payload, "context" => context, "inserted_at" => ts} = map
-       )
-       when is_integer(ts) do
-    %{
-      payload: payload,
-      context: context,
-      inserted_at: ts,
-      fingerprint: Map.get(map, "fingerprint")
-    }
-  end
-
-  defp map_to_queue_entry(_), do: nil
-
-  defp ensure_dir(path) do
-    case File.mkdir_p(path) do
-      :ok -> :ok
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp stringify_keys(%{} = map) do
-    map
-    |> Enum.map(fn
-      {key, value} when is_atom(key) -> {Atom.to_string(key), stringify_keys(value)}
-      {key, value} when is_binary(key) -> {key, stringify_keys(value)}
-      {key, value} -> {to_string(key), stringify_keys(value)}
-    end)
-    |> Enum.into(%{})
-  end
-
-  defp stringify_keys(list) when is_list(list), do: Enum.map(list, &stringify_keys/1)
-  defp stringify_keys(other), do: other
-
-  defp schedule_cleanup do
-    Process.send_after(self(), :cleanup_old_versions, @cleanup_interval_ms)
-  end
-
-  defp cleanup_old_versions(versions_dir) do
-    cutoff_time = System.system_time(:second) - @version_ttl_hours * 3600
-
-    case File.ls(versions_dir) do
-      {:ok, files} ->
-        files
-        |> Enum.filter(&String.ends_with?(&1, ".exs"))
-        |> Enum.each(&cleanup_file(&1, versions_dir, cutoff_time))
-
-      _ ->
-        :ok
-    end
-  end
-
-  defp cleanup_file(file, versions_dir, cutoff_time) do
-    path = Path.join(versions_dir, file)
-
-    case File.stat(path) do
-      {:ok, %{mtime: mtime}} ->
-        file_time = :calendar.datetime_to_gregorian_seconds(mtime)
-
-        if file_time < cutoff_time do
-          File.rm(path)
-          File.rm(Path.rootname(path) <> ".json")
-        end
-
-      _ ->
-        :ok
-    end
-  end
-
-  # Multi-codebase handlers
-  @impl true
   def handle_call({:register_codebase, codebase_id, codebase_path, type, metadata}, _from, state) do
     if File.exists?(codebase_path) do
       new_codebase = %{
@@ -450,6 +331,35 @@ defmodule Singularity.CodeStore do
   end
 
   @impl true
+  def handle_cast({:save_vision, vision_data}, state) do
+    vision_path = Path.join(state.root, "vision.json")
+
+    json = Jason.encode!(vision_data, pretty: true)
+    File.write!(vision_path, json)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:save_queue, agent_id, entries}, state) when is_list(entries) do
+    queue_path = queue_path(state.queues, agent_id)
+
+    if entries == [] do
+      File.rm(queue_path)
+      {:noreply, state}
+    else
+      payload =
+        entries
+        |> Enum.map(&queue_entry_to_map/1)
+        |> Enum.reject(&is_nil/1)
+        |> Jason.encode!()
+
+      :ok = File.write(queue_path, payload)
+      {:noreply, state}
+    end
+  end
+
+  @impl true
   def handle_cast({:store_analysis, codebase_id, analysis_data}, state) do
     analysis_path = get_analysis_path(state.root, codebase_id)
     analysis_dir = Path.dirname(analysis_path)
@@ -465,6 +375,95 @@ defmodule Singularity.CodeStore do
     end
 
     {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(:cleanup_old_versions, state) do
+    cleanup_old_versions(state.versions)
+    schedule_cleanup()
+    {:noreply, state}
+  end
+
+  defp queue_path(dir, agent_id), do: Path.join(dir, "#{agent_id}.json")
+
+  defp queue_entry_to_map(%{payload: payload, context: context, inserted_at: inserted_at} = entry) do
+    %{
+      "payload" => payload,
+      "context" => context,
+      "inserted_at" => inserted_at,
+      "fingerprint" => Map.get(entry, :fingerprint)
+    }
+  end
+
+  defp queue_entry_to_map(_), do: nil
+
+  defp map_to_queue_entry(
+         %{"payload" => payload, "context" => context, "inserted_at" => ts} = map
+       )
+       when is_integer(ts) do
+    %{
+      payload: payload,
+      context: context,
+      inserted_at: ts,
+      fingerprint: Map.get(map, "fingerprint")
+    }
+  end
+
+  defp map_to_queue_entry(_), do: nil
+
+  defp ensure_dir(path) do
+    case File.mkdir_p(path) do
+      :ok -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp stringify_keys(%{} = map) do
+    map
+    |> Enum.map(fn
+      {key, value} when is_atom(key) -> {Atom.to_string(key), stringify_keys(value)}
+      {key, value} when is_binary(key) -> {key, stringify_keys(value)}
+      {key, value} -> {to_string(key), stringify_keys(value)}
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp stringify_keys(list) when is_list(list), do: Enum.map(list, &stringify_keys/1)
+  defp stringify_keys(other), do: other
+
+  defp schedule_cleanup do
+    Process.send_after(self(), :cleanup_old_versions, @cleanup_interval_ms)
+  end
+
+  defp cleanup_old_versions(versions_dir) do
+    cutoff_time = System.system_time(:second) - @version_ttl_hours * 3600
+
+    case File.ls(versions_dir) do
+      {:ok, files} ->
+        files
+        |> Enum.filter(&String.ends_with?(&1, ".exs"))
+        |> Enum.each(&cleanup_file(&1, versions_dir, cutoff_time))
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp cleanup_file(file, versions_dir, cutoff_time) do
+    path = Path.join(versions_dir, file)
+
+    case File.stat(path) do
+      {:ok, %{mtime: mtime}} ->
+        file_time = :calendar.datetime_to_gregorian_seconds(mtime)
+
+        if file_time < cutoff_time do
+          File.rm(path)
+          File.rm(Path.rootname(path) <> ".json")
+        end
+
+      _ ->
+        :ok
+    end
   end
 
   # Helper functions for codebase analysis
@@ -532,7 +531,10 @@ defmodule Singularity.CodeStore do
 
   defp analyze_technologies(codebase_path) do
     # Use advanced technology detection with confidence scoring
-    detection_result = Singularity.ArchitectureEngine.Detectors.TechnologyDetector.detect_technologies(codebase_path)
+    detection_result =
+      Singularity.ArchitectureEngine.Detectors.TechnologyDetector.detect_technologies(
+        codebase_path
+      )
 
     case detection_result do
       {:ok, result} ->

@@ -75,6 +75,7 @@ defmodule Singularity.Database.AutonomousWorker do
           patterns_learned: patterns_learned,
           patterns_queued: patterns_queued
         )
+
         {:ok, %{patterns_learned: patterns_learned, patterns_queued: patterns_queued}}
 
       error ->
@@ -102,6 +103,7 @@ defmodule Singularity.Database.AutonomousWorker do
           agents_updated: agents_updated,
           total_patterns: total_patterns
         )
+
         {:ok, %{agents_updated: agents_updated, total_patterns: total_patterns}}
 
       error ->
@@ -129,6 +131,7 @@ defmodule Singularity.Database.AutonomousWorker do
           batch_id: batch_id,
           pattern_count: pattern_count
         )
+
         {:ok, %{batch_id: batch_id, pattern_count: pattern_count}}
 
       error ->
@@ -156,6 +159,7 @@ defmodule Singularity.Database.AutonomousWorker do
           tasks_assigned: tasks_assigned,
           agents_assigned: agents_assigned
         )
+
         {:ok, %{tasks_assigned: tasks_assigned, agents_assigned: agents_assigned}}
 
       error ->
@@ -179,16 +183,18 @@ defmodule Singularity.Database.AutonomousWorker do
   """
   def get_cdc_changes do
     case Repo.query("""
-    SELECT lsn, data FROM pg_logical_slot_get_changes(
-      'singularity_centralcloud_cdc',
-      NULL,
-      NULL
-    );
-    """) do
+         SELECT lsn, data FROM pg_logical_slot_get_changes(
+           'singularity_centralcloud_cdc',
+           NULL,
+           NULL
+         );
+         """) do
       {:ok, %{rows: rows}} ->
-        changes = Enum.map(rows, fn [lsn, data] ->
-          %{lsn: lsn, data: Jason.decode!(data)}
-        end)
+        changes =
+          Enum.map(rows, fn [lsn, data] ->
+            %{lsn: lsn, data: Jason.decode!(data)}
+          end)
+
         {:ok, changes}
 
       error ->
@@ -205,9 +211,11 @@ defmodule Singularity.Database.AutonomousWorker do
   def get_pattern_changes do
     case get_cdc_changes() do
       {:ok, all_changes} ->
-        pattern_changes = Enum.filter(all_changes, fn %{data: data} ->
-          data["table"] == "learned_patterns"
-        end)
+        pattern_changes =
+          Enum.filter(all_changes, fn %{data: data} ->
+            data["table"] == "learned_patterns"
+          end)
+
         {:ok, pattern_changes}
 
       error ->
@@ -223,9 +231,11 @@ defmodule Singularity.Database.AutonomousWorker do
   def get_session_changes do
     case get_cdc_changes() do
       {:ok, all_changes} ->
-        session_changes = Enum.filter(all_changes, fn %{data: data} ->
-          data["table"] == "agent_sessions"
-        end)
+        session_changes =
+          Enum.filter(all_changes, fn %{data: data} ->
+            data["table"] == "agent_sessions"
+          end)
+
         {:ok, session_changes}
 
       error ->
@@ -244,20 +254,22 @@ defmodule Singularity.Database.AutonomousWorker do
   """
   def queue_status do
     case Repo.query("""
-    SELECT queue_name, messages, messages_in_flight
-    FROM pgmq.queue_stats()
-    WHERE queue_name LIKE 'centralcloud-%' OR queue_name LIKE 'agent-%'
-    ORDER BY queue_name;
-    """) do
+         SELECT queue_name, messages, messages_in_flight
+         FROM pgmq.queue_stats()
+         WHERE queue_name LIKE 'centralcloud-%' OR queue_name LIKE 'agent-%'
+         ORDER BY queue_name;
+         """) do
       {:ok, %{rows: rows}} ->
-        queues = Enum.map(rows, fn [name, total, in_flight] ->
-          %{
-            queue: name,
-            total_messages: total,
-            in_flight: in_flight,
-            available: total - in_flight
-          }
-        end)
+        queues =
+          Enum.map(rows, fn [name, total, in_flight] ->
+            %{
+              queue: name,
+              total_messages: total,
+              in_flight: in_flight,
+              available: total - in_flight
+            }
+          end)
+
         {:ok, queues}
 
       error ->
@@ -273,9 +285,9 @@ defmodule Singularity.Database.AutonomousWorker do
   """
   def learning_queue_backed_up?(threshold \\ 100) do
     case Repo.query("""
-    SELECT messages FROM pgmq.queue_stats()
-    WHERE queue_name = 'centralcloud-new-patterns';
-    """) do
+         SELECT messages FROM pgmq.queue_stats()
+         WHERE queue_name = 'centralcloud-new-patterns';
+         """) do
       {:ok, %{rows: [[count]]}} ->
         count > threshold
 
@@ -295,31 +307,34 @@ defmodule Singularity.Database.AutonomousWorker do
   """
   def scheduled_jobs_status do
     case Repo.query("""
-    SELECT 
-      jobid,
-      jobname,
-      schedule,
-      last_successful_run,
-      last_run_status,
-      last_run_duration
-    FROM cron.job
-    WHERE jobname LIKE '%-every-%' OR jobname LIKE '%-hourly%' OR jobname LIKE '%-daily%'
-    ORDER BY last_successful_run DESC;
-    """) do
+         SELECT 
+           jobid,
+           jobname,
+           schedule,
+           last_successful_run,
+           last_run_status,
+           last_run_duration
+         FROM cron.job
+         WHERE jobname LIKE '%-every-%' OR jobname LIKE '%-hourly%' OR jobname LIKE '%-daily%'
+         ORDER BY last_successful_run DESC;
+         """) do
       {:ok, %{rows: rows}} ->
-        jobs = Enum.map(rows, fn
-          [job_id, name, schedule, last_run, status, duration] ->
-            %{
-              job_id: job_id,
-              name: name,
-              schedule: schedule,
-              last_run: last_run,
-              status: status,
-              duration_ms: duration
-            }
-          _ -> nil
-        end)
-        |> Enum.filter(& &1)
+        jobs =
+          Enum.map(rows, fn
+            [job_id, name, schedule, last_run, status, duration] ->
+              %{
+                job_id: job_id,
+                name: name,
+                schedule: schedule,
+                last_run: last_run,
+                status: status,
+                duration_ms: duration
+              }
+
+            _ ->
+              nil
+          end)
+          |> Enum.filter(& &1)
 
         {:ok, jobs}
 
@@ -336,13 +351,13 @@ defmodule Singularity.Database.AutonomousWorker do
   """
   def check_job_health(job_name) do
     case Repo.query(
-      """
-      SELECT last_run_status, last_successful_run
-      FROM cron.job
-      WHERE jobname = $1;
-      """,
-      [job_name]
-    ) do
+           """
+           SELECT last_run_status, last_successful_run
+           FROM cron.job
+           WHERE jobname = $1;
+           """,
+           [job_name]
+         ) do
       {:ok, %{rows: [[status, last_run]]}} ->
         {:ok, %{status: status, last_run: last_run}}
 
@@ -366,15 +381,15 @@ defmodule Singularity.Database.AutonomousWorker do
   """
   def manually_learn_analysis(analysis_id) do
     case Repo.query(
-      """
-      INSERT INTO learned_patterns (agent_id, pattern, confidence, learned_from_analysis_id, created_at)
-      SELECT agent_id, result, confidence, id, created_at
-      FROM analysis_results
-      WHERE id = $1 AND learned = FALSE
-      RETURNING id;
-      """,
-      [analysis_id]
-    ) do
+           """
+           INSERT INTO learned_patterns (agent_id, pattern, confidence, learned_from_analysis_id, created_at)
+           SELECT agent_id, result, confidence, id, created_at
+           FROM analysis_results
+           WHERE id = $1 AND learned = FALSE
+           RETURNING id;
+           """,
+           [analysis_id]
+         ) do
       {:ok, %{rows: [[pattern_id]]}} ->
         Logger.info("Manually learned pattern", pattern_id: pattern_id)
         {:ok, pattern_id}

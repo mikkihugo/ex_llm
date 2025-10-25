@@ -69,12 +69,14 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
             project_path: project_path,
             status: result[:status]
           )
+
           {:ok, result}
 
         {:error, :no_tool_found} ->
           Logger.warning("No applicable build tool found",
             project_path: project_path
           )
+
           {:error, :no_tool_found}
 
         error ->
@@ -86,6 +88,7 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
           error: inspect(e),
           stacktrace: inspect(__STACKTRACE__)
         )
+
         {:error, :build_failed}
     end
   end

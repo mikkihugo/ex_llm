@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateVectorSearch do
   use Ecto.Migration
 
   def change do
-    create table(:vector_search, primary_key: false) do
+    create_if_not_exists table(:vector_search, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :codebase_id, :string, null: false
       add :file_path, :string, null: false
@@ -15,10 +15,22 @@ defmodule Singularity.Repo.Migrations.CreateVectorSearch do
     end
 
     # Indexes for performance
-    create index(:vector_search, [:codebase_id])
-    create index(:vector_search, [:codebase_id, :file_path])
-    create index(:vector_search, [:codebase_id, :content_type])
-    create unique_index(:vector_search, [:codebase_id, :file_path, :content_type])
+    execute("""
+      CREATE INDEX IF NOT EXISTS vector_search_codebase_id_index
+      ON vector_search (codebase_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS vector_search_codebase_id_file_path_index
+      ON vector_search (codebase_id, file_path)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS vector_search_codebase_id_content_type_index
+      ON vector_search (codebase_id, content_type)
+    """, "")
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS vector_search_codebase_id_file_path_content_type_key
+      ON vector_search (codebase_id, file_path, content_type)
+    """, "")
 
     # Vector index for similarity search
     execute("""

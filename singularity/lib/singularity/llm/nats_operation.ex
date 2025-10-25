@@ -747,7 +747,9 @@ defmodule Singularity.LLM.NatsOperation do
            circuit_name,
            fn ->
              do_run_with_rate_limit(compiled, inputs, ctx)
-           end, timeout_ms: compiled.timeout_ms) do
+           end,
+           timeout_ms: compiled.timeout_ms
+         ) do
       {:ok, result} ->
         {:ok, result}
 

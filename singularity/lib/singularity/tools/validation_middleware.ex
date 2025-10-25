@@ -219,10 +219,10 @@ defmodule Singularity.Tools.ValidationMiddleware do
     Logger.debug("ValidationMiddleware.validate_parameters(#{tool_name})", arguments)
 
     case InstructorAdapter.validate_parameters(
-      tool_name,
-      arguments,
-      Keyword.take(opts, [:max_retries, :model])
-    ) do
+           tool_name,
+           arguments,
+           Keyword.take(opts, [:max_retries, :model])
+         ) do
       {:ok, _validated} ->
         :ok
 

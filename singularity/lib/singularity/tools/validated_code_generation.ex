@@ -332,7 +332,8 @@ defmodule Singularity.Tools.ValidatedCodeGeneration do
 
     with :ok <- validate_language(language),
          :ok <- validate_quality(quality),
-         {:ok, code} <- CodeGeneration.code_generate(%{"task" => task, "language" => language}, context),
+         {:ok, code} <-
+           CodeGeneration.code_generate(%{"task" => task, "language" => language}, context),
          {:ok, validated} <- ValidationMiddleware.validate_output(code, :generated_code, context) do
       {:ok, validated}
     else
@@ -357,13 +358,17 @@ defmodule Singularity.Tools.ValidatedCodeGeneration do
     with :ok <- validate_language(language),
          :ok <- validate_quality(quality),
          :ok <- validate_threshold(quality_threshold),
-         {:ok, result} <- CodeGeneration.code_iterate(%{
-           "task" => task,
-           "language" => language,
-           "quality" => quality,
-           "quality_threshold" => quality_threshold,
-           "max_iterations" => max_iterations
-         }, context) do
+         {:ok, result} <-
+           CodeGeneration.code_iterate(
+             %{
+               "task" => task,
+               "language" => language,
+               "quality" => quality,
+               "quality_threshold" => quality_threshold,
+               "max_iterations" => max_iterations
+             },
+             context
+           ) do
       {:ok, result}
     else
       {:error, reason} ->
@@ -379,12 +384,17 @@ defmodule Singularity.Tools.ValidatedCodeGeneration do
     language = Map.get(args, "language", "elixir")
 
     with :ok <- validate_language(language),
-         {:ok, refined} <- CodeGeneration.code_refine(%{
-           "code" => code,
-           "issues" => issues,
-           "language" => language
-         }, context),
-         {:ok, validated} <- ValidationMiddleware.validate_output(refined, :generated_code, context) do
+         {:ok, refined} <-
+           CodeGeneration.code_refine(
+             %{
+               "code" => code,
+               "issues" => issues,
+               "language" => language
+             },
+             context
+           ),
+         {:ok, validated} <-
+           ValidationMiddleware.validate_output(refined, :generated_code, context) do
       {:ok, validated}
     else
       {:error, reason} ->
@@ -393,11 +403,12 @@ defmodule Singularity.Tools.ValidatedCodeGeneration do
   end
 
   def code_refine_validated(args, _context) do
-    missing = cond do
-      !Map.has_key?(args, "code") -> "code"
-      !Map.has_key?(args, "issues") -> "issues"
-      true -> nil
-    end
+    missing =
+      cond do
+        !Map.has_key?(args, "code") -> "code"
+        !Map.has_key?(args, "issues") -> "issues"
+        true -> nil
+      end
 
     {:error, "Missing required parameter: #{missing}"}
   end
@@ -410,7 +421,8 @@ defmodule Singularity.Tools.ValidatedCodeGeneration do
     if Enum.member?(@supported_languages, String.downcase(language)) do
       :ok
     else
-      {:error, "Unsupported language: #{language}. Supported: #{Enum.join(@supported_languages, ", ")}"}
+      {:error,
+       "Unsupported language: #{language}. Supported: #{Enum.join(@supported_languages, ", ")}"}
     end
   end
 

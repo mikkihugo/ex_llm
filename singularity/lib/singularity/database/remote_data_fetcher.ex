@@ -54,8 +54,10 @@ defmodule Singularity.Database.RemoteDataFetcher do
   require Logger
   alias CentralCloud.Repo
 
-  @http_timeout 5000  # 5 seconds for external API calls
-  @cache_ttl 86400    # 24 hours cache TTL
+  # 5 seconds for external API calls
+  @http_timeout 5000
+  # 24 hours cache TTL
+  @cache_ttl 86400
 
   # ============================================================================
   # npm Registry
@@ -151,12 +153,15 @@ defmodule Singularity.Database.RemoteDataFetcher do
   Returns {:ok, data} if cached, {:error, :not_found} if not cached or expired.
   """
   def get_cached(ecosystem, package_name) when is_binary(ecosystem) and is_binary(package_name) do
-    case Repo.query("""
-      SELECT metadata FROM package_registry
-      WHERE ecosystem = $1 AND package_name = $2
-        AND cached_at > NOW() - INTERVAL '1 day'
-      LIMIT 1
-    """, [ecosystem, package_name]) do
+    case Repo.query(
+           """
+             SELECT metadata FROM package_registry
+             WHERE ecosystem = $1 AND package_name = $2
+               AND cached_at > NOW() - INTERVAL '1 day'
+             LIMIT 1
+           """,
+           [ecosystem, package_name]
+         ) do
       {:ok, %{rows: [[metadata_json]]}} ->
         {:ok, Jason.decode!(metadata_json)}
 
@@ -172,12 +177,15 @@ defmodule Singularity.Database.RemoteDataFetcher do
   Check if cached data is fresh (< 24 hours old).
   """
   def is_fresh?(ecosystem, package_name) when is_binary(ecosystem) and is_binary(package_name) do
-    case Repo.query("""
-      SELECT 1 FROM package_registry
-      WHERE ecosystem = $1 AND package_name = $2
-        AND cached_at > NOW() - INTERVAL '1 day'
-      LIMIT 1
-    """, [ecosystem, package_name]) do
+    case Repo.query(
+           """
+             SELECT 1 FROM package_registry
+             WHERE ecosystem = $1 AND package_name = $2
+               AND cached_at > NOW() - INTERVAL '1 day'
+             LIMIT 1
+           """,
+           [ecosystem, package_name]
+         ) do
       {:ok, %{rows: [[_]]}} -> true
       {:ok, %{rows: []}} -> false
       _ -> false
@@ -190,13 +198,16 @@ defmodule Singularity.Database.RemoteDataFetcher do
   Returns count of refreshed packages.
   """
   def refresh_expired_cache(limit \\ 100) do
-    case Repo.query("""
-      UPDATE package_registry
-      SET refresh_needed = true
-      WHERE cached_at < NOW() - INTERVAL '1 day'
-      LIMIT $1
-      RETURNING package_name
-    """, [limit]) do
+    case Repo.query(
+           """
+             UPDATE package_registry
+             SET refresh_needed = true
+             WHERE cached_at < NOW() - INTERVAL '1 day'
+             LIMIT $1
+             RETURNING package_name
+           """,
+           [limit]
+         ) do
       {:ok, %{num_rows: count}} ->
         Logger.info("Marked #{count} packages for cache refresh")
         {:ok, count}
@@ -211,14 +222,14 @@ defmodule Singularity.Database.RemoteDataFetcher do
   """
   def cache_stats do
     case Repo.query("""
-      SELECT
-        ecosystem,
-        COUNT(*) as total_cached,
-        SUM(CASE WHEN cached_at > NOW() - INTERVAL '1 day' THEN 1 ELSE 0 END) as fresh_count,
-        SUM(CASE WHEN refresh_needed THEN 1 ELSE 0 END) as refresh_needed_count
-      FROM package_registry
-      GROUP BY ecosystem
-    """) do
+           SELECT
+             ecosystem,
+             COUNT(*) as total_cached,
+             SUM(CASE WHEN cached_at > NOW() - INTERVAL '1 day' THEN 1 ELSE 0 END) as fresh_count,
+             SUM(CASE WHEN refresh_needed THEN 1 ELSE 0 END) as refresh_needed_count
+           FROM package_registry
+           GROUP BY ecosystem
+         """) do
       {:ok, %{rows: rows}} ->
         stats =
           Enum.map(rows, fn [eco, total, fresh, refresh_needed] ->
@@ -244,12 +255,15 @@ defmodule Singularity.Database.RemoteDataFetcher do
   defp fetch_and_cache(ecosystem, package_name, url) do
     Logger.debug("Fetching #{ecosystem} package: #{package_name} from #{url}")
 
-    case Repo.query("""
-      SELECT net.http_get(
-        url := $1,
-        timeout_milliseconds := $2
-      ) as response
-    """, [url, @http_timeout]) do
+    case Repo.query(
+           """
+             SELECT net.http_get(
+               url := $1,
+               timeout_milliseconds := $2
+             ) as response
+           """,
+           [url, @http_timeout]
+         ) do
       {:ok, %{rows: [[response_json]]}} ->
         case Jason.decode(response_json) do
           {:ok, response} ->
@@ -280,17 +294,20 @@ defmodule Singularity.Database.RemoteDataFetcher do
   defp cache_response(ecosystem, package_name, response) do
     metadata = response["body"]
 
-    case Repo.query("""
-      INSERT INTO package_registry
-        (ecosystem, package_name, metadata, cached_at, refresh_needed)
-      VALUES ($1, $2, $3, NOW(), false)
-      ON CONFLICT (ecosystem, package_name)
-      DO UPDATE SET
-        metadata = EXCLUDED.metadata,
-        cached_at = NOW(),
-        refresh_needed = false
-      RETURNING metadata
-    """, [ecosystem, package_name, metadata]) do
+    case Repo.query(
+           """
+             INSERT INTO package_registry
+               (ecosystem, package_name, metadata, cached_at, refresh_needed)
+             VALUES ($1, $2, $3, NOW(), false)
+             ON CONFLICT (ecosystem, package_name)
+             DO UPDATE SET
+               metadata = EXCLUDED.metadata,
+               cached_at = NOW(),
+               refresh_needed = false
+             RETURNING metadata
+           """,
+           [ecosystem, package_name, metadata]
+         ) do
       {:ok, %{rows: [[cached_json]]}} ->
         {:ok, Jason.decode!(cached_json)}
 
@@ -300,52 +317,56 @@ defmodule Singularity.Database.RemoteDataFetcher do
   end
 
   defp parse_npm_response(name, data) do
-    {:ok, %{
-      name: name,
-      ecosystem: "npm",
-      version: data["dist-tags"]["latest"],
-      description: data["description"],
-      homepage: data["homepage"],
-      repository: get_in(data, ["repository", "url"]),
-      downloads: data["downloads_per_month"],
-      updated_at: data["time"]["modified"]
-    }}
+    {:ok,
+     %{
+       name: name,
+       ecosystem: "npm",
+       version: data["dist-tags"]["latest"],
+       description: data["description"],
+       homepage: data["homepage"],
+       repository: get_in(data, ["repository", "url"]),
+       downloads: data["downloads_per_month"],
+       updated_at: data["time"]["modified"]
+     }}
   end
 
   defp parse_cargo_response(name, data) do
-    {:ok, %{
-      name: name,
-      ecosystem: "cargo",
-      version: get_in(data, ["crate", "max_version"]),
-      description: get_in(data, ["crate", "description"]),
-      repository: get_in(data, ["crate", "repository"]),
-      downloads: get_in(data, ["crate", "downloads"]),
-      updated_at: get_in(data, ["crate", "updated_at"])
-    }}
+    {:ok,
+     %{
+       name: name,
+       ecosystem: "cargo",
+       version: get_in(data, ["crate", "max_version"]),
+       description: get_in(data, ["crate", "description"]),
+       repository: get_in(data, ["crate", "repository"]),
+       downloads: get_in(data, ["crate", "downloads"]),
+       updated_at: get_in(data, ["crate", "updated_at"])
+     }}
   end
 
   defp parse_hex_response(name, data) do
-    {:ok, %{
-      name: name,
-      ecosystem: "hex",
-      version: data["latest_version"],
-      description: data["meta"]["description"],
-      repository: data["meta"]["links"]["Repository"],
-      downloads: data["downloads"]["all"],
-      updated_at: data["updated_at"]
-    }}
+    {:ok,
+     %{
+       name: name,
+       ecosystem: "hex",
+       version: data["latest_version"],
+       description: data["meta"]["description"],
+       repository: data["meta"]["links"]["Repository"],
+       downloads: data["downloads"]["all"],
+       updated_at: data["updated_at"]
+     }}
   end
 
   defp parse_pypi_response(name, data) do
-    {:ok, %{
-      name: name,
-      ecosystem: "pypi",
-      version: get_in(data, ["info", "version"]),
-      description: get_in(data, ["info", "summary"]),
-      repository: get_in(data, ["info", "home_page"]),
-      downloads: get_in(data, ["info", "downloads"]),
-      updated_at: get_in(data, ["info", "last_updated"])
-    }}
+    {:ok,
+     %{
+       name: name,
+       ecosystem: "pypi",
+       version: get_in(data, ["info", "version"]),
+       description: get_in(data, ["info", "summary"]),
+       repository: get_in(data, ["info", "home_page"]),
+       downloads: get_in(data, ["info", "downloads"]),
+       updated_at: get_in(data, ["info", "last_updated"])
+     }}
   end
 
   defp encode_url(name) do

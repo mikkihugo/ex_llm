@@ -3,7 +3,7 @@ defmodule Singularity.Repo.Migrations.CreateWorkPlanTables do
 
   def change do
     # Strategic Themes - 3-5 year vision areas
-    create table(:strategic_themes, primary_key: false) do
+    create_if_not_exists table(:strategic_themes, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :name, :string, null: false
       add :description, :text, null: false
@@ -15,11 +15,17 @@ defmodule Singularity.Repo.Migrations.CreateWorkPlanTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:strategic_themes, [:priority])
-    create index(:strategic_themes, [:status])
+    execute("""
+      CREATE INDEX IF NOT EXISTS strategic_themes_priority_index
+      ON strategic_themes (priority)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS strategic_themes_status_index
+      ON strategic_themes (status)
+    """, "")
 
     # Epics - 6-12 month initiatives (Business or Enabler)
-    create table(:epics, primary_key: false) do
+    create_if_not_exists table(:epics, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :theme_id, references(:strategic_themes, type: :binary_id, on_delete: :nilify_all)
 
@@ -40,13 +46,25 @@ defmodule Singularity.Repo.Migrations.CreateWorkPlanTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:epics, [:theme_id])
-    create index(:epics, [:type])
-    create index(:epics, [:status])
-    create index(:epics, [:wsjf_score])
+    execute("""
+      CREATE INDEX IF NOT EXISTS epics_theme_id_index
+      ON epics (theme_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS epics_type_index
+      ON epics (type)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS epics_status_index
+      ON epics (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS epics_wsjf_score_index
+      ON epics (wsjf_score)
+    """, "")
 
     # Capabilities - 3-6 month cross-team features
-    create table(:capabilities, primary_key: false) do
+    create_if_not_exists table(:capabilities, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :epic_id, references(:epics, type: :binary_id, on_delete: :nilify_all)
 
@@ -60,12 +78,21 @@ defmodule Singularity.Repo.Migrations.CreateWorkPlanTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:capabilities, [:epic_id])
-    create index(:capabilities, [:status])
-    create index(:capabilities, [:wsjf_score])
+    execute("""
+      CREATE INDEX IF NOT EXISTS capabilities_epic_id_index
+      ON capabilities (epic_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS capabilities_status_index
+      ON capabilities (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS capabilities_wsjf_score_index
+      ON capabilities (wsjf_score)
+    """, "")
 
     # Capability Dependencies - Track dependencies between capabilities
-    create table(:capability_dependencies, primary_key: false) do
+    create_if_not_exists table(:capability_dependencies, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :capability_id, references(:capabilities, type: :binary_id, on_delete: :delete_all), null: false
       add :depends_on_capability_id, references(:capabilities, type: :binary_id, on_delete: :delete_all), null: false
@@ -73,12 +100,21 @@ defmodule Singularity.Repo.Migrations.CreateWorkPlanTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:capability_dependencies, [:capability_id])
-    create index(:capability_dependencies, [:depends_on_capability_id])
-    create unique_index(:capability_dependencies, [:capability_id, :depends_on_capability_id], name: :capability_dependencies_unique)
+    execute("""
+      CREATE INDEX IF NOT EXISTS capability_dependencies_capability_id_index
+      ON capability_dependencies (capability_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS capability_dependencies_depends_on_capability_id_index
+      ON capability_dependencies (depends_on_capability_id)
+    """, "")
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS capability_dependencies_capability_id_depends_on_capability_id_key
+      ON capability_dependencies (capability_id, depends_on_capability_id)
+    """, "")
 
     # Features - 1-3 month team deliverables
-    create table(:features, primary_key: false) do
+    create_if_not_exists table(:features, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :capability_id, references(:capabilities, type: :binary_id, on_delete: :nilify_all)
 
@@ -94,8 +130,17 @@ defmodule Singularity.Repo.Migrations.CreateWorkPlanTables do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:features, [:capability_id])
-    create index(:features, [:status])
-    create index(:features, [:htdag_id])
+    execute("""
+      CREATE INDEX IF NOT EXISTS features_capability_id_index
+      ON features (capability_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS features_status_index
+      ON features (status)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS features_htdag_id_index
+      ON features (htdag_id)
+    """, "")
   end
 end

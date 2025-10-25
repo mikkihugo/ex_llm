@@ -82,11 +82,11 @@ defmodule Singularity.Tools.InstructorAdapter do
     prompt = create_parameter_validation_prompt(tool_name, params)
 
     case Instructor.chat_completion(
-      model: Keyword.get(opts, :model, "claude-opus"),
-      response_model: InstructorSchemas.ToolParameters,
-      prompt: prompt,
-      max_retries: max_retries
-    ) do
+           model: Keyword.get(opts, :model, "claude-opus"),
+           response_model: InstructorSchemas.ToolParameters,
+           prompt: prompt,
+           max_retries: max_retries
+         ) do
       {:ok, %InstructorSchemas.ToolParameters{valid: true, parameters: validated}} ->
         {:ok, validated}
 
@@ -123,11 +123,11 @@ defmodule Singularity.Tools.InstructorAdapter do
     prompt = create_code_quality_prompt(code, language, quality)
 
     case Instructor.chat_completion(
-      model: Keyword.get(opts, :model, "claude-opus"),
-      response_model: InstructorSchemas.CodeQualityResult,
-      prompt: prompt,
-      max_retries: max_retries
-    ) do
+           model: Keyword.get(opts, :model, "claude-opus"),
+           response_model: InstructorSchemas.CodeQualityResult,
+           prompt: prompt,
+           max_retries: max_retries
+         ) do
       {:ok, result} ->
         {:ok, Map.from_struct(result)}
 
@@ -152,7 +152,8 @@ defmodule Singularity.Tools.InstructorAdapter do
       iex> refine_output(:code, code, quality_feedback, max_iterations: 3)
       {:ok, refined_code}
   """
-  @spec refine_output(atom(), String.t(), map(), Keyword.t()) :: {:ok, String.t()} | {:error, String.t()}
+  @spec refine_output(atom(), String.t(), map(), Keyword.t()) ::
+          {:ok, String.t()} | {:error, String.t()}
   def refine_output(output_type, content, feedback, opts \\ [])
 
   def refine_output(:code, code, %{issues: issues, suggestions: suggestions}, opts) do
@@ -163,11 +164,11 @@ defmodule Singularity.Tools.InstructorAdapter do
     prompt = create_refinement_prompt(code, language, issues, suggestions)
 
     case Instructor.chat_completion(
-      model: Keyword.get(opts, :model, "claude-opus"),
-      response_model: InstructorSchemas.GeneratedCode,
-      prompt: prompt,
-      max_retries: max_retries
-    ) do
+           model: Keyword.get(opts, :model, "claude-opus"),
+           response_model: InstructorSchemas.GeneratedCode,
+           prompt: prompt,
+           max_retries: max_retries
+         ) do
       {:ok, result} ->
         {:ok, result.code}
 
@@ -234,16 +235,24 @@ defmodule Singularity.Tools.InstructorAdapter do
      }}
   end
 
-  defp generate_and_validate_loop(task, language, quality, threshold, max_iters, iteration, history) do
+  defp generate_and_validate_loop(
+         task,
+         language,
+         quality,
+         threshold,
+         max_iters,
+         iteration,
+         history
+       ) do
     # Generate code
     prompt = "Generate #{language} code for: #{task}"
 
     case Instructor.chat_completion(
-      model: "claude-opus",
-      response_model: InstructorSchemas.GeneratedCode,
-      prompt: prompt,
-      max_retries: 1
-    ) do
+           model: "claude-opus",
+           response_model: InstructorSchemas.GeneratedCode,
+           prompt: prompt,
+           max_retries: 1
+         ) do
       {:ok, generated} ->
         # Validate output
         case validate_output(:code, generated.code, language: language, quality: quality) do
@@ -259,12 +268,12 @@ defmodule Singularity.Tools.InstructorAdapter do
           {:ok, %{score: score} = quality_result} ->
             # Refine and retry
             case refine_output(
-              :code,
-              generated.code,
-              quality_result,
-              language: language,
-              max_iterations: 1
-            ) do
+                   :code,
+                   generated.code,
+                   quality_result,
+                   language: language,
+                   max_iterations: 1
+                 ) do
               {:ok, refined_code} ->
                 refined_history = history ++ [%{code: generated.code, score: score}]
 

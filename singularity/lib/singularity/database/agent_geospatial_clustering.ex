@@ -75,19 +75,26 @@ defmodule Singularity.Database.AgentGeospatialClustering do
   Automatically calculates H3 index cell at specified resolution.
   """
   def set_agent_location(agent_id, latitude, longitude, resolution \\ @default_resolution)
-      when is_integer(agent_id) and is_float(latitude) and is_float(longitude) and is_integer(resolution) do
-    case Repo.query("""
-      UPDATE agents
-      SET
-        latitude = $1,
-        longitude = $2,
-        h3_cell = h3_latlng_to_cell($1, $2, $3),
-        location_updated_at = NOW()
-      WHERE id = $4
-      RETURNING h3_cell
-    """, [latitude, longitude, resolution, agent_id]) do
+      when is_integer(agent_id) and is_float(latitude) and is_float(longitude) and
+             is_integer(resolution) do
+    case Repo.query(
+           """
+             UPDATE agents
+             SET
+               latitude = $1,
+               longitude = $2,
+               h3_cell = h3_latlng_to_cell($1, $2, $3),
+               location_updated_at = NOW()
+             WHERE id = $4
+             RETURNING h3_cell
+           """,
+           [latitude, longitude, resolution, agent_id]
+         ) do
       {:ok, %{rows: [[h3_cell]]}} ->
-        Logger.info("Agent #{agent_id} location set: #{latitude}, #{longitude} (cell: #{h3_cell})")
+        Logger.info(
+          "Agent #{agent_id} location set: #{latitude}, #{longitude} (cell: #{h3_cell})"
+        )
+
         {:ok, h3_cell}
 
       {:ok, %{rows: []}} ->
@@ -111,9 +118,9 @@ defmodule Singularity.Database.AgentGeospatialClustering do
     limit = Keyword.get(opts, :limit, 50)
 
     case Repo.query(
-      "SELECT h3_cell FROM agents WHERE id = $1",
-      [agent_id]
-    ) do
+           "SELECT h3_cell FROM agents WHERE id = $1",
+           [agent_id]
+         ) do
       {:ok, %{rows: [[h3_cell]]}} when h3_cell != nil ->
         if radius == :same do
           # Same H3 cell only
@@ -140,13 +147,16 @@ defmodule Singularity.Database.AgentGeospatialClustering do
   Useful for location-based queries and regional analysis.
   """
   def get_agents_in_hex(h3_cell, limit \\ 100) when is_binary(h3_cell) do
-    case Repo.query("""
-      SELECT id, agent_name, h3_cell, latitude, longitude, status
-      FROM agents
-      WHERE h3_cell = $1
-      ORDER BY created_at DESC
-      LIMIT $2
-    """, [h3_cell, limit]) do
+    case Repo.query(
+           """
+             SELECT id, agent_name, h3_cell, latitude, longitude, status
+             FROM agents
+             WHERE h3_cell = $1
+             ORDER BY created_at DESC
+             LIMIT $2
+           """,
+           [h3_cell, limit]
+         ) do
       {:ok, %{rows: rows}} ->
         agents =
           Enum.map(rows, fn [id, name, cell, lat, lon, status] ->
@@ -175,17 +185,17 @@ defmodule Singularity.Database.AgentGeospatialClustering do
   """
   def cluster_agents_by_region(resolution \\ @default_resolution) when is_integer(resolution) do
     case Repo.query("""
-      SELECT
-        h3_cell,
-        COUNT(*) as agent_count,
-        AVG(latitude) as avg_latitude,
-        AVG(longitude) as avg_longitude,
-        STRING_AGG(agent_name, ', ') as agent_names
-      FROM agents
-      WHERE h3_cell IS NOT NULL
-      GROUP BY h3_cell
-      ORDER BY agent_count DESC
-    """) do
+           SELECT
+             h3_cell,
+             COUNT(*) as agent_count,
+             AVG(latitude) as avg_latitude,
+             AVG(longitude) as avg_longitude,
+             STRING_AGG(agent_name, ', ') as agent_names
+           FROM agents
+           WHERE h3_cell IS NOT NULL
+           GROUP BY h3_cell
+           ORDER BY agent_count DESC
+         """) do
       {:ok, %{rows: rows}} ->
         clusters =
           Enum.map(rows, fn [cell, count, avg_lat, avg_lon, names] ->
@@ -211,9 +221,12 @@ defmodule Singularity.Database.AgentGeospatialClustering do
   Useful for zooming into regions with many agents.
   """
   def get_cell_children(h3_cell, target_resolution \\ 8) when is_binary(h3_cell) do
-    case Repo.query("""
-      SELECT h3_cell_to_children($1, $2) as child_cells
-    """, [h3_cell, target_resolution]) do
+    case Repo.query(
+           """
+             SELECT h3_cell_to_children($1, $2) as child_cells
+           """,
+           [h3_cell, target_resolution]
+         ) do
       {:ok, %{rows: [[child_cells]]}} ->
         {:ok, child_cells}
 
@@ -228,9 +241,12 @@ defmodule Singularity.Database.AgentGeospatialClustering do
   Useful for zooming out to see broader regions.
   """
   def get_cell_parent(h3_cell, target_resolution \\ 5) when is_binary(h3_cell) do
-    case Repo.query("""
-      SELECT h3_cell_to_parent($1, $2) as parent_cell
-    """, [h3_cell, target_resolution]) do
+    case Repo.query(
+           """
+             SELECT h3_cell_to_parent($1, $2) as parent_cell
+           """,
+           [h3_cell, target_resolution]
+         ) do
       {:ok, %{rows: [[parent_cell]]}} ->
         {:ok, parent_cell}
 
@@ -244,10 +260,14 @@ defmodule Singularity.Database.AgentGeospatialClustering do
 
   Returns cells directly adjacent to the given cell.
   """
-  def get_cell_neighbors(h3_cell, ring_size \\ 1) when is_binary(h3_cell) and is_integer(ring_size) do
-    case Repo.query("""
-      SELECT h3_grid_ring($1, $2) as neighbor_cells
-    """, [h3_cell, ring_size]) do
+  def get_cell_neighbors(h3_cell, ring_size \\ 1)
+      when is_binary(h3_cell) and is_integer(ring_size) do
+    case Repo.query(
+           """
+             SELECT h3_grid_ring($1, $2) as neighbor_cells
+           """,
+           [h3_cell, ring_size]
+         ) do
       {:ok, %{rows: [[neighbor_cells]]}} ->
         {:ok, neighbor_cells}
 
@@ -262,14 +282,18 @@ defmodule Singularity.Database.AgentGeospatialClustering do
   Returns grid distance (number of H3 steps between cells).
   Useful for routing and locality optimization.
   """
-  def get_h3_distance(agent_1_id, agent_2_id) when is_integer(agent_1_id) and is_integer(agent_2_id) do
-    case Repo.query("""
-      SELECT
-        h3_grid_distance(
-          (SELECT h3_cell FROM agents WHERE id = $1),
-          (SELECT h3_cell FROM agents WHERE id = $2)
-        ) as distance
-    """, [agent_1_id, agent_2_id]) do
+  def get_h3_distance(agent_1_id, agent_2_id)
+      when is_integer(agent_1_id) and is_integer(agent_2_id) do
+    case Repo.query(
+           """
+             SELECT
+               h3_grid_distance(
+                 (SELECT h3_cell FROM agents WHERE id = $1),
+                 (SELECT h3_cell FROM agents WHERE id = $2)
+               ) as distance
+           """,
+           [agent_1_id, agent_2_id]
+         ) do
       {:ok, %{rows: [[distance]]}} when distance != nil ->
         {:ok, distance}
 
@@ -288,17 +312,17 @@ defmodule Singularity.Database.AgentGeospatialClustering do
   """
   def get_regional_stats do
     case Repo.query("""
-      SELECT
-        h3_cell,
-        COUNT(*) as agent_count,
-        (ARRAY_AGG(status))[1:5]::TEXT[] as sample_statuses,
-        MAX(created_at) as newest_agent,
-        MIN(created_at) as oldest_agent
-      FROM agents
-      WHERE h3_cell IS NOT NULL
-      GROUP BY h3_cell
-      ORDER BY agent_count DESC
-    """) do
+           SELECT
+             h3_cell,
+             COUNT(*) as agent_count,
+             (ARRAY_AGG(status))[1:5]::TEXT[] as sample_statuses,
+             MAX(created_at) as newest_agent,
+             MIN(created_at) as oldest_agent
+           FROM agents
+           WHERE h3_cell IS NOT NULL
+           GROUP BY h3_cell
+           ORDER BY agent_count DESC
+         """) do
       {:ok, %{rows: rows}} ->
         stats =
           Enum.map(rows, fn [cell, count, statuses, newest, oldest] ->
@@ -323,12 +347,15 @@ defmodule Singularity.Database.AgentGeospatialClustering do
   # ============================================================================
 
   defp query_nearby_same_cell(h3_cell, agent_id, limit) do
-    case Repo.query("""
-      SELECT id, agent_name, h3_cell, status
-      FROM agents
-      WHERE h3_cell = $1 AND id != $2
-      LIMIT $3
-    """, [h3_cell, agent_id, limit]) do
+    case Repo.query(
+           """
+             SELECT id, agent_name, h3_cell, status
+             FROM agents
+             WHERE h3_cell = $1 AND id != $2
+             LIMIT $3
+           """,
+           [h3_cell, agent_id, limit]
+         ) do
       {:ok, %{rows: rows}} ->
         agents =
           Enum.map(rows, fn [id, name, cell, status] ->
@@ -343,24 +370,27 @@ defmodule Singularity.Database.AgentGeospatialClustering do
   end
 
   defp query_nearby_with_neighbors(h3_cell, agent_id, limit) do
-    case Repo.query("""
-      WITH neighbors AS (
-        SELECT h3_grid_ring($1, 1) as neighbor_cell
-      ),
-      all_cells AS (
-        SELECT $1::h3index as cell
-        UNION ALL
-        SELECT neighbor_cell FROM neighbors
-      )
-      SELECT id, agent_name, h3_cell, status
-      FROM agents
-      WHERE h3_cell = ANY(SELECT cell FROM all_cells)
-        AND id != $2
-      ORDER BY
-        CASE WHEN h3_cell = $1 THEN 0 ELSE 1 END,
-        created_at DESC
-      LIMIT $3
-    """, [h3_cell, agent_id, limit]) do
+    case Repo.query(
+           """
+             WITH neighbors AS (
+               SELECT h3_grid_ring($1, 1) as neighbor_cell
+             ),
+             all_cells AS (
+               SELECT $1::h3index as cell
+               UNION ALL
+               SELECT neighbor_cell FROM neighbors
+             )
+             SELECT id, agent_name, h3_cell, status
+             FROM agents
+             WHERE h3_cell = ANY(SELECT cell FROM all_cells)
+               AND id != $2
+             ORDER BY
+               CASE WHEN h3_cell = $1 THEN 0 ELSE 1 END,
+               created_at DESC
+             LIMIT $3
+           """,
+           [h3_cell, agent_id, limit]
+         ) do
       {:ok, %{rows: rows}} ->
         agents =
           Enum.map(rows, fn [id, name, cell, status] ->

@@ -490,171 +490,129 @@ defmodule Singularity.CodeDeduplicator do
   # Language-specific keyword extraction
 
   defp extract_elixir_keywords(code) do
-    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
-    case Singularity.Engines.ParserEngine.extract_functions(code, "elixir") do
-      {:ok, functions} ->
-        function_names = Enum.map(functions, & &1.name)
-        module_names = extract_module_names_from_code(code)
+    # Parser Engine doesn't support string-based extraction
+    # Use basic pattern matching for keywords
+    module_names = extract_module_names_from_code(code)
 
-        framework_patterns =
-          extract_patterns(code, [
-            "GenServer",
-            "Supervisor",
-            "Agent",
-            "Task",
-            "Broadway",
-            "Ecto.Schema"
-          ])
+    framework_patterns =
+      extract_patterns(code, [
+        "GenServer",
+        "Supervisor",
+        "Agent",
+        "Task",
+        "Broadway",
+        "Ecto.Schema"
+      ])
 
-        domain_patterns =
-          extract_patterns(code, [
-            "http",
-            "api",
-            "request",
-            "cache",
-            "pubsub",
-            "nats",
-            "database"
-          ])
+    domain_patterns =
+      extract_patterns(code, [
+        "http",
+        "api",
+        "request",
+        "cache",
+        "pubsub",
+        "nats",
+        "database"
+      ])
 
-        (function_names ++ module_names ++ framework_patterns ++ domain_patterns)
-        |> Enum.map(&String.downcase/1)
-
-      {:error, _} ->
-        # Fallback to basic extraction
-        extract_generic_keywords(code)
-    end
+    (module_names ++ framework_patterns ++ domain_patterns)
+    |> Enum.map(&String.downcase/1)
   end
 
   defp extract_rust_keywords(code) do
-    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
-    case Singularity.Engines.ParserEngine.extract_functions(code, "rust") do
-      {:ok, functions} ->
-        function_names = Enum.map(functions, & &1.name)
-        class_names = extract_class_names_from_code(code)
+    # Parser Engine doesn't support string-based extraction
+    # Use basic pattern matching for keywords
+    class_names = extract_class_names_from_code(code)
 
-        framework_patterns =
-          extract_patterns(code, [
-            "Result",
-            "Option",
-            "Vec",
-            "HashMap",
-            "async",
-            "tokio",
-            "serde"
-          ])
+    framework_patterns =
+      extract_patterns(code, [
+        "Result",
+        "Option",
+        "Vec",
+        "HashMap",
+        "async",
+        "tokio",
+        "serde"
+      ])
 
-        (function_names ++ class_names ++ framework_patterns)
-        |> Enum.map(&String.downcase/1)
-
-      {:error, _} ->
-        # Fallback to basic extraction
-        extract_generic_keywords(code)
-    end
+    (class_names ++ framework_patterns)
+    |> Enum.map(&String.downcase/1)
   end
 
   defp extract_go_keywords(code) do
-    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
-    case Singularity.Engines.ParserEngine.extract_functions(code, "go") do
-      {:ok, functions} ->
-        function_names = Enum.map(functions, & &1.name)
-        class_names = extract_class_names_from_code(code)
+    # Parser Engine doesn't support string-based extraction
+    # Use basic pattern matching for keywords
+    class_names = extract_class_names_from_code(code)
 
-        framework_patterns =
-          extract_patterns(code, [
-            "http",
-            "context",
-            "goroutine",
-            "channel",
-            "error",
-            "interface"
-          ])
+    framework_patterns =
+      extract_patterns(code, [
+        "http",
+        "context",
+        "goroutine",
+        "channel",
+        "error",
+        "interface"
+      ])
 
-        (function_names ++ class_names ++ framework_patterns)
-        |> Enum.map(&String.downcase/1)
-
-      {:error, _} ->
-        # Fallback to basic extraction
-        extract_generic_keywords(code)
-    end
+    (class_names ++ framework_patterns)
+    |> Enum.map(&String.downcase/1)
   end
 
   defp extract_ts_keywords(code) do
-    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
-    case Singularity.Engines.ParserEngine.extract_functions(code, "typescript") do
-      {:ok, functions} ->
-        function_names = Enum.map(functions, & &1.name)
-        class_names = extract_class_names_from_code(code)
+    # Parser Engine doesn't support string-based extraction
+    # Use basic pattern matching for keywords
+    class_names = extract_class_names_from_code(code)
 
-        framework_patterns =
-          extract_patterns(code, [
-            "async",
-            "await",
-            "Promise",
-            "Observable",
-            "http",
-            "api"
-          ])
+    framework_patterns =
+      extract_patterns(code, [
+        "async",
+        "await",
+        "Promise",
+        "Observable",
+        "http",
+        "api"
+      ])
 
-        (function_names ++ class_names ++ framework_patterns)
-        |> Enum.map(&String.downcase/1)
-
-      {:error, _} ->
-        # Fallback to basic extraction
-        extract_generic_keywords(code)
-    end
+    (class_names ++ framework_patterns)
+    |> Enum.map(&String.downcase/1)
   end
 
   defp extract_python_keywords(code) do
-    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
-    case Singularity.Engines.ParserEngine.extract_functions(code, "python") do
-      {:ok, functions} ->
-        function_names = Enum.map(functions, & &1.name)
-        class_names = extract_class_names_from_code(code)
+    # Parser Engine doesn't support string-based extraction
+    # Use basic pattern matching for keywords
+    class_names = extract_class_names_from_code(code)
 
-        framework_patterns =
-          extract_patterns(code, [
-            "async",
-            "await",
-            "dataclass",
-            "pydantic",
-            "fastapi",
-            "django"
-          ])
+    framework_patterns =
+      extract_patterns(code, [
+        "async",
+        "await",
+        "dataclass",
+        "pydantic",
+        "fastapi",
+        "django"
+      ])
 
-        (function_names ++ class_names ++ framework_patterns)
-        |> Enum.map(&String.downcase/1)
-
-      {:error, _} ->
-        # Fallback to basic extraction
-        extract_generic_keywords(code)
-    end
+    (class_names ++ framework_patterns)
+    |> Enum.map(&String.downcase/1)
   end
 
   defp extract_java_keywords(code) do
-    # Use CodeAnalyzer for accurate AST-based extraction with multi-language support
-    case Singularity.Engines.ParserEngine.extract_functions(code, "java") do
-      {:ok, functions} ->
-        function_names = Enum.map(functions, & &1.name)
-        class_names = extract_class_names_from_code(code)
+    # Parser Engine doesn't support string-based extraction
+    # Use basic pattern matching for keywords
+    class_names = extract_class_names_from_code(code)
 
-        framework_patterns =
-          extract_patterns(code, [
-            "Spring",
-            "Repository",
-            "Service",
-            "Controller",
-            "Entity",
-            "Optional"
-          ])
+    framework_patterns =
+      extract_patterns(code, [
+        "Spring",
+        "Repository",
+        "Service",
+        "Controller",
+        "Entity",
+        "Optional"
+      ])
 
-        (function_names ++ class_names ++ framework_patterns)
-        |> Enum.map(&String.downcase/1)
-
-      {:error, _} ->
-        # Fallback to basic extraction
-        extract_generic_keywords(code)
-    end
+    (class_names ++ framework_patterns)
+    |> Enum.map(&String.downcase/1)
   end
 
   defp extract_generic_keywords(code) do

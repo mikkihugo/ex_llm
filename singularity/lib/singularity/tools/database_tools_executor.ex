@@ -131,7 +131,8 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
   use GenServer
   require Logger
 
-  alias Singularity.{Repo, CodeSearch, NatsClient, Telemetry}
+  alias Singularity.{Repo, CodeSearch, NatsClient}
+  alias Singularity.Infrastructure.Telemetry
   alias Singularity.Tools.SecurityPolicy
   import Ecto.Query
 
@@ -450,10 +451,143 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
     {:ok, matches}
   end
 
-  defp find_symbol_references(%{"symbol" => _symbol_name} = _request) do
-    # TODO: Implement reference finding (requires import/usage analysis)
-    {:ok, []}
+  defp find_symbol_references(%{"symbol" => symbol_name} = request) do
+    codebase_id = Map.get(request, "codebase_id", "singularity")
+
+    # Query for files that reference this symbol (imports or usages)
+    # Strategy: Search through functions and classes that reference the symbol
+    query =
+      from(c in "codebase_metadata",
+        where: c.codebase_id == ^codebase_id,
+        select: %{
+          path: c.path,
+          functions: c.functions,
+          classes: c.classes,
+          imports: c.imports,
+          dependencies: c.dependencies
+        }
+      )
+
+    case Repo.all(query) do
+      [] ->
+        {:ok, []}
+
+      matches ->
+        references =
+          matches
+          |> Enum.reduce([], fn result, acc ->
+            file_refs =
+              []
+              # Check imports (from X import Y)
+              |> maybe_add_import_refs(result.imports, symbol_name, result.path)
+              # Check function references (functions calling this symbol)
+              |> maybe_add_function_refs(result.functions, symbol_name, result.path)
+              # Check class references (classes using this symbol)
+              |> maybe_add_class_refs(result.classes, symbol_name, result.path)
+              # Check dependencies (requires/uses)
+              |> maybe_add_dependency_refs(result.dependencies, symbol_name, result.path)
+
+            acc ++ file_refs
+          end)
+
+        {:ok, references}
+
+      {:error, reason} ->
+        {:error, "Failed to find references: #{inspect(reason)}"}
+    end
   end
+
+  defp maybe_add_import_refs(acc, nil, _symbol_name, _path), do: acc
+
+  defp maybe_add_import_refs(acc, imports, symbol_name, path) when is_list(imports) do
+    import_refs =
+      imports
+      |> Enum.filter(&String.contains?(&1, symbol_name))
+      |> Enum.map(fn imp ->
+        %{
+          type: "import",
+          path: path,
+          symbol: symbol_name,
+          reference: imp,
+          context: "Module import"
+        }
+      end)
+
+    acc ++ import_refs
+  end
+
+  defp maybe_add_import_refs(acc, _imports, _symbol_name, _path), do: acc
+
+  defp maybe_add_function_refs(acc, nil, _symbol_name, _path), do: acc
+
+  defp maybe_add_function_refs(acc, functions, symbol_name, path) when is_list(functions) do
+    func_refs =
+      functions
+      |> Enum.filter(fn func ->
+        Map.get(func, :calls, [])
+        |> Enum.any?(&String.contains?(&1, symbol_name))
+      end)
+      |> Enum.map(fn func ->
+        %{
+          type: "function_call",
+          path: path,
+          symbol: symbol_name,
+          reference: Map.get(func, :name, "unknown"),
+          line: Map.get(func, :line),
+          context: "Function call"
+        }
+      end)
+
+    acc ++ func_refs
+  end
+
+  defp maybe_add_function_refs(acc, _functions, _symbol_name, _path), do: acc
+
+  defp maybe_add_class_refs(acc, nil, _symbol_name, _path), do: acc
+
+  defp maybe_add_class_refs(acc, classes, symbol_name, path) when is_list(classes) do
+    class_refs =
+      classes
+      |> Enum.filter(fn cls ->
+        Map.get(cls, :uses, [])
+        |> Enum.any?(&String.contains?(&1, symbol_name))
+      end)
+      |> Enum.map(fn cls ->
+        %{
+          type: "class_usage",
+          path: path,
+          symbol: symbol_name,
+          reference: Map.get(cls, :name, "unknown"),
+          line: Map.get(cls, :line),
+          context: "Class usage"
+        }
+      end)
+
+    acc ++ class_refs
+  end
+
+  defp maybe_add_class_refs(acc, _classes, _symbol_name, _path), do: acc
+
+  defp maybe_add_dependency_refs(acc, nil, _symbol_name, _path), do: acc
+
+  defp maybe_add_dependency_refs(acc, dependencies, symbol_name, path) when is_list(dependencies) do
+    dep_refs =
+      dependencies
+      |> Enum.filter(&String.contains?(&1, symbol_name))
+      |> Enum.map(fn dep ->
+        %{
+          type: "dependency",
+          path: path,
+          symbol: symbol_name,
+          reference: dep,
+          context: "Module dependency"
+        }
+      end)
+
+    acc ++ dep_refs
+  end
+
+  defp maybe_add_dependency_refs(acc, _dependencies, _symbol_name, _path), do: acc
 
   defp list_symbols(%{"path" => path} = request) do
     codebase_id = Map.get(request, "codebase_id", "singularity")

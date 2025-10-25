@@ -142,8 +142,14 @@ defmodule TodoValidator do
     # Summary
     IO.puts("\n📈 Summary:")
     IO.puts("  Total TODOs: #{length(todos)}")
-    IO.puts("  Potentially outdated: #{length(outdated)} (#{percentage(length(outdated), length(todos))}%)")
-    IO.puts("  Still valid: #{length(todos) - length(outdated)} (#{percentage(length(todos) - length(outdated), length(todos))}%)")
+
+    IO.puts(
+      "  Potentially outdated: #{length(outdated)} (#{percentage(length(outdated), length(todos))}%)"
+    )
+
+    IO.puts(
+      "  Still valid: #{length(todos) - length(outdated)} (#{percentage(length(todos) - length(outdated), length(todos))}%)"
+    )
 
     IO.puts("\n" <> String.duplicate("=", 60))
     IO.puts("💡 Next Steps:")
@@ -155,13 +161,18 @@ defmodule TodoValidator do
   end
 
   defp find_all_todos do
-    {result, 0} = System.cmd("grep", [
-      "-rn",
-      "# TODO",
-      "--include=*.ex",
-      "--include=*.exs",
-      "lib/"
-    ], stderr_to_stdout: true)
+    {result, 0} =
+      System.cmd(
+        "grep",
+        [
+          "-rn",
+          "# TODO",
+          "--include=*.ex",
+          "--include=*.exs",
+          "lib/"
+        ],
+        stderr_to_stdout: true
+      )
 
     result
     |> String.split("\n", trim: true)

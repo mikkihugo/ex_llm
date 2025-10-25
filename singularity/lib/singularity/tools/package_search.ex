@@ -122,12 +122,19 @@ defmodule Singularity.Tools.PackageSearch do
     |> String.split(" ", parts: 2)
     |> case do
       [prefix, rest] when prefix in ["npm", "cargo", "hex", "pypi", "github"] ->
-        {String.to_atom(prefix), rest}
+        # Safe conversion - prefix is whitelisted by guard clause
+        {ecosystem_from_prefix(prefix), rest}
 
       _ ->
         {default_ecosystem, query}
     end
   end
+
+  defp ecosystem_from_prefix("npm"), do: :npm
+  defp ecosystem_from_prefix("cargo"), do: :cargo
+  defp ecosystem_from_prefix("hex"), do: :hex
+  defp ecosystem_from_prefix("pypi"), do: :pypi
+  defp ecosystem_from_prefix("github"), do: :github
 
   defp parse_package_spec(spec) when is_binary(spec) do
     case String.split(spec, "@", parts: 2) do

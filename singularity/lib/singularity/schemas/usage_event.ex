@@ -137,18 +137,23 @@ defmodule Singularity.Schemas.UsageEvent do
   def acceptance_rate(category, codebase_id) do
     import Ecto.Query
 
-    query = from u in __MODULE__,
-      where: u.category == ^category and u.codebase_id == ^codebase_id,
-      select: %{
-        total: count(u.id),
-        accepted: sum(fragment("CASE WHEN ? THEN 1 ELSE 0 END", u.accepted))
-      }
+    query =
+      from u in __MODULE__,
+        where: u.category == ^category and u.codebase_id == ^codebase_id,
+        select: %{
+          total: count(u.id),
+          accepted: sum(fragment("CASE WHEN ? THEN 1 ELSE 0 END", u.accepted))
+        }
 
     case Singularity.Repo.one(query) do
-      %{total: 0} -> 0.0
+      %{total: 0} ->
+        0.0
+
       %{total: total, accepted: accepted} when not is_nil(accepted) ->
         accepted / total
-      _ -> 0.0
+
+      _ ->
+        0.0
     end
   end
 
@@ -164,23 +169,27 @@ defmodule Singularity.Schemas.UsageEvent do
     import Ecto.Query
 
     # Get overall stats
-    overall_query = from u in __MODULE__,
-      where: u.codebase_id == ^codebase_id,
-      select: %{
-        total_events: count(u.id),
-        accepted: sum(fragment("CASE WHEN ? THEN 1 ELSE 0 END", u.accepted))
-      }
+    overall_query =
+      from u in __MODULE__,
+        where: u.codebase_id == ^codebase_id,
+        select: %{
+          total_events: count(u.id),
+          accepted: sum(fragment("CASE WHEN ? THEN 1 ELSE 0 END", u.accepted))
+        }
 
     overall = Singularity.Repo.one(overall_query) || %{total_events: 0, accepted: 0}
 
     # Get per-category stats
-    category_query = from u in __MODULE__,
-      where: u.codebase_id == ^codebase_id,
-      group_by: u.category,
-      select: {u.category, %{
-        total: count(u.id),
-        accepted: sum(fragment("CASE WHEN ? THEN 1 ELSE 0 END", u.accepted))
-      }}
+    category_query =
+      from u in __MODULE__,
+        where: u.codebase_id == ^codebase_id,
+        group_by: u.category,
+        select:
+          {u.category,
+           %{
+             total: count(u.id),
+             accepted: sum(fragment("CASE WHEN ? THEN 1 ELSE 0 END", u.accepted))
+           }}
 
     categories =
       category_query
@@ -189,10 +198,14 @@ defmodule Singularity.Schemas.UsageEvent do
 
     acceptance_rate =
       case overall do
-        %{total_events: 0} -> 0.0
+        %{total_events: 0} ->
+          0.0
+
         %{total_events: total, accepted: accepted} when not is_nil(accepted) ->
           accepted / total
-        _ -> 0.0
+
+        _ ->
+          0.0
       end
 
     %{

@@ -100,7 +100,8 @@ defmodule Singularity.CodeQuality.AstSecurityScanner do
 
     with {:ok, files} <- discover_files_by_language(codebase_path, languages, exclude_patterns),
          {:ok, vulnerabilities} <- scan_files_for_all_vulnerabilities(files, languages) do
-      report = generate_security_report_with_severity_grouping(vulnerabilities, severity_threshold)
+      report =
+        generate_security_report_with_severity_grouping(vulnerabilities, severity_threshold)
 
       Logger.info("Security scan complete: #{report.summary.total} issues found")
       {:ok, report}

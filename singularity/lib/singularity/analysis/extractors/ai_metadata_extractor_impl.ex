@@ -109,6 +109,7 @@ defmodule Singularity.Analysis.Extractors.AIMetadataExtractorImpl do
           module: identity["module"],
           has_call_graph: not is_nil(graph)
         )
+
         :ok
 
       _ ->

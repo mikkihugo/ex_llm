@@ -75,17 +75,21 @@ defmodule Singularity.MixProject do
       # Rustler NIFs
       {:rustler, "~> 0.37", runtime: false},
 
-      # All 6 Rust NIFs with Rustler integration (compile: false)
+      # Rust NIFs with Rustler integration (compile: false)
       # Rustler NIF compilation happens via Elixir modules that call `use Rustler`
       # Each module has: use Rustler, otp_app: :singularity, crate: :engine_name, path: ../..
       # NIFs are compiled on-demand when modules are loaded, not via Mix dependency compilation
-      {:architecture_engine, path: "../rust/architecture_engine", runtime: false, compile: false, app: false},
-      {:code_quality_engine, path: "../rust/code_quality_engine", runtime: false, compile: false, app: false},
+      # Note: architecture_engine removed - uses pure Elixir detectors instead
+      {:code_quality_engine,
+       path: "../rust/code_quality_engine", runtime: false, compile: false, app: false},
       # Embedding now uses pure Elixir (NxService) instead of Rust NIF
       # knowledge_engine consolidated into architecture_engine
-      {:parser_engine, path: "../rust/parser_engine", runtime: false, compile: false, app: false, optional: true},
-      {:prompt_engine, path: "../rust/prompt_engine", runtime: false, compile: false, app: false, optional: true},
-      {:linting_engine, path: "../rust/linting_engine", runtime: false, compile: false, app: false},
+      {:parser_engine,
+       path: "../rust/parser_engine", runtime: false, compile: false, app: false, optional: true},
+      {:prompt_engine,
+       path: "../rust/prompt_engine", runtime: false, compile: false, app: false, optional: true},
+      {:linting_engine,
+       path: "../rust/linting_engine", runtime: false, compile: false, app: false},
       # Other engines are symlinks to rust/ or rust-central/ directories (already included in workspace)
 
       # Data & Serialization
@@ -182,7 +186,9 @@ defmodule Singularity.MixProject do
         "deps.audit"
       ],
       "registry.sync": ["registry.sync"],
-      "registry.report": ["registry.report"]
+      "registry.report": ["registry.report"],
+      # Compile with only Singularity warnings (filter out dependency warnings)
+      "compile.only": ["compile.filtered"]
     ]
   end
 end

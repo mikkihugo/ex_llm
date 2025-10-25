@@ -209,9 +209,10 @@ defmodule Singularity.Search.SearchOrchestratorTest do
     end
 
     test "logs search operations" do
-      log = capture_log(fn ->
-        SearchOrchestrator.search("logging test")
-      end)
+      log =
+        capture_log(fn ->
+          SearchOrchestrator.search("logging test")
+        end)
 
       # Should contain search logs
       assert log =~ "Search" or log =~ "search" or log == ""
@@ -235,6 +236,7 @@ defmodule Singularity.Search.SearchOrchestratorTest do
       Enum.each(search_types, fn search ->
         capabilities = SearchOrchestrator.get_capabilities(search.name)
         assert is_list(capabilities)
+
         assert length(capabilities) > 0,
                "Search type #{search.name} should have capabilities"
       end)
@@ -439,6 +441,7 @@ defmodule Singularity.Search.SearchOrchestratorTest do
 
       # Should return map with empty lists
       assert is_map(results)
+
       Enum.each(results, fn {_type, items} ->
         assert is_list(items)
       end)

@@ -155,11 +155,13 @@ defmodule Singularity.Jobs.AgentEvolutionWorker do
     improvements =
       results
       |> Enum.filter(&(&1.improvement_applied && &1.improvement_applied != :none))
-      |> Enum.map(&%{
-        agent: &1.agent_id,
-        improvement: &1.improvement_applied,
-        change: &1.improvement
-      })
+      |> Enum.map(
+        &%{
+          agent: &1.agent_id,
+          improvement: &1.improvement_applied,
+          change: &1.improvement
+        }
+      )
 
     if length(improvements) > 0 do
       Logger.info("📈 Improvements applied",

@@ -400,11 +400,12 @@ defmodule Singularity.Knowledge.TemplateGeneration do
 
   defp format_answer_file_yaml(generation) do
     # Format as simple YAML (without external dependencies)
-    generated_at = if generation.generated_at do
-      DateTime.to_iso8601(generation.generated_at)
-    else
-      DateTime.to_iso8601(DateTime.utc_now())
-    end
+    generated_at =
+      if generation.generated_at do
+        DateTime.to_iso8601(generation.generated_at)
+      else
+        DateTime.to_iso8601(DateTime.utc_now())
+      end
 
     header = """
     # Template Answer File
@@ -454,9 +455,15 @@ defmodule Singularity.Knowledge.TemplateGeneration do
       answers: generation.answers,
       success: generation.success,
       quality_score: get_in(generation.answers, ["quality_score"]),
-      generated_at: if(generation.generated_at, do: DateTime.to_iso8601(generation.generated_at), else: DateTime.to_iso8601(DateTime.utc_now())),
-      instance_id: node() |> to_string(),  # Which Singularity instance
-      file_path: anonymize_path(generation.file_path)  # Strip user/project paths
+      generated_at:
+        if(generation.generated_at,
+          do: DateTime.to_iso8601(generation.generated_at),
+          else: DateTime.to_iso8601(DateTime.utc_now())
+        ),
+      # Which Singularity instance
+      instance_id: node() |> to_string(),
+      # Strip user/project paths
+      file_path: anonymize_path(generation.file_path)
     }
 
     # Publish to CentralCloud via NATS
@@ -478,15 +485,19 @@ defmodule Singularity.Knowledge.TemplateGeneration do
 
   # Anonymize file paths for privacy
   defp anonymize_path(nil), do: nil
+
   defp anonymize_path(path) when is_binary(path) do
     # Keep only relative path from project root
     # /Users/alice/secret-project/lib/auth.ex -> lib/auth.ex
     case String.split(path, "/lib/") do
-      [_prefix, relative] -> "lib/" <> relative
+      [_prefix, relative] ->
+        "lib/" <> relative
+
       _ ->
         case String.split(path, "/test/") do
           [_prefix, relative] -> "test/" <> relative
-          _ -> Path.basename(path)  # Just filename if can't parse
+          # Just filename if can't parse
+          _ -> Path.basename(path)
         end
     end
   end

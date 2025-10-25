@@ -63,7 +63,7 @@ defmodule Singularity.Embedding.Trainer do
     :axon_model,
     :model_params,
     :optimizer_state,
-    :training_config,
+    :training_config
   ]
 
   @doc """
@@ -91,8 +91,8 @@ defmodule Singularity.Embedding.Trainer do
           warmup_steps: 100,
           max_grad_norm: 1.0,
           weight_decay: 0.01,
-          margin: 0.5,
-        },
+          margin: 0.5
+        }
       }
 
       Logger.info("✅ Trainer created with Axon model")
@@ -172,11 +172,12 @@ defmodule Singularity.Embedding.Trainer do
       "model" => "#{trainer.model}",
       "checkpoint" => checkpoint_name,
       "saved_at" => DateTime.to_iso8601(DateTime.utc_now()),
-      "training_config" => trainer.training_config,
+      "training_config" => trainer.training_config
     }
 
     File.write!(Path.join(checkpoint_dir, "config.json"), Jason.encode!(config, pretty: true))
-    File.write!(Path.join(checkpoint_dir, "params.bin"), "")  # Placeholder
+    # Placeholder
+    File.write!(Path.join(checkpoint_dir, "params.bin"), "")
 
     {:ok, checkpoint_dir}
   end
@@ -243,17 +244,18 @@ defmodule Singularity.Embedding.Trainer do
         total_loss = all_metrics |> Enum.map(& &1.loss) |> Enum.sum()
         avg_loss = total_loss / length(all_metrics)
 
-        {:ok, %{
-          model: final_trainer.model,
-          epochs: epochs,
-          samples: length(training_triplets),
-          device: final_trainer.device,
-          final_loss: List.last(all_metrics).loss,
-          avg_loss: avg_loss,
-          trained_at: DateTime.utc_now(),
-          metrics_per_epoch: all_metrics,
-          final_trainer: final_trainer,
-        }}
+        {:ok,
+         %{
+           model: final_trainer.model,
+           epochs: epochs,
+           samples: length(training_triplets),
+           device: final_trainer.device,
+           final_loss: List.last(all_metrics).loss,
+           avg_loss: avg_loss,
+           trained_at: DateTime.utc_now(),
+           metrics_per_epoch: all_metrics,
+           final_trainer: final_trainer
+         }}
 
       error ->
         error
@@ -286,12 +288,13 @@ defmodule Singularity.Embedding.Trainer do
 
     Logger.info("Epoch #{epoch} avg loss: #{Float.round(avg_loss, 4)}")
 
-    {:ok, %{
-      epoch: epoch,
-      loss: avg_loss,
-      num_samples: length(training_triplets),
-      updated_trainer: updated_trainer,
-    }}
+    {:ok,
+     %{
+       epoch: epoch,
+       loss: avg_loss,
+       num_samples: length(training_triplets),
+       updated_trainer: updated_trainer
+     }}
   end
 
   defp update_weights_for_batch(trainer, batch, _loss) do
@@ -313,20 +316,20 @@ defmodule Singularity.Embedding.Trainer do
 
     # Step 1: Compute gradients using finite difference approximation
     case TrainingStep.compute_gradients(
-      trainer.axon_model,
-      trainer.model_params,
-      batch,
-      triplet_loss_fn
-    ) do
+           trainer.axon_model,
+           trainer.model_params,
+           batch,
+           triplet_loss_fn
+         ) do
       {:ok, {_loss, gradients}} ->
         # Step 2: Apply Adam optimizer update
         case TrainingStep.apply_adam_update(
-          trainer.model_params,
-          gradients,
-          trainer.optimizer_state,
-          learning_rate,
-          max_grad_norm
-        ) do
+               trainer.model_params,
+               gradients,
+               trainer.optimizer_state,
+               learning_rate,
+               max_grad_norm
+             ) do
           {:ok, {updated_params, updated_optimizer_state}} ->
             Logger.debug("✅ Updated #{map_size(updated_params)} parameters via Adam optimizer")
 
@@ -346,10 +349,11 @@ defmodule Singularity.Embedding.Trainer do
         Logger.warning("Failed to compute gradients: #{inspect(reason)}, using fallback update")
 
         # Fallback: simple parameter update if gradient computation fails
-        fallback_update = Map.map(trainer.model_params, fn _key, param ->
-          gradient = Nx.random_normal(Nx.shape(param)) |> Nx.multiply(0.001)
-          Nx.subtract(param, Nx.multiply(gradient, learning_rate))
-        end)
+        fallback_update =
+          Map.map(trainer.model_params, fn _key, param ->
+            gradient = Nx.random_normal(Nx.shape(param)) |> Nx.multiply(0.001)
+            Nx.subtract(param, Nx.multiply(gradient, learning_rate))
+          end)
 
         %{trainer | model_params: fallback_update}
     end
@@ -377,7 +381,8 @@ defmodule Singularity.Embedding.Trainer do
                {:ok, anchor_ids} <- Tokenizer.tokenize(tokenizer, anchor),
                {:ok, pos_ids} <- Tokenizer.tokenize(tokenizer, positive),
                {:ok, neg_ids} <- Tokenizer.tokenize(tokenizer, negative),
-               {:ok, anchor_emb} <- Model.embed(trainer.axon_model, trainer.model_params, [anchor_ids]),
+               {:ok, anchor_emb} <-
+                 Model.embed(trainer.axon_model, trainer.model_params, [anchor_ids]),
                {:ok, pos_emb} <- Model.embed(trainer.axon_model, trainer.model_params, [pos_ids]),
                {:ok, neg_emb} <- Model.embed(trainer.axon_model, trainer.model_params, [neg_ids]) do
             # Compute cosine distances
@@ -412,7 +417,8 @@ defmodule Singularity.Embedding.Trainer do
     end
   end
 
-  defp cosine_distance(emb1, emb2) when is_struct(emb1, Nx.Tensor) and is_struct(emb2, Nx.Tensor) do
+  defp cosine_distance(emb1, emb2)
+       when is_struct(emb1, Nx.Tensor) and is_struct(emb2, Nx.Tensor) do
     # Cosine distance = 1 - cosine_similarity
     dot_product = Nx.dot(emb1, emb2) |> Nx.to_number()
     norm1 = Nx.sqrt(Nx.sum(Nx.multiply(emb1, emb1))) |> Nx.to_number()
@@ -429,7 +435,8 @@ defmodule Singularity.Embedding.Trainer do
   end
 
   defp cosine_distance(_emb1, _emb2) do
-    0.5  # Fallback
+    # Fallback
+    0.5
   end
 
   defp text_distance(text1, text2) when is_binary(text1) and is_binary(text2) do
@@ -468,7 +475,7 @@ defmodule Singularity.Embedding.Trainer do
       num_batches = ceil(length(training_data) / batch_size)
 
       Enum.each(1..num_batches, fn batch_num ->
-        loss = 0.5 - (batch_num * 0.08)
+        loss = 0.5 - batch_num * 0.08
         Logger.info("  Batch #{batch_num}/#{num_batches} - Loss: #{Float.round(loss, 4)}")
       end)
 
@@ -481,13 +488,14 @@ defmodule Singularity.Embedding.Trainer do
 
     Logger.info("✅ Training completed")
 
-    {:ok, %{
-      model: trainer.model,
-      epochs: epochs,
-      samples: length(training_data),
-      device: trainer.device,
-      trained_at: DateTime.utc_now(),
-    }}
+    {:ok,
+     %{
+       model: trainer.model,
+       epochs: epochs,
+       samples: length(training_data),
+       device: trainer.device,
+       trained_at: DateTime.utc_now()
+     }}
   end
 
   defp models_dir do

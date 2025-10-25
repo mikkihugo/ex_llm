@@ -113,7 +113,7 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
       device: device,
       parameters: info.parameters,
       framework: info.framework,
-      loaded_at: DateTime.utc_now(),
+      loaded_at: DateTime.utc_now()
     }
 
     {:ok, state}

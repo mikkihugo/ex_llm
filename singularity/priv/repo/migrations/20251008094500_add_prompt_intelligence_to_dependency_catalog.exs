@@ -9,7 +9,7 @@ defmodule Singularity.Repo.Migrations.AddPromptIntelligenceToDependencyCatalog d
       add :prompt_usage_stats, :map, default: %{}, null: false
     end
 
-    create table(:dependency_catalog_prompt_usage, primary_key: false) do
+    create_if_not_exists table(:dependency_catalog_prompt_usage, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :dependency_id,
           references(:dependency_catalog, type: :binary_id, on_delete: :delete_all),
@@ -26,8 +26,14 @@ defmodule Singularity.Repo.Migrations.AddPromptIntelligenceToDependencyCatalog d
       timestamps(type: :utc_datetime)
     end
 
-    create index(:dependency_catalog_prompt_usage, [:dependency_id])
-    create index(:dependency_catalog_prompt_usage, [:prompt_id])
+    execute("""
+      CREATE INDEX IF NOT EXISTS dependency_catalog_prompt_usage_dependency_id_index
+      ON dependency_catalog_prompt_usage (dependency_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS dependency_catalog_prompt_usage_prompt_id_index
+      ON dependency_catalog_prompt_usage (prompt_id)
+    """, "")
   end
 
   def down do

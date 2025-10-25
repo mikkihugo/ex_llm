@@ -45,17 +45,21 @@ defmodule Singularity.NATS.EngineDiscoveryHandler do
       "engine.capability.>"
     ]
 
-    results = Enum.map(subjects, fn subject ->
-      case Singularity.NATS.Client.subscribe(subject) do
-        {:ok, _subscription} ->
-          Logger.info("[EngineDiscovery] Subscribed to #{subject}")
-          {:ok, subject}
+    results =
+      Enum.map(subjects, fn subject ->
+        case Singularity.NATS.Client.subscribe(subject) do
+          {:ok, _subscription} ->
+            Logger.info("[EngineDiscovery] Subscribed to #{subject}")
+            {:ok, subject}
 
-        {:error, reason} ->
-          Logger.warning("[EngineDiscovery] Failed to subscribe to #{subject}: #{inspect(reason)}")
-          {:error, {subject, reason}}
-      end
-    end)
+          {:error, reason} ->
+            Logger.warning(
+              "[EngineDiscovery] Failed to subscribe to #{subject}: #{inspect(reason)}"
+            )
+
+            {:error, {subject, reason}}
+        end
+      end)
 
     if Enum.all?(results, &match?({:ok, _}, &1)) do
       Logger.info("[EngineDiscovery] All engine discovery subscriptions initialized")

@@ -80,10 +80,16 @@ defmodule Singularity.Web.HealthRouter do
   """
   get "/agents/:agent_id/status" do
     agent_id = agent_id
+
     case Singularity.Health.AgentHealth.get_agent_status(agent_id) do
-      {:ok, status} -> send_resp(conn, 200, Jason.encode!(status))
-      {:error, :agent_not_found} -> send_resp(conn, 404, Jason.encode!(%{error: "Agent not found"}))
-      {:error, reason} -> send_resp(conn, 500, Jason.encode!(%{error: inspect(reason)}))
+      {:ok, status} ->
+        send_resp(conn, 200, Jason.encode!(status))
+
+      {:error, :agent_not_found} ->
+        send_resp(conn, 404, Jason.encode!(%{error: "Agent not found"}))
+
+      {:error, reason} ->
+        send_resp(conn, 500, Jason.encode!(%{error: inspect(reason)}))
     end
   end
 

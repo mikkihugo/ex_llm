@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateUsageEventsTable do
   use Ecto.Migration
 
   def change do
-    create table(:usage_events, primary_key: false) do
+    create_if_not_exists table(:usage_events, primary_key: false) do
       add :id, :bigserial, primary_key: true
       add :codebase_id, :string, null: false
       add :category, :string, null: false
@@ -14,12 +14,33 @@ defmodule Singularity.Repo.Migrations.CreateUsageEventsTable do
       add :updated_at, :utc_datetime, null: false, default: fragment("NOW()")
     end
 
-    create index(:usage_events, [:codebase_id])
-    create index(:usage_events, [:category])
-    create index(:usage_events, [:accepted])
-    create index(:usage_events, [:inserted_at])
-    create index(:usage_events, [:codebase_id, :category])
-    create index(:usage_events, [:codebase_id, :accepted])
-    create index(:usage_events, [:category, :accepted])
+    execute("""
+      CREATE INDEX IF NOT EXISTS usage_events_codebase_id_index
+      ON usage_events (codebase_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS usage_events_category_index
+      ON usage_events (category)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS usage_events_accepted_index
+      ON usage_events (accepted)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS usage_events_inserted_at_index
+      ON usage_events (inserted_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS usage_events_codebase_id_category_index
+      ON usage_events (codebase_id, category)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS usage_events_codebase_id_accepted_index
+      ON usage_events (codebase_id, accepted)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS usage_events_category_accepted_index
+      ON usage_events (category, accepted)
+    """, "")
   end
 end

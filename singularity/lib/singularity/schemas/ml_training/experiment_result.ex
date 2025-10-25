@@ -74,11 +74,15 @@ defmodule Singularity.Learning.ExperimentResult do
   @foreign_key_type :binary_id
   schema "experiment_results" do
     field :experiment_id, :string
-    field :status, :string  # success, timeout, failed
-    field :metrics, :map    # success_rate, regression, runtime_ms, etc.
-    field :recommendation, :string  # merge, merge_with_adaptations, rollback
+    # success, timeout, failed
+    field :status, :string
+    # success_rate, regression, runtime_ms, etc.
+    field :metrics, :map
+    # merge, merge_with_adaptations, rollback
+    field :recommendation, :string
     field :changes_description, :string
-    field :risk_level, :string  # low, medium, high
+    # low, medium, high
+    field :risk_level, :string
     field :recorded_at, :utc_datetime_usec
 
     timestamps(type: :utc_datetime_usec)
@@ -115,7 +119,8 @@ defmodule Singularity.Learning.ExperimentResult do
   Called when Genesis publishes results to NATS.
   Stores result for learning and provides recommendation to caller.
   """
-  def record(experiment_id, genesis_result) when is_binary(experiment_id) and is_map(genesis_result) do
+  def record(experiment_id, genesis_result)
+      when is_binary(experiment_id) and is_map(genesis_result) do
     try do
       now = DateTime.utc_now()
 
@@ -197,9 +202,10 @@ defmodule Singularity.Learning.ExperimentResult do
     if Enum.empty?(results) do
       {:error, :no_results}
     else
-      successful_merges = Enum.filter(results, fn r ->
-        r.status == "success" and r.recommendation in ["merge", "merge_with_adaptations"]
-      end)
+      successful_merges =
+        Enum.filter(results, fn r ->
+          r.status == "success" and r.recommendation in ["merge", "merge_with_adaptations"]
+        end)
 
       rollbacks = Enum.filter(results, fn r -> r.recommendation == "rollback" end)
 

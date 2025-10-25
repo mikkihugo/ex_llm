@@ -486,7 +486,9 @@ defmodule Singularity.Learning.PatternMiner do
     pattern_embeddings =
       patterns
       |> Enum.map(fn pattern ->
-        case Singularity.CodeGeneration.Implementations.EmbeddingGenerator.embed(pattern.description || pattern.name) do
+        case Singularity.CodeGeneration.Implementations.EmbeddingGenerator.embed(
+               pattern.description || pattern.name
+             ) do
           {:ok, embedding} ->
             {pattern, embedding}
 
@@ -703,7 +705,9 @@ defmodule Singularity.Learning.PatternMiner do
       # Generate embedding for the cluster
       cluster_description = build_cluster_description(cluster)
 
-      case Singularity.CodeGeneration.Implementations.EmbeddingGenerator.embed(cluster_description) do
+      case Singularity.CodeGeneration.Implementations.EmbeddingGenerator.embed(
+             cluster_description
+           ) do
         {:ok, embedding} ->
           # Store in database
           pattern_data = %{

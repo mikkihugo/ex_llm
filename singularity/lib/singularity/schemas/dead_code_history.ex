@@ -58,7 +58,8 @@ defmodule Singularity.Schemas.DeadCodeHistory do
     field :check_date, :utc_datetime_usec
     field :total_count, :integer
     field :change_from_baseline, :integer
-    field :status, :string  # ok, warn, alert, critical
+    # ok, warn, alert, critical
+    field :status, :string
 
     # Category breakdown
     field :struct_fields_count, :integer, default: 0
@@ -141,7 +142,8 @@ defmodule Singularity.Schemas.DeadCodeHistory do
       [{~U[2025-01-23 09:00:00Z], 35}, {~U[2025-01-30 09:00:00Z], 37}, ...]
   """
   def trend(opts \\ [], repo \\ Singularity.Repo) do
-    days = Keyword.get(opts, :days, 180)  # Default: 6 months
+    # Default: 6 months
+    days = Keyword.get(opts, :days, 180)
     start_date = DateTime.utc_now() |> DateTime.add(-days * 24 * 3600, :second)
 
     from(h in __MODULE__,

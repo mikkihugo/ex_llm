@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateMetricsAggregated do
   use Ecto.Migration
 
   def change do
-    create table(:metrics_aggregated, primary_key: false) do
+    create_if_not_exists table(:metrics_aggregated, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :event_name, :string, null: false
       add :period, :string, null: false  # "hour" or "day"
@@ -28,13 +28,22 @@ defmodule Singularity.Repo.Migrations.CreateMetricsAggregated do
       name: "metrics_aggregated_unique_idx")
 
     # Query indexes - most common access patterns
-    create index(:metrics_aggregated, [:event_name, :period_start],
+    execute("""
+      CREATE INDEX IF NOT EXISTS metrics_aggregated_event_name_period_start_index
+      ON metrics_aggregated (event_name, period_start)
+    """, "")
       name: "metrics_aggregated_event_time_idx")
 
-    create index(:metrics_aggregated, [:period, :period_start],
+    execute("""
+      CREATE INDEX IF NOT EXISTS metrics_aggregated_period_period_start_index
+      ON metrics_aggregated (period, period_start)
+    """, "")
       name: "metrics_aggregated_period_time_idx")
 
-    create index(:metrics_aggregated, [:period_start],
+    execute("""
+      CREATE INDEX IF NOT EXISTS metrics_aggregated_period_start_index
+      ON metrics_aggregated (period_start)
+    """, "")
       name: "metrics_aggregated_period_start_idx")
   end
 end

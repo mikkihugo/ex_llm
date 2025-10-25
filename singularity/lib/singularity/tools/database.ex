@@ -711,8 +711,8 @@ defmodule Singularity.Tools.Database do
   defp execute_query_with_timeout(sql, params, timeout) do
     Task.async(fn -> execute_query(sql, params) end)
     |> Task.await(timeout)
-  rescue
-    :timeout -> {:error, "Query timeout after #{timeout}ms"}
+  catch
+    :exit, {:timeout, _} -> {:error, "Query timeout after #{timeout}ms"}
   end
 
   defp get_pending_migrations(ran_migrations) do

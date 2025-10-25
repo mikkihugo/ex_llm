@@ -86,7 +86,6 @@ defmodule Singularity.CodeGraph.AGEQueries do
   end
 
   defp initialize_age_graph do
-
     case Repo.query("SELECT * FROM ag_catalog.create_graph('code_graph')") do
       {:ok, _} ->
         Logger.info("AGE graph 'code_graph' initialized")
@@ -124,10 +123,11 @@ defmodule Singularity.CodeGraph.AGEQueries do
     end
 
     try do
-      {:ok, result} = Repo.query(
-        "SELECT * FROM cypher('code_graph', $1) AS (result jsonb)",
-        [query] ++ params
-      )
+      {:ok, result} =
+        Repo.query(
+          "SELECT * FROM cypher('code_graph', $1) AS (result jsonb)",
+          [query] ++ params
+        )
 
       rows = Enum.map(result.rows, fn [jsonb] -> jsonb end)
       {:ok, rows}
@@ -179,7 +179,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
         results = Enum.map(rows, &parse_result/1)
         {:ok, results}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -224,7 +225,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
         results = Enum.map(rows, &parse_result/1)
         {:ok, results}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -268,7 +270,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
         result = parse_result(List.first(rows))
         {:ok, result}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -311,7 +314,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
         results = Enum.map(rows, &parse_result/1)
         {:ok, results}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -358,7 +362,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
         results = Enum.map(rows, &parse_result/1)
         {:ok, results}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -404,7 +409,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
         results = Enum.map(rows, &parse_result/1)
         {:ok, results}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -441,7 +447,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
         results = Enum.map(rows, &parse_result/1)
         {:ok, results}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -486,7 +493,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
         results = Enum.map(rows, &parse_result/1)
         {:ok, results}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -526,7 +534,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
         results = Enum.map(rows, &parse_result/1)
         {:ok, results}
 
-      error -> error
+      error ->
+        error
     end
   end
 

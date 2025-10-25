@@ -5,7 +5,7 @@ defmodule Singularity.Repo.Migrations.CreateKnowledgeArtifacts do
     # Enable pgvector if not already enabled
     execute("CREATE EXTENSION IF NOT EXISTS vector")
 
-    create table(:knowledge_artifacts, primary_key: false) do
+    create_if_not_exists table(:knowledge_artifacts, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
 
       # Identity
@@ -60,12 +60,18 @@ defmodule Singularity.Repo.Migrations.CreateKnowledgeArtifacts do
     """)
 
     # Unique constraint
-    create unique_index(:knowledge_artifacts, [:artifact_type, :artifact_id, :version],
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS knowledge_artifacts_artifact_type_artifact_id_version_key
+      ON knowledge_artifacts (artifact_type, artifact_id, version)
+    """, "")
              name: :knowledge_artifacts_unique_idx
            )
 
     # Indexes for fast queries
-    create index(:knowledge_artifacts, [:artifact_type, :language],
+    execute("""
+      CREATE INDEX IF NOT EXISTS knowledge_artifacts_artifact_type_language_index
+      ON knowledge_artifacts (artifact_type, language)
+    """, "")
              name: :knowledge_artifacts_type_lang_idx
            )
 

@@ -35,11 +35,11 @@ defmodule Singularity.Jobs.PatternSyncJobTest do
       job = %Oban.Job{}
 
       assert capture_log([level: :debug], fn ->
-        PatternSyncJob.perform(job)
-      end) =~ "Syncing" or
-             capture_log([level: :debug], fn ->
                PatternSyncJob.perform(job)
-             end) =~ "🔄"
+             end) =~ "Syncing" or
+               capture_log([level: :debug], fn ->
+                 PatternSyncJob.perform(job)
+               end) =~ "🔄"
     end
 
     test "returns :ok even if sync fails" do
@@ -53,9 +53,10 @@ defmodule Singularity.Jobs.PatternSyncJobTest do
     test "handles successful sync with info log" do
       job = %Oban.Job{}
 
-      log = capture_log([level: :info], fn ->
-        PatternSyncJob.perform(job)
-      end)
+      log =
+        capture_log([level: :info], fn ->
+          PatternSyncJob.perform(job)
+        end)
 
       # Should log success or error
       assert String.length(log) >= 0
@@ -67,9 +68,9 @@ defmodule Singularity.Jobs.PatternSyncJobTest do
       job = %Oban.Job{}
 
       assert capture_log([level: :info], fn ->
-        PatternSyncJob.perform(job)
-      end) =~ "patterns synced" or
-             PatternSyncJob.perform(job) == :ok
+               PatternSyncJob.perform(job)
+             end) =~ "patterns synced" or
+               PatternSyncJob.perform(job) == :ok
     end
 
     test "syncs to NATS messaging" do
@@ -101,9 +102,10 @@ defmodule Singularity.Jobs.PatternSyncJobTest do
     test "logs errors without crashing" do
       job = %Oban.Job{}
 
-      log = capture_log([level: :error], fn ->
-        PatternSyncJob.perform(job)
-      end)
+      log =
+        capture_log([level: :error], fn ->
+          PatternSyncJob.perform(job)
+        end)
 
       # Error may or may not occur depending on system state
       assert String.length(log) >= 0
@@ -222,7 +224,8 @@ defmodule Singularity.Jobs.PatternSyncJobTest do
 
       # Should complete in reasonable time
       assert result == :ok
-      assert elapsed < 30000  # 30 seconds max for 5 minute job
+      # 30 seconds max for 5 minute job
+      assert elapsed < 30000
     end
 
     test "job suitable for cron scheduling" do
@@ -268,30 +271,31 @@ defmodule Singularity.Jobs.PatternSyncJobTest do
       job = %Oban.Job{}
 
       assert capture_log([level: :debug], fn ->
-        PatternSyncJob.perform(job)
-      end) =~ "Syncing" or
-             capture_log([level: :debug], fn ->
                PatternSyncJob.perform(job)
-             end) =~ "pattern"
+             end) =~ "Syncing" or
+               capture_log([level: :debug], fn ->
+                 PatternSyncJob.perform(job)
+               end) =~ "pattern"
     end
 
     test "logs successful sync" do
       job = %Oban.Job{}
 
       assert capture_log([level: :info], fn ->
-        PatternSyncJob.perform(job)
-      end) =~ "synced" or
-             capture_log([level: :info], fn ->
                PatternSyncJob.perform(job)
-             end) =~ "✅"
+             end) =~ "synced" or
+               capture_log([level: :info], fn ->
+                 PatternSyncJob.perform(job)
+               end) =~ "✅"
     end
 
     test "logs failure reasons" do
       job = %Oban.Job{}
 
-      log = capture_log([level: :error], fn ->
-        PatternSyncJob.perform(job)
-      end)
+      log =
+        capture_log([level: :error], fn ->
+          PatternSyncJob.perform(job)
+        end)
 
       # May log errors if sync fails
       assert String.length(log) >= 0
@@ -300,9 +304,10 @@ defmodule Singularity.Jobs.PatternSyncJobTest do
     test "provides detailed error context" do
       job = %Oban.Job{}
 
-      _log = capture_log([level: :error], fn ->
-        PatternSyncJob.perform(job)
-      end)
+      _log =
+        capture_log([level: :error], fn ->
+          PatternSyncJob.perform(job)
+        end)
 
       :ok
     end

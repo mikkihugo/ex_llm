@@ -234,7 +234,7 @@ defmodule Singularity.Execution.TaskGraph.Worker do
     case TodoStore.complete(todo, result) do
       {:ok, _updated_todo} ->
         # Notify coordinator
-        TaskGraph.WorkerPool.worker_completed(state.worker_id, todo.id, result)
+        WorkerPool.worker_completed(state.worker_id, todo.id, result)
 
       {:error, reason} ->
         Logger.error("Failed to update completed todo",
@@ -261,7 +261,7 @@ defmodule Singularity.Execution.TaskGraph.Worker do
     case TodoStore.fail(todo, error_message) do
       {:ok, _updated_todo} ->
         # Notify coordinator
-        TaskGraph.WorkerPool.worker_failed(state.worker_id, todo.id, error_message)
+        WorkerPool.worker_failed(state.worker_id, todo.id, error_message)
 
       {:error, reason} ->
         Logger.error("Failed to update failed todo",

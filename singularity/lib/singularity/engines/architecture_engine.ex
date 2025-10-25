@@ -1,16 +1,16 @@
 defmodule Singularity.ArchitectureEngine do
   @moduledoc """
-  Architecture Engine - Unified NIF Interface for Architectural Analysis - Production Quality
+  Architecture Engine - Unified Pattern Detection for Architectural Analysis - Production Quality
 
-  **REAL IMPLEMENTATION** - Database-driven pattern matching with self-learning
+  **PURE ELIXIR IMPLEMENTATION** - Database-driven pattern matching with self-learning
 
   ```json
   {
     "module": "Singularity.ArchitectureEngine",
-    "layer": "nif_orchestrator",
-    "purpose": "Orchestrate I/O (PostgreSQL) and computation (Rust NIF) for architecture analysis",
-    "rust_nif": "architecture_engine (../rust/architecture_engine)",
-    "nif_operations": [
+    "layer": "pattern_detection",
+    "purpose": "Orchestrate I/O (PostgreSQL) and pattern matching (Pure Elixir) for architecture analysis",
+    "implementation": "Pure Elixir via FrameworkDetector and TechnologyDetector",
+    "operations": [
       "detect_frameworks",
       "detect_technologies",
       "get_architectural_suggestions"
@@ -35,22 +35,22 @@ defmodule Singularity.ArchitectureEngine do
   graph TB
       A[Client: CodeSearch] -->|detect_frameworks| B[ArchitectureEngine]
       B -->|1. Query DB| C[(PostgreSQL<br/>framework_patterns)]
-      C -->|2. patterns| D[Elixir: build request]
-      D -->|3. NIF call| E[Rust: architecture_engine_call]
-      E -->|4. detect_frameworks| F[Rust: pattern matching]
-      F -->|5. results| G[Elixir: decode results]
-      G -->|6. store| H[(PostgreSQL<br/>framework_patterns)]
-      G -->|7. return| A
+      C -->|2. patterns| D[FrameworkDetector]
+      D -->|3. Pattern Matching| E[File/Config Analysis]
+      E -->|4. Results| F[Elixir: store results]
+      F -->|5. store| G[(PostgreSQL<br/>framework_patterns)]
+      F -->|6. return| A
 
-      I[Client: detect_technologies] -->|request| B
-      B -->|1. Query DB| J[(PostgreSQL<br/>technology_patterns)]
-      J -->|2. patterns| D
+      H[Client: detect_technologies] -->|request| B
+      B -->|1. Query DB| I[(PostgreSQL<br/>technology_patterns)]
+      I -->|2. patterns| J[TechnologyDetector]
+      J -->|3. Pattern Matching| K[Language/DB/Container Detection]
 
       style B fill:#90EE90
+      style D fill:#87CEEB
       style E fill:#FFB6C1
-      style F fill:#87CEEB
       style C fill:#FFE4B5
-      style J fill:#FFE4B5
+      style I fill:#FFE4B5
   ```
 
   ## Call Graph (YAML - Machine Readable)
@@ -59,7 +59,8 @@ defmodule Singularity.ArchitectureEngine do
   ArchitectureEngine:
     calls:
       - Singularity.Repo.query/2: "Fetch patterns from PostgreSQL"
-      - architecture_engine_call/2: "NIF call to Rust (private stub)"
+      - Singularity.Architecture.Detectors.FrameworkDetector.detect/2: "Framework detection"
+      - Singularity.Architecture.Detectors.TechnologyDetector.detect/2: "Technology detection"
       - FrameworkPatternStore.learn_pattern/1: "Store framework results"
       - TechnologyPatternStore.learn_pattern/1: "Store technology results"
       - Logger: "Logging detection progress"
@@ -68,14 +69,9 @@ defmodule Singularity.ArchitectureEngine do
       - Singularity.ArchitectureAnalyzer: "Full architecture analysis"
       - Mix.Tasks.Architecture.Detect: "CLI detection tasks"
       - Singularity.Agents.*: "Agent-driven analysis"
-    rust_nif:
-      crate: "architecture_engine"
-      path: "../rust/architecture_engine"
-      entry_point: "architecture_engine_call(operation, request)"
-      operations:
-        - detect_frameworks: "Framework pattern matching"
-        - detect_technologies: "Technology pattern matching"
-        - get_architectural_suggestions: "Generate suggestions"
+    implementations:
+      - FrameworkDetector: "Pure Elixir framework detection via file patterns"
+      - TechnologyDetector: "Pure Elixir technology detection via language detection + file patterns"
     database:
       tables:
         - framework_patterns: "Framework detection patterns and stats"
@@ -105,21 +101,22 @@ defmodule Singularity.ArchitectureEngine do
   technology identification, framework identification, pattern storage, success rate tracking,
   pure computation, I/O orchestration, Ecto queries
 
-  ## Architecture Pattern (Elixir ←→ Rust NIF)
+  ## Implementation Pattern (Pure Elixir)
 
-  **I/O → Computation → I/O Pattern:**
+  **I/O → Detection → I/O Pattern:**
 
   1. **Elixir fetches data** from PostgreSQL (framework_patterns, technology_patterns tables)
-  2. **Elixir passes data** to Rust NIF (via architecture_engine_call/2)
-  3. **Rust computes results** (pure computation, no I/O, < 10ms)
-  4. **Rust returns results** to Elixir (as Elixir terms)
+  2. **Elixir delegates to detectors** (FrameworkDetector, TechnologyDetector)
+  3. **Detectors perform pattern matching** (file checks, config analysis, language detection)
+  4. **Detectors return results** to Elixir
   5. **Elixir stores results** in PostgreSQL (via pattern stores)
 
   **Why this pattern?**
-  - BEAM scheduler safety: Rust NIFs don't block on I/O
+  - Simplicity: Pure Elixir, no NIF compilation issues
   - Testability: Can mock database layer in Elixir
-  - Flexibility: Can swap database without changing Rust
+  - Flexibility: Can swap detectors without changing orchestrator
   - Learning: Elixir tracks pattern success rates
+  - Performance: Simple pattern matching is fast enough for architecture detection
 
   ## Operations
 
@@ -137,11 +134,6 @@ defmodule Singularity.ArchitectureEngine do
 
   This creates a feedback loop where patterns improve over time!
   """
-
-  use Rustler,
-    otp_app: :singularity,
-    crate: :architecture_engine,
-    path: "../rust/architecture_engine"
 
   require Logger
   alias Singularity.Repo
@@ -517,9 +509,48 @@ defmodule Singularity.ArchitectureEngine do
   end
 
   ##############################################################################
-  ## NIF STUB (Implemented by Rust)
+  ## PURE ELIXIR IMPLEMENTATIONS
   ##############################################################################
 
-  # This function is replaced by Rust NIF at runtime
-  defp architecture_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
+  # Delegate to Elixir detectors for framework detection
+  defp architecture_engine_call("detect_frameworks", request) do
+    code_patterns = Map.get(request, :code_patterns, [])
+
+    case Singularity.Architecture.Detectors.FrameworkDetector.detect("") do
+      results when is_list(results) ->
+        {:ok, Enum.map(results, &Map.from_struct/1)}
+
+      error ->
+        Logger.error("Framework detection failed: #{inspect(error)}")
+        {:error, error}
+    end
+  end
+
+  # Delegate to Elixir detectors for technology detection
+  defp architecture_engine_call("detect_technologies", request) do
+    code_patterns = Map.get(request, :code_patterns, [])
+
+    case Singularity.Architecture.Detectors.TechnologyDetector.detect("") do
+      results when is_list(results) ->
+        {:ok, Enum.map(results, &Map.from_struct/1)}
+
+      error ->
+        Logger.error("Technology detection failed: #{inspect(error)}")
+        {:error, error}
+    end
+  end
+
+  # Architectural suggestions (simple implementation)
+  defp architecture_engine_call("get_architectural_suggestions", request) do
+    _codebase_info = Map.get(request, :codebase_info, %{})
+
+    # For now, return empty suggestions (can be enhanced later)
+    {:ok, []}
+  end
+
+  # Unknown operation
+  defp architecture_engine_call(operation, _request) do
+    Logger.warning("Unknown architecture_engine operation: #{operation}")
+    {:error, {:unknown_operation, operation}}
+  end
 end

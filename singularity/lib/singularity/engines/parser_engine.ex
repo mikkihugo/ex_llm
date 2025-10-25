@@ -618,7 +618,9 @@ defmodule Singularity.ParserEngine do
       include_performance: true
     }
 
-    case Singularity.NATS.Client.request("central.parser.capabilities", Jason.encode!(request), timeout: 5000) do
+    case Singularity.NATS.Client.request("central.parser.capabilities", Jason.encode!(request),
+           timeout: 5000
+         ) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data}

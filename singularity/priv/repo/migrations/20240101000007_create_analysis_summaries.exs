@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateAnalysisSummaries do
   use Ecto.Migration
 
   def change do
-    create table(:analysis_summaries, primary_key: false) do
+    create_if_not_exists table(:analysis_summaries, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :codebase_id, :string, null: false
       add :analysis_data, :map, null: false, default: %{}
@@ -27,16 +27,31 @@ defmodule Singularity.Repo.Migrations.CreateAnalysisSummaries do
     end
 
     # Primary indexes for querying
-    create index(:analysis_summaries, [:analyzed_at])
+    execute("""
+      CREATE INDEX IF NOT EXISTS analysis_summaries_analyzed_at_index
+      ON analysis_summaries (analyzed_at)
+    """, "")
 
     # Index for cleanup queries
-    create index(:analysis_summaries, [:codebase_id])
+    execute("""
+      CREATE INDEX IF NOT EXISTS analysis_summaries_codebase_id_index
+      ON analysis_summaries (codebase_id)
+    """, "")
 
     # Index for quality-based queries
-    create index(:analysis_summaries, [:quality_score])
-    create index(:analysis_summaries, [:technical_debt_ratio])
+    execute("""
+      CREATE INDEX IF NOT EXISTS analysis_summaries_quality_score_index
+      ON analysis_summaries (quality_score)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS analysis_summaries_technical_debt_ratio_index
+      ON analysis_summaries (technical_debt_ratio)
+    """, "")
 
     # Unique constraint for time-series data (prevent duplicate analyses at same timestamp)
-    create unique_index(:analysis_summaries, [:codebase_id, :analyzed_at])
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS analysis_summaries_codebase_id_analyzed_at_key
+      ON analysis_summaries (codebase_id, analyzed_at)
+    """, "")
   end
 end

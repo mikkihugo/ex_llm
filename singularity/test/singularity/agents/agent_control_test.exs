@@ -20,10 +20,11 @@ defmodule Singularity.Agents.AgentControlTest do
   describe "individual agent pause/resume" do
     setup do
       # Spawn test agent
-      {:ok, agent} = AgentSpawner.spawn(%{
-        "role" => "test_agent",
-        "config" => %{}
-      })
+      {:ok, agent} =
+        AgentSpawner.spawn(%{
+          "role" => "test_agent",
+          "config" => %{}
+        })
 
       {:ok, agent: agent}
     end
@@ -71,13 +72,16 @@ defmodule Singularity.Agents.AgentControlTest do
   describe "supervisor-level pause/resume" do
     setup do
       # Spawn multiple test agents
-      agents = for i <- 1..3 do
-        {:ok, agent} = AgentSpawner.spawn(%{
-          "role" => "test_agent_#{i}",
-          "config" => %{}
-        })
-        agent
-      end
+      agents =
+        for i <- 1..3 do
+          {:ok, agent} =
+            AgentSpawner.spawn(%{
+              "role" => "test_agent_#{i}",
+              "config" => %{}
+            })
+
+          agent
+        end
 
       {:ok, agents: agents}
     end
@@ -139,10 +143,11 @@ defmodule Singularity.Agents.AgentControlTest do
   describe "agent improvement" do
     setup do
       # Spawn test agent
-      {:ok, agent} = AgentSpawner.spawn(%{
-        "role" => "test_agent",
-        "config" => %{}
-      })
+      {:ok, agent} =
+        AgentSpawner.spawn(%{
+          "role" => "test_agent",
+          "config" => %{}
+        })
 
       {:ok, agent: agent}
     end
@@ -151,23 +156,26 @@ defmodule Singularity.Agents.AgentControlTest do
       agent_id = agent.id
 
       # Submit improvement request
-      assert :ok = AgentSupervisor.improve_agent(agent_id, %{
-        type: :optimization,
-        description: "Test improvement"
-      })
+      assert :ok =
+               AgentSupervisor.improve_agent(agent_id, %{
+                 type: :optimization,
+                 description: "Test improvement"
+               })
     end
 
     test "improve returns error for non-existent agent" do
-      assert {:error, :not_found} = AgentSupervisor.improve_agent("non-existent-agent-id", %{
-        type: :optimization
-      })
+      assert {:error, :not_found} =
+               AgentSupervisor.improve_agent("non-existent-agent-id", %{
+                 type: :optimization
+               })
     end
 
     test "improve with empty payload works" do
-      {:ok, agent} = AgentSpawner.spawn(%{
-        "role" => "test_agent",
-        "config" => %{}
-      })
+      {:ok, agent} =
+        AgentSpawner.spawn(%{
+          "role" => "test_agent",
+          "config" => %{}
+        })
 
       assert :ok = AgentSupervisor.improve_agent(agent.id, %{})
     end
@@ -176,10 +184,11 @@ defmodule Singularity.Agents.AgentControlTest do
   describe "pause state tracking" do
     setup do
       # Spawn test agent
-      {:ok, agent} = AgentSpawner.spawn(%{
-        "role" => "test_agent",
-        "config" => %{}
-      })
+      {:ok, agent} =
+        AgentSpawner.spawn(%{
+          "role" => "test_agent",
+          "config" => %{}
+        })
 
       {:ok, agent: agent}
     end
@@ -237,13 +246,16 @@ defmodule Singularity.Agents.AgentControlTest do
   describe "get all agents" do
     setup do
       # Spawn multiple agents
-      agents = for i <- 1..5 do
-        {:ok, agent} = AgentSpawner.spawn(%{
-          "role" => "test_agent_#{i}",
-          "config" => %{}
-        })
-        agent
-      end
+      agents =
+        for i <- 1..5 do
+          {:ok, agent} =
+            AgentSpawner.spawn(%{
+              "role" => "test_agent_#{i}",
+              "config" => %{}
+            })
+
+          agent
+        end
 
       {:ok, agents: agents}
     end

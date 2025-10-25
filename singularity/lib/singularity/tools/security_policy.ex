@@ -253,7 +253,8 @@ defmodule Singularity.Tools.SecurityPolicy do
 
   Returns `:ok` if user has access, `{:error, reason}` otherwise.
   """
-  def check_user_permission(user_id, codebase_id) when is_binary(user_id) and is_binary(codebase_id) do
+  def check_user_permission(user_id, codebase_id)
+      when is_binary(user_id) and is_binary(codebase_id) do
     case Repo.get_by(UserCodebasePermission, user_id: user_id, codebase_id: codebase_id) do
       nil ->
         Logger.warning("Unauthorized codebase access attempt",
@@ -367,13 +368,50 @@ defmodule Singularity.Tools.SecurityPolicy do
   defp validate_graph_size_limit(_request), do: :ok
 
   defp check_rate_limit(request) do
-    # TODO: Implement actual rate limiting (ETS-based or Redis)
+    # ETS-based rate limiting: track requests per codebase
     codebase_id = Map.get(request, "codebase_id", "singularity")
 
-    # For now, just log the request
-    Logger.debug("[SecurityPolicy] Rate limit check: #{codebase_id}")
+    # Limits: 100 requests per minute per codebase
+    max_requests = 100
+    window_seconds = 60
+    current_time = System.system_time(:second)
+    window_start = current_time - window_seconds
 
-    :ok
+    # Initialize ETS table if needed
+    ets_table = :security_policy_rate_limits
+    if !:ets.info(ets_table) do
+      :ets.new(ets_table, [:set, :public, :named_table, {:write_concurrency, true}])
+    end
+
+    # Get or create request count for this codebase
+    case :ets.lookup(ets_table, codebase_id) do
+      [{^codebase_id, {count, timestamp}}] ->
+        if timestamp < window_start do
+          # Window expired, reset counter
+          :ets.insert(ets_table, {codebase_id, {1, current_time}})
+          :ok
+        else
+          # Within window
+          if count >= max_requests do
+            {:error, "Rate limit exceeded for codebase #{codebase_id}"}
+          else
+            :ets.insert(ets_table, {codebase_id, {count + 1, timestamp}})
+            Logger.debug("[SecurityPolicy] Rate limit check: #{codebase_id} (#{count + 1}/#{max_requests})")
+            :ok
+          end
+        end
+
+      [] ->
+        # First request from this codebase
+        :ets.insert(ets_table, {codebase_id, {1, current_time}})
+        Logger.debug("[SecurityPolicy] Rate limit check: #{codebase_id} (1/#{max_requests})")
+        :ok
+    end
+  rescue
+    # If ETS fails, allow request to proceed (graceful degradation)
+    _ ->
+      Logger.warning("[SecurityPolicy] Rate limiting unavailable, allowing request")
+      :ok
   end
 
   ## Public Helpers

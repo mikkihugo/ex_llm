@@ -59,26 +59,41 @@ defmodule Singularity.Repo.Migrations.AddPageRankToGraphNodes do
   """
 
   def up do
-    # Add pagerank_score column if it doesn't exist
-    alter table(:graph_nodes) do
-      add :pagerank_score, :float, default: 0.0
-    end
+    # Only add pagerank_score column if graph_nodes table exists
+    execute("""
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'graph_nodes') THEN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'graph_nodes' AND column_name = 'pagerank_score'
+          ) THEN
+            ALTER TABLE graph_nodes ADD COLUMN pagerank_score float DEFAULT 0.0;
+          END IF;
+        END IF;
+      END$$;
+    """, "")
 
     # Create index for efficient queries by PageRank
-    create index(:graph_nodes, [:pagerank_score], name: :graph_nodes_pagerank_idx)
+    execute("""
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'graph_nodes') THEN
+          CREATE INDEX IF NOT EXISTS graph_nodes_pagerank_score_index ON graph_nodes (pagerank_score);
+        END IF;
+      END$$;
+    """, "")
 
     # Create index for composite queries (codebase + pagerank)
-    create index(:graph_nodes, [:codebase_id, :pagerank_score],
-      name: :graph_nodes_codebase_pagerank_idx
-    )
-
-    IO.puts("✅ Added pagerank_score column to graph_nodes")
-    IO.puts("   • pagerank_score (float, default: 0.0)")
-    IO.puts("   • Index: graph_nodes_pagerank_idx")
-    IO.puts("   • Composite index: graph_nodes_codebase_pagerank_idx")
-    IO.puts("")
-    IO.puts("Next: Run PageRankCalculationJob to populate scores")
-    IO.puts("  Singularity.Jobs.JobOrchestrator.enqueue(:pagerank_calculation, %{})")
+    execute("""
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'graph_nodes') THEN
+          CREATE INDEX IF NOT EXISTS graph_nodes_codebase_id_pagerank_score_index
+          ON graph_nodes (codebase_id, pagerank_score);
+        END IF;
+      END$$;
+    """, "")
   end
 
   def down do

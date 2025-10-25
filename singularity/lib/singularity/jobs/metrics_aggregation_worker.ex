@@ -51,7 +51,11 @@ defmodule Singularity.Jobs.MetricsAggregationWorker do
       end
     rescue
       e in Exception ->
-        Logger.error("❌ Metrics aggregation exception", error: inspect(e), stacktrace: __STACKTRACE__)
+        Logger.error("❌ Metrics aggregation exception",
+          error: inspect(e),
+          stacktrace: __STACKTRACE__
+        )
+
         {:error, e}
     end
   end

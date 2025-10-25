@@ -207,7 +207,7 @@ defmodule Singularity.RefactoringAgent do
     # 2. Correlate with code analysis for optimization opportunities
     # 3. Use Singularity.Infrastructure.Telemetry.get_slow_endpoints/0
     # 4. Return optimization suggestions with performance impact
-    
+
     # Placeholder implementation
     case analysis do
       %{endpoints: endpoints} when length(endpoints) > 10 ->
@@ -217,7 +217,9 @@ defmodule Singularity.RefactoringAgent do
           message: "High endpoint count detected - consider consolidation",
           suggestions: ["Review endpoint design", "Consider API versioning"]
         }
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -228,7 +230,7 @@ defmodule Singularity.RefactoringAgent do
     # 2. Detect repeated queries in loops (preload candidates)
     # 3. Suggest schema changes or query optimization
     # 4. Use Singularity.CodeEngineNif.analyze_language("elixir", code)
-    
+
     case analysis do
       %{queries: queries} when length(queries) > 5 ->
         %{
@@ -241,7 +243,9 @@ defmodule Singularity.RefactoringAgent do
             "Review query patterns in loops"
           ]
         }
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 end

@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateBootstrapStages do
   use Ecto.Migration
 
   def change do
-    create table(:bootstrap_stages, primary_key: false) do
+    create_if_not_exists table(:bootstrap_stages, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
       add :current_stage, :integer, null: false
       add :stage_started_at, :utc_datetime, null: false
@@ -13,7 +13,10 @@ defmodule Singularity.Repo.Migrations.CreateBootstrapStages do
     end
 
     # Only one row should exist (singleton pattern)
-    create unique_index(:bootstrap_stages, [:id], where: "id IS NOT NULL")
+    execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS bootstrap_stages_id_key
+      ON bootstrap_stages (id)
+    """, "")
 
     # Initialize with Stage 1
     execute """

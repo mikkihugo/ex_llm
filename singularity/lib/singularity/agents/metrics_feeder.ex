@@ -122,11 +122,15 @@ defmodule Singularity.Agents.MetricsFeeder do
   defp generate_realistic_metrics do
     # Vary success rate to sometimes drop below threshold (0.75)
     # This triggers the Decider to request improvements
-    success_rate = case :rand.uniform() do
-      x when x < 0.3 -> 0.5 + :rand.uniform() * 0.25  # 50-75% (triggers improvement)
-      x when x < 0.7 -> 0.75 + :rand.uniform() * 0.25 # 75-100% (stable)
-      _ -> 0.3 + :rand.uniform() * 0.45                # 30-75% (degradation)
-    end
+    success_rate =
+      case :rand.uniform() do
+        # 50-75% (triggers improvement)
+        x when x < 0.3 -> 0.5 + :rand.uniform() * 0.25
+        # 75-100% (stable)
+        x when x < 0.7 -> 0.75 + :rand.uniform() * 0.25
+        # 30-75% (degradation)
+        _ -> 0.3 + :rand.uniform() * 0.45
+      end
 
     %{
       success_rate: success_rate,

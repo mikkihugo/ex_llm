@@ -138,7 +138,6 @@ defmodule Singularity.LLM.Prompt.Cache do
     end
   end
 
-
   defp calculate_similarity(embedding1, embedding2) do
     # Cosine similarity: 1 - cosine_distance
     # pgvector stores vectors, calculate similarity

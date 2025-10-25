@@ -3,7 +3,7 @@ defmodule Singularity.Repo.Migrations.AddTemplateAnswerTracking do
 
   def change do
     # Track what templates generated what code
-    create table(:template_generations) do
+    create_if_not_exists table(:template_generations) do
       add :template_id, :string, null: false
       add :template_version, :string
       add :generated_at, :utc_datetime, null: false
@@ -15,9 +15,21 @@ defmodule Singularity.Repo.Migrations.AddTemplateAnswerTracking do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:template_generations, [:template_id])
-    create index(:template_generations, [:file_path])
-    create index(:template_generations, [:generated_at])
-    create index(:template_generations, [:answers], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS template_generations_template_id_index
+      ON template_generations (template_id)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS template_generations_file_path_index
+      ON template_generations (file_path)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS template_generations_generated_at_index
+      ON template_generations (generated_at)
+    """, "")
+    execute("""
+      CREATE INDEX IF NOT EXISTS template_generations_answers_index
+      ON template_generations (answers)
+    """, "")
   end
 end

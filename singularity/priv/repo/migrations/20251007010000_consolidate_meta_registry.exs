@@ -33,7 +33,10 @@ defmodule Singularity.Repo.Migrations.ConsolidateMetaRegistry do
     end
 
     # Step 3: Add GIN index for service_structure queries
-    create index(:codebase_snapshots, [:service_structure], using: :gin)
+    execute("""
+      CREATE INDEX IF NOT EXISTS codebase_snapshots_service_structure_index
+      ON codebase_snapshots (service_structure)
+    """, "")
 
     # Step 4: Rename table to better reflect its purpose
     rename table(:codebase_snapshots), to: table(:technology_detections)

@@ -154,11 +154,13 @@ defmodule Singularity.Execution.Evolution do
           case select_best_improvement(analysis) do
             nil ->
               Logger.info("No improvements needed", agent_id: agent_id)
-              {:ok, %{
-                agent_id: agent_id,
-                improvement_applied: :none,
-                status: :no_improvement_needed
-              }}
+
+              {:ok,
+               %{
+                 agent_id: agent_id,
+                 improvement_applied: :none,
+                 status: :no_improvement_needed
+               }}
 
             suggestion ->
               # 3. Apply improvement and validate with A/B test
@@ -188,17 +190,19 @@ defmodule Singularity.Execution.Evolution do
   @spec get_evolution_status(String.t()) :: {:ok, map()} | {:error, term()}
   def get_evolution_status(agent_id) do
     try do
-      {:ok, %{
-        agent_id: agent_id,
-        status: :no_evolution_attempts,
-        last_evolution: nil
-      }}
+      {:ok,
+       %{
+         agent_id: agent_id,
+         status: :no_evolution_attempts,
+         last_evolution: nil
+       }}
     rescue
       e in Exception ->
         Logger.error("Failed to get evolution status",
           agent_id: agent_id,
           error: inspect(e)
         )
+
         {:error, e}
     end
   end
@@ -206,7 +210,8 @@ defmodule Singularity.Execution.Evolution do
   # Private Functions
 
   @spec select_best_improvement(map()) :: map() | nil
-  defp select_best_improvement(%{suggestions: suggestions, issues: issues}) when is_list(suggestions) do
+  defp select_best_improvement(%{suggestions: suggestions, issues: issues})
+       when is_list(suggestions) do
     # Select the suggestion with highest confidence that addresses critical issues
     suggestions
     |> Enum.filter(&critical_issue_match?(&1, issues))
@@ -225,7 +230,8 @@ defmodule Singularity.Execution.Evolution do
     end)
   end
 
-  @spec apply_and_validate_improvement(String.t(), map(), map()) :: {:ok, map()} | {:error, term()}
+  @spec apply_and_validate_improvement(String.t(), map(), map()) ::
+          {:ok, map()} | {:error, term()}
   defp apply_and_validate_improvement(agent_id, suggestion, analysis) do
     Logger.info("Applying improvement",
       agent_id: agent_id,
@@ -247,16 +253,24 @@ defmodule Singularity.Execution.Evolution do
                 improvement = calculate_improvement_percent(baseline, variant_metric)
 
                 # 4. Store evolution attempt
-                store_evolution_attempt(agent_id, suggestion, baseline, variant_metric, improvement, :success)
+                store_evolution_attempt(
+                  agent_id,
+                  suggestion,
+                  baseline,
+                  variant_metric,
+                  improvement,
+                  :success
+                )
 
-                {:ok, %{
-                  agent_id: agent_id,
-                  improvement_applied: suggestion.type,
-                  baseline_metric: baseline,
-                  variant_metric: variant_metric,
-                  improvement: improvement,
-                  status: :success
-                }}
+                {:ok,
+                 %{
+                   agent_id: agent_id,
+                   improvement_applied: suggestion.type,
+                   baseline_metric: baseline,
+                   variant_metric: variant_metric,
+                   improvement: improvement,
+                   status: :success
+                 }}
 
               {:error, _reason} ->
                 Logger.warning("Improvement validation failed, rolling back",
@@ -276,12 +290,13 @@ defmodule Singularity.Execution.Evolution do
                   :validation_failed
                 )
 
-                {:ok, %{
-                  agent_id: agent_id,
-                  improvement_applied: suggestion.type,
-                  status: :validation_failed,
-                  reason: "A/B test showed regression"
-                }}
+                {:ok,
+                 %{
+                   agent_id: agent_id,
+                   improvement_applied: suggestion.type,
+                   status: :validation_failed,
+                   reason: "A/B test showed regression"
+                 }}
             end
 
           {:error, reason} ->
@@ -389,7 +404,8 @@ defmodule Singularity.Execution.Evolution do
     }
   end
 
-  @spec run_improvement_validation(String.t(), map(), float()) :: {:ok, float()} | {:error, term()}
+  @spec run_improvement_validation(String.t(), map(), float()) ::
+          {:ok, float()} | {:error, term()}
   defp run_improvement_validation(agent_id, suggestion, baseline) do
     # Wait for improvement to apply
     Process.sleep(5_000)
@@ -442,7 +458,8 @@ defmodule Singularity.Execution.Evolution do
   end
 
   @spec calculate_improvement_percent(float(), float()) :: String.t()
-  defp calculate_improvement_percent(baseline, variant) when is_number(baseline) and is_number(variant) do
+  defp calculate_improvement_percent(baseline, variant)
+       when is_number(baseline) and is_number(variant) do
     case baseline do
       0 ->
         "N/A"
@@ -470,7 +487,14 @@ defmodule Singularity.Execution.Evolution do
     :ok
   end
 
-  @spec store_evolution_attempt(String.t(), map(), float(), float() | nil, String.t() | nil, atom()) ::
+  @spec store_evolution_attempt(
+          String.t(),
+          map(),
+          float(),
+          float() | nil,
+          String.t() | nil,
+          atom()
+        ) ::
           {:ok, term()} | {:error, term()}
   defp store_evolution_attempt(agent_id, suggestion, baseline, variant, improvement, status) do
     # This would store the evolution attempt in the database

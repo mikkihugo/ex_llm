@@ -36,7 +36,7 @@ defmodule CentralCloud.MixProject do
       
       # Rust NIF Engines (same as Singularity)
       {:rustler, "~> 0.37"},
-      {:architecture_engine, path: "../rust/architecture_engine", runtime: false, app: false, compile: false},
+      # architecture_engine removed - uses pure Elixir detectors via NATS delegation to Singularity
       {:code_quality_engine, path: "../rust/code_quality_engine", runtime: false, app: false, compile: false},
       # Embedding calls Singularity via NATS (pure Elixir NxService)
       {:parser_engine, path: "../rust/parser_engine", runtime: false, app: false, compile: false, optional: true},

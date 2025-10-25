@@ -239,14 +239,20 @@ defmodule Singularity.Cache do
         "model_type" => opts[:model_type] || "candle-transformer",
         "file_path" => opts[:file_path]
       },
-      expires_at: opts[:expires_at] || DateTime.add(DateTime.utc_now(), 86400)  # 24 hours default
+      # 24 hours default
+      expires_at: opts[:expires_at] || DateTime.add(DateTime.utc_now(), 86400)
     }
 
     %CodeEmbeddingCache{}
     |> CodeEmbeddingCache.changeset(attrs)
-    |> Repo.insert(on_conflict: {:replace, [:embedding, :metadata]}, conflict_target: [:code_hash, :language])
+    |> Repo.insert(
+      on_conflict: {:replace, [:embedding, :metadata]},
+      conflict_target: [:code_hash, :language]
+    )
     |> case do
-      {:ok, _} -> :ok
+      {:ok, _} ->
+        :ok
+
       {:error, reason} ->
         Logger.error("Failed to cache embedding: #{inspect(reason)}")
         :error

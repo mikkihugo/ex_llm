@@ -54,7 +54,8 @@ defmodule Singularity.Tools.Planning do
   defp planning_decompose_tool do
     Tool.new!(%{
       name: "planning_decompose",
-      description: "Break down a high-level task into smaller, manageable subtasks using TaskGraph.",
+      description:
+        "Break down a high-level task into smaller, manageable subtasks using TaskGraph.",
       display_text: "Task Decomposition",
       parameters: [
         %{

@@ -107,7 +107,15 @@ defmodule Singularity.Tools.InstructorSchemas do
     @doc "Cast and validate raw data against GeneratedCode schema."
     def cast_and_validate(data) do
       %__MODULE__{}
-      |> cast(data, [:code, :language, :quality_level, :has_docs, :has_tests, :has_error_handling, :estimated_lines])
+      |> cast(data, [
+        :code,
+        :language,
+        :quality_level,
+        :has_docs,
+        :has_tests,
+        :has_error_handling,
+        :estimated_lines
+      ])
       |> validate_changeset()
     end
 
@@ -183,8 +191,9 @@ defmodule Singularity.Tools.InstructorSchemas do
 
     defp validate_tool_name_format(changeset) do
       validate_change(changeset, :tool_name, fn :tool_name, name ->
-        if String.match?(name, ~r/^[a-z_][a-z0-9_]*$/), do: [],
-        else: [tool_name: "Must be lowercase with underscores and numbers"]
+        if String.match?(name, ~r/^[a-z_][a-z0-9_]*$/),
+          do: [],
+          else: [tool_name: "Must be lowercase with underscores and numbers"]
       end)
     end
 
@@ -233,8 +242,9 @@ defmodule Singularity.Tools.InstructorSchemas do
       validate_change(changeset, :passing, fn :passing, _ ->
         expected_passing = score >= 0.8
 
-        if passing == expected_passing, do: [],
-        else: [passing: "Passing status must match score (>= 0.8 = passing)"]
+        if passing == expected_passing,
+          do: [],
+          else: [passing: "Passing status must match score (>= 0.8 = passing)"]
       end)
     end
   end
@@ -278,8 +288,9 @@ defmodule Singularity.Tools.InstructorSchemas do
     end
 
     defp validate_list(field, value) do
-      if is_list(value) and length(value) > 0, do: [],
-      else: [{field, "Must be a non-empty list"}]
+      if is_list(value) and length(value) > 0,
+        do: [],
+        else: [{field, "Must be a non-empty list"}]
     end
   end
 
@@ -304,7 +315,15 @@ defmodule Singularity.Tools.InstructorSchemas do
     def validate_changeset(changeset) do
       changeset
       |> validate_required([:task_description, :language, :quality_requirement])
-      |> validate_inclusion(:language, ["elixir", "rust", "typescript", "python", "go", "java", "c++"])
+      |> validate_inclusion(:language, [
+        "elixir",
+        "rust",
+        "typescript",
+        "python",
+        "go",
+        "java",
+        "c++"
+      ])
       |> validate_inclusion(:quality_requirement, ["production", "prototype", "quick"])
       |> validate_task_description()
     end
@@ -351,8 +370,9 @@ defmodule Singularity.Tools.InstructorSchemas do
 
     defp validate_field_name(changeset) do
       validate_change(changeset, :field_name, fn :field_name, name ->
-        if String.match?(name, ~r/^[a-z_][a-z0-9_]*$/), do: [],
-        else: [field_name: "Must be valid Elixir identifier"]
+        if String.match?(name, ~r/^[a-z_][a-z0-9_]*$/),
+          do: [],
+          else: [field_name: "Must be valid Elixir identifier"]
       end)
     end
   end

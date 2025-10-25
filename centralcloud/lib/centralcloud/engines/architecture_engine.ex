@@ -2,21 +2,15 @@ defmodule CentralCloud.Engines.ArchitectureEngine do
   @moduledoc """
   Architecture Engine - Delegates to Singularity via NATS.
 
-  CentralCloud doesn't compile Rust NIFs directly (compile: false in mix.exs).
-  Instead, this module delegates architecture analysis requests to Singularity
-  via NATS, which has the compiled architecture_engine NIF.
+  CentralCloud delegates architecture analysis requests to Singularity
+  via NATS, which provides pure Elixir pattern detection via FrameworkDetector
+  and TechnologyDetector.
   """
-
-  # Note: Rustler bindings disabled - NIFs compiled only in Singularity
-  # use Rustler,
-  #   otp_app: :centralcloud,
-  #   crate: :architecture_engine,
-  #   path: "../../../../rust/architecture_engine"
 
   require Logger
 
   @doc """
-  Detect frameworks in codebase using Rust Architecture Engine.
+  Detect frameworks in codebase.
   """
   def detect_frameworks(codebase_info, opts \\ []) do
     detection_type = Keyword.get(opts, :detection_type, "comprehensive")
@@ -30,7 +24,8 @@ defmodule CentralCloud.Engines.ArchitectureEngine do
       "include_technologies" => include_technologies
     }
 
-    case architecture_engine_call("detect_frameworks", request) do
+    # Delegate to Singularity via NATS for architecture analysis
+    case request_singularity("detect_frameworks", request) do
       {:ok, results} ->
         Logger.debug("Architecture engine detected frameworks",
           frameworks: length(Map.get(results, "frameworks", [])),
@@ -53,7 +48,8 @@ defmodule CentralCloud.Engines.ArchitectureEngine do
       "detection_type" => Keyword.get(opts, :detection_type, "comprehensive")
     }
 
-    case architecture_engine_call("detect_technologies", request) do
+    # Delegate to Singularity via NATS for architecture analysis
+    case request_singularity("detect_technologies", request) do
       {:ok, results} ->
         Logger.debug("Architecture engine detected technologies",
           technologies: length(Map.get(results, "technologies", []))
@@ -75,7 +71,8 @@ defmodule CentralCloud.Engines.ArchitectureEngine do
       "suggestion_type" => Keyword.get(opts, :suggestion_type, "comprehensive")
     }
 
-    case architecture_engine_call("get_architectural_suggestions", request) do
+    # Delegate to Singularity via NATS for architecture analysis
+    case request_singularity("get_architectural_suggestions", request) do
       {:ok, results} ->
         Logger.debug("Architecture engine generated suggestions",
           suggestions: length(Map.get(results, "suggestions", []))
@@ -88,6 +85,8 @@ defmodule CentralCloud.Engines.ArchitectureEngine do
     end
   end
 
-  # NIF function (loaded from shared Rust crate)
-  defp architecture_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
+  # TODO: Implement NATS delegation to Singularity
+  defp request_singularity(_operation, _request) do
+    {:error, :nats_not_configured}
+  end
 end

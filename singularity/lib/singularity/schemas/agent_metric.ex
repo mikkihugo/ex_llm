@@ -62,7 +62,8 @@ defmodule Singularity.Schemas.AgentMetric do
   @primary_key {:id, :id, autogenerate: true}
   schema "agent_metrics" do
     field :agent_id, :string
-    field :time_window, :map  # Will be TSRANGE in PostgreSQL
+    # Will be TSRANGE in PostgreSQL
+    field :time_window, :map
     field :success_rate, :float
     field :avg_cost_cents, :float
     field :avg_latency_ms, :float
@@ -82,7 +83,13 @@ defmodule Singularity.Schemas.AgentMetric do
       :avg_latency_ms,
       :patterns_used
     ])
-    |> validate_required([:agent_id, :time_window, :success_rate, :avg_cost_cents, :avg_latency_ms])
+    |> validate_required([
+      :agent_id,
+      :time_window,
+      :success_rate,
+      :avg_cost_cents,
+      :avg_latency_ms
+    ])
     |> validate_number(:success_rate, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0)
     |> validate_number(:avg_cost_cents, greater_than_or_equal_to: 0.0)
     |> validate_number(:avg_latency_ms, greater_than_or_equal_to: 0.0)

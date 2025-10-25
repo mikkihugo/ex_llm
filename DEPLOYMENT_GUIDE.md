@@ -71,9 +71,9 @@ export XLA_TARGET=metal      # Use Metal on macOS for CoreML/MLX tasks
 ## Model Configuration
 
 ### Current (Production Ready)
-- **CodeT5p-770m** (1.5GB) - Code generation
-- **Jina Embeddings v3** (1024 dims) - Text/docs via ONNX NIF
-- **Qodo-Embed-1** (1536 dims) - Code embeddings via ONNX NIF
+- **CodeT5p-770m** (1.5GB) - Code generation via EXLA
+- **Jina Embeddings v3** (1024 dims) - Text embeddings via pure Elixir Nx/Axon (safetensors)
+- **Qodo-Embed-1** (1536 dims) - Code embeddings via pure Elixir Nx/Axon (concatenated 2560-dim)
 
 ### Future (Q1 2026)
 - **StarCoder2-7B** - Fine-tuned for Rust/Elixir
@@ -219,10 +219,11 @@ iex> Singularity.SemanticCodeSearch.search("async handler")
    - Fits in 12GB budget
    - Planned upgrade: Q1 2026
 
-3. **Training vs Inference:**
-   - EXLA (training) = CUDA required
-   - ONNX (embeddings) = CPU compatible
-   - Both configured for their use cases
+3. **Unified Nx/EXLA Backend:**
+   - Both CodeT5p training and Qodo/Jina embeddings use EXLA
+   - macOS: CPU only (Nx CPU backend via EXLA :host client)
+   - RTX 4080: CUDA GPU (EXLA :cuda client for both training and embeddings)
+   - Consistent device handling and configuration
 
 ## Configuration Files
 
