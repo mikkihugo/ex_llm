@@ -80,7 +80,7 @@ defmodule Singularity.CodeGeneration.Generators.RAGGeneratorImpl do
         :ok
 
       {:error, reason} ->
-        Logger.warn("RAG generation failed", reason: inspect(reason))
+        Logger.warning("RAG generation failed", reason: inspect(reason))
         :ok
 
       _ ->

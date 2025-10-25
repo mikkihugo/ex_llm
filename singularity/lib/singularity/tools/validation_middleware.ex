@@ -259,7 +259,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
         validate_refinement_feedback(tool_result, opts)
 
       _ ->
-        Logger.warn("Unknown validation schema: #{inspect(schema)}")
+        Logger.warning("Unknown validation schema: #{inspect(schema)}")
         {:ok, tool_result}
     end
   end

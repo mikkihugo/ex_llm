@@ -285,7 +285,7 @@ defmodule Singularity.Architecture.PatternDetector do
         Logger.debug("#{pattern_type} detector found #{length(filtered)} patterns")
         {pattern_type, filtered}
       else
-        Logger.warn("Detector module not found for #{pattern_type}")
+        Logger.warning("Detector module not found for #{pattern_type}")
         {pattern_type, []}
       end
     rescue

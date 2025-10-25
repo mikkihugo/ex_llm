@@ -182,7 +182,7 @@ defmodule Singularity.Database.MessageQueue do
               count + 1
             
             error -> 
-              Logger.warn("Handler failed for message #{msg_id}: #{inspect(error)}")
+              Logger.warning("Handler failed for message #{msg_id}: #{inspect(error)}")
               count
           end
         
@@ -203,7 +203,7 @@ defmodule Singularity.Database.MessageQueue do
   def drop_queue(queue_name) when is_binary(queue_name) do
     case Repo.query("SELECT pgmq.drop_queue($1)", [queue_name]) do
       {:ok, _} -> 
-        Logger.warn("Queue dropped: #{queue_name}")
+        Logger.warning("Queue dropped: #{queue_name}")
         {:ok, :dropped}
       error -> 
         Logger.error("Failed to drop queue #{queue_name}: #{inspect(error)}")

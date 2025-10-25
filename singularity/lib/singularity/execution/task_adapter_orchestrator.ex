@@ -118,7 +118,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
           {:ok, task_id}
 
         {:error, :no_adapter_found} ->
-          Logger.warn("No adapter could execute task",
+          Logger.warning("No adapter could execute task",
             task_type: task[:type],
             tried_adapters: Enum.map(adapters, fn {type, _priority, _config} -> type end)
           )
@@ -228,7 +228,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
             {:error, reason}
         end
       else
-        Logger.warn("Adapter module not found for #{adapter_type}")
+        Logger.warning("Adapter module not found for #{adapter_type}")
         try_adapters(rest, task, opts)
       end
     rescue

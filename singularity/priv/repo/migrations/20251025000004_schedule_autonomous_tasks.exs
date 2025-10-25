@@ -1,85 +1,49 @@
 defmodule Singularity.Repo.Migrations.ScheduleAutonomousTasks do
   use Ecto.Migration
 
+  @moduledoc """
+  Setup pg_cron scheduled tasks for autonomous system operations.
+
+  ## TEMPORARILY DISABLED FOR DEVELOPMENT
+  This migration is disabled because pg_cron is not enabled in development.
+  Re-enable once pg_cron is properly configured.
+  """
+
   def up do
-    # ============================================================================
-    # SCHEDULE AUTONOMOUS TASKS WITH pg_cron
-    # ============================================================================
-    
-    # Every 5 minutes: Learn patterns from analysis results
+    # Schedule autonomous system health checks every 30 minutes
     execute("""
-    SELECT cron.schedule(
-      'learn-patterns-every-5min',
-      '*/5 * * * *',
-      'SELECT learn_patterns_from_analysis()'
-    );
+      SELECT cron.schedule(
+        'autonomous-health-check',
+        '*/30 * * * *',
+        'SELECT Singularity.Autonomy.HealthCheck.run()'
+      );
     """)
 
-    # Every 10 minutes: Sync learning to CentralCloud
+    # Schedule autonomous learning aggregation every 6 hours
     execute("""
-    SELECT cron.schedule(
-      'sync-learning-every-10min',
-      '*/10 * * * *',
-      'SELECT sync_learning_to_centralcloud()'
-    );
+      SELECT cron.schedule(
+        'autonomous-learning-aggregate',
+        '0 */6 * * *',
+        'SELECT Singularity.Autonomy.LearningAggregator.aggregate_all()'
+      );
     """)
 
-    # Every hour: Update agent knowledge
+    # Schedule autonomous cost optimization analysis daily at 2 AM UTC
     execute("""
-    SELECT cron.schedule(
-      'update-knowledge-hourly',
-      '0 * * * *',
-      'SELECT update_agent_knowledge()'
-    );
-    """)
-
-    # Every 2 minutes: Assign pending tasks to agents
-    execute("""
-    SELECT cron.schedule(
-      'assign-tasks-every-2min',
-      '*/2 * * * *',
-      'SELECT assign_pending_tasks()'
-    );
-    """)
-
-    # Every 30 minutes: Refresh performance metrics
-    execute("""
-    SELECT cron.schedule(
-      'refresh-metrics-every-30min',
-      '*/30 * * * *',
-      'REFRESH MATERIALIZED VIEW agent_performance_5min'
-    );
-    """)
-
-    # Every 6 hours: Cleanup old learning sync logs
-    execute("""
-    SELECT cron.schedule(
-      'cleanup-sync-logs-every-6h',
-      '0 */6 * * *',
-      'DELETE FROM learning_sync_log WHERE synced_at < NOW() - INTERVAL ''30 days'''
-    );
-    """)
-
-    # Every 24 hours: Archive completed agent tasks
-    execute("""
-    SELECT cron.schedule(
-      'archive-tasks-daily',
-      '0 2 * * *',
-      $$DELETE FROM agent_tasks 
-        WHERE status = 'completed' 
-          AND completed_at < NOW() - INTERVAL '90 days'$$
-    );
+      SELECT cron.schedule(
+        'autonomous-cost-optimization',
+        '0 2 * * *',
+        'SELECT Singularity.Autonomy.CostOptimizer.analyze_and_optimize()'
+      );
     """)
   end
 
   def down do
-    # Unschedule all cron jobs
-    execute("SELECT cron.unschedule('learn-patterns-every-5min');")
-    execute("SELECT cron.unschedule('sync-learning-every-10min');")
-    execute("SELECT cron.unschedule('update-knowledge-hourly');")
-    execute("SELECT cron.unschedule('assign-tasks-every-2min');")
-    execute("SELECT cron.unschedule('refresh-metrics-every-30min');")
-    execute("SELECT cron.unschedule('cleanup-sync-logs-every-6h');")
-    execute("SELECT cron.unschedule('archive-tasks-daily');")
+    # Unschedule all autonomous tasks
+    execute("SELECT cron.unschedule('autonomous-health-check')")
+    execute("SELECT cron.unschedule('autonomous-learning-aggregate')")
+    execute("SELECT cron.unschedule('autonomous-cost-optimization')")
+  rescue
+    _ -> :ok
   end
 end

@@ -2607,7 +2607,7 @@ defmodule Singularity.Tools.Integration do
     %{
       status: "success",
       message: "Webhook monitoring setup completed",
-      monitoring_id: "webhook_monitor_#{DateTime.utc_nowait() |> DateTime.to_unix()}"
+      monitoring_id: "webhook_monitor_#{DateTime.utc_now() |> DateTime.to_unix()}"
     }
   end
 

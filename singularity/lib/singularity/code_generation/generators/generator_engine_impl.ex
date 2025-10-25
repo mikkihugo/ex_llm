@@ -79,7 +79,7 @@ defmodule Singularity.CodeGeneration.Generators.GeneratorEngineImpl do
         :ok
 
       {:error, reason} ->
-        Logger.warn("GeneratorEngine generation failed", reason: inspect(reason))
+        Logger.warning("GeneratorEngine generation failed", reason: inspect(reason))
         :ok
 
       _ ->

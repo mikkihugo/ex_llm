@@ -179,7 +179,7 @@ defmodule Singularity.Search.SearchOrchestrator do
             {search_type, filtered}
 
           {:error, reason} ->
-            Logger.warn("Search failed for #{search_type}",
+            Logger.warning("Search failed for #{search_type}",
               reason: inspect(reason),
               query: query
             )
@@ -187,7 +187,7 @@ defmodule Singularity.Search.SearchOrchestrator do
             {search_type, []}
         end
       else
-        Logger.warn("Search module not found for #{search_type}")
+        Logger.warning("Search module not found for #{search_type}")
         {search_type, []}
       end
     rescue

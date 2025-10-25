@@ -36,7 +36,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
           {:ok, result}
 
         {:error, :no_strategy_found} ->
-          Logger.warn("No applicable execution strategy found")
+          Logger.warning("No applicable execution strategy found")
           {:error, :no_strategy_found}
 
         error ->
@@ -130,7 +130,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
             try_strategies(rest, goal, opts)
         end
       else
-        Logger.warn("Strategy module not found for #{strategy_type}")
+        Logger.warning("Strategy module not found for #{strategy_type}")
         try_strategies(rest, goal, opts)
       end
     rescue

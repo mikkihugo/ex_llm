@@ -256,7 +256,7 @@ defmodule Singularity.Tools.SecurityPolicy do
   def check_user_permission(user_id, codebase_id) when is_binary(user_id) and is_binary(codebase_id) do
     case Repo.get_by(UserCodebasePermission, user_id: user_id, codebase_id: codebase_id) do
       nil ->
-        Logger.warn("Unauthorized codebase access attempt",
+        Logger.warning("Unauthorized codebase access attempt",
           user: user_id,
           codebase: codebase_id
         )

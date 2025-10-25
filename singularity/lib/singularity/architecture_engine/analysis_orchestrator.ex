@@ -289,7 +289,7 @@ defmodule Singularity.Architecture.AnalysisOrchestrator do
         Logger.debug("#{analyzer_type} analyzer found #{length(filtered)} issues")
         {analyzer_type, filtered}
       else
-        Logger.warn("Analyzer module not found for #{analyzer_type}")
+        Logger.warning("Analyzer module not found for #{analyzer_type}")
         {analyzer_type, []}
       end
     rescue

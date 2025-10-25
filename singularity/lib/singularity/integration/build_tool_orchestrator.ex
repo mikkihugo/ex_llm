@@ -72,7 +72,7 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
           {:ok, result}
 
         {:error, :no_tool_found} ->
-          Logger.warn("No applicable build tool found",
+          Logger.warning("No applicable build tool found",
             project_path: project_path
           )
           {:error, :no_tool_found}
@@ -244,7 +244,7 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
             try_build_tools(rest, project_path, opts)
         end
       else
-        Logger.warn("Tool module not found for #{tool_type}")
+        Logger.warning("Tool module not found for #{tool_type}")
         try_build_tools(rest, project_path, opts)
       end
     rescue

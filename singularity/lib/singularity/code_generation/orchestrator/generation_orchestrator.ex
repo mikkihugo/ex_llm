@@ -174,7 +174,7 @@ defmodule Singularity.CodeGeneration.Orchestrator.GenerationOrchestrator do
         result = module.generate(spec, opts)
         {gen_type, result}
       else
-        Logger.warn("Generator module not found for #{gen_type}")
+        Logger.warning("Generator module not found for #{gen_type}")
         {gen_type, {:error, :module_not_found}}
       end
     rescue

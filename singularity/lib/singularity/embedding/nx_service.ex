@@ -328,7 +328,7 @@ defmodule Singularity.Embedding.NxService do
         :qodo -> ModelLoader.preload(:qodo)
         :jina_v3 -> ModelLoader.preload(:jina_v3)
         :jina -> ModelLoader.preload(:jina_v3)
-        _ -> Logger.warn("Unknown model: #{inspect(model)}")
+        _ -> Logger.warning("Unknown model: #{inspect(model)}")
       end
     end)
     :ok

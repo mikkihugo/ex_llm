@@ -44,10 +44,9 @@ defmodule Singularity.Repo.Migrations.StandardizeAllTableNamesToPluralBestPracti
   end
 
   defp table_exists?(table_name) do
-    case execute(
-      "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1)",
-      [table_name]
-    ) do
+    table_name_str = if is_atom(table_name), do: Atom.to_string(table_name), else: table_name
+    query = "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '#{table_name_str}')"
+    case execute(query) do
       {:ok, %{rows: [[true]]}} -> true
       _ -> false
     end

@@ -262,7 +262,7 @@ defmodule Singularity.Database.RemoteDataFetcher do
                 {:error, :package_not_found}
 
               status ->
-                Logger.warn("HTTP #{status} from #{ecosystem} for #{package_name}")
+                Logger.warning("HTTP #{status} from #{ecosystem} for #{package_name}")
                 {:error, {:http_error, status}}
             end
 

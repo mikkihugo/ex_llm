@@ -285,7 +285,7 @@ defmodule Singularity.Jobs.JobOrchestrator do
               {:error, reason}
 
             other ->
-              Logger.warn("Unexpected job creation result",
+              Logger.warning("Unexpected job creation result",
                 job_type: job_type,
                 result: inspect(other)
               )

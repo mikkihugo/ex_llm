@@ -352,7 +352,7 @@ defmodule Singularity.Embedding.ModelLoader do
         :ok
 
       {:error, reason} ->
-        Logger.warn("Failed to preload model #{inspect(model)}: #{inspect(reason)}")
+        Logger.warning("Failed to preload model #{inspect(model)}: #{inspect(reason)}")
         :error
     end
   end

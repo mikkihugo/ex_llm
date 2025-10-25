@@ -10,10 +10,22 @@ defmodule Singularity.Repo.Migrations.AddPageRankPgCronSchedule do
   """
 
   def up do
-    # No-op: pg_cron not available in development
+    # Schedule daily PageRank recalculation at 3 AM UTC
+    # This ensures that the dependency graph's PageRank scores are updated daily
+    # to reflect the latest code patterns and architecture insights
+    execute("""
+      SELECT cron.schedule(
+        'daily-pagerank-recalc',
+        '0 3 * * *',
+        'SELECT Singularity.ArchitectureEngine.PageRankCalculator.recalculate_all_pagerank()'
+      );
+    """)
   end
 
   def down do
-    # No-op: pg_cron not available in development
+    # Unschedule PageRank recalculation
+    execute("SELECT cron.unschedule('daily-pagerank-recalc')")
+  rescue
+    _ -> :ok
   end
 end
