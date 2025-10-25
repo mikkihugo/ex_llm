@@ -92,7 +92,7 @@ defmodule Pgflow.Executor do
       # Error handling
       case Pgflow.Executor.execute(MyWorkflow, input, repo) do
         {:ok, result} -> IO.inspect(result)
-        {:error, reason} -> Logger.error("Workflow failed: #{inspect(reason)}")
+        {:error, reason} -> Logger.error("Workflow failed: \#{inspect(reason)}")
       end
   """
 
@@ -148,19 +148,93 @@ defmodule Pgflow.Executor do
           )
 
           {:error, reason}
-
-        {:timeout, partial_output} ->
-          Logger.warn("Pgflow.Executor: Workflow timed out",
-            workflow: workflow_module,
-            run_id: run_id
-          )
-
-          {:error, {:timeout, partial_output}}
       end
     else
       {:error, reason} ->
         Logger.error("Pgflow.Executor: Workflow initialization failed",
           workflow: workflow_module,
+          reason: inspect(reason)
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Execute a dynamic workflow (stored in database).
+
+  For workflows created via FlowBuilder API (AI/LLM-generated workflows).
+
+  ## Parameters
+
+    - `workflow_slug` - Workflow identifier (string, not module)
+    - `input` - Initial input map
+    - `step_functions` - Map of step_slug atoms to functions
+    - `repo` - Ecto repo for database operations
+    - `opts` - Execution options (same as execute/4)
+
+  ## Returns
+
+    - `{:ok, result}` - Workflow completed successfully
+    - `{:error, reason}` - Workflow failed
+
+  ## Example
+
+      # AI generates workflow at runtime
+      {:ok, _} = FlowBuilder.create_flow("ai_workflow", repo)
+      {:ok, _} = FlowBuilder.add_step("ai_workflow", "step1", [], repo)
+      {:ok, _} = FlowBuilder.add_step("ai_workflow", "step2", ["step1"], repo)
+
+      # Provide step implementations
+      step_functions = %{
+        step1: fn _input -> {:ok, %{data: "processed"}} end,
+        step2: fn input -> {:ok, Map.put(input, "done", true)} end
+      }
+
+      # Execute
+      {:ok, result} = Pgflow.Executor.execute_dynamic(
+        "ai_workflow",
+        %{"initial" => "data"},
+        step_functions,
+        MyApp.Repo
+      )
+  """
+  @spec execute_dynamic(String.t(), map(), map(), module(), keyword()) ::
+          {:ok, map()} | {:error, term()}
+  def execute_dynamic(workflow_slug, input, step_functions, repo, opts \\ [])
+      when is_binary(workflow_slug) do
+    Logger.info("Pgflow.Executor: Starting dynamic workflow",
+      workflow_slug: workflow_slug,
+      input_keys: Map.keys(input)
+    )
+
+    alias Pgflow.DAG.DynamicWorkflowLoader
+
+    with {:ok, definition} <- DynamicWorkflowLoader.load(workflow_slug, step_functions, repo),
+         {:ok, run_id} <- RunInitializer.initialize(definition, input, repo),
+         result <- TaskExecutor.execute_run(run_id, definition, repo, opts) do
+      case result do
+        {:ok, output} ->
+          Logger.info("Pgflow.Executor: Dynamic workflow completed",
+            workflow_slug: workflow_slug,
+            run_id: run_id
+          )
+
+          {:ok, output}
+
+        {:error, reason} ->
+          Logger.error("Pgflow.Executor: Dynamic workflow failed",
+            workflow_slug: workflow_slug,
+            run_id: run_id,
+            reason: inspect(reason)
+          )
+
+          {:error, reason}
+      end
+    else
+      {:error, reason} ->
+        Logger.error("Pgflow.Executor: Dynamic workflow initialization failed",
+          workflow_slug: workflow_slug,
           reason: inspect(reason)
         )
 

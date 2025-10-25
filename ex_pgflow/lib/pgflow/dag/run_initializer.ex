@@ -8,10 +8,13 @@ defmodule Pgflow.DAG.RunInitializer do
   1. Create workflow_runs record with status='started'
   2. Create workflow_step_states records for each step
      - Set remaining_deps based on dependency count
-     - Set initial_tasks (1 for now, will support maps later)
+     - Set initial_tasks (supports map steps with N tasks)
   3. Create workflow_step_dependencies records
-  4. Create workflow_step_tasks records for root steps (steps with remaining_deps=0)
-  5. Call start_ready_steps() to mark root steps as 'started'
+  4. Ensure pgmq queue exists for this workflow
+  5. Call start_ready_steps() to:
+     - Mark root steps as 'started'
+     - Create workflow_step_tasks records
+     - Send messages to pgmq queue (matches pgflow architecture)
 
   ## Example
 
@@ -26,10 +29,9 @@ defmodule Pgflow.DAG.RunInitializer do
   """
 
   require Logger
-  import Ecto.Query
 
   alias Pgflow.DAG.WorkflowDefinition
-  alias Pgflow.{WorkflowRun, StepState, StepTask, StepDependency}
+  alias Pgflow.{WorkflowRun, StepState, StepDependency}
 
   @doc """
   Initialize a workflow run with all database records.
@@ -43,7 +45,7 @@ defmodule Pgflow.DAG.RunInitializer do
       with {:ok, run} <- create_run(definition, input, repo),
            :ok <- create_step_states(definition, run.id, repo),
            :ok <- create_dependencies(definition, run.id, repo),
-           :ok <- create_initial_tasks(definition, run.id, repo),
+           :ok <- ensure_workflow_queue(definition.slug, repo),
            :ok <- start_ready_steps(run.id, repo) do
         run.id
       else
@@ -75,6 +77,7 @@ defmodule Pgflow.DAG.RunInitializer do
     step_states =
       Enum.map(definition.steps, fn {step_name, _step_fn} ->
         remaining_deps = WorkflowDefinition.dependency_count(definition, step_name)
+        metadata = WorkflowDefinition.get_step_metadata(definition, step_name)
 
         %{
           run_id: run_id,
@@ -82,8 +85,7 @@ defmodule Pgflow.DAG.RunInitializer do
           workflow_slug: definition.slug,
           status: "created",
           remaining_deps: remaining_deps,
-          initial_tasks: 1,
-          # TODO: Support map steps with variable task counts
+          initial_tasks: metadata.initial_tasks,
           inserted_at: DateTime.utc_now(),
           updated_at: DateTime.utc_now()
         }
@@ -120,34 +122,31 @@ defmodule Pgflow.DAG.RunInitializer do
     end
   end
 
-  # Step 4: Create workflow_step_tasks for root steps
-  defp create_initial_tasks(definition, run_id, repo) do
-    task_records =
-      Enum.map(definition.root_steps, fn step_name ->
-        %{
-          run_id: run_id,
-          step_slug: to_string(step_name),
-          task_index: 0,
-          workflow_slug: definition.slug,
-          status: "queued",
-          input: %{},
-          # Root steps get full workflow input
-          attempts_count: 0,
-          max_attempts: 3,
-          inserted_at: DateTime.utc_now(),
-          updated_at: DateTime.utc_now()
-        }
-      end)
+  # Step 4: Ensure pgmq queue exists for this workflow
+  defp ensure_workflow_queue(workflow_slug, repo) do
+    result =
+      repo.query(
+        "SELECT pgflow.ensure_workflow_queue($1)",
+        [workflow_slug]
+      )
 
-    if task_records == [] do
-      {:error, :no_root_steps}
-    else
-      {_count, _} = repo.insert_all(StepTask, task_records)
-      :ok
+    case result do
+      {:ok, _} ->
+        Logger.debug("RunInitializer: Ensured queue exists", workflow_slug: workflow_slug)
+        :ok
+
+      {:error, reason} ->
+        Logger.error("RunInitializer: Failed to ensure queue",
+          workflow_slug: workflow_slug,
+          reason: inspect(reason)
+        )
+
+        {:error, reason}
     end
   end
 
-  # Step 5: Call start_ready_steps() to mark root steps as 'started'
+  # Step 5: Call start_ready_steps() to mark root steps as 'started' and send to pgmq
+  # NOTE: start_ready_steps now creates task records AND sends messages to pgmq
   defp start_ready_steps(run_id, repo) do
     # Call PostgreSQL function via raw SQL
     result =

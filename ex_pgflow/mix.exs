@@ -28,21 +28,24 @@ defmodule ExPgflow.MixProject do
 
   defp deps do
     [
-      {:oban, "~> 2.17"},
       {:ecto_sql, "~> 3.10"},
+      {:postgrex, "~> 0.17"},
+      {:jason, "~> 1.4"},
       {:ex_doc, "~> 0.31", only: :dev},
       {:credo, "~> 1.7", only: [:dev, :test]},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:mix_test_watch, "~> 1.1", only: :dev}
     ]
   end
 
   defp description do
     """
-    Pure Elixir workflow orchestration engine.
+    Elixir implementation of pgflow's database-driven DAG execution.
 
-    Like pgflow but 100x faster (<1ms vs 10-100ms polling), pure Elixir,
-    and with built-in Oban integration for distributed execution.
+    Uses PostgreSQL + pgmq extension for workflow coordination, matching
+    pgflow's proven architecture with 100% feature parity: parallel DAG
+    execution, map steps, dependency merging, and multi-instance scaling.
     """
   end
 

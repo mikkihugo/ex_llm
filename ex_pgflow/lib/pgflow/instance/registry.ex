@@ -181,8 +181,9 @@ defmodule Pgflow.Instance.Registry do
   # Private Functions
 
   defp generate_instance_id do
-    hostname = Socket.gethostname!()
-    pid = System.get_pid()
+    {:ok, hostname_charlist} = :inet.gethostname()
+    hostname = to_string(hostname_charlist)
+    pid = System.pid()
     "#{hostname}:#{pid}"
   rescue
     _ -> "instance_#{Node.self()}"
@@ -194,10 +195,13 @@ defmodule Pgflow.Instance.Registry do
 
       # This is a placeholder - actual implementation depends on your database setup
       # In real usage, you'd use your Repo module here
+      {:ok, hostname_charlist} = :inet.gethostname()
+      hostname = to_string(hostname_charlist)
+
       Logger.info("Pgflow.Instance.Registry: Instance registered",
         instance_id: instance_id,
-        hostname: Socket.gethostname!(),
-        pid: System.get_pid()
+        hostname: hostname,
+        pid: System.pid()
       )
     catch
       kind, error ->

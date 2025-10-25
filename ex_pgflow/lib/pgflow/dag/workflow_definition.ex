@@ -33,14 +33,21 @@ defmodule Pgflow.DAG.WorkflowDefinition do
   - Ensures root steps exist (steps with no dependencies)
   """
 
-  defstruct [:steps, :dependencies, :root_steps, :slug]
+  defstruct [:steps, :dependencies, :root_steps, :slug, :step_metadata]
+
+  @type step_metadata :: %{
+          initial_tasks: integer(),
+          timeout: integer() | nil,
+          max_attempts: integer()
+        }
 
   @type step_definition :: {atom(), function(), keyword()}
   @type t :: %__MODULE__{
           steps: %{atom() => function()},
           dependencies: %{atom() => [atom()]},
           root_steps: [atom()],
-          slug: String.t()
+          slug: String.t(),
+          step_metadata: %{atom() => step_metadata()}
         }
 
   @doc """
@@ -60,23 +67,40 @@ defmodule Pgflow.DAG.WorkflowDefinition do
          steps: parsed.steps,
          dependencies: parsed.dependencies,
          root_steps: root_steps,
-         slug: workflow_slug
+         slug: workflow_slug,
+         step_metadata: parsed.step_metadata
        }}
     end
   end
 
-  # Parse step definitions, handling both legacy and new syntax
-  defp parse_steps(steps_list) do
-    {steps, dependencies, _prev_step} =
-      Enum.reduce(steps_list, {%{}, %{}, nil}, fn step_def, {steps_acc, deps_acc, prev_step} ->
+  @doc """
+  Parse step definitions, handling both legacy and new syntax.
+
+  Used internally by parse/1 and also by DynamicWorkflowLoader for
+  database-stored workflows.
+  """
+  @spec parse_steps(list()) :: {:ok, map()} | {:error, term()}
+  def parse_steps(steps_list) do
+    {steps, dependencies, metadata, _prev_step} =
+      Enum.reduce(steps_list, {%{}, %{}, %{}, nil}, fn step_def, {steps_acc, deps_acc, meta_acc, prev_step} ->
         case step_def do
-          # New syntax: {step_name, step_fn, depends_on: [deps]}
+          # New syntax: {step_name, step_fn, depends_on: [deps], ...}
           {step_name, step_fn, opts} when is_atom(step_name) and is_function(step_fn) ->
             depends_on = Keyword.get(opts, :depends_on, [])
+            initial_tasks = Keyword.get(opts, :initial_tasks, 1)
+            timeout = Keyword.get(opts, :timeout)
+            max_attempts = Keyword.get(opts, :max_attempts, 3)
+
+            step_meta = %{
+              initial_tasks: initial_tasks,
+              timeout: timeout,
+              max_attempts: max_attempts
+            }
 
             {
               Map.put(steps_acc, step_name, step_fn),
               Map.put(deps_acc, step_name, depends_on),
+              Map.put(meta_acc, step_name, step_meta),
               step_name
             }
 
@@ -84,9 +108,16 @@ defmodule Pgflow.DAG.WorkflowDefinition do
           {step_name, step_fn} when is_atom(step_name) and is_function(step_fn) ->
             depends_on = if prev_step, do: [prev_step], else: []
 
+            step_meta = %{
+              initial_tasks: 1,
+              timeout: nil,
+              max_attempts: 3
+            }
+
             {
               Map.put(steps_acc, step_name, step_fn),
               Map.put(deps_acc, step_name, depends_on),
+              Map.put(meta_acc, step_name, step_meta),
               step_name
             }
 
@@ -96,11 +127,12 @@ defmodule Pgflow.DAG.WorkflowDefinition do
         end
       end)
 
-    {:ok, %{steps: steps, dependencies: dependencies}}
+    {:ok, %{steps: steps, dependencies: dependencies, step_metadata: metadata}}
   end
 
   # Validate that all dependencies reference existing steps
-  defp validate_dependencies(steps, dependencies) do
+  @doc false
+  def validate_dependencies(steps, dependencies) do
     all_step_names = Map.keys(steps)
 
     invalid_deps =
@@ -117,13 +149,15 @@ defmodule Pgflow.DAG.WorkflowDefinition do
   end
 
   # Validate no cycles using depth-first search
-  defp validate_no_cycles(dependencies) do
+  @doc false
+  def validate_no_cycles(dependencies) do
     case find_cycle(dependencies) do
       nil -> :ok
       cycle -> {:error, {:cycle_detected, cycle}}
     end
   end
 
+  @spec find_cycle(map()) :: list(atom()) | nil
   defp find_cycle(dependencies) do
     all_steps = Map.keys(dependencies)
 
@@ -135,9 +169,12 @@ defmodule Pgflow.DAG.WorkflowDefinition do
     end)
   end
 
+  @dialyzer {:nowarn_function, dfs_cycle: 4}
+  @spec dfs_cycle(atom(), map(), MapSet.t(atom()), list(atom())) ::
+          {:cycle, list(atom())} | :no_cycle
   defp dfs_cycle(step, dependencies, visited, path) do
     cond do
-      step in visited ->
+      MapSet.member?(visited, step) ->
         # Found a cycle
         cycle_start = Enum.find_index(path, &(&1 == step))
         {:cycle, Enum.drop(path, cycle_start || 0)}
@@ -157,7 +194,8 @@ defmodule Pgflow.DAG.WorkflowDefinition do
   end
 
   # Find root steps (steps with no dependencies)
-  defp find_root_steps(dependencies) do
+  @doc false
+  def find_root_steps(dependencies) do
     root_steps =
       dependencies
       |> Enum.filter(fn {_step, deps} -> deps == [] end)
@@ -202,5 +240,13 @@ defmodule Pgflow.DAG.WorkflowDefinition do
   @spec dependency_count(t(), atom()) :: integer()
   def dependency_count(%__MODULE__{dependencies: dependencies}, step_name) do
     Map.get(dependencies, step_name, []) |> length()
+  end
+
+  @doc """
+  Get metadata for a step (initial_tasks, timeout, max_attempts).
+  """
+  @spec get_step_metadata(t(), atom()) :: step_metadata()
+  def get_step_metadata(%__MODULE__{step_metadata: metadata}, step_name) do
+    Map.get(metadata, step_name, %{initial_tasks: 1, timeout: nil, max_attempts: 3})
   end
 end
