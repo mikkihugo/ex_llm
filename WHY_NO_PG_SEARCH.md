@@ -2,37 +2,48 @@
 
 **Question**: Why no pg_search? It's a powerful search engine.
 
-**Answer**: Short version - **Semantic search (pgvector) is better for code than keyword search (pg_search).**
+**Answer**: **We have ast-grep in the parser engine, which is BETTER than pg_search for code.**
 
 ---
 
-## What is pg_search?
+## What We Have Instead: ast-grep (Parser Engine)
 
-pg_search is a PostgreSQL extension from ParadeDB that:
-- Implements **BM25 ranking algorithm** (used by Elasticsearch)
-- Provides **full-text search** (keyword-based)
-- Optimized for documents, articles, logs
-- NOT optimized for code
+ast-grep is already integrated into our Rust parser engine (NIF):
+- **Understands syntax trees** (not just text/keywords)
+- **Pattern matching across 15+ languages**
+- **Semantic code patterns** (not keyword frequency)
+- **Optimized specifically for code**
+- **Already compiled and available**
 
-**Example pg_search query**:
-```sql
-SELECT * FROM code_chunks
-WHERE content @@ 'asyncio'  -- Find all mentions of "asyncio"
-ORDER BY rank DESC;         -- BM25 ranking
+This is **superior to pg_search** for code analysis.
+
+**Example ast-grep query** (via parser engine):
+```elixir
+# Find async patterns across code (understands syntax)
+{:ok, results} = ParserEngine.find_pattern("async .*? function", language: :rust)
+# Returns: All async functions, regardless of keyword variations
 ```
 
 ---
 
-## Why We Chose pgvector Over pg_search
+## The Complete Search Stack
 
-### 1. Different Search Paradigms
+| Tool | Purpose | Implementation |
+|------|---------|-----------------|
+| **ast-grep** | Syntax tree patterns | Rust parser engine (NIF) |
+| **pgvector** | Semantic similarity | PostgreSQL + embeddings |
+| **pg_trgm** | Fuzzy text matching | PostgreSQL (built-in) |
+| **git grep** | Keyword search (fallback) | Git command-line |
 
-| Aspect | pg_search (Keyword) | pgvector (Semantic) |
-|--------|-------------------|-------------------|
-| **Finds** | Words/phrases | Similar meaning |
-| **Example** | "Find code containing 'async'" | "Find code with async pattern" |
-| **Best for** | Text, documents, logs | Code, embeddings, semantics |
-| **Algorithm** | BM25 ranking | Vector similarity (cosine) |
+**Why this beats pg_search**:
+
+| Aspect | pg_search (BM25) | Our Stack |
+|--------|-----------------|-----------|
+| **Syntax understanding** | ❌ No | ✅ ast-grep (syntax trees) |
+| **Semantic search** | ❌ No | ✅ pgvector (embeddings) |
+| **Pattern matching** | ❌ Text only | ✅ ast-grep (15+ languages) |
+| **Code optimization** | ❌ Generic | ✅ Specialized for code |
+| **Already available** | ❌ No (not in nixpkgs) | ✅ Yes (parser engine) |
 
 ### 2. Code Search is Semantic, Not Keyword-Based
 
@@ -134,46 +145,48 @@ docker run -p 5432:5432 paradedb/paradedb:latest
 # pg_search for keyword: "Find code containing 'bug'"
 ```
 
-## LLM Coders Might Need Full-Text Search
+## What LLM Agents Can Use
 
-Good point. LLM agents might want:
+**Examples where agents need code search**:
 
-**Examples where agents need keyword search**:
-1. "Find all TODO comments" → needs exact keyword match
-2. "Find all occurrences of deprecated API X" → literal search
-3. "Find all files importing module Y" → text matching
-4. "Find all error messages containing 'timeout'" → keyword search
-5. "Find all SQL queries with specific pattern" → text matching
+1. "Find all TODO comments"
+   → ✅ ast-grep pattern matching
 
-**Current tools**:
-- ✅ git grep (command-line, works today)
-- ✅ pg_trgm (fuzzy keyword matching, built-in)
-- ❌ pg_search (BM25 full-text, not installed)
+2. "Find all deprecated API X calls"
+   → ✅ ast-grep (understands function calls)
 
-**Options for agents**:
+3. "Find all async functions"
+   → ✅ ast-grep (syntax-aware)
 
-### Option A: Use git grep (TODAY)
+4. "Find similar error handling"
+   → ✅ pgvector (semantic)
+
+5. "Find database query patterns"
+   → ✅ ast-grep (recognizes query structure)
+
+**Agent Search Toolkit** (COMPLETE):
+
 ```elixir
-{:ok, results} = System.cmd("git", ["grep", "-n", "TODO"])
-# Instant, no DB needed, perfect for keyword search
+# 1. Syntax-aware pattern matching
+{:ok, results} = ParserEngine.find_pattern("async fn", language: :rust)
+
+# 2. Semantic similarity
+{:ok, similar} = CodeSearch.find_similar(embedding)
+
+# 3. Fuzzy text matching
+SELECT * FROM code WHERE content % 'search_term'
+
+# 4. Keyword fallback
+System.cmd("git", ["grep", "-n", "keyword"])
 ```
 
-### Option B: Add pg_search (FUTURE)
-```elixir
-{:ok, results} = Repo.query("""
-  SELECT path, content FROM code_chunks
-  WHERE content @@ 'deprecated_api'
-""")
-```
+**Why we don't need pg_search**:
+- ✅ ast-grep handles syntax patterns BETTER than BM25
+- ✅ pgvector handles semantic search BETTER than keywords
+- ✅ pg_trgm handles fuzzy matching if needed
+- ✅ All tools already available, no extra dependencies
 
-### Option C: Hybrid (BEST)
-- Use **pgvector** for semantic/pattern search ("find similar code")
-- Use **git grep** for keyword search ("find this text")
-- Add **pg_search** if git grep becomes bottleneck
-
-**Decision**: Start with git grep + pgvector, add pg_search if needed
-
-But right now: **We optimized for semantic search, which is better for most code analysis.**
+**pg_search would only add**: Keyword frequency ranking (which we don't need for code)
 
 ---
 
@@ -232,16 +245,44 @@ CONCLUSION: Semantic-first, no regrets
 
 | Question | Answer |
 |----------|--------|
-| What is pg_search? | BM25 full-text search (keyword-based) |
-| Why not include it? | Semantic search (pgvector) > keyword search for code |
-| Could we add it? | Yes, but would need to build ParadeDB from source |
-| Do we need it? | No - git grep handles keyword search, pgvector handles semantic |
-| Is pgvector better? | For code: YES. For documents: pg_search is better |
-| What if we want both? | Can add later if needed (Nix-compatible) |
+| What is pg_search? | BM25 full-text search (keyword frequency ranking) |
+| Why not include it? | We have BETTER tools: ast-grep (syntax) + pgvector (semantic) |
+| What do we actually have? | ast-grep in parser engine (already in Rust NIF) |
+| Is ast-grep better? | YES - understands code syntax, not just keywords |
+| Do agents need keyword search? | No - ast-grep handles patterns, pgvector handles similarity |
+| Can we add pg_search later? | Could, but we'd never use it (we have superior tools) |
 
-**Bottom line**: We chose the right tool for the job. pgvector for code analysis beats keyword search every time.
+**Bottom line**:
+- pg_search is for documents (BM25 keyword ranking)
+- Code needs: syntax understanding (ast-grep) + semantic similarity (pgvector)
+- We already have both, built into parser engine and database
+- pg_search is redundant for our use case
+
+---
+
+## The Real Search Stack We Have
+
+```
+CODE SEARCH CAPABILITIES
+├── ast-grep (Parser Engine - Rust NIF)
+│   ├── Syntax tree pattern matching
+│   ├── 15+ language support
+│   └── Understands code structure
+├── pgvector (PostgreSQL)
+│   ├── Semantic similarity search
+│   ├── 2560-dim embeddings
+│   └── <50ms for 1M vectors
+├── pg_trgm (PostgreSQL - built-in)
+│   ├── Fuzzy text matching
+│   └── Typo tolerance
+└── git grep (Git CLI)
+    ├── Keyword fallback
+    └── Works on any repository
+```
+
+**This is complete. pg_search adds nothing we need.**
 
 ---
 
 **Date**: October 25, 2025
-**Status**: Intentional design decision, not oversight
+**Status**: We don't need pg_search because we have ast-grep in the parser engine
