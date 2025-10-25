@@ -8,7 +8,7 @@ defmodule CentralCloud.SharedQueueRegistry do
   - Singularity instances
   - CentralCloud
   - Genesis
-  - Nexus
+  - External services (LLM router, HITL bridge)
   - Other services
 
   The registry is written to the `queue_registry` table in shared_queue DB on startup,
@@ -50,10 +50,10 @@ defmodule CentralCloud.SharedQueueRegistry do
 
     %{
       name: "llm_requests",
-      purpose: "LLM routing requests from Singularity to Nexus",
+      purpose: "LLM routing requests from Singularity to external LLM router",
       direction: "send",
       source: "singularity",
-      consumer: "nexus",
+      consumer: "llm_router",
       message_schema: %{
         type: "llm_request",
         request_id: "uuid",
@@ -67,9 +67,9 @@ defmodule CentralCloud.SharedQueueRegistry do
     },
     %{
       name: "llm_results",
-      purpose: "LLM responses from Nexus back to Singularity",
+      purpose: "LLM responses from external LLM router back to Singularity",
       direction: "receive",
-      source: "nexus",
+      source: "llm_router",
       consumer: "singularity",
       message_schema: %{
         type: "llm_result",

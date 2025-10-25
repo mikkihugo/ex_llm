@@ -5,22 +5,22 @@ defmodule Singularity.SharedQueuePublisher do
   Singularity publishes requests to the central shared_queue database
   (PostgreSQL with pgmq extension) for other services to consume:
 
-  - **LLM Requests** → Nexus (routes to Claude, Gemini, etc.)
-  - **Approval Requests** → Nexus HITL bridge
-  - **Question Requests** → Nexus HITL bridge
+  - **LLM Requests** → External LLM router (routes to Claude, Gemini, etc.)
+  - **Approval Requests** → External HITL bridge
+  - **Question Requests** → External HITL bridge
   - **Job Requests** → Genesis (code execution)
 
   Singularity reads responses back from the same queues:
-  - **LLM Results** ← Nexus
+  - **LLM Results** ← External LLM router
   - **Job Results** ← Genesis
-  - **Approval Responses** ← Browser (via Nexus)
-  - **Question Responses** ← Browser (via Nexus)
+  - **Approval Responses** ← Browser (via HITL bridge)
+  - **Question Responses** ← Browser (via HITL bridge)
 
   ## Queue Architecture
 
   ```
-  pgmq.llm_requests         ← Publish LLM requests to Nexus
-  pgmq.llm_results          ← Read LLM responses from Nexus
+  pgmq.llm_requests         ← Publish LLM requests to external router
+  pgmq.llm_results          ← Read LLM responses from external router
 
   pgmq.approval_requests    ← Publish code approval requests
   pgmq.approval_responses   ← Read human approval decisions
@@ -46,7 +46,7 @@ defmodule Singularity.SharedQueuePublisher do
   ## Usage
 
   ```elixir
-  # Publish LLM request to be routed by Nexus
+  # Publish LLM request to be routed by external LLM router
   Singularity.SharedQueuePublisher.publish_llm_request(%{
     agent_id: "self-improving-agent",
     task_type: "architect",
@@ -83,9 +83,9 @@ defmodule Singularity.SharedQueuePublisher do
   ## Message Flow
 
   1. Agent publishes LLM request to shared_queue
-  2. Nexus consumes from `pgmq.llm_requests`
-  3. Nexus calls LLM provider (Claude, Gemini, etc.)
-  4. Nexus publishes result to `pgmq.llm_results`
+  2. External LLM router consumes from `pgmq.llm_requests`
+  3. External LLM router calls LLM provider (Claude, Gemini, etc.)
+  4. External LLM router publishes result to `pgmq.llm_results`
   5. Singularity consumer reads from `pgmq.llm_results`
   6. Agent processes result and continues execution
 
@@ -106,7 +106,7 @@ defmodule Singularity.SharedQueuePublisher do
   @queue_job_results "job_results"
 
   @doc """
-  Publish LLM request to Nexus for routing.
+  Publish LLM request to external LLM router for routing.
 
   Also stores the request in the local llm_requests table for faster polling
   by the SharedQueueConsumer.
@@ -259,7 +259,7 @@ defmodule Singularity.SharedQueuePublisher do
   end
 
   @doc """
-  Read LLM results from Nexus.
+  Read LLM results from external LLM router.
 
   Returns `{:ok, [results]}` or `:empty` if no messages.
 

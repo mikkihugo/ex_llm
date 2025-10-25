@@ -5,7 +5,7 @@ defmodule CentralCloud.Repo.Migrations.CreateQueueRegistry do
   Creates the queue_registry table in the shared_queue database.
 
   This table is the single source of truth for all pgmq queues used by
-  Singularity, CentralCloud, Genesis, Nexus, and other services.
+  Singularity, CentralCloud, Genesis, external LLM router, and other services.
 
   All services can query this table to discover available queues, their
   purpose, message schemas, and retention policies.

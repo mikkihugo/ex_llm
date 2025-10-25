@@ -2,12 +2,12 @@ defmodule Singularity.HITL.ApprovalService do
   @moduledoc """
   Service for managing Human-in-the-Loop (HITL) approval workflow via NATS.
 
-  Implements request-reply pattern with Nexus web UI.
+  Implements request-reply pattern with external HITL web UI.
 
   ## Approval Flow
   - Agent requests approval via NATS (approval.request topic)
-  - Nexus displays in web UI
-  - Human approves/rejects in Nexus
+  - External service displays in web UI
+  - Human approves/rejects in UI
   - Response sent back via NATS reply
 
   ## Timeout
@@ -37,7 +37,7 @@ defmodule Singularity.HITL.ApprovalService do
   @doc """
   Request approval for a code change via NATS.
 
-  Sends approval request to Nexus web UI via NATS request-reply.
+  Sends approval request to external HITL service via NATS request-reply.
   Waits up to 30 seconds for human response.
 
   Returns:
@@ -63,7 +63,7 @@ defmodule Singularity.HITL.ApprovalService do
     Logger.info("Requesting approval via NATS: #{approval_request.id} (#{file_path})")
 
     try do
-      # NATS request-reply to Nexus
+      # NATS request-reply to external HITL service
       response = Client.request(
         "approval.request",
         Jason.encode!(approval_request),

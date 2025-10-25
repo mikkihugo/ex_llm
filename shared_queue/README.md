@@ -1,14 +1,14 @@
 # Shared Queue Database
 
-Central PostgreSQL message queue for all Singularity instances, Genesis, CentralCloud, and Nexus.
+Central PostgreSQL message queue for all Singularity instances, Genesis, CentralCloud, and external services.
 
 ## Overview
 
 Replaces NATS with PostgreSQL `pgmq` extension for durable, ACID-compliant messaging:
-- **LLM Requests** - Route agent requests to AI providers (Singularity → Nexus)
-- **Approval Requests** - HITL approval workflows (Singularity → Nexus → Browser)
-- **Question Requests** - Agent questions to humans (Singularity → Nexus → Browser)
-- **Job Results** - Return responses back to agents (Nexus → Singularity)
+- **LLM Requests** - Route agent requests to AI providers (Singularity → External LLM router)
+- **Approval Requests** - HITL approval workflows (Singularity → External HITL bridge → Browser)
+- **Question Requests** - Agent questions to humans (Singularity → External HITL bridge → Browser)
+- **Job Results** - Return responses back to agents (External LLM router → Singularity)
 
 ## Database
 
@@ -46,8 +46,8 @@ createdb shared_queue
 # 2. Create pgmq extension
 psql shared_queue -c "CREATE EXTENSION pgmq"
 
-# 3. Initialize queues (via Drizzle migration)
-bunx drizzle-kit push -d nexus_llm_server
+# 3. Initialize queues (via CentralCloud migration)
+cd centralcloud && mix ecto.migrate
 
 # 4. Test connection
 psql shared_queue -c "SELECT * FROM pgmq.queue_list();"
@@ -64,11 +64,11 @@ INSERT INTO pgmq.llm_requests (msg)
     ↓
 shared_queue database
     ↓
-Nexus polls: SELECT * FROM pgmq.read('llm_requests', limit:10)
+External LLM router polls: SELECT * FROM pgmq.read('llm_requests', limit:10)
     ↓
-Nexus calls Claude/Gemini/etc
+External LLM router calls Claude/Gemini/etc
     ↓
-Nexus archives: SELECT pgmq.archive('llm_requests', msg_id)
+External LLM router archives: SELECT pgmq.archive('llm_requests', msg_id)
     ↓
 INSERT INTO pgmq.llm_results (msg)
     ↓
@@ -82,7 +82,7 @@ Agent processes result
 | Service | Role | Reads From | Writes To |
 |---------|------|-----------|-----------|
 | **Singularity** | Agent orchestration | llm_results, job_results | llm_requests, approval_responses, question_responses |
-| **Nexus** | LLM Router + HITL Bridge | llm_requests, approval_responses | llm_results |
+| **External LLM Router** | LLM Router + HITL Bridge | llm_requests, approval_responses | llm_results |
 | **CentralCloud** | Analytics (read-only) | All queues | (none) |
 | **Genesis** | Code execution | job_requests | job_results |
 
@@ -115,15 +115,15 @@ config :singularity, :shared_queue,
   batch_size: 10
 ```
 
-### Nexus Configuration
+### External LLM Router Configuration
+
+Configuration for external LLM routing service (if using):
 
 ```typescript
-// nexus/src/config.ts
+// Example configuration
 export const sharedQueueConfig = {
   enabled: true,
-  databaseUrl:
-    process.env.SHARED_QUEUE_DB_URL ||
-    `postgresql://${process.env.SHARED_QUEUE_USER || 'postgres'}:${process.env.SHARED_QUEUE_PASSWORD || ''}@${process.env.SHARED_QUEUE_HOST || 'localhost'}:${process.env.SHARED_QUEUE_PORT || '5432'}/shared_queue`,
+  databaseUrl: process.env.SHARED_QUEUE_DB_URL,
   llmRequestsQueue: 'llm_requests',
   approvalRequestsQueue: 'approval_requests',
   questionRequestsQueue: 'question_requests',
@@ -151,23 +151,24 @@ watch "psql shared_queue -c \"SELECT msg_id, read_ct, enqueued_at FROM pgmq.llm_
 ## Migration from NATS
 
 1. **Phase 1: Both Active (Safe)**
-   - Deploy Nexus with pgmq consumer
+   - Deploy external LLM router with pgmq consumer
    - Keep NATS running (agents still use NATS)
-   - Nexus reads from BOTH pgmq and NATS
+   - External router reads from BOTH pgmq and NATS
 
 2. **Phase 2: Primary Cutover**
    - Agents switch to publish to pgmq
-   - Nexus only reads pgmq
+   - External router only reads pgmq
    - Archive NATS messages for safety
 
-3. **Phase 3: NATS Retirement**
-   - Remove NATS from deployment
-   - Confirm all systems stable
-   - Archive pgmq history to cold storage
+3. **Phase 3: NATS Retirement (COMPLETED)**
+   - NATS removed from deployment
+   - All systems using pgmq
+   - Archive pgmq history to cold storage as needed
 
 ## Files
 
-- `nexus_llm_server/drizzle/shared_queue_schema.ts` - Drizzle schema
-- `nexus_llm_server/src/shared-queue-handler.ts` - pgmq consumer
+- `centralcloud/lib/centralcloud/shared_queue_registry.ex` - Queue registry
+- `centralcloud/lib/centralcloud/shared_queue_manager.ex` - Queue manager
 - `singularity/lib/singularity/shared_queue_publisher.ex` - pgmq publisher
+- `singularity/lib/singularity/shared_queue_consumer.ex` - pgmq consumer
 - `DATABASE_SETUP.md` - Database initialization guide

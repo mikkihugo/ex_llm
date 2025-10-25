@@ -3,7 +3,7 @@ defmodule Singularity.SharedQueueConsumer do
   Singularity Consumer - Reads responses from shared_queue and delivers to agents.
 
   Singularity publishes requests to shared_queue and then polls for responses:
-  - Reads LLM results from Nexus
+  - Reads LLM results from external services
   - Reads job results from Genesis
   - Reads approval/question responses from HITL bridge
 
@@ -14,7 +14,7 @@ defmodule Singularity.SharedQueueConsumer do
       ↓ publishes request
   pgmq.llm_requests / job_requests / etc.
       ↓
-  External Service (Nexus, Genesis, HITL)
+  External Service (Genesis, HITL)
       ↓ publishes response
   pgmq.llm_results / job_results / responses
       ↓
@@ -92,7 +92,7 @@ defmodule Singularity.SharedQueueConsumer do
   end
 
   @doc """
-  Consume LLM results from Nexus - FILTERED BY AGENT.
+  Consume LLM results from external LLM router - FILTERED BY AGENT.
 
   CRITICAL: Only process results for agents owned by this Singularity instance.
   This prevents cross-contamination between multiple Singularity instances.

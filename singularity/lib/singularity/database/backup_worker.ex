@@ -29,7 +29,7 @@ defmodule Singularity.Database.BackupWorker do
   require Logger
 
   @backup_dir ".db-backup"
-  @databases ["singularity", "centralcloud", "genesis", "nexus"]
+  @databases ["singularity", "centralcloud", "genesis"]
   @db_user System.get_env("DB_USER", "mhugo")
 
   @impl Oban.Worker

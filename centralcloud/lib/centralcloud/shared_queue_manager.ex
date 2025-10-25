@@ -3,7 +3,7 @@ defmodule CentralCloud.SharedQueueManager do
   Central Queue Manager - Initializes and manages the shared_queue database (PostgreSQL with pgmq).
 
   This is the single source of truth for the shared queue infrastructure that all services
-  (Singularity instances, Genesis, Nexus, CentralCloud) rely on for inter-service communication.
+  (Singularity instances, Genesis, external LLM router, CentralCloud) rely on for inter-service communication.
 
   ## Database Structure
 
@@ -11,8 +11,8 @@ defmodule CentralCloud.SharedQueueManager do
 
   ### Queue Tables (via pgmq extension)
 
-  - `pgmq.llm_requests` - LLM routing requests from Singularity to Nexus
-  - `pgmq.llm_results` - LLM responses from Nexus back to Singularity
+  - `pgmq.llm_requests` - LLM routing requests from Singularity to external LLM router
+  - `pgmq.llm_results` - LLM responses from external LLM router back to Singularity
   - `pgmq.approval_requests` - Code approval requests from Singularity to HITL
   - `pgmq.approval_responses` - Human approval decisions back to Singularity
   - `pgmq.question_requests` - Questions from Singularity to humans
@@ -59,7 +59,7 @@ defmodule CentralCloud.SharedQueueManager do
   ## Architecture Note
 
   CentralCloud (this application) is the OWNER of shared_queue.
-  Other services (Singularity, Genesis, Nexus) are CONSUMERS that read/write to shared_queue.
+  Other services (Singularity, Genesis, external LLM router) are CONSUMERS that read/write to shared_queue.
 
   This ensures:
   - Single source of truth for queue infrastructure

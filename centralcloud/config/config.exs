@@ -20,7 +20,7 @@ config :centralcloud, CentralCloud.SharedQueueRepo,
   pool_size: 5
 
 # Configure Shared Queue Manager (pgmq initialization and retention)
-# Central message hub for all services (Singularity, Genesis, Nexus)
+# Central message hub for all services (Singularity, Genesis, external LLM router)
 config :centralcloud, :shared_queue,
   enabled: System.get_env("SHARED_QUEUE_ENABLED", "true") == "true",
   database_url: System.get_env("SHARED_QUEUE_DB_URL"),
