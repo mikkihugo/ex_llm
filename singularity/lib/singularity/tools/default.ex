@@ -8,7 +8,7 @@ defmodule Singularity.Tools.Default do
 
   alias Singularity.Schemas.Tools.Tool
 
-  @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http]
+  @providers [:claude_cli, :claude_http, :gemini_code_cli, :gemini_code_api]
   @defaults_key {:singularity, :tools, :defaults_loaded}
   @allowed_commands ["ls", "cat", "pwd"]
   @shell_timeout 10_000

@@ -200,6 +200,7 @@
           git gh curl pkg-config direnv gnused gawk coreutils findutils
           ripgrep fd jq bat htop tree watchexec entr just nil nixfmt-rfc-style lsof
           mold sccache cachix rustc cargo rustfmt clippy rust-analyzer cargo-watch
+          # Note: Google auth uses @google/gemini-cli-core OAuth (no gcloud needed)
         ] ++ lib.optionals env.gpu (if platform.hasCuda then [
           # CUDA tools only if GPU enabled and CUDA available
           cudaPackages.cudatoolkit cudaPackages.cudnn

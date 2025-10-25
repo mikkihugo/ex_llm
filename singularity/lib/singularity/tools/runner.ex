@@ -9,8 +9,11 @@ defmodule Singularity.Tools.Runner do
   @provider_aliases %{
     "claude_cli" => :claude_cli,
     "claude_http" => :claude_http,
-    "gemini_cli" => :gemini_cli,
-    "gemini_http" => :gemini_http
+    "gemini_code_cli" => :gemini_code_cli,
+    "gemini_code_api" => :gemini_code_api,
+    # Legacy aliases (deprecated)
+    "gemini_cli" => :gemini_code_cli,
+    "gemini_http" => :gemini_code_api
   }
 
   @type context :: map()

@@ -11,7 +11,7 @@ defmodule Singularity.Tools.Basic do
 
   alias Singularity.Schemas.Tools.Tool
 
-  @providers [:claude_cli, :claude_http, :gemini_cli, :gemini_http]
+  @providers [:claude_cli, :claude_http, :gemini_code_cli, :gemini_code_api]
   @workspace_root File.cwd!()
   @registration_key {:singularity, :tools, :basic_loaded}
   @max_matches 20

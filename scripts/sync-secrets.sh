@@ -155,13 +155,11 @@ push_secrets() {
   set -u
 
   # List of secrets to sync to GitHub
+  # Note: GITHUB_TOKEN is excluded - GitHub Actions provides it automatically
+  # Note: Google auth uses @google/gemini-cli OAuth (no ADC needed)
   GITHUB_SECRETS=(
-    "SECRET_KEY_BASE"
     "CACHIX_AUTH_TOKEN"
     "CLAUDE_CODE_OAUTH_TOKEN"
-    "GOOGLE_APPLICATION_CREDENTIALS_JSON"
-    "SLACK_TOKEN"
-    "GOOGLE_CHAT_WEBHOOK_URL"
   )
 
   for secret in "${GITHUB_SECRETS[@]}"; do

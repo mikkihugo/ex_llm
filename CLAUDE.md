@@ -74,13 +74,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **CRITICAL:** This project uses ONLY subscription-based or FREE AI providers. Never enable pay-per-use API billing.
 
 **Approved providers:**
-- Gemini (FREE via gemini-cli-core + ADC)
+- **Gemini Code Assist API** (FREE - `gemini_code_api` provider) **[PRIMARY]**
+  - Direct HTTP to `cloudcode-pa.googleapis.com` (Project Assistant API)
+  - Uses `@google/gemini-cli-core` OAuth credentials (shared with CLI)
+  - Auth: One-time browser OAuth via `bunx @google/gemini-cli auth`
+  - No gcloud SDK needed - lightweight npm package handles everything
+  - FREE tier for code assistance (not billed)
+- **Gemini Code Assist CLI** (FREE - `gemini_code_cli` provider) **[BACKUP]**
+  - Fallback when API fails or OAuth not configured
+  - Bun wrapper around `@google/gemini-cli`
+  - Uses same OAuth credentials as API
+  - Auth: Browser flow via `codeassist.google.com`
 - Claude (Claude Pro/Max subscription via claude-code SDK)
 - Codex (subscription-based via CLI)
 - Copilot (GitHub Copilot subscription)
 - Cursor (Cursor subscription)
 
-**Forbidden:** OpenAI API, Vertex AI API, Anthropic API (all pay-per-token)
+**Future providers (NOT YET IMPLEMENTED):**
+- Google AI Studio (web UI - `generativelanguage.googleapis.com`)
+- Vertex AI (GCP enterprise - `aiplatform.googleapis.com`)
+
+**Forbidden:** OpenAI API direct billing, Anthropic API direct billing (all pay-per-token)
 
 ## Common Development Commands
 

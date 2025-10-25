@@ -30,7 +30,7 @@ defmodule Genesis.Schemas.SandboxHistory do
     field :created_at, :utc_datetime_usec
 
     # Association
-    belongs_to :experiment, Genesis.Schemas.ExperimentRecord, foreign_key: :experiment_id, type: :string
+    belongs_to :experiment, Genesis.Schemas.ExperimentRecord, foreign_key: :experiment_id, references: :experiment_id, type: :string
   end
 
   @doc """
