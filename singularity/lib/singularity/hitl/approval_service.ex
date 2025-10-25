@@ -1,213 +1,160 @@
 defmodule Singularity.HITL.ApprovalService do
   @moduledoc """
-  Service for managing Human-in-the-Loop (HITL) approval workflow.
+  Service for managing Human-in-the-Loop (HITL) approval workflow via NATS.
 
-  Implements queue-based approval with Google Chat integration.
+  Implements request-reply pattern with Nexus web UI.
 
-  ## Queue Limits
-  - Max 3 pending approvals at once
-  - Blocks agent when queue is full
-  - FIFO ordering
-  - No timeout (waits indefinitely)
+  ## Approval Flow
+  - Agent requests approval via NATS (approval.request topic)
+  - Nexus displays in web UI
+  - Human approves/rejects in Nexus
+  - Response sent back via NATS reply
+
+  ## Timeout
+  - 30 second timeout if no human response
+  - Agent can proceed with fallback decision
 
   ## Usage
 
-      # Request approval (blocks if queue full)
-      {:ok, approval_id} = ApprovalService.request_approval(
+      # Request approval (NATS request-reply, 30s timeout)
+      case ApprovalService.request_approval(
         file_path: "lib/my_module.ex",
         diff: diff_text,
         description: "Add feature X"
-      )
-
-      # Wait for human decision (blocks until approved/rejected)
-      case ApprovalService.wait_for_decision(approval_id) do
+      ) do
         {:ok, :approved} -> write_file(...)
         {:ok, :rejected} -> skip_change()
-        {:error, reason} -> handle_error(reason)
+        {:error, :timeout} -> fallback_behavior()
       end
   """
 
   require Logger
-  import Ecto.Query
 
-  alias Singularity.Repo
-  alias Singularity.Schemas.ApprovalQueue
-  alias Singularity.HITL.GoogleChat
+  alias Singularity.NATS.Client
 
-  @max_pending 3
-  # Check for status change every 2 seconds
-  @poll_interval_ms 2_000
+  @approval_timeout_ms 30_000  # 30 second timeout
 
   @doc """
-  Request approval for a code change.
+  Request approval for a code change via NATS.
 
-  Blocks if queue is full (>= 3 pending). Posts to Google Chat.
-  Returns {:ok, approval_id} when request is queued.
+  Sends approval request to Nexus web UI via NATS request-reply.
+  Waits up to 30 seconds for human response.
+
+  Returns:
+  - {:ok, :approved} - Human approved
+  - {:ok, :rejected} - Human rejected
+  - {:error, :timeout} - No response within 30s
   """
   def request_approval(opts) do
     file_path = Keyword.fetch!(opts, :file_path)
     diff = Keyword.fetch!(opts, :diff)
+    description = Keyword.get(opts, :description, "Approval requested")
+    agent_id = Keyword.get(opts, :agent_id, "system")
 
-    # Wait if queue is full
-    wait_for_queue_space()
+    approval_request = %{
+      id: UUID.uuid4(),
+      file_path: file_path,
+      diff: diff,
+      description: description,
+      agent_id: agent_id,
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+    }
 
-    # Create pending approval
-    changeset =
-      ApprovalQueue.new_request(file_path, diff,
-        description: Keyword.get(opts, :description),
-        agent_id: Keyword.get(opts, :agent_id),
-        requested_by: Keyword.get(opts, :requested_by, "system")
+    Logger.info("Requesting approval via NATS: #{approval_request.id} (#{file_path})")
+
+    try do
+      # NATS request-reply to Nexus
+      response = Client.request(
+        "approval.request",
+        Jason.encode!(approval_request),
+        timeout: @approval_timeout_ms
       )
 
-    case Repo.insert(changeset) do
-      {:ok, approval} ->
-        # Post to Google Chat
-        case GoogleChat.post_approval_request(file_path, diff,
-               description: approval.description,
-               agent_id: approval.agent_id
-             ) do
-          {:ok, message_id} ->
-            # Update with Google Chat message ID
-            approval
-            |> ApprovalQueue.set_chat_message("default", message_id)
-            |> Repo.update()
+      case response do
+        {:ok, body} ->
+          decoded = Jason.decode!(body)
+          case decoded do
+            %{"approved" => true} ->
+              Logger.info("Approval granted: #{approval_request.id}")
+              {:ok, :approved}
+            %{"approved" => false} ->
+              Logger.info("Approval rejected: #{approval_request.id}")
+              {:ok, :rejected}
+            _ ->
+              Logger.warning("Invalid approval response")
+              {:error, :invalid_response}
+          end
 
-            Logger.info("Approval request posted: #{approval.id} (#{file_path})")
-            {:ok, approval.id}
+        {:error, :timeout} ->
+          Logger.warning("Approval request timeout: #{approval_request.id}")
+          {:error, :timeout}
 
-          {:error, reason} ->
-            Logger.warning("Failed to post to Google Chat: #{inspect(reason)}")
-            # Keep approval in queue even if Chat fails
-            {:ok, approval.id}
-        end
-
-      {:error, changeset} ->
-        {:error, changeset}
+        {:error, reason} ->
+          Logger.error("Approval request failed: #{inspect(reason)}")
+          {:error, reason}
+      end
+    rescue
+      e in RuntimeError ->
+        Logger.error("Error requesting approval: #{inspect(e)}")
+        {:error, :request_failed}
     end
   end
 
   @doc """
-  Wait for human decision on approval request.
+  Request a question/clarification from human via NATS.
 
-  Blocks until status changes to approved/rejected.
-  Polls database every 2 seconds.
+  Similar to approval but returns text response instead of yes/no.
 
   Returns:
-  - {:ok, :approved} - User clicked approve
-  - {:ok, :rejected} - User clicked reject
-  - {:error, :not_found} - Approval ID doesn't exist
+  - {:ok, response_text} - Human provided response
+  - {:error, :timeout} - No response within 30s
   """
-  def wait_for_decision(approval_id, opts \\ []) do
-    poll_interval = Keyword.get(opts, :poll_interval_ms, @poll_interval_ms)
-    max_polls = Keyword.get(opts, :max_polls, :infinity)
+  def request_question(opts) do
+    question = Keyword.fetch!(opts, :question)
+    agent_id = Keyword.get(opts, :agent_id, "system")
+    context = Keyword.get(opts, :context, %{})
 
-    Logger.info("Waiting for approval decision: #{approval_id}")
+    question_request = %{
+      id: UUID.uuid4(),
+      question: question,
+      context: context,
+      agent_id: agent_id,
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+    }
 
-    do_wait_for_decision(approval_id, poll_interval, max_polls, 0)
-  end
+    Logger.info("Requesting question response via NATS: #{question_request.id}")
 
-  defp do_wait_for_decision(approval_id, _interval, max_polls, poll_count)
-       when max_polls != :infinity and poll_count >= max_polls do
-    Logger.warning("Max polls reached for approval: #{approval_id}")
-    {:error, :timeout}
-  end
-
-  defp do_wait_for_decision(approval_id, interval, max_polls, poll_count) do
-    case Repo.get(ApprovalQueue, approval_id) do
-      nil ->
-        {:error, :not_found}
-
-      %{status: "approved"} = approval ->
-        Logger.info("Approval granted: #{approval_id} by #{approval.approved_by}")
-        {:ok, :approved}
-
-      %{status: "rejected"} = approval ->
-        Logger.info("Approval rejected: #{approval_id} by #{approval.approved_by}")
-        {:ok, :rejected}
-
-      %{status: "pending"} ->
-        # Still waiting, poll again
-        Process.sleep(interval)
-        do_wait_for_decision(approval_id, interval, max_polls, poll_count + 1)
-    end
-  end
-
-  @doc """
-  Approve a pending request (called by Google Chat webhook handler).
-  """
-  def approve(approval_id, approved_by) do
-    with %ApprovalQueue{} = approval <- Repo.get(ApprovalQueue, approval_id),
-         changeset <- ApprovalQueue.approve(approval, approved_by),
-         {:ok, updated} <- Repo.update(changeset) do
-      Logger.info("Approval #{approval_id} approved by #{approved_by}")
-
-      # Update Google Chat message
-      GoogleChat.update_message_status(
-        updated.chat_message_id,
-        "approved",
-        approved_by
+    try do
+      response = Client.request(
+        "question.ask",
+        Jason.encode!(question_request),
+        timeout: @approval_timeout_ms
       )
 
-      {:ok, updated}
-    else
-      nil -> {:error, :not_found}
-      {:error, reason} -> {:error, reason}
-    end
-  end
+      case response do
+        {:ok, body} ->
+          decoded = Jason.decode!(body)
+          case decoded do
+            %{"response" => response_text} when is_binary(response_text) ->
+              Logger.info("Question answered: #{question_request.id}")
+              {:ok, response_text}
+            _ ->
+              Logger.warning("Invalid question response")
+              {:error, :invalid_response}
+          end
 
-  @doc """
-  Reject a pending request (called by Google Chat webhook handler).
-  """
-  def reject(approval_id, rejected_by, reason \\ nil) do
-    with %ApprovalQueue{} = approval <- Repo.get(ApprovalQueue, approval_id),
-         changeset <- ApprovalQueue.reject(approval, rejected_by, reason),
-         {:ok, updated} <- Repo.update(changeset) do
-      Logger.info("Approval #{approval_id} rejected by #{rejected_by}")
+        {:error, :timeout} ->
+          Logger.warning("Question request timeout: #{question_request.id}")
+          {:error, :timeout}
 
-      # Update Google Chat message
-      GoogleChat.update_message_status(
-        updated.chat_message_id,
-        "rejected",
-        rejected_by
-      )
-
-      {:ok, updated}
-    else
-      nil -> {:error, :not_found}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  @doc """
-  Count pending approvals in queue.
-  """
-  def count_pending do
-    from(a in ApprovalQueue, where: a.status == "pending", select: count(a.id))
-    |> Repo.one()
-  end
-
-  @doc """
-  List all pending approvals (oldest first).
-  """
-  def list_pending do
-    from(a in ApprovalQueue,
-      where: a.status == "pending",
-      order_by: [asc: a.inserted_at]
-    )
-    |> Repo.all()
-  end
-
-  ## Private Functions
-
-  defp wait_for_queue_space do
-    pending_count = count_pending()
-
-    if pending_count >= @max_pending do
-      Logger.info("Approval queue full (#{pending_count}/#{@max_pending}), waiting...")
-      Process.sleep(@poll_interval_ms)
-      wait_for_queue_space()
-    else
-      :ok
+        {:error, reason} ->
+          Logger.error("Question request failed: #{inspect(reason)}")
+          {:error, reason}
+      end
+    rescue
+      e in RuntimeError ->
+        Logger.error("Error requesting question: #{inspect(e)}")
+        {:error, :request_failed}
     end
   end
 end

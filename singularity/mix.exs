@@ -53,18 +53,6 @@ defmodule Singularity.MixProject do
 
   defp deps do
     [
-      # Web interface (Phoenix LiveDashboard)
-      {:phoenix, "~> 1.7"},
-      {:phoenix_live_view, "~> 0.20"},
-      {:phoenix_html, "~> 4.0"},
-      {:bandit, "~> 1.5"},
-      {:plug, "~> 1.15"},
-      {:finch, "~> 0.17"},
-      {:req, "~> 0.5"},
-
-      # UI Component Library (inspired by shadcn/ui)
-      {:salad_ui, "~> 0.14"},
-
       # Database
       {:ecto, "~> 3.11"},
       {:ecto_sql, "~> 3.11"},

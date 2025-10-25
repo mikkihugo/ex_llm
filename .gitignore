@@ -27,8 +27,9 @@ flake.lock  # Machine-specific, generated per architecture
 auth.json
 application_default_credentials.json
 .envrc.local
-.envrc.local.example
+.envrc.local.*
 .envrc.secrets
+.gist_id  # Private gist ID for secret sync
 
 # Encryption keys - NEVER COMMIT
 .age-key.txt
