@@ -16,5 +16,6 @@
       "docker/**/jaeger*.yml",
       "config/jaeger*.{exs,ex,ts,js}"
     ]
-  }
+  },
+  "parent_pattern": null
 }

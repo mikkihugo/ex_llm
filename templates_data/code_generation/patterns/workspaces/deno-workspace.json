@@ -7,7 +7,12 @@
     "name": "Deno Workspace",
     "description": "Deno monorepo using deno.json workspace configuration",
     "language": "typescript",
-    "tags": ["workspace", "monorepo", "deno", "typescript"],
+    "tags": [
+      "workspace",
+      "monorepo",
+      "deno",
+      "typescript"
+    ],
     "author": "singularity",
     "created": "2025-01-15",
     "updated": "2025-01-15"
@@ -23,7 +28,11 @@
       "confidence_threshold": 0.8
     },
     "structure": {
-      "root_files": ["deno.json", "deno.lock", "import_map.json"],
+      "root_files": [
+        "deno.json",
+        "deno.lock",
+        "import_map.json"
+      ],
       "workspace_members": [
         "apps/*",
         "libs/*",
@@ -38,11 +47,26 @@
       ]
     },
     "commands": {
-      "build": ["deno task build", "deno build"],
-      "test": ["deno test", "deno test --workspace"],
-      "lint": ["deno lint", "deno lint --workspace"],
-      "format": ["deno fmt", "deno fmt --workspace"],
-      "run": ["deno run", "deno task start"]
+      "build": [
+        "deno task build",
+        "deno build"
+      ],
+      "test": [
+        "deno test",
+        "deno test --workspace"
+      ],
+      "lint": [
+        "deno lint",
+        "deno lint --workspace"
+      ],
+      "format": [
+        "deno fmt",
+        "deno fmt --workspace"
+      ],
+      "run": [
+        "deno run",
+        "deno task start"
+      ]
     },
     "naming_conventions": {
       "modules": "kebab-case",
@@ -67,5 +91,6 @@
       "must_have_consistent_deno_version"
     ],
     "score": 0.9
-  }
+  },
+  "parent_pattern": null
 }

@@ -18,5 +18,6 @@
       "src/**/nats/*.ts",
       "src/**/nats/*.rs"
     ]
-  }
+  },
+  "parent_pattern": null
 }

@@ -35,7 +35,7 @@ defmodule Singularity.Repo.Migrations.CreateModuleImportanceTiersView do
 
   def up do
     # Create materialized view - only runs if graph_nodes table exists
-    execute(~s(
+    execute("""
       DO $$
       BEGIN
         IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'graph_nodes') THEN
@@ -77,7 +77,7 @@ defmodule Singularity.Repo.Migrations.CreateModuleImportanceTiersView do
           ON module_importance_tiers(codebase_id, rank_in_codebase);
         END IF;
       END$$;
-    ))
+    """)
   end
 
   def down do

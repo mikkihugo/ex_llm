@@ -3,7 +3,9 @@
   "name": "SPARC Security Phase",
   "description": "Security analysis and implementation planning",
   "phase": 3,
-  "depends_on": ["sparc-architecture"],
+  "depends_on": [
+    "sparc-architecture"
+  ],
   "compose": [
     "bits/security/oauth2.md",
     "bits/security/input-validation.md",
@@ -11,7 +13,11 @@
   ],
   "metadata": {
     "version": "2.0.0",
-    "tags": ["sparc", "security", "analysis"],
+    "tags": [
+      "sparc",
+      "security",
+      "analysis"
+    ],
     "complexity": 7
   },
   "instruction": "Analyze security requirements and design security architecture including authentication, authorization, input validation, rate limiting, and data protection.",
@@ -21,5 +27,6 @@
     "authentication_design",
     "authorization_strategy",
     "data_protection_plan"
-  ]
+  ],
+  "parent_pattern": null
 }

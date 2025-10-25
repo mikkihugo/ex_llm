@@ -7,18 +7,36 @@
     "name": "Elixir NATS Consumer Pattern (Production)",
     "description": "Async NATS consumer with GenServer pattern for reliable message processing - Production Standards Compliant",
     "language": "elixir",
-    "tags": ["messaging", "nats", "async", "genserver", "consumer", "production", "documentation", "error-handling"],
+    "tags": [
+      "messaging",
+      "nats",
+      "async",
+      "genserver",
+      "consumer",
+      "production",
+      "documentation",
+      "error-handling"
+    ],
     "author": "singularity",
     "created": "2025-10-06",
     "updated": "2025-10-12",
-    "compliance": ["production-standards", "error-matrix", "integration-examples", "edge-cases"],
+    "compliance": [
+      "production-standards",
+      "error-matrix",
+      "integration-examples",
+      "edge-cases"
+    ],
     "embedding": null
   },
   "content": {
     "code": "defmodule {{module_name}} do\n  @moduledoc \"\"\"\n  {{description}}\n\n  ## Overview\n\n  {{overview}}\n\n  ## Public API Contract\n\n  {{api_contract}}\n\n  ## Error Matrix\n\n  {{error_matrix}}\n\n  ## Performance Notes\n\n  {{performance_notes}}\n\n  ## Concurrency Semantics\n\n  {{concurrency_notes}}\n\n  ## Security Considerations\n\n  {{security_notes}}\n\n  ## Examples\n\n  {{examples}}\n\n  ## Relationships\n\n  {{relationships}}\n\n  ## Template Version\n\n  {{template_version}}\n  \"\"\"\n\n  use GenServer\n  require Logger\n\n  @type state :: %{\n    conn: Gnat.t() | nil,\n    subscription: reference() | nil,\n    subject: String.t(),\n    handler: module(),\n    concurrency: pos_integer()\n  }\n\n  ## Client API\n\n  @doc \"\"\"\n  Start the NATS consumer.\n\n  ## Options\n\n  - `:subject` - NATS subject to subscribe to (required)\n  - `:handler` - Handler module implementing `handle_message/1` (required)\n  - `:concurrency` - Number of concurrent message processors (default: 10)\n  - `:connection_settings` - Gnat connection settings\n  \"\"\"\n  @spec start_link(keyword()) :: GenServer.on_start()\n  def start_link(opts) do\n    subject = Keyword.fetch!(opts, :subject)\n    handler = Keyword.fetch!(opts, :handler)\n    GenServer.start_link(__MODULE__, opts, name: __MODULE__)\n  end\n\n  ## Server Callbacks\n\n  @impl true\n  def init(opts) do\n    subject = Keyword.fetch!(opts, :subject)\n    handler = Keyword.fetch!(opts, :handler)\n    concurrency = Keyword.get(opts, :concurrency, 10)\n\n    state = %{\n      conn: nil,\n      subscription: nil,\n      subject: subject,\n      handler: handler,\n      concurrency: concurrency\n    }\n\n    # Connect in init to fail fast\n    case connect(state) do\n      {:ok, new_state} ->\n        Logger.info(\"NATS consumer started for subject: #{subject}\")\n        {:ok, new_state}\n\n      {:error, reason} ->\n        Logger.error(\"Failed to connect to NATS: #{inspect(reason)}\")\n        {:stop, reason}\n    end\n  end\n\n  @impl true\n  def handle_info({:msg, %{body: body, topic: topic, reply_to: reply_to}}, state) do\n    # Process message async\n    Task.Supervisor.start_child(MyApp.TaskSupervisor, fn ->\n      process_message(body, topic, reply_to, state)\n    end)\n\n    {:noreply, state}\n  end\n\n  @impl true\n  def handle_info(:reconnect, state) do\n    case connect(state) do\n      {:ok, new_state} ->\n        Logger.info(\"Reconnected to NATS\")\n        {:noreply, new_state}\n\n      {:error, _reason} ->\n        # Retry after delay\n        Process.send_after(self(), :reconnect, 5_000)\n        {:noreply, state}\n    end\n  end\n\n  ## Private Functions\n\n  defp connect(state) do\n    with {:ok, conn} <- Gnat.start_link(),\n         {:ok, sub} <- Gnat.sub(conn, self(), state.subject) do\n      {:ok, %{state | conn: conn, subscription: sub}}\n    end\n  end\n\n  defp process_message(body, topic, reply_to, state) do\n    start_time = System.monotonic_time(:millisecond)\n\n    case state.handler.handle_message(body) do\n      :ok ->\n        emit_telemetry(:success, topic, start_time)\n        if reply_to, do: Gnat.pub(state.conn, reply_to, \"ACK\")\n\n      {:error, reason} ->\n        Logger.error(\"Message processing failed: #{inspect(reason)}\")\n        emit_telemetry(:error, topic, start_time)\n        send_to_dlq(body, topic, reason)\n    end\n  end\n\n  defp emit_telemetry(status, topic, start_time) do\n    duration = System.monotonic_time(:millisecond) - start_time\n\n    :telemetry.execute(\n      [:nats_consumer, :message, status],\n      %{duration: duration},\n      %{topic: topic}\n    )\n  end\n\n  defp send_to_dlq(body, topic, reason) do\n    # Send failed messages to dead letter queue\n    dlq_topic = \"#{topic}.dlq\"\n\n    payload = Jason.encode!(%{\n      original_body: body,\n      error: inspect(reason),\n      timestamp: DateTime.utc_now()\n    })\n\n    Gnat.pub(state.conn, dlq_topic, payload)\n  end\nend",
     "tests": "defmodule MyApp.NatsConsumerTest do\n  use ExUnit.Case, async: false\n\n  alias MyApp.NatsConsumer\n\n  defmodule TestHandler do\n    def handle_message(\"success\"), do: :ok\n    def handle_message(\"error\"), do: {:error, :test_error}\n  end\n\n  setup do\n    # Start test NATS connection\n    {:ok, conn} = Gnat.start_link()\n    on_exit(fn -> Process.exit(conn, :kill) end)\n\n    {:ok, conn: conn}\n  end\n\n  test \"processes messages successfully\" do\n    subject = \"test.subject\"\n\n    {:ok, _pid} = NatsConsumer.start_link(\n      subject: subject,\n      handler: TestHandler\n    )\n\n    # Publish test message\n    Gnat.pub(conn, subject, \"success\")\n\n    # Verify telemetry event\n    assert_receive {:telemetry, [:nats_consumer, :message, :success], _, _}\n  end\n\n  test \"handles errors and sends to DLQ\" do\n    subject = \"test.error\"\n\n    {:ok, _pid} = NatsConsumer.start_link(\n      subject: subject,\n      handler: TestHandler\n    )\n\n    # Subscribe to DLQ\n    Gnat.sub(conn, self(), \"#{subject}.dlq\")\n\n    # Publish failing message\n    Gnat.pub(conn, subject, \"error\")\n\n    # Verify DLQ message\n    assert_receive {:msg, %{topic: dlq_topic, body: body}}\n    assert dlq_topic == \"#{subject}.dlq\"\n    assert String.contains?(body, \"test_error\")\n  end\nend",
     "docs": "@moduledoc for NatsConsumer explains the pattern\n@doc for start_link/1 with all options\n@spec for all public functions\n@type for state struct",
-    "dependencies": ["gnat", "jason", "telemetry"],
+    "dependencies": [
+      "gnat",
+      "jason",
+      "telemetry"
+    ],
     "examples": [
       "# Define handler\ndefmodule MyApp.OrderHandler do\n  def handle_message(body) do\n    order = Jason.decode!(body)\n    process_order(order)\n    :ok\n  end\nend",
       "# Start consumer\nchildren = [\n  {MyApp.NatsConsumer,\n    subject: \"orders.created\",\n    handler: MyApp.OrderHandler,\n    concurrency: 20\n  }\n]\n\nSupervisor.start_link(children, strategy: :one_for_one)"
@@ -107,6 +125,11 @@
   },
   "compatibility": {
     "min_version": "1.14",
-    "platforms": ["linux", "macos", "windows"]
-  }
+    "platforms": [
+      "linux",
+      "macos",
+      "windows"
+    ]
+  },
+  "parent_pattern": null
 }

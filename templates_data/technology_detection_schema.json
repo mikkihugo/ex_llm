@@ -3,7 +3,12 @@
   "title": "Technology Detection Template Schema",
   "description": "Schema for technology/framework/language detection templates with LLM support",
   "type": "object",
-  "required": ["name", "category", "version", "detector_signatures"],
+  "required": [
+    "name",
+    "category",
+    "version",
+    "detector_signatures"
+  ],
   "properties": {
     "name": {
       "type": "string",
@@ -11,7 +16,16 @@
     },
     "category": {
       "type": "string",
-      "enum": ["language", "framework", "database", "messaging", "security", "monitoring", "cloud", "build_tool"],
+      "enum": [
+        "language",
+        "framework",
+        "database",
+        "messaging",
+        "security",
+        "monitoring",
+        "cloud",
+        "build_tool"
+      ],
       "description": "Technology category"
     },
     "version": {
@@ -20,37 +34,53 @@
     },
     "detector_signatures": {
       "type": "object",
-      "required": ["patterns"],
+      "required": [
+        "patterns"
+      ],
       "properties": {
         "config_files": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Configuration files that indicate this technology"
         },
         "file_extensions": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "File extensions for this technology"
         },
         "patterns": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Regex patterns that match code signatures",
           "minItems": 1
         },
         "import_patterns": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Patterns to extract imports/dependencies from code"
         },
         "dependencies": {
           "type": "object",
           "properties": {
-            "file": {"type": "string"},
-            "section": {"type": "string"},
+            "file": {
+              "type": "string"
+            },
+            "section": {
+              "type": "string"
+            },
             "common_packages": {
               "type": "array",
-              "items": {"type": "string"}
+              "items": {
+                "type": "string"
+              }
             }
           }
         }
@@ -60,15 +90,22 @@
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "required": ["patterns", "confidence_boost"],
+        "required": [
+          "patterns",
+          "confidence_boost"
+        ],
         "properties": {
           "patterns": {
             "type": "array",
-            "items": {"type": "string"}
+            "items": {
+              "type": "string"
+            }
           },
           "config_files": {
             "type": "array",
-            "items": {"type": "string"}
+            "items": {
+              "type": "string"
+            }
           },
           "confidence_boost": {
             "type": "number",
@@ -81,22 +118,40 @@
     "build_commands": {
       "type": "object",
       "properties": {
-        "install": {"type": "string"},
-        "build": {"type": "string"},
-        "dev": {"type": "string"},
-        "test": {"type": "string"},
-        "check": {"type": "string"},
-        "start": {"type": "string"}
+        "install": {
+          "type": "string"
+        },
+        "build": {
+          "type": "string"
+        },
+        "dev": {
+          "type": "string"
+        },
+        "test": {
+          "type": "string"
+        },
+        "check": {
+          "type": "string"
+        },
+        "start": {
+          "type": "string"
+        }
       }
     },
     "metadata": {
       "type": "object",
       "properties": {
-        "ecosystem": {"type": "string"},
-        "package_manager": {"type": "string"},
+        "ecosystem": {
+          "type": "string"
+        },
+        "package_manager": {
+          "type": "string"
+        },
         "typical_structure": {
           "type": "array",
-          "items": {"type": "string"}
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -105,19 +160,27 @@
       "properties": {
         "analysis_prompts": {
           "type": "object",
-          "additionalProperties": {"type": "string"}
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "prompt_bits": {
           "type": "object",
           "properties": {
-            "context": {"type": "string"},
+            "context": {
+              "type": "string"
+            },
             "best_practices": {
               "type": "array",
-              "items": {"type": "string"}
+              "items": {
+                "type": "string"
+              }
             },
             "common_mistakes": {
               "type": "array",
-              "items": {"type": "string"}
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -125,20 +188,37 @@
           "type": "object",
           "additionalProperties": {
             "type": "object",
-            "required": ["description", "code", "patterns"],
+            "required": [
+              "description",
+              "code",
+              "patterns"
+            ],
             "properties": {
-              "description": {"type": "string"},
-              "code": {"type": "string"},
+              "description": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
               "patterns": {
                 "type": "array",
-                "items": {"type": "string"}
+                "items": {
+                  "type": "string"
+                }
               },
               "github_examples": {
                 "type": "array",
-                "items": {"type": "string", "format": "uri"}
+                "items": {
+                  "type": "string",
+                  "format": "uri"
+                }
               },
-              "best_practice": {"type": "boolean"},
-              "use_case": {"type": "string"}
+              "best_practice": {
+                "type": "boolean"
+              },
+              "use_case": {
+                "type": "string"
+              }
             }
           }
         },
@@ -147,22 +227,31 @@
           "properties": {
             "github_repos": {
               "type": "array",
-              "items": {"type": "string"}
+              "items": {
+                "type": "string"
+              }
             },
             "documentation": {
               "type": "array",
-              "items": {"type": "string", "format": "uri"}
+              "items": {
+                "type": "string",
+                "format": "uri"
+              }
             },
             "common_crates": {
               "type": "object",
               "additionalProperties": {
                 "type": "array",
-                "items": {"type": "string"}
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
         }
       }
     }
-  }
+  },
+  "_metadata_type": "schema",
+  "parent_pattern": null
 }

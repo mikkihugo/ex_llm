@@ -4,7 +4,12 @@
   "description": "SPARC coordination template for managing structured phase execution and flow decisions",
   "category": "sparc",
   "language": "sparc",
-  "tags": ["sparc", "coordination", "flow-management", "phase-control"],
+  "tags": [
+    "sparc",
+    "coordination",
+    "flow-management",
+    "phase-control"
+  ],
   "version": "1.0.0",
   "author": "SPARC Team",
   "created_at": "2024-01-15T10:00:00Z",
@@ -27,5 +32,6 @@
       "coordination_needs": "Required specialists and tools",
       "reasoning": "Reasoning for flow decisions"
     }
-  }
+  },
+  "parent_pattern": null
 }

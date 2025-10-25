@@ -18,5 +18,6 @@
       "config/kafka*.{ex,exs,ts,js,py}",
       "lib/**/kafka/*.ex"
     ]
-  }
+  },
+  "parent_pattern": null
 }

@@ -6,7 +6,11 @@
     "id": "build-tool-detection",
     "name": "Build Tool Detection",
     "description": "Detect build tools and package managers in repositories",
-    "tags": ["detection", "build-tools", "package-managers"],
+    "tags": [
+      "detection",
+      "build-tools",
+      "package-managers"
+    ],
     "author": "singularity",
     "created": "2025-01-15",
     "updated": "2025-01-15"
@@ -14,92 +18,208 @@
   "content": {
     "npm": {
       "indicators": [
-        {"type": "file", "path": "package.json"},
-        {"type": "file", "path": "package-lock.json"}
+        {
+          "type": "file",
+          "path": "package.json"
+        },
+        {
+          "type": "file",
+          "path": "package-lock.json"
+        }
       ],
-      "tools": ["npm"],
-      "managers": ["npm"]
+      "tools": [
+        "npm"
+      ],
+      "managers": [
+        "npm"
+      ]
     },
     "yarn": {
       "indicators": [
-        {"type": "file", "path": "yarn.lock"},
-        {"type": "file", "path": "package.json"}
+        {
+          "type": "file",
+          "path": "yarn.lock"
+        },
+        {
+          "type": "file",
+          "path": "package.json"
+        }
       ],
-      "tools": ["yarn"],
-      "managers": ["yarn"]
+      "tools": [
+        "yarn"
+      ],
+      "managers": [
+        "yarn"
+      ]
     },
     "pnpm": {
       "indicators": [
-        {"type": "file", "path": "pnpm-lock.yaml"},
-        {"type": "file", "path": "pnpm-workspace.yaml"}
+        {
+          "type": "file",
+          "path": "pnpm-lock.yaml"
+        },
+        {
+          "type": "file",
+          "path": "pnpm-workspace.yaml"
+        }
       ],
-      "tools": ["pnpm"],
-      "managers": ["pnpm"]
+      "tools": [
+        "pnpm"
+      ],
+      "managers": [
+        "pnpm"
+      ]
     },
     "bun": {
       "indicators": [
-        {"type": "file", "path": "bun.lockb"},
-        {"type": "file", "path": "bunfig.toml"}
+        {
+          "type": "file",
+          "path": "bun.lockb"
+        },
+        {
+          "type": "file",
+          "path": "bunfig.toml"
+        }
       ],
-      "tools": ["bun"],
-      "managers": ["bun"]
+      "tools": [
+        "bun"
+      ],
+      "managers": [
+        "bun"
+      ]
     },
     "cargo": {
       "indicators": [
-        {"type": "file", "path": "Cargo.toml"},
-        {"type": "file", "path": "Cargo.lock"}
+        {
+          "type": "file",
+          "path": "Cargo.toml"
+        },
+        {
+          "type": "file",
+          "path": "Cargo.lock"
+        }
       ],
-      "tools": ["cargo"],
-      "managers": ["cargo"]
+      "tools": [
+        "cargo"
+      ],
+      "managers": [
+        "cargo"
+      ]
     },
     "mix": {
       "indicators": [
-        {"type": "file", "path": "mix.exs"},
-        {"type": "file", "path": "mix.lock"}
+        {
+          "type": "file",
+          "path": "mix.exs"
+        },
+        {
+          "type": "file",
+          "path": "mix.lock"
+        }
       ],
-      "tools": ["mix"],
-      "managers": ["hex"]
+      "tools": [
+        "mix"
+      ],
+      "managers": [
+        "hex"
+      ]
     },
     "rebar": {
       "indicators": [
-        {"type": "file", "path": "rebar.config"},
-        {"type": "file", "path": "rebar.lock"}
+        {
+          "type": "file",
+          "path": "rebar.config"
+        },
+        {
+          "type": "file",
+          "path": "rebar.lock"
+        }
       ],
-      "tools": ["rebar3"],
-      "managers": ["rebar3"]
+      "tools": [
+        "rebar3"
+      ],
+      "managers": [
+        "rebar3"
+      ]
     },
     "gleam": {
       "indicators": [
-        {"type": "file", "path": "gleam.toml"},
-        {"type": "file", "path": "gleam.lock"}
+        {
+          "type": "file",
+          "path": "gleam.toml"
+        },
+        {
+          "type": "file",
+          "path": "gleam.lock"
+        }
       ],
-      "tools": ["gleam"],
-      "managers": ["gleam"]
+      "tools": [
+        "gleam"
+      ],
+      "managers": [
+        "gleam"
+      ]
     },
     "deno": {
       "indicators": [
-        {"type": "file", "path": "deno.json"},
-        {"type": "file", "path": "deno.lock"}
+        {
+          "type": "file",
+          "path": "deno.json"
+        },
+        {
+          "type": "file",
+          "path": "deno.lock"
+        }
       ],
-      "tools": ["deno"],
-      "managers": ["deno"]
+      "tools": [
+        "deno"
+      ],
+      "managers": [
+        "deno"
+      ]
     },
     "go": {
       "indicators": [
-        {"type": "file", "path": "go.mod"},
-        {"type": "file", "path": "go.sum"}
+        {
+          "type": "file",
+          "path": "go.mod"
+        },
+        {
+          "type": "file",
+          "path": "go.sum"
+        }
       ],
-      "tools": ["go"],
-      "managers": ["go"]
+      "tools": [
+        "go"
+      ],
+      "managers": [
+        "go"
+      ]
     },
     "python": {
       "indicators": [
-        {"type": "file", "path": "requirements.txt"},
-        {"type": "file", "path": "pyproject.toml"},
-        {"type": "file", "path": "poetry.lock"}
+        {
+          "type": "file",
+          "path": "requirements.txt"
+        },
+        {
+          "type": "file",
+          "path": "pyproject.toml"
+        },
+        {
+          "type": "file",
+          "path": "poetry.lock"
+        }
       ],
-      "tools": ["pip", "poetry"],
-      "managers": ["pip", "poetry"]
+      "tools": [
+        "pip",
+        "poetry"
+      ],
+      "managers": [
+        "pip",
+        "poetry"
+      ]
     }
-  }
+  },
+  "parent_pattern": null
 }

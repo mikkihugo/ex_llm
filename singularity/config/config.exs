@@ -182,11 +182,6 @@ config :singularity, :analyzer_types,
     module: Singularity.Architecture.Analyzers.RefactoringAnalyzer,
     enabled: true,
     description: "Identify refactoring needs and opportunities"
-  },
-  microservice: %{
-    module: Singularity.Architecture.Analyzers.MicroserviceAnalyzer,
-    enabled: true,
-    description: "Detect microservice vs monolith architecture patterns"
   }
 
 # =============================================================================

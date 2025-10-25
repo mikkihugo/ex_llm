@@ -16,12 +16,24 @@
   ],
   "metadata": {
     "version": "2.0.0",
-    "tags": ["rust", "microservice", "axum", "rest-api"],
+    "tags": [
+      "rust",
+      "microservice",
+      "axum",
+      "rest-api"
+    ],
     "complexity": 7
   },
   "detector_signatures": {
-    "dependencies": ["axum", "tokio", "tower"],
-    "file_patterns": ["Cargo.toml", "src/main.rs"],
+    "dependencies": [
+      "axum",
+      "tokio",
+      "tower"
+    ],
+    "file_patterns": [
+      "Cargo.toml",
+      "src/main.rs"
+    ],
     "min_confidence": 0.8
   },
   "template_variables": {
@@ -62,5 +74,6 @@
       "path": "tests/integration_test.rs",
       "type": "tests"
     }
-  ]
+  ],
+  "parent_pattern": "rust"
 }

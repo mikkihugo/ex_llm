@@ -4,13 +4,22 @@
   "title": "Singularity Template Schema v2.0",
   "description": "Unified schema for all template types with composition support",
   "type": "object",
-  "required": ["id", "category", "metadata", "content"],
+  "required": [
+    "id",
+    "category",
+    "metadata",
+    "content"
+  ],
   "properties": {
     "id": {
       "type": "string",
       "description": "Unique template identifier (kebab-case)",
       "pattern": "^[a-z0-9-]+$",
-      "examples": ["elixir-genserver", "rust-api-endpoint", "phoenix-authenticated-api"]
+      "examples": [
+        "elixir-genserver",
+        "rust-api-endpoint",
+        "phoenix-authenticated-api"
+      ]
     },
     "category": {
       "type": "string",
@@ -28,7 +37,11 @@
     },
     "metadata": {
       "type": "object",
-      "required": ["name", "version", "description"],
+      "required": [
+        "name",
+        "version",
+        "description"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -50,16 +63,34 @@
         "language": {
           "type": "string",
           "description": "Primary programming language",
-          "enum": ["elixir", "gleam", "rust", "python", "javascript", "typescript", "go", "java", "multi"]
+          "enum": [
+            "elixir",
+            "gleam",
+            "rust",
+            "python",
+            "javascript",
+            "typescript",
+            "go",
+            "java",
+            "multi"
+          ]
         },
         "framework": {
           "type": "string",
           "description": "Framework if applicable",
-          "examples": ["phoenix", "react", "fastapi", "django", "nextjs"]
+          "examples": [
+            "phoenix",
+            "react",
+            "fastapi",
+            "django",
+            "nextjs"
+          ]
         },
         "tags": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Searchable tags"
         },
         "created": {
@@ -77,9 +108,14 @@
         {
           "type": "object",
           "description": "Code template",
-          "required": ["type", "code"],
+          "required": [
+            "type",
+            "code"
+          ],
           "properties": {
-            "type": {"const": "code"},
+            "type": {
+              "const": "code"
+            },
             "code": {
               "type": "string",
               "description": "Template code with {{variables}}"
@@ -90,10 +126,18 @@
               "additionalProperties": {
                 "type": "object",
                 "properties": {
-                  "type": {"type": "string"},
-                  "description": {"type": "string"},
-                  "required": {"type": "boolean"},
-                  "default": {"type": "string"}
+                  "type": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "required": {
+                    "type": "boolean"
+                  },
+                  "default": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -102,23 +146,40 @@
         {
           "type": "object",
           "description": "Multi-snippet template",
-          "required": ["type", "snippets"],
+          "required": [
+            "type",
+            "snippets"
+          ],
           "properties": {
-            "type": {"const": "snippets"},
+            "type": {
+              "const": "snippets"
+            },
             "snippets": {
               "type": "object",
               "description": "Named code snippets",
               "additionalProperties": {
                 "type": "object",
-                "required": ["code"],
+                "required": [
+                  "code"
+                ],
                 "properties": {
-                  "description": {"type": "string"},
-                  "file_path": {"type": "string"},
-                  "code": {"type": "string"},
-                  "language": {"type": "string"},
+                  "description": {
+                    "type": "string"
+                  },
+                  "file_path": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "language": {
+                    "type": "string"
+                  },
                   "compose": {
                     "type": "array",
-                    "items": {"type": "string"},
+                    "items": {
+                      "type": "string"
+                    },
                     "description": "Bits to compose into this snippet"
                   }
                 }
@@ -129,28 +190,49 @@
         {
           "type": "object",
           "description": "LLM prompt template",
-          "required": ["type", "system", "user"],
+          "required": [
+            "type",
+            "system",
+            "user"
+          ],
           "properties": {
-            "type": {"const": "prompt"},
-            "system": {"type": "string"},
-            "user": {"type": "string"},
+            "type": {
+              "const": "prompt"
+            },
+            "system": {
+              "type": "string"
+            },
+            "user": {
+              "type": "string"
+            },
             "original_system": {
               "type": "string",
               "description": "Base/original prompt before customization"
             },
-            "variables": {"type": "object"},
+            "variables": {
+              "type": "object"
+            },
             "complexity_level": {
               "type": "string",
-              "enum": ["simple", "medium", "complex"]
+              "enum": [
+                "simple",
+                "medium",
+                "complex"
+              ]
             }
           }
         },
         {
           "type": "object",
           "description": "Quality standard",
-          "required": ["type", "requirements"],
+          "required": [
+            "type",
+            "requirements"
+          ],
           "properties": {
-            "type": {"const": "quality"},
+            "type": {
+              "const": "quality"
+            },
             "requirements": {
               "type": "object",
               "description": "Quality requirements"
@@ -162,21 +244,35 @@
     "extends": {
       "type": "string",
       "description": "Base template ID to extend from",
-      "examples": ["base/elixir-module", "base/rust-struct"]
+      "examples": [
+        "base/elixir-module",
+        "base/rust-struct"
+      ]
     },
     "compose": {
       "type": "array",
-      "items": {"type": "string"},
+      "items": {
+        "type": "string"
+      },
       "description": "Bit template IDs to compose",
       "examples": [
-        ["bits/authentication/guardian", "bits/observability/telemetry"],
-        ["bits/validation/ecto-changeset", "bits/testing/exunit"]
+        [
+          "bits/authentication/guardian",
+          "bits/observability/telemetry"
+        ],
+        [
+          "bits/validation/ecto-changeset",
+          "bits/testing/exunit"
+        ]
       ]
     },
     "quality_standard": {
       "type": "string",
       "description": "Quality standard to apply",
-      "examples": ["quality_standards/elixir/production", "quality_standards/rust/production"]
+      "examples": [
+        "quality_standards/elixir/production",
+        "quality_standards/rust/production"
+      ]
     },
     "dependencies": {
       "type": "object",
@@ -185,13 +281,25 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
-              "name": {"type": "string"},
-              "version": {"type": "string"},
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
               "ecosystem": {
                 "type": "string",
-                "enum": ["hex", "cargo", "npm", "pypi", "maven"]
+                "enum": [
+                  "hex",
+                  "cargo",
+                  "npm",
+                  "pypi",
+                  "maven"
+                ]
               }
             }
           }
@@ -200,11 +308,20 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name", "purpose"],
+            "required": [
+              "name",
+              "purpose"
+            ],
             "properties": {
-              "name": {"type": "string"},
-              "version": {"type": "string"},
-              "purpose": {"type": "string"}
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              }
             }
           }
         }
@@ -216,16 +333,26 @@
       "items": {
         "type": "object",
         "properties": {
-          "description": {"type": "string"},
-          "variables": {"type": "object"},
-          "output": {"type": "string"}
+          "description": {
+            "type": "string"
+          },
+          "variables": {
+            "type": "object"
+          },
+          "output": {
+            "type": "string"
+          }
         }
       }
     },
     "related": {
       "type": "array",
-      "items": {"type": "string"},
+      "items": {
+        "type": "string"
+      },
       "description": "Related template IDs"
     }
-  }
+  },
+  "_metadata_type": "schema",
+  "parent_pattern": null
 }

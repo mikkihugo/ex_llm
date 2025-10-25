@@ -3,7 +3,12 @@
   "title": "Unified Technology Detection Template",
   "description": "Schema combining Netlify framework-info format with LLM-aware enhancements",
   "type": "object",
-  "required": ["id", "name", "category", "detect"],
+  "required": [
+    "id",
+    "name",
+    "category",
+    "detect"
+  ],
   "properties": {
     "id": {
       "type": "string",
@@ -45,52 +50,72 @@
       "properties": {
         "configFiles": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Config files that indicate this technology (Level 1 - instant)"
         },
         "lockFiles": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Lock files (package-lock.json, Cargo.lock)"
         },
         "directoryPatterns": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Directory structure patterns (src/, tests/)"
         },
         "fileExtensions": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "File extensions (.rs, .py, .jsx)"
         },
         "npmDependencies": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "NPM packages in dependencies/devDependencies (Level 2 - fast)"
         },
         "excludedNpmDependencies": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Packages that exclude this framework"
         },
         "cargoDependencies": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Cargo crates in dependencies"
         },
         "pipDependencies": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Python packages in requirements.txt"
         },
         "patterns": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Regex patterns for code signatures (Level 2 - fast regex)"
         },
         "importPatterns": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Import/use statement patterns"
         },
         "astPatterns": {
@@ -98,8 +123,12 @@
           "items": {
             "type": "object",
             "properties": {
-              "nodeType": {"type": "string"},
-              "matcher": {"type": "string"}
+              "nodeType": {
+                "type": "string"
+              },
+              "matcher": {
+                "type": "string"
+              }
             }
           },
           "description": "AST node patterns (Level 3 - medium cost)"
@@ -109,14 +138,20 @@
     "dev": {
       "type": "object",
       "properties": {
-        "command": {"type": "string"},
-        "port": {"type": "integer"},
+        "command": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        },
         "pollingStrategies": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "name": {"type": "string"}
+              "name": {
+                "type": "string"
+              }
             }
           }
         }
@@ -125,18 +160,30 @@
     "build": {
       "type": "object",
       "properties": {
-        "command": {"type": "string"},
-        "directory": {"type": "string"}
+        "command": {
+          "type": "string"
+        },
+        "directory": {
+          "type": "string"
+        }
       }
     },
     "commands": {
       "type": "object",
       "description": "Additional commands",
       "properties": {
-        "install": {"type": "string"},
-        "test": {"type": "string"},
-        "lint": {"type": "string"},
-        "format": {"type": "string"}
+        "install": {
+          "type": "string"
+        },
+        "test": {
+          "type": "string"
+        },
+        "lint": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        }
       }
     },
     "staticAssetsDirectory": {
@@ -144,15 +191,21 @@
     },
     "env": {
       "type": "object",
-      "additionalProperties": {"type": "string"}
+      "additionalProperties": {
+        "type": "string"
+      }
     },
     "plugins": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "packageName": {"type": "string"},
-          "condition": {"type": "object"}
+          "packageName": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "object"
+          }
         }
       }
     },
@@ -172,8 +225,15 @@
           "additionalProperties": {
             "type": "object",
             "properties": {
-              "patterns": {"type": "array", "items": {"type": "string"}},
-              "boost": {"type": "number"}
+              "patterns": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "boost": {
+                "type": "number"
+              }
             }
           }
         }
@@ -182,14 +242,25 @@
     "metadata": {
       "type": "object",
       "properties": {
-        "ecosystem": {"type": "string"},
-        "packageManager": {"type": "string"},
+        "ecosystem": {
+          "type": "string"
+        },
+        "packageManager": {
+          "type": "string"
+        },
         "typicalStructure": {
           "type": "array",
-          "items": {"type": "string"}
+          "items": {
+            "type": "string"
+          }
         },
-        "homepage": {"type": "string", "format": "uri"},
-        "repository": {"type": "string"}
+        "homepage": {
+          "type": "string",
+          "format": "uri"
+        },
+        "repository": {
+          "type": "string"
+        }
       }
     },
     "llm": {
@@ -200,41 +271,91 @@
           "type": "object",
           "description": "When to invoke LLM",
           "properties": {
-            "minConfidence": {"type": "number"},
-            "maxConfidence": {"type": "number"},
-            "conditions": {"type": "array", "items": {"type": "string"}}
+            "minConfidence": {
+              "type": "number"
+            },
+            "maxConfidence": {
+              "type": "number"
+            },
+            "conditions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         },
         "prompts": {
           "type": "object",
-          "additionalProperties": {"type": "string"},
+          "additionalProperties": {
+            "type": "string"
+          },
           "description": "Analysis prompts for LLM"
         },
         "context": {
           "type": "object",
           "properties": {
-            "description": {"type": "string"},
-            "keyFeatures": {"type": "array", "items": {"type": "string"}},
-            "bestPractices": {"type": "array", "items": {"type": "string"}},
-            "commonMistakes": {"type": "array", "items": {"type": "string"}}
+            "description": {
+              "type": "string"
+            },
+            "keyFeatures": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "bestPractices": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "commonMistakes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         },
         "snippets": {
           "type": "object",
           "additionalProperties": {
             "type": "object",
-            "required": ["description", "code", "patterns"],
+            "required": [
+              "description",
+              "code",
+              "patterns"
+            ],
             "properties": {
-              "description": {"type": "string"},
-              "code": {"type": "string"},
-              "patterns": {"type": "array", "items": {"type": "string"}},
-              "language": {"type": "string"},
+              "description": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "patterns": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "language": {
+                "type": "string"
+              },
               "githubExamples": {
                 "type": "array",
-                "items": {"type": "string", "format": "uri"}
+                "items": {
+                  "type": "string",
+                  "format": "uri"
+                }
               },
-              "bestPractice": {"type": "boolean"},
-              "useCase": {"type": "string"}
+              "bestPractice": {
+                "type": "boolean"
+              },
+              "useCase": {
+                "type": "string"
+              }
             }
           }
         },
@@ -244,23 +365,32 @@
           "properties": {
             "githubRepos": {
               "type": "array",
-              "items": {"type": "string"},
+              "items": {
+                "type": "string"
+              },
               "description": "Repos to fetch examples from (owner/repo format)"
             },
             "documentation": {
               "type": "array",
-              "items": {"type": "string", "format": "uri"}
+              "items": {
+                "type": "string",
+                "format": "uri"
+              }
             },
             "relatedTechnologies": {
               "type": "object",
               "additionalProperties": {
                 "type": "array",
-                "items": {"type": "string"}
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
         }
       }
     }
-  }
+  },
+  "_metadata_type": "schema",
+  "parent_pattern": null
 }

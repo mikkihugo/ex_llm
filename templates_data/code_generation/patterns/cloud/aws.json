@@ -19,5 +19,6 @@
       "terraform/**/aws*.tf",
       "cloudformation/**.yml"
     ]
-  }
+  },
+  "parent_pattern": null
 }

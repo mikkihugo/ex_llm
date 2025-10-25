@@ -1,0 +1,120 @@
+{
+  "id": "microservices_cqrs",
+  "name": "Microservices with CQRS",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "Microservices architecture using CQRS (Command Query Responsibility Segregation) pattern. Separates read and write responsibilities in each service.",
+  "parent_pattern": "microservices",
+  "aliases": ["CQRS Microservices", "Read-Write Segregation"],
+  "cqrs_patterns": [
+    {
+      "pattern": "command_queries_separate",
+      "description": "Commands and queries in separate modules/services"
+    },
+    {
+      "pattern": "read_model_sync",
+      "description": "Read model kept in sync with write model via events"
+    },
+    {
+      "pattern": "full_cqrs",
+      "description": "Completely separate read and write databases"
+    }
+  ],
+  "indicators": [
+    {
+      "name": "multiple_independent_services",
+      "description": "4+ microservices",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "command_query_separation",
+      "description": "Commands (writes) separate from queries (reads)",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "command_handlers",
+      "description": "Handlers that process commands and modify state",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "query_handlers",
+      "description": "Handlers for read operations without side effects",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "read_models",
+      "description": "Separate optimized read models",
+      "weight": 0.8,
+      "required": false
+    }
+  ],
+  "benefits": [
+    "Independent optimization of read and write paths",
+    "Different scale requirements per direction",
+    "Separate database models optimized for use case",
+    "Clear separation of concerns",
+    "Better performance for read-heavy or write-heavy systems"
+  ],
+  "concerns": [
+    "Eventual consistency (read lag behind writes)",
+    "Code duplication (separate read/write models)",
+    "Complexity (more moving parts)",
+    "Synchronization challenges between models",
+    "Testing complexity"
+  ],
+  "when_to_use": [
+    "Asymmetric read/write patterns (e.g., 100:1 read/write ratio)",
+    "Complex domain models with different read requirements",
+    "High performance requirements",
+    "Different scaling needs for reads vs writes"
+  ],
+  "when_not_to_use": [
+    "Simple CRUD applications",
+    "Strong consistency everywhere required",
+    "Read/write patterns similar",
+    "Over-engineering risk for simple domains"
+  ],
+  "required_practices": [
+    {
+      "practice": "Read Model Synchronization",
+      "priority": "REQUIRED",
+      "description": "Keep read models in sync with write model"
+    },
+    {
+      "practice": "Event Notification",
+      "priority": "REQUIRED",
+      "description": "Publish events when write side changes"
+    },
+    {
+      "practice": "Read Model Rebuilding",
+      "priority": "RECOMMENDED",
+      "description": "Ability to rebuild read models from events"
+    },
+    {
+      "practice": "Consistency Monitoring",
+      "priority": "RECOMMENDED",
+      "description": "Monitor read/write model divergence"
+    }
+  ],
+  "tools_and_frameworks": [
+    "Axon (Java)",
+    "Event Store",
+    "Kafka/NATS for event distribution"
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 84,
+    "validated_by": ["claude-opus", "gpt-4.1", "gemini-2.5-pro", "claude-sonnet", "gpt-5-mini"],
+    "validation_date": "2025-10-25",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-25",
+    "version": "1.0.0",
+    "detection_template": "detect-microservices-cqrs.lua"
+  }
+}

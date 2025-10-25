@@ -23,7 +23,12 @@
     "author": "SPARC Team",
     "created_at": "2024-01-15T10:00:00Z",
     "updated_at": "2024-01-15T10:00:00Z",
-    "tags": ["utility", "initialization", "project", "setup"],
+    "tags": [
+      "utility",
+      "initialization",
+      "project",
+      "setup"
+    ],
     "performance": {
       "avg_execution_time_ms": 300.0,
       "memory_usage_bytes": 6291456,
@@ -46,5 +51,6 @@
     },
     "instruction": "Initialize a new project with proper structure, configuration files, and initial code templates based on the project type and requirements."
   },
-  "template_content": "Initialize a new project with the following requirements:\n\n[REQUIREMENTS]\n\nPlease provide:\n1. Project directory structure\n2. Configuration files needed\n3. Initial code templates\n4. Setup instructions\n5. Dependencies and requirements\n6. Next steps for development\n\nFollow best practices for the selected technology stack."
+  "template_content": "Initialize a new project with the following requirements:\n\n[REQUIREMENTS]\n\nPlease provide:\n1. Project directory structure\n2. Configuration files needed\n3. Initial code templates\n4. Setup instructions\n5. Dependencies and requirements\n6. Next steps for development\n\nFollow best practices for the selected technology stack.",
+  "parent_pattern": null
 }

@@ -7,7 +7,13 @@
     "name": "Bun Workspace",
     "description": "Bun monorepo using bun workspaces",
     "language": "javascript",
-    "tags": ["workspace", "monorepo", "bun", "javascript", "typescript"],
+    "tags": [
+      "workspace",
+      "monorepo",
+      "bun",
+      "javascript",
+      "typescript"
+    ],
     "author": "singularity",
     "created": "2025-01-15",
     "updated": "2025-01-15"
@@ -23,7 +29,11 @@
       "confidence_threshold": 0.8
     },
     "structure": {
-      "root_files": ["package.json", "bun.lockb", "bunfig.toml"],
+      "root_files": [
+        "package.json",
+        "bun.lockb",
+        "bunfig.toml"
+      ],
       "workspace_members": [
         "packages/*",
         "apps/*",
@@ -38,11 +48,26 @@
       ]
     },
     "commands": {
-      "build": ["bun run build", "bun run build --filter"],
-      "test": ["bun test", "bun test --filter"],
-      "lint": ["bun run lint", "bun run lint --filter"],
-      "format": ["bun run format", "bun run format --filter"],
-      "install": ["bun install", "bun install --filter"]
+      "build": [
+        "bun run build",
+        "bun run build --filter"
+      ],
+      "test": [
+        "bun test",
+        "bun test --filter"
+      ],
+      "lint": [
+        "bun run lint",
+        "bun run lint --filter"
+      ],
+      "format": [
+        "bun run format",
+        "bun run format --filter"
+      ],
+      "install": [
+        "bun install",
+        "bun install --filter"
+      ]
     },
     "naming_conventions": {
       "packages": "kebab-case",
@@ -64,5 +89,6 @@
       "must_have_shared_dev_dependencies"
     ],
     "score": 0.9
-  }
+  },
+  "parent_pattern": null
 }

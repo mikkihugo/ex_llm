@@ -1,0 +1,113 @@
+{
+  "id": "request_response",
+  "name": "Request-Response Communication Pattern",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "Services communicate synchronously via request-response pattern. Caller waits for response (HTTP, gRPC, RPC).",
+  "aliases": [
+    "Synchronous Communication",
+    "Blocking Calls"
+  ],
+  "communication_types": [
+    {
+      "type": "rest_http",
+      "description": "RESTful HTTP APIs"
+    },
+    {
+      "type": "grpc",
+      "description": "gRPC with Protocol Buffers"
+    },
+    {
+      "type": "json_rpc",
+      "description": "JSON-RPC 2.0"
+    },
+    {
+      "type": "remote_procedure_call",
+      "description": "Traditional RPC mechanisms"
+    }
+  ],
+  "indicators": [
+    {
+      "name": "synchronous_calls",
+      "description": "Services wait for responses",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "direct_coupling",
+      "description": "Caller directly knows callee location",
+      "weight": 0.85,
+      "required": true
+    },
+    {
+      "name": "http_or_rpc",
+      "description": "HTTP, gRPC, or RPC transport",
+      "weight": 0.9,
+      "required": true
+    }
+  ],
+  "benefits": [
+    "Simple to understand and implement",
+    "Immediate feedback (response or error)",
+    "Easy to debug (direct calls)",
+    "Familiar paradigm (function calls)"
+  ],
+  "concerns": [
+    "Tight coupling between services",
+    "Cascading failures (timeout chain)",
+    "Scalability limits (blocked threads/connections)",
+    "Network latency increases response time"
+  ],
+  "when_to_use": [
+    "Immediate response required",
+    "Tightly coupled operations",
+    "Simple service interactions"
+  ],
+  "when_not_to_use": [
+    "Long-running operations",
+    "Loose coupling desired",
+    "High latency acceptable (use async)"
+  ],
+  "required_practices": [
+    {
+      "practice": "Timeout Handling",
+      "priority": "REQUIRED",
+      "description": "Set reasonable timeouts to prevent indefinite waits"
+    },
+    {
+      "practice": "Retry Logic",
+      "priority": "RECOMMENDED",
+      "description": "Retry transient failures with backoff"
+    },
+    {
+      "practice": "Circuit Breakers",
+      "priority": "RECOMMENDED",
+      "description": "Fail fast when service is down"
+    }
+  ],
+  "tools_and_frameworks": [
+    "REST (HTTP)",
+    "gRPC",
+    "JSON-RPC",
+    "OpenRPC"
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 87,
+    "validated_by": [
+      "claude-opus",
+      "gpt-4.1",
+      "gemini-2.5-pro",
+      "claude-sonnet",
+      "gpt-5-mini"
+    ],
+    "validation_date": "2025-10-25",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-25",
+    "version": "1.0.0",
+    "detection_template": "detect-request-response.lua"
+  },
+  "parent_pattern": null
+}

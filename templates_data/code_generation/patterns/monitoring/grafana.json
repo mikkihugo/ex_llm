@@ -15,5 +15,6 @@
       "grafana/dashboards/**/*.json",
       "ops/grafana/**/*.yaml"
     ]
-  }
+  },
+  "parent_pattern": null
 }

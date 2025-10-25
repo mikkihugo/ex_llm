@@ -17,5 +17,6 @@
       "mcp/*.json",
       "mcp/**/*.toml"
     ]
-  }
+  },
+  "parent_pattern": null
 }

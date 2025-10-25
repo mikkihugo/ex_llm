@@ -4,7 +4,11 @@
   "category": "architecture",
   "version": "1.0.0",
   "description": "Architecture pattern isolating business logic from external concerns using ports (interfaces) and adapters (implementations). Core depends on abstractions, not concretions.",
-  "aliases": ["Ports and Adapters", "Clean Architecture", "Onion Architecture"],
+  "aliases": [
+    "Ports and Adapters",
+    "Clean Architecture",
+    "Onion Architecture"
+  ],
   "layers": [
     {
       "layer": "domain_core",
@@ -14,12 +18,19 @@
     {
       "layer": "ports",
       "description": "Interfaces defining contracts",
-      "types": ["input ports (driving)", "output ports (driven)"]
+      "types": [
+        "input ports (driving)",
+        "output ports (driven)"
+      ]
     },
     {
       "layer": "adapters",
       "description": "Implementations of ports",
-      "types": ["HTTP adapters", "Database adapters", "External API adapters"]
+      "types": [
+        "HTTP adapters",
+        "Database adapters",
+        "External API adapters"
+      ]
     }
   ],
   "indicators": [
@@ -59,11 +70,17 @@
     "Requires discipline",
     "More files (interfaces + implementations)"
   ],
-  "dependency_rule": "Core → Ports ✅ | Core → Adapters ❌ | Adapters → Ports ✅ | Adapters → Core ✅",
+  "dependency_rule": "Core \u2192 Ports \u2705 | Core \u2192 Adapters \u274c | Adapters \u2192 Ports \u2705 | Adapters \u2192 Core \u2705",
   "llm_team_validation": {
     "validated": true,
     "consensus_score": 88,
-    "validated_by": ["claude-opus", "gpt-4.1", "gemini-2.5-pro", "claude-sonnet", "gpt-5-mini"],
+    "validated_by": [
+      "claude-opus",
+      "gpt-4.1",
+      "gemini-2.5-pro",
+      "claude-sonnet",
+      "gpt-5-mini"
+    ],
     "validation_date": "2025-10-23",
     "approved": true
   },
@@ -71,5 +88,6 @@
     "created_at": "2025-10-23",
     "version": "1.0.0",
     "detection_template": "detect-hexagonal.lua"
-  }
+  },
+  "parent_pattern": "monolith"
 }

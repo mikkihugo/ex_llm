@@ -4,7 +4,12 @@
   "description": "SPARC Phase 5: Generate production-ready implementation code",
   "category": "sparc",
   "language": "sparc",
-  "tags": ["sparc", "implementation", "phase5", "code-generation"],
+  "tags": [
+    "sparc",
+    "implementation",
+    "phase5",
+    "code-generation"
+  ],
   "version": "1.0.0",
   "author": "SPARC Team",
   "created_at": "2024-01-15T10:00:00Z",
@@ -26,5 +31,6 @@
       "tests": "Unit tests",
       "documentation": "Documentation"
     }
-  }
+  },
+  "parent_pattern": null
 }

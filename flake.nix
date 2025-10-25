@@ -268,7 +268,7 @@
         ];
 
         getWebAndCliTools = env: with pkgs; [
-          flyctl bun nats-server
+          flyctl bun nats-server overmind
         ] ++ lib.optionals platform.isLinux [
           podman buildah skopeo
         ];

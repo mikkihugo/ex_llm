@@ -1,0 +1,121 @@
+{
+  "id": "distributed",
+  "name": "Distributed System Architecture",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "2-3 independent services with clear separation. Bridge between monolith and full microservices - moderate complexity with service boundaries but still manageable.",
+  "aliases": [
+    "Service Pair",
+    "Distributed Services",
+    "Multi-Service"
+  ],
+  "types": [
+    {
+      "type": "two_service",
+      "description": "Two independent services (e.g., frontend + backend)"
+    },
+    {
+      "type": "three_service",
+      "description": "Three services with distinct responsibilities"
+    },
+    {
+      "type": "backend_split",
+      "description": "One frontend + multiple specialized backends"
+    }
+  ],
+  "indicators": [
+    {
+      "name": "multiple_independent_services",
+      "description": "2-3 services with separate codebases/deployments",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "network_communication",
+      "description": "Services communicate via HTTP/gRPC/messaging",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "independent_data",
+      "description": "Each service has its own data store (or mostly separate)",
+      "weight": 0.8,
+      "required": true
+    },
+    {
+      "name": "separate_deployment",
+      "description": "Services can be deployed independently",
+      "weight": 0.85,
+      "required": true
+    }
+  ],
+  "benefits": [
+    "Clear service boundaries with manageable complexity",
+    "Independent scaling of services",
+    "Fault isolation (one service down doesn't crash all)",
+    "Technology diversity possible per service",
+    "Reasonable deployment complexity",
+    "Good introduction to distributed systems"
+  ],
+  "concerns": [
+    "Introduces network latency and failures",
+    "Distributed transaction complexity (2-3 way commits)",
+    "Debugging across service boundaries",
+    "Operational overhead (monitoring multiple services)",
+    "Data consistency challenges between services"
+  ],
+  "when_to_use": [
+    "Outgrowing monolith with clear domain split",
+    "Teams of 10-30 developers with specialization",
+    "Some services need independent scaling",
+    "Learning distributed systems",
+    "Moderate operational capabilities"
+  ],
+  "when_not_to_use": [
+    "Simple domains (use monolith)",
+    "Very small teams (<5 developers)",
+    "Tight coupling between components",
+    "Insufficient ops/DevOps resources"
+  ],
+  "required_practices": [
+    {
+      "practice": "API Contracts",
+      "priority": "REQUIRED",
+      "description": "Clear service API definitions"
+    },
+    {
+      "practice": "Health Checks",
+      "priority": "REQUIRED",
+      "description": "Monitor service health"
+    },
+    {
+      "practice": "Retry Logic",
+      "priority": "REQUIRED",
+      "description": "Handle transient network failures"
+    },
+    {
+      "practice": "Request Tracing",
+      "priority": "RECOMMENDED",
+      "description": "Track requests across services"
+    }
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 79,
+    "validated_by": [
+      "claude-opus",
+      "gpt-4.1",
+      "gemini-2.5-pro",
+      "claude-sonnet",
+      "gpt-5-mini"
+    ],
+    "validation_date": "2025-10-25",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-25",
+    "version": "1.0.0",
+    "detection_template": "detect-distributed.lua"
+  },
+  "parent_pattern": "monolith"
+}

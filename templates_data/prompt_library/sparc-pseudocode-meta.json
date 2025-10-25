@@ -4,7 +4,12 @@
   "description": "SPARC Phase 2: Generate detailed pseudocode based on specification",
   "category": "sparc",
   "language": "sparc",
-  "tags": ["sparc", "pseudocode", "phase2", "algorithm"],
+  "tags": [
+    "sparc",
+    "pseudocode",
+    "phase2",
+    "algorithm"
+  ],
   "version": "1.0.0",
   "author": "SPARC Team",
   "created_at": "2024-01-15T10:00:00Z",
@@ -26,5 +31,6 @@
       "key_functions": "Key functions and purposes",
       "error_handling": "Error handling approach"
     }
-  }
+  },
+  "parent_pattern": null
 }

@@ -1,0 +1,118 @@
+{
+  "id": "message_queue",
+  "name": "Message Queue Communication Pattern",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "Asynchronous communication via message queues. Producers put messages in queue, consumers read from queue. Decouples producer and consumer timing.",
+  "aliases": [
+    "Queue-Based Messaging",
+    "Producer-Consumer Pattern"
+  ],
+  "queue_types": [
+    {
+      "type": "point_to_point",
+      "description": "Each message consumed by one consumer"
+    },
+    {
+      "type": "request_reply",
+      "description": "Consumer sends reply back to producer"
+    },
+    {
+      "type": "fanout_queue",
+      "description": "Multiple consumers for same queue (work sharing)"
+    }
+  ],
+  "indicators": [
+    {
+      "name": "message_queue",
+      "description": "Named queues for message buffering",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "producers",
+      "description": "Services put messages in queue",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "consumers",
+      "description": "Services consume from queue",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "decoupled_timing",
+      "description": "Producer/consumer operate independently",
+      "weight": 0.9,
+      "required": true
+    }
+  ],
+  "benefits": [
+    "Buffering (handles producer/consumer speed mismatch)",
+    "Load leveling (queue absorbs traffic spikes)",
+    "Temporal decoupling (can work at different times)",
+    "Easier scaling (add consumers)",
+    "Better failure resilience"
+  ],
+  "concerns": [
+    "Message ordering not guaranteed (by default)",
+    "Debugging (asynchronous, hard to trace)",
+    "Operational complexity (queue management)",
+    "Potential for message loss"
+  ],
+  "when_to_use": [
+    "Temporal decoupling needed",
+    "Variable load (spiky traffic)",
+    "Resilience important (buffer requests)",
+    "Multiple consumers for same work type"
+  ],
+  "when_not_to_use": [
+    "Immediate response required",
+    "Strict ordering critical",
+    "Simple point-to-point communication"
+  ],
+  "required_practices": [
+    {
+      "practice": "Queue Design",
+      "priority": "REQUIRED",
+      "description": "Appropriate queue characteristics (size, TTL)"
+    },
+    {
+      "practice": "Message Acknowledgment",
+      "priority": "REQUIRED",
+      "description": "Ensure message processing before removal"
+    },
+    {
+      "practice": "Dead Letter Handling",
+      "priority": "REQUIRED",
+      "description": "Handle messages that can't be processed"
+    }
+  ],
+  "tools_and_frameworks": [
+    "NATS Queues",
+    "RabbitMQ",
+    "AWS SQS",
+    "Azure Service Bus",
+    "ActiveMQ"
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 85,
+    "validated_by": [
+      "claude-opus",
+      "gpt-4.1",
+      "gemini-2.5-pro",
+      "claude-sonnet",
+      "gpt-5-mini"
+    ],
+    "validation_date": "2025-10-25",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-25",
+    "version": "1.0.0",
+    "detection_template": "detect-message-queue.lua"
+  },
+  "parent_pattern": "publish-subscribe"
+}

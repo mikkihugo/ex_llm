@@ -19,5 +19,6 @@
       "src/**/langchain/*.ts",
       "src/**/langchain/*.py"
     ]
-  }
+  },
+  "parent_pattern": null
 }

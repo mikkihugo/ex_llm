@@ -7,7 +7,12 @@
     "name": "Gleam Workspace",
     "description": "Gleam monorepo using gleam workspaces",
     "language": "gleam",
-    "tags": ["workspace", "monorepo", "gleam", "functional"],
+    "tags": [
+      "workspace",
+      "monorepo",
+      "gleam",
+      "functional"
+    ],
     "author": "singularity",
     "created": "2025-01-15",
     "updated": "2025-01-15"
@@ -23,7 +28,10 @@
       "confidence_threshold": 0.8
     },
     "structure": {
-      "root_files": ["gleam.toml", "gleam.lock"],
+      "root_files": [
+        "gleam.toml",
+        "gleam.lock"
+      ],
       "workspace_members": [
         "packages/*",
         "apps/*"
@@ -36,11 +44,26 @@
       ]
     },
     "commands": {
-      "build": ["gleam build", "gleam build --force"],
-      "test": ["gleam test", "gleam test --watch"],
-      "lint": ["gleam check", "gleam format --check"],
-      "format": ["gleam format", "gleam format --check"],
-      "install": ["gleam deps download", "gleam deps compile"]
+      "build": [
+        "gleam build",
+        "gleam build --force"
+      ],
+      "test": [
+        "gleam test",
+        "gleam test --watch"
+      ],
+      "lint": [
+        "gleam check",
+        "gleam format --check"
+      ],
+      "format": [
+        "gleam format",
+        "gleam format --check"
+      ],
+      "install": [
+        "gleam deps download",
+        "gleam deps compile"
+      ]
     },
     "naming_conventions": {
       "modules": "snake_case",
@@ -63,5 +86,6 @@
       "must_have_shared_dependencies"
     ],
     "score": 0.9
-  }
+  },
+  "parent_pattern": null
 }

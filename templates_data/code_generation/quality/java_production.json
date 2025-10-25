@@ -139,7 +139,7 @@
     "common_patterns": [
       {
         "pattern": "REST Controller",
-        "pseudocode": "@RestController → @Autowired Service → @GetMapping/@PostMapping → ResponseEntity<T> → HTTP response",
+        "pseudocode": "@RestController \u2192 @Autowired Service \u2192 @GetMapping/@PostMapping \u2192 ResponseEntity<T> \u2192 HTTP response",
         "relationships": [
           "Service layer",
           "DTO validation",
@@ -156,7 +156,7 @@
       },
       {
         "pattern": "Service Layer",
-        "pseudocode": "@Service → @Transactional → Repository calls → business logic → return DTO",
+        "pseudocode": "@Service \u2192 @Transactional \u2192 Repository calls \u2192 business logic \u2192 return DTO",
         "relationships": [
           "Repository pattern",
           "Transaction management",
@@ -172,7 +172,7 @@
       },
       {
         "pattern": "Repository Pattern",
-        "pseudocode": "interface extends JpaRepository<Entity, ID> → custom queries with @Query → Optional<T> returns",
+        "pseudocode": "interface extends JpaRepository<Entity, ID> \u2192 custom queries with @Query \u2192 Optional<T> returns",
         "relationships": [
           "JPA entities",
           "Database",
@@ -189,7 +189,7 @@
       },
       {
         "pattern": "Event-Driven",
-        "pseudocode": "@EventListener → handle event → async processing → publish new event",
+        "pseudocode": "@EventListener \u2192 handle event \u2192 async processing \u2192 publish new event",
         "relationships": [
           "ApplicationEventPublisher",
           "Async",
@@ -205,35 +205,35 @@
       }
     ],
     "relationship_vectors": {
-      "spring_mvc": "Controller → Service → Repository → Entity → DB",
-      "dto_pattern": "Entity → Mapper → DTO → JSON response",
-      "dependency_injection": "@Autowired/@Component → Spring container → lifecycle management",
-      "transaction_management": "@Transactional → propagation → isolation → rollback rules",
-      "async_processing": "@Async → CompletableFuture → thread pool → exception handling",
-      "validation": "@Valid → Bean Validation → ConstraintValidator → error messages",
-      "security": "SecurityContext → Authentication → Authorization → @PreAuthorize"
+      "spring_mvc": "Controller \u2192 Service \u2192 Repository \u2192 Entity \u2192 DB",
+      "dto_pattern": "Entity \u2192 Mapper \u2192 DTO \u2192 JSON response",
+      "dependency_injection": "@Autowired/@Component \u2192 Spring container \u2192 lifecycle management",
+      "transaction_management": "@Transactional \u2192 propagation \u2192 isolation \u2192 rollback rules",
+      "async_processing": "@Async \u2192 CompletableFuture \u2192 thread pool \u2192 exception handling",
+      "validation": "@Valid \u2192 Bean Validation \u2192 ConstraintValidator \u2192 error messages",
+      "security": "SecurityContext \u2192 Authentication \u2192 Authorization \u2192 @PreAuthorize"
     },
     "architectural_hints": {
-      "layered": "Controller → Service → Repository → Entity (strict boundaries)",
-      "hexagonal": "Domain core → Ports (interfaces) → Adapters (implementations)",
-      "cqrs": "Command → CommandHandler → Event → EventHandler → Query → QueryHandler",
-      "event_sourcing": "Command → Aggregate → Events → EventStore → Projections",
-      "microservices": "Service → REST/gRPC → Service discovery → Circuit breaker → Resilience4j",
-      "messaging": "Producer → Kafka/RabbitMQ → Consumer → Dead letter queue"
+      "layered": "Controller \u2192 Service \u2192 Repository \u2192 Entity (strict boundaries)",
+      "hexagonal": "Domain core \u2192 Ports (interfaces) \u2192 Adapters (implementations)",
+      "cqrs": "Command \u2192 CommandHandler \u2192 Event \u2192 EventHandler \u2192 Query \u2192 QueryHandler",
+      "event_sourcing": "Command \u2192 Aggregate \u2192 Events \u2192 EventStore \u2192 Projections",
+      "microservices": "Service \u2192 REST/gRPC \u2192 Service discovery \u2192 Circuit breaker \u2192 Resilience4j",
+      "messaging": "Producer \u2192 Kafka/RabbitMQ \u2192 Consumer \u2192 Dead letter queue"
     },
     "distributed_patterns": {
       "spring_cloud_microservice": {
-        "structure": "@SpringBootApplication → @EnableDiscoveryClient → Feign clients → Eureka → LoadBalanced RestTemplate",
+        "structure": "@SpringBootApplication \u2192 @EnableDiscoveryClient \u2192 Feign clients \u2192 Eureka \u2192 LoadBalanced RestTemplate",
         "relationships": [
           "Service registration with Eureka/Consul",
           "Client-side load balancing",
           "Circuit breaker with Resilience4j",
           "Distributed tracing with Sleuth"
         ],
-        "example_flow": "Service A → Feign client → Eureka lookup → Service B instance → circuit breaker → fallback"
+        "example_flow": "Service A \u2192 Feign client \u2192 Eureka lookup \u2192 Service B instance \u2192 circuit breaker \u2192 fallback"
       },
       "kafka_event_streaming": {
-        "structure": "@KafkaListener → deserialize → process → @Transactional → commit offset",
+        "structure": "@KafkaListener \u2192 deserialize \u2192 process \u2192 @Transactional \u2192 commit offset",
         "relationships": [
           "Consumer groups for scaling",
           "Idempotency handling",
@@ -242,7 +242,7 @@
         ]
       },
       "saga_choreography": {
-        "structure": "Service publishes event → Other services listen → local transaction → publish compensating event on failure",
+        "structure": "Service publishes event \u2192 Other services listen \u2192 local transaction \u2192 publish compensating event on failure",
         "relationships": [
           "Event bus (Kafka)",
           "Eventual consistency",
@@ -252,14 +252,14 @@
       }
     },
     "service_relationships": {
-      "api_gateway_to_services": "API Gateway (Spring Cloud Gateway) → route → backend services → aggregate responses",
-      "service_to_service": "Service A → Feign/RestTemplate → Service B → circuit breaker → fallback",
-      "event_driven_coordination": "Service A → publish event → Kafka → Service B subscribes → process → ack",
-      "distributed_tracing": "Request → trace ID → spans across services → Zipkin/Jaeger → observability"
+      "api_gateway_to_services": "API Gateway (Spring Cloud Gateway) \u2192 route \u2192 backend services \u2192 aggregate responses",
+      "service_to_service": "Service A \u2192 Feign/RestTemplate \u2192 Service B \u2192 circuit breaker \u2192 fallback",
+      "event_driven_coordination": "Service A \u2192 publish event \u2192 Kafka \u2192 Service B subscribes \u2192 process \u2192 ack",
+      "distributed_tracing": "Request \u2192 trace ID \u2192 spans across services \u2192 Zipkin/Jaeger \u2192 observability"
     }
   },
   "prompts": {
-    "code_generation": "Generate production-quality Java code for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines in JavaDoc):\n/**\n * Class Name - Brief description\n *\n * <p><b>Purpose:</b> What this class does (clear statement)</p>\n *\n * <h2>Quick Start</h2>\n * <pre>{@code\n * // Copy-paste example\n * MyService service = new MyService(repository);\n * UserDTO user = service.findById(1L);\n * }</pre>\n *\n * <h2>Public API</h2>\n * <ul>\n *   <li>findById(Long) - Find user by ID</li>\n *   <li>create(UserDTO) - Create new user</li>\n * </ul>\n *\n * <h2>Error Handling</h2>\n * <ul>\n *   <li>UserNotFoundException - When user not found</li>\n *   <li>ValidationException - Invalid input data</li>\n * </ul>\n */\n\nSEPARATOR:\n---\n<h2>AI Navigation Metadata</h2>\n<p><i>The sections below provide structured metadata for AI assistants,\ngraph databases (Neo4j), and vector databases (pgvector).</i></p>\n\nAI METADATA (Below separator in JavaDoc):\n- Module Identity (JSON in {@code} block)\n- Architecture Diagram (Mermaid as text)\n- Call Graph (YAML as text)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- JavaDoc for all public classes and methods\n- Use Optional<T> instead of null\n- Custom exception hierarchy\n- JUnit 5 tests with Mockito\n- Follow Spring Boot conventions\n- Constructor injection\n- Records for DTOs\n\n3. AI NAVIGATION (in class JavaDoc):\n\nModule Identity (JSON):\n<pre>{@code\n{\n  \"class\": \"com.example.UserService\",\n  \"purpose\": \"User management service with validation\",\n  \"layer\": \"service\",\n  \"spring_annotations\": [\"@Service\", \"@Transactional\"],\n  \"related_classes\": [\"UserRepository\", \"UserDTO\", \"UserMapper\"],\n  \"alternatives\": {\n    \"UserManager\": \"Legacy - use UserService instead\"\n  },\n  \"disambiguation\": {\n    \"vs_UserManager\": \"UserService = Spring-managed, validated. UserManager = legacy\"\n  }\n}\n}</pre>\n\nArchitecture (Mermaid):\n<pre>\ngraph TB\n    Controller[UserController] --> Service[UserService]\n    Service --> Repository[UserRepository]\n    Service --> Mapper[UserMapper]\n    Repository --> Entity[UserEntity]\n</pre>\n\nCall Graph (YAML):\n<pre>\ncalls_out:\n  - class: UserRepository\n    methods: [findById, save]\n    purpose: Database operations\n    critical: true\n\ncalled_by:\n  - class: UserController\n    purpose: REST API endpoint\n    frequency: high\n\ndepends_on:\n  - UserRepository (required)\n  - UserMapper (required)\n\ninjection:\n  type: constructor\n  dependencies: [UserRepository, UserMapper]\n</pre>\n\nAnti-Patterns:\n❌ DO NOT create UserManager - UserService exists!\n❌ DO NOT use field injection (@Autowired on fields) - use constructor injection\n❌ DO NOT return null - use Optional&lt;T&gt;\n\nSearch Keywords:\nspring-service, user-management, jpa-repository, transaction-management, dto-mapping\n\nOUTPUT CODE ONLY (with enhanced JavaDoc).",
+    "code_generation": "Generate production-quality Java code for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines in JavaDoc):\n/**\n * Class Name - Brief description\n *\n * <p><b>Purpose:</b> What this class does (clear statement)</p>\n *\n * <h2>Quick Start</h2>\n * <pre>{@code\n * // Copy-paste example\n * MyService service = new MyService(repository);\n * UserDTO user = service.findById(1L);\n * }</pre>\n *\n * <h2>Public API</h2>\n * <ul>\n *   <li>findById(Long) - Find user by ID</li>\n *   <li>create(UserDTO) - Create new user</li>\n * </ul>\n *\n * <h2>Error Handling</h2>\n * <ul>\n *   <li>UserNotFoundException - When user not found</li>\n *   <li>ValidationException - Invalid input data</li>\n * </ul>\n */\n\nSEPARATOR:\n---\n<h2>AI Navigation Metadata</h2>\n<p><i>The sections below provide structured metadata for AI assistants,\ngraph databases (Neo4j), and vector databases (pgvector).</i></p>\n\nAI METADATA (Below separator in JavaDoc):\n- Module Identity (JSON in {@code} block)\n- Architecture Diagram (Mermaid as text)\n- Call Graph (YAML as text)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- JavaDoc for all public classes and methods\n- Use Optional<T> instead of null\n- Custom exception hierarchy\n- JUnit 5 tests with Mockito\n- Follow Spring Boot conventions\n- Constructor injection\n- Records for DTOs\n\n3. AI NAVIGATION (in class JavaDoc):\n\nModule Identity (JSON):\n<pre>{@code\n{\n  \"class\": \"com.example.UserService\",\n  \"purpose\": \"User management service with validation\",\n  \"layer\": \"service\",\n  \"spring_annotations\": [\"@Service\", \"@Transactional\"],\n  \"related_classes\": [\"UserRepository\", \"UserDTO\", \"UserMapper\"],\n  \"alternatives\": {\n    \"UserManager\": \"Legacy - use UserService instead\"\n  },\n  \"disambiguation\": {\n    \"vs_UserManager\": \"UserService = Spring-managed, validated. UserManager = legacy\"\n  }\n}\n}</pre>\n\nArchitecture (Mermaid):\n<pre>\ngraph TB\n    Controller[UserController] --> Service[UserService]\n    Service --> Repository[UserRepository]\n    Service --> Mapper[UserMapper]\n    Repository --> Entity[UserEntity]\n</pre>\n\nCall Graph (YAML):\n<pre>\ncalls_out:\n  - class: UserRepository\n    methods: [findById, save]\n    purpose: Database operations\n    critical: true\n\ncalled_by:\n  - class: UserController\n    purpose: REST API endpoint\n    frequency: high\n\ndepends_on:\n  - UserRepository (required)\n  - UserMapper (required)\n\ninjection:\n  type: constructor\n  dependencies: [UserRepository, UserMapper]\n</pre>\n\nAnti-Patterns:\n\u274c DO NOT create UserManager - UserService exists!\n\u274c DO NOT use field injection (@Autowired on fields) - use constructor injection\n\u274c DO NOT return null - use Optional&lt;T&gt;\n\nSearch Keywords:\nspring-service, user-management, jpa-repository, transaction-management, dto-mapping\n\nOUTPUT CODE ONLY (with enhanced JavaDoc).",
     "documentation": "Generate JavaDoc for this Java code:\n\n```java\n{code}\n```\n\nInclude:\n\nHUMAN CONTENT (top):\n- Class-level JavaDoc with description, purpose, quick start, API list, error handling\n- Method-level JavaDoc with @param, @return, @throws\n\nSEPARATOR:\n---\n<h2>AI Navigation Metadata</h2>\n\nAI METADATA (below):\n- Module Identity (JSON)\n- Architecture Diagram (Mermaid)\n- Call Graph (YAML)\n- Anti-Patterns\n- Search Keywords\n\nOUTPUT DOCUMENTATION ONLY.",
     "tests": "Generate JUnit 5 tests for this code:\n\n```java\n{code}\n```\n\nInclude:\n- Unit tests with Mockito\n- Edge cases\n- Exception handling tests\n- Use @ParameterizedTest for multiple scenarios\n\nOUTPUT TEST CODE ONLY."
   },
@@ -369,5 +369,6 @@
       "default_severity": "logic"
     }
   },
-  "last_updated": "2025-01-14"
+  "last_updated": "2025-01-14",
+  "parent_pattern": null
 }

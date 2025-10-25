@@ -3,8 +3,13 @@
   "category": "language",
   "version": "1.0",
   "detector_signatures": {
-    "config_files": ["go.mod", "go.sum"],
-    "file_extensions": [".go"],
+    "config_files": [
+      "go.mod",
+      "go.sum"
+    ],
+    "file_extensions": [
+      ".go"
+    ],
     "patterns": [
       "package\\s+\\w+",
       "func\\s+\\w+",
@@ -21,20 +26,33 @@
     "dependencies": {
       "file": "go.mod",
       "section": "require",
-      "common_packages": ["github.com/gin-gonic/gin", "github.com/gorilla/mux"]
+      "common_packages": [
+        "github.com/gin-gonic/gin",
+        "github.com/gorilla/mux"
+      ]
     }
   },
   "framework_hints": {
     "gin": {
-      "patterns": ["gin\\.Default", "gin\\.Engine", "github\\.com/gin-gonic/gin"],
+      "patterns": [
+        "gin\\.Default",
+        "gin\\.Engine",
+        "github\\.com/gin-gonic/gin"
+      ],
       "confidence_boost": 0.4
     },
     "echo": {
-      "patterns": ["echo\\.New", "github\\.com/labstack/echo"],
+      "patterns": [
+        "echo\\.New",
+        "github\\.com/labstack/echo"
+      ],
       "confidence_boost": 0.4
     },
     "fiber": {
-      "patterns": ["fiber\\.New", "github\\.com/gofiber/fiber"],
+      "patterns": [
+        "fiber\\.New",
+        "github\\.com/gofiber/fiber"
+      ],
       "confidence_boost": 0.4
     }
   },
@@ -48,6 +66,12 @@
   "metadata": {
     "ecosystem": "go",
     "package_manager": "go mod",
-    "typical_structure": ["cmd/", "internal/", "pkg/", "api/"]
-  }
+    "typical_structure": [
+      "cmd/",
+      "internal/",
+      "pkg/",
+      "api/"
+    ]
+  },
+  "parent_pattern": null
 }

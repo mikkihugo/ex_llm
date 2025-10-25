@@ -23,7 +23,12 @@
     "author": "SPARC Team",
     "created_at": "2024-01-15T10:00:00Z",
     "updated_at": "2024-01-15T10:00:00Z",
-    "tags": ["sparc", "refinement", "optimization", "validation"],
+    "tags": [
+      "sparc",
+      "refinement",
+      "optimization",
+      "validation"
+    ],
     "performance": {
       "avg_execution_time_ms": 400.0,
       "memory_usage_bytes": 8388608,
@@ -46,5 +51,6 @@
     },
     "instruction": "Refine and optimize the architecture and pseudocode based on feedback, validation results, and performance metrics. Structure the response with ANALYSIS, FILES, and SUMMARY sections."
   },
-  "template_content": "Refine the architecture and pseudocode based on feedback and validation.\n\nFollow the structured response format with FILES section for refined designs.\n\nPlease provide:\n1. Analysis of current issues and bottlenecks\n2. Refined architecture components\n3. Optimized algorithm logic\n4. Performance improvements\n5. Quality enhancements\n6. Risk mitigation strategies"
+  "template_content": "Refine the architecture and pseudocode based on feedback and validation.\n\nFollow the structured response format with FILES section for refined designs.\n\nPlease provide:\n1. Analysis of current issues and bottlenecks\n2. Refined architecture components\n3. Optimized algorithm logic\n4. Performance improvements\n5. Quality enhancements\n6. Risk mitigation strategies",
+  "parent_pattern": null
 }

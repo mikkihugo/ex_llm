@@ -5,7 +5,11 @@
   "language": "typescript",
   "metadata": {
     "version": "1.0.0",
-    "tags": ["typescript", "base", "common"]
+    "tags": [
+      "typescript",
+      "base",
+      "common"
+    ]
   },
   "common_patterns": {
     "types": "interface User {\n  id: string;\n  name: string;\n  email: string;\n}\n\ntype Result<T> = Success<T> | Failure;",
@@ -27,5 +31,6 @@
     "module": "ESNext",
     "strict": true,
     "esModuleInterop": true
-  }
+  },
+  "parent_pattern": "typescript"
 }

@@ -20,5 +20,6 @@
       "src/**/*.module.ts",
       "src/main.ts"
     ]
-  }
+  },
+  "parent_pattern": null
 }

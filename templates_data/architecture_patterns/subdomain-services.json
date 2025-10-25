@@ -1,0 +1,112 @@
+{
+  "id": "subdomain_services",
+  "name": "Subdomain Services Architecture",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "Microservices where each service corresponds to a business subdomain (from DDD). Services organized by business capabilities rather than technical layers.",
+  "aliases": [
+    "Business-Capability Services",
+    "Domain-Aligned Microservices"
+  ],
+  "subdomain_types": [
+    {
+      "type": "core_subdomains",
+      "description": "Services implementing core business logic (high value)"
+    },
+    {
+      "type": "supporting_subdomains",
+      "description": "Services supporting core business"
+    },
+    {
+      "type": "generic_subdomains",
+      "description": "Services for standard functionality (could be bought/OSS)"
+    }
+  ],
+  "indicators": [
+    {
+      "name": "multiple_independent_services",
+      "description": "Services align with business subdomains",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "business_domain_alignment",
+      "description": "Service names reflect business capabilities",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "bounded_contexts",
+      "description": "Each service is a bounded context",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "context_mapping",
+      "description": "Explicit integration between service contexts",
+      "weight": 0.8,
+      "required": true
+    }
+  ],
+  "benefits": [
+    "Aligns software organization with business",
+    "Team autonomy per business capability",
+    "Clear ownership (business to engineering)",
+    "Easy to understand service responsibilities",
+    "Scaling follows business growth",
+    "Natural team topologies (Conway's Law)"
+  ],
+  "concerns": [
+    "Requires good domain understanding",
+    "Subdomain boundaries can shift with business",
+    "Careful context mapping needed",
+    "Microservices operational complexity"
+  ],
+  "when_to_use": [
+    "Clear business domain structure",
+    "Multiple teams organized by business capability",
+    "Long-term product evolution expected",
+    "Need to align engineering with business"
+  ],
+  "when_not_to_use": [
+    "Unclear or shifting domain boundaries",
+    "Small teams",
+    "Simple business logic"
+  ],
+  "required_practices": [
+    {
+      "practice": "Domain Knowledge",
+      "priority": "REQUIRED",
+      "description": "Deep understanding of business subdomains"
+    },
+    {
+      "practice": "Context Mapping",
+      "priority": "REQUIRED",
+      "description": "Define relationships between services/subdomains"
+    },
+    {
+      "practice": "Team Alignment",
+      "priority": "REQUIRED",
+      "description": "Team structure matches service/domain structure"
+    }
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 84,
+    "validated_by": [
+      "claude-opus",
+      "gpt-4.1",
+      "gemini-2.5-pro",
+      "claude-sonnet",
+      "gpt-5-mini"
+    ],
+    "validation_date": "2025-10-25",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-25",
+    "version": "1.0.0",
+    "detection_template": "detect-subdomain-services.lua"
+  },
+  "parent_pattern": "domain-driven-design"
+}

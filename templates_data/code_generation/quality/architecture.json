@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "design_principles": [
       "modularity",
-      "composability", 
+      "composability",
       "scalability",
       "versioning",
       "inheritance",
@@ -16,7 +16,7 @@
         "naming": "{language}_production.json",
         "examples": [
           "elixir_production.json",
-          "rust_production.json", 
+          "rust_production.json",
           "typescript_production.json",
           "python_production.json",
           "gleam_production.json"
@@ -29,7 +29,7 @@
         "examples": [
           "research.json",
           "specification.json",
-          "pseudocode.json", 
+          "pseudocode.json",
           "architecture.json",
           "implementation.json"
         ]
@@ -72,20 +72,27 @@
         "type": "array",
         "description": "List of template IDs to inherit from",
         "order": "first_to_last_override",
-        "example": ["elixir_production", "implementation", "web_application"]
+        "example": [
+          "elixir_production",
+          "implementation",
+          "web_application"
+        ]
       },
       "overrides": {
         "type": "object",
         "description": "Override specific sections from inherited templates",
         "example": {
-          "quality_checklist": ["additional_checkpoint_1", "additional_checkpoint_2"],
+          "quality_checklist": [
+            "additional_checkpoint_1",
+            "additional_checkpoint_2"
+          ],
           "relationship_annotations.patterns": {
             "custom_pattern": "# @custom: description"
           }
         }
       },
       "merges": {
-        "type": "object", 
+        "type": "object",
         "description": "Merge arrays/objects from inherited templates",
         "example": {
           "quality_checklist": "append",
@@ -107,5 +114,6 @@
       "distributed_validation": true,
       "performance_metrics": true
     }
-  }
+  },
+  "parent_pattern": null
 }

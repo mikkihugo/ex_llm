@@ -4,7 +4,12 @@
   "description": "SPARC Phase 1: Generate detailed specification based on requirements",
   "category": "sparc",
   "language": "sparc",
-  "tags": ["sparc", "specification", "phase1", "requirements"],
+  "tags": [
+    "sparc",
+    "specification",
+    "phase1",
+    "requirements"
+  ],
   "version": "1.0.0",
   "author": "SPARC Team",
   "created_at": "2024-01-15T10:00:00Z",
@@ -27,5 +32,6 @@
       "success_criteria": "Success criteria and metrics",
       "risk_assessment": "Identified risks and mitigations"
     }
-  }
+  },
+  "parent_pattern": null
 }

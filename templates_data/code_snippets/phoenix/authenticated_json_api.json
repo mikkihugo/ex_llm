@@ -4,9 +4,18 @@
   "name": "Authenticated JSON API Endpoint",
   "version": "1.0.0",
   "framework": "phoenix",
-  "framework_versions": ["1.7", "1.8"],
+  "framework_versions": [
+    "1.7",
+    "1.8"
+  ],
   "category": "api_endpoint",
-  "tags": ["authentication", "json", "rest", "plug", "controller"],
+  "tags": [
+    "authentication",
+    "json",
+    "rest",
+    "plug",
+    "controller"
+  ],
   "metadata": {
     "author": "singularity",
     "created": "2025-01-09",
@@ -25,14 +34,34 @@
   },
   "dependencies": {
     "required": [
-      {"name": "phoenix", "version": "~> 1.7"},
-      {"name": "ecto", "version": "~> 3.11"},
-      {"name": "guardian", "version": "~> 2.3"},
-      {"name": "jason", "version": "~> 1.4"}
+      {
+        "name": "phoenix",
+        "version": "~> 1.7"
+      },
+      {
+        "name": "ecto",
+        "version": "~> 3.11"
+      },
+      {
+        "name": "guardian",
+        "version": "~> 2.3"
+      },
+      {
+        "name": "jason",
+        "version": "~> 1.4"
+      }
     ],
     "optional": [
-      {"name": "ex_json_schema", "version": "~> 0.10", "purpose": "JSON schema validation"},
-      {"name": "cors_plug", "version": "~> 3.0", "purpose": "CORS support"}
+      {
+        "name": "ex_json_schema",
+        "version": "~> 0.10",
+        "purpose": "JSON schema validation"
+      },
+      {
+        "name": "cors_plug",
+        "version": "~> 3.0",
+        "purpose": "CORS support"
+      }
     ]
   },
   "snippets": {
@@ -41,7 +70,12 @@
       "file_path": "lib/my_app_web/router.ex",
       "code": "defmodule MyAppWeb.Router do\n  use MyAppWeb, :router\n\n  pipeline :api do\n    plug :accepts, [\"json\"]\n  end\n\n  pipeline :authenticated do\n    plug MyAppWeb.Auth.Pipeline\n  end\n\n  scope \"/api/v1\", MyAppWeb do\n    pipe_through [:api, :authenticated]\n\n    resources \"/users\", UserController, except: [:new, :edit]\n    get \"/me\", UserController, :me\n  end\n\n  scope \"/api/v1\", MyAppWeb do\n    pipe_through :api\n\n    post \"/register\", AuthController, :register\n    post \"/login\", AuthController, :login\n  end\nend",
       "language": "elixir",
-      "patterns": ["verified_routes", "pipeline", "scope", "resources"],
+      "patterns": [
+        "verified_routes",
+        "pipeline",
+        "scope",
+        "resources"
+      ],
       "phoenix_version": "1.7+",
       "best_practice": true
     },
@@ -50,7 +84,11 @@
       "file_path": "lib/my_app_web/auth/pipeline.ex",
       "code": "defmodule MyAppWeb.Auth.Pipeline do\n  use Guardian.Plug.Pipeline,\n    otp_app: :my_app,\n    module: MyAppWeb.Auth.Guardian,\n    error_handler: MyAppWeb.Auth.ErrorHandler\n\n  plug Guardian.Plug.VerifyHeader, scheme: \"Bearer\"\n  plug Guardian.Plug.EnsureAuthenticated\n  plug Guardian.Plug.LoadResource\nend",
       "language": "elixir",
-      "patterns": ["guardian", "plug_pipeline", "jwt"],
+      "patterns": [
+        "guardian",
+        "plug_pipeline",
+        "jwt"
+      ],
       "best_practice": true
     },
     "controller": {
@@ -58,7 +96,12 @@
       "file_path": "lib/my_app_web/controllers/user_controller.ex",
       "code": "defmodule MyAppWeb.UserController do\n  use MyAppWeb, :controller\n\n  alias MyApp.Accounts\n  alias MyApp.Accounts.User\n\n  action_fallback MyAppWeb.FallbackController\n\n  def index(conn, params) do\n    users = Accounts.list_users(params)\n    render(conn, :index, users: users)\n  end\n\n  def show(conn, %{\"id\" => id}) do\n    with {:ok, user} <- Accounts.get_user(id) do\n      render(conn, :show, user: user)\n    end\n  end\n\n  def create(conn, %{\"user\" => user_params}) do\n    with {:ok, %User{} = user} <- Accounts.create_user(user_params) do\n      conn\n      |> put_status(:created)\n      |> put_resp_header(\"location\", ~p\"/api/v1/users/#{user}\")\n      |> render(:show, user: user)\n    end\n  end\n\n  def update(conn, %{\"id\" => id, \"user\" => user_params}) do\n    with {:ok, user} <- Accounts.get_user(id),\n         {:ok, %User{} = user} <- Accounts.update_user(user, user_params) do\n      render(conn, :show, user: user)\n    end\n  end\n\n  def delete(conn, %{\"id\" => id}) do\n    with {:ok, user} <- Accounts.get_user(id),\n         {:ok, %User{}} <- Accounts.delete_user(user) do\n      send_resp(conn, :no_content, \"\")\n    end\n  end\n\n  # Get current authenticated user\n  def me(conn, _params) do\n    user = Guardian.Plug.current_resource(conn)\n    render(conn, :show, user: user)\n  end\nend",
       "language": "elixir",
-      "patterns": ["verified_routes", "with_statements", "action_fallback", "guardian"],
+      "patterns": [
+        "verified_routes",
+        "with_statements",
+        "action_fallback",
+        "guardian"
+      ],
       "phoenix_version": "1.7+",
       "best_practice": true,
       "highlights": [
@@ -74,7 +117,10 @@
       "file_path": "lib/my_app_web/controllers/user_json.ex",
       "code": "defmodule MyAppWeb.UserJSON do\n  alias MyApp.Accounts.User\n\n  @doc \"\"\"\n  Renders a list of users.\n  \"\"\"\n  def index(%{users: users}) do\n    %{data: for(user <- users, do: data(user))}\n  end\n\n  @doc \"\"\"\n  Renders a single user.\n  \"\"\"\n  def show(%{user: user}) do\n    %{data: data(user)}\n  end\n\n  defp data(%User{} = user) do\n    %{\n      id: user.id,\n      email: user.email,\n      name: user.name,\n      role: user.role,\n      inserted_at: user.inserted_at,\n      updated_at: user.updated_at\n    }\n  end\nend",
       "language": "elixir",
-      "patterns": ["json_view", "embedded_schema"],
+      "patterns": [
+        "json_view",
+        "embedded_schema"
+      ],
       "phoenix_version": "1.7+",
       "best_practice": true,
       "highlights": [
@@ -89,7 +135,11 @@
       "file_path": "lib/my_app_web/controllers/fallback_controller.ex",
       "code": "defmodule MyAppWeb.FallbackController do\n  use MyAppWeb, :controller\n\n  def call(conn, {:error, :not_found}) do\n    conn\n    |> put_status(:not_found)\n    |> put_view(json: MyAppWeb.ErrorJSON)\n    |> render(:\"404.json\")\n  end\n\n  def call(conn, {:error, %Ecto.Changeset{} = changeset}) do\n    conn\n    |> put_status(:unprocessable_entity)\n    |> put_view(json: MyAppWeb.ChangesetJSON)\n    |> render(:error, changeset: changeset)\n  end\n\n  def call(conn, {:error, :unauthorized}) do\n    conn\n    |> put_status(:unauthorized)\n    |> put_view(json: MyAppWeb.ErrorJSON)\n    |> render(:\"401.json\")\n  end\nend",
       "language": "elixir",
-      "patterns": ["fallback_controller", "error_handling", "pattern_matching"],
+      "patterns": [
+        "fallback_controller",
+        "error_handling",
+        "pattern_matching"
+      ],
       "best_practice": true
     },
     "context": {
@@ -97,7 +147,11 @@
       "file_path": "lib/my_app/accounts.ex",
       "code": "defmodule MyApp.Accounts do\n  @moduledoc \"\"\"\n  The Accounts context.\n  \"\"\"\n\n  import Ecto.Query, warn: false\n  alias MyApp.Repo\n  alias MyApp.Accounts.User\n\n  @doc \"\"\"\n  Returns the list of users with optional filters.\n  \"\"\"\n  def list_users(params \\\\ %{}) do\n    User\n    |> apply_filters(params)\n    |> Repo.all()\n  end\n\n  @doc \"\"\"\n  Gets a single user.\n  Returns {:ok, user} or {:error, :not_found}\n  \"\"\"\n  def get_user(id) do\n    case Repo.get(User, id) do\n      nil -> {:error, :not_found}\n      user -> {:ok, user}\n    end\n  end\n\n  @doc \"\"\"\n  Creates a user.\n  \"\"\"\n  def create_user(attrs \\\\ %{}) do\n    %User{}\n    |> User.changeset(attrs)\n    |> Repo.insert()\n  end\n\n  @doc \"\"\"\n  Updates a user.\n  \"\"\"\n  def update_user(%User{} = user, attrs) do\n    user\n    |> User.changeset(attrs)\n    |> Repo.update()\n  end\n\n  @doc \"\"\"\n  Deletes a user.\n  \"\"\"\n  def delete_user(%User{} = user) do\n    Repo.delete(user)\n  end\n\n  defp apply_filters(query, %{\"role\" => role}) do\n    where(query, [u], u.role == ^role)\n  end\n\n  defp apply_filters(query, _params), do: query\nend",
       "language": "elixir",
-      "patterns": ["context", "ecto", "query_building"],
+      "patterns": [
+        "context",
+        "ecto",
+        "query_building"
+      ],
       "best_practice": true,
       "highlights": [
         "All database operations in context, not controller",
@@ -111,7 +165,11 @@
       "file_path": "lib/my_app/accounts/user.ex",
       "code": "defmodule MyApp.Accounts.User do\n  use Ecto.Schema\n  import Ecto.Changeset\n\n  @primary_key {:id, :binary_id, autogenerate: true}\n  @foreign_key_type :binary_id\n  schema \"users\" do\n    field :email, :string\n    field :name, :string\n    field :password, :string, virtual: true, redact: true\n    field :hashed_password, :string, redact: true\n    field :role, Ecto.Enum, values: [:user, :admin], default: :user\n\n    timestamps(type: :utc_datetime)\n  end\n\n  @doc false\n  def changeset(user, attrs) do\n    user\n    |> cast(attrs, [:email, :name, :password, :role])\n    |> validate_required([:email, :name])\n    |> validate_email()\n    |> validate_password()\n    |> unique_constraint(:email)\n  end\n\n  defp validate_email(changeset) do\n    changeset\n    |> validate_format(:email, ~r/^[^\\s]+@[^\\s]+$/, message: \"must be a valid email\")\n    |> validate_length(:email, max: 160)\n  end\n\n  defp validate_password(changeset) do\n    changeset\n    |> validate_length(:password, min: 12, max: 72)\n    |> maybe_hash_password()\n  end\n\n  defp maybe_hash_password(changeset) do\n    password = get_change(changeset, :password)\n\n    if password && changeset.valid? do\n      changeset\n      |> put_change(:hashed_password, Bcrypt.hash_pwd_salt(password))\n      |> delete_change(:password)\n    else\n      changeset\n    end\n  end\nend",
       "language": "elixir",
-      "patterns": ["ecto_schema", "validation", "password_hashing"],
+      "patterns": [
+        "ecto_schema",
+        "validation",
+        "password_hashing"
+      ],
       "best_practice": true,
       "highlights": [
         "UUIDs for primary keys (binary_id)",
@@ -160,7 +218,12 @@
   "testing": {
     "controller_test": "test/my_app_web/controllers/user_controller_test.exs",
     "test_code": "defmodule MyAppWeb.UserControllerTest do\n  use MyAppWeb.ConnCase\n\n  import MyApp.AccountsFixtures\n\n  setup %{conn: conn} do\n    user = user_fixture()\n    {:ok, token, _} = MyAppWeb.Auth.Guardian.encode_and_sign(user)\n    conn = put_req_header(conn, \"authorization\", \"Bearer #{token}\")\n    {:ok, conn: conn, user: user}\n  end\n\n  describe \"GET /api/v1/users\" do\n    test \"lists all users\", %{conn: conn} do\n      conn = get(conn, ~p\"/api/v1/users\")\n      assert json_response(conn, 200)[\"data\"] |> length() > 0\n    end\n  end\n\n  describe \"POST /api/v1/users\" do\n    test \"creates user with valid data\", %{conn: conn} do\n      attrs = %{email: \"test@example.com\", name: \"Test\", password: \"securepassword123\"}\n      conn = post(conn, ~p\"/api/v1/users\", user: attrs)\n      assert %{\"id\" => id} = json_response(conn, 201)[\"data\"]\n    end\n\n    test \"returns errors with invalid data\", %{conn: conn} do\n      conn = post(conn, ~p\"/api/v1/users\", user: %{})\n      assert json_response(conn, 422)[\"errors\"] != %{}\n    end\n  end\nend",
-    "patterns": ["conn_case", "fixtures", "verified_routes_in_tests", "jwt_auth_setup"]
+    "patterns": [
+      "conn_case",
+      "fixtures",
+      "verified_routes_in_tests",
+      "jwt_auth_setup"
+    ]
   },
   "related_snippets": [
     "phoenix-websocket-channel",
@@ -172,5 +235,6 @@
     "https://github.com/phoenixframework/phoenix/tree/master/guides",
     "https://github.com/ueberauth/guardian",
     "https://hexdocs.pm/phoenix/Phoenix.Controller.html"
-  ]
+  ],
+  "parent_pattern": null
 }

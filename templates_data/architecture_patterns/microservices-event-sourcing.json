@@ -1,0 +1,124 @@
+{
+  "id": "microservices_event_sourcing",
+  "name": "Microservices with Event Sourcing",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "Microservices architecture using Event Sourcing pattern. All state changes are stored as immutable events in append-only log, with services rebuilding state from events.",
+  "parent_pattern": "microservices",
+  "aliases": ["Event-Sourced Microservices", "Event Store Pattern"],
+  "event_sourcing_types": [
+    {
+      "type": "aggregate_events",
+      "description": "Store events per aggregate root with snapshots"
+    },
+    {
+      "type": "global_event_log",
+      "description": "Single append-only log for entire system"
+    },
+    {
+      "type": "service_event_store",
+      "description": "Each service has own event store"
+    }
+  ],
+  "indicators": [
+    {
+      "name": "multiple_independent_services",
+      "description": "4+ microservices",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "event_store",
+      "description": "Append-only event storage (EventStoreDB, PostgreSQL, Kafka)",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "immutable_events",
+      "description": "Events represent state changes, never overwritten",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "event_projections",
+      "description": "Services rebuild state from event stream",
+      "weight": 0.85,
+      "required": true
+    },
+    {
+      "name": "audit_trail",
+      "description": "Complete history of all state changes",
+      "weight": 0.8,
+      "required": false
+    }
+  ],
+  "benefits": [
+    "Complete audit trail (all changes stored)",
+    "Temporal queries (state at any point in time)",
+    "Event replay and recovery capabilities",
+    "Loose coupling via events",
+    "Easy to scale read models independently",
+    "Excellent for business domain modeling"
+  ],
+  "concerns": [
+    "Eventual consistency (read models lag behind)",
+    "Event schema evolution challenges",
+    "Storage overhead (storing all events)",
+    "Complex to debug (must trace through events)",
+    "Operational complexity (event store management)"
+  ],
+  "when_to_use": [
+    "Audit trail requirements (financial, healthcare)",
+    "Temporal analysis needed (state at any time)",
+    "Complex domain with rich event model",
+    "Event replay/recovery important",
+    "Eventual consistency acceptable"
+  ],
+  "when_not_to_use": [
+    "Simple CRUD applications",
+    "Strong consistency requirements",
+    "No need for audit trail",
+    "Real-time consistency essential"
+  ],
+  "required_practices": [
+    {
+      "practice": "Event Schema Design",
+      "priority": "REQUIRED",
+      "description": "Well-designed, versionable event schemas"
+    },
+    {
+      "practice": "Event Versioning",
+      "priority": "REQUIRED",
+      "description": "Handle event schema evolution"
+    },
+    {
+      "practice": "Snapshot Strategy",
+      "priority": "RECOMMENDED",
+      "description": "Use snapshots to avoid replaying entire history"
+    },
+    {
+      "practice": "Projection Management",
+      "priority": "REQUIRED",
+      "description": "Rebuild/update read model projections"
+    }
+  ],
+  "tools_and_frameworks": [
+    "EventStoreDB",
+    "Axon",
+    "Kafka",
+    "Apache Pulsar",
+    "Axon Framework (Java)"
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 82,
+    "validated_by": ["claude-opus", "gpt-4.1", "gemini-2.5-pro", "claude-sonnet", "gpt-5-mini"],
+    "validation_date": "2025-10-25",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-25",
+    "version": "1.0.0",
+    "detection_template": "detect-microservices-event-sourcing.lua"
+  }
+}

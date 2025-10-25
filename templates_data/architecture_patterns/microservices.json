@@ -15,35 +15,55 @@
       "description": "Multiple independent services with separate codebases or clear boundaries",
       "weight": 0.9,
       "required": true,
-      "detection_hints": ["Multiple package.json/Cargo.toml/mix.exs files", "Separate service directories", "Multiple build configurations"]
+      "detection_hints": [
+        "Multiple package.json/Cargo.toml/mix.exs files",
+        "Separate service directories",
+        "Multiple build configurations"
+      ]
     },
     {
       "name": "api_boundaries",
       "description": "Clear API contracts between services (REST, gRPC, GraphQL)",
       "weight": 0.85,
       "required": true,
-      "detection_hints": ["OpenAPI/Swagger specs", "gRPC .proto files", "GraphQL schemas"]
+      "detection_hints": [
+        "OpenAPI/Swagger specs",
+        "gRPC .proto files",
+        "GraphQL schemas"
+      ]
     },
     {
       "name": "independent_deployment",
       "description": "Each service can be deployed independently",
       "weight": 0.8,
       "required": false,
-      "detection_hints": ["Separate Dockerfiles", "Service-specific deployment configs", "CI/CD per service"]
+      "detection_hints": [
+        "Separate Dockerfiles",
+        "Service-specific deployment configs",
+        "CI/CD per service"
+      ]
     },
     {
       "name": "inter_service_communication",
       "description": "Services communicate via network (sync or async)",
       "weight": 0.75,
       "required": false,
-      "detection_hints": ["HTTP clients", "Message brokers (NATS, Kafka, RabbitMQ)", "Service mesh"]
+      "detection_hints": [
+        "HTTP clients",
+        "Message brokers (NATS, Kafka, RabbitMQ)",
+        "Service mesh"
+      ]
     },
     {
       "name": "containerization",
       "description": "Services containerized for deployment",
       "weight": 0.7,
       "required": false,
-      "detection_hints": ["Dockerfiles", "Kubernetes manifests", "docker-compose.yml"]
+      "detection_hints": [
+        "Dockerfiles",
+        "Kubernetes manifests",
+        "docker-compose.yml"
+      ]
     }
   ],
   "benefits": [
@@ -82,41 +102,63 @@
       "priority": "REQUIRED",
       "description": "Prevent cascading failures when services are down",
       "adoption_rate": 0.94,
-      "sources": ["Netflix Hystrix", "Martin Fowler"]
+      "sources": [
+        "Netflix Hystrix",
+        "Martin Fowler"
+      ]
     },
     {
       "practice": "Distributed Tracing",
       "priority": "REQUIRED",
       "description": "Track requests across service boundaries",
       "adoption_rate": 0.78,
-      "sources": ["OpenTelemetry", "Google Dapper"]
+      "sources": [
+        "OpenTelemetry",
+        "Google Dapper"
+      ]
     },
     {
       "practice": "API Gateway",
       "priority": "RECOMMENDED",
       "description": "Single entry point for external clients",
       "adoption_rate": 0.65,
-      "sources": ["Kong", "NGINX", "Traefik"]
+      "sources": [
+        "Kong",
+        "NGINX",
+        "Traefik"
+      ]
     },
     {
       "practice": "Service Discovery",
       "priority": "RECOMMENDED",
       "description": "Dynamic service location and health checking",
       "adoption_rate": 0.88,
-      "sources": ["Consul", "Kubernetes DNS"]
+      "sources": [
+        "Consul",
+        "Kubernetes DNS"
+      ]
     },
     {
       "practice": "Service Mesh",
       "priority": "OPTIONAL",
       "description": "Traffic management and observability layer",
       "adoption_rate": 0.42,
-      "sources": ["Istio", "Linkerd"]
+      "sources": [
+        "Istio",
+        "Linkerd"
+      ]
     }
   ],
   "llm_team_validation": {
     "validated": true,
     "consensus_score": 82,
-    "validated_by": ["claude-opus", "gpt-4.1", "gemini-2.5-pro", "claude-sonnet", "gpt-5-mini"],
+    "validated_by": [
+      "claude-opus",
+      "gpt-4.1",
+      "gemini-2.5-pro",
+      "claude-sonnet",
+      "gpt-5-mini"
+    ],
     "validation_date": "2025-10-23",
     "approved": true,
     "conditions": [
@@ -156,5 +198,6 @@
       "researcher-research-pattern.lua",
       "coordinator-build-consensus.lua"
     ]
-  }
+  },
+  "parent_pattern": null
 }

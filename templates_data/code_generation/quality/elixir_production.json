@@ -421,7 +421,11 @@
       "name": "supervisor_strategy",
       "type": "choice",
       "prompt": "What supervision strategy should be used?",
-      "choices": ["one_for_one", "rest_for_one", "one_for_all"],
+      "choices": [
+        "one_for_one",
+        "rest_for_one",
+        "one_for_all"
+      ],
       "default": "one_for_one",
       "when": "{{use_genserver}}",
       "hint": "one_for_one: restart only failed child (most common). rest_for_one: restart failed + later siblings. one_for_all: restart all children"
@@ -460,7 +464,11 @@
       "name": "documentation_level",
       "type": "choice",
       "prompt": "Documentation detail level?",
-      "choices": ["minimal", "standard", "comprehensive"],
+      "choices": [
+        "minimal",
+        "standard",
+        "comprehensive"
+      ],
       "default": "comprehensive",
       "hint": "minimal: basic @moduledoc + @doc. standard: + examples. comprehensive: + AI metadata (Mermaid, YAML)"
     },
@@ -468,7 +476,11 @@
       "name": "error_tracking_integration",
       "type": "choice",
       "prompt": "Error tracking integration for production monitoring?",
-      "choices": ["none", "sentry", "custom"],
+      "choices": [
+        "none",
+        "sentry",
+        "custom"
+      ],
       "default": "none",
       "hint": "Sentry integration for automatic error tracking and alerting in production"
     },
@@ -546,5 +558,6 @@
     "has_architecture_decisions": 0.7,
     "production_deployment_ready": 0.95,
     "security_reviewed": 0.95
-  }
+  },
+  "parent_pattern": null
 }

@@ -7,7 +7,12 @@
     "name": "Node.js NPM Workspace",
     "description": "Node.js monorepo using NPM workspaces",
     "language": "javascript",
-    "tags": ["workspace", "monorepo", "node", "npm"],
+    "tags": [
+      "workspace",
+      "monorepo",
+      "node",
+      "npm"
+    ],
     "author": "singularity",
     "created": "2025-01-15",
     "updated": "2025-01-15"
@@ -22,7 +27,10 @@
       "confidence_threshold": 0.8
     },
     "structure": {
-      "root_files": ["package.json", "package-lock.json"],
+      "root_files": [
+        "package.json",
+        "package-lock.json"
+      ],
       "workspace_members": [
         "packages/*",
         "apps/*",
@@ -37,11 +45,26 @@
       ]
     },
     "commands": {
-      "build": ["npm run build", "npm run build --workspaces"],
-      "test": ["npm test", "npm test --workspaces"],
-      "lint": ["npm run lint", "npm run lint --workspaces"],
-      "format": ["npm run format", "npm run format --workspaces"],
-      "install": ["npm install", "npm install --workspaces"]
+      "build": [
+        "npm run build",
+        "npm run build --workspaces"
+      ],
+      "test": [
+        "npm test",
+        "npm test --workspaces"
+      ],
+      "lint": [
+        "npm run lint",
+        "npm run lint --workspaces"
+      ],
+      "format": [
+        "npm run format",
+        "npm run format --workspaces"
+      ],
+      "install": [
+        "npm install",
+        "npm install --workspaces"
+      ]
     },
     "naming_conventions": {
       "packages": "kebab-case",
@@ -63,5 +86,6 @@
       "must_have_shared_dev_dependencies"
     ],
     "score": 0.9
-  }
+  },
+  "parent_pattern": null
 }

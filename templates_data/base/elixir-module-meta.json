@@ -7,10 +7,23 @@
     "version": "2.1.0",
     "description": "Production-ready base template for Elixir modules with comprehensive documentation, error handling, and integration examples - Now uses Solid (Handlebars)",
     "language": "elixir",
-    "tags": ["base", "elixir", "module", "production", "documentation", "error-handling", "handlebars"],
+    "tags": [
+      "base",
+      "elixir",
+      "module",
+      "production",
+      "documentation",
+      "error-handling",
+      "handlebars"
+    ],
     "created": "2025-01-09",
     "updated": "2025-10-12",
-    "compliance": ["production-standards", "error-matrix", "integration-examples", "edge-cases"],
+    "compliance": [
+      "production-standards",
+      "error-matrix",
+      "integration-examples",
+      "edge-cases"
+    ],
     "template_file": "elixir-module.hbs"
   },
   "variables": {
@@ -58,10 +71,22 @@
         "description": "string"
       },
       "default": [
-        {"atom": "invalid_input", "description": "When input validation fails"},
-        {"atom": "not_found", "description": "When requested resource doesn't exist"},
-        {"atom": "timeout", "description": "When operation exceeds time limits"},
-        {"atom": "unauthorized", "description": "When access is denied"}
+        {
+          "atom": "invalid_input",
+          "description": "When input validation fails"
+        },
+        {
+          "atom": "not_found",
+          "description": "When requested resource doesn't exist"
+        },
+        {
+          "atom": "timeout",
+          "description": "When operation exceeds time limits"
+        },
+        {
+          "atom": "unauthorized",
+          "description": "When access is denied"
+        }
       ]
     },
     "performance_notes": {
@@ -113,16 +138,30 @@
       },
       "default": {
         "calls": [
-          {"module": "OtherModule", "function": "function", "arity": 2, "purpose": "Data processing"}
+          {
+            "module": "OtherModule",
+            "function": "function",
+            "arity": 2,
+            "purpose": "Data processing"
+          }
         ],
         "called_by": [
-          {"module": "WebController", "purpose": "HTTP request handling"}
+          {
+            "module": "WebController",
+            "purpose": "HTTP request handling"
+          }
         ],
         "depends_on": [
-          {"name": "PostgreSQL", "purpose": "Data persistence"}
+          {
+            "name": "PostgreSQL",
+            "purpose": "Data persistence"
+          }
         ],
         "integrates_with": [
-          {"name": "CacheService", "purpose": "Performance optimization"}
+          {
+            "name": "CacheService",
+            "purpose": "Performance optimization"
+          }
         ]
       }
     },
@@ -168,5 +207,6 @@
       "required": true
     }
   },
-  "quality_standard": "quality_standards/elixir/production"
+  "quality_standard": "quality_standards/elixir/production",
+  "parent_pattern": null
 }

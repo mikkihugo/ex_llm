@@ -3,8 +3,14 @@
   "category": "framework",
   "version": "1.0",
   "detector_signatures": {
-    "package_names": ["react", "react-dom"],
-    "file_extensions": [".jsx", ".tsx"],
+    "package_names": [
+      "react",
+      "react-dom"
+    ],
+    "file_extensions": [
+      ".jsx",
+      ".tsx"
+    ],
     "patterns": [
       "import\\s+.*from\\s+['\"]react['\"]",
       "useState",
@@ -12,23 +18,42 @@
       "React\\.Component",
       "React\\.FC"
     ],
-    "config_files": ["package.json", ".babelrc", "webpack.config.js"],
-    "directory_patterns": ["src/", "components/"],
+    "config_files": [
+      "package.json",
+      ".babelrc",
+      "webpack.config.js"
+    ],
+    "directory_patterns": [
+      "src/",
+      "components/"
+    ],
     "dependencies": {
       "file": "package.json",
       "section": "dependencies",
-      "common_packages": ["react", "react-dom", "react-router-dom"]
+      "common_packages": [
+        "react",
+        "react-dom",
+        "react-router-dom"
+      ]
     }
   },
   "framework_hints": {
     "create-react-app": {
-      "patterns": ["react-scripts"],
-      "config_files": ["public/index.html"],
+      "patterns": [
+        "react-scripts"
+      ],
+      "config_files": [
+        "public/index.html"
+      ],
       "confidence_boost": 0.3
     },
     "vite": {
-      "patterns": ["import\\.meta\\.env"],
-      "config_files": ["vite.config.js"],
+      "patterns": [
+        "import\\.meta\\.env"
+      ],
+      "config_files": [
+        "vite.config.js"
+      ],
       "confidence_boost": 0.2
     }
   },
@@ -38,13 +63,21 @@
     "dev": "npm start",
     "test": "npm test"
   },
-  "output_directories": ["build/", "dist/"],
+  "output_directories": [
+    "build/",
+    "dist/"
+  ],
   "framework_type": "frontend",
   "confidence_weight": 0.9,
   "metadata": {
     "ecosystem": "npm",
     "package_manager": "npm",
-    "typical_structure": ["src/", "public/", "components/", "build/"]
+    "typical_structure": [
+      "src/",
+      "public/",
+      "components/",
+      "build/"
+    ]
   },
   "llm_support": {
     "analysis_prompts": {
@@ -72,7 +105,11 @@
       "basic_component": {
         "description": "Modern React functional component with hooks",
         "code": "import React, { useState, useEffect } from 'react';\n\nfunction Counter() {\n  const [count, setCount] = useState(0);\n  \n  useEffect(() => {\n    document.title = `Count: ${count}`;\n  }, [count]);\n  \n  return (\n    <div>\n      <p>Count: {count}</p>\n      <button onClick={() => setCount(count + 1)}>+</button>\n    </div>\n  );\n}\n\nexport default Counter;",
-        "patterns": ["useState", "useEffect", "functional component"],
+        "patterns": [
+          "useState",
+          "useEffect",
+          "functional component"
+        ],
         "best_practice": true,
         "github_examples": [
           "https://github.com/facebook/react/tree/main/packages/react"
@@ -81,13 +118,22 @@
       "custom_hook": {
         "description": "Custom hook for fetching data",
         "code": "import { useState, useEffect } from 'react';\n\nfunction useFetch(url) {\n  const [data, setData] = useState(null);\n  const [loading, setLoading] = useState(true);\n  const [error, setError] = useState(null);\n  \n  useEffect(() => {\n    fetch(url)\n      .then(res => res.json())\n      .then(setData)\n      .catch(setError)\n      .finally(() => setLoading(false));\n  }, [url]);\n  \n  return { data, loading, error };\n}",
-        "patterns": ["custom hook", "useState", "useEffect", "data fetching"],
+        "patterns": [
+          "custom hook",
+          "useState",
+          "useEffect",
+          "data fetching"
+        ],
         "use_case": "reusable data fetching logic"
       },
       "context_pattern": {
         "description": "Context API for global state",
         "code": "import React, { createContext, useContext, useState } from 'react';\n\nconst ThemeContext = createContext();\n\nexport function ThemeProvider({ children }) {\n  const [theme, setTheme] = useState('light');\n  \n  return (\n    <ThemeContext.Provider value={{ theme, setTheme }}>\n      {children}\n    </ThemeContext.Provider>\n  );\n}\n\nexport function useTheme() {\n  return useContext(ThemeContext);\n}",
-        "patterns": ["Context API", "useContext", "provider pattern"],
+        "patterns": [
+          "Context API",
+          "useContext",
+          "provider pattern"
+        ],
         "use_case": "avoiding prop drilling",
         "github_examples": [
           "https://github.com/facebook/react/tree/main/packages/react/src"
@@ -107,11 +153,30 @@
         "https://react.dev/reference/react"
       ],
       "common_crates": {
-        "state_management": ["redux", "mobx", "zustand", "jotai", "recoil"],
-        "routing": ["react-router-dom", "wouter"],
-        "styling": ["styled-components", "emotion", "@mui/material", "tailwindcss"],
-        "data_fetching": ["react-query", "swr", "apollo-client"]
+        "state_management": [
+          "redux",
+          "mobx",
+          "zustand",
+          "jotai",
+          "recoil"
+        ],
+        "routing": [
+          "react-router-dom",
+          "wouter"
+        ],
+        "styling": [
+          "styled-components",
+          "emotion",
+          "@mui/material",
+          "tailwindcss"
+        ],
+        "data_fetching": [
+          "react-query",
+          "swr",
+          "apollo-client"
+        ]
       }
     }
-  }
+  },
+  "parent_pattern": null
 }

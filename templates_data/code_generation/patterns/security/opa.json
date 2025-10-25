@@ -15,5 +15,6 @@
       "policy/**/*.rego",
       "policies/**/*.rego"
     ]
-  }
+  },
+  "parent_pattern": null
 }

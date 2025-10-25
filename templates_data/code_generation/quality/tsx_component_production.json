@@ -1,221 +1,222 @@
 {
-    "name": "TSX Component Production Quality",
-    "spec_version": "2.3.0",
-    "capabilities": [
-        "quality",
-        "graph",
-        "rag",
-        "ai_navigation",
-        "graph_db",
-        "vector_db"
-    ],
-    "language": "typescript_tsx",
-    "quality_level": "production",
-    "description": "Production-grade quality standards for React/TSX components with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, focus on accessibility, stability, and composability",
-    "changelog": {
-        "2.3.0": {
-            "date": "2025-01-14",
-            "changes": [
-                "Integrated self-awareness protocol for agent evolution",
-                "Added documentation-first development requirements",
-                "Enhanced duplicate prevention and architecture understanding",
-                "Multi-language coordination with Elixir and Rust"
-            ]
-        },
-        "2.2.0": {
-            "date": "2025-01-14",
-            "changes": [
-                "Added human-first documentation structure (human content top, AI metadata below separator)",
-                "Added component_identity JSON for vector DB disambiguation",
-                "Added architecture_diagram (Mermaid) for component hierarchy visualization",
-                "Added call_graph (YAML) for graph DB indexing (renders, uses_hook)",
-                "Added anti_patterns for duplicate prevention and React best practices",
-                "Added search_keywords for vector search optimization",
-                "Enhanced prompts with documentation structure guidance",
-                "Added scoring weights for AI-optimized metadata and documentation structure"
-            ]
-        },
-        "2.0": {
-            "date": "2025-01-08",
-            "changes": [
-                "Initial production template for React/TSX components with accessibility focus"
-            ]
+  "name": "TSX Component Production Quality",
+  "spec_version": "2.3.0",
+  "capabilities": [
+    "quality",
+    "graph",
+    "rag",
+    "ai_navigation",
+    "graph_db",
+    "vector_db"
+  ],
+  "language": "typescript_tsx",
+  "quality_level": "production",
+  "description": "Production-grade quality standards for React/TSX components with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, focus on accessibility, stability, and composability",
+  "changelog": {
+    "2.3.0": {
+      "date": "2025-01-14",
+      "changes": [
+        "Integrated self-awareness protocol for agent evolution",
+        "Added documentation-first development requirements",
+        "Enhanced duplicate prevention and architecture understanding",
+        "Multi-language coordination with Elixir and Rust"
+      ]
+    },
+    "2.2.0": {
+      "date": "2025-01-14",
+      "changes": [
+        "Added human-first documentation structure (human content top, AI metadata below separator)",
+        "Added component_identity JSON for vector DB disambiguation",
+        "Added architecture_diagram (Mermaid) for component hierarchy visualization",
+        "Added call_graph (YAML) for graph DB indexing (renders, uses_hook)",
+        "Added anti_patterns for duplicate prevention and React best practices",
+        "Added search_keywords for vector search optimization",
+        "Enhanced prompts with documentation structure guidance",
+        "Added scoring weights for AI-optimized metadata and documentation structure"
+      ]
+    },
+    "2.0": {
+      "date": "2025-01-08",
+      "changes": [
+        "Initial production template for React/TSX components with accessibility focus"
+      ]
+    }
+  },
+  "requirements": {
+    "documentation": {
+      "component_jsdoc": {
+        "required": true,
+        "min_length": 100,
+        "must_include": [
+          "description",
+          "props",
+          "examples",
+          "accessibility",
+          "human_content_first",
+          "component_identity_json",
+          "architecture_diagram",
+          "call_graph_metadata",
+          "anti_patterns"
+        ],
+        "ai_navigation": {
+          "component_identity": {
+            "format": "json",
+            "required_fields": [
+              "component",
+              "purpose",
+              "layer",
+              "react_patterns",
+              "related_components",
+              "alternatives",
+              "disambiguation"
+            ],
+            "description": "JSON block for vector DB disambiguation and graph DB indexing (React/TSX-specific)"
+          },
+          "architecture_diagram": {
+            "format": "mermaid",
+            "types": [
+              "graph",
+              "flowchart"
+            ],
+            "description": "Visual component hierarchy and hook usage for AI understanding"
+          },
+          "call_graph": {
+            "format": "yaml",
+            "required_fields": [
+              "renders",
+              "rendered_by",
+              "uses_hooks",
+              "depends_on"
+            ],
+            "description": "Machine-readable component graph for graph DB indexing (Neo4j, etc.)"
+          },
+          "anti_patterns": {
+            "format": "markdown",
+            "sections": [
+              "duplicate_components",
+              "usage_mistakes",
+              "react_antipatterns",
+              "a11y_violations"
+            ],
+            "description": "Explicit duplicate prevention and React/accessibility best practices"
+          },
+          "search_keywords": {
+            "format": "comma_separated",
+            "min_count": 5,
+            "description": "Keywords for vector search optimization (10+ recommended)"
+          }
         }
+      }
     },
-    "requirements": {
-        "documentation": {
-            "component_jsdoc": {
-                "required": true,
-                "min_length": 100,
-                "must_include": [
-                    "description",
-                    "props",
-                    "examples",
-                    "accessibility",
-                    "human_content_first",
-                    "component_identity_json",
-                    "architecture_diagram",
-                    "call_graph_metadata",
-                    "anti_patterns"
-                ],
-                "ai_navigation": {
-                    "component_identity": {
-                        "format": "json",
-                        "required_fields": [
-                            "component",
-                            "purpose",
-                            "layer",
-                            "react_patterns",
-                            "related_components",
-                            "alternatives",
-                            "disambiguation"
-                        ],
-                        "description": "JSON block for vector DB disambiguation and graph DB indexing (React/TSX-specific)"
-                    },
-                    "architecture_diagram": {
-                        "format": "mermaid",
-                        "types": [
-                            "graph",
-                            "flowchart"
-                        ],
-                        "description": "Visual component hierarchy and hook usage for AI understanding"
-                    },
-                    "call_graph": {
-                        "format": "yaml",
-                        "required_fields": [
-                            "renders",
-                            "rendered_by",
-                            "uses_hooks",
-                            "depends_on"
-                        ],
-                        "description": "Machine-readable component graph for graph DB indexing (Neo4j, etc.)"
-                    },
-                    "anti_patterns": {
-                        "format": "markdown",
-                        "sections": [
-                            "duplicate_components",
-                            "usage_mistakes",
-                            "react_antipatterns",
-                            "a11y_violations"
-                        ],
-                        "description": "Explicit duplicate prevention and React/accessibility best practices"
-                    },
-                    "search_keywords": {
-                        "format": "comma_separated",
-                        "min_count": 5,
-                        "description": "Keywords for vector search optimization (10+ recommended)"
-                    }
-                }
-            }
-        },
-        "props": {
-            "explicit_interface": true,
-            "no_any": true,
-            "prefer_discriminated_unions": true
-        },
-        "a11y": {
-            "required": true,
-            "must_address": [
-                "aria-labels",
-                "focus-order",
-                "keyboard-nav"
-            ]
-        },
-        "testing": {
-            "framework": "vitest + @testing-library/react",
-            "required": true,
-            "coverage_target": 85,
-            "test_types": [
-                "behavior",
-                "a11y",
-                "snapshot_optional"
-            ]
-        },
-        "performance": {
-            "guidelines": [
-                "avoid inline functions in hot lists",
-                "memoize expensive renders"
-            ],
-            "metrics": [
-                "render_count",
-                "hook_allocation"
-            ]
-        }
+    "props": {
+      "explicit_interface": true,
+      "no_any": true,
+      "prefer_discriminated_unions": true
     },
-    "prompts": {
-        "code_generation": "Generate production-quality React/TSX component for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines in JSDoc):\n/**\n * Component Name - Brief description\n *\n * **Purpose:** What this component does (clear statement)\n *\n * ## Quick Start\n * ```tsx\n * import { MyComponent } from './MyComponent';\n *\n * function App() {\n *   return <MyComponent name=\"example\" />;\n * }\n * ```\n *\n * ## Props\n * - `name` (string, required) - Display name\n * - `onClick` (function, optional) - Click handler\n *\n * ## Accessibility\n * - ARIA labels for screen readers\n * - Keyboard navigation support\n * - Focus management\n *\n * ## Examples\n * ```tsx\n * // Basic usage\n * <MyComponent name=\"John\" />\n *\n * // With event handler\n * <MyComponent name=\"Jane\" onClick={handleClick} />\n * ```\n */\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n// The sections below provide structured metadata for AI assistants,\n// graph databases (Neo4j), and vector databases (pgvector).\n\nAI METADATA (Below separator in JSDoc):\n- Component Identity (JSON in code block)\n- Architecture Diagram (Mermaid - component tree)\n- Call Graph (YAML - renders, hooks)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- TypeScript interface for props (no any)\n- Accessibility (aria-labels, keyboard nav)\n- Vitest + @testing-library/react tests\n- Memoization for expensive renders\n- No inline functions in lists\n\n3. AI NAVIGATION (in component JSDoc):\n\nComponent Identity (JSON):\n```json\n{\n  \"component\": \"MyComponent\",\n  \"purpose\": \"Clear unique purpose statement\",\n  \"layer\": \"page|layout|component|hook\",\n  \"react_patterns\": [\"useState\", \"useEffect\", \"custom hooks\"],\n  \"related_components\": [\"ParentComponent\", \"ChildComponent\"],\n  \"alternatives\": {\n    \"OldComponent\": \"Legacy - use this component instead\",\n    \"SimilarComponent\": \"Different use case - see disambiguation\"\n  },\n  \"disambiguation\": {\n    \"vs_OldComponent\": \"This = TypeScript + hooks. OldComponent = class component\",\n    \"vs_SimilarComponent\": \"This = form input. SimilarComponent = display only\"\n  }\n}\n```\n\nArchitecture (Mermaid):\n```mermaid\ngraph TB\n    App[App] --> MyComponent[MyComponent]\n    MyComponent --> Button[Button]\n    MyComponent --> Input[Input]\n    MyComponent -.uses.-> useCustomHook[useCustomHook]\n```\n\nCall Graph (YAML):\n```yaml\nrenders:\n  - component: Button\n    purpose: Submit action\n    critical: true\n  - component: Input\n    purpose: User input\n    critical: true\n\nrendered_by:\n  - component: App\n    purpose: Main application\n    frequency: high\n\nuses_hooks:\n  - useState (React)\n  - useEffect (React)\n  - useCustomHook (custom)\n\ndepends_on:\n  - react (required)\n  - react-dom (required)\n```\n\nAnti-Patterns:\n❌ DO NOT create 'MyComponentWrapper' - use this component directly\n❌ DO NOT use inline arrow functions in map() - memoize instead\n❌ DO NOT forget aria-label - accessibility required\n❌ DO NOT use 'any' type - explicit interfaces required\n\nSearch Keywords:\nreact-component, typescript-tsx, accessibility, hooks, production-ready, a11y\n\nOUTPUT CODE ONLY (with enhanced JSDoc)."
+    "a11y": {
+      "required": true,
+      "must_address": [
+        "aria-labels",
+        "focus-order",
+        "keyboard-nav"
+      ]
     },
-    "scoring_weights": {
-        "has_component_jsdoc": 1.0,
-        "has_tests": 1.0,
-        "a11y_compliant": 1.0,
-        "typescript_strict": 1.0,
-        "no_any_type": 0.9,
-        "has_component_identity_json": 0.95,
-        "has_architecture_diagram": 0.9,
-        "has_call_graph_yaml": 0.9,
-        "has_anti_patterns": 0.85,
-        "has_search_keywords": 0.8,
-        "human_content_first": 0.9,
-        "clear_separation": 0.85,
-        "ai_metadata_explained": 0.8,
-        "graph_db_ready": 0.9,
-        "vector_db_optimized": 0.9
+    "testing": {
+      "framework": "vitest + @testing-library/react",
+      "required": true,
+      "coverage_target": 85,
+      "test_types": [
+        "behavior",
+        "a11y",
+        "snapshot_optional"
+      ]
     },
-    "graph_model": {
-        "version": 2,
-        "node_types": {
-            "component": {
-                "id_format": "tsx://{path}#{component}",
-                "merge_keys": [
-                    "component"
-                ]
-            },
-            "hook": {
-                "id_format": "tsx://{path}#hook/{name}",
-                "merge_keys": [
-                    "name"
-                ]
-            }
-        },
-        "edge_types": {
-            "renders": {
-                "from": "component",
-                "to": "component",
-                "weight": 0.6
-            },
-            "uses_hook": {
-                "from": "component",
-                "to": "hook",
-                "weight": 0.9
-            }
-        },
-        "extraction_rules": {
-            "component_detection": "export function | const Name: React.FC",
-            "hook_detection": "function names starting with use",
-            "a11y_flags": "scan JSX props for aria-*",
-            "ai_metadata_extraction": "parse JSON/YAML/Mermaid from JSDoc comments"
-        },
-        "temporal": {
-            "track": true,
-            "fields": [
-                "first_seen",
-                "last_modified"
-            ],
-            "update_policy": "touch_last_modified_on_signature_change"
-        },
-        "error_semantics": {
-            "severity_enum": [
-                "fatal",
-                "transient",
-                "validation"
-            ],
-            "classification_enum": [
-                "user_input",
-                "external_dependency"
-            ],
-            "default_severity": "validation"
-        }
+    "performance": {
+      "guidelines": [
+        "avoid inline functions in hot lists",
+        "memoize expensive renders"
+      ],
+      "metrics": [
+        "render_count",
+        "hook_allocation"
+      ]
+    }
+  },
+  "prompts": {
+    "code_generation": "Generate production-quality React/TSX component for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines in JSDoc):\n/**\n * Component Name - Brief description\n *\n * **Purpose:** What this component does (clear statement)\n *\n * ## Quick Start\n * ```tsx\n * import { MyComponent } from './MyComponent';\n *\n * function App() {\n *   return <MyComponent name=\"example\" />;\n * }\n * ```\n *\n * ## Props\n * - `name` (string, required) - Display name\n * - `onClick` (function, optional) - Click handler\n *\n * ## Accessibility\n * - ARIA labels for screen readers\n * - Keyboard navigation support\n * - Focus management\n *\n * ## Examples\n * ```tsx\n * // Basic usage\n * <MyComponent name=\"John\" />\n *\n * // With event handler\n * <MyComponent name=\"Jane\" onClick={handleClick} />\n * ```\n */\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n// The sections below provide structured metadata for AI assistants,\n// graph databases (Neo4j), and vector databases (pgvector).\n\nAI METADATA (Below separator in JSDoc):\n- Component Identity (JSON in code block)\n- Architecture Diagram (Mermaid - component tree)\n- Call Graph (YAML - renders, hooks)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- TypeScript interface for props (no any)\n- Accessibility (aria-labels, keyboard nav)\n- Vitest + @testing-library/react tests\n- Memoization for expensive renders\n- No inline functions in lists\n\n3. AI NAVIGATION (in component JSDoc):\n\nComponent Identity (JSON):\n```json\n{\n  \"component\": \"MyComponent\",\n  \"purpose\": \"Clear unique purpose statement\",\n  \"layer\": \"page|layout|component|hook\",\n  \"react_patterns\": [\"useState\", \"useEffect\", \"custom hooks\"],\n  \"related_components\": [\"ParentComponent\", \"ChildComponent\"],\n  \"alternatives\": {\n    \"OldComponent\": \"Legacy - use this component instead\",\n    \"SimilarComponent\": \"Different use case - see disambiguation\"\n  },\n  \"disambiguation\": {\n    \"vs_OldComponent\": \"This = TypeScript + hooks. OldComponent = class component\",\n    \"vs_SimilarComponent\": \"This = form input. SimilarComponent = display only\"\n  }\n}\n```\n\nArchitecture (Mermaid):\n```mermaid\ngraph TB\n    App[App] --> MyComponent[MyComponent]\n    MyComponent --> Button[Button]\n    MyComponent --> Input[Input]\n    MyComponent -.uses.-> useCustomHook[useCustomHook]\n```\n\nCall Graph (YAML):\n```yaml\nrenders:\n  - component: Button\n    purpose: Submit action\n    critical: true\n  - component: Input\n    purpose: User input\n    critical: true\n\nrendered_by:\n  - component: App\n    purpose: Main application\n    frequency: high\n\nuses_hooks:\n  - useState (React)\n  - useEffect (React)\n  - useCustomHook (custom)\n\ndepends_on:\n  - react (required)\n  - react-dom (required)\n```\n\nAnti-Patterns:\n\u274c DO NOT create 'MyComponentWrapper' - use this component directly\n\u274c DO NOT use inline arrow functions in map() - memoize instead\n\u274c DO NOT forget aria-label - accessibility required\n\u274c DO NOT use 'any' type - explicit interfaces required\n\nSearch Keywords:\nreact-component, typescript-tsx, accessibility, hooks, production-ready, a11y\n\nOUTPUT CODE ONLY (with enhanced JSDoc)."
+  },
+  "scoring_weights": {
+    "has_component_jsdoc": 1.0,
+    "has_tests": 1.0,
+    "a11y_compliant": 1.0,
+    "typescript_strict": 1.0,
+    "no_any_type": 0.9,
+    "has_component_identity_json": 0.95,
+    "has_architecture_diagram": 0.9,
+    "has_call_graph_yaml": 0.9,
+    "has_anti_patterns": 0.85,
+    "has_search_keywords": 0.8,
+    "human_content_first": 0.9,
+    "clear_separation": 0.85,
+    "ai_metadata_explained": 0.8,
+    "graph_db_ready": 0.9,
+    "vector_db_optimized": 0.9
+  },
+  "graph_model": {
+    "version": 2,
+    "node_types": {
+      "component": {
+        "id_format": "tsx://{path}#{component}",
+        "merge_keys": [
+          "component"
+        ]
+      },
+      "hook": {
+        "id_format": "tsx://{path}#hook/{name}",
+        "merge_keys": [
+          "name"
+        ]
+      }
     },
-    "last_updated": "2025-01-14"
+    "edge_types": {
+      "renders": {
+        "from": "component",
+        "to": "component",
+        "weight": 0.6
+      },
+      "uses_hook": {
+        "from": "component",
+        "to": "hook",
+        "weight": 0.9
+      }
+    },
+    "extraction_rules": {
+      "component_detection": "export function | const Name: React.FC",
+      "hook_detection": "function names starting with use",
+      "a11y_flags": "scan JSX props for aria-*",
+      "ai_metadata_extraction": "parse JSON/YAML/Mermaid from JSDoc comments"
+    },
+    "temporal": {
+      "track": true,
+      "fields": [
+        "first_seen",
+        "last_modified"
+      ],
+      "update_policy": "touch_last_modified_on_signature_change"
+    },
+    "error_semantics": {
+      "severity_enum": [
+        "fatal",
+        "transient",
+        "validation"
+      ],
+      "classification_enum": [
+        "user_input",
+        "external_dependency"
+      ],
+      "default_severity": "validation"
+    }
+  },
+  "last_updated": "2025-01-14",
+  "parent_pattern": null
 }

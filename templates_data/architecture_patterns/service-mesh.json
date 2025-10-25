@@ -1,0 +1,134 @@
+{
+  "id": "service_mesh",
+  "name": "Service Mesh Architecture",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "Microservices with dedicated infrastructure layer for service-to-service communication. Handles routing, load balancing, security, and observability at infrastructure level.",
+  "aliases": [
+    "Sidecar Proxy Architecture",
+    "Distributed Proxy Pattern"
+  ],
+  "mesh_types": [
+    {
+      "type": "sidecar_proxy",
+      "description": "Proxy runs alongside each service instance (Envoy)"
+    },
+    {
+      "type": "control_plane",
+      "description": "Centralized control plane manages proxy behavior"
+    },
+    {
+      "type": "service_discovery",
+      "description": "Automatic service registration and discovery"
+    }
+  ],
+  "indicators": [
+    {
+      "name": "multiple_independent_services",
+      "description": "4+ microservices",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "service_mesh_platform",
+      "description": "Istio, Linkerd, Consul, Traefik configuration",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "sidecar_proxies",
+      "description": "Proxy containers/processes alongside services",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "control_plane",
+      "description": "Central control plane managing traffic policies",
+      "weight": 0.85,
+      "required": true
+    },
+    {
+      "name": "traffic_policies",
+      "description": "Declarative traffic management rules",
+      "weight": 0.8,
+      "required": false
+    }
+  ],
+  "benefits": [
+    "Transparent service communication",
+    "Traffic management (routing, load balancing, rate limiting)",
+    "Security (mutual TLS, authorization policies)",
+    "Observability (metrics, tracing, logging)",
+    "Resilience (circuit breaking, retries, timeouts)",
+    "Services don't need to implement networking logic"
+  ],
+  "concerns": [
+    "Operational complexity (mesh management)",
+    "Resource overhead (proxy per service)",
+    "Learning curve (mesh concepts)",
+    "Debugging complexity (another layer)",
+    "Requires Kubernetes or orchestration platform"
+  ],
+  "when_to_use": [
+    "Large microservices deployments (10+ services)",
+    "Complex traffic management needs",
+    "Security and observability critical",
+    "Running on Kubernetes",
+    "Team familiar with service meshes"
+  ],
+  "when_not_to_use": [
+    "Small number of services",
+    "Simple communication patterns",
+    "Not using container orchestration",
+    "Resource-constrained environments",
+    "Team inexperienced with meshes"
+  ],
+  "required_practices": [
+    {
+      "practice": "Traffic Policies",
+      "priority": "REQUIRED",
+      "description": "Define routing, load balancing, retries"
+    },
+    {
+      "practice": "Security Policies",
+      "priority": "REQUIRED",
+      "description": "Mutual TLS and authorization rules"
+    },
+    {
+      "practice": "Observability",
+      "priority": "REQUIRED",
+      "description": "Collect metrics, traces, logs from proxies"
+    },
+    {
+      "practice": "Mesh Monitoring",
+      "priority": "REQUIRED",
+      "description": "Monitor mesh health and performance"
+    }
+  ],
+  "tools_and_frameworks": [
+    "Istio",
+    "Linkerd",
+    "Consul Connect",
+    "AWS App Mesh",
+    "Traefik"
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 86,
+    "validated_by": [
+      "claude-opus",
+      "gpt-4.1",
+      "gemini-2.5-pro",
+      "claude-sonnet",
+      "gpt-5-mini"
+    ],
+    "validation_date": "2025-10-25",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-25",
+    "version": "1.0.0",
+    "detection_template": "detect-service-mesh.lua"
+  },
+  "parent_pattern": null
+}

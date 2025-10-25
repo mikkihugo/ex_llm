@@ -15,5 +15,6 @@
       "falco*.yaml",
       "config/falco/**/*.yaml"
     ]
-  }
+  },
+  "parent_pattern": null
 }

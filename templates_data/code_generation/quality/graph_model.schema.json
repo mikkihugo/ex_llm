@@ -1,56 +1,58 @@
 {
-    "title": "Code Quality Graph Model Schema",
-    "type": "object",
-    "required": [
-        "graph_model"
-    ],
-    "properties": {
-        "graph_model": {
-            "type": "object",
-            "required": [
-                "version",
-                "node_types",
-                "edge_types"
-            ],
-            "properties": {
-                "version": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "purpose": {
-                    "type": "string"
-                },
-                "node_types": {
-                    "type": "object"
-                },
-                "edge_types": {
-                    "type": "object"
-                },
-                "extraction_rules": {
-                    "type": "object"
-                },
-                "relation_taxonomy": {
-                    "type": "object"
-                },
-                "confidence_scoring": {
-                    "type": "object"
-                },
-                "integrity_checks": {
-                    "type": "array"
-                },
-                "graph_export": {
-                    "type": "object"
-                },
-                "query_hints": {
-                    "type": "object"
-                },
-                "temporal": {
-                    "type": "object"
-                },
-                "error_semantics": {
-                    "type": "object"
-                }
-            }
+  "title": "Code Quality Graph Model Schema",
+  "type": "object",
+  "required": [
+    "graph_model"
+  ],
+  "properties": {
+    "graph_model": {
+      "type": "object",
+      "required": [
+        "version",
+        "node_types",
+        "edge_types"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "node_types": {
+          "type": "object"
+        },
+        "edge_types": {
+          "type": "object"
+        },
+        "extraction_rules": {
+          "type": "object"
+        },
+        "relation_taxonomy": {
+          "type": "object"
+        },
+        "confidence_scoring": {
+          "type": "object"
+        },
+        "integrity_checks": {
+          "type": "array"
+        },
+        "graph_export": {
+          "type": "object"
+        },
+        "query_hints": {
+          "type": "object"
+        },
+        "temporal": {
+          "type": "object"
+        },
+        "error_semantics": {
+          "type": "object"
         }
+      }
     }
+  },
+  "_metadata_type": "schema",
+  "parent_pattern": null
 }

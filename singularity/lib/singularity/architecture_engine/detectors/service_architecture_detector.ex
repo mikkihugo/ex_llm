@@ -1,9 +1,24 @@
 defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
   @moduledoc """
-  Service Architecture Pattern Detector - Detects microservice vs monolith patterns.
+  Service Architecture Pattern Detector - Detects 20+ architecture patterns.
 
   Implements `@behaviour PatternType` to detect architectural patterns in codebases.
   Replaces the old `MicroserviceAnalyzer` module.
+
+  ## Learning & Maintenance
+
+  **IMPORTANT:** The detection logic (how to identify each pattern) is maintained by the LLM team via CentralCloud:
+
+  1. **This Module (ServiceArchitectureDetector)**: Defines supported pattern types
+  2. **CentralCloud (ML Team)**: Maintains detection rules, indicators, heuristics
+  3. **Knowledge Base (PostgreSQL)**: Stores learned patterns with confidence scores
+  4. **Continuous Learning**: Patterns evolve as codebases are analyzed
+
+  To add/update pattern detection logic:
+  - CentralCloud learns from analyzing many codebases
+  - Stores detection rules: file patterns, dependencies, config files, code signatures
+  - Distributes via NATS → Singularity for local execution
+  - No hardcoding detection logic in this module!
 
   ## Module Identity (JSON)
 
@@ -59,10 +74,36 @@ defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
 
   ## Detection Heuristics
 
-  - **Microservices**: 4+ independent services with separate build/deploy configs
-  - **Distributed**: 2-3 independent services
-  - **Modular**: 1 service with clear module boundaries
+  ### Core Styles
   - **Monolith**: Single codebase without service separation
+  - **Modular**: 1 service with clear module boundaries
+  - **Distributed**: 2-3 independent services
+  - **Microservices**: 4+ independent services with separate build/deploy configs
+
+  ### Microservices Implementation Variants
+  - **Microservices**: Basic service decomposition
+  - **Microservices + Saga**: Distributed transaction coordination via sagas
+  - **Microservices + Event Sourcing**: All changes stored as immutable events
+  - **Microservices + CQRS**: Separate read and write models
+
+  ### Domain-Driven Design
+  - **Domain Driven Design**: Clear bounded contexts with domain modeling
+  - **Domain Driven Monolith**: Single app with strong domain boundaries
+  - **Subdomain Services**: Services organized by business subdomains
+
+  ### Communication Patterns
+  - **Request/Response**: Synchronous HTTP/RPC calls
+  - **Publish/Subscribe**: Event-based async communication
+  - **Message Queue**: Async messaging via queues (RabbitMQ, NATS, Kafka)
+
+  ### Other Patterns
+  - **Event Driven**: Architecture built around event streams
+  - **Layered**: Traditional 3-tier, 4-tier architectures
+  - **API Gateway**: Unified entry point for services
+  - **Service Mesh**: Infrastructure for service-to-service communication
+  - **Serverless**: Function-based architecture (Lambda, Cloud Functions)
+  - **Peer-to-Peer**: Decentralized services without central coordinator
+  - **Hybrid**: Mix of multiple architectural styles
 
   ## Search Keywords
 
@@ -83,11 +124,32 @@ defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
   @impl true
   def supported_types do
     [
+      # Core architecture styles
       "monolith",
       "modular",
       "distributed",
+      # Microservices variants
       "microservices",
-      "service_mesh"
+      "microservices_saga",
+      "microservices_event_sourcing",
+      "microservices_cqrs",
+      # Distributed patterns
+      "service_mesh",
+      "event_driven",
+      "layered",
+      "api_gateway",
+      # Domain-driven patterns
+      "domain_driven_design",
+      "domain_driven_monolith",
+      "subdomain_services",
+      # Communication patterns
+      "request_response",
+      "publish_subscribe",
+      "message_queue",
+      # Other patterns
+      "serverless",
+      "peer_to_peer",
+      "hybrid"
     ]
   end
 

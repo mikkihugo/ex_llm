@@ -7,7 +7,13 @@
     "name": "Elixir Umbrella Workspace",
     "description": "Elixir monorepo using umbrella applications",
     "language": "elixir",
-    "tags": ["workspace", "monorepo", "elixir", "umbrella", "otp"],
+    "tags": [
+      "workspace",
+      "monorepo",
+      "elixir",
+      "umbrella",
+      "otp"
+    ],
     "author": "singularity",
     "created": "2025-01-15",
     "updated": "2025-01-15"
@@ -23,7 +29,11 @@
       "confidence_threshold": 0.8
     },
     "structure": {
-      "root_files": ["mix.exs", "mix.lock", "config/"],
+      "root_files": [
+        "mix.exs",
+        "mix.lock",
+        "config/"
+      ],
       "workspace_members": [
         "apps/*"
       ],
@@ -36,11 +46,26 @@
       ]
     },
     "commands": {
-      "build": ["mix compile", "mix compile --force"],
-      "test": ["mix test", "mix test --cover"],
-      "lint": ["mix credo", "mix credo --strict"],
-      "format": ["mix format", "mix format --check-formatted"],
-      "install": ["mix deps.get", "mix deps.compile"]
+      "build": [
+        "mix compile",
+        "mix compile --force"
+      ],
+      "test": [
+        "mix test",
+        "mix test --cover"
+      ],
+      "lint": [
+        "mix credo",
+        "mix credo --strict"
+      ],
+      "format": [
+        "mix format",
+        "mix format --check-formatted"
+      ],
+      "install": [
+        "mix deps.get",
+        "mix deps.compile"
+      ]
     },
     "naming_conventions": {
       "modules": "PascalCase",
@@ -63,5 +88,6 @@
       "must_have_shared_dependencies"
     ],
     "score": 0.9
-  }
+  },
+  "parent_pattern": null
 }

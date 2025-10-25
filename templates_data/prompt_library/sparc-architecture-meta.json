@@ -4,7 +4,12 @@
   "description": "SPARC Phase 3: Design system architecture based on pseudocode",
   "category": "sparc",
   "language": "sparc",
-  "tags": ["sparc", "architecture", "phase3", "system-design"],
+  "tags": [
+    "sparc",
+    "architecture",
+    "phase3",
+    "system-design"
+  ],
   "version": "1.0.0",
   "author": "SPARC Team",
   "created_at": "2024-01-15T10:00:00Z",
@@ -27,5 +32,6 @@
       "scalability": "Scalability and performance considerations",
       "security": "Security architecture"
     }
-  }
+  },
+  "parent_pattern": null
 }

@@ -3,11 +3,19 @@
   "name": "SPARC Architecture Phase",
   "description": "Design system architecture and component interactions",
   "phase": 2,
-  "depends_on": ["sparc-research"],
-  "compose": ["bits/architecture/rest-api.md"],
+  "depends_on": [
+    "sparc-research"
+  ],
+  "compose": [
+    "bits/architecture/rest-api.md"
+  ],
   "metadata": {
     "version": "2.0.0",
-    "tags": ["sparc", "architecture", "design"],
+    "tags": [
+      "sparc",
+      "architecture",
+      "design"
+    ],
     "complexity": 8
   },
   "instruction": "Design comprehensive system architecture with components, interfaces, data flow, technology stack, and scalability considerations.",
@@ -17,5 +25,6 @@
     "data_flow_design",
     "technology_stack",
     "scalability_plan"
-  ]
+  ],
+  "parent_pattern": null
 }

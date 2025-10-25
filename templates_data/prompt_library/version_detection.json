@@ -35,7 +35,11 @@
       "type": "array[string]",
       "description": "Known framework versions from database",
       "required": true,
-      "example": ["1.6", "1.7", "1.8"]
+      "example": [
+        "1.6",
+        "1.7",
+        "1.8"
+      ]
     },
     {
       "name": "code_patterns",
@@ -68,20 +72,43 @@
   ],
   "output_schema": {
     "type": "object",
-    "required": ["version", "confidence", "reasoning"],
+    "required": [
+      "version",
+      "confidence",
+      "reasoning"
+    ],
     "properties": {
-      "version": {"type": ["string", "null"]},
-      "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
-      "reasoning": {"type": "string"},
-      "indicators": {"type": "array"},
-      "ambiguities": {"type": "array"}
+      "version": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "confidence": {
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0
+      },
+      "reasoning": {
+        "type": "string"
+      },
+      "indicators": {
+        "type": "array"
+      },
+      "ambiguities": {
+        "type": "array"
+      }
     }
   },
   "examples": {
     "phoenix_1.7": {
       "request": {
         "framework_name": "Phoenix",
-        "known_versions": ["1.6", "1.7", "1.8"],
+        "known_versions": [
+          "1.6",
+          "1.7",
+          "1.8"
+        ],
         "code_patterns": [
           "use Phoenix.Controller",
           "~p\"/users/#{user}\"",
@@ -98,9 +125,18 @@
         "confidence": 0.95,
         "reasoning": "Strong indicators of Phoenix 1.7: verified routes with ~p sigil, dependency version ~> 1.7, and absence of 1.8-specific features like streams",
         "indicators": [
-          {"pattern": "~p\"/users/#{user}\"", "indicates_version": "1.7+"},
-          {"pattern": "{:phoenix, \"~> 1.7\"}", "indicates_version": "1.7"},
-          {"pattern": "Phoenix.LiveView (0.20)", "indicates_version": "1.7-compatible"}
+          {
+            "pattern": "~p\"/users/#{user}\"",
+            "indicates_version": "1.7+"
+          },
+          {
+            "pattern": "{:phoenix, \"~> 1.7\"}",
+            "indicates_version": "1.7"
+          },
+          {
+            "pattern": "Phoenix.LiveView (0.20)",
+            "indicates_version": "1.7-compatible"
+          }
         ],
         "ambiguities": []
       }
@@ -108,7 +144,11 @@
     "fastapi_pydantic_v2": {
       "request": {
         "framework_name": "FastAPI",
-        "known_versions": ["0.95", "0.100", "0.110"],
+        "known_versions": [
+          "0.95",
+          "0.100",
+          "0.110"
+        ],
         "code_patterns": [
           "from fastapi import FastAPI",
           "model_config = ConfigDict(from_attributes=True)",
@@ -125,8 +165,14 @@
         "confidence": 0.92,
         "reasoning": "Pydantic v2 syntax (model_config = ConfigDict) indicates FastAPI 0.100 or later. Dependency confirms >=0.100.0. No 0.110-specific features detected.",
         "indicators": [
-          {"pattern": "model_config = ConfigDict", "indicates_version": "0.100+ (Pydantic v2)"},
-          {"pattern": "fastapi = '>=0.100.0'", "indicates_version": "0.100+"}
+          {
+            "pattern": "model_config = ConfigDict",
+            "indicates_version": "0.100+ (Pydantic v2)"
+          },
+          {
+            "pattern": "fastapi = '>=0.100.0'",
+            "indicates_version": "0.100+"
+          }
         ],
         "ambiguities": [
           "Cannot distinguish between 0.100-0.109 without more specific features"
@@ -136,7 +182,11 @@
     "nextjs_app_router": {
       "request": {
         "framework_name": "Next.js",
-        "known_versions": ["12", "13", "14"],
+        "known_versions": [
+          "12",
+          "13",
+          "14"
+        ],
         "code_patterns": [
           "'use client'",
           "async function getData()",
@@ -154,9 +204,18 @@
         "confidence": 0.98,
         "reasoning": "Package.json shows next 14.0.4. App Router patterns ('use client', async getData, app/ directory) confirm 13+. Server-side features stable in 14.",
         "indicators": [
-          {"pattern": "next: '14.0.4'", "indicates_version": "14"},
-          {"pattern": "app/page.tsx", "indicates_version": "13+ (App Router)"},
-          {"pattern": "'use client'", "indicates_version": "13+ (RSC directives)"}
+          {
+            "pattern": "next: '14.0.4'",
+            "indicates_version": "14"
+          },
+          {
+            "pattern": "app/page.tsx",
+            "indicates_version": "13+ (App Router)"
+          },
+          {
+            "pattern": "'use client'",
+            "indicates_version": "13+ (RSC directives)"
+          }
         ],
         "ambiguities": []
       }
@@ -168,5 +227,6 @@
     "nats_subject": "llm.request",
     "response_subject": "architecture.version.detected",
     "storage": "Update framework_versions table"
-  }
+  },
+  "parent_pattern": null
 }

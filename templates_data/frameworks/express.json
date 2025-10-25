@@ -15,5 +15,6 @@
       "server.js",
       "src/**/express.ts"
     ]
-  }
+  },
+  "parent_pattern": null
 }

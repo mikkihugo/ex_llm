@@ -4,7 +4,10 @@
   "category": "architecture",
   "version": "1.0.0",
   "description": "Architecture pattern separating read operations (queries) from write operations (commands). Different models optimized for reading vs writing.",
-  "aliases": ["Command Query Separation", "CQRS Pattern"],
+  "aliases": [
+    "Command Query Separation",
+    "CQRS Pattern"
+  ],
   "principle": "A method should either change state OR return data, never both (Bertrand Meyer)",
   "variants": [
     {
@@ -75,7 +78,13 @@
   "llm_team_validation": {
     "validated": true,
     "consensus_score": 87,
-    "validated_by": ["claude-opus", "gpt-4.1", "gemini-2.5-pro", "claude-sonnet", "gpt-5-mini"],
+    "validated_by": [
+      "claude-opus",
+      "gpt-4.1",
+      "gemini-2.5-pro",
+      "claude-sonnet",
+      "gpt-5-mini"
+    ],
     "validation_date": "2025-10-23",
     "approved": true
   },
@@ -83,5 +92,6 @@
     "created_at": "2025-10-23",
     "version": "1.0.0",
     "detection_template": "detect-cqrs.lua"
-  }
+  },
+  "parent_pattern": null
 }

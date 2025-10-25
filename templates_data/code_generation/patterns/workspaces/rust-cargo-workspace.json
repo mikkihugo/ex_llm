@@ -7,7 +7,12 @@
     "name": "Rust Cargo Workspace",
     "description": "Rust monorepo using Cargo workspaces",
     "language": "rust",
-    "tags": ["workspace", "monorepo", "rust", "cargo"],
+    "tags": [
+      "workspace",
+      "monorepo",
+      "rust",
+      "cargo"
+    ],
     "author": "singularity",
     "created": "2025-01-15",
     "updated": "2025-01-15"
@@ -22,7 +27,10 @@
       "confidence_threshold": 0.8
     },
     "structure": {
-      "root_files": ["Cargo.toml", "Cargo.lock"],
+      "root_files": [
+        "Cargo.toml",
+        "Cargo.lock"
+      ],
       "workspace_members": [
         "crates/*",
         "apps/*",
@@ -38,11 +46,26 @@
       ]
     },
     "commands": {
-      "build": ["cargo build", "cargo build --workspace"],
-      "test": ["cargo test", "cargo test --workspace"],
-      "lint": ["cargo clippy", "cargo clippy --workspace"],
-      "format": ["cargo fmt", "cargo fmt --all"],
-      "clean": ["cargo clean", "cargo clean --workspace"]
+      "build": [
+        "cargo build",
+        "cargo build --workspace"
+      ],
+      "test": [
+        "cargo test",
+        "cargo test --workspace"
+      ],
+      "lint": [
+        "cargo clippy",
+        "cargo clippy --workspace"
+      ],
+      "format": [
+        "cargo fmt",
+        "cargo fmt --all"
+      ],
+      "clean": [
+        "cargo clean",
+        "cargo clean --workspace"
+      ]
     },
     "naming_conventions": {
       "crates": "kebab-case",
@@ -64,5 +87,6 @@
       "must_have_shared_dev_dependencies"
     ],
     "score": 0.9
-  }
+  },
+  "parent_pattern": null
 }

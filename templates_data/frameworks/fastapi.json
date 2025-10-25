@@ -16,5 +16,6 @@
       "app/main.py",
       "src/**/fastapi_*.py"
     ]
-  }
+  },
+  "parent_pattern": null
 }

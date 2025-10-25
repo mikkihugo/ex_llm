@@ -23,7 +23,12 @@
     "author": "SPARC Team",
     "created_at": "2024-01-15T10:00:00Z",
     "updated_at": "2024-01-15T10:00:00Z",
-    "tags": ["utility", "summarization", "content", "analysis"],
+    "tags": [
+      "utility",
+      "summarization",
+      "content",
+      "analysis"
+    ],
     "performance": {
       "avg_execution_time_ms": 150.0,
       "memory_usage_bytes": 3145728,
@@ -46,5 +51,6 @@
     },
     "instruction": "Create a concise, actionable summary that captures the essential information and provides clear next steps."
   },
-  "template_content": "Summarize the following content into a concise, actionable summary:\n\n[CONTENT]\n\nPlease provide:\n1. Executive summary (2-3 sentences)\n2. Key points (bullet list)\n3. Action items (if any)\n4. Recommendations (if applicable)\n\nKeep the summary focused and practical."
+  "template_content": "Summarize the following content into a concise, actionable summary:\n\n[CONTENT]\n\nPlease provide:\n1. Executive summary (2-3 sentences)\n2. Key points (bullet list)\n3. Action items (if any)\n4. Recommendations (if applicable)\n\nKeep the summary focused and practical.",
+  "parent_pattern": null
 }

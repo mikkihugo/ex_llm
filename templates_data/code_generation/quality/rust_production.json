@@ -297,5 +297,6 @@
     "ai_metadata_explained": 0.8,
     "graph_db_ready": 0.9,
     "vector_db_optimized": 0.9
-  }
+  },
+  "parent_pattern": null
 }

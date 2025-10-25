@@ -18,5 +18,6 @@
       "src/**/redis/*.ts",
       "src/**/redis/*.py"
     ]
-  }
+  },
+  "parent_pattern": null
 }

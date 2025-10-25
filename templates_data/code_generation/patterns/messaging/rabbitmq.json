@@ -20,5 +20,6 @@
       "src/**/rabbitmq/*.ts",
       "src/**/rabbitmq/*.py"
     ]
-  }
+  },
+  "parent_pattern": null
 }

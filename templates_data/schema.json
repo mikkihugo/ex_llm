@@ -5,7 +5,12 @@
   "description": "Unified schema for all Singularity templates (code patterns, quality rules, workflows)",
   "version": "1.0.0",
   "type": "object",
-  "required": ["version", "type", "metadata", "content"],
+  "required": [
+    "version",
+    "type",
+    "metadata",
+    "content"
+  ],
   "properties": {
     "$schema": {
       "type": "string",
@@ -18,12 +23,22 @@
     },
     "type": {
       "type": "string",
-      "enum": ["code_pattern", "quality_rule", "workflow", "snippet"],
+      "enum": [
+        "code_pattern",
+        "quality_rule",
+        "workflow",
+        "snippet"
+      ],
       "description": "Type of template"
     },
     "metadata": {
       "type": "object",
-      "required": ["id", "name", "description", "language"],
+      "required": [
+        "id",
+        "name",
+        "description",
+        "language"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -44,7 +59,18 @@
         },
         "language": {
           "type": "string",
-          "enum": ["elixir", "erlang", "gleam", "rust", "go", "typescript", "javascript", "python", "java", "multi"],
+          "enum": [
+            "elixir",
+            "erlang",
+            "gleam",
+            "rust",
+            "go",
+            "typescript",
+            "javascript",
+            "python",
+            "java",
+            "multi"
+          ],
           "description": "Primary programming language"
         },
         "tags": {
@@ -92,7 +118,9 @@
     },
     "content": {
       "type": "object",
-      "required": ["code"],
+      "required": [
+        "code"
+      ],
       "properties": {
         "code": {
           "type": "string",
@@ -199,7 +227,13 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["linux", "macos", "windows", "bsd", "all"]
+            "enum": [
+              "linux",
+              "macos",
+              "windows",
+              "bsd",
+              "all"
+            ]
           },
           "description": "Supported platforms"
         }
@@ -218,18 +252,25 @@
       "then": {
         "properties": {
           "content": {
-            "required": ["code", "tests"]
+            "required": [
+              "code",
+              "tests"
+            ]
           },
           "quality": {
-            "required": ["score"],
+            "required": [
+              "score"
+            ],
             "properties": {
               "score": {
-                "minimum": 0.80
+                "minimum": 0.8
               }
             }
           }
         }
       }
     }
-  ]
+  ],
+  "_metadata_type": "schema",
+  "parent_pattern": null
 }

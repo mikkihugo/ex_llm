@@ -19,5 +19,6 @@
       "terraform/**/azure*.tf",
       "bicep/**/*.bicep"
     ]
-  }
+  },
+  "parent_pattern": null
 }

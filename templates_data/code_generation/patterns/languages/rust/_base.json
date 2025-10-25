@@ -5,7 +5,11 @@
   "language": "rust",
   "metadata": {
     "version": "1.0.0",
-    "tags": ["rust", "base", "common"]
+    "tags": [
+      "rust",
+      "base",
+      "common"
+    ]
   },
   "common_patterns": {
     "error_handling": "use anyhow::{Result, Context};\nuse thiserror::Error;",
@@ -15,10 +19,24 @@
     "testing": "#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn test_name() {\n        assert_eq!(2 + 2, 4);\n    }\n}"
   },
   "dependencies": {
-    "common": ["serde", "tokio", "anyhow", "thiserror", "tracing"],
-    "async": ["tokio = { version = \"1\", features = [\"full\"] }"],
-    "web": ["axum", "tower", "tower-http"],
-    "database": ["sqlx = { version = \"0.7\", features = [\"runtime-tokio-native-tls\", \"postgres\"] }"]
+    "common": [
+      "serde",
+      "tokio",
+      "anyhow",
+      "thiserror",
+      "tracing"
+    ],
+    "async": [
+      "tokio = { version = \"1\", features = [\"full\"] }"
+    ],
+    "web": [
+      "axum",
+      "tower",
+      "tower-http"
+    ],
+    "database": [
+      "sqlx = { version = \"0.7\", features = [\"runtime-tokio-native-tls\", \"postgres\"] }"
+    ]
   },
   "style_guide": {
     "formatter": "rustfmt",
@@ -28,5 +46,6 @@
   "testing": {
     "framework": "cargo test",
     "coverage_tool": "cargo-tarpaulin"
-  }
+  },
+  "parent_pattern": "rust"
 }

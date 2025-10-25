@@ -1,0 +1,116 @@
+{
+  "id": "api_gateway",
+  "name": "API Gateway Architecture",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "Microservices with unified entry point (API Gateway) that routes requests to backend services. Gateway handles cross-cutting concerns like authentication, logging, rate limiting.",
+  "parent_pattern": null,
+  "aliases": ["Gateway Pattern", "Backend-for-Frontend", "BFF"],
+  "gateway_types": [
+    {
+      "type": "monolithic_gateway",
+      "description": "Single gateway for all clients"
+    },
+    {
+      "type": "bff_pattern",
+      "description": "Different gateway per client type (web, mobile, desktop)"
+    },
+    {
+      "type": "api_layers",
+      "description": "Multiple gateway layers for different concerns"
+    }
+  ],
+  "indicators": [
+    {
+      "name": "gateway_service",
+      "description": "Dedicated API Gateway service (Kong, NGINX, custom)",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "single_entry_point",
+      "description": "All external traffic through gateway",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "backend_services",
+      "description": "Multiple backend services accessed through gateway",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "cross_cutting_concerns",
+      "description": "Authentication, logging, rate limiting in gateway",
+      "weight": 0.8,
+      "required": true
+    }
+  ],
+  "benefits": [
+    "Single entry point for external clients",
+    "Centralized authentication and authorization",
+    "Rate limiting and abuse prevention",
+    "Request/response transformation",
+    "Decouples clients from backend service URLs",
+    "Easier API versioning"
+  ],
+  "concerns": [
+    "Gateway becomes bottleneck",
+    "Single point of failure if not replicated",
+    "Complex gateway logic",
+    "Debugging requests through gateway",
+    "Gateway can become 'God Service' with too many responsibilities"
+  ],
+  "when_to_use": [
+    "Multiple backend services needing unified interface",
+    "Complex request/response transformation needed",
+    "Centralized authentication/authorization required",
+    "Different API versions for different clients"
+  ],
+  "when_not_to_use": [
+    "Very simple architecture",
+    "Service-to-service communication (use service mesh)",
+    "All traffic patterns identical"
+  ],
+  "required_practices": [
+    {
+      "practice": "Gateway Replication",
+      "priority": "REQUIRED",
+      "description": "Multiple gateway instances for high availability"
+    },
+    {
+      "practice": "Service Discovery",
+      "priority": "REQUIRED",
+      "description": "Gateway discovers backend service locations"
+    },
+    {
+      "practice": "Health Checks",
+      "priority": "REQUIRED",
+      "description": "Monitor backend service health"
+    },
+    {
+      "practice": "Rate Limiting",
+      "priority": "RECOMMENDED",
+      "description": "Prevent abuse, fair usage"
+    }
+  ],
+  "tools_and_frameworks": [
+    "Kong",
+    "NGINX",
+    "AWS API Gateway",
+    "Azure API Gateway",
+    "Traefik"
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 88,
+    "validated_by": ["claude-opus", "gpt-4.1", "gemini-2.5-pro", "claude-sonnet", "gpt-5-mini"],
+    "validation_date": "2025-10-25",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-25",
+    "version": "1.0.0",
+    "detection_template": "detect-api-gateway.lua"
+  }
+}

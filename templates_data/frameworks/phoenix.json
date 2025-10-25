@@ -22,5 +22,6 @@
       "lib/**/endpoint.ex",
       "lib/**/router.ex"
     ]
-  }
+  },
+  "parent_pattern": null
 }

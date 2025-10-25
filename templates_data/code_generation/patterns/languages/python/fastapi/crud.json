@@ -18,13 +18,29 @@
   "metadata": {
     "version": "2.0.0",
     "author": "SPARC Team",
-    "tags": ["python", "fastapi", "crud", "rest-api"],
+    "tags": [
+      "python",
+      "fastapi",
+      "crud",
+      "rest-api"
+    ],
     "complexity": 5
   },
   "detector_signatures": {
-    "dependencies": ["fastapi", "pydantic", "uvicorn"],
-    "file_patterns": ["main.py", "app.py", "api/**/*.py"],
-    "import_patterns": ["from fastapi import", "FastAPI()"],
+    "dependencies": [
+      "fastapi",
+      "pydantic",
+      "uvicorn"
+    ],
+    "file_patterns": [
+      "main.py",
+      "app.py",
+      "api/**/*.py"
+    ],
+    "import_patterns": [
+      "from fastapi import",
+      "FastAPI()"
+    ],
     "min_confidence": 0.7
   },
   "template_variables": {
@@ -57,5 +73,6 @@
       "path": "tests/test_{{entity_name}}.py",
       "type": "tests"
     }
-  ]
+  ],
+  "parent_pattern": "python"
 }

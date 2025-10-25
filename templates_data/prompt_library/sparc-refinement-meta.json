@@ -4,7 +4,12 @@
   "description": "SPARC Phase 4: Refine architecture based on feedback and implementation details",
   "category": "sparc",
   "language": "sparc",
-  "tags": ["sparc", "refinement", "phase4", "optimization"],
+  "tags": [
+    "sparc",
+    "refinement",
+    "phase4",
+    "optimization"
+  ],
   "version": "1.0.0",
   "author": "SPARC Team",
   "created_at": "2024-01-15T10:00:00Z",
@@ -26,5 +31,6 @@
       "optimizations": "Performance optimizations",
       "timeline": "Implementation timeline"
     }
-  }
+  },
+  "parent_pattern": null
 }

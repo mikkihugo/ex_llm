@@ -4,7 +4,12 @@
   "description": "SPARC escalation template for evaluating when to break from standard flow to adaptive coordination",
   "category": "sparc",
   "language": "sparc",
-  "tags": ["sparc", "adaptive-coordination", "escalation", "fallback-strategy"],
+  "tags": [
+    "sparc",
+    "adaptive-coordination",
+    "escalation",
+    "fallback-strategy"
+  ],
   "version": "1.0.0",
   "author": "SPARC Team",
   "created_at": "2024-01-15T10:00:00Z",
@@ -31,5 +36,6 @@
       "fallback_strategy": "Alternative approach if coordination unavailable",
       "minimum_viable_solution": "Acceptable baseline solution"
     }
-  }
+  },
+  "parent_pattern": null
 }

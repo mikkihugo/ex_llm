@@ -1,0 +1,119 @@
+{
+  "id": "peer_to_peer",
+  "name": "Peer-to-Peer Architecture",
+  "category": "architecture",
+  "version": "1.0.0",
+  "description": "Decentralized architecture where every node is both client and server. No central coordinator or server. Nodes discover and communicate directly with peers.",
+  "aliases": [
+    "P2P",
+    "Distributed Peer Network"
+  ],
+  "p2p_types": [
+    {
+      "type": "unstructured",
+      "description": "Random peer connections (flooding, gossip)"
+    },
+    {
+      "type": "structured",
+      "description": "Organized topology (DHT, consistent hashing)"
+    },
+    {
+      "type": "hybrid",
+      "description": "Some nodes have special roles (super-peers)"
+    }
+  ],
+  "indicators": [
+    {
+      "name": "decentralized_network",
+      "description": "No central server or coordinator",
+      "weight": 0.95,
+      "required": true
+    },
+    {
+      "name": "peer_discovery",
+      "description": "Peers discover each other (DHT, gossip)",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "direct_communication",
+      "description": "Peers communicate directly peer-to-peer",
+      "weight": 0.9,
+      "required": true
+    },
+    {
+      "name": "distributed_consensus",
+      "description": "Agreement without central authority",
+      "weight": 0.85,
+      "required": false
+    }
+  ],
+  "benefits": [
+    "No single point of failure",
+    "Scalability (peer adds capacity)",
+    "Censorship resistance",
+    "Privacy (no central monitoring)",
+    "Resilience to network partitions"
+  ],
+  "concerns": [
+    "Complexity (consensus, synchronization)",
+    "Performance (latency from hops)",
+    "Data consistency (eventual consistency only)",
+    "Debugging difficulty",
+    "Security challenges"
+  ],
+  "when_to_use": [
+    "Decentralization important (blockchain, etc)",
+    "No trusted central authority",
+    "Fault tolerance critical",
+    "Privacy concerns"
+  ],
+  "when_not_to_use": [
+    "Strong consistency required",
+    "Central coordination beneficial",
+    "Simple architecture preferred"
+  ],
+  "required_practices": [
+    {
+      "practice": "Peer Discovery",
+      "priority": "REQUIRED",
+      "description": "DHT or bootstrap nodes for discovery"
+    },
+    {
+      "practice": "Consensus Protocol",
+      "priority": "REQUIRED",
+      "description": "Algorithm for distributed agreement"
+    },
+    {
+      "practice": "Data Replication",
+      "priority": "REQUIRED",
+      "description": "Replicate data across peers"
+    }
+  ],
+  "tools_and_frameworks": [
+    "IPFS",
+    "Blockchain networks",
+    "BitTorrent",
+    "Dat protocol",
+    "Bittorrent DHT"
+  ],
+  "llm_team_validation": {
+    "validated": true,
+    "consensus_score": 78,
+    "validated_by": [
+      "claude-opus",
+      "gpt-4.1",
+      "gemini-2.5-pro",
+      "claude-sonnet",
+      "gpt-5-mini"
+    ],
+    "validation_date": "2025-10-25",
+    "approved": true
+  },
+  "metadata": {
+    "created_at": "2025-10-25",
+    "version": "1.0.0",
+    "detection_template": "detect-peer-to-peer.lua"
+  },
+  "parent_pattern": null
+}

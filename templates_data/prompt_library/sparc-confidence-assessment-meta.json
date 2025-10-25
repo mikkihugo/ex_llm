@@ -4,7 +4,12 @@
   "description": "SPARC quality assessment template for evaluating work output confidence",
   "category": "sparc",
   "language": "sparc",
-  "tags": ["sparc", "quality-assessment", "confidence-scoring", "self-evaluation"],
+  "tags": [
+    "sparc",
+    "quality-assessment",
+    "confidence-scoring",
+    "self-evaluation"
+  ],
   "version": "1.0.0",
   "author": "SPARC Team",
   "created_at": "2024-01-15T10:00:00Z",
@@ -31,5 +36,6 @@
       "recommendation": "PROCEED/REFINE/RESTART",
       "next_steps": "Specific improvement actions if needed"
     }
-  }
+  },
+  "parent_pattern": null
 }

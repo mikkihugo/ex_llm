@@ -7,7 +7,13 @@
     "name": "Erlang Rebar Workspace",
     "description": "Erlang monorepo using Rebar3 workspaces",
     "language": "erlang",
-    "tags": ["workspace", "monorepo", "erlang", "rebar", "otp"],
+    "tags": [
+      "workspace",
+      "monorepo",
+      "erlang",
+      "rebar",
+      "otp"
+    ],
     "author": "singularity",
     "created": "2025-01-15",
     "updated": "2025-01-15"
@@ -23,7 +29,10 @@
       "confidence_threshold": 0.8
     },
     "structure": {
-      "root_files": ["rebar.config", "rebar.lock"],
+      "root_files": [
+        "rebar.config",
+        "rebar.lock"
+      ],
       "workspace_members": [
         "apps/*"
       ],
@@ -36,11 +45,26 @@
       ]
     },
     "commands": {
-      "build": ["rebar3 compile", "rebar3 compile --force"],
-      "test": ["rebar3 eunit", "rebar3 ct"],
-      "lint": ["rebar3 dialyzer", "rebar3 xref"],
-      "format": ["rebar3 fmt", "rebar3 fmt --check"],
-      "install": ["rebar3 get-deps", "rebar3 compile"]
+      "build": [
+        "rebar3 compile",
+        "rebar3 compile --force"
+      ],
+      "test": [
+        "rebar3 eunit",
+        "rebar3 ct"
+      ],
+      "lint": [
+        "rebar3 dialyzer",
+        "rebar3 xref"
+      ],
+      "format": [
+        "rebar3 fmt",
+        "rebar3 fmt --check"
+      ],
+      "install": [
+        "rebar3 get-deps",
+        "rebar3 compile"
+      ]
     },
     "naming_conventions": {
       "modules": "snake_case",
@@ -63,5 +87,6 @@
       "must_have_shared_dependencies"
     ],
     "score": 0.9
-  }
+  },
+  "parent_pattern": null
 }

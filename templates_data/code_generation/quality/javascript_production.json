@@ -1,206 +1,207 @@
 {
-    "name": "JavaScript Production Quality",
-    "spec_version": "2.2.0",
-    "capabilities": [
-        "quality",
-        "graph",
-        "rag",
-        "ai_navigation",
-        "graph_db",
-        "vector_db"
-    ],
-    "language": "javascript",
-    "quality_level": "production",
-    "description": "Production-grade quality standards for modern JavaScript (ES2022+) with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
-    "changelog": {
-        "2.2.0": {
-            "date": "2025-01-14",
-            "changes": [
-                "Added human-first documentation structure (human content top, AI metadata below separator)",
-                "Added module_identity JSON for vector DB disambiguation",
-                "Added architecture_diagram (Mermaid) for visual understanding",
-                "Added call_graph (YAML) for graph DB indexing",
-                "Added anti_patterns for duplicate prevention",
-                "Added search_keywords for vector search optimization",
-                "Enhanced prompts with documentation structure guidance",
-                "Added scoring weights for AI-optimized metadata and documentation structure"
-            ]
-        },
-        "2.0": {
-            "date": "2025-01-08",
-            "changes": [
-                "Initial production template for modern JavaScript (ES2022+)"
-            ]
-        }
+  "name": "JavaScript Production Quality",
+  "spec_version": "2.2.0",
+  "capabilities": [
+    "quality",
+    "graph",
+    "rag",
+    "ai_navigation",
+    "graph_db",
+    "vector_db"
+  ],
+  "language": "javascript",
+  "quality_level": "production",
+  "description": "Production-grade quality standards for modern JavaScript (ES2022+) with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
+  "changelog": {
+    "2.2.0": {
+      "date": "2025-01-14",
+      "changes": [
+        "Added human-first documentation structure (human content top, AI metadata below separator)",
+        "Added module_identity JSON for vector DB disambiguation",
+        "Added architecture_diagram (Mermaid) for visual understanding",
+        "Added call_graph (YAML) for graph DB indexing",
+        "Added anti_patterns for duplicate prevention",
+        "Added search_keywords for vector search optimization",
+        "Enhanced prompts with documentation structure guidance",
+        "Added scoring weights for AI-optimized metadata and documentation structure"
+      ]
     },
-    "requirements": {
-        "documentation": {
-            "jsdoc": {
-                "required": true,
-                "required_for": [
-                    "all_public_functions"
-                ],
-                "min_length": 100,
-                "must_include": [
-                    "description",
-                    "params",
-                    "returns",
-                    "examples",
-                    "human_content_first",
-                    "module_identity_json",
-                    "architecture_diagram",
-                    "call_graph_metadata",
-                    "anti_patterns"
-                ],
-                "ai_navigation": {
-                    "module_identity": {
-                        "format": "json",
-                        "required_fields": [
-                            "module",
-                            "purpose",
-                            "layer",
-                            "export_type",
-                            "related_modules",
-                            "alternatives",
-                            "disambiguation"
-                        ],
-                        "description": "JSON block for vector DB disambiguation and graph DB indexing (JavaScript-specific)"
-                    },
-                    "architecture_diagram": {
-                        "format": "mermaid",
-                        "types": [
-                            "graph",
-                            "sequence",
-                            "flowchart"
-                        ],
-                        "description": "Visual architecture for AI understanding of call flow and data flow"
-                    },
-                    "call_graph": {
-                        "format": "yaml",
-                        "required_fields": [
-                            "calls_out",
-                            "called_by",
-                            "depends_on"
-                        ],
-                        "description": "Machine-readable call graph for graph DB indexing (Neo4j, etc.)"
-                    },
-                    "anti_patterns": {
-                        "format": "markdown",
-                        "sections": [
-                            "duplicate_modules",
-                            "usage_mistakes",
-                            "common_pitfalls"
-                        ],
-                        "description": "Explicit duplicate prevention and JavaScript best practices"
-                    },
-                    "search_keywords": {
-                        "format": "comma_separated",
-                        "min_count": 5,
-                        "description": "Keywords for vector search optimization (10+ recommended)"
-                    }
-                }
-            }
-        },
-        "error_handling": {
-            "style": "exceptions_or_result_objects",
-            "recommended_pattern": "return { ok: true, value } / { ok: false, error }",
-            "custom_error_classes": true
-        },
-        "testing": {
-            "required": true,
-            "framework": "vitest or jest",
-            "coverage_target": 80,
-            "test_types": [
-                "unit",
-                "integration"
-            ]
-        },
-        "code_style": {
-            "formatter": "prettier",
-            "linter": "eslint",
-            "prefer_const": true,
-            "no_var": true
-        }
-    },
-    "prompts": {
-        "code_generation": "Generate production-quality JavaScript code for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines in JSDoc):\n/**\n * Module Name - Brief description\n *\n * **Purpose:** What this module does (clear statement)\n *\n * ## Quick Start\n * ```javascript\n * // Copy-paste example\n * import { myFunction } from './module.js';\n * const result = myFunction('example');\n * console.log(result); // Expected output\n * ```\n *\n * ## Public API\n * - `myFunction(param)` - Does something useful\n * - `anotherFunction(a, b)` - Combines inputs\n *\n * ## Error Handling\n * - Returns `{ ok: false, error }` on failure\n * - Throws `ValidationError` for invalid inputs\n *\n * ## Examples\n * ```javascript\n * // Success case\n * const result = myFunction('valid');\n * // result: { ok: true, value: 'processed' }\n *\n * // Error case\n * const result = myFunction(null);\n * // result: { ok: false, error: 'Invalid input' }\n * ```\n */\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n// The sections below provide structured metadata for AI assistants,\n// graph databases (Neo4j), and vector databases (pgvector).\n\nAI METADATA (Below separator in JSDoc):\n- Module Identity (JSON in code block)\n- Architecture Diagram (Mermaid)\n- Call Graph (YAML)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- JSDoc for all public functions\n- Result objects: { ok: true, value } / { ok: false, error }\n- Custom error classes for domain errors\n- Vitest or Jest tests\n- ESLint + Prettier compliant\n- Use const/let, never var\n\n3. AI NAVIGATION (in module JSDoc):\n\nModule Identity (JSON):\n```json\n{\n  \"module\": \"module_name\",\n  \"purpose\": \"Clear unique purpose statement\",\n  \"layer\": \"api|service|util|component\",\n  \"export_type\": \"default|named\",\n  \"related_modules\": [\"express\", \"axios\", \"lodash\"],\n  \"alternatives\": {\n    \"OldModule\": \"Legacy - use this module instead\",\n    \"SimilarModule\": \"Different use case - see disambiguation\"\n  },\n  \"disambiguation\": {\n    \"vs_OldModule\": \"This module = modern async. OldModule = legacy callbacks\",\n    \"vs_SimilarModule\": \"This = server-side. SimilarModule = client-side\"\n  }\n}\n```\n\nArchitecture (Mermaid):\n```mermaid\ngraph TB\n    Caller[API Route] --> ThisModule[module_name]\n    ThisModule --> DB[Database]\n    ThisModule --> Cache[Redis]\n```\n\nCall Graph (YAML):\n```yaml\ncalls_out:\n  - module: './database'\n    functions: [query, insert]\n    purpose: Data persistence\n    critical: true\n\ncalled_by:\n  - module: './api/routes'\n    purpose: HTTP endpoints\n    frequency: high\n\ndepends_on:\n  - express (required)\n  - pg (required)\n  - redis (optional)\n```\n\nAnti-Patterns:\n❌ DO NOT create 'module_wrapper' - use this module directly\n❌ DO NOT use var - use const/let\n❌ DO NOT ignore errors - always handle { ok, error } returns\n\nSearch Keywords:\njavascript-api, express-middleware, async-await, error-handling, production-ready\n\nOUTPUT CODE ONLY (with enhanced JSDoc).",
-        "documentation": "Generate JSDoc for this JavaScript code:\n\n```javascript\n{code}\n```\n\nInclude:\n\nHUMAN CONTENT (top):\n- Module/function description with purpose\n- Quick start example\n- Public API list\n- Error handling\n- Examples with expected output\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n\nAI METADATA (below):\n- Module Identity (JSON)\n- Architecture Diagram (Mermaid)\n- Call Graph (YAML)\n- Anti-Patterns\n- Search Keywords\n\nOUTPUT DOCUMENTATION ONLY.",
-        "tests": "Generate Vitest/Jest tests for this code:\n\n```javascript\n{code}\n```\n\nInclude:\n- Unit tests for all public functions\n- Edge cases\n- Error handling tests\n- Use describe/it structure\n\nOUTPUT TEST CODE ONLY."
-    },
-    "scoring_weights": {
-        "has_jsdoc": 1.0,
-        "has_tests": 1.0,
-        "error_handling": 1.0,
-        "eslint_compliant": 1.0,
-        "prettier_formatted": 1.0,
-        "has_module_identity_json": 0.95,
-        "has_architecture_diagram": 0.9,
-        "has_call_graph_yaml": 0.9,
-        "has_anti_patterns": 0.85,
-        "has_search_keywords": 0.8,
-        "human_content_first": 0.9,
-        "clear_separation": 0.85,
-        "ai_metadata_explained": 0.8,
-        "graph_db_ready": 0.9,
-        "vector_db_optimized": 0.9
-    },
-    "graph_model": {
-        "version": 2,
-        "node_types": {
-            "module": {
-                "id_format": "js://{path}",
-                "merge_keys": [
-                    "path"
-                ]
-            },
-            "function": {
-                "id_format": "js://{path}#{name}/{arity}",
-                "merge_keys": [
-                    "signature_hash"
-                ]
-            }
-        },
-        "edge_types": {
-            "calls": {
-                "from": "function",
-                "to": "function",
-                "weight": 0.9
-            },
-            "declares": {
-                "from": "module",
-                "to": "function",
-                "weight": 1.0
-            }
-        },
-        "extraction_rules": {
-            "function_detection": "parse via acorn/babel AST",
-            "call_graph": "static import + member expression resolution (best-effort)",
-            "ai_metadata_extraction": "parse JSON/YAML/Mermaid from JSDoc comments"
-        },
-        "temporal": {
-            "track": true,
-            "fields": [
-                "first_seen",
-                "last_modified"
+    "2.0": {
+      "date": "2025-01-08",
+      "changes": [
+        "Initial production template for modern JavaScript (ES2022+)"
+      ]
+    }
+  },
+  "requirements": {
+    "documentation": {
+      "jsdoc": {
+        "required": true,
+        "required_for": [
+          "all_public_functions"
+        ],
+        "min_length": 100,
+        "must_include": [
+          "description",
+          "params",
+          "returns",
+          "examples",
+          "human_content_first",
+          "module_identity_json",
+          "architecture_diagram",
+          "call_graph_metadata",
+          "anti_patterns"
+        ],
+        "ai_navigation": {
+          "module_identity": {
+            "format": "json",
+            "required_fields": [
+              "module",
+              "purpose",
+              "layer",
+              "export_type",
+              "related_modules",
+              "alternatives",
+              "disambiguation"
             ],
-            "update_policy": "touch_last_modified_on_signature_change"
-        },
-        "error_semantics": {
-            "severity_enum": [
-                "fatal",
-                "transient",
-                "validation",
-                "resource",
-                "logic"
+            "description": "JSON block for vector DB disambiguation and graph DB indexing (JavaScript-specific)"
+          },
+          "architecture_diagram": {
+            "format": "mermaid",
+            "types": [
+              "graph",
+              "sequence",
+              "flowchart"
             ],
-            "classification_enum": [
-                "user_input",
-                "system_state",
-                "external_dependency",
-                "data_integrity"
+            "description": "Visual architecture for AI understanding of call flow and data flow"
+          },
+          "call_graph": {
+            "format": "yaml",
+            "required_fields": [
+              "calls_out",
+              "called_by",
+              "depends_on"
             ],
-            "default_severity": "logic"
+            "description": "Machine-readable call graph for graph DB indexing (Neo4j, etc.)"
+          },
+          "anti_patterns": {
+            "format": "markdown",
+            "sections": [
+              "duplicate_modules",
+              "usage_mistakes",
+              "common_pitfalls"
+            ],
+            "description": "Explicit duplicate prevention and JavaScript best practices"
+          },
+          "search_keywords": {
+            "format": "comma_separated",
+            "min_count": 5,
+            "description": "Keywords for vector search optimization (10+ recommended)"
+          }
         }
+      }
     },
-    "last_updated": "2025-01-14"
+    "error_handling": {
+      "style": "exceptions_or_result_objects",
+      "recommended_pattern": "return { ok: true, value } / { ok: false, error }",
+      "custom_error_classes": true
+    },
+    "testing": {
+      "required": true,
+      "framework": "vitest or jest",
+      "coverage_target": 80,
+      "test_types": [
+        "unit",
+        "integration"
+      ]
+    },
+    "code_style": {
+      "formatter": "prettier",
+      "linter": "eslint",
+      "prefer_const": true,
+      "no_var": true
+    }
+  },
+  "prompts": {
+    "code_generation": "Generate production-quality JavaScript code for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines in JSDoc):\n/**\n * Module Name - Brief description\n *\n * **Purpose:** What this module does (clear statement)\n *\n * ## Quick Start\n * ```javascript\n * // Copy-paste example\n * import { myFunction } from './module.js';\n * const result = myFunction('example');\n * console.log(result); // Expected output\n * ```\n *\n * ## Public API\n * - `myFunction(param)` - Does something useful\n * - `anotherFunction(a, b)` - Combines inputs\n *\n * ## Error Handling\n * - Returns `{ ok: false, error }` on failure\n * - Throws `ValidationError` for invalid inputs\n *\n * ## Examples\n * ```javascript\n * // Success case\n * const result = myFunction('valid');\n * // result: { ok: true, value: 'processed' }\n *\n * // Error case\n * const result = myFunction(null);\n * // result: { ok: false, error: 'Invalid input' }\n * ```\n */\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n// The sections below provide structured metadata for AI assistants,\n// graph databases (Neo4j), and vector databases (pgvector).\n\nAI METADATA (Below separator in JSDoc):\n- Module Identity (JSON in code block)\n- Architecture Diagram (Mermaid)\n- Call Graph (YAML)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- JSDoc for all public functions\n- Result objects: { ok: true, value } / { ok: false, error }\n- Custom error classes for domain errors\n- Vitest or Jest tests\n- ESLint + Prettier compliant\n- Use const/let, never var\n\n3. AI NAVIGATION (in module JSDoc):\n\nModule Identity (JSON):\n```json\n{\n  \"module\": \"module_name\",\n  \"purpose\": \"Clear unique purpose statement\",\n  \"layer\": \"api|service|util|component\",\n  \"export_type\": \"default|named\",\n  \"related_modules\": [\"express\", \"axios\", \"lodash\"],\n  \"alternatives\": {\n    \"OldModule\": \"Legacy - use this module instead\",\n    \"SimilarModule\": \"Different use case - see disambiguation\"\n  },\n  \"disambiguation\": {\n    \"vs_OldModule\": \"This module = modern async. OldModule = legacy callbacks\",\n    \"vs_SimilarModule\": \"This = server-side. SimilarModule = client-side\"\n  }\n}\n```\n\nArchitecture (Mermaid):\n```mermaid\ngraph TB\n    Caller[API Route] --> ThisModule[module_name]\n    ThisModule --> DB[Database]\n    ThisModule --> Cache[Redis]\n```\n\nCall Graph (YAML):\n```yaml\ncalls_out:\n  - module: './database'\n    functions: [query, insert]\n    purpose: Data persistence\n    critical: true\n\ncalled_by:\n  - module: './api/routes'\n    purpose: HTTP endpoints\n    frequency: high\n\ndepends_on:\n  - express (required)\n  - pg (required)\n  - redis (optional)\n```\n\nAnti-Patterns:\n\u274c DO NOT create 'module_wrapper' - use this module directly\n\u274c DO NOT use var - use const/let\n\u274c DO NOT ignore errors - always handle { ok, error } returns\n\nSearch Keywords:\njavascript-api, express-middleware, async-await, error-handling, production-ready\n\nOUTPUT CODE ONLY (with enhanced JSDoc).",
+    "documentation": "Generate JSDoc for this JavaScript code:\n\n```javascript\n{code}\n```\n\nInclude:\n\nHUMAN CONTENT (top):\n- Module/function description with purpose\n- Quick start example\n- Public API list\n- Error handling\n- Examples with expected output\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n\nAI METADATA (below):\n- Module Identity (JSON)\n- Architecture Diagram (Mermaid)\n- Call Graph (YAML)\n- Anti-Patterns\n- Search Keywords\n\nOUTPUT DOCUMENTATION ONLY.",
+    "tests": "Generate Vitest/Jest tests for this code:\n\n```javascript\n{code}\n```\n\nInclude:\n- Unit tests for all public functions\n- Edge cases\n- Error handling tests\n- Use describe/it structure\n\nOUTPUT TEST CODE ONLY."
+  },
+  "scoring_weights": {
+    "has_jsdoc": 1.0,
+    "has_tests": 1.0,
+    "error_handling": 1.0,
+    "eslint_compliant": 1.0,
+    "prettier_formatted": 1.0,
+    "has_module_identity_json": 0.95,
+    "has_architecture_diagram": 0.9,
+    "has_call_graph_yaml": 0.9,
+    "has_anti_patterns": 0.85,
+    "has_search_keywords": 0.8,
+    "human_content_first": 0.9,
+    "clear_separation": 0.85,
+    "ai_metadata_explained": 0.8,
+    "graph_db_ready": 0.9,
+    "vector_db_optimized": 0.9
+  },
+  "graph_model": {
+    "version": 2,
+    "node_types": {
+      "module": {
+        "id_format": "js://{path}",
+        "merge_keys": [
+          "path"
+        ]
+      },
+      "function": {
+        "id_format": "js://{path}#{name}/{arity}",
+        "merge_keys": [
+          "signature_hash"
+        ]
+      }
+    },
+    "edge_types": {
+      "calls": {
+        "from": "function",
+        "to": "function",
+        "weight": 0.9
+      },
+      "declares": {
+        "from": "module",
+        "to": "function",
+        "weight": 1.0
+      }
+    },
+    "extraction_rules": {
+      "function_detection": "parse via acorn/babel AST",
+      "call_graph": "static import + member expression resolution (best-effort)",
+      "ai_metadata_extraction": "parse JSON/YAML/Mermaid from JSDoc comments"
+    },
+    "temporal": {
+      "track": true,
+      "fields": [
+        "first_seen",
+        "last_modified"
+      ],
+      "update_policy": "touch_last_modified_on_signature_change"
+    },
+    "error_semantics": {
+      "severity_enum": [
+        "fatal",
+        "transient",
+        "validation",
+        "resource",
+        "logic"
+      ],
+      "classification_enum": [
+        "user_input",
+        "system_state",
+        "external_dependency",
+        "data_integrity"
+      ],
+      "default_severity": "logic"
+    }
+  },
+  "last_updated": "2025-01-14",
+  "parent_pattern": null
 }

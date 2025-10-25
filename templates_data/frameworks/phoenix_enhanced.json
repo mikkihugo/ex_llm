@@ -3,8 +3,17 @@
   "category": "framework",
   "version": "2.0",
   "detector_signatures": {
-    "package_names": ["phoenix", "phoenix_html", "phoenix_live_view"],
-    "file_extensions": [".ex", ".exs", ".heex", ".leex"],
+    "package_names": [
+      "phoenix",
+      "phoenix_html",
+      "phoenix_live_view"
+    ],
+    "file_extensions": [
+      ".ex",
+      ".exs",
+      ".heex",
+      ".leex"
+    ],
     "patterns": [
       "use Phoenix\\.Controller",
       "use Phoenix\\.Endpoint",
@@ -47,7 +56,9 @@
         "~L\"\"\"",
         "~H\"\"\""
       ],
-      "config_files": ["assets/js/app.js"],
+      "config_files": [
+        "assets/js/app.js"
+      ],
       "confidence_boost": 0.4
     },
     "phoenix_channels": {
@@ -65,7 +76,10 @@
         "Ecto\\.Changeset",
         "Ecto\\.Repo"
       ],
-      "dependencies": ["phoenix_ecto", "ecto_sql"],
+      "dependencies": [
+        "phoenix_ecto",
+        "ecto_sql"
+      ],
       "confidence_boost": 0.2
     }
   },
@@ -174,13 +188,21 @@
       "liveview_component": {
         "description": "Modern Phoenix LiveView component",
         "code": "defmodule MyAppWeb.DashboardLive do\n  use MyAppWeb, :live_view\n\n  def mount(_params, _session, socket) do\n    if connected?(socket) do\n      MyAppWeb.Endpoint.subscribe(\"updates\")\n    end\n    {:ok, assign(socket, data: load_data())}\n  end\n\n  def handle_event(\"refresh\", _, socket) do\n    {:noreply, assign(socket, data: load_data())}\n  end\n\n  def handle_info(%{event: \"update\"}, socket) do\n    {:noreply, assign(socket, data: load_data())}\n  end\n\n  def render(assigns) do\n    ~H\"\"\"\n    <div>\n      <h1>Dashboard</h1>\n      <button phx-click=\"refresh\">Refresh</button>\n    </div>\n    \"\"\"\n  end\nend",
-        "patterns": ["LiveView", "PubSub", "real-time updates"],
+        "patterns": [
+          "LiveView",
+          "PubSub",
+          "real-time updates"
+        ],
         "best_practice": true
       },
       "context_module": {
         "description": "Phoenix context for business logic",
         "code": "defmodule MyApp.Catalog do\n  import Ecto.Query\n  alias MyApp.Repo\n  alias MyApp.Catalog.Product\n\n  def list_products(params \\\\ %{}) do\n    Product\n    |> apply_filters(params)\n    |> Repo.all()\n  end\n\n  def create_product(attrs) do\n    %Product{}\n    |> Product.changeset(attrs)\n    |> Repo.insert()\n  end\n\n  defp apply_filters(query, params) do\n    Enum.reduce(params, query, fn\n      {:category, cat}, q -> where(q, category: ^cat)\n      _, q -> q\n    end)\n  end\nend",
-        "patterns": ["context", "Ecto", "domain logic"],
+        "patterns": [
+          "context",
+          "Ecto",
+          "domain logic"
+        ],
         "use_case": "business logic separation"
       }
     },
@@ -196,12 +218,32 @@
         "https://hexdocs.pm/phoenix_live_view/"
       ],
       "common_packages": {
-        "database": ["ecto", "ecto_sql", "postgrex"],
-        "frontend": ["phoenix_html", "phoenix_live_view", "esbuild"],
-        "auth": ["pow", "guardian", "phx_gen_auth"],
-        "api": ["absinthe", "cors_plug"],
-        "testing": ["wallaby", "hound", "ex_machina"]
+        "database": [
+          "ecto",
+          "ecto_sql",
+          "postgrex"
+        ],
+        "frontend": [
+          "phoenix_html",
+          "phoenix_live_view",
+          "esbuild"
+        ],
+        "auth": [
+          "pow",
+          "guardian",
+          "phx_gen_auth"
+        ],
+        "api": [
+          "absinthe",
+          "cors_plug"
+        ],
+        "testing": [
+          "wallaby",
+          "hound",
+          "ex_machina"
+        ]
       }
     }
-  }
+  },
+  "parent_pattern": null
 }

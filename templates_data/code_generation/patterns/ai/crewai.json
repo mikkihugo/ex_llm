@@ -15,5 +15,6 @@
       "agents/**/crew*.py",
       "src/**/crewai/*.py"
     ]
-  }
+  },
+  "parent_pattern": null
 }

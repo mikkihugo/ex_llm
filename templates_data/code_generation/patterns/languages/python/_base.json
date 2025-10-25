@@ -5,7 +5,11 @@
   "language": "python",
   "metadata": {
     "version": "1.0.0",
-    "tags": ["python", "base", "common"]
+    "tags": [
+      "python",
+      "base",
+      "common"
+    ]
   },
   "common_patterns": {
     "imports": "from typing import Optional, List, Dict\nimport logging\nfrom datetime import datetime",
@@ -23,5 +27,6 @@
   "testing": {
     "framework": "pytest",
     "coverage_min": 80
-  }
+  },
+  "parent_pattern": "python"
 }

@@ -148,14 +148,23 @@
     },
     "otp_patterns": {
       "genserver": {
-        "required_callbacks": ["init/1", "handle_call/3", "handle_cast/2", "handle_info/2"],
+        "required_callbacks": [
+          "init/1",
+          "handle_call/3",
+          "handle_cast/2",
+          "handle_info/2"
+        ],
         "error_handling": "Always return {:ok, state} or {:stop, reason, state}",
         "state_validation": "Validate state transitions",
         "terminate_cleanup": "Implement terminate/2 for resource cleanup",
         "hot_code_swapping": "Implement code_change/3 for hot upgrades"
       },
       "supervisor": {
-        "strategies": ["one_for_one", "one_for_all", "rest_for_one"],
+        "strategies": [
+          "one_for_one",
+          "one_for_all",
+          "rest_for_one"
+        ],
         "restart_policies": "Define appropriate restart policies",
         "child_specs": "Use proper child_spec/1 functions",
         "hot_upgrades": "Support hot upgrades of supervised processes"
@@ -190,7 +199,10 @@
         "ets_lifecycle": "Manage ETS table creation and cleanup"
       },
       "nif_usage": {
-        "requirements": ["NIF execution under 1ms", "Use dirty schedulers for longer operations"],
+        "requirements": [
+          "NIF execution under 1ms",
+          "Use dirty schedulers for longer operations"
+        ],
         "error_handling": "Handle NIF failures gracefully"
       },
       "memory_management": {
@@ -249,7 +261,13 @@
     },
     "observability": {
       "telemetry": {
-        "required_events": ["function_call", "function_duration", "error_occurred", "cache_hit", "cache_miss"],
+        "required_events": [
+          "function_call",
+          "function_duration",
+          "error_occurred",
+          "cache_hit",
+          "cache_miss"
+        ],
         "structured_data": "Include structured data in telemetry events",
         "event_naming": "Use consistent event naming conventions"
       },
@@ -386,7 +404,7 @@
       "required": true,
       "patterns": {
         "calls": "# @calls: module.function/arity - purpose",
-        "called_by": "# @called_by: module.function/arity - purpose", 
+        "called_by": "# @called_by: module.function/arity - purpose",
         "depends_on": "# @depends_on: module - purpose",
         "used_by": "# @used_by: module - purpose",
         "integrates_with": "# @integrates_with: service/component - purpose",
@@ -825,5 +843,6 @@
     "code_generation": "Generate production Elixir module for: {task}\nREQUIREMENTS:\n- Complete @moduledoc with all required sections\n- @doc for every public function with examples\n- @spec for every function\n- Use {:ok, _} | {:error, _} pattern (no raise for control flow)\n- Pattern match + guards for validation\n- Functions <= 25 LOC\n- No TODO/FIXME\n- Include telemetry instrumentation\n- Add health checks\n- Implement proper error handling\n- Add performance documentation\n- Include security considerations\nOUTPUT ONLY CODE.",
     "tests": "Generate comprehensive ExUnit tests for: {code}\nCover: happy paths, edge cases (nil/empty/boundaries), error cases, concurrency scenarios. Include property-based tests where appropriate. Ensure isolation and use async when safe. OUTPUT ONLY TEST MODULE.",
     "refactor_quality": "Refactor this Elixir code to production quality standards: {code}\nAdd missing docs/specs, simplify branching, replace raise with tagged tuples, break up long functions, add telemetry, implement proper error handling, add security considerations, improve performance. OUTPUT ONLY REFACTORED CODE."
-  }
+  },
+  "parent_pattern": null
 }

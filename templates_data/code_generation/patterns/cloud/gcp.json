@@ -19,5 +19,6 @@
       "terraform/**/gcp*.tf",
       "deployment-manager/**/*.yaml"
     ]
-  }
+  },
+  "parent_pattern": null
 }

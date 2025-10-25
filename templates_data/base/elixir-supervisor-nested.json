@@ -7,10 +7,22 @@
     "version": "1.0.0",
     "description": "Production-ready template for nested Elixir supervisors with layered architecture, comprehensive documentation, and dependency tracking",
     "language": "elixir",
-    "tags": ["base", "elixir", "supervisor", "otp", "production", "nested", "layered"],
+    "tags": [
+      "base",
+      "elixir",
+      "supervisor",
+      "otp",
+      "production",
+      "nested",
+      "layered"
+    ],
     "created": "2025-10-12",
     "updated": "2025-10-12",
-    "compliance": ["production-standards", "otp-best-practices", "dependency-documentation"]
+    "compliance": [
+      "production-standards",
+      "otp-best-practices",
+      "dependency-documentation"
+    ]
   },
   "content": {
     "type": "code",
@@ -61,7 +73,11 @@
         "description": "Supervisor strategy (:one_for_one, :rest_for_one, :one_for_all)",
         "required": true,
         "default": ":one_for_one",
-        "enum": [":one_for_one", ":rest_for_one", ":one_for_all"]
+        "enum": [
+          ":one_for_one",
+          ":rest_for_one",
+          ":one_for_all"
+        ]
       }
     }
   },
@@ -86,14 +102,15 @@
       "variables": {
         "module_name": "MyApp.Knowledge.Supervisor",
         "description": "Knowledge Supervisor - Manages knowledge base and template infrastructure.",
-        "purpose": "Supervises all knowledge-related processes including templates, performance tracking, and code storage.\n\nThis supervisor manages the \"Living Knowledge Base\" components:\n- Templates (JSON → PostgreSQL → ETS cache)\n- Performance metrics (usage tracking, success rates)\n- Code storage (parsed code chunks with embeddings)",
+        "purpose": "Supervises all knowledge-related processes including templates, performance tracking, and code storage.\n\nThis supervisor manages the \"Living Knowledge Base\" components:\n- Templates (JSON \u2192 PostgreSQL \u2192 ETS cache)\n- Performance metrics (usage tracking, success rates)\n- Code storage (parsed code chunks with embeddings)",
         "managed_processes": "- `MyApp.Knowledge.TemplateService` - GenServer managing template loading/caching\n- `MyApp.TemplatePerformanceTracker` - GenServer tracking template usage/performance\n- `MyApp.CodeStore` - GenServer managing code chunk storage",
         "restart_strategy": "Uses `:one_for_one` because each child is independent.\n\nChildren can fail and restart independently without affecting siblings. All children depend on Repo but not on each other.",
         "dependencies": "Depends on:\n- Repo - For PostgreSQL access (knowledge_artifacts table)\n- EmbeddingModelLoader (Infrastructure.Supervisor) - For generating embeddings",
         "children": "MyApp.Knowledge.TemplateService,\n      MyApp.TemplatePerformanceTracker,\n      MyApp.CodeStore",
         "strategy": ":one_for_one"
       },
-      "output": "defmodule MyApp.Knowledge.Supervisor do\n  @moduledoc \"\"\"\n  Knowledge Supervisor - Manages knowledge base and template infrastructure.\n\n  Supervises all knowledge-related processes including templates, performance tracking, and code storage.\n\n  This supervisor manages the \"Living Knowledge Base\" components:\n  - Templates (JSON → PostgreSQL → ETS cache)\n  - Performance metrics (usage tracking, success rates)\n  - Code storage (parsed code chunks with embeddings)\n\n  ## Managed Processes\n\n  - `MyApp.Knowledge.TemplateService` - GenServer managing template loading/caching\n  - `MyApp.TemplatePerformanceTracker` - GenServer tracking template usage/performance\n  - `MyApp.CodeStore` - GenServer managing code chunk storage\n\n  ## Restart Strategy\n\n  Uses `:one_for_one` because each child is independent.\n\n  Children can fail and restart independently without affecting siblings. All children depend on Repo but not on each other.\n\n  ## Dependencies\n\n  Depends on:\n  - Repo - For PostgreSQL access (knowledge_artifacts table)\n  - EmbeddingModelLoader (Infrastructure.Supervisor) - For generating embeddings\n  \"\"\"\n\n  use Supervisor\n  require Logger\n\n  def start_link(opts \\\\ []) do\n    Supervisor.start_link(__MODULE__, opts, name: __MODULE__)\n  end\n\n  @impl true\n  def init(_opts) do\n    Logger.info(\"Starting MyApp.Knowledge.Supervisor...\")\n\n    children = [\n      MyApp.Knowledge.TemplateService,\n      MyApp.TemplatePerformanceTracker,\n      MyApp.CodeStore\n    ]\n\n    Supervisor.init(children, strategy: :one_for_one)\n  end\nend"
+      "output": "defmodule MyApp.Knowledge.Supervisor do\n  @moduledoc \"\"\"\n  Knowledge Supervisor - Manages knowledge base and template infrastructure.\n\n  Supervises all knowledge-related processes including templates, performance tracking, and code storage.\n\n  This supervisor manages the \"Living Knowledge Base\" components:\n  - Templates (JSON \u2192 PostgreSQL \u2192 ETS cache)\n  - Performance metrics (usage tracking, success rates)\n  - Code storage (parsed code chunks with embeddings)\n\n  ## Managed Processes\n\n  - `MyApp.Knowledge.TemplateService` - GenServer managing template loading/caching\n  - `MyApp.TemplatePerformanceTracker` - GenServer tracking template usage/performance\n  - `MyApp.CodeStore` - GenServer managing code chunk storage\n\n  ## Restart Strategy\n\n  Uses `:one_for_one` because each child is independent.\n\n  Children can fail and restart independently without affecting siblings. All children depend on Repo but not on each other.\n\n  ## Dependencies\n\n  Depends on:\n  - Repo - For PostgreSQL access (knowledge_artifacts table)\n  - EmbeddingModelLoader (Infrastructure.Supervisor) - For generating embeddings\n  \"\"\"\n\n  use Supervisor\n  require Logger\n\n  def start_link(opts \\\\ []) do\n    Supervisor.start_link(__MODULE__, opts, name: __MODULE__)\n  end\n\n  @impl true\n  def init(_opts) do\n    Logger.info(\"Starting MyApp.Knowledge.Supervisor...\")\n\n    children = [\n      MyApp.Knowledge.TemplateService,\n      MyApp.TemplatePerformanceTracker,\n      MyApp.CodeStore\n    ]\n\n    Supervisor.init(children, strategy: :one_for_one)\n  end\nend"
     }
-  ]
+  ],
+  "parent_pattern": null
 }

@@ -7,10 +7,22 @@
     "version": "2.0.0",
     "description": "Production-ready base template for Elixir modules with comprehensive documentation, error handling, and integration examples",
     "language": "elixir",
-    "tags": ["base", "elixir", "module", "production", "documentation", "error-handling"],
+    "tags": [
+      "base",
+      "elixir",
+      "module",
+      "production",
+      "documentation",
+      "error-handling"
+    ],
     "created": "2025-01-09",
     "updated": "2025-10-12",
-    "compliance": ["production-standards", "error-matrix", "integration-examples", "edge-cases"]
+    "compliance": [
+      "production-standards",
+      "error-matrix",
+      "integration-examples",
+      "edge-cases"
+    ]
   },
   "content": {
     "type": "code",
@@ -107,5 +119,6 @@
       },
       "output": "defmodule MyApp.UserService do\n  @moduledoc \"\"\"\n  User management service with authentication and profile management\n\n  ## Overview\n\n  Provides comprehensive user management functionality including registration, authentication, and profile management. This module exists as a centralized service rather than scattered functions because it ensures consistent user data handling and security policies across the application. Key capabilities include secure password hashing, session management, and user preference storage.\n\n  ## Public API Contract\n\n  - `register(params) :: {:ok, user} | {:error, reason}` - Creates new user account\n  - `authenticate(email, password) :: {:ok, user} | {:error, reason}` - Validates user credentials\n  - `get_profile(user_id) :: {:ok, profile} | {:error, reason}` - Retrieves user profile\n  - `update_profile(user_id, params) :: {:ok, profile} | {:error, reason}` - Updates user profile\n\n  ## Error Matrix\n\n  - `:invalid_input` - When required fields are missing or malformed\n  - `:email_taken` - When attempting to register with existing email\n  - `:invalid_credentials` - When login credentials don't match\n  - `:not_found` - When requested user doesn't exist\n  - `:unauthorized` - When user lacks permission for operation\n  - `:rate_limited` - When too many requests from same source\n\n  ## Performance Notes\n\n  - **Time Complexity:** O(1) for authentication, O(log n) for user lookups\n  - **Space Complexity:** O(n) where n is number of users\n  - **Memory Usage:** Sessions cached in ETS, profiles in database\n  - **Database Load:** ~10ms per authentication request\n\n  ## Concurrency Semantics\n\n  - **Thread Safe:** Yes - Uses GenServer for state management\n  - **GenServer State:** Maintains connection pool and cache\n  - **Shared State:** User sessions shared via distributed Erlang\n\n  ## Security Considerations\n\n  - **Input Validation:** All inputs validated with Ecto schemas\n  - **Sanitization:** Email normalization, password complexity requirements\n  - **Privilege Requirements:** Admin role required for user deletion\n\n  ## Examples\n\n      # Success case - user registration\n      {:ok, user} = MyApp.UserService.register(%{email: \"user@example.com\", password: \"secure123!\"})\n      # => {:ok, %User{id: 123, email: \"user@example.com\"}}\n\n      # Success case - authentication\n      {:ok, user} = MyApp.UserService.authenticate(\"user@example.com\", \"secure123!\")\n      # => {:ok, %User{id: 123, email: \"user@example.com\"}}\n\n      # Error cases\n      {:error, :invalid_input} = MyApp.UserService.register(%{email: \"invalid-email\", password: \"\"})\n      {:error, :invalid_credentials} = MyApp.UserService.authenticate(\"user@example.com\", \"wrongpass\")\n      {:error, :not_found} = MyApp.UserService.get_profile(999)\n\n      # Edge cases\n      {:error, :rate_limited} = MyApp.UserService.register(%{email: \"new@example.com\", password: \"pass\"}) # After 10 attempts\n      {:ok, default_profile} = MyApp.UserService.get_profile(123) # User with no custom profile\n\n  ## Relationships\n\n  - **Calls:** MyApp.Repo - Database operations\n  - **Calls:** MyApp.Cache - Session caching\n  - **Calls:** MyApp.Mailer - Email notifications\n  - **Called by:** MyAppWeb.UserController - HTTP request handling\n  - **Called by:** MyAppWeb.AuthPlug - Authentication middleware\n  - **Depends on:** PostgreSQL - User data storage\n  - **Integrates with:** Redis - Session storage\n  - **Integrates with:** SendGrid - Email delivery\n\n  ## Template Version\n\n  - **Applied:** base-elixir-module v1.0.0\n  - **Applied on:** 2025-01-09\n  - **Upgrade path:** base-elixir-module v1.0.0 -> v1.1.0\n  \"\"\"\n\n  use GenServer\n  alias MyApp.{Repo, User, UserProfile}\n\n  @doc \"\"\"\n  Registers a new user account.\n\n  ## Parameters\n  - `params` - Map with `:email` and `:password` keys\n\n  ## Returns\n  - `{:ok, user}` - Successfully created user\n  - `{:error, reason}` - Registration failed\n\n  ## Errors\n  - `:invalid_input` - Missing or invalid parameters\n  - `:email_taken` - Email already registered\n\n  ## Examples\n\n      {:ok, user} = MyApp.UserService.register(%{email: \"user@example.com\", password: \"secure123!\"})\n      {:error, :email_taken} = MyApp.UserService.register(%{email: \"existing@example.com\", password: \"pass\"})\n  \"\"\"\n  @spec register(map()) :: {:ok, User.t()} | {:error, atom()}\n  def register(params) do\n    # Implementation here\n  end\nend"
     }
-  ]
+  ],
+  "parent_pattern": null
 }

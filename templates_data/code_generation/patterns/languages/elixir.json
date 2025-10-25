@@ -3,8 +3,14 @@
   "category": "language",
   "version": "1.0",
   "detector_signatures": {
-    "config_files": ["mix.exs", "mix.lock"],
-    "file_extensions": [".ex", ".exs"],
+    "config_files": [
+      "mix.exs",
+      "mix.lock"
+    ],
+    "file_extensions": [
+      ".ex",
+      ".exs"
+    ],
     "patterns": [
       "defmodule\\s+\\w+",
       "def\\s+\\w+",
@@ -23,17 +29,33 @@
     "dependencies": {
       "file": "mix.exs",
       "section": "deps",
-      "common_packages": ["phoenix", "ecto", "plug", "jason"]
+      "common_packages": [
+        "phoenix",
+        "ecto",
+        "plug",
+        "jason"
+      ]
     }
   },
   "framework_hints": {
     "phoenix": {
-      "patterns": ["use\\s+Phoenix", "Phoenix\\.Router", "Phoenix\\.Controller", "Phoenix\\.LiveView"],
-      "config_files": ["config/config.exs", "lib/*_web/"],
+      "patterns": [
+        "use\\s+Phoenix",
+        "Phoenix\\.Router",
+        "Phoenix\\.Controller",
+        "Phoenix\\.LiveView"
+      ],
+      "config_files": [
+        "config/config.exs",
+        "lib/*_web/"
+      ],
       "confidence_boost": 0.5
     },
     "nerves": {
-      "patterns": ["use\\s+Nerves", "Nerves\\."],
+      "patterns": [
+        "use\\s+Nerves",
+        "Nerves\\."
+      ],
       "confidence_boost": 0.4
     }
   },
@@ -47,7 +69,12 @@
   "metadata": {
     "ecosystem": "hex",
     "package_manager": "mix",
-    "typical_structure": ["lib/", "test/", "config/", "priv/"]
+    "typical_structure": [
+      "lib/",
+      "test/",
+      "config/",
+      "priv/"
+    ]
   },
   "llm_support": {
     "analysis_prompts": {
@@ -69,5 +96,6 @@
         "Ignoring supervision strategies"
       ]
     }
-  }
+  },
+  "parent_pattern": null
 }
