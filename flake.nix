@@ -539,6 +539,7 @@
             export CARGO_TARGET_DIR=".cargo-build"
             export CARGO_INCREMENTAL="0"
             export CARGO_REGISTRIES_CRATES_IO_PROTOCOL="sparse"
+            export CARGO_BUILD_JOBS="4"
             mkdir -p "$CARGO_HOME" "$SCCACHE_DIR" 2>/dev/null || true
             '' else ""}
 

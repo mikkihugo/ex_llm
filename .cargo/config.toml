@@ -1,0 +1,33 @@
+# Cargo configuration for Singularity
+# Ensures consistent build behavior across all Rust NIFs
+
+[build]
+# Parallel job limit - prevents Erlang VM resource exhaustion
+# Apple Silicon (8 cores typical): 4 jobs is conservative
+# Linux with more cores: adjust as needed
+jobs = 4
+
+# Target for Apple Silicon
+[target.aarch64-apple-darwin]
+rustflags = [
+    "-C", "link-arg=-undefined",
+    "-C", "link-arg=dynamic_lookup",
+]
+
+# Target for x86_64 Linux
+[target.x86_64-unknown-linux-gnu]
+rustflags = [
+    "-C", "relocation-model=dynamic-no-pic",
+]
+
+# Target for x86_64 Linux with musl (Alpine)
+[target.x86_64-unknown-linux-musl]
+rustflags = [
+    "-C", "target-feature=-crt-static",
+]
+
+# Target for aarch64 Linux with musl
+[target.aarch64-unknown-linux-musl]
+rustflags = [
+    "-C", "target-feature=-crt-static",
+]
