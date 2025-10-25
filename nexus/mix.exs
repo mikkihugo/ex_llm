@@ -34,8 +34,8 @@ defmodule Nexus.MixProject do
       # PostgreSQL driver (required by pgmq)
       {:postgrex, "~> 0.21"},
 
-      # UUID generation
-      {:uuid, "~> 1.1"}
+      # UUID generation (UUIDv7 with timestamp ordering)
+      {:uniq, "~> 0.6"}
     ]
   end
 end
