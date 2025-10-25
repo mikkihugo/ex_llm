@@ -352,7 +352,9 @@ defmodule Singularity.PromptEngine do
 
   defp nats_generate_prompt(request) do
     with {:ok, response} <-
-           Singularity.NATS.Client.request("prompt.generate.request", Jason.encode!(request), timeout: 15_000),
+           Singularity.NATS.Client.request("prompt.generate.request", Jason.encode!(request),
+             timeout: 15_000
+           ),
          {:ok, data} <- Jason.decode(response.data) do
       {:ok, data}
     end
@@ -360,7 +362,9 @@ defmodule Singularity.PromptEngine do
 
   defp nats_optimize_prompt(request) do
     with {:ok, response} <-
-           Singularity.NATS.Client.request("prompt.optimize.request", Jason.encode!(request), timeout: 15_000),
+           Singularity.NATS.Client.request("prompt.optimize.request", Jason.encode!(request),
+             timeout: 15_000
+           ),
          {:ok, data} <- Jason.decode(response.data) do
       {:ok, data}
     end
@@ -372,8 +376,7 @@ defmodule Singularity.PromptEngine do
       otp_app: :singularity,
       crate: :prompt_engine,
       path: "../rust/prompt_engine",
-      mode: :release,
-      skip_compilation?: true
+      mode: :release
 
     # NIF functions - names must match Rust #[rustler::nif] function names
     def nif_generate_prompt(_request), do: :erlang.nif_error(:nif_not_loaded)

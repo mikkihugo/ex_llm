@@ -14,9 +14,7 @@ defmodule Singularity.LintingEngine do
   use Rustler,
     otp_app: :singularity,
     crate: :linting_engine,
-    path: "../rust/linting_engine",
-    # Temporarily skip compilation to fix hot reload
-    skip_compilation?: true
+    path: "../rust/linting_engine"
 
   require Logger
   alias Singularity.NATS.Client, as: NatsClient
@@ -109,7 +107,9 @@ defmodule Singularity.LintingEngine do
       include_patterns: true
     }
 
-    case Singularity.NATS.Client.request("central.quality.rules", Jason.encode!(request), timeout: 5000) do
+    case Singularity.NATS.Client.request("central.quality.rules", Jason.encode!(request),
+           timeout: 5000
+         ) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data["rules"] || []}
@@ -148,7 +148,9 @@ defmodule Singularity.LintingEngine do
       include_examples: true
     }
 
-    case Singularity.NATS.Client.request("central.quality.recommendations", Jason.encode!(request),
+    case Singularity.NATS.Client.request(
+           "central.quality.recommendations",
+           Jason.encode!(request),
            timeout: 3000
          ) do
       {:ok, response} ->
