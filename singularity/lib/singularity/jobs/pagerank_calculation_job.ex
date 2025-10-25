@@ -1,14 +1,22 @@
 defmodule Singularity.Jobs.PageRankCalculationJob do
   @moduledoc """
-  Background job for calculating and storing PageRank scores in the code graph.
+  Background job for calculating and storing PageRank and centrality scores in the code graph.
 
   ## Purpose
 
   Identifies the most important/central nodes in the call graph based on
-  PageRank algorithm. Answers questions like:
+  PageRank algorithm (a proven centrality measure). Answers questions like:
   - "Which modules are most frequently called?"
   - "What's the most central component in our architecture?"
   - "Which modules have the highest impact if they fail?"
+
+  ## Note on Centrality
+
+  **PageRank IS a centrality measure**. It calculates node importance based on the structure
+  of incoming edges. This job stores the same PageRank score in both:
+  - `graph_nodes.pagerank_score` - For graph database queries
+  - `codebase_metadata.pagerank_score` - For comprehensive metadata queries
+  - `codebase_metadata.centrality_score` - For centrality-specific queries (same value as pagerank_score)
 
   ## Algorithm
 
@@ -57,7 +65,10 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
 
   ## Results
 
-  Stores PageRank scores in `graph_nodes.pagerank_score` column.
+  Stores PageRank and centrality scores in:
+  - `graph_nodes.pagerank_score` - Direct graph node scores
+  - `codebase_metadata.pagerank_score` - File/module-level scores
+  - `codebase_metadata.centrality_score` - Centrality-specific queries (same value as pagerank_score)
 
   Query examples:
   ```sql
@@ -161,6 +172,7 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
 
   alias Singularity.Repo
   alias Singularity.Schemas.GraphNode
+  alias Singularity.Schemas.CodebaseMetadata
   alias Singularity.CodeSearch.Ecto, as: CodeSearchEcto
 
   import Ecto.Query
@@ -188,10 +200,11 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
     start_time = System.monotonic_time(:millisecond)
 
     # Check if we have nodes to process
-    node_count = Repo.aggregate(
-      from(n in GraphNode, where: n.codebase_id == ^codebase_id),
-      :count
-    )
+    node_count =
+      Repo.aggregate(
+        from(n in GraphNode, where: n.codebase_id == ^codebase_id),
+        :count
+      )
 
     if node_count == 0 do
       Logger.warning("⚠️  No graph nodes found for codebase: #{codebase_id}")
@@ -241,9 +254,14 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
         Logger.warning("No PageRank scores calculated")
         {:error, :no_scores_calculated}
       else
-        # Step 2: Store scores in database
+        # Step 2: Store scores in database (graph_nodes)
         Logger.debug("Storing #{length(scores)} PageRank scores in database...")
         updated_count = store_pagerank_scores(codebase_id, scores)
+
+        # Step 2b: Also store centrality_score in codebase_metadata
+        # (PageRank IS a centrality measure - update both fields)
+        Logger.debug("Storing centrality scores in codebase_metadata...")
+        store_centrality_scores(codebase_id, scores)
 
         # Step 3: Calculate statistics
         stats = get_pagerank_statistics(codebase_id)
@@ -262,11 +280,32 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
     # Convert node_id strings to UUIDs and store scores
     Enum.reduce(scores, 0, fn %{node_id: node_id, pagerank_score: score}, acc ->
       case update_node_pagerank(node_id, score) do
-        {:ok, 1} -> acc + 1
-        {:ok, _} -> acc
+        {:ok, 1} ->
+          acc + 1
+
+        {:ok, _} ->
+          acc
+
         {:error, reason} ->
           Logger.warning("Failed to update node #{node_id}: #{inspect(reason)}")
           acc
+      end
+    end)
+  end
+
+  @doc false
+  defp store_centrality_scores(codebase_id, scores) do
+    # Store centrality_score in codebase_metadata
+    # PageRank IS a centrality measure, so we populate both pagerank_score and centrality_score
+    Enum.each(scores, fn %{node_id: node_id, pagerank_score: score} ->
+      try do
+        Repo.update_all(
+          from(m in CodebaseMetadata, where: m.path == ^node_id and m.codebase_id == ^codebase_id),
+          set: [pagerank_score: score, centrality_score: score]
+        )
+      rescue
+        e ->
+          Logger.warning("Failed to update centrality score for #{node_id}: #{inspect(e)}")
       end
     end)
   end
