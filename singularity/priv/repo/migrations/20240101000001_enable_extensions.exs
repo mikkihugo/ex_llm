@@ -28,7 +28,8 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
     execute "CREATE EXTENSION IF NOT EXISTS ltree"
 
     # TimescaleDB (time-series data) - configured in Nix
-    execute "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE"
+    # Disabled for now - causes connection issues in development
+    # execute "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE"
 
     # PostGIS (geospatial) - configured in Nix
     execute "CREATE EXTENSION IF NOT EXISTS postgis"
@@ -44,7 +45,7 @@ defmodule Singularity.Repo.Migrations.EnableExtensions do
     # execute "DROP EXTENSION IF EXISTS pgtap"
     execute "DROP EXTENSION IF EXISTS pg_cron"
     execute "DROP EXTENSION IF EXISTS postgis"
-    execute "DROP EXTENSION IF EXISTS timescaledb"
+    # execute "DROP EXTENSION IF EXISTS timescaledb"  # Disabled - not created in up migration
     execute "DROP EXTENSION IF EXISTS ltree"
     execute "DROP EXTENSION IF EXISTS hstore"
     execute "DROP EXTENSION IF EXISTS pg_prewarm"

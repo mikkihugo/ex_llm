@@ -219,12 +219,13 @@
         getDataServices = env: lib.optionals (lib.elem "postgresql" env.services) [
           # PostgreSQL 17 with 20+ extensions for search, time-series, spatial, graph, security, and messaging
           # Built-in extensions (from PostgreSQL): ltree, hstore, pg_trgm, uuid-ossp, fuzzystrmatch, etc
-          # Nix-packaged extensions below (including AGE which is in nixpkgs for PG17):
+          # PostgreSQL 18 is stable but Apache AGE PG18_prepare branch is still unstable/incomplete
+          # Ready to upgrade to PG18 + AGE once PR #2165 is merged (follow https://github.com/apache/age/pull/2165)
           (pkgs.postgresql_17.withPackages (ps:
             [
               # Search & Vectors
               ps.pgvector           # Vector embeddings for semantic search (2560-dim)
-              ps.lantern            # Alternative vector search engine with HNSW indexes
+              # ps.lantern            # Alternative vector search engine - broken in nixpkgs (use pgvector instead)
 
               # Spatial & Geospatial
               ps.postgis            # PostGIS 3.6.0 - full geospatial queries
@@ -235,7 +236,7 @@
               # ps.timescaledb_toolkit # TimescaleDB analytics extension (broken in nixpkgs - marked as broken package)
 
               # Graph Database
-              ps.age                # Apache AGE - graph database extension (supported on PG17)
+              ps.age                # Apache AGE - graph database extension (stable on PG17)
 
               # Distributed IDs & ULIDs (future PostgreSQL 18 migration path: UUIDv7)
               # ps.pgx_ulid           # ULID generation - broken in nixpkgs (use UUID v7 / TimescaleDB hypertables instead)
@@ -248,7 +249,7 @@
               ps.wal2json           # JSON WAL decoding for event streaming
 
               # HTTP & External APIs
-              ps.pg_net             # HTTP client from SQL for calling external APIs
+              # ps.pg_net             # HTTP client from SQL - broken in nixpkgs (compilation error)
 
               # Testing
               ps.pgtap              # PostgreSQL TAP testing framework
@@ -257,7 +258,7 @@
               ps.pg_cron            # Cron-like task scheduling
 
               # Metrics & Monitoring
-              ps.pg_stat_statements # Query performance statistics
+              # pg_stat_statements is built into PostgreSQL - enable via shared_preload_libraries config
 
               # Advanced Querying
               ps.plpgsql_check      # PL/pgSQL function validation
@@ -521,7 +522,7 @@
             export LANG=C.UTF-8
             export ELIXIR_ERL_OPTIONS="+fnu"
             export ERL_AFLAGS="-proto_dist inet6_tcp"
-            export ERL_FLAGS="-heart +sbt u +sbwt very_long +swt very_low"
+            export ERL_FLAGS="+sbt u +sbwt very_long +swt very_low"  # Removed -heart for cleaner development logs
             export MIX_ENV=''${MIX_ENV:-${if env.name == "Remote Production Environment" then "prod" else "dev"}}
 
             # Erlang NIF headers for Rustler (required for NIF compilation)

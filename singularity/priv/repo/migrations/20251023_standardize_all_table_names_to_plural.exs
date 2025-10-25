@@ -34,11 +34,25 @@ defmodule Singularity.Repo.Migrations.StandardizeAllTableNamesToPluralBestPracti
   end
 
   defp rename_table_and_indexes(old_name, new_name) do
-    # Rename the table
-    rename table(old_name), to: table(new_name)
+    # Only rename if the table exists (some may not have been created yet)
+    if table_exists?(old_name) do
+      rename table(old_name), to: table(new_name)
+    end
 
     # Note: Indexes will automatically be renamed by Postgres
     # But we should verify with: SELECT * FROM pg_indexes WHERE schemaname = 'public';
+  end
+
+  defp table_exists?(table_name) do
+    case execute(
+      "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1)",
+      [table_name]
+    ) do
+      {:ok, %{rows: [[true]]}} -> true
+      _ -> false
+    end
+  rescue
+    _ -> false
   end
 
   defp update_foreign_keys_for_dependency_catalogs do
