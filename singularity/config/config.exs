@@ -134,7 +134,15 @@ config :oban,
        # Database backup: hourly (keep 6)
        {"0 * * * *", Singularity.Database.BackupWorker, args: %{"type" => "hourly"}},
        # Database backup: daily at 1:00 AM (keep 7)
-       {"0 1 * * *", Singularity.Database.BackupWorker, args: %{"type" => "daily"}}
+       {"0 1 * * *", Singularity.Database.BackupWorker, args: %{"type" => "daily"}},
+       # Template sync: daily at 2:00 AM (was: mix templates.sync --force)
+       {"0 2 * * *", Singularity.Jobs.TemplateSyncWorker},
+       # Cache cleanup: daily at 3:00 AM (was: mix analyze.cache clear)
+       {"0 3 * * *", Singularity.Jobs.CacheClearWorker},
+       # Registry sync: daily at 4:00 AM (was: mix registry.sync)
+       {"0 4 * * *", Singularity.Jobs.RegistrySyncWorker},
+       # Template embed: weekly on Sundays at 5:00 AM (was: mix templates.embed --missing)
+       {"0 5 * * 0", Singularity.Jobs.TemplateEmbedWorker}
        # PageRank recalculation: scheduled via pg_cron (database-native scheduling)
        # See migration: add_pagerank_pg_cron_schedule.exs
      ]}
