@@ -1,17 +1,20 @@
 defmodule Singularity.Database.MetricsAggregation do
   @moduledoc """
-  Time-series metrics aggregation via TimescaleDB Toolkit.
+  Time-series metrics aggregation via TimescaleDB core (time_bucket).
 
   Aggregates agent performance metrics, pattern learning rates, and system health
   using time-series analytics functions optimized for high-cardinality data.
 
+  Note: Uses TimescaleDB core functions (time_bucket, percentile_cont).
+  timescaledb_toolkit is broken in nixpkgs; full functionality via core features.
+
   ## Features
 
-  - Time-bucketing functions (5min, 1hour, 1day aggregations)
+  - Time-bucketing functions (5min, 1hour, 1day aggregations) via time_bucket()
   - Statistical aggregates (percentiles, rates of change)
-  - Continuous aggregates (pre-computed rollups)
-  - Downsampling (compress old data to save space)
-  - Gap filling (interpolation for missing time periods)
+  - Hypertable automatic partitioning by time
+  - Compression (>30 days old compressed to 1/10th size)
+  - Percentile aggregation (p50, p95, p99 for SLO monitoring)
 
   ## Architecture
 
