@@ -6,9 +6,10 @@ $schema: './cache/schemas/workspace.json'
 projects:
   - 'llm-server'
   - 'centralcloud'
-  - 'seed_agent'
+  - 'nexus'
   - 'singularity'
   - 'templates_data'
+  # - 'seed_agent'  # Placeholder for future Gleam-based agent (not implemented yet)
   # - 'vendor/codex'  # Codex fork for builtin tool filtering (temporarily disabled for compilation)
 
   # External Elixir packages

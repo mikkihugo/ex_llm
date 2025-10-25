@@ -1,0 +1,51 @@
+$schema: '../.moon/cache/schemas/project.json'
+
+type: 'application'
+language: 'elixir'
+
+project:
+  name: 'nexus'
+  description: 'LLM Router and HITL Bridge - Routes LLM requests using ex_llm'
+
+tasks:
+  deps:
+    command: 'mix deps.get'
+    inputs:
+      - 'mix.exs'
+      - 'mix.lock'
+
+  compile:
+    command: 'mix compile'
+    inputs:
+      - 'lib/**/*.ex'
+      - 'mix.exs'
+    deps:
+      - '~:deps'
+
+  test:
+    command: 'mix test'
+    inputs:
+      - 'lib/**/*.ex'
+      - 'test/**/*.exs'
+    deps:
+      - '~:compile'
+
+  format:
+    command: 'mix format'
+    inputs:
+      - 'lib/**/*.ex'
+      - 'test/**/*.exs'
+      - '.formatter.exs'
+
+  format-check:
+    command: 'mix format --check-formatted'
+    inputs:
+      - 'lib/**/*.ex'
+      - 'test/**/*.exs'
+      - '.formatter.exs'
+
+  run:
+    command: 'iex -S mix'
+    local: true
+    deps:
+      - '~:compile'
