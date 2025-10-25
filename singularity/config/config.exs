@@ -130,7 +130,11 @@ config :oban,
        # Dead code monitoring: daily at 9am
        {"0 9 * * *", Singularity.Jobs.DeadCodeDailyCheck},
        # Dead code summary: every Monday at 9am
-       {"0 9 * * 1", Singularity.Jobs.DeadCodeWeeklySummary}
+       {"0 9 * * 1", Singularity.Jobs.DeadCodeWeeklySummary},
+       # Database backup: hourly (keep 6)
+       {"0 * * * *", Singularity.Database.BackupWorker, args: %{"type" => "hourly"}},
+       # Database backup: daily at 1:00 AM (keep 7)
+       {"0 1 * * *", Singularity.Database.BackupWorker, args: %{"type" => "daily"}}
        # PageRank recalculation: scheduled via pg_cron (database-native scheduling)
        # See migration: add_pagerank_pg_cron_schedule.exs
      ]}

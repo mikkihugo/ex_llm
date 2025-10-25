@@ -60,12 +60,12 @@ if [ ${#existing_processes[@]} -gt 0 ]; then
 fi
 
 # 1. Check and start NATS
-echo -e "\n${YELLOW}[1/4] Checking NATS...${NC}"
+echo -e "\n${YELLOW}[1/6] Checking NATS...${NC}"
 if pgrep -x "nats-server" > /dev/null; then
     echo "✅ NATS already running"
 else
     echo "Starting NATS with JetStream..."
-    nats-server -js -sd .nats -p 4222 > logs/nats.log 2>&1 &
+    nats-server -c .nats/nats-server.conf > logs/nats.log 2>&1 &
     sleep 2
     if pgrep -x "nats-server" > /dev/null; then
         echo "✅ NATS started on port 4222"

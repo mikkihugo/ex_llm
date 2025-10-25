@@ -9,7 +9,7 @@ Complete Remix + Bun implementation of the HITL (Human-in-the-Loop) control pane
 ### ✅ Complete Remix Project Structure
 
 ```
-/Users/mhugo/code/singularity-incubation/nexus-remix/
+/Users/mhugo/code/singularity-incubation/nexus/
 ├── app/
 │   ├── routes/
 │   │   ├── _index.tsx              ✅ Dashboard tab
@@ -25,8 +25,9 @@ Complete Remix + Bun implementation of the HITL (Human-in-the-Loop) control pane
 │   │   └── tailwind.css            ✅ Tailwind styling
 │   └── root.tsx                    ✅ Root layout with navigation
 ├── src/
-│   ├── server.ts                   ✅ Express + Bun server + WebSocket handler
-│   └── approval-websocket-bridge.ts ✅ NATS ↔ WebSocket bridge
+│   ├── server.ts                   ✅ Express + Bun server + WebSocket handler (unified)
+│   ├── nats-handler.ts             ✅ LLM Router (merged from old nexus/)
+│   ├── approval-websocket-bridge.ts ✅ NATS ↔ WebSocket bridge
 ├── scripts/
 │   ├── test-hitl-flow.ts           ✅ End-to-end test script
 │   ├── send-test-approval.ts       ✅ Individual approval test
@@ -84,12 +85,12 @@ nats-server -js
 # Output: Listening on 127.0.0.1:4222
 ```
 
-### 2. Start Remix Dev Server (Terminal 2)
+### 2. Start Unified Nexus Server (Terminal 2)
 
 ```bash
-cd /Users/mhugo/code/singularity-incubation/nexus-remix
+cd /Users/mhugo/code/singularity-incubation/nexus
 bun run dev
-# Output: Remix + Bun HITL Control Panel running on http://localhost:3000
+# Output: Nexus Unified Server (LLM Router + HITL Control Panel) running on http://localhost:3000
 ```
 
 ### 3. Open Browser
@@ -106,7 +107,7 @@ Should see:
 ### 4. Run Test (Terminal 3)
 
 ```bash
-cd /Users/mhugo/code/singularity-incubation/nexus-remix
+cd /Users/mhugo/code/singularity-incubation/nexus
 
 # Test 1: Send approval request and approve it
 bun run test:approval
@@ -363,6 +364,7 @@ See `TESTING.md` for detailed troubleshooting.
 ### Development
 
 ```bash
+cd nexus
 bun run dev
 # Running on http://localhost:3000
 ```
@@ -370,6 +372,7 @@ bun run dev
 ### Production Build
 
 ```bash
+cd nexus
 bun run build
 du -sh build/
 # Should be ~85KB
