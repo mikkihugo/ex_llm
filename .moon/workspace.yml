@@ -11,6 +11,10 @@ projects:
   - 'templates_data'
   # - 'vendor/codex'  # Codex fork for builtin tool filtering (temporarily disabled for compilation)
 
+  # External Elixir packages
+  - 'packages/ex_llm'
+  - 'packages/ex_pgflow'
+
   # Rust workspace (all Rust engines consolidated)
   - 'rust'
 
