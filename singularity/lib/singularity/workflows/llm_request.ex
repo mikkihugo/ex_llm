@@ -5,8 +5,8 @@ defmodule Singularity.Workflows.LlmRequest do
   Handles routing and processing of LLM requests:
   1. Receive request with task type
   2. Determine complexity and select best model
-  3. Call LLM provider (Claude, Gemini, OpenAI, etc.)
-  4. Return result
+  3. Enqueue request for Nexus to execute via OpenAI Responses API
+  4. Emit acknowledgement
 
   Replaces: NATS llm.request topic + TypeScript pgflow workflow
 
@@ -33,6 +33,7 @@ defmodule Singularity.Workflows.LlmRequest do
   """
 
   require Logger
+  alias Singularity.Jobs.PgmqClient
 
   def __workflow_steps__ do
     [
@@ -53,14 +54,24 @@ defmodule Singularity.Workflows.LlmRequest do
       task_type: input["task_type"]
     )
 
-    {:ok, %{
-      request_id: input["request_id"],
-      task_type: input["task_type"],
-      messages: input["messages"],
-      model: input["model"] || "auto",
-      provider: input["provider"] || "auto",
-      received_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       request_id: input["request_id"],
+       task_type: input["task_type"],
+       messages: input["messages"] || [],
+       requested_model: input["model"] || "auto",
+       requested_provider: input["provider"] || "auto",
+       requested_complexity: input["complexity"],
+       api_version: input["api_version"] || "responses",
+       agent_id: input["agent_id"],
+       max_tokens: input["max_tokens"],
+       temperature: input["temperature"],
+       previous_response_id: input["previous_response_id"],
+       mcp_servers: input["mcp_servers"],
+       store: input["store"],
+       tools: input["tools"],
+       received_at: DateTime.utc_now()
+     }}
   end
 
   # ============================================================================
@@ -68,8 +79,8 @@ defmodule Singularity.Workflows.LlmRequest do
   # ============================================================================
 
   def select_model(prev) do
-    complexity = get_complexity_for_task(prev.task_type)
-    {model, provider} = select_best_model(complexity)
+    complexity = prev.requested_complexity || get_complexity_for_task(prev.task_type)
+    {model, provider} = decide_model(prev.requested_model, prev.requested_provider, complexity)
 
     Logger.debug("LLM Workflow: Selected model",
       task_type: prev.task_type,
@@ -79,11 +90,10 @@ defmodule Singularity.Workflows.LlmRequest do
     )
 
     {:ok,
-     Map.merge(prev, %{
-       selected_model: model,
-       selected_provider: provider,
-       complexity: complexity
-     })}
+     prev
+     |> Map.put(:selected_model, model)
+     |> Map.put(:selected_provider, provider)
+     |> Map.put(:complexity, complexity)}
   end
 
   # ============================================================================
@@ -91,38 +101,53 @@ defmodule Singularity.Workflows.LlmRequest do
   # ============================================================================
 
   def call_llm_provider(prev) do
-    Logger.info("LLM Workflow: Enqueuing request to Nexus LLM processor",
-      request_id: prev.request_id,
-      provider: prev.selected_provider,
-      model: prev.selected_model
+    payload =
+      %{
+        "request_id" => prev.request_id,
+        "agent_id" => prev.agent_id,
+        "task_type" => prev.task_type,
+        "complexity" => prev.complexity,
+        "messages" => prev.messages,
+        "model" => prev.selected_model,
+        "provider" => prev.selected_provider,
+        "api_version" => prev.api_version || "responses",
+        "max_tokens" => prev.max_tokens,
+        "temperature" => prev.temperature,
+        "previous_response_id" => prev.previous_response_id,
+        "mcp_servers" => prev.mcp_servers,
+        "store" => prev.store,
+        "tools" => prev.tools,
+        "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
+      }
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+      |> Map.new()
+
+    Logger.info("LLM Workflow: Enqueuing request to Nexus",
+      request_id: payload["request_id"],
+      provider: payload["provider"],
+      model: payload["model"],
+      api_version: payload["api_version"]
     )
 
-    # Enqueue request through Singularity's LLM.Service which routes to Nexus via pgmq
-    case Singularity.LLM.Service.call_with_prompt(
-      prev.complexity,
-      format_prompt(prev.messages),
-      task_type: prev.task_type
-    ) do
-      {:ok, %{request_id: request_id, status: :enqueued}} ->
-        # Request enqueued, but result comes asynchronously via LlmResultPoller
-        # For pgflow execution, we timeout and let the result poller handle persistence
+    case PgmqClient.send_message("ai_requests", payload) do
+      {:ok, message_id} ->
         Logger.info("LLM Workflow: Request enqueued successfully",
-          request_id: request_id
+          request_id: payload["request_id"],
+          message_id: message_id
         )
 
         {:ok,
-         Map.merge(prev, %{
-           response: "LLM request enqueued",
-           model_used: prev.selected_model,
-           tokens_used: 0,
-           cost_cents: 0,
-           success: true,
-           request_id: request_id
-         })}
+         prev
+         |> Map.put(:queue_message_id, message_id)
+         |> Map.put(:response, "LLM request enqueued")
+         |> Map.put(:model_used, prev.selected_model)
+         |> Map.put(:tokens_used, 0)
+         |> Map.put(:cost_cents, 0)
+         |> Map.put(:success, true)}
 
       {:error, reason} ->
         Logger.error("LLM Workflow: Failed to enqueue request to Nexus",
-          request_id: prev.request_id,
+          request_id: payload["request_id"],
           reason: inspect(reason)
         )
 
@@ -135,21 +160,22 @@ defmodule Singularity.Workflows.LlmRequest do
   # ============================================================================
 
   def publish_result(prev) do
-    result = %{
+    acknowledgement = %{
       request_id: prev.request_id,
-      response: prev.response,
+      status: :enqueued,
       model: prev.model_used,
+      queue_message_id: prev.queue_message_id,
       tokens_used: prev.tokens_used,
       cost_cents: prev.cost_cents,
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    Logger.info("LLM Workflow: Result published",
+    Logger.info("LLM Workflow: Request acknowledged (awaiting async result)",
       request_id: prev.request_id,
-      cost_cents: prev.cost_cents
+      queue_message_id: prev.queue_message_id
     )
 
-    {:ok, result}
+    {:ok, acknowledgement}
   end
 
   # ============================================================================
@@ -172,45 +198,46 @@ defmodule Singularity.Workflows.LlmRequest do
     end
   end
 
-  defp select_best_model(complexity) do
-    case complexity do
-      "simple" -> {"gemini-1.5-flash", "gemini"}
-      "medium" -> {"claude-sonnet-4.5", "anthropic"}
-      "complex" -> {"claude-opus", "anthropic"}
+  defp decide_model("auto", provider, complexity), do: select_best_model(complexity, provider)
+  defp decide_model(nil, provider, complexity), do: select_best_model(complexity, provider)
+
+  defp decide_model(model, provider, complexity) when is_binary(model) do
+    selected_provider =
+      case provider do
+        "auto" -> provider_for_model(model)
+        nil -> provider_for_model(model)
+        value -> value
+      end
+
+    {model, selected_provider || provider_for_complexity(complexity)}
+  end
+
+  defp decide_model(model, provider, complexity) when is_atom(model) do
+    decide_model(to_string(model), provider, complexity)
+  end
+
+  defp select_best_model(complexity, provider \\ "auto") do
+    case {complexity, provider} do
+      {"simple", _} -> {"gemini-1.5-flash", "gemini"}
+      {"medium", _} -> {"claude-sonnet-4.5", "anthropic"}
+      {"complex", _} -> {"claude-opus", "anthropic"}
+      {_, "anthropic"} -> {"claude-sonnet-4.5", "anthropic"}
+      {_, "gemini"} -> {"gemini-1.5-flash", "gemini"}
+      _ -> {"claude-sonnet-4.5", "anthropic"}
     end
   end
 
-  defp format_prompt(messages) do
-    messages
-    |> Enum.map(&format_message/1)
-    |> Enum.join("\n\n")
+  defp provider_for_model(model) do
+    cond do
+      String.starts_with?(model, "claude") -> "anthropic"
+      String.starts_with?(model, "gpt") -> "openai"
+      String.starts_with?(model, "gpt-4") -> "openai"
+      String.starts_with?(model, "gemini") -> "gemini"
+      true -> nil
+    end
   end
 
-  defp format_message(%{"role" => "user", "content" => content}), do: "User: #{content}"
-  defp format_message(%{"role" => "assistant", "content" => content}), do: "Assistant: #{content}"
-  defp format_message(%{"role" => "system", "content" => content}), do: "System: #{content}"
-  defp format_message(%{"content" => content}), do: content
-
-  defp calculate_cost(usage, model) do
-    # Cost per 1M tokens for different models
-    input_cost = case model do
-      "gemini-1.5-flash" -> 0.0375
-      "claude-sonnet-4.5" -> 3.0
-      "claude-opus" -> 15.0
-      _ -> 1.0
-    end
-
-    output_cost = case model do
-      "gemini-1.5-flash" -> 0.15
-      "claude-sonnet-4.5" -> 15.0
-      "claude-opus" -> 45.0
-      _ -> 1.0
-    end
-
-    input_tokens = usage.input_tokens || 0
-    output_tokens = usage.output_tokens || 0
-
-    # Convert to cents (multiply by 100 to get cents from dollars)
-    trunc((input_tokens * input_cost + output_tokens * output_cost) / 10_000)
-  end
+  defp provider_for_complexity("simple"), do: "gemini"
+  defp provider_for_complexity("complex"), do: "anthropic"
+  defp provider_for_complexity(_), do: "anthropic"
 end

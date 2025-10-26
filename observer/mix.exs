@@ -53,7 +53,8 @@ defmodule Observer.MixProject do
       {:ecto_psql_extras, "~> 0.7"},
       {:oban, "~> 2.18"},
       {:pgmq, "~> 0.4"},
-      {:ex_pgflow, path: "../packages/ex_pgflow"}
+      {:ex_pgflow, path: "../packages/ex_pgflow", override: true},
+      {:singularity, path: "../singularity"}
     ]
   end
 

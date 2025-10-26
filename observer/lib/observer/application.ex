@@ -5,9 +5,12 @@ defmodule Observer.Application do
 
   use Application
   alias Oban
+  require Logger
 
   @impl true
   def start(_type, _args) do
+    ensure_singularity_started()
+
     children = [
       ObserverWeb.Telemetry,
       Observer.Repo,
@@ -26,6 +29,23 @@ defmodule Observer.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Observer.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp ensure_singularity_started do
+    case Application.ensure_all_started(:singularity) do
+      {:ok, _} ->
+        :ok
+
+      {:error, {:already_started, _}} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("Observer could not start Singularity application automatically",
+          reason: inspect(reason)
+        )
+
+        :ok
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration

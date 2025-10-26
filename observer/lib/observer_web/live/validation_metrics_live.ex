@@ -1,111 +1,95 @@
 defmodule ObserverWeb.ValidationMetricsLive do
-  use ObserverWeb, :live_view
+  use ObserverWeb.DashboardLive, fetch: &Observer.Dashboard.validation_metrics/0
 
-  require Logger
-
-  @impl true
-  def mount(_params, _session, socket) do
-    Logger.info("ValidationMetricsLive: Mounting")
-
-    if connected?(socket) do
-      :timer.send_interval(15000, self(), :refresh_metrics)
-    end
-
-    {:ok,
-     socket
-     |> assign(:loading, true)
-     |> assign(:error, nil)
-     |> assign(:time_range, :last_week)
-     |> fetch_metrics()}
-  end
+  @ranges [last_hour: "Last hour", last_day: "Last day", last_week: "Last week"]
 
   @impl true
-  def handle_info(:refresh_metrics, socket) do
-    {:noreply, fetch_metrics(socket)}
+  def render(assigns) do
+    assigns = assign(assigns, :ranges, @ranges)
+
+    ~H"""
+    <div class="max-w-5xl mx-auto space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-semibold text-zinc-900">Validation Metrics</h1>
+          <p class="text-sm text-zinc-500 mt-1">
+            Accuracy, execution success, and timing across validation phases.
+          </p>
+        </div>
+        <div class="text-sm text-zinc-500">
+          <span class="font-medium text-zinc-700">Updated:</span>
+          <%= format_timestamp(@last_updated) %>
+        </div>
+      </div>
+
+      <%= if @error do %>
+        <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-800">
+          <p class="font-medium">Unable to load validation metrics</p>
+          <p class="text-sm mt-1"><%= @error %></p>
+        </div>
+      <% end %>
+
+      <%= if @data do %>
+        <section class="rounded-xl border border-zinc-200 bg-white shadow-sm">
+          <header class="border-b border-zinc-100 px-6 py-4">
+            <h2 class="text-lg font-semibold text-zinc-900">Key Performance Indicators</h2>
+          </header>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-zinc-100 text-sm">
+              <thead class="bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <tr>
+                  <th class="px-6 py-3">Range</th>
+                  <th class="px-6 py-3">Validation accuracy</th>
+                  <th class="px-6 py-3">Execution success</th>
+                  <th class="px-6 py-3">Avg validation time</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-zinc-100 bg-white">
+                <%= for {key, label} <- @ranges do %>
+                  <% kpis = Map.get(@data, key, %{}) %>
+                  <tr class="hover:bg-zinc-50">
+                    <td class="px-6 py-3 font-medium text-zinc-900"><%= label %></td>
+                    <td class="px-6 py-3 text-zinc-700">
+                      <%= percent(kpis[:validation_accuracy]) %>
+                    </td>
+                    <td class="px-6 py-3 text-zinc-700">
+                      <%= percent(kpis[:execution_success_rate]) %>
+                    </td>
+                    <td class="px-6 py-3 text-zinc-700">
+                      <%= ms(kpis[:average_validation_time_ms]) %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="rounded-xl border border-zinc-200 bg-white shadow-sm">
+          <header class="border-b border-zinc-100 px-6 py-4 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-zinc-900">Raw Dashboard Payload</h2>
+            <span class="text-xs font-medium uppercase tracking-wide text-zinc-400">debug</span>
+          </header>
+          <pre class="overflow-x-auto whitespace-pre-wrap bg-zinc-900 p-6 text-xs leading-5 text-zinc-100">
+    <%= pretty_json(@data) %>
+          </pre>
+        </section>
+      <% end %>
+    </div>
+    """
   end
 
-  @impl true
-  def handle_event("refresh", _params, socket) do
-    {:noreply, fetch_metrics(socket)}
-  end
+  defp percent(nil), do: "n/a"
 
-  @impl true
-  def handle_event("set_time_range", %{"range" => range}, socket) do
-    {:noreply,
-     socket
-     |> assign(:time_range, String.to_atom(range))
-     |> fetch_metrics()}
-  end
+  defp percent(value) when is_number(value),
+    do: :io_lib.format("~.2f%", [value * 100]) |> IO.iodata_to_binary()
 
-  defp fetch_metrics(socket) do
-    try do
-      dashboard = Singularity.Validation.ValidationDashboard.get_dashboard()
+  defp percent(_), do: "n/a"
 
-      case dashboard do
-        {:ok, data} ->
-          time_range = socket.assigns[:time_range] || :last_week
+  defp ms(nil), do: "n/a"
 
-          kpi_key =
-            case time_range do
-              :last_hour -> :last_hour
-              :last_day -> :last_day
-              :last_week -> :last_week
-              _ -> :last_week
-            end
+  defp ms(value) when is_number(value),
+    do: :io_lib.format("~.1f ms", [value]) |> IO.iodata_to_binary()
 
-          kpi = data[kpi_key]
-
-          socket
-          |> assign(:loading, false)
-          |> assign(:error, nil)
-          |> assign(:dashboard, data)
-          |> assign(:current_kpi, kpi)
-
-        {:error, reason} ->
-          socket
-          |> assign(:loading, false)
-          |> assign(:error, "Failed to load metrics: #{inspect(reason)}")
-          |> assign(:dashboard, nil)
-          |> assign(:current_kpi, nil)
-      end
-    rescue
-      error ->
-        Logger.error("ValidationMetricsLive: Error fetching metrics", error: inspect(error))
-
-        socket
-        |> assign(:loading, false)
-        |> assign(:error, "Error loading validation metrics")
-        |> assign(:dashboard, nil)
-        |> assign(:current_kpi, nil)
-    end
-  end
-
-  defp health_status(accuracy, success_rate) do
-    cond do
-      accuracy >= 0.90 and success_rate >= 0.90 -> "✅ Excellent"
-      accuracy >= 0.85 and success_rate >= 0.85 -> "✅ Good"
-      accuracy >= 0.75 and success_rate >= 0.75 -> "⚠️ Fair"
-      true -> "❌ Poor"
-    end
-  end
-
-  defp health_color(accuracy, success_rate) do
-    cond do
-      accuracy >= 0.90 and success_rate >= 0.90 -> "bg-green-600"
-      accuracy >= 0.85 and success_rate >= 0.85 -> "bg-green-500"
-      accuracy >= 0.75 and success_rate >= 0.75 -> "bg-yellow-500"
-      true -> "bg-red-500"
-    end
-  end
-
-  defp trend_arrow(:improving), do: "📈 Improving"
-  defp trend_arrow(:declining), do: "📉 Declining"
-  defp trend_arrow(:stable), do: "→ Stable"
-  defp trend_arrow(_), do: "❓ Unknown"
-
-  defp priority_color("HIGH"), do: "bg-red-100 text-red-800"
-  defp priority_color("MEDIUM"), do: "bg-yellow-100 text-yellow-800"
-  defp priority_color("LOW"), do: "bg-blue-100 text-blue-800"
-  defp priority_color("INFO"), do: "bg-green-100 text-green-800"
-  defp priority_color(_), do: "bg-gray-100 text-gray-800"
+  defp ms(_), do: "n/a"
 end

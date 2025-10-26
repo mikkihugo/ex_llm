@@ -1,63 +1,97 @@
 defmodule ObserverWeb.CostAnalyticsLive do
-  use ObserverWeb, :live_view
-
-  require Logger
+  use ObserverWeb.DashboardLive, fetch: &Observer.Dashboard.cost_analysis/0
 
   @impl true
-  def mount(_params, _session, socket) do
-    Logger.info("CostAnalyticsLive: Mounting")
+  def render(assigns) do
+    dashboard = assigns.data || %{}
 
-    if connected?(socket) do
-      :timer.send_interval(10000, self(), :refresh_metrics)
-    end
+    assigns =
+      assigns
+      |> assign(:total_cents, Map.get(dashboard, :total_cost_cents))
+      |> assign(:forecast_cents, Map.get(dashboard, :forecasted_monthly_cost_cents))
 
-    {:ok,
-     socket
-     |> assign(:loading, true)
-     |> assign(:error, nil)
-     |> fetch_metrics()}
+    ~H"""
+    <div class="max-w-6xl mx-auto space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-semibold text-zinc-900">Cost Analytics</h1>
+          <p class="text-sm text-zinc-500 mt-1">Spending by provider, model, and task type.</p>
+        </div>
+        <div class="text-sm text-zinc-500">
+          <span class="font-medium text-zinc-700">Updated:</span>
+          <%= format_timestamp(@last_updated) %>
+        </div>
+      </div>
+
+      <%= if @error do %>
+        <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-800">
+          <p class="font-medium">Unable to load cost analytics</p>
+          <p class="text-sm mt-1"><%= @error %></p>
+        </div>
+      <% end %>
+
+      <%= if @data do %>
+        <section class="grid gap-4 sm:grid-cols-2">
+          <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-zinc-400">Total Spend</p>
+            <p class="text-3xl font-bold text-emerald-600 mt-1">
+              $<%= cents_to_dollars(@total_cents) %>
+            </p>
+          </div>
+          <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-zinc-400">Forecast (30 days)</p>
+            <p class="text-3xl font-bold text-sky-600 mt-1">
+              $<%= cents_to_dollars(@forecast_cents) %>
+            </p>
+          </div>
+        </section>
+
+        <section class="rounded-xl border border-zinc-200 bg-white shadow-sm">
+          <header class="border-b border-zinc-100 px-6 py-4">
+            <h2 class="text-lg font-semibold text-zinc-900">Spend by Provider</h2>
+          </header>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-zinc-100 text-sm">
+              <thead class="bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <tr>
+                  <th class="px-6 py-3">Provider</th>
+                  <th class="px-6 py-3">Cost</th>
+                  <th class="px-6 py-3">Executions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-zinc-100 bg-white">
+                <%= for entry <- Map.get(@data, :cost_by_provider, []) do %>
+                  <tr class="hover:bg-zinc-50">
+                    <td class="px-6 py-3 font-medium text-zinc-900"><%= entry.provider %></td>
+                    <td class="px-6 py-3 text-zinc-700">
+                      $<%= cents_to_dollars(entry.total_cost_cents) %>
+                    </td>
+                    <td class="px-6 py-3 text-zinc-700"><%= entry.execution_count %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="rounded-xl border border-zinc-200 bg-white shadow-sm">
+          <header class="border-b border-zinc-100 px-6 py-4 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-zinc-900">Raw Dashboard Payload</h2>
+            <span class="text-xs font-medium uppercase tracking-wide text-zinc-400">debug</span>
+          </header>
+          <pre class="overflow-x-auto whitespace-pre-wrap bg-zinc-900 p-6 text-xs leading-5 text-zinc-100">
+    <%= pretty_json(@data) %>
+          </pre>
+        </section>
+      <% end %>
+    </div>
+    """
   end
 
-  @impl true
-  def handle_info(:refresh_metrics, socket) do
-    {:noreply, fetch_metrics(socket)}
-  end
+  defp cents_to_dollars(nil), do: "0.00"
 
-  @impl true
-  def handle_event("refresh", _params, socket) do
-    {:noreply, fetch_metrics(socket)}
-  end
+  defp cents_to_dollars(value) when is_number(value),
+    do: :io_lib.format("~.2f", [value / 100]) |> IO.iodata_to_binary()
 
-  defp fetch_metrics(socket) do
-    try do
-      {:ok, dashboard} = Singularity.LLM.CostAnalysisDashboard.get_dashboard()
-
-      socket
-      |> assign(:loading, false)
-      |> assign(:error, nil)
-      |> assign(:dashboard, dashboard)
-    rescue
-      error ->
-        Logger.error("CostAnalyticsLive: Error fetching metrics",
-          error: inspect(error)
-        )
-
-        socket
-        |> assign(:loading, false)
-        |> assign(:error, "Failed to load cost metrics: #{inspect(error)}")
-        |> assign(:dashboard, nil)
-    end
-  end
-
-  defp format_cost(cents) when is_number(cents) do
-    (cents / 100) |> Float.round(2) |> :erlang.float_to_binary([decimals: 2])
-  end
-
-  defp format_cost(_), do: "N/A"
-
-  defp format_percentage(value) when is_number(value) do
-    (value * 100) |> Float.round(1) |> :erlang.float_to_binary([decimals: 1])
-  end
-
-  defp format_percentage(_), do: "N/A"
+  defp cents_to_dollars(_), do: "0.00"
 end

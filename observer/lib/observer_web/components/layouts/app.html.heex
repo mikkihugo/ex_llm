@@ -1,32 +1,31 @@
-<header class="px-4 sm:px-6 lg:px-8">
-  <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
-    <div class="flex items-center gap-4">
-      <a href="/">
-        <img src={~p"/images/logo.svg"} width="36" />
+<header class="bg-white border-b border-zinc-200">
+  <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+    <div class="flex items-center gap-3">
+      <a href="/" class="inline-flex items-center gap-2">
+        <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-sky-500 text-sm font-semibold text-white">
+          OB
+        </span>
+        <span class="text-lg font-semibold text-zinc-900">Observer</span>
       </a>
-      <p class="bg-brand/5 text-brand rounded-full px-2 font-medium leading-6">
+      <span class="rounded-full bg-zinc-100 px-2 py-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
         v<%= Application.spec(:phoenix, :vsn) %>
-      </p>
+      </span>
     </div>
-    <div class="flex items-center gap-4 font-semibold leading-6 text-zinc-900">
-      <a href="https://twitter.com/elixirphoenix" class="hover:text-zinc-700">
-        @elixirphoenix
-      </a>
-      <a href="https://github.com/phoenixframework/phoenix" class="hover:text-zinc-700">
-        GitHub
-      </a>
-      <a
-        href="https://hexdocs.pm/phoenix/overview.html"
-        class="rounded-lg bg-zinc-100 px-2 py-1 hover:bg-zinc-200/80"
-      >
-        Get Started <span aria-hidden="true">&rarr;</span>
-      </a>
-    </div>
+    <nav class="hidden items-center gap-4 text-sm font-medium text-zinc-600 md:flex">
+      <.nav_link to={~p"/"}>System Health</.nav_link>
+      <.nav_link to={~p"/adaptive-threshold"}>Adaptive Threshold</.nav_link>
+      <.nav_link to={~p"/nexus-llm-health"}>Nexus LLM</.nav_link>
+      <.nav_link to={~p"/validation-metrics"}>Validation</.nav_link>
+      <.nav_link to={~p"/agent-performance"}>Agents</.nav_link>
+      <.nav_link to={~p"/task-execution"}>Task Execution</.nav_link>
+      <.nav_link to={~p"/cost-analytics"}>Cost</.nav_link>
+      <.nav_link to={~p"/code-quality"}>Code Quality</.nav_link>
+      <.nav_link to={~p"/rule-evolution"}>Rule Evolution</.nav_link>
+      <.nav_link to={~p"/knowledge-base"}>Knowledge Base</.nav_link>
+    </nav>
   </div>
 </header>
-<main class="px-4 py-20 sm:px-6 lg:px-8">
-  <div class="mx-auto max-w-2xl">
-    <.flash_group flash={@flash} />
-    <%= @inner_content %>
-  </div>
+<main class="mx-auto max-w-7xl px-6 py-8">
+  <.flash_group flash={@flash} class="mb-4" />
+  <%= @inner_content %>
 </main>

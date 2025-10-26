@@ -591,72 +591,40 @@ defmodule ObserverWeb.CoreComponents do
   attr :class, :string, default: nil
   attr :rest, :global
 
-  def icon(%{name: "hero-" <> name} = assigns) do
-    spec = heroicon_spec(name)
-
-    icon_attrs =
-      heroicon_assigns(
-        assigns.class,
-        spec.style,
-        assigns_to_attributes(assigns, [:name, :class])
-      )
-
-    assigns =
-      assigns
-      |> assign(:heroicon_component, {Heroicons, spec.fun})
-      |> assign(
-        :heroicon_assigns,
-        Map.put(icon_attrs, :__changed__, heroicon_changed(icon_attrs))
-      )
+  def icon(assigns) do
+    assigns = assign(assigns, :name, assigns.name || "")
 
     ~H"""
-    <%= Phoenix.LiveView.TagEngine.component(@heroicon_component, @heroicon_assigns) %>
+    <span class={[
+      "inline-flex items-center justify-center",
+      @class,
+      @name
+    ]} />
     """
   end
 
-  defp heroicon_spec(name) do
-    parts = String.split(name, "-")
+  @doc """
+  Renders a navigation link for the Observer header.
+  """
+  attr :to, :any, required: true
+  attr :class, :string, default: nil
+  slot :inner_block, required: true
 
-    {style, icon_parts} =
-      case List.last(parts) do
-        "solid" -> {:solid, Enum.drop(parts, -1)}
-        "mini" -> {:mini, Enum.drop(parts, -1)}
-        "micro" -> {:micro, Enum.drop(parts, -1)}
-        _ -> {:outline, parts}
-      end
+  def nav_link(assigns) do
+    assigns = assign_new(assigns, :class, fn -> nil end)
 
-    fun =
-      icon_parts
-      |> Enum.join("_")
-      |> String.to_atom()
-
-    %{style: style, fun: fun}
+    ~H"""
+    <.link navigate={@to} class={nav_link_class(@class)}>
+      <%= render_slot(@inner_block) %>
+    </.link>
+    """
   end
 
-  defp heroicon_assigns(class, style, attrs) do
-    base = %{
-      solid: style == :solid,
-      mini: style == :mini,
-      micro: style == :micro
-    }
+  defp nav_link_class(nil),
+    do:
+      "rounded-md px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 hover:bg-zinc-100"
 
-    base =
-      case class do
-        nil -> base
-        class -> Map.put(base, :class, class)
-      end
-
-    Enum.reduce(attrs, base, fn
-      {:class, _}, acc -> acc
-      {:name, _}, acc -> acc
-      {key, value}, acc when is_atom(key) -> Map.put(acc, key, value)
-      {key, value}, acc -> Map.put(acc, String.to_atom(key), value)
-    end)
-  end
-
-  defp heroicon_changed(assigns) do
-    Map.new(assigns, fn {key, _} -> {key, true} end)
-  end
+  defp nav_link_class(extra), do: nav_link_class(nil) <> " " <> extra
 
   ## JS Commands
 

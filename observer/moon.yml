@@ -1,0 +1,55 @@
+$schema: '../.moon/cache/schemas/project.json'
+
+type: 'application'
+language: 'elixir'
+
+project:
+  name: 'observer'
+  description: 'Phoenix LiveView dashboard for human-in-the-loop approvals and runtime telemetry'
+
+tasks:
+  deps:
+    command: 'mix deps.get'
+    inputs:
+      - 'mix.exs'
+      - 'mix.lock'
+
+  compile:
+    command: 'mix compile'
+    inputs:
+      - 'lib/**/*.ex'
+      - 'lib/**/*.heex'
+      - 'mix.exs'
+    deps:
+      - '~:deps'
+
+  format:
+    command: 'mix format'
+    inputs:
+      - 'lib/**/*.ex'
+      - 'lib/**/*.heex'
+      - 'test/**/*.exs'
+      - '.formatter.exs'
+
+  format-check:
+    command: 'mix format --check-formatted'
+    inputs:
+      - 'lib/**/*.ex'
+      - 'lib/**/*.heex'
+      - 'test/**/*.exs'
+      - '.formatter.exs'
+
+  test:
+    command: 'mix test'
+    inputs:
+      - 'lib/**/*.ex'
+      - 'lib/**/*.heex'
+      - 'test/**/*.exs'
+    deps:
+      - '~:compile'
+
+  server:
+    command: 'mix phx.server'
+    local: true
+    deps:
+      - '~:compile'

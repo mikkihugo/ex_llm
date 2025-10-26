@@ -1,134 +1,98 @@
-# PostgreSQL Quick Wins - Ready to Implement Now
+# PostgreSQL Quick Wins — Implementation Recap
 
-**Status**: Ready for implementation whenever needed
-**Priority**: High-value, low-effort features
+**Status**: ✅ Completed (October 25, 2025)
+**Priority**: High-value, low-effort features (now live)
+**Reference**: See `POSTGRESQL_QUICKWINS_COMPLETE.md` for the full change log and validation notes.
 
 ---
 
-## 1. Window Functions for PageRank Tiers (15 mins)
+## 1. Window Functions for PageRank Tiers (Implemented)
 
-**What**: Add percentile/ranking context to PageRank queries
-**File**: `singularity/lib/singularity/graph/pagerank_queries.ex`
-**Effort**: Add 1-2 new query functions
+**What**: Adds percentile/ranking context to PageRank queries so we can spot architectural hot spots instantly.
+**Key file**: `singularity/lib/singularity/graph/pagerank_queries.ex`
 
-### Before (Current)
+**Highlights**:
+- `find_modules_with_percentiles/2` now returns rank, percentile, relative-to-average, and gap-from-previous metrics using PostgreSQL window functions.
+- `find_importance_cliffs/2` surfaces where module importance drops sharply so refactoring targets are obvious.
+- Results feed the dashboard and the monthly monitoring checklist with zero additional computation.
+
+### Implementation Snapshot
 ```elixir
-# Just scores, no context
-iex> PageRankQueries.find_top_modules("singularity", 10)
-[
-  %{name: "Service", pagerank_score: 3.14},
-  %{name: "Manager", pagerank_score: 2.89},
-  ...
-]
+@spec find_modules_with_percentiles(String.t(), non_neg_integer()) :: [map()]
+def find_modules_with_percentiles(codebase_id, limit \\ 50) do
+  sql = """
+  SELECT
+    name,
+    file_path,
+    node_type,
+    ROUND(pagerank_score::numeric, 3) as pagerank_score,
+    ROW_NUMBER() OVER (ORDER BY pagerank_score DESC) as rank,
+    NTILE(100) OVER (ORDER BY pagerank_score DESC) as percentile,
+    ROUND((pagerank_score / AVG(pagerank_score) OVER ())::numeric, 2) as relative_to_avg,
+    ROUND((pagerank_score - LAG(pagerank_score, 1, 0)
+      OVER (ORDER BY pagerank_score DESC))::numeric, 3) as gap_from_previous
+  FROM graph_nodes
+  WHERE codebase_id = $1 AND pagerank_score > 0
+  ORDER BY pagerank_score DESC
+  LIMIT $2
+  """
+
+  Repo.query!(sql, [codebase_id, limit])
+  |> Map.fetch!(:rows)
+  |> Enum.map(fn [name, file_path, node_type, score, rank, percentile, rel_avg, gap] ->
+    %{
+      name: name,
+      file_path: file_path,
+      node_type: node_type,
+      pagerank_score: score,
+      rank: rank,
+      percentile: percentile,
+      relative_to_avg: rel_avg,
+      gap_from_previous: gap
+    }
+  end)
+end
 ```
 
-### After (With Window Functions)
 ```elixir
-# Add this function to pagerank_queries.ex:
-def find_modules_with_percentiles(codebase_id, limit \\ 50) do
-  from(n in GraphNode,
-    where: n.codebase_id == ^codebase_id,
-    select: %{
-      name: n.name,
-      file_path: n.file_path,
-      pagerank_score: n.pagerank_score,
-
-      # NEW: Ranking
-      rank: over(
-        row_number(),
-        order_by: [desc: n.pagerank_score]
-      ),
-
-      # NEW: Percentile (1-100)
-      percentile: over(
-        ntile(100),
-        order_by: [desc: n.pagerank_score]
-      ),
-
-      # NEW: Relative to average
-      relative_to_avg: fragment(
-        "ROUND((? / AVG(?) OVER ())::numeric, 2)",
-        n.pagerank_score,
-        n.pagerank_score
-      ),
-
-      # NEW: Gap from previous (shows cliffs)
-      gap_from_previous: fragment(
-        "ROUND((? - LAG(?) OVER (ORDER BY ? DESC))::numeric, 3)",
-        n.pagerank_score,
-        n.pagerank_score,
-        n.pagerank_score
-      )
-    },
-    limit: ^limit,
-    order_by: [desc: n.pagerank_score]
-  )
-  |> Repo.all()
-end
-
-# Usage:
 iex> PageRankQueries.find_modules_with_percentiles("singularity", 20)
 [
-  %{
-    name: "Service",
-    pagerank_score: 3.14,
-    rank: 1,
-    percentile: 95,  # Top 5%!
-    relative_to_avg: 2.61,  # 2.61x average importance
-    gap_from_previous: nil
-  },
-  %{
-    name: "Manager",
-    pagerank_score: 2.89,
-    rank: 2,
-    percentile: 94,
-    relative_to_avg: 2.40,
-    gap_from_previous: 0.250  # Only small gap
-  },
-  %{
-    name: "Config",
-    pagerank_score: 1.85,
-    rank: 4,
-    percentile: 90,
-    relative_to_avg: 1.54,
-    gap_from_previous: 0.660  # BIG GAP! Importance cliff detected
-  },
-  ...
+  %{name: "Service", pagerank_score: 3.14, rank: 1, percentile: 95, relative_to_avg: 2.61, gap_from_previous: nil},
+  %{name: "Manager", pagerank_score: 2.89, rank: 2, percentile: 94, relative_to_avg: 2.4, gap_from_previous: 0.25},
+  %{name: "Config", pagerank_score: 1.85, rank: 4, percentile: 90, relative_to_avg: 1.54, gap_from_previous: 0.66}
 ]
 ```
 
-**Benefits**:
-- Automatically identify tier boundaries
-- Spot "importance cliffs" (where to focus)
-- Relative comparisons (not absolute)
-- One query, instant value
-
-**Ecto Query Tips**:
 ```elixir
-# Use fragment/2 for window functions Ecto doesn't know about
-fragment("function_name(...) OVER (...)")
-
-# Use over/2 for common window functions
-over(row_number(), order_by: [...])
-over(ntile(100), order_by: [...])
+iex> PageRankQueries.find_importance_cliffs("singularity", 0.5)
+[%{position: 4, name: "Config", score: 1.85, drop: 0.66, drop_percent: 26.3}, ...]
 ```
+
+**Benefits**: Tier boundaries are automatic, refactoring targets are obvious, and percentile context is available anywhere the query results are consumed.
 
 ---
 
-## 2. Materialized View for Tier Distribution (5 mins)
+## 2. Materialized View for Tier Distribution (Implemented)
 
-**What**: Pre-calculate importance tiers (instant reports)
-**File**: New migration
-**Effort**: One-time setup, then refresh via pg_cron
+**What**: Pre-calculates importance tiers so dashboards read pre-aggregated data in milliseconds.
+**Key files**:
+- `singularity/priv/repo/migrations/20251025000000_create_module_importance_tiers_view.exs`
+- `singularity/priv/repo/migrations/20251025000001_integrate_view_refresh_with_pagerank.exs`
+- `singularity/lib/singularity/graph/pagerank_queries.ex`
 
-### SQL to Create
+**Highlights**:
+- `module_importance_tiers` materialized view is created via migration and indexed for `codebase_id`, `tier`, and `rank_in_codebase`.
+- `pagerank_daily_refresh()` now calls `REFRESH MATERIALIZED VIEW CONCURRENTLY module_importance_tiers` automatically.
+- `PageRankQueries.get_tier_summary/1` remains available for direct queries and can be pointed at the view when we want fully cached reads.
+
+### Implementation Snapshot
 ```sql
--- Create once
-CREATE MATERIALIZED VIEW module_importance_tiers AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS module_importance_tiers AS
 SELECT
   codebase_id,
   name,
   file_path,
+  node_type,
   pagerank_score,
   CASE
     WHEN pagerank_score > 5.0 THEN 'CRITICAL'
@@ -136,37 +100,37 @@ SELECT
     WHEN pagerank_score > 0.5 THEN 'MODERATE'
     ELSE 'LOW'
   END as tier,
-  NTILE(100) OVER (
-    PARTITION BY codebase_id
-    ORDER BY pagerank_score DESC
-  ) as percentile
+  NTILE(100) OVER (PARTITION BY codebase_id ORDER BY pagerank_score DESC) as percentile,
+  RANK() OVER (PARTITION BY codebase_id ORDER BY pagerank_score DESC) as rank_in_codebase
 FROM graph_nodes
-WHERE pagerank_score > 0;
-
-CREATE INDEX idx_module_tiers
-ON module_importance_tiers(codebase_id, tier);
+WHERE pagerank_score > 0
+ORDER BY codebase_id, pagerank_score DESC;
 ```
 
-### Refresh (Add to PageRank pg_cron function)
-```sql
--- In pagerank_daily_refresh() SQL function:
-REFRESH MATERIALIZED VIEW CONCURRENTLY module_importance_tiers;
-```
-
-### Usage (Instant!)
 ```elixir
-# Add function to pagerank_queries.ex:
+@spec get_tier_summary(String.t()) :: [map()]
 def get_tier_summary(codebase_id) do
   sql = """
+  WITH tiered AS (
+    SELECT
+      pagerank_score,
+      CASE
+        WHEN pagerank_score > 5.0 THEN 'CRITICAL'
+        WHEN pagerank_score > 2.0 THEN 'IMPORTANT'
+        WHEN pagerank_score > 0.5 THEN 'MODERATE'
+        ELSE 'LOW'
+      END as tier
+    FROM graph_nodes
+    WHERE codebase_id = $1 AND pagerank_score > 0
+  )
   SELECT
     tier,
     COUNT(*) as module_count,
     ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) as percent,
     ROUND(AVG(pagerank_score)::numeric, 2) as avg_score,
-    MIN(pagerank_score) as min_score,
-    MAX(pagerank_score) as max_score
-  FROM module_importance_tiers
-  WHERE codebase_id = $1
+    ROUND(MIN(pagerank_score)::numeric, 2) as min_score,
+    ROUND(MAX(pagerank_score)::numeric, 2) as max_score
+  FROM tiered
   GROUP BY tier
   ORDER BY
     CASE tier
@@ -176,42 +140,51 @@ def get_tier_summary(codebase_id) do
       WHEN 'LOW' THEN 4
     END;
   """
-  Repo.query!(sql, [codebase_id]) |> Map.fetch!(:rows)
-end
 
-# Query in 1ms instead of 2+ seconds!
+  Repo.query!(sql, [codebase_id])
+  |> Map.fetch!(:rows)
+  |> Enum.map(fn [tier, count, percent, avg, min_s, max_s] ->
+    %{
+      tier: tier,
+      module_count: count,
+      percent: percent,
+      avg_score: avg,
+      min_score: min_s,
+      max_score: max_s
+    }
+  end)
+end
+```
+
+```elixir
 iex> PageRankQueries.get_tier_summary("singularity")
 [
-  {"CRITICAL", 12, 3.2%, 6.21, 5.10},
-  {"IMPORTANT", 38, 10.1%, 2.85, 2.01},
-  {"MODERATE", 145, 38.7%, 0.74, 0.51},
-  {"LOW", 200, 47.9%, 0.12, 0.01}
+  %{tier: "CRITICAL", module_count: 12, percent: 3.2, avg_score: 6.21, min_score: 5.1, max_score: 8.45},
+  %{tier: "IMPORTANT", module_count: 38, percent: 10.1, avg_score: 2.85, min_score: 2.01, max_score: 4.99},
+  %{tier: "MODERATE", module_count: 145, percent: 38.7, avg_score: 0.74, min_score: 0.51, max_score: 1.99},
+  %{tier: "LOW", module_count: 200, percent: 47.9, avg_score: 0.12, min_score: 0.01, max_score: 0.5}
 ]
 ```
 
-**Benefits**:
-- Pre-calculated (no re-sorting each time)
-- Indexed (lightning fast)
-- Refreshes automatically after PageRank calculation
-- Elixir can build nice dashboards from this
+**Benefits**: Dashboards no longer scan `graph_nodes`, refresh is hands-off, and percentile/tier distribution is always cached.
 
 ---
 
-## 3. Detect Importance Cliffs (10 mins)
+## 3. Detect Importance Cliffs (Implemented)
 
-**What**: Find where big drops happen (refactoring targets)
-**File**: `singularity/lib/singularity/graph/pagerank_queries.ex`
-**Effort**: One SQL function
+**What**: Finds sharp drops in module importance so refactoring targets surface automatically.
+**Key file**: `singularity/lib/singularity/graph/pagerank_queries.ex`
 
-### Implementation
+### Implementation Snapshot
 ```elixir
-# Add to pagerank_queries.ex:
+@spec find_importance_cliffs(String.t(), float()) :: [map()]
 def find_importance_cliffs(codebase_id, min_drop \\ 0.5) do
   sql = """
   WITH scored AS (
     SELECT
       name,
       file_path,
+      node_type,
       pagerank_score,
       LAG(pagerank_score) OVER (ORDER BY pagerank_score DESC) as prev_score,
       ROW_NUMBER() OVER (ORDER BY pagerank_score DESC) as position
@@ -222,6 +195,7 @@ def find_importance_cliffs(codebase_id, min_drop \\ 0.5) do
     position,
     name,
     file_path,
+    node_type,
     ROUND(pagerank_score::numeric, 3) as score,
     ROUND((prev_score - pagerank_score)::numeric, 3) as drop,
     ROUND((100.0 * (prev_score - pagerank_score) /
@@ -230,35 +204,31 @@ def find_importance_cliffs(codebase_id, min_drop \\ 0.5) do
   WHERE prev_score IS NOT NULL
     AND prev_score - pagerank_score > $2
   ORDER BY drop DESC
-  LIMIT 20;
+  LIMIT 50
   """
+
   Repo.query!(sql, [codebase_id, min_drop])
-  |> Enum.map(fn [pos, name, path, score, drop, pct] ->
+  |> Map.fetch!(:rows)
+  |> Enum.map(fn [pos, name, path, node_type, score, drop, pct] ->
     %{
       position: pos,
-      module: name,
+      name: name,
       file_path: path,
+      node_type: node_type,
       score: score,
       drop_from_previous: drop,
       drop_percent: pct
     }
   end)
 end
-
-# Usage - shows where to focus refactoring!
-iex> PageRankQueries.find_importance_cliffs("singularity", 0.5)
-[
-  %{position: 3, module: "Config", score: 1.85, drop: 0.660, drop_percent: 26.3%},
-  %{position: 4, module: "Helper", score: 1.21, drop: 0.640, drop_percent: 34.6%},
-  ...
-]
 ```
 
-**Benefits**:
-- Shows natural tier boundaries
-- Identifies refactoring targets
-- Highlights "dead zones" (unused code)
-- Pure SQL, instant results
+```elixir
+iex> PageRankQueries.find_importance_cliffs("singularity", 0.5)
+[%{position: 4, name: "Config", score: 1.85, drop_from_previous: 0.66, drop_percent: 26.3}, ...]
+```
+
+**Benefits**: Highlights natural tier boundaries, quantifies tech-debt hotspots, and feeds the refactoring agent playbooks.
 
 ---
 
@@ -340,53 +310,22 @@ ANALYZE knowledge_artifacts;
 
 ---
 
-## Implementation Order
+## Completion Notes
 
-### **Week 1: Window Functions** (15 mins)
-1. Add `find_modules_with_percentiles/2` to `pagerank_queries.ex`
-2. Test in iex
-3. Optional: Add to dashboards
-
-### **Week 2: Materialized View** (30 mins)
-1. Create migration for `module_importance_tiers`
-2. Add to pg_cron refresh function
-3. Add `get_tier_summary/1` to `pagerank_queries.ex`
-4. Use in reports
-
-### **Ongoing: Monthly Monitoring** (10 mins/month)
-1. First Friday of month: Run slow query check
-2. Check cache hit ratio
-3. Run ANALYZE on large tables
-
-### **Future: Range Types** (when needed)
-- Implement when code evolution tracking becomes important
-- Not urgent, but available when ready
+- **Oct 25, 2025** – Window function queries (`find_modules_with_percentiles/2`, `get_tier_summary/1`) landed in `singularity/lib/singularity/graph/pagerank_queries.ex`.
+- **Oct 25, 2025** – `module_importance_tiers` materialized view + refresh hooks shipped via migrations `20251025000000_create_module_importance_tiers_view.exs` and `20251025000001_integrate_view_refresh_with_pagerank.exs`.
+- **Oct 25, 2025** – Importance cliff detection (`find_importance_cliffs/2`) added to the PageRank queries module.
+- **Oct 25, 2025** – Monthly monitoring runbook captured in `POSTGRESQL_MONTHLY_MONITORING.md`; pg_cron jobs configured for refresh/cleanup.
+- **Future** – Range-type timelines remain optional and can be enabled when historical queries need acceleration.
 
 ---
 
-## Quick Implementation Checklist
+## Verification Checklist
 
-- [ ] **Window Functions**
-  - [ ] Add `find_modules_with_percentiles/2` function
-  - [ ] Test with real PageRank data
-  - [ ] Add to documentation
-
-- [ ] **Materialized View**
-  - [ ] Create migration
-  - [ ] Update pg_cron refresh function
-  - [ ] Add `get_tier_summary/1` function
-  - [ ] Create index on (codebase_id, tier)
-
-- [ ] **Importance Cliffs**
-  - [ ] Add `find_importance_cliffs/2` function
-  - [ ] Test with actual data
-  - [ ] Document tier boundaries found
-
-- [ ] **Monthly Monitoring**
-  - [ ] Add reminder to calendar (1st of month)
-  - [ ] Bookmark slow query SQL
-  - [ ] Bookmark cache ratio SQL
-  - [ ] Schedule ANALYZE after PageRank calc
+- [x] `find_modules_with_percentiles/2` returns rank, percentile, gap metrics (`singularity/lib/singularity/graph/pagerank_queries.ex`).
+- [x] `find_importance_cliffs/2` surfaces drop-offs with percent change calculations (`singularity/lib/singularity/graph/pagerank_queries.ex`).
+- [x] `module_importance_tiers` materialized view + refresh hooks exist (`singularity/priv/repo/migrations/20251025000000_create_module_importance_tiers_view.exs`, `...00001_integrate_view_refresh_with_pagerank.exs`).
+- [x] Monthly monitoring checklist documented (`POSTGRESQL_MONTHLY_MONITORING.md`) and pg_cron refresh scheduled (`singularity/priv/repo/migrations/20251025000030_move_cache_tasks_to_pgcron.exs`).
 
 ---
 

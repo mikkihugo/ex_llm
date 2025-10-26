@@ -1,149 +1,112 @@
 defmodule ObserverWeb.AdaptiveThresholdLive do
-  use ObserverWeb, :live_view
-
-  require Logger
+  use ObserverWeb.DashboardLive, fetch: &Observer.Dashboard.adaptive_threshold/0
 
   @impl true
-  def mount(_params, _session, socket) do
-    Logger.info("AdaptiveThresholdLive: Mounting")
+  def render(assigns) do
+    ~H"""
+    <div class="max-w-4xl mx-auto space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-semibold text-zinc-900">Adaptive Threshold</h1>
+          <p class="text-sm text-zinc-500 mt-1">
+            Confidence gating status for automated rule publishing.
+          </p>
+        </div>
+        <div class="text-sm text-zinc-500">
+          <span class="font-medium text-zinc-700">Updated:</span>
+          <%= format_timestamp(@last_updated) %>
+        </div>
+      </div>
 
-    if connected?(socket) do
-      # Auto-refresh metrics every 5 seconds
-      :timer.send_interval(5000, self(), :refresh_metrics)
-    end
+      <%= if @error do %>
+        <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-800">
+          <p class="font-medium">Unable to load adaptive threshold state</p>
+          <p class="text-sm mt-1"><%= @error %></p>
+        </div>
+      <% end %>
 
-    {:ok,
-     socket
-     |> assign(:loading, true)
-     |> assign(:error, nil)
-     |> fetch_metrics()}
+      <%= if @data do %>
+        <section class="rounded-xl border border-zinc-200 bg-white shadow-sm p-6 space-y-4">
+          <header class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-zinc-900">Current Threshold</h2>
+              <p class="text-xs uppercase tracking-wide text-zinc-400">
+                status: <%= @data.status.convergence_status %>
+              </p>
+            </div>
+            <div class="text-right">
+              <p class="text-3xl font-bold text-sky-600">
+                <%= Float.round(@data.status.current_threshold, 3) %>
+              </p>
+              <p class="text-xs text-zinc-500">
+                Target success rate: <%= percent(@data.status.target_success_rate) %>
+              </p>
+            </div>
+          </header>
+
+          <dl class="grid gap-4 sm:grid-cols-2">
+            <div class="rounded-lg bg-sky-50 p-4">
+              <dt class="text-xs font-semibold uppercase text-sky-600">Actual success rate</dt>
+              <dd class="text-lg font-semibold text-sky-900">
+                <%= percent(@data.status.actual_success_rate) %>
+              </dd>
+            </div>
+            <div class="rounded-lg bg-indigo-50 p-4">
+              <dt class="text-xs font-semibold uppercase text-indigo-600">Direction</dt>
+              <dd class="text-lg font-semibold text-indigo-900">
+                <%= human(@data.status.adjustment_direction) %>
+              </dd>
+            </div>
+            <div class="rounded-lg bg-emerald-50 p-4">
+              <dt class="text-xs font-semibold uppercase text-emerald-600">Published rules</dt>
+              <dd class="text-lg font-semibold text-emerald-900">
+                <%= @data.status.published_rules %>
+              </dd>
+            </div>
+            <div class="rounded-lg bg-rose-50 p-4">
+              <dt class="text-xs font-semibold uppercase text-rose-600">Successful rules</dt>
+              <dd class="text-lg font-semibold text-rose-900">
+                <%= @data.status.successful_rules %>
+              </dd>
+            </div>
+          </dl>
+
+          <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+            <p class="text-sm text-zinc-700">
+              <span class="font-medium text-zinc-900">Recommendation:</span>
+              <%= @data.status.recommendation %>
+            </p>
+          </div>
+
+          <section class="rounded-lg border border-zinc-100 bg-white">
+            <header class="border-b border-zinc-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              Raw status payload
+            </header>
+            <pre class="overflow-x-auto whitespace-pre-wrap bg-zinc-900 p-4 text-xs leading-5 text-zinc-100">
+    <%= pretty_json(@data) %>
+            </pre>
+          </section>
+        </section>
+      <% end %>
+    </div>
+    """
   end
 
-  @impl true
-  def handle_info(:refresh_metrics, socket) do
-    {:noreply, fetch_metrics(socket)}
+  defp percent(nil), do: "n/a"
+
+  defp percent(value) when is_number(value),
+    do: :io_lib.format("~.2f%", [value * 100]) |> IO.iodata_to_binary()
+
+  defp percent(_), do: "n/a"
+
+  defp human(nil), do: "unknown"
+
+  defp human(atom) when is_atom(atom) do
+    atom
+    |> Atom.to_string()
+    |> String.replace("_", " ")
+    |> String.capitalize()
   end
 
-  @impl true
-  def handle_event("refresh", _params, socket) do
-    {:noreply, fetch_metrics(socket)}
-  end
-
-  @impl true
-  def handle_event("reset_threshold", _params, socket) do
-    Logger.warning("AdaptiveThresholdLive: User requested threshold reset")
-
-    case Singularity.Evolution.AdaptiveConfidenceGating.reset_to_default() do
-      :ok ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Threshold reset to default (0.85)")
-         |> fetch_metrics()}
-
-      {:error, reason} ->
-        {:noreply,
-         socket
-         |> put_flash(:error, "Failed to reset threshold: #{inspect(reason)}")
-         |> fetch_metrics()}
-    end
-  end
-
-  defp fetch_metrics(socket) do
-    try do
-      metrics = Singularity.Evolution.RuleQualityDashboard.get_adaptive_threshold_metrics()
-
-      socket
-      |> assign(:loading, false)
-      |> assign(:error, nil)
-      |> assign(:metrics, metrics)
-    rescue
-      error ->
-        Logger.error("AdaptiveThresholdLive: Error fetching metrics",
-          error: inspect(error)
-        )
-
-        socket
-        |> assign(:loading, false)
-        |> assign(:error, "Failed to load metrics: #{inspect(error)}")
-        |> assign(:metrics, nil)
-    end
-  end
-
-  defp status_badge(status) do
-    case status do
-      :converged ->
-        {"✅ Converged", "bg-green-100 text-green-800"}
-
-      :adjusting ->
-        {"🔧 Adjusting", "bg-blue-100 text-blue-800"}
-
-      :initializing ->
-        {"🔄 Initializing", "bg-yellow-100 text-yellow-800"}
-
-      :max_threshold_reached ->
-        {"⚠️ Max Threshold", "bg-red-100 text-red-800"}
-
-      :min_threshold_reached ->
-        {"⚠️ Min Threshold", "bg-red-100 text-red-800"}
-
-      _ ->
-        {"❓ Unknown", "bg-gray-100 text-gray-800"}
-    end
-  end
-
-  defp direction_badge(direction) do
-    case direction do
-      :stable -> {"→ Stable", "bg-green-50 text-green-700"}
-      :raise_threshold -> {"↑ Raising", "bg-orange-50 text-orange-700"}
-      :lower_threshold -> {"↓ Lowering", "bg-blue-50 text-blue-700"}
-      _ -> {"→ Unknown", "bg-gray-50 text-gray-700"}
-    end
-  end
-
-  defp bar_width(value, max) do
-    case max do
-      0 -> 0
-      _ -> value / max * 100
-    end
-  end
-
-  defp success_bar_color(rate) do
-    cond do
-      rate >= 0.95 -> "bg-green-500"
-      rate >= 0.90 -> "bg-green-400"
-      rate >= 0.85 -> "bg-yellow-400"
-      rate >= 0.75 -> "bg-orange-400"
-      true -> "bg-red-400"
-    end
-  end
-
-  defp format_float(value) when is_float(value), do: Float.round(value, 3)
-  defp format_float(value) when is_nil(value), do: "N/A"
-  defp format_float(value) when is_number(value), do: Float.round(value / 1.0, 3)
-  defp format_float(_), do: "N/A"
-
-  defp format_percent(value) when is_float(value) do
-    "#{Float.round(value * 100, 1)}%"
-  end
-
-  defp format_percent(value) when is_number(value) do
-    "#{Float.round(value * 100 / 1.0, 1)}%"
-  end
-
-  defp format_percent(_), do: "N/A"
-
-  defp format_time(nil), do: "Never"
-
-  defp format_time(datetime) do
-    case datetime do
-      %DateTime{} ->
-        datetime
-        |> DateTime.to_naive()
-        |> NaiveDateTime.to_string()
-        |> String.slice(0..18)
-
-      _ ->
-        "Unknown"
-    end
-  end
+  defp human(value), do: to_string(value)
 end

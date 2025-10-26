@@ -1,74 +1,99 @@
 defmodule ObserverWeb.AgentPerformanceLive do
-  use ObserverWeb, :live_view
-
-  require Logger
+  use ObserverWeb.DashboardLive, fetch: &Observer.Dashboard.agent_performance/0
 
   @impl true
-  def mount(_params, _session, socket) do
-    Logger.info("AgentPerformanceLive: Mounting")
+  def render(assigns) do
+    ~H"""
+    <div class="max-w-7xl mx-auto space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-semibold text-zinc-900">Agent Performance</h1>
+          <p class="text-sm text-zinc-500 mt-1">Live metrics for all autonomous agents.</p>
+        </div>
+        <div class="text-sm text-zinc-500">
+          <span class="font-medium text-zinc-700">Updated:</span>
+          <%= format_timestamp(@last_updated) %>
+        </div>
+      </div>
 
-    if connected?(socket) do
-      # Auto-refresh metrics every 5 seconds
-      :timer.send_interval(5000, self(), :refresh_metrics)
-    end
+      <%= if @error do %>
+        <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-800">
+          <p class="font-medium">Unable to load agent metrics</p>
+          <p class="text-sm mt-1"><%= @error %></p>
+        </div>
+      <% end %>
 
-    {:ok,
-     socket
-     |> assign(:loading, true)
-     |> assign(:error, nil)
-     |> fetch_metrics()}
+      <%= if @data do %>
+        <section class="rounded-xl border border-zinc-200 bg-white shadow-sm">
+          <header class="border-b border-zinc-100 px-6 py-4">
+            <h2 class="text-lg font-semibold text-zinc-900">Agent Summary</h2>
+          </header>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-zinc-100 text-sm">
+              <thead class="bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                <tr>
+                  <th class="px-6 py-3">Agent</th>
+                  <th class="px-6 py-3">Success Rate</th>
+                  <th class="px-6 py-3">Avg Latency</th>
+                  <th class="px-6 py-3">Avg Cost</th>
+                  <th class="px-6 py-3">Tasks</th>
+                  <th class="px-6 py-3">Errors</th>
+                  <th class="px-6 py-3">Version</th>
+                  <th class="px-6 py-3">Cycles</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-zinc-100 bg-white">
+                <%= for agent <- Map.get(@data, :agent_summaries, []) do %>
+                  <tr class="hover:bg-zinc-50">
+                    <td class="px-6 py-3 font-medium text-zinc-900"><%= agent.name %></td>
+                    <td class="px-6 py-3 text-zinc-700"><%= format_percent(agent.success_rate) %></td>
+                    <td class="px-6 py-3 text-zinc-700"><%= format_ms(agent.avg_latency_ms) %></td>
+                    <td class="px-6 py-3 text-zinc-700">
+                      $<%= cents_to_dollars(agent.avg_cost_cents) %>
+                    </td>
+                    <td class="px-6 py-3 text-zinc-700"><%= agent.tasks_completed %></td>
+                    <td class="px-6 py-3 text-zinc-700"><%= agent.errors %></td>
+                    <td class="px-6 py-3 text-zinc-700"><%= agent.version %></td>
+                    <td class="px-6 py-3 text-zinc-700"><%= agent.cycles %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="rounded-xl border border-zinc-200 bg-white shadow-sm">
+          <header class="border-b border-zinc-100 px-6 py-4 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-zinc-900">Raw Dashboard Payload</h2>
+            <span class="text-xs font-medium uppercase tracking-wide text-zinc-400">debug</span>
+          </header>
+          <pre class="overflow-x-auto whitespace-pre-wrap bg-zinc-900 p-6 text-xs leading-5 text-zinc-100">
+    <%= pretty_json(@data) %>
+          </pre>
+        </section>
+      <% end %>
+    </div>
+    """
   end
 
-  @impl true
-  def handle_info(:refresh_metrics, socket) do
-    {:noreply, fetch_metrics(socket)}
-  end
+  defp format_percent(nil), do: "n/a"
 
-  @impl true
-  def handle_event("refresh", _params, socket) do
-    {:noreply, fetch_metrics(socket)}
-  end
+  defp format_percent(value) when is_number(value),
+    do: :io_lib.format("~.2f%", [value * 100]) |> IO.iodata_to_binary()
 
-  defp fetch_metrics(socket) do
-    try do
-      {:ok, dashboard} = Singularity.Agents.AgentPerformanceDashboard.get_dashboard()
+  defp format_percent(_), do: "n/a"
 
-      socket
-      |> assign(:loading, false)
-      |> assign(:error, nil)
-      |> assign(:dashboard, dashboard)
-    rescue
-      error ->
-        Logger.error("AgentPerformanceLive: Error fetching metrics",
-          error: inspect(error)
-        )
+  defp format_ms(nil), do: "n/a"
 
-        socket
-        |> assign(:loading, false)
-        |> assign(:error, "Failed to load agent metrics: #{inspect(error)}")
-        |> assign(:dashboard, nil)
-    end
-  end
+  defp format_ms(value) when is_number(value),
+    do: :io_lib.format("~.1f ms", [value]) |> IO.iodata_to_binary()
 
-  defp status_badge(status) do
-    case status do
-      :excellent -> {"✅ Excellent", "bg-green-100 text-green-800"}
-      :good -> {"👍 Good", "bg-blue-100 text-blue-800"}
-      :fair -> {"⚠️ Fair", "bg-yellow-100 text-yellow-800"}
-      :needs_improvement -> {"❌ Needs Work", "bg-red-100 text-red-800"}
-      _ -> {"❓ Unknown", "bg-gray-100 text-gray-800"}
-    end
-  end
+  defp format_ms(_), do: "n/a"
 
-  defp format_cost(cents) when is_number(cents) do
-    cents / 100 |> Float.round(2) |> :erlang.float_to_binary([decimals: 2])
-  end
+  defp cents_to_dollars(nil), do: "0.00"
 
-  defp format_cost(_), do: "N/A"
+  defp cents_to_dollars(value) when is_number(value),
+    do: :io_lib.format("~.2f", [value / 100]) |> IO.iodata_to_binary()
 
-  defp format_percentage(value) when is_number(value) do
-    (value * 100) |> Float.round(1) |> :erlang.float_to_binary([decimals: 1])
-  end
-
-  defp format_percentage(_), do: "N/A"
+  defp cents_to_dollars(_), do: "0.00"
 end
