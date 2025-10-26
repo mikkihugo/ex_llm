@@ -106,6 +106,9 @@ defmodule Singularity.Pipeline.Orchestrator do
   alias Singularity.Pipeline.Learning
   alias Singularity.Validation.HistoricalValidator
   alias Singularity.Validation.EffectivenessTracker
+  alias Singularity.Evolution.RuleEvolutionSystem
+  alias Singularity.Evolution.GenesisPublisher
+  alias Singularity.Evolution.AdaptiveConfidenceGating
 
   @type story :: String.t() | map()
   @type opts :: keyword()
@@ -404,6 +407,202 @@ defmodule Singularity.Pipeline.Orchestrator do
       check_effectiveness: effectiveness,
       system_health: interpret_health(kpis, effectiveness)
     }
+  end
+
+  @doc """
+  Analyze execution patterns and propose evolved rules.
+
+  Synthesizes new validation rules from successful patterns with confidence scoring.
+
+  ## Parameters
+  - `criteria` - Analysis criteria (task_type, complexity, time_range)
+  - `opts` - Options (min_confidence, limit)
+
+  ## Returns
+  - `{:ok, rules}` - List of proposed rules with confidence scores
+  """
+  @spec analyze_and_propose_rules(map(), keyword()) :: {:ok, [map()]} | {:error, term()}
+  def analyze_and_propose_rules(criteria \\ %{}, opts \\ []) do
+    Logger.info("Pipeline.Orchestrator: Analyzing patterns for rule evolution")
+    RuleEvolutionSystem.analyze_and_propose_rules(criteria, opts)
+  end
+
+  @doc """
+  Get rules that are candidates for promotion.
+
+  Returns rules below the confidence quorum that may improve with more data.
+
+  ## Returns
+  - List of candidate rules sorted by confidence
+  """
+  @spec get_candidate_rules(keyword()) :: [map()]
+  def get_candidate_rules(opts \\ []) do
+    Logger.info("Pipeline.Orchestrator: Getting candidate rules")
+    RuleEvolutionSystem.get_candidate_rules(opts)
+  end
+
+  @doc """
+  Publish confident rules to Genesis Framework.
+
+  Makes high-confidence rules available to other Singularity instances.
+
+  ## Parameters
+  - `opts` - Publishing options (min_confidence, limit)
+
+  ## Returns
+  - `{:ok, publication_results}` - List of published rules with Genesis IDs
+  """
+  @spec publish_evolved_rules(keyword()) :: {:ok, [map()]} | {:error, term()}
+  def publish_evolved_rules(opts \\ []) do
+    Logger.info("Pipeline.Orchestrator: Publishing evolved rules to Genesis")
+    GenesisPublisher.publish_rules(opts)
+  end
+
+  @doc """
+  Import rules from other Singularity instances via Genesis.
+
+  Subscribes to high-confidence rules published by other instances.
+
+  ## Parameters
+  - `opts` - Import options (min_confidence, limit)
+
+  ## Returns
+  - `{:ok, imported_rules}` - Rules from other instances
+  """
+  @spec import_rules_from_genesis(keyword()) :: {:ok, [map()]} | {:error, term()}
+  def import_rules_from_genesis(opts \\ []) do
+    Logger.info("Pipeline.Orchestrator: Importing rules from Genesis")
+    GenesisPublisher.import_rules_from_genesis(opts)
+  end
+
+  @doc """
+  Get consensus rules (published by multiple instances).
+
+  Returns the most reliable rules that have been independently synthesized
+  and published by multiple Singularity instances.
+
+  ## Returns
+  - List of consensus rules with source counts
+  """
+  @spec get_consensus_rules() :: [map()]
+  def get_consensus_rules do
+    Logger.info("Pipeline.Orchestrator: Retrieving consensus rules")
+    GenesisPublisher.get_consensus_rules()
+  end
+
+  @doc """
+  Get evolution system health metrics.
+
+  Returns KPIs showing how well the rule evolution system is working.
+
+  ## Returns
+  - Map with total rules, confidence distribution, and health status
+  """
+  @spec get_evolution_health() :: map()
+  def get_evolution_health do
+    Logger.info("Pipeline.Orchestrator: Analyzing evolution system health")
+    RuleEvolutionSystem.get_evolution_health()
+  end
+
+  @doc """
+  Get cross-instance metrics.
+
+  Returns aggregated metrics showing how rules are performing across
+  all Singularity instances in the Genesis network.
+
+  ## Returns
+  - Map with cross-instance performance data
+  """
+  @spec get_cross_instance_metrics() :: map()
+  def get_cross_instance_metrics do
+    Logger.info("Pipeline.Orchestrator: Analyzing cross-instance rule metrics")
+    GenesisPublisher.get_cross_instance_metrics()
+  end
+
+  @doc """
+  Get publication history.
+
+  Returns log of all rules published to Genesis with effectiveness feedback.
+
+  ## Parameters
+  - `opts` - Options (limit, status filter)
+
+  ## Returns
+  - List of publication records
+  """
+  @spec get_publication_history(keyword()) :: [map()]
+  def get_publication_history(opts \\ []) do
+    Logger.info("Pipeline.Orchestrator: Retrieving rule publication history")
+    GenesisPublisher.get_publication_history(opts)
+  end
+
+  @doc """
+  Get rule impact metrics.
+
+  Tracks correlation between rule application and execution success.
+
+  ## Parameters
+  - `opts` - Options (time_range)
+
+  ## Returns
+  - Map with effectiveness metrics
+  """
+  @spec get_rule_impact_metrics(keyword()) :: map()
+  def get_rule_impact_metrics(opts \\ []) do
+    Logger.info("Pipeline.Orchestrator: Analyzing rule impact on execution quality")
+    RuleEvolutionSystem.get_rule_impact_metrics(opts)
+  end
+
+  @doc """
+  Get adaptive confidence gating status.
+
+  Shows current publishing threshold and learning progress toward convergence.
+  The threshold automatically adjusts based on published rule performance.
+
+  ## Returns
+  - Map with threshold metrics, success rates, and convergence status
+  """
+  @spec get_adaptive_threshold_status() :: map()
+  def get_adaptive_threshold_status do
+    Logger.info("Pipeline.Orchestrator: Getting adaptive threshold status")
+    AdaptiveConfidenceGating.get_tuning_status()
+  end
+
+  @doc """
+  Get convergence metrics for adaptive threshold.
+
+  Shows how close the system is to finding the optimal publishing threshold.
+
+  ## Returns
+  - Map with convergence progress
+  """
+  @spec get_threshold_convergence_metrics() :: map()
+  def get_threshold_convergence_metrics do
+    Logger.info("Pipeline.Orchestrator: Getting threshold convergence metrics")
+    AdaptiveConfidenceGating.get_convergence_metrics()
+  end
+
+  @doc """
+  Record feedback on published rule performance.
+
+  When a published rule is used in practice, record whether it helped or hurt
+  to improve threshold adaptation.
+
+  ## Parameters
+  - `rule_id` - ID of published rule
+  - `opts` - Options (success: boolean, effectiveness: 0.0-1.0)
+
+  ## Returns
+  - `:ok` - Feedback recorded
+  """
+  @spec record_published_rule_feedback(String.t(), keyword()) :: :ok | {:error, term()}
+  def record_published_rule_feedback(rule_id, opts \\ []) do
+    Logger.info("Pipeline.Orchestrator: Recording published rule feedback",
+      rule_id: rule_id,
+      opts: opts
+    )
+
+    RuleEvolutionSystem.record_rule_feedback(rule_id, opts)
   end
 
   # Private Helpers
