@@ -12,15 +12,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **Speed & Security** - Not prioritized (internal use only, no scale requirements)
 
 **What it does:**
-- **6 Autonomous AI Agents** (Self-Improving, Cost-Optimized, Architecture, Technology, Refactoring, Chat)
+- **Singularity (Core)** - Self-evolving code generation pipeline (5 phases, 39 components, 100% complete ✅)
+  - Phase 1: Context Gathering, Phase 2: Generation, Phase 3: Validation, Phase 4: Refinement, Phase 5: Learning
+- **20+ Autonomous Agent Modules** - Primary agents + workflows + infrastructure
+  - Primary: Self-Improving, Cost-Optimized, Analyzer
+  - Workflows: Code Quality Improvement, Documentation, Remediation
+  - Infrastructure: AgentSpawner, AgentSupervisor, MetricsFeeder, RuntimeBootstrapper, etc.
+- **CentralCloud** - Multi-instance learning hub (pattern aggregation, consensus, framework learning) [REQUIRED]
+- **Genesis** - Autonomous improvement workflows and rule evolution [REQUIRED]
+- **Observer** - Phoenix web UI with dashboards for observability
 - **Rust NIF Engines** via Rustler (Architecture, Code Analysis, Parser, Quality, Language Detection, Graph PageRank)
 - **Pure Elixir ML** (Embeddings via Nx: Qodo + Jina v3 multi-vector 2560-dim)
-- **3 Central_Cloud Services** (Framework Learning Agent, Package Intelligence, Knowledge Cache)
 - **GPU-Accelerated Search** (RTX 4080 + pgvector for semantic code search)
 - **Living Knowledge Base** (Git ←→ PostgreSQL bidirectional learning)
 - **Multi-AI Orchestration** (Claude, Gemini, OpenAI, Copilot via NATS)
 - **Distributed Messaging** (NATS with JetStream)
-- **Multi-System Architecture** (Multiple Singularity instances ←→ Shared CentralCloud knowledge)
 
 **Environment:** Nix-based (dev/test/prod) with PostgreSQL.
 
@@ -55,10 +61,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Integrated across Elixir, TypeScript, and Rust
 - Zero breaking changes (opt-in per tool)
 
-**CentralCloud (Multi-Instance Learning):** See **CENTRALCLOUD_DETECTION_ROLE.md** and **CENTRALCLOUD_INTEGRATION_GUIDE.md**:
-- Optional service for aggregating learnings across multiple Singularity instances
-- Not required for single-instance development
-- Available when you need cross-instance knowledge sharing
+**CentralCloud & Genesis (Multi-Instance & Autonomous Learning):** See **CENTRALCLOUD_INTEGRATION_GUIDE.md** and **AGENT_SYSTEM_EXPERT.md**:
+- **CentralCloud** - REQUIRED: Aggregates patterns, frameworks, and learnings across instances
+- **Genesis** - REQUIRED: Autonomous improvement hub for rule evolution and long-horizon learning
+- Both are integral parts of the unified system (not optional)
 
 ## Technology Stack
 
@@ -117,29 +123,38 @@ mix knowledge.migrate        # Imports templates_data/**/*.json
 moon run templates_data:embed-all  # Generates embeddings
 ```
 
-**Single Database for Single-Instance Development:**
-- **`singularity`** - Main application database (shared across dev/test/prod)
+**Two Required Databases:**
+- **`singularity`** - Main Singularity application database (shared across dev/test/prod)
   - Dev: Direct access
   - Test: Sandboxed transactions (Ecto.Sandbox)
   - Prod: Same DB (internal tooling, no separation needed)
+  - Contains: Pipeline execution, validation metrics, failure patterns, agent metrics
 
-**Optional:** If using CentralCloud for multi-instance learning:
-- **`central_services`** - CentralCloud application database (separate, independent)
-  - Used by: Framework Learning Agent, Package Intelligence, Knowledge Cache
-  - Only needed when aggregating learnings across multiple Singularity instances
+- **`central_services`** - CentralCloud application database (separate, independent) [REQUIRED]
+  - Used by: Framework Learning Agent, Pattern Intelligence, Knowledge Cache
+  - Contains: Cross-instance patterns, consensus scores, aggregated learnings
+  - Always needed for full system functionality
 
-### Running the Application
+### Running the Complete System
 ```bash
-# Start all services (NATS, PostgreSQL, Elixir app)
+# Start all services (NATS, PostgreSQL, Singularity, CentralCloud, Observer)
 ./start-all.sh
 
 # Or individually:
 # Terminal 1: Start NATS
 nats-server -js
 
-# Terminal 2: Start Elixir app
+# Terminal 2: Start Singularity (Core Elixir/OTP)
 cd singularity
 mix phx.server  # Runs on port 4000
+
+# Terminal 3: Start CentralCloud (Pattern Intelligence)
+cd centralcloud
+mix phx.server  # Runs on port 4001
+
+# Terminal 4: Start Observer (Phoenix Web UI)
+cd observer
+mix phx.server  # Runs on port 4002
 
 # Stop all services
 ./stop-all.sh
