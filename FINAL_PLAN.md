@@ -2149,6 +2149,165 @@ Documentation:
 
 ---
 
+## Advanced Dashboards Implementation Roadmap
+
+### Phase 1: Foundation (Already Complete)
+
+✅ **Core Observability Dashboards** (Completed 2025-10-26):
+- AdaptiveThresholdLive - Adaptive confidence gating metrics
+- NexusLLMHealthLive - LLM provider health via circuit breakers
+- ValidationMetricsLive - Validation KPI tracking (accuracy, success rate, time)
+- SystemHealthLive - Overview dashboard linking all components
+
+✅ **Backend Query Modules:**
+- `Singularity.Evolution.AdaptiveConfidenceGating` - Threshold tracking
+- `Singularity.LLM.LLMHealthDashboard` - Provider health aggregation
+- `Singularity.Validation.ValidationDashboard` - Validation metrics
+- `Singularity.Evolution.RuleQualityDashboard` - Rule evolution metrics
+
+### Phase 2: Advanced Dashboards (Planned - 6 Backend + 6 Frontend)
+
+**Implementation Order** (based on data availability & dependencies):
+
+#### 1. **Agent Performance Dashboard** ✅ Backend Started
+- **Status:** Backend module created, needs compilation verification
+- **Dependencies:**
+  - `Singularity.Agents.Agent` - GenServer.call for agent state
+  - `Singularity.Database.MetricsAggregation` - Query historical metrics
+- **Data Sources:**
+  - Agent in-memory state (metrics, version, cycles, improvement_history)
+  - MetricsAggregation timeseries (latency, cost, success rate)
+  - Telemetry events (improvement attempts, results)
+- **Key Metrics:** Success rate, latency, cost per task, improvement cycles
+- **Live View:** Real-time agent performance, cost tracking, improvement trends
+- **Frontend:** Cards showing top/bottom agents, cost efficiency ranking, improvement velocity
+
+#### 2. **Code Quality Metrics Dashboard**
+- **Status:** Pending backend
+- **Dependencies:**
+  - `Singularity.CodeAnalysis.ScanOrchestrator` - Get quality scan results
+  - `Singularity.Analysis.AnalysisOrchestrator` - Get analysis results
+  - Code store with historical quality scores
+- **Data Sources:**
+  - Quality scanner results (linting, complexity, coverage)
+  - Analysis results (refactoring opportunities, debt)
+  - Historical trends (7-day rolling quality improvements)
+- **Key Metrics:** Code quality score, violation trends, coverage %, technical debt
+- **Live View:** Quality trend charts, violation breakdown, improvement opportunities
+- **Frontend:** Health gauge, violation list, trend comparison (this week vs last)
+
+#### 3. **Rule Evolution Progress Dashboard**
+- **Status:** Pending backend
+- **Dependencies:**
+  - `Singularity.Evolution.RuleEvolution` - Rule promotion tracking
+  - `Singularity.Knowledge.ArtifactStore` - Rule storage and queries
+  - Time-series data on rule effectiveness
+- **Data Sources:**
+  - Rule promotion stages (candidate → draft → validated → published)
+  - Rule effectiveness scores over time
+  - Learner feedback on rule performance
+- **Key Metrics:** Rules by stage, average time to promotion, effectiveness gain
+- **Live View:** Visual timeline of rule progression, success metrics per stage
+- **Frontend:** Pipeline view, stage transition timeline, effectiveness heatmap
+
+#### 4. **Task Execution Metrics Dashboard**
+- **Status:** Pending backend
+- **Dependencies:**
+  - `Singularity.Execution.ExecutionOrchestrator` - Task execution results
+  - Task DAG execution history
+  - Per-task timing and success data
+- **Data Sources:**
+  - Task DAG runs (success, failure, duration breakdown)
+  - Per-stage metrics (planning time, code generation time, validation time)
+  - Bottleneck identification (what stages are slow)
+- **Key Metrics:** Task success rate, end-to-end time, stage distribution
+- **Live View:** Real-time task execution progress, stage latency breakdown
+- **Frontend:** Gantt-like timeline, bottleneck analysis, performance trends
+
+#### 5. **Cost Analysis Dashboard**
+- **Status:** Pending backend
+- **Dependencies:**
+  - `Singularity.LLM.Service` - LLM call tracking
+  - `Singularity.Schemas.ExecutionMetric` - Per-call cost data
+  - Aggregated cost by provider, model, and task type
+- **Data Sources:**
+  - ExecutionMetric table (cost_cents, tokens_used, model, provider, task_type)
+  - MetricsAggregation cost events
+  - Provider pricing models for forecasting
+- **Key Metrics:** Total cost, cost per task, provider breakdown, token efficiency
+- **Live View:** Real-time spending trends, provider comparison, cost forecasting
+- **Frontend:** Pie chart breakdown, spending velocity, cost per model type
+
+#### 6. **Knowledge Base Metrics Dashboard**
+- **Status:** Pending backend
+- **Dependencies:**
+  - `Singularity.Embedding.NxService` - Embedding generation tracking
+  - Vector search effectiveness metrics
+  - Embedding model performance
+- **Data Sources:**
+  - Embedding cache hit/miss rates
+  - Search query relevance metrics
+  - Embedding model accuracy on test queries
+  - Knowledge base growth rate
+- **Key Metrics:** Cache hit rate, search accuracy, embedding freshness, KB growth
+- **Live View:** Cache statistics, search effectiveness metrics, KB size trends
+- **Frontend:** Cache efficiency gauge, search test results, model performance
+
+### Implementation Sequence & Blockers
+
+```
+Dependencies Graph:
+  MetricsAggregation (foundation)
+    ├─→ Agent Performance (needs GenServer.call)
+    ├─→ Code Quality (needs ScanOrchestrator)
+    ├─→ Task Execution (needs ExecutionOrchestrator)
+    └─→ Cost Analysis (needs ExecutionMetric queries)
+
+  LLM/Nexus (already available)
+    └─→ Cost Analysis (alternative data source)
+
+  Knowledge Store (already available)
+    └─→ Knowledge Base Metrics (embedding stats)
+
+  Evolution System (needs implementation)
+    └─→ Rule Evolution Progress (needs rule tracking)
+```
+
+**Recommended Order:**
+1. ✅ **Agent Performance** (least blockers, uses existing Agent state)
+2. **Code Quality** (ScanOrchestrator query interface may need enhancement)
+3. **Task Execution** (ExecutionOrchestrator needs tracking layer)
+4. **Cost Analysis** (ExecutionMetric table fully available)
+5. **Knowledge Base** (embedding stats available via NxService)
+6. **Rule Evolution** (needs RuleEvolution module implementation first)
+
+### Data Availability Assessment
+
+| Dashboard | Database Ready | Query Functions Exist | Needs New Module |
+|-----------|---|---|---|
+| Agent Performance | ✅ agent_metrics | ⚠️ Partial | Agent.get_state export |
+| Code Quality | ✅ (via live scans) | ⏳ No aggregation | CodeQualityDashboard |
+| Rule Evolution | ⏳ In development | ❌ No | RuleEvolutionProgress |
+| Task Execution | ✅ execution_metrics | ⏳ Limited | TaskExecutionDashboard |
+| Cost Analysis | ✅ execution_metrics | ✅ Yes | CostAnalysisDashboard |
+| Knowledge Base | ✅ embeddings | ⚠️ Partial | KnowledgeBaseDashboard |
+
+### Priority Recommendation
+
+**High Priority (Do First):**
+1. Agent Performance - Lowest risk, good learning curve for pattern
+2. Cost Analysis - Data fully available, immediate ROI
+3. Code Quality - Valuable for developers, enables feedback loop
+
+**Medium Priority (Do Second):**
+4. Task Execution - Needs minimal new infrastructure
+5. Knowledge Base - Data available, good metrics already exist
+
+**Lower Priority (Do Last):**
+6. Rule Evolution - Depends on Rule Evolution system implementation
+
+---
+
 ## Conclusion
 
 You are **now 75% of the way there!** The self-evolving context-aware generation pipeline is achievable with:
