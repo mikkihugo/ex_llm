@@ -1,23 +1,23 @@
 [workspace]
 resolver = "2"
 members = [
-    "rust/code_quality_engine",
-    "rust/linting_engine",
-    "rust/parser_engine/core",
-    "rust/parser_engine/formats/dependency",
-    "rust/parser_engine/formats/template_definitions",
+    # Rust NIF engines - now in packages/ as standalone Moon projects (publishable)
+    "packages/code_quality_engine",
+    "packages/linting_engine",
+    "packages/parser_engine/core",
+    "packages/parser_engine/formats/dependency",
+    "packages/parser_engine/formats/template_definitions",
     # Broken parsers (parser_core API mismatch) - excluded from workspace
-    # "rust/parser_engine/languages/rust",
-    # "rust/parser_engine/languages/elixir",
-    # "rust/parser_engine/languages/erlang",
-    "rust/parser_engine/languages/python",
-    "rust/parser_engine/languages/javascript",
-    "rust/parser_engine/languages/typescript",
-    "rust/parser_engine/languages/gleam",
-    "rust/prompt_engine",
-    "centralcloud/rust/package_intelligence",
-    "rust/template",
-    "rust/architecture_engine",
+    # "packages/parser_engine/languages/rust",
+    # "packages/parser_engine/languages/elixir",
+    # "packages/parser_engine/languages/erlang",
+    "packages/parser_engine/languages/python",
+    "packages/parser_engine/languages/javascript",
+    "packages/parser_engine/languages/typescript",
+    "packages/parser_engine/languages/gleam",
+    "packages/prompt_engine",
+    "packages/package_intelligence",
+    "packages/architecture_engine",
 ]
 
 [workspace.dependencies]

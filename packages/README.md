@@ -13,15 +13,72 @@ Following [moonrepo best practices](https://moonrepo.dev/docs/concepts/project#o
 
 ## Current Packages
 
-### ex_pgflow
+### Elixir Libraries
+
+#### ex_pgflow
 - **Path**: `packages/ex_pgflow/`
 - **Language**: Elixir
 - **Purpose**: PostgreSQL-native workflow orchestration library
-- **Status**: Production-ready, can be published to Hex.pm
+- **Status**: Production-ready, publishable to Hex.pm
 - **Size**: 148K+ lines, 769 files
-- **CI**: Independent GitHub Actions pipeline
 
-**Why it's here**: ex_pgflow is a complete, standalone Elixir library that implements pgflow's architecture. It has no dependencies on other Singularity components and can be used by any Elixir application.
+**Why it's here**: Complete standalone Elixir library with no Singularity dependencies. Can be used by any Elixir application.
+
+#### ex_llm
+- **Path**: `packages/ex_llm/`
+- **Language**: Elixir
+- **Purpose**: Unified client for Large Language Models (Claude, Gemini, OpenAI, etc.)
+- **Status**: Production-ready (v1.0.0-rc1), publishable to Hex.pm
+
+**Why it's here**: Standalone library providing multi-provider LLM abstraction. No Singularity-specific dependencies.
+
+### Rust NIF Engines
+
+Rust-based native interface modules (NIFs) for high-performance code analysis. Each is an Elixir+Rust hybrid package with independent Cargo and Mix builds.
+
+#### architecture_engine
+- **Path**: `packages/architecture_engine/`
+- **Purpose**: Framework detection, architecture patterns, package registry analysis
+- **Status**: Production, internal use
+- **Moon tasks**: `cargo:build`, `cargo:test`, `mix:compile`, `mix:test`
+
+#### code_quality_engine
+- **Path**: `packages/code_quality_engine/`
+- **Purpose**: Code quality metrics and analysis
+- **Status**: Production, internal use
+- **Moon tasks**: `cargo:build`, `cargo:test`, `mix:compile`, `mix:test`
+
+#### parser_engine
+- **Path**: `packages/parser_engine/`
+- **Purpose**: Polyglot code parsing via tree-sitter (30+ languages)
+- **Status**: Production, internal use
+- **Moon tasks**: `cargo:build`, `cargo:test`, `mix:compile`, `mix:test`
+
+#### linting_engine
+- **Path**: `packages/linting_engine/`
+- **Purpose**: Code linting and style analysis
+- **Status**: Production, internal use
+- **Moon tasks**: `cargo:build`, `cargo:test`, `mix:compile`, `mix:test`
+
+#### prompt_engine
+- **Path**: `packages/prompt_engine/`
+- **Purpose**: Dynamic prompt generation and optimization
+- **Status**: Production, internal use
+- **Moon tasks**: `cargo:build`, `cargo:test`, `mix:compile`, `mix:test`
+
+**Why they're here**: Enables independent versioning, publishing to internal registry, and future crates.io publication. Each can be developed and released separately from Singularity core.
+
+### Rust Utility Libraries
+
+#### package_intelligence
+- **Path**: `packages/package_intelligence/`
+- **Language**: Rust (binary + library)
+- **Purpose**: Semantic indexing and search for npm, cargo, hex, and pypi packages
+- **Status**: Production, internal use
+- **Moon tasks**: `cargo:build`, `cargo:test`, `cargo:clippy`, `docs`
+- **Previously at**: `centralcloud/rust/package_intelligence/`
+
+**Why it's here**: Independent utility for package registry analysis that can be used by any service. Moved from CentralCloud to follow the "publishable packages" pattern. Can be published independently for use by external systems.
 
 ## Adding New Packages
 

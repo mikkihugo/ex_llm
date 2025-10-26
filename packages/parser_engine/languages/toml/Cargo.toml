@@ -1,0 +1,9 @@
+[package]
+name = "parser_engine_toml"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tree-sitter = { workspace = true }
+tree-sitter-toml-ng = { workspace = true }  # Updated for tree-sitter 0.25
+parser_core = { path = "../../core" }

@@ -7,7 +7,7 @@ defmodule Singularity.MixProject do
     [
       app: @app,
       version: project_version(),
-      elixir: "~> 1.18",
+      elixir: "~> 1.19",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
@@ -65,20 +65,17 @@ defmodule Singularity.MixProject do
 
       # Rust NIFs with Rustler integration (compile: false)
       # Rustler NIF compilation happens via Elixir modules that call `use Rustler`
-      # Each module has: use Rustler, otp_app: :singularity, crate: :engine_name, path: ../..
+      # Each module has: use Rustler, otp_app: :singularity, crate: :engine_name
       # NIFs are compiled on-demand when modules are loaded, not via Mix dependency compilation
-      # Note: architecture_engine removed - uses pure Elixir detectors instead
+      # Engines are now in packages/ as standalone Moon projects (publishable)
       {:code_quality_engine,
-       path: "../rust/code_quality_engine", runtime: false, compile: false, app: false},
-      # Embedding now uses pure Elixir (NxService) instead of Rust NIF
-      # knowledge_engine consolidated into architecture_engine
+       path: "../packages/code_quality_engine", runtime: false, compile: false, app: false},
       {:parser_engine,
-       path: "../rust/parser_engine", runtime: false, compile: false, app: false, optional: true},
+       path: "../packages/parser_engine", runtime: false, compile: false, app: false, optional: true},
       {:prompt_engine,
-       path: "../rust/prompt_engine", runtime: false, compile: false, app: false, optional: true},
+       path: "../packages/prompt_engine", runtime: false, compile: false, app: false, optional: true},
       {:linting_engine,
-       path: "../rust/linting_engine", runtime: false, compile: false, app: false},
-      # Other engines are symlinks to rust/ or rust-central/ directories (already included in workspace)
+       path: "../packages/linting_engine", runtime: false, compile: false, app: false},
 
       # Data & Serialization
       {:jason, "~> 1.4"},

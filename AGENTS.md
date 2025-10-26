@@ -1,40 +1,47 @@
 # Agents - Autonomous Development System
 
-✅ **STATUS: FULLY IMPLEMENTED & PRODUCTION READY** - All 6 primary agents + 12 support modules complete and tested
+✅ **STATUS: FULLY IMPLEMENTED & PRODUCTION READY** - All 7 primary agents + 12 support modules complete and tested
 
-Singularity includes 18 agent modules (6 primary agents + 12 support modules) that leverage the unified orchestration framework for code analysis, generation, and execution.
+Singularity includes 20 agent modules (7 primary agents + 12 support modules) that leverage the unified orchestration framework for code analysis, generation, and execution.
 
 **Implementation Status:**
-- Code: ✅ All 18 agent modules implemented (95K+ lines)
+- Code: ✅ All 20 agent modules implemented
 - Supervision: ✅ Functional with OTP supervision tree
-- Testing: ✅ Comprehensive test coverage (2,500+ LOC tests)
+- Testing: ✅ Comprehensive test coverage
 - Status: Production-ready, fully integrated with pipeline phases
 
-## The Complete Agent System (18 Interdependent Modules)
+## The Complete Agent System (20 Interdependent Modules)
 
-### 6 Primary Agent Roles
+### 7 Primary Agent Roles
 These are the user-facing agent types that perform high-level tasks:
 
-1. **SelfImprovingAgent** (3291 LOC) - Core self-improvement and learning
+1. **SelfImprovingAgent** - Core self-improvement and learning
+   - Analyzes codebase for improvement opportunities
+   - Autonomously tests and refines changes
 
-2. **ArchitectureAgent** (157 LOC) - System architecture analysis and design
+2. **ArchitectureAgent** - System architecture analysis and design
    - Real implementation: `Singularity.ArchitectureEngine.Agent`
    - Analyzes codebase architecture, detects patterns, assesses quality
 
-3. **TechnologyAgent** (665 LOC) - Technology detection and adoption
+3. **TechnologyAgent** - Technology detection and adoption
    - Real implementation: `Singularity.Detection.TechnologyAgent`
    - Detects frameworks, evaluates technology stacks, recommends packages
 
-4. **RefactoringAgent** (247 LOC) - Code refactoring and optimization
+4. **RefactoringAgent** - Code refactoring and optimization
    - Real implementation: `Singularity.Storage.Code.Quality.RefactoringAgent`
    - Analyzes refactoring needs, executes patterns, assesses impact
 
-5. **CostOptimizedAgent** (551 LOC) - Cost optimization and performance
+5. **CostOptimizedAgent** - Cost optimization and performance
    - Optimizes resource usage and costs across agents
+   - Tracks and minimizes LLM provider costs
 
-6. **ChatConversationAgent** (664 LOC) - User interaction and conversations
+6. **ChatConversationAgent** - User interaction and conversations
    - Real implementation: `Singularity.Conversation.ChatConversationAgent`
    - Multi-turn conversations, context awareness, intent extraction
+
+7. **TodoWorkerAgent** - Todo task management and execution
+   - Real implementation: `Singularity.Execution.Todos.TodoWorkerAgent`
+   - Manages todo lists, tracks task progress, coordinates todo-based workflows
 
 ### 12 Essential Support Modules
 These infrastructure modules are **REQUIRED** for the primary agents to function:
@@ -42,20 +49,20 @@ These infrastructure modules are **REQUIRED** for the primary agents to function
 **Metrics & Feedback Loop:**
 - **MetricsFeeder** - Feeds success/cost data to learning systems
 - **RealWorkloadFeeder** - Executes real LLM tasks for realistic metrics
-- **DeadCodeMonitor** (629 LOC) - Tracks dead code for improvement opportunities
+- **DeadCodeMonitor** - Tracks dead code for improvement opportunities
 
 **Quality & Documentation System:**
-- **DocumentationUpgrader** (629 LOC) - Auto-upgrades code documentation
-- **DocumentationPipeline** (491 LOC) - Orchestrates documentation generation
-- **QualityEnforcer** (491 LOC) - Enforces quality standards before commits
+- **DocumentationUpgrader** - Auto-upgrades code documentation
+- **DocumentationPipeline** - Orchestrates documentation generation
+- **QualityEnforcer** - Enforces quality standards before commits
 
 **Execution & Remediation:**
-- **RemediationEngine** (491 LOC) - Auto-fixes detected issues
+- **RemediationEngine** - Auto-fixes detected issues
 - **RuntimeBootstrapper** - Initializes agent system on startup
 
 **Agent Infrastructure:**
-- **Agent** (30K LOC) - Base GenServer for all agents
-- **AgentSpawner** (3.5K LOC) - Creates agents from Lua/config
+- **Agent** - Base GenServer for all agents
+- **AgentSpawner** - Creates agents from Lua/config
 - **AgentSupervisor** - Manages agent processes (DynamicSupervisor)
 - **Agents.Supervisor** - Root supervisor for entire agent system
 
@@ -591,8 +598,8 @@ iex> Application.get_env(:singularity, Singularity.Agents.CostOptimizedAgent)
 # Check agent logs
 tail -f logs/singularity.log | grep "agent"
 
-# Check NATS connection (agents use NATS for LLM)
-iex> Singularity.NATS.Client.health_check()
+# Check LLM service availability
+iex> Singularity.LLM.Service.healthy?()
 
 # Check orchestrator availability
 iex> Singularity.Analysis.AnalysisOrchestrator.enabled_analyzers()
@@ -616,5 +623,5 @@ iex> Application.put_env(:singularity, :agents, %{
 ## See Also
 
 - [CLAUDE.md](CLAUDE.md) - Main development guide
-- [SYSTEM_FLOWS.md](SYSTEM_FLOWS.md) - Architecture diagrams
 - [README.md](README.md) - Quick start and overview
+- [FINAL_PLAN.md](FINAL_PLAN.md) - 5-phase pipeline architecture

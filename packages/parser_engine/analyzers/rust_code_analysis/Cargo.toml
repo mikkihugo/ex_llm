@@ -1,0 +1,42 @@
+[package]
+name = "singularity-code-analysis"
+version = "0.1.0"
+authors = ["Singularity Contributors", "PrimeCode Team"]
+edition = "2021"
+description = "Modernized complexity analyzer based on Singularity rust-code-analysis"
+license = "MIT OR Apache-2.0"
+keywords = ["metrics", "complexity", "analysis"]
+repository = "https://github.com/claude-code-zen/zenflow"
+categories = ["development-tools", "parsing"]
+
+[dependencies]
+aho-corasick = "1.0"
+crossbeam = { version = "0.8", features = ["crossbeam-channel"] }
+globset = "0.4"
+num = "0.4"
+num-derive = "0.4"
+num-format = "0.4"
+petgraph = "0.6"
+regex = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+termcolor = "1.2"
+walkdir = "2.0"
+
+tree-sitter = { workspace = true }
+tree-sitter-java = { workspace = true }
+tree-sitter-typescript = { workspace = true }
+tree-sitter-javascript = { workspace = true }
+tree-sitter-python = { workspace = true }
+tree-sitter-rust = { workspace = true }
+tree-sitter-cpp = { workspace = true }
+# BEAM languages
+tree-sitter-elixir = { workspace = true }
+tree-sitter-erlang = { workspace = true }
+tree-sitter-gleam = { workspace = true }
+# Lua
+tree-sitter-lua = { workspace = true }
+num-traits = "0.2"
+
+[dev-dependencies]
+insta = { version = "1.29.0", features = ["yaml", "json", "redactions"] }
+pretty_assertions = "1.3"

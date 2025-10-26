@@ -1,0 +1,143 @@
+[package]
+name = "package_intelligence_service"
+version = "1.1.0"
+authors = ["mikkihugo"]
+edition = "2021"
+description = "Package Registry Indexer - Semantic search and indexing for npm, cargo, hex, and pypi packages"
+homepage = "https://github.com/mikkihugo/claude-code-zen"
+repository = "https://github.com/mikkihugo/claude-code-zen"
+license = "MIT"
+readme = "README.md"
+keywords = ["packages", "registry", "search", "semantic", "index"]
+categories = ["algorithms", "development-tools", "command-line-utilities"]
+
+[lib]
+name = "package_intelligence_service"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "package-registry-indexer"
+path = "src/bin/main.rs"
+
+[[bin]]
+name = "package_intelligence_service"
+path = "src/bin/service.rs"
+
+[dependencies]
+# Core dependencies
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+ahash = { workspace = true }
+smallvec = { workspace = true }
+parking_lot = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+getrandom = { version = "0.3" }
+num_cpus = { workspace = true }
+
+# CLI dependencies
+clap = { version = "4.4", features = ["derive", "cargo", "env", "unicode"] }
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging and diagnostics
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+
+# Performance monitoring
+dashmap = { workspace = true }
+crossbeam = { workspace = true }
+rayon = { workspace = true }
+
+# Simple storage dependencies - using foundation pattern
+regex = { workspace = true }
+
+async-trait = { workspace = true }
+log = { workspace = true }
+walkdir = { workspace = true }
+toml = { workspace = true }
+
+# Messaging only (no local storage)
+async-nats = "0.33"
+quick-xml = "0.31"
+
+# Database dependencies
+tokio-postgres = { version = "0.7", features = ["with-chrono-0_4"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+futures-util = "0.3"
+
+# Vector embeddings and graph analysis
+ndarray = { workspace = true }
+petgraph = { workspace = true }
+
+# Pattern matching for file detection
+glob = { workspace = true }
+
+# Transformer embeddings (optional)
+candle-core = { version = "0.9", optional = true }
+candle-nn = { version = "0.9", optional = true }
+candle-transformers = { version = "0.9", optional = true }
+tokenizers = { version = "0.20", optional = true }
+hf-hub = { version = "0.3", optional = true }
+
+# Optional dependencies for github and auto features
+notify = { version = "6.0", optional = true }
+octocrab = { version = "0.38", optional = true }
+reqwest = { workspace = true, features = ["json"], optional = true }
+dirs = { workspace = true }
+
+# Package collector dependencies
+flate2 = { version = "1.0", optional = true }
+tar = { version = "0.4", optional = true }
+
+# Prompt engine integration - for framework detection knowledge (optional to avoid cyclic path deps)
+# Removed to break cyclic dependency. Integration should be done via NATS messaging instead.
+# prompt-engine = { workspace = true, optional = true }
+
+# Parser dependencies
+dependency_parser = { path = "../../../rust/parser_engine/formats/dependency" }
+
+[dev-dependencies]
+criterion = { workspace = true, features = ["html_reports"] }
+proptest = { workspace = true }
+tempfile = { workspace = true }
+mockall = { workspace = true }
+
+[features]
+default = ["standard"]
+# Standard library features with intelligent automation
+standard = ["auto", "github"]
+github = ["dep:octocrab", "dep:reqwest"]
+github-graphql = ["github"]
+auto = ["dep:notify"]
+orchestration = []
+storage = []
+# Framework detection with prompt integration
+detection = []
+# prompt-engine integration removed to avoid cycles
+# prompt-engine = []
+# Optional feature to enable prompt-engine integration
+# with-prompt-engine = ["dep:prompt-engine"]
+# Package collectors
+cargo-collector = ["dep:reqwest", "dep:flate2", "dep:tar"]
+npm-collector = ["dep:reqwest", "dep:flate2", "dep:tar"]
+hex-collector = ["dep:reqwest", "dep:flate2", "dep:tar"]
+collectors = ["cargo-collector", "npm-collector", "hex-collector"]
+# Tree-sitter extraction using universal-parser framework
+tree-sitter-extraction = []
+
+
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
+
+[[example]]
+name = "npm_collector"
+path = "examples/npm_collector.rs"
+required-features = ["npm-collector"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

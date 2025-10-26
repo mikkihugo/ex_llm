@@ -1756,21 +1756,26 @@ Dependencies Graph:
 
 ---
 
-## Rust NIF Engines Migration - October 2025 ✅ COMPLETE
+## Rust Engine & Utility Migration - October 2025 ✅ COMPLETE
 
 ### Summary
 
 **Date:** October 26, 2025
-**Status:** ✅ **FULLY COMPLETE** - All 5 Rust engines migrated to `packages/` as standalone, publishable Moon projects
+**Status:** ✅ **FULLY COMPLETE** - All 5 Rust NIF engines + package_intelligence migrated to `packages/` as standalone, publishable Moon projects
 
 ### Migration Details
 
-**5 Rust NIF Engines migrated:**
+**6 Rust Projects migrated to packages/:**
+
+**Rust NIF Engines (5):**
 - ✅ `packages/architecture_engine/` - Framework detection, pattern analysis
 - ✅ `packages/code_quality_engine/` - Code metrics, quality analysis
 - ✅ `packages/linting_engine/` - 15+ language linters
 - ✅ `packages/parser_engine/` - Tree-sitter polyglot parser
 - ✅ `packages/prompt_engine/` - Dynamic prompt generation
+
+**Rust Utility Libraries (1):**
+- ✅ `packages/package_intelligence/` - npm/cargo/hex/pypi package registry indexing (moved from `centralcloud/rust/package_intelligence/`)
 
 ### Configuration Changes
 
@@ -1824,16 +1829,33 @@ cargo publish --registry internal  # Publish Rust crate
 - ✅ **Nix Enforcement** - Consistent development environments
 - ✅ **Moon Integration** - Standardized build/test/CI tasks
 
+### Cleanup Actions
+
+**Removed:**
+- ✅ `rust/embedding_trainer/` - Obsolete (replaced by Elixir `lib/singularity/embedding/trainer.ex`)
+
+**Kept (Not Rust):**
+- `rust/template/` - Central template library (not Rust code, kept in place)
+
 ### Verification Checklist
 
+**Rust NIF Engines (5):**
 - [x] All 5 engines copied to `packages/`
 - [x] moon.yml created with Rust + Elixir tasks
 - [x] singularity/mix.exs paths updated
-- [x] Root Cargo.toml workspace members updated
-- [x] packages/README.md updated with new engines
 - [x] Nix enforcement added to all engines
-- [x] All references in FINAL_PLAN.md updated from `rust/` to `packages/`
-- [x] No old `rust/` references remain in dependency files
+
+**Package Intelligence Utility (1):**
+- [x] Copied from `centralcloud/rust/package_intelligence/` to `packages/package_intelligence/`
+- [x] moon.yml created for package_intelligence
+- [x] Root Cargo.toml updated to reference `packages/package_intelligence`
+
+**Overall:**
+- [x] Root Cargo.toml workspace members updated (6 projects in packages/)
+- [x] packages/README.md updated with all new packages
+- [x] All references in FINAL_PLAN.md updated
+- [x] No old incorrect `rust/` references remain in dependency files
+- [x] Obsolete embedding_trainer removed
 
 ---
 

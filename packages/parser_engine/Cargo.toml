@@ -1,0 +1,92 @@
+[package]
+name = "parser-code"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["claude-code-zen Team"]
+description = "Source code parser for AST analysis, complexity metrics, and language detection using tree-sitter"
+repository = "https://github.com/claude-code-zen/zenflow"
+readme = "README.md"
+keywords = ["parser", "source-code", "ast", "code-analysis", "tree-sitter", "complexity", "metrics"]
+categories = ["development-tools", "parsing"]
+
+[lib]
+name = "parser_code"
+path = "src/lib.rs"
+crate-type = ["cdylib"]  # Pure NIF - parser_core provides the rlib
+
+
+[dependencies]
+# Core parser library (shared types, no NIF)
+parser_core = { path = "./core" }
+
+# Rustler for NIF (match Elixir mix.exs version)
+rustler = "0.37"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Universal dependency analysis - stable version
+tokei = "12.1"
+
+# Tree-sitter core
+tree-sitter = { workspace = true }
+
+# Language parser crates (separate crates for each language)
+elixir_parser = { path = "./languages/elixir" }
+erlang_parser = { path = "./languages/erlang" }
+gleam_parser = { path = "./languages/gleam" }
+rust_parser = { path = "./languages/rust" }
+javascript_parser = { path = "./languages/javascript" }
+typescript_parser = { path = "./languages/typescript" }
+python_parser = { path = "./languages/python" }
+json_parser = { path = "./languages/json" }
+yaml_parser = { path = "./languages/yaml" }
+bash_parser = { path = "./languages/bash" }
+go_parser = { path = "./languages/go" }
+java_parser = { path = "./languages/java" }
+csharp_parser = { path = "./languages/csharp" }
+c_parser = { path = "./languages/c" }
+cpp_parser = { path = "./languages/cpp" }
+parser_engine_lua = { path = "./languages/lua" }
+
+# Core utilities - explicit versions (not workspace)
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"  # For dependency parsing (Cargo.toml, pyproject.toml, etc.)
+async-trait = "0.1"
+futures = "0.3"
+tokio = { version = "1.0", features = ["full"] }
+tokio-retry = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+tempfile = "3.0"
+
+# Performance optimizations
+lru = "0.12"
+dashmap = "5.0"
+
+# PageRank for ML central heuristics (merged from parser-coordinator)
+petgraph = "0.6"
+
+# Regular expressions for refactoring
+regex = "1.0"
+
+# Logging
+tracing = "0.1"
+tree-sitter-little-mermaid = { git = "https://github.com/mikkihugo/tree-sitter-mermaid", version = "0.9" }
+
+# Dependency parsing - DISABLED: path dependency causes Rustler issues
+# dependency_parser = { path = "../formats/dependency" }
+
+[dev-dependencies]
+tokio-test = "0.4"
+criterion = "0.5"
+
+[[bench]]
+name = "parser_performance"
+harness = false
+
+[features]
+default = ["rca"]  # RCA metrics enabled by default
+rca = []  # Mozilla rust-code-analysis metrics

@@ -4,7 +4,7 @@
 
 **Personal AI-powered development tooling** - not shipped software. Your autonomous coding companion.
 
-20+ autonomous agent modules, semantic code search, living knowledge base, and multi-AI orchestration running on BEAM (Elixir/Gleam/Rust) with GPU acceleration and Nix reproducibility.
+20+ autonomous agent modules, semantic code search, living knowledge base, and multi-AI orchestration running on BEAM (Elixir/Rust) with GPU acceleration and Nix reproducibility.
 
 **Priorities:** Features & Learning > Speed & Security (internal use only)
 
@@ -12,7 +12,7 @@
 
 - **Living Knowledge Base** - Git ←→ PostgreSQL bidirectional learning (templates, patterns, prompts)
 - **Semantic Search** - GPU-accelerated (RTX 4080) code + package search with pgvector
-- **Autonomous Agents** - Self-improving Elixir/Gleam agents with HTDAG task decomposition
+- **Autonomous Agents** - Self-improving agents with HTDAG task decomposition
 - **Multi-AI Orchestration** - Claude, Gemini, OpenAI, Copilot
 - **Code Quality** - Rust-powered parsing, linting, analysis for 30+ languages
 - **Nix Everywhere** - Single reproducible environment (dev/test/prod)
@@ -80,9 +80,6 @@ Elixir/BEAM (OTP Application)
 Observer (Phoenix Web UI)
   └─ Dashboards (ValidationDashboard, RuleQualityDashboard, etc.)
 
-Gleam
-  ├─ singularity/htdag.gleam (Hierarchical Temporal DAG)
-  └─ singularity/rule_engine.gleam (Confidence-based rules)
 ```
 
 ### Key Features of Unified Architecture
@@ -139,14 +136,10 @@ singularity/
 │   ├── autonomy/                          # Rule engine, planners
 │   ├── llm/                               # LLM provider integration
 │   └── knowledge/                         # Living knowledge base
-├── src/                       # Gleam modules (compiled via mix_gleam)
-│   ├── singularity/htdag.gleam            # Hierarchical Temporal DAG
-│   └── singularity/rule_engine.gleam      # Confidence-based rule evaluation
 ├── config/
 │   └── config.exs            # Unified orchestrator configs (:pattern_types, :analyzer_types, etc.)
 ├── test/                      # ExUnit tests
-├── mix.exs                    # Mix project (mix_gleam enabled)
-└── gleam.toml                 # Gleam config
+└── mix.exs                    # Mix project
 ```
 
 ### Using the Unified Orchestrators
@@ -208,13 +201,8 @@ alias Singularity.Execution.ExecutionOrchestrator
 
 ## Quick Start (Nix-only)
 
-**📚 Complete Documentation:**
-- **🚀 PROTOTYPE_LAUNCH_QUICKSTART.md** - 30-minute launch guide
-- **📋 PROTOTYPE_LAUNCH_READINESS.md** - Full evaluation (83% complete, ready for launch)
-- **📊 SYSTEM_FLOWS.md** - 22 Mermaid diagrams (application + database + agent flows)
-- **🦀 RUST_ENGINES_INVENTORY.md** - 8 NIFs + 3 services complete inventory
-- **🤖 AGENTS.md** - Agent system documentation (6 agents + supporting systems)
-- **🔧 PRODUCTION_FIXES_IMPLEMENTED.md** - Error handling + monitoring details
+**📚 Documentation:**
+- **🤖 AGENTS.md** - Agent system documentation (7 primary agents + 12 supporting systems)
 - **🔍 verify-launch.sh** - Automated readiness verification script
 
 ### 1. Enter Nix Shell
@@ -224,7 +212,7 @@ nix develop   # Or: direnv allow
 
 This auto-starts:
 - PostgreSQL 17 (with pgvector, timescaledb, postgis)
-- All tools (Elixir, Gleam, Rust, Bun)
+- All tools (Elixir, Rust, Bun)
 
 ### 2. Setup Database (Single Shared DB)
 ```bash
@@ -319,31 +307,9 @@ Binary cache
 
 - RuleEngineV2 supersedes the older `Singularity.Autonomy.RuleEngine`. New code should depend on V2.
 - Singularity is an OTP application (not a service with external interfaces). Observer Phoenix app provides the web UI.
-- Nix flake pins OTP 28 + Elixir 1.19 and sets UTF‑8 env for stable rebar3; outside Nix, ensure matching versions for smooth `mix_gleam` builds.
-- The core system also runs with Mix alone if your host has compatible Erlang/Elixir/Gleam.
+- Nix flake pins OTP 28 + Elixir 1.19 for reproducible builds
 
-## Gleam via mix_gleam
-
-Gleam modules are compiled automatically by Mix (mix_gleam).
-
-Common commands:
-
-```
-cd singularity
-mix deps.get                 # also fetches Gleam deps via alias
-mix compile                  # compiles Elixir + Gleam
-gleam check                  # optional fast type-check
-gleam test                   # optional Gleam tests
-```
-
-If Gleam stdlib resolution fails once (rare):
-
-```
-mix compile.gleam gleam_stdlib --force
-mix compile
-```
-
-For deeper details see INTERFACE_ARCHITECTURE.md and docs/setup/QUICKSTART.md.
+For deeper details see CLAUDE.md.
 ```elixir
 # Extract reusable patterns
 iex> Singularity.CodePatternExtractor.extract_from_project("my_project")
@@ -406,7 +372,7 @@ gemini --model=gemini-1.5-pro "generate unit tests"
 
 **✅ Working Tools:**
 - **Cursor Agent**: Fully integrated via Nix wrapper with automatic binary download
-- **OpenAI Codex CLI**: Fully integrated via npx with npm package, includes sandbox execution and MCP server support
+- **OpenAI Codex CLI**: Fully integrated via npx with npm package, includes sandbox execution
 
 **Note:** Other tools are currently placeholder scripts that provide guidance and point to the AI server. Full implementations can be added by installing the respective tools or connecting to their APIs.
 
@@ -417,12 +383,8 @@ gemini --model=gemini-1.5-pro "generate unit tests"
 mix analyze.rust         # Analyze Rust codebase
 mix analyze.query        # Query analysis results
 
-# Gleam integration
-mix gleam.deps.get      # Fetch Gleam dependencies
-mix compile.gleam       # Compile Gleam modules
-
 # Registry management
-mix registry.sync       # Sync MCP tool registry
+mix registry.sync       # Sync codebase analysis registry
 mix registry.report     # Generate registry report
 
 # Quality checks
@@ -500,12 +462,6 @@ This is **personal development tooling** (not production software), so:
 - [CLAUDE.md](CLAUDE.md) - Main guide for Claude Code AI
 - [FINAL_PLAN.md](FINAL_PLAN.md) - Comprehensive system audit and status
 - [AGENTS.md](AGENTS.md) - Agent system documentation
-- [KNOWLEDGE_ARTIFACTS_SETUP.md](KNOWLEDGE_ARTIFACTS_SETUP.md) - Living knowledge base setup
-- [DATABASE_STRATEGY.md](DATABASE_STRATEGY.md) - Single shared DB approach
-
-**Features:**
-- [PATTERN_SYSTEM.md](PATTERN_SYSTEM.md) - Pattern extraction & learning
-- [PACKAGE_REGISTRY_AND_CODEBASE_SEARCH.md](PACKAGE_REGISTRY_AND_CODEBASE_SEARCH.md) - Semantic search
 
 ## 📄 License
 
@@ -513,7 +469,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
-- Built with Elixir, Gleam, and Rust
+- Built with Elixir and Rust
 - Powered by BEAM VM for fault-tolerance
 - Uses Tree-sitter for universal parsing
 - PostgreSQL with pgvector for embeddings

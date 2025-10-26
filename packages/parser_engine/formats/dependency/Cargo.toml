@@ -1,0 +1,26 @@
+[package]
+name = "dependency_parser"
+version = "0.1.0"
+edition = "2021"
+authors = ["Singularity Team"]
+description = "Tree-sitter based parser for dependency files (package.json, Cargo.toml, mix.exs, etc.)"
+license = "MIT"
+
+[lib]
+name = "dependency_parser"
+crate-type = ["rlib"]
+
+[dependencies]
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+regex = "1"
+tree-sitter = { workspace = true }
+tree-sitter-json = { workspace = true }
+# tree-sitter-toml = "0.20"  # Removed - not used, was pulling in tree-sitter 0.20.x
+parser_core = { path = "../../core" }
+
+[dev-dependencies]
+tempfile = "3"
