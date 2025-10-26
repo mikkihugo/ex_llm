@@ -1564,6 +1564,22 @@ With that baseline in place, implement the missing storage and analytics compone
 - Updated Singularity modules no longer referencing NATS; they enqueue approvals via Observer
 - Live dashboards for HITL queue, queue metrics, TaskGraph runs, Responses API stats
 - Documentation (`OBSERVER_APP_PLAN.md`) with setup instructions and wiring diagrams
+- **System Health Dashboard Suite** (IMPLEMENTED - 2025-10-26):
+  - Backend modules:
+    - `Singularity.LLM.LLMHealthDashboard` - Monitor LLM provider health via Nexus circuit breakers
+    - `Singularity.Validation.ValidationDashboard` - Track validation accuracy & execution success (3 core KPIs)
+    - `Singularity.Evolution.RuleQualityDashboard` - Adaptive threshold metrics
+  - Observer Live Views:
+    - `SystemHealthLive` (/) - System health index with links to all dashboards
+    - `NexusLLMHealthLive` (/nexus-llm-health) - Provider health, circuit breaker status, throughput, error rates
+    - `ValidationMetricsLive` (/validation-metrics) - Accuracy, success rate, validation time with time-range selector
+    - `AdaptiveThresholdLive` (/adaptive-threshold) - Confidence gating metrics & convergence progress
+  - Features:
+    - Auto-refresh timers (5s-30s depending on dashboard)
+    - Color-coded health indicators
+    - Error handling with graceful fallbacks
+    - Trend analysis & recommendations
+    - Time-range analysis (last hour/day/week for validation metrics)
 
 ### Shared Queue Integration (Genesis)
 
