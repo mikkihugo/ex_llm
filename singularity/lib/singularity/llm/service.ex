@@ -343,7 +343,7 @@ defmodule Singularity.LLM.Service do
 
   ## Performance Notes
 
-  - NATS requests: < 100ms average latency
+  - Queue enqueue: < 50ms average latency via Oban/pgmq
   - Model selection: < 10ms overhead
   - Prompt optimization: < 50ms processing time
   - SLO targets: 99.9% availability, < 2s P95 latency
@@ -352,7 +352,7 @@ defmodule Singularity.LLM.Service do
   ## Concurrency Semantics
 
   - Stateless service - all functions are pure
-  - NATS client handles connection pooling
+  - Oban/pgmq handle concurrency and backpressure transparently
   - Concurrent requests are fully supported
   - No shared state between requests
 
@@ -365,16 +365,17 @@ defmodule Singularity.LLM.Service do
 
   ## Relationships
 
-  - **Calls:** Singularity.NATS.Client.request/3 - NATS communication
+  - **Calls:** Singularity.Jobs.LlmRequestWorker.enqueue_llm_request/3 - queue publication
   - **Calls:** Singularity.Engines.PromptEngine.optimize_prompt/2 - Prompt optimization
   - **Calls:** Logger.info/2, Logger.error/2 - Structured logging
   - **Calls:** :telemetry.execute/2 - Metrics collection
   - **Called by:** Singularity.Agents.Agent, Singularity.Engines.ArchitectureEngine - AI operations
-  - **Depends on:** Singularity.NATS.Client - Message transport
+  - **Depends on:** Singularity.Jobs.LlmRequestWorker - Queue orchestration
+  - **Depends on:** Singularity.Jobs.LlmResultPoller - Result persistence & retrieval
   - **Depends on:** Singularity.Engines.PromptEngine - Prompt optimization
   - **Used by:** All AI-powered features in the system
-  - **Integrates with:** AI Server (TypeScript) - LLM provider orchestration
-  - **Integrates with:** NATS - Message queuing and routing
+  - **Integrates with:** Nexus.Workflows.LLMRequestWorkflow - Executes Responses requests
+  - **Integrates with:** pgmq (`ai_requests`, `ai_results`) - Message transport
 
   ## Template Version
 
