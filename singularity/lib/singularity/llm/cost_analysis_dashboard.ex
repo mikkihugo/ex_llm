@@ -19,6 +19,7 @@ defmodule Singularity.LLM.CostAnalysisDashboard do
   """
 
   require Logger
+  import Ecto.Query
 
   alias Singularity.Repo
   alias Singularity.Schemas.ExecutionMetric
@@ -290,7 +291,7 @@ defmodule Singularity.LLM.CostAnalysisDashboard do
 
       Enum.map(daily_costs, fn day ->
         %{
-          day.date,
+          date: day.date,
           total_cost_cents: round(day.total_cost_cents) || 0,
           execution_count: day.execution_count,
           total_tokens: day.total_tokens || 0,
