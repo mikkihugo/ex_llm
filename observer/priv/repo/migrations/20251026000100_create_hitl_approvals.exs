@@ -14,6 +14,7 @@ defmodule Observer.Repo.Migrations.CreateHitlApprovals do
       add :payload, :map, null: false, default: %{}
       add :metadata, :map, null: false, default: %{}
       add :expires_at, :utc_datetime_usec
+      add :response_queue, :string
 
       timestamps(type: :utc_datetime_usec)
     end

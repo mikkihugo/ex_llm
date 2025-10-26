@@ -17,6 +17,7 @@ defmodule Observer.Application do
       {DNSCluster, query: Application.get_env(:observer, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Observer.PubSub},
       {Oban, Application.fetch_env!(:observer, Oban)},
+      Observer.HITL.QueuePoller,
       # Start the Finch HTTP client for sending emails
       {Finch, name: Observer.Finch},
       # Start a worker by calling: Observer.Worker.start_link(arg)

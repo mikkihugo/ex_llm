@@ -60,7 +60,7 @@ defmodule Singularity.Jobs.PgmqClient do
         )
 
       Enum.map(result.rows, fn [msg_id, body] ->
-        {msg_id, body}
+        {msg_id, decode(body)}
       end)
     rescue
       error ->
@@ -142,10 +142,22 @@ defmodule Singularity.Jobs.PgmqClient do
       "embedding_results",
       "agent_messages",
       "agent_responses",
-      "centralcloud_updates"
+      "centralcloud_updates",
+      "observer_hitl_requests"
     ]
 
     Enum.each(queues, &ensure_queue/1)
     :ok
   end
+
+  defp decode(body) when is_map(body), do: body
+
+  defp decode(body) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, map} -> map
+      _ -> %{"raw" => body}
+    end
+  end
+
+  defp decode(other), do: other
 end

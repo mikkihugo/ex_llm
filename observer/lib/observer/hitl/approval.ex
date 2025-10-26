@@ -27,6 +27,7 @@ defmodule Observer.HITL.Approval do
     field :payload, :map, default: %{}
     field :metadata, :map, default: %{}
     field :expires_at, :utc_datetime_usec
+    field :response_queue, :string
 
     timestamps(type: :utc_datetime_usec)
   end
@@ -46,12 +47,14 @@ defmodule Observer.HITL.Approval do
       :decided_at,
       :payload,
       :metadata,
-      :expires_at
+      :expires_at,
+      :response_queue
     ])
     |> validate_required([:request_id, :payload])
     |> validate_length(:request_id, max: 255)
     |> validate_length(:agent_id, max: 255)
     |> validate_length(:task_type, max: 255)
+    |> validate_length(:response_queue, max: 255)
     |> put_default(:payload, %{})
     |> put_default(:metadata, %{})
     |> unique_constraint(:request_id)

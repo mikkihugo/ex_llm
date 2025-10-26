@@ -1,160 +1,140 @@
 defmodule Singularity.HITL.ApprovalService do
   @moduledoc """
-  Service for managing Human-in-the-Loop (HITL) approval workflow via NATS.
+  Queue-backed HITL approval service for Singularity.
 
-  Implements request-reply pattern with external HITL web UI.
-
-  ## Approval Flow
-  - Agent requests approval via NATS (approval.request topic)
-  - External service displays in web UI
-  - Human approves/rejects in UI
-  - Response sent back via NATS reply
-
-  ## Timeout
-  - 30 second timeout if no human response
-  - Agent can proceed with fallback decision
-
-  ## Usage
-
-      # Request approval (NATS request-reply, 30s timeout)
-      case ApprovalService.request_approval(
-        file_path: "lib/my_module.ex",
-        diff: diff_text,
-        description: "Add feature X"
-      ) do
-        {:ok, :approved} -> write_file(...)
-        {:ok, :rejected} -> skip_change()
-        {:error, :timeout} -> fallback_behavior()
-      end
+  Approval and question requests are enqueued in pgmq for Observer to pick up.
+  Responses are read from a dedicated response queue per request.
   """
 
   require Logger
 
-  alias Singularity.Messaging.Client
+  alias Singularity.Jobs.PgmqClient
 
-  @approval_timeout_ms 30_000  # 30 second timeout
+  @approval_timeout_ms 30_000
+  @poll_interval_ms 500
+  @request_queue "observer_hitl_requests"
 
   @doc """
-  Request approval for a code change via NATS.
-
-  Sends approval request to external HITL service via NATS request-reply.
-  Waits up to 30 seconds for human response.
+  Request approval for a code change.
 
   Returns:
-  - {:ok, :approved} - Human approved
-  - {:ok, :rejected} - Human rejected
-  - {:error, :timeout} - No response within 30s
+    * `{:ok, :approved}`
+    * `{:ok, :rejected}`
+    * `{:ok, :cancelled}`
+    * `{:error, :timeout}`
   """
   def request_approval(opts) do
     file_path = Keyword.fetch!(opts, :file_path)
     diff = Keyword.fetch!(opts, :diff)
     description = Keyword.get(opts, :description, "Approval requested")
     agent_id = Keyword.get(opts, :agent_id, "system")
+    task_type = Keyword.get(opts, :task_type)
 
-    approval_request = %{
-      id: UUID.uuid4(),
-      file_path: file_path,
-      diff: diff,
-      description: description,
-      agent_id: agent_id,
-      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+    request_id = UUID.uuid4()
+    response_queue = response_queue_name(request_id)
+
+    payload = %{
+      "request_id" => request_id,
+      "type" => "approval",
+      "response_queue" => response_queue,
+      "agent_id" => agent_id,
+      "task_type" => task_type,
+      "payload" => %{
+        "file_path" => file_path,
+        "diff" => diff,
+        "description" => description
+      }
     }
 
-    Logger.info("Requesting approval via NATS: #{approval_request.id} (#{file_path})")
-
-    try do
-      # NATS request-reply to external HITL service
-      response = Client.request(
-        "approval.request",
-        Jason.encode!(approval_request),
-        timeout: @approval_timeout_ms
-      )
-
-      case response do
-        {:ok, body} ->
-          decoded = Jason.decode!(body)
-          case decoded do
-            %{"approved" => true} ->
-              Logger.info("Approval granted: #{approval_request.id}")
-              {:ok, :approved}
-            %{"approved" => false} ->
-              Logger.info("Approval rejected: #{approval_request.id}")
-              {:ok, :rejected}
-            _ ->
-              Logger.warning("Invalid approval response")
-              {:error, :invalid_response}
-          end
-
-        {:error, :timeout} ->
-          Logger.warning("Approval request timeout: #{approval_request.id}")
-          {:error, :timeout}
-
-        {:error, reason} ->
-          Logger.error("Approval request failed: #{inspect(reason)}")
-          {:error, reason}
-      end
-    rescue
-      e in RuntimeError ->
-        Logger.error("Error requesting approval: #{inspect(e)}")
-        {:error, :request_failed}
-    end
+    dispatch_and_wait(payload, response_queue)
   end
 
   @doc """
-  Request a question/clarification from human via NATS.
-
-  Similar to approval but returns text response instead of yes/no.
+  Ask a human a free-form question.
 
   Returns:
-  - {:ok, response_text} - Human provided response
-  - {:error, :timeout} - No response within 30s
+    * `{:ok, response_text}`
+    * `{:error, :timeout}`
   """
   def request_question(opts) do
     question = Keyword.fetch!(opts, :question)
     agent_id = Keyword.get(opts, :agent_id, "system")
     context = Keyword.get(opts, :context, %{})
 
-    question_request = %{
-      id: UUID.uuid4(),
-      question: question,
-      context: context,
-      agent_id: agent_id,
-      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+    request_id = UUID.uuid4()
+    response_queue = response_queue_name(request_id)
+
+    payload = %{
+      "request_id" => request_id,
+      "type" => "question",
+      "response_queue" => response_queue,
+      "agent_id" => agent_id,
+      "payload" => %{
+        "question" => question,
+        "context" => context
+      }
     }
 
-    Logger.info("Requesting question response via NATS: #{question_request.id}")
+    dispatch_and_wait(payload, response_queue)
+  end
 
-    try do
-      response = Client.request(
-        "question.ask",
-        Jason.encode!(question_request),
-        timeout: @approval_timeout_ms
-      )
-
-      case response do
-        {:ok, body} ->
-          decoded = Jason.decode!(body)
-          case decoded do
-            %{"response" => response_text} when is_binary(response_text) ->
-              Logger.info("Question answered: #{question_request.id}")
-              {:ok, response_text}
-            _ ->
-              Logger.warning("Invalid question response")
-              {:error, :invalid_response}
-          end
-
-        {:error, :timeout} ->
-          Logger.warning("Question request timeout: #{question_request.id}")
-          {:error, :timeout}
-
-        {:error, reason} ->
-          Logger.error("Question request failed: #{inspect(reason)}")
-          {:error, reason}
-      end
-    rescue
-      e in RuntimeError ->
-        Logger.error("Error requesting question: #{inspect(e)}")
-        {:error, :request_failed}
+  defp dispatch_and_wait(payload, response_queue) do
+    with :ok <- ensure_queue(@request_queue),
+         :ok <- ensure_queue(response_queue),
+         {:ok, _msg_id} <- PgmqClient.send_message(@request_queue, payload) do
+      await_response(response_queue, @approval_timeout_ms)
+    else
+      {:error, reason} ->
+        Logger.error("HITL request failed", reason: inspect(reason))
+        {:error, reason}
     end
   end
+
+  defp await_response(queue, timeout_ms) do
+    deadline = System.monotonic_time(:millisecond) + timeout_ms
+    do_await_response(queue, deadline)
+  end
+
+  defp do_await_response(queue, deadline) do
+    case PgmqClient.read_messages(queue, 1) do
+      [{msg_id, body}] ->
+        PgmqClient.ack_message(queue, msg_id)
+        decode_response(body)
+
+      [] ->
+        if System.monotonic_time(:millisecond) >= deadline do
+          {:error, :timeout}
+        else
+          Process.sleep(@poll_interval_ms)
+          do_await_response(queue, deadline)
+        end
+    end
+  end
+
+  defp decode_response(%{"decision" => decision}) do
+    case decision do
+      "approved" -> {:ok, :approved}
+      "rejected" -> {:ok, :rejected}
+      "cancelled" -> {:ok, :cancelled}
+      _ -> {:error, :invalid_response}
+    end
+  end
+
+  defp decode_response(%{"response" => response}) when is_binary(response) do
+    {:ok, response}
+  end
+
+  defp decode_response(other) do
+    Logger.warning("Unknown HITL response", payload: inspect(other))
+    {:error, :invalid_response}
+  end
+
+  defp ensure_queue(queue) do
+    case PgmqClient.ensure_queue(queue) do
+      :ok -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp response_queue_name(request_id), do: "observer_hitl_response_" <> request_id
 end

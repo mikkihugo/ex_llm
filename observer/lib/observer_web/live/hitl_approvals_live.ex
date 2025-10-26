@@ -36,7 +36,13 @@ defmodule ObserverWeb.HITLApprovalsLive do
   @impl true
   def handle_event("set-filter", %{"status" => status}, socket) do
     status = normalize_status(status, socket.assigns.status_filter)
-    {:noreply, socket |> assign(:status_filter, status) |> assign(:selected_id, nil) |> assign(:selected, nil) |> reload()}
+
+    {:noreply,
+     socket
+     |> assign(:status_filter, status)
+     |> assign(:selected_id, nil)
+     |> assign(:selected, nil)
+     |> reload()}
   end
 
   def handle_event("select", %{"id" => id}, socket) do
@@ -57,7 +63,10 @@ defmodule ObserverWeb.HITLApprovalsLive do
       true ->
         with {:ok, approval} <- fetch_approval(id),
              {:ok, updated} <- apply_decision(approval, decision, decided_by, reason) do
+          HITL.publish_decision(updated)
+
           msg = decision_message(decision)
+
           socket =
             socket
             |> put_flash(:info, msg)
@@ -125,7 +134,9 @@ defmodule ObserverWeb.HITLApprovalsLive do
                       <td class="px-6 py-3 font-mono text-xs"><%= shorten(approval.request_id) %></td>
                       <td class="px-6 py-3 text-zinc-700"><%= approval.task_type || "n/a" %></td>
                       <td class="px-6 py-3"><.status_badge status={approval.status} /></td>
-                      <td class="px-6 py-3 text-zinc-500"><%= format_dt(approval.updated_at || approval.inserted_at) %></td>
+                      <td class="px-6 py-3 text-zinc-500">
+                        <%= format_dt(approval.updated_at || approval.inserted_at) %>
+                      </td>
                       <td class="px-6 py-3 text-right">
                         <button
                           type="button"
@@ -220,13 +231,17 @@ defmodule ObserverWeb.HITLApprovalsLive do
       <%= if @approval.status == :pending do %>
         <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
           <h3 class="text-sm font-semibold text-amber-800">Decision Required</h3>
-          <p class="text-sm text-amber-700 mt-2">Provide your name, optional context, and choose an action.</p>
+          <p class="text-sm text-amber-700 mt-2">
+            Provide your name, optional context, and choose an action.
+          </p>
 
           <form class="mt-4 space-y-4" phx-submit="decide">
             <input type="hidden" name="approval_id" value={@approval.id} />
 
             <div>
-              <label class="block text-xs font-semibold uppercase tracking-wide text-amber-700">Operator</label>
+              <label class="block text-xs font-semibold uppercase tracking-wide text-amber-700">
+                Operator
+              </label>
               <input
                 type="text"
                 name="decided_by"
@@ -237,7 +252,9 @@ defmodule ObserverWeb.HITLApprovalsLive do
             </div>
 
             <div>
-              <label class="block text-xs font-semibold uppercase tracking-wide text-amber-700">Reason (optional)</label>
+              <label class="block text-xs font-semibold uppercase tracking-wide text-amber-700">
+                Reason (optional)
+              </label>
               <textarea
                 name="decision_reason"
                 rows="3"
@@ -276,9 +293,15 @@ defmodule ObserverWeb.HITLApprovalsLive do
       <% else %>
         <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
           <p><span class="font-semibold">Decision:</span> <%= human_status(@approval.status) %></p>
-          <p class="mt-1"><span class="font-semibold">By:</span> <%= @approval.decided_by || "unknown" %></p>
-          <p class="mt-1"><span class="font-semibold">Reason:</span> <%= @approval.decision_reason || "—" %></p>
-          <p class="mt-1"><span class="font-semibold">When:</span> <%= format_dt(@approval.decided_at) %></p>
+          <p class="mt-1">
+            <span class="font-semibold">By:</span> <%= @approval.decided_by || "unknown" %>
+          </p>
+          <p class="mt-1">
+            <span class="font-semibold">Reason:</span> <%= @approval.decision_reason || "—" %>
+          </p>
+          <p class="mt-1">
+            <span class="font-semibold">When:</span> <%= format_dt(@approval.decided_at) %>
+          </p>
         </div>
       <% end %>
     </div>
@@ -386,12 +409,25 @@ defmodule ObserverWeb.HITLApprovalsLive do
     """
   end
 
-  defp badge_classes(:pending), do: "inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"
-  defp badge_classes(:approved), do: "inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800"
-  defp badge_classes(:rejected), do: "inline-flex items-center rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-800"
-  defp badge_classes(:cancelled), do: "inline-flex items-center rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-semibold text-zinc-700"
+  defp badge_classes(:pending),
+    do:
+      "inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"
 
-  defp badge_classes(_), do: "inline-flex items-center rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-semibold text-zinc-700"
+  defp badge_classes(:approved),
+    do:
+      "inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800"
+
+  defp badge_classes(:rejected),
+    do:
+      "inline-flex items-center rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-800"
+
+  defp badge_classes(:cancelled),
+    do:
+      "inline-flex items-center rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-semibold text-zinc-700"
+
+  defp badge_classes(_),
+    do:
+      "inline-flex items-center rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-semibold text-zinc-700"
 
   defp human_status(status) when is_atom(status) do
     status
@@ -442,9 +478,10 @@ defmodule ObserverWeb.HITLApprovalsLive do
   defp changeset_error(changeset) do
     changeset.errors
     |> Enum.map(fn {field, {message, opts}} ->
-      interpolated = Enum.reduce(opts, message, fn {key, value}, acc ->
-        String.replace(acc, "%{#{key}}", to_string(value))
-      end)
+      interpolated =
+        Enum.reduce(opts, message, fn {key, value}, acc ->
+          String.replace(acc, "%{#{key}}", to_string(value))
+        end)
 
       "#{field} #{interpolated}"
     end)

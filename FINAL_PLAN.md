@@ -9,7 +9,7 @@
 - **Queue-based LLM requests now run end-to-end.** `Singularity.LLM.Service.dispatch_request/2` routes calls through `Singularity.Jobs.LlmRequestWorker`, the workflow at `singularity/lib/singularity/workflows/llm_request.ex` publishes Responses payloads to `ai_requests`, and `Singularity.Jobs.LlmResultPoller` persists Nexus `ai_results` via `JobResult.record_success/1`. The moduledocs still describe NATS, so documentation cleanup is pending.
 - **Observer dashboards render live data but lack approvals.** The LiveViews under `observer/lib/observer_web/live/` use `Observer.Dashboard` to render cards, charts, and pretty JSON with auto-refresh intervals, yet no `Observer.HITL.Approvals` context or persistence exists for human-in-the-loop flows.
 - **Genesis publishing and rule evolution are stubbed.** `singularity/lib/singularity/evolution/rule_evolution_system.ex` keeps confident rule data but `publish_rule_to_genesis/2` is still a no-op simulation. `Singularity.Evolution.GenesisPublisher` expects queue wiring that is not yet present.
-- **Legacy NATS messaging docs linger.** `singularity/lib/singularity/llm/service.ex` and `singularity/lib/singularity/jobs/pgmq_client.ex` moduledocs still reference NATS/ai-server paths; they need to be updated so future work follows the pgmq + Nexus pipeline.
+- **Legacy NATS messaging docs linger.** `singularity/lib/singularity/llm/service.ex`, `singularity/lib/singularity/jobs/pgmq_client.ex`, and `singularity/lib/singularity/storage/knowledge/template_service.ex` have been updated to reflect the pgmq/Nexus flow; remaining cleanup is limited to ancillary comments and older READMEs.
 
 ## Active Workstreams
 
@@ -20,7 +20,7 @@
    Replace `publish_rule_to_genesis/2` with a real pgmq producer, persist metrics from `Nexus.Workflows.LLMRequestWorkflow.track_metrics/1`, and surface the data through Rule Evolution and Cost dashboards.
 
 3. **Documentation + helper cleanup for the Responses pipeline**  
-   Update `Singularity.LLM.Service` and `Singularity.Jobs.PgmqClient` moduledocs, retire NATS mentions, add `await_responses_result/2`, and backfill `RESPONSES_API_PGMQ_INTEGRATION.md` so every caller follows the new async pattern.
+   `Singularity.LLM.Service`, `Singularity.Jobs.PgmqClient`, and `Singularity.Knowledge.TemplateService` now describe the queue-first architecture; `await_responses_result/2` ships with unit coverage and `RESPONSES_API_PGMQ_INTEGRATION.md` documents the flow. Remaining work: align secondary docs (CLAUDE.md, README) and ensure callers adopt the new helper.
 
 4. **CentralCloud intelligence alignment**  
    Keep framework/architecture pattern learning centralized in CentralCloud and share it back through pgmq/ex_pgflow so Observer and the pipeline can consume the latest pattern metadata.
@@ -39,12 +39,12 @@
 2. **Queue hand-off.** `call_llm_provider/1` publishes to `ai_requests` via `Singularity.Jobs.PgmqClient`, while `Singularity.LLM.Service.dispatch_request/2` now enqueues through `Singularity.Jobs.LlmRequestWorker` (Oban) instead of NATS.
 3. **Result ingestion.** `Singularity.Jobs.LlmResultPoller` reads `ai_results`, persists outcomes with `Singularity.Schemas.Execution.JobResult.record_success/1`, and acknowledges the messages. Still pending: expose `await_responses_result/2` for synchronous waits.
 4. **Callers aligned.** Agents, planning tools, and PromptEngine continue to invoke `Singularity.LLM.Service`, which now routes through the queue path transparently.
-5. **Documentation cleanup outstanding.** Update moduledocs and `RESPONSES_API_PGMQ_INTEGRATION.md` to describe the pgmq flow (current docs still mention NATS).
+5. **Documentation cleanup complete.** Moduledocs were refreshed and `RESPONSES_API_PGMQ_INTEGRATION.md` now describes the queue flow; secondary guides still need later alignment.
 
 ### Phase 2 — Observer / HITL Platform (⚠️ In progress)
 
 1. **Observer dashboards.** `ObserverWeb.DashboardLive` macro, LiveViews (`system_health_live.ex`, `agent_performance_live.ex`, etc.), and shared components are in place with auto-refresh, summary cards, and fallback JSON inspectors.
-2. **HITL approvals context (TODO).** Implement `Observer.HITL` schemas, migrations, and LiveViews so humans can approve tasks. Replace direct callbacks in Singularity with pgmq/HTTP hand-offs once the context exists.
+2. **HITL approvals context (✅ live via UI).** `Observer.HITL` context, schemas, and LiveViews now support approvals. Next step: wire Singularity callbacks through Observer.
 3. **Dashboards polish.** Add pagination/search where needed, tighten error messaging, and decide whether raw JSON panels remain or move to a drill-down modal.
 4. **Routing & security.** Current router exposes dashboards without auth; add authentication/authorization before exposing Observer in production. Provide pgmq or REST endpoints for approvals once the context ships.
 
@@ -93,7 +93,7 @@
 - [x] Responses API enqueuing & result polling (Singularity ↔ Nexus) via `LlmRequestWorker`, `LlmRequest`, and `LlmResultPoller`
 - [ ] Build Observer HITL/approvals + dashboard polish
 - [ ] Replace Genesis publishing stub with real pgmq producer and persist Nexus metrics
-- [ ] Update `Singularity.LLM.Service`/`PgmqClient` docs, add `await_responses_result/2`, refresh `RESPONSES_API_PGMQ_INTEGRATION.md`
+- [x] Update `Singularity.LLM.Service`/`PgmqClient` docs, add `await_responses_result/2`, refresh `RESPONSES_API_PGMQ_INTEGRATION.md`
 - [ ] Add integration + LiveView tests, wire tasks into Moon/Nix pipelines
 
 This plan keeps the existing intelligence modules intact (FailurePatternStore, ValidationMetricsStore, CentralCloud pattern catalogues, framework learners, Adaptive Confidence Gating) while focusing current effort on Observer HITL approvals, documentation cleanup, and Genesis publishing.

@@ -9,6 +9,7 @@ defmodule Observer.HITL do
   import Ecto.Query
 
   alias Observer.HITL.Approval
+  alias Observer.Pgmq
   alias Observer.Repo
 
   @type approval_id :: Ecto.UUID.t()
@@ -95,6 +96,24 @@ defmodule Observer.HITL do
   @spec cancel(Approval.t(), map()) :: {:ok, Approval.t()} | {:error, term()}
   def cancel(%Approval{} = approval, attrs \\ %{}) do
     decide(approval, :cancelled, attrs)
+  end
+
+  @doc """
+  Broadcast a decision to the requester via pgmq.
+  """
+  @spec publish_decision(Approval.t()) :: :ok | {:error, term()}
+  def publish_decision(%Approval{response_queue: nil}), do: :ok
+
+  def publish_decision(%Approval{} = approval) do
+    payload = %{
+      request_id: approval.request_id,
+      decision: approval.status |> to_string(),
+      decided_by: approval.decided_by,
+      decision_reason: approval.decision_reason
+    }
+
+    Pgmq.send_message(approval.response_queue, payload)
+    :ok
   end
 
   defp decide(%Approval{} = approval, status, attrs) do

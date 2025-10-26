@@ -87,6 +87,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   alias Singularity.Storage.FailurePatternStore
   alias Singularity.Validation.EffectivenessTracker
   alias Singularity.Evolution.AdaptiveConfidenceGating
+  alias Singularity.Jobs.PgmqClient
 
   @type rule :: %{
           pattern: map(),
@@ -544,22 +545,39 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
       namespace: namespace
     )
 
-    try do
-      # In real implementation, would call Genesis API
-      # For now, simulate successful publishing
-      if rule.confidence >= @confidence_quorum do
-        # In production: Genesis.Framework.publish_rule(namespace, rule)
-        Logger.debug("RuleEvolutionSystem: Rule published (simulated)",
-          pattern: inspect(rule.pattern),
-          confidence: rule.confidence
-        )
+    if rule.confidence < @confidence_quorum do
+      :skip
+    else
+      payload = %{
+        "namespace" => namespace,
+        "pattern" => rule.pattern,
+        "action" => rule.action,
+        "confidence" => rule.confidence,
+        "evidence" => rule.evidence,
+        "status" => Atom.to_string(rule.status || :candidate),
+        "frequency" => rule.frequency,
+        "success_rate" => rule.success_rate,
+        "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+      }
 
-        :ok
-      else
-        :skip
+      case PgmqClient.send_message("genesis_rule_updates", payload) do
+        {:ok, msg_id} ->
+          Logger.debug("RuleEvolutionSystem: Rule published to Genesis queue",
+            pattern: inspect(rule.pattern),
+            confidence: rule.confidence,
+            message_id: msg_id
+          )
+
+          :ok
+
+        {:error, reason} ->
+          Logger.error("RuleEvolutionSystem: Failed to publish rule to Genesis queue",
+            pattern: inspect(rule.pattern),
+            reason: inspect(reason)
+          )
+
+          {:error, reason}
       end
-    rescue
-      _error -> :error
     end
   end
 
