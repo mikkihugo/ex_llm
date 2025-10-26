@@ -301,18 +301,12 @@ defmodule Singularity.Application do
   defp optional_children do
     # Return any additional children based on environment
     # Most supervisors are now in main tree
-    case Mix.env() do
-      :test ->
-        # Test mode: skip any test-specific configuration
-        []
-
-      :dev ->
-        # Development: run one-time setup jobs on startup
-        [Singularity.Bootstrap.SetupBootstrap]
-
-      :prod ->
-        # Production: run one-time setup jobs on startup
-        [Singularity.Bootstrap.SetupBootstrap]
+    # Skip bootstrap in test mode (use is_test_mode? for reliable detection)
+    if is_test_mode?() do
+      []
+    else
+      # Development and production: run one-time setup jobs
+      [Singularity.Bootstrap.SetupBootstrap]
     end
   end
 

@@ -164,6 +164,72 @@ defmodule ObserverWeb.SystemHealthLive do
             <% end %>
           </.health_card>
         </div>
+
+        <!-- Navigation to Detailed Dashboards -->
+        <section class="rounded-xl border border-zinc-200 bg-white shadow-sm p-6">
+          <header class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-semibold text-zinc-900">Detailed Dashboards</h2>
+              <p class="text-xs text-zinc-500">Access detailed analytics and monitoring for each system component</p>
+            </div>
+          </header>
+          
+          <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <!-- Nexus LLM Router Dashboards -->
+            <div class="space-y-2">
+              <h3 class="text-sm font-medium text-zinc-700">Nexus LLM Router</h3>
+              <div class="space-y-1">
+                <a href="/nexus-analytics" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  📊 Analytics Overview
+                </a>
+                <a href="/nexus-model-performance" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  ⚡ Model Performance
+                </a>
+                <a href="/nexus-model-discovery" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  🔍 Model Discovery
+                </a>
+                <a href="/nexus-cost-analysis" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  💰 Cost Analysis
+                </a>
+              </div>
+            </div>
+
+            <!-- System Health Dashboards -->
+            <div class="space-y-2">
+              <h3 class="text-sm font-medium text-zinc-700">System Health</h3>
+              <div class="space-y-1">
+                <a href="/nexus-llm-health" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  🏥 LLM Health
+                </a>
+                <a href="/validation-metrics" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  ✅ Validation Metrics
+                </a>
+                <a href="/adaptive-threshold" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  🎯 Adaptive Threshold
+                </a>
+              </div>
+            </div>
+
+            <!-- Advanced Dashboards -->
+            <div class="space-y-2">
+              <h3 class="text-sm font-medium text-zinc-700">Advanced Analytics</h3>
+              <div class="space-y-1">
+                <a href="/agent-performance" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  🤖 Agent Performance
+                </a>
+                <a href="/cost-analytics" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  💸 Cost Analytics
+                </a>
+                <a href="/code-quality" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  🔍 Code Quality
+                </a>
+                <a href="/task-execution" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  ⚙️ Task Execution
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
       <% end %>
     </div>
     """

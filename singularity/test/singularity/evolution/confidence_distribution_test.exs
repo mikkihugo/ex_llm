@@ -112,7 +112,8 @@ defmodule Singularity.Evolution.ConfidenceDistributionTest do
       |> Enum.with_index(1)
       |> Enum.each(fn {conf, idx} ->
         bar = String.duplicate("█", round(conf * 20))
-        IO.puts("   #{idx:2}. #{Float.round(conf, 3)} #{bar}")
+        idx_str = String.pad_leading(to_string(idx), 2)
+        IO.puts("   #{idx_str}. #{Float.round(conf, 3)} #{bar}")
       end)
 
       IO.puts("\n" <> String.duplicate("=", 60) <> "\n")
