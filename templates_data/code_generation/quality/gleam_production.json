@@ -61,6 +61,16 @@
           "call_graph_metadata",
           "anti_patterns"
         ],
+        "should_include_v2_5_0": [
+          "performance_characteristics",
+          "concurrency_safety",
+          "observable_metrics",
+          "troubleshooting_guide",
+          "graceful_degradation",
+          "version_compatibility",
+          "configuration_guide",
+          "architecture_decisions"
+        ],
         "ai_navigation": {
           "module_identity": {
             "format": "json",
@@ -106,6 +116,103 @@
             "format": "comma_separated",
             "min_count": 5,
             "description": "Keywords for vector search optimization (10+ recommended)"
+          },
+          "performance_characteristics": {
+            "format": "markdown",
+            "when": "module has measurable computational behavior",
+            "should_include": [
+              "time_complexity",
+              "space_complexity",
+              "typical_latencies",
+              "benchmarks",
+              "beam_considerations"
+            ],
+            "description": "Performance characteristics for production deployment decisions"
+          },
+          "concurrency_safety": {
+            "format": "markdown",
+            "when": "module has concurrent operations",
+            "should_include": [
+              "process_safety",
+              "actor_model_usage",
+              "message_passing_guarantees",
+              "race_condition_risks",
+              "recommended_usage_patterns"
+            ],
+            "description": "Concurrency and safety guarantees for BEAM/Erlang runtime"
+          },
+          "observable_metrics": {
+            "format": "markdown",
+            "when": "module emits telemetry or logs",
+            "should_include": [
+              "log_messages",
+              "telemetry_events",
+              "observer_integration",
+              "example_dashboards"
+            ],
+            "description": "Documented telemetry events and monitoring guidance (BEAM Observer)"
+          },
+          "troubleshooting_guide": {
+            "format": "markdown",
+            "when": "module might encounter runtime issues",
+            "should_include": [
+              "common_problems",
+              "root_causes",
+              "diagnostic_steps",
+              "solutions",
+              "beam_debugging",
+              "prevention_strategies"
+            ],
+            "description": "Common issues, diagnostics, and solutions for production debugging"
+          },
+          "graceful_degradation": {
+            "format": "markdown",
+            "when": "module has external dependencies",
+            "should_include": [
+              "failure_scenarios",
+              "fallback_behavior",
+              "supervision_strategy",
+              "recovery_mechanism",
+              "testing_guidance"
+            ],
+            "description": "Failure modes and degradation patterns for fault tolerance (BEAM supervision)"
+          },
+          "version_compatibility": {
+            "format": "markdown",
+            "when": "module has dependencies or breaking history",
+            "should_include": [
+              "gleam_versions_supported",
+              "erlang_otp_versions",
+              "key_dependencies",
+              "breaking_changes_history",
+              "migration_guide"
+            ],
+            "description": "Version compatibility matrix and breaking changes documentation"
+          },
+          "configuration_guide": {
+            "format": "markdown",
+            "when": "module has configurable behavior",
+            "should_include": [
+              "environment_variables",
+              "runtime_options",
+              "tuning_recommendations",
+              "beam_flags",
+              "safety_constraints"
+            ],
+            "description": "Configuration options and runtime tuning guidance"
+          },
+          "architecture_decisions": {
+            "format": "markdown",
+            "when": "module has non-obvious design choices",
+            "should_include": [
+              "decision_id",
+              "problem_statement",
+              "alternatives_considered",
+              "chosen_solution_and_rationale",
+              "consequences",
+              "related_decisions"
+            ],
+            "description": "Architecture Decision Records (ADR) explaining design rationale"
           }
         }
       },
@@ -147,6 +254,53 @@
       "immutability": "required"
     }
   },
+  "questions": [
+    {
+      "name": "error_tracking_integration",
+      "type": "choice",
+      "prompt": "Error tracking integration for production monitoring?",
+      "choices": [
+        "none",
+        "sentry",
+        "custom"
+      ],
+      "default": "none",
+      "hint": "Sentry integration for automatic error tracking and alerting in production"
+    },
+    {
+      "name": "target_runtime",
+      "type": "choice",
+      "prompt": "Target runtime?",
+      "choices": [
+        "erlang",
+        "javascript",
+        "both"
+      ],
+      "default": "erlang",
+      "hint": "Erlang for BEAM runtime, JavaScript for browser/Node.js, both for multi-target"
+    },
+    {
+      "name": "performance_critical",
+      "type": "boolean",
+      "prompt": "Is this performance-critical code?",
+      "default": false,
+      "hint": "Triggers: benchmarking, optimization, latency documentation, BEAM profiling"
+    },
+    {
+      "name": "erlang_compatibility",
+      "type": "boolean",
+      "prompt": "Must maintain Erlang/OTP compatibility?",
+      "default": true,
+      "hint": "Ensures compatibility with existing Erlang code and OTP patterns"
+    },
+    {
+      "name": "backward_compatibility",
+      "type": "boolean",
+      "prompt": "Must maintain backward compatibility?",
+      "default": true,
+      "hint": "Triggers: deprecation warnings, migration guides, version matrix documentation"
+    }
+  ],
   "prompts": {
     "code_generation": "Generate production-quality Gleam code for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines):\n//// Module Name - Brief description\n///\n/// **Purpose:** What this module does (clear statement)\n///\n/// ## Quick Start\n/// ```gleam\n/// import my_module\n///\n/// pub fn main() {\n///   let result = my_module.my_function(\"example\")\n///   io.println(result)\n/// }\n/// ```\n///\n/// ## Public API\n/// - `my_function(String) -> Result(String, Error)` - Does something useful\n/// - `another_function(Int, Int) -> Int` - Combines inputs\n///\n/// ## Error Handling\n/// - Returns `Error(InvalidInput)` for invalid data\n/// - Uses Result type, never panics\n///\n/// ## Examples\n/// ```gleam\n/// // Success case\n/// let result = my_function(\"valid\")\n/// // result: Ok(\"processed\")\n///\n/// // Error case\n/// let result = my_function(\"\")\n/// // result: Error(InvalidInput)\n/// ```\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n/// The sections below provide structured metadata for AI assistants,\n/// graph databases (Neo4j), and vector databases (pgvector).\n\nAI METADATA (Below separator):\n- Module Identity (JSON in code comment)\n- Architecture Diagram (Mermaid)\n- Call Graph (YAML)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- Module docs for all public modules\n- Function docs for all public functions\n- Result type for errors (never panic/assert)\n- Custom types for domain modeling\n- gleam test tests\n- gleam format compliant\n- Use pipe operator |> for chaining\n\n3. AI NAVIGATION (in module docs):\n\nModule Identity (JSON):\n```json\n{\n  \"module\": \"my_module\",\n  \"purpose\": \"Clear unique purpose statement\",\n  \"layer\": \"api|service|domain|util\",\n  \"gleam_patterns\": [\"Result types\", \"custom types\", \"pipe operator\"],\n  \"related_modules\": [\"gleam/io\", \"gleam/result\", \"gleam/option\"],\n  \"alternatives\": {\n    \"OldModule\": \"Legacy - use this module instead\",\n    \"SimilarModule\": \"Different use case - see disambiguation\"\n  },\n  \"disambiguation\": {\n    \"vs_OldModule\": \"This = Result types. OldModule = panics on error\",\n    \"vs_SimilarModule\": \"This = synchronous. SimilarModule = async\"\n  }\n}\n```\n\nArchitecture (Mermaid):\n```mermaid\ngraph TB\n    Main[main] --> MyModule[my_module]\n    MyModule --> Result[gleam/result]\n    MyModule --> IO[gleam/io]\n```\n\nCall Graph (YAML):\n```yaml\ncalls_out:\n  - module: gleam/result\n    functions: [map, try]\n    purpose: Error handling\n    critical: true\n\ncalled_by:\n  - module: main\n    purpose: Application entry\n    frequency: high\n\ndepends_on:\n  - gleam_stdlib (required)\n```\n\nAnti-Patterns:\n\u274c DO NOT use panic() or assert - use Result type\n\u274c DO NOT create 'my_module_wrapper' - use this module directly\n\u274c DO NOT avoid custom types - domain model with types\n\nSearch Keywords:\ngleam-module, result-types, type-safety, functional-programming, production-ready\n\nOUTPUT CODE ONLY (with enhanced documentation)."
   },
@@ -166,7 +320,17 @@
     "clear_separation": 0.85,
     "ai_metadata_explained": 0.8,
     "graph_db_ready": 0.9,
-    "vector_db_optimized": 0.9
+    "vector_db_optimized": 0.9,
+    "has_performance_characteristics": 0.9,
+    "has_concurrency_safety_docs": 0.85,
+    "has_degradation_patterns": 0.8,
+    "has_version_compatibility": 0.85,
+    "has_configuration_guide": 0.8,
+    "has_observable_metrics": 0.9,
+    "has_troubleshooting_guide": 0.75,
+    "has_architecture_decisions": 0.7,
+    "production_deployment_ready": 0.95,
+    "security_reviewed": 0.95
   },
   "graph_model": {
     "version": 2,

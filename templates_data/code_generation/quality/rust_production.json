@@ -78,6 +78,16 @@
           "call_graph_metadata",
           "anti_patterns"
         ],
+        "should_include_v2_5_0": [
+          "performance_characteristics",
+          "concurrency_safety",
+          "observable_metrics",
+          "troubleshooting_guide",
+          "graceful_degradation",
+          "version_compatibility",
+          "configuration_guide",
+          "architecture_decisions"
+        ],
         "ai_navigation": {
           "module_identity": {
             "format": "json",
@@ -124,6 +134,103 @@
             "format": "text",
             "min_keywords": 10,
             "description": "Comma-separated keywords for vector DB semantic search optimization"
+          },
+          "performance_characteristics": {
+            "format": "markdown",
+            "when": "module has measurable computational behavior",
+            "should_include": [
+              "time_complexity",
+              "space_complexity",
+              "typical_latencies",
+              "benchmarks",
+              "nif_latency_targets"
+            ],
+            "description": "Performance characteristics for production deployment decisions (NIFs must be <10ms)"
+          },
+          "concurrency_safety": {
+            "format": "markdown",
+            "when": "module has state or concurrent access",
+            "should_include": [
+              "thread_safety",
+              "send_sync_guarantees",
+              "mutex_rwlock_usage",
+              "race_condition_risks",
+              "recommended_usage_patterns"
+            ],
+            "description": "Concurrency and thread safety guarantees for safe concurrent usage (Rust ownership model)"
+          },
+          "observable_metrics": {
+            "format": "markdown",
+            "when": "module emits metrics or logs",
+            "should_include": [
+              "log_messages",
+              "metrics_emitted",
+              "tracing_integration",
+              "example_dashboards"
+            ],
+            "description": "Documented metrics and monitoring guidance (tracing crate)"
+          },
+          "troubleshooting_guide": {
+            "format": "markdown",
+            "when": "module might encounter runtime issues",
+            "should_include": [
+              "common_problems",
+              "root_causes",
+              "diagnostic_steps",
+              "solutions",
+              "nif_debugging",
+              "prevention_strategies"
+            ],
+            "description": "Common issues, diagnostics, and solutions for production debugging (NIFs and Rust)"
+          },
+          "graceful_degradation": {
+            "format": "markdown",
+            "when": "module has external dependencies",
+            "should_include": [
+              "failure_scenarios",
+              "fallback_behavior",
+              "error_propagation",
+              "recovery_mechanism",
+              "testing_guidance"
+            ],
+            "description": "Failure modes and degradation patterns for fault tolerance (Result types)"
+          },
+          "version_compatibility": {
+            "format": "markdown",
+            "when": "module has dependencies or breaking history",
+            "should_include": [
+              "rust_versions_supported",
+              "rustler_version",
+              "key_dependencies",
+              "breaking_changes_history",
+              "migration_guide"
+            ],
+            "description": "Version compatibility matrix and breaking changes documentation (NIFs and Rustler)"
+          },
+          "configuration_guide": {
+            "format": "markdown",
+            "when": "module has configurable behavior",
+            "should_include": [
+              "environment_variables",
+              "compile_time_features",
+              "runtime_options",
+              "tuning_recommendations",
+              "safety_constraints"
+            ],
+            "description": "Configuration options and runtime tuning guidance (Cargo features)"
+          },
+          "architecture_decisions": {
+            "format": "markdown",
+            "when": "module has non-obvious design choices",
+            "should_include": [
+              "decision_id",
+              "problem_statement",
+              "alternatives_considered",
+              "chosen_solution_and_rationale",
+              "consequences",
+              "related_decisions"
+            ],
+            "description": "Architecture Decision Records (ADR) explaining design rationale"
           }
         }
       },
@@ -276,6 +383,48 @@
       }
     }
   },
+  "questions": [
+    {
+      "name": "error_tracking_integration",
+      "type": "choice",
+      "prompt": "Error tracking integration for production monitoring?",
+      "choices": [
+        "none",
+        "sentry",
+        "custom"
+      ],
+      "default": "none",
+      "hint": "Sentry integration for automatic error tracking and alerting in production"
+    },
+    {
+      "name": "nif_usage",
+      "type": "boolean",
+      "prompt": "Is this a NIF (Native Implemented Function) for Elixir?",
+      "default": false,
+      "hint": "NIFs have special requirements: no I/O, no panics, <10ms latency, BEAM scheduler safety"
+    },
+    {
+      "name": "performance_critical",
+      "type": "boolean",
+      "prompt": "Is this performance-critical code?",
+      "default": false,
+      "hint": "Triggers: benchmarking, optimization, profiling, latency documentation"
+    },
+    {
+      "name": "unsafe_required",
+      "type": "boolean",
+      "prompt": "Does this require unsafe code?",
+      "default": false,
+      "hint": "Unsafe blocks need extra documentation: safety invariants, why unsafe is necessary, testing strategy"
+    },
+    {
+      "name": "backward_compatibility",
+      "type": "boolean",
+      "prompt": "Must maintain backward compatibility?",
+      "default": true,
+      "hint": "Triggers: deprecation warnings, migration guides, version matrix documentation"
+    }
+  ],
   "prompts": {
     "code_generation": "Generate PRODUCTION-QUALITY Rust code for: {task}\n\nREQUIREMENTS:\n- Module doc comment (//!) with overview, examples, usage patterns\n- Function docs (///) for ALL public functions with examples and edge cases\n- Struct docs for public structs with field descriptions\n- Result<T, E> for ALL fallible functions\n- NEVER panic in NIFs - always return Result\n- NO I/O in NIFs (file, network, database)\n- Keep NIF latency <10ms (ideal <1ms)\n- rustfmt formatted code\n- clippy clean (no warnings)\n- #[derive(Debug)] for all structs\n- Tests for all public functions\n- Doc tests with examples\n- RAG-optimized: semantic chunks, metadata tags, AI hints in module doc\n\nOUTPUT CODE ONLY.",
     "documentation": "Generate PRODUCTION-GRADE documentation for this Rust code:\n\n```rust\n{code}\n```\n\nINCLUDE module doc with HUMAN CONTENT FIRST, then AI metadata:\n\n1. HUMAN CONTENT (top section):\n   - Title: Module name - Brief description\n   - Purpose: What this module does (clear)\n   - Quick Start: Copy-paste examples showing common usage\n   - Public API: Bullet list of main functions\n   - NIF Safety: If NIF, explain I/O model and safety guarantees\n   - Error Handling: Common errors and solutions\n   - Examples: Real usage patterns with expected output\n\n2. SEPARATOR:\n   ---\n   ## AI Navigation Metadata\n   Brief explanation: \"The sections below provide structured metadata for AI assistants...\"\n\n3. AI METADATA (below separator):\n   - Module Identity (JSON): module, purpose, layer, nif_functions, related_modules, io_model\n   - Architecture Diagram (Mermaid): graph/sequence showing call flow\n   - Call Graph (YAML): nif_exports, calls, called_by, structs\n   - Anti-Patterns: what NOT to create, IO prohibition for NIFs, no panics\n   - Search Keywords: 10+ keywords for vector search\n\nALSO INCLUDE:\n- Function docs: Description, arguments, returns, examples, errors\n- Struct docs: Purpose, field descriptions, Elixir mapping (for NifStruct)\n- Doc tests for all public functions\n\nKEY: Human content at TOP (fast scanning), AI metadata BELOW (clear separation).\n\nOUTPUT DOCUMENTATION ONLY.",
@@ -307,7 +456,17 @@
     "clear_separation": 0.85,
     "ai_metadata_explained": 0.8,
     "graph_db_ready": 0.9,
-    "vector_db_optimized": 0.9
+    "vector_db_optimized": 0.9,
+    "has_performance_characteristics": 0.9,
+    "has_concurrency_safety_docs": 0.85,
+    "has_degradation_patterns": 0.8,
+    "has_version_compatibility": 0.85,
+    "has_configuration_guide": 0.8,
+    "has_observable_metrics": 0.9,
+    "has_troubleshooting_guide": 0.75,
+    "has_architecture_decisions": 0.7,
+    "production_deployment_ready": 0.95,
+    "security_reviewed": 0.95
   },
   "parent_pattern": null
 }

@@ -69,6 +69,16 @@
           "call_graph_metadata",
           "anti_patterns"
         ],
+        "should_include_v2_5_0": [
+          "performance_characteristics",
+          "concurrency_safety",
+          "observable_metrics",
+          "troubleshooting_guide",
+          "graceful_degradation",
+          "version_compatibility",
+          "configuration_guide",
+          "architecture_decisions"
+        ],
         "ai_navigation": {
           "component_identity": {
             "format": "json",
@@ -115,6 +125,104 @@
             "format": "comma_separated",
             "min_count": 5,
             "description": "Keywords for vector search optimization (10+ recommended)"
+          },
+          "performance_characteristics": {
+            "format": "markdown",
+            "when": "component has measurable render behavior",
+            "should_include": [
+              "render_count_typical",
+              "memory_footprint",
+              "re_render_triggers",
+              "benchmarks",
+              "optimization_techniques"
+            ],
+            "description": "Performance characteristics for production deployment decisions (React DevTools Profiler)"
+          },
+          "concurrency_safety": {
+            "format": "markdown",
+            "when": "component has async operations or state updates",
+            "should_include": [
+              "race_condition_risks",
+              "state_update_batching",
+              "concurrent_rendering",
+              "cleanup_requirements",
+              "recommended_usage_patterns"
+            ],
+            "description": "Concurrency and safety guarantees for React 18+ concurrent features"
+          },
+          "observable_metrics": {
+            "format": "markdown",
+            "when": "component emits analytics or logs",
+            "should_include": [
+              "analytics_events",
+              "error_boundaries",
+              "performance_marks",
+              "user_interaction_tracking",
+              "example_dashboards"
+            ],
+            "description": "Documented analytics events and monitoring guidance"
+          },
+          "troubleshooting_guide": {
+            "format": "markdown",
+            "when": "component might encounter runtime issues",
+            "should_include": [
+              "common_problems",
+              "root_causes",
+              "diagnostic_steps",
+              "solutions",
+              "react_devtools_usage",
+              "prevention_strategies"
+            ],
+            "description": "Common issues, diagnostics, and solutions for production debugging"
+          },
+          "graceful_degradation": {
+            "format": "markdown",
+            "when": "component has external dependencies or data loading",
+            "should_include": [
+              "failure_scenarios",
+              "fallback_ui",
+              "error_boundary_usage",
+              "loading_states",
+              "recovery_mechanism"
+            ],
+            "description": "Failure modes and degradation patterns for fault tolerance (Suspense + ErrorBoundary)"
+          },
+          "version_compatibility": {
+            "format": "markdown",
+            "when": "component has dependencies or breaking history",
+            "should_include": [
+              "react_versions_supported",
+              "typescript_versions",
+              "key_dependencies",
+              "breaking_changes_history",
+              "migration_guide"
+            ],
+            "description": "Version compatibility matrix and breaking changes documentation"
+          },
+          "configuration_guide": {
+            "format": "markdown",
+            "when": "component has configurable behavior",
+            "should_include": [
+              "props_reference",
+              "theme_customization",
+              "css_variables",
+              "feature_flags",
+              "accessibility_options"
+            ],
+            "description": "Configuration options and customization guidance"
+          },
+          "architecture_decisions": {
+            "format": "markdown",
+            "when": "component has non-obvious design choices",
+            "should_include": [
+              "decision_id",
+              "problem_statement",
+              "alternatives_considered",
+              "chosen_solution_and_rationale",
+              "consequences",
+              "related_decisions"
+            ],
+            "description": "Architecture Decision Records (ADR) explaining design rationale"
           }
         }
       }
@@ -153,6 +261,61 @@
       ]
     }
   },
+  "questions": [
+    {
+      "name": "error_tracking_integration",
+      "type": "choice",
+      "prompt": "Error tracking integration for production monitoring?",
+      "choices": [
+        "none",
+        "sentry",
+        "datadog",
+        "custom"
+      ],
+      "default": "none",
+      "hint": "Sentry/Datadog integration for automatic error tracking with React ErrorBoundary"
+    },
+    {
+      "name": "deployment_target",
+      "type": "choice",
+      "prompt": "Deployment target?",
+      "choices": [
+        "browser",
+        "server_side_rendering",
+        "static_export",
+        "hybrid"
+      ],
+      "default": "browser",
+      "hint": "Browser for SPA, SSR for Next.js/Remix, static for prerendering, hybrid for both"
+    },
+    {
+      "name": "performance_critical",
+      "type": "boolean",
+      "prompt": "Is this a performance-critical component?",
+      "default": false,
+      "hint": "Triggers: React.memo, useMemo, useCallback, virtualization, profiling"
+    },
+    {
+      "name": "accessibility_wcag",
+      "type": "choice",
+      "prompt": "WCAG accessibility level target?",
+      "choices": [
+        "none",
+        "wcag_a",
+        "wcag_aa",
+        "wcag_aaa"
+      ],
+      "default": "wcag_aa",
+      "hint": "WCAG AA is standard for most apps, AAA for government/healthcare"
+    },
+    {
+      "name": "backward_compatibility",
+      "type": "boolean",
+      "prompt": "Must maintain backward compatibility?",
+      "default": true,
+      "hint": "Triggers: deprecation warnings, migration guides, version matrix documentation"
+    }
+  ],
   "prompts": {
     "code_generation": "Generate production-quality React/TSX component for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines in JSDoc):\n/**\n * Component Name - Brief description\n *\n * **Purpose:** What this component does (clear statement)\n *\n * ## Quick Start\n * ```tsx\n * import { MyComponent } from './MyComponent';\n *\n * function App() {\n *   return <MyComponent name=\"example\" />;\n * }\n * ```\n *\n * ## Props\n * - `name` (string, required) - Display name\n * - `onClick` (function, optional) - Click handler\n *\n * ## Accessibility\n * - ARIA labels for screen readers\n * - Keyboard navigation support\n * - Focus management\n *\n * ## Examples\n * ```tsx\n * // Basic usage\n * <MyComponent name=\"John\" />\n *\n * // With event handler\n * <MyComponent name=\"Jane\" onClick={handleClick} />\n * ```\n */\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n// The sections below provide structured metadata for AI assistants,\n// graph databases (Neo4j), and vector databases (pgvector).\n\nAI METADATA (Below separator in JSDoc):\n- Component Identity (JSON in code block)\n- Architecture Diagram (Mermaid - component tree)\n- Call Graph (YAML - renders, hooks)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- TypeScript interface for props (no any)\n- Accessibility (aria-labels, keyboard nav)\n- Vitest + @testing-library/react tests\n- Memoization for expensive renders\n- No inline functions in lists\n\n3. AI NAVIGATION (in component JSDoc):\n\nComponent Identity (JSON):\n```json\n{\n  \"component\": \"MyComponent\",\n  \"purpose\": \"Clear unique purpose statement\",\n  \"layer\": \"page|layout|component|hook\",\n  \"react_patterns\": [\"useState\", \"useEffect\", \"custom hooks\"],\n  \"related_components\": [\"ParentComponent\", \"ChildComponent\"],\n  \"alternatives\": {\n    \"OldComponent\": \"Legacy - use this component instead\",\n    \"SimilarComponent\": \"Different use case - see disambiguation\"\n  },\n  \"disambiguation\": {\n    \"vs_OldComponent\": \"This = TypeScript + hooks. OldComponent = class component\",\n    \"vs_SimilarComponent\": \"This = form input. SimilarComponent = display only\"\n  }\n}\n```\n\nArchitecture (Mermaid):\n```mermaid\ngraph TB\n    App[App] --> MyComponent[MyComponent]\n    MyComponent --> Button[Button]\n    MyComponent --> Input[Input]\n    MyComponent -.uses.-> useCustomHook[useCustomHook]\n```\n\nCall Graph (YAML):\n```yaml\nrenders:\n  - component: Button\n    purpose: Submit action\n    critical: true\n  - component: Input\n    purpose: User input\n    critical: true\n\nrendered_by:\n  - component: App\n    purpose: Main application\n    frequency: high\n\nuses_hooks:\n  - useState (React)\n  - useEffect (React)\n  - useCustomHook (custom)\n\ndepends_on:\n  - react (required)\n  - react-dom (required)\n```\n\nAnti-Patterns:\n\u274c DO NOT create 'MyComponentWrapper' - use this component directly\n\u274c DO NOT use inline arrow functions in map() - memoize instead\n\u274c DO NOT forget aria-label - accessibility required\n\u274c DO NOT use 'any' type - explicit interfaces required\n\nSearch Keywords:\nreact-component, typescript-tsx, accessibility, hooks, production-ready, a11y\n\nOUTPUT CODE ONLY (with enhanced JSDoc)."
   },
@@ -171,7 +334,17 @@
     "clear_separation": 0.85,
     "ai_metadata_explained": 0.8,
     "graph_db_ready": 0.9,
-    "vector_db_optimized": 0.9
+    "vector_db_optimized": 0.9,
+    "has_performance_characteristics": 0.9,
+    "has_concurrency_safety_docs": 0.85,
+    "has_degradation_patterns": 0.8,
+    "has_version_compatibility": 0.85,
+    "has_configuration_guide": 0.8,
+    "has_observable_metrics": 0.9,
+    "has_troubleshooting_guide": 0.75,
+    "has_architecture_decisions": 0.7,
+    "production_deployment_ready": 0.95,
+    "security_reviewed": 0.95
   },
   "graph_model": {
     "version": 2,

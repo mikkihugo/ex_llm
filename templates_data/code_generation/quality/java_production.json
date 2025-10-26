@@ -65,6 +65,16 @@
           "call_graph_metadata",
           "anti_patterns"
         ],
+        "should_include_v2_5_0": [
+          "performance_characteristics",
+          "concurrency_safety",
+          "observable_metrics",
+          "troubleshooting_guide",
+          "graceful_degradation",
+          "version_compatibility",
+          "configuration_guide",
+          "architecture_decisions"
+        ],
         "ai_navigation": {
           "module_identity": {
             "format": "json",
@@ -111,6 +121,104 @@
             "format": "comma_separated",
             "min_count": 5,
             "description": "Keywords for vector search optimization (10+ recommended)"
+          },
+          "performance_characteristics": {
+            "format": "markdown",
+            "when": "class has measurable computational behavior",
+            "should_include": [
+              "time_complexity",
+              "space_complexity",
+              "typical_latencies",
+              "benchmarks",
+              "jvm_considerations"
+            ],
+            "description": "Performance characteristics for production deployment decisions"
+          },
+          "concurrency_safety": {
+            "format": "markdown",
+            "when": "class has state or concurrent access",
+            "should_include": [
+              "thread_safety",
+              "synchronization_guarantees",
+              "race_condition_risks",
+              "concurrent_collections_usage",
+              "recommended_usage_patterns"
+            ],
+            "description": "Concurrency and thread safety guarantees for safe concurrent usage"
+          },
+          "observable_metrics": {
+            "format": "markdown",
+            "when": "class emits metrics or logs",
+            "should_include": [
+              "micrometer_metrics",
+              "log_messages",
+              "actuator_endpoints",
+              "example_dashboards",
+              "alert_thresholds"
+            ],
+            "description": "Documented metrics and monitoring guidance (Spring Boot Actuator/Micrometer)"
+          },
+          "troubleshooting_guide": {
+            "format": "markdown",
+            "when": "class might encounter runtime issues",
+            "should_include": [
+              "common_problems",
+              "root_causes",
+              "diagnostic_steps",
+              "solutions",
+              "jvm_flags",
+              "prevention_strategies"
+            ],
+            "description": "Common issues, diagnostics, and solutions for production debugging"
+          },
+          "graceful_degradation": {
+            "format": "markdown",
+            "when": "class has external dependencies or caching",
+            "should_include": [
+              "failure_scenarios",
+              "fallback_behavior",
+              "circuit_breaker_usage",
+              "retry_strategy",
+              "recovery_mechanism"
+            ],
+            "description": "Failure modes and degradation patterns for fault tolerance (Resilience4j)"
+          },
+          "version_compatibility": {
+            "format": "markdown",
+            "when": "class has dependencies or breaking history",
+            "should_include": [
+              "java_versions_supported",
+              "spring_boot_versions",
+              "key_dependencies",
+              "breaking_changes_history",
+              "migration_guide"
+            ],
+            "description": "Version compatibility matrix and breaking changes documentation"
+          },
+          "configuration_guide": {
+            "format": "markdown",
+            "when": "class has configurable behavior",
+            "should_include": [
+              "application_properties",
+              "environment_variables",
+              "spring_profiles",
+              "tuning_recommendations",
+              "safety_constraints"
+            ],
+            "description": "Configuration options and runtime tuning guidance (application.yml)"
+          },
+          "architecture_decisions": {
+            "format": "markdown",
+            "when": "class has non-obvious design choices",
+            "should_include": [
+              "decision_id",
+              "problem_statement",
+              "alternatives_considered",
+              "chosen_solution_and_rationale",
+              "consequences",
+              "related_decisions"
+            ],
+            "description": "Architecture Decision Records (ADR) explaining design rationale"
           }
         }
       }
@@ -269,6 +377,55 @@
       "distributed_tracing": "Request \u2192 trace ID \u2192 spans across services \u2192 Zipkin/Jaeger \u2192 observability"
     }
   },
+  "questions": [
+    {
+      "name": "error_tracking_integration",
+      "type": "choice",
+      "prompt": "Error tracking integration for production monitoring?",
+      "choices": [
+        "none",
+        "sentry",
+        "datadog",
+        "custom"
+      ],
+      "default": "none",
+      "hint": "Sentry/Datadog integration for automatic error tracking and alerting in production"
+    },
+    {
+      "name": "deployment_container",
+      "type": "choice",
+      "prompt": "Deployment container?",
+      "choices": [
+        "docker",
+        "kubernetes",
+        "standalone_jar",
+        "application_server"
+      ],
+      "default": "docker",
+      "hint": "Docker for containerized deployment, Kubernetes for orchestration, standalone JAR for simple deployment"
+    },
+    {
+      "name": "performance_critical",
+      "type": "boolean",
+      "prompt": "Is this performance-critical code?",
+      "default": false,
+      "hint": "Triggers: benchmarking, JVM tuning, GC optimization, latency documentation"
+    },
+    {
+      "name": "spring_boot_specific",
+      "type": "boolean",
+      "prompt": "Use Spring Boot patterns (DI, transactions, actuator)?",
+      "default": true,
+      "hint": "Enables Spring-specific features: @Service, @Transactional, @Autowired, actuator metrics"
+    },
+    {
+      "name": "backward_compatibility",
+      "type": "boolean",
+      "prompt": "Must maintain backward compatibility?",
+      "default": true,
+      "hint": "Triggers: deprecation warnings, migration guides, version matrix documentation"
+    }
+  ],
   "prompts": {
     "code_generation": "Generate production-quality Java code for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines in JavaDoc):\n/**\n * Class Name - Brief description\n *\n * <p><b>Purpose:</b> What this class does (clear statement)</p>\n *\n * <h2>Quick Start</h2>\n * <pre>{@code\n * // Copy-paste example\n * MyService service = new MyService(repository);\n * UserDTO user = service.findById(1L);\n * }</pre>\n *\n * <h2>Public API</h2>\n * <ul>\n *   <li>findById(Long) - Find user by ID</li>\n *   <li>create(UserDTO) - Create new user</li>\n * </ul>\n *\n * <h2>Error Handling</h2>\n * <ul>\n *   <li>UserNotFoundException - When user not found</li>\n *   <li>ValidationException - Invalid input data</li>\n * </ul>\n */\n\nSEPARATOR:\n---\n<h2>AI Navigation Metadata</h2>\n<p><i>The sections below provide structured metadata for AI assistants,\ngraph databases (Neo4j), and vector databases (pgvector).</i></p>\n\nAI METADATA (Below separator in JavaDoc):\n- Module Identity (JSON in {@code} block)\n- Architecture Diagram (Mermaid as text)\n- Call Graph (YAML as text)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- JavaDoc for all public classes and methods\n- Use Optional<T> instead of null\n- Custom exception hierarchy\n- JUnit 5 tests with Mockito\n- Follow Spring Boot conventions\n- Constructor injection\n- Records for DTOs\n\n3. AI NAVIGATION (in class JavaDoc):\n\nModule Identity (JSON):\n<pre>{@code\n{\n  \"class\": \"com.example.UserService\",\n  \"purpose\": \"User management service with validation\",\n  \"layer\": \"service\",\n  \"spring_annotations\": [\"@Service\", \"@Transactional\"],\n  \"related_classes\": [\"UserRepository\", \"UserDTO\", \"UserMapper\"],\n  \"alternatives\": {\n    \"UserManager\": \"Legacy - use UserService instead\"\n  },\n  \"disambiguation\": {\n    \"vs_UserManager\": \"UserService = Spring-managed, validated. UserManager = legacy\"\n  }\n}\n}</pre>\n\nArchitecture (Mermaid):\n<pre>\ngraph TB\n    Controller[UserController] --> Service[UserService]\n    Service --> Repository[UserRepository]\n    Service --> Mapper[UserMapper]\n    Repository --> Entity[UserEntity]\n</pre>\n\nCall Graph (YAML):\n<pre>\ncalls_out:\n  - class: UserRepository\n    methods: [findById, save]\n    purpose: Database operations\n    critical: true\n\ncalled_by:\n  - class: UserController\n    purpose: REST API endpoint\n    frequency: high\n\ndepends_on:\n  - UserRepository (required)\n  - UserMapper (required)\n\ninjection:\n  type: constructor\n  dependencies: [UserRepository, UserMapper]\n</pre>\n\nAnti-Patterns:\n\u274c DO NOT create UserManager - UserService exists!\n\u274c DO NOT use field injection (@Autowired on fields) - use constructor injection\n\u274c DO NOT return null - use Optional&lt;T&gt;\n\nSearch Keywords:\nspring-service, user-management, jpa-repository, transaction-management, dto-mapping\n\nOUTPUT CODE ONLY (with enhanced JavaDoc).",
     "documentation": "Generate JavaDoc for this Java code:\n\n```java\n{code}\n```\n\nInclude:\n\nHUMAN CONTENT (top):\n- Class-level JavaDoc with description, purpose, quick start, API list, error handling\n- Method-level JavaDoc with @param, @return, @throws\n\nSEPARATOR:\n---\n<h2>AI Navigation Metadata</h2>\n\nAI METADATA (below):\n- Module Identity (JSON)\n- Architecture Diagram (Mermaid)\n- Call Graph (YAML)\n- Anti-Patterns\n- Search Keywords\n\nOUTPUT DOCUMENTATION ONLY.",
@@ -308,7 +465,17 @@
     "clear_separation": 0.85,
     "ai_metadata_explained": 0.8,
     "graph_db_ready": 0.9,
-    "vector_db_optimized": 0.9
+    "vector_db_optimized": 0.9,
+    "has_performance_characteristics": 0.9,
+    "has_concurrency_safety_docs": 0.85,
+    "has_degradation_patterns": 0.8,
+    "has_version_compatibility": 0.85,
+    "has_configuration_guide": 0.8,
+    "has_observable_metrics": 0.9,
+    "has_troubleshooting_guide": 0.75,
+    "has_architecture_decisions": 0.7,
+    "production_deployment_ready": 0.95,
+    "security_reviewed": 0.95
   },
   "graph_model": {
     "version": 2,

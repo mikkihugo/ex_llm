@@ -63,6 +63,16 @@
           "call_graph_metadata",
           "anti_patterns"
         ],
+        "should_include_v2_5_0": [
+          "performance_characteristics",
+          "concurrency_safety",
+          "observable_metrics",
+          "troubleshooting_guide",
+          "graceful_degradation",
+          "version_compatibility",
+          "configuration_guide",
+          "architecture_decisions"
+        ],
         "ai_navigation": {
           "module_identity": {
             "format": "json",
@@ -106,8 +116,98 @@
           },
           "search_keywords": {
             "format": "comma_separated",
-            "min_count": 5,
+            "min_count": 10,
             "description": "Keywords for vector search optimization (10+ recommended)"
+          },
+          "performance_characteristics": {
+            "format": "markdown",
+            "when": "module has measurable computational behavior",
+            "should_include": [
+              "time_complexity",
+              "space_complexity",
+              "typical_latencies",
+              "benchmarks"
+            ],
+            "description": "Performance characteristics for production deployment decisions"
+          },
+          "concurrency_safety": {
+            "format": "markdown",
+            "when": "module has async operations or shared state",
+            "should_include": [
+              "promise_safety",
+              "callback_safety",
+              "race_condition_risks",
+              "concurrency_limits",
+              "recommended_usage_patterns"
+            ],
+            "description": "Concurrency and safety guarantees for async code"
+          },
+          "observable_metrics": {
+            "format": "markdown",
+            "when": "module emits metrics or logs",
+            "should_include": [
+              "log_messages",
+              "metrics_emitted",
+              "trace_points",
+              "example_dashboards"
+            ],
+            "description": "Documented logging, metrics, and observability guidance"
+          },
+          "troubleshooting_guide": {
+            "format": "markdown",
+            "when": "module might encounter runtime issues",
+            "should_include": [
+              "common_problems",
+              "root_causes",
+              "diagnostic_steps",
+              "solutions"
+            ],
+            "description": "Common issues, diagnostics, and solutions for production debugging"
+          },
+          "graceful_degradation": {
+            "format": "markdown",
+            "when": "module has external dependencies",
+            "should_include": [
+              "failure_scenarios",
+              "fallback_behavior",
+              "retry_strategy",
+              "recovery_mechanism"
+            ],
+            "description": "Failure modes and degradation patterns for fault tolerance"
+          },
+          "version_compatibility": {
+            "format": "markdown",
+            "when": "module has dependencies",
+            "should_include": [
+              "node_versions_supported",
+              "key_dependencies",
+              "breaking_changes_history",
+              "migration_guide"
+            ],
+            "description": "Version compatibility matrix and breaking changes documentation"
+          },
+          "configuration_guide": {
+            "format": "markdown",
+            "when": "module has configurable behavior",
+            "should_include": [
+              "environment_variables",
+              "runtime_options",
+              "tuning_recommendations",
+              "safety_constraints"
+            ],
+            "description": "Configuration options and runtime tuning guidance"
+          },
+          "architecture_decisions": {
+            "format": "markdown",
+            "when": "module has non-obvious design choices",
+            "should_include": [
+              "decision_id",
+              "problem_statement",
+              "alternatives_considered",
+              "chosen_solution_and_rationale",
+              "consequences"
+            ],
+            "description": "Architecture Decision Records (ADR) explaining design rationale"
           }
         }
       }
@@ -133,6 +233,61 @@
       "no_var": true
     }
   },
+  "questions": [
+    {
+      "name": "error_tracking_integration",
+      "type": "choice",
+      "prompt": "Error tracking integration for production?",
+      "choices": [
+        "none",
+        "sentry",
+        "datadog",
+        "custom"
+      ],
+      "default": "none",
+      "hint": "Sentry/Datadog integration for automatic error tracking and alerting"
+    },
+    {
+      "name": "deployment_target",
+      "type": "choice",
+      "prompt": "Deployment target?",
+      "choices": [
+        "browser",
+        "nodejs",
+        "both",
+        "edge_runtime"
+      ],
+      "default": "nodejs",
+      "hint": "Affects polyfills, imports, async patterns"
+    },
+    {
+      "name": "performance_critical",
+      "type": "boolean",
+      "prompt": "Is this performance-critical code?",
+      "default": false,
+      "hint": "Triggers: benchmarking, optimization, latency documentation"
+    },
+    {
+      "name": "async_style",
+      "type": "choice",
+      "prompt": "Async pattern preference?",
+      "choices": [
+        "async_await",
+        "promises",
+        "callbacks",
+        "mixed"
+      ],
+      "default": "async_await",
+      "hint": "async/await preferred; callbacks for legacy compatibility"
+    },
+    {
+      "name": "backward_compatibility",
+      "type": "boolean",
+      "prompt": "Must maintain backward compatibility?",
+      "default": true,
+      "hint": "Triggers: deprecation warnings, migration guides, version matrix"
+    }
+  ],
   "prompts": {
     "code_generation": "Generate production-quality JavaScript code for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines in JSDoc):\n/**\n * Module Name - Brief description\n *\n * **Purpose:** What this module does (clear statement)\n *\n * ## Quick Start\n * ```javascript\n * // Copy-paste example\n * import { myFunction } from './module.js';\n * const result = myFunction('example');\n * console.log(result); // Expected output\n * ```\n *\n * ## Public API\n * - `myFunction(param)` - Does something useful\n * - `anotherFunction(a, b)` - Combines inputs\n *\n * ## Error Handling\n * - Returns `{ ok: false, error }` on failure\n * - Throws `ValidationError` for invalid inputs\n *\n * ## Examples\n * ```javascript\n * // Success case\n * const result = myFunction('valid');\n * // result: { ok: true, value: 'processed' }\n *\n * // Error case\n * const result = myFunction(null);\n * // result: { ok: false, error: 'Invalid input' }\n * ```\n */\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n// The sections below provide structured metadata for AI assistants,\n// graph databases (Neo4j), and vector databases (pgvector).\n\nAI METADATA (Below separator in JSDoc):\n- Module Identity (JSON in code block)\n- Architecture Diagram (Mermaid)\n- Call Graph (YAML)\n- Anti-Patterns (Markdown list)\n- Search Keywords (comma-separated)\n\n2. CODE QUALITY:\n- JSDoc for all public functions\n- Result objects: { ok: true, value } / { ok: false, error }\n- Custom error classes for domain errors\n- Vitest or Jest tests\n- ESLint + Prettier compliant\n- Use const/let, never var\n\n3. AI NAVIGATION (in module JSDoc):\n\nModule Identity (JSON):\n```json\n{\n  \"module\": \"module_name\",\n  \"purpose\": \"Clear unique purpose statement\",\n  \"layer\": \"api|service|util|component\",\n  \"export_type\": \"default|named\",\n  \"related_modules\": [\"express\", \"axios\", \"lodash\"],\n  \"alternatives\": {\n    \"OldModule\": \"Legacy - use this module instead\",\n    \"SimilarModule\": \"Different use case - see disambiguation\"\n  },\n  \"disambiguation\": {\n    \"vs_OldModule\": \"This module = modern async. OldModule = legacy callbacks\",\n    \"vs_SimilarModule\": \"This = server-side. SimilarModule = client-side\"\n  }\n}\n```\n\nArchitecture (Mermaid):\n```mermaid\ngraph TB\n    Caller[API Route] --> ThisModule[module_name]\n    ThisModule --> DB[Database]\n    ThisModule --> Cache[Redis]\n```\n\nCall Graph (YAML):\n```yaml\ncalls_out:\n  - module: './database'\n    functions: [query, insert]\n    purpose: Data persistence\n    critical: true\n\ncalled_by:\n  - module: './api/routes'\n    purpose: HTTP endpoints\n    frequency: high\n\ndepends_on:\n  - express (required)\n  - pg (required)\n  - redis (optional)\n```\n\nAnti-Patterns:\n\u274c DO NOT create 'module_wrapper' - use this module directly\n\u274c DO NOT use var - use const/let\n\u274c DO NOT ignore errors - always handle { ok, error } returns\n\nSearch Keywords:\njavascript-api, express-middleware, async-await, error-handling, production-ready\n\nOUTPUT CODE ONLY (with enhanced JSDoc).",
     "documentation": "Generate JSDoc for this JavaScript code:\n\n```javascript\n{code}\n```\n\nInclude:\n\nHUMAN CONTENT (top):\n- Module/function description with purpose\n- Quick start example\n- Public API list\n- Error handling\n- Examples with expected output\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n\nAI METADATA (below):\n- Module Identity (JSON)\n- Architecture Diagram (Mermaid)\n- Call Graph (YAML)\n- Anti-Patterns\n- Search Keywords\n\nOUTPUT DOCUMENTATION ONLY.",
@@ -153,7 +308,17 @@
     "clear_separation": 0.85,
     "ai_metadata_explained": 0.8,
     "graph_db_ready": 0.9,
-    "vector_db_optimized": 0.9
+    "vector_db_optimized": 0.9,
+    "has_performance_characteristics": 0.9,
+    "has_concurrency_safety_docs": 0.85,
+    "has_degradation_patterns": 0.8,
+    "has_version_compatibility": 0.85,
+    "has_configuration_guide": 0.8,
+    "has_observable_metrics": 0.9,
+    "has_troubleshooting_guide": 0.75,
+    "has_architecture_decisions": 0.7,
+    "production_deployment_ready": 0.95,
+    "security_reviewed": 0.95
   },
   "graph_model": {
     "version": 2,

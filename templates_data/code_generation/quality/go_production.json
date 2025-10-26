@@ -141,6 +141,45 @@
       "golint": "required"
     }
   },
+  "questions": [
+    {
+      "name": "error_tracking_integration",
+      "type": "choice",
+      "prompt": "Error tracking for production?",
+      "choices": ["none", "sentry", "datadog", "custom"],
+      "default": "none",
+      "hint": "Sentry/Datadog for error tracking in production"
+    },
+    {
+      "name": "deployment_target",
+      "type": "choice",
+      "prompt": "Deployment target?",
+      "choices": ["linux", "kubernetes", "serverless", "multi_platform"],
+      "default": "linux",
+      "hint": "Affects build tags and platform-specific code"
+    },
+    {
+      "name": "performance_critical",
+      "type": "boolean",
+      "prompt": "Is this performance-critical?",
+      "default": false,
+      "hint": "Triggers: benchmarking, profiling, optimization"
+    },
+    {
+      "name": "goroutine_usage",
+      "type": "boolean",
+      "prompt": "Uses goroutines?",
+      "default": false,
+      "hint": "Triggers: concurrency docs, race detector guidance"
+    },
+    {
+      "name": "backward_compatibility",
+      "type": "boolean",
+      "prompt": "Must maintain backward compatibility?",
+      "default": true,
+      "hint": "Triggers: deprecation warnings, migration guides"
+    }
+  ],
   "prompts": {
     "code_generation": "Generate production-quality Go code for: {task}\n\nREQUIREMENTS:\n\n1. DOCUMENTATION STRUCTURE (human-first):\n\nHUMAN CONTENT (Top ~80 lines):\n- Package comment: // Package name provides clear description\n- Purpose: What this package does (bold, clear)\n- Quick Start: Copy-paste example showing common usage\n- Exported API: List of exported functions/types\n- Error Handling: Common errors and how to handle them\n- Examples: Real usage patterns with expected output\n\nSEPARATOR:\n---\n## AI Navigation Metadata\n// The sections below provide structured metadata for AI assistants,\n// graph databases (Neo4j), and vector databases (pgvector).\n\nAI METADATA (Below separator):\n- Module Identity (JSON comment block)\n- Architecture Diagram (Mermaid in comment)\n- Call Graph (YAML in comment)\n- Anti-Patterns (Markdown in comment)\n- Search Keywords (comma-separated in comment)\n\n2. CODE QUALITY:\n- Explicit error handling: return (result, error)\n- No panic() in library code\n- Table-driven tests\n- Pass gofmt and golint\n\n3. AI NAVIGATION (in package comment):\n\nModule Identity (JSON):\n```json\n{\n  \"package\": \"package_name\",\n  \"purpose\": \"Clear unique purpose statement\",\n  \"layer\": \"handler|service|repository|domain\",\n  \"go_patterns\": [\"http.Handler\", \"context.Context usage\"],\n  \"related_packages\": [\"net/http\", \"database/sql\"],\n  \"alternatives\": {\n    \"SimilarPkg1\": \"Why use this instead\",\n    \"SimilarPkg2\": \"Why use this instead\"\n  },\n  \"disambiguation\": {\n    \"vs_similar1\": \"Key differences\",\n    \"vs_similar2\": \"Key differences\"\n  }\n}\n```\n\nArchitecture (Mermaid):\n```mermaid\ngraph TB\n    Caller --> ThisPackage\n    ThisPackage --> Dep1\n    ThisPackage --> Dep2\n```\n\nCall Graph (YAML):\n```yaml\ncalls_out:\n  - package: net/http\n    functions: [Get, Post]\n    purpose: HTTP client\n    critical: true\n\ncalled_by:\n  - package: main\n    purpose: Application entry\n    frequency: high\n\ndepends_on:\n  - net/http (standard library)\n  - context (standard library)\n```\n\nAnti-Patterns:\n\u274c DO NOT create duplicate \"pkg_wrapper\" - use this package directly\n\u274c DO NOT ignore errors - always check error returns\n\nSearch Keywords:\ngo-handler, http-server, context-usage, error-handling, production-ready\n\nOUTPUT CODE ONLY (with enhanced documentation)."
   },
@@ -220,5 +259,32 @@
     }
   },
   "last_updated": "2025-01-14",
+  "scoring_weights": {
+    "has_package_docs": 1.0,
+    "has_function_docs": 1.0,
+    "has_tests": 1.0,
+    "error_handling": 1.0,
+    "golangci_lint_compliant": 1.0,
+    "has_module_identity_json": 0.95,
+    "has_architecture_diagram": 0.9,
+    "has_call_graph_yaml": 0.9,
+    "has_anti_patterns": 0.85,
+    "has_search_keywords": 0.8,
+    "human_content_first": 0.9,
+    "clear_separation": 0.85,
+    "ai_metadata_explained": 0.8,
+    "graph_db_ready": 0.9,
+    "vector_db_optimized": 0.9,
+    "has_performance_characteristics": 0.9,
+    "has_concurrency_safety_docs": 0.85,
+    "has_degradation_patterns": 0.8,
+    "has_version_compatibility": 0.85,
+    "has_configuration_guide": 0.8,
+    "has_observable_metrics": 0.9,
+    "has_troubleshooting_guide": 0.75,
+    "has_architecture_decisions": 0.7,
+    "production_deployment_ready": 0.95,
+    "security_reviewed": 0.95
+  },
   "parent_pattern": null
 }
