@@ -328,7 +328,7 @@ defmodule Singularity.SelfImprovingAgent do
   defp subscribe_to_genesis_results(agent_id) do
     subject = "agent.events.experiment.completed.#{agent_id}"
 
-    case Singularity.NATS.Client.subscribe(subject) do
+    case Singularity.Messaging.Client.subscribe(subject) do
       :ok ->
         Logger.debug("Subscribed to Genesis results", agent_id: agent_id, subject: subject)
 
@@ -648,7 +648,7 @@ defmodule Singularity.SelfImprovingAgent do
     # Publish request to Genesis via NATS
     subject = "agent.events.experiment.request.#{state.id}"
 
-    case Singularity.NATS.Client.publish(subject, request) do
+    case Singularity.Messaging.Client.publish(subject, request) do
       :ok ->
         Logger.debug("Genesis experiment request published", experiment_id: experiment_id)
 

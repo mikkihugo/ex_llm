@@ -98,7 +98,7 @@ defmodule Singularity.Embedding.Service do
       frequency: medium
 
   depends_on:
-    - Singularity.NATS.Client (MUST start first - NATS messaging)
+    - Singularity.Messaging.Client (MUST start first - NATS messaging)
     - Singularity.Embedding.NxService (MUST load models first)
     - ONNX Runtime (Qodo, Jina, MiniLM models)
 

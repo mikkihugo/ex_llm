@@ -46,7 +46,7 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
 
   require Logger
   alias Singularity.DomainVocabularyTrainer
-  alias Singularity.NATS.Client, as: NatsClient
+  alias Singularity.Messaging.Client, as: NatsClient
   alias Singularity.Repo
 
   @impl Oban.Worker
@@ -328,7 +328,7 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
         timestamp: DateTime.utc_now()
       })
 
-    case Singularity.NATS.Client.publish("ml.training.vocabulary.completed", payload) do
+    case Singularity.Messaging.Client.publish("ml.training.vocabulary.completed", payload) do
       :ok ->
         Logger.info("Published vocabulary training completion to NATS",
           source: source,
@@ -358,7 +358,7 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
         timestamp: DateTime.utc_now()
       })
 
-    case Singularity.NATS.Client.publish("ml.training.vocabulary.failed", payload) do
+    case Singularity.Messaging.Client.publish("ml.training.vocabulary.failed", payload) do
       :ok ->
         Logger.info("Published vocabulary training failure to NATS", source: source)
 

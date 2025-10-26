@@ -75,7 +75,7 @@ defmodule Singularity.Knowledge.TemplateCache do
         "template.invalidate.>"
       ],
       fn subject ->
-        case Singularity.NATS.Client.subscribe(subject) do
+        case Singularity.Messaging.Client.subscribe(subject) do
           :ok -> Logger.info("TemplateCache subscribed to: #{subject}")
           {:error, reason} -> Logger.error("Failed to subscribe to #{subject}: #{reason}")
         end
@@ -126,7 +126,7 @@ defmodule Singularity.Knowledge.TemplateCache do
     :ets.delete(@table, key)
 
     # Broadcast to other nodes
-    Singularity.NATS.Client.publish("template.invalidate.#{artifact_type}.#{artifact_id}", "")
+    Singularity.Messaging.Client.publish("template.invalidate.#{artifact_type}.#{artifact_id}", "")
 
     Logger.debug("Invalidated: #{key}")
     {:noreply, state}

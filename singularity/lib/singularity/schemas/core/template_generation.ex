@@ -467,7 +467,7 @@ defmodule Singularity.Knowledge.TemplateGeneration do
     }
 
     # Publish to CentralCloud via NATS
-    case Singularity.NATS.Client.publish("centralcloud.template.generation", message) do
+    case Singularity.Messaging.Client.publish("centralcloud.template.generation", message) do
       :ok ->
         Logger.debug("Published generation to CentralCloud: #{generation.template_id}")
         :ok

@@ -726,7 +726,7 @@ defmodule Singularity.Execution.Runners.Runner do
 
   defp connect_to_nats do
     try do
-      # Use Singularity.NATS.Client instead of direct Gnat connection
+      # Use Singularity.Messaging.Client instead of direct Gnat connection
       # NATS connection handled by application startup
       {:ok, nil}
     rescue
@@ -739,7 +739,7 @@ defmodule Singularity.Execution.Runners.Runner do
     try do
       subject = "system.events.runner.#{event_type}"
       message = Jason.encode!(payload)
-      Singularity.NATS.Client.publish(subject, message)
+      Singularity.Messaging.Client.publish(subject, message)
       :ok
     rescue
       error ->

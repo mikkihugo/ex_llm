@@ -17,7 +17,7 @@ defmodule Singularity.LintingEngine do
     path: "../rust/linting_engine"
 
   require Logger
-  alias Singularity.NATS.Client, as: NatsClient
+  alias Singularity.Messaging.Client, as: NatsClient
 
   @behaviour Singularity.Engine
 
@@ -107,7 +107,7 @@ defmodule Singularity.LintingEngine do
       include_patterns: true
     }
 
-    case Singularity.NATS.Client.request("central.quality.rules", Jason.encode!(request),
+    case Singularity.Messaging.Client.request("central.quality.rules", Jason.encode!(request),
            timeout: 5000
          ) do
       {:ok, response} ->
@@ -131,7 +131,7 @@ defmodule Singularity.LintingEngine do
       timestamp: DateTime.utc_now()
     }
 
-    case Singularity.NATS.Client.publish("central.quality.analytics", Jason.encode!(request)) do
+    case Singularity.Messaging.Client.publish("central.quality.analytics", Jason.encode!(request)) do
       :ok -> :ok
       {:error, reason} -> {:error, "Failed to send quality analytics: #{reason}"}
     end
@@ -148,7 +148,7 @@ defmodule Singularity.LintingEngine do
       include_examples: true
     }
 
-    case Singularity.NATS.Client.request(
+    case Singularity.Messaging.Client.request(
            "central.quality.recommendations",
            Jason.encode!(request),
            timeout: 3000

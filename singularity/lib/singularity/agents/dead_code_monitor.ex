@@ -485,7 +485,7 @@ defmodule Singularity.Agents.DeadCodeMonitor do
 
   defp publish_report(subject, report) do
     # Publish to NATS (if available)
-    case Process.whereis(Singularity.NATS.Client) do
+    case Process.whereis(Singularity.Messaging.Client) do
       nil ->
         Logger.warning("NATS not available, skipping report publish")
         :ok

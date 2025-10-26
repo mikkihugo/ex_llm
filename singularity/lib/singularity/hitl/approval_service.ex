@@ -30,7 +30,7 @@ defmodule Singularity.HITL.ApprovalService do
 
   require Logger
 
-  alias Singularity.NATS.Client
+  alias Singularity.Messaging.Client
 
   @approval_timeout_ms 30_000  # 30 second timeout
 
