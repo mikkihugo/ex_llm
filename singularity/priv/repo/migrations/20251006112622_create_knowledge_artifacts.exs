@@ -64,16 +64,12 @@ defmodule Singularity.Repo.Migrations.CreateKnowledgeArtifacts do
       CREATE UNIQUE INDEX IF NOT EXISTS knowledge_artifacts_artifact_type_artifact_id_version_key
       ON knowledge_artifacts (artifact_type, artifact_id, version)
     """, "")
-             name: :knowledge_artifacts_unique_idx
-           )
 
     # Indexes for fast queries
     execute("""
       CREATE INDEX IF NOT EXISTS knowledge_artifacts_artifact_type_language_index
       ON knowledge_artifacts (artifact_type, language)
     """, "")
-             name: :knowledge_artifacts_type_lang_idx
-           )
 
     # GIN index for JSONB queries (fast WHERE content @> ...)
     execute("CREATE INDEX knowledge_artifacts_content_gin_idx ON knowledge_artifacts USING gin(content)")

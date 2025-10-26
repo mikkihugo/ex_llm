@@ -25,14 +25,20 @@ defmodule Nexus.MixProject do
       # LLM client library (local fork)
       {:ex_llm, path: "../packages/ex_llm"},
 
+      # Workflow orchestration (local fork)
+      {:ex_pgflow, path: "../packages/ex_pgflow"},
+
       # JSON encoding/decoding
       {:jason, "~> 1.4"},
 
-      # PostgreSQL message queue
+      # PostgreSQL message queue (brought in by ex_pgflow, kept for explicit usage)
       {:pgmq, "~> 0.4.0"},
 
-      # PostgreSQL driver (required by pgmq)
+      # PostgreSQL driver (brought in by ex_pgflow)
       {:postgrex, "~> 0.21"},
+
+      # Ecto database wrapper (brought in by ex_pgflow, needed for OAuth tokens)
+      {:ecto_sql, "~> 3.12"},
 
       # UUID generation (UUIDv7 with timestamp ordering)
       {:uniq, "~> 0.6"}

@@ -7,7 +7,6 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
   """
 
   @frameworks %{
-    nats: Singularity.MetaRegistry.Frameworks.Nats,
     postgresql: Singularity.MetaRegistry.Frameworks.Postgresql,
     ets: Singularity.MetaRegistry.Frameworks.Ets,
     rust_nif: Singularity.MetaRegistry.Frameworks.RustNif,
@@ -23,14 +22,10 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
 
   ## Examples
 
-      # Get NATS suggestions
-      get_suggestions(:nats, "search", "subject")
-      # Returns: ["search.semantic", "search.hybrid", "search.vector"]
-      
       # Get PostgreSQL suggestions
       get_suggestions(:postgresql, "user", "table")
       # Returns: ["user_profiles", "user_sessions", "user_preferences"]
-      
+
       # Get Rust NIF suggestions
       get_suggestions(:rust_nif, "parser", "module")
       # Returns: ["ParserEngine", "CodeParser", "SyntaxParser"]
@@ -47,13 +42,6 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
 
   ## Examples
 
-      # Learn NATS patterns
-      learn_patterns(:nats, %{
-        subjects: ["llm.provider.claude", "analysis.code.parse"],
-        messaging: ["request/response", "pub/sub"],
-        patterns: ["analysis.meta.subject.hierarchy", "analysis.meta.wildcard.subjects"]
-      })
-      
       # Learn PostgreSQL patterns
       learn_patterns(:postgresql, %{
         tables: ["code_chunks", "technology_detections"],
@@ -73,11 +61,11 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
 
   ## Examples
 
-      # Initialize NATS patterns
-      initialize_framework(:nats)
-      
       # Initialize PostgreSQL patterns
       initialize_framework(:postgresql)
+
+      # Initialize Ecto patterns
+      initialize_framework(:ecto)
   """
   def initialize_framework(framework) do
     case Map.get(@frameworks, framework) do
@@ -112,7 +100,7 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
 
       # Get all frameworks
       get_available_frameworks()
-      # Returns: [:nats, :postgresql, :ets, :rust_nif, :elixir_otp, :ecto, :jason, :phoenix, :exunit]
+      # Returns: [:postgresql, :ets, :rust_nif, :elixir_otp, :ecto, :jason, :phoenix, :exunit]
   """
   def get_available_frameworks do
     Map.keys(@frameworks)
@@ -123,10 +111,10 @@ defmodule Singularity.MetaRegistry.FrameworkRegistry do
 
   ## Examples
 
-      # Check if NATS is available
-      framework_available?(:nats)
+      # Check if PostgreSQL is available
+      framework_available?(:postgresql)
       # Returns: true
-      
+
       # Check if unknown framework is available
       framework_available?(:unknown)
       # Returns: false

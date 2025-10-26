@@ -156,7 +156,7 @@ defmodule Singularity.Execution.Todos.TodoWorkerAgent do
       # Execute with TaskGraph
       run_id = "todo-#{todo.id}-#{System.system_time(:millisecond)}"
 
-      case TaskGraph.execute_with_nats(dag,
+      case TaskGraph.execute(dag,
              run_id: run_id,
              stream: false,
              # Don't evolve for simple todos

@@ -4,7 +4,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
 
   Provides high-level API for decomposing complex goals into hierarchical task graphs,
   executing them with LLM integration, and supporting self-improvement through evolution.
-  Based on Deep Agent (2025) research with NATS-based LLM communication.
+  Based on Deep Agent (2025) research with PostgreSQL-based state management.
 
   ## Integration Points
 
@@ -15,7 +15,6 @@ defmodule Singularity.Execution.Planning.TaskGraph do
   - `Singularity.Execution.Planning.SafeWorkPlanner` - Hierarchical planning (SafeWorkPlanner integration)
   - `Singularity.Execution.SPARC.Orchestrator` - SPARC methodology integration
   - `Singularity.LLM.Service` - Task decomposition (Service.call/3 for LLM decomposition)
-  - NATS subject: `task_graph.execute.*` (publishes execution requests)
   - PostgreSQL table: `task_graph_executions` (stores execution history)
 
   ## Usage
@@ -25,7 +24,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
       # => %{root_id: "goal-123", tasks: %{...}}
 
       # Execute with self-improvement enabled
-      {:ok, result} = TaskGraph.execute_with_nats(dag,
+      {:ok, result} = TaskGraph.execute(dag,
         run_id: "run-123",
         evolve: true,
         use_rag: true,
@@ -50,7 +49,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
       "Integrate with self-improvement via TaskGraphEvolution"
     ],
     "prevents_duplicates": ["DAGExecutor", "WorkflowEngine", "TaskOrchestrator", "TaskManager"],
-    "uses": ["TaskGraphCore", "TaskGraphExecutor", "TaskGraphEvolution", "SafeWorkPlanner", "LLM.Service", "NATS"],
+    "uses": ["TaskGraphCore", "TaskGraphExecutor", "TaskGraphEvolution", "SafeWorkPlanner", "LLM.Service"],
     "architecture_pattern": "Delegation: TaskGraph (orchestrator) → TaskGraphCore (data) + TaskGraphExecutor (engine)"
   }
   ```
@@ -134,11 +133,10 @@ defmodule Singularity.Execution.Planning.TaskGraph do
       records: failure_reason
       may_trigger: evolve (if evolution enabled)
 
-    - name: execute_with_nats
+    - name: execute
       from: decomposed
       to: executing
-      publishes: task_graph.execute.* (NATS subjects)
-      subscribes: task_graph.result.* (NATS subjects)
+      persists: task_graph_executions (PostgreSQL table)
       transitions_to: completed (when all tasks done)
 
   depends_on:
@@ -162,7 +160,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
 
   # ✅ CORRECT - Use TaskGraph
   dag = TaskGraph.decompose(goal)
-  {:ok, result} = TaskGraph.execute_with_nats(dag, opts)
+  {:ok, result} = TaskGraph.execute(dag, opts)
   ```
 
   #### ❌ DO NOT use TaskGraphCore directly for execution
@@ -174,7 +172,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
 
   # ✅ CORRECT - Use TaskGraph orchestrator
   dag = TaskGraph.decompose(%{description: "goal"})
-  result = TaskGraph.execute_with_nats(dag, opts)
+  result = TaskGraph.execute(dag, opts)
   ```
 
   #### ❌ DO NOT bypass TaskGraphExecutor for task execution
@@ -195,14 +193,14 @@ defmodule Singularity.Execution.Planning.TaskGraph do
 
   # ✅ CORRECT - Integrate with SafeWorkPlanner
   dag = TaskGraph.decompose(goal)
-  {:ok, result} = TaskGraph.execute_with_nats(dag, safe_planning: true)
+  {:ok, result} = TaskGraph.execute(dag, safe_planning: true)
   ```
 
   ### Search Keywords
 
   task graph, DAG execution, hierarchical decomposition, goal decomposition, task orchestration,
   task scheduling, dependency management, parallel execution, task lifecycle, execution strategies,
-  LLM decomposition, NATS integration, self-improvement, autonomous planning, task coordination,
+  LLM decomposition, PostgreSQL state, self-improvement, autonomous planning, task coordination,
   deep agent, task hierarchy, work breakdown structure, execution orchestrator, autonomous execution
   """
 
@@ -303,14 +301,14 @@ defmodule Singularity.Execution.Planning.TaskGraph do
   ## Example
 
       dag = TaskGraph.decompose(%{description: "Build user auth"})
-      {:ok, result} = TaskGraph.execute_with_nats(dag, 
+      {:ok, result} = TaskGraph.execute(dag,
         run_id: "run-123",
         evolve: true,
         use_rag: true,
         use_quality_templates: true
       )
   """
-  def execute_with_nats(dag, opts \\ []) do
+  def execute(dag, opts \\ []) do
     run_id = Keyword.get(opts, :run_id, generate_run_id())
 
     # Integrate with SafeWorkPlanner if requested

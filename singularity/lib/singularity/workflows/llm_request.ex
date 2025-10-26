@@ -87,38 +87,41 @@ defmodule Singularity.Workflows.LlmRequest do
   end
 
   # ============================================================================
-  # Step 3: Call LLM Provider
+  # Step 3: Call LLM Provider via Nexus
   # ============================================================================
 
   def call_llm_provider(prev) do
-    Logger.info("LLM Workflow: Calling LLM provider",
+    Logger.info("LLM Workflow: Enqueuing request to Nexus LLM processor",
+      request_id: prev.request_id,
       provider: prev.selected_provider,
-      model: prev.selected_model,
-      request_id: prev.request_id
+      model: prev.selected_model
     )
 
+    # Enqueue request through Singularity's LLM.Service which routes to Nexus via pgmq
     case Singularity.LLM.Service.call_with_prompt(
       prev.complexity,
       format_prompt(prev.messages),
       task_type: prev.task_type
     ) do
-      {:ok, response} ->
-        Logger.info("LLM Workflow: Response received",
-          request_id: prev.request_id,
-          tokens: response.usage.output_tokens
+      {:ok, %{request_id: request_id, status: :enqueued}} ->
+        # Request enqueued, but result comes asynchronously via LlmResultPoller
+        # For pgflow execution, we timeout and let the result poller handle persistence
+        Logger.info("LLM Workflow: Request enqueued successfully",
+          request_id: request_id
         )
 
         {:ok,
          Map.merge(prev, %{
-           response: response.content,
+           response: "LLM request enqueued",
            model_used: prev.selected_model,
-           tokens_used: response.usage.output_tokens,
-           cost_cents: calculate_cost(response.usage, prev.selected_model),
-           success: true
+           tokens_used: 0,
+           cost_cents: 0,
+           success: true,
+           request_id: request_id
          })}
 
       {:error, reason} ->
-        Logger.error("LLM Workflow: Provider call failed",
+        Logger.error("LLM Workflow: Failed to enqueue request to Nexus",
           request_id: prev.request_id,
           reason: inspect(reason)
         )

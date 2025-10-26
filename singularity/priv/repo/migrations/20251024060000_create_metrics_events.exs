@@ -18,20 +18,16 @@ defmodule Singularity.Repo.Migrations.CreateMetricsEvents do
       CREATE INDEX IF NOT EXISTS metrics_events_event_name_recorded_at_index
       ON metrics_events (event_name, recorded_at)
     """, "")
-      name: "metrics_events_event_time_idx")
 
     execute("""
       CREATE INDEX IF NOT EXISTS metrics_events_recorded_at_index
       ON metrics_events (recorded_at)
     """, "")
-      name: "metrics_events_recorded_at_idx")
 
     # GIN index for JSONB tag queries
     execute("""
       CREATE INDEX IF NOT EXISTS metrics_events_tags_index
       ON metrics_events (tags)
     """, "")
-      name: "metrics_events_tags_idx",
-      using: :gin)
   end
 end

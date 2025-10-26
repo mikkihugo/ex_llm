@@ -39,8 +39,8 @@ defmodule Nexus.QueueConsumer do
   use GenServer
   require Logger
 
-  @queue_name "llm_requests"
-  @results_queue "llm_results"
+  @queue_name "ai_requests"
+  @results_queue "ai_results"
   @poll_interval_ms 1000
   @batch_size 10
 
@@ -96,10 +96,12 @@ defmodule Nexus.QueueConsumer do
 
   # Private functions
 
-  defp get_database_url(opts) do
-    Keyword.get(opts, :database_url) ||
-      System.get_env("SHARED_QUEUE_DB_URL") ||
-      "postgresql://postgres:@localhost:5432/shared_queue"
+  defp get_database_url(_opts) do
+    # Use shared queue database configured for Nexus
+    # This should be the same PostgreSQL instance as Singularity
+    System.get_env("SHARED_QUEUE_DB_URL") ||
+      System.get_env("DATABASE_URL") ||
+      "postgresql://postgres:@localhost:5432/singularity"
   end
 
   defp schedule_poll(delay_ms) do
@@ -135,15 +137,13 @@ defmodule Nexus.QueueConsumer do
     end
   end
 
-  defp run_query(db_url, query) do
-    case Postgrex.start_link(database: db_url) do
-      {:ok, conn} ->
-        result = Postgrex.query(conn, query, [])
-        GenServer.stop(conn)
-        result
-
-      error ->
-        error
+  defp run_query(_db_url, query) do
+    # Use Nexus.Repo for queries to maintain connection pooling
+    # and proper transaction handling
+    try do
+      {:ok, Nexus.Repo.query!(query)}
+    rescue
+      e -> {:error, e}
     end
   end
 
@@ -192,13 +192,23 @@ defmodule Nexus.QueueConsumer do
 
   defp route_request(request) do
     # Convert string keys to atom keys for router
+    api_version = Map.get(request, "api_version", "responses")
+
     router_request = %{
       complexity: string_to_atom(Map.get(request, "complexity")),
       messages: Map.get(request, "messages", []),
       task_type: string_to_atom(Map.get(request, "task_type")),
+      api_version: api_version,
       max_tokens: Map.get(request, "max_tokens"),
-      temperature: Map.get(request, "temperature")
+      temperature: Map.get(request, "temperature"),
+      previous_response_id: Map.get(request, "previous_response_id"),
+      mcp_servers: Map.get(request, "mcp_servers"),
+      store: Map.get(request, "store"),
+      tools: Map.get(request, "tools")
     }
+    # Remove nil values for cleaner request
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Map.new()
 
     Nexus.LLMRouter.route(router_request)
   end

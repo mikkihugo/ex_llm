@@ -100,23 +100,55 @@ defmodule Singularity.Jobs.LlmResultPoller do
 
   defp store_result(result) do
     try do
-      # Store in a table for agent consumption
-      # For now, just log it - agents can poll from this job's state
+      request_id = result["request_id"]
+
       Logger.info("Storing LLM result",
-        request_id: result["request_id"],
+        request_id: request_id,
         model: result["model"],
         tokens: result["tokens_used"]
       )
 
-      # TODO: Insert into database table for persistent storage
-      # INSERT INTO ai_results (request_id, response, model, tokens_used, cost_cents, processed_at)
-      # VALUES (result["request_id"], result["response"], result["model"], result["tokens_used"], result["cost_cents"], NOW())
+      # Insert result into job_results table for persistent storage and agent consumption
+      case Singularity.Schemas.Execution.JobResult.record_success(
+        workflow: "Singularity.Workflows.LlmRequest",
+        instance_id: Singularity.Application.instance_id(),
+        input: %{
+          request_id: request_id,
+          agent_id: result["agent_id"],
+          complexity: result["complexity"],
+          task_type: result["task_type"]
+        },
+        output: %{
+          request_id: request_id,
+          response: result["response"],
+          model: result["model"],
+          usage: result["usage"],
+          cost: result["cost"],
+          latency_ms: result["latency_ms"]
+        },
+        tokens_used: get_in(result, ["usage", "total_tokens"]) || 0,
+        cost_cents: Float.round((result["cost"] || 0.0) * 100) |> trunc(),
+        duration_ms: result["latency_ms"]
+      ) do
+        {:ok, job_result} ->
+          Logger.info("LLM result stored successfully",
+            request_id: request_id,
+            result_id: job_result.id
+          )
+          :ok
 
-      :ok
+        {:error, reason} ->
+          Logger.error("Failed to store LLM result",
+            request_id: request_id,
+            error: inspect(reason)
+          )
+          {:error, reason}
+      end
     rescue
       error ->
         Logger.error("Error storing LLM result",
-          error: inspect(error)
+          error: inspect(error),
+          request_id: result["request_id"]
         )
 
         {:error, error}

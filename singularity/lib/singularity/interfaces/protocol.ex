@@ -3,15 +3,14 @@ defprotocol Singularity.Interfaces.Protocol do
   Protocol for executing tool calls across different interfaces.
 
   Enables uniform tool execution regardless of the interface:
-  - NATS - For distributed messaging and AI Server integration
   - HTTP - For REST APIs
   - CLI - For command-line tools
   - WebSocket - For real-time connections
 
   ## Example
 
-      # NATS interface
-      interface = %Singularity.Interfaces.NATS{reply_to: "responses.123"}
+      # HTTP interface
+      interface = %Singularity.Interfaces.HTTP{url: "http://localhost:4000"}
       Singularity.Interfaces.Protocol.execute_tool(interface, tool_call)
 
   ## Interface Responsibilities

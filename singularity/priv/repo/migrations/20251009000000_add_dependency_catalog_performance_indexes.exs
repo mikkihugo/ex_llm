@@ -18,40 +18,30 @@ defmodule Singularity.Repo.Migrations.AddDependencyCatalogPerformanceIndexes2025
       CREATE INDEX IF NOT EXISTS dependency_catalog_ecosystem_github_stars_download_count_index
       ON dependency_catalog (ecosystem, github_stars, download_count)
     """, "")
-      name: :idx_dependency_catalog_search_filters
-    )
-    
+
     # Composite index for get_latest/2 function (package_name + ecosystem + date)
     execute("""
       CREATE INDEX IF NOT EXISTS dependency_catalog_package_name_ecosystem_last_release_date_index
       ON dependency_catalog (package_name, ecosystem, last_release_date)
     """, "")
-      name: :idx_dependency_catalog_latest_version
-    )
-    
+
     # Composite index for get_recent/2 function (ecosystem + date)
     execute("""
       CREATE INDEX IF NOT EXISTS dependency_catalog_ecosystem_last_release_date_index
       ON dependency_catalog (ecosystem, last_release_date)
     """, "")
-      name: :idx_dependency_catalog_recent
-    )
-    
+
     # Composite index for get_popular/2 function (ecosystem + github_stars)
     execute("""
       CREATE INDEX IF NOT EXISTS dependency_catalog_ecosystem_github_stars_index
       ON dependency_catalog (ecosystem, github_stars)
     """, "")
-      name: :idx_dependency_catalog_popular_stars
-    )
-    
+
     # Composite index for get_popular/2 function (ecosystem + download_count)
     execute("""
       CREATE INDEX IF NOT EXISTS dependency_catalog_ecosystem_download_count_index
       ON dependency_catalog (ecosystem, download_count)
     """, "")
-      name: :idx_dependency_catalog_popular_downloads
-    )
 
     # === OPTIONAL CHILD TABLES (only if they exist) ===
     # Note: dependency_catalog_examples, _patterns, _deps tables don't exist yet

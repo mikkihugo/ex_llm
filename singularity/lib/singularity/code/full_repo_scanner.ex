@@ -1106,7 +1106,7 @@ defmodule Singularity.Code.FullRepoScanner do
       """,
       how_to_use_it: """
       # TaskGraph will automatically map tasks to Features
-      TaskGraph.execute_with_nats(dag, safe_planning: true)
+      TaskGraph.execute(dag, safe_planning: true)
       """
     }
   end
@@ -1127,7 +1127,7 @@ defmodule Singularity.Code.FullRepoScanner do
       """,
       how_to_use_it: """
       # Enable SPARC for structured development
-      TaskGraph.execute_with_nats(dag, integrate_sparc: true)
+      TaskGraph.execute(dag, integrate_sparc: true)
       """
     }
   end
@@ -1147,7 +1147,7 @@ defmodule Singularity.Code.FullRepoScanner do
       """,
       how_to_use_it: """
       # Use both for best results
-      TaskGraph.execute_with_nats(dag,
+      TaskGraph.execute(dag,
         use_rag: true,
         use_quality_templates: true
       )
@@ -1194,13 +1194,13 @@ defmodule Singularity.Code.FullRepoScanner do
       %{
         from: "TaskGraph",
         to: "SafeWorkPlanner",
-        via: "TaskGraph.execute_with_nats/2 with safe_planning: true",
+        via: "TaskGraph.execute/2 with safe_planning: true",
         status: :partial
       },
       %{
         from: "TaskGraph",
         to: "SPARC.Orchestrator",
-        via: "TaskGraph.execute_with_nats/2 with integrate_sparc: true",
+        via: "TaskGraph.execute/2 with integrate_sparc: true",
         status: :partial
       }
     ]

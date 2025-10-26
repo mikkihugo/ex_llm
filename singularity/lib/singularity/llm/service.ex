@@ -810,25 +810,41 @@ defmodule Singularity.LLM.Service do
   end
 
   # LLM communication via pgmq queue system
-  # @calls: LLMRequest schema - Enqueue request
-  # @calls: LLMResult schema - Poll results queue
-  # @error_flow: :unavailable -> AI server not reachable
+  # @calls: LlmRequestWorker.enqueue_llm_request/3 - Enqueue request to Oban
+  # @calls: LlmResultPoller - Polls pgmq:ai_results asynchronously
   # @error_flow: :timeout -> Request exceeded timeout threshold
+  # @error_flow: :unavailable -> Nexus queue consumer not running
   defp dispatch_request(request, opts) do
-    # LLM service is unavailable without NATS/messaging infrastructure
-    # AI server communication requires pgmq queue setup and consumer
-    requested_model = Map.get(request, :model, "auto")
-    _timeout = Keyword.get(opts, :timeout, 30_000)
+    # Route LLM request through Nexus via pgmq + Oban async workflow
+    # This enables distributed LLM processing without blocking Singularity
 
-    Logger.error("LLM service unavailable - AI server communication disabled",
-      model: requested_model,
+    task_type = Map.get(request, :task_type, :medium)
+    messages = Map.get(request, :messages, [])
+    timeout_ms = Keyword.get(opts, :timeout, 30_000)
+
+    case Singularity.Jobs.LlmRequestWorker.enqueue_llm_request(task_type, messages, %{
+      timeout: timeout_ms,
+      model: Map.get(request, :model),
       provider: Map.get(request, :provider),
-      complexity: Map.get(request, :complexity),
-      task_type: Map.get(request, :task_type),
-      reason: "NATS messaging layer removed - requires pgmq queue infrastructure"
-    )
+      complexity: Map.get(request, :complexity)
+    }) do
+      {:ok, request_id} ->
+        # Return request_id so caller can poll for results if needed
+        # Or accept async pattern where results appear via LlmResultPoller
+        {:ok, %{
+          request_id: request_id,
+          status: :enqueued,
+          message: "LLM request enqueued for processing in Nexus"
+        }}
 
-    {:error, :unavailable}
+      {:error, reason} ->
+        Logger.error("Failed to enqueue LLM request",
+          reason: reason,
+          task_type: task_type,
+          timeout: timeout_ms
+        )
+        {:error, reason}
+    end
   end
 
   defp maybe_put(map, _key, nil), do: map

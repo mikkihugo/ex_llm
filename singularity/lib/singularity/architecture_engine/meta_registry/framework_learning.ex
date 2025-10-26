@@ -3,7 +3,6 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
   Meta-registry for learning from framework-specific patterns.
 
   This learns from each framework we use to improve our development:
-  - NATS messaging patterns
   - PostgreSQL database patterns
   - ETS caching patterns
   - Rust NIF patterns
@@ -23,26 +22,6 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
   """
 
   alias Singularity.MetaRegistry.QuerySystem
-  alias Singularity.MetaRegistry.NatsSubjects
-
-  @doc """
-  Learn from NATS messaging patterns.
-
-  ## Examples
-
-      # Learn from our NATS subjects
-      learn_nats_patterns(%{
-        subjects: ["llm.provider.claude", "analysis.code.parse", "analysis.meta.registry.naming"],
-        messaging: ["request/response", "pub/sub", "streaming"],
-        patterns: ["analysis.meta.subject.hierarchy", "analysis.meta.wildcard.subjects", "analysis.meta.message.routing"]
-      })
-  """
-  def learn_nats_patterns(attrs) do
-    QuerySystem.learn_architecture_patterns("nats-framework", %{
-      patterns: attrs.patterns,
-      services: attrs.subjects
-    })
-  end
 
   @doc """
   Learn from PostgreSQL database patterns.
@@ -210,29 +189,14 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
 
   ## Examples
 
-      # Get NATS subject suggestions
-      get_nats_suggestions("search", "subject")
-      # Returns: ["search.semantic", "search.hybrid", "search.vector"]
-      
       # Get PostgreSQL table suggestions
       get_postgresql_suggestions("user", "table")
       # Returns: ["user_profiles", "user_sessions", "user_preferences"]
-      
+
       # Get Rust NIF suggestions
       get_rust_nif_suggestions("parser", "module")
       # Returns: ["ParserEngine", "CodeParser", "SyntaxParser"]
   """
-  def get_nats_suggestions(context, type) do
-    QuerySystem.query_architecture_suggestions("nats-framework", type)
-    |> Enum.map(fn pattern ->
-      case type do
-        "subject" -> "#{context}.#{pattern}"
-        "service" -> "#{context}-#{pattern}"
-        _ -> pattern
-      end
-    end)
-  end
-
   def get_postgresql_suggestions(context, type) do
     QuerySystem.query_architecture_suggestions("postgresql-framework", type)
     |> Enum.map(fn pattern ->
@@ -272,30 +236,6 @@ defmodule Singularity.MetaRegistry.FrameworkLearning do
   This sets up the meta-registry with patterns we know work for each framework.
   """
   def initialize_framework_patterns do
-    # Learn NATS patterns
-    learn_nats_patterns(%{
-      subjects: [
-        "llm.provider.claude",
-        "llm.provider.gemini",
-        "llm.provider.openai",
-        "analysis.code.parse",
-        "analysis.code.embed",
-        "analysis.code.search",
-        "analysis.meta.registry.naming",
-        "analysis.meta.registry.architecture",
-        "analysis.meta.registry.quality"
-      ],
-      messaging: ["request/response", "pub/sub", "streaming"],
-      patterns: [
-        "analysis.meta.subject.hierarchy",
-        "analysis.meta.wildcard.subjects",
-        "analysis.meta.message.routing",
-        "llm.provider.*",
-        "analysis.code.*",
-        "analysis.meta.registry.*"
-      ]
-    })
-
     # Learn PostgreSQL patterns
     learn_postgresql_patterns(%{
       tables: [

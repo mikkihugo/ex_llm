@@ -14,6 +14,9 @@ defmodule Nexus.Application do
     Logger.info("Starting Nexus application...")
 
     children = [
+      # Database connection (for OAuth tokens and model registry)
+      Nexus.Repo,
+
       # Queue consumer - polls llm_requests and publishes to llm_results
       {Nexus.QueueConsumer, get_queue_config()}
     ]

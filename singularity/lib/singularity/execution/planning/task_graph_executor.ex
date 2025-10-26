@@ -100,7 +100,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
   called_by:
     - module: Singularity.Execution.Planning.TaskGraph
-      function: execute_with_nats/2
+      function: execute/2
       purpose: "TaskGraph delegates execution to TaskGraphExecutor"
       frequency: per_execution
 
@@ -157,17 +157,17 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
   # ✅ CORRECT - Use TaskGraph orchestrator
   dag = TaskGraph.decompose(goal)
-  {:ok, result} = TaskGraph.execute_with_nats(dag, run_id: "run-123")
+  {:ok, result} = TaskGraph.execute(dag, run_id: "run-123")
   ```
 
-  #### ❌ DO NOT bypass LLM.NatsOperation for task execution
-  **Why:** NATS operations handle circuit breaking, streaming, and rate limiting.
+  #### ❌ DO NOT bypass LLM integration for task execution
+  **Why:** Task execution uses LLM.Service with rate limiting and circuit breaking via TaskGraphExecutor.
   ```elixir
-  # ❌ WRONG - Direct LLM call
-  LLM.Service.call(:complex, messages)
+  # ❌ WRONG - Inline LLM calls outside of TaskGraph
+  Enum.each(tasks, &LLM.Service.call/1)
 
-  # ✅ CORRECT - Use NatsOperation via TaskGraphExecutor
-  LLM.NatsOperation.run(operation, task_context, opts)
+  # ✅ CORRECT - Let TaskGraphExecutor handle LLM integration
+  TaskGraphExecutor.execute(executor, dag, opts)
   ```
 
   #### ❌ DO NOT inline parallel execution logic

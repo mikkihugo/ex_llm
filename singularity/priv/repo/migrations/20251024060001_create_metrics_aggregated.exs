@@ -32,18 +32,15 @@ defmodule Singularity.Repo.Migrations.CreateMetricsAggregated do
       CREATE INDEX IF NOT EXISTS metrics_aggregated_event_name_period_start_index
       ON metrics_aggregated (event_name, period_start)
     """, "")
-      name: "metrics_aggregated_event_time_idx")
 
     execute("""
       CREATE INDEX IF NOT EXISTS metrics_aggregated_period_period_start_index
       ON metrics_aggregated (period, period_start)
     """, "")
-      name: "metrics_aggregated_period_time_idx")
 
     execute("""
       CREATE INDEX IF NOT EXISTS metrics_aggregated_period_start_index
       ON metrics_aggregated (period_start)
     """, "")
-      name: "metrics_aggregated_period_start_idx")
   end
 end
