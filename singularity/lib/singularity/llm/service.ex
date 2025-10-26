@@ -279,11 +279,11 @@ defmodule Singularity.LLM.Service do
 
   ### ❌ DO NOT call providers directly
   ```elixir
-  # ❌ WRONG - Bypasses NATS, cost tracking, SLO monitoring
+  # ❌ WRONG - Bypasses queue, cost tracking, SLO monitoring
   Provider.claude_request(%{prompt: "..."})
   HTTPoison.post("https://api.anthropic.com/...", ...)
 
-  # ✅ CORRECT - Goes through NATS with full observability
+  # ✅ CORRECT - Goes through LlmRequestWorker + Nexus with full observability
   Service.call(:complex, [%{role: "user", content: "..."}])
   ```
 
@@ -307,21 +307,21 @@ defmodule Singularity.LLM.Service do
   Service.call(:complex, messages, task_type: :architect)
   ```
 
-  ### ❌ DO NOT create custom NATS subjects for LLM calls
+  ### ❌ DO NOT publish custom pgmq subjects for LLM calls
   ```elixir
-  # ❌ WRONG - Custom subject bypasses routing
-  Singularity.NATS.Client.request("my.custom.llm.call", data)
+  # ❌ WRONG - Custom queue bypasses orchestration
+  Singularity.Jobs.PgmqClient.send_message("my_custom_llm_queue", payload)
 
-  # ✅ CORRECT - Use Service which handles subject routing
+  # ✅ CORRECT - Use Service which standardises queue + workflow
   Service.call(:medium, messages)
   ```
 
   ## Search Keywords (Vector DB Optimization)
 
   llm service, ai call, claude call, gemini call, openai call, model selection,
-  complexity routing, nats llm, llm orchestration, cost optimization, slo monitoring,
+  complexity routing, pgmq llm, llm orchestration, cost optimization, slo monitoring,
   prompt optimization, llm gateway, ai provider, intelligent routing, task-based selection,
-  llm abstraction, elixir llm, ai integration, llm nats, provider orchestration
+  llm abstraction, elixir llm, ai integration, queue-based orchestration
 
   ## Public API Contract
 
@@ -333,7 +333,6 @@ defmodule Singularity.LLM.Service do
 
   ## Error Matrix
 
-  :nats_error | NATS communication failed
   :json_decode_error | Response parsing failed
   :timeout | Request exceeded timeout threshold
   :invalid_arguments | Invalid function arguments
