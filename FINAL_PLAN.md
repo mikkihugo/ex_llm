@@ -25,51 +25,51 @@
 ### Detail Breakdown (All COMPLETE, Not Stubs)
 
 **Phase 1 - Context Gathering (6/6 ✅)**
-- ✅ FrameworkDetector (425 lines, 15+ functions, 228 test lines)
-- ✅ TechnologyDetector (435 lines, 12+ functions, 110 test lines)
-- ✅ PatternDetector (316 lines, 8+ functions)
-- ✅ CodePatternExtractor (278 lines, 10+ functions, 226 test lines)
-- ✅ QualityAnalyzer (136 lines, 5+ functions)
-- ✅ DependencyMapper (410 lines, 12+ functions)
+- ✅ FrameworkDetector - Fully implemented & tested
+- ✅ TechnologyDetector - Fully implemented & tested
+- ✅ PatternDetector - Fully implemented & tested
+- ✅ CodePatternExtractor - Fully implemented & tested
+- ✅ QualityAnalyzer - Fully implemented
+- ✅ DependencyMapper - Fully implemented
 
 **Phase 2 - Generation (6/6 ✅)**
-- ✅ QualityCodeGenerator (54 lines, 3+ functions)
-- ✅ RagCodeGenerator (91 lines, 3+ functions)
-- ✅ TaskGraphEvolution (502 lines, 12+ functions, 297 test lines)
-- ✅ GenerationOrchestrator (194 lines, 8+ functions)
-- ✅ TaskGraph (369 lines, 10+ functions)
-- ✅ PromptEngine/InferenceEngine (280+ lines, 8+ functions)
+- ✅ QualityCodeGenerator - Fully implemented
+- ✅ RagCodeGenerator - Fully implemented
+- ✅ TaskGraphEvolution - Fully implemented & tested
+- ✅ GenerationOrchestrator - Fully implemented
+- ✅ TaskGraph - Fully implemented
+- ✅ PromptEngine/InferenceEngine - Fully implemented
 
 **Phase 3 - Validation (6/6 ✅)**
-- ✅ HistoricalValidator (450 lines, 8+ functions)
-- ✅ EffectivenessTracker (510 lines, 12+ functions)
-- ✅ ValidationDashboard (273 lines, 6+ functions)
-- ✅ ValidationMetricsStore (366 lines, 10+ functions, 173 test lines)
-- ✅ TemplateValidator (120+ lines, 4+ functions)
-- ✅ SchemaValidator (150+ lines, 6+ functions)
+- ✅ HistoricalValidator - Fully implemented
+- ✅ EffectivenessTracker - Fully implemented
+- ✅ ValidationDashboard - Fully implemented
+- ✅ ValidationMetricsStore - Fully implemented & tested
+- ✅ TemplateValidator - Fully implemented
+- ✅ SchemaValidator - Fully implemented
 
 **Phase 4 - Refinement (3/3 ✅)**
-- ✅ ExecutionEvolution (513 lines, 10+ functions, 297 test lines)
+- ✅ ExecutionEvolution - Fully implemented & tested
 - ✅ HistoricalValidator (reused from Phase 3)
 - ✅ TaskGraphEvolution (reused from Phase 2)
 
 **Phase 5 - Learning (6/6 ✅)**
-- ✅ Pipeline.Learning (444 lines, 8+ functions)
-- ✅ AgentEvolutionWorker (181 lines, 5+ functions)
-- ✅ RuleEvolutionSystem (591 lines, 12+ functions)
-- ✅ GenesisPublisher (390+ lines, 8+ functions)
-- ✅ AdaptiveConfidenceGating (370+ lines, 8+ functions)
-- ✅ RuleQualityDashboard (511 lines, 8+ functions)
+- ✅ Pipeline.Learning - Fully implemented
+- ✅ AgentEvolutionWorker - Fully implemented
+- ✅ RuleEvolutionSystem - Fully implemented
+- ✅ GenesisPublisher - Fully implemented
+- ✅ AdaptiveConfidenceGating - Fully implemented
+- ✅ RuleQualityDashboard - Fully implemented
 
 **Data Stores (2/2 ✅)**
-- ✅ FailurePatternStore (296 lines, 10+ functions, 173 test lines)
-- ✅ ValidationMetricsStore (366 lines, 10+ functions)
+- ✅ FailurePatternStore - Fully implemented & tested
+- ✅ ValidationMetricsStore - Fully implemented
 
 **Integration Points (5/5 ✅)**
-- ✅ Pipeline.Orchestrator (637 lines, 21+ functions) - Unified 5-phase orchestration
-- ✅ Pipeline.Context (316+ lines, 8+ functions) - Context gathering/enrichment
-- ✅ LLM Service (280+ lines, 10+ functions) - Multi-provider abstraction
-- ✅ CentralCloud (47 modules, 5000+ LOC) - Multi-instance learning
+- ✅ Pipeline.Orchestrator - Unified 5-phase orchestration
+- ✅ Pipeline.Context - Context gathering/enrichment
+- ✅ LLM Service - Multi-provider abstraction
+- ✅ CentralCloud - Multi-instance learning
 
 **Observability (5/5 ✅)**
 - ✅ ValidationDashboard
@@ -220,33 +220,33 @@ Result: Implementation plan + validation metrics + learned rules
 ### Key Implementation Files
 
 **Phase 1 - Context Gathering:**
-- `lib/singularity/architecture_engine/detectors/framework_detector.ex` (425 lines)
-- `lib/singularity/architecture_engine/detectors/technology_detector.ex` (435 lines)
-- `lib/singularity/analysis/pattern_detector.ex` (316 lines)
-- `lib/singularity/analysis/extractors/code_pattern_extractor.ex` (278 lines)
+- `lib/singularity/architecture_engine/detectors/framework_detector.ex`
+- `lib/singularity/architecture_engine/detectors/technology_detector.ex`
+- `lib/singularity/architecture_engine/pattern_detector.ex`
+- `lib/singularity/storage/code/patterns/code_pattern_extractor.ex`
 
 **Phase 2 - Generation:**
-- `lib/singularity/code_generation/generation_orchestrator.ex` (194 lines)
-- `lib/singularity/execution/planning/task_graph.ex` (369 lines)
-- `lib/singularity/llm/service.ex` (280+ lines)
+- `lib/singularity/code_generation/generation_orchestrator.ex`
+- `lib/singularity/execution/planning/task_graph.ex`
+- `lib/singularity/llm/service.ex`
 
 **Phase 3 - Validation:**
-- `lib/singularity/validation/historical_validator.ex` (450 lines) - Pattern matching with confidence scoring
-- `lib/singularity/validation/effectiveness_tracker.ex` (510 lines) - Dynamic weight adjustment
-- `lib/singularity/storage/validation_metrics_store.ex` (366 lines) - KPI tracking
+- `lib/singularity/validation/historical_validator.ex` - Pattern matching with confidence scoring
+- `lib/singularity/validation/effectiveness_tracker.ex` - Dynamic weight adjustment
+- `lib/singularity/storage/validation_metrics_store.ex` - KPI tracking
 
 **Phase 4 - Refinement:**
-- `lib/singularity/execution/evolution/execution_evolution.ex` (513 lines)
+- `lib/singularity/execution/evolution/execution_evolution.ex`
 
 **Phase 5 - Learning:**
-- `lib/singularity/pipeline/learning.ex` (444 lines) - Post-execution analysis
-- `lib/singularity/evolution/rule_evolution_system.ex` (591 lines) - Rule synthesis
-- `lib/singularity/storage/failure_pattern_store.ex` (296 lines) - Failure persistence
+- `lib/singularity/pipeline/learning.ex` - Post-execution analysis
+- `lib/singularity/evolution/rule_evolution_system.ex` - Rule synthesis
+- `lib/singularity/storage/failure_pattern_store.ex` - Failure persistence
 
 **Orchestration & Integration:**
-- `lib/singularity/pipeline/orchestrator.ex` (637 lines) - Main entry point
-- `lib/singularity/pipeline/orchestrator.ex` (410+ lines) - NATS messaging
-- `lib/singularity/llm/cost_analysis_dashboard.ex` (406 lines) - Cost tracking
+- `lib/singularity/pipeline/orchestrator.ex` - Main entry point
+- `lib/singularity/llm/service.ex` - Multi-provider LLM abstraction
+- `lib/singularity/llm/cost_analysis_dashboard.ex` - Cost tracking
 
 ### Data Stores
 
@@ -415,7 +415,7 @@ These are **already compiled and wrapped in Elixir** - just need integration:
 | NIF Engine | Capabilities | Elixir Wrapper | Use For | Pipeline Functions |
 |---|---|---|---|---|
 | **PromptEngine** | AI prompt generation, optimization, template catalog, caching | `singularity/lib/singularity/engines/prompt_engine.ex` | Generate constrained prompts, optimize refinement prompts | `build_constrained_prompt`, refinement prompts |
-| **LintingEngine** | 15+ language linters (Rust, JS, Python, Go, Java, C++, C#, Elixir, Erlang, Gleam, etc) | Rust NIF at `rust/linting_engine/` | Validate code structure, complexity, quality rules | `validate_structure`, `validate_complexity` |
+| **LintingEngine** | 15+ language linters (Rust, JS, Python, Go, Java, C++, C#, Elixir, Erlang, Gleam, etc) | Rust NIF at `packages/linting_engine/` | Validate code structure, complexity, quality rules | `validate_structure`, `validate_complexity` |
 | **UniversalParser** | 20+ languages (Elixir, Rust, Python, JS, Go, Ruby, Java, C, etc) | `singularity/lib/singularity/parsing/universal_parser.ex` | Extract AST, function signatures, imports, types | `extract_features`, `extract_call_graph` |
 | **ast-grep** | 19+ pattern matching rules for code queries | Pattern detection modules | Find code patterns, duplicates, refactoring opportunities | `pattern_matches_failure_pattern` |
 | **MermaidParser** | Parse diagram syntax (flowcharts, sequence, class) | Diagram analysis module | Architecture visualization analysis | Architecture validation |
@@ -429,7 +429,7 @@ These are **already compiled and wrapped in Elixir** - just need integration:
 | Module | Type | Location | Key Functions | Pipeline Use |
 |---|---|---|---|---|
 | **PromptEngine** | Rust NIF | `singularity/lib/singularity/engines/prompt_engine.ex` | `generate_prompt`, `optimize_prompt`, `cache_get/put`, `list_templates` | Constrained prompt generation, refinement optimization |
-| **LintingEngine** | Rust NIF | `rust/linting_engine/src/` | `analyze_code`, language-specific checks (15+ langs) | Structure validation, complexity checking, quality rules |
+| **LintingEngine** | Rust NIF | `packages/linting_engine/src/` | `analyze_code`, language-specific checks (15+ langs) | Structure validation, complexity checking, quality rules |
 
 ### Existing Elixir Modules to Reuse (Core Capabilities)
 
@@ -1753,6 +1753,87 @@ Dependencies Graph:
 6. ✅ **Knowledge Base** - **DONE** (170 LOC) - Data available, good metrics already exist
    - Module: `Singularity.Embedding.KnowledgeBaseMetricsDashboard`
    - Data: NxService (available), embedding cache stats
+
+---
+
+## Rust NIF Engines Migration - October 2025 ✅ COMPLETE
+
+### Summary
+
+**Date:** October 26, 2025
+**Status:** ✅ **FULLY COMPLETE** - All 5 Rust engines migrated to `packages/` as standalone, publishable Moon projects
+
+### Migration Details
+
+**5 Rust NIF Engines migrated:**
+- ✅ `packages/architecture_engine/` - Framework detection, pattern analysis
+- ✅ `packages/code_quality_engine/` - Code metrics, quality analysis
+- ✅ `packages/linting_engine/` - 15+ language linters
+- ✅ `packages/parser_engine/` - Tree-sitter polyglot parser
+- ✅ `packages/prompt_engine/` - Dynamic prompt generation
+
+### Configuration Changes
+
+**Each engine now has:**
+1. ✅ `Cargo.toml` - Rust package manifest
+2. ✅ `mix.exs` - Elixir wrapper with Nix enforcement
+3. ✅ `moon.yml` - Moon project config with Rust + Elixir tasks
+4. ✅ `src/` - Rust source code
+5. ✅ `lib/` - Elixir wrapper modules
+
+**Nix Enforcement Added:**
+- All 6 packages (5 engines + ex_pgflow) enforce Nix dev-shell
+- Prevents accidental use of system Elixir
+- CI and ALLOW_SYSTEM_ELIXIR bypass available
+
+### Dependency Updates
+
+**singularity/mix.exs:**
+- ✅ Updated 4 engine dependencies: `path: "../packages/..."` (was `../rust/...`)
+- ✅ No old `rust/` references remain
+
+**Root Cargo.toml:**
+- ✅ Updated workspace members from `rust/` to `packages/`
+- ✅ 13 member paths updated
+
+### Publishing Roadmap
+
+**Phase 1: Internal Use** ✅ **ACTIVE**
+- All 5 engines functional in Singularity
+- Independent versioning enabled
+- Moon CI/CD tasks working
+
+**Phase 2: Internal Registry** (Future)
+```bash
+cd packages/code_quality_engine
+mix hex.publish --repo internal  # Publish Elixir wrapper
+cargo publish --registry internal  # Publish Rust crate
+```
+
+**Phase 3: Public** (Optional - useful engines)
+- `parser_engine` → crates.io (broad utility)
+- `architecture_engine` → crates.io (framework detection)
+- Others stay internal (Singularity-specific)
+
+### Benefits
+
+- ✅ **Unified Structure** - Same pattern as ex_llm, ex_pgflow
+- ✅ **Independent Publishing** - Each engine can be released separately
+- ✅ **Version Management** - Decoupled from Singularity releases
+- ✅ **Clear Organization** - Publishable packages in `packages/`, core apps in root
+- ✅ **Nix Enforcement** - Consistent development environments
+- ✅ **Moon Integration** - Standardized build/test/CI tasks
+
+### Verification Checklist
+
+- [x] All 5 engines copied to `packages/`
+- [x] moon.yml created with Rust + Elixir tasks
+- [x] singularity/mix.exs paths updated
+- [x] Root Cargo.toml workspace members updated
+- [x] packages/README.md updated with new engines
+- [x] Nix enforcement added to all engines
+- [x] All references in FINAL_PLAN.md updated from `rust/` to `packages/`
+- [x] No old `rust/` references remain in dependency files
 
 ---
 
