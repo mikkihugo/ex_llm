@@ -67,9 +67,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Technology Stack
 
-- **Elixir 1.18.4** for the main application
+- **Elixir 1.19** for the main application
 - **Rust** for high-performance parsing and analysis tools via Rustler NIFs
-- **NATS** for distributed messaging
 - **PostgreSQL 17** with pgvector, timescaledb, postgis
 - **Bun** for TypeScript/JavaScript runtime (AI server)
 - **Nix** for reproducible development environment
@@ -136,22 +135,19 @@ moon run templates_data:embed-all  # Generates embeddings
 
 ### Running the Complete System
 ```bash
-# Start all services (NATS, PostgreSQL, Singularity, CentralCloud, Observer)
+# Start all services (PostgreSQL, Singularity, CentralCloud, Observer)
 ./start-all.sh
 
 # Or individually:
-# Terminal 1: Start NATS
-nats-server -js
-
-# Terminal 2: Start Singularity (Core Elixir/OTP)
+# Terminal 1: Start Singularity (Core Elixir/OTP)
 cd singularity
 mix phx.server  # Runs on port 4000
 
-# Terminal 3: Start CentralCloud (Pattern Intelligence)
+# Terminal 2: Start CentralCloud (Pattern Intelligence)
 cd centralcloud
 mix phx.server  # Runs on port 4001
 
-# Terminal 4: Start Observer (Phoenix Web UI)
+# Terminal 3: Start Observer (Phoenix Web UI)
 cd observer
 mix phx.server  # Runs on port 4002
 
@@ -209,16 +205,23 @@ MIX_ENV=prod mix release
 - ❌ **NOT recommended** - Docker/Podman (GPU overhead, complexity)
 
 ### Rust Components
+
+**All 5 Rust NIF Engines are now in `packages/` as standalone Moon projects:**
 ```bash
-# Run Rust tests
-cd rust/universal_parser
+# Run Rust tests for a specific engine
+cd packages/parser_engine
 cargo test
 
 # Run all Rust checks
 cargo clippy
 cargo fmt -- --check
 cargo audit
+
+# Or run all Rust tests in workspace
+cargo test --workspace
 ```
+
+See **FINAL_PLAN.md** for details on the Rust engine migration to `packages/` (October 2025).
 
 ## Architecture Overview
 
@@ -250,7 +253,6 @@ Singularity uses a **single, reusable orchestration pattern** applied to 7 major
 
 **Orchestration Layer** (`singularity/lib/singularity/`)
 - `application.ex`: Main OTP application supervisor
-- `nats_orchestrator.ex`: NATS messaging integration, handles AI provider requests
 - `language_detection.ex`: Single source of truth for language detection (Rust NIF bridge)
 
 **Analysis & Code Operations**
@@ -278,9 +280,7 @@ Singularity uses a **single, reusable orchestration pattern** applied to 7 major
 
 **AI/LLM Integration**
 - `singularity/lib/singularity/llm/`: Provider abstraction for Claude, Gemini, OpenAI, Copilot
-- **NATS-based LLM calls**: ALL Elixir code uses NATS (no direct HTTP to LLM APIs)
 - Model selection via complexity levels (simple, medium, complex)
-- MCP (Model Context Protocol) federation via `hermes_mcp`
 
 **Agents**
 - `agents/`: Autonomous agents (Self-Improving, Cost-Optimized, Architecture, Technology, Refactoring, Chat)
@@ -289,57 +289,67 @@ Singularity uses a **single, reusable orchestration pattern** applied to 7 major
 
 ### LLM Usage Guidelines (IMPORTANT!)
 
-**ALL LLM calls in Elixir MUST use `Singularity.LLM.Service` via NATS:**
+**ALL LLM calls in Elixir are routed through Nexus:**
 
 ```elixir
-alias Singularity.LLM.Service
+alias Nexus.LLMRouter
 
-# ✅ CORRECT - Provide task_type for intelligent model selection
-Service.call(:complex, messages, task_type: :architect)
-Service.call_with_prompt(:medium, "Your question", task_type: :planning)
+# ✅ CORRECT - Route through Nexus with complexity and task_type
+{:ok, response} = Nexus.LLMRouter.route(%{
+  complexity: :complex,
+  messages: [%{role: "user", content: "Design a microservice architecture"}],
+  task_type: :architect
+})
 
-# Or let Elixir auto-determine complexity from task_type
-complexity = Service.determine_complexity_for_task(:code_generation)
-Service.call(complexity, messages)
+{:ok, response} = Nexus.LLMRouter.route(%{
+  complexity: :medium,
+  messages: [%{role: "user", content: "Plan the next sprint"}],
+  task_type: :planning,
+  max_tokens: 2000
+})
 
 # ❌ WRONG - Direct HTTP calls forbidden
 Provider.call(:claude, %{prompt: prompt})  # Module doesn't exist!
 HTTPoison.post("https://api.anthropic.com/...")  # Never do this!
 ```
 
-**Complexity Levels & Auto-Scoring:**
+**Complexity Levels & Model Selection:**
 
-Singularity uses **two-tier model selection**:
+Nexus.LLMRouter uses **intelligent model selection** based on complexity and task type:
 
-1. **Elixir Side** - Maps task types to broad complexity levels:
-   - `:simple` → `:classifier`, `:parser`, `:simple_chat`, `:web_search`
-   - `:medium` → `:coder`, `:decomposition`, `:planning`, `:pseudocode`, `:chat`
-   - `:complex` → `:architect`, `:code_generation`, `:pattern_analyzer`, `:refactoring`, `:code_analysis`, `:qa`
+1. **Complexity Levels** - Determine model tier:
+   - `:simple` → Fast, cheap models (Gemini Flash)
+   - `:medium` → Balanced models (Claude Sonnet, GPT-4o)
+   - `:complex` → Powerful models (Claude Sonnet with Codex fallback)
 
-2. **AI Server Side** (TypeScript) - Analyzes task for refined model selection:
-   - Scores task based on: keywords ("architecture", "design", "refactor"), code generation needs, reasoning requirements, context window, task length
-   - Keywords like "architecture", "design", "refactor", "optimize" boost complexity score
-   - Final score maps to available models with cost optimization
-   - Returns specific model recommendation with reasoning
+2. **Task Type** - Refines model selection within complexity tier:
+   - `:architect` → Code architecture/design tasks
+   - `:coder` → Code generation (tries Codex, falls back to selected model)
+   - `:planning` → Strategic planning tasks
+   - `:code_generation` → Code generation (tries Codex)
+   - `:refactoring` → Refactoring tasks (tries Codex)
+   - Other types use default model for complexity level
 
 **Model Examples by Complexity:**
 
-- `:simple` (score < 4) - Gemini Flash, GPT-4o-mini (~$0.001 per call)
-- `:medium` (score 4-7) - Claude Sonnet, GPT-4o (~$0.01-0.05 per call)
-- `:complex` (score ≥ 8) - Claude Opus, GPT-5-Codex, o3 (~$0.10-0.50+ per call)
+- `:simple` → `gemini-2.0-flash-exp` (fast, free)
+- `:medium` → `claude-3-5-sonnet-20241022` (balanced)
+- `:complex` → `gpt-5-codex` (if configured) or `claude-3-5-sonnet-20241022`
 
-**NATS Communication Flow:**
+**LLM Communication Flow:**
 
 ```
 Elixir Code
-    ↓ NATS subject: llm.request
-AI Server (TypeScript/Bun)
-    ↓ HTTP
-LLM Provider APIs (Claude, Gemini, etc.)
     ↓
-AI Server
-    ↓ NATS subject: llm.response
-Elixir Code
+Nexus.LLMRouter.route(%{complexity: :medium, ...})
+    ↓
+ExLLM (provider abstraction)
+    ↓ HTTP
+LLM Provider APIs (Claude, Gemini, OpenAI, etc.)
+    ↓
+ExLLM
+    ↓
+Elixir Code (response with usage/cost)
 ```
 
 ### Using the Unified Orchestrators
@@ -465,8 +475,8 @@ config :singularity, :extractor_types,
 
 **Code Analysis**
 - `architecture_analyzer.ex`: Codebase structure analysis
-- `rust/universal_parser/`: Tree-sitter based parsing for 30+ languages
-- `rust/analysis_suite/`: Rust analysis tool integration
+- `packages/parser_engine/`: Tree-sitter based parsing for 30+ languages (Rust NIF)
+- `packages/architecture_engine/`: Framework detection and analysis (Rust NIF)
 
 **Quality & Methodology**
 - `quality_code_generator.ex`: Generate quality-assured code
@@ -475,21 +485,13 @@ config :singularity, :extractor_types,
 
 ### Data Flow
 
-1. **Requests** → NATS subjects (`llm.provider.*`, `code.analysis.*`)
-2. **Orchestrator** routes to appropriate handler
+1. **Requests** → HTTP to appropriate handler
+2. **Orchestrator** routes to appropriate processor
 3. **Handlers** process using:
    - LLM providers for AI tasks
    - Rust parsers for code analysis
    - PostgreSQL/pgvector for semantic search
-4. **Results** published back via NATS or stored in DB
-
-### NATS Subjects
-
-Key subjects defined in `NATS_SUBJECTS.md`:
-- `llm.provider.{claude|gemini|openai|copilot}` - AI provider requests
-- `code.analysis.{parse|embed|search}` - Code analysis
-- `agents.{spawn|status|result}` - Agent management
-- `system.{health|metrics}` - System monitoring
+4. **Results** returned via HTTP or stored in DB
 
 ### Database Schema
 
@@ -503,7 +505,13 @@ Uses PostgreSQL with:
 ## Key Files & Directories
 
 - `singularity/` - Main Elixir/Phoenix application
-- `rust/` - Rust components (parsers, analysis tools) ✅ **CLEAN**
+- `packages/` - Publishable packages (ex_llm, ex_pgflow, + 5 Rust NIF engines)
+  - ✅ `packages/architecture_engine/` - Framework detection (Rust NIF, Moon project)
+  - ✅ `packages/code_quality_engine/` - Code metrics (Rust NIF, Moon project)
+  - ✅ `packages/linting_engine/` - Multi-language linting (Rust NIF, Moon project)
+  - ✅ `packages/parser_engine/` - Tree-sitter parsing (Rust NIF, Moon project)
+  - ✅ `packages/prompt_engine/` - Prompt generation (Rust NIF, Moon project)
+- `rust/` - Legacy Rust components (non-engine utilities)
 - `rust_global/package_registry/` - Global external package analysis ✅ **CLEAN**
 - `llm-server/` - TypeScript AI provider server (Bun)
 - `flake.nix` - Nix configuration with all tools
@@ -520,10 +528,7 @@ Required in `.env` or shell:
 - `DATABASE_URL` - PostgreSQL connection
 
 Optional (with defaults):
-- `NATS_HOST` - NATS server host (default: 127.0.0.1)
-- `NATS_PORT` - NATS server port (default: 4222)
-  - NatsOrchestrator gracefully degrades if NATS is unavailable
-  - Start NATS with: `nats-server -js`
+- None currently configured
 
 **Note on Embeddings:**
 - ✅ Pure local Nx/Ortex inference (no API keys required)
@@ -533,22 +538,12 @@ Optional (with defaults):
 
 ## Troubleshooting
 
-### Elixir/Gleam compilation issues
+### Elixir compilation issues
 ```bash
 cd singularity
 mix clean
 mix deps.clean --all
 mix setup
-```
-
-### NATS connection errors
-```bash
-# Check NATS is running
-nats-server --version
-ps aux | grep nats
-
-# Restart NATS with JetStream
-nats-server -js
 ```
 
 ### Database issues
@@ -746,22 +741,6 @@ end
 # Ecto handles mapping automatically
 ```
 
-### NATS Subject Naming
-
-**Pattern: `<domain>.<subdomain>.<action>`**
-
-```elixir
-# Good: Self-documenting hierarchy
-packages.registry.search              # Search package registry
-packages.registry.examples.search     # Search package examples
-packages.registry.collect.package     # Collect single package
-search.packages_and_codebase.unified  # Unified search across both
-
-# Bad: Vague
-tools.search                         # What tools?
-search.hybrid                        # Hybrid of what?
-```
-
 ### Documentation Requirements
 
 Every module MUST have:
@@ -926,7 +905,7 @@ alias Singularity.Knowledge.ArtifactStore
 #### Export Learned Patterns (DB → Git)
 ```bash
 # After your code tracks usage:
-# ArtifactStore.record_usage("elixir-nats-consumer", success: true)
+# ArtifactStore.record_usage("elixir-consumer", success: true)
 
 # Export high-quality learned patterns
 moon run templates_data:sync-from-db
@@ -935,7 +914,7 @@ moon run templates_data:sync-from-db
 ls templates_data/learned/
 
 # Promote if good
-mv templates_data/learned/code_template_messaging/improved-nats-consumer.json \
+mv templates_data/learned/code_template_messaging/improved-consumer.json \
    templates_data/code_generation/patterns/messaging/
 ```
 
@@ -958,32 +937,27 @@ moon run templates_data:embed-all      # Generate embeddings
 moon run templates_data:stats          # Usage statistics
 ```
 
-### Detection & Intelligence Features (All Work Locally)
+### CentralCloud & Genesis (REQUIRED Multi-Instance & Autonomous Learning)
 
-**Singularity does NOT require CentralCloud** - All detection features are fully implemented locally:
+**CentralCloud and Genesis are REQUIRED system components** - not optional:
 
-| Feature | Works Locally? | Implementation |
-|---------|---|---|
-| **Framework Detection** | ✅ Yes | Rust NIF + Knowledge Base |
-| **Language Detection** | ✅ Yes | Rust NIF (25+ languages) |
-| **Code Analysis** | ✅ Yes | Rust NIF (20 languages) |
-| **Pattern Extraction** | ✅ Yes | Rust NIF + PostgreSQL |
-| **Technology Detection** | ✅ Yes | Rust NIF + PostgreSQL |
-| **Semantic Embeddings** | ✅ Yes | Pure Elixir Nx (Qodo + Jina v3, 2560-dim) |
-| **Graph PageRank** | ✅ Yes | Rust NIF (CentralPageRank algorithm) |
+- **CentralCloud** - REQUIRED: Aggregates patterns, frameworks, and learnings across instances
+- **Genesis** - REQUIRED: Autonomous improvement hub for rule evolution and long-horizon learning
+- **Both are integral parts of the unified system** - Essential for full system capabilities
 
-See **CENTRALCLOUD_DETECTION_ROLE.md** for details on how CentralCloud (optional multi-instance feature) relates to these local capabilities.
+CentralCloud provides:
+- Multi-instance learning aggregation
+- Cross-instance insights and shared patterns
+- Collective intelligence across developers
+- Pattern consensus and framework learning
 
-### Future: CentralCloud (For Cross-Instance Learning)
+Genesis provides:
+- Autonomous rule evolution and synthesis
+- Long-horizon improvement workflows
+- Self-directed optimization strategies
+- Continuous system refinement
 
-**Optional multi-instance feature** - enables aggregating learnings across multiple Singularity instances:
-
-- **Purpose:** Aggregate learnings across multiple Singularity instances
-- **When:** Only if/when you have multiple developers/instances
-- **What it adds:** Cross-instance insights, collective intelligence, shared patterns
-- **Current status:** Implemented but optional for single-instance development
-
-See **CENTRALCLOUD_INTEGRATION_GUIDE.md** for setup details.
+See **CENTRALCLOUD_INTEGRATION_GUIDE.md** and **AGENT_SYSTEM_EXPERT.md** for setup details.
 
 ### Priority: Features over Speed/Security
 
@@ -1018,7 +992,6 @@ children = [
 
   # Layer 2: Infrastructure - Core services required by application layer
   Singularity.Infrastructure.Supervisor,  # CircuitBreaker, ErrorRateTracker, StartupWarmup, EmbeddingModelLoader
-  Singularity.NATS.Supervisor,           # NatsServer, NatsClient, NatsExecutionRouter
 
   # Layer 3: Domain Services - Business logic and domain-specific functionality
   Singularity.LLM.Supervisor,            # LLM.RateLimiter
@@ -1069,7 +1042,6 @@ defmodule Singularity.MyDomain.Supervisor do
 
   Depends on:
   - Repo - For database access
-  - NATS.Supervisor - For messaging
   """
 
   use Supervisor
@@ -1101,7 +1073,7 @@ end
 
 **`:rest_for_one`** - For ordered dependencies
 - If a child crashes, restart it and all children started after it
-- Use for NATS.Supervisor (Server → Client → Router)
+- Use for layered services with ordered startup
 
 **`:one_for_all`** - Rare, for tightly coupled systems
 - If any child crashes, restart all children
@@ -1118,7 +1090,7 @@ end
 ### Guidelines
 
 **DO:**
-- Create nested supervisors for logical domains (NATS, LLM, Knowledge, etc.)
+- Create nested supervisors for logical domains (LLM, Knowledge, etc.)
 - Document managed processes in `@moduledoc`
 - Explain restart strategy and why it was chosen
 - List dependencies (what must start before this supervisor)
@@ -1153,7 +1125,6 @@ The `central_cloud` application demonstrates clean supervision for internal tool
 # central_cloud/lib/central_cloud/application.ex
 children = [
   CentralCloud.Repo,                    # Database
-  CentralCloud.NatsClient,              # Messaging
   CentralCloud.KnowledgeCache,          # Cache
   CentralCloud.TemplateService,         # Domain services
   CentralCloud.FrameworkLearningAgent,
@@ -1163,8 +1134,8 @@ children = [
 ```
 
 **Why this works:**
-- Only 8 children (manageable)
-- Clear dependency order (Repo → NATS → Services)
+- Only 6 children (manageable)
+- Clear dependency order (Repo → Cache → Services)
 - No duplicates
 - All children are actual processes
 - Self-documenting
