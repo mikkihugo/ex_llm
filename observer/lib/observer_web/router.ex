@@ -17,8 +17,10 @@ defmodule ObserverWeb.Router do
   scope "/", ObserverWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", SystemHealthLive
     live "/adaptive-threshold", AdaptiveThresholdLive
+    live "/nexus-llm-health", NexusLLMHealthLive
+    live "/validation-metrics", ValidationMetricsLive
   end
 
   # Other scopes may use custom stacks.

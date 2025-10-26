@@ -1,0 +1,178 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Nexus LLM Health</h1>
+    <p class="text-gray-600">Monitor LLM provider health, circuit breaker status, and performance</p>
+  </div>
+
+  <div class="mb-6 flex justify-between items-center">
+    <button
+      phx-click="refresh"
+      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+    >
+      🔄 Refresh
+    </button>
+
+    <div class="text-sm text-gray-500">
+      Last updated: <%= if @dashboard, do: format_time(@dashboard[:timestamp]), else: "Loading..." %>
+    </div>
+  </div>
+
+  <%= if @error do %>
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 mb-6">
+      <strong>Error:</strong> <%= @error %>
+    </div>
+  <% end %>
+
+  <%= if @loading do %>
+    <div class="text-center py-12">
+      <p class="text-gray-600">Loading LLM health metrics...</p>
+    </div>
+  <% else %>
+    <%= if @dashboard do %>
+      <!-- Provider Health Overview -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <%= for provider <- @dashboard[:provider_health][:providers] do %>
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-semibold text-gray-800"><%= provider[:name] %></h3>
+              <% {status_text, status_class} = health_badge(provider[:health]) %>
+              <span class="px-2 py-1 rounded text-xs font-medium <%= status_class %>">
+                <%= status_text %>
+              </span>
+            </div>
+            <div class="text-sm text-gray-600">
+              Score: <%= provider[:score] %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Overall Status -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Overall Health</h3>
+          <% {health_text, health_class} = health_badge(@dashboard[:provider_health][:overall_health]) %>
+          <div class="text-3xl font-bold <%= health_class %> px-3 py-2 rounded inline-block">
+            <%= health_text %>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Healthy Providers</h3>
+          <div class="text-3xl font-bold text-green-600">
+            <%= @dashboard[:provider_health][:healthy_count] %>/<%= @dashboard[:provider_health][:healthy_count] + @dashboard[:provider_health][:unhealthy_count] %>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Requests/min</h3>
+          <div class="text-3xl font-bold text-blue-600">
+            <%= @dashboard[:performance][:total_requests_per_minute] %>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Error Rate</h3>
+          <div class="text-3xl font-bold <%= if @dashboard[:performance][:average_error_rate] > 0.05, do: "text-red-600", else: "text-green-600" %>">
+            <%= Float.round(@dashboard[:performance][:average_error_rate] * 100, 2) %>%
+          </div>
+        </div>
+      </div>
+
+      <!-- Circuit Breaker States -->
+      <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Circuit Breaker Status</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <div class="text-sm text-gray-600 mb-2">Closed (Healthy)</div>
+            <div class="text-3xl font-bold text-green-600">
+              <%= @dashboard[:circuit_status][:closed_circuits] %>
+            </div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-600 mb-2">Half-Open (Testing)</div>
+            <div class="text-3xl font-bold text-yellow-600">
+              <%= @dashboard[:circuit_status][:half_open_circuits] %>
+            </div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-600 mb-2">Open (Failing)</div>
+            <div class="text-3xl font-bold text-red-600">
+              <%= @dashboard[:circuit_status][:open_circuits] %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Distribution Chart -->
+        <div class="mt-6">
+          <div class="flex gap-2 h-8 rounded-lg overflow-hidden bg-gray-100">
+            <%= for item <- @dashboard[:circuit_status][:distribution] do %>
+              <div
+                class="<%= state_color(item[:state]) %> flex-1 relative group"
+                style="width: <%= Float.round(item[:count] / @dashboard[:circuit_status][:total_circuits] * 100, 1) %>%"
+              >
+                <span class="absolute hidden group-hover:block bg-gray-800 text-white px-2 py-1 rounded text-xs whitespace-nowrap bottom-10">
+                  <%= item[:state] %>: <%= item[:count] %>
+                </span>
+              </div>
+            <% end %>
+          </div>
+          <div class="mt-2 text-sm text-gray-600">
+            Total: <%= @dashboard[:circuit_status][:total_circuits] %> circuits
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <%= if length(@dashboard[:alerts]) > 0 do %>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+          <h3 class="text-lg font-semibold text-red-900 mb-4">Active Alerts</h3>
+          <div class="space-y-3">
+            <%= for alert <- Enum.take(@dashboard[:alerts], 10) do %>
+              <div class="flex items-start gap-3 p-3 bg-red-100 rounded">
+                <div class="flex-1">
+                  <div class="font-semibold text-red-800"><%= alert[:message] %></div>
+                  <div class="text-sm text-red-700 mt-1"><%= alert[:type] %></div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% else %>
+        <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
+          <div class="text-green-800">
+            <strong>✅ No active alerts</strong> - All LLM providers are healthy
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Help -->
+      <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h4 class="font-semibold text-blue-900 mb-2">About LLM Health</h4>
+        <ul class="text-sm text-blue-800 space-y-1">
+          <li>• <strong>Closed:</strong> Circuit is working normally</li>
+          <li>• <strong>Half-Open:</strong> Circuit is testing recovery</li>
+          <li>• <strong>Open:</strong> Circuit is failing and has been disabled</li>
+          <li>• <strong>Error Rate:</strong> Percentage of requests that fail</li>
+          <li>• Metrics auto-refresh every 10 seconds</li>
+        </ul>
+      </div>
+    <% else %>
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
+        <strong>No data available:</strong> LLM metrics have not been collected yet.
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+<script>
+  function format_time(datetime) {
+    if (!datetime) return "Loading...";
+    try {
+      const date = new Date(datetime);
+      return date.toLocaleTimeString();
+    } catch {
+      return "Unknown";
+    }
+  }
+</script>

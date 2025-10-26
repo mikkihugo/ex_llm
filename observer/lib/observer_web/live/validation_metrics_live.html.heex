@@ -1,0 +1,191 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Validation Metrics</h1>
+    <p class="text-gray-600">Monitor validation accuracy, execution success rates, and KPI trends</p>
+  </div>
+
+  <div class="mb-6 flex justify-between items-center gap-4">
+    <div class="flex gap-2">
+      <button
+        phx-click="refresh"
+        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+      >
+        🔄 Refresh
+      </button>
+    </div>
+
+    <div class="flex gap-2">
+      <button
+        phx-click="set_time_range"
+        phx-value-range="last_hour"
+        class={"px-4 py-2 rounded-lg transition", if(@time_range == :last_hour, do: "bg-blue-600 text-white", else: "bg-gray-200 text-gray-800 hover:bg-gray-300")}
+      >
+        Last Hour
+      </button>
+      <button
+        phx-click="set_time_range"
+        phx-value-range="last_day"
+        class={"px-4 py-2 rounded-lg transition", if(@time_range == :last_day, do: "bg-blue-600 text-white", else: "bg-gray-200 text-gray-800 hover:bg-gray-300")}
+      >
+        Last Day
+      </button>
+      <button
+        phx-click="set_time_range"
+        phx-value-range="last_week"
+        class={"px-4 py-2 rounded-lg transition", if(@time_range == :last_week, do: "bg-blue-600 text-white", else: "bg-gray-200 text-gray-800 hover:bg-gray-300")}
+      >
+        Last Week
+      </button>
+    </div>
+
+    <div class="text-sm text-gray-500">
+      Last updated: <%= if @dashboard, do: format_time(@dashboard[:timestamp]), else: "Loading..." %>
+    </div>
+  </div>
+
+  <%= if @error do %>
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 mb-6">
+      <strong>Error:</strong> <%= @error %>
+    </div>
+  <% end %>
+
+  <%= if @loading do %>
+    <div class="text-center py-12">
+      <p class="text-gray-600">Loading validation metrics...</p>
+    </div>
+  <% else %>
+    <%= if @dashboard && @current_kpi do %>
+      <!-- KPI Overview -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Validation Accuracy</h3>
+          <div class="text-4xl font-bold text-blue-600">
+            <%= Float.round(@current_kpi[:validation_accuracy] * 100, 1) %>%
+          </div>
+          <p class="text-sm text-gray-600 mt-2">
+            Checks correctly predict success
+          </p>
+          <div class="mt-4 bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div
+              class="bg-blue-500 h-full"
+              style="width: <%= Float.round(@current_kpi[:validation_accuracy] * 100, 1) %>%"
+            ></div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Execution Success Rate</h3>
+          <div class="text-4xl font-bold text-green-600">
+            <%= Float.round(@current_kpi[:execution_success_rate] * 100, 1) %>%
+          </div>
+          <p class="text-sm text-gray-600 mt-2">
+            Plans execute without errors
+          </p>
+          <div class="mt-4 bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div
+              class="bg-green-500 h-full"
+              style="width: <%= Float.round(@current_kpi[:execution_success_rate] * 100, 1) %>%"
+            ></div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Avg Validation Time</h3>
+          <div class="text-4xl font-bold text-purple-600">
+            <%= @current_kpi[:average_validation_time_ms] %>ms
+          </div>
+          <p class="text-sm text-gray-600 mt-2">
+            Time in validation phase
+          </p>
+        </div>
+      </div>
+
+      <!-- Health Status -->
+      <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Overall Health</h3>
+        <div class="flex items-center gap-4">
+          <div class={"text-3xl font-bold px-6 py-4 rounded-lg text-white", health_color(@current_kpi[:validation_accuracy], @current_kpi[:execution_success_rate])}>
+            <%= health_status(@current_kpi[:validation_accuracy], @current_kpi[:execution_success_rate]) %>
+          </div>
+          <div class="text-sm text-gray-600">
+            <%= if @current_kpi[:is_healthy] do %>
+              <p>✅ Both validation and execution metrics are healthy</p>
+            <% else %>
+              <p>❌ One or more metrics are below target threshold (0.85/0.90)</p>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trends -->
+      <%= if @dashboard[:trend] do %>
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Trends</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <div class="text-sm text-gray-600 mb-2">Accuracy Trend</div>
+              <div class="text-xl font-semibold text-gray-900">
+                <%= trend_arrow(@dashboard[:trend][:accuracy_trend]) %>
+              </div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-600 mb-2">Success Rate Trend</div>
+              <div class="text-xl font-semibold text-gray-900">
+                <%= trend_arrow(@dashboard[:trend][:success_trend]) %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Recommendations -->
+      <%= if @dashboard[:recommendations] && length(@dashboard[:recommendations]) > 0 do %>
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Recommendations</h3>
+          <div class="space-y-3">
+            <%= for rec <- @dashboard[:recommendations] do %>
+              <div class={"p-4 rounded-lg border-l-4", priority_color(rec[:priority])}>
+                <div class="font-semibold"><%= rec[:message] %></div>
+                <div class="text-sm mt-1"><%= rec[:action] %></div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% else %>
+        <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
+          <div class="text-green-800">
+            <strong>✅ No recommendations</strong> - All metrics are performing well
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Help -->
+      <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h4 class="font-semibold text-blue-900 mb-2">About These Metrics</h4>
+        <ul class="text-sm text-blue-800 space-y-1">
+          <li>• <strong>Validation Accuracy:</strong> % of checks that correctly predict execution success</li>
+          <li>• <strong>Execution Success Rate:</strong> % of plans that executed without errors</li>
+          <li>• <strong>Avg Validation Time:</strong> Average time spent in validation phase</li>
+          <li>• <strong>Healthy Range:</strong> Accuracy >= 85%, Success >= 90%</li>
+          <li>• Metrics auto-refresh every 15 seconds</li>
+        </ul>
+      </div>
+    <% else %>
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
+        <strong>No data available:</strong> Validation metrics have not been collected yet.
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+<script>
+  function format_time(datetime) {
+    if (!datetime) return "Loading...";
+    try {
+      const date = new Date(datetime);
+      return date.toLocaleTimeString();
+    } catch {
+      return "Unknown";
+    }
+  }
+</script>
