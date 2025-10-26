@@ -18,7 +18,7 @@
 | **Phase 4: Adaptive Refinement** | ✅ 100% | 3 components | 1,415 | 297 lines | `execution/evolution/`, `validation/` |
 | **Phase 5: Post-Execution Learning** | ✅ 100% | 6 components | 2,914 | 521 lines | `jobs/`, `evolution/`, `agents/` |
 | **Data Stores** | ✅ 100% | 2 components | 662 | 173 lines | `storage/` |
-| **Integration & Orchestration** | ✅ 100% | 5 components | 2,200 | 400+ lines | `pipeline/`, `nats/`, `llm/` |
+| **Integration & Orchestration** | ✅ 100% | 5 components | 2,200 | 400+ lines | `pipeline/`, `llm/`, `agents/` |
 | **Observability & Dashboards** | ✅ 100% | 5 components | 1,940 | 200+ lines | `dashboards/`, `observer/` |
 | **TOTAL** | ✅ 100% | **39 components** | **~7,500** | **2,500+** | **All integrated** |
 
@@ -69,7 +69,6 @@
 - ✅ Pipeline.Orchestrator (637 lines, 21+ functions) - Unified 5-phase orchestration
 - ✅ Pipeline.Context (316+ lines, 8+ functions) - Context gathering/enrichment
 - ✅ LLM Service (280+ lines, 10+ functions) - Multi-provider abstraction
-- ✅ NATS Integration (410+ lines) - Async message routing
 - ✅ CentralCloud (47 modules, 5000+ LOC) - Multi-instance learning
 
 **Observability (5/5 ✅)**
@@ -246,7 +245,7 @@ Result: Implementation plan + validation metrics + learned rules
 
 **Orchestration & Integration:**
 - `lib/singularity/pipeline/orchestrator.ex` (637 lines) - Main entry point
-- `lib/singularity/nats_orchestrator.ex` (410+ lines) - NATS messaging
+- `lib/singularity/pipeline/orchestrator.ex` (410+ lines) - NATS messaging
 - `lib/singularity/llm/cost_analysis_dashboard.ex` (406 lines) - Cost tracking
 
 ### Data Stores
@@ -334,7 +333,6 @@ Before deploying to production:
 - [ ] Responses API E2E tested (Priority 2)
 - [ ] Cost analysis dashboard verified with real execution metrics
 - [ ] Multi-instance CentralCloud communication tested (if using)
-- [ ] NATS JetStream configured and running
 - [ ] PostgreSQL 17+ with pgvector, timescaledb, postgis extensions
 - [ ] Rust NIFs compiled for target platform
 
