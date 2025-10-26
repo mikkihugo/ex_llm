@@ -13,6 +13,17 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for Gleam code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.5.0": {
+      "date": "2025-10-24",
+      "changes": [
+        "Added 8 production readiness sections for production operations knowledge",
+        "Sections: Performance Characteristics, Concurrency & Safety, Graceful Degradation, Version Compatibility, Configuration Guide, Observable Metrics, Troubleshooting, Architecture Decisions (ADR)",
+        "Added 5 new interactive questions: error_tracking_integration, target_runtime, performance_critical, erlang_compatibility, backward_compatibility",
+        "Added 10 new scoring weights for production readiness assessment",
+        "Non-breaking: v2.4.0 modules remain valid, v2.5.0 sections are optional but recommended for production",
+        "Tier-based implementation: Tier 1 (Performance, Metrics, Troubleshooting, Safety), Tier 2 (Config, Degradation, Compatibility), Tier 3 (ADR, Decisions)"
+      ]
+    },
     "2.2.0": {
       "date": "2025-01-14",
       "changes": [
