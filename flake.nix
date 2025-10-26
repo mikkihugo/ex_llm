@@ -236,10 +236,12 @@
           ))
         ];
 
-        getWebAndCliTools = env: with pkgs; [
-          flyctl bun overmind
+        getWebAndCliTools = env: with pkgs;
+          # Include Bun in dev/prod only, exclude from CI
+          if env.name == "Continuous Integration Environment"
+          then [ flyctl overmind ]
+          else [ flyctl bun overmind ];
           # Note: pgxnclient not in nixpkgs, but shell hook checks for pgxn from system package managers
-        ];
 
         getQaTools = env: with pkgs; [
           semgrep shellcheck hadolint
