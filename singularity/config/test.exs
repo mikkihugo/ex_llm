@@ -19,10 +19,10 @@ config :singularity, Singularity.Repo,
 config :singularity, :oban_enabled, false
 
 # Oban configuration for test mode
-# Using `testing: :inline` prevents Oban from trying to connect to the database
-# The dispatcher runs jobs immediately in the same process instead of enqueueing them
-# NOTE: Even though oban_enabled is false above, we still provide config for if it's explicitly started
+# CRITICAL: start_supervised: false prevents OTP from auto-starting Oban
+# This allows us to handle Oban startup explicitly in the supervision tree
 config :oban,
+  start_supervised: false,
   engine: Oban.Engines.Inline,
-  queues: [],
+  queues: [default: [concurrency: 1]],
   repo: Singularity.Repo

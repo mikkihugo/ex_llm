@@ -314,20 +314,33 @@ defmodule Singularity.Application do
   end
 
   # Helper function to conditionally add optional children
-  # Checks application config for enabled flag, defaults to true
+  # Special handling for Oban: detect test mode by checking database pool configuration
   defp add_optional_child(children, config_key, child_factory) do
-    enabled = Application.get_env(:singularity, config_key, true)
-    Logger.info("Checking config for #{config_key}: #{inspect(enabled)}")
+    # For Oban, skip if in test mode (detected by SQL.Sandbox pool)
+    if config_key == :oban_enabled and is_test_mode?() do
+      Logger.info("Skipping #{config_key} - test mode detected (SQL.Sandbox pool)")
+      children
+    else
+      enabled = Application.get_env(:singularity, config_key, true)
+      Logger.info("Checking config for #{config_key}: #{inspect(enabled)}")
 
-    case enabled do
-      true ->
-        Logger.info("Adding child for #{config_key}")
-        children ++ [child_factory.()]
+      case enabled do
+        true ->
+          Logger.info("Adding child for #{config_key}")
+          children ++ [child_factory.()]
 
-      false ->
-        Logger.info("Skipping #{config_key} - disabled in config")
-        children
+        false ->
+          Logger.info("Skipping #{config_key} - disabled in config")
+          children
+      end
     end
+  end
+
+  # Detect test mode by checking if ExUnit is loaded
+  # This is reliable regardless of environment variable overrides
+  defp is_test_mode? do
+    Application.loaded_applications()
+    |> Enum.any?(fn {app, _, _} -> app == :ex_unit end)
   end
 
   # Returns Oban child spec if enabled
