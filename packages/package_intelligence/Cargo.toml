@@ -20,9 +20,11 @@ crate-type = ["cdylib", "rlib"]
 name = "package-registry-indexer"
 path = "src/bin/main.rs"
 
-[[bin]]
-name = "package_intelligence_service"
-path = "src/bin/service.rs"
+# Service binary commented out - nats_service module not included in this migration
+# Move to separate service project when needed
+# [[bin]]
+# name = "package_intelligence_service"
+# path = "src/bin/service.rs"
 
 [dependencies]
 # Core dependencies
@@ -96,7 +98,7 @@ tar = { version = "0.4", optional = true }
 # prompt-engine = { workspace = true, optional = true }
 
 # Parser dependencies
-dependency_parser = { path = "../../../rust/parser_engine/formats/dependency" }
+dependency_parser = { path = "../parser_engine/formats/dependency" }
 
 [dev-dependencies]
 criterion = { workspace = true, features = ["html_reports"] }

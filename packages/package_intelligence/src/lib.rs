@@ -85,7 +85,8 @@ pub mod extractor;
 pub use tech_detector;
 
 // NATS service (package_registry_indexer is a service, not just a library)
-pub mod nats_service;
+// Commented out: moved to standalone service binaries (src/bin/)
+// pub mod nats_service;
 
 // NEW: Prompt management
 pub mod prompts;
