@@ -147,7 +147,7 @@ defmodule Singularity.LLM.Service do
       Start -->|Yes| InElixir{In Elixir code?}
 
       InElixir -->|Yes| UseService[Use LLM.Service]
-      InElixir -->|No| UseAIServer[Use AI Server directly]
+      InElixir -->|No| UseNexusAPI[Call Nexus workflow directly]
 
       UseService --> KnowModel{Know specific model?}
       KnowModel -->|Yes| SpecificModel[call 'claude-sonnet-4.5', messages]
@@ -439,14 +439,14 @@ defmodule Singularity.LLM.Service do
         }
 
   # @calls: build_request/3 - Build LLM request structure
-  # @calls: dispatch_request/2 - Send request via NATS
+  # @calls: dispatch_request/2 - Enqueue request via Oban/pgmq
   # @calls: track_slo_metric/3 - Track SLO compliance
   # @calls: log_slo_breach/3 - Log SLA breaches
   # @telemetry: [:llm_service, :call, :start] - Call initiation
   # @telemetry: [:llm_service, :call, :stop] - Call completion
   # @slo: llm_call -> 2000ms
   @doc """
-  Call an LLM via NATS with intelligent model selection and SLO monitoring.
+  Call an LLM via the Nexus queue with intelligent model selection and SLO monitoring.
 
   ## Parameters
   - model_or_complexity :: String.t() | atom() - Model name or complexity level

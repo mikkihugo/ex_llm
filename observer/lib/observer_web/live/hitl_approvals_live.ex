@@ -43,7 +43,7 @@ defmodule ObserverWeb.HITLApprovalsLive do
     {:noreply, select(socket, id)}
   end
 
-  def handle_event("decide", %{"id" => id, "decision" => decision} = params, socket) do
+  def handle_event("decide", %{"approval_id" => id, "decision" => decision} = params, socket) do
     decided_by = params["decided_by"] |> String.trim()
     reason = params["decision_reason"] |> blank_to_nil()
 
@@ -223,7 +223,7 @@ defmodule ObserverWeb.HITLApprovalsLive do
           <p class="text-sm text-amber-700 mt-2">Provide your name, optional context, and choose an action.</p>
 
           <form class="mt-4 space-y-4" phx-submit="decide">
-            <input type="hidden" name="id" value={@approval.id} />
+            <input type="hidden" name="approval_id" value={@approval.id} />
 
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wide text-amber-700">Operator</label>
@@ -343,13 +343,15 @@ defmodule ObserverWeb.HITLApprovalsLive do
   defp normalize_status(nil, fallback), do: fallback
   defp normalize_status("", fallback), do: fallback
 
-  defp normalize_status(status, _fallback) when is_atom(status) and status in Approval.statuses(),
-    do: status
+  defp normalize_status(status, fallback) when is_atom(status) do
+    if status in Approval.statuses(), do: status, else: fallback
+  end
 
   defp normalize_status(status, fallback) when is_binary(status) do
     status
     |> String.downcase()
     |> String.to_existing_atom()
+    |> normalize_status(fallback)
   rescue
     ArgumentError -> fallback
   end

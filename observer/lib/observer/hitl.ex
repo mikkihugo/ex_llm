@@ -65,7 +65,7 @@ defmodule Observer.HITL do
   Create a new approval entry. Defaults status to `:pending`.
   """
   @spec create_approval(map()) :: {:ok, Approval.t()} | {:error, Ecto.Changeset.t()}
-  def create_approval(attrs \ %{}) do
+  def create_approval(attrs \\ %{}) do
     attrs = Map.put_new(attrs, :status, :pending)
 
     %Approval{}

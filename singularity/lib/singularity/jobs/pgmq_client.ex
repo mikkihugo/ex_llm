@@ -3,11 +3,11 @@ defmodule Singularity.Jobs.PgmqClient do
   PostgreSQL Message Queue (pgmq) Client
 
   Provides helper functions for publishing messages to pgmq queues.
-  pgmq enables Singularity (Elixir/Oban) ↔ ai-server (TypeScript/pgflow) communication.
+  pgmq enables Singularity (Elixir/Oban) ↔ Nexus (Responses API workflows) communication.
 
   Architecture:
-  - Singularity enqueues tasks to pgmq (via Oban jobs)
-  - ai-server polls pgmq, executes workflows
+  - Singularity enqueues tasks to pgmq (via Oban/ex_pgflow workers)
+  - Nexus polls pgmq, executes Responses workflows
   - Results published back to pgmq
   - Singularity polls results via separate Oban jobs
   """
