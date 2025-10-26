@@ -1506,6 +1506,65 @@ Before layering more orchestration logic, verify that the intelligence data path
 
 With that baseline in place, implement the missing storage and analytics components below.
 
+### Observer App (HITL + LiveView Dashboard) Plan
+
+**Purpose:** Provide a dedicated Phoenix LiveView application named `observer` that centralises human approvals, pipeline visibility, and runtime observability without reviving the deprecated NATS stack or depending on `ai-server`.
+
+#### Scope
+- **Human-in-the-loop approvals**
+  - LiveView interface backed by the existing `approval_queues` table (list, approve, reject, comment)
+  - Replace NATS request/reply with pgmq + DB polling so Singularity agents block on database status changes
+  - Move `Singularity.HITL.ApprovalService` logic into `observer` (rename to `Observer.HITL.Approvals`) and expose an HTTP/pgmq API that Singularity calls
+- **LLM + workflow observability**
+  - Dashboards for `ai_requests` / `ai_results` queues (depth, throughput, last error)
+  - Visualise `TaskGraph` executions: recent runs, validation outcomes, refinement loops
+  - Live status for Responses API jobs (streaming output, tool usage)
+- **Manual operations**
+  - Trigger rescan/retry buttons (publishes to pgmq commands)
+  - Incident log with manual acknowledgement
+- **Authentication**
+  - Minimal Auth (env-configured SSO or Phoenix token auth) to keep access restricted
+
+#### Architecture
+- New Phoenix LiveView app at `/observer`
+- Shared repo-level dependency on `ex_pgflow`, `pgmq`, `ecto_sql`, `phoenix_live_view`, `phoenix_html`, `tailwind`
+- Configure to use the same Postgres database and `pgmq` schema as Singularity (read/write but no business logic duplication)
+- Introduce a small internal API module `Observer.API.Approvals` exposing `enqueue_request/1`, `await_decision/2`, `list_pending/1`:
+  - Singularity calls this via a lightweight HTTP client or direct RPC (if running in same BEAM cluster)
+  - Module updates `approval_queues`, broadcasts via `Phoenix.PubSub`
+- Telemetry subscribers (`Observer.Telemetry`) listen to `:pgmq` + `:task_graph` events and push LiveView updates
+
+#### Migration Tasks
+1. **Scaffold app**
+   - `mix phx.new observer --live --no-ecto` (reuse top-level repo Ecto config)
+   - Link to umbrella `config/config.exs` for shared repos and telemetry
+2. **Data layer**
+   - Add Ecto repo module `Observer.Repo` pointing to same DB; share schemas or define view-only structs
+   - Extract approval schema into shared core (`core/lib`) or duplicate via `Observer.Schemas.ApprovalQueue` referencing existing table
+3. **HITL service refactor**
+   - Move approval logic from `Singularity.HITL.ApprovalService` to `observer/lib/observer/hitl/approvals.ex`
+   - Replace NATS calls with `pgmq.send/2` + DB updates and add polling helper `await_decision/2`
+   - Update Singularity callers (`Singularity.Tools.FileSystem`, `SelfImprovingAgent`, etc.) to call the new API (HTTP or direct module if compiled into umbrella)
+4. **LiveView screens**
+   - Pending approvals board (sortable, filterable)
+   - Approval detail view (diff viewer, approve/reject buttons, comment box)
+   - Queue metrics dashboard (pgmq backlog, processing latency)
+   - TaskGraph timeline (list of runs, validation errors, refinement status)
+5. **Observability integrations**
+   - Subscribe to `Singularity.Telemetry` events for LLM calls, validations, rule evolution
+   - Display charts (response times, success/failure counts)
+   - Add log viewer (tail `Singularity.LogBuffer` if available)
+6. **Security + deployment**
+   - Add minimal auth (phx_gen_auth or plug-based token check)
+   - Include in release pipeline (`mix release observer`)
+   - Document runbook (env vars, ports, routing behind reverse proxy)
+
+#### Deliverables
+- Phoenix LiveView application (`observer/`) checked into repo
+- Updated Singularity modules no longer referencing NATS; they enqueue approvals via Observer
+- Live dashboards for HITL queue, queue metrics, TaskGraph runs, Responses API stats
+- Documentation (`OBSERVER_APP_PLAN.md`) with setup instructions and wiring diagrams
+
 ### Shared Queue Integration (Genesis)
 
 - **Existing channels** – Genesis processes `code_execution_requests` and publishes `code_execution_results` via pgmq (`centralcloud/lib/centralcloud/shared_queue_registry.ex:158`, `genesis/lib/genesis/shared_queue_consumer.ex:112`).
@@ -2018,16 +2077,20 @@ Documentation:
    - 3.1 Replace remaining `LLM.Service.call/…` usages with `enqueue_responses_request` helper that sets `api_version: "responses"`
    - 3.2 Implement Nexus queue consumer (poll `ai_requests`, call OpenAI Responses API, publish Responses payload to `ai_results`)
    - 3.3 Wire `LlmResultPoller.store_result/1` to persist Responses output (content array, tool outputs) and unblock downstream phases
-4. ⏳ **Define `plan_outcomes_published` queue**
-   - 4.1 Update `centralcloud/lib/centralcloud/shared_queue_registry.ex`
-   - 4.2 Add Singularity publisher + Genesis consumer stubs
-5. ⏳ **Document shared ex_pgflow connection**
-   - 5.1 Add connection settings to ops docs / env vars
-   - 5.2 Confirm migration plan for shared schema
-6. ⏳ **Test Nexus workflow** - Validate ex_pgflow integration
-7. ⏳ **Bootstrap automated validation harness**
-   - 7.1 Configure `SelfImprovingAgent` targets for pipeline modules
-   - 7.2 Enable `AgentEvolutionWorker` schedule in staging/non-prod to exercise validation loops
+4. ⏳ **Scaffold Observer app (Phoenix LiveView HITL)**
+   - 4.1 Generate `observer` LiveView project sharing the main Postgres database
+   - 4.2 Move approval workflow into `Observer.HITL.Approvals` and expose HTTP/pgmq endpoints
+   - 4.3 Build LiveView screens for approval queue + queue metrics, wire Phoenix PubSub for updates
+5. ⏳ **Define `plan_outcomes_published` queue**
+   - 5.1 Update `centralcloud/lib/centralcloud/shared_queue_registry.ex`
+   - 5.2 Add Singularity publisher + Genesis consumer stubs
+6. ⏳ **Document shared ex_pgflow connection**
+   - 6.1 Add connection settings to ops docs / env vars
+   - 6.2 Confirm migration plan for shared schema
+7. ⏳ **Test Nexus workflow** - Validate ex_pgflow integration
+8. ⏳ **Bootstrap automated validation harness**
+   - 8.1 Configure `SelfImprovingAgent` targets for pipeline modules
+   - 8.2 Enable `AgentEvolutionWorker` schedule in staging/non-prod to exercise validation loops
    - 7.3 Route validation telemetry into `Singularity.Database.MetricsAggregation` dashboards
 ### Short Term (Next 2 Weeks)
 
