@@ -1,6 +1,6 @@
 {
   "name": "Gleam Production Quality",
-  "spec_version": "2.2.0",
+  "spec_version": "2.5.0",
   "capabilities": [
     "quality",
     "graph",

@@ -1,6 +1,6 @@
 {
   "name": "TSX Component Production Quality",
-  "spec_version": "2.3.0",
+  "spec_version": "2.5.0",
   "capabilities": [
     "quality",
     "graph",

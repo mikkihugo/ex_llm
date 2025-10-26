@@ -1,6 +1,6 @@
 {
   "name": "Elixir Production Quality Template",
-  "spec_version": "2.1",
+  "spec_version": "2.5.0",
   "capabilities": [
     "quality",
     "graph",
@@ -19,8 +19,8 @@
   "quality_level": "production",
   "description": "Elixir production quality standards for robust, maintainable, and scalable applications.",
   "extends": [],
-  "version": "2.1.0",
-  "last_updated": "2025-01-27",
+  "version": "2.5.0",
+  "last_updated": "2025-10-26",
   "requirements": {
     "documentation": {
       "moduledoc": {
