@@ -3,15 +3,16 @@ defmodule Singularity.Evolution.RuleQualityDashboard do
   Rule Quality Dashboard - Monitoring and Analytics for Evolved Rules
 
   Provides comprehensive dashboard queries for monitoring rule evolution health,
-  effectiveness tracking, and cross-instance performance metrics.
+  effectiveness tracking, cross-instance performance metrics, and adaptive threshold tuning.
 
   ## Dashboard Sections
 
   1. **Rule Evolution Status** - Current state of rule synthesis pipeline
   2. **Effectiveness Analytics** - How rules improve plan quality
-  3. **Cross-Instance Intelligence** - Network-wide rule sharing metrics
-  4. **Quality Trends** - Historical evolution of rule effectiveness
-  5. **Recommendations** - Actions to improve evolution system
+  3. **Adaptive Threshold Metrics** - Self-tuning confidence gating progress
+  4. **Cross-Instance Intelligence** - Network-wide rule sharing metrics
+  5. **Quality Trends** - Historical evolution of rule effectiveness
+  6. **Recommendations** - Actions to improve evolution system
 
   ## Usage
 
@@ -22,6 +23,7 @@ defmodule Singularity.Evolution.RuleQualityDashboard do
   # Get specific section
   status = RuleQualityDashboard.get_evolution_status()
   analytics = RuleQualityDashboard.get_effectiveness_analytics()
+  threshold_metrics = RuleQualityDashboard.get_adaptive_threshold_metrics()
   network = RuleQualityDashboard.get_network_metrics()
   ```
   """
@@ -30,6 +32,7 @@ defmodule Singularity.Evolution.RuleQualityDashboard do
 
   alias Singularity.Evolution.RuleEvolutionSystem
   alias Singularity.Evolution.GenesisPublisher
+  alias Singularity.Evolution.AdaptiveConfidenceGating
   alias Singularity.Storage.ValidationMetricsStore
 
   @doc """
@@ -60,6 +63,7 @@ defmodule Singularity.Evolution.RuleQualityDashboard do
     try do
       evolution_status = get_evolution_status()
       effectiveness_analytics = get_effectiveness_analytics()
+      adaptive_threshold_metrics = get_adaptive_threshold_metrics()
       network_metrics = get_network_metrics()
       quality_trends = get_quality_trends()
       recommendations = get_recommendations()
@@ -68,6 +72,7 @@ defmodule Singularity.Evolution.RuleQualityDashboard do
        %{
          evolution_status: evolution_status,
          effectiveness_analytics: effectiveness_analytics,
+         adaptive_threshold_metrics: adaptive_threshold_metrics,
          network_metrics: network_metrics,
          quality_trends: quality_trends,
          recommendations: recommendations,
@@ -97,13 +102,14 @@ defmodule Singularity.Evolution.RuleQualityDashboard do
 
     try do
       health = RuleEvolutionSystem.get_evolution_health()
+      adaptive_threshold = AdaptiveConfidenceGating.get_current_threshold()
 
       %{
         total_rules: health[:total_rules],
         confident_rules: health[:confident_rules],
         candidate_rules: health[:candidate_rules],
         avg_confidence: health[:avg_confidence],
-        confidence_threshold: 0.85,
+        confidence_threshold: Float.round(adaptive_threshold, 3),
         published_to_genesis: health[:published_to_genesis],
         health_status: health[:health_status],
         status_timestamp: health[:timestamp]
@@ -148,6 +154,52 @@ defmodule Singularity.Evolution.RuleQualityDashboard do
         )
 
         %{error: "Could not fetch effectiveness analytics"}
+    end
+  end
+
+  @doc """
+  Get adaptive threshold metrics.
+
+  Returns self-tuning confidence gating progress, convergence status, and recommendations.
+
+  ## Returns
+  - Map with current threshold, success rate, convergence status, and tuning recommendations
+  """
+  @spec get_adaptive_threshold_metrics() :: map()
+  def get_adaptive_threshold_metrics do
+    Logger.debug("RuleQualityDashboard: Getting adaptive threshold metrics")
+
+    try do
+      tuning_status = AdaptiveConfidenceGating.get_tuning_status()
+      convergence_metrics = AdaptiveConfidenceGating.get_convergence_metrics()
+
+      %{
+        current_threshold: tuning_status[:current_threshold],
+        target_success_rate: tuning_status[:target_success_rate],
+        published_rules: tuning_status[:published_rules],
+        successful_rules: tuning_status[:successful_rules],
+        actual_success_rate: tuning_status[:actual_success_rate],
+        adjustment_direction: tuning_status[:adjustment_direction],
+        convergence_status: tuning_status[:convergence_status],
+        recommendation: tuning_status[:recommendation],
+        min_threshold: tuning_status[:min_threshold],
+        max_threshold: tuning_status[:max_threshold],
+        last_adjusted_at: tuning_status[:last_adjusted_at],
+        data_points: tuning_status[:data_points],
+        min_data_points_needed: tuning_status[:min_data_points_needed],
+        # Convergence details
+        gap_to_target: convergence_metrics[:gap_to_target],
+        converged: convergence_metrics[:converged],
+        estimated_iterations_remaining: convergence_metrics[:estimated_iterations_remaining],
+        convergence_status_detail: convergence_metrics[:status]
+      }
+    rescue
+      error ->
+        Logger.warning("RuleQualityDashboard: Error getting adaptive threshold metrics",
+          error: inspect(error)
+        )
+
+        %{error: "Could not fetch adaptive threshold metrics"}
     end
   end
 
