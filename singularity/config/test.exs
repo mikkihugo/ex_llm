@@ -18,6 +18,9 @@ config :singularity, Singularity.Repo,
 # Disable Oban in tests - it's not needed and causes initialization issues
 config :singularity, :oban_enabled, false
 
+# Disable NATS in tests - NATS server not available
+config :singularity, :nats, %{enabled: false}
+
 # Oban configuration for test mode
 # CRITICAL: start_supervised: false prevents OTP from auto-starting Oban
 # This allows us to handle Oban startup explicitly in the supervision tree
