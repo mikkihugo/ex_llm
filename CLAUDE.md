@@ -569,12 +569,20 @@ Singularity separates **WHAT** (tools) from **HOW** (interfaces):
 - **Tools** (`lib/singularity/tools/`) - Core capabilities (quality checks, shell commands, LLM calls)
 - **Interfaces** (`lib/singularity/interfaces/`) - How tools are exposed
 
-**2 Interfaces**:
-1. **MCP** - For AI assistants (Claude Desktop, Cursor)
-2. **NATS** - For distributed services
+### 3 Complementary Interfaces (Not Alternatives)
 
+| Interface | Purpose | Users | Communication |
+|-----------|---------|-------|-----------------|
+| **Observer (Phoenix)** | Visualization & Dashboards | Humans | HTTP/WebSocket |
+| **NATS** | Async service-to-service messaging | Singularity, CentralCloud, Genesis | NATS Pub/Sub |
+| **MCP** | AI assistant tool invocation | Claude, Cursor, other LLM tools | Model Context Protocol |
 
-**No External REST API**: External clients use MCP or NATS.
+**Why 3 Interfaces?**
+- **Observer**: Humans need to see dashboards (ValidationDashboard, RuleQualityDashboard, etc.)
+- **NATS**: Services need to communicate asynchronously (Singularity → CentralCloud → Genesis learning loop)
+- **MCP**: AI assistants need to invoke Singularity capabilities as tools
+
+**No External REST API**: External clients use MCP (for AI) or NATS (for systems).
 
 ## Development Tips
 
