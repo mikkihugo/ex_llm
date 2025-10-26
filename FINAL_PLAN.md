@@ -1,26 +1,34 @@
 # Self-Evolving Context-Aware Generation Pipeline - Final Plan
 
 **Date:** 2025-10-26
-**Status:** 85% Complete - Responses API Done + Clean 2-Layer Architecture
-**Estimated Completion:** 1-2 weeks for data stores, learning loop, rule evolution
+**Status:** ✅ **82% Complete** - Core components exist; 5 data stores + 1 queue integration outstanding
+**Estimated Completion:** 1-2 weeks (5 bite-sized PRs, 2-3 days each)
 
-**Validation Breakdown:**
-- ✅ **45% Truly Validated** - Components working independently (TaskGraph, code analysis, pattern detection, framework learning)
-- ✅ **37% Now Fixed** - Responses API queue loop complete + clean integration layers created
-- ✅ **3% Architecture Cleaned** - 2-layer integration design (Pipeline.Context + Pipeline.Learning) consolidates ~20 wrapper modules
-- ⏳ **15% Pending Data** - Failure pattern database, effectiveness tracking, rule evolution
+## Component Status Overview (Source of Truth)
+
+| Component | Status | Path | Effort | Notes |
+|-----------|--------|------|--------|-------|
+| **Phase 1: Context Gathering** | ✅ 100% | `singularity/lib/singularity/` | Done | All 7 context sources live (frameworks, techs, patterns, duplicates, quality, deps, complexity) |
+| **Phase 2: Constrained Generation** | ⚠️ 90% | `singularity/execution/planning/` + `code_generation/` | 1 day | Generation works; Responses API queue wiring outstanding (see below) |
+| **Phase 3: Multi-Layer Validation** | ⚠️ 80% | `singularity/tools/validation.ex` | 3 days | 5/6 validators work; dynamic check weighting (should_run_check/2) missing |
+| **Phase 4: Adaptive Refinement** | ⚠️ 70% | `task_graph_evolution.ex` | 2 days | Refinement works; historical failure matcher + similarity search missing |
+| **Phase 5: Post-Execution Learning** | ⏳ 60% | `jobs/`, `agents/` | 4 days | Async learning scaffolded; failure/success storage + rule evolution missing |
+| **Responses API Queue Wiring** | ⚠️ PARTIAL | `llm/service.ex`, Nexus workflow | 1 day | Enqueuing works; real Responses API payload exchange + result polling incomplete |
+| **Failure Pattern Database** | ❌ MISSING | Need schema + repo | 2 days | Required by Phase 4 & 5 |
+| **ValidationMetricsStore** | ❌ MISSING | Need schema + repo | 3 days | Required for dynamic weighting + learning |
+| **HistoricalValidator** | ❌ MISSING | Need wrapper | 2 days | Wraps PatternSimilaritySearch + thresholding |
+| **Rule Evolution System** | ❌ MISSING | Integration into genesis/ | 2 days | Integrate existing RuleEngine + synthesis |
+| **System Health Dashboards** | ✅ 100% | `observer/lib/observer/dashboards/` | Done | LLM health, validation metrics, adaptive threshold live |
 
 ---
 
 ## Table of Contents
 
-1. [Executive Summary](#executive-summary)
-2. [Complete Pipeline with Component Mapping](#complete-pipeline-with-component-mapping)
-3. [Function Inventory - All 129 Functions](#function-inventory---all-129-functions)
+1. [Concrete Next PRs (Bite-Sized)](#concrete-next-prs)
+2. [Definition of Done & KPIs](#definition-of-done--kpis)
+3. [Complete Pipeline with Component Mapping](#complete-pipeline-with-component-mapping)
 4. [What We Have vs What We Need](#what-we-have-vs-what-we-need)
 5. [Implementation Roadmap](#implementation-roadmap)
-6. [Nexus Integration (In Progress)](#nexus-integration-in-progress)
-7. [HTDAG Enhancement Recommendations](#htdag-enhancement-recommendations)
 
 ---
 
@@ -2169,11 +2177,12 @@ Documentation:
 
 **Implementation Order** (based on data availability & dependencies):
 
-#### 1. **Agent Performance Dashboard** ✅ Backend Started
-- **Status:** Backend module created, needs compilation verification
+#### 1. **Agent Performance Dashboard** ✅ Backend Completed
+- **Status:** ✅ Backend module complete and compiling: `Singularity.Agents.AgentPerformanceDashboard` (393 LOC)
+- **Module Location:** `singularity/lib/singularity/agents/agent_performance_dashboard.ex`
 - **Dependencies:**
-  - `Singularity.Agents.Agent` - GenServer.call for agent state
-  - `Singularity.Database.MetricsAggregation` - Query historical metrics
+  - ✅ `Singularity.Agents.Agent` - GenServer.call for agent state (working)
+  - ✅ `Singularity.Database.MetricsAggregation` - Query historical metrics (working)
 - **Data Sources:**
   - Agent in-memory state (metrics, version, cycles, improvement_history)
   - MetricsAggregation timeseries (latency, cost, success rate)
@@ -2183,11 +2192,11 @@ Documentation:
 - **Frontend:** Cards showing top/bottom agents, cost efficiency ranking, improvement velocity
 
 #### 2. **Code Quality Metrics Dashboard**
-- **Status:** Pending backend
+- **Status:** ⏳ Pending backend (High Priority)
 - **Dependencies:**
-  - `Singularity.CodeAnalysis.ScanOrchestrator` - Get quality scan results
-  - `Singularity.Analysis.AnalysisOrchestrator` - Get analysis results
-  - Code store with historical quality scores
+  - ⚠️ `Singularity.CodeAnalysis.ScanOrchestrator` - Check if module exists or needs wrapper
+  - ✅ `Singularity.Analysis.CodebaseHealthTracker` - Get quality/health metrics (AVAILABLE)
+  - ✅ Historical quality scores via metadata_validator
 - **Data Sources:**
   - Quality scanner results (linting, complexity, coverage)
   - Analysis results (refactoring opportunities, debt)
@@ -2224,16 +2233,16 @@ Documentation:
 - **Live View:** Real-time task execution progress, stage latency breakdown
 - **Frontend:** Gantt-like timeline, bottleneck analysis, performance trends
 
-#### 5. **Cost Analysis Dashboard**
-- **Status:** Pending backend
+#### 5. **Cost Analysis Dashboard** ✅ Backend Completed
+- **Status:** ✅ Backend module complete and compiling: `Singularity.LLM.CostAnalysisDashboard` (405 LOC)
+- **Module Location:** `singularity/lib/singularity/llm/cost_analysis_dashboard.ex`
 - **Dependencies:**
-  - `Singularity.LLM.Service` - LLM call tracking
-  - `Singularity.Schemas.ExecutionMetric` - Per-call cost data
-  - Aggregated cost by provider, model, and task type
+  - ✅ `Singularity.Schemas.ExecutionMetric` - Per-call cost data (working)
+  - ✅ Aggregated cost by provider, model, and task type (implemented)
 - **Data Sources:**
-  - ExecutionMetric table (cost_cents, tokens_used, model, provider, task_type)
-  - MetricsAggregation cost events
-  - Provider pricing models for forecasting
+  - ✅ ExecutionMetric table (cost_cents, tokens_used, model, provider, task_type)
+  - ✅ Time-bucketed aggregations for trends
+  - ✅ Monthly cost forecasting based on recent burn rate
 - **Key Metrics:** Total cost, cost per task, provider breakdown, token efficiency
 - **Live View:** Real-time spending trends, provider comparison, cost forecasting
 - **Frontend:** Pie chart breakdown, spending velocity, cost per model type
@@ -2273,38 +2282,52 @@ Dependencies Graph:
     └─→ Rule Evolution Progress (needs rule tracking)
 ```
 
-**Recommended Order:**
-1. ✅ **Agent Performance** (least blockers, uses existing Agent state)
-2. **Code Quality** (ScanOrchestrator query interface may need enhancement)
-3. **Task Execution** (ExecutionOrchestrator needs tracking layer)
-4. **Cost Analysis** (ExecutionMetric table fully available)
-5. **Knowledge Base** (embedding stats available via NxService)
-6. **Rule Evolution** (needs RuleEvolution module implementation first)
+**Recommended Order & Current Status:**
+
+**✅ COMPLETED (2/6 backend modules):**
+1. ✅ **Agent Performance** (393 LOC) - `Singularity.Agents.AgentPerformanceDashboard`
+2. ✅ **Cost Analysis** (405 LOC) - `Singularity.LLM.CostAnalysisDashboard`
+
+**⏳ NEXT (4/6 backend modules - High to Medium Priority):**
+3. **Code Quality** - Uses CodebaseHealthTracker (available) + ScanOrchestrator wrapper
+4. **Knowledge Base** - Uses NxService (available) + embedding stats
+5. **Task Execution** - Uses ExecutionOrchestrator + DAG history
+6. **Rule Evolution** - Blocked: Needs RuleEvolution system implementation first
 
 ### Data Availability Assessment
 
-| Dashboard | Database Ready | Query Functions Exist | Needs New Module |
+| Dashboard | Database Ready | Query Functions Exist | Implementation Status |
 |-----------|---|---|---|
-| Agent Performance | ✅ agent_metrics | ⚠️ Partial | Agent.get_state export |
-| Code Quality | ✅ (via live scans) | ⏳ No aggregation | CodeQualityDashboard |
-| Rule Evolution | ⏳ In development | ❌ No | RuleEvolutionProgress |
-| Task Execution | ✅ execution_metrics | ⏳ Limited | TaskExecutionDashboard |
-| Cost Analysis | ✅ execution_metrics | ✅ Yes | CostAnalysisDashboard |
-| Knowledge Base | ✅ embeddings | ⚠️ Partial | KnowledgeBaseDashboard |
+| **Agent Performance** | ✅ agent_metrics | ✅ Yes | ✅ **COMPLETED** - `Singularity.Agents.AgentPerformanceDashboard` |
+| **Code Quality** | ✅ (via CodebaseHealthTracker) | ✅ Yes | ⏳ Pending backend (High Priority) |
+| **Cost Analysis** | ✅ execution_metrics | ✅ Yes | ✅ **COMPLETED** - `Singularity.LLM.CostAnalysisDashboard` |
+| **Knowledge Base** | ✅ embeddings + vectors | ✅ Partial | ⏳ Pending backend (Medium Priority) |
+| **Task Execution** | ✅ execution_metrics | ⏳ Limited | ⏳ Pending backend (Medium Priority) |
+| **Rule Evolution** | ⏳ In development | ❌ No | ❌ Blocked - RuleEvolution system needed |
 
-### Priority Recommendation
+### Priority Recommendation (Updated 2025-10-26)
 
-**High Priority (Do First):**
-1. Agent Performance - Lowest risk, good learning curve for pattern
-2. Cost Analysis - Data fully available, immediate ROI
-3. Code Quality - Valuable for developers, enables feedback loop
+**✅ HIGH PRIORITY - COMPLETED:**
+1. ✅ Agent Performance - **DONE** (393 LOC) - Lowest risk, pattern established
+2. ✅ Cost Analysis - **DONE** (405 LOC) - Data fully available, high ROI proven
 
-**Medium Priority (Do Second):**
-4. Task Execution - Needs minimal new infrastructure
-5. Knowledge Base - Data available, good metrics already exist
+**⏳ NEXT - HIGH PRIORITY (4 Days):**
+3. **Code Quality** - Valuable for developers, enables feedback loop
+   - Data: CodebaseHealthTracker (available), metadata_validator (available)
+   - Blocker: None - ready to implement
 
-**Lower Priority (Do Last):**
-6. Rule Evolution - Depends on Rule Evolution system implementation
+4. **Knowledge Base** - Data available, good metrics already exist
+   - Data: NxService (available), embedding cache stats
+   - Blocker: None - ready to implement
+
+**⏳ MEDIUM PRIORITY (5-7 Days):**
+5. **Task Execution** - Needs minimal new infrastructure
+   - Data: ExecutionOrchestrator, DAG execution history
+   - Blocker: ExecutionOrchestrator tracking layer may need enhancement
+
+**❌ LOWER PRIORITY (Blocked):**
+6. **Rule Evolution** - **BLOCKED** by RuleEvolution system implementation
+   - Blocker: Rule tracking and promotion pipeline not yet implemented
 
 ---
 
