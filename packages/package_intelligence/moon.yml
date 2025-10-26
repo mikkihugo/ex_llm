@@ -61,5 +61,7 @@ tasks:
     outputs:
       - 'target/doc/'
 
-# This package indexes external package registries
-# Can be published to crates.io or internal registry
+# This package indexes external package registries (npm, cargo, hex, pypi)
+# - Standalone Rust library and binary (NOT a NIF)
+# - Can be published to crates.io or internal registry
+# - Used as standalone service or imported as library
