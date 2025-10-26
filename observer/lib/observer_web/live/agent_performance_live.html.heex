@@ -83,18 +83,21 @@
                         <span class="font-semibold text-gray-900">
                           <%= trend.metric |> String.upcase() |> String.replace("_", " ") %>
                         </span>
-                        <span class="text-sm font-medium <%= case trend.direction do %>
-                          <%= :improving -> "text-green-600" %>
-                          <%= :stable -> "text-gray-600" %>
-                          <%= :declining -> "text-red-600" %>
-                          <%= _ -> "text-gray-600" %>
-                        <% end %>">
-                          <%= case trend.direction do %>
-                            <%= :improving -> "📈 Improving" %>
-                            <%= :stable -> "→ Stable" %>
-                            <%= :declining -> "📉 Declining" %>
-                            <%= _ -> "Unknown" %>
-                          <% end %>
+                        <span class={
+                          "text-sm font-medium " <>
+                          case trend.direction do
+                            :improving -> "text-green-600"
+                            :stable -> "text-gray-600"
+                            :declining -> "text-red-600"
+                            _ -> "text-gray-600"
+                          end
+                        }>
+                          <%= case trend.direction do
+                            :improving -> "📈 Improving"
+                            :stable -> "→ Stable"
+                            :declining -> "📉 Declining"
+                            _ -> "Unknown"
+                          end %>
                         </span>
                       </div>
                       <p class="text-gray-600 text-sm">Current: <%= trend.current_value %></p>

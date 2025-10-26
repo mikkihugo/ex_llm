@@ -41,12 +41,12 @@
                 </div>
               </div>
               <p class="text-lg font-semibold text-gray-900 mb-6">
-                <%= case @dashboard.efficiency_score.status do %>
-                  <%= :excellent -> "✅ Excellent" %>
-                  <%= :good -> "👍 Good" %>
-                  <%= :fair -> "⚠️ Fair" %>
-                  <%= _ -> "Unknown" %>
-                <% end %>
+                <%= case @dashboard.efficiency_score.status do
+                  :excellent -> "✅ Excellent"
+                  :good -> "👍 Good"
+                  :fair -> "⚠️ Fair"
+                  _ -> "Unknown"
+                end %>
               </p>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>

@@ -21,6 +21,14 @@ defmodule ObserverWeb.Router do
     live "/adaptive-threshold", AdaptiveThresholdLive
     live "/nexus-llm-health", NexusLLMHealthLive
     live "/validation-metrics", ValidationMetricsLive
+
+    # Advanced Dashboards (Phase 2)
+    live "/agent-performance", AgentPerformanceLive
+    live "/cost-analytics", CostAnalyticsLive
+    live "/code-quality", CodeQualityLive
+    live "/rule-evolution", RuleEvolutionLive
+    live "/knowledge-base", KnowledgeBaseLive
+    live "/task-execution", TaskExecutionLive
   end
 
   # Other scopes may use custom stacks.
