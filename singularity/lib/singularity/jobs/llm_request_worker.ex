@@ -138,4 +138,82 @@ defmodule Singularity.Jobs.LlmRequestWorker do
         {:error, reason}
     end
   end
+
+  @doc """
+  Wait synchronously for an LLM request result.
+
+  Polls the JobResult table until a result with the given request_id is found,
+  or times out after the specified duration.
+
+  ## Parameters
+    - `request_id` - UUID of the LLM request returned by enqueue_llm_request/3
+    - `timeout_ms` - Maximum time to wait in milliseconds (default: 30000 = 30 seconds)
+
+  ## Returns
+    - `{:ok, result}` - LLM result from Responses API
+    - `{:error, :timeout}` - No result available after timeout
+    - `{:error, :not_found}` - No result and no workflow job found
+    - `{:error, :failed}` - Workflow execution failed
+
+  ## Examples
+
+      # Wait up to 30 seconds for a result
+      case LlmRequestWorker.await_responses_result(request_id) do
+        {:ok, result} -> handle_result(result)
+        {:error, :timeout} -> handle_timeout()
+        {:error, reason} -> handle_error(reason)
+      end
+
+      # Wait only 5 seconds
+      LlmRequestWorker.await_responses_result(request_id, timeout_ms: 5000)
+  """
+  @spec await_responses_result(String.t(), keyword()) ::
+    {:ok, map()} | {:error, :timeout | :not_found | :failed | term()}
+  def await_responses_result(request_id, opts \\ []) do
+    timeout_ms = Keyword.get(opts, :timeout_ms, 30000)
+    poll_interval_ms = Keyword.get(opts, :poll_interval_ms, 100)
+
+    start_time = System.monotonic_time(:millisecond)
+    poll_until_found(request_id, timeout_ms, poll_interval_ms, start_time)
+  end
+
+  # ============================================================================
+  # Private Helpers
+  # ============================================================================
+
+  defp poll_until_found(request_id, timeout_ms, poll_interval_ms, start_time) do
+    import Ecto.Query
+
+    alias Singularity.Schemas.Execution.JobResult
+    alias Singularity.Repo
+
+    # Check if result exists
+    result = Repo.one(
+      from jr in JobResult,
+      where: fragment("? ->> 'request_id' = ?", jr.input, ^request_id),
+      select: jr
+    )
+
+    case result do
+      # Result found - return it
+      %{status: "success", output: output} ->
+        {:ok, output}
+
+      # Workflow failed
+      %{status: "failed", error: error} ->
+        {:error, {:failed, error}}
+
+      # No result yet - check timeout
+      nil ->
+        elapsed = System.monotonic_time(:millisecond) - start_time
+
+        if elapsed >= timeout_ms do
+          {:error, :timeout}
+        else
+          # Sleep and retry
+          Process.sleep(poll_interval_ms)
+          poll_until_found(request_id, timeout_ms, poll_interval_ms, start_time)
+        end
+    end
+  end
 end

@@ -1,12 +1,12 @@
 defmodule Singularity.Jobs.LlmResultPoller do
   @moduledoc """
-  LLM Result Poller - Poll pgmq for results from ai-server
+  LLM Result Poller - Polls pgmq for Responses API results routed through Nexus.
 
   Architecture:
-  - ai-server publishes LLM results to pgmq:ai_results
-  - This job polls pgmq:ai_results periodically
+  - Nexus publishes LLM results to the `ai_results` pgmq queue
+  - This worker polls `ai_results` periodically
   - Processes results and acknowledges messages
-  - Stores results in database for agents to consume
+  - Persists results so agents can retrieve outcomes or await them synchronously
 
   Polling Strategy:
   - Runs every 5 seconds via Oban cron job
@@ -26,6 +26,10 @@ defmodule Singularity.Jobs.LlmResultPoller do
 
   require Logger
   alias Singularity.Jobs.PgmqClient
+  alias Singularity.Schemas.Execution.JobResult
+  alias Singularity.Repo
+
+  import Ecto.Query
 
   @doc """
   Poll pgmq:ai_results for responses from ai-server.
@@ -109,7 +113,7 @@ defmodule Singularity.Jobs.LlmResultPoller do
       )
 
       # Insert result into job_results table for persistent storage and agent consumption
-      case Singularity.Schemas.Execution.JobResult.record_success(
+      case JobResult.record_success(
         workflow: "Singularity.Workflows.LlmRequest",
         instance_id: Singularity.Application.instance_id(),
         input: %{
@@ -152,6 +156,78 @@ defmodule Singularity.Jobs.LlmResultPoller do
         )
 
         {:error, error}
+    end
+  end
+
+  # ==========================================================================
+  # Synchronous helper
+  # ==========================================================================
+
+  @doc """
+  Await the Responses API result for the given `request_id`.
+
+  This helper polls the `job_results` table (populated by the poller) until a
+  matching result is available or the timeout elapses.
+
+  ## Options
+
+    * `:timeout` - Maximum wait time in milliseconds (default: 30_000)
+    * `:poll_interval` - Delay between checks in milliseconds (default: 500)
+
+  ## Examples
+
+      iex> Singularity.Jobs.LlmResultPoller.await_responses_result(request_id)
+      {:ok, %{"response" => "..."}}
+  """
+  @spec await_responses_result(String.t(), keyword()) :: {:ok, map()} | {:error, term()}
+  def await_responses_result(request_id, opts \\ []) when is_binary(request_id) do
+    timeout = Keyword.get(opts, :timeout, 30_000)
+    poll_interval = Keyword.get(opts, :poll_interval, 500)
+    deadline = System.monotonic_time(:millisecond) + timeout
+
+    do_await(request_id, poll_interval, deadline)
+  end
+
+  defp do_await(request_id, poll_interval, deadline) do
+    case fetch_job_result(request_id) do
+      :pending ->
+        if System.monotonic_time(:millisecond) >= deadline do
+          {:error, :timeout}
+        else
+          Process.sleep(poll_interval)
+          do_await(request_id, poll_interval, deadline)
+        end
+
+      {:success, output} ->
+        {:ok, output}
+
+      {:failure, %JobResult{} = result} ->
+        {:error, {:failed, result.error, result.output}}
+
+      {:timeout, %JobResult{} = result} ->
+        {:error, {:timeout, result}}
+
+      {:unknown, %JobResult{} = result} ->
+        {:error, {:unknown_status, result.status, result}}
+    end
+  end
+
+  defp fetch_job_result(request_id) do
+    query =
+      from jr in JobResult,
+        where: jr.workflow == "Singularity.Workflows.LlmRequest",
+        where:
+          fragment("(?->>'request_id') = ?", jr.input, ^request_id) or
+            fragment("(?->>'request_id') = ?", jr.output, ^request_id),
+        order_by: [desc: jr.inserted_at],
+        limit: 1
+
+    case Repo.one(query) do
+      nil -> :pending
+      %JobResult{status: "success", output: output} -> {:success, output}
+      %JobResult{status: "failed"} = result -> {:failure, result}
+      %JobResult{status: "timeout"} = result -> {:timeout, result}
+      %JobResult{} = result -> {:unknown, result}
     end
   end
 end

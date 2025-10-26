@@ -29,6 +29,7 @@ defmodule ObserverWeb.Router do
     live "/rule-evolution", RuleEvolutionLive
     live "/knowledge-base", KnowledgeBaseLive
     live "/task-execution", TaskExecutionLive
+    live "/hitl-approvals", HITLApprovalsLive
   end
 
   # Other scopes may use custom stacks.

@@ -3,12 +3,13 @@ defmodule Singularity.LLM.Service do
   @template_version "elixir_production_v2 v2.1.0"
 
   @moduledoc """
-  # LLM Service - High-performance AI provider orchestration via NATS
+  # LLM Service — Queue-based Nexus orchestration for Responses API calls
 
   **This is the ONLY way to call LLM providers in the Elixir app.**
 
-  All LLM calls go through NATS to the AI server (TypeScript) with intelligent
-  model selection, cost optimization, and SLO monitoring.
+  Every request is routed through `Singularity.Jobs.LlmRequestWorker`, published
+  to the `ai_requests` pgmq queue, executed by Nexus (Responses API), and the
+  result is persisted by `Singularity.Jobs.LlmResultPoller`.
 
   ## Quick Start
 
@@ -52,8 +53,8 @@ defmodule Singularity.LLM.Service do
   ## Error Handling
 
   All functions return `{:ok, result} | {:error, reason}`:
-  - `:nats_error` - NATS communication failed
-  - `:timeout` - Request exceeded 30s
+  - `{:failed, details}` - Workflow failed before Nexus published a result
+  - `{:timeout, _}` or `:timeout` - Queue submission or wait exceeded the timeout window
   - `:invalid_arguments` - Bad input
   - `:model_unavailable` - Model not available
 
@@ -95,12 +96,13 @@ defmodule Singularity.LLM.Service do
     "layer": "domain_services",
     "alternatives": {
       "LLM.Provider": "Low-level provider abstraction - DO NOT use directly (internal only)",
-      "NatsClient": "Generic NATS client - use for non-LLM NATS calls",
-      "AI Server": "TypeScript server - called via NATS (not directly)"
+      "LlmRequestWorker": "Oban/ex_pgflow worker that enqueues requests to pgmq",
+      "LlmResultPoller": "Oban worker that persists Nexus results"
     },
     "disambiguation": {
       "vs_provider": "Service = High-level, intelligent routing. Provider = Low-level, internal",
-      "vs_nats_client": "Service = LLM-specific with cost optimization. NatsClient = Generic messaging"
+      "vs_llm_request_worker": "Service = user API surface. Worker = background execution pipeline",
+      "vs_llm_result_poller": "Service = call surface. Poller = result ingestion"
     },
     "replaces": [],
     "replaced_by": null
@@ -111,29 +113,30 @@ defmodule Singularity.LLM.Service do
 
   ```mermaid
   graph TB
-      Agent[Agent/ArchitectureEngine/SPARC]
+      Agent[Agent / tools]
       Service[LLM.Service]
-      NATS[NatsClient]
-      AI[AI Server TypeScript]
-      Claude[Claude API]
-      Gemini[Gemini API]
-      OpenAI[OpenAI API]
+      Worker[LlmRequestWorker]
+      Queue[pgmq ai_requests]
+      Nexus[Nexus Workflow]
+      Responses[OpenAI Responses API]
+      ResultsQueue[pgmq ai_results]
+      Poller[LlmResultPoller]
+      Store[job_results]
 
       Agent -->|1. call/3| Service
-      Service -->|2. build_request| Service
-      Service -->|3. NATS request| NATS
-      NATS -->|4. llm.request| AI
-      AI -->|5. HTTP| Claude
-      AI -->|5. HTTP| Gemini
-      AI -->|5. HTTP| OpenAI
-      AI -->|6. response| NATS
-      NATS -->|7. data| Service
-      Service -->|8. track_slo_metric| Service
-      Service -->|9. ok/error| Agent
+      Service -->|2. enqueue| Worker
+      Worker -->|3. publish| Queue
+      Queue -->|4. consume| Nexus
+      Nexus -->|5. call| Responses
+      Responses -->|6. return| Nexus
+      Nexus -->|7. publish| ResultsQueue
+      ResultsQueue -->|8. poll| Poller
+      Poller -->|9. record| Store
+      Store -->|10. lookup / await| Agent
 
       style Service fill:#90EE90
       style Agent fill:#87CEEB
-      style AI fill:#FFB6C1
+      style Nexus fill:#FFB6C1
   ```
 
   ## Decision Tree
@@ -169,10 +172,15 @@ defmodule Singularity.LLM.Service do
 
   ```yaml
   calls_out:
-    - module: Singularity.NATS.Client
-      function: request/3
-      purpose: NATS communication to AI server
+    - module: Singularity.Jobs.LlmRequestWorker
+      function: enqueue_llm_request/3
+      purpose: Publish requests to pgmq `ai_requests`
       critical: true
+
+    - module: Singularity.Jobs.LlmResultPoller
+      function: await_responses_result/2
+      purpose: Optional helper to wait for async Responses results
+      critical: false
 
     - module: Singularity.Engines.PromptEngine
       function: optimize_prompt/2
@@ -216,14 +224,15 @@ defmodule Singularity.LLM.Service do
       frequency: medium
 
   depends_on:
-    - Singularity.NATS.Client (MUST be started and connected)
-    - AI Server (TypeScript) (MUST be running on NATS)
+    - Singularity.Jobs.LlmRequestWorker (Oban + pgmq must be running)
+    - Nexus.Workflows.LLMRequestWorkflow (consumes `ai_requests` queue)
+    - Singularity.Jobs.LlmResultPoller (persists `ai_results`)
     - Singularity.Engines.PromptEngine (optional - graceful degradation)
     - Singularity.LuaRunner (optional - only for Lua scripts)
 
   supervision:
     supervised: false
-    reason: "Stateless service module - no process to supervise. All state in NATS/AI Server."
+    reason: "Stateless service module - orchestration handled by Oban/pgmq/Nexus."
   ```
 
   ## Data Flow
@@ -232,24 +241,26 @@ defmodule Singularity.LLM.Service do
   sequenceDiagram
       participant Agent
       participant Service
-      participant NATS
-      participant AI Server
-      participant Claude
+      participant Worker
+      participant Queue
+      participant Nexus
+      participant Responses
+      participant Poller
 
       Agent->>Service: call(:complex, messages, task_type: :architect)
       Service->>Service: generate_correlation_id()
       Service->>Service: build_request(messages, opts)
-      Service-->>Agent: Telemetry: [:llm_service, :call, :start]
+      Service-->>Agent: Telemetry [:llm_service, :call, :start]
 
-      Service->>NATS: request("llm.request", json, timeout: 30s)
-      NATS->>AI Server: Publish to subject
+      Service->>Worker: enqueue_llm_request(task_type, messages, opts)
+      Worker->>Queue: pgmq.send("ai_requests", payload)
 
-      AI Server->>AI Server: Select model (Claude Sonnet 4.5)
-      AI Server->>Claude: HTTP POST /v1/messages
-      Claude-->>AI Server: HTTP 200 + response
-
-      AI Server-->>NATS: Publish response
-      NATS-->>Service: {:ok, response}
+      Queue->>Nexus: deliver request
+      Nexus->>Responses: POST /v1/responses
+      Responses-->>Nexus: response body
+      Nexus->>Queue: pgmq.send("ai_results", envelope)
+      Queue->>Poller: deliver result
+      Poller->>Service: JobResult stored (awaitable)
 
       Service->>Service: track_slo_metric(:llm_call, duration, true)
       alt SLO breach (> 2000ms)
