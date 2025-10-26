@@ -2117,14 +2117,35 @@ Documentation:
 10. Connect framework learner modules (`frameworks/*.ex`) into Phase 5 learning
 11. Integrate pipeline with TaskGraph in Singularity
 12. Enable self-evolution dry runs (target pipeline functions, capture regression metrics)
+13. ✅ **Implement Core System Observability Dashboards** (COMPLETED 2025-10-26):
+    - ✅ Adaptive Confidence Gating Dashboard
+    - ✅ LLM Health Dashboard (Nexus circuit breakers)
+    - ✅ Validation Metrics Dashboard (3 core KPIs)
+    - ✅ System Health Index Dashboard
+    - All with auto-refresh, error handling, and trend analysis
 
 ### Medium Term (Next Month)
 
-13. Add hierarchy support to ex_pgflow (if needed)
-14. Deploy Nexus with ex_pgflow workflows
-15. Full integration testing of self-evolving pipeline
-16. Automate full function-to-capability audit using existing AIMeta/Telemetry infrastructure (FILES.md ingestion → AIMeta registry)
-17. Document and train team on new systems
+14. Add hierarchy support to ex_pgflow (if needed)
+15. Deploy Nexus with ex_pgflow workflows
+16. Full integration testing of self-evolving pipeline
+17. Automate full function-to-capability audit using existing AIMeta/Telemetry infrastructure (FILES.md ingestion → AIMeta registry)
+18. Document and train team on new systems
+19. **Extend System Observability with Advanced Dashboards** (PLANNED):
+    - **Backend Modules:**
+      - Agent Performance Dashboard - Track autonomous agent metrics (cost, tokens, success rate, execution time)
+      - Code Quality Metrics Dashboard - Code analysis results, linting, test coverage trends
+      - Rule Evolution Progress Dashboard - Rule promotion stages, effectiveness over time
+      - Task Execution Metrics Dashboard - Task DAG runs, success rates, performance bottlenecks
+      - Cost Analysis Dashboard - Token usage breakdown by provider, task type, and time period
+      - Knowledge Base Metrics Dashboard - Embedding effectiveness, cache hit rates, search accuracy
+    - **Observer Live Views:**
+      - Agent Performance Live View - Real-time agent cost/token tracking and success metrics
+      - Code Quality Analytics Live View - Quality scores, violations, improvement trends
+      - Rule Evolution Timeline Live View - Visual progression of rules through promotion stages
+      - Cost Analytics Live View - Cost breakdown, spending trends, provider comparison charts
+      - Unified Alerts Live View - Centralized alert management across all system components
+      - Knowledge Base Browser Live View - Search/browse embeddings, view patterns, similarity analysis
 
 ---
 
