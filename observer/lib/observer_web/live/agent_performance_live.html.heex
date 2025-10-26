@@ -1,0 +1,144 @@
+<div class="min-h-screen bg-gray-50 p-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-4xl font-bold text-gray-900">🤖 Agent Performance Dashboard</h1>
+        <button
+          phx-click="refresh"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+        >
+          🔄 Refresh
+        </button>
+      </div>
+      <p class="text-gray-600">Real-time monitoring of autonomous agent metrics, cost tracking, and performance trends</p>
+    </div>
+
+    <!-- Loading State -->
+    <%= if @loading do %>
+      <div class="flex items-center justify-center h-64">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p class="text-gray-600">Loading agent metrics...</p>
+        </div>
+      </div>
+    <% else %>
+      <!-- Error State -->
+      <%= if @error do %>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+          <p class="text-red-800">⚠️ Error: <%= @error %></p>
+        </div>
+      <% else %>
+        <!-- Dashboard Content -->
+        <%= if @dashboard do %>
+          <!-- Agent Summaries -->
+          <section class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Agent Status</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <%= for agent <- (@dashboard.agent_summaries || []) do %>
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
+                  <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                      <%= agent.agent_id
+                      |> String.upcase()
+                      |> String.replace("_", " ") %>
+                    </h3>
+                    <span class="text-sm font-medium text-gray-500">v<%= agent.version %></span>
+                  </div>
+
+                  <div class="space-y-3">
+                    <div>
+                      <p class="text-sm text-gray-600">Success Rate</p>
+                      <p class="text-2xl font-bold text-blue-600">
+                        <%= format_percentage(agent.success_rate) %>%
+                      </p>
+                    </div>
+
+                    <div>
+                      <p class="text-sm text-gray-600">Avg Latency</p>
+                      <p class="text-lg font-semibold text-gray-900">
+                        <%= Float.round(agent.avg_latency_ms, 1) %>ms
+                      </p>
+                    </div>
+
+                    <div>
+                      <p class="text-sm text-gray-600">Cycles Completed</p>
+                      <p class="text-lg font-semibold text-gray-900"><%= agent.cycles %></p>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </section>
+
+          <!-- Performance Trends -->
+          <%= if @dashboard.performance_trends do %>
+            <section class="mb-8">
+              <h2 class="text-2xl font-bold text-gray-900 mb-4">Performance Trends</h2>
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="space-y-4">
+                  <%= for trend <- (@dashboard.performance_trends || []) do %>
+                    <div class="border-b border-gray-200 pb-4 last:border-b-0">
+                      <div class="flex justify-between items-center mb-2">
+                        <span class="font-semibold text-gray-900">
+                          <%= trend.metric |> String.upcase() |> String.replace("_", " ") %>
+                        </span>
+                        <span class="text-sm font-medium <%= case trend.direction do %>
+                          <%= :improving -> "text-green-600" %>
+                          <%= :stable -> "text-gray-600" %>
+                          <%= :declining -> "text-red-600" %>
+                          <%= _ -> "text-gray-600" %>
+                        <% end %>">
+                          <%= case trend.direction do %>
+                            <%= :improving -> "📈 Improving" %>
+                            <%= :stable -> "→ Stable" %>
+                            <%= :declining -> "📉 Declining" %>
+                            <%= _ -> "Unknown" %>
+                          <% end %>
+                        </span>
+                      </div>
+                      <p class="text-gray-600 text-sm">Current: <%= trend.current_value %></p>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </section>
+          <% end %>
+
+          <!-- Cost Metrics -->
+          <%= if @dashboard.cost_metrics do %>
+            <section class="mb-8">
+              <h2 class="text-2xl font-bold text-gray-900 mb-4">Cost Analysis</h2>
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <p class="text-sm text-gray-600 mb-2">Total Cost</p>
+                    <p class="text-3xl font-bold text-blue-600">
+                      $<%= format_cost(@dashboard.cost_metrics.total_cost_cents) %>
+                    </p>
+                  </div>
+
+                  <div>
+                    <p class="text-sm text-gray-600 mb-2">Avg Cost Per Task</p>
+                    <p class="text-3xl font-bold text-gray-900">
+                      $<%= format_cost(@dashboard.cost_metrics.avg_cost_per_task) %>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          <% end %>
+
+          <!-- Last Updated -->
+          <div class="text-sm text-gray-500 text-right">
+            Last updated: <%= @dashboard.timestamp |> DateTime.truncate(:second) |> DateTime.to_string() %>
+          </div>
+        <% else %>
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+            <p class="text-gray-600">No agent data available</p>
+          </div>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+</div>
