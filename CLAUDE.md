@@ -25,8 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Pure Elixir ML** (Embeddings via Nx: Qodo + Jina v3 multi-vector 2560-dim)
 - **GPU-Accelerated Search** (RTX 4080 + pgvector for semantic code search)
 - **Living Knowledge Base** (Git ←→ PostgreSQL bidirectional learning)
-- **Multi-AI Orchestration** (Claude, Gemini, OpenAI, Copilot via NATS)
-- **Distributed Messaging** (NATS with JetStream)
+- **Multi-AI Orchestration** (Claude, Gemini, OpenAI, Copilot)
 
 **Environment:** Nix-based (dev/test/prod) with PostgreSQL.
 
@@ -560,38 +559,12 @@ mix ecto.create
 mix ecto.migrate
 ```
 
-## Interface Architecture
-
-### Tools vs Interfaces
-
-Singularity separates **WHAT** (tools) from **HOW** (interfaces):
-
-- **Tools** (`lib/singularity/tools/`) - Core capabilities (quality checks, shell commands, LLM calls)
-- **Interfaces** (`lib/singularity/interfaces/`) - How tools are exposed
-
-### 3 Complementary Interfaces (Not Alternatives)
-
-| Interface | Purpose | Users | Communication |
-|-----------|---------|-------|-----------------|
-| **Observer (Phoenix)** | Visualization & Dashboards | Humans | HTTP/WebSocket |
-| **NATS** | Async service-to-service messaging | Singularity, CentralCloud, Genesis | NATS Pub/Sub |
-| **MCP** | AI assistant tool invocation | Claude, Cursor, other LLM tools | Model Context Protocol |
-
-**Why 3 Interfaces?**
-- **Observer**: Humans need to see dashboards (ValidationDashboard, RuleQualityDashboard, etc.)
-- **NATS**: Services need to communicate asynchronously (Singularity → CentralCloud → Genesis learning loop)
-- **MCP**: AI assistants need to invoke Singularity capabilities as tools
-
-**No External REST API**: External clients use MCP (for AI) or NATS (for systems).
-
 ## Development Tips
 
 1. **Use the Nix shell** - All tools are pre-configured with correct versions
 2. **Run quality checks before commits** - `mix quality` catches most issues
-3. **NATS for new features** - Publish/subscribe pattern for loose coupling
-4. **Semantic search for navigation** - Use embedding service to find similar code
-5. **Gleam for type-safe logic** - Critical algorithms benefit from Gleam's type system
-6. **Interface abstraction** - Tools are interface-agnostic, use Protocol for execution
+3. **Semantic search for navigation** - Use embedding service to find similar code
+4. **Observe dashboards** - Observer Phoenix app shows real-time system state
 
 ## AI-Optimized Documentation (v2.1)
 

@@ -13,88 +13,10 @@
 - **Living Knowledge Base** - Git ←→ PostgreSQL bidirectional learning (templates, patterns, prompts)
 - **Semantic Search** - GPU-accelerated (RTX 4080) code + package search with pgvector
 - **Autonomous Agents** - Self-improving Elixir/Gleam agents with HTDAG task decomposition
-- **Multi-AI Orchestration** - Claude, Gemini, OpenAI, Copilot via NATS messaging
+- **Multi-AI Orchestration** - Claude, Gemini, OpenAI, Copilot
 - **Code Quality** - Rust-powered parsing, linting, analysis for 30+ languages
 - **Nix Everywhere** - Single reproducible environment (dev/test/prod)
 - **Internal Only** - No scale/security constraints, maximum features & learning
-
-## Unified NATS Architecture
-
-**Single NATS Server**: Streamlined architecture with hierarchical subject routing and multiple protocol support.
-
-### NATS Transport Protocols
-
-Singularity's NATS server supports multiple client protocols on a single server instance:
-
-| Protocol | Port | Use Case | Status |
-|----------|------|----------|--------|
-| **NATS** | 4222 | Elixir/Rust native clients (primary) | ✅ Enabled |
-| **WebSocket** | 4223 | Browser JS clients, web frontends | ✅ Enabled |
-| **TLS/Secure** | 4221 | Production secure connections | ⚠️ Disabled (set in flake.nix) |
-| **MQTT** | 1883 | IoT devices, edge computing | ⚠️ Disabled (set in flake.nix) |
-
-**Default Configuration (Dev):**
-- NATS: `localhost:4222` (Elixir/Rust clients)
-- WebSocket: `localhost:4223` (Browser clients)
-- TLS/MQTT: Disabled
-
-**To Enable Additional Protocols** (e.g., production TLS or IoT MQTT):
-
-Edit `flake.nix` in the `nats` service configuration:
-```nix
-nats = {
-  name = "NATS Message Bus";
-  protocols = {
-    nats = 4222;        # Core NATS (always enabled)
-    websocket = 4223;   # WebSocket (always enabled for browser support)
-    tls = 4221;         # Set port to enable TLS (null = disabled)
-    mqtt = 1883;        # Set port to enable MQTT (null = disabled)
-  };
-};
-```
-
-Then run `nix flake update` and `direnv reload` to apply changes.
-
-### Topic Hierarchy (Pattern: `{domain}.{subdomain}.{action}`)
-- **`llm.*`** - Direct request/reply (no JetStream) for maximum LLM performance
-- **`system.engines.*`** - Direct discovery (no JetStream) for performance
-- **`system.capabilities.*`** - Direct discovery (no JetStream) for performance  
-- **`system.health.*`** - Direct health checks (no JetStream) for performance
-- **`system.events.*`** - JetStream for system events
-- **`agent.*`** - Agent management (commands direct, events JetStream)
-- **`planning.*`** - Work planning and task management (direct)
-- **`knowledge.*`** - Knowledge and template management (direct)
-- **`analysis.*`** - Code analysis and processing (direct)
-- **`central.*`** - Central services and cross-cutting concerns (direct)
-- **`intelligence.*`** - AI intelligence and insights (direct)
-- **`patterns.*`** - Pattern mining and management (direct)
-- **`packages.*`** - Package registry and management (direct)
-
-### JetStream Streams
-- **`EVENTS`** - All `*.events.*` subjects (1 hour retention) - excludes `llm.*`
-- **`METRICS`** - All `*.metrics.*` subjects (24 hour retention) - excludes `llm.*`
-
-### Excluded from JetStream (Direct Request/Reply)
-- **`llm.*`** - All LLM requests for maximum performance
-- **`system.engines.*`** - Engine discovery
-- **`system.capabilities.*`** - Capability discovery  
-- **`system.health.*`** - Health checks
-
-```
-All Requests → Single NATS Server → Route by hierarchical subject pattern
-```
-
-**Key Components:**
-- **🎯 NatsServer** - Single entry point for all requests
-- **⚡ Local Detection** - NIF for fast local codebase analysis  
-- **🌐 Remote Detection** - Consolidated Rust detector for external packages
-- **🤖 LLM Auto-discovery** - 5-level detection with AI fallback
-- **📊 Complexity Routing** - Simple/Medium/Complex task routing
-
-**NATS Subjects:**
-- `nats.request` - Single entry point
-- `detector.analyze` - Framework detection
-- `llm.request` - LLM requests
 
 ## Architecture (Unified Config-Driven Orchestration)
 
@@ -132,14 +54,13 @@ All major subsystems follow the same proven architecture:
 ### Architecture Layers
 
 ```
-Elixir/BEAM (Local)
+Elixir/BEAM (OTP Application)
   ├─ Foundation
   │   ├─ PostgreSQL (with pgvector)
-  │   ├─ NATS (Gnat) - Real distributed messaging
   │   └─ Telemetry
   ├─ Infrastructure
   │   ├─ CircuitBreaker, ErrorRateTracker, EmbeddingModelLoader
-  │   └─ NATS.Supervisor (NatsServer, NatsClient, NatsRouter)
+  │   └─ LLM.Supervisor (RateLimiter)
   ├─ Unified Orchestrators (Config-Driven)
   │   ├─ PatternDetector (Framework, Technology, ServiceArchitecture patterns)
   │   ├─ AnalysisOrchestrator (Feedback, Quality, Refactoring, Microservice analyzers)
@@ -148,13 +69,16 @@ Elixir/BEAM (Local)
   │   ├─ ExecutionOrchestrator (TaskDAG, SPARC, Methodology strategies)
   │   └─ Validators & Extractors (config-driven discovery)
   ├─ Domain Services
-  │   ├─ LLM.Supervisor (RateLimiter)
   │   ├─ Knowledge.Supervisor (ArtifactStore, CodeStore)
-  │   └─ Planning.Supervisor (HTDAG, SafeWorkPlanner)
+  │   ├─ Planning.Supervisor (HTDAG, SafeWorkPlanner)
+  │   └─ Pipeline.Orchestrator (5-phase generation pipeline)
   ├─ Agents & Execution
-  │   ├─ Agents.Supervisor (AgentSupervisor)
+  │   ├─ Agents.Supervisor (20+ agent modules)
   │   └─ ApplicationSupervisor (Control, Runner)
-  └─ Interfaces (MCP + NATS)
+  └─ Oban Jobs (Background processing)
+
+Observer (Phoenix Web UI)
+  └─ Dashboards (ValidationDashboard, RuleQualityDashboard, etc.)
 
 Gleam
   ├─ singularity/htdag.gleam (Hierarchical Temporal DAG)
@@ -214,8 +138,7 @@ singularity/
 │   ├── agents/                            # Autonomous agents
 │   ├── autonomy/                          # Rule engine, planners
 │   ├── llm/                               # LLM provider integration
-│   ├── knowledge/                         # Living knowledge base
-│   └── nats_orchestrator.ex               # NATS messaging hub
+│   └── knowledge/                         # Living knowledge base
 ├── src/                       # Gleam modules (compiled via mix_gleam)
 │   ├── singularity/htdag.gleam            # Hierarchical Temporal DAG
 │   └── singularity/rule_engine.gleam      # Confidence-based rule evaluation
@@ -322,7 +245,7 @@ moon run templates_data:embed-all  # Generate embeddings
 
 ### 4. Start Services
 ```bash
-./start-all.sh  # Starts NATS, Elixir app, AI server
+./start-all.sh  # Starts Singularity and related services
 ```
 
 ### 5. Test It
@@ -373,7 +296,7 @@ Binary cache
 - ✅ Phase 4: Adaptive Refinement (3 components)
 - ✅ Phase 5: Post-Execution Learning (6 components)
 - ✅ Data Stores (FailurePatternStore, ValidationMetricsStore)
-- ✅ Integration & Orchestration (Pipeline.Orchestrator, NATS, LLM.Service)
+- ✅ Integration & Orchestration (Pipeline.Orchestrator, LLM.Service)
 - ✅ Dashboards & Observability (5 dashboards)
 - ✅ 2,500+ LOC of tests (68 test files)
 
@@ -389,13 +312,13 @@ Binary cache
    - Impact: Confirmed real LLM completions in production
 
 **Full Details**: See `FINAL_PLAN.md` (comprehensive audit and architecture)
-**Agent Details**: See `AGENTS.md` (6 autonomous agents, fully implemented)
+**Agent Details**: See `AGENTS.md` (20+ autonomous agent modules, fully implemented)
 **Developer Guide**: See `CLAUDE.md` (setup, patterns, best practices)
 
 ## Notes
 
 - RuleEngineV2 supersedes the older `Singularity.Autonomy.RuleEngine`. New code should depend on V2.
-- MCP docs were removed; an MCP interface is not present in this repo. NATS interface exists but some runtime wiring is optional or commented out.
+- Singularity is an OTP application (not a service with external interfaces). Observer Phoenix app provides the web UI.
 - Nix flake pins OTP 28 + Elixir 1.19 and sets UTF‑8 env for stable rebar3; outside Nix, ensure matching versions for smooth `mix_gleam` builds.
 - The core system also runs with Mix alone if your host has compatible Erlang/Elixir/Gleam.
 
@@ -436,37 +359,17 @@ iex> Singularity.FrameworkPatternStore.learn_from_project("my_project")
 iex> Singularity.ArchitectureAnalyzer.analyze_project("my_project")
 ```
 
-## 🧠 How LLMs Interact with Singularity
+## 🧠 How the Pipeline Works
 
-### Autonomous Development Workflow
+The self-evolving code generation pipeline runs through 5 integrated phases:
 
-1. **Task Reception**: LLM receives development task via NATS (`execution.request`)
-2. **Semantic Cache Check**: System checks if similar task was already completed
-3. **Template Selection**: TemplateOptimizer selects optimal code template
-4. **Code Generation**: HybridAgent generates code using selected AI model
-5. **Quality Assurance**: Generated code passes through quality checks
-6. **Learning**: System extracts patterns for future use
+1. **Phase 1: Context Gathering** - Detect frameworks, technologies, patterns, failures
+2. **Phase 2: Constrained Generation** - Generate plans using LLM with learned constraints
+3. **Phase 3: Multi-Layer Validation** - Validate through historical patterns and effectiveness metrics
+4. **Phase 4: Adaptive Refinement** - Refine based on validation failures and past solutions
+5. **Phase 5: Post-Execution Learning** - Store failures, evolve rules, update metrics
 
-### LLM Agent Capabilities
-
-```elixir
-# LLMs can spawn specialized agents
-{:ok, agent} = Singularity.Agents.HybridAgent.start_link(
-  id: "code_architect_001",
-  specialization: :architecture
-)
-
-# Agents have access to all development tools
-HybridAgent.process_task(agent, %{
-  prompt: "Refactor the authentication system for better security",
-  tools: ["rust_analyzer", "cargo_audit", "sobelow"],
-  context: %{project: "my_app"}
-})
-```
-
-## 📡 Messaging
-
-Singularity uses NATS for cross-service coordination (LLM requests, package registry queries, execution events). The authoritative subject list and payload formats live in [`docs/messaging/NATS_SUBJECTS.md`](docs/messaging/NATS_SUBJECTS.md).
+All phases are orchestrated by `Pipeline.Orchestrator` and integrated with 20+ autonomous agent modules.
 
 ## 🤖 AI CLI Tools
 
@@ -595,14 +498,14 @@ This is **personal development tooling** (not production software), so:
 
 **Setup & Architecture:**
 - [CLAUDE.md](CLAUDE.md) - Main guide for Claude Code AI
+- [FINAL_PLAN.md](FINAL_PLAN.md) - Comprehensive system audit and status
+- [AGENTS.md](AGENTS.md) - Agent system documentation
 - [KNOWLEDGE_ARTIFACTS_SETUP.md](KNOWLEDGE_ARTIFACTS_SETUP.md) - Living knowledge base setup
 - [DATABASE_STRATEGY.md](DATABASE_STRATEGY.md) - Single shared DB approach
-- [INTERFACE_ARCHITECTURE.md](INTERFACE_ARCHITECTURE.md) - Tools vs Interfaces
 
 **Features:**
 - [PATTERN_SYSTEM.md](PATTERN_SYSTEM.md) - Pattern extraction & learning
 - [PACKAGE_REGISTRY_AND_CODEBASE_SEARCH.md](PACKAGE_REGISTRY_AND_CODEBASE_SEARCH.md) - Semantic search
-- [NATS_SUBJECTS.md](docs/messaging/NATS_SUBJECTS.md) - Messaging reference
 
 ## 📄 License
 
@@ -614,5 +517,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Powered by BEAM VM for fault-tolerance
 - Uses Tree-sitter for universal parsing
 - PostgreSQL with pgvector for embeddings
-- NATS for distributed messaging
+- Observer (Phoenix) for web dashboards
 # Test commit to trigger CI workflow
