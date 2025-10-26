@@ -1,6 +1,6 @@
 {
   "name": "Gleam Production Quality",
-  "spec_version": "2.5.0",
+  "spec_version": "2.6.0",
   "capabilities": [
     "quality",
     "graph",
@@ -13,6 +13,19 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for Gleam code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.6.0": {
+      "date": "2025-10-26",
+      "changes": [
+        "Added 6 gold standard production sections for true production readiness",
+        "Security section: authentication, authorization, input validation, cryptography, OWASP, headers, API security",
+        "Deployment section: containerization, CI/CD, infrastructure, health checks, scaling, DR",
+        "API Design section: REST, GraphQL, versioning, OpenAPI documentation",
+        "Data Persistence section: migrations, transactions, caching, event sourcing, retention",
+        "Operational Excellence section: monitoring, SLA/SLO, incident management, cost optimization",
+        "Compliance section: GDPR, CCPA, PCI DSS, HIPAA, SOX, audit logging",
+        "Non-breaking: v2.5.0 modules remain valid, new sections are strongly recommended for production"
+      ]
+    },
     "2.5.0": {
       "date": "2025-10-24",
       "changes": [
@@ -252,6 +265,162 @@
       "naming": "snake_case for functions, PascalCase for types",
       "prefer_pipe": true,
       "immutability": "required"
+    },
+    "security": {
+      "authentication": {
+        "jwt_handling": "Use Erlang JWT libraries via FFI, validate tokens",
+        "oauth2_flows": "Integrate with Erlang OAuth2 via FFI",
+        "api_keys": "Store in application environment config",
+        "session_management": "Use Erlang session libraries or custom implementation"
+      },
+      "authorization": {
+        "rbac": "Implement RBAC with custom types and pattern matching",
+        "permissions": "Validate permissions with Result types",
+        "audit_logging": "Log security events to BEAM logger"
+      },
+      "input_validation": {
+        "sanitization": "Validate all inputs with custom types and decoders",
+        "rate_limiting": "Use BEAM process-based rate limiting or ETS",
+        "file_uploads": "Validate types, size limits before processing"
+      },
+      "cryptography": {
+        "password_hashing": "Use Erlang crypto via FFI (bcrypt, argon2)",
+        "encryption": "Use Erlang :crypto for encryption",
+        "secrets": "Use BEAM application config or external secrets"
+      },
+      "owasp_compliance": {
+        "injection": "Type-safe queries, parameterized statements",
+        "broken_auth": "Secure token handling, session validation",
+        "sensitive_data": "Encrypt sensitive data, TLS for transport",
+        "xxe": "Avoid XML parsing or use safe parsers",
+        "broken_access": "Enforce authorization checks",
+        "security_misconfig": "Secure defaults in config",
+        "xss": "Escape HTML output in templates",
+        "deserialization": "Type-safe JSON decoding with gleam/json",
+        "vulnerable_deps": "Audit Gleam and Erlang dependencies",
+        "logging": "Don't log sensitive data"
+      },
+      "security_headers": {
+        "csp": "Set Content-Security-Policy headers",
+        "hsts": "Strict-Transport-Security headers",
+        "x_frame_options": "X-Frame-Options: DENY",
+        "x_content_type": "X-Content-Type-Options: nosniff",
+        "referrer_policy": "Referrer-Policy: no-referrer"
+      },
+      "api_security": {
+        "rate_limiting": "Process-based rate limiting with ETS",
+        "cors": "Configure CORS headers properly",
+        "webhooks": "Validate HMAC signatures",
+        "idempotency": "Use idempotency keys with ETS or DB"
+      }
+    },
+    "deployment": {
+      "containerization": {
+        "docker": {
+          "multi_stage": "Multi-stage builds with Erlang runtime",
+          "non_root": "Run as non-root user",
+          "security_scanning": "Scan with Trivy"
+        },
+        "kubernetes": {
+          "resource_limits": "Set BEAM VM limits appropriately",
+          "network_policies": "Implement pod network policies",
+          "secrets": "Use Kubernetes Secrets or external secrets"
+        }
+      },
+      "ci_cd": {
+        "pipeline_stages": "Build -> Test -> Format Check -> Deploy",
+        "testing": "Unit tests with gleam test",
+        "quality_gates": "Coverage 80%+, format check, type check",
+        "deployment_strategies": "Blue-green, rolling updates"
+      },
+      "infrastructure": {
+        "health_checks": "Health check endpoints for liveness/readiness",
+        "scaling": "Horizontal scaling with BEAM clustering",
+        "observability": "BEAM Observer, telemetry events, structured logging",
+        "disaster_recovery": "Multi-node clustering, automated backups"
+      }
+    },
+    "api_design": {
+      "rest": {
+        "url_structure": "RESTful URLs with versioning",
+        "pagination": "Cursor-based pagination for large datasets",
+        "filtering": "Query params for filtering",
+        "sorting": "Sort query param support"
+      },
+      "graphql": {
+        "schema": "Type-safe GraphQL via FFI to Erlang libraries",
+        "rate_limiting": "Query complexity analysis",
+        "subscriptions": "WebSocket subscriptions"
+      },
+      "versioning": {
+        "deprecation": "Deprecation warnings in docs",
+        "backward_compatibility": "Maintain compatibility for 6+ months"
+      },
+      "documentation": {
+        "openapi": "Generate OpenAPI specs from types",
+        "examples": "Include examples in documentation",
+        "error_codes": "Document all error types"
+      }
+    },
+    "data_persistence": {
+      "database": {
+        "migrations": "Use Erlang migration tools or custom scripts",
+        "transactions": "Use database transaction support",
+        "optimization": "Index queries, analyze performance"
+      },
+      "caching": {
+        "strategies": "ETS for in-memory caching",
+        "invalidation": "TTL-based or event-driven invalidation",
+        "distributed_cache": "Distributed ETS or external cache"
+      },
+      "event_sourcing": {
+        "when_applicable": "Audit trails, event-driven architectures",
+        "event_store": "Custom event store or Kafka integration",
+        "projections": "Build read models from events"
+      },
+      "data_retention": {
+        "policies": "Define retention per data type",
+        "archival": "Archive to external storage",
+        "gdpr_compliance": "Right to erasure, data export"
+      }
+    },
+    "operational_excellence": {
+      "monitoring": {
+        "golden_signals": "Latency, traffic, errors, saturation",
+        "metrics": "BEAM telemetry events, custom metrics",
+        "dashboards": "BEAM Observer, Grafana dashboards",
+        "alerting": "Alert on anomalies and SLO breaches"
+      },
+      "performance": {
+        "sla_slo": "Define SLAs and SLOs",
+        "budgets": "Error budgets for risk management",
+        "optimization": "Profile with BEAM tools, optimize hot paths"
+      },
+      "incident_management": {
+        "on_call": "On-call rotation with runbooks",
+        "response": "Incident response procedures, post-mortems",
+        "runbooks": "Document common issues"
+      },
+      "cost_optimization": {
+        "resource_monitoring": "Monitor resource usage",
+        "cleanup": "Automated cleanup",
+        "tiered_storage": "Use appropriate storage tiers"
+      }
+    },
+    "compliance": {
+      "data_privacy": {
+        "gdpr": "Right to access, erasure, portability",
+        "ccpa": "California privacy rights"
+      },
+      "industry_specific": {
+        "pci_dss": "Payment data security",
+        "hipaa": "Healthcare data protection",
+        "sox": "Financial audit trails"
+      },
+      "audit": {
+        "logging": "Audit logs for security events",
+        "reporting": "Compliance reports"
+      }
     }
   },
   "questions": [

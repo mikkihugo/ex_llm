@@ -1,6 +1,6 @@
 {
   "name": "Go Production Quality",
-  "spec_version": "2.5.0",
+  "spec_version": "2.6.0",
   "capabilities": [
     "quality",
     "graph",
@@ -13,6 +13,19 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for Go code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.6.0": {
+      "date": "2025-10-26",
+      "changes": [
+        "Added 6 gold standard production sections for true production readiness",
+        "Security section: authentication, authorization, input validation, cryptography, OWASP, headers, API security",
+        "Deployment section: containerization, CI/CD, infrastructure, health checks, scaling, DR",
+        "API Design section: REST, GraphQL, versioning, OpenAPI documentation",
+        "Data Persistence section: migrations, transactions, caching, event sourcing, retention",
+        "Operational Excellence section: monitoring, SLA/SLO, incident management, cost optimization",
+        "Compliance section: GDPR, CCPA, PCI DSS, HIPAA, SOX, audit logging",
+        "Non-breaking: v2.5.0 modules remain valid, new sections are strongly recommended for production"
+      ]
+    },
     "2.5.0": {
       "date": "2025-10-24",
       "changes": [
@@ -139,6 +152,162 @@
       "max_function_length": 50,
       "gofmt": "required",
       "golint": "required"
+    },
+    "security": {
+      "authentication": {
+        "jwt_handling": "Use golang-jwt/jwt for JWT validation, proper signing key rotation",
+        "oauth2_flows": "Use golang.org/x/oauth2 for OAuth2 flows",
+        "api_keys": "Store API keys in environment variables or secrets manager",
+        "session_management": "Use gorilla/sessions with secure cookie settings"
+      },
+      "authorization": {
+        "rbac": "Implement RBAC with casbin or custom middleware",
+        "permissions": "Validate permissions at handler level",
+        "audit_logging": "Log security events to structured logs"
+      },
+      "input_validation": {
+        "sanitization": "Validate and sanitize all inputs (go-playground/validator)",
+        "rate_limiting": "Use golang.org/x/time/rate or tollbooth middleware",
+        "file_uploads": "Validate MIME types, size limits, scan files"
+      },
+      "cryptography": {
+        "password_hashing": "Use bcrypt or argon2 (golang.org/x/crypto/bcrypt)",
+        "encryption": "Use crypto/aes for encryption (GCM mode)",
+        "secrets": "Use AWS Secrets Manager, HashiCorp Vault"
+      },
+      "owasp_compliance": {
+        "injection": "Use parameterized queries (database/sql with placeholders)",
+        "broken_auth": "Implement MFA, secure session handling",
+        "sensitive_data": "Encrypt data at rest and in transit (TLS 1.3)",
+        "xxe": "Disable XML external entities in encoding/xml",
+        "broken_access": "Enforce authorization checks in middleware",
+        "security_misconfig": "Secure defaults, remove debug handlers",
+        "xss": "Escape HTML output (html/template auto-escapes)",
+        "deserialization": "Validate JSON schemas before unmarshaling",
+        "vulnerable_deps": "Run go mod verify, govulncheck regularly",
+        "logging": "Don't log sensitive data, sanitize logs"
+      },
+      "security_headers": {
+        "csp": "Content-Security-Policy: default-src 'self'",
+        "hsts": "Strict-Transport-Security: max-age=31536000",
+        "x_frame_options": "X-Frame-Options: DENY",
+        "x_content_type": "X-Content-Type-Options: nosniff",
+        "referrer_policy": "Referrer-Policy: no-referrer"
+      },
+      "api_security": {
+        "rate_limiting": "Rate limit per-IP and per-user (tollbooth, ulule/limiter)",
+        "cors": "Configure CORS with rs/cors package",
+        "webhooks": "Validate webhook signatures (crypto/hmac)",
+        "idempotency": "Use idempotency keys for critical operations"
+      }
+    },
+    "deployment": {
+      "containerization": {
+        "docker": {
+          "multi_stage": "Use multi-stage builds with scratch or distroless base",
+          "non_root": "Run as non-root user (USER 1000)",
+          "security_scanning": "Scan with Trivy, Snyk, govulncheck"
+        },
+        "kubernetes": {
+          "resource_limits": "Set CPU/memory requests and limits",
+          "network_policies": "Implement pod-to-pod network policies",
+          "secrets": "Use Kubernetes Secrets or external secrets operator"
+        }
+      },
+      "ci_cd": {
+        "pipeline_stages": "Build -> Test -> Lint -> Security Scan -> Deploy",
+        "testing": "Unit, integration, benchmark tests in CI",
+        "quality_gates": "Coverage 80%+, golangci-lint pass, security scan clear",
+        "deployment_strategies": "Blue-green, canary deployments"
+      },
+      "infrastructure": {
+        "health_checks": "Liveness (/healthz) and readiness (/readyz) endpoints",
+        "scaling": "Horizontal pod autoscaling based on CPU/memory",
+        "observability": "Prometheus metrics, structured logging, OpenTelemetry traces",
+        "disaster_recovery": "Automated backups, multi-AZ deployment"
+      }
+    },
+    "api_design": {
+      "rest": {
+        "url_structure": "RESTful URLs with versioning (/api/v1/users/:id)",
+        "pagination": "Cursor-based or offset pagination",
+        "filtering": "Query params for filtering",
+        "sorting": "Sort query param support"
+      },
+      "graphql": {
+        "schema": "Use gqlgen for type-safe GraphQL",
+        "rate_limiting": "Query complexity analysis",
+        "subscriptions": "WebSocket subscriptions with auth"
+      },
+      "versioning": {
+        "deprecation": "Deprecation headers with sunset dates",
+        "backward_compatibility": "Maintain compatibility for 6+ months"
+      },
+      "documentation": {
+        "openapi": "OpenAPI 3.0 spec with swaggo/swag",
+        "examples": "Include request/response examples",
+        "error_codes": "Document all error codes"
+      }
+    },
+    "data_persistence": {
+      "database": {
+        "migrations": "Use golang-migrate or goose for migrations",
+        "transactions": "Use sql.Tx for multi-step operations",
+        "optimization": "Index foreign keys, analyze query plans"
+      },
+      "caching": {
+        "strategies": "Cache-aside with go-redis",
+        "invalidation": "TTL-based and event-driven invalidation",
+        "distributed_cache": "Redis cluster or Memcached"
+      },
+      "event_sourcing": {
+        "when_applicable": "Audit trails, CQRS patterns",
+        "event_store": "EventStore, Kafka with sarama",
+        "projections": "Build read models from events"
+      },
+      "data_retention": {
+        "policies": "Define retention per data type",
+        "archival": "Archive to S3 with lifecycle policies",
+        "gdpr_compliance": "Right to erasure, data export"
+      }
+    },
+    "operational_excellence": {
+      "monitoring": {
+        "golden_signals": "Latency, traffic, errors, saturation",
+        "metrics": "Prometheus metrics with promhttp",
+        "dashboards": "Grafana dashboards for key metrics",
+        "alerting": "Alert on SLO breaches (Alertmanager)"
+      },
+      "performance": {
+        "sla_slo": "Define SLAs (99.9%) and SLOs (P95 < 200ms)",
+        "budgets": "Error budgets for risk management",
+        "optimization": "Profile with pprof, optimize hot paths"
+      },
+      "incident_management": {
+        "on_call": "On-call rotation with documented runbooks",
+        "response": "Incident response procedures, blameless post-mortems",
+        "runbooks": "Documented procedures for common issues"
+      },
+      "cost_optimization": {
+        "resource_monitoring": "Monitor cloud costs",
+        "cleanup": "Automated resource cleanup",
+        "tiered_storage": "Use appropriate storage tiers"
+      }
+    },
+    "compliance": {
+      "data_privacy": {
+        "gdpr": "Right to access, erasure, portability",
+        "ccpa": "California privacy rights"
+      },
+      "industry_specific": {
+        "pci_dss": "Payment card data security",
+        "hipaa": "Healthcare data protection",
+        "sox": "Financial audit trails"
+      },
+      "audit": {
+        "logging": "Audit logs for security events",
+        "reporting": "Compliance reports"
+      }
     }
   },
   "questions": [

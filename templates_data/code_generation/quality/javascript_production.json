@@ -1,6 +1,6 @@
 {
   "name": "JavaScript Production Quality",
-  "spec_version": "2.5.0",
+  "spec_version": "2.6.0",
   "capabilities": [
     "quality",
     "graph",
@@ -13,6 +13,19 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for modern JavaScript (ES2022+) with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.6.0": {
+      "date": "2025-10-26",
+      "changes": [
+        "Added 6 gold standard production sections for true production readiness",
+        "Security section: authentication, authorization, input validation, cryptography, OWASP, headers, API security",
+        "Deployment section: containerization, CI/CD, infrastructure, health checks, scaling, DR",
+        "API Design section: REST, GraphQL, versioning, OpenAPI documentation",
+        "Data Persistence section: migrations, transactions, caching, event sourcing, retention",
+        "Operational Excellence section: monitoring, SLA/SLO, incident management, cost optimization",
+        "Compliance section: GDPR, CCPA, PCI DSS, HIPAA, SOX, audit logging",
+        "Non-breaking: v2.5.0 modules remain valid, new sections are strongly recommended for production"
+      ]
+    },
     "2.5.0": {
       "date": "2025-10-24",
       "changes": [
@@ -231,6 +244,162 @@
       "linter": "eslint",
       "prefer_const": true,
       "no_var": true
+    },
+    "security": {
+      "authentication": {
+        "jwt_handling": "Use secure JWT libraries (jsonwebtoken), proper secret rotation",
+        "oauth2_flows": "Implement OAuth2 flows securely (authorization code, PKCE)",
+        "api_keys": "Store API keys in environment variables, never in code",
+        "session_management": "Use secure session storage (Redis, signed cookies), CSRF tokens"
+      },
+      "authorization": {
+        "rbac": "Implement role-based access control with proper permission checks",
+        "permissions": "Validate user permissions before operations",
+        "audit_logging": "Log all security-relevant events with context"
+      },
+      "input_validation": {
+        "sanitization": "Sanitize all user inputs (XSS prevention, SQL injection)",
+        "rate_limiting": "Implement rate limiting (express-rate-limit, Redis)",
+        "file_uploads": "Validate file types, size limits, scan for malware"
+      },
+      "cryptography": {
+        "password_hashing": "Use bcrypt or argon2 for password hashing (min 12 rounds)",
+        "encryption": "Use crypto module for encryption (AES-256-GCM)",
+        "secrets": "Use secrets manager (AWS Secrets Manager, Vault), never hardcode"
+      },
+      "owasp_compliance": {
+        "injection": "Parameterized queries, input validation",
+        "broken_auth": "Multi-factor authentication, secure session management",
+        "sensitive_data": "Encrypt sensitive data at rest and in transit (TLS 1.3)",
+        "xxe": "Disable XML external entities",
+        "broken_access": "Enforce authorization checks",
+        "security_misconfig": "Secure defaults, remove debug endpoints",
+        "xss": "Content Security Policy, input sanitization",
+        "deserialization": "Avoid deserializing untrusted data",
+        "vulnerable_deps": "npm audit, Snyk scanning",
+        "logging": "Don't log sensitive data"
+      },
+      "security_headers": {
+        "csp": "Content-Security-Policy: default-src 'self'",
+        "hsts": "Strict-Transport-Security: max-age=31536000",
+        "x_frame_options": "X-Frame-Options: DENY",
+        "x_content_type": "X-Content-Type-Options: nosniff",
+        "referrer_policy": "Referrer-Policy: no-referrer"
+      },
+      "api_security": {
+        "rate_limiting": "Rate limit API endpoints (per-user, per-IP)",
+        "cors": "Configure CORS properly, whitelist domains",
+        "webhooks": "Validate webhook signatures (HMAC)",
+        "idempotency": "Use idempotency keys for critical operations"
+      }
+    },
+    "deployment": {
+      "containerization": {
+        "docker": {
+          "multi_stage": "Use multi-stage builds to minimize image size",
+          "non_root": "Run as non-root user (USER node)",
+          "security_scanning": "Scan images with Trivy, Snyk"
+        },
+        "kubernetes": {
+          "resource_limits": "Set CPU/memory requests and limits",
+          "network_policies": "Implement network policies for pod isolation",
+          "secrets": "Use Kubernetes Secrets or external secrets manager"
+        }
+      },
+      "ci_cd": {
+        "pipeline_stages": "Build -> Test -> Security Scan -> Deploy",
+        "testing": "Unit, integration, E2E tests in CI",
+        "quality_gates": "Code coverage (80%+), security scan pass, linting",
+        "deployment_strategies": "Blue-green, canary, rolling updates"
+      },
+      "infrastructure": {
+        "health_checks": "Liveness and readiness probes",
+        "scaling": "Horizontal pod autoscaling based on metrics",
+        "observability": "Metrics (Prometheus), logs (ELK), traces (Jaeger)",
+        "disaster_recovery": "Automated backups, multi-region deployment"
+      }
+    },
+    "api_design": {
+      "rest": {
+        "url_structure": "RESTful URLs (/users/:id), versioning (/api/v1/)",
+        "pagination": "Cursor-based pagination for large datasets",
+        "filtering": "Query params for filtering (?status=active)",
+        "sorting": "Sort query param (?sort=created_at:desc)"
+      },
+      "graphql": {
+        "schema": "Type-safe schema with proper error handling",
+        "rate_limiting": "Query complexity analysis, depth limiting",
+        "subscriptions": "WebSocket-based subscriptions with auth"
+      },
+      "versioning": {
+        "deprecation": "Deprecation warnings with sunset dates",
+        "backward_compatibility": "Maintain backward compatibility for 6+ months"
+      },
+      "documentation": {
+        "openapi": "OpenAPI 3.0 specification (Swagger)",
+        "examples": "Include request/response examples",
+        "error_codes": "Document all error codes and meanings"
+      }
+    },
+    "data_persistence": {
+      "database": {
+        "migrations": "Version-controlled database migrations (Knex, Prisma)",
+        "transactions": "Use transactions for multi-step operations",
+        "optimization": "Indexes on foreign keys and query columns, query analysis"
+      },
+      "caching": {
+        "strategies": "Cache-aside, write-through, write-behind",
+        "invalidation": "Time-based (TTL) and event-based invalidation",
+        "distributed_cache": "Redis cluster for distributed caching"
+      },
+      "event_sourcing": {
+        "when_applicable": "Audit trails, complex workflows, temporal queries",
+        "event_store": "Store events immutably (EventStore, Kafka)",
+        "projections": "Build read models from events"
+      },
+      "data_retention": {
+        "policies": "Define retention periods per data type",
+        "archival": "Archive old data to cold storage (S3 Glacier)",
+        "gdpr_compliance": "Right to erasure, data portability"
+      }
+    },
+    "operational_excellence": {
+      "monitoring": {
+        "golden_signals": "Latency, traffic, errors, saturation",
+        "metrics": "Custom business metrics (Prometheus, StatsD)",
+        "dashboards": "Grafana dashboards for key metrics",
+        "alerting": "Alert on SLO breaches, anomalies (PagerDuty, Opsgenie)"
+      },
+      "performance": {
+        "sla_slo": "Define SLAs (99.9% uptime) and SLOs (P95 < 200ms)",
+        "budgets": "Error budgets for controlled risk-taking",
+        "optimization": "Profile and optimize hot paths (Clinic.js)"
+      },
+      "incident_management": {
+        "on_call": "On-call rotation with runbooks",
+        "response": "Incident response procedures, post-mortems",
+        "runbooks": "Documented procedures for common issues"
+      },
+      "cost_optimization": {
+        "resource_monitoring": "Monitor cloud costs (AWS Cost Explorer)",
+        "cleanup": "Automated cleanup of unused resources",
+        "tiered_storage": "Use appropriate storage tiers (S3 Standard, IA, Glacier)"
+      }
+    },
+    "compliance": {
+      "data_privacy": {
+        "gdpr": "Right to access, erasure, portability, consent management",
+        "ccpa": "California consumer privacy rights"
+      },
+      "industry_specific": {
+        "pci_dss": "Payment card data security (if applicable)",
+        "hipaa": "Healthcare data protection (if applicable)",
+        "sox": "Financial audit trails (if applicable)"
+      },
+      "audit": {
+        "logging": "Audit logs for security events, data access",
+        "reporting": "Compliance reports, audit trails"
+      }
     }
   },
   "questions": [

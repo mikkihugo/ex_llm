@@ -1,6 +1,6 @@
 {
   "name": "Java Production Quality",
-  "spec_version": "2.5.0",
+  "spec_version": "2.6.0",
   "capabilities": [
     "quality",
     "graph",
@@ -13,6 +13,19 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for modern Java (17+) with Spring Boot patterns, AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.6.0": {
+      "date": "2025-10-26",
+      "changes": [
+        "Added 6 gold standard production sections for true production readiness",
+        "Security section: authentication, authorization, input validation, cryptography, OWASP, headers, API security",
+        "Deployment section: containerization, CI/CD, infrastructure, health checks, scaling, DR",
+        "API Design section: REST, GraphQL, versioning, OpenAPI documentation",
+        "Data Persistence section: migrations, transactions, caching, event sourcing, retention",
+        "Operational Excellence section: monitoring, SLA/SLO, incident management, cost optimization",
+        "Compliance section: GDPR, CCPA, PCI DSS, HIPAA, SOX, audit logging",
+        "Non-breaking: v2.5.0 modules remain valid, new sections are strongly recommended for production"
+      ]
+    },
     "2.5.0": {
       "date": "2025-10-24",
       "changes": [
@@ -252,6 +265,162 @@
       "max_class_length": 500,
       "immutability": "prefer_final_and_records",
       "dependency_injection": "constructor_injection"
+    },
+    "security": {
+      "authentication": {
+        "jwt_handling": "Use Spring Security with JWT (io.jsonwebtoken), key rotation",
+        "oauth2_flows": "Spring Security OAuth2 for authorization code, PKCE",
+        "api_keys": "Store in application.yml, use Spring Cloud Config",
+        "session_management": "Spring Session with Redis, CSRF protection"
+      },
+      "authorization": {
+        "rbac": "Spring Security with @PreAuthorize, role hierarchy",
+        "permissions": "Method-level security with @Secured, @RolesAllowed",
+        "audit_logging": "Spring Data Envers for entity auditing"
+      },
+      "input_validation": {
+        "sanitization": "Bean Validation (@Valid, @NotNull), OWASP Java Encoder",
+        "rate_limiting": "Bucket4j for rate limiting",
+        "file_uploads": "Validate MIME types, size limits, virus scanning"
+      },
+      "cryptography": {
+        "password_hashing": "BCryptPasswordEncoder or Argon2PasswordEncoder",
+        "encryption": "Spring Security Crypto for encryption",
+        "secrets": "Spring Cloud Vault, AWS Secrets Manager"
+      },
+      "owasp_compliance": {
+        "injection": "Parameterized queries (JPA, JDBC Template)",
+        "broken_auth": "Spring Security with MFA support",
+        "sensitive_data": "Encrypt at rest (JPA AttributeConverter), TLS 1.3 in transit",
+        "xxe": "Disable external entities in DocumentBuilderFactory",
+        "broken_access": "Method security with @PreAuthorize checks",
+        "security_misconfig": "Spring Boot security auto-config, remove actuator endpoints",
+        "xss": "Thymeleaf auto-escapes, Content Security Policy",
+        "deserialization": "Avoid ObjectInputStream, use JSON with Jackson",
+        "vulnerable_deps": "OWASP Dependency Check, Snyk Maven plugin",
+        "logging": "Don't log sensitive data, use logback filters"
+      },
+      "security_headers": {
+        "csp": "Content-Security-Policy via Spring Security headers",
+        "hsts": "Strict-Transport-Security in SecurityFilterChain",
+        "x_frame_options": "X-Frame-Options: DENY",
+        "x_content_type": "X-Content-Type-Options: nosniff",
+        "referrer_policy": "Referrer-Policy: no-referrer"
+      },
+      "api_security": {
+        "rate_limiting": "Bucket4j with Spring AOP for rate limiting",
+        "cors": "CorsConfiguration with allowed origins",
+        "webhooks": "Validate HMAC signatures",
+        "idempotency": "Idempotency keys with Redis"
+      }
+    },
+    "deployment": {
+      "containerization": {
+        "docker": {
+          "multi_stage": "Multi-stage with Eclipse Temurin JRE, minimal base",
+          "non_root": "Run as non-root user (USER 1000)",
+          "security_scanning": "Trivy, Snyk, OWASP Dependency Check"
+        },
+        "kubernetes": {
+          "resource_limits": "Set JVM heap limits matching container limits",
+          "network_policies": "Pod network policies for isolation",
+          "secrets": "Kubernetes Secrets or external secrets operator"
+        }
+      },
+      "ci_cd": {
+        "pipeline_stages": "Build -> Test -> Security Scan -> Package -> Deploy",
+        "testing": "Unit (JUnit 5), integration (Testcontainers), E2E tests",
+        "quality_gates": "Coverage 85%+, SonarQube quality gate, security scan pass",
+        "deployment_strategies": "Blue-green, canary with Spring Cloud Gateway"
+      },
+      "infrastructure": {
+        "health_checks": "Spring Boot Actuator /actuator/health (liveness, readiness)",
+        "scaling": "HPA based on CPU/memory, custom metrics",
+        "observability": "Micrometer metrics, Spring Cloud Sleuth traces",
+        "disaster_recovery": "Database backups, multi-region deployment"
+      }
+    },
+    "api_design": {
+      "rest": {
+        "url_structure": "RESTful with @RestController, versioning (/api/v1/)",
+        "pagination": "Spring Data Pageable, cursor-based for large datasets",
+        "filtering": "Spring Data Specifications for dynamic queries",
+        "sorting": "Sort parameter with Spring Data Sort"
+      },
+      "graphql": {
+        "schema": "Spring for GraphQL with type-safe resolvers",
+        "rate_limiting": "Query complexity analysis",
+        "subscriptions": "WebSocket subscriptions with STOMP"
+      },
+      "versioning": {
+        "deprecation": "@Deprecated annotation with Javadoc sunset dates",
+        "backward_compatibility": "Maintain compatibility for 6+ months"
+      },
+      "documentation": {
+        "openapi": "SpringDoc OpenAPI 3.0 (springdoc-openapi)",
+        "examples": "Include examples in @Operation annotations",
+        "error_codes": "Document with @ApiResponse"
+      }
+    },
+    "data_persistence": {
+      "database": {
+        "migrations": "Flyway or Liquibase for version-controlled migrations",
+        "transactions": "@Transactional with proper propagation",
+        "optimization": "JPA indexes, query optimization with query hints"
+      },
+      "caching": {
+        "strategies": "Spring Cache with @Cacheable (cache-aside)",
+        "invalidation": "TTL with @CacheEvict for event-driven invalidation",
+        "distributed_cache": "Redis with Spring Data Redis"
+      },
+      "event_sourcing": {
+        "when_applicable": "Axon Framework for CQRS and event sourcing",
+        "event_store": "Axon Server, EventStore, Kafka",
+        "projections": "Query handlers for read models"
+      },
+      "data_retention": {
+        "policies": "Define retention with Spring Batch jobs",
+        "archival": "Archive to S3 with lifecycle policies",
+        "gdpr_compliance": "Right to erasure endpoints, data export"
+      }
+    },
+    "operational_excellence": {
+      "monitoring": {
+        "golden_signals": "Latency, traffic, errors, saturation",
+        "metrics": "Micrometer with Prometheus, custom metrics",
+        "dashboards": "Grafana dashboards for Spring Boot metrics",
+        "alerting": "Alertmanager rules for SLO breaches"
+      },
+      "performance": {
+        "sla_slo": "Define SLAs (99.9% uptime) and SLOs (P95 < 200ms)",
+        "budgets": "Error budgets for controlled experiments",
+        "optimization": "JVM profiling (JProfiler, VisualVM), optimize GC"
+      },
+      "incident_management": {
+        "on_call": "On-call rotation with runbooks",
+        "response": "Incident response procedures, post-mortems",
+        "runbooks": "Document common issues and solutions"
+      },
+      "cost_optimization": {
+        "resource_monitoring": "Monitor cloud costs (AWS Cost Explorer)",
+        "cleanup": "Automated cleanup of unused resources",
+        "tiered_storage": "Use S3 storage classes"
+      }
+    },
+    "compliance": {
+      "data_privacy": {
+        "gdpr": "Right to access, erasure, portability",
+        "ccpa": "California privacy rights"
+      },
+      "industry_specific": {
+        "pci_dss": "Payment card data security",
+        "hipaa": "Healthcare data protection (encryption, audit trails)",
+        "sox": "Financial audit trails, access control"
+      },
+      "audit": {
+        "logging": "Spring Data Envers for entity auditing, security event logs",
+        "reporting": "Compliance reports, audit queries"
+      }
     }
   },
   "semantic_patterns": {

@@ -1,6 +1,6 @@
 {
   "name": "Elixir Production Quality Template",
-  "spec_version": "2.5.0",
+  "spec_version": "2.6.0",
   "capabilities": [
     "quality",
     "graph",
@@ -19,7 +19,7 @@
   "quality_level": "production",
   "description": "Elixir production quality standards for robust, maintainable, and scalable applications.",
   "extends": [],
-  "version": "2.5.0",
+  "version": "2.6.0",
   "last_updated": "2025-10-26",
   "requirements": {
     "documentation": {
@@ -431,6 +431,162 @@
         "upgrade_tracking": "Track template upgrades in module documentation"
       },
       "upgrade_detection": "Compare @template_version with latest template version"
+    },
+    "security": {
+      "authentication": {
+        "jwt_handling": "Use Guardian or Joken for JWT validation, proper secret rotation",
+        "oauth2_flows": "Use Ueberauth for OAuth2 flows",
+        "api_keys": "Store in application config or environment variables",
+        "session_management": "Use Plug.Session with secure cookie settings, CSRF protection"
+      },
+      "authorization": {
+        "rbac": "Implement RBAC with policies (Canada, Bodyguard)",
+        "permissions": "Validate permissions in plugs and controllers",
+        "audit_logging": "Log security events with structured logging"
+      },
+      "input_validation": {
+        "sanitization": "Validate with Ecto changesets, sanitize HTML with HtmlSanitizeEx",
+        "rate_limiting": "Use PlugAttack or Hammer for rate limiting",
+        "file_uploads": "Validate MIME types, size limits, scan uploads"
+      },
+      "cryptography": {
+        "password_hashing": "Use Argon2 (argon2_elixir) or Bcrypt (bcrypt_elixir)",
+        "encryption": "Use Cloak for field-level encryption",
+        "secrets": "Use runtime config, environment variables, or secrets manager"
+      },
+      "owasp_compliance": {
+        "injection": "Use parameterized queries (Ecto prevents SQL injection)",
+        "broken_auth": "Implement MFA with NimbleTOTP, secure session handling",
+        "sensitive_data": "Encrypt at rest with Cloak, TLS 1.3 in transit",
+        "xxe": "Avoid XML parsing or use safe parsers",
+        "broken_access": "Enforce authorization in plugs",
+        "security_misconfig": "Secure defaults, disable debug in production",
+        "xss": "Phoenix templates auto-escape, use Content Security Policy",
+        "deserialization": "Validate JSON schemas before processing",
+        "vulnerable_deps": "Run mix audit regularly",
+        "logging": "Don't log sensitive data, use Logger filters"
+      },
+      "security_headers": {
+        "csp": "Content-Security-Policy via Plug.SecureHeaders",
+        "hsts": "Strict-Transport-Security headers",
+        "x_frame_options": "X-Frame-Options: DENY",
+        "x_content_type": "X-Content-Type-Options: nosniff",
+        "referrer_policy": "Referrer-Policy: no-referrer"
+      },
+      "api_security": {
+        "rate_limiting": "PlugAttack or Hammer for per-IP and per-user limits",
+        "cors": "Configure CORS with Corsica",
+        "webhooks": "Validate HMAC signatures",
+        "idempotency": "Implement idempotency keys with ETS or Redis"
+      }
+    },
+    "deployment": {
+      "containerization": {
+        "docker": {
+          "multi_stage": "Multi-stage builds with Elixir + minimal base",
+          "non_root": "Run as non-root user",
+          "security_scanning": "Scan with Trivy, mix audit"
+        },
+        "kubernetes": {
+          "resource_limits": "Set BEAM VM limits appropriately",
+          "network_policies": "Implement pod network policies",
+          "secrets": "Use Kubernetes Secrets or external secrets"
+        }
+      },
+      "ci_cd": {
+        "pipeline_stages": "Build -> Test -> Quality -> Security Scan -> Deploy",
+        "testing": "Unit, integration, property-based (StreamData) tests",
+        "quality_gates": "Coverage 95%+, Credo strict, Dialyzer clean, Sobelow pass",
+        "deployment_strategies": "Blue-green with Mix releases, hot upgrades"
+      },
+      "infrastructure": {
+        "health_checks": "Health check endpoints for liveness/readiness",
+        "scaling": "Horizontal scaling with BEAM clustering, libcluster",
+        "observability": "Telemetry events, structured logging, Phoenix LiveDashboard",
+        "disaster_recovery": "Multi-node clustering, automated backups"
+      }
+    },
+    "api_design": {
+      "rest": {
+        "url_structure": "RESTful URLs with Phoenix routes, versioning (/api/v1/)",
+        "pagination": "Scrivener for pagination or cursor-based",
+        "filtering": "Query params with Ecto dynamic queries",
+        "sorting": "Sort params with Ecto.Query"
+      },
+      "graphql": {
+        "schema": "Absinthe for type-safe GraphQL",
+        "rate_limiting": "Query complexity analysis with Absinthe",
+        "subscriptions": "Phoenix.PubSub for subscriptions"
+      },
+      "versioning": {
+        "deprecation": "@deprecated attribute with docs",
+        "backward_compatibility": "Maintain compatibility for 6+ months"
+      },
+      "documentation": {
+        "openapi": "Generate OpenAPI spec with OpenApiSpex",
+        "examples": "Include examples in @doc",
+        "error_codes": "Document all error atoms"
+      }
+    },
+    "data_persistence": {
+      "database": {
+        "migrations": "Ecto migrations with version control",
+        "transactions": "Use Ecto.Multi for multi-step transactions",
+        "optimization": "Index foreign keys, analyze query plans with Ecto.Adapters.SQL.explain"
+      },
+      "caching": {
+        "strategies": "ETS, Cachex, or Nebulex for caching",
+        "invalidation": "TTL-based and event-driven invalidation",
+        "distributed_cache": "Nebulex with distributed backend"
+      },
+      "event_sourcing": {
+        "when_applicable": "Use Commanded for CQRS and event sourcing",
+        "event_store": "EventStore database or Kafka",
+        "projections": "Build read models with projections"
+      },
+      "data_retention": {
+        "policies": "Define retention per schema",
+        "archival": "Archive with Oban jobs to external storage",
+        "gdpr_compliance": "Right to erasure, data export endpoints"
+      }
+    },
+    "operational_excellence": {
+      "monitoring": {
+        "golden_signals": "Latency, traffic, errors, saturation",
+        "metrics": "Telemetry.Metrics with Prometheus, custom metrics",
+        "dashboards": "Phoenix LiveDashboard, Grafana dashboards",
+        "alerting": "Alert on SLO breaches with Alertmanager"
+      },
+      "performance": {
+        "sla_slo": "Define SLAs (99.9% uptime) and SLOs (P95 < 200ms)",
+        "budgets": "Error budgets for controlled risk-taking",
+        "optimization": "Profile with :fprof, :eprof, optimize hot paths"
+      },
+      "incident_management": {
+        "on_call": "On-call rotation with documented runbooks",
+        "response": "Incident response procedures, blameless post-mortems",
+        "runbooks": "Document common issues and resolution steps"
+      },
+      "cost_optimization": {
+        "resource_monitoring": "Monitor BEAM memory and CPU usage",
+        "cleanup": "Automated cleanup of old data",
+        "tiered_storage": "Use appropriate storage tiers"
+      }
+    },
+    "compliance": {
+      "data_privacy": {
+        "gdpr": "Right to access, erasure, portability",
+        "ccpa": "California privacy rights"
+      },
+      "industry_specific": {
+        "pci_dss": "Payment card data security",
+        "hipaa": "Healthcare data protection (encryption, audit trails)",
+        "sox": "Financial audit trails, access control"
+      },
+      "audit": {
+        "logging": "Audit logs with structured logging, Ecto audit trail",
+        "reporting": "Compliance reports, audit queries"
+      }
     }
   },
   "patterns": {

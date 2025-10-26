@@ -1,6 +1,6 @@
 {
   "name": "Elixir Production Quality",
-  "spec_version": "2.5.0",
+  "spec_version": "2.6.0",
   "capabilities": [
     "quality",
     "graph",
@@ -13,6 +13,19 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for Elixir code with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.6.0": {
+      "date": "2025-10-26",
+      "changes": [
+        "Added 6 gold standard production sections for true production readiness",
+        "Security section: authentication, authorization, input validation, cryptography, OWASP, headers, API security",
+        "Deployment section: containerization, CI/CD, infrastructure, health checks, scaling, DR",
+        "API Design section: REST, GraphQL, versioning, OpenAPI documentation",
+        "Data Persistence section: migrations, transactions, caching, event sourcing, retention",
+        "Operational Excellence section: monitoring, SLA/SLO, incident management, cost optimization",
+        "Compliance section: GDPR, CCPA, PCI DSS, HIPAA, SOX, audit logging",
+        "Non-breaking: v2.5.0 modules remain valid, new sections are strongly recommended for production"
+      ]
+    },
     "2.5.0": {
       "date": "2025-10-24",
       "changes": [
@@ -405,6 +418,328 @@
         "search_keywords": "required",
         "purpose_statement": "clear_and_unique",
         "disambiguation_vs_similar": "explicit"
+      }
+    },
+    "security": {
+      "authentication": {
+        "required_for": ["api_endpoints", "admin_functions"],
+        "patterns": ["jwt", "oauth2", "api_keys"],
+        "session_management": "stateless_preferred",
+        "token_expiry": "required",
+        "refresh_tokens": "recommended"
+      },
+      "authorization": {
+        "rbac": "role_based_access_control",
+        "permissions": "granular_per_resource",
+        "policy_engine": "recommended_for_complex_rules",
+        "audit_logging": "required_for_sensitive_ops"
+      },
+      "input_validation": {
+        "required": true,
+        "sanitization": "all_user_inputs",
+        "parameterized_queries": "required_for_db",
+        "rate_limiting": {
+          "per_endpoint": true,
+          "per_user": true,
+          "algorithms": ["token_bucket", "sliding_window"]
+        },
+        "file_upload_validation": {
+          "size_limits": "required",
+          "type_validation": "required",
+          "virus_scanning": "recommended"
+        }
+      },
+      "cryptography": {
+        "password_hashing": {
+          "algorithm": "argon2id_or_bcrypt",
+          "min_rounds": 10,
+          "salt": "required_unique"
+        },
+        "data_encryption": {
+          "at_rest": "aes_256_gcm",
+          "in_transit": "tls_1_3_minimum",
+          "key_rotation": "quarterly_recommended"
+        },
+        "secrets_management": {
+          "storage": "never_in_code",
+          "environment_variables": "acceptable",
+          "vault_integration": "recommended_production"
+        }
+      },
+      "owasp_compliance": {
+        "injection_prevention": "parameterized_queries",
+        "broken_authentication": "mfa_recommended",
+        "sensitive_data_exposure": "encryption_required",
+        "xml_external_entities": "disable_dtd_processing",
+        "broken_access_control": "rbac_required",
+        "security_misconfiguration": "secure_defaults",
+        "xss_prevention": "output_encoding",
+        "insecure_deserialization": "avoid_or_validate",
+        "using_vulnerable_components": "dependency_scanning",
+        "insufficient_logging": "audit_trail_required"
+      },
+      "security_headers": {
+        "content_security_policy": "required",
+        "x_frame_options": "DENY_or_SAMEORIGIN",
+        "x_content_type_options": "nosniff",
+        "strict_transport_security": "required_for_https",
+        "x_xss_protection": "1_mode_block",
+        "referrer_policy": "strict_origin_when_cross_origin",
+        "permissions_policy": "restrictive_by_default"
+      },
+      "api_security": {
+        "rate_limiting": "required",
+        "api_key_rotation": "90_days",
+        "cors_configuration": "whitelist_only",
+        "request_signing": "recommended_for_webhooks",
+        "idempotency_keys": "required_for_mutations"
+      }
+    },
+    "deployment": {
+      "containerization": {
+        "docker": {
+          "multi_stage_builds": "required",
+          "non_root_user": "required",
+          "minimal_base_image": "alpine_or_distroless",
+          "security_scanning": "required",
+          "layer_caching": "optimize"
+        },
+        "kubernetes": {
+          "resource_limits": "required",
+          "security_context": "non_root_readonly",
+          "network_policies": "required",
+          "pod_security_policies": "restricted",
+          "secrets_management": "external_secrets_operator"
+        }
+      },
+      "ci_cd": {
+        "pipeline_stages": ["lint", "test", "security_scan", "build", "deploy"],
+        "automated_testing": {
+          "unit_tests": "required",
+          "integration_tests": "required",
+          "security_tests": "required",
+          "performance_tests": "recommended"
+        },
+        "quality_gates": {
+          "code_coverage": 85,
+          "security_score": "A",
+          "performance_regression": "block_if_detected"
+        },
+        "deployment_strategies": {
+          "blue_green": "recommended",
+          "canary": "for_critical_changes",
+          "rolling": "acceptable",
+          "feature_flags": "required"
+        }
+      },
+      "infrastructure": {
+        "health_checks": {
+          "liveness_probe": "required",
+          "readiness_probe": "required",
+          "startup_probe": "recommended"
+        },
+        "scaling": {
+          "horizontal": "preferred",
+          "vertical": "temporary_only",
+          "auto_scaling": "cpu_and_memory_based"
+        },
+        "observability": {
+          "distributed_tracing": "required",
+          "centralized_logging": "required",
+          "metrics_aggregation": "required",
+          "alerting": "pagerduty_or_opsgenie"
+        },
+        "disaster_recovery": {
+          "backup_strategy": "3_2_1_rule",
+          "rto": "4_hours",
+          "rpo": "1_hour",
+          "chaos_engineering": "recommended"
+        }
+      }
+    },
+    "api_design": {
+      "rest": {
+        "url_structure": "resource_based",
+        "http_methods": "semantic_usage",
+        "status_codes": "rfc_compliant",
+        "content_negotiation": "accept_headers",
+        "pagination": {
+          "style": "cursor_or_offset",
+          "page_size_limits": "required",
+          "total_count": "optional_header"
+        },
+        "filtering": "query_parameters",
+        "sorting": "sort_parameter",
+        "field_selection": "sparse_fieldsets",
+        "bulk_operations": "batch_endpoints"
+      },
+      "graphql": {
+        "schema_design": "graph_based",
+        "query_complexity": "limited",
+        "depth_limiting": "required",
+        "rate_limiting": "query_cost_based",
+        "batching": "dataloader_pattern",
+        "subscriptions": "websocket_based"
+      },
+      "versioning": {
+        "strategy": "url_or_header",
+        "deprecation_policy": "6_months_minimum",
+        "sunset_headers": "required",
+        "migration_guides": "required",
+        "backward_compatibility": "2_versions_minimum"
+      },
+      "documentation": {
+        "openapi": "version_3_minimum",
+        "examples": "required_per_endpoint",
+        "error_codes": "comprehensive_list",
+        "rate_limits": "documented",
+        "authentication": "clear_examples"
+      }
+    },
+    "data_persistence": {
+      "database": {
+        "migrations": {
+          "tool": "ecto_or_similar",
+          "reversible": "required",
+          "testing": "required",
+          "zero_downtime": "preferred",
+          "data_migrations": "separate_from_schema"
+        },
+        "transactions": {
+          "isolation_levels": "explicit",
+          "retry_logic": "exponential_backoff",
+          "deadlock_handling": "required",
+          "distributed_transactions": "avoid_if_possible"
+        },
+        "optimization": {
+          "indexes": "evidence_based",
+          "query_analysis": "explain_analyze",
+          "connection_pooling": "required",
+          "prepared_statements": "recommended"
+        }
+      },
+      "caching": {
+        "strategies": ["cache_aside", "write_through", "write_behind"],
+        "invalidation": "event_based_preferred",
+        "ttl": "context_appropriate",
+        "cache_warming": "for_critical_data",
+        "distributed_cache": "redis_or_memcached"
+      },
+      "event_sourcing": {
+        "when_applicable": "audit_requirements",
+        "event_store": "append_only",
+        "projections": "eventually_consistent",
+        "snapshots": "periodic",
+        "replay_capability": "required"
+      },
+      "data_retention": {
+        "policies": "documented",
+        "archival": "automated",
+        "deletion": "soft_delete_then_hard",
+        "gdpr_compliance": "right_to_be_forgotten"
+      }
+    },
+    "operational_excellence": {
+      "monitoring": {
+        "golden_signals": ["latency", "traffic", "errors", "saturation"],
+        "custom_metrics": "business_relevant",
+        "dashboards": "role_specific",
+        "alerting": {
+          "severity_levels": ["critical", "warning", "info"],
+          "escalation_policies": "defined",
+          "runbook_links": "required",
+          "deduplication": "required"
+        }
+      },
+      "performance": {
+        "sla_slo": {
+          "availability": "99.9_minimum",
+          "latency_p95": "200ms_api_calls",
+          "latency_p99": "1s_api_calls",
+          "error_rate": "less_than_1_percent"
+        },
+        "budgets": {
+          "performance_budget": "defined",
+          "error_budget": "tracked",
+          "latency_budget": "per_endpoint"
+        },
+        "optimization": {
+          "profiling": "regular",
+          "load_testing": "required",
+          "capacity_planning": "quarterly",
+          "bottleneck_analysis": "continuous"
+        }
+      },
+      "incident_management": {
+        "on_call_rotation": "defined",
+        "incident_response": {
+          "severity_classification": "required",
+          "communication_channels": "defined",
+          "war_room_procedures": "documented",
+          "postmortem": "blameless_required"
+        },
+        "runbooks": {
+          "common_issues": "documented",
+          "troubleshooting_guides": "step_by_step",
+          "recovery_procedures": "tested",
+          "contact_information": "updated"
+        }
+      },
+      "cost_optimization": {
+        "resource_monitoring": "continuous",
+        "unused_resources": "automated_cleanup",
+        "reserved_capacity": "where_predictable",
+        "spot_instances": "for_non_critical",
+        "data_lifecycle": "tiered_storage"
+      }
+    },
+    "compliance": {
+      "data_privacy": {
+        "gdpr": {
+          "consent_management": "explicit",
+          "data_portability": "supported",
+          "right_to_deletion": "automated",
+          "breach_notification": "72_hours",
+          "privacy_by_design": "required"
+        },
+        "ccpa": {
+          "opt_out": "supported",
+          "data_disclosure": "45_days",
+          "non_discrimination": "enforced"
+        }
+      },
+      "industry_specific": {
+        "pci_dss": {
+          "when": "payment_processing",
+          "scope_reduction": "tokenization",
+          "network_segmentation": "required",
+          "encryption": "required"
+        },
+        "hipaa": {
+          "when": "healthcare_data",
+          "encryption": "required",
+          "access_controls": "strict",
+          "audit_logs": "comprehensive"
+        },
+        "sox": {
+          "when": "financial_reporting",
+          "change_management": "documented",
+          "separation_of_duties": "enforced",
+          "audit_trail": "immutable"
+        }
+      },
+      "audit": {
+        "logging": {
+          "what": ["who", "what", "when", "where", "why"],
+          "retention": "7_years_minimum",
+          "integrity": "tamper_proof",
+          "access": "restricted"
+        },
+        "reporting": {
+          "regular_audits": "quarterly",
+          "compliance_reports": "automated",
+          "vulnerability_reports": "monthly"
+        }
       }
     }
   },

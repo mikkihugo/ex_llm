@@ -1,6 +1,6 @@
 {
   "name": "Rust Production Quality",
-  "spec_version": "2.5.0",
+  "spec_version": "2.6.0",
   "capabilities": [
     "quality",
     "graph",
@@ -14,6 +14,19 @@
   "quality_level": "production",
   "description": "Production-grade quality standards for Rust code (NIFs, libraries, services) with AI navigation metadata (JSON/YAML/Mermaid) for billion-line codebases, graph DB indexing (Neo4j), and vector DB optimization (pgvector)",
   "changelog": {
+    "2.6.0": {
+      "date": "2025-10-26",
+      "changes": [
+        "Added 6 gold standard production sections for true production readiness",
+        "Security section: authentication, authorization, input validation, cryptography, OWASP, headers, API security",
+        "Deployment section: containerization, CI/CD, infrastructure, health checks, scaling, DR",
+        "API Design section: REST, GraphQL, versioning, OpenAPI documentation",
+        "Data Persistence section: migrations, transactions, caching, event sourcing, retention",
+        "Operational Excellence section: monitoring, SLA/SLO, incident management, cost optimization",
+        "Compliance section: GDPR, CCPA, PCI DSS, HIPAA, SOX, audit logging",
+        "Non-breaking: v2.5.0 modules remain valid, new sections are strongly recommended for production"
+      ]
+    },
     "2.5.0": {
       "date": "2025-10-24",
       "changes": [
@@ -380,6 +393,162 @@
         "search_keywords": "required",
         "purpose_statement": "clear_and_unique",
         "disambiguation_vs_similar": "explicit"
+      }
+    },
+    "security": {
+      "authentication": {
+        "jwt_handling": "Use jsonwebtoken crate for JWT validation",
+        "oauth2_flows": "Use oauth2 crate for OAuth2 flows",
+        "api_keys": "Store in environment variables or secrets manager",
+        "session_management": "Use secure session storage (Redis, actix-session)"
+      },
+      "authorization": {
+        "rbac": "Implement RBAC with custom types and middleware",
+        "permissions": "Validate permissions at handler level",
+        "audit_logging": "Log security events with tracing crate"
+      },
+      "input_validation": {
+        "sanitization": "Validate inputs with validator crate, sanitize HTML",
+        "rate_limiting": "Use governor crate for rate limiting",
+        "file_uploads": "Validate MIME types, size limits, scan uploads"
+      },
+      "cryptography": {
+        "password_hashing": "Use argon2 or bcrypt crate (recommended: argon2)",
+        "encryption": "Use ring or RustCrypto for encryption (AES-GCM)",
+        "secrets": "Use AWS Secrets Manager, Vault, or dotenv for dev"
+      },
+      "owasp_compliance": {
+        "injection": "Use parameterized queries (sqlx, diesel with placeholders)",
+        "broken_auth": "MFA support, secure session handling",
+        "sensitive_data": "Encrypt at rest and in transit (TLS 1.3)",
+        "xxe": "Avoid XML parsing or use safe parsers (quick-xml)",
+        "broken_access": "Enforce authorization in middleware",
+        "security_misconfig": "Secure defaults, disable debug in production",
+        "xss": "Escape HTML output (askama, tera auto-escape)",
+        "deserialization": "Use serde with validation",
+        "vulnerable_deps": "Run cargo audit regularly",
+        "logging": "Don't log sensitive data, use tracing filters"
+      },
+      "security_headers": {
+        "csp": "Content-Security-Policy via middleware",
+        "hsts": "Strict-Transport-Security headers",
+        "x_frame_options": "X-Frame-Options: DENY",
+        "x_content_type": "X-Content-Type-Options: nosniff",
+        "referrer_policy": "Referrer-Policy: no-referrer"
+      },
+      "api_security": {
+        "rate_limiting": "Use governor for per-IP and per-user limits",
+        "cors": "Configure CORS with actix-cors or tower-http",
+        "webhooks": "Validate HMAC signatures with hmac crate",
+        "idempotency": "Implement idempotency keys with Redis"
+      }
+    },
+    "deployment": {
+      "containerization": {
+        "docker": {
+          "multi_stage": "Multi-stage builds with scratch or distroless base",
+          "non_root": "Run as non-root user (USER 1000)",
+          "security_scanning": "Scan with Trivy, cargo audit, cargo deny"
+        },
+        "kubernetes": {
+          "resource_limits": "Set CPU/memory limits appropriately",
+          "network_policies": "Implement pod network policies",
+          "secrets": "Use Kubernetes Secrets or external secrets"
+        }
+      },
+      "ci_cd": {
+        "pipeline_stages": "Build -> Test -> Clippy -> Security Scan -> Deploy",
+        "testing": "Unit, integration, doc tests, property-based (proptest)",
+        "quality_gates": "Coverage 80%+, clippy pass, cargo audit clean",
+        "deployment_strategies": "Blue-green, canary deployments"
+      },
+      "infrastructure": {
+        "health_checks": "Health check endpoints (/health, /ready)",
+        "scaling": "Horizontal scaling with load balancer",
+        "observability": "Prometheus metrics (metrics crate), tracing, logs",
+        "disaster_recovery": "Automated backups, multi-region deployment"
+      }
+    },
+    "api_design": {
+      "rest": {
+        "url_structure": "RESTful URLs with versioning (/api/v1/)",
+        "pagination": "Cursor-based pagination for large datasets",
+        "filtering": "Query params for filtering",
+        "sorting": "Sort query param support"
+      },
+      "graphql": {
+        "schema": "Use async-graphql for type-safe GraphQL",
+        "rate_limiting": "Query complexity analysis",
+        "subscriptions": "WebSocket subscriptions"
+      },
+      "versioning": {
+        "deprecation": "Deprecation warnings in docs and headers",
+        "backward_compatibility": "Maintain compatibility for 6+ months"
+      },
+      "documentation": {
+        "openapi": "Generate OpenAPI spec with utoipa",
+        "examples": "Include examples in docs",
+        "error_codes": "Document all error types"
+      }
+    },
+    "data_persistence": {
+      "database": {
+        "migrations": "Use sqlx or diesel migrations",
+        "transactions": "Use database transactions for multi-step ops",
+        "optimization": "Index foreign keys, analyze query plans"
+      },
+      "caching": {
+        "strategies": "Cache-aside with redis crate",
+        "invalidation": "TTL-based and event-driven invalidation",
+        "distributed_cache": "Redis cluster"
+      },
+      "event_sourcing": {
+        "when_applicable": "Audit trails, CQRS patterns",
+        "event_store": "Custom event store or Kafka integration",
+        "projections": "Build read models from events"
+      },
+      "data_retention": {
+        "policies": "Define retention per data type",
+        "archival": "Archive to S3 with lifecycle policies",
+        "gdpr_compliance": "Right to erasure, data export"
+      }
+    },
+    "operational_excellence": {
+      "monitoring": {
+        "golden_signals": "Latency, traffic, errors, saturation",
+        "metrics": "Prometheus metrics with metrics/opentelemetry crates",
+        "dashboards": "Grafana dashboards",
+        "alerting": "Alert on SLO breaches (Alertmanager)"
+      },
+      "performance": {
+        "sla_slo": "Define SLAs (99.9%) and SLOs (P95 < 200ms)",
+        "budgets": "Error budgets for risk management",
+        "optimization": "Profile with perf, flamegraph, criterion benchmarks"
+      },
+      "incident_management": {
+        "on_call": "On-call rotation with runbooks",
+        "response": "Incident response procedures, post-mortems",
+        "runbooks": "Document common issues"
+      },
+      "cost_optimization": {
+        "resource_monitoring": "Monitor cloud costs",
+        "cleanup": "Automated resource cleanup",
+        "tiered_storage": "Use appropriate storage tiers"
+      }
+    },
+    "compliance": {
+      "data_privacy": {
+        "gdpr": "Right to access, erasure, portability",
+        "ccpa": "California privacy rights"
+      },
+      "industry_specific": {
+        "pci_dss": "Payment data security",
+        "hipaa": "Healthcare data protection",
+        "sox": "Financial audit trails"
+      },
+      "audit": {
+        "logging": "Audit logs with tracing, structured logging",
+        "reporting": "Compliance reports"
       }
     }
   },
