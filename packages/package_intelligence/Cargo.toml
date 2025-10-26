@@ -14,7 +14,8 @@ categories = ["algorithms", "development-tools", "command-line-utilities"]
 [lib]
 name = "package_intelligence_service"
 path = "src/lib.rs"
-crate-type = ["cdylib", "rlib"]
+# Regular library (not a NIF) - can be used as binary or imported as library
+crate-type = ["rlib"]
 
 [[bin]]
 name = "package-registry-indexer"
