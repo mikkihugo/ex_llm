@@ -104,6 +104,8 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   alias Singularity.Pipeline.Context
   alias Singularity.Pipeline.Learning
+  alias Singularity.Validation.HistoricalValidator
+  alias Singularity.Validation.EffectivenessTracker
 
   @type story :: String.t() | map()
   @type opts :: keyword()
@@ -292,11 +294,145 @@ defmodule Singularity.Pipeline.Orchestrator do
     Learning.find_similar_failures(criteria)
   end
 
+  @doc """
+  Recommend validation checks based on execution context.
+
+  Uses HistoricalValidator to find similar past failures and recommend
+  validation checks that caught real issues in similar scenarios.
+
+  ## Parameters
+  - `context` - Execution context with:
+    - `:task_type` - Type of task (architect, coder, etc.)
+    - `:complexity` - Complexity level
+    - `:story_signature` - Signature for pattern matching
+
+  ## Returns
+  - List of check recommendations with effectiveness scores
+
+  ## Example
+
+      iex> Pipeline.Orchestrator.recommend_validation_checks(
+      ...>   task_type: :architect,
+      ...>   complexity: :high
+      ...> )
+      [
+        %{check_id: "quality_check", effectiveness_score: 0.92, ...},
+        ...
+      ]
+  """
+  @spec recommend_validation_checks(map()) :: [map()]
+  def recommend_validation_checks(context) do
+    Logger.info("Pipeline.Orchestrator: Recommending validation checks from history")
+    HistoricalValidator.recommend_checks(context)
+  end
+
+  @doc """
+  Get validation check effectiveness analysis.
+
+  Returns which validation checks are most effective at catching real issues
+  based on historical data, and which are wasting time with false positives.
+
+  ## Returns
+  - Map with effectiveness analysis for all checks
+
+  ## Example
+
+      iex> Pipeline.Orchestrator.get_validation_effectiveness()
+      %{
+        "quality_check" => 0.92,
+        "template_check" => 0.88,
+        ...
+      }
+  """
+  @spec get_validation_effectiveness() :: map()
+  def get_validation_effectiveness do
+    Logger.info("Pipeline.Orchestrator: Getting validation check effectiveness")
+    EffectivenessTracker.get_validation_weights()
+  end
+
+  @doc """
+  Get improvement opportunities for validation checks.
+
+  Identifies checks that are underperforming or too slow relative to their value.
+
+  ## Returns
+  - List of checks with improvement recommendations
+  """
+  @spec get_validation_improvement_opportunities() :: [map()]
+  def get_validation_improvement_opportunities do
+    Logger.info("Pipeline.Orchestrator: Identifying validation improvements")
+    EffectivenessTracker.get_improvement_opportunities()
+  end
+
+  @doc """
+  Get top performing validation checks.
+
+  Returns the most effective checks based on historical success rates.
+
+  ## Parameters
+  - `limit` - Max checks to return (default: 10)
+
+  ## Returns
+  - List of {check_id, effectiveness_score} tuples
+  """
+  @spec get_top_validation_checks(integer()) :: [{String.t(), float()}]
+  def get_top_validation_checks(limit \\ 10) do
+    Logger.info("Pipeline.Orchestrator: Getting top validation checks",
+      limit: limit
+    )
+
+    EffectivenessTracker.get_top_performing_checks(limit: limit)
+  end
+
+  @doc """
+  Analyze complete learning system health.
+
+  Returns KPIs showing how well the system is learning and improving.
+
+  ## Returns
+  - Map with validation accuracy, success rate, and optimization metrics
+  """
+  @spec analyze_learning_health() :: map()
+  def analyze_learning_health do
+    Logger.info("Pipeline.Orchestrator: Analyzing learning system health")
+
+    kpis = Learning.get_kpis()
+    effectiveness = get_validation_effectiveness()
+
+    %{
+      kpis: kpis,
+      check_effectiveness: effectiveness,
+      system_health: interpret_health(kpis, effectiveness)
+    }
+  end
+
   # Private Helpers
 
   defp extract_constraints(context) do
     []
     # In real implementation, would generate constraints from context
     # e.g., FrameworkConstraint, TechnologyConstraint, etc.
+  end
+
+  defp interpret_health(kpis, _effectiveness) do
+    validation_accuracy = kpis[:validation_accuracy]
+    success_rate = kpis[:execution_success_rate]
+
+    cond do
+      is_nil(validation_accuracy) or is_nil(success_rate) ->
+        "WARMING_UP - Insufficient data for assessment"
+
+      validation_accuracy > 0.90 and success_rate > 0.90 ->
+        "EXCELLENT - System is learning and improving well"
+
+      validation_accuracy > 0.80 and success_rate > 0.80 ->
+        "GOOD - Validation and execution both performing well"
+
+      validation_accuracy > 0.70 ->
+        "FAIR - Validation is reasonable, execution could improve"
+
+      true ->
+        "NEEDS_IMPROVEMENT - Consider refining validation checks"
+    end
   end
 end
