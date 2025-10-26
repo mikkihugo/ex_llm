@@ -300,19 +300,25 @@ Result: Implementation plan + validation metrics + learned rules
 
 ---
 
-### Priority 2: E2E Test Responses API Integration (2 days)
+### Priority 2: E2E Test Async Responses API Result Polling (2 days)
 
-**File:** `lib/singularity/llm/service.ex` (LLM request/response handling)
+**Files:**
+- `lib/singularity/jobs/llm_request_worker.ex` (enqueues with `api_version: "responses"` ✅)
+- `lib/singularity/workflows/llm_request.ex` (workflow execution ✅)
+- `lib/singularity/jobs/llm_result_poller.ex` (async result retrieval ⚠️)
 
-**Current State:** Enqueuing LLM requests works; receiving real Responses API payloads needs verification
+**Current State:**
+- ✅ Responses API is the default API version (set in LlmRequestWorker line 46)
+- ✅ Requests enqueued with Responses API format
+- ⚠️ Async result polling chain needs E2E testing with real API responses
 
 **What Needs to Happen:**
 1. Set up integration test with real OpenAI Responses API credentials
-2. Exchange real Responses API payloads (`type: "response.create"`, `api_version: "responses"`)
-3. Verify RequestWorker → Nexus QueueConsumer → LlmResultPoller chain
-4. Test timeout/retry logic with real API delays
+2. Verify complete async chain: enqueue → LlmRequest workflow → Nexus → API → LlmResultPoller → database
+3. Test timeout/retry logic with real API delays and actual Responses API payloads
+4. Verify result persistence and availability to callers
 
-**Impact:** Production deployments can receive real LLM completions instead of stubs
+**Impact:** Production deployments confirmed to receive real LLM completions asynchronously
 
 **Test:** Integration test in `test/singularity/llm/service_integration_test.exs`
 
