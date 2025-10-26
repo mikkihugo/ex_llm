@@ -1,0 +1,66 @@
+defmodule ObserverWeb.KnowledgeBaseLive do
+  use ObserverWeb, :live_view
+
+  require Logger
+
+  @impl true
+  def mount(_params, _session, socket) do
+    Logger.info("KnowledgeBaseLive: Mounting")
+
+    if connected?(socket) do
+      :timer.send_interval(15000, self(), :refresh_metrics)
+    end
+
+    {:ok,
+     socket
+     |> assign(:loading, true)
+     |> assign(:error, nil)
+     |> fetch_metrics()}
+  end
+
+  @impl true
+  def handle_info(:refresh_metrics, socket) do
+    {:noreply, fetch_metrics(socket)}
+  end
+
+  @impl true
+  def handle_event("refresh", _params, socket) do
+    {:noreply, fetch_metrics(socket)}
+  end
+
+  defp fetch_metrics(socket) do
+    try do
+      {:ok, dashboard} = Singularity.Embedding.KnowledgeBaseMetricsDashboard.get_dashboard()
+
+      socket
+      |> assign(:loading, false)
+      |> assign(:error, nil)
+      |> assign(:dashboard, dashboard)
+    rescue
+      error ->
+        Logger.error("KnowledgeBaseLive: Error fetching metrics",
+          error: inspect(error)
+        )
+
+        socket
+        |> assign(:loading, false)
+        |> assign(:error, "Failed to load knowledge base metrics: #{inspect(error)}")
+        |> assign(:dashboard, nil)
+    end
+  end
+
+  defp efficiency_badge(status) do
+    case status do
+      :excellent -> {"✅ Excellent", "bg-green-100 text-green-800"}
+      :good -> {"👍 Good", "bg-blue-100 text-blue-800"}
+      :fair -> {"⚠️ Fair", "bg-yellow-100 text-yellow-800"}
+      _ -> {"❓ Unknown", "bg-gray-100 text-gray-800"}
+    end
+  end
+
+  defp format_percentage(value) when is_number(value) do
+    (value * 100) |> Float.round(1) |> :erlang.float_to_binary([decimals: 1])
+  end
+
+  defp format_percentage(_), do: "N/A"
+end
