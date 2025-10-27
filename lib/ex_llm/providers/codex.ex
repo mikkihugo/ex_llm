@@ -71,7 +71,7 @@ defmodule ExLLM.Providers.Codex do
       content = extract_content_from_response(response)
 
       {:ok,
-       %ExLLM.Types.LLMResponse{
+       %Types.LLMResponse{
          content: content,
          model: Map.get(response, "model", "gpt-5-codex"),
          usage: extract_tokens(response),

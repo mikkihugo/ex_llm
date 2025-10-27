@@ -1,0 +1,46 @@
+provider: gemini_embeddings
+description: Google Gemini Embeddings API (via AI Studio)
+authentication:
+  type: api_key
+  env_var: GEMINI_AI_STUDIO_API_KEY
+  endpoint: https://generativelanguage.googleapis.com/v1beta/models
+
+models:
+  text-embedding-004:
+    name: Text Embedding 004
+    description: Latest Gemini text embedding model with 768 dimensions
+    embedding_dimension: 768
+    max_input_tokens: 2048
+    pricing:
+      input: 0.0
+    capabilities:
+      - text_embedding
+      - semantic_search
+      - batch_processing
+    task_complexity_score:
+      simple: 1.0
+      medium: 1.5
+      complex: 1.5
+    api_type: embedding
+    endpoint: /generateContent
+    batch_size: 100
+
+  embedding-001:
+    name: Embedding 001
+    description: Stable Gemini embedding model with 768 dimensions
+    embedding_dimension: 768
+    max_input_tokens: 2048
+    pricing:
+      input: 0.0
+    capabilities:
+      - text_embedding
+      - semantic_search
+    task_complexity_score:
+      simple: 1.0
+      medium: 1.0
+      complex: 1.0
+    api_type: embedding
+    endpoint: /generateContent
+    batch_size: 100
+
+default_model: text-embedding-004

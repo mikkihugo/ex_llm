@@ -121,6 +121,10 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
   def sync_to_configs do
     case fetch_all() do
       {:ok, models_by_provider} ->
+        # Note: We fetch models from models.dev but DO NOT enrich with dynamic OpenRouter prices
+        # Dynamic prices should come from OpenRouter API at runtime, not persisted to YAML
+        # YAML is for relatively static configuration only
+
         Enum.each(models_by_provider, fn {provider, models} ->
           sync_provider_models(provider, models)
         end)
@@ -128,12 +132,26 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
         # Update sync marker for TTL tracking
         update_sync_marker()
 
-        Logger.info("Synced models.dev data to YAML configs")
+        Logger.info("Synced models.dev data to YAML configs (prices retrieved from OpenRouter API at runtime)")
         :ok
 
       {:error, _reason, _msg} ->
         Logger.error("Failed to sync models.dev")
         {:error, :sync_failed}
+    end
+  end
+
+  @doc """
+  Get cached models if available (for enrichment purposes).
+
+  Returns models without refetching from API.
+  Used by OpenRouter price syncer to merge pricing data.
+  """
+  @spec get_cached_models() :: {:ok, map()} | {:error, :no_cache}
+  def get_cached_models do
+    case read_from_file_cache() do
+      {:ok, data} -> {:ok, parse_models(data)}
+      :error -> {:error, :no_cache}
     end
   end
 
@@ -185,8 +203,11 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
   @spec sync_ttl_expired?() :: boolean()
   def sync_ttl_expired? do
     case File.stat(@sync_marker_file) do
-      {:ok, %{mtime: mtime}} ->
-        age_seconds = (System.os_time(:second) - DateTime.to_unix(mtime, :second))
+      {:ok, %{mtime: mtime_erl}} ->
+        # Convert Erlang datetime to seconds since epoch
+        mtime_dt = erl_time_to_datetime(mtime_erl)
+        mtime_unix = DateTime.to_unix(mtime_dt, :second)
+        age_seconds = System.os_time(:second) - mtime_unix
         age_hours = age_seconds / 3600
         age_hours >= @config_sync_ttl_hours
 
@@ -257,14 +278,22 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
 
   defp cache_fresh? do
     case File.stat(@cache_file) do
-      {:ok, %{mtime: mtime}} ->
-        age_seconds = System.os_time(:second) - DateTime.to_unix(mtime, :second)
+      {:ok, %{mtime: mtime_erl}} ->
+        # Convert Erlang datetime to seconds since epoch
+        mtime_dt = erl_time_to_datetime(mtime_erl)
+        mtime_unix = DateTime.to_unix(mtime_dt, :second)
+        age_seconds = System.os_time(:second) - mtime_unix
         age_minutes = age_seconds / 60
         age_minutes < @api_cache_ttl_minutes
 
       {:error, _} ->
         false
     end
+  end
+
+  defp erl_time_to_datetime({{year, month, day}, {hour, minute, second}}) do
+    {:ok, dt} = DateTime.new(Date.new!(year, month, day), Time.new!(hour, minute, second), "Etc/UTC")
+    dt
   end
 
   defp parse_models(data) when is_map(data) do
@@ -319,21 +348,23 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
     capabilities = []
 
     capabilities =
-      if model["vision"] or model["image_input"], do: capabilities ++ ["vision"], else: capabilities
+      if (model["vision"] == true or model["image_input"] == true),
+        do: capabilities ++ ["vision"],
+        else: capabilities
 
     capabilities =
-      if model["function_calling"] or model["tool_use"],
+      if (model["function_calling"] == true or model["tool_use"] == true),
         do: capabilities ++ ["function_calling"],
         else: capabilities
 
     capabilities =
-      if model["streaming"], do: capabilities ++ ["streaming"], else: capabilities
+      if model["streaming"] == true, do: capabilities ++ ["streaming"], else: capabilities
 
     capabilities =
-      if model["json_mode"], do: capabilities ++ ["json_mode"], else: capabilities
+      if model["json_mode"] == true, do: capabilities ++ ["json_mode"], else: capabilities
 
     capabilities =
-      if model["reasoning"], do: capabilities ++ ["reasoning"], else: capabilities
+      if model["reasoning"] == true, do: capabilities ++ ["reasoning"], else: capabilities
 
     capabilities
   end
@@ -489,4 +520,19 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
         :ok
     end
   end
+
+  defp read_from_file_cache do
+    # Read raw models.dev data from file cache for enrichment
+    case File.read(@cache_file) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} -> {:ok, data}
+          {:error, _} -> :error
+        end
+
+      {:error, _} ->
+        :error
+    end
+  end
+
 end

@@ -38,9 +38,11 @@ defmodule ExLLM.Providers.OpenRouter.Responses do
       )
   """
 
+  import ExLLM.Providers.Shared.ConfigHelper
+
   @behaviour ExLLM.Provider
 
-  @base_url "https://openrouter.ai/v1"
+  @base_url "https://openrouter.ai/api/v1"
   @responses_endpoint "/responses"
 
   @impl true
@@ -54,9 +56,18 @@ defmodule ExLLM.Providers.OpenRouter.Responses do
 
   @impl true
   def chat(messages, opts \\ []) do
-    # For now, fall back to regular OpenRouter chat since responses endpoint isn't available
-    # This will be updated when OpenRouter adds responses support
-    ExLLM.Providers.OpenRouter.chat(messages, opts)
+    config_provider = get_config_provider(opts)
+    with {:ok, config} <- get_config(:openrouter, config_provider),
+         {:ok, request} <- build_responses_request(messages, opts),
+         {:ok, response} <- execute_responses_request(request, config) do
+      parse_responses_response(response)
+    else
+      {:error, :responses_not_available} ->
+        # Fall back to regular OpenRouter chat if responses endpoint isn't available
+        ExLLM.Providers.OpenRouter.chat(messages, opts)
+      {:error, reason} -> 
+        {:error, reason}
+    end
   end
 
   @impl true
@@ -78,9 +89,8 @@ defmodule ExLLM.Providers.OpenRouter.Responses do
   """
   @spec responses_supported?() :: boolean()
   def responses_supported? do
-    # OpenRouter has Responses API documentation but endpoint not yet live
-    # The endpoint will be at https://openrouter.ai/v1/responses
-    false
+    # OpenRouter now supports the Responses API at https://openrouter.ai/api/v1/responses
+    true
   end
 
   @doc """
@@ -89,7 +99,7 @@ defmodule ExLLM.Providers.OpenRouter.Responses do
   This function prepares the request body for the `/responses` endpoint
   with support for MCP servers, built-in tools, and stateful conversations.
   """
-  @spec build_responses_request([map()], keyword()) :: map()
+  @spec build_responses_request([map()], keyword()) :: {:ok, map()} | {:error, term()}
   def build_responses_request(messages, opts \\ []) do
     model = Keyword.get(opts, :model, "openai/gpt-4o-mini")
     mcp_servers = Keyword.get(opts, :mcp_servers, [])
@@ -97,9 +107,22 @@ defmodule ExLLM.Providers.OpenRouter.Responses do
     stateful = Keyword.get(opts, :stateful, false)
     conversation_id = Keyword.get(opts, :conversation_id)
 
+    # Convert messages to input format for OpenRouter Responses API
+    input = case messages do
+      [%{role: "user", content: content}] when is_binary(content) ->
+        content
+      _ ->
+        # For complex messages, convert to text format
+        messages
+        |> Enum.map(fn %{role: role, content: content} ->
+          "#{role}: #{content}"
+        end)
+        |> Enum.join("\n")
+    end
+
     base_request = %{
       model: model,
-      messages: messages
+      input: input
     }
 
     # Add MCP servers if provided
@@ -130,7 +153,24 @@ defmodule ExLLM.Providers.OpenRouter.Responses do
       request
     end
 
-    request
+    {:ok, request}
+  end
+
+  @doc """
+  Execute a request to the OpenRouter Responses API.
+  """
+  @spec execute_responses_request(map(), map()) :: {:ok, map()} | {:error, term()}
+  def execute_responses_request(request, config) do
+    url = "#{@base_url}#{@responses_endpoint}"
+    headers = [
+      {"authorization", "Bearer #{config.api_key}"},
+      {"content-type", "application/json"}
+    ]
+
+    case ExLLM.Providers.Shared.HTTP.Core.post(url, request, headers) do
+      {:ok, response} -> {:ok, response}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @doc """
@@ -140,7 +180,7 @@ defmodule ExLLM.Providers.OpenRouter.Responses do
   tool calls, and MCP server interactions.
   """
   @spec parse_responses_response(map()) :: {:ok, map()} | {:error, term()}
-  def parse_responses_response(response) do
+  def parse_responses_response(_response) do
     # This will be implemented when OpenRouter adds responses support
     # For now, return an error indicating the feature isn't available
     {:error, :responses_not_supported}
@@ -148,33 +188,33 @@ defmodule ExLLM.Providers.OpenRouter.Responses do
 
   @doc """
   Start a stateful conversation.
-  
+
   Creates a new conversation with server-side state management.
   """
   @spec start_conversation([map()], keyword()) :: {:ok, map()} | {:error, term()}
-  def start_conversation(messages, opts \\ []) do
+  def start_conversation(_messages, _opts \\ []) do
     # This will be implemented when OpenRouter adds responses support
     {:error, :responses_not_supported}
   end
 
   @doc """
   Continue an existing conversation.
-  
+
   Sends new messages to an existing conversation using the conversation ID.
   """
   @spec continue_conversation(String.t(), [map()], keyword()) :: {:ok, map()} | {:error, term()}
-  def continue_conversation(conversation_id, messages, opts \\ []) do
+  def continue_conversation(_conversation_id, _messages, _opts \\ []) do
     # This will be implemented when OpenRouter adds responses support
     {:error, :responses_not_supported}
   end
 
   @doc """
   Get conversation history.
-  
+
   Retrieves the full conversation history for a given conversation ID.
   """
   @spec get_conversation_history(String.t()) :: {:ok, [map()]} | {:error, term()}
-  def get_conversation_history(conversation_id) do
+  def get_conversation_history(_conversation_id) do
     # This will be implemented when OpenRouter adds responses support
     {:error, :responses_not_supported}
   end

@@ -120,8 +120,8 @@ defmodule ExLLM.ResponsesAPI do
   @spec supported_providers() :: [atom()]
   def supported_providers do
     # Providers that support the Responses API
-    # Note: OpenRouter has documentation but endpoint not yet live
-    [:openai, :openrouter]
+    # OpenRouter, Codex, and X.AI all offer the new Responses API
+    [:openai, :openrouter, :codex, :xai]
   end
 
   @doc """
@@ -194,6 +194,22 @@ defmodule ExLLM.ResponsesAPI do
         # Check if OpenRouter has responses support
         if Code.ensure_loaded?(ExLLM.Providers.OpenRouter.Responses) do
           {:ok, ExLLM.Providers.OpenRouter.Responses}
+        else
+          {:error, :responses_not_implemented}
+        end
+        
+      :codex ->
+        # Check if Codex has responses support
+        if Code.ensure_loaded?(ExLLM.Providers.Codex.Responses) do
+          {:ok, ExLLM.Providers.Codex.Responses}
+        else
+          {:error, :responses_not_implemented}
+        end
+        
+      :xai ->
+        # Check if X.AI has responses support
+        if Code.ensure_loaded?(ExLLM.Providers.XAI.Responses) do
+          {:ok, ExLLM.Providers.XAI.Responses}
         else
           {:error, :responses_not_implemented}
         end

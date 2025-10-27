@@ -1,0 +1,20 @@
+{
+  "default_model": null,
+  "models": {
+    "chutes": {
+      "available": true,
+      "capabilities": [],
+      "context_window": 4096,
+      "deprecated": false,
+      "description": "From models.dev",
+      "max_output_tokens": 2048,
+      "name": "Chutes",
+      "pricing": {
+        "input": 0.0,
+        "output": 0.0
+      },
+      "source": "models.dev"
+    }
+  },
+  "provider": "chutes"
+}
