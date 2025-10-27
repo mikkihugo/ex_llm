@@ -95,9 +95,8 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
 
   require Logger
   alias Singularity.Analysis.PatternDetector
-  alias Singularity.TemplateMatcher
   alias Singularity.CodebaseSnapshots
-  alias Singularity.TechnologyPatternAdapter
+  alias Singularity.CentralCloud
 
   @type detection_type :: :framework | :technology | :service_architecture
   @type detection_result :: %{
@@ -121,6 +120,8 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
     - `:framework`, `:technology`, `:service_architecture`
   - `:confidence_threshold` - Minimum confidence 0.0-1.0 (default: 0.5)
   - `:cache` - Use cached results (default: true)
+  - `:use_centralcloud` - Delegate to CentralCloud for intelligent analysis (default: true)
+  - `:learning_enabled` - Enable cross-instance learning (default: true)
 
   ## Returns
   {:ok, [detection_result()]} or {:error, reason}
@@ -131,44 +132,56 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
     try do
       detector_types = Keyword.get(opts, :types, nil)
       use_cache = Keyword.get(opts, :cache, true)
+      use_centralcloud = Keyword.get(opts, :use_centralcloud, true)
+      learning_enabled = Keyword.get(opts, :learning_enabled, true)
 
       Logger.debug("DetectionOrchestrator: detecting in #{codebase_path}",
         types: detector_types,
-        use_cache: use_cache
+        use_cache: use_cache,
+        use_centralcloud: use_centralcloud
       )
 
-      # Use PatternDetector (config-driven, unified orchestrator for low-level detectors)
-      detections =
-        if detector_types do
-          Enum.flat_map(detector_types, fn type ->
-            case PatternDetector.detect(codebase_path, types: [type]) do
-              {:ok, results} -> results
-              {:error, _} -> []
-            end
-          end)
-        else
-          case PatternDetector.detect(codebase_path) do
-            {:ok, results} -> results
-            {:error, _} -> []
-          end
+      # Step 1: Try local pattern detection first (fast, always available)
+      local_detections = detect_locally(codebase_path, detector_types)
+
+      # Step 2: If CentralCloud enabled, delegate intelligent analysis
+      detections = if use_centralcloud do
+        case delegate_to_centralcloud(codebase_path, local_detections, opts) do
+          {:ok, enhanced_detections} ->
+            Logger.info("✅ Enhanced detection with CentralCloud intelligence")
+            enhanced_detections
+          {:error, _reason} ->
+            Logger.warning("⚠️ CentralCloud unavailable, using local detection only")
+            local_detections
         end
+      else
+        local_detections
+      end
+
+      # Step 3: Apply learning if enabled
+      final_detections = if learning_enabled do
+        learn_and_enhance_patterns(detections, codebase_path)
+      else
+        detections
+      end
 
       elapsed = System.monotonic_time(:millisecond) - start_time
 
       Logger.info("DetectionOrchestrator: detection complete",
         codebase: codebase_path,
-        detections: length(detections),
-        elapsed_ms: elapsed
+        detections: length(final_detections),
+        elapsed_ms: elapsed,
+        centralcloud_used: use_centralcloud
       )
 
       # Publish metrics
       :telemetry.execute(
         [:singularity, :detection, :completed],
-        %{duration_ms: elapsed, detections_count: length(detections)},
-        %{codebase: codebase_path}
+        %{duration_ms: elapsed, detections_count: length(final_detections)},
+        %{codebase: codebase_path, centralcloud_used: use_centralcloud}
       )
 
-      {:ok, detections}
+      {:ok, final_detections}
     rescue
       e ->
         Logger.error("DetectionOrchestrator failed", error: inspect(e))
@@ -289,9 +302,119 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
     end
   end
 
-  # Private helpers
+  # Private Functions
+
+  defp detect_locally(codebase_path, detector_types) do
+    # Use PatternDetector (config-driven, unified orchestrator for low-level detectors)
+    if detector_types do
+      Enum.flat_map(detector_types, fn type ->
+        case PatternDetector.detect(codebase_path, types: [type]) do
+          {:ok, results} -> results
+          {:error, _} -> []
+        end
+      end)
+    else
+      case PatternDetector.detect(codebase_path) do
+        {:ok, results} -> results
+        {:error, _} -> []
+      end
+    end
+  end
+
+  defp delegate_to_centralcloud(codebase_path, local_detections, opts) do
+    # Prepare codebase info for CentralCloud analysis
+    codebase_info = %{
+      path: codebase_path,
+      local_detections: local_detections,
+      analysis_type: :pattern_detection,
+      include_patterns: true,
+      include_learning: true
+    }
+
+    analysis_opts = [
+      analysis_type: :pattern_detection,
+      include_patterns: true,
+      include_learning: true
+    ]
+
+    case CentralCloud.analyze_codebase(codebase_info, analysis_opts) do
+      {:ok, centralcloud_results} ->
+        # Merge CentralCloud intelligence with local detections
+        merge_centralcloud_results(local_detections, centralcloud_results)
+      {:error, _reason} = error ->
+        error
+    end
+  end
+
+  defp merge_centralcloud_results(local_detections, centralcloud_results) do
+    # Extract enhanced detections from CentralCloud results
+    enhanced_detections = Map.get(centralcloud_results, :enhanced_detections, [])
+    learned_patterns = Map.get(centralcloud_results, :learned_patterns, [])
+
+    # Merge: prefer CentralCloud results, fall back to local
+    merged = Enum.map(local_detections, fn local_detection ->
+      # Try to find enhanced version from CentralCloud
+      case find_matching_detection(local_detection, enhanced_detections) do
+        nil -> local_detection  # Keep local if no enhancement
+        enhanced -> enhanced    # Use enhanced version
+      end
+    end)
+
+    # Add any new detections learned from CentralCloud
+    new_detections = Enum.reject(enhanced_detections, fn enhanced ->
+      Enum.any?(local_detections, &detection_matches?(&1, enhanced))
+    end)
+
+    merged ++ new_detections ++ learned_patterns
+  end
+
+  defp find_matching_detection(target_detection, detection_list) do
+    Enum.find(detection_list, fn detection ->
+      detection_matches?(target_detection, detection)
+    end)
+  end
+
+  defp detection_matches?(detection1, detection2) do
+    # Match by name and type with some flexibility
+    detection1.name == detection2.name and
+    detection1.type == detection2.type and
+    abs(detection1.confidence - detection2.confidence) < 0.2
+  end
+
+  defp learn_and_enhance_patterns(detections, codebase_path) do
+    # Send detection results to CentralCloud for cross-instance learning
+    instance_patterns = %{
+      codebase_path: codebase_path,
+      detections: detections,
+      instance_id: get_instance_id(),
+      detected_at: DateTime.utc_now()
+    }
+
+    # Fire and forget - don't block on learning
+    Task.start(fn ->
+      case CentralCloud.learn_patterns([instance_patterns]) do
+        {:ok, learning_results} ->
+          Logger.debug("✅ Pattern learning completed",
+            patterns_learned: length(Map.get(learning_results, :new_patterns, []))
+          )
+        {:error, reason} ->
+          Logger.debug("⚠️ Pattern learning failed", reason: reason)
+      end
+    end)
+
+    detections
+  end
+
+  defp get_instance_id do
+    # Get unique instance identifier
+    System.get_env("SINGULARITY_INSTANCE_ID") ||
+      (:crypto.hash(:sha256, File.cwd!()) |> Base.encode16(case: :lower) |> String.slice(0, 8))
+  end
 
   defp generate_snapshot_id do
-    System.os_time(:millisecond)
+    # Generate unique snapshot ID for this detection run
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    instance_id = get_instance_id()
+    "#{instance_id}_#{timestamp}"
   end
 end

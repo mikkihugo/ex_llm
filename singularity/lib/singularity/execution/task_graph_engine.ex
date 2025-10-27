@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Planning.TaskGraphEngine do
+defmodule Singularity.Execution.TaskGraphEngine do
   @moduledoc """
   Pure Elixir Hierarchical Task Directed Acyclic Graph (TaskGraph) for autonomous task decomposition.
 

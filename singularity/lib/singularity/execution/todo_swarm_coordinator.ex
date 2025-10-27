@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Todos.TodoSwarmCoordinator do
+defmodule Singularity.Execution.TodoSwarmCoordinator do
   @moduledoc """
   ## TodoSwarmCoordinator - Orchestrate Distributed Todo Execution via Worker Pool
 

@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Todos.Todo do
+defmodule Singularity.Execution.Todo do
   @moduledoc """
   Todo schema for task management with swarm-based execution.
 
@@ -27,7 +27,7 @@ defmodule Singularity.Execution.Todos.Todo do
   ### Module Identity (JSON)
   ```json
   {
-    "module": "Singularity.Execution.Todos.Todo",
+    "module": "Singularity.Execution.Todo",
     "purpose": "Task management with swarm-based execution, dependencies, and embeddings",
     "role": "schema",
     "layer": "domain_services",

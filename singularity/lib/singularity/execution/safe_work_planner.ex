@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Planning.SafeWorkPlanner do
+defmodule Singularity.Execution.SafeWorkPlanner do
   @moduledoc """
   SAFe 6.0 Essential Work Planner with intelligent vision chunk processing and WSJF prioritization.
 

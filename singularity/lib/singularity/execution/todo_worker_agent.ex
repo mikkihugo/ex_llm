@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Todos.TodoWorkerAgent do
+defmodule Singularity.Execution.TodoWorkerAgent do
   @moduledoc """
   TodoWorkerAgent - Individual worker that executes a single todo.
 

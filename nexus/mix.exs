@@ -33,6 +33,9 @@ defmodule Nexus.MixProject do
 
       # JSON encoding/decoding
       {:jason, "~> 1.4"},
+      
+      # TOML parsing for Codex config
+      {:toml, "~> 0.7"},
 
       # PostgreSQL message queue (brought in by ex_pgflow, kept for explicit usage)
       {:pgmq, "~> 0.4.0"},

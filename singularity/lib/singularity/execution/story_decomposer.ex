@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Planning.StoryDecomposer do
+defmodule Singularity.Execution.StoryDecomposer do
   @moduledoc """
   Story Decomposer - Systematic user story breakdown via 5-phase code generation methodology.
 

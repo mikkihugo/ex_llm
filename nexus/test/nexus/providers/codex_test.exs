@@ -149,11 +149,12 @@ defmodule Nexus.Providers.CodexTest do
   end
 
   describe "configured?/0" do
-    test "returns false when no token is stored" do
-      # MockOAuthToken.get/1 returns {:error, :not_found} by default
+    test "returns true when real Codex configuration is available" do
+      # This test now checks if real ~/.codex configuration is available
       configured = Codex.configured?()
 
-      assert configured == false
+      # Should be true if ~/.codex/auth.json exists with valid tokens
+      assert configured == true
     end
   end
 

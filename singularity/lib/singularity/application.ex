@@ -193,17 +193,13 @@ defmodule Singularity.Application do
         # Uses PGMQ for task queuing and Broadway for pipeline orchestration
         Singularity.ML.PipelineSupervisor,
 
-        # Execution Planning - Work planning and task graphs
+        # Execution - Unified planning and todos system
         # PGMQ and Knowledge.Supervisor are now available
-        Singularity.Execution.Planning.Supervisor,
+        Singularity.Execution.Supervisor,
 
         # SPARC Orchestration - Template-driven execution
         # PGMQ and Knowledge.Supervisor are now available
         Singularity.Execution.SPARC.Supervisor,
-
-        # Task Coordination - Todo/work item management
-        # NOTE: Disabled - requires unavailable infrastructure
-        # Singularity.Execution.Todos.Supervisor,
 
         # Agent Coordination - Task routing and execution coordination
         # Routes tasks to best-fit agents based on capabilities

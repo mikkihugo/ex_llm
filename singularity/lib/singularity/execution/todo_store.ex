@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Todos.TodoStore do
+defmodule Singularity.Execution.TodoStore do
   @moduledoc """
   TodoStore - Storage and retrieval for todos with semantic search.
 
