@@ -39,13 +39,13 @@ defmodule Singularity.CodePatternExtractorTest do
       patterns = [
         %{name: "api_client", keywords: ["api", "client", "http"]},
         %{name: "database", keywords: ["database", "sql", "query"]},
-        %{name: "nats_consumer", keywords: ["nats", "consumer", "message"]}
+        %{name: "message_consumer", keywords: ["message", "consumer", "queue"]}
       ]
 
-      user_tokens = ["nats", "consumer"]
+      user_tokens = ["message", "consumer"]
       matches = CodePatternExtractor.find_matching_patterns(user_tokens, patterns)
 
-      assert [%{pattern: %{name: "nats_consumer"}} | _] = matches
+      assert [%{pattern: %{name: "message_consumer"}} | _] = matches
     end
 
     test "pattern name contributes to score" do
@@ -63,19 +63,19 @@ defmodule Singularity.CodePatternExtractorTest do
     test "relationship bonus increases score" do
       patterns = [
         %{
-          name: "nats_service",
-          keywords: ["nats"],
+          name: "messaging_service",
+          keywords: ["messaging"],
           relationships: ["genserver", "supervisor"]
         },
-        %{name: "simple_nats", keywords: ["nats"]}
+        %{name: "simple_queue", keywords: ["queue"]}
       ]
 
       # User mentions related pattern
-      user_tokens = ["nats", "genserver"]
+      user_tokens = ["messaging", "genserver"]
       matches = CodePatternExtractor.find_matching_patterns(user_tokens, patterns)
 
       # Pattern with relationship should score higher
-      assert [%{pattern: %{name: "nats_service"}} | _] = matches
+      assert [%{pattern: %{name: "messaging_service"}} | _] = matches
     end
 
     test "no match returns empty list" do
