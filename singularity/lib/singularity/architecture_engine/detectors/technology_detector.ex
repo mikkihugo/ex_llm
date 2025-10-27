@@ -77,7 +77,7 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
   def pattern_type, do: :technology
 
   @impl true
-  def description, do: "Detect programming languages, runtimes, and technology stack (with learned patterns)"
+  def description, do: "Detect programming languages, runtimes, technology stack, and infrastructure systems (Phase 7)"
 
   @impl true
   def supported_types do
@@ -88,7 +88,11 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
       "cache",
       "messaging",
       "ci_cd",
-      "container"
+      "container",
+      # Phase 7: Infrastructure types via registry cache
+      "service_mesh",
+      "api_gateway",
+      "container_orchestration"
     ]
   end
 
@@ -191,7 +195,11 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
       detect_caching(path),
       detect_messaging(path),
       detect_ci_cd(path),
-      detect_containers(path)
+      detect_containers(path),
+      # Phase 7: Dynamic infrastructure detection via registry cache
+      detect_service_mesh(path),
+      detect_api_gateways(path),
+      detect_container_orchestration(path)
     ]
     |> List.flatten()
     |> Enum.reject(&is_nil/1)
@@ -296,7 +304,7 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
 
   defp detect_messaging(path) do
     [
-      if(has_file?(path, "pgmq.js"),
+      if(has_file?(path, "Singularity.Jobs.PgmqClient.js"),
         do: %{name: "pgmq", type: "messaging", confidence: 0.90, description: "pgmq messaging"}
       ),
       if(contains_dependency?(path, "amqp"),
@@ -360,6 +368,101 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
       )
     ]
     |> Enum.reject(&is_nil/1)
+  end
+
+  # Phase 7: Infrastructure detection via registry cache
+
+  defp detect_service_mesh(path) do
+    alias Singularity.Architecture.InfrastructureRegistryCache
+
+    case InfrastructureRegistryCache.get_registry() do
+      {:ok, registry} ->
+        meshes = registry["service_mesh"] || %{}
+
+        meshes
+        |> Enum.reduce([], fn {system_name, schema}, acc ->
+          patterns = schema["detection_patterns"] || []
+
+          if Enum.any?(patterns, &has_file?(path, &1)) do
+            [
+              %{
+                name: system_name,
+                type: "service_mesh",
+                confidence: 0.80,
+                description: schema["description"] || "Service mesh"
+              }
+              | acc
+            ]
+          else
+            acc
+          end
+        end)
+
+      {:error, _} ->
+        []
+    end
+  end
+
+  defp detect_api_gateways(path) do
+    alias Singularity.Architecture.InfrastructureRegistryCache
+
+    case InfrastructureRegistryCache.get_registry() do
+      {:ok, registry} ->
+        gateways = registry["api_gateways"] || %{}
+
+        gateways
+        |> Enum.reduce([], fn {system_name, schema}, acc ->
+          patterns = schema["detection_patterns"] || []
+
+          if Enum.any?(patterns, &has_file?(path, &1)) do
+            [
+              %{
+                name: system_name,
+                type: "api_gateway",
+                confidence: 0.80,
+                description: schema["description"] || "API gateway"
+              }
+              | acc
+            ]
+          else
+            acc
+          end
+        end)
+
+      {:error, _} ->
+        []
+    end
+  end
+
+  defp detect_container_orchestration(path) do
+    alias Singularity.Architecture.InfrastructureRegistryCache
+
+    case InfrastructureRegistryCache.get_registry() do
+      {:ok, registry} ->
+        orchestrators = registry["container_orchestration"] || %{}
+
+        orchestrators
+        |> Enum.reduce([], fn {system_name, schema}, acc ->
+          patterns = schema["detection_patterns"] || []
+
+          if Enum.any?(patterns, &has_file?(path, &1)) do
+            [
+              %{
+                name: system_name,
+                type: "container_orchestration",
+                confidence: 0.85,
+                description: schema["description"] || "Container orchestration"
+              }
+              | acc
+            ]
+          else
+            acc
+          end
+        end)
+
+      {:error, _} ->
+        []
+    end
   end
 
   # Helpers
