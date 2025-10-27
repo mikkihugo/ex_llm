@@ -158,7 +158,7 @@ defmodule Singularity.ArchitectureEngine do
       # => {:ok, [%{name: "phoenix", version: "1.7.0", confidence: 0.98}]}
   """
   @spec detect_frameworks(list(String.t()), keyword()) :: {:ok, list(map())} | {:error, term()}
-  def detect_frameworks(code_patterns, _opts \\ []) do
+  def detect_frameworks(code_patterns, opts \\ []) do
     context = Keyword.get(opts, :context, "")
     confidence_threshold = Keyword.get(opts, :confidence_threshold, 0.7)
 
@@ -191,7 +191,7 @@ defmodule Singularity.ArchitectureEngine do
       # => {:ok, [%{name: "elixir", version: "1.18", confidence: 0.95}]}
   """
   @spec detect_technologies(list(String.t()), keyword()) :: {:ok, list(map())} | {:error, term()}
-  def detect_technologies(code_patterns, _opts \\ []) do
+  def detect_technologies(code_patterns, opts \\ []) do
     context = Keyword.get(opts, :context, "")
     confidence_threshold = Keyword.get(opts, :confidence_threshold, 0.6)
 
@@ -218,7 +218,7 @@ defmodule Singularity.ArchitectureEngine do
   Get architectural suggestions.
   """
   @spec get_architectural_suggestions(map(), keyword()) :: {:ok, list(map())} | {:error, term()}
-  def get_architectural_suggestions(codebase_info, _opts \\ []) do
+  def get_architectural_suggestions(codebase_info, opts \\ []) do
     context = Keyword.get(opts, :context, "")
     types = Keyword.get(opts, :suggestion_types, [:naming, :patterns])
 

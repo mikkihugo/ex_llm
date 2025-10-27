@@ -10,7 +10,7 @@ defmodule Singularity.Engine.NifStatus do
 
   alias Singularity.Engine.NifLoader
 
-  def start_link(_opts \\ []) do
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 

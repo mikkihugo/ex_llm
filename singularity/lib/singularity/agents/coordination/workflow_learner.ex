@@ -172,9 +172,11 @@ defmodule Singularity.Agents.Coordination.WorkflowLearner do
         task_id: outcome[:task_id]
       )
 
-      # Store in database (TODO: implement PostgreSQL persistence)
-      # For now, store in ETS for in-memory learning
+      # Store in ETS for fast in-memory learning
       store_outcome_in_memory(outcome)
+
+      # Async persist to PostgreSQL (fire-and-forget)
+      persist_to_database_async(outcome)
 
       # Calculate and update success rates periodically
       # (Every 10 executions or on demand)
@@ -409,5 +411,30 @@ defmodule Singularity.Agents.Coordination.WorkflowLearner do
   defp is_agent_table?(table) do
     table_str = Atom.to_string(table)
     String.starts_with?(table_str, "workflow_learner_stats_")
+  end
+
+  defp persist_to_database_async(outcome) do
+    # Spawn async task to persist without blocking
+    Task.start_link(fn ->
+      persist_outcome_to_database(outcome)
+    end)
+  end
+
+  defp persist_outcome_to_database(outcome) do
+    alias Singularity.Repo
+    alias Singularity.Schemas.Execution.ExecutionOutcome
+
+    try do
+      outcome
+      |> ExecutionOutcome.from_outcome()
+      |> Repo.insert()
+    rescue
+      e ->
+        Logger.warn("[WorkflowLearner] Failed to persist outcome to database",
+          agent: outcome[:agent],
+          task_id: outcome[:task_id],
+          error: inspect(e)
+        )
+    end
   end
 end

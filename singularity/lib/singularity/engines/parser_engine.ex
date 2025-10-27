@@ -113,29 +113,29 @@ defmodule Singularity.ParserEngine do
 
   Alias for `parse_and_store_file/2` for backward compatibility.
   """
-  def parse_and_store_single_file(file_path, _opts \\ []) do
-    parse_and_store_file(file_path, _opts)
+  def parse_and_store_single_file(file_path, opts \\ []) do
+    parse_and_store_file(file_path, opts)
   end
 
   @doc """
   Parse a single file and persist the result to the database.
   """
-  def parse_and_store_file(file_path, _opts \\ []) do
-    _opts = normalize_options(_opts)
-    do_parse_and_store_file(file_path, _opts)
+  def parse_and_store_file(file_path, opts \\ []) do
+    opts = normalize_options(opts)
+    do_parse_and_store_file(file_path, opts)
   end
 
   @doc """
   Parse all files below a root path and persist them to the database.
   """
-  def parse_and_store_tree(root_path, _opts \\ []) do
-    _opts = normalize_options(_opts)
+  def parse_and_store_tree(root_path, opts \\ []) do
+    opts = normalize_options(opts)
 
     with {:ok, files} <- discover_files(root_path) do
       results =
         files
-        |> Task.async_stream(&do_parse_and_store_file(&1, _opts),
-          max_concurrency: _opts.max_concurrency,
+        |> Task.async_stream(&do_parse_and_store_file(&1, opts),
+          max_concurrency: opts.max_concurrency,
           timeout: :infinity
         )
         |> Enum.map(&unwrap_stream_result/1)
@@ -360,9 +360,9 @@ defmodule Singularity.ParserEngine do
 
   # Private helpers -----------------------------------------------------------
 
-  defp do_parse_and_store_file(file_path, _opts) do
+  defp do_parse_and_store_file(file_path, opts) do
     with {:ok, document} <- parse_file(file_path),
-         {:ok, record} <- store_document(_opts.codebase_id, document, _opts.hash_algorithm) do
+         {:ok, record} <- store_document(opts.codebase_id, document, opts.hash_algorithm) do
       {:ok, %{document: document, record: record}}
     else
       {:error, reason} = error ->
@@ -587,13 +587,13 @@ defmodule Singularity.ParserEngine do
   defp unwrap_stream_result({:ok, result}), do: result
   defp unwrap_stream_result({:exit, reason}), do: {:error, reason}
 
-  defp normalize_options(opts) when is_list(_opts) do
-    _opts
+  defp normalize_options(opts) when is_list(opts) do
+    opts
     |> Enum.into(%{})
     |> normalize_options()
   end
 
-  defp normalize_options(%{} = _opts) do
+  defp normalize_options(%{} = opts) do
     %{
       codebase_id: Map.get(opts, :codebase_id, @default_codebase_id),
       hash_algorithm: Map.get(opts, :hash_algorithm, @default_hash_algorithm),

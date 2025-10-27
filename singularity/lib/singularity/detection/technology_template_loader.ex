@@ -15,7 +15,7 @@ defmodule Singularity.TechnologyTemplateLoader do
   alias Singularity.TemplateStore
 
   @doc "Return decoded template map (or nil if missing)"
-  def template(identifier, _opts \\ []) do
+  def template(identifier, opts \\ []) do
     # Use dynamic template discovery - tries multiple patterns and semantic search
     case Singularity.Knowledge.TemplateService.find_technology_template(identifier) do
       {:ok, template} ->
@@ -32,19 +32,19 @@ defmodule Singularity.TechnologyTemplateLoader do
     field = opts[:field]
 
     identifier
-    |> template(_opts)
+    |> template(opts)
     |> extract_patterns(field)
     |> compile_patterns()
   end
 
   @doc "Append template-based patterns to defaults"
-  def compiled_patterns(identifier, defaults, _opts \\ []) when is_list(defaults) do
-    defaults ++ patterns(identifier, _opts)
+  def compiled_patterns(identifier, defaults, opts \\ []) when is_list(defaults) do
+    defaults ++ patterns(identifier, opts)
   end
 
   @doc "Fetch detector signatures map for identifier"
-  def detector_signatures(identifier, _opts \\ []) do
-    case template(identifier, _opts) do
+  def detector_signatures(identifier, opts \\ []) do
+    case template(identifier, opts) do
       %{"detector_signatures" => signatures} when is_map(signatures) -> signatures
       _ -> %{}
     end

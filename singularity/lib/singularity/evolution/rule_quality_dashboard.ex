@@ -379,7 +379,7 @@ defmodule Singularity.Evolution.RuleQualityDashboard do
   - List of publication records
   """
   @spec get_publication_history(integer()) :: [map()]
-  def get_publication_history(limit \\ 20) do
+  def get_publication_history(opts \\ [])(limit \\ 20) do
     Logger.debug("RuleQualityDashboard: Getting publication history",
       limit: limit
     )
