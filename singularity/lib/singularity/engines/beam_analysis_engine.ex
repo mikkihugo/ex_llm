@@ -30,7 +30,6 @@ defmodule Singularity.BeamAnalysisEngine do
   """
 
   require Logger
-  alias Singularity.NatsClient
 
   @supported_beam_languages ["elixir", "erlang", "gleam"]
 
