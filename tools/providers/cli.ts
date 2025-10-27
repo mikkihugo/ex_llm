@@ -114,6 +114,20 @@ export const claudeCliLanguageModel = createLanguageModel({
   },
 });
 
+/**
+ * Codex CLI Language Model - Special Case Tool
+ * 
+ * This is a special case tool for specific scenarios where the Codex CLI
+ * is needed directly, similar to Jules. It's NOT part of the general
+ * tool registry or fallback chain since the HTTP API rarely fails.
+ * 
+ * Use cases:
+ * - Direct CLI execution with specific sandbox policies
+ * - Testing Codex CLI functionality
+ * - Special scenarios requiring CLI-specific features
+ * 
+ * For general use, prefer the HTTP API via ExLLM.Providers.Codex
+ */
 export const codexCliLanguageModel = createLanguageModel({
   doGenerate: async (options) => {
     const prompt = buildPrompt(options);
