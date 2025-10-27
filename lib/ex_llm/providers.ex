@@ -112,6 +112,7 @@ defmodule ExLLM.Providers do
       :ollama -> ollama_list_models_pipeline()
       :xai -> xai_list_models_pipeline()
       :mock -> mock_list_models_pipeline()
+      :github_models -> github_models_list_models_pipeline()
       _ -> default_list_models_pipeline()
     end
   end
@@ -670,6 +671,16 @@ defmodule ExLLM.Providers do
       Plugs.FetchConfiguration,
       {Plugs.Cache, ttl: 3600},
       Plugs.Providers.XAIListModelsHandler
+    ]
+  end
+
+  defp github_models_list_models_pipeline do
+    # GitHub Models uses the provider's list_models function directly
+    [
+      Plugs.ValidateProvider,
+      Plugs.FetchConfiguration,
+      {Plugs.Cache, ttl: 300},  # 5 minutes cache
+      Plugs.Providers.GitHubModelsListModelsHandler
     ]
   end
 

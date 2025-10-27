@@ -33,6 +33,7 @@ defmodule ExLLM.Plugs.ValidateProvider do
     :bumblebee,
     :xai,
     :bedrock,
+    :github_models,
     :mock
   ]
 

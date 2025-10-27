@@ -1,0 +1,77 @@
+provider: jules
+default_model: google-julius
+description: Google Jules Code Generation
+documentation: |
+  Autonomous AI coding agent from Google.
+
+  Supports two authentication methods:
+  1. API Key (GOOGLE_JULES_API_KEY) - Simple, direct
+  2. Google OAuth2 (GOOGLE_CLIENT_ID/SECRET) - Production, auto-refresh
+
+  Get API key: https://julius.google/ → Settings
+
+  Cost: FREE with Google Cloud account
+
+authentication:
+  methods:
+    - type: api_key
+      env_var: GOOGLE_JULES_API_KEY
+      header: X-Goog-Api-Key
+      description: Simple API key from Julius web app
+    - type: oauth2
+      env_vars:
+        client_id: GOOGLE_CLIENT_ID
+        client_secret: GOOGLE_CLIENT_SECRET
+      scopes:
+        - https://www.googleapis.com/auth/cloud-platform
+      description: Google OAuth2 (shared with Gemini)
+      shared_with: [gemini]
+  priority: [api_key, oauth2]
+
+models:
+  google-julius:
+    name: Google Jules
+    description: Autonomous AI coding agent for full-stack development
+    context_window: 200000
+    max_input_tokens: 200000
+    max_output_tokens: 128000
+    pricing:
+      input: 0.0
+      output: 0.0
+    capabilities:
+      - code_generation
+      - code_analysis
+      - refactoring
+      - testing
+      - documentation
+      - bug_fixing
+      - design_patterns
+    task_complexity_score:
+      simple: 2.5
+      medium: 4.0
+      complex: 4.5
+    cost_score:
+      value: 0.0
+    routing_metadata:
+      api_type: async_task
+      pattern: request_reply
+      submit_fn: create_session
+      poll_fn: poll_session
+      extract_fn: extract_response
+      api_base: https://julius.googleapis.com/v1alpha
+      auth_methods: [api_key, oauth2]
+    session_states:
+      - initializing
+      - planning
+      - executing
+      - done
+      - failed
+    poll_config:
+      default_interval_ms: 3000
+      max_attempts: 60
+      timeout_ms: 300000
+    metadata:
+      language: en
+      region: global
+      release_stage: alpha
+      documentation_url: https://developers.google.com/jules/api

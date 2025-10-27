@@ -458,6 +458,33 @@ defmodule ExLLM.Infrastructure.Config.ProviderCapabilities do
         limitations: %{
           for_testing_only: true
         }
+      },
+
+      # GitHub Models
+      github_models: %__MODULE__.ProviderInfo{
+        id: :github_models,
+        name: "GitHub Models",
+        description: "GitHub's FREE tier LLM inference service with multiple models",
+        documentation_url: "https://docs.github.com/en/github-models",
+        endpoints: [:chat],
+        authentication: [:github_token],
+        features: [
+          :streaming,
+          :function_calling,
+          :usage_tracking,
+          :system_messages,
+          :vision,
+          :tool_use,
+          :reasoning,
+          :json_mode,
+          :structured_outputs
+        ],
+        limitations: %{
+          free_tier_only: true,
+          rate_limited: true,
+          max_context_tokens: 1_000_000,
+          max_output_tokens: 100_000
+        }
       }
     }
   end
@@ -805,6 +832,7 @@ defmodule ExLLM.Infrastructure.Config.ProviderCapabilities do
       :openrouter -> ExLLM.Providers.OpenRouter
       :bumblebee -> ExLLM.Providers.Bumblebee
       :mock -> ExLLM.Providers.Mock
+      :github_models -> ExLLM.Providers.GitHubModels
       _ -> nil
     end
   end
