@@ -977,7 +977,7 @@ defmodule Singularity.Embedding.Validation do
             {:ok, emb} ->
               # Check for NaN and Inf
               flat = Nx.flatten(emb) |> Nx.to_flat_list()
-              has_nan = Enum.any?(flat, &:math.is_nan/1)
+              has_nan = Enum.any?(flat, fn x -> is_float(x) and x != x end)
 
               has_inf =
                 Enum.any?(flat, fn x ->

@@ -78,10 +78,20 @@ defmodule Singularity.Metrics.Event do
     validate_change(changeset, field, fn ^field, value ->
       cond do
         not is_number(value) -> [{field, "must be a number"}]
-        :math.is_nan(value) -> [{field, "cannot be NaN"}]
-        :math.is_inf(value) != 0 -> [{field, "cannot be infinity"}]
+        is_nan(value) -> [{field, "cannot be NaN"}]
+        is_infinity(value) -> [{field, "cannot be infinity"}]
         true -> []
       end
     end)
   end
+
+  # Helper functions for NaN and Infinity checking
+  defp is_nan(value) when is_float(value), do: value != value
+  defp is_nan(_), do: false
+
+  defp is_infinity(value) when is_float(value) do
+    value == :infinity or value == :neg_infinity
+  end
+
+  defp is_infinity(_), do: false
 end
