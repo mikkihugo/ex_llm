@@ -10,17 +10,21 @@
 
 Phase 8.3 integrates infrastructure system definitions from CentralCloud (built in Phase 8.1-8.2) into Singularity and Genesis instances. This enables dynamic, LLM-researched infrastructure detection instead of hardcoded defaults.
 
+Uses **PostgreSQL pgmq** for reliable Singularity ↔ CentralCloud communication over shared_queue database.
+
 ### Integration Flow
 
 ```
 CentralCloud (Database)
     ↓ infrastructure_systems table (28 systems seeded)
-IntelligenceHub.InfrastructureEndpoint
-    ↓ listens at intelligence_hub.infrastructure.registry (NATS)
-Singularity & Genesis (Connected via NATS)
+    ↓
+PgmqConsumer (listening to infrastructure_registry_requests queue)
+    ↓ PgmqConsumer.InfrastructureRegistryConsumer
+    ↓ sends response via infrastructure_registry_responses queue
+Singularity & Genesis (pgmq clients via PgmqClient)
     ↓
 InfrastructureRegistryCache (GenServer, Phase 8.3)
-    ↓ queries via NatsOrchestrator
+    ↓ reads from response queue
 TechnologyDetector (Phase 7)
     ↓ uses dynamic patterns for detection
 Detection Results
@@ -38,7 +42,8 @@ Record confidence updates back to CentralCloud
 
 **What It Does**:
 - GenServer that caches infrastructure system definitions
-- Queries CentralCloud on startup via NATS
+- Sends requests to CentralCloud via pgmq (PostgreSQL message queue)
+- Polls response queue with 100ms sleep between retries
 - Gracefully falls back to hardcoded defaults if CentralCloud unavailable
 - Provides public API for TechnologyDetector and other components
 
@@ -53,13 +58,13 @@ patterns = InfrastructureRegistryCache.get_detection_patterns("Kafka", "message_
 # => ["kafka.yml", "kafkajs", "kafka-python", "rdkafka"]
 
 # Validate infrastructure exists
-:true = InfrastructureRegistryCache.validate_infrastructure("PostgreSQL", "databases")
+true = InfrastructureRegistryCache.validate_infrastructure("PostgreSQL", "databases")
 
 # Refresh from CentralCloud (manual refresh)
 :ok = InfrastructureRegistryCache.refresh_from_centralcloud()
 ```
 
-**NATS Request Format**:
+**pgmq Request Format** (sent to `infrastructure_registry_requests` queue):
 ```json
 {
   "query_type": "infrastructure_registry",
@@ -78,7 +83,7 @@ patterns = InfrastructureRegistryCache.get_detection_patterns("Kafka", "message_
 }
 ```
 
-**Response Format** (from CentralCloud):
+**Response Format** (received from `infrastructure_registry_responses` queue):
 ```json
 {
   "message_brokers": [
@@ -101,14 +106,15 @@ patterns = InfrastructureRegistryCache.get_detection_patterns("Kafka", "message_
 
 **Error Handling**:
 - If CentralCloud unavailable: Falls back to `default_registry()` with 28 hardcoded systems
-- If NATS unavailable: Falls back gracefully with debug logging
-- Timeout: 5 seconds for NATS request
+- If pgmq unavailable: Falls back gracefully with debug logging
+- Timeout: 3 seconds for pgmq response with 100ms polling interval
+- Both apps use shared PostgreSQL database for message queues
 
-### 2. Supervision Tree Integration
+### 2. Singularity Components
 
 **File**: `singularity/lib/singularity/application.ex`
 
-**Change Made**:
+**Supervision Tree Integration**:
 Added `Singularity.Architecture.InfrastructureRegistryCache` to Layer 3 (Domain Services)
 
 ```elixir
@@ -118,14 +124,17 @@ Singularity.LLM.Supervisor,
 # Infrastructure Registry Cache - Caches infrastructure systems from CentralCloud
 # Phase 8.3: Provides detection patterns for TechnologyDetector
 # Falls back to defaults if CentralCloud unavailable
+# Uses pgmq for Singularity ↔ CentralCloud communication
 Singularity.Architecture.InfrastructureRegistryCache,
 ```
 
-**Why This Location**:
-- Layer 3 = Domain Services (business logic)
-- Depends on Layer 2 (Infrastructure) being started first
-- Used by Architecture Engine (which queries it for detection patterns)
-- Optional in test mode (falls back gracefully)
+**File**: `singularity/lib/singularity/jobs/pgmq_client.ex`
+
+**Infrastructure Queues Added**:
+- `infrastructure_registry_requests` - Singularity sends requests to CentralCloud
+- `infrastructure_registry_responses` - CentralCloud sends responses to Singularity
+
+Both queues are created automatically by `ensure_all_queues()` on startup.
 
 ### 3. TechnologyDetector Integration
 
