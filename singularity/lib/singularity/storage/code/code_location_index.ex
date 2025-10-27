@@ -22,7 +22,7 @@ defmodule Singularity.CodeLocationIndex do
   defdelegate find_microservices(type), to: Singularity.Storage.Code.CodeLocationIndexService
   defdelegate find_by_framework(framework), to: Singularity.Storage.Code.CodeLocationIndexService
 
-  defdelegate find_nats_subscribers(subject_pattern),
+  defdelegate find_pgmq_subscribers(subject_pattern),
     to: Singularity.Storage.Code.CodeLocationIndexService
 
   # Alias for backward compatibility

@@ -1000,7 +1000,7 @@ defmodule Singularity.CodeStore do
       },
       %{
         step: 5,
-        description: "Implement NATS messaging",
+        description: "Implement pgmq messaging",
         effort_hours: 12
       },
       %{
@@ -1585,10 +1585,10 @@ defmodule Singularity.CodeStore do
   defp analyze_messaging_patterns(codebase_path) do
     messaging_patterns = []
 
-    # Check for NATS
+    # Check for pgmq
     messaging_patterns =
-      if find_nats_patterns(codebase_path) do
-        [:nats | messaging_patterns]
+      if find_pgmq_patterns(codebase_path) do
+        [:pgmq | messaging_patterns]
       else
         messaging_patterns
       end
@@ -1625,13 +1625,13 @@ defmodule Singularity.CodeStore do
     }
   end
 
-  defp find_nats_patterns(codebase_path) do
-    # Look for NATS-related files and configurations
-    nats_files =
-      Path.wildcard(Path.join(codebase_path, "**/*nats*"))
+  defp find_pgmq_patterns(codebase_path) do
+    # Look for pgmq-related files and configurations
+    pgmq_files =
+      Path.wildcard(Path.join(codebase_path, "**/*pgmq*"))
       |> Enum.filter(&File.exists?/1)
 
-    length(nats_files) > 0
+    length(pgmq_files) > 0
   end
 
   defp find_kafka_patterns(codebase_path) do

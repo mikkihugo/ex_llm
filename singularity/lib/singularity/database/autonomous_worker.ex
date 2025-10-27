@@ -13,7 +13,7 @@ defmodule Singularity.Database.AutonomousWorker do
   ├─ Agent execution              ├─ learn_patterns_from_analysis()
   ├─ LLM calls                    ├─ persist_agent_session()
   ├─ Insert analysis results  →   ├─ update_agent_knowledge()
-  └─ Send NATS messages           ├─ sync_learning_to_centralcloud()
+  └─ Send pgmq messages           ├─ sync_learning_to_centralcloud()
                                   ├─ assign_pending_tasks()
                                   └─ Triggers: Auto-persistence
   ```

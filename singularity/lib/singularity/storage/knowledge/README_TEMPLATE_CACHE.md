@@ -1,13 +1,13 @@
 # Template Cache Architecture
 
-High-performance template caching with **ETS + NATS JetStream KV** for AI agents and prompt engines.
+High-performance template caching with **ETS + pgmq JetStream KV** for AI agents and prompt engines.
 
 ## Performance
 
 | Cache Level | Latency | Scope | Persistence |
 |-------------|---------|-------|-------------|
 | **ETS (L1)** | <1ms | Per-node | In-memory only |
-| **NATS KV (L2)** | 1-2ms | Distributed | Optional |
+| **pgmq KV (L2)** | 1-2ms | Distributed | Optional |
 | **PostgreSQL (L3)** | 10-30ms | Global | Persistent |
 
 ## Architecture
@@ -15,26 +15,26 @@ High-performance template caching with **ETS + NATS JetStream KV** for AI agents
 ```
 Agent/Prompt Engine
        ↓
-   NATS Request
+   pgmq Request
        ↓
 TemplateService (Elixir)
        ↓
 TemplateCache
    ├─ ETS lookup (<1ms)
-   ├─ NATS KV lookup (1-2ms) [on ETS miss]
+   ├─ pgmq KV lookup (1-2ms) [on ETS miss]
    └─ PostgreSQL query (10-30ms) [on all misses]
        ↓
    Cache Result
        ↓
-   Return via NATS
+   Return via pgmq
 ```
 
 ## Setup
 
-### 1. Create NATS KV Buckets
+### 1. Create pgmq KV Buckets
 
 ```bash
-./scripts/setup-nats-templates.sh
+./scripts/setup-pgmq-templates.sh
 ```
 
 This creates:
@@ -49,14 +49,14 @@ This creates:
 Singularity.Knowledge.TemplateCache.warm_cache()
 ```
 
-Loads all templates from PostgreSQL into ETS + NATS KV.
+Loads all templates from PostgreSQL into ETS + pgmq KV.
 
 ## Usage
 
 ### From Elixir
 
 ```elixir
-# Get template (tries ETS → NATS KV → PostgreSQL)
+# Get template (tries ETS → pgmq KV → PostgreSQL)
 {:ok, template} = Singularity.Knowledge.TemplateCache.get("framework", "phoenix")
 
 # Invalidate template (clears all caches + broadcasts)
@@ -64,19 +64,19 @@ Singularity.Knowledge.TemplateCache.invalidate("framework", "phoenix")
 
 # Get stats
 stats = Singularity.Knowledge.TemplateCache.stats()
-# => %{ets_hits: 1250, nats_hits: 45, db_hits: 12, misses: 3}
+# => %{ets_hits: 1250, pgmq_hits: 45, db_hits: 12, misses: 3}
 ```
 
-### From NATS (Rust, Go, Python, etc.)
+### From pgmq (Rust, Go, Python, etc.)
 
 ```rust
 // Rust example
-use async_nats;
+use async_pgmq;
 use serde_json::Value;
 
 #[tokio::main]
 async fn main() {
-    let nc = async_nats::connect("nats://localhost:4222").await?;
+    let nc = async_pgmq::connect("pgmq://localhost:4222").await?;
 
     // Request Phoenix template
     let response = nc
@@ -90,10 +90,10 @@ async fn main() {
 
 ```bash
 # CLI
-nats request template.get.framework.phoenix ""
+pgmq request template.get.framework.phoenix ""
 ```
 
-## NATS Subjects
+## pgmq Subjects
 
 ### Get Template
 
@@ -131,10 +131,10 @@ changeset = KnowledgeArtifact.changeset(artifact, %{content: new_content})
 Repo.update!(changeset)
 
 # Broadcast update (TemplateCache subscribes to this)
-Gnat.pub(gnat, "template.updated.framework.phoenix", "")
+pgmq.pub(gnat, "template.updated.framework.phoenix", "")
 ```
 
-All nodes will automatically invalidate their ETS + NATS KV caches.
+All nodes will automatically invalidate their ETS + pgmq KV caches.
 
 ### Manual
 
@@ -144,7 +144,7 @@ TemplateCache.invalidate("framework", "phoenix")
 
 Removes from:
 1. Local ETS
-2. NATS KV
+2. pgmq KV
 3. Broadcasts to all other nodes
 
 ## Monitoring
@@ -154,11 +154,11 @@ Removes from:
 ```elixir
 # Cache hits/misses
 [:singularity, :template_cache, :ets_hit]
-[:singularity, :template_cache, :nats_hit]
+[:singularity, :template_cache, :pgmq_hit]
 [:singularity, :template_cache, :db_hit]
 [:singularity, :template_cache, :miss]
 
-# NATS service requests
+# pgmq service requests
 [:singularity, :template_service, :request]
 # Metadata: %{status: :success | :error | :not_found, artifact_type: "framework"}
 # Measurements: %{duration_us: 1250}
@@ -173,7 +173,7 @@ Singularity.Knowledge.TemplateCache.stats()
 # Output:
 %{
   ets_hits: 15234,
-  nats_hits: 456,
+  pgmq_hits: 456,
   db_hits: 23,
   misses: 5,
   ets_cache_size: 127,
@@ -193,10 +193,10 @@ Edit `template_cache.ex`:
 @ttl_seconds 600   # 10 minutes (more fresh)
 ```
 
-### Increase NATS KV Size
+### Increase pgmq KV Size
 
 ```bash
-nats kv add templates --max-bucket-size=5GB  # Increase from 1GB
+pgmq kv add templates --max-bucket-size=5GB  # Increase from 1GB
 ```
 
 ### Preload Hot Templates
@@ -210,15 +210,15 @@ Singularity.Knowledge.TemplateCache.warm_cache()
 
 ### Cache Not Working
 
-Check NATS connection:
+Check pgmq connection:
 ```bash
-nats account info
+pgmq account info
 ```
 
 Check KV buckets:
 ```bash
-nats kv ls
-nats kv info templates
+pgmq kv ls
+pgmq kv info templates
 ```
 
 ### High Miss Rate
@@ -247,27 +247,27 @@ Singularity.Knowledge.TemplateCache.warm_cache()
 
 ## Integration with Prompt Engine (Rust)
 
-Your Rust prompt engine can connect via NATS:
+Your Rust prompt engine can connect via pgmq:
 
 ```rust
 // prompt-engine/src/template_client.rs
-use async_nats;
+use async_pgmq;
 use serde_json::Value;
 
 pub struct TemplateClient {
-    nats: async_nats::Client,
+    pgmq: async_pgmq::Client,
 }
 
 impl TemplateClient {
     pub async fn new() -> Result<Self, Error> {
-        let nats = async_nats::connect("nats://localhost:4222").await?;
-        Ok(Self { nats })
+        let pgmq = async_pgmq::connect("pgmq://localhost:4222").await?;
+        Ok(Self { pgmq })
     }
 
     pub async fn get_template(&self, type_: &str, id: &str) -> Result<Value, Error> {
         let subject = format!("template.get.{}.{}", type_, id);
 
-        let response = self.nats
+        let response = self.pgmq
             .request(subject, "".into())
             .await?;
 
@@ -277,14 +277,14 @@ impl TemplateClient {
 }
 ```
 
-**No Rustler needed!** Prompt engine runs as separate process, connects via NATS.
+**No Rustler needed!** Prompt engine runs as separate process, connects via pgmq.
 
 ## Benefits
 
 ✅ **Fast:** <1ms for cached templates (ETS)
-✅ **Distributed:** NATS KV shared across all nodes
-✅ **Language Agnostic:** Rust, Go, Python can all use NATS
-✅ **Scalable:** Horizontal scaling with NATS
+✅ **Distributed:** pgmq KV shared across all nodes
+✅ **Language Agnostic:** Rust, Go, Python can all use pgmq
+✅ **Scalable:** Horizontal scaling with pgmq
 ✅ **Persistent:** PostgreSQL source of truth
 ✅ **Observable:** Telemetry for all cache operations
 ✅ **Simple:** No Redis, no extra infrastructure

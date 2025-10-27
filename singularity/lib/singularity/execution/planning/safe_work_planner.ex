@@ -143,8 +143,8 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
       purpose: CLI commands for vision management
       frequency: medium
 
-    - module: Singularity.NATS.PlanningRouter
-      purpose: NATS-based vision chunk submission
+    - module: Singularity.pgmq.PlanningRouter
+      purpose: pgmq-based vision chunk submission
       frequency: low
 
     - module: Singularity.Agents.PlanningAgent

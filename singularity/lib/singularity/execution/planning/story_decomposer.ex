@@ -273,13 +273,13 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   **Root Causes**
   1. LLM error (invalid response, timeout)
   2. Lua script error (malformed input)
-  3. Network error (NATS connection)
+  3. Network error (pgmq connection)
   4. Rate limit exceeded
 
   **Solutions**
   - Retry individual phase: Check which phase fails
   - Check LLM response: Verify response format is valid
-  - Check NATS: Verify message queue healthy
+  - Check pgmq: Verify message queue healthy
   - Store intermediate: Save phase results to database for recovery
 
   ### Anti-Patterns
@@ -349,7 +349,7 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
 
   require Logger
 
-  # INTEGRATION: LLM operations (NATS-based story analysis)
+  # INTEGRATION: LLM operations (pgmq-based story analysis)
   alias Singularity.LLM.Service
 
   @doc "Decompose a user story using SPARC methodology"

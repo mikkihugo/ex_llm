@@ -17,7 +17,7 @@ defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
   To add/update pattern detection logic:
   - CentralCloud learns from analyzing many codebases
   - Stores detection rules: file patterns, dependencies, config files, code signatures
-  - Distributes via NATS → Singularity for local execution
+  - Distributes via pgmq → Singularity for local execution
   - No hardcoding detection logic in this module!
 
   ## Module Identity (JSON)
@@ -94,7 +94,7 @@ defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
   ### Communication Patterns
   - **Request/Response**: Synchronous HTTP/RPC calls
   - **Publish/Subscribe**: Event-based async communication
-  - **Message Queue**: Async messaging via queues (RabbitMQ, NATS, Kafka)
+  - **Message Queue**: Async messaging via queues (RabbitMQ, pgmq, Kafka)
 
   ### Other Patterns
   - **Event Driven**: Architecture built around event streams

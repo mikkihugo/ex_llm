@@ -60,7 +60,7 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
   - **Languages**: TypeScript, Rust, Python, Go, Elixir, Java, Ruby, PHP, C/C++
   - **Runtimes**: Node.js, JVM, CPython, Go Runtime
   - **Databases**: PostgreSQL, MongoDB, Redis, MySQL
-  - **Messaging**: RabbitMQ, Kafka, NATS
+  - **Messaging**: RabbitMQ, Kafka, pgmq
 
   ## Search Keywords
 
@@ -296,8 +296,8 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
 
   defp detect_messaging(path) do
     [
-      if(has_file?(path, "nats.js"),
-        do: %{name: "NATS", type: "messaging", confidence: 0.90, description: "NATS messaging"}
+      if(has_file?(path, "pgmq.js"),
+        do: %{name: "pgmq", type: "messaging", confidence: 0.90, description: "pgmq messaging"}
       ),
       if(contains_dependency?(path, "amqp"),
         do: %{name: "RabbitMQ", type: "messaging", confidence: 0.75, description: "RabbitMQ"}

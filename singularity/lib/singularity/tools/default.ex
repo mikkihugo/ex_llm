@@ -41,18 +41,7 @@ defmodule Singularity.Tools.Default do
     Singularity.Tools.CodeNaming.register(provider)
     Singularity.Tools.Git.register(provider)
     Singularity.Tools.Database.register(provider)
-    Singularity.Tools.Testing.register(provider)
     Singularity.Tools.ProcessSystem.register(provider)
-    Singularity.Tools.Documentation.register(provider)
-    Singularity.Tools.Monitoring.register(provider)
-    Singularity.Tools.Security.register(provider)
-    Singularity.Tools.Performance.register(provider)
-    Singularity.Tools.Deployment.register(provider)
-    Singularity.Tools.Communication.register(provider)
-    Singularity.Tools.Analytics.register(provider)
-    Singularity.Tools.Integration.register(provider)
-    Singularity.Tools.QualityAssurance.register(provider)
-    Singularity.Tools.Development.register(provider)
   end
 
   defp shell_tool do

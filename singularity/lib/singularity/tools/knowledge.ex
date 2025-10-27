@@ -1039,8 +1039,8 @@ defmodule Singularity.Tools.Knowledge do
     Tool.new!(%{
       name: "package_search",
       description:
-        "Search for packages across ecosystems via NATS service with real database data",
-      display_text: "Package Search (NATS)",
+        "Search for packages across ecosystems via pgmq service with real database data",
+      display_text: "Package Search (pgmq)",
       parameters: [
         %{name: "query", type: :string, required: true, description: "Search query for packages"},
         %{

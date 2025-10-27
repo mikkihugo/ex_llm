@@ -25,7 +25,7 @@ defmodule Singularity.Database.ChangeDataCapture do
       ↓
   CDC Consumer (get_changes/0)
       ↓
-  CentralCloud via NATS
+  CentralCloud via pgmq
   ```
 
   ## Queues

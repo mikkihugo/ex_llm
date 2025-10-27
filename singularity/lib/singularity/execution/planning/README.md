@@ -1,6 +1,6 @@
 # Singularity Work Plan System
 
-Complete SAFe 6.0 Essential Portfolio Management with NATS API, PostgreSQL persistence, and WSJF prioritization.
+Complete SAFe 6.0 Essential Portfolio Management with pgmq API, PostgreSQL persistence, and WSJF prioritization.
 
 ## Overview
 
@@ -30,8 +30,8 @@ Strategic Themes (3-5 year vision areas)
    - Loads from database on startup
    - Provides fast access to hierarchy and next work
 
-3. **NATS API** (`work_plan_api.ex`)
-   - External interface for submitting work via NATS
+3. **pgmq API** (`work_plan_api.ex`)
+   - External interface for submitting work via pgmq
    - Request/reply pattern for synchronous operations
    - JSON message format
 
@@ -67,7 +67,7 @@ This loads the Singularity roadmap with:
   - Epic: Self-Improving Agent System
   - Epic: Semantic Code Search & RAG
 - **Strategic Theme 2**: Distributed Agent Orchestration (2 BLOC)
-  - Epic: NATS-Based Messaging
+  - Epic: pgmq-Based Messaging
   - Epic: SAFe Portfolio Management
 - **Strategic Theme 3**: Production-Grade Infrastructure (1.5 BLOC)
   - Epic: Observability Stack
@@ -138,12 +138,12 @@ hierarchy = WorkPlanCoordinator.get_hierarchy()
 progress = WorkPlanCoordinator.get_progress()
 ```
 
-### NATS API (External Systems)
+### pgmq API (External Systems)
 
 #### Create Strategic Theme
 
 ```bash
-nats req planning.strategic_theme.create '{
+pgmq req planning.strategic_theme.create '{
   "name": "AI-Powered Development",
   "description": "Build AI-first development tools (5 BLOC)",
   "target_bloc": 5.0,
@@ -163,7 +163,7 @@ Response:
 #### Create Epic
 
 ```bash
-nats req planning.epic.create '{
+pgmq req planning.epic.create '{
   "theme_id": "theme-abc123",
   "name": "Intelligent Code Review",
   "description": "AI-powered code review with automated fixes",
@@ -178,7 +178,7 @@ nats req planning.epic.create '{
 #### Create Capability
 
 ```bash
-nats req planning.capability.create '{
+pgmq req planning.capability.create '{
   "epic_id": "epic-xyz789",
   "name": "Static Analysis Integration",
   "description": "Integrate with existing static analysis tools",
@@ -189,7 +189,7 @@ nats req planning.capability.create '{
 #### Create Feature
 
 ```bash
-nats req planning.feature.create '{
+pgmq req planning.feature.create '{
   "capability_id": "cap-def456",
   "name": "Credo Integration",
   "description": "Auto-fix Credo warnings",
@@ -204,7 +204,7 @@ nats req planning.feature.create '{
 #### Get Next Work
 
 ```bash
-nats req planning.next_work.get '{}'
+pgmq req planning.next_work.get '{}'
 ```
 
 Response:
@@ -225,13 +225,13 @@ Response:
 #### Get Hierarchy
 
 ```bash
-nats req planning.hierarchy.get '{}'
+pgmq req planning.hierarchy.get '{}'
 ```
 
 #### Get Progress
 
 ```bash
-nats req planning.progress.get '{}'
+pgmq req planning.progress.get '{}'
 ```
 
 Response:
@@ -292,7 +292,7 @@ job_size = 20
 wsjf = (5 + 4 + 3) / 20 = 0.6  # Lower priority
 ```
 
-## NATS Subjects
+## pgmq Subjects
 
 All subjects are defined in `work_plan_api.ex`:
 
@@ -420,14 +420,14 @@ mix ecto.migrate
 mix planning.seed
 ```
 
-### NATS Connection Errors
+### pgmq Connection Errors
 
 **Problem**: WorkPlanAPI fails to subscribe
 
-**Solution**: Ensure NATS server is running:
+**Solution**: Ensure pgmq server is running:
 
 ```bash
-nats-server -js
+pgmq-server -js
 ```
 
 ### WSJF Not Calculating
@@ -468,4 +468,4 @@ WorkPlanCoordinator.add_epic(%{
 - [SAFe 6.0 Essential](https://scaledagileframework.com/essential-safe/)
 - [WSJF Explained](https://scaledagileframework.com/wsjf/)
 - [Ecto Documentation](https://hexdocs.pm/ecto/)
-- [NATS Documentation](https://docs.nats.io/)
+- [pgmq Documentation](https://docs.pgmq.io/)

@@ -2,7 +2,7 @@ defmodule Singularity.AgentImprovementBroadcaster do
   @moduledoc """
   Agent Improvement Broadcaster - Publishes agent improvements across cluster nodes.
 
-  Cluster-native broadcasting without external transports (NATS-free).
+  Cluster-native broadcasting without external transports (pgmq-free).
   """
 
   alias Singularity.Agents.Agent

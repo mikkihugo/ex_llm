@@ -422,7 +422,7 @@ defmodule Singularity.Quality.TemplateTracker do
 
   defp generate_recommendations(_state) do
     [
-      "Consider using 'elixir-nats-consumer' more often - 95% success rate",
+      "Consider using 'elixir-pgmq-consumer' more often - 95% success rate",
       "Template 'rust-microservice' performs poorly on small tasks - consider alternatives",
       "Quality scores improving steadily - current approach working well"
     ]

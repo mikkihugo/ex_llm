@@ -6,7 +6,7 @@ defmodule Singularity.Tools.EmergencyLLM do
 
   This module provides EMERGENCY fallback tools that call Claude CLI directly.
   These are only used when:
-  - NATS AI server is down
+  - pgmq AI server is down
   - Emergency recovery scenarios
   - Agent tools that explicitly request CLI fallback
 
@@ -16,7 +16,7 @@ defmodule Singularity.Tools.EmergencyLLM do
 
       Singularity.LLM.Service.call("claude-sonnet-4.5", messages)
 
-  This goes through NATS → AI Server → AI SDK providers.
+  This goes through pgmq → AI Server → AI SDK providers.
 
   ## Emergency Tools
 
@@ -27,7 +27,7 @@ defmodule Singularity.Tools.EmergencyLLM do
 
   ## Architecture
 
-  Normal:  Elixir → NATS → AI Server → AI SDK → Providers
+  Normal:  Elixir → pgmq → AI Server → AI SDK → Providers
   Emergency: Agent Tool → This Module → Claude CLI (direct)
   """
 

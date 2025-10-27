@@ -39,7 +39,7 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
       # With user intent matching
       {:ok, matched, detections} = DetectionOrchestrator.detect_with_intent(
         "path/to/code",
-        "Create NATS consumer with pattern matching"
+        "Create pgmq consumer with pattern matching"
       )
 
       # With caching
@@ -185,10 +185,10 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
   ## Example
       iex> DetectionOrchestrator.detect_with_intent(
       ...>   "/path/to/code",
-      ...>   "Create NATS consumer with Broadway"
+      ...>   "Create pgmq consumer with Broadway"
       ...> )
       {:ok, %{template: "...", pattern: "...", score: 8.5},
-            [%{name: "nats", type: :technology, ...}, ...]}
+            [%{name: "pgmq", type: :technology, ...}, ...]}
   """
   def detect_with_intent(codebase_path, user_request, opts \\ [])
       when is_binary(codebase_path) and is_binary(user_request) do

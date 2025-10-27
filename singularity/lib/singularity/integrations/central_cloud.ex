@@ -4,7 +4,7 @@ defmodule Singularity.CentralCloud do
 
   This module talks to the Elixir-based central cloud services that aggregate
   knowledge across instances. Those services can still enlist Rust engines over
-  NATS when a workload demands it, but the coordination layer now lives entirely
+  pgmq when a workload demands it, but the coordination layer now lives entirely
   on the BEAM.
 
   ## Central Cloud Operations
@@ -222,7 +222,7 @@ defmodule Singularity.CentralCloud do
       # Or: Store as JSONB in knowledge_artifacts with type: "code_insight"
     end)
 
-    # Update central knowledge via NATS
+    # Update central knowledge via pgmq
     update_central_knowledge(results)
   end
 

@@ -25,7 +25,7 @@ defmodule Singularity.TemplateStore do
       TemplateStore.sync()
 
       # Get template by ID
-      {:ok, template} = TemplateStore.get("elixir-nats-consumer")
+      {:ok, template} = TemplateStore.get("elixir-pgmq-consumer")
 
       # Semantic search (uses Qodo-Embed-1)
       {:ok, templates} = TemplateStore.search("async worker pattern",
@@ -35,13 +35,13 @@ defmodule Singularity.TemplateStore do
 
       # Get best templates for a task
       {:ok, best} = TemplateStore.get_best_for_task(
-        "NATS consumer with error handling",
+        "pgmq consumer with error handling",
         "elixir",
         top_k: 3
       )
 
       # Track usage (for learning which templates work)
-      TemplateStore.record_usage("elixir-nats-consumer", success: true)
+      TemplateStore.record_usage("elixir-pgmq-consumer", success: true)
   """
 
   use GenServer

@@ -2,7 +2,7 @@ defmodule Singularity.Learning.ExperimentResult do
   @moduledoc """
   ExperimentResult - Records and learns from Genesis experiment outcomes.
 
-  Integration Point: Genesis publishes experiment results to NATS.
+  Integration Point: Genesis publishes experiment results to pgmq.
   Singularity records these results and learns from outcomes to improve future experiments.
 
   ## AI Navigation Metadata
@@ -15,7 +15,7 @@ defmodule Singularity.Learning.ExperimentResult do
     "role": "schema",
     "layer": "ml_training",
     "table": "experiment_results",
-    "integration": "Genesis ↔ Singularity via NATS",
+    "integration": "Genesis ↔ Singularity via pgmq",
     "features": ["learning_from_outcomes", "success_rate_tracking", "insights_generation"]
   }
   ```
@@ -23,7 +23,7 @@ defmodule Singularity.Learning.ExperimentResult do
   ### Anti-Patterns
   - ❌ DO NOT use this for non-Genesis experiments - this is Genesis-specific
   - ❌ DO NOT skip recording outcomes - needed for learning loop
-  - ✅ DO use this for all Genesis experiment results via NATS
+  - ✅ DO use this for all Genesis experiment results via pgmq
   - ✅ DO query insights for improving future experiments
 
   ### Search Keywords
@@ -34,7 +34,7 @@ defmodule Singularity.Learning.ExperimentResult do
 
   ```
   Genesis (Isolated)
-      ↓ NATS: agent.events.experiment.completed.{experiment_id}
+      ↓ pgmq: agent.events.experiment.completed.{experiment_id}
   {
     "experiment_id": "exp-abc123",
     "status": "success",
@@ -116,7 +116,7 @@ defmodule Singularity.Learning.ExperimentResult do
   @doc """
   Record a Genesis experiment result.
 
-  Called when Genesis publishes results to NATS.
+  Called when Genesis publishes results to pgmq.
   Stores result for learning and provides recommendation to caller.
   """
   def record(experiment_id, genesis_result)

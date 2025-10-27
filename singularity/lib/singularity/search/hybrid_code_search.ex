@@ -49,7 +49,7 @@ defmodule Singularity.Search.HybridCodeSearch do
 
   called_by:
     - Singularity.Tools.CodeSearch (MCP interface)
-    - Singularity.NATS.CodeSearchSubscriber (NATS interface)
+    - Singularity.pgmq.CodeSearchSubscriber (pgmq interface)
     - User-facing search APIs
   ```
 

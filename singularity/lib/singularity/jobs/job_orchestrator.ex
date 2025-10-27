@@ -148,8 +148,8 @@ defmodule Singularity.Jobs.JobOrchestrator do
       purpose: Long-running execution as jobs
       frequency: medium
 
-    - module: Singularity.NATS.JobRouter
-      purpose: NATS-triggered job scheduling
+    - module: Singularity.pgmq.JobRouter
+      purpose: pgmq-triggered job scheduling
       frequency: medium
 
   depends_on:

@@ -44,7 +44,7 @@ defmodule Singularity.Schemas.Core.LLMCall do
   ```
 
   ### Anti-Patterns
-  - ❌ DO NOT call LLM APIs directly - use Singularity.LLM.Service via NATS
+  - ❌ DO NOT call LLM APIs directly - use Singularity.LLM.Service via pgmq
   - ❌ DO NOT skip LLMCall tracking - essential for cost optimization
   - ✅ DO use LLMCall for cost analysis and prompt optimization
   - ✅ DO query by correlation_id to track multi-step agent workflows

@@ -172,7 +172,7 @@ defmodule Singularity.Application do
         Singularity.LLM.Supervisor,
 
         # Knowledge Services - Templates and code storage
-        # NOTE: Disabled - requires NATS which is not available in test mode
+        # NOTE: Disabled - requires PGMQ which is not available in test mode
         # Singularity.Knowledge.Supervisor,
 
         # Layer 4: Agents & Execution - Task execution and planning
@@ -183,7 +183,7 @@ defmodule Singularity.Application do
         Singularity.Execution.Autonomy.RuleLoader,
 
         # Execution Planning - Work planning and task graphs
-        # NOTE: Disabled - requires unavailable infrastructure (NATS, Knowledge.Supervisor)
+        # NOTE: Disabled - requires unavailable infrastructure (PGMQ, Knowledge.Supervisor)
         # Singularity.Execution.Planning.Supervisor,
 
         # SPARC Orchestration - Template-driven execution
@@ -199,7 +199,7 @@ defmodule Singularity.Application do
         # Singularity.Agents.Supervisor,
 
         # Layer 5: Domain Supervisors - Domain-specific supervision trees
-        # ArchitectureEngine.MetaRegistry.Supervisor - Requires NATS (not available in test mode)
+        # ArchitectureEngine.MetaRegistry.Supervisor - Requires pgmq (not available in test mode)
         # Singularity.ArchitectureEngine.MetaRegistry.Supervisor,
         Singularity.Git.Supervisor
       ])

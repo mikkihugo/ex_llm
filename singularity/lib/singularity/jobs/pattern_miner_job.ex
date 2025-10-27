@@ -4,17 +4,17 @@ defmodule Singularity.Jobs.PatternMinerJob do
 
   **What it does:**
   - Analyzes local codebase for reusable patterns
-  - Extracts architectural patterns (GenServer, NATS, async/await)
+  - Extracts architectural patterns (GenServer, pgmq, async/await)
   - Clusters similar patterns using embeddings
   - Stores patterns in database with pgvector embeddings
-  - Publishes pattern updates to NATS for centralcloud sync
+  - Publishes pattern updates to pgmq for centralcloud sync
 
   **Job Configuration:**
   - Queue: `:pattern_mining` (dedicated queue for pattern analysis)
   - Max attempts: 3 (retry on transient failures)
   - Priority: 2 (medium priority)
 
-  **NATS Integration:**
+  **pgmq Integration:**
   Publishes to `patterns.mined.completed` when successful
   Publishes pattern clusters to `patterns.cluster.updated`
 
@@ -217,7 +217,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
     base_score = 0.5
 
     # Architectural pattern bonus
-    architectural_keywords = ~w(genserver supervisor broadway nats async tokio actor)
+    architectural_keywords = ~w(genserver supervisor broadway pgmq async tokio actor)
     architectural_count = Enum.count(keywords, &(&1 in architectural_keywords))
     architectural_bonus = min(0.3, architectural_count * 0.1)
 
@@ -237,7 +237,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
     # Use most significant keyword as suffix
     significant_keyword =
       keywords
-      |> Enum.filter(&(&1 in ~w(genserver supervisor nats async http)))
+      |> Enum.filter(&(&1 in ~w(genserver supervisor pgmq async http)))
       |> List.first()
 
     if significant_keyword do
@@ -250,7 +250,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
   defp determine_pattern_type(keywords) do
     cond do
       Enum.any?(keywords, &(&1 in ~w(genserver supervisor actor))) -> "process"
-      Enum.any?(keywords, &(&1 in ~w(nats http kafka messaging))) -> "integration"
+      Enum.any?(keywords, &(&1 in ~w(pgmq http kafka messaging))) -> "integration"
       Enum.any?(keywords, &(&1 in ~w(async concurrent tokio))) -> "concurrency"
       Enum.any?(keywords, &(&1 in ~w(error retry circuit))) -> "resilience"
       true -> "general"
@@ -376,7 +376,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
   end
 
   defp publish_completion(codebase_path, stored_count, clusters) do
-    Logger.debug("Publishing pattern mining completion to NATS")
+    Logger.debug("Publishing pattern mining completion to pgmq")
 
     payload =
       Jason.encode!(%{
@@ -389,7 +389,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
 
     case Singularity.Messaging.Client.publish("patterns.mined.completed", payload) do
       :ok ->
-        Logger.info("Published pattern mining completion to NATS",
+        Logger.info("Published pattern mining completion to pgmq",
           codebase_path: codebase_path
         )
 
@@ -398,12 +398,12 @@ defmodule Singularity.Jobs.PatternMinerJob do
         :ok
 
       {:error, reason} ->
-        Logger.warning("Failed to publish to NATS (non-critical)", error: inspect(reason))
+        Logger.warning("Failed to publish to pgmq (non-critical)", error: inspect(reason))
         :ok
     end
   rescue
     exception ->
-      Logger.warning("Exception publishing to NATS (non-critical)", exception: inspect(exception))
+      Logger.warning("Exception publishing to pgmq (non-critical)", exception: inspect(exception))
       :ok
   end
 
@@ -426,7 +426,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
   end
 
   defp publish_failure(codebase_path, reason) do
-    Logger.debug("Publishing pattern mining failure to NATS")
+    Logger.debug("Publishing pattern mining failure to pgmq")
 
     payload =
       Jason.encode!(%{
@@ -438,13 +438,13 @@ defmodule Singularity.Jobs.PatternMinerJob do
 
     case Singularity.Messaging.Client.publish("patterns.mined.failed", payload) do
       :ok ->
-        Logger.info("Published pattern mining failure to NATS", codebase_path: codebase_path)
+        Logger.info("Published pattern mining failure to pgmq", codebase_path: codebase_path)
 
-      {:error, nats_error} ->
-        Logger.warning("Failed to publish failure to NATS", error: inspect(nats_error))
+      {:error, pgmq_error} ->
+        Logger.warning("Failed to publish failure to pgmq", error: inspect(pgmq_error))
     end
   rescue
     exception ->
-      Logger.warning("Exception publishing failure to NATS", exception: inspect(exception))
+      Logger.warning("Exception publishing failure to pgmq", exception: inspect(exception))
   end
 end

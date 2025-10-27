@@ -18,15 +18,6 @@ defmodule Singularity.MixProject do
       deps: deps(),
       releases: releases(),
       test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.html": :test,
-        "coveralls.json": :test,
-        "coveralls.post": :test,
-        test: :test,
-        "test.ci": :test,
-        quality: :dev
-      ],
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
         flags: [:error_handling, :underspecs, :unknown]
@@ -38,6 +29,20 @@ defmodule Singularity.MixProject do
     [
       mod: {Singularity.Application, []},
       extra_applications: [:logger, :runtime_tools, :os_mon]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.html": :test,
+        "coveralls.json": :test,
+        "coveralls.post": :test,
+        test: :test,
+        "test.ci": :test,
+        quality: :dev
+      ]
     ]
   end
 

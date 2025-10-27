@@ -14,10 +14,6 @@ defmodule Singularity.ParserEngine do
   # Standalone Cargo.toml (no workspace dependencies) to avoid Rustler conflicts
 
   # Match exact crate name from Cargo.toml (parser-code with dash)
-  # use Rustler,
-    otp_app: :singularity,
-    crate: "parser-code",
-    path: "../packages/parser_engine"
 
   require Logger
   alias Singularity.BeamAnalysisEngine
@@ -627,7 +623,7 @@ defmodule Singularity.ParserEngine do
         end
 
       {:error, reason} ->
-        {:error, "NATS request failed: #{reason}"}
+        {:error, "pgmq request failed: #{reason}"}
     end
   end
 
@@ -668,7 +664,7 @@ defmodule Singularity.ParserEngine do
         end
 
       {:error, reason} ->
-        {:error, "NATS request failed: #{reason}"}
+        {:error, "pgmq request failed: #{reason}"}
     end
   end
 end

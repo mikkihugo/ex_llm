@@ -1,9 +1,9 @@
 defmodule Singularity.Messaging.Client do
   @moduledoc """
-  Unified messaging client replacing NATS with pgmq (PostgreSQL message queue).
+  Unified messaging client replacing pgmq with pgmq (PostgreSQL message queue).
 
-  This module provides a compatibility layer between NATS and pgmq, allowing
-  gradual migration from NATS to persistent PostgreSQL-based messaging.
+  This module provides a compatibility layer between pgmq and pgmq, allowing
+  gradual migration from pgmq to persistent PostgreSQL-based messaging.
 
   ## API Compatibility
 
@@ -27,7 +27,7 @@ defmodule Singularity.Messaging.Client do
 
   ## Subject Mapping
 
-  NATS subjects map to PostgreSQL queue names:
+  pgmq subjects map to PostgreSQL queue names:
   - `template.get.*` → queue: `template_get_replies`
   - `quality.rules.*` → queue: `quality_rules_replies`
   - `*` → queue: `{subject_name}_queue`

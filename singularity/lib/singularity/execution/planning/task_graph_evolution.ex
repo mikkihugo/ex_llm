@@ -325,7 +325,7 @@ defmodule Singularity.Execution.Planning.TaskGraphEvolution do
 
   require Logger
 
-  # INTEGRATION: LLM operations (NATS-based critique and mutation)
+  # INTEGRATION: LLM operations (pgmq-based critique and mutation)
   # INTEGRATION: LLM service with Lua script support for context-aware critique
   @type mutation :: %{
           type: :model_change | :param_change | :prompt_change,

@@ -2,7 +2,7 @@ defmodule Singularity.PromptEngine do
   @moduledoc """
   Prompt Engine - AI-powered prompt generation and optimization.
 
-  Integrates the Rust `prompt_intelligence` NIF when available, falls back to NATS services,
+  Integrates the Rust `prompt_intelligence` NIF when available, falls back to pgmq services,
   and finally to lightweight Elixir templates.
   """
 
@@ -18,7 +18,7 @@ defmodule Singularity.PromptEngine do
 
   @impl Singularity.Engine
   def description,
-    do: "Prompt generation, optimization, and template management with NIF/NATS fallbacks."
+    do: "Prompt generation, optimization, and template management with NIF/pgmq fallbacks."
 
   @impl Singularity.Engine
   def capabilities do
@@ -30,9 +30,9 @@ defmodule Singularity.PromptEngine do
       %{
         id: :prompt_generation,
         label: "Prompt Generation",
-        description: "Generate prompts using NIF, NATS service, or local templates.",
+        description: "Generate prompts using NIF, pgmq service, or local templates.",
         available?: backend_available,
-        tags: [:prompting, :nif, :nats]
+        tags: [:prompting, :nif, :pgmq]
       },
       %{
         id: :prompt_optimization,
@@ -44,7 +44,7 @@ defmodule Singularity.PromptEngine do
       %{
         id: :template_catalog,
         label: "Template Catalog",
-        description: "Expose built-in templates plus remote template discovery via NATS.",
+        description: "Expose built-in templates plus remote template discovery via pgmq.",
         available?: backend_available || templates_available,
         tags: [:templates]
       },
@@ -62,7 +62,7 @@ defmodule Singularity.PromptEngine do
   def health, do: health_check()
 
   defp backend_available? do
-    nif_loaded?() or nats_available?()
+    nif_loaded?() or pgmq_available?()
   end
 
   defp cache_available? do
@@ -118,8 +118,8 @@ defmodule Singularity.PromptEngine do
       {:ok, response}
     else
       {:nif, {:error, _}} ->
-        with {:nats, true} <- {:nats, nats_available?()},
-             {:ok, response} <- nats_generate_prompt(request) do
+        with {:pgmq, true} <- {:pgmq, pgmq_available?()},
+             {:ok, response} <- pgmq_generate_prompt(request) do
           {:ok, response}
         else
           _ -> {:ok, local_generate_prompt(request)}
@@ -133,8 +133,7 @@ defmodule Singularity.PromptEngine do
     generate_prompt(context, language,
       trigger_type: "framework",
       trigger_value: framework,
-      category: category
-    )
+      category: category)
   end
 
   @spec generate_language_prompt(String.t(), String.t(), String.t()) :: prompt_response
@@ -142,8 +141,7 @@ defmodule Singularity.PromptEngine do
     generate_prompt(context, language,
       trigger_type: "language",
       trigger_value: language,
-      category: category
-    )
+      category: category)
   end
 
   @spec generate_pattern_prompt(String.t(), String.t(), String.t(), String.t()) :: prompt_response
@@ -151,13 +149,12 @@ defmodule Singularity.PromptEngine do
     generate_prompt(context, language,
       trigger_type: "pattern",
       trigger_value: pattern,
-      category: category
-    )
+      category: category)
   end
 
   @spec call_llm(String.t() | atom(), [map()], keyword()) :: {:ok, map()} | {:error, term()}
   def call_llm(model_or_complexity, messages, opts \\ []) do
-    # Use centralized LLM service via NATS-based llm-server
+    # Use centralized LLM service via pgmq-based llm-server
     Singularity.LLM.Service.call(model_or_complexity, messages, opts)
   end
 
@@ -191,8 +188,8 @@ defmodule Singularity.PromptEngine do
       {:ok, response}
     else
       {:nif, {:error, _}} ->
-        with {:nats, true} <- {:nats, nats_available?()},
-             {:ok, response} <- nats_optimize_prompt(request) do
+        with {:pgmq, true} <- {:pgmq, pgmq_available?()},
+             {:ok, response} <- pgmq_optimize_prompt(request) do
           {:ok, response}
         else
           _ -> {:ok, local_optimize_prompt(request)}
@@ -255,7 +252,7 @@ defmodule Singularity.PromptEngine do
   def health_check do
     cond do
       nif_loaded?() -> :ok
-      nats_available?() -> :ok
+      pgmq_available?() -> :ok
       true -> {:error, :no_backend_available}
     end
   end
@@ -313,11 +310,11 @@ defmodule Singularity.PromptEngine do
   end
 
   # ---------------------------------------------------------------------------
-  # NATS helpers
+  # pgmq helpers
   # ---------------------------------------------------------------------------
 
-  defp nats_available? do
-    # Use the centralized template service instead of direct NATS calls
+  defp pgmq_available? do
+    # Use the centralized template service instead of direct pgmq calls
     case Singularity.Knowledge.TemplateService.search_patterns(["prompt"]) do
       {:ok, _} -> true
       {:error, _} -> false
@@ -349,7 +346,7 @@ defmodule Singularity.PromptEngine do
   defp normalize_result({:error, reason}), do: {:error, reason}
   defp normalize_result(other), do: {:ok, other}
 
-  defp nats_generate_prompt(request) do
+  defp pgmq_generate_prompt(request) do
     with {:ok, response} <-
            Singularity.Messaging.Client.request("prompt.generate.request", Jason.encode!(request),
              timeout: 15_000
@@ -359,7 +356,7 @@ defmodule Singularity.PromptEngine do
     end
   end
 
-  defp nats_optimize_prompt(request) do
+  defp pgmq_optimize_prompt(request) do
     with {:ok, response} <-
            Singularity.Messaging.Client.request("prompt.optimize.request", Jason.encode!(request),
              timeout: 15_000
@@ -371,12 +368,7 @@ defmodule Singularity.PromptEngine do
 
   defmodule Native do
     @moduledoc false
-    use Rustler,
-      otp_app: :singularity,
-      crate: :prompt_engine,
-      path: "../packages/prompt_engine",
-      mode: :release
-    )
+    use Rustler, otp_app: :singularity, crate: "prompt_engine", path: "../packages/prompt_engine"
 
     # NIF functions - names must match Rust #[rustler::nif] function names
     def nif_generate_prompt(_request), do: :erlang.nif_error(:nif_not_loaded)
@@ -412,7 +404,7 @@ defmodule Singularity.PromptEngine do
   end
 
   @doc """
-  Syncs a template from the global knowledge cache via NATS.
+  Syncs a template from the global knowledge cache via pgmq.
   """
   def sync_template_from_global(template_name) do
     :prompt_engine.sync_template_from_global(template_name)

@@ -12,15 +12,15 @@ defmodule Singularity.LLM.Supervisor do
   ## Important Notes
 
   `Singularity.LLM.Service` is NOT supervised here because it's a stateless module
-  that delegates to NATS. All state is managed by:
+  that delegates to pgmq. All state is managed by:
   - RateLimiter (for rate limiting)
   - NatsClient (for communication)
-  - AI Server (TypeScript service via NATS)
+  - AI Server (TypeScript service via pgmq)
 
   ## Dependencies
 
   Depends on:
-  - NATS.Supervisor - For NATS communication
+  - pgmq.Supervisor - For pgmq communication
   - Repo - For storing rate limit state (if persisted)
   """
 

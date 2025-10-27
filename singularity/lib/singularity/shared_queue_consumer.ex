@@ -314,7 +314,7 @@ defmodule Singularity.SharedQueueConsumer do
       # Mark as processing immediately
       update_llm_request_status(llm_request, "processing")
 
-      # Route request to LLM provider via NATS
+      # Route request to LLM provider via PGMQ
       route_llm_request_to_provider(llm_request)
     rescue
       e ->
@@ -332,7 +332,7 @@ defmodule Singularity.SharedQueueConsumer do
   @doc """
   Handle LLM response - validates JSON and Instructor schema if provided.
 
-  Called when LLM response is received (either from NATS or pgmq).
+  Called when LLM response is received from PGMQ.
 
   Handles:
   1. Empty/nil responses → marked as failed (LLM down)
@@ -604,7 +604,7 @@ defmodule Singularity.SharedQueueConsumer do
 
   # --- Private Helpers ---
 
-  defp call_nats(_subject, _payload), do: :ok
+  defp call_pgmq(_queue, _payload), do: :ok
 
   defp schedule_poll do
     poll_interval = config()[:poll_interval_ms] || 1000
@@ -675,8 +675,8 @@ defmodule Singularity.SharedQueueConsumer do
   end
 
   defp route_llm_request_to_provider(llm_request) do
-    # Publish LLM request to NATS for processing
-    nats_subject = "llm.requests.#{llm_request.provider}"
+    # Publish LLM request to PGMQ for processing
+    pgmq_queue = "llm_requests"
     
     request_payload = %{
       "request_id" => llm_request.id,
@@ -689,7 +689,7 @@ defmodule Singularity.SharedQueueConsumer do
       "instructor_schema" => llm_request.instructor_schema
     }
 
-    case call_nats(nats_subject, request_payload) do
+    case call_pgmq(pgmq_queue, request_payload) do
       :ok ->
         Logger.info("✅ LLM request routed to provider: #{llm_request.provider}")
         

@@ -1,8 +1,8 @@
 defmodule Singularity.Execution.Planning.WorkPlanAPI do
   @moduledoc """
-  NATS API for submitting SAFe work items to SafeWorkPlanner with intelligent task management.
+  pgmq API for submitting SAFe work items to SafeWorkPlanner with intelligent task management.
 
-  Provides comprehensive NATS-based API for creating and managing SAFe work items
+  Provides comprehensive pgmq-based API for creating and managing SAFe work items
   with intelligent task conflict detection, TaskGraph-based prioritization, and
   self-improvement agent synchronization for dynamic work planning.
 
@@ -10,11 +10,11 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   This module integrates with:
   - `Singularity.Execution.Planning.SafeWorkPlanner` - Work planning (SafeWorkPlanner.add_chunk/2, get_hierarchy/0)
-  - `Gnat` - NATS messaging (Gnat.sub/3, pub/3 for message handling)
+  - `pgmq` - pgmq messaging (pgmq.sub/3, pub/3 for message handling)
   - `Jason` - JSON processing (Jason.encode!/1, decode/1 for message parsing)
   - PostgreSQL table: `work_plan_api_logs` (stores API request/response history)
 
-  ## NATS Subjects
+  ## pgmq Subjects
 
   - `planning.strategic_theme.create` - Create a new strategic theme
   - `planning.epic.create` - Create a new epic
@@ -39,8 +39,8 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   ## Usage
 
-      # Create a feature via NATS
-      Gnat.request(conn, "planning.feature.create", Jason.encode!(%{
+      # Create a feature via pgmq
+      pgmq.request(conn, "planning.feature.create", Jason.encode!(%{
         "name": "User Authentication",
         "description": "OAuth2-based user authentication",
         "capability_id": "cap-auth-123"
@@ -48,7 +48,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       # => {:ok, %{"status" => "ok", "id" => "feat-xyz789"}}
 
       # Get next work item
-      Gnat.request(conn, "planning.next_work.get", "{}")
+      pgmq.request(conn, "planning.next_work.get", "{}")
       # => {:ok, %{"status" => "ok", "next_work" => %{...}}}
 
   ## AI Navigation Metadata
@@ -58,11 +58,11 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   ```json
   {
     "module": "Singularity.Execution.Planning.WorkPlanAPI",
-    "purpose": "NATS-based API for SAFe work item management with conflict detection and TaskGraph prioritization",
+    "purpose": "pgmq-based API for SAFe work item management with conflict detection and TaskGraph prioritization",
     "role": "api_gateway",
     "layer": "execution_planning",
     "key_responsibilities": [
-      "Listen on NATS planning.* subjects for work item creation requests",
+      "Listen on pgmq planning.* subjects for work item creation requests",
       "Parse and validate JSON payloads for work items (themes, epics, capabilities, features)",
       "Route requests to SafeWorkPlanner for persistence and hierarchy management",
       "Synchronize task updates from self-improvement agents",
@@ -72,8 +72,8 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       "Provide helpful error messages and subject suggestions"
     ],
     "prevents_duplicates": ["PlanningAPI", "WorkPlanService", "SAFeAPI", "TaskCreationService"],
-    "uses": ["SafeWorkPlanner", "Gnat", "Jason", "Logger", "Ecto.Changeset"],
-    "nats_subjects": {
+    "uses": ["SafeWorkPlanner", "pgmq", "Jason", "Logger", "Ecto.Changeset"],
+    "pgmq_subjects": {
       "create": ["planning.strategic_theme.create", "planning.epic.create", "planning.capability.create", "planning.feature.create"],
       "query": ["planning.hierarchy.get", "planning.progress.get", "planning.next_work.get"]
     },
@@ -85,7 +85,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   ```mermaid
   graph TB
-    NatsIn["NATS Listener<br/>planning.* subjects"]
+    NatsIn["pgmq Listener<br/>planning.* subjects"]
 
     NatsIn -->|handle_info| MsgHandler["handle_message/2<br/>(topic, body)"]
 
@@ -110,7 +110,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     PriorityResp -->|calc priority| Priority["calculate_task_graph_priority/1<br/>WSJF scoring"]
     Priority -->|return prioritized| FinalResp["Final Response<br/>{status: ok, priority_score}"]
 
-    FinalResp -->|reply_to| NatsOut["NATS Reply<br/>via Gnat.pub"]
+    FinalResp -->|reply_to| NatsOut["pgmq Reply<br/>via pgmq.pub"]
     ErrorResp -->|reply_to| NatsOut
 
     SyncAgents["Self-Improvement Agents<br/>send updates"]
@@ -126,7 +126,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   ```yaml
   calls_out:
-    - module: Gnat
+    - module: pgmq
       function: sub/3, pub/3
       purpose: Subscribe to planning.* subjects, publish JSON responses
       critical: true
@@ -140,7 +140,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
     - module: Jason
       function: encode!/1, decode/1
-      purpose: JSON serialization for NATS payloads
+      purpose: JSON serialization for pgmq payloads
       critical: true
 
     - module: Logger
@@ -159,8 +159,8 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       purpose: Supervise WorkPlanAPI GenServer
       frequency: on_startup
 
-    - module: External NATS clients
-      function: Gnat.request on planning.* subjects
+    - module: External pgmq clients
+      function: pgmq.request on planning.* subjects
       purpose: Submit work items, query hierarchy, get next work
       frequency: on_demand
 
@@ -175,7 +175,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       to: listening
       trigger: start_link/1, init/1 called
       actions:
-        - Connect to NATS server
+        - Connect to pgmq server
         - Subscribe to all 7 planning.* subjects
         - Log subscription information
         - Return {:ok, %{gnat: gnat}}
@@ -269,13 +269,13 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       trigger: reply_to present in original message
       actions:
         - Encode response to JSON
-        - Publish via Gnat.pub(gnat, reply_to, json)
+        - Publish via pgmq.pub(gnat, reply_to, json)
         - Return {:noreply, state}
 
   depends_on:
     - Singularity.Execution.Planning.SafeWorkPlanner (MUST be available)
-    - Gnat NATS client (MUST be started)
-    - NATS server on localhost:4222 (MUST be running)
+    - pgmq pgmq client (MUST be started)
+    - pgmq server on localhost:4222 (MUST be running)
   ```
 
   ### Performance Characteristics ⚡
@@ -289,7 +289,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     - Typical: ~10-100ms sorting for 100-1000 tasks
 
   **Space Complexity**
-  - Per NATS message: ~1-5KB (JSON payload)
+  - Per pgmq message: ~1-5KB (JSON payload)
   - Response size: ~2-10KB (includes hierarchy/progress data)
   - Conflict detection temporary: ~5-20KB for similarity calculations
   - Total state: ~10KB per active GenServer instance (minimal)
@@ -306,8 +306,8 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   **Process Safety**
   - ✅ GenServer singleton ensures serialized state updates
-  - ✅ NATS message handling is sequential
-  - ✅ Safe for multiple NATS clients (request/reply pattern)
+  - ✅ pgmq message handling is sequential
+  - ✅ Safe for multiple pgmq clients (request/reply pattern)
 
   **Thread Safety**
   - ✅ GenServer handle_info serializes all messages
@@ -315,7 +315,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   - ✅ No shared mutable state (GenServer state is immutable)
 
   **Atomicity Guarantees**
-  - ✅ Single NATS message: Atomic (all-or-nothing response)
+  - ✅ Single pgmq message: Atomic (all-or-nothing response)
   - ✅ SafeWorkPlanner operations: Atomic with Ecto transactions
   - ❌ Conflict detection: Not atomic with creation (time-of-check/time-of-use race)
   - Recommended: Add database constraints for redundancy detection
@@ -331,12 +331,12 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   ### Observable Metrics 📊
 
   **Telemetry Events**
-  - message_received: NATS message arrives (topic, payload_size)
+  - message_received: pgmq message arrives (topic, payload_size)
   - validation_complete: JSON validation succeeds/fails (valid, error_type)
   - route_complete: Message routed to handler (topic, handler)
   - conflict_detected: Task conflicts found (conflict_count, types)
   - priority_calculated: Task prioritized (priority_score, factors)
-  - response_sent: Reply sent to NATS (topic, response_size)
+  - response_sent: Reply sent to pgmq (topic, response_size)
   - error: Any failure in pipeline (phase, error_type, reason)
 
   **Key Metrics**
@@ -350,7 +350,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   - SLA: P95 latency < 500ms per create
   - Availability: Error rate < 1%
   - Conflict detection: > 90% recall (catch real conflicts)
-  - Queue depth: Monitor NATS message queue
+  - Queue depth: Monitor pgmq message queue
 
   ---
 
@@ -367,13 +367,13 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   1. SafeWorkPlanner has many tasks (conflict check becomes O(n) slow)
   2. Similarity calculation expensive (many tasks to compare)
   3. SafeWorkPlanner database query slow
-  4. NATS network latency
+  4. pgmq network latency
 
   **Solutions**
   - Optimize conflict check: Add indexed queries to SafeWorkPlanner
   - Limit comparisons: Only check recent tasks (e.g., last 100)
   - Batch writes: Cache writes and flush periodically
-  - Monitor NATS: Check network latency separately
+  - Monitor pgmq: Check network latency separately
 
   ---
 
@@ -398,23 +398,23 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   ---
 
-  **Problem: NATS Message Handling Hangs (No Response)**
+  **Problem: pgmq Message Handling Hangs (No Response)**
 
   **Symptoms**
-  - NATS client waits forever for reply
+  - pgmq client waits forever for reply
   - WorkPlanAPI receives message but no response sent
-  - reply_to present but Gnat.pub never called
+  - reply_to present but pgmq.pub never called
 
   **Root Causes**
   1. Exception in route_message/2 (unhandled error)
   2. SafeWorkPlanner.add_chunk crashes or hangs
-  3. Gnat.pub fails to send reply
-  4. NATS connection lost
+  3. pgmq.pub fails to send reply
+  4. pgmq connection lost
 
   **Solutions**
   - Add error handling: Wrap SafeWorkPlanner calls in try/catch
   - Log all exceptions: Always log errors before returning
-  - Test NATS: Verify connection with simple pub/sub test
+  - Test pgmq: Verify connection with simple pub/sub test
   - Add timeout: Implement message handling timeout
 
   ---
@@ -422,7 +422,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   ### Anti-Patterns
 
   #### ❌ DO NOT create PlanningAPI, WorkPlanService, or SAFeAPI duplicates
-  **Why:** WorkPlanAPI is the single canonical NATS gateway for work planning operations.
+  **Why:** WorkPlanAPI is the single canonical pgmq gateway for work planning operations.
 
   ```elixir
   # ❌ WRONG - Duplicate planning API
@@ -432,8 +432,8 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     end
   end
 
-  # ✅ CORRECT - Use WorkPlanAPI via NATS
-  Gnat.request(conn, "planning.feature.create", Jason.encode!(%{
+  # ✅ CORRECT - Use WorkPlanAPI via pgmq
+  pgmq.request(conn, "planning.feature.create", Jason.encode!(%{
     "name" => name,
     "description" => description
   }))
@@ -492,7 +492,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   ### Search Keywords
 
-  work plan API, NATS gateway, SAFe work items, task creation, conflict detection,
+  work plan API, pgmq gateway, SAFe work items, task creation, conflict detection,
   task synchronization, WSJF prioritization (Weighted Shortest Job First), hierarchy management,
   strategic theme, epic, capability, feature, request/reply pattern, JSON validation,
   error handling, task redundancy, dependency calculation, self-improvement agent sync,
@@ -526,13 +526,13 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   @impl true
   def init(:ok) do
-    # Start our own NATS connection
-    {:ok, gnat} = Gnat.start_link(%{host: "localhost", port: 4222})
+    # Start our own pgmq connection
+    {:ok, gnat} = pgmq.start_link(%{host: "localhost", port: 4222})
 
     # Subscribe to all planning subjects
     Enum.each(@subjects, fn {_key, subject} ->
-      {:ok, _sid} = Gnat.sub(gnat, self(), subject)
-      Logger.info("WorkPlanAPI subscribed to NATS subject: #{subject}")
+      {:ok, _sid} = pgmq.sub(gnat, self(), subject)
+      Logger.info("WorkPlanAPI subscribed to pgmq subject: #{subject}")
     end)
 
     {:ok, %{gnat: gnat}}
@@ -550,7 +550,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
     # Send reply if reply_to is present
     if reply_to do
-      Gnat.pub(state.gnat, reply_to, Jason.encode!(response))
+      pgmq.pub(state.gnat, reply_to, Jason.encode!(response))
     end
 
     {:noreply, state}
@@ -725,7 +725,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   end
 
   defp route_message(topic, _attrs) do
-    Logger.warning("Unknown NATS subject: #{topic}")
+    Logger.warning("Unknown pgmq subject: #{topic}")
 
     # Provide helpful suggestions for similar topics
     suggestions = get_similar_topics(topic)
@@ -967,7 +967,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   end
 
   # COMPLETED: Enhanced error handling for unexpected messages and invalid JSON in Work Plan API.
-  # COMPLETED: All `call_llm` patterns have been refactored to use the NATS-based `llm-server`.
+  # COMPLETED: All `call_llm` patterns have been refactored to use the pgmq-based `llm-server`.
   # COMPLETED: All LLM interactions are now centralized via Singularity.LLM.Service.
   # COMPLETED: Implemented mechanism to synchronize task updates from the self-improvement agent.
   # This ensures:

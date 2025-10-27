@@ -358,7 +358,7 @@ defmodule Singularity.Tools.AgentRoles do
       "database" -> load_database_tool()
       "file_system" -> load_file_system_tool()
       "git" -> load_git_tool()
-      "nats" -> load_nats_tool()
+      "pgmq" -> load_pgmq_tool()
       "analytics" -> load_analytics_tool()
       "backup" -> load_backup_tool()
       "communication" -> load_communication_tool()
@@ -547,15 +547,15 @@ defmodule Singularity.Tools.AgentRoles do
     }
   end
 
-  defp load_nats_tool do
+  defp load_pgmq_tool do
     %{
-      name: "nats",
-      description: "NATS messaging system integration",
+      name: "pgmq",
+      description: "pgmq messaging system integration",
       capabilities: [
-        "NATS message publishing",
-        "NATS subscription management",
+        "pgmq message publishing",
+        "pgmq subscription management",
         "Message routing",
-        "NATS monitoring",
+        "pgmq monitoring",
         "Message queuing"
       ],
       status: "active",

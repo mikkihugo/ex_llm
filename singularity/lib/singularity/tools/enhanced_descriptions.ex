@@ -94,7 +94,7 @@ defmodule Singularity.Tools.EnhancedDescriptions do
         codebase_path: "./",
         frameworks: ["Phoenix", "React"],
         databases: ["PostgreSQL", "Redis"],
-        messaging: ["NATS"]
+        messaging: ["pgmq"]
       }
     },
 

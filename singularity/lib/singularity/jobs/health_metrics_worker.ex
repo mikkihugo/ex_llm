@@ -2,7 +2,7 @@ defmodule Singularity.Jobs.HealthMetricsWorker do
   @moduledoc """
   Health Metrics Worker - Report codebase health metrics to aggregation system
 
-  Replaces NATS publish("intelligence_hub.codebase_health", ...)
+  Replaces pgmq publish("intelligence_hub.codebase_health", ...)
   Now enqueued as an Oban job in the metrics queue.
   
   Triggered by:

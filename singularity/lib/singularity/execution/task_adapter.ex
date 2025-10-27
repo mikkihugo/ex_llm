@@ -2,10 +2,10 @@ defmodule Singularity.Execution.TaskAdapter do
   @moduledoc """
   Task Adapter Behavior - Contract for all task execution strategies.
 
-  Defines the unified interface for task adapters (Oban jobs, NATS messages, GenServer tasks, etc.)
+  Defines the unified interface for task adapters (Oban jobs, pgmq messages, GenServer tasks, etc.)
   enabling config-driven orchestration of task execution patterns.
 
-  Consolidates 4 distinct execution systems (Oban, NATS, Task Graph, GenServer agents)
+  Consolidates 4 distinct execution systems (Oban, pgmq, Task Graph, GenServer agents)
   into a unified execution adapter system with consistent configuration and queuing.
 
   ## Module Identity (JSON)
@@ -31,11 +31,11 @@ defmodule Singularity.Execution.TaskAdapter do
       priority: 10,
       description: "Background job execution via Oban"
     },
-    nats_adapter: %{
+    pgmq_adapter: %{
       module: Singularity.Adapters.NatsAdapter,
       enabled: true,
       priority: 15,
-      description: "Async task execution via NATS"
+      description: "Async task execution via pgmq"
     },
     genserver_adapter: %{
       module: Singularity.Adapters.GenServerAdapter,
@@ -65,7 +65,7 @@ defmodule Singularity.Execution.TaskAdapter do
   @doc """
   Returns the atom identifier for this adapter.
 
-  Examples: `:oban_adapter`, `:nats_adapter`, `:genserver_adapter`
+  Examples: `:oban_adapter`, `:pgmq_adapter`, `:genserver_adapter`
   """
   @callback adapter_type() :: atom()
 

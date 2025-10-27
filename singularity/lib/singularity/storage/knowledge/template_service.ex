@@ -1,13 +1,13 @@
 defmodule Singularity.Knowledge.TemplateService do
   @moduledoc """
-  NATS service for template requests.
+  pgmq service for template requests.
 
-  Exposes templates via NATS subjects for consumption by:
+  Exposes templates via pgmq subjects for consumption by:
   - Rust prompt engine
   - External agents
   - Other microservices
 
-  ## NATS Subjects
+  ## pgmq Subjects
 
   Request templates:
   - `template.get.framework.phoenix` → Get Phoenix framework template
@@ -23,9 +23,9 @@ defmodule Singularity.Knowledge.TemplateService do
   ## Example: Rust Client
 
   ```rust
-  use async_nats;
+  use async_pgmq;
 
-  let nc = async_nats::connect("nats://localhost:4222").await?;
+  let nc = async_pgmq::connect("pgmq://localhost:4222").await?;
 
   // Request template
   let response = nc
@@ -38,7 +38,7 @@ defmodule Singularity.Knowledge.TemplateService do
   ## Example: Elixir Client
 
   ```elixir
-  {:ok, response} = Gnat.request(gnat, "template.get.framework.phoenix", "")
+  {:ok, response} = pgmq.request(gnat, "template.get.framework.phoenix", "")
   {:ok, template} = Jason.decode(response.body)
   ```
 
@@ -51,16 +51,16 @@ defmodule Singularity.Knowledge.TemplateService do
   ```json
   {
     "module": "Singularity.Knowledge.TemplateService",
-    "purpose": "NATS-based template service with context-aware rendering and Package Intelligence integration",
+    "purpose": "pgmq-based template service with context-aware rendering and Package Intelligence integration",
     "role": "service",
     "layer": "domain_services",
     "alternatives": {
-      "Singularity.TemplateStore": "Use TemplateService for NATS access; TemplateStore for local DB access",
-      "Singularity.Templates.Renderer": "TemplateService wraps Renderer with NATS + intelligence injection",
+      "Singularity.TemplateStore": "Use TemplateService for pgmq access; TemplateStore for local DB access",
+      "Singularity.Templates.Renderer": "TemplateService wraps Renderer with pgmq + intelligence injection",
       "Direct File Access": "TemplateService provides caching, semantic search, and version control"
     },
     "disambiguation": {
-      "vs_template_store": "TemplateService adds NATS interface + Package Intelligence context injection",
+      "vs_template_store": "TemplateService adds pgmq interface + Package Intelligence context injection",
       "vs_renderer": "TemplateService orchestrates rendering; Renderer handles Solid/Handlebars logic",
       "vs_template_cache": "TemplateService is the API; TemplateCache is the storage backend"
     }
@@ -71,7 +71,7 @@ defmodule Singularity.Knowledge.TemplateService do
 
   ```mermaid
   graph TB
-      Client[Rust/Agent Client] -->|1. NATS request| Service[TemplateService]
+      Client[Rust/Agent Client] -->|1. pgmq request| Service[TemplateService]
       Service -->|2. check| Cache[TemplateCache]
       Cache -->|3a. hit| Service
       Cache -->|3b. miss| DB[PostgreSQL]
@@ -80,7 +80,7 @@ defmodule Singularity.Knowledge.TemplateService do
       Intel -->|5. framework hints| Service
       Service -->|6. render| Renderer[Templates.Renderer]
       Renderer -->|7. Solid/Handlebars| Service
-      Service -->|8. NATS response| Client
+      Service -->|8. pgmq response| Client
 
       Service -->|track usage| Learning[Learning Loop]
 
@@ -105,10 +105,10 @@ defmodule Singularity.Knowledge.TemplateService do
 
     - module: Singularity.NatsClient
       function: publish/2, subscribe/1
-      purpose: NATS messaging for template requests/responses
+      purpose: pgmq messaging for template requests/responses
       critical: true
 
-    - module: Package Intelligence (via NATS)
+    - module: Package Intelligence (via pgmq)
       function: intelligence.query
       purpose: Inject framework/quality context into templates
       critical: false
@@ -122,18 +122,18 @@ defmodule Singularity.Knowledge.TemplateService do
       purpose: Request templates for cross-instance learning
       frequency: medium
 
-    - module: Agents (via NATS)
+    - module: Agents (via pgmq)
       purpose: Render code with best practices and patterns
       frequency: high
 
   depends_on:
-    - Singularity.NatsClient (MUST start first - NATS messaging)
+    - Singularity.NatsClient (MUST start first - pgmq messaging)
     - Singularity.Knowledge.TemplateCache (MUST start first - storage)
     - PostgreSQL knowledge_artifacts table (MUST exist)
 
   supervision:
     supervised: true
-    reason: "GenServer managing NATS subscriptions, must restart to re-subscribe on crash"
+    reason: "GenServer managing pgmq subscriptions, must restart to re-subscribe on crash"
   ```
 
   ### Data Flow (Mermaid Sequence)
@@ -180,9 +180,9 @@ defmodule Singularity.Knowledge.TemplateService do
   TemplateService.render_with_context(template_id, vars, framework: "phoenix")
   ```
 
-  #### ❌ DO NOT implement custom NATS template handlers
+  #### ❌ DO NOT implement custom pgmq template handlers
   ```elixir
-  # ❌ WRONG - Custom NATS handler
+  # ❌ WRONG - Custom pgmq handler
   Singularity.Messaging.Client.subscribe("template.get.*", fn msg -> ... end)
 
   # ✅ CORRECT - TemplateService handles all template.* subjects
@@ -195,7 +195,7 @@ defmodule Singularity.Knowledge.TemplateService do
 
   ### Search Keywords
 
-  template service, nats templates, code generation templates, handlebars rendering,
+  template service, pgmq templates, code generation templates, handlebars rendering,
   solid templates, package intelligence, framework hints, quality templates,
   context injection, template caching, semantic search, learning loop, rust integration
   """
@@ -215,13 +215,13 @@ defmodule Singularity.Knowledge.TemplateService do
 
   @impl true
   def init(_opts) do
-    # Use the default Gnat connection
-    gnat_name = :nats_client
+    # Use the default pgmq connection
+    gnat_name = :pgmq_client
 
-    # Check if NATS is enabled before subscribing
-    nats_enabled = Application.get_env(:singularity, :nats, %{})[:enabled] != false
+    # Check if pgmq is enabled before subscribing
+    pgmq_enabled = Application.get_env(:singularity, :pgmq, %{})[:enabled] != false
 
-    if nats_enabled do
+    if pgmq_enabled do
       # Subscribe to template requests using Singularity.NatsClient
       Enum.each(
         [
@@ -236,13 +236,13 @@ defmodule Singularity.Knowledge.TemplateService do
         end
       )
 
-      Logger.info("Template NATS service started")
+      Logger.info("Template pgmq service started")
       Logger.info("  Listening on: template.get.*, template.search.*")
     else
-      Logger.info("Template NATS service running in local-only mode (NATS disabled)")
+      Logger.info("Template pgmq service running in local-only mode (pgmq disabled)")
     end
 
-    {:ok, %{gnat: gnat_name, requests_handled: 0, nats_enabled: nats_enabled}}
+    {:ok, %{gnat: gnat_name, requests_handled: 0, pgmq_enabled: pgmq_enabled}}
   end
 
   @impl true
@@ -356,7 +356,7 @@ defmodule Singularity.Knowledge.TemplateService do
 
   defp send_error(_gnat, nil, _message), do: :ok
 
-  # Public API for other modules to use instead of direct NATS calls
+  # Public API for other modules to use instead of direct pgmq calls
 
   @doc """
   Render a template with automatic Package Intelligence context injection.
@@ -560,7 +560,7 @@ defmodule Singularity.Knowledge.TemplateService do
             {:ok, template}
 
           {:error, :not_found} ->
-            # Fetch from central cloud via NATS and cache locally
+            # Fetch from central cloud via pgmq and cache locally
             fetch_and_cache_from_central(template_type, template_id)
 
           {:error, reason} ->
@@ -583,7 +583,7 @@ defmodule Singularity.Knowledge.TemplateService do
         {:ok, template_ids}
 
       _ ->
-        # Fetch from central cloud via NATS
+        # Fetch from central cloud via pgmq
         fetch_template_list_from_central(template_type, limit)
     end
   end
@@ -666,7 +666,7 @@ defmodule Singularity.Knowledge.TemplateService do
         # Also store in TemplateCache for immediate access
         TemplateCache.put("#{template_type}.#{template_id}", template_data)
 
-        # Sync to central cloud via NATS
+        # Sync to central cloud via pgmq
         sync_to_central(template_type, template_id, template_data)
 
         {:ok, template_data}
@@ -688,7 +688,7 @@ defmodule Singularity.Knowledge.TemplateService do
     }
 
     case Singularity.Messaging.Client.publish(
-           Singularity.NATS.RegistryClient.subject(:knowledge_template_store),
+           Singularity.pgmq.RegistryClient.subject(:knowledge_template_store),
            Jason.encode!(request)
          ) do
       :ok ->
@@ -714,7 +714,7 @@ defmodule Singularity.Knowledge.TemplateService do
     }
 
     case Singularity.Messaging.Client.request(
-           Singularity.NATS.RegistryClient.subject(:knowledge_template_get),
+           Singularity.pgmq.RegistryClient.subject(:knowledge_template_get),
            Jason.encode!(request),
            timeout: 5000
          ) do
@@ -743,7 +743,7 @@ defmodule Singularity.Knowledge.TemplateService do
     }
 
     case Singularity.Messaging.Client.request(
-           Singularity.NATS.RegistryClient.subject(:knowledge_template_list),
+           Singularity.pgmq.RegistryClient.subject(:knowledge_template_list),
            Jason.encode!(request),
            timeout: 5000
          ) do
@@ -883,7 +883,7 @@ defmodule Singularity.Knowledge.TemplateService do
       "task_type" => opts[:task_type] || "code_generation"
     }
 
-    # Query via NATS with timeout
+    # Query via pgmq with timeout
     case Singularity.Messaging.Client.request(
            "intelligence.query",
            Jason.encode!(query),
@@ -903,7 +903,7 @@ defmodule Singularity.Knowledge.TemplateService do
         end
 
       {:error, reason} ->
-        {:error, {:nats_error, reason}}
+        {:error, {:pgmq_error, reason}}
     end
   end
 

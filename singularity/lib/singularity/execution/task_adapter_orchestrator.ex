@@ -3,7 +3,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
   Task Adapter Orchestrator - Config-driven orchestration of task execution strategies.
 
   Automatically discovers and uses enabled adapters to execute tasks using the most
-  appropriate execution method (Oban jobs, NATS messages, GenServer agents, etc.).
+  appropriate execution method (Oban jobs, pgmq messages, GenServer agents, etc.).
 
   Routes tasks to first-available-match adapter based on task requirements and adapter
   capabilities.

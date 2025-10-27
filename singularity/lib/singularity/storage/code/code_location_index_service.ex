@@ -137,8 +137,8 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
 
   ## Examples
 
-      iex> CodeLocationIndexService.find_microservices(:nats)
-      [%{filepath: "...", patterns: [...], nats_subjects: [...]}]
+      iex> CodeLocationIndexService.find_microservices(:pgmq)
+      [%{filepath: "...", patterns: [...], pgmq_subjects: [...]}]
   """
   def find_microservices(type \\ nil) do
     query =
@@ -149,7 +149,7 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
           type: c.microservice_type,
           patterns: c.patterns,
           frameworks: c.frameworks,
-          nats_subjects: c.nats_subjects,
+          pgmq_subjects: c.pgmq_subjects,
           http_routes: c.http_routes
         }
 
@@ -180,16 +180,16 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
   end
 
   @doc """
-  Find NATS subscribers to a subject pattern.
+  Find pgmq subscribers to a subject pattern.
 
   ## Examples
 
-      iex> CodeLocationIndexService.find_nats_subscribers("user.>")
+      iex> CodeLocationIndexService.find_pgmq_subscribers("user.>")
       ["lib/services/user_service.ex", "lib/services/analytics.ex"]
   """
-  def find_nats_subscribers(subject_pattern) do
+  def find_pgmq_subscribers(subject_pattern) do
     from(c in CodeLocationIndex,
-      where: fragment("? @> ARRAY[?]::text[]", c.nats_subjects, ^subject_pattern),
+      where: fragment("? @> ARRAY[?]::text[]", c.pgmq_subjects, ^subject_pattern),
       select: c.filepath
     )
     |> Repo.all()
@@ -400,7 +400,7 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
     mapping = [
       {["phoenix"], "Phoenix"},
       {["broadway"], "Broadway"},
-      {["nats", "gnat"], "NATS"},
+      {["pgmq", "gnat"], "pgmq"},
       {["ecto"], "Ecto"},
       {["genserver"], "GenServer"}
     ]
@@ -425,7 +425,7 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
     if type do
       %{
         type: type,
-        nats_subjects: extract_nats_subjects(code),
+        pgmq_subjects: extract_pgmq_subjects(code),
         http_routes: extract_http_routes(code)
       }
     else
@@ -433,9 +433,9 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
     end
   end
 
-  defp extract_nats_subjects(code) do
-    # Extract NATS subject patterns: Gnat.sub(conn, self(), "subject")
-    Regex.scan(~r/Gnat\.sub\([^,]+,[^,]+,\s*"([^"]+)"/, code)
+  defp extract_pgmq_subjects(code) do
+    # Extract pgmq subject patterns: pgmq.sub(conn, self(), "subject")
+    Regex.scan(~r/pgmq\.sub\([^,]+,[^,]+,\s*"([^"]+)"/, code)
     |> Enum.map(fn [_, subject] -> subject end)
   end
 

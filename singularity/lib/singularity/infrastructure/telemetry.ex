@@ -70,10 +70,10 @@ defmodule Singularity.Infrastructure.Telemetry do
       ),
       last_value("singularity.agent.active.count", tags: [:agent_type]),
 
-      # NATS Metrics
-      counter("singularity.nats.message.count", tags: [:subject, :direction]),
-      summary("singularity.nats.message.size",
-        event_name: [:singularity, :nats, :message, :stop],
+      # pgmq Metrics
+      counter("singularity.pgmq.message.count", tags: [:subject, :direction]),
+      summary("singularity.pgmq.message.size",
+        event_name: [:singularity, :pgmq, :message, :stop],
         measurement: :size_bytes,
         tags: [:subject, :direction],
         unit: :byte
@@ -169,7 +169,7 @@ defmodule Singularity.Infrastructure.Telemetry do
   - VM stats (memory, processes, schedulers)
   - Agent stats (active count, total spawned)
   - LLM stats (total requests, cost, cache hit rate)
-  - NATS stats (message throughput)
+  - pgmq stats (message throughput)
   """
   @spec get_metrics() :: map()
   def get_metrics do
@@ -177,7 +177,7 @@ defmodule Singularity.Infrastructure.Telemetry do
       vm: vm_metrics(),
       agents: agent_metrics(),
       llm: llm_metrics(),
-      nats: nats_metrics(),
+      pgmq: pgmq_metrics(),
       tools: tool_metrics(),
       timestamp: DateTime.utc_now()
     }
@@ -236,12 +236,12 @@ defmodule Singularity.Infrastructure.Telemetry do
     }
   end
 
-  defp nats_metrics do
+  defp pgmq_metrics do
     %{
       messages_sent:
-        get_counter_value([:singularity, :nats, :message, :count], %{direction: :send}),
+        get_counter_value([:singularity, :pgmq, :message, :count], %{direction: :send}),
       messages_received:
-        get_counter_value([:singularity, :nats, :message, :count], %{direction: :receive})
+        get_counter_value([:singularity, :pgmq, :message, :count], %{direction: :receive})
     }
   end
 

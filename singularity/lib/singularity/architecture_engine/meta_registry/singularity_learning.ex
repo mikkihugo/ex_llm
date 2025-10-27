@@ -3,7 +3,7 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
   Meta-registry for learning from framework-specific patterns.
 
   This learns from each framework we use to improve our development:
-  - NATS messaging patterns
+  - pgmq messaging patterns
   - PostgreSQL database patterns
   - ETS caching patterns
   - Rust NIF patterns
@@ -25,22 +25,22 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
   alias Singularity.MetaRegistry.QuerySystem
 
   @doc """
-  Learn from NATS messaging patterns.
+  Learn from pgmq messaging patterns.
 
   ## Examples
 
-      # Learn from our NATS subjects
-      learn_nats_patterns(%{
+      # Learn from our pgmq subjects
+      learn_pgmq_patterns(%{
         subjects: ["llm.provider.claude", "analysis.code.parse", "analysis.meta.registry.naming"],
         messaging: ["request/response", "pub/sub", "streaming"],
         patterns: ["analysis.meta.subject.hierarchy", "analysis.meta.wildcard.subjects", "analysis.meta.message.routing"]
       })
   """
-  def learn_nats_patterns(attrs) do
+  def learn_pgmq_patterns(attrs) do
     codebase_id =
       Map.get(attrs, :codebase_id) ||
         Map.get(attrs, "codebase_id") ||
-        "nats-framework"
+        "pgmq-framework"
 
     patterns =
       Map.get(attrs, :patterns) ||
@@ -173,8 +173,8 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
       get_rust_suggestions("parser", "module")
       # Returns: ["ParserEngine", "CodeParser", "SyntaxParser"]
       
-      # Get naming suggestions for new NATS subjects
-      get_nats_suggestions("search", "subject")
+      # Get naming suggestions for new pgmq subjects
+      get_pgmq_suggestions("search", "subject")
       # Returns: ["search.semantic", "search.hybrid", "search.vector"]
   """
   def get_elixir_suggestions(context, type) do
@@ -199,8 +199,8 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
     end)
   end
 
-  def get_nats_suggestions(context, type) do
-    QuerySystem.query_architecture_suggestions("singularity-nats", type)
+  def get_pgmq_suggestions(context, type) do
+    QuerySystem.query_architecture_suggestions("singularity-pgmq", type)
     |> Enum.map(fn pattern ->
       case type do
         "subject" -> "#{context}.#{pattern}"
@@ -258,8 +258,8 @@ defmodule Singularity.MetaRegistry.SingularityLearning do
       ]
     })
 
-    # Learn NATS patterns
-    learn_nats_patterns(%{
+    # Learn pgmq patterns
+    learn_pgmq_patterns(%{
       subjects: [
         "llm.provider.claude",
         "llm.provider.gemini",

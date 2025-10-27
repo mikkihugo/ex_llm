@@ -34,7 +34,7 @@ defmodule Singularity.CodeSynthesisPipeline do
     ↓ (cache miss)
   ┌─────────────────────────────────┐
   │  PARALLEL QUERIES (async)        │
-  │  ├─ Facts query (NATS)           │
+  │  ├─ Facts query (pgmq)           │
   │  ├─ Pattern search (pgvector)    │
   │  ├─ RAG retrieval (pgvector)     │
   │  └─ Dedup check (multi-hash)     │
@@ -214,7 +214,7 @@ defmodule Singularity.CodeSynthesisPipeline do
         tech_stack
 
       [] ->
-        # Try to query from SPARC facts (NATS)
+        # Try to query from SPARC facts (pgmq)
         case query_tech_stack_from_facts(repo) do
           {:ok, tech_stack} ->
             # Cache for 1 hour
@@ -229,9 +229,9 @@ defmodule Singularity.CodeSynthesisPipeline do
   end
 
   defp query_tech_stack_from_facts(repo) do
-    # Query SPARC facts via NATS
-    # NATS.request("knowledge.facts.query", %{repo: repo, type: :tech_stack})
-    # For now, return empty (integrate when NATS is ready)
+    # Query SPARC facts via pgmq
+    # pgmq.request("knowledge.facts.query", %{repo: repo, type: :tech_stack})
+    # For now, return empty (integrate when pgmq is ready)
     {:error, :not_implemented}
   end
 

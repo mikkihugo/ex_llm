@@ -4,9 +4,9 @@ defmodule Singularity.Knowledge.TemplateCache do
 
   On startup: Load ALL templates from PostgreSQL → ETS
   At runtime: ETS lookup (<1ms)
-  On update: NATS broadcast → Reload from PostgreSQL
+  On update: pgmq broadcast → Reload from PostgreSQL
 
-  No NATS KV, no TTL, no complexity - just fast in-memory cache.
+  No pgmq KV, no TTL, no complexity - just fast in-memory cache.
   """
 
   use GenServer

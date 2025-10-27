@@ -2,7 +2,7 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
   @moduledoc """
   Agent Coordination Worker - Coordinate inter-agent communication
 
-  Replaces NATS publish/subscribe patterns for agent communication.
+  Replaces pgmq publish/subscribe patterns for agent communication.
   Now uses Oban jobs for reliable, ordered message passing between agents.
   
   Patterns replaced:

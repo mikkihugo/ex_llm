@@ -8,7 +8,7 @@ defmodule Singularity.Workflows.Embedding do
   3. Call embedding service (Qodo, Jina, or external API)
   4. Return embedding vector
 
-  Replaces: NATS embedding.request topic
+  Replaces: pgmq embedding.request topic
 
   ## Input
 

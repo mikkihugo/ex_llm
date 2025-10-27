@@ -61,7 +61,7 @@ defmodule Singularity.Agents.RemediationEngine do
 
   - **Used by**: QualityEnforcer, SelfImprovingAgent
   - **Uses**: RAGCodeGenerator, QualityCodeGenerator, Store
-  - **Integrates with**: NATS (LLM calls for complex fixes)
+  - **Integrates with**: pgmq (LLM calls for complex fixes)
 
   ## Performance
 

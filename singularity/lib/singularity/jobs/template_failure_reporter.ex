@@ -2,7 +2,7 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
   @moduledoc """
   Template Failure Reporter - Report template performance failures to CentralCloud
 
-  Replaces NATS request("centralcloud.template.intelligence", ...)
+  Replaces pgmq request("centralcloud.template.intelligence", ...)
   Now enqueued as an Oban job that reports failures back via pgmq.
   
   Triggered when:

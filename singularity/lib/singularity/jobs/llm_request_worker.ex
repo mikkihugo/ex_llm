@@ -2,7 +2,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   @moduledoc """
   LLM Request Worker - Execute LLM requests via Elixir workflow
 
-  Replaces: NATS llm.request topic + TypeScript pgflow
+  Replaces: pgmq llm.request topic + TypeScript pgflow
 
   Architecture:
   - Oban job enqueues with request details

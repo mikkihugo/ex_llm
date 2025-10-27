@@ -480,7 +480,7 @@ defmodule Singularity.LLM.Service do
 
       # Error handling
       iex> Singularity.LLM.Service.call("invalid-model", [%{role: "user", content: "Test"}])
-      {:error, :nats_error}
+      {:error, :pgmq_error}
   """
   @spec call(model(), [message()], keyword()) :: {:ok, llm_response()} | {:error, term()}
   @spec call(atom(), [message()], keyword()) :: {:ok, llm_response()} | {:error, term()}

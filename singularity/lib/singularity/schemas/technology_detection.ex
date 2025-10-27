@@ -35,7 +35,7 @@ defmodule Singularity.Schemas.TechnologyDetection do
     - languages: Detected languages and versions
     - frameworks: Web/ML/async frameworks
     - databases: Data stores used
-    - messaging: Message brokers (NATS, RabbitMQ, etc.)
+    - messaging: Message brokers (pgmq, RabbitMQ, etc.)
     - services: Service names and types
     - architecture: Detected architecture pattern
   ```

@@ -11,7 +11,7 @@ defmodule Singularity.TechnologyAgent do
   ## Overview
 
   Technology detection agent that identifies frameworks, libraries, and tools
-  used in codebases. The original Rust + NATS detection pipeline is not available
+  used in codebases. The original Rust + pgmq detection pipeline is not available
   in this stripped workspace, so every entry point returns a descriptive error
   instead of attempting partial fallbacks.
 
@@ -107,7 +107,7 @@ defmodule Singularity.TechnologyAgent do
 
   ## Search Keywords
 
-  technology, detection, analysis, frameworks, libraries, tools, codebase, dependencies, classification, report, rust, nats, pipeline, stripped, fallback
+  technology, detection, analysis, frameworks, libraries, tools, codebase, dependencies, classification, report, rust, pgmq, pipeline, stripped, fallback
   """
 
   require Logger
@@ -619,7 +619,7 @@ defmodule Singularity.TechnologyAgent do
   end
 
   defp publish_to_intelligence_hub(codebase_path, technologies) do
-    # Publish detection results to CentralCloud's IntelligenceHub via NATS
+    # Publish detection results to CentralCloud's IntelligenceHub via pgmq
     # This enables collective learning across all codebases
     message = %{
       "event" => "technology_detected",

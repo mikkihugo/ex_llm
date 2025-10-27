@@ -5,7 +5,7 @@ defmodule Singularity.Integration.Claude do
   ⚠️  EMERGENCY FALLBACK ONLY ⚠️
 
   This module provides direct access to Claude via the CLI when:
-  - NATS AI server is down
+  - pgmq AI server is down
   - Emergency agent recovery is needed
   - System is in critical failure state
 
@@ -15,11 +15,11 @@ defmodule Singularity.Integration.Claude do
 
       Singularity.LLM.Service.call(:complex, messages, task_type: :architect)
 
-  This goes through: Elixir → NATS → TypeScript AI Server → LLM Providers
+  This goes through: Elixir → pgmq → TypeScript AI Server → LLM Providers
 
   ## Emergency Usage (Fallback Only)
 
-  Only use this when NATS is unavailable:
+  Only use this when pgmq is unavailable:
 
       Singularity.Integration.Claude.chat(prompt, profile: :recovery)
 
@@ -35,7 +35,7 @@ defmodule Singularity.Integration.Claude do
   ```json
   {
     "module": "Singularity.Integration.Claude",
-    "purpose": "Emergency Claude CLI fallback when NATS is down",
+    "purpose": "Emergency Claude CLI fallback when pgmq is down",
     "role": "emergency_fallback",
     "layer": "integration",
     "criticality": "MEDIUM",
@@ -51,8 +51,8 @@ defmodule Singularity.Integration.Claude do
 
   ### Anti-Patterns
   - ❌ **DO NOT** use for regular LLM calls - use LLM.Service
-  - ❌ **DO NOT** bypass NATS for performance - embrace async messaging
-  - ✅ **DO** use only in confirmed NATS failure scenarios
+  - ❌ **DO NOT** bypass pgmq for performance - embrace async messaging
+  - ✅ **DO** use only in confirmed pgmq failure scenarios
   """
 
   require Logger

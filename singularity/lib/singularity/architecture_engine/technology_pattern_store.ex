@@ -17,7 +17,7 @@ defmodule Singularity.ArchitectureEngine.TechnologyPatternStore do
       "rust_nif": "architecture_engine NIF (detect_technologies)",
       "embeddings": "Singularity.EmbeddingGenerator"
     },
-    "nats_subjects": [],
+    "pgmq_subjects": [],
     "technology_stack": ["Elixir", "PostgreSQL", "pgvector", "Ecto.SQL"]
   }
   ```
@@ -62,7 +62,7 @@ defmodule Singularity.ArchitectureEngine.TechnologyPatternStore do
         - "unique: [technology_name, technology_type]"
         - "GIN: file_extensions, import_patterns, package_managers"
         - "pgvector: pattern_embedding"
-    nats: null
+    pgmq: null
   ```
 
   ## Anti-Patterns (DO NOT DO THIS!)

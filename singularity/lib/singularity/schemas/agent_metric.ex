@@ -52,7 +52,7 @@ defmodule Singularity.Schemas.AgentMetric do
         success_rate: 0.95,
         avg_cost_cents: 3.5,
         avg_latency_ms: 1200,
-        patterns_used: %{"supervision" => 5, "nats" => 3}
+        patterns_used: %{"supervision" => 5, "pgmq" => 3}
       }
   """
 

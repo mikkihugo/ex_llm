@@ -8,7 +8,7 @@ defmodule Singularity.Workflows.AgentCoordination do
   3. Notify target agent
   4. Return acknowledgment
 
-  Replaces: NATS agent.* topics
+  Replaces: pgmq agent.* topics
 
   ## Input
 

@@ -8,9 +8,9 @@ defmodule Singularity.TemplateMatcher do
 
   ## Flow
 
-  1. User: "Create NATS consumer with Broadway"
-  2. Tokenize → ["create", "nats", "consumer", "broadway"]
-  3. Match patterns → finds elixir_production.json NATS pattern
+  1. User: "Create pgmq consumer with Broadway"
+  2. Tokenize → ["create", "pgmq", "consumer", "broadway"]
+  3. Match patterns → finds elixir_production.json pgmq pattern
   4. Load relationships → GenServer, supervision, error handling
   5. Return complete template with all architectural knowledge
 
@@ -233,8 +233,8 @@ defmodule Singularity.TemplateMatcher do
     # Based on relationships, suggest how patterns connect
     Enum.map(related_patterns, fn rp ->
       cond do
-        String.contains?(rp.name, "genserver") and String.contains?(pattern.name, "nats") ->
-          "GenServer manages NATS connection lifecycle and subscription state"
+        String.contains?(rp.name, "genserver") and String.contains?(pattern.name, "pgmq") ->
+          "GenServer manages pgmq connection lifecycle and subscription state"
 
         String.contains?(rp.name, "supervisor") ->
           "Supervisor restarts #{pattern.name} on failure"
@@ -270,8 +270,8 @@ defmodule Singularity.TemplateMatcher do
       end
 
     suggestions =
-      if "nats" in detected and "health_check" not in detected do
-        ["Add health checks for NATS connection" | suggestions]
+      if "pgmq" in detected and "health_check" not in detected do
+        ["Add health checks for pgmq connection" | suggestions]
       else
         suggestions
       end

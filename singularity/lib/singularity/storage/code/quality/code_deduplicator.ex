@@ -511,7 +511,7 @@ defmodule Singularity.CodeDeduplicator do
         "request",
         "cache",
         "pubsub",
-        "nats",
+        "pgmq",
         "database"
       ])
 

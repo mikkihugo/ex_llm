@@ -466,14 +466,14 @@ defmodule Singularity.Knowledge.TemplateGeneration do
       file_path: anonymize_path(generation.file_path)
     }
 
-    # Publish to CentralCloud via NATS
+    # Publish to CentralCloud via pgmq
     case Singularity.Messaging.Client.publish("centralcloud.template.generation", message) do
       :ok ->
         Logger.debug("Published generation to CentralCloud: #{generation.template_id}")
         :ok
 
       {:error, reason} ->
-        # Don't fail the whole operation if NATS is down
+        # Don't fail the whole operation if pgmq is down
         Logger.warning("Failed to publish to CentralCloud: #{inspect(reason)}")
         :ok
     end

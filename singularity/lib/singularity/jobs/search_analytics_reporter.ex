@@ -2,7 +2,7 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
   @moduledoc """
   Search Analytics Reporter - Report search metrics to KnowledgeCache
 
-  Replaces NATS publish("knowledge_cache.search_analytics", ...)
+  Replaces pgmq publish("knowledge_cache.search_analytics", ...)
   Now enqueued as an Oban job for batch reporting.
   
   Architecture:

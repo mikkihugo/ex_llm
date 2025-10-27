@@ -3,14 +3,14 @@ defmodule Singularity.Database.MessageQueue do
   In-database message queue using PostgreSQL pgmq extension.
 
   Provides durable message queueing for:
-  - **Singularity ↔ CentralCloud messaging** when NATS is unavailable
+  - **Singularity ↔ CentralCloud messaging** when pgmq is unavailable
   - **Cross-instance agent communication** in multi-instance setups
   - **Event persistence** for audit trails
   - **Reliable task distribution** between autonomous agents
 
-  ## When to Use pgmq vs NATS
+  ## When to Use pgmq vs pgmq
 
-  | Use Case | pgmq | NATS |
+  | Use Case | pgmq | pgmq |
   |----------|------|------|
   | Persistence | ✅ Durable | ❌ Memory-only |
   | Reliability | ✅ Guaranteed | ⚠️ Best-effort |
@@ -20,7 +20,7 @@ defmodule Singularity.Database.MessageQueue do
   | Transactions | ✅ ACID | ❌ None |
 
   **Use pgmq for**: Critical messages, audit logs, cross-instance sync
-  **Use NATS for**: Real-time, high-throughput, performance-critical
+  **Use pgmq for**: Real-time, high-throughput, performance-critical
 
   ## Usage Examples
 
@@ -45,7 +45,7 @@ defmodule Singularity.Database.MessageQueue do
 
   1. **Agent Session Sync**: Persist agent state between Singularity instances
   2. **CentralCloud Requests**: Queue learning requests from Singularity to CentralCloud
-  3. **Fallback Communication**: When NATS is down, use pgmq as fallback
+  3. **Fallback Communication**: When pgmq is down, use pgmq as fallback
   4. **Audit Trail**: All inter-system messages persisted for compliance
   """
 

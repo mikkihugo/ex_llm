@@ -27,7 +27,7 @@ defmodule Singularity.Agents.Supervisor do
 
   Depends on:
   - LLM.Supervisor - For LLM-driven agent operations
-  - NATS.Supervisor - For agent coordination
+  - pgmq.Supervisor - For agent coordination
   """
 
   use Supervisor

@@ -48,7 +48,7 @@ defmodule Singularity.Search.CodeSearchStack do
   called_by:
     - Singularity.Agents.* (autonomous agents)
     - Singularity.Tools.* (MCP tools)
-    - NATS subscribers (message queue)
+    - pgmq subscribers (message queue)
 
   dependencies_graph:
     ast_grep_nif: "Rust parser engine (already compiled)"

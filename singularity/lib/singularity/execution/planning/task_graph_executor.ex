@@ -1,8 +1,8 @@
 defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   @moduledoc """
-  TaskGraph Executor with NATS LLM integration for self-evolving task execution.
+  TaskGraph Executor with pgmq LLM integration for self-evolving task execution.
 
-  Executes hierarchical task DAGs using NATS-based LLM communication with real-time
+  Executes hierarchical task DAGs using pgmq-based LLM communication with real-time
   token streaming, circuit breaking, and self-improvement through execution feedback.
   Provides telemetry and observability for task execution monitoring.
 
@@ -15,14 +15,14 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   - `Singularity.QualityCodeGenerator` - Quality enforcement (QualityCodeGenerator.generate/2)
   - `Singularity.Store` - Knowledge search (Store.search_knowledge/2)
   - `Singularity.SelfImprovingAgent` - Self-improvement (SelfImprovingAgent.learn_from_execution/2)
-  - NATS subject: `task_graph.execute.*` (publishes execution requests)
+  - pgmq subject: `task_graph.execute.*` (publishes execution requests)
   - PostgreSQL table: `task_graph_executions` (stores execution history)
 
   ## Execution Flow
 
   1. Select next task from DAG
   2. Compile LLM operation for task
-  3. Execute via NATS with streaming
+  3. Execute via pgmq with streaming
   4. Update DAG with results
   5. Optionally evolve operation based on feedback
 
@@ -43,13 +43,13 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   ```json
   {
     "module": "Singularity.Execution.Planning.TaskGraphExecutor",
-    "purpose": "Execution engine for task DAGs with NATS LLM integration",
+    "purpose": "Execution engine for task DAGs with pgmq LLM integration",
     "role": "execution_engine",
     "layer": "execution_core",
     "key_responsibilities": [
       "Execute individual tasks from DAG",
       "Manage parallel/sequential execution strategies",
-      "Integrate with NATS for async LLM operations",
+      "Integrate with pgmq for async LLM operations",
       "Handle task streaming and real-time feedback",
       "Support self-improvement via evolution feedback"
     ],
@@ -118,8 +118,8 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     - name: execute
       from: idle
       to: executing
-      publishes: task_graph.execute.* (NATS)
-      subscribes: task_graph.result.* (NATS)
+      publishes: task_graph.execute.* (pgmq)
+      subscribes: task_graph.result.* (pgmq)
 
     - name: execute_task (internal)
       from: executing
@@ -194,7 +194,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   ### Search Keywords
 
   task executor, execution engine, DAG execution, parallel execution, task execution strategy,
-  NATS LLM integration, task streaming, execution feedback, self-improvement, task lifecycle,
+  pgmq LLM integration, task streaming, execution feedback, self-improvement, task lifecycle,
   GenServer executor, async execution, execution orchestration, task coordination, execution monitoring,
   circuit breaking, rate limiting, task scheduling, work execution, autonomous execution
   """
@@ -210,7 +210,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     LuaStrategyExecutor
   }
 
-  # INTEGRATION: LLM execution (NATS-based operations)
+  # INTEGRATION: LLM execution (pgmq-based operations)
   # INTEGRATION: Code generation and quality enforcement
   alias Singularity.CodeGeneration.Implementations.{RAGCodeGenerator, QualityCodeGenerator}
   alias Singularity.Store

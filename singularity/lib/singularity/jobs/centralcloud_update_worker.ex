@@ -2,7 +2,7 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
   @moduledoc """
   CentralCloud Update Worker - Send knowledge updates back to CentralCloud
 
-  Replaces NATS publish("central.knowledge.update", ...)
+  Replaces pgmq publish("central.knowledge.update", ...)
   Now enqueued as an Oban job that will eventually write to pgmq queue.
   
   Architecture:

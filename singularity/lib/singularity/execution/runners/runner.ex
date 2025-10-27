@@ -12,7 +12,7 @@ defmodule Singularity.Execution.Runners.Runner do
   - **Telemetry** - Observability and metrics
   - **Circuit Breaker** - Fault tolerance for external services
   - **PostgreSQL Persistence** - Execution history and state management
-  - **NATS Integration** - Distributed coordination and messaging
+  - **pgmq Integration** - Distributed coordination and messaging
 
   ## Key Features
 
@@ -23,7 +23,7 @@ defmodule Singularity.Execution.Runners.Runner do
   - **Dynamic Scaling** - Adjusts resources based on load
   - **Event-Driven** - Responds to system events
   - **Persistent State** - Execution history survives restarts
-  - **Distributed Coordination** - NATS-based task distribution
+  - **Distributed Coordination** - pgmq-based task distribution
 
   ## Usage
 
@@ -130,7 +130,7 @@ defmodule Singularity.Execution.Runners.Runner do
   end
 
   @doc """
-  Publish execution event via NATS.
+  Publish execution event via pgmq.
   """
   @spec publish_event(String.t(), map()) :: :ok | {:error, term()}
   def publish_event(event_type, payload) do
@@ -149,15 +149,15 @@ defmodule Singularity.Execution.Runners.Runner do
     # Initialize circuit breakers for external services
     circuit_breakers = initialize_circuit_breakers()
 
-    # Connect to NATS if available
+    # Connect to pgmq if available
     gnat =
-      case connect_to_nats() do
+      case connect_to_pgmq() do
         {:ok, pid} ->
-          Logger.info("Connected to NATS")
+          Logger.info("Connected to pgmq")
           pid
 
         {:error, reason} ->
-          Logger.warning("NATS connection failed: #{inspect(reason)}")
+          Logger.warning("pgmq connection failed: #{inspect(reason)}")
           nil
       end
 
@@ -187,7 +187,7 @@ defmodule Singularity.Execution.Runners.Runner do
       execution_history: execution_history
     }
 
-    Logger.info("Runner started", supervisor_ref: supervisor_ref, nats: gnat != nil)
+    Logger.info("Runner started", supervisor_ref: supervisor_ref, pgmq: gnat != nil)
     {:ok, state}
   end
 
@@ -199,7 +199,7 @@ defmodule Singularity.Execution.Runners.Runner do
     case persist_execution(execution_id, task, :pending) do
       :ok ->
         # Publish task started event
-        publish_nats_event(state.gnat, "system.events.runner.task.started", %{
+        publish_pgmq_event(state.gnat, "system.events.runner.task.started", %{
           execution_id: execution_id,
           task_type: task.type,
           timestamp: DateTime.utc_now()
@@ -286,7 +286,7 @@ defmodule Singularity.Execution.Runners.Runner do
       metrics: state.metrics,
       circuit_breakers: state.circuit_breakers,
       supervisor_children: DynamicSupervisor.count_children(state.supervisor_ref),
-      nats_connected: state.gnat != nil,
+      pgmq_connected: state.gnat != nil,
       execution_history_count: length(state.execution_history)
     }
 
@@ -313,7 +313,7 @@ defmodule Singularity.Execution.Runners.Runner do
 
   @impl true
   def handle_call({:publish_event, event_type, payload}, _from, state) do
-    result = publish_nats_event(state.gnat, event_type, payload)
+    result = publish_pgmq_event(state.gnat, event_type, payload)
     {:reply, result, state}
   end
 
@@ -348,7 +348,7 @@ defmodule Singularity.Execution.Runners.Runner do
     end
 
     # Publish completion event
-    publish_nats_event(state.gnat, "system.events.runner.task.completed", %{
+    publish_pgmq_event(state.gnat, "system.events.runner.task.completed", %{
       execution_id: execution_id,
       result: result,
       timestamp: DateTime.utc_now()
@@ -389,7 +389,7 @@ defmodule Singularity.Execution.Runners.Runner do
     end
 
     # Publish failure event
-    publish_nats_event(state.gnat, "system.events.runner.task.failed", %{
+    publish_pgmq_event(state.gnat, "system.events.runner.task.failed", %{
       execution_id: execution_id,
       error: reason,
       timestamp: DateTime.utc_now()
@@ -410,7 +410,7 @@ defmodule Singularity.Execution.Runners.Runner do
       end)
 
     # Publish circuit breaker event
-    publish_nats_event(state.gnat, "system.events.runner.circuit.opened", %{
+    publish_pgmq_event(state.gnat, "system.events.runner.circuit.opened", %{
       service: service,
       timestamp: DateTime.utc_now()
     })
@@ -430,7 +430,7 @@ defmodule Singularity.Execution.Runners.Runner do
       end)
 
     # Publish circuit breaker event
-    publish_nats_event(state.gnat, "system.events.runner.circuit.closed", %{
+    publish_pgmq_event(state.gnat, "system.events.runner.circuit.closed", %{
       service: service,
       timestamp: DateTime.utc_now()
     })
@@ -721,13 +721,13 @@ defmodule Singularity.Execution.Runners.Runner do
   end
 
   # ============================================================================
-  # NATS INTEGRATION
+  # pgmq INTEGRATION
   # ============================================================================
 
-  defp connect_to_nats do
+  defp connect_to_pgmq do
     try do
-      # Use Singularity.Messaging.Client instead of direct Gnat connection
-      # NATS connection handled by application startup
+      # Use Singularity.Messaging.Client instead of direct pgmq connection
+      # pgmq connection handled by application startup
       {:ok, nil}
     rescue
       error ->
@@ -735,7 +735,7 @@ defmodule Singularity.Execution.Runners.Runner do
     end
   end
 
-  defp publish_nats_event(_gnat, event_type, payload) do
+  defp publish_pgmq_event(_gnat, event_type, payload) do
     try do
       subject = "system.events.runner.#{event_type}"
       message = Jason.encode!(payload)
@@ -743,13 +743,13 @@ defmodule Singularity.Execution.Runners.Runner do
       :ok
     rescue
       error ->
-        Logger.error("Failed to publish NATS event", event: event_type, error: error)
+        Logger.error("Failed to publish pgmq event", event: event_type, error: error)
         {:error, error}
     end
   end
 
-  defp publish_nats_event(nil, _event_type, _payload) do
-    # NATS not available, silently ignore
+  defp publish_pgmq_event(nil, _event_type, _payload) do
+    # pgmq not available, silently ignore
     :ok
   end
 
@@ -1047,9 +1047,9 @@ defmodule Singularity.Execution.Runners.Runner do
         do: [:phoenix | frameworks],
         else: frameworks
 
-    # NATS detection
+    # pgmq detection
     frameworks =
-      if String.contains?(file_path, "nats"), do: [:nats | frameworks], else: frameworks
+      if String.contains?(file_path, "pgmq"), do: [:pgmq | frameworks], else: frameworks
 
     # PostgreSQL detection
     frameworks =

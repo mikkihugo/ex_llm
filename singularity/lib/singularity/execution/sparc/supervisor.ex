@@ -23,7 +23,7 @@ defmodule Singularity.Execution.SPARC.Supervisor do
   Depends on:
   - LLM.Supervisor - For LLM-driven SPARC phases
   - Knowledge.Supervisor - For template access
-  - NATS.Supervisor - For SPARC workflow coordination
+  - pgmq.Supervisor - For SPARC workflow coordination
   """
 
   use Supervisor

@@ -29,7 +29,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
 
     Logger.info("🔍 Searching packages: '#{query}' in #{ecosystem}")
 
-    # Search local knowledge base instead of NATS
+    # Search local knowledge base instead of pgmq
     case search_local_packages(query, ecosystem, limit) do
       {:ok, results} when is_list(results) ->
         parsed = parse_search_results(results)

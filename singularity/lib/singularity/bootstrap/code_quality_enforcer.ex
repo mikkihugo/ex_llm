@@ -20,7 +20,7 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
   - `templates_data/prompt_library/quality/extract-patterns.lua` - Pattern extraction (Lua)
   - `Singularity.CodeStore` - Code chunk storage with embeddings
   - `Singularity.Knowledge.ArtifactStore` - Template retrieval
-  - `Singularity.LLM.Service` - LLM operations via NATS
+  - `Singularity.LLM.Service` - LLM operations via pgmq
   - Rust `code_analysis` NIF - AST parsing and duplication detection
 
   ## Lua Scripts

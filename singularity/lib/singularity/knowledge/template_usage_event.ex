@@ -2,7 +2,7 @@ defmodule Singularity.Knowledge.TemplateUsageEvent do
   @moduledoc """
   Tracks template rendering success/failure for learning and analytics.
 
-  Previously published to NATS for event streaming, now persisted in PostgreSQL
+  Previously published to pgmq for event streaming, now persisted in PostgreSQL
   to provide:
 
   1. **Audit Trail** - Complete history of template usage

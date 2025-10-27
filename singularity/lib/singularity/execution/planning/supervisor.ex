@@ -26,7 +26,7 @@ defmodule Singularity.Execution.Planning.Supervisor do
   - TaskGraph.WorkerPool - For worker spawning (Orchestrator delegates to WorkerPool)
   - Agents.Supervisor - For AgentSupervisor (TaskGraph.Orchestrator spawns role-based agents)
   - LLM.Supervisor - For task decomposition via LLM.Service
-  - NATS.Supervisor - For task_graph.execute.* NATS subjects
+  - pgmq.Supervisor - For task_graph.execute.* pgmq subjects
   - Repo - For todos and task_graph_executions tables
   """
 

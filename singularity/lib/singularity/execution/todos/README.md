@@ -10,7 +10,7 @@ This system allows you to create todos that are automatically picked up and solv
 - Stored in PostgreSQL with semantic embeddings
 - Prioritized by urgency and dependencies
 - Assigned to worker agents automatically
-- Executed using LLM capabilities via NATS
+- Executed using LLM capabilities via pgmq
 - Results tracked and failures retried
 
 ## Architecture
@@ -21,7 +21,7 @@ This system allows you to create todos that are automatically picked up and solv
 2. **TodoStore** (`todo_store.ex`) - CRUD operations + semantic search + prioritization
 3. **TodoSwarmCoordinator** (`todo_swarm_coordinator.ex`) - Spawns and manages worker agents
 4. **TodoWorkerAgent** (`todo_worker_agent.ex`) - Individual agent that executes a single todo
-5. **TodoNatsInterface** (`todo_nats_interface.ex`) - NATS API for distributed communication
+5. **TodoNatsInterface** (`todo_pgmq_interface.ex`) - pgmq API for distributed communication
 6. **Singularity.Tools.Todos** (`../tools/todos.ex`) - MCP tool for AI assistants
 
 ### Database Schema
@@ -79,11 +79,11 @@ create_todo(%{
 })
 ```
 
-### 2. Via NATS
+### 2. Via pgmq
 
 ```bash
-# Create todo via NATS
-nats pub todos.create '{
+# Create todo via pgmq
+pgmq pub todos.create '{
   "title": "Optimize database queries",
   "description": "Add indexes and optimize N+1 queries",
   "priority": 2,
@@ -92,10 +92,10 @@ nats pub todos.create '{
 }'
 
 # Check swarm status
-nats request todos.swarm.status '{}'
+pgmq request todos.swarm.status '{}'
 
 # Search for similar todos
-nats request todos.search '{"query": "authentication implementation", "limit": 5}'
+pgmq request todos.search '{"query": "authentication implementation", "limit": 5}'
 ```
 
 ### 3. Via Elixir API
@@ -209,7 +209,7 @@ Worker agents automatically select the appropriate LLM complexity:
 - `IMP_VALIDATION_MEMORY_MULT` - Memory growth threshold (default: 1.25)
 - `IMP_VALIDATION_RUNQ_DELTA` - Run queue threshold (default: 50)
 
-## NATS Subjects
+## pgmq Subjects
 
 - `todos.create` - Create a new todo
 - `todos.get` - Get todo by ID

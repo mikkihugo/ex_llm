@@ -11,11 +11,7 @@ defmodule Singularity.LintingEngine do
   The Rust NIF handles heavy linting work while Elixir coordinates workflows.
   """
 
-  use Rustler,
-    otp_app: :singularity,
-    crate: :linting_engine,
-    path: "../packages/linting_engine"
-  )
+  use Rustler, otp_app: :singularity, crate: "quality_engine", path: "../packages/quality_engine"
 
   require Logger
 
@@ -117,7 +113,7 @@ defmodule Singularity.LintingEngine do
         end
 
       {:error, reason} ->
-        {:error, "NATS request failed: #{reason}"}
+        {:error, "pgmq request failed: #{reason}"}
     end
   end
 
@@ -160,7 +156,7 @@ defmodule Singularity.LintingEngine do
         end
 
       {:error, reason} ->
-        {:error, "NATS request failed: #{reason}"}
+        {:error, "pgmq request failed: #{reason}"}
     end
   end
 end

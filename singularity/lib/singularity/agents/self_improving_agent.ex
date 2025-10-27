@@ -645,7 +645,7 @@ defmodule Singularity.SelfImprovingAgent do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    # Publish request to Genesis via NATS
+    # Publish request to Genesis via pgmq
     subject = "agent.events.experiment.request.#{state.id}"
 
     case Singularity.Messaging.Client.publish(subject, request) do

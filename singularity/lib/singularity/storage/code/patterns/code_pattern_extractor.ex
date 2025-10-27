@@ -4,13 +4,13 @@ defmodule Singularity.CodePatternExtractor do
 
   **What it does:** Answers "What architectural patterns does this code use?"
 
-  **How:** Keyword matching on concrete technical terms (genserver, nats, async)
+  **How:** Keyword matching on concrete technical terms (genserver, pgmq, async)
   not marketing fluff ("enterprise-ready", "production-grade").
 
   ## Pattern Categories Extracted
 
   - **Process patterns**: GenServer, Supervisor, Broadway, Actor
-  - **Integration**: NATS, HTTP, Database, Kafka, Message queues
+  - **Integration**: pgmq, HTTP, Database, Kafka, Message queues
   - **Resilience**: Circuit breakers, retry logic, error handling
   - **Concurrency**: Async/await, processes, supervision trees
   - **Data**: Serialization, validation, caching
@@ -100,9 +100,9 @@ defmodule Singularity.CodePatternExtractor do
   Extract architectural patterns from existing code.
 
   **Language-specific detection:**
-  - **Elixir**: GenServer, Supervisor, Broadway, NATS, Phoenix
+  - **Elixir**: GenServer, Supervisor, Broadway, pgmq, Phoenix
   - **Gleam**: Actor, Supervisor, HTTP client
-  - **Rust**: Async/tokio, Serde, NATS, async-trait
+  - **Rust**: Async/tokio, Serde, pgmq, async-trait
 
   Returns concrete architectural keywords, not generic terms.
 
@@ -184,9 +184,9 @@ defmodule Singularity.CodePatternExtractor do
       {~r/use\s+Phoenix\.Channel/i, ["channel", "websocket", "pubsub", "realtime"]},
       {~r/use\s+Ecto\.Schema/i, ["schema", "database", "changeset", "validation"]},
 
-      # NATS/Messaging
-      {~r/Gnat\./i, ["nats", "messaging", "pubsub"]},
-      {~r/jetstream/i, ["jetstream", "nats", "streaming", "persistence"]},
+      # pgmq/Messaging
+      {~r/pgmq\./i, ["pgmq", "messaging", "pubsub"]},
+      {~r/jetstream/i, ["jetstream", "pgmq", "streaming", "persistence"]},
 
       # HTTP
       {~r/Tesla\./i, ["http", "client", "api", "rest"]},
@@ -250,7 +250,7 @@ defmodule Singularity.CodePatternExtractor do
       {~r/use\s+tokio/i, ["async", "runtime", "concurrent", "tokio"]},
       {~r/async\s+fn/i, ["async", "concurrent", "await"]},
       {~r/use\s+serde/i, ["serialization", "json", "encoding"]},
-      {~r/use\s+async_nats/i, ["nats", "messaging", "async"]},
+      {~r/use\s+async_pgmq/i, ["pgmq", "messaging", "async"]},
       {~r/#\[derive\(.*Serialize/i, ["serialization", "json", "derive"]},
       {~r/impl.*Service/i, ["service", "trait", "interface"]},
       {~r/\.await/i, ["async", "future", "concurrent"]}

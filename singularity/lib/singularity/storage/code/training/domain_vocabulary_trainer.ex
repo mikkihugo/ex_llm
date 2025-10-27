@@ -7,7 +7,7 @@ defmodule Singularity.DomainVocabularyTrainer do
   - Technology patterns (frameworks, languages, tools from technology_patterns table)
   - Template variables ({{MODULE_NAME}}, {{SUBJECT}})
   - Prompt bits (<REASONING>, <CODE_QUALITY>)
-  - NATS subjects (db.query, facts.technology_detected)
+  - pgmq subjects (db.query, facts.technology_detected)
   - Custom modules (RAGCodeGenerator, HybridAgent)
 
   ## Why This Matters
@@ -223,8 +223,8 @@ defmodule Singularity.DomainVocabularyTrainer do
       "pub async fn",
       "tokio::spawn",
       ".await?",
-      "Gnat.subscribe",
-      "nats.publish",
+      "pgmq.subscribe",
+      "pgmq.publish",
       "JetStream",
       "knowledge.facts.technology_patterns",
       "llm.analyze",
@@ -332,7 +332,7 @@ defmodule Singularity.DomainVocabularyTrainer do
         cond do
           String.contains?(pattern, ["def ", "defmodule"]) -> :elixir
           String.contains?(pattern, ["impl ", "pub ", "#["]) -> :rust
-          String.contains?(pattern, ["Gnat", "nats"]) -> :nats
+          String.contains?(pattern, ["pgmq", "pgmq"]) -> :pgmq
           true -> :other
         end
       end)

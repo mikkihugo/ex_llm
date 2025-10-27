@@ -340,7 +340,7 @@ defmodule Singularity.Database.PatternSimilaritySearch do
     # Delegate to embedding engine
     case Singularity.Database.Encryption.encrypt("embedding_secret", text) do
       {:ok, _} ->
-        # In real implementation, call embedding service via NATS
+        # In real implementation, call embedding service via pgmq
         # For now, return dummy vector (1536-dim matching Qodo-Embed)
         dummy_vector = List.duplicate(0.0, 1536)
         {:ok, dummy_vector}

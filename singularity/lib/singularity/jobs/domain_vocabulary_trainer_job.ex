@@ -4,17 +4,17 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
 
   **What it does:**
   - Builds domain-specific vocabularies from codebase
-  - Trains embedding models on custom terminology (SPARC, template vars, NATS subjects)
+  - Trains embedding models on custom terminology (SPARC, template vars, pgmq subjects)
   - Augments tokenizers with custom tokens ({{MODULE_NAME}}, sparc-phase-3-architecture)
   - Stores vocabulary models for RAG code search
-  - Publishes vocabulary updates to NATS
+  - Publishes vocabulary updates to pgmq
 
   **Job Configuration:**
   - Queue: `:ml_training` (shares queue with T5 training)
   - Max attempts: 3 (retry on transient failures)
   - Priority: 1 (high priority - vocabulary training is critical for RAG)
 
-  **NATS Integration:**
+  **pgmq Integration:**
   Publishes to `ml.training.vocabulary.completed` when successful
   Publishes to `ml.training.vocabulary.failed` on error
 
@@ -313,7 +313,7 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
   end
 
   defp publish_completion(source, vocab_id, vocabulary) do
-    Logger.debug("Publishing vocabulary training completion to NATS")
+    Logger.debug("Publishing vocabulary training completion to pgmq")
 
     payload =
       Jason.encode!(%{
@@ -329,7 +329,7 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
 
     case Singularity.Messaging.Client.publish("ml.training.vocabulary.completed", payload) do
       :ok ->
-        Logger.info("Published vocabulary training completion to NATS",
+        Logger.info("Published vocabulary training completion to pgmq",
           source: source,
           vocab_id: vocab_id
         )
@@ -337,17 +337,17 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
         :ok
 
       {:error, reason} ->
-        Logger.warning("Failed to publish to NATS (non-critical)", error: inspect(reason))
+        Logger.warning("Failed to publish to pgmq (non-critical)", error: inspect(reason))
         :ok
     end
   rescue
     exception ->
-      Logger.warning("Exception publishing to NATS (non-critical)", exception: inspect(exception))
+      Logger.warning("Exception publishing to pgmq (non-critical)", exception: inspect(exception))
       :ok
   end
 
   defp publish_failure(source, reason) do
-    Logger.debug("Publishing vocabulary training failure to NATS")
+    Logger.debug("Publishing vocabulary training failure to pgmq")
 
     payload =
       Jason.encode!(%{
@@ -359,13 +359,13 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
 
     case Singularity.Messaging.Client.publish("ml.training.vocabulary.failed", payload) do
       :ok ->
-        Logger.info("Published vocabulary training failure to NATS", source: source)
+        Logger.info("Published vocabulary training failure to pgmq", source: source)
 
-      {:error, nats_error} ->
-        Logger.warning("Failed to publish failure to NATS", error: inspect(nats_error))
+      {:error, pgmq_error} ->
+        Logger.warning("Failed to publish failure to pgmq", error: inspect(pgmq_error))
     end
   rescue
     exception ->
-      Logger.warning("Exception publishing failure to NATS", exception: inspect(exception))
+      Logger.warning("Exception publishing failure to pgmq", exception: inspect(exception))
   end
 end

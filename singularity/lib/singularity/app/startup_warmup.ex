@@ -72,7 +72,7 @@ defmodule Singularity.StartupWarmup do
 
     common_queries = [
       "create GenServer",
-      "NATS consumer",
+      "pgmq consumer",
       "API endpoint",
       "test suite",
       "error handling",

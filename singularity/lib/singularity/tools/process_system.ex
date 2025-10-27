@@ -204,7 +204,7 @@ defmodule Singularity.Tools.ProcessSystem do
           name: "service",
           type: :string,
           required: true,
-          description: "Service name (e.g., 'postgresql', 'nginx', 'nats')"
+          description: "Service name (e.g., 'postgresql', 'nginx', 'pgmq')"
         },
         %{
           name: "timeout",

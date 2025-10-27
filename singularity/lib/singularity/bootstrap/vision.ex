@@ -134,7 +134,7 @@ defmodule Singularity.Bootstrap.Vision do
         name: "Self-Knowledge Queries",
         description: "Answer questions about own architecture",
         acceptance_criteria: [
-          "Semantic search works: 'How does NATS work?'",
+          "Semantic search works: 'How does pgmq work?'",
           "Can find related modules",
           "Integration points discoverable",
           "Example code retrievable"

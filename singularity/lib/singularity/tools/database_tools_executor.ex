@@ -1,12 +1,12 @@
 defmodule Singularity.Tools.DatabaseToolsExecutor do
   @moduledoc """
-  Database-First Tool Executor - Executes AI tool requests via NATS
+  Database-First Tool Executor - Executes AI tool requests via pgmq
 
   ## Module Identity (JSON)
   ```json
   {
     "module": "Singularity.Tools.DatabaseToolsExecutor",
-    "purpose": "Execute database-first code tools via NATS",
+    "purpose": "Execute database-first code tools via pgmq",
     "layer": "infrastructure",
     "category": "tool_execution",
     "database": "codebase_metadata",
@@ -18,7 +18,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
 
   TypeScript AI Server                     Elixir Tool Executor
   ────────────────────                     ─────────────────────
-  NATS Request
+  pgmq Request
     │ Subject: tools.code.get
     │ Format: OpenAI function calling
     └───────────────────────►               GenServer
@@ -26,7 +26,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
                                               ├─ Security validation
                                               ├─ Query PostgreSQL
                                               ├─ Audit logging
-                                              └─ NATS Response
+                                              └─ pgmq Response
 
   ## Database-First Architecture
 
@@ -98,11 +98,11 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
   uses:
     - Singularity.Repo: Database queries
     - Singularity.CodeSearch: Semantic search
-    - Singularity.NatsClient: NATS communication
+    - Singularity.NatsClient: pgmq communication
     - Singularity.Tools.SecurityPolicy: Access control
 
   used_by:
-    - AI Server (TypeScript): Via NATS requests
+    - AI Server (TypeScript): Via pgmq requests
 
   publishes:
     - No events
@@ -123,7 +123,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
 
   ## Search Keywords
 
-  database-first, tool-execution, nats, postgresql, pgvector, semantic-search,
+  database-first, tool-execution, pgmq, postgresql, pgvector, semantic-search,
   ast-parsing, symbol-navigation, dependency-analysis, openai-format,
   security-policy, audit-logging, code-access
   """

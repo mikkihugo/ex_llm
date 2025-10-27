@@ -7,7 +7,7 @@ defmodule Singularity.Schemas.CodeLocationIndex do
   Questions answered:
   - "Where is X implemented?" → List of files
   - "What frameworks are used?" → List with files
-  - "Where are NATS microservices?" → Filtered list
+  - "Where are pgmq microservices?" → Filtered list
   - "What does this file do?" → Pattern summary
 
   ## AI Navigation Metadata

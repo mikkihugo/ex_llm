@@ -183,7 +183,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
         # Optimize prompt using prompt engine if available
         optimized_prompt = optimize_prompt_if_available(prompt_data.prompt, task, opts)
 
-        # Execute LLM call via NATS (determine complexity from task)
+        # Execute LLM call via pgmq (determine complexity from task)
         complexity = determine_complexity(task, prompt_data.template)
         system_prompt = build_system_prompt(prompt_data.template)
 
@@ -337,7 +337,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   end
 
   defp determine_complexity(task, template) do
-    # Determine complexity level for NATS routing based on task and template
+    # Determine complexity level for pgmq routing based on task and template
     template_complexity = get_in(template, ["metadata", "performance", "complexity"]) || 5
 
     cond do

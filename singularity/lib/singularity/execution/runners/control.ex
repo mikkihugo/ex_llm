@@ -117,13 +117,13 @@ defmodule Singularity.Execution.Runners.Control do
 
   @impl true
   def handle_cast({:publish_improvement, event}, state) do
-    # Publish to agent-specific NATS subject
+    # Publish to agent-specific pgmq subject
     Singularity.Messaging.Client.publish(
       "agent_improvements.#{event.agent_id}",
       Jason.encode!(%{improvement: event})
     )
 
-    # Publish to general improvements NATS subject
+    # Publish to general improvements pgmq subject
     Singularity.Messaging.Client.publish("improvements", Jason.encode!(%{improvement: event}))
 
     # Update metrics
@@ -148,7 +148,7 @@ defmodule Singularity.Execution.Runners.Control do
 
   @impl true
   def handle_cast({:broadcast_event, event}, state) do
-    # Broadcast to system events NATS subject
+    # Broadcast to system events pgmq subject
     Singularity.Messaging.Client.publish("system_events", Jason.encode!(%{system_event: event}))
 
     # Update metrics

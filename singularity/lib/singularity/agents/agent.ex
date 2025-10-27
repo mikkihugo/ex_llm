@@ -65,7 +65,7 @@ defmodule Singularity.Agents.Agent do
     - module: Runner
       purpose: Execution framework for agent work
 
-    - module: NATS subjects (async)
+    - module: pgmq subjects (async)
       purpose: Task requests via messaging
   ```
 

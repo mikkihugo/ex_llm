@@ -661,7 +661,7 @@ defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Code do
   end
 
   defp generate_with_rust_elixir_t5(prompt, language) do
-    # Hook up real T5 model generation via NATS
+    # Hook up real T5 model generation via pgmq
     case Singularity.Messaging.Client.request(
            "code.t5.generate",
            Jason.encode!(%{
@@ -694,7 +694,7 @@ defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Code do
   end
 
   defp generate_fallback_code(prompt, language) do
-    # Direct fallback to external LLM via NATS when T5 model is unavailable
+    # Direct fallback to external LLM via pgmq when T5 model is unavailable
     Logger.info("T5 failed, using external LLM fallback for language: #{language}")
     generate_external_llm_fallback(prompt, language)
   end
@@ -746,15 +746,15 @@ defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Code do
   end
 
   defp generate_external_llm_fallback(prompt, language) do
-    # Ultimate fallback to external LLM via NATS when local models fail
+    # Ultimate fallback to external LLM via pgmq when local models fail
     Logger.info("Using external LLM fallback for language: #{language}")
 
     # Build prompt for external LLM
     external_prompt = build_external_llm_prompt(prompt, language)
 
-    # Request external LLM via NATS
+    # Request external LLM via pgmq
     case Singularity.Messaging.Client.request(
-           Singularity.NATS.RegistryClient.subject(:llm_request),
+           Singularity.pgmq.RegistryClient.subject(:llm_request),
            Jason.encode!(%{
              prompt: external_prompt,
              language: language,

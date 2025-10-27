@@ -319,8 +319,7 @@ defmodule Singularity.Embedding.Trainer do
     
     # Serialize model weights to binary format
     weights_data = %{
-      "embedding_weights" => trainer.embedding_weights,
-      "model_state" => trainer.model_state,
+      "model_params" => trainer.model_params,
       "optimizer_state" => trainer.optimizer_state,
       "saved_at" => DateTime.to_iso8601(DateTime.utc_now())
     }
@@ -353,9 +352,9 @@ defmodule Singularity.Embedding.Trainer do
     state_file = Path.join(checkpoint_dir, "training_state.json")
     
     state_data = %{
-      "epoch" => trainer.current_epoch,
-      "step" => trainer.current_step,
-      "learning_rate" => trainer.learning_rate,
+      "epoch" => Map.get(trainer, :current_epoch, 0),
+      "step" => Map.get(trainer, :current_step, 0),
+      "learning_rate" => Map.get(trainer, :learning_rate, trainer.training_config.learning_rate),
       "best_metric" => trainer.best_metric,
       "training_loss" => trainer.training_loss,
       "validation_metrics" => trainer.validation_metrics
@@ -724,21 +723,47 @@ defmodule Singularity.Embedding.Trainer do
   end
 
   defp load_checkpoint_data(trainer, checkpoint_dir) do
-    # Load checkpoint data from files
     try do
-      # Load configuration
-      config_file = Path.join(checkpoint_dir, "config.json")
-      config = File.read!(config_file) |> Jason.decode!()
-      
-      # Load model weights
-      weights_file = Path.join(checkpoint_dir, "weights.bin")
-      weights_data = File.read!(weights_file) |> :erlang.binary_to_term()
-      
-      # Load training state
-      state_file = Path.join(checkpoint_dir, "training_state.json")
-      training_state = File.read!(state_file) |> Jason.decode!()
-      
-      {:ok, config, weights_data, training_state}
+      config_path = Path.join(checkpoint_dir, "config.json")
+      weights_path = Path.join(checkpoint_dir, "weights.bin")
+      state_path = Path.join(checkpoint_dir, "training_state.json")
+
+      config =
+        if File.exists?(config_path) do
+          config_path |> File.read!() |> Jason.decode!()
+        else
+          %{}
+        end
+
+      weights =
+        if File.exists?(weights_path) do
+          weights_path |> File.read!() |> :erlang.binary_to_term()
+        else
+          %{}
+        end
+
+      state =
+        if File.exists?(state_path) do
+          state_path |> File.read!() |> Jason.decode!()
+        else
+          %{}
+        end
+
+      updated_trainer =
+        trainer
+        |> Map.put(:model_params, Map.get(weights, "model_params", trainer.model_params))
+        |> Map.put(:optimizer_state, Map.get(weights, "optimizer_state", trainer.optimizer_state))
+        |> Map.put(:training_config, Map.get(config, "training_config", trainer.training_config))
+        |> Map.put(:embedding_dim, Map.get(config, "embedding_dim", Map.get(trainer, :embedding_dim)))
+        |> Map.put(:vocab_size, Map.get(config, "vocab_size", Map.get(trainer, :vocab_size)))
+        |> Map.put(:current_epoch, Map.get(state, "epoch", 0))
+        |> Map.put(:current_step, Map.get(state, "step", 0))
+        |> Map.put(:learning_rate, Map.get(state, "learning_rate", trainer.training_config.learning_rate))
+        |> Map.put(:best_metric, Map.get(state, "best_metric"))
+        |> Map.put(:training_loss, Map.get(state, "training_loss"))
+        |> Map.put(:validation_metrics, Map.get(state, "validation_metrics"))
+
+      {:ok, updated_trainer}
     rescue
       error -> {:error, "Failed to load checkpoint data: #{inspect(error)}"}
     end

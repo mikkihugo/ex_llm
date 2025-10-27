@@ -46,7 +46,7 @@ defmodule Singularity.Search.AstGrepCodeSearch do
 
   called_by:
     - Singularity.Tools.CodeSearch (MCP tool)
-    - Singularity.NATS.CodeSearchSubscriber (NATS service)
+    - Singularity.pgmq.CodeSearchSubscriber (pgmq service)
     - Agent workflows (code pattern discovery)
   ```
 

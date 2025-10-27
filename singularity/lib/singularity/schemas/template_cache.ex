@@ -1,9 +1,9 @@
 defmodule Singularity.Schemas.TemplateCache do
   @moduledoc """
-  Local cache of templates downloaded from central via NATS.
+  Local cache of templates downloaded from central via pgmq.
 
   Stores templates locally for:
-  - Fast access (no NATS round-trip)
+  - Fast access (no pgmq round-trip)
   - Offline capability
   - Usage tracking
 

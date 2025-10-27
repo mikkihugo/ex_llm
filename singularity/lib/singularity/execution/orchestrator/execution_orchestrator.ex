@@ -122,8 +122,8 @@ defmodule Singularity.Execution.Orchestrator.ExecutionOrchestrator do
       purpose: CLI command execution
       frequency: medium
 
-    - module: Singularity.NATS.ExecutionRouter
-      purpose: NATS-based execution requests
+    - module: Singularity.pgmq.ExecutionRouter
+      purpose: pgmq-based execution requests
       frequency: high
 
   depends_on:

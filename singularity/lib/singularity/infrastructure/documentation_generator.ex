@@ -402,7 +402,7 @@ defmodule Singularity.DocumentationGenerator do
     # Identify communication patterns
     %{
       synchronous: ["HTTP REST", "gRPC"],
-      asynchronous: ["NATS", "Message queues"],
+      asynchronous: ["pgmq", "Message queues"],
       event_driven: ["Event sourcing", "CQRS"]
     }
   end

@@ -58,7 +58,7 @@ defmodule Singularity.EmbeddingEngine do
     "alternatives": {
       "Singularity.Embedding.NxService": "Direct inference (lower-level)",
       "External APIs": "API-based embeddings (cost, latency, privacy concerns)",
-      "Embedding.Service": "NATS-based distributed embedding service"
+      "Embedding.Service": "pgmq-based distributed embedding service"
     }
   }
   ```

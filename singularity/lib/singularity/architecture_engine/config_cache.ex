@@ -3,7 +3,7 @@ defmodule Singularity.ArchitectureEngine.ConfigCache do
   ETS Manager for ArchitectureEngine configuration
 
   Manages ETS tables for workspace detection, build tool detection, and other configs.
-  In production, this data comes from central NATS. For testing, we use local ETS files.
+  In production, this data comes from central pgmq. For testing, we use local ETS files.
   """
 
   require Logger
@@ -70,9 +70,9 @@ defmodule Singularity.ArchitectureEngine.ConfigCache do
   end
 
   @doc """
-  Update configuration from central NATS (future implementation)
+  Update configuration from central pgmq (future implementation)
   """
-  def update_from_central_nats(config_type, data) do
+  def update_from_central_pgmq(config_type, data) do
     table_name = Map.get(@ets_tables, config_type)
 
     if table_name do
@@ -84,7 +84,7 @@ defmodule Singularity.ArchitectureEngine.ConfigCache do
         :ets.insert(table_name, {key, value})
       end)
 
-      Logger.info("Updated #{config_type} from central NATS")
+      Logger.info("Updated #{config_type} from central pgmq")
       :ok
     else
       {:error, :unknown_config_type}

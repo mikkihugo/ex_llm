@@ -44,7 +44,7 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   called_by:
     - Scheduled jobs (daily quality checks)
     - Git hooks (pre-push quality gates)
-    - Manual triggers (via NATS or CLI)
+    - Manual triggers (via pgmq or CLI)
   ```
 
   ## Anti-Patterns

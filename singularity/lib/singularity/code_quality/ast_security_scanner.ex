@@ -37,7 +37,7 @@ defmodule Singularity.CodeQuality.AstSecurityScanner do
   called_by:
     - Agents (security audit workflows)
     - Mix tasks (mix security.scan)
-    - NATS subscribers (security.scan.request)
+    - pgmq subscribers (security.scan.request)
   ```
 
   ## Anti-Patterns

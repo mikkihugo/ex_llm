@@ -83,7 +83,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
       purpose: "Task decomposition via LLM"
       critical: true
 
-    - module: Singularity.NATS.NatsClient
+    - module: Singularity.pgmq.NatsClient
       function: publish/2, subscribe/1
       purpose: "Publish execution requests, subscribe to responses"
       critical: false
@@ -206,7 +206,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
 
   require Logger
 
-  # INTEGRATION: LLM (task decomposition via NATS)
+  # INTEGRATION: LLM (task decomposition via pgmq)
   alias Singularity.LLM.Service
 
   # INTEGRATION: Core DAG operations (data structures)
@@ -275,10 +275,10 @@ defmodule Singularity.Execution.Planning.TaskGraph do
   end
 
   @doc """
-  Execute DAG with NATS LLM integration.
+  Execute DAG with pgmq LLM integration.
 
   This is the new self-evolving execution path that uses:
-  - NATS for LLM communication
+  - pgmq for LLM communication
   - Streaming tokens for real-time feedback
   - Circuit breaking and rate limiting
   - Self-improvement through critique

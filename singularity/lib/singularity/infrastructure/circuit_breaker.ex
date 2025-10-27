@@ -48,7 +48,7 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
     \"uses\": [\"GenServer\", \"Registry\", \"DynamicSupervisor\", \"Task\", \"DateTime\", \"Logger\"],
     \"state_machine\": \"3-state (closed, open, half_open)\",
     \"timeout_driven\": true,
-    \"critical_for\": [\"NATS integration\", \"LLM API calls\", \"External service calls\"]
+    \"critical_for\": [\"pgmq integration\", \"LLM API calls\", \"External service calls\"]
   }
   ```
 
@@ -128,10 +128,10 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
       frequency: per_llm_call
       pattern: \"Resilience wrapper for external API\"
 
-    - module: Singularity.NATS.NatsClient
+    - module: Singularity.pgmq.NatsClient
       function: publish/2, subscribe/2
-      purpose: Protect NATS operations from network failures
-      frequency: per_nats_operation
+      purpose: Protect pgmq operations from network failures
+      frequency: per_pgmq_operation
       pattern: \"Infrastructure protection\"
 
     - module: Singularity.CodeAnalysis.ScanOrchestrator
@@ -276,7 +276,7 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
 
   circuit breaker, resilience pattern, cascading failure prevention, fast-fail, state machine,
   failure detection, recovery testing, half-open state, timeout-based reset, exponential backoff,
-  service degradation, fault tolerance, external service protection, NATS protection,
+  service degradation, fault tolerance, external service protection, pgmq protection,
   LLM API resilience, infrastructure pattern, GenServer state machine, Registry-based lifecycle,
   DynamicSupervisor management, failure threshold, reset timeout, probe request
   """

@@ -5,7 +5,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
   **What it does:**
   - Trains T5 models on Rust/Elixir patterns from codebase
   - Stores trained models in database
-  - Publishes completion events to NATS for centralcloud
+  - Publishes completion events to pgmq for centralcloud
   - Tracks training metrics and performance
 
   **Job Configuration:**
@@ -13,7 +13,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
   - Max attempts: 3 (retry on failure)
   - Priority: 1 (lower number = higher priority)
 
-  **NATS Integration:**
+  **pgmq Integration:**
   Publishes to `ml.training.t5.completed` when successful
   Publishes to `ml.training.t5.failed` on error
 
@@ -146,7 +146,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
   end
 
   defp publish_completion(session_id, model_id) do
-    Logger.debug("Publishing T5 training completion to NATS")
+    Logger.debug("Publishing T5 training completion to pgmq")
 
     payload =
       Jason.encode!(%{
@@ -158,7 +158,7 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
 
     case Singularity.Messaging.Client.publish("ml.training.t5.completed", payload) do
       :ok ->
-        Logger.info("Published training completion to NATS",
+        Logger.info("Published training completion to pgmq",
           session_id: session_id,
           model_id: model_id
         )
@@ -166,18 +166,18 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
         :ok
 
       {:error, reason} ->
-        Logger.warning("Failed to publish to NATS (non-critical)", error: inspect(reason))
-        # Don't fail the job if NATS publish fails
+        Logger.warning("Failed to publish to pgmq (non-critical)", error: inspect(reason))
+        # Don't fail the job if pgmq publish fails
         :ok
     end
   rescue
     exception ->
-      Logger.warning("Exception publishing to NATS (non-critical)", exception: inspect(exception))
+      Logger.warning("Exception publishing to pgmq (non-critical)", exception: inspect(exception))
       :ok
   end
 
   defp publish_failure(training_name, reason) do
-    Logger.debug("Publishing T5 training failure to NATS")
+    Logger.debug("Publishing T5 training failure to pgmq")
 
     payload =
       Jason.encode!(%{
@@ -189,13 +189,13 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
 
     case Singularity.Messaging.Client.publish("ml.training.t5.failed", payload) do
       :ok ->
-        Logger.info("Published training failure to NATS", training_name: training_name)
+        Logger.info("Published training failure to pgmq", training_name: training_name)
 
-      {:error, nats_error} ->
-        Logger.warning("Failed to publish failure to NATS", error: inspect(nats_error))
+      {:error, pgmq_error} ->
+        Logger.warning("Failed to publish failure to pgmq", error: inspect(pgmq_error))
     end
   rescue
     exception ->
-      Logger.warning("Exception publishing failure to NATS", exception: inspect(exception))
+      Logger.warning("Exception publishing failure to pgmq", exception: inspect(exception))
   end
 end

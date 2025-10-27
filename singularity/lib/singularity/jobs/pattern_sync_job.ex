@@ -5,7 +5,7 @@ defmodule Singularity.Jobs.PatternSyncJob do
   Syncs framework patterns through:
   - PostgreSQL (source of truth, self-learning)
   - ETS Cache (hot patterns, <5ms reads)
-  - NATS (distribute to SPARC fact system)
+  - pgmq (distribute to SPARC fact system)
   - JSON Export (for Rust detector to read)
 
   ## Scheduling
@@ -38,7 +38,7 @@ defmodule Singularity.Jobs.PatternSyncJob do
     try do
       case FrameworkPatternSync.refresh_cache() do
         :ok ->
-          Logger.info("✅ Framework patterns synced to ETS/NATS/JSON")
+          Logger.info("✅ Framework patterns synced to ETS/pgmq/JSON")
           :ok
 
         {:error, reason} ->

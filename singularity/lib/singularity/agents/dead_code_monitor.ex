@@ -11,7 +11,7 @@ defmodule Singularity.Agents.DeadCodeMonitor do
     "purpose": "Monitor and report on dead code annotations in Rust codebase",
     "related_modules": [
       "Singularity.Agents.Agent",
-      "Singularity.NATS.ExecutionRouter"
+      "Singularity.pgmq.ExecutionRouter"
     ],
     "duplicate_prevention": [
       "DO NOT create DeadCodeAnalyzer - use DeadCodeMonitor",
@@ -33,12 +33,12 @@ defmodule Singularity.Agents.DeadCodeMonitor do
 
   ```mermaid
   graph LR
-    A[Scheduler/NATS] -->|spawn| B[DeadCodeMonitor]
+    A[Scheduler/pgmq] -->|spawn| B[DeadCodeMonitor]
     B -->|scan| C[scan_dead_code.sh]
     B -->|analyze| D[analyze_dead_code.sh]
     C -->|count| E[Compare Baseline]
     D -->|details| F[Categorize]
-    E -->|report| G[NATS/Logger]
+    E -->|report| G[pgmq/Logger]
     F -->|report| G
   ```
 
@@ -48,14 +48,14 @@ defmodule Singularity.Agents.DeadCodeMonitor do
   DeadCodeMonitor:
     spawned_by:
       - Scheduler (weekly cron)
-      - NATS message (on-demand)
+      - pgmq message (on-demand)
       - Pre-commit hook (git hook)
     calls:
       - System.cmd/3 (run scan scripts)
       - File.read!/1 (read script output)
       - String.split/2 (parse output)
       - Logger.info/1 (log results)
-      - NATS.publish/2 (send reports)
+      - pgmq.publish/2 (send reports)
     publishes_to:
       - "code_quality.dead_code.report"
       - "code_quality.dead_code.alert"
@@ -480,14 +480,14 @@ defmodule Singularity.Agents.DeadCodeMonitor do
   end
 
   defp publish_report(subject, report) do
-    # Publish to NATS (if available)
+    # Publish to pgmq (if available)
     case Process.whereis(Singularity.Messaging.Client) do
       nil ->
-        Logger.warning("NATS not available, skipping report publish")
+        Logger.warning("pgmq not available, skipping report publish")
         :ok
 
       _pid ->
-        # Would publish via NATS here
+        # Would publish via pgmq here
         Logger.info("Publishing report to #{subject}")
         :ok
     end

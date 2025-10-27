@@ -1,6 +1,6 @@
 defmodule Singularity.System.Bootstrap do
   @moduledoc """
-  Bootstrap module that integrates TaskGraph NATS-LLM self-evolution with existing Singularity infrastructure.
+  Bootstrap module that integrates TaskGraph pgmq-LLM self-evolution with existing Singularity infrastructure.
 
   Provides comprehensive system integration by connecting TaskGraph with existing self-improvement
   systems including SelfImprovingAgent, SafeWorkPlanner, and code generation tools.
@@ -207,7 +207,7 @@ defmodule Singularity.System.Bootstrap do
     # Create goal based on analysis
     goal = %{
       description: """
-      Integrate TaskGraph NATS-LLM self-evolution with existing Singularity infrastructure.
+      Integrate TaskGraph pgmq-LLM self-evolution with existing Singularity infrastructure.
 
       Integration points:
       - SelfImprovingAgent: Connect evolution feedback loop

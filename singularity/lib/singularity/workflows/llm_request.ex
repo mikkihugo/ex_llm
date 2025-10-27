@@ -8,7 +8,7 @@ defmodule Singularity.Workflows.LlmRequest do
   3. Enqueue request for Nexus to execute via OpenAI Responses API
   4. Emit acknowledgement
 
-  Replaces: NATS llm.request topic + TypeScript pgflow workflow
+  Replaces: pgmq llm.request topic + TypeScript pgflow workflow
 
   ## Input
 

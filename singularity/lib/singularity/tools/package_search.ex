@@ -142,7 +142,7 @@ defmodule Singularity.Tools.PackageSearch do
   end
 
   # Note: get_package now uses PackageAndCodebaseSearch directly
-  # No NATS calls needed - all handled by local search infrastructure
+  # No pgmq calls needed - all handled by local search infrastructure
 
   @doc """
   Search for packages in a specific ecosystem

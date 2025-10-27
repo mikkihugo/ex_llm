@@ -5,7 +5,7 @@ defmodule Singularity.Embedding.Service do
   This service generates 2560-dim multi-vector embeddings
   (Qodo 1536-dim + Jina v3 1024-dim concatenated) via direct function calls.
 
-  ## Message Flow (Removed NATS)
+  ## Message Flow (Removed pgmq)
 
   ```
   CentralCloud / Other Service
@@ -23,7 +23,7 @@ defmodule Singularity.Embedding.Service do
 
   ## Usage
 
-  Direct function call - no NATS needed:
+  Direct function call - no pgmq needed:
   ```elixir
   {:ok, embedding} = Embedding.Service.process_request("my text", :qodo)
   ```
@@ -37,16 +37,16 @@ defmodule Singularity.Embedding.Service do
   ```json
   {
     "module": "Singularity.Embedding.Service",
-    "purpose": "NATS-based embedding service providing GPU-accelerated 2560-dim vectors via ONNX runtime",
+    "purpose": "pgmq-based embedding service providing GPU-accelerated 2560-dim vectors via ONNX runtime",
     "role": "service",
     "layer": "infrastructure",
     "alternatives": {
-      "Singularity.Embedding.NxService": "Use Embedding.Service for NATS access; NxService for local inference",
+      "Singularity.Embedding.NxService": "Use Embedding.Service for pgmq access; NxService for local inference",
       "External Embedding APIs": "This provides local GPU/CPU inference with no API costs or rate limits",
       "CentralCloud Embeddings": "This is the SOURCE - CentralCloud requests embeddings from here"
     },
     "disambiguation": {
-      "vs_nx_service": "Embedding.Service wraps NxService with NATS interface for distributed access",
+      "vs_nx_service": "Embedding.Service wraps NxService with pgmq interface for distributed access",
       "vs_external_apis": "Pure local ONNX inference (Qodo + Jina) with GPU auto-detection",
       "vs_centralcloud": "CentralCloud is a CLIENT - this service PROVIDES embeddings to it"
     }
@@ -57,7 +57,7 @@ defmodule Singularity.Embedding.Service do
 
   ```mermaid
   graph TB
-      Client[CentralCloud / Agent] -->|1. NATS embedding.request| Service[Embedding.Service]
+      Client[CentralCloud / Agent] -->|1. pgmq embedding.request| Service[Embedding.Service]
       Service -->|2. embed/2| NxService[NxService ONNX Runtime]
       NxService -->|3. GPU detect| GPU{GPU Available?}
       GPU -->|Yes| Qodo[Qodo 1536-dim]
@@ -65,7 +65,7 @@ defmodule Singularity.Embedding.Service do
       Qodo -->|4. concat| Jina[Jina v3 1024-dim]
       Jina -->|5. 2560-dim vector| NxService
       NxService -->|6. return| Service
-      Service -->|7. NATS embedding.response| Client
+      Service -->|7. pgmq embedding.response| Client
 
       style Service fill:#90EE90
       style NxService fill:#FFD700
@@ -98,13 +98,13 @@ defmodule Singularity.Embedding.Service do
       frequency: medium
 
   depends_on:
-    - Singularity.Messaging.Client (MUST start first - NATS messaging)
+    - Singularity.Messaging.Client (MUST start first - pgmq messaging)
     - Singularity.Embedding.NxService (MUST load models first)
     - ONNX Runtime (Qodo, Jina, MiniLM models)
 
   supervision:
     supervised: true
-    reason: "GenServer managing NATS subscriptions and async tasks, must restart to re-subscribe"
+    reason: "GenServer managing pgmq subscriptions and async tasks, must restart to re-subscribe"
   ```
 
   ### Data Flow (Mermaid Sequence)
@@ -117,7 +117,7 @@ defmodule Singularity.Embedding.Service do
       participant ONNX as ONNX Runtime (GPU)
 
       Note over Client: Request Embedding
-      Client->>Service: NATS embedding.request {"query": "code snippet", "model": "qodo"}
+      Client->>Service: pgmq embedding.request {"query": "code snippet", "model": "qodo"}
       Service->>Service: parse_request(msg)
       Service->>NxService: embed("code snippet", model: :qodo)
       NxService->>ONNX: infer(qodo_model, input)
@@ -127,7 +127,7 @@ defmodule Singularity.Embedding.Service do
       NxService->>NxService: concat([qodo, jina]) = 2560-dim
       NxService-->>Service: {:ok, embedding_tensor}
       Service->>Service: Nx.to_list(embedding)
-      Service->>Client: NATS embedding.response {embedding: [2560 floats], status: "success"}
+      Service->>Client: pgmq embedding.response {embedding: [2560 floats], status: "success"}
   ```
 
   ### Anti-Patterns
@@ -155,7 +155,7 @@ defmodule Singularity.Embedding.Service do
 
   ### Search Keywords
 
-  embedding service, nats embeddings, onnx runtime, gpu embeddings, qodo embed,
+  embedding service, pgmq embeddings, onnx runtime, gpu embeddings, qodo embed,
   jina v3, multi-vector embeddings, semantic search, local inference, no api costs,
   cuda acceleration, metal acceleration, 2560 dimensions, code embeddings
   """

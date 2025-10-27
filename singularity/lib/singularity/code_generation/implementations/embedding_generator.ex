@@ -112,8 +112,8 @@ defmodule Singularity.CodeGeneration.Implementations.EmbeddingGenerator do
 
     - module: Singularity.Embedding.Service
       function: handle_request/1
-      purpose: Process embedding requests from NATS
-      frequency: per_nats_request
+      purpose: Process embedding requests from pgmq
+      frequency: per_pgmq_request
 
     - module: Singularity.Knowledge.LearningLoop
       function: embed_learned_pattern/1
