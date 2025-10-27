@@ -52,11 +52,15 @@ defmodule Singularity.Conversation.WebChat do
 
   alias Singularity.Jobs.PgmqClient
   alias Singularity.Conversation.MessageHistory
-  alias Observer.HITL
 
   @pubsub_module Application.compile_env(:observer, :pubsub, Observer.PubSub)
   @notifications_topic "agent_notifications"
   @approvals_topic "agent_approvals"
+
+  # Get configured HITL module (allows mocking in tests)
+  defp hitl_module do
+    Application.get_env(:observer, :hitl_module, Observer.HITL)
+  end
 
   @doc """
   Send a notification to the Observer web UI.
@@ -140,7 +144,7 @@ defmodule Singularity.Conversation.WebChat do
       }
 
       # Create approval in Observer database
-      case HITL.create_approval(approval_attrs) do
+      case hitl_module().create_approval(approval_attrs) do
         {:ok, approval} ->
           Logger.info(
             "Approval request created #{request_id} (response queue: #{response_queue})"
@@ -213,7 +217,7 @@ defmodule Singularity.Conversation.WebChat do
       }
 
       # Create question approval in Observer database
-      case HITL.create_approval(approval_attrs) do
+      case hitl_module().create_approval(approval_attrs) do
         {:ok, approval} ->
           Logger.info("Question request created #{request_id}")
 
@@ -389,7 +393,7 @@ defmodule Singularity.Conversation.WebChat do
   """
   @spec list_pending_approvals() :: [map()]
   def list_pending_approvals do
-    HITL.list_pending_approvals()
+    hitl_module().list_pending_approvals()
   end
 
   @doc """
@@ -397,7 +401,7 @@ defmodule Singularity.Conversation.WebChat do
   """
   @spec get_approval(String.t()) :: map() | nil
   def get_approval(request_id) do
-    HITL.get_by_request_id(request_id)
+    hitl_module().get_by_request_id(request_id)
   end
 
   @doc """
