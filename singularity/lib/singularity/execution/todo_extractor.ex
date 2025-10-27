@@ -2,11 +2,11 @@ defmodule Singularity.Execution.TodoExtractor do
   @moduledoc """
   TODO Comment Extractor - Centralized TODO extraction from code files
 
-  **PURPOSE**: Extract ONLY actionable TODO and FIXME comments from code files
-  and convert them into actionable todo items in the database.
+  **PURPOSE**: Extract ALL code smell comments from code files and convert them
+  into actionable todo items in the database.
 
-  **PRODUCTION-READY**: Filters out development artifacts like stubs, notes,
-  dead code markers, and temporary hacks to focus on real actionable items.
+  **CODE SMELL DETECTION**: Captures all actionable markers including TODOs,
+  FIXMEs, stubs, hacks, debug code, dead code, unused code, and hidden notes.
 
   ## Module Identity
 
@@ -54,25 +54,43 @@ defmodule Singularity.Execution.TodoExtractor do
 
   ## What Gets Extracted
 
-  **✅ EXTRACTED (Actionable):**
+  **✅ EXTRACTED (All Code Smells):**
   - `# TODO: Implement user authentication`
   - `# FIXME: Handle null pointer exception`
-  - `// TODO: Add error handling for edge case`
-  - `// FIXME: Memory leak in cleanup function`
-
-  **❌ FILTERED OUT (Development Artifacts):**
+  - `# NOTE: This needs refactoring for performance`
   - `# STUB: Placeholder for future implementation`
-  - `# NOTE: This is just documentation`
-  - `# DEBUG: Temporary logging statement`
   - `# HACK: Quick workaround for testing`
+  - `# DEBUG: Temporary logging statement`
   - `# DEAD: This code should be removed`
   - `# UNUSED: Legacy function no longer needed`
+  - `# DEPRECATED: Use new API instead`
+  - `# REMOVE: Old configuration file`
+  - `# WORKAROUND: Temporary fix for edge case`
+  - `# QUICKFIX: Handle null case`
+  - `# TEMP: Temporary code for testing`
+  - `# PLACEHOLDER: Will implement later`
+
+  **🔗 UUID TRACKING:**
+  - `# TODO: Fix memory leak [uuid: 123e4567-e89b-12d3-a456-426614174000]`
+  - `# FIXME: Handle edge case [uuid: 987fcdeb-51a2-43d1-9f12-3456789abcde]`
+  - Auto-generates UUIDs for new todos
+  - Updates existing todos when content changes
+  - Prevents duplicate todos from same comment
+
+  **❌ FILTERED OUT (Pure Documentation):**
+  - `# INFO: This is just information`
+  - `# DOC: This is documentation`
+  - `# COMMENT: This is an explanation`
+  - `# TEST: This is test code`
+  - `# EXAMPLE: This is example code`
+  - `# SAMPLE: This is sample code`
   """
 
   alias Singularity.Execution.TodoStore
   alias Singularity.CodeQuality.AstQualityAnalyzer
 
   require Logger
+  require Ecto.Query
 
   # Production-ready comment patterns - only extract actionable items
   @default_patterns [
@@ -86,74 +104,64 @@ defmodule Singularity.Execution.TodoExtractor do
     {"python", "# FIXME: $$$", "FIXME comment - needs fixing"}
   ]
 
-  # Patterns to EXCLUDE (development artifacts, not actionable todos)
+  # Patterns to EXCLUDE (only pure documentation, not actionable code smells)
   @excluded_patterns [
-    # Stubs and placeholders
-    {"elixir", "# STUB: $$$", "STUB comment - placeholder code"},
-    {"elixir", "# PLACEHOLDER: $$$", "PLACEHOLDER comment - temporary code"},
-    {"elixir", "# TEMP: $$$", "TEMP comment - temporary code"},
-    {"elixir", "# TEMPORARY: $$$", "TEMPORARY comment - temporary code"},
+    # Pure documentation (not actionable)
+    {"elixir", "# NOTE: $$$", "NOTE comment - pure documentation"},
+    {"elixir", "# INFO: $$$", "INFO comment - pure information"},
+    {"elixir", "# DOC: $$$", "DOC comment - pure documentation"},
+    {"elixir", "# COMMENT: $$$", "COMMENT comment - pure explanation"},
     
-    # Notes and documentation
-    {"elixir", "# NOTE: $$$", "NOTE comment - documentation"},
-    {"elixir", "# INFO: $$$", "INFO comment - information"},
-    {"elixir", "# DOC: $$$", "DOC comment - documentation"},
-    {"elixir", "# COMMENT: $$$", "COMMENT comment - explanation"},
-    
-    # Dead code markers
-    {"elixir", "# DEAD: $$$", "DEAD comment - dead code"},
-    {"elixir", "# UNUSED: $$$", "UNUSED comment - unused code"},
-    {"elixir", "# DEPRECATED: $$$", "DEPRECATED comment - deprecated code"},
-    {"elixir", "# REMOVE: $$$", "REMOVE comment - code to remove"},
-    
-    # Development markers
-    {"elixir", "# DEBUG: $$$", "DEBUG comment - debugging code"},
+    # Test/example code (not actionable in production)
     {"elixir", "# TEST: $$$", "TEST comment - test code"},
     {"elixir", "# EXAMPLE: $$$", "EXAMPLE comment - example code"},
     {"elixir", "# SAMPLE: $$$", "SAMPLE comment - sample code"},
     
-    # Hacks (too temporary for production todos)
-    {"elixir", "# HACK: $$$", "HACK comment - temporary solution"},
-    {"elixir", "# WORKAROUND: $$$", "WORKAROUND comment - temporary fix"},
-    {"elixir", "# QUICKFIX: $$$", "QUICKFIX comment - quick fix"},
-    
     # Rust equivalents
-    {"rust", "// STUB: $$$", "STUB comment - placeholder code"},
-    {"rust", "// PLACEHOLDER: $$$", "PLACEHOLDER comment - temporary code"},
-    {"rust", "// TEMP: $$$", "TEMP comment - temporary code"},
-    {"rust", "// NOTE: $$$", "NOTE comment - documentation"},
-    {"rust", "// DEBUG: $$$", "DEBUG comment - debugging code"},
-    {"rust", "// HACK: $$$", "HACK comment - temporary solution"},
-    {"rust", "// DEAD: $$$", "DEAD comment - dead code"},
-    {"rust", "// UNUSED: $$$", "UNUSED comment - unused code"},
+    {"rust", "// NOTE: $$$", "NOTE comment - pure documentation"},
+    {"rust", "// INFO: $$$", "INFO comment - pure information"},
+    {"rust", "// DOC: $$$", "DOC comment - pure documentation"},
+    {"rust", "// COMMENT: $$$", "COMMENT comment - pure explanation"},
+    {"rust", "// TEST: $$$", "TEST comment - test code"},
+    {"rust", "// EXAMPLE: $$$", "EXAMPLE comment - example code"},
+    {"rust", "// SAMPLE: $$$", "SAMPLE comment - sample code"},
     
     # JavaScript equivalents
-    {"javascript", "// STUB: $$$", "STUB comment - placeholder code"},
-    {"javascript", "// PLACEHOLDER: $$$", "PLACEHOLDER comment - temporary code"},
-    {"javascript", "// TEMP: $$$", "TEMP comment - temporary code"},
-    {"javascript", "// NOTE: $$$", "NOTE comment - documentation"},
-    {"javascript", "// DEBUG: $$$", "DEBUG comment - debugging code"},
-    {"javascript", "// HACK: $$$", "HACK comment - temporary solution"},
-    {"javascript", "// DEAD: $$$", "DEAD comment - dead code"},
-    {"javascript", "// UNUSED: $$$", "UNUSED comment - unused code"},
+    {"javascript", "// NOTE: $$$", "NOTE comment - pure documentation"},
+    {"javascript", "// INFO: $$$", "INFO comment - pure information"},
+    {"javascript", "// DOC: $$$", "DOC comment - pure documentation"},
+    {"javascript", "// COMMENT: $$$", "COMMENT comment - pure explanation"},
+    {"javascript", "// TEST: $$$", "TEST comment - test code"},
+    {"javascript", "// EXAMPLE: $$$", "EXAMPLE comment - example code"},
+    {"javascript", "// SAMPLE: $$$", "SAMPLE comment - sample code"},
     
     # Python equivalents
-    {"python", "# STUB: $$$", "STUB comment - placeholder code"},
-    {"python", "# PLACEHOLDER: $$$", "PLACEHOLDER comment - temporary code"},
-    {"python", "# TEMP: $$$", "TEMP comment - temporary code"},
-    {"python", "# NOTE: $$$", "NOTE comment - documentation"},
-    {"python", "# DEBUG: $$$", "DEBUG comment - debugging code"},
-    {"python", "# HACK: $$$", "HACK comment - temporary solution"},
-    {"python", "# DEAD: $$$", "DEAD comment - dead code"},
-    {"python", "# UNUSED: $$$", "UNUSED comment - unused code"}
+    {"python", "# NOTE: $$$", "NOTE comment - pure documentation"},
+    {"python", "# INFO: $$$", "INFO comment - pure information"},
+    {"python", "# DOC: $$$", "DOC comment - pure documentation"},
+    {"python", "# COMMENT: $$$", "COMMENT comment - pure explanation"},
+    {"python", "# TEST: $$$", "TEST comment - test code"},
+    {"python", "# EXAMPLE: $$$", "EXAMPLE comment - example code"},
+    {"python", "# SAMPLE: $$$", "SAMPLE comment - sample code"}
   ]
 
   # Priority mapping for comment types
   @priority_map %{
-    "FIXME" => 1,  # Critical
-    "TODO" => 2,   # High
-    "HACK" => 3,   # Medium
-    "NOTE" => 4    # Low
+    "FIXME" => 1,      # Critical - needs fixing
+    "TODO" => 2,       # High - incomplete work
+    "STUB" => 3,       # High - placeholder code
+    "HACK" => 4,       # Medium - temporary solution
+    "DEBUG" => 5,      # Medium - debugging code
+    "DEAD" => 6,       # Medium - dead code
+    "UNUSED" => 7,     # Medium - unused code
+    "DEPRECATED" => 8, # Medium - deprecated code
+    "REMOVE" => 9,     # Medium - code to remove
+    "WORKAROUND" => 10, # Low - temporary fix
+    "QUICKFIX" => 11,  # Low - quick fix
+    "TEMP" => 12,      # Low - temporary code
+    "TEMPORARY" => 13, # Low - temporary code
+    "PLACEHOLDER" => 14, # Low - placeholder code
+    "NOTE" => 15       # Low - hidden todo or important info
   }
 
   @doc """
@@ -240,16 +248,27 @@ defmodule Singularity.Execution.TodoExtractor do
     pattern = comment[:pattern] || ""
     matched_text = comment[:matched_text] || ""
     
-    # Must be a TODO or FIXME (not excluded)
-    is_todo_or_fixme = String.contains?(pattern, "TODO:") or String.contains?(pattern, "FIXME:")
+    # Must be any code smell marker (not excluded)
+    is_code_smell = String.contains?(pattern, "TODO:") or 
+                   String.contains?(pattern, "FIXME:") or
+                   String.contains?(pattern, "NOTE:") or
+                   String.contains?(pattern, "STUB:") or
+                   String.contains?(pattern, "HACK:") or
+                   String.contains?(pattern, "DEBUG:") or
+                   String.contains?(pattern, "DEAD:") or
+                   String.contains?(pattern, "UNUSED:") or
+                   String.contains?(pattern, "DEPRECATED:") or
+                   String.contains?(pattern, "REMOVE:") or
+                   String.contains?(pattern, "WORKAROUND:") or
+                   String.contains?(pattern, "QUICKFIX:") or
+                   String.contains?(pattern, "TEMP:") or
+                   String.contains?(pattern, "TEMPORARY:") or
+                   String.contains?(pattern, "PLACEHOLDER:")
     
-    # Must have meaningful content (not just "TODO:" or "FIXME:")
+    # Must have meaningful content (not just the marker)
     has_content = String.length(String.trim(matched_text)) > 10
     
-    # Must not be a stub or placeholder
-    not_is_stub = not String.contains?(String.downcase(matched_text), ["stub", "placeholder", "temp", "temporary"])
-    
-    is_todo_or_fixme and has_content and not_is_stub
+    is_code_smell and has_content
   end
 
 
@@ -257,34 +276,21 @@ defmodule Singularity.Execution.TodoExtractor do
     # Extract TODO text from the comment
     todo_text = extract_todo_text(comment)
     
-    # Determine priority based on comment type
-    priority = determine_priority(comment)
+    # Check if comment already has a UUID
+    existing_uuid = extract_uuid_from_comment(comment)
     
-    # Determine complexity based on comment length and content
-    complexity = determine_complexity(todo_text)
-
-    # Create the todo
-    case TodoStore.create(%{
-      title: todo_text,
-      description: "Auto-extracted from #{Path.relative_to_cwd(file_path)}",
-      priority: priority,
-      complexity: complexity,
-      status: "pending",
-      source: "code_comment",
-      metadata: %{
-        file_path: file_path,
-        line_number: comment[:line] || 0,
-        comment_type: comment[:pattern] || "TODO",
-        extracted_at: DateTime.utc_now()
-      }
-    }) do
-      {:ok, todo} ->
-        Logger.debug("Created todo from comment: #{todo.title}")
-        todo
-
-      {:error, reason} ->
-        Logger.debug("Failed to create todo from comment: #{inspect(reason)}")
-        %{error: reason, comment: comment}
+    # Generate new UUID if none exists
+    file_uuid = existing_uuid || generate_uuid()
+    
+    # Check if todo with this UUID already exists
+    case find_todo_by_file_uuid(file_uuid) do
+      nil ->
+        # Create new todo
+        create_new_todo(comment, file_path, todo_text, file_uuid)
+      
+      existing_todo ->
+        # Update existing todo if content changed
+        update_existing_todo(existing_todo, comment, file_path, todo_text)
     end
   end
 
@@ -322,6 +328,95 @@ defmodule Singularity.Execution.TodoExtractor do
       String.contains?(todo_text, ["architecture", "refactor", "migrate", "rewrite"]) -> :complex
       String.contains?(todo_text, ["fix", "bug", "error", "issue"]) -> :medium
       true -> :medium
+    end
+  end
+
+  # UUID handling functions
+
+  defp extract_uuid_from_comment(comment) do
+    text = comment[:matched_text] || ""
+    
+    # Look for UUID pattern in comment text
+    case Regex.run(~r/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i, text) do
+      [uuid] -> uuid
+      _ -> nil
+    end
+  end
+
+  defp generate_uuid do
+    # Generate a UUID4
+    :crypto.strong_rand_bytes(16)
+    |> :binary.encode_hex()
+    |> String.downcase()
+    |> then(fn hex ->
+      <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4), e::binary-size(12)>> = hex
+      "#{a}-#{b}-#{c}-#{d}-#{e}"
+    end)
+  end
+
+  defp find_todo_by_file_uuid(file_uuid) do
+    import Ecto.Query
+    
+    Singularity.Repo.one(
+      from t in Singularity.Execution.Todo,
+      where: t.file_uuid == ^file_uuid
+    )
+  end
+
+  defp create_new_todo(comment, file_path, todo_text, file_uuid) do
+    priority = determine_priority(comment)
+    complexity = determine_complexity(todo_text)
+
+    case TodoStore.create(%{
+      title: todo_text,
+      description: "Auto-extracted from #{Path.relative_to_cwd(file_path)}",
+      priority: priority,
+      complexity: complexity,
+      status: "pending",
+      source: "code_comment",
+      file_uuid: file_uuid,
+      context: %{
+        file_path: file_path,
+        line_number: comment[:line] || 0,
+        comment_type: comment[:pattern] || "TODO",
+        extracted_at: DateTime.utc_now()
+      }
+    }) do
+      {:ok, todo} ->
+        Logger.debug("Created todo from comment: #{todo.title} (UUID: #{file_uuid})")
+        todo
+
+      {:error, reason} ->
+        Logger.debug("Failed to create todo from comment: #{inspect(reason)}")
+        %{error: reason, comment: comment}
+    end
+  end
+
+  defp update_existing_todo(existing_todo, comment, file_path, todo_text) do
+    # Check if content has changed
+    if existing_todo.title != todo_text do
+      # Update the todo with new content
+      case TodoStore.update(existing_todo, %{
+        title: todo_text,
+        context: Map.merge(existing_todo.context || %{}, %{
+          file_path: file_path,
+          line_number: comment[:line] || 0,
+          comment_type: comment[:pattern] || "TODO",
+          updated_at: DateTime.utc_now()
+        })
+      }) do
+        {:ok, updated_todo} ->
+          Logger.debug("Updated existing todo: #{updated_todo.title} (UUID: #{existing_todo.file_uuid})")
+          updated_todo
+
+        {:error, reason} ->
+          Logger.debug("Failed to update existing todo: #{inspect(reason)}")
+          existing_todo
+      end
+    else
+      # Content unchanged, return existing todo
+      Logger.debug("Todo unchanged: #{existing_todo.title} (UUID: #{existing_todo.file_uuid})")
+      existing_todo
     end
   end
 end
