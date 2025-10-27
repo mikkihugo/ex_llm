@@ -50,7 +50,10 @@ defmodule Nexus.MixProject do
       {:uniq, "~> 0.6"},
 
       # Mocking library for tests (HTTP and database mocking)
-      {:mox, "~> 1.0", only: :test}
+      {:mox, "~> 1.0", only: :test},
+
+      # Code coverage reporting
+      {:excoveralls, "~> 0.18", only: :test}
     ]
   end
 end
