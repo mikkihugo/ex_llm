@@ -46,7 +46,9 @@ defmodule ExLLM.Application do
         # Start Circuit Breaker Metrics system if enabled
         metrics_child_spec(),
         # Start Ollama Model Registry
-        ExLLM.Infrastructure.OllamaModelRegistry
+        ExLLM.Infrastructure.OllamaModelRegistry,
+        # Start Codex Token Manager for OAuth2 token lifecycle management
+        codex_token_manager_child_spec()
       ]
       |> Enum.filter(& &1)
 
@@ -82,6 +84,17 @@ defmodule ExLLM.Application do
       ExLLM.Infrastructure.CircuitBreaker.Metrics.StatsDReporter
     else
       nil
+    end
+  end
+
+  defp codex_token_manager_child_spec do
+    # Only start TokenManager if Codex credentials exist
+    case File.read(Path.expand("~/.codex/auth.json")) do
+      {:ok, _} ->
+        ExLLM.Providers.Codex.TokenManager
+
+      {:error, _} ->
+        nil
     end
   end
 end

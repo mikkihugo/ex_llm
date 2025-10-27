@@ -5,6 +5,25 @@ defmodule ExLLM.Providers.Codex do
   Integrates with OpenAI's Codex CLI tool, which stores OAuth2 credentials in `~/.codex/auth.json`.
   This provider acts as a bridge to use Codex-authenticated LLM access from ExLLM.
 
+  ## Supported APIs
+
+  ### Chat API (Streaming)
+  For real-time chat completions with streaming responses.
+
+      iex> {:ok, response} = ExLLM.Providers.Codex.chat([
+      ...>   %{role: "user", content: "Write a binary search function"}
+      ...> ])
+
+  ### Task API (Long-running)
+  For code generation tasks using the WHAM protocol.
+
+      iex> {:ok, task_id} = ExLLM.Providers.Codex.create_task(
+      ...>   environment_id: "owner/repo",
+      ...>   branch: "main",
+      ...>   prompt: "Add dark mode support"
+      ...> )
+      iex> {:ok, response} = ExLLM.Providers.Codex.poll_task(task_id)
+
   ## Credential Management
 
   TokenManager automatically:
@@ -21,13 +40,13 @@ defmodule ExLLM.Providers.Codex do
   3. ExLLM loads and uses these same credentials
   4. Tokens auto-refresh and stay in sync with Codex CLI
 
-  ## Usage
+  ## Available Models
 
-      iex> {:ok, response} = ExLLM.Providers.Codex.chat([
-      ...>   %{role: "user", content: "Write a binary search function"}
-      ...> ])
-      iex> response.content
-      "def binary_search(arr, target):\\n..."
+  - `gpt-5-codex` (default) - Specialized code generation (272K context)
+  - `gpt-5` - General-purpose reasoning (400K context)
+  - `codex-mini-latest` - Fast lightweight model (200K context)
+
+  All models are **FREE** to use with Codex CLI subscription.
 
   ## Requirements
 
@@ -93,6 +112,171 @@ defmodule ExLLM.Providers.Codex do
       {:ok, models} -> {:ok, models}
       {:error, _} -> {:error, "Failed to load Codex models from registry"}
     end
+  end
+
+  # Task API Methods (WHAM Protocol)
+
+  @doc """
+  Create a new code generation task using the WHAM API.
+
+  ## Options
+
+  - `:environment_id` (required) - Repository identifier (e.g., "owner/repo")
+  - `:branch` (required) - Git branch name
+  - `:prompt` (required) - Code generation instruction
+  - `:model` - Model ID (default: "gpt-5-codex")
+  - `:qa_mode` - Run in QA mode (default: false)
+  - `:best_of_n` - Number of attempts (default: 1)
+  - `:poll_interval_ms` - Polling interval (default: 3000)
+  - `:max_attempts` - Max poll attempts (default: 30)
+  - `:timeout_ms` - Total timeout (default: 120000)
+
+  ## Returns
+
+  - `{:ok, task_id}` - Task created successfully
+  - `{:error, reason}` - Creation failed
+
+  ## Example
+
+      iex> {:ok, task_id} = create_task(
+      ...>   environment_id: "mikkihugo/singularity-incubation",
+      ...>   branch: "main",
+      ...>   prompt: "Add dark mode support to the Phoenix dashboard"
+      ...> )
+  """
+  def create_task(opts) when is_list(opts) do
+    alias ExLLM.Providers.Codex.TaskClient
+    TaskClient.create_task(opts)
+  end
+
+  @doc """
+  Create a task and wait for completion (blocking).
+
+  ## Returns
+
+  - `{:ok, task_id, response}` - Task completed with response
+  - `{:error, reason}` - Failed
+
+  ## Example
+
+      iex> {:ok, task_id, response} = create_task_and_wait(
+      ...>   environment_id: "owner/repo",
+      ...>   branch: "main",
+      ...>   prompt: "Generate tests",
+      ...>   max_attempts: 60
+      ...> )
+  """
+  def create_task_and_wait(opts) when is_list(opts) do
+    alias ExLLM.Providers.Codex.TaskClient
+    TaskClient.create_task_and_wait(opts)
+  end
+
+  @doc """
+  Poll a task for completion.
+
+  Continuously polls until completion or timeout.
+
+  ## Options
+
+  - `:poll_interval_ms` - Wait between polls (default: 3000)
+  - `:max_attempts` - Maximum polls (default: 30)
+  - `:timeout_ms` - Total timeout (default: 120000)
+
+  ## Returns
+
+  - `{:ok, response}` - Task completed
+  - `{:error, reason}` - Failed or timed out
+
+  ## Example
+
+      iex> {:ok, response} = poll_task("task_e_...", max_attempts: 60)
+  """
+  def poll_task(task_id, opts \\ []) when is_binary(task_id) do
+    alias ExLLM.Providers.Codex.TaskClient
+    TaskClient.poll_task(task_id, opts)
+  end
+
+  @doc """
+  Get task status without waiting.
+
+  ## Returns
+
+  - `{:ok, status}` - Current status ("queued", "in_progress", "completed", etc.)
+  - `{:error, reason}` - Request failed
+  """
+  def get_task_status(task_id) when is_binary(task_id) do
+    alias ExLLM.Providers.Codex.TaskClient
+    TaskClient.get_task_status(task_id)
+  end
+
+  @doc """
+  Get full task response without polling.
+
+  ## Returns
+
+  - `{:ok, response}` - Full WHAM response
+  - `{:error, reason}` - Request failed
+  """
+  def get_task_response(task_id) when is_binary(task_id) do
+    alias ExLLM.Providers.Codex.TaskClient
+    TaskClient.get_task_response(task_id)
+  end
+
+  @doc """
+  Extract structured data from a task response.
+
+  ## Returns
+
+  Map with extracted message, code_diff, pr_info, and files.
+
+  ## Example
+
+      iex> {:ok, response} = get_task_response(task_id)
+      iex> extracted = extract_response(response)
+      iex> extracted.code_diff
+      "diff --git a/lib/..."
+  """
+  def extract_response(response) when is_map(response) do
+    alias ExLLM.Providers.Codex.ResponseExtractor
+    ResponseExtractor.extract(response)
+  end
+
+  @doc """
+  List user's tasks.
+
+  ## Options
+
+  - `:limit` - Number of tasks (default: 10)
+  - `:offset` - Pagination offset (default: 0)
+
+  ## Returns
+
+  - `{:ok, tasks}` - List of task summaries
+  - `{:error, reason}` - Request failed
+  """
+  def list_tasks(opts \\ []) do
+    alias ExLLM.Providers.Codex.TaskClient
+    TaskClient.list_tasks(opts)
+  end
+
+  @doc """
+  Check rate limit usage.
+
+  ## Returns
+
+  - `{:ok, usage}` - Rate limit information
+  - `{:error, reason}` - Request failed
+
+  ## Example Response
+
+      %{
+        "primary_window" => %{"used_percent" => 8, ...},
+        "secondary_window" => %{"used_percent" => 15, ...}
+      }
+  """
+  def get_usage() do
+    alias ExLLM.Providers.Codex.TaskClient
+    TaskClient.get_usage()
   end
 
   # Private helpers for model loading
