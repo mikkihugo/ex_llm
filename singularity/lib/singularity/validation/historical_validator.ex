@@ -175,7 +175,7 @@ defmodule Singularity.Validation.HistoricalValidator do
       ]
   """
   @spec find_similar_failures(failure_context, keyword()) :: [map()]
-  def find_similar_failures(context, _opts \\ []) do
+  def find_similar_failures(context, opts \\ []) do
     threshold = Keyword.get(opts, :threshold, 0.80)
     limit = Keyword.get(opts, :limit, 10)
 
@@ -324,7 +324,7 @@ defmodule Singularity.Validation.HistoricalValidator do
       ]
   """
   @spec get_top_performing_checks(keyword()) :: [{String.t(), float()}]
-  def get_top_performing_checks(_opts \\ []) do
+  def get_top_performing_checks(opts \\ []) do
     limit = Keyword.get(opts, :limit, 10)
     time_range = Keyword.get(opts, :time_range, :last_week)
 

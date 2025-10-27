@@ -207,7 +207,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionOrchestrator do
       ExecutionOrchestrator.execute(goal, strategy: :sparc)
       # => {:ok, results}
   """
-  def execute(goal, _opts \\ []) when is_map(goal) or is_binary(goal) do
+  def execute(goal, opts \\ []) when is_map(goal) or is_binary(goal) do
     timeout = Keyword.get(opts, :timeout, 60000)
 
     Logger.info("ExecutionOrchestrator: Routing goal to execution strategy",

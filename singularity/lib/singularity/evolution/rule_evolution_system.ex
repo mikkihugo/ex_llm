@@ -142,9 +142,9 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
         ...
       ]}
   """
-  @spec analyze_and_propose_rules(map(), keyword()) ::
+  @spec analyze_and_propose_rules(keyword(), map()) ::
           {:ok, [rule()]} | {:error, term()}
-  def analyze_and_propose_rules(opts \\ [])(criteria \\ %{}, _opts \\ []) do
+  def analyze_and_propose_rules(opts \\ [], criteria \\ %{}) do
     min_confidence = Keyword.get(opts, :min_confidence, 0.0)
     limit = Keyword.get(opts, :limit, 20)
 
@@ -216,7 +216,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
       ]
   """
   @spec get_candidate_rules(keyword()) :: [rule()]
-  def get_candidate_rules(opts \\ [])(_opts \\ []) do
+  def get_candidate_rules(opts \\ []) do
     min_frequency = Keyword.get(opts, :min_frequency, 5)
     limit = Keyword.get(opts, :limit, 10)
 
@@ -271,7 +271,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
       {:ok, 3}  # Published 3 rules to Genesis
   """
   @spec publish_confident_rules(keyword()) :: {:ok, integer()} | {:error, term()}
-  def publish_confident_rules(opts \\ [])(_opts \\ []) do
+  def publish_confident_rules(opts \\ []) do
     # Use adaptive threshold if not overridden
     adaptive_threshold = AdaptiveConfidenceGating.get_current_threshold()
     min_confidence = Keyword.get(opts, :min_confidence, adaptive_threshold)
@@ -436,7 +436,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   - Map with rule effectiveness metrics
   """
   @spec get_rule_impact_metrics(keyword()) :: map()
-  def get_rule_impact_metrics(_opts \\ []) do
+  def get_rule_impact_metrics(opts \\ []) do
     time_range = Keyword.get(opts, :time_range, :last_week)
 
     Logger.info("RuleEvolutionSystem: Calculating rule impact metrics",

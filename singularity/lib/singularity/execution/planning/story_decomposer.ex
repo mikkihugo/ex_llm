@@ -373,7 +373,7 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   ## SPARC Phases
 
   # S - Specification
-  defp generate_specification(story, _opts) do
+  defp generate_specification(story, opts) do
     # Extract options with defaults
     complexity = Keyword.get(opts, :complexity, :medium)
     language = Keyword.get(opts, :language, "any")
@@ -395,7 +395,7 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   end
 
   # P - Pseudocode
-  defp generate_pseudocode(spec, _opts) do
+  defp generate_pseudocode(spec, opts) do
     complexity = Keyword.get(opts, :complexity, :medium)
 
     case Service.call_with_script(
@@ -410,7 +410,7 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   end
 
   # A - Architecture
-  defp design_architecture(pseudocode, _opts) do
+  defp design_architecture(pseudocode, opts) do
     complexity = Keyword.get(opts, :complexity, :medium)
 
     case Service.call_with_script(
@@ -425,7 +425,7 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   end
 
   # R - Refinement
-  defp refine_design(architecture, _opts) do
+  defp refine_design(architecture, opts) do
     complexity = Keyword.get(opts, :complexity, :medium)
 
     case Service.call_with_script(
@@ -440,7 +440,7 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   end
 
   # C - Completion Tasks
-  defp generate_completion_tasks(refinement, _opts) do
+  defp generate_completion_tasks(refinement, opts) do
     complexity = Keyword.get(opts, :complexity, :medium)
 
     case Service.call_with_script(

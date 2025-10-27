@@ -422,9 +422,9 @@ defmodule Singularity.Pipeline.Orchestrator do
   - `{:ok, rules}` - List of proposed rules with confidence scores
   """
   @spec analyze_and_propose_rules(map(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def analyze_and_propose_rules(opts \\ [])(criteria \\ %{}, _opts \\ []) do
+  def analyze_and_propose_rules(opts \\ [], criteria \\ %{}) do
     Logger.info("Pipeline.Orchestrator: Analyzing patterns for rule evolution")
-    RuleEvolutionSystem.analyze_and_propose_rules(criteria, _opts)
+    RuleEvolutionSystem.analyze_and_propose_rules(opts, criteria)
   end
 
   @doc """
@@ -436,9 +436,9 @@ defmodule Singularity.Pipeline.Orchestrator do
   - List of candidate rules sorted by confidence
   """
   @spec get_candidate_rules(keyword()) :: [map()]
-  def get_candidate_rules(opts \\ [])(_opts \\ []) do
+  def get_candidate_rules(opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Getting candidate rules")
-    RuleEvolutionSystem.get_candidate_rules(_opts)
+    RuleEvolutionSystem.get_candidate_rules(opts)
   end
 
   @doc """
@@ -470,9 +470,9 @@ defmodule Singularity.Pipeline.Orchestrator do
   - `{:ok, imported_rules}` - Rules from other instances
   """
   @spec import_rules_from_genesis(keyword()) :: {:ok, [map()]} | {:error, term()}
-  def import_rules_from_genesis(opts \\ [])(_opts \\ []) do
+  def import_rules_from_genesis(opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Importing rules from Genesis")
-    GenesisPublisher.import_rules_from_genesis(_opts)
+    GenesisPublisher.import_rules_from_genesis(opts)
   end
 
   @doc """
@@ -531,9 +531,9 @@ defmodule Singularity.Pipeline.Orchestrator do
   - List of publication records
   """
   @spec get_publication_history(keyword()) :: [map()]
-  def get_publication_history(opts \\ [])(_opts \\ []) do
+  def get_publication_history(opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Retrieving rule publication history")
-    GenesisPublisher.get_publication_history(_opts)
+    GenesisPublisher.get_publication_history(opts)
   end
 
   @doc """

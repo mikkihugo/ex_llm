@@ -342,7 +342,7 @@ defmodule Singularity.Execution.Planning.TaskGraphEvolution do
   Analyzes execution metrics, searches git history for successful patterns, and suggests improvements.
   """
   @spec critique_and_mutate(map(), keyword()) :: {:ok, [mutation()]} | {:error, term()}
-  def critique_and_mutate(execution_result, _opts \\ []) do
+  def critique_and_mutate(execution_result, opts \\ []) do
     run_id = Keyword.get(opts, :run_id, generate_run_id())
 
     # Enrich execution result with calculated metrics

@@ -267,7 +267,7 @@ defmodule Singularity.SharedQueuePublisher do
 
   - `:limit` - Number of messages to read (default: 10)
   """
-  def read_llm_results(_opts \\ []) do
+  def read_llm_results(opts \\ []) do
     limit = Keyword.get(opts, :limit, 10)
 
     case read_from_queue(@queue_llm_results, limit) do
@@ -294,7 +294,7 @@ defmodule Singularity.SharedQueuePublisher do
 
   - `:limit` - Number of messages to read (default: 10)
   """
-  def read_approval_responses(_opts \\ []) do
+  def read_approval_responses(opts \\ []) do
     limit = Keyword.get(opts, :limit, 10)
 
     case read_from_queue(@queue_approval_responses, limit) do
@@ -321,7 +321,7 @@ defmodule Singularity.SharedQueuePublisher do
 
   - `:limit` - Number of messages to read (default: 10)
   """
-  def read_question_responses(_opts \\ []) do
+  def read_question_responses(opts \\ []) do
     limit = Keyword.get(opts, :limit, 10)
 
     case read_from_queue(@queue_question_responses, limit) do
@@ -348,7 +348,7 @@ defmodule Singularity.SharedQueuePublisher do
 
   - `:limit` - Number of messages to read (default: 10)
   """
-  def read_job_results(_opts \\ []) do
+  def read_job_results(opts \\ []) do
     limit = Keyword.get(opts, :limit, 10)
 
     case read_from_queue(@queue_job_results, limit) do

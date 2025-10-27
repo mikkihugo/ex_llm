@@ -241,7 +241,7 @@ defmodule Singularity.Templates.Renderer do
     end
   end
 
-  defp validate_variables_from_metadata(metadata, variables, _opts) do
+  defp validate_variables_from_metadata(metadata, variables, opts) do
     if Keyword.get(opts, :validate, true) do
       var_defs = metadata["variables"] || %{}
       normalized = normalize_variables(variables)
@@ -367,7 +367,7 @@ defmodule Singularity.Templates.Renderer do
 
   ## Variable Handling
 
-  defp validate_variables(template, variables, _opts) do
+  defp validate_variables(template, variables, opts) do
     if Keyword.get(opts, :validate, true) do
       case check_required_variables(template, variables) do
         {:ok, normalized} -> {:ok, normalized}
@@ -521,7 +521,7 @@ defmodule Singularity.Templates.Renderer do
 
   ## Quality Checking
 
-  defp maybe_quality_check(code, template, _opts) do
+  defp maybe_quality_check(code, template, opts) do
     if Keyword.get(opts, :quality_check, false) do
       quality_check(code, template)
     else

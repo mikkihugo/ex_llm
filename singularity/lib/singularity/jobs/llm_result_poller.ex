@@ -180,7 +180,7 @@ defmodule Singularity.Jobs.LlmResultPoller do
       {:ok, %{"response" => "..."}}
   """
   @spec await_responses_result(String.t(), keyword()) :: {:ok, map()} | {:error, term()}
-  def await_responses_result(request_id, _opts \\ []) when is_binary(request_id) do
+  def await_responses_result(request_id, opts \\ []) when is_binary(request_id) do
     timeout = Keyword.get(opts, :timeout, 30_000)
     poll_interval = Keyword.get(opts, :poll_interval, 500)
     deadline = System.monotonic_time(:millisecond) + timeout

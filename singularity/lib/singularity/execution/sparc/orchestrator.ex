@@ -179,7 +179,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
 
   # Client API
 
-  def start_link(_opts \\ []) do
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
@@ -216,7 +216,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
   end
 
   @impl true
-  def handle_call({:execute, goal, _opts}, _from, state) do
+  def handle_call({:execute, goal, opts}, _from, state) do
     Logger.info("Starting orchestrated execution for: #{inspect(goal)}")
 
     # 1. Get best template from Template Performance DAG
@@ -234,7 +234,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
     # 3. Execute tasks with selected template
     execution_start = DateTime.utc_now()
 
-    result = execute_with_template(sparc_dag, template_id, _opts)
+    result = execute_with_template(sparc_dag, template_id, opts)
 
     execution_time = DateTime.diff(DateTime.utc_now(), execution_start, :millisecond)
 
@@ -316,7 +316,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
     end
   end
 
-  defp execute_task_with_template(task, template_id, _opts) do
+  defp execute_task_with_template(task, template_id, opts) do
     # Use SPARC Coordinator with specific template
     MethodologyExecutor.execute_phase_only(
       task.phase || :completion,
