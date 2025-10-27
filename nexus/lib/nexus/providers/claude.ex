@@ -1,16 +1,18 @@
 defmodule Nexus.Providers.Claude do
   @moduledoc """
-  Claude provider for Anthropic Claude integration via HTTP API.
+  Claude provider for Anthropic Claude integration via OAuth2.
 
   This provider handles authentication, model selection, and API calls
-  to the Claude API using the standard Anthropic API key.
+  to the Claude API using OAuth2 tokens from Claude Code.
   
-  Uses the existing ExLLM.Providers.Anthropic module for HTTP API calls.
+  Uses OAuth2 tokens from Claude Code authentication flow.
   """
 
   require Logger
-  alias ExLLM.Providers.Anthropic
+  alias Nexus.OAuthToken
+  alias Nexus.Providers.ClaudeCode.OAuth2
 
+  @base_url "https://api.anthropic.com/v1"
   @default_model "claude-3-5-sonnet-20241022"
 
   # ======================================================================
@@ -98,7 +100,6 @@ defmodule Nexus.Providers.Claude do
         context_window: 200_000,
         max_output_tokens: 4_096,
         capabilities: [:chat, :streaming, :vision],
-        thinking_levels: nil,
         cost: :free,
         pricing: "Free with Claude Pro subscription",
         quota_usage: %{
