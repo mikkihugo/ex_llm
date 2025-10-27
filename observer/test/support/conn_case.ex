@@ -33,6 +33,9 @@ defmodule ObserverWeb.ConnCase do
 
   setup tags do
     Observer.DataCase.setup_sandbox(tags)
+    unless Process.whereis(ObserverWeb.Endpoint) do
+      {:ok, _pid} = ObserverWeb.Endpoint.start_link()
+    end
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end

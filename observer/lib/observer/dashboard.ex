@@ -38,6 +38,30 @@ defmodule Observer.Dashboard do
     call_dashboard(&Singularity.Validation.ValidationDashboard.get_dashboard/0)
   end
 
+  def validation_metrics_store do
+    safe_call(fn ->
+      {:ok,
+       %{
+         validation_accuracy: Singularity.Storage.ValidationMetricsStore.get_validation_accuracy(:last_week),
+         execution_success_rate: Singularity.Storage.ValidationMetricsStore.get_execution_success_rate(:last_week),
+         avg_validation_time: Singularity.Storage.ValidationMetricsStore.get_avg_validation_time(:last_week),
+         effectiveness_scores: Singularity.Storage.ValidationMetricsStore.get_effectiveness_scores(:last_week),
+         aggregated_metrics: Singularity.Storage.ValidationMetricsStore.get_aggregated_metrics(:last_week, :model)
+       }}
+    end)
+  end
+
+  def failure_patterns do
+    safe_call(fn ->
+      {:ok,
+       %{
+         top_patterns: Singularity.Storage.FailurePatternStore.find_patterns(limit: 10),
+         recent_failures: Singularity.Storage.FailurePatternStore.query(%{since: DateTime.add(DateTime.utc_now(), -7, :day), limit: 20}),
+         successful_fixes: Singularity.Storage.FailurePatternStore.get_successful_fixes(%{limit: 10})
+       }}
+    end)
+  end
+
   def adaptive_threshold do
     safe_call(fn ->
       {:ok,

@@ -374,7 +374,7 @@ defmodule Singularity.PromptEngine do
     use Rustler,
       otp_app: :singularity,
       crate: :prompt_engine,
-      path: "../rust/prompt_engine",
+      path: "../packages/prompt_engine",
       mode: :release
 
     # NIF functions - names must match Rust #[rustler::nif] function names

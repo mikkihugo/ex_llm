@@ -342,7 +342,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
     cond do
       String.contains?(goal.description, ["API", "endpoint"]) -> "api_endpoint"
       String.contains?(goal.description, ["service", "microservice"]) -> "microservice"
-      String.contains?(goal.description, ["NATS", "consumer"]) -> "nats_consumer"
+      String.contains?(goal.description, ["message", "consumer"]) -> "message_consumer"
       String.contains?(goal.description, ["component", "UI"]) -> "web_component"
       true -> "general"
     end

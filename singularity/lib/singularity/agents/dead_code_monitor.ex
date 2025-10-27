@@ -328,12 +328,8 @@ defmodule Singularity.Agents.DeadCodeMonitor do
       status: Atom.to_string(status),
       triggered_by: triggered_by,
       output: output,
-      # TODO: Parse categorization from analysis output
-      struct_fields_count: 18,
-      future_features_count: 7,
-      cache_placeholders_count: 4,
-      helper_functions_count: 4,
-      other_count: 2
+      # Parse categorization from analysis output
+      categorization: parse_categorization(output)
     }
 
     %DeadCodeHistory{}
@@ -636,5 +632,46 @@ defmodule Singularity.Agents.DeadCodeMonitor do
       "  - #{date_str}: #{count} annotations"
     end)
     |> Enum.join("\n")
+  end
+
+  defp parse_categorization(output) when is_binary(output) do
+    # Parse categorization from analysis output
+    categories = %{
+      struct_fields: count_pattern(output, ~r/struct\s+\w+\s*\{/),
+      future_features: count_pattern(output, ~r/#\[allow\(dead_code\)\]/),
+      cache_placeholders: count_pattern(output, ~r/placeholder|stub|TODO/),
+      helper_functions: count_pattern(output, ~r/defp\s+\w+/),
+      test_utilities: count_pattern(output, ~r/test_|mock_|stub_/),
+      deprecated: count_pattern(output, ~r/@deprecated/),
+      other: 0
+    }
+    
+    # Calculate other count as remainder
+    total_categorized = 
+      categories
+      |> Map.values()
+      |> Enum.sum()
+    
+    %{categories | other: max(0, 10 - total_categorized)}
+  end
+
+  defp parse_categorization(_output) do
+    # Default categorization for non-string output
+    %{
+      struct_fields: 0,
+      future_features: 0,
+      cache_placeholders: 0,
+      helper_functions: 0,
+      test_utilities: 0,
+      deprecated: 0,
+      other: 0
+    }
+  end
+
+  defp count_pattern(text, pattern) do
+    case Regex.scan(pattern, text) do
+      matches when is_list(matches) -> length(matches)
+      _ -> 0
+    end
   end
 end

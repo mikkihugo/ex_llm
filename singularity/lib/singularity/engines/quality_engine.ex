@@ -14,7 +14,7 @@ defmodule Singularity.LintingEngine do
   use Rustler,
     otp_app: :singularity,
     crate: :linting_engine,
-    path: "../rust/linting_engine"
+    path: "../packages/linting_engine"
 
   require Logger
 

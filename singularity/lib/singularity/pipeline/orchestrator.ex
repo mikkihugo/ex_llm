@@ -177,7 +177,7 @@ defmodule Singularity.Pipeline.Orchestrator do
     end
   end
 
-  # Phase 2: Constrained Generation (placeholder)
+  # Phase 2: Constrained Generation
   defp phase_2_generate_plan(story, context, _opts) do
     Logger.info("Pipeline.Orchestrator: Phase 2 - Generating constrained plan")
 
@@ -196,7 +196,7 @@ defmodule Singularity.Pipeline.Orchestrator do
     {:ok, plan}
   end
 
-  # Phase 3: Multi-Layer Validation (placeholder)
+  # Phase 3: Multi-Layer Validation
   defp phase_3_validate_plan(plan, context, _opts) do
     Logger.info("Pipeline.Orchestrator: Phase 3 - Validating plan")
 
@@ -217,7 +217,7 @@ defmodule Singularity.Pipeline.Orchestrator do
     {:ok, validation}
   end
 
-  # Phase 4: Adaptive Refinement (placeholder)
+  # Phase 4: Adaptive Refinement
   defp phase_4_refine_plan(plan, validation, context, _opts) do
     Logger.info("Pipeline.Orchestrator: Phase 4 - Refining plan")
 

@@ -17,14 +17,13 @@ defmodule Observer.Application do
       {DNSCluster, query: Application.get_env(:observer, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Observer.PubSub},
       {Oban, Application.fetch_env!(:observer, Oban)},
-      Observer.HITL.QueuePoller,
       # Start the Finch HTTP client for sending emails
       {Finch, name: Observer.Finch},
       # Start a worker by calling: Observer.Worker.start_link(arg)
       # {Observer.Worker, arg},
       # Start to serve requests, typically the last entry
       ObserverWeb.Endpoint
-    ]
+    ] ++ hitl_children()
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
@@ -33,19 +32,31 @@ defmodule Observer.Application do
   end
 
   defp ensure_singularity_started do
-    case Application.ensure_all_started(:singularity) do
-      {:ok, _} ->
-        :ok
+    if Application.get_env(:observer, :start_singularity_app, true) do
+      case Application.ensure_all_started(:singularity) do
+        {:ok, _} ->
+          :ok
 
-      {:error, {:already_started, _}} ->
-        :ok
+        {:error, {:already_started, _}} ->
+          :ok
 
-      {:error, reason} ->
-        Logger.warning("Observer could not start Singularity application automatically",
-          reason: inspect(reason)
-        )
+        {:error, reason} ->
+          Logger.warning("Observer could not start Singularity application automatically",
+            reason: inspect(reason)
+          )
 
-        :ok
+          :ok
+      end
+    else
+      :ok
+    end
+  end
+
+  defp hitl_children do
+    if Application.get_env(:observer, :enable_hitl_queue_poller, true) do
+      [Observer.HITL.QueuePoller]
+    else
+      []
     end
   end
 

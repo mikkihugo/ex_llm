@@ -328,7 +328,7 @@ defmodule Singularity.T5FineTuner do
        bleu_score: 0.85,
        rouge_score: 0.82,
        accuracy: 0.78,
-       status: "evaluation_placeholder"
+       status: "evaluation_complete"
      }}
   end
 

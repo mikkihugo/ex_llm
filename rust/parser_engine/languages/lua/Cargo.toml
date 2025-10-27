@@ -1,8 +1,0 @@
-[package]
-name = "parser_engine_lua"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-tree-sitter = { workspace = true }
-tree-sitter-lua = { workspace = true }

@@ -204,6 +204,12 @@ defmodule ObserverWeb.SystemHealthLive do
                 <a href="/validation-metrics" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
                   ✅ Validation Metrics
                 </a>
+                <a href="/validation-metrics-store" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  📊 Validation Metrics Store
+                </a>
+                <a href="/failure-patterns" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  🚨 Failure Patterns
+                </a>
                 <a href="/adaptive-threshold" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
                   🎯 Adaptive Threshold
                 </a>

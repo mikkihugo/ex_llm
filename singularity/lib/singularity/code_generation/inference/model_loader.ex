@@ -88,11 +88,46 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
     Logger.info("Model download would happen here: #{info.repo}")
     Logger.info("Files would be saved to: #{target_dir}")
 
-    # Create placeholder files
-    File.write!(Path.join(target_dir, "config.json"), "{}")
-    File.write!(Path.join(target_dir, "tokenizer.json"), "{}")
+    # Download actual model files
+    case download_model_files(info, target_dir) do
+      {:ok, _} -> 
+        Logger.info("✅ Model files downloaded successfully")
+        {:ok, target_dir}
+      
+      {:error, reason} ->
+        Logger.error("❌ Failed to download model files: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
 
-    {:ok, target_dir}
+  defp download_model_files(info, target_dir) do
+    # Download model configuration
+    config_url = "#{info.repo}/raw/main/config.json"
+    case download_file(config_url, Path.join(target_dir, "config.json")) do
+      {:ok, _} -> 
+        # Download tokenizer
+        tokenizer_url = "#{info.repo}/raw/main/tokenizer.json"
+        case download_file(tokenizer_url, Path.join(target_dir, "tokenizer.json")) do
+          {:ok, _} -> {:ok, :downloaded}
+          {:error, reason} -> {:error, reason}
+        end
+      
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp download_file(url, file_path) do
+    case HTTPoison.get(url) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        File.write!(file_path, body)
+        {:ok, :downloaded}
+      
+      {:ok, %HTTPoison.Response{status_code: status}} ->
+        {:error, "HTTP #{status}"}
+      
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp load_weights(model, model_path, info, device) do

@@ -582,68 +582,59 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   end
 
   defp load_bumblebee_model(model_name, device) do
-    # Load Bumblebee model (placeholder implementation)
-    # In a real implementation, this would use Bumblebee.Model.load/2
+    # Load Bumblebee model using real Bumblebee integration
     try do
-      # Simulate model loading
-      model_info = %{
-        name: model_name,
-        device: device,
-        loaded_at: DateTime.utc_now()
-      }
+      # Use Bumblebee to load the model
+      case Bumblebee.load_model(model_name, device: device) do
+        {:ok, model} ->
+          model_info = %{
+            name: model_name,
+            device: device,
+            model: model,
+            loaded_at: DateTime.utc_now()
+          }
 
-      Logger.info("Bumblebee model loaded",
-        model: model_name,
-        device: device
-      )
+          Logger.info("Bumblebee model loaded",
+            model: model_name,
+            device: device
+          )
 
-      {:ok, model_info}
+          {:ok, model_info}
+        
+        {:error, reason} ->
+          {:error, {:model_load_error, reason}}
     rescue
       error ->
         {:error, {:model_load_error, error}}
     end
   end
 
-  defp tokenize_text(text, model, max_length) do
-    # Tokenize text for the model (placeholder implementation)
-    # In a real implementation, this would use Bumblebee.Text.tokenize/3
+  defp tokenize_text(text, model_info, max_length) do
+    # Tokenize text using Bumblebee
     try do
-      # Simulate tokenization
-      tokens =
-        String.split(text, " ")
-        |> Enum.take(max_length)
-        |> Enum.map(&String.trim/1)
-
-      {:ok, tokens}
+      case Bumblebee.Text.tokenize(model_info.model, text, max_length: max_length) do
+        {:ok, tokens} ->
+          {:ok, tokens}
+        
+        {:error, reason} ->
+          {:error, {:tokenization_error, reason}}
+      end
     rescue
       error ->
         {:error, {:tokenization_error, error}}
     end
   end
 
-  defp generate_embedding_from_tokens(tokens, model, normalize) do
-    # Generate embedding from tokens (placeholder implementation)
-    # In a real implementation, this would use Bumblebee.Text.embed/3
+  defp generate_embedding_from_tokens(tokens, model_info, normalize) do
+    # Generate embedding using Bumblebee
     try do
-      # Simulate embedding generation
-      # Typical size for all-MiniLM-L6-v2
-      embedding_size = 384
-
-      embedding =
-        for _ <- 1..embedding_size do
-          # Random values between -1 and 1
-          :rand.uniform() * 2 - 1
-        end
-
-      # Normalize if requested
-      final_embedding =
-        if normalize do
-          normalize_embedding(embedding)
-        else
-          embedding
-        end
-
-      {:ok, final_embedding}
+      case Bumblebee.Text.embed(model_info.model, tokens, normalize: normalize) do
+        {:ok, embedding} ->
+          {:ok, embedding}
+        
+        {:error, reason} ->
+          {:error, {:embedding_error, reason}}
+      end
     rescue
       error ->
         {:error, {:embedding_error, error}}

@@ -17,7 +17,7 @@ defmodule Singularity.ParserEngine do
   use Rustler,
     otp_app: :singularity,
     crate: "parser-code",
-    path: "../rust/parser_engine"
+    path: "../packages/parser_engine"
 
   require Logger
   alias Singularity.BeamAnalysisEngine

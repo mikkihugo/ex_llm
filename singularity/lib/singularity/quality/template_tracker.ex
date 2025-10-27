@@ -300,7 +300,7 @@ defmodule Singularity.Quality.TemplateTracker do
   defp get_default_template(task_type, language) do
     # Fallback template selection
     case {task_type, language} do
-      {:nats_consumer, "elixir"} -> "elixir-nats-consumer"
+      {:message_consumer, "elixir"} -> "elixir-message-consumer"
       {:api_endpoint, "rust"} -> "rust-api-endpoint"
       {:web_component, "typescript"} -> "typescript-react-component"
       _ -> "generic-code-template"

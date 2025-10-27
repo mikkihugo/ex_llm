@@ -12,8 +12,12 @@ config :singularity, :http_server_enabled, false
 
 config :singularity, Singularity.Repo,
   # Shared DB, sandboxed for tests
-  database: "singularity",
-  pool: Ecto.Adapters.SQL.Sandbox
+  username: System.get_env("POSTGRES_USER", "postgres"),
+  password: System.get_env("POSTGRES_PASSWORD", "postgres"),
+  hostname: System.get_env("POSTGRES_HOST", "localhost"),
+  database: "singularity_test#{System.get_env("MIX_TEST_PARTITION")}",
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: 10
 
 # Disable Oban in tests - it's not needed and causes initialization issues
 config :singularity, :oban_enabled, false

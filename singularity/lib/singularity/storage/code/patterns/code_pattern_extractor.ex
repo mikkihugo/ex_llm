@@ -18,8 +18,8 @@ defmodule Singularity.CodePatternExtractor do
   ## Usage Examples
 
       # What patterns does user want?
-      iex> CodePatternExtractor.extract_from_text("Create NATS consumer")
-      ["create", "nats", "consumer", "messaging"]
+      iex> CodePatternExtractor.extract_from_text("Create message consumer")
+      ["create", "message", "consumer", "messaging"]
 
       # What patterns does this code already use?
       iex> code = "use GenServer\\ndef handle_call..."
@@ -28,7 +28,7 @@ defmodule Singularity.CodePatternExtractor do
 
       # Which template patterns match?
       iex> CodePatternExtractor.find_matching_patterns(keywords, template_patterns)
-      [%{score: 4.0, pattern: "nats_microservice", matched: ["nats", "consumer"]}]
+      [%{score: 4.0, pattern: "messaging_microservice", matched: ["message", "consumer"]}]
   """
 
   @type pattern_keyword :: String.t()
@@ -53,8 +53,8 @@ defmodule Singularity.CodePatternExtractor do
       iex> extract_from_text("Create an API client")
       ["create", "api", "client"]
 
-      iex> extract_from_text("genServerWithNATS")
-      ["gen", "server", "nats"]
+      iex> extract_from_text("genServerWithMessaging")
+      ["gen", "server", "messaging"]
   """
   @spec extract_from_text(String.t()) :: [pattern_keyword()]
   def extract_from_text(text) when is_binary(text) do
@@ -82,9 +82,9 @@ defmodule Singularity.CodePatternExtractor do
 
   ## Examples
 
-      iex> patterns = [%{name: "nats_consumer", keywords: ["nats", "consumer"]}]
-      iex> find_matching_patterns(["nats", "consumer"], patterns)
-      [%{score: 4.0, pattern: "nats_consumer", matched_keywords: ["nats", "consumer"]}]
+      iex> patterns = [%{name: "message_consumer", keywords: ["message", "consumer"]}]
+      iex> find_matching_patterns(["message", "consumer"], patterns)
+      [%{score: 4.0, pattern: "message_consumer", matched_keywords: ["message", "consumer"]}]
   """
   @spec find_matching_patterns([pattern_keyword()], [pattern()]) :: [
           %{score: float(), pattern: pattern(), matched_keywords: [pattern_keyword()]}

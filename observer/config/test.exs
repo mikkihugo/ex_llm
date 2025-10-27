@@ -28,6 +28,10 @@ config :observer, Oban,
   testing: :inline,
   queues: false
 
+config :observer, :start_singularity_app, false
+config :observer, :sql_sandbox, true
+config :observer, :enable_hitl_queue_poller, false
+
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
 

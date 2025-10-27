@@ -363,4 +363,95 @@ defmodule Singularity.Storage.ValidationMetricsStore do
         DateTime.add(now, -7, :day)
     end
   end
+
+  @doc """
+  Sync validation metrics to CentralCloud for cross-instance learning.
+
+  Publishes recent validation metrics and execution data to CentralCloud
+  for pattern aggregation and cross-instance insights.
+
+  ## Parameters
+  - `filters` - Optional filters for which metrics to sync
+
+  ## Returns
+  - `{:ok, count}` - Number of metrics synced
+  - `{:error, reason}` - Sync failed
+  """
+  @spec sync_with_centralcloud(map()) :: {:ok, non_neg_integer()} | {:error, term()}
+  def sync_with_centralcloud(filters \\ %{}) do
+    Logger.info("ValidationMetricsStore: Syncing metrics to CentralCloud")
+
+    try do
+      # Get recent validation metrics
+      from_dt = DateTime.add(DateTime.utc_now(), -24, :hour)  # Last 24 hours
+      
+      validation_metrics = Repo.all(
+        from vm in ValidationMetric,
+          where: vm.inserted_at >= ^from_dt,
+          limit: 100
+      )
+
+      execution_metrics = Repo.all(
+        from em in ExecutionMetric,
+          where: em.inserted_at >= ^from_dt,
+          limit: 100
+      )
+
+      # Prepare sync payload
+      sync_payload = %{
+        validation_metrics: Enum.map(validation_metrics, &format_metric/1),
+        execution_metrics: Enum.map(execution_metrics, &format_metric/1),
+        sync_timestamp: DateTime.utc_now(),
+        source_instance: "singularity_#{node()}"
+      }
+
+      # Check if CentralCloud integration is available
+      cond do
+        Code.ensure_loaded?(CentralCloud.ValidationMetricsIngestion) and
+            function_exported?(CentralCloud.ValidationMetricsIngestion, :ingest_metrics, 1) ->
+          CentralCloud.ValidationMetricsIngestion.ingest_metrics(sync_payload)
+
+        Code.ensure_loaded?(CentralCloud.PatternLearningPublisher) and
+            function_exported?(CentralCloud.PatternLearningPublisher, :publish_validation_metrics, 1) ->
+          CentralCloud.PatternLearningPublisher.publish_validation_metrics(sync_payload)
+
+        true ->
+          Logger.debug("CentralCloud validation metrics sync skipped: integration not configured")
+          {:ok, 0}
+      end
+    rescue
+      error ->
+        Logger.error("ValidationMetricsStore: Error syncing to CentralCloud",
+          error: inspect(error)
+        )
+
+        {:error, error}
+    end
+  end
+
+  defp format_metric(%ValidationMetric{} = metric) do
+    %{
+      check_id: metric.check_id,
+      check_type: metric.check_type,
+      result: metric.result,
+      confidence_score: metric.confidence_score,
+      runtime_ms: metric.runtime_ms,
+      run_id: metric.run_id,
+      inserted_at: metric.inserted_at
+    }
+  end
+
+  defp format_metric(%ExecutionMetric{} = metric) do
+    %{
+      task_type: metric.task_type,
+      model: metric.model,
+      provider: metric.provider,
+      cost_cents: metric.cost_cents,
+      tokens_used: metric.tokens_used,
+      latency_ms: metric.latency_ms,
+      success: metric.success,
+      run_id: metric.run_id,
+      inserted_at: metric.inserted_at
+    }
+  end
 end

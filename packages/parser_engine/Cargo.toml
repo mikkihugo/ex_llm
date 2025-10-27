@@ -31,7 +31,7 @@ anyhow = "1.0"
 tokei = "12.1"
 
 # Tree-sitter core
-tree-sitter = { workspace = true }
+tree-sitter = "0.25.10"
 
 # Language parser crates (separate crates for each language)
 elixir_parser = { path = "./languages/elixir" }
@@ -90,3 +90,6 @@ harness = false
 [features]
 default = ["rca"]  # RCA metrics enabled by default
 rca = []  # Mozilla rust-code-analysis metrics
+
+[workspace]
+

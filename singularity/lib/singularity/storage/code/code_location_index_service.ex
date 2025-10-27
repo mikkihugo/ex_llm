@@ -121,8 +121,8 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
 
   ## Examples
 
-      iex> CodeLocationIndexService.find_by_all_patterns(["genserver", "nats"])
-      ["lib/services/nats_consumer.ex"]
+      iex> CodeLocationIndexService.find_by_all_patterns(["genserver", "messaging"])
+      ["lib/services/message_consumer.ex"]
   """
   def find_by_all_patterns(patterns) when is_list(patterns) do
     from(c in CodeLocationIndex,
@@ -414,7 +414,7 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
   defp classify_microservice_type(code, patterns) do
     type =
       cond do
-        "nats" in patterns and "genserver" in patterns -> "nats_microservice"
+        "messaging" in patterns and "genserver" in patterns -> "messaging_microservice"
         "broadway" in patterns -> "stream_processor"
         "channel" in patterns -> "websocket_service"
         "plug" in patterns and "http" in patterns -> "http_api"

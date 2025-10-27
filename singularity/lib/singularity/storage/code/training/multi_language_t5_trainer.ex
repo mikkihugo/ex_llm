@@ -1384,12 +1384,83 @@ defmodule Singularity.MultiLanguageT5Trainer do
     if union > 0, do: intersection / union, else: 0.0
   end
 
-  # Helper functions (placeholders for actual implementation)
-  defp extract_rust_patterns(_code), do: []
-  defp extract_elixir_patterns(_code), do: []
-  defp find_elixir_equivalents(_patterns), do: []
-  defp find_rust_equivalents(_patterns), do: []
-  defp extract_code_patterns(_code), do: []
+  # Helper functions for pattern extraction and analysis
+  defp extract_rust_patterns(code) do
+    # Extract Rust-specific patterns from code
+    patterns = []
+    
+    # Extract function definitions
+    function_patterns = Regex.scan(~r/fn\s+(\w+)/, code)
+    |> Enum.map(fn [_, name] -> %{type: :function, name: name, language: :rust} end)
+    
+    # Extract struct definitions
+    struct_patterns = Regex.scan(~r/struct\s+(\w+)/, code)
+    |> Enum.map(fn [_, name] -> %{type: :struct, name: name, language: :rust} end)
+    
+    # Extract trait implementations
+    trait_patterns = Regex.scan(~r/impl\s+(\w+)/, code)
+    |> Enum.map(fn [_, name] -> %{type: :trait, name: name, language: :rust} end)
+    
+    patterns ++ function_patterns ++ struct_patterns ++ trait_patterns
+  end
+
+  defp extract_elixir_patterns(code) do
+    # Extract Elixir-specific patterns from code
+    patterns = []
+    
+    # Extract function definitions
+    function_patterns = Regex.scan(~r/def\s+(\w+)/, code)
+    |> Enum.map(fn [_, name] -> %{type: :function, name: name, language: :elixir} end)
+    
+    # Extract module definitions
+    module_patterns = Regex.scan(~r/defmodule\s+(\w+)/, code)
+    |> Enum.map(fn [_, name] -> %{type: :module, name: name, language: :elixir} end)
+    
+    # Extract struct definitions
+    struct_patterns = Regex.scan(~r/defstruct\s+(\w+)/, code)
+    |> Enum.map(fn [_, name] -> %{type: :struct, name: name, language: :elixir} end)
+    
+    patterns ++ function_patterns ++ module_patterns ++ struct_patterns
+  end
+
+  defp find_elixir_equivalents(patterns) do
+    # Find Elixir equivalents for Rust patterns
+    Enum.map(patterns, fn pattern ->
+      case pattern.type do
+        :function -> %{pattern | equivalent: "def #{pattern.name}"}
+        :struct -> %{pattern | equivalent: "defstruct #{pattern.name}"}
+        :trait -> %{pattern | equivalent: "defprotocol #{pattern.name}"}
+        _ -> pattern
+      end
+    end)
+  end
+
+  defp find_rust_equivalents(patterns) do
+    # Find Rust equivalents for Elixir patterns
+    Enum.map(patterns, fn pattern ->
+      case pattern.type do
+        :function -> %{pattern | equivalent: "fn #{pattern.name}"}
+        :module -> %{pattern | equivalent: "mod #{pattern.name}"}
+        :struct -> %{pattern | equivalent: "struct #{pattern.name}"}
+        _ -> pattern
+      end
+    end)
+  end
+
+  defp extract_code_patterns(code) do
+    # Extract general code patterns
+    patterns = []
+    
+    # Extract variable assignments
+    assignment_patterns = Regex.scan(~r/(\w+)\s*=\s*/, code)
+    |> Enum.map(fn [_, var] -> %{type: :assignment, name: var} end)
+    
+    # Extract function calls
+    call_patterns = Regex.scan(~r/(\w+)\s*\(/, code)
+    |> Enum.map(fn [_, func] -> %{type: :call, name: func} end)
+    
+    patterns ++ assignment_patterns ++ call_patterns
+  end
 
   defp calculate_overall_score(rust_metrics, elixir_metrics, cross_metrics) do
     (rust_metrics.code_quality + elixir_metrics.code_quality + cross_metrics.pattern_transfer) / 3

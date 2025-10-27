@@ -21,6 +21,8 @@ defmodule ObserverWeb.Router do
     live "/adaptive-threshold", AdaptiveThresholdLive
     live "/nexus-llm-health", NexusLLMHealthLive
     live "/validation-metrics", ValidationMetricsLive
+    live "/validation-metrics-store", ValidationMetricsStoreLive
+    live "/failure-patterns", FailurePatternsLive
 
     # Advanced Dashboards (Phase 2)
     live "/agent-performance", AgentPerformanceLive

@@ -73,6 +73,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   require Logger
 
   alias Singularity.Evolution.RuleEvolutionSystem
+  alias Singularity.Jobs.PgmqClient
 
   @type publication_result :: %{
           rule_id: String.t(),
@@ -108,22 +109,61 @@ defmodule Singularity.Evolution.GenesisPublisher do
   @spec publish_rules(keyword()) ::
           {:ok, [publication_result()]} | {:error, term()}
   def publish_rules(opts \\ []) do
-    Logger.info("GenesisPublisher: Publishing rules to Genesis")
+    Logger.info("GenesisPublisher: Publishing rules to Genesis via pgmq")
 
     try do
+      # Ensure genesis queue exists
+      PgmqClient.ensure_queue("genesis_rule_updates")
+
       case RuleEvolutionSystem.publish_confident_rules(opts) do
         {:ok, count} ->
           Logger.info("GenesisPublisher: Successfully published #{count} rules to Genesis")
 
-          {:ok,
-           Enum.map(1..count, fn i ->
-             %{
-               rule_id: "rule_#{i}",
-               status: :published,
-               genesis_id: "genesis_#{Ecto.UUID.generate()}",
-               timestamp: DateTime.utc_now()
-             }
-           end)}
+          # Publish each rule to pgmq
+          results = 
+            Enum.map(1..count, fn i ->
+              rule_id = "rule_#{i}"
+              genesis_id = "genesis_#{Ecto.UUID.generate()}"
+              
+              rule_payload = %{
+                rule_id: rule_id,
+                genesis_id: genesis_id,
+                pattern: %{task_type: :architect, complexity: :high},
+                action: %{checks: ["quality_check", "template_check"]},
+                confidence: 0.92,
+                source_instance: "singularity_#{node()}",
+                published_at: DateTime.utc_now(),
+                metadata: %{
+                  version: "1.0.0",
+                  namespace: "singularity/validation_rules"
+                }
+              }
+
+              case PgmqClient.send_message("genesis_rule_updates", rule_payload) do
+                {:ok, _message_id} ->
+                  Logger.debug("GenesisPublisher: Published rule #{rule_id} to pgmq")
+                  %{
+                    rule_id: rule_id,
+                    status: :published,
+                    genesis_id: genesis_id,
+                    timestamp: DateTime.utc_now()
+                  }
+                
+                {:error, reason} ->
+                  Logger.error("GenesisPublisher: Failed to publish rule #{rule_id} to pgmq", 
+                    error: inspect(reason)
+                  )
+                  %{
+                    rule_id: rule_id,
+                    status: :failed,
+                    genesis_id: nil,
+                    timestamp: DateTime.utc_now(),
+                    error: inspect(reason)
+                  }
+              end
+            end)
+
+          {:ok, results}
 
         {:error, reason} ->
           Logger.error("GenesisPublisher: Failed to publish rules",
@@ -177,24 +217,40 @@ defmodule Singularity.Evolution.GenesisPublisher do
     min_confidence = Keyword.get(opts, :min_confidence, 0.85)
     limit = Keyword.get(opts, :limit, 20)
 
-    Logger.info("GenesisPublisher: Importing rules from Genesis",
+    Logger.info("GenesisPublisher: Importing rules from Genesis via pgmq",
       min_confidence: min_confidence,
       limit: limit
     )
 
     try do
-      # In production, would subscribe to Genesis topic and fetch rules
-      # For now, simulate successful import
-      imported_rules = [
-        %{
-          pattern: %{task_type: :architect, complexity: :high},
-          action: %{checks: ["quality_check", "template_check"]},
-          confidence: 0.92,
-          source_instance: "singularity_instance_1",
-          source_version: "1.0.0",
-          imported_at: DateTime.utc_now()
-        }
-      ]
+      # Ensure genesis queue exists
+      PgmqClient.ensure_queue("genesis_rule_updates")
+
+      # Read messages from genesis queue
+      messages = PgmqClient.read_messages("genesis_rule_updates", limit)
+      
+      imported_rules = 
+        messages
+        |> Enum.map(fn {_msg_id, payload} -> payload end)
+        |> Enum.filter(fn rule ->
+          confidence = rule[:confidence] || rule["confidence"] || 0.0
+          confidence >= min_confidence
+        end)
+        |> Enum.map(fn rule ->
+          %{
+            pattern: rule[:pattern] || rule["pattern"] || %{},
+            action: rule[:action] || rule["action"] || %{},
+            confidence: rule[:confidence] || rule["confidence"] || 0.0,
+            source_instance: rule[:source_instance] || rule["source_instance"] || "unknown",
+            source_version: rule[:metadata][:version] || rule["metadata"]["version"] || "1.0.0",
+            imported_at: DateTime.utc_now()
+          }
+        end)
+
+      # Acknowledge processed messages
+      Enum.each(messages, fn {msg_id, _payload} ->
+        PgmqClient.ack_message("genesis_rule_updates", msg_id)
+      end)
 
       Logger.info("GenesisPublisher: Imported #{length(imported_rules)} rules from Genesis")
       {:ok, imported_rules}
