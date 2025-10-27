@@ -70,29 +70,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Elixir 1.19** for the main application
 - **Rust** for high-performance parsing and analysis tools via Rustler NIFs
 - **PostgreSQL 17** with pgvector, timescaledb, postgis
-- **Bun** for TypeScript/JavaScript runtime (AI server)
 - **Nix** for reproducible development environment
+
+## Architecture Consolidation (October 2025)
+
+**Status: ✅ COMPLETE - Pure Elixir, No External Services**
+
+Previously, LLM requests routed through a TypeScript ai-server service. This has been **completely removed**:
+
+- ❌ TypeScript ai-server (was: pgmq wrapper for pgflow workflows)
+- ❌ Bun runtime (was: TypeScript execution)
+- ✅ Now: Direct Elixir routing to ExLLM provider abstraction layer
+
+**Benefits of consolidation:**
+- Single tech stack (Elixir only)
+- Faster request handling (no inter-process communication)
+- Simpler deployment (fewer services to manage)
+- Better observability (all code in one repo)
 
 ## AI Provider Policy
 
 **CRITICAL:** This project uses ONLY subscription-based or FREE AI providers. Never enable pay-per-use API billing.
 
-**Approved providers:**
-- **Gemini Code Assist API** (FREE - `gemini_code_api` provider) **[PRIMARY]**
-  - Direct HTTP to `cloudcode-pa.googleapis.com` (Project Assistant API)
-  - Uses `@google/gemini-cli-core` OAuth credentials (shared with CLI)
-  - Auth: One-time browser OAuth via `bunx @google/gemini-cli auth`
-  - No gcloud SDK needed - lightweight npm package handles everything
-  - FREE tier for code assistance (not billed)
-- **Gemini Code Assist CLI** (FREE - `gemini_code_cli` provider) **[BACKUP]**
-  - Fallback when API fails or OAuth not configured
-  - Bun wrapper around `@google/gemini-cli`
-  - Uses same OAuth credentials as API
-  - Auth: Browser flow via `codeassist.google.com`
-- Claude (Claude Pro/Max subscription via claude-code SDK)
-- Codex (subscription-based via CLI)
-- Copilot (GitHub Copilot subscription)
-- Cursor (Cursor subscription)
+**Approved providers (via ExLLM abstraction layer):**
+- **Claude (via claude-code SDK)** - Claude Pro/Max subscription (integrated via ExLLM)
+- **ChatGPT Pro / Codex** - OpenAI ChatGPT Pro subscription with OAuth2 token exchange
+- **GitHub Copilot** - GitHub Copilot subscription with OAuth2 token exchange
+- **Gemini** - Free tier via API key (limited quota)
+- **OpenAI** - Requires API key (not recommended - use Claude/Copilot instead)
+- **Groq, Mistral, Perplexity, XAI** - Various free tier APIs
+- **Local Providers** - Ollama, LM Studio (on-device, no credentials needed)
 
 **Future providers (NOT YET IMPLEMENTED):**
 - Google AI Studio (web UI - `generativelanguage.googleapis.com`)
@@ -289,38 +296,40 @@ Singularity uses a **single, reusable orchestration pattern** applied to 7 major
 
 ### LLM Usage Guidelines (IMPORTANT!)
 
-**ALL LLM calls in Elixir are routed through Nexus:**
+**ALL LLM calls in Elixir are routed through ExLLM (direct, no intermediaries):**
+
+Starting October 2025, LLM requests route **directly to ExLLM providers** - no TypeScript intermediary.
 
 ```elixir
-alias Nexus.LLMRouter
+alias Singularity.LLM.Service
 
-# ✅ CORRECT - Route through Nexus with complexity and task_type
-{:ok, response} = Nexus.LLMRouter.route(%{
-  complexity: :complex,
-  messages: [%{role: "user", content: "Design a microservice architecture"}],
-  task_type: :architect
-})
+# ✅ CORRECT - Route through LLM.Service with complexity level
+{:ok, response} = Singularity.LLM.Service.call(:complex, [
+  %{role: "user", content: "Design a microservice architecture"}
+], task_type: :architect)
 
-{:ok, response} = Nexus.LLMRouter.route(%{
-  complexity: :medium,
-  messages: [%{role: "user", content: "Plan the next sprint"}],
-  task_type: :planning,
-  max_tokens: 2000
-})
+{:ok, response} = Singularity.LLM.Service.call(:medium, [
+  %{role: "user", content: "Plan the next sprint"}
+], task_type: :planning, max_tokens: 2000)
 
-# ❌ WRONG - Direct HTTP calls forbidden
-Provider.call(:claude, %{prompt: prompt})  # Module doesn't exist!
-HTTPoison.post("https://api.anthropic.com/...")  # Never do this!
+# Or use ExLLM directly for low-level access:
+{:ok, response} = ExLLM.chat(:claude, messages, model: "claude-3-5-sonnet-20241022")
+{:ok, response} = ExLLM.chat(:codex, messages, model: "gpt-5-codex")
+{:ok, response} = ExLLM.chat(:copilot, messages, model: "gpt-4.1")
+
+# ❌ WRONG - Don't use old Nexus routing (ai-server removed)
+Nexus.LLMRouter.route(%{...})  # This no longer exists!
+HTTPoison.post("https://api.anthropic.com/...")  # Never do direct HTTP!
 ```
 
 **Complexity Levels & Model Selection:**
 
-Nexus.LLMRouter uses **intelligent model selection** based on complexity and task type:
+Singularity.LLM.Service provides **intelligent model selection** based on complexity and task type:
 
 1. **Complexity Levels** - Determine model tier:
    - `:simple` → Fast, cheap models (Gemini Flash)
    - `:medium` → Balanced models (Claude Sonnet, GPT-4o)
-   - `:complex` → Powerful models (Claude Sonnet with Codex fallback)
+   - `:complex` → Powerful models (Claude, Codex)
 
 2. **Task Type** - Refines model selection within complexity tier:
    - `:architect` → Code architecture/design tasks
@@ -328,29 +337,34 @@ Nexus.LLMRouter uses **intelligent model selection** based on complexity and tas
    - `:planning` → Strategic planning tasks
    - `:code_generation` → Code generation (tries Codex)
    - `:refactoring` → Refactoring tasks (tries Codex)
-   - Other types use default model for complexity level
 
 **Model Examples by Complexity:**
 
 - `:simple` → `gemini-2.0-flash-exp` (fast, free)
 - `:medium` → `claude-3-5-sonnet-20241022` (balanced)
-- `:complex` → `gpt-5-codex` (if configured) or `claude-3-5-sonnet-20241022`
+- `:complex` → `gpt-5-codex` (Codex) or `claude-3-5-sonnet-20241022` (Claude)
 
-**LLM Communication Flow:**
+**LLM Communication Flow (NEW - October 2025):**
 
 ```
-Elixir Code
+Elixir Code (Singularity)
     ↓
-Nexus.LLMRouter.route(%{complexity: :medium, ...})
+Singularity.LLM.Service or ExLLM.chat()
     ↓
-ExLLM (provider abstraction)
+ExLLM Provider Abstraction
     ↓ HTTP
-LLM Provider APIs (Claude, Gemini, OpenAI, etc.)
+LLM Provider APIs (Claude, Gemini, OpenAI, Codex, Copilot, etc.)
     ↓
-ExLLM
+ExLLM (response parsing)
     ↓
 Elixir Code (response with usage/cost)
 ```
+
+**Previously (Before October 2025):**
+
+Was: Elixir → pgmq queue → TypeScript ai-server → ExLLM → Provider APIs
+
+Now: Elixir → ExLLM → Provider APIs (direct, no intermediary)
 
 ### Using the Unified Orchestrators
 
