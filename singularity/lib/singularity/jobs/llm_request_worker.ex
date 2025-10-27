@@ -169,7 +169,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   """
   @spec await_responses_result(String.t(), keyword()) ::
     {:ok, map()} | {:error, :timeout | :not_found | :failed | term()}
-  def await_responses_result(opts \\ [])(request_id, _opts \\ []) do
+  def await_responses_result(request_id, opts \\ []) do
     timeout_ms = Keyword.get(opts, :timeout_ms, 30000)
     poll_interval_ms = Keyword.get(opts, :poll_interval_ms, 100)
 
