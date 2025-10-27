@@ -47,6 +47,8 @@ defmodule ExLLM.Application do
         metrics_child_spec(),
         # Start Ollama Model Registry
         ExLLM.Infrastructure.OllamaModelRegistry,
+        # Start Models.dev syncer for model data enrichment (startup sync if empty, respects 24h TTL)
+        ExLLM.ModelDiscovery.ModelsDevInitializer,
         # Start Codex Token Manager for OAuth2 token lifecycle management
         codex_token_manager_child_spec()
       ]

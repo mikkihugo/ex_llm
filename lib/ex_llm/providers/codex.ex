@@ -335,38 +335,31 @@ defmodule ExLLM.Providers.Codex do
 
   # API communication
 
-  defp call_api(messages, token, opts) do
+  defp call_api(messages, _token, opts) do
     # Use the WHAM Task API instead of simple chat completion
     # This provides the proper Codex format with special input tags
-    case create_task_from_messages(messages, token, opts) do
-      {:ok, task_id} ->
-        # Poll for completion
-        poll_task(task_id, [max_attempts: 1, timeout_ms: 30_000])
+    # Use create_task_and_wait for proper async handling
+    task_opts = [
+      environment_id: get_environment_id(opts),
+      branch: get_branch(opts),
+      prompt: format_codex_input(extract_user_content(messages), opts),
+      model: Keyword.get(opts, :model, default_model()),
+      sandbox_policy: Keyword.get(opts, :sandbox_policy, "workspace-write"),
+      approval_policy: Keyword.get(opts, :approval_policy, "untrusted"),
+      max_attempts: 60,
+      timeout_ms: 300_000
+    ]
+    
+    case create_task_and_wait(task_opts) do
+      {:ok, _task_id, response} ->
+        # Extract the response content
+        extract_response_content(response)
       
       {:error, reason} ->
         {:error, reason}
     end
   end
 
-  defp create_task_from_messages(messages, token, opts) do
-    # Extract the user message content
-    user_content = extract_user_content(messages)
-    
-    # Format with special Codex input tags
-    formatted_content = format_codex_input(user_content, opts)
-    
-    # Create UserTurn payload
-    task_opts = [
-      environment_id: get_environment_id(opts),
-      branch: get_branch(opts),
-      prompt: formatted_content,
-      model: Keyword.get(opts, :model, default_model()),
-      sandbox_policy: Keyword.get(opts, :sandbox_policy, "workspace-write"),
-      approval_policy: Keyword.get(opts, :approval_policy, "untrusted")
-    ]
-    
-    create_task(task_opts)
-  end
 
   defp extract_user_content(messages) when is_list(messages) do
     messages
@@ -505,6 +498,38 @@ defmodule ExLLM.Providers.Codex do
 
   defp get_branch(opts) do
     Keyword.get(opts, :branch, "main")
+  end
+
+  defp extract_response_content(response) do
+    # Extract content from Codex task response
+    case response do
+      %{"current_assistant_turn" => %{"output_items" => output_items}} when is_list(output_items) ->
+        # Extract text content from output items
+        content = output_items
+        |> Enum.filter(fn item -> 
+          item["type"] == "message" || item["type"] == "text"
+        end)
+        |> Enum.map(fn item ->
+          item["content"] || item["text"] || ""
+        end)
+        |> Enum.join("\n")
+        |> String.trim()
+        
+        if content != "" do
+          {:ok, %{"message" => %{"content" => content}}}
+        else
+          {:error, "No content found in response"}
+        end
+      
+      %{"current_assistant_turn" => %{"turn_status" => "failed"}} ->
+        {:error, "Task failed"}
+      
+      %{"current_assistant_turn" => %{"turn_status" => "aborted"}} ->
+        {:error, "Task aborted"}
+      
+      _ ->
+        {:error, "Unexpected response format: #{inspect(response)}"}
+    end
   end
 
   defp call_api_stream(messages, token, opts) do

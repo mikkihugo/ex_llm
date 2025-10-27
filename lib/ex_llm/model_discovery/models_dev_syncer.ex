@@ -45,11 +45,13 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
   """
 
   require Logger
-  alias ExLLM.ModelDiscovery.ProviderFetcher
 
   @api_url "https://models.dev/api.json"
-  @cache_ttl_minutes 60
+  @api_cache_ttl_minutes 60  # Cache API responses for 60 minutes
+  @config_sync_ttl_hours 24  # Resync config files every 24 hours
   @cache_file Path.expand("~/.cache/models_dev.json")
+  @sync_marker_file Path.expand("~/.cache/models_dev_sync.marker")
+  @db_cache_ttl_minutes 120  # Cache models in PostgreSQL for 2 hours
 
   @doc """
   Fetch all models from models.dev API.
@@ -72,7 +74,35 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
   end
 
   @doc """
-  Sync models.dev data to YAML configs.
+  Sync models if needed (empty config or TTL expired).
+
+  Automatically syncs if:
+  1. config/models is empty (first run)
+  2. Last sync was > 24 hours ago
+
+  Otherwise skips to preserve cache.
+
+  This is safe to call on application startup.
+  """
+  @spec sync_if_needed() :: :ok | {:error, atom()}
+  def sync_if_needed do
+    cond do
+      config_is_empty?() ->
+        Logger.info("Config empty, syncing models from models.dev...")
+        sync_to_configs()
+
+      sync_ttl_expired?() ->
+        Logger.info("24-hour sync TTL expired, refreshing models...")
+        sync_to_configs()
+
+      true ->
+        Logger.debug("Models.dev sync TTL still valid (< 24 hours)")
+        :ok
+    end
+  end
+
+  @doc """
+  Force sync models.dev data to YAML configs.
 
   Merges API data with existing configs, preserving:
   - task_complexity_score (our learned scores)
@@ -84,6 +114,8 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
   - capabilities
   - context_window
   - max_output_tokens
+
+  Updates sync marker file for 24-hour TTL tracking.
   """
   @spec sync_to_configs() :: :ok | {:error, atom()}
   def sync_to_configs do
@@ -92,6 +124,9 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
         Enum.each(models_by_provider, fn {provider, models} ->
           sync_provider_models(provider, models)
         end)
+
+        # Update sync marker for TTL tracking
+        update_sync_marker()
 
         Logger.info("Synced models.dev data to YAML configs")
         :ok
@@ -120,24 +155,76 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
             end
         end
 
-      {:error, reason} ->
-        {:error, reason}
+      {:error, error_atom, _reason} ->
+        {:error, error_atom}
     end
+  end
+
+  # === TTL & State Management ===
+
+  @doc """
+  Check if config/models directory is empty or missing.
+  """
+  @spec config_is_empty?() :: boolean()
+  def config_is_empty? do
+    config_dir = ExLLM.Infrastructure.Config.ModelConfig.config_dir()
+
+    case File.ls(config_dir) do
+      {:ok, files} ->
+        yaml_files = Enum.filter(files, &String.ends_with?(&1, ".yml"))
+        Enum.empty?(yaml_files)
+
+      {:error, _} ->
+        true  # Directory doesn't exist, consider empty
+    end
+  end
+
+  @doc """
+  Check if sync TTL (24 hours) has expired.
+  """
+  @spec sync_ttl_expired?() :: boolean()
+  def sync_ttl_expired? do
+    case File.stat(@sync_marker_file) do
+      {:ok, %{mtime: mtime}} ->
+        age_seconds = (System.os_time(:second) - DateTime.to_unix(mtime, :second))
+        age_hours = age_seconds / 3600
+        age_hours >= @config_sync_ttl_hours
+
+      {:error, _} ->
+        true  # No marker file, consider expired
+    end
+  end
+
+  defp update_sync_marker do
+    File.write(@sync_marker_file, "synced")
+  rescue
+    _ -> :ok  # Ignore if we can't write marker
   end
 
   # === Private Implementation ===
 
   defp get_models_data do
-    if cache_fresh?() do
-      case File.read(@cache_file) do
-        {:ok, content} ->
-          {:ok, Jason.decode!(content)}
+    # Try database cache first (if available in Singularity/CentralCloud context)
+    case get_from_db_cache() do
+      {:ok, data} ->
+        {:ok, data}
 
-        {:error, _} ->
+      :not_available ->
+        # Fall back to local file cache
+        if cache_fresh?() do
+          case File.read(@cache_file) do
+            {:ok, content} ->
+              data = Jason.decode!(content)
+              # Try to cache in DB for other instances
+              store_to_db_cache(data)
+              {:ok, data}
+
+            {:error, _} ->
+              fetch_from_api()
+          end
+        else
           fetch_from_api()
-      end
-    else
-      fetch_from_api()
+        end
     end
   end
 
@@ -171,8 +258,9 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
   defp cache_fresh? do
     case File.stat(@cache_file) do
       {:ok, %{mtime: mtime}} ->
-        age_minutes = (System.os_time(:millisecond) - DateTime.to_unix(mtime, :millisecond)) / 1000 / 60
-        age_minutes < @cache_ttl_minutes
+        age_seconds = System.os_time(:second) - DateTime.to_unix(mtime, :second)
+        age_minutes = age_seconds / 60
+        age_minutes < @api_cache_ttl_minutes
 
       {:error, _} ->
         false
@@ -343,5 +431,62 @@ defmodule ExLLM.ModelDiscovery.ModelsDevSyncer do
     models_by_provider
     |> Enum.map(fn {_provider, models} -> length(models) end)
     |> Enum.sum()
+  end
+
+  # === PostgreSQL Cache (Persistent, Shared) ===
+
+  defp get_from_db_cache do
+    # Try to fetch from PostgreSQL (if available)
+    try do
+      # Check if Repo is available (in Singularity/CentralCloud context)
+      case Code.ensure_compiled(ExLLM.Repo) do
+        {:module, _} ->
+          # Try to query the cache table
+          case ExLLM.Repo.query(
+            "SELECT content, created_at FROM model_cache WHERE key = $1 AND created_at > NOW() - INTERVAL '#{@db_cache_ttl_minutes} minutes'",
+            ["models_dev"]
+          ) do
+            {:ok, %{rows: [[content_json, _]]}} ->
+              {:ok, Jason.decode!(content_json)}
+
+            _ ->
+              :not_available
+          end
+
+        {:error, _} ->
+          :not_available
+      end
+    rescue
+      _ -> :not_available
+    end
+  end
+
+  defp store_to_db_cache(data) do
+    # Store in PostgreSQL for other instances (if available)
+    try do
+      case Code.ensure_compiled(ExLLM.Repo) do
+        {:module, _} ->
+          json_data = Jason.encode!(data)
+
+          ExLLM.Repo.query(
+            """
+            INSERT INTO model_cache (key, content, created_at, updated_at)
+            VALUES ($1, $2, NOW(), NOW())
+            ON CONFLICT (key) DO UPDATE
+            SET content = $2, updated_at = NOW()
+            """,
+            ["models_dev", json_data]
+          )
+
+          Logger.debug("Cached models.dev data in PostgreSQL")
+
+        {:error, _} ->
+          :ok
+      end
+    rescue
+      e ->
+        Logger.debug("Could not cache to PostgreSQL: #{inspect(e)}")
+        :ok
+    end
   end
 end
