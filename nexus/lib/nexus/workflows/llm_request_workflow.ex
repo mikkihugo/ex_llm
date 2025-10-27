@@ -213,10 +213,10 @@ defmodule Nexus.Workflows.LLMRequestWorkflow do
 
     # Enqueue result to ai_results queue for Singularity to consume
     case publish_to_queue("ai_results", result_message) do
-      {:ok, _msg_id} ->
+      {:ok, msg_id} ->
         Logger.info("LLM result published",
           request_id: result_message.request_id,
-          msg_id: _msg_id
+          msg_id: msg_id
         )
         {:ok, Map.put(result, :published, true)}
 

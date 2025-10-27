@@ -249,7 +249,7 @@ defmodule Nexus.LLMRouter do
     ExLLM.chat(:openai, input, opts)
   end
 
-  defp log_success(model, response, opts \\ []) do
+defp log_success(model, response, opts) do
     api_version = Keyword.get(opts, :api_version, "chat_completions")
 
     Logger.info("LLM request successful",
