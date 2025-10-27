@@ -119,9 +119,9 @@ defmodule ExLLM.ResponsesAPI do
   """
   @spec supported_providers() :: [atom()]
   def supported_providers do
-    # For now, only OpenAI supports responses
-    # This will be updated as more providers add support
-    [:openai]
+    # Providers that support the Responses API
+    # Note: OpenRouter has documentation but endpoint not yet live
+    [:openai, :openrouter]
   end
 
   @doc """

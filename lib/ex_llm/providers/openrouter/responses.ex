@@ -78,9 +78,9 @@ defmodule ExLLM.Providers.OpenRouter.Responses do
   """
   @spec responses_supported?() :: boolean()
   def responses_supported? do
-    # OpenRouter has a Responses API Beta available
-    # The endpoint is at https://openrouter.ai/v1/responses
-    true
+    # OpenRouter has Responses API documentation but endpoint not yet live
+    # The endpoint will be at https://openrouter.ai/v1/responses
+    false
   end
 
   @doc """
