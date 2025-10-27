@@ -29,6 +29,14 @@ pub struct InfrastructureRegistry {
   pub queues: HashMap<String, InfrastructureSystemSchema>,
   /// Observability systems: name → schema (Phase 6.x)
   pub observability: HashMap<String, InfrastructureSystemSchema>,
+  /// Service mesh systems: name → schema (Phase 7)
+  pub service_mesh: HashMap<String, InfrastructureSystemSchema>,
+  /// API gateways: name → schema (Phase 7)
+  pub api_gateways: HashMap<String, InfrastructureSystemSchema>,
+  /// Container orchestration: name → schema (Phase 7)
+  pub container_orchestration: HashMap<String, InfrastructureSystemSchema>,
+  /// CI/CD systems: name → schema (Phase 7)
+  pub cicd: HashMap<String, InfrastructureSystemSchema>,
 }
 
 /// Schema for an infrastructure system (defines its structure)
@@ -72,6 +80,10 @@ impl InfrastructureRegistry {
       service_registries: HashMap::new(),
       queues: HashMap::new(),
       observability: HashMap::new(),
+      service_mesh: HashMap::new(),
+      api_gateways: HashMap::new(),
+      container_orchestration: HashMap::new(),
+      cicd: HashMap::new(),
     };
 
     // Parse message brokers from response
@@ -124,6 +136,42 @@ impl InfrastructureRegistry {
       for obs in observability {
         if let Ok(schema) = Self::parse_system_schema(obs) {
           registry.observability.insert(schema.name.clone(), schema);
+        }
+      }
+    }
+
+    // Phase 7: Parse service mesh systems from response
+    if let Some(meshes) = response.get("service_mesh").and_then(|v| v.as_array()) {
+      for mesh in meshes {
+        if let Ok(schema) = Self::parse_system_schema(mesh) {
+          registry.service_mesh.insert(schema.name.clone(), schema);
+        }
+      }
+    }
+
+    // Phase 7: Parse API gateways from response
+    if let Some(gateways) = response.get("api_gateways").and_then(|v| v.as_array()) {
+      for gateway in gateways {
+        if let Ok(schema) = Self::parse_system_schema(gateway) {
+          registry.api_gateways.insert(schema.name.clone(), schema);
+        }
+      }
+    }
+
+    // Phase 7: Parse container orchestration systems from response
+    if let Some(orchestrators) = response.get("container_orchestration").and_then(|v| v.as_array()) {
+      for orchestrator in orchestrators {
+        if let Ok(schema) = Self::parse_system_schema(orchestrator) {
+          registry.container_orchestration.insert(schema.name.clone(), schema);
+        }
+      }
+    }
+
+    // Phase 7: Parse CI/CD systems from response
+    if let Some(cicd_systems) = response.get("cicd").and_then(|v| v.as_array()) {
+      for cicd in cicd_systems {
+        if let Ok(schema) = Self::parse_system_schema(cicd) {
+          registry.cicd.insert(schema.name.clone(), schema);
         }
       }
     }
@@ -182,6 +230,10 @@ impl InfrastructureRegistry {
       service_registries: HashMap::new(),
       queues: HashMap::new(),
       observability: HashMap::new(),
+      service_mesh: HashMap::new(),
+      api_gateways: HashMap::new(),
+      container_orchestration: HashMap::new(),
+      cicd: HashMap::new(),
     };
 
     // Default message brokers
@@ -363,6 +415,205 @@ impl InfrastructureRegistry {
         description: "OpenTelemetry instrumentation and collection".to_string(),
         detection_patterns: vec!["opentelemetry".to_string(), "otel".to_string()],
         fields: [("exporters".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    // Phase 7: Default service mesh systems
+    registry.service_mesh.insert(
+      "Istio".to_string(),
+      InfrastructureSystemSchema {
+        name: "Istio".to_string(),
+        category: "service_mesh".to_string(),
+        description: "Istio service mesh for Kubernetes".to_string(),
+        detection_patterns: vec!["istio.io".to_string(), "istio".to_string(), "istiod".to_string()],
+        fields: [("virtual_services".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.service_mesh.insert(
+      "Linkerd".to_string(),
+      InfrastructureSystemSchema {
+        name: "Linkerd".to_string(),
+        category: "service_mesh".to_string(),
+        description: "Linkerd lightweight service mesh".to_string(),
+        detection_patterns: vec!["linkerd.io".to_string(), "linkerd".to_string()],
+        fields: [("service_profiles".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.service_mesh.insert(
+      "Consul".to_string(),
+      InfrastructureSystemSchema {
+        name: "Consul".to_string(),
+        category: "service_mesh".to_string(),
+        description: "Consul service mesh and service discovery".to_string(),
+        detection_patterns: vec!["consul".to_string(), "consul.hcl".to_string()],
+        fields: [("services".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    // Phase 7: Default API gateway systems
+    registry.api_gateways.insert(
+      "Kong".to_string(),
+      InfrastructureSystemSchema {
+        name: "Kong".to_string(),
+        category: "api_gateway".to_string(),
+        description: "Kong API gateway and service connectivity".to_string(),
+        detection_patterns: vec!["kong".to_string(), "kong.conf".to_string()],
+        fields: [("routes".to_string(), "array".to_string()), ("services".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.api_gateways.insert(
+      "NGINX Ingress".to_string(),
+      InfrastructureSystemSchema {
+        name: "NGINX Ingress".to_string(),
+        category: "api_gateway".to_string(),
+        description: "NGINX Ingress Controller for Kubernetes".to_string(),
+        detection_patterns: vec!["nginx-ingress".to_string(), "ingress.nginx.org".to_string()],
+        fields: [("ingressClassName".to_string(), "string".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.api_gateways.insert(
+      "Traefik".to_string(),
+      InfrastructureSystemSchema {
+        name: "Traefik".to_string(),
+        category: "api_gateway".to_string(),
+        description: "Traefik edge router and API gateway".to_string(),
+        detection_patterns: vec!["traefik.io".to_string(), "traefik".to_string(), "traefik.yml".to_string()],
+        fields: [("entryPoints".to_string(), "array".to_string()), ("routers".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.api_gateways.insert(
+      "AWS API Gateway".to_string(),
+      InfrastructureSystemSchema {
+        name: "AWS API Gateway".to_string(),
+        category: "api_gateway".to_string(),
+        description: "AWS API Gateway service".to_string(),
+        detection_patterns: vec!["apigateway".to_string(), "execute-api.amazonaws.com".to_string()],
+        fields: [("rest_apis".to_string(), "array".to_string()), ("http_apis".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    // Phase 7: Default container orchestration systems
+    registry.container_orchestration.insert(
+      "Kubernetes".to_string(),
+      InfrastructureSystemSchema {
+        name: "Kubernetes".to_string(),
+        category: "container_orchestration".to_string(),
+        description: "Kubernetes container orchestration platform".to_string(),
+        detection_patterns: vec!["kubernetes".to_string(), "k8s".to_string(), "kind.yml".to_string(), ".kube".to_string()],
+        fields: [("namespaces".to_string(), "array".to_string()), ("deployments".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.container_orchestration.insert(
+      "Docker Swarm".to_string(),
+      InfrastructureSystemSchema {
+        name: "Docker Swarm".to_string(),
+        category: "container_orchestration".to_string(),
+        description: "Docker Swarm container orchestration".to_string(),
+        detection_patterns: vec!["docker-compose.yml".to_string(), "docker-compose.yaml".to_string(), "swarm".to_string()],
+        fields: [("services".to_string(), "array".to_string()), ("networks".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.container_orchestration.insert(
+      "Nomad".to_string(),
+      InfrastructureSystemSchema {
+        name: "Nomad".to_string(),
+        category: "container_orchestration".to_string(),
+        description: "HashiCorp Nomad workload orchestrator".to_string(),
+        detection_patterns: vec!["nomad".to_string(), "nomad.hcl".to_string()],
+        fields: [("jobs".to_string(), "array".to_string()), ("datacenters".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    // Phase 7: Default CI/CD systems
+    registry.cicd.insert(
+      "Jenkins".to_string(),
+      InfrastructureSystemSchema {
+        name: "Jenkins".to_string(),
+        category: "cicd".to_string(),
+        description: "Jenkins continuous integration and deployment".to_string(),
+        detection_patterns: vec!["jenkins".to_string(), "Jenkinsfile".to_string(), "jenkins.xml".to_string()],
+        fields: [("pipelines".to_string(), "array".to_string()), ("agents".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.cicd.insert(
+      "GitLab CI".to_string(),
+      InfrastructureSystemSchema {
+        name: "GitLab CI".to_string(),
+        category: "cicd".to_string(),
+        description: "GitLab CI/CD pipeline configuration".to_string(),
+        detection_patterns: vec![".gitlab-ci.yml".to_string(), "gitlab".to_string()],
+        fields: [("stages".to_string(), "array".to_string()), ("jobs".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.cicd.insert(
+      "GitHub Actions".to_string(),
+      InfrastructureSystemSchema {
+        name: "GitHub Actions".to_string(),
+        category: "cicd".to_string(),
+        description: "GitHub Actions CI/CD automation".to_string(),
+        detection_patterns: vec![".github/workflows".to_string(), "github.com".to_string(), "actions".to_string()],
+        fields: [("workflows".to_string(), "array".to_string()), ("jobs".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.cicd.insert(
+      "CircleCI".to_string(),
+      InfrastructureSystemSchema {
+        name: "CircleCI".to_string(),
+        category: "cicd".to_string(),
+        description: "CircleCI continuous integration platform".to_string(),
+        detection_patterns: vec![".circleci/config.yml".to_string(), "circleci".to_string()],
+        fields: [("jobs".to_string(), "array".to_string()), ("workflows".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.cicd.insert(
+      "Travis CI".to_string(),
+      InfrastructureSystemSchema {
+        name: "Travis CI".to_string(),
+        category: "cicd".to_string(),
+        description: "Travis CI continuous integration".to_string(),
+        detection_patterns: vec![".travis.yml".to_string(), "travis".to_string()],
+        fields: [("stages".to_string(), "array".to_string()), ("build_matrix".to_string(), "object".to_string())]
           .into_iter()
           .collect(),
       },

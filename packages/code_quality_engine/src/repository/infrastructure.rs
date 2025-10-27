@@ -79,7 +79,7 @@ impl DetectionContext {
     false
   }
 
-  /// Get detection patterns for infrastructure type from registry (Phase 6.3)
+  /// Get detection patterns for infrastructure type from registry (Phase 6.3, Phase 7 extended)
   pub fn get_detection_patterns(&self, infra_name: &str, category: &str) -> Option<Vec<String>> {
     self.registry.as_ref().and_then(|reg| {
       let schema = match category {
@@ -89,13 +89,18 @@ impl DetectionContext {
         "service_registry" => reg.service_registries.get(infra_name),
         "queue" => reg.queues.get(infra_name),
         "observability" => reg.observability.get(infra_name),
+        // Phase 7: New infrastructure categories
+        "service_mesh" => reg.service_mesh.get(infra_name),
+        "api_gateway" => reg.api_gateways.get(infra_name),
+        "container_orchestration" => reg.container_orchestration.get(infra_name),
+        "cicd" => reg.cicd.get(infra_name),
         _ => None,
       };
       schema.map(|s| s.detection_patterns.clone())
     })
   }
 
-  /// Validate infrastructure name against registry (Phase 6.3)
+  /// Validate infrastructure name against registry (Phase 6.3, Phase 7 extended)
   pub fn validate_infrastructure(&self, name: &str, category: &str) -> bool {
     if let Some(ref reg) = self.registry {
       match category {
@@ -105,6 +110,11 @@ impl DetectionContext {
         "service_registry" => reg.service_registries.contains_key(name),
         "queue" => reg.queues.contains_key(name),
         "observability" => reg.observability.contains_key(name),
+        // Phase 7: New infrastructure categories
+        "service_mesh" => reg.service_mesh.contains_key(name),
+        "api_gateway" => reg.api_gateways.contains_key(name),
+        "container_orchestration" => reg.container_orchestration.contains_key(name),
+        "cicd" => reg.cicd.contains_key(name),
         _ => false,
       }
     } else {
