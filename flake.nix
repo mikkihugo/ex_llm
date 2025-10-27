@@ -166,7 +166,7 @@
           git gh curl pkg-config direnv gnused gawk coreutils findutils
           ripgrep fd jq bat htop tree watchexec entr just nil nixfmt-rfc-style lsof
           mold sccache cachix rustc cargo rustfmt clippy rust-analyzer cargo-watch
-          postgresql_18  # For pgxn (pg_config and dev headers)
+          postgresql_17  # For pgxn (pg_config and dev headers)
           google-cloud-sdk  # Google Cloud CLI for GCP operations
         ] ++ lib.optionals env.gpu (if platform.hasCuda then [
           # CUDA tools only if GPU enabled and CUDA available
@@ -462,7 +462,7 @@
             export LANG=C.UTF-8
             export ELIXIR_ERL_OPTIONS="+fnu"
             export ERL_AFLAGS="-proto_dist inet6_tcp"
-            export ERL_FLAGS="+sbt u +sbwt very_long +swt very_low"  # Removed -heart for cleaner development logs
+            export ERL_FLAGS="+sbt u +sbwt very_long +swt very_low"  # Baseline threading and timeout settings
             export MIX_ENV=''${MIX_ENV:-${if env.name == "GPU Development Environment" then "prod" else "dev"}}
 
             # Erlang NIF headers for Rustler (required for NIF compilation)
