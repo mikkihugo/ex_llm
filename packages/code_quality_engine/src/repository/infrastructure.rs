@@ -93,7 +93,7 @@ impl InfrastructureAnalyzer {
     let mut analyzer = Self { root_path: root_path.clone(), detectors: Vec::new() };
 
     // Register all detectors
-    analyzer.register_detector(Box::new(NATSDetector));
+    // NATS detector removed in Phase 4 - use ex_pgflow/pgmq via Elixir
     analyzer.register_detector(Box::new(KafkaDetector));
     analyzer.register_detector(Box::new(RabbitMQDetector));
     analyzer.register_detector(Box::new(RedisDetector));
@@ -178,45 +178,12 @@ pub struct InfrastructureAnalysis {
 // ============================================================================
 
 /// NATS detector
-struct NATSDetector;
-
-#[async_trait]
-impl InfrastructureDetector for NATSDetector {
-  fn name(&self) -> &str {
-    "NATS"
-  }
-
-  fn priority(&self) -> u8 {
-    100
-  }
-
-  fn can_detect(&self, context: &DetectionContext) -> bool {
-    context.file_exists("nats.conf") || context.file_exists(".nats") || context.has_pattern("nats://") || context.has_pattern("\"nats\"")
-  }
-
-  async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
-    let mut clusters = Vec::new();
-    let mut jetstream = false;
-
-    // Check nats.conf
-    if context.file_exists("nats.conf") {
-      if let Ok(contents) = context.read_file("nats.conf") {
-        jetstream = contents.contains("jetstream");
-      }
-    }
-
-    // Check for NATS in docker-compose
-    if context.file_exists("docker-compose.yml") {
-      if let Ok(contents) = context.read_file("docker-compose.yml") {
-        if contents.contains("nats:") {
-          clusters.push("nats://localhost:4222".to_string());
-        }
-      }
-    }
-
-    Ok(DetectionResult::MessageBroker(MessageBroker::NATS { clusters, jetstream }))
-  }
-}
+// NATS detector removed in Phase 4 NATS removal
+// Previous implementation:
+// - Detected nats.conf, .nats, nats:// patterns
+// - Supported JetStream detection
+// - Integrated with docker-compose
+// Now use ex_pgflow/pgmq via Elixir for persistent storage
 
 /// Kafka detector
 struct KafkaDetector;
@@ -405,20 +372,7 @@ mod tests {
 
   use super::*;
 
-  #[tokio::test]
-  async fn test_nats_detection() {
-    let temp = TempDir::new().unwrap();
-    std::fs::write(temp.path().join("nats.conf"), "jetstream { enabled: true }").unwrap();
-
-    let analyzer = InfrastructureAnalyzer::new(temp.path().to_path_buf());
-    let result = analyzer.detect_all().await.unwrap();
-
-    assert_eq!(result.message_brokers.len(), 1);
-    match &result.message_brokers[0] {
-      MessageBroker::NATS { jetstream, .. } => assert!(*jetstream),
-      _ => panic!("Expected NATS"),
-    }
-  }
+  // NATS test removed in Phase 4 - NATS detection no longer supported
 
   #[tokio::test]
   async fn test_postgres_detection() {

@@ -13,7 +13,7 @@ async fn test_assembler_creation() {
         languages: vec![Language::Rust],
         architecture_patterns: vec![ArchitectureCodePattern::Microservices],
         databases: vec![DatabaseSystem::PostgreSQL],
-        message_brokers: vec![MessageBroker::NATS],
+        message_brokers: vec![MessageBroker::Kafka], // NATS removed in Phase 4
     };
 
     // Test simple constructor
@@ -31,7 +31,7 @@ async fn test_assembler_with_framework_detection() {
         languages: vec![Language::Rust],
         architecture_patterns: vec![ArchitectureCodePattern::Microservices],
         databases: vec![DatabaseSystem::PostgreSQL],
-        message_brokers: vec![MessageBroker::NATS],
+        message_brokers: vec![MessageBroker::Kafka], // NATS removed in Phase 4
     };
 
     // Test with framework detection (this will call sparc-engine)

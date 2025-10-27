@@ -129,8 +129,9 @@ impl ArchitectureAnalyzer {
       patterns.push(CommunicationCodePattern::Asynchronous);
     }
 
-    // Pub/Sub (NATS, Kafka)
-    if infrastructure.message_brokers.iter().any(|b| matches!(b, MessageBroker::NATS { .. } | MessageBroker::Kafka { .. })) {
+    // Pub/Sub (Kafka, RabbitMQ)
+    // NATS removed in Phase 4
+    if infrastructure.message_brokers.iter().any(|b| matches!(b, MessageBroker::Kafka { .. } | MessageBroker::RabbitMQ { .. })) {
       patterns.push(CommunicationCodePattern::PubSub);
     }
 
@@ -387,7 +388,8 @@ mod tests {
       .collect();
 
     let infrastructure = InfrastructureAnalysis {
-      message_brokers: vec![MessageBroker::NATS { clusters: vec![], jetstream: true }],
+      // NATS removed in Phase 4, use Kafka instead for testing
+      message_brokers: vec![MessageBroker::Kafka { topics: vec![], partitions: 3 }],
       databases: vec![],
       caches: vec![],
       service_registries: vec![],

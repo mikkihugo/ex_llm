@@ -884,18 +884,8 @@ impl PromptBitAssembler {
     fn generate_infrastructure_integration(&self) -> String {
         let mut section = String::from("## Infrastructure\n\n");
 
-        // NATS
-        for broker in &self.analysis.message_brokers {
-            if let MessageBroker::NATS = broker {
-                section.push_str("### NATS Message Broker\n\n");
-                section.push_str("Connection: `nats://localhost:4222`\n");
-                section.push_str("JetStream: enabled\n\n");
-                section.push_str("Publish events:\n");
-                section.push_str("- `auth.login` - User logged in\n");
-                section.push_str("- `auth.logout` - User logged out\n");
-                section.push_str("- `auth.register` - New user\n\n");
-            }
-        }
+        // NATS removed in Phase 4 - use ex_pgflow/pgmq via Elixir
+        // Supported brokers: RabbitMQ, Kafka, Redis
 
         // PostgreSQL
         for db in &self.analysis.databases {

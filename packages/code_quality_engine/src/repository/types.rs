@@ -186,7 +186,7 @@ pub struct ToolStack {
 /// Message broker systems
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MessageBroker {
-  NATS { clusters: Vec<String>, jetstream: bool },
+  // NATS removed in Phase 4 - use ex_pgflow/pgmq via Elixir
   Kafka { topics: Vec<String>, partitions: usize },
   RabbitMQ { exchanges: Vec<String>, queues: Vec<String> },
   RedisStreams { streams: Vec<String> },
