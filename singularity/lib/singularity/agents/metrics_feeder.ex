@@ -8,7 +8,7 @@ defmodule Singularity.Agents.MetricsFeeder do
   use GenServer
   require Logger
 
-  def start_link(_opts \\ []) do
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 

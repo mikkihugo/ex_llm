@@ -157,7 +157,7 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
     - `:days` - Number of days to analyze (default: 30)
     - `:metrics` - Specific metrics to analyze (default: all)
   """
-  def analyze_health_trend(codebase_path, _opts \\ []) do
+  def analyze_health_trend(codebase_path, opts \\ []) do
     days = Keyword.get(opts, :days, 30)
 
     with {:ok, snapshots} <- fetch_snapshots(codebase_path, days) do
@@ -187,7 +187,7 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
     - `:threshold` - Regression threshold (default: 0.05 = 5% drop)
     - `:baseline` - Baseline snapshot to compare against (default: previous)
   """
-  def detect_regressions(codebase_path, _opts \\ []) do
+  def detect_regressions(codebase_path, opts \\ []) do
     threshold = Keyword.get(opts, :threshold, 0.05)
 
     with {:ok, current} <- snapshot_codebase(codebase_path),

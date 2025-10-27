@@ -89,7 +89,7 @@ defmodule Singularity.Analysis.CodeQualityDashboard do
   - `:module_filter` - Filter by module name pattern (optional)
   - `:severity_threshold` - Min violation severity (optional)
   """
-  def get_quality_analysis(codebase_path \\ ".", _opts \\ []) do
+  def get_quality_analysis(codebase_path \\ ".", opts \\ []) do
     try do
       days = Keyword.get(opts, :days, 30)
 

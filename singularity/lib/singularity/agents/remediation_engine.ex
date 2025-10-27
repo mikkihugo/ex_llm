@@ -141,7 +141,7 @@ defmodule Singularity.Agents.RemediationEngine do
     - `:max_fixes` - Maximum fixes to apply (default: 50)
     - `:include_types` - Which fix types to apply (default: all)
   """
-  def remediate_file(file_path, _opts \\ []) do
+  def remediate_file(file_path, opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
     auto_apply = Keyword.get(opts, :auto_apply, false)
     dry_run = Keyword.get(opts, :dry_run, false)
@@ -149,14 +149,14 @@ defmodule Singularity.Agents.RemediationEngine do
 
     with :ok <- File.exists?(file_path) |> if(do: :ok, else: {:error, :file_not_found}),
          {:ok, content} <- File.read(file_path),
-         {:ok, fixes} <- generate_fixes(file_path, _opts) do
+         {:ok, fixes} <- generate_fixes(file_path, opts) do
       # Create backup if requested
       backup_path = if backup and not dry_run, do: create_backup(file_path), else: nil
 
       # Apply fixes
       result =
         if auto_apply or dry_run do
-          apply_fixes_batch(content, fixes, _opts)
+          apply_fixes_batch(content, fixes, opts)
         else
           {:ok,
            %{
@@ -223,14 +223,14 @@ defmodule Singularity.Agents.RemediationEngine do
   @doc """
   Remediate multiple files in parallel.
   """
-  def remediate_batch(file_paths, _opts \\ []) do
+  def remediate_batch(file_paths, opts \\ []) do
     Logger.info("Starting batch remediation", file_count: length(file_paths))
 
     results =
       file_paths
       |> Task.async_stream(
         fn file_path ->
-          remediate_file(file_path, _opts)
+          remediate_file(file_path, opts)
         end,
         max_concurrency: 5,
         timeout: 30_000
@@ -261,7 +261,7 @@ defmodule Singularity.Agents.RemediationEngine do
   @doc """
   Generate (but don't apply) fixes for a file.
   """
-  def generate_fixes(file_path, _opts \\ []) do
+  def generate_fixes(file_path, opts \\ []) do
     with :ok <- File.exists?(file_path) |> if(do: :ok, else: {:error, :file_not_found}),
          {:ok, content} <- File.read(file_path),
          language <- detect_language(file_path),
@@ -305,7 +305,7 @@ defmodule Singularity.Agents.RemediationEngine do
   @doc """
   Validate that a fix doesn't break the code.
   """
-  def validate_remediation(original_content, new_content, _opts \\ []) do
+  def validate_remediation(original_content, new_content, opts \\ []) do
     language = Keyword.get(opts, :language, :elixir)
 
     validation_results = %{
@@ -413,7 +413,7 @@ defmodule Singularity.Agents.RemediationEngine do
     end
   end
 
-  defp apply_fixes_batch(content, fixes, _opts) do
+  defp apply_fixes_batch(content, fixes, opts) do
     new_content =
       Enum.reduce(fixes, content, fn fix, acc ->
         case apply_auto_fix(acc, fix) do

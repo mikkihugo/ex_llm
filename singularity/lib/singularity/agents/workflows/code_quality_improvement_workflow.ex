@@ -87,7 +87,7 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
 
   ## Parameters
   - `codebase_path` - Root directory of codebase
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:auto_commit` - Automatically commit fixes (default: false)
     - `:run_tests` - Run tests before committing (default: true)
     - `:max_fixes` - Maximum number of issues to fix (default: 50)
@@ -115,7 +115,7 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   """
   @spec execute_quality_improvement_workflow(String.t(), keyword()) ::
           {:ok, map()} | {:error, String.t()}
-  def execute_quality_improvement_workflow(codebase_path, _opts \\ []) do
+  def execute_quality_improvement_workflow(codebase_path, opts \\ []) do
     Logger.info("Starting autonomous quality improvement workflow: #{codebase_path}")
 
     auto_commit = Keyword.get(opts, :auto_commit, false)
@@ -159,9 +159,9 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   """
   @spec execute_security_improvement_workflow(String.t(), keyword()) ::
           {:ok, map()} | {:error, String.t()}
-  def execute_security_improvement_workflow(codebase_path, _opts \\ []) do
-    _opts = Keyword.merge(_opts, categories: [:security], min_severity: :medium)
-    execute_quality_improvement_workflow(codebase_path, _opts)
+  def execute_security_improvement_workflow(codebase_path, opts \\ []) do
+    opts = Keyword.merge(opts, categories: [:security], min_severity: :medium)
+    execute_quality_improvement_workflow(codebase_path, opts)
   end
 
   @doc """
@@ -171,11 +171,11 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   """
   @spec execute_refactoring_improvement_workflow(String.t(), keyword()) ::
           {:ok, map()} | {:error, String.t()}
-  def execute_refactoring_improvement_workflow(codebase_path, _opts \\ []) do
-    _opts =
-      Keyword.merge(_opts, categories: [:long_functions, :duplicate_code, :nested_conditionals])
+  def execute_refactoring_improvement_workflow(codebase_path, opts \\ []) do
+    opts =
+      Keyword.merge(opts, categories: [:long_functions, :duplicate_code, :nested_conditionals])
 
-    execute_quality_improvement_workflow(codebase_path, _opts)
+    execute_quality_improvement_workflow(codebase_path, opts)
   end
 
   # ============================================================================

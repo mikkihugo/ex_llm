@@ -109,22 +109,16 @@ defmodule Nexus.WorkflowWorker do
 
   defp poll_and_execute(state) do
     # Read messages from pgmq
-    case read_messages(state.batch_size) do
-      {:ok, messages} when messages != [] ->
-        # Execute workflow for each message
-        results =
-          Enum.map(messages, fn msg ->
-            execute_workflow(msg)
-          end)
+    with {:ok, messages} <- read_messages(state.batch_size) do
+      case messages do
+        [] ->
+          {:ok, 0}
 
-        successful = Enum.count(results, &match?({:ok, _}, &1))
-        {:ok, successful}
-
-      {:ok, []} ->
-        {:ok, 0}
-
-      {:error, _reason} = error ->
-        error
+        _ ->
+          results = Enum.map(messages, &execute_workflow/1)
+          successful = Enum.count(results, &match?({:ok, _}, &1))
+          {:ok, successful}
+      end
     end
   end
 
