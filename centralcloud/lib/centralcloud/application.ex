@@ -38,6 +38,14 @@ defmodule CentralCloud.Application do
       CentralCloud.TemplateService,     # Template management
       CentralCloud.TemplateLoader,      # Lua template loading and rendering
 
+      # Task Learning: Aggregates task-specialized routing metrics every 60 seconds
+      CentralCloud.ModelLearning.TaskMetricsAggregator,
+
+      # ML Training Pipelines - Broadway-based ML training orchestration
+      # Handles: Model complexity training, Pattern learning, Framework intelligence
+      # Uses PGMQ for task queuing and Broadway for pipeline orchestration
+      CentralCloud.ML.PipelineSupervisor,
+
       # pgmq Consumers: Read from distributed queues
       # Pattern Learning: Consumes pattern discoveries and learned patterns from instances
       {CentralCloud.PgmqConsumer,

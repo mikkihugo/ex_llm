@@ -1,4 +1,4 @@
-defmodule Singularity.Schemas.LLMSchemas.LLMRequest do
+defmodule Singularity.Schemas.LLMRequest do
   @moduledoc """
   Ecto schema for tracking incoming LLM requests from agents.
 
@@ -56,7 +56,7 @@ defmodule Singularity.Schemas.LLMSchemas.LLMRequest do
   ### Module Identity (JSON)
   ```json
   {
-    "module": "Singularity.Schemas.LLMSchemas.LLMRequest",
+    "module": "Singularity.Schemas.LLMRequest",
     "purpose": "Stores incoming LLM requests from agents with fast polling support",
     "role": "schema",
     "layer": "infrastructure",

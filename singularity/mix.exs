@@ -86,7 +86,7 @@ defmodule Singularity.MixProject do
       {:jason, "~> 1.4"},
       {:nimble_options, "~> 1.1"},
       # Templating engines
-      {:solid, "~> 0.14"},
+      {:solid, "~> 1.0"},
       # Lua on BEAM for dynamic prompt scripts (ergonomic luerl wrapper)
       # When luerl 2.0 releases, this will be merged into luerl directly
       {:lua, "~> 0.3.0"},
@@ -114,7 +114,7 @@ defmodule Singularity.MixProject do
 
       # Monitoring & Telemetry
       {:telemetry, "~> 1.2"},
-      {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.1"},
       {:phoenix_live_dashboard, "~> 0.8"},
 
@@ -123,10 +123,13 @@ defmodule Singularity.MixProject do
 
       # Workflow Orchestration (ExPgflow)
       {:ex_pgflow, path: "../packages/ex_pgflow"},
+      
+      # LLM Orchestration (Nexus) - Removed: Singularity uses PGMQ, Nexus consumes separately
+      # {:nexus, path: "../nexus"},
 
-      # MoonShine-style Rule Engine
+      # Rule Engine with Fast Caching
       # Fast caching for rule results
-      {:cachex, "~> 3.6"},
+      {:cachex, "~> 4.0"},
       # Resource pooling for LLM APIs
       {:nimble_pool, "~> 1.0"},
 
@@ -135,6 +138,7 @@ defmodule Singularity.MixProject do
       # Event Processing
       # Data pipelines
       {:broadway, "~> 1.0"},
+      {:off_broadway_pgmq, "~> 0.2"},
       # Producer-consumer
       {:gen_stage, "~> 1.2"},
       # Parallel processing

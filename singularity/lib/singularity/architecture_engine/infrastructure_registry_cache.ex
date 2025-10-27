@@ -69,7 +69,6 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
   use GenServer
   require Logger
   alias Singularity.Jobs.PgmqClient
-  alias Singularity.Repo
 
   # Public API
 
@@ -131,7 +130,7 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
   # GenServer Implementation
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     # Ensure pgmq queues exist
     PgmqClient.ensure_queue("infrastructure_registry_requests")
     PgmqClient.ensure_queue("infrastructure_registry_responses")

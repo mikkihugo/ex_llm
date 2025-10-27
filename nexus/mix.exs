@@ -28,6 +28,9 @@ defmodule Nexus.MixProject do
       # Workflow orchestration (local fork)
       {:ex_pgflow, path: "../packages/ex_pgflow"},
 
+      # HTTP client for OAuth2 and API calls
+      {:req, "~> 0.5.0"},
+
       # JSON encoding/decoding
       {:jason, "~> 1.4"},
 
@@ -41,7 +44,10 @@ defmodule Nexus.MixProject do
       {:ecto_sql, "~> 3.12"},
 
       # UUID generation (UUIDv7 with timestamp ordering)
-      {:uniq, "~> 0.6"}
+      {:uniq, "~> 0.6"},
+
+      # Mocking library for tests (HTTP and database mocking)
+      {:mox, "~> 1.0", only: :test}
     ]
   end
 end

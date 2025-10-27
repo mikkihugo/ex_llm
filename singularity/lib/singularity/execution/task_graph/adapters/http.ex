@@ -99,7 +99,7 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
 
   ## HTTP Execution
 
-  defp execute_request(request, opts) do
+  defp execute_request(request, _opts) do
     Logger.info("Executing HTTP request",
       method: request.method,
       url: request.url,

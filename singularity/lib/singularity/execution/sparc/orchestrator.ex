@@ -1,19 +1,19 @@
-defmodule Singularity.Execution.SPARC.Orchestrator do
+defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
   @moduledoc """
-  SPARC Orchestrator - Template-driven SPARC execution with TaskGraph integration.
+  Code Generation Workflow Orchestrator - Template-driven 5-phase code generation with TaskGraph integration.
 
   Two-DAG architecture:
   - Template Performance DAG (top) - Selects best templates via ML
-  - SPARC TaskGraph (bottom) - Executes tasks hierarchically
+  - Code Generation TaskGraph (bottom) - Executes tasks hierarchically
 
   ## Quick Start
 
   ```elixir
   # Execute with optimal template selection
-  {:ok, results, metrics} = SPARC.Orchestrator.execute(goal)
+  {:ok, results, metrics} = CodeGenerationWorkflow.Orchestrator.execute(goal)
 
   # Get execution statistics
-  stats = SPARC.Orchestrator.get_stats()
+  stats = CodeGenerationWorkflow.Orchestrator.get_stats()
   # => %{total_executions: 42, success_rate: 0.95, ...}
   ```
 

@@ -180,64 +180,60 @@ defmodule Nexus.LLMRouter do
   end
 
   # Dynamic model discovery using ex_llm
+  # Note: ExLLM.Core.Models.list_all() always returns {:ok, models}, never {:error, _}
   defp find_model_by_criteria(:simple) do
-    case ExLLM.Core.Models.list_all() do
-      {:ok, models} ->
-        # Find fast, cheap models (Gemini Flash, GPT-4o-mini, GitHub Models, etc.)
-        simple_model = models
-        |> Enum.filter(fn model ->
-          model.provider in [:gemini, :openai, :github_models] and
-          (String.contains?(model.id, "flash") or
-           String.contains?(model.id, "mini") or
-           String.contains?(model.id, "github"))
-        end)
-        |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
-        |> List.first()
+    {:ok, models} = ExLLM.Core.Models.list_all()
 
-        if simple_model, do: {:ok, simple_model.id}, else: {:error, :no_model_found}
+    # Find fast, cheap models (Gemini Flash, GPT-4o-mini, GitHub Models, etc.)
+    simple_model = models
+    |> Enum.filter(fn model ->
+      model.provider in [:gemini, :openai, :github_models] and
+      (String.contains?(model.id, "flash") or
+       String.contains?(model.id, "mini") or
+       String.contains?(model.id, "github"))
+    end)
+    |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
+    |> List.first()
 
-      {:error, _} -> {:error, :discovery_failed}
-    end
+    if simple_model, do: {:ok, simple_model.id}, else: {:error, :no_model_found}
   end
 
   defp find_medium_model do
-    case ExLLM.Core.Models.list_all() do
-      {:ok, models} ->
-        # Find balanced models (Claude Sonnet, GPT-4o, GitHub Models, etc.)
-        medium_model = models
-        |> Enum.filter(fn model ->
-          model.provider in [:anthropic, :openai, :github_models] and
-          (String.contains?(model.id, "sonnet") or
-           String.contains?(model.id, "gpt-4o") and not String.contains?(model.id, "mini") or
-           String.contains?(model.id, "llama") or
-           String.contains?(model.id, "mistral"))
-        end)
-        |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
-        |> List.first()
+    # Note: ExLLM.Core.Models.list_all() always returns {:ok, models}, never {:error, _}
+    {:ok, models} = ExLLM.Core.Models.list_all()
 
-        if medium_model, do: medium_model.id, else: "claude-3-5-sonnet-latest"
-      {:error, _} -> "claude-3-5-sonnet-latest"
-    end
+    # Find balanced models (Claude Sonnet, GPT-4o, GitHub Models, etc.)
+    medium_model = models
+    |> Enum.filter(fn model ->
+      model.provider in [:anthropic, :openai, :github_models] and
+      (String.contains?(model.id, "sonnet") or
+       String.contains?(model.id, "gpt-4o") and not String.contains?(model.id, "mini") or
+       String.contains?(model.id, "llama") or
+       String.contains?(model.id, "mistral"))
+    end)
+    |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
+    |> List.first()
+
+    if medium_model, do: medium_model.id, else: "claude-3-5-sonnet-latest"
   end
 
   defp find_complex_model do
-    case ExLLM.Core.Models.list_all() do
-      {:ok, models} ->
-        # Find powerful models (Claude Opus, GPT-4, GitHub Models, etc.)
-        complex_model = models
-        |> Enum.filter(fn model ->
-          model.provider in [:anthropic, :openai, :github_models] and
-          (String.contains?(model.id, "opus") or
-           String.contains?(model.id, "gpt-4") and not String.contains?(model.id, "mini") or
-           String.contains?(model.id, "llama-3.3") or
-           String.contains?(model.id, "deepseek"))
-        end)
-        |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
-        |> List.first()
+    # Note: ExLLM.Core.Models.list_all() always returns {:ok, models}, never {:error, _}
+    {:ok, models} = ExLLM.Core.Models.list_all()
 
-        if complex_model, do: complex_model.id, else: "claude-3-5-sonnet-latest"
-      {:error, _} -> "claude-3-5-sonnet-latest"
-    end
+    # Find powerful models (Claude Opus, GPT-4, GitHub Models, etc.)
+    complex_model = models
+    |> Enum.filter(fn model ->
+      model.provider in [:anthropic, :openai, :github_models] and
+      (String.contains?(model.id, "opus") or
+       String.contains?(model.id, "gpt-4") and not String.contains?(model.id, "mini") or
+       String.contains?(model.id, "llama-3.3") or
+       String.contains?(model.id, "deepseek"))
+    end)
+    |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
+    |> List.first()
+
+    if complex_model, do: complex_model.id, else: "claude-3-5-sonnet-latest"
   end
 
   # Private functions

@@ -10,6 +10,21 @@ defmodule ObserverWeb.Router do
     plug :put_secure_browser_headers
   end
 
+  pipeline :auth do
+    plug :check_auth
+  end
+
+  defp check_auth(conn, _opts) do
+    case get_session(conn, :authenticated) do
+      true -> conn
+      _ -> 
+        conn
+        |> put_session(:return_to, conn.request_path)
+        |> Phoenix.Controller.redirect(to: "/login")
+        |> halt()
+    end
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
   end
@@ -17,23 +32,34 @@ defmodule ObserverWeb.Router do
   scope "/", ObserverWeb do
     pipe_through :browser
 
-    live "/", SystemHealthLive
-    live "/adaptive-threshold", AdaptiveThresholdLive
-    live "/nexus-llm-health", NexusLLMHealthLive
-    live "/validation-metrics", ValidationMetricsLive
-    live "/validation-metrics-store", ValidationMetricsStoreLive
-    live "/failure-patterns", FailurePatternsLive
+    # Login routes (no auth required)
+    get "/login", AuthController, :login
+    post "/login", AuthController, :do_login
+    delete "/logout", AuthController, :logout
 
-    # Advanced Dashboards (Phase 2)
-    live "/agent-performance", AgentPerformanceLive
-    live "/cost-analytics", CostAnalyticsLive
-    live "/code-quality", CodeQualityLive
-    live "/rule-evolution", RuleEvolutionLive
-    live "/knowledge-base", KnowledgeBaseLive
-    live "/task-execution", TaskExecutionLive
-    live "/hitl-approvals", HITLApprovalsLive
-    # WebChat Integration
-    live "/webchat", WebChatLive  end
+    # Protected routes
+    scope "/" do
+      pipe_through :auth
+
+        live "/", SystemHealthLive
+      live "/adaptive-threshold", AdaptiveThresholdLive
+      live "/nexus-llm-health", NexusLLMHealthLive
+      live "/validation-metrics", ValidationMetricsLive
+      live "/validation-metrics-store", ValidationMetricsStoreLive
+      live "/failure-patterns", FailurePatternsLive
+
+      # Advanced Dashboards (Phase 2)
+      live "/agent-performance", AgentPerformanceLive
+      live "/cost-analytics", CostAnalyticsLive
+      live "/code-quality", CodeQualityLive
+      live "/rule-evolution", RuleEvolutionLive
+      live "/knowledge-base", KnowledgeBaseLive
+      live "/task-execution", TaskExecutionLive
+      live "/hitl-approvals", HITLApprovalsLive
+      # WebChat Integration
+      live "/webchat", WebChatLive
+    end
+  end
 
   # Other scopes may use custom stacks.
   # scope "/api", ObserverWeb do

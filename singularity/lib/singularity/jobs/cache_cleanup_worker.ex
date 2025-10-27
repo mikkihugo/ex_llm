@@ -30,7 +30,7 @@ defmodule Singularity.Jobs.CacheCleanupWorker do
           {:error, reason}
       end
     rescue
-      e in Exception ->
+      e ->
         Logger.error("❌ Cache cleanup exception", error: inspect(e))
         {:error, e}
     end

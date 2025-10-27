@@ -28,19 +28,34 @@ defmodule CentralCloud.MixProject do
 
       # Background Job Queue for aggregation, package sync, statistics
       {:oban, "~> 2.18"},
+      
+      # Data Processing Pipeline for ML training
+      {:broadway, "~> 1.0"},
+      {:off_broadway_pgmq, "~> 0.2"},
+
+      # ML and Data Science dependencies (optional - only load if needed)
+      {:axon, "~> 0.6", optional: true},                    # Deep Learning framework
+      {:nx, "~> 0.6", optional: true},                      # Numerical computing (required by Axon)
+      {:exla, "~> 0.6", optional: true},                    # GPU acceleration (optional)
+      {:yaml_elixir, "~> 2.9", optional: true},             # YAML parsing for static models
+      {:yamerl, "~> 0.10", optional: true},                 # Alternative YAML parser
+      {:httpoison, "~> 2.2", optional: true},               # HTTP client for models.dev API
+      {:timex, "~> 3.7", optional: true},                   # Time utilities for training data
+      {:statistics, "~> 0.6", optional: true},              # Statistical functions for ML
+      {:decimal, "~> 2.1", optional: true},                 # High precision decimal arithmetic
 
       # Testing dependencies
       {:mox, "~> 1.0", only: :test},
       {:ex_machina, "~> 2.8", only: :test},
       
-      # Rust NIF Engines (same as Singularity)
-      {:rustler, "~> 0.37"},
+      # Rust NIF Engines (optional, only used if present)
+      {:rustler, "~> 0.37", optional: true},
       # architecture_engine removed - uses pure Elixir detectors via NATS delegation to Singularity
-      {:code_quality_engine, path: "../rust/code_quality_engine", runtime: false, app: false, compile: false},
+      {:code_quality_engine, path: "../packages/code_quality_engine", runtime: false, app: false, compile: false, optional: true},
       # Embedding calls Singularity via NATS (pure Elixir NxService)
-      {:parser_engine, path: "../rust/parser_engine", runtime: false, app: false, compile: false, optional: true},
-      {:prompt_engine, path: "../rust/prompt_engine", runtime: false, app: false, compile: false, optional: true},
-      {:linting_engine, path: "../rust/linting_engine", runtime: false, app: false, compile: false}
+      {:parser_engine, path: "../packages/parser_engine", runtime: false, app: false, compile: false, optional: true},
+      {:prompt_engine, path: "../packages/prompt_engine", runtime: false, app: false, compile: false, optional: true},
+      {:linting_engine, path: "../packages/linting_engine", runtime: false, app: false, compile: false, optional: true}
     ]
   end
 end

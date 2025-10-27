@@ -39,10 +39,27 @@ defmodule Nexus.Providers.Codex do
   require Logger
   alias Nexus.OAuthToken
   alias Nexus.Providers.Codex.OAuth2
-  alias Nexus.Providers.Codex.OAuth2
 
   @base_url "https://chatgpt.com/backend-api"
-  @default_model "gpt-5-codex"
+  @default_model "gpt-5"
+
+  # ======================================================================
+  # Dependency Injection for Testing
+  # ======================================================================
+  # Production: Uses real Req HTTP client
+  # Tests: Can be configured with MockReq via Application.put_env
+  #
+  # Usage in module: http_client().post(url, opts)
+  # Usage in test setup: Application.put_env(:nexus, :http_client, MockReq)
+  # ======================================================================
+
+  defp http_client do
+    Application.get_env(:nexus, :http_client, Req)
+  end
+
+  defp token_repository do
+    Application.get_env(:nexus, :token_repository, OAuthToken)
+  end
 
   @doc """
   Send chat request to ChatGPT Pro using OAuth tokens.
@@ -68,11 +85,21 @@ defmodule Nexus.Providers.Codex do
   Check if Codex is configured (has valid OAuth tokens).
   """
   def configured? do
-    case OAuthToken.get("codex") do
+    case token_repository().get("codex") do
       {:ok, _token} -> true
       {:error, :not_found} -> false
     end
   end
+
+  @doc """
+  Get the provider name.
+  """
+  def provider_name, do: "codex"
+
+  @doc """
+  Get the default model.
+  """
+  def default_model, do: @default_model
 
   @doc """
   List available Codex models.
@@ -80,25 +107,46 @@ defmodule Nexus.Providers.Codex do
   def list_models do
     [
       %{
+        id: "gpt-5",
+        name: "GPT-5",
+        context_window: 400_000,
+        max_output_tokens: 128_000,
+        capabilities: [:chat, :streaming, :vision, :thinking],
+        thinking_levels: [:low, :medium, :high],
+        cost: :free,
+        pricing: "Free with volume limits",
+        quota_usage: %{
+          low: 1.0,
+          medium: 3.0,
+          high: 5.0
+        }
+      },
+      %{
         id: "gpt-5-codex",
         name: "GPT-5 Codex",
-        context_window: 128_000,
-        max_output_tokens: 4096,
-        capabilities: [:chat, :streaming, :code_generation]
+        context_window: 400_000,
+        max_output_tokens: 128_000,
+        capabilities: [:chat, :streaming, :vision, :code_generation, :thinking],
+        thinking_levels: [:low, :medium, :high],
+        cost: :free,
+        pricing: "Free with volume limits",
+        quota_usage: %{
+          low: 1.0,
+          medium: 3.0,
+          high: 5.0
+        }
       },
       %{
-        id: "gpt-4o",
-        name: "GPT-4 Optimized",
-        context_window: 128_000,
-        max_output_tokens: 4096,
-        capabilities: [:chat, :streaming, :vision]
-      },
-      %{
-        id: "o1",
-        name: "o1 (Reasoning)",
+        id: "codex-mini-latest",
+        name: "Codex Mini Latest",
         context_window: 200_000,
         max_output_tokens: 100_000,
-        capabilities: [:chat, :reasoning]
+        capabilities: [:chat, :streaming, :code_generation],
+        cost: :free,
+        pricing: "Free with volume limits",
+        quota_usage: %{
+          default: 1.0
+        }
       }
     ]
   end
@@ -106,7 +154,7 @@ defmodule Nexus.Providers.Codex do
   # Private functions
 
   defp get_valid_token do
-    with {:ok, token} <- OAuthToken.get("codex"),
+    with {:ok, token} <- token_repository().get("codex"),
          {:ok, token} <- ensure_not_expired(token) do
       {:ok, token}
     end
@@ -124,7 +172,7 @@ defmodule Nexus.Providers.Codex do
     case OAuth2.refresh(token) do
       {:ok, new_tokens} ->
         attrs = OAuthToken.from_ex_llm_format(new_tokens)
-        OAuthToken.upsert("codex", attrs)
+        token_repository().upsert("codex", attrs)
 
       error ->
         error
@@ -147,7 +195,7 @@ defmodule Nexus.Providers.Codex do
       {"Content-Type", "application/json"}
     ]
 
-    case Req.post("#{@base_url}/conversation", json: body, headers: headers) do
+    case http_client().post("#{@base_url}/conversation", json: body, headers: headers) do
       {:ok, %{status: 200, body: response}} ->
         {:ok, response}
 

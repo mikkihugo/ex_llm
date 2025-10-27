@@ -282,7 +282,7 @@ defmodule Singularity.SharedQueueConsumer do
       # These are requests that have been stored but not yet published to pgmq
       query =
         from(
-          r in Singularity.LLMSchemas.LLMRequest,
+          r in Singularity.Schemas.LLMRequest,
           where: r.status == "pending",
           order_by: [asc: r.created_at],
           limit: ^limit
@@ -322,7 +322,7 @@ defmodule Singularity.SharedQueueConsumer do
         Logger.error("[Singularity.SharedQueueConsumer] Exception processing LLM request", %{
           id: llm_request.id,
           error: inspect(e),
-          type: Exception.module(e)
+          type: inspect(e.__struct__)
         })
 
         # Mark as failed with error details
@@ -341,7 +341,7 @@ defmodule Singularity.SharedQueueConsumer do
   3. Instructor validation → marked as completed/failed based on schema
   """
   def handle_llm_response(llm_request_id, response, parsed_response \\ nil) do
-    case Singularity.Repo.get(Singularity.LLMSchemas.LLMRequest, llm_request_id) do
+    case Singularity.Repo.get(Singularity.Schemas.LLMRequest, llm_request_id) do
       nil ->
         Logger.warning("[Singularity.SharedQueueConsumer] LLM request not found", %{
           id: llm_request_id
@@ -445,14 +445,14 @@ defmodule Singularity.SharedQueueConsumer do
         Logger.error("[Singularity.SharedQueueConsumer] Instructor validation exception", %{
           id: request.id,
           error: inspect(e),
-          type: Exception.module(e)
+          type: inspect(e.__struct__)
         })
 
         # Capture validation error
         validation_error = %{
           error: "Instructor validation exception",
           message: inspect(e),
-          type: Exception.module(e)
+          type: inspect(e.__struct__)
         }
 
         mark_request_failed_validation(request, response, [validation_error])
@@ -463,7 +463,7 @@ defmodule Singularity.SharedQueueConsumer do
 
   defp mark_request_completed(request, response, parsed_response) do
     changeset =
-      Singularity.LLMSchemas.LLMRequest.mark_completed_with_response(
+      Singularity.Schemas.LLMRequest.mark_completed_with_response(
         request,
         response,
         parsed_response
@@ -487,7 +487,7 @@ defmodule Singularity.SharedQueueConsumer do
 
   defp mark_request_failed(request, error_message) do
     changeset =
-      Singularity.LLMSchemas.LLMRequest.mark_failed(request, error_message)
+      Singularity.Schemas.LLMRequest.mark_failed(request, error_message)
 
     case Singularity.Repo.update(changeset) do
       {:ok, _updated_request} ->
@@ -507,7 +507,7 @@ defmodule Singularity.SharedQueueConsumer do
 
   defp mark_request_failed_llm_down(request, reason) do
     changeset =
-      Singularity.LLMSchemas.LLMRequest.mark_failed_llm_down(request, reason)
+      Singularity.Schemas.LLMRequest.mark_failed_llm_down(request, reason)
 
     case Singularity.Repo.update(changeset) do
       {:ok, _updated_request} ->
@@ -529,7 +529,7 @@ defmodule Singularity.SharedQueueConsumer do
 
   defp mark_request_failed_validation(request, response, validation_errors) do
     changeset =
-      Singularity.LLMSchemas.LLMRequest.mark_failed_malformed_response(
+      Singularity.Schemas.LLMRequest.mark_failed_malformed_response(
         request,
         response,
         validation_errors
@@ -560,7 +560,7 @@ defmodule Singularity.SharedQueueConsumer do
     }
 
     changeset =
-      Singularity.LLMSchemas.LLMRequest.mark_failed_malformed_response(
+      Singularity.Schemas.LLMRequest.mark_failed_malformed_response(
         request,
         response,
         [validation_error]

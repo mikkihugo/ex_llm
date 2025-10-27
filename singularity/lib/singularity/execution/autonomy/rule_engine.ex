@@ -161,7 +161,7 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
   Create cache key from rule and context.
   """
   def cache_key(rule_id, context_fingerprint) do
-    "moonshine:#{rule_id}:#{context_fingerprint}"
+    "rule_cache:#{rule_id}:#{context_fingerprint}"
   end
 
   @doc """

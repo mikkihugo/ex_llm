@@ -323,7 +323,8 @@
           (writeScriptBin "gemini-cli" ''
             #!${bash}/bin/bash
             echo "⚠️  'gemini-cli' is deprecated. Use 'gemini' instead."
-            exec gemini "$@"
+            # Call bunx directly to avoid any potential loops
+            exec bunx --yes @google/gemini-cli "$@"
           '')
 
           (writeScriptBin "codex" ''

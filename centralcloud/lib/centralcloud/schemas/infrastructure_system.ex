@@ -54,6 +54,21 @@ defmodule CentralCloud.Schemas.InfrastructureSystem do
     timestamps(type: :utc_datetime_usec)
   end
 
+  @type t() :: %__MODULE__{
+    id: binary() | nil,
+    name: String.t() | nil,
+    category: String.t() | nil,
+    description: String.t() | nil,
+    detection_patterns: [String.t()],
+    fields: map(),
+    source: String.t(),
+    confidence: float(),
+    last_validated_at: DateTime.t() | nil,
+    learned_at: DateTime.t() | nil,
+    inserted_at: DateTime.t() | nil,
+    updated_at: DateTime.t() | nil
+  }
+
   @doc """
   Build a changeset for creating or updating an infrastructure system.
 
@@ -64,7 +79,7 @@ defmodule CentralCloud.Schemas.InfrastructureSystem do
       iex> changeset(%InfrastructureSystem{}, %{"name" => "Kafka", "category" => "message_broker"})
       %Ecto.Changeset{...}
   """
-  @spec changeset(__MODULE__.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(system, attrs) do
     system
     |> cast(attrs, [

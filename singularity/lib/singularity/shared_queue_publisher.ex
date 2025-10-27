@@ -584,8 +584,8 @@ defmodule Singularity.SharedQueuePublisher do
 
     try do
       case Singularity.Repo.insert(
-             Singularity.Schemas.LLMSchemas.LLMRequest.changeset(
-               %Singularity.Schemas.LLMSchemas.LLMRequest{},
+             Singularity.Schemas.LLMRequest.changeset(
+               %Singularity.Schemas.LLMRequest{},
                attrs
              )
            ) do

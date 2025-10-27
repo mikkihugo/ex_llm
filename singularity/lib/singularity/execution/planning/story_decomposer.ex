@@ -1,12 +1,12 @@
 defmodule Singularity.Execution.Planning.StoryDecomposer do
   @moduledoc """
-  SPARC Framework Story Decomposer - Systematic user story breakdown via 5-phase LLM methodology.
+  Story Decomposer - Systematic user story breakdown via 5-phase code generation methodology.
 
-  Implements the SPARC methodology (Specification, Pseudocode, Architecture, Refinement, Completion)
+  Implements the 5-phase code generation workflow (Specification, Pseudocode, Architecture, Refinement, Completion)
   to decompose user stories into detailed technical specifications, implementation plans,
   and actionable tasks with fallback mechanisms for LLM reliability.
 
-  ## SPARC Phases (5-State Machine)
+  ## 5-Phase Code Generation Workflow
 
   1. **Specification** - Generate detailed technical requirements from user story
   2. **Pseudocode** - Create implementation algorithm logic and data structures
@@ -17,13 +17,13 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   ## Integration Points
 
   This module integrates with:
-  - `Singularity.LLM.Service` - LLM operations (Service.call_with_script/3 for SPARC phases)
-  - SPARC Lua scripts: `templates_data/prompt_library/sparc/decompose-*.lua`
+  - `Singularity.LLM.Service` - LLM operations (Service.call_with_script/3 for 5-phase workflow)
+  - Code generation Lua scripts: `templates_data/prompt_library/code_generation/decompose-*.lua`
   - PostgreSQL table: `story_decompositions` (stores decomposition results)
 
   ## Usage
 
-      # Decompose a user story using SPARC
+      # Decompose a user story using 5-phase code generation workflow
       {:ok, decomposition} = StoryDecomposer.decompose_story(%{
         description: "As a user, I want to authenticate with OAuth2",
         acceptance_criteria: ["User can login with Google", "Session is maintained"]
@@ -40,18 +40,18 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   ```json
   {
     "module": "Singularity.Execution.Planning.StoryDecomposer",
-    "purpose": "SPARC 5-phase story decomposition with LLM-driven systematic design",
+    "purpose": "5-phase code generation story decomposition with LLM-driven systematic design",
     "role": "planner",
     "layer": "execution_planning",
     "key_responsibilities": [
-      "Decompose user stories into 5 SPARC phases",
+      "Decompose user stories into 5-phase code generation workflow",
       "Generate specifications, pseudocode, architecture, refinement, tasks",
       "Coordinate LLM.Service calls with Lua script templates",
       "Produce actionable implementation tasks with clear requirements"
     ],
-    "prevents_duplicates": ["StoryBreakdown", "UserStoryDecomposer", "SPARCOrchestrator"],
+    "prevents_duplicates": ["StoryBreakdown", "UserStoryDecomposer", "CodeGenerationWorkflowOrchestrator"],
     "uses": ["LLM.Service", "Logger"],
-    "sparc_phases": ["Specification", "Pseudocode", "Architecture", "Refinement", "Completion"],
+    "code_generation_phases": ["Specification", "Pseudocode", "Architecture", "Refinement", "Completion"],
     "state_machine": "5-phase linear (spec → pseudo → arch → refine → tasks)"
   }
   ```

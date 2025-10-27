@@ -44,6 +44,6 @@ defmodule CentralCloud.Repo.Migrations.CreateModelLearningTables do
 
     # Fast lookups by complexity
     create index(:model_routing_metrics, [:complexity_level])
-    create index(:model_routing_metrics, [:usage_count, :desc: true])
+    create index(:model_routing_metrics, [desc: :usage_count])
   end
 end

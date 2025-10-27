@@ -178,8 +178,8 @@ defmodule Singularity.Application do
         Singularity.Architecture.InfrastructureRegistryCache,
 
         # Knowledge Services - Templates and code storage
-        # NOTE: Disabled - requires PGMQ which is not available in test mode
-        # Singularity.Knowledge.Supervisor,
+        # PGMQ is available - enabling Knowledge.Supervisor
+        Singularity.Knowledge.Supervisor,
 
         # Layer 4: Agents & Execution - Task execution and planning
         # Autonomy Rules - Confidence-based autonomous decision making
@@ -188,13 +188,18 @@ defmodule Singularity.Application do
         Singularity.Execution.Autonomy.RuleEngine,
         Singularity.Execution.Autonomy.RuleLoader,
 
+        # ML Training Pipelines - Broadway-based ML training orchestration
+        # Handles: Embedding training (Qodo + Jina), Code generation training, Model complexity training
+        # Uses PGMQ for task queuing and Broadway for pipeline orchestration
+        Singularity.ML.PipelineSupervisor,
+
         # Execution Planning - Work planning and task graphs
-        # NOTE: Disabled - requires unavailable infrastructure (PGMQ, Knowledge.Supervisor)
-        # Singularity.Execution.Planning.Supervisor,
+        # PGMQ and Knowledge.Supervisor are now available
+        Singularity.Execution.Planning.Supervisor,
 
         # SPARC Orchestration - Template-driven execution
-        # NOTE: Disabled - requires unavailable infrastructure
-        # Singularity.Execution.SPARC.Supervisor,
+        # PGMQ and Knowledge.Supervisor are now available
+        Singularity.Execution.SPARC.Supervisor,
 
         # Task Coordination - Todo/work item management
         # NOTE: Disabled - requires unavailable infrastructure

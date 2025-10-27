@@ -274,57 +274,26 @@ defmodule Singularity.Execution.TaskGraph.Worker do
     {:stop, :normal, state}
   end
 
-  defp build_task_prompt(todo) do
-    # Use template for task execution prompt
-    variables = %{
-      "title" => todo.title,
-      "description" => todo.description,
-      "context" => if(map_size(todo.context) > 0, do: true, else: false),
-      "context_json" => Jason.encode!(todo.context, pretty: true),
-      "tags" => if(length(todo.tags) > 0, do: true, else: false),
-      "tags_list" => Enum.join(todo.tags, ", "),
-      "priority_label" => priority_label(todo.priority),
-      "complexity" => todo.complexity
-    }
-
-    case Singularity.Knowledge.TemplateService.render_template_with_solid(
-           "todos/execute-task.hbs",
-           variables
-         ) do
-      {:ok, rendered} ->
-        rendered
-
-      {:error, reason} ->
-        Logger.warning("Template rendering failed, using fallback",
-          template: "todos/execute-task.hbs",
-          reason: reason
-        )
-
-        # Fallback to inline prompt
-        """
-        # Task: #{todo.title}
-
-        #{todo.description || "No description provided"}
-
-        **Priority:** #{priority_label(todo.priority)}
-        **Complexity:** #{todo.complexity}
-
-        Please complete this task.
-        """
-    end
-  end
 
   defp map_complexity("simple"), do: :simple
   defp map_complexity("medium"), do: :medium
   defp map_complexity("complex"), do: :complex
   defp map_complexity(_), do: :medium
 
-  defp priority_label(1), do: "Critical"
-  defp priority_label(2), do: "High"
-  defp priority_label(3), do: "Medium"
-  defp priority_label(4), do: "Low"
-  defp priority_label(5), do: "Backlog"
-  defp priority_label(_), do: "Unknown"
+  defp priority_label(priority) do
+    case priority do
+      :low -> "Low"
+      :medium -> "Medium"
+      :high -> "High"
+      :critical -> "Critical"
+      1 -> "Critical"
+      2 -> "High"
+      3 -> "Medium"
+      4 -> "Low"
+      5 -> "Backlog"
+      _ -> "Unknown"
+    end
+  end
 
   defp format_error(error) when is_binary(error), do: error
   defp format_error(error), do: inspect(error)

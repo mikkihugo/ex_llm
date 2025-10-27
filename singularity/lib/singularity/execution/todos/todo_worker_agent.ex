@@ -279,45 +279,6 @@ defmodule Singularity.Execution.Todos.TodoWorkerAgent do
     {:stop, :normal, state}
   end
 
-  defp build_task_prompt(todo) do
-    # Use template for task execution prompt
-    variables = %{
-      "title" => todo.title,
-      "description" => todo.description,
-      "context" => if(map_size(todo.context) > 0, do: true, else: false),
-      "context_json" => Jason.encode!(todo.context, pretty: true),
-      "tags" => if(length(todo.tags) > 0, do: true, else: false),
-      "tags_list" => Enum.join(todo.tags, ", "),
-      "priority_label" => priority_label(todo.priority),
-      "complexity" => todo.complexity
-    }
-
-    case Singularity.Knowledge.TemplateService.render_template_with_solid(
-           "todos/execute-task.hbs",
-           variables
-         ) do
-      {:ok, rendered} ->
-        rendered
-
-      {:error, reason} ->
-        Logger.warning("Template rendering failed, using fallback",
-          template: "todos/execute-task.hbs",
-          reason: reason
-        )
-
-        # Fallback to inline prompt
-        """
-        # Task: #{todo.title}
-
-        #{todo.description || "No description provided"}
-
-        **Priority:** #{priority_label(todo.priority)}
-        **Complexity:** #{todo.complexity}
-
-        Please complete this task.
-        """
-    end
-  end
 
   defp map_complexity("simple"), do: :simple
   defp map_complexity("medium"), do: :medium
