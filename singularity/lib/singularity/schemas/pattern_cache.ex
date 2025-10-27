@@ -12,10 +12,10 @@ defmodule Singularity.Schemas.PatternCache do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "pattern_cache" do
-    field :pattern_key, :string, null: false
-    field :pattern_data, :string, null: false  # JSON-encoded pattern
-    field :instance_id, :string, null: false
-    field :expires_at, :utc_datetime, null: false
+    field :pattern_key, :string
+    field :pattern_data, :string  # JSON-encoded pattern
+    field :instance_id, :string
+    field :expires_at, :utc_datetime
     field :metadata, :map, default: %{}
 
     timestamps()

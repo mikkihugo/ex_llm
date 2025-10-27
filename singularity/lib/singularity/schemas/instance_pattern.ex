@@ -12,10 +12,10 @@ defmodule Singularity.Schemas.InstancePattern do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "instance_patterns" do
-    field :pattern_key, :string, null: false
-    field :instance_id, :string, null: false
-    field :confidence_score, :float, null: false
-    field :detected_at, :utc_datetime, null: false
+    field :pattern_key, :string
+    field :instance_id, :string
+    field :confidence_score, :float
+    field :detected_at, :utc_datetime
     field :metadata, :map, default: %{}
 
     timestamps()

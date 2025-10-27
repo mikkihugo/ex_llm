@@ -12,10 +12,10 @@ defmodule Singularity.Schemas.PatternConsensus do
   @primary_key {:pattern_key, :string, []}
   @foreign_key_type :binary_id
   schema "pattern_consensus" do
-    field :total_instances, :integer, null: false
-    field :average_confidence, :float, null: false
-    field :consensus_level, :string, null: false
-    field :updated_at, :utc_datetime, null: false
+    field :total_instances, :integer
+    field :average_confidence, :float
+    field :consensus_level, :string
+    field :updated_at, :utc_datetime
 
     timestamps()
   end
