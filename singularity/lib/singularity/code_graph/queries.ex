@@ -319,7 +319,7 @@ defmodule Singularity.CodeGraph.Queries do
       {:error, :no_path}
   """
   @spec shortest_path(module_id, module_id, keyword()) :: query_result()
-  def shortest_path(from_module_id, to_module_id, _opts \\ []) do
+  def shortest_path(from_module_id, to_module_id, opts \\ []) do
     max_depth = Keyword.get(opts, :max_depth, 10)
 
     query = """

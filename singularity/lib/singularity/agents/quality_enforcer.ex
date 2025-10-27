@@ -144,7 +144,7 @@ defmodule Singularity.Agents.QualityEnforcer do
   @doc """
   Start the Quality Enforcer agent.
   """
-  def start_link(_opts \\ []) do
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 

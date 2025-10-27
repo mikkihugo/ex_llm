@@ -154,7 +154,7 @@ defmodule Singularity.CodeGraph.AGEQueries do
   """
   @spec forward_dependencies(String.t(), list()) ::
           {:ok, list(map())} | {:error, String.t()}
-  def forward_dependencies(module_name, _opts \\ []) do
+  def forward_dependencies(module_name, opts \\ []) do
     limit = Keyword.get(opts, :limit, 1000)
     max_depth = Keyword.get(opts, :max_depth, 100)
 
@@ -200,7 +200,7 @@ defmodule Singularity.CodeGraph.AGEQueries do
   """
   @spec reverse_callers(String.t(), list()) ::
           {:ok, list(map())} | {:error, String.t()}
-  def reverse_callers(module_name, _opts \\ []) do
+  def reverse_callers(module_name, opts \\ []) do
     limit = Keyword.get(opts, :limit, 1000)
     max_depth = Keyword.get(opts, :max_depth, 100)
 
@@ -335,7 +335,7 @@ defmodule Singularity.CodeGraph.AGEQueries do
   """
   @spec impact_analysis(String.t(), list()) ::
           {:ok, list(map())} | {:error, String.t()}
-  def impact_analysis(module_name, _opts \\ []) do
+  def impact_analysis(module_name, opts \\ []) do
     limit = Keyword.get(opts, :limit, 50)
 
     query = """

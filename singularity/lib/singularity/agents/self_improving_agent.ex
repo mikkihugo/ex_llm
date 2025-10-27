@@ -156,14 +156,14 @@ defmodule Singularity.SelfImprovingAgent do
   def child_spec(opts) do
     %{
       id: Keyword.get(opts, :id, make_id()),
-      start: {__MODULE__, :start_link, [_opts]},
+      start: {__MODULE__, :start_link, [opts]},
       restart: :transient,
       shutdown: 10_000
     }
   end
 
   def start_link(opts) do
-    id = _opts |> Keyword.get(:id, make_id()) |> to_string()
+    id = opts |> Keyword.get(:id, make_id()) |> to_string()
     name = via_tuple(id)
     GenServer.start_link(__MODULE__, Keyword.put(opts, :id, id), name: name)
   end
@@ -269,8 +269,8 @@ defmodule Singularity.SelfImprovingAgent do
   documentation upgrades across all source files.
   """
   @spec upgrade_documentation(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def upgrade_documentation(file_path, _opts \\ []) do
-    DocUpgrader.upgrade_documentation(file_path, _opts)
+  def upgrade_documentation(file_path, opts \\ []) do
+    DocUpgrader.upgrade_documentation(file_path, opts)
   end
 
   @doc """
@@ -294,7 +294,7 @@ defmodule Singularity.SelfImprovingAgent do
     state = %{
       id: id,
       version: 1,
-      context: Map.new(_opts),
+      context: Map.new(opts),
       metrics: %{},
       status: :idle,
       cycles: 0,
