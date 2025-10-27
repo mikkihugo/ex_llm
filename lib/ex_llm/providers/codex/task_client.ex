@@ -110,7 +110,12 @@ defmodule ExLLM.Providers.Codex.TaskClient do
         ]
 
   @doc """
-  Create a new Codex task and optionally wait for completion.
+  Create a new Codex task (Async Request-Reply Pattern - Step 1/2).
+
+  **Async Pattern:** This function returns immediately with a task ID.
+  Use `poll_task/2` to check for completion.
+
+  **HTTP:** `POST /wham/tasks` → 202 Accepted (task submitted)
 
   ## Arguments
 
@@ -124,29 +129,23 @@ defmodule ExLLM.Providers.Codex.TaskClient do
   - `:model` - Model ID (default: "gpt-5-codex")
   - `:qa_mode` - Run in QA mode (default: false)
   - `:best_of_n` - Number of attempts (default: 1)
-  - `:poll_interval_ms` - Polling interval (default: 3000ms)
-  - `:max_attempts` - Max poll attempts (default: 30)
-  - `:timeout_ms` - Total timeout (default: 120000ms)
 
   ## Returns
 
-  - `{:ok, task_id}` - Task created successfully
-  - `{:error, reason}` - Creation failed
+  - `{:ok, task_id}` - Task submitted successfully ✓
+  - `{:error, reason}` - Submission failed
 
   ## Examples
 
+      iex> # Step 1: Submit task (returns immediately)
       iex> {:ok, task_id} = create_task(
       ...>   environment_id: "mikkihugo/singularity-incubation",
       ...>   branch: "main",
       ...>   prompt: "Add dark mode support"
       ...> )
 
-      iex> {:ok, task_id, response} = create_task(
-      ...>   environment_id: "owner/repo",
-      ...>   branch: "main",
-      ...>   prompt: "Add feature",
-      ...>   wait_for_completion: true
-      ...> )
+      iex> # Step 2: Poll for results
+      iex> {:ok, response} = poll_task(task_id, max_attempts: 60)
   """
   @spec create_task(create_opts()) :: {:ok, String.t()} | {:error, term()}
   def create_task(opts) when is_list(opts) do
@@ -194,13 +193,16 @@ defmodule ExLLM.Providers.Codex.TaskClient do
   end
 
   @doc """
-  Poll a task for completion.
+  Poll a task for completion (Async Request-Reply Pattern - Step 2/2).
 
-  Continuously polls the task endpoint until completion or timeout.
+  **Async Pattern:** Continuously polls the task endpoint until completion or timeout.
+  Call after `create_task/1` to wait for results.
+
+  **HTTP:** `GET /wham/tasks/{task_id}` → 200 OK with status
 
   ## Arguments
 
-  - `task_id` - Task ID from task creation
+  - `task_id` - Task ID from `create_task/1`
   - `opts` - Polling options
 
   ## Options
@@ -211,12 +213,13 @@ defmodule ExLLM.Providers.Codex.TaskClient do
 
   ## Returns
 
-  - `{:ok, response}` - Task completed, response returned
+  - `{:ok, response}` - Task completed with response ✓
   - `{:error, reason}` - Polling failed or timed out
 
   ## Example
 
-      iex> {:ok, response} = poll_task("task_e_...", max_attempts: 30)
+      iex> # Poll until completion (blocks)
+      iex> {:ok, response} = poll_task("task_e_...", max_attempts: 60)
       iex> response["current_assistant_turn"]["turn_status"]
       "completed"
   """
