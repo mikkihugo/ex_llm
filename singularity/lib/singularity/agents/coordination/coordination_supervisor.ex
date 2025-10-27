@@ -26,7 +26,10 @@ defmodule Singularity.Agents.Coordination.CoordinationSupervisor do
       {Singularity.Agents.Coordination.CapabilityRegistry, []},
 
       # LearningFeedback - periodically sync learned success rates to routing system
-      {Singularity.Agents.Coordination.LearningFeedback, []}
+      {Singularity.Agents.Coordination.LearningFeedback, []},
+
+      # CentralCloudSyncWorker - periodically push/pull capabilities across instances
+      {Singularity.Agents.Coordination.CentralCloudSyncWorker, []}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

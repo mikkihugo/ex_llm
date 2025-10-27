@@ -40,6 +40,13 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
   """
 
   require Logger
+  alias Singularity.Agents.Coordination.{CapabilityRegistry, AgentCapability}
+  alias Singularity.Jobs.PgmqClient
+  alias Singularity.Repo
+
+  @centralcloud_push_queue "centralcloud_updates"
+  @centralcloud_poll_queue "centralcloud_responses"
+  @instance_id System.get_env("SINGULARITY_INSTANCE_ID", "instance_default")
 
   @doc """
   Sync capabilities with CentralCloud.
@@ -52,8 +59,8 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
   def sync_with_centralcloud do
     case fetch_aggregated_capabilities() do
       {:ok, aggregated_caps} ->
-        merge_into_registry(aggregated_caps)
-        log_sync_success(aggregated_caps)
+        merged_count = merge_into_registry(aggregated_caps)
+        log_sync_success(aggregated_caps, merged_count)
 
       {:error, reason} ->
         Logger.info("[CentralCloudSync] CentralCloud unavailable (graceful degradation)",
@@ -69,14 +76,12 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
   with the aggregation service for cross-instance learning.
   """
   def push_local_capabilities do
-    alias Singularity.Agents.Coordination.CapabilityRegistry
-
     try do
       capabilities = CapabilityRegistry.all_agents()
       push_to_centralcloud(capabilities)
     rescue
       e ->
-        Logger.warn("[CentralCloudSync] Failed to push capabilities",
+        Logger.warning("[CentralCloudSync] Failed to push capabilities",
           error: inspect(e)
         )
     end
@@ -85,40 +90,217 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
   # Private
 
   defp fetch_aggregated_capabilities do
-    # Placeholder - connects to CentralCloud service
-    case centralcloud_available?() do
-      true ->
-        # TODO: Implement NATS/HTTP call to CentralCloud aggregation service
-        {:ok, %{}}
-
-      false ->
-        {:error, :centralcloud_unavailable}
+    # Ensure queues exist
+    with :ok <- ensure_queues(),
+         # Poll for messages from CentralCloud (other instances' aggregated learnings)
+         {:ok, messages} <- poll_responses() do
+      # Aggregate messages into capability maps
+      aggregated = aggregate_messages(messages)
+      {:ok, aggregated}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp centralcloud_available? do
-    # Check if CentralCloud service is running
-    # For now, return false (feature flag)
-    false
+  defp ensure_queues do
+    try do
+      PgmqClient.ensure_queue(@centralcloud_push_queue)
+      PgmqClient.ensure_queue(@centralcloud_poll_queue)
+      :ok
+    rescue
+      _ -> {:error, :queue_creation_failed}
+    end
   end
 
-  defp push_to_centralcloud(_capabilities) do
-    # TODO: Implement NATS/HTTP push to CentralCloud
-    :ok
+  defp poll_responses do
+    try do
+      # Read up to 10 aggregated capability updates from other instances
+      messages = PgmqClient.read_messages(@centralcloud_poll_queue, 10)
+
+      # Acknowledge messages after reading (they'll be deleted)
+      Enum.each(messages, fn {msg_id, _body} ->
+        PgmqClient.ack_message(@centralcloud_poll_queue, msg_id)
+      end)
+
+      {:ok, messages}
+    rescue
+      e ->
+        Logger.debug("[CentralCloudSync] Error polling responses",
+          error: inspect(e)
+        )
+
+        {:error, :poll_failed}
+    end
   end
 
-  defp merge_into_registry(_aggregated_caps) do
-    # TODO: Merge aggregated capabilities into CapabilityRegistry
-    # Weighted by:
-    # - Success rate from other instances
-    # - Sample size (confidence)
-    # - Recency
-    :ok
+  defp aggregate_messages(messages) do
+    # Convert pgmq messages to aggregated capability map
+    # Format: {message_id, %{"agent" => name, "domains" => [...], "success_rate" => 0.95, ...}}
+    messages
+    |> Enum.map(fn {_msg_id, body} ->
+      case Jason.decode(body) do
+        {:ok, data} -> data
+        {:error, _} -> nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.reduce(%{}, fn capability, acc ->
+      agent_name = capability["agent"]
+
+      if agent_name do
+        # Store with metadata for weighted merging
+        Map.put(acc, agent_name, %{
+          "domains" => capability["domains"] || [],
+          "success_rate" => capability["success_rate"] || 0.0,
+          "sample_size" => capability["sample_size"] || 0,
+          "updated_at" => capability["updated_at"],
+          "instance_id" => capability["instance_id"],
+          "complexity_level" => capability["complexity_level"]
+        })
+      else
+        acc
+      end
+    end)
   end
 
-  defp log_sync_success(aggregated) do
+  defp push_to_centralcloud(capabilities) do
+    try do
+      # Prepare message with current instance's capabilities
+      message = %{
+        "instance_id" => @instance_id,
+        "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "capabilities" =>
+          Enum.map(capabilities, fn cap ->
+            %{
+              "agent" => Atom.to_string(cap.name),
+              "role" => Atom.to_string(cap.role),
+              "domains" => Enum.map(cap.domains, &Atom.to_string/1),
+              "success_rate" => cap.success_rate,
+              "complexity_level" => Atom.to_string(cap.complexity_level),
+              "availability" => cap.availability
+            }
+          end)
+      }
+
+      # Publish to CentralCloud
+      case Jason.encode(message) do
+        {:ok, json_body} ->
+          PgmqClient.send_message(@centralcloud_push_queue, json_body)
+
+          Logger.info("[CentralCloudSync] Pushed local capabilities to CentralCloud",
+            capability_count: length(capabilities),
+            instance_id: @instance_id
+          )
+
+        {:error, encode_error} ->
+          Logger.warning("[CentralCloudSync] Failed to encode capabilities",
+            error: inspect(encode_error)
+          )
+      end
+    rescue
+      e ->
+        Logger.warning("[CentralCloudSync] Exception pushing capabilities",
+          error: inspect(e)
+        )
+    end
+  end
+
+  defp merge_into_registry(aggregated_caps) when is_map(aggregated_caps) do
+    # Only merge if we have data from other instances
+    if map_size(aggregated_caps) == 0 do
+      Logger.debug("[CentralCloudSync] No aggregated capabilities to merge")
+      0
+    else
+      # For each aggregated capability, compute weighted score and update if beneficial
+      merged_count =
+        Enum.reduce(aggregated_caps, 0, fn {agent_name_str, cross_instance_data}, count ->
+          # Convert agent name back to atom
+          agent_name = String.to_atom(agent_name_str)
+
+          # Get current capability from local registry
+          case CapabilityRegistry.get_capability(agent_name) do
+            {:ok, local_cap} ->
+              # Compute confidence weight based on sample size and recency
+              confidence = calculate_confidence(cross_instance_data)
+
+              # Weighted averaging: prefer local learnings for now, blend cross-instance insights
+              # Weight: 70% local, 30% cross-instance (conservative blending)
+              new_success_rate =
+                (local_cap.success_rate * 0.7) + (cross_instance_data["success_rate"] * 0.3 * confidence)
+
+              # Update registry with blended rate
+              case CapabilityRegistry.update_success_rate(agent_name, new_success_rate) do
+                :ok ->
+                  Logger.debug("[CentralCloudSync] Updated agent success rate",
+                    agent: agent_name,
+                    previous_rate: Float.round(local_cap.success_rate, 3),
+                    new_rate: Float.round(new_success_rate, 3),
+                    confidence: Float.round(confidence, 2)
+                  )
+
+                  count + 1
+
+                {:error, reason} ->
+                  Logger.warning("[CentralCloudSync] Failed to update agent",
+                    agent: agent_name,
+                    reason: inspect(reason)
+                  )
+
+                  count
+              end
+
+            {:error, :not_found} ->
+              # Agent not registered locally - skip (don't auto-register unknown agents)
+              Logger.debug("[CentralCloudSync] Cross-instance agent not found locally",
+                agent: agent_name
+              )
+
+              count
+          end
+        end)
+
+      merged_count
+    end
+  end
+
+  defp calculate_confidence(cross_instance_data) do
+    # Confidence score (0.0-1.0) based on:
+    # 1. Sample size: more executions = higher confidence
+    # 2. Recency: recent updates = higher confidence
+
+    sample_size = cross_instance_data["sample_size"] || 0
+    updated_at_str = cross_instance_data["updated_at"]
+
+    # Sample size confidence: assume 50+ samples = max confidence
+    sample_confidence = min(1.0, sample_size / 50)
+
+    # Recency confidence: updates within last 24 hours = full confidence
+    recency_confidence =
+      if updated_at_str do
+        case DateTime.from_iso8601(updated_at_str) do
+          {:ok, update_time, _offset} ->
+            now = DateTime.utc_now()
+            seconds_old = DateTime.diff(now, update_time)
+            hours_old = seconds_old / 3600
+
+            # Linear decay: 24 hours = 1.0, 168 hours (1 week) = 0.0
+            min(1.0, max(0.0, 1.0 - hours_old / 168))
+
+          {:error, _} ->
+            0.5  # Default if parsing fails
+        end
+      else
+        0.5  # Default if no timestamp
+      end
+
+    # Weighted average: 60% sample size, 40% recency
+    sample_confidence * 0.6 + recency_confidence * 0.4
+  end
+
+  defp log_sync_success(aggregated, merged_count) do
     Logger.info("[CentralCloudSync] Synced with CentralCloud",
       aggregated_insights: map_size(aggregated),
+      merged_capabilities: merged_count,
       timestamp: DateTime.utc_now()
     )
   end

@@ -79,7 +79,7 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
   @doc """
   Manually trigger fine-tuning (useful for testing)
   """
-  def schedule_now(_opts \\ []) do
+  def schedule_now(opts \\ []) do
     model = Keyword.get(opts, :model, :qodo)
     epochs = Keyword.get(opts, :epochs, 1)
     learning_rate = Keyword.get(opts, :learning_rate, 1.0e-5)

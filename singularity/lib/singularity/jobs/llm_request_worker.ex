@@ -34,7 +34,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   Returns: {:ok, request_id} or {:error, reason}
   """
   @spec enqueue_llm_request(String.t(), list(map()), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def enqueue_llm_request(task_type, messages, _opts \\ []) do
+  def enqueue_llm_request(task_type, messages, opts \\ []) do
     request_id = Ecto.UUID.generate()
 
     args = %{
@@ -169,7 +169,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   """
   @spec await_responses_result(String.t(), keyword()) ::
     {:ok, map()} | {:error, :timeout | :not_found | :failed | term()}
-  def await_responses_result(request_id, _opts \\ []) do
+  def await_responses_result(opts \\ [])(request_id, _opts \\ []) do
     timeout_ms = Keyword.get(opts, :timeout_ms, 30000)
     poll_interval_ms = Keyword.get(opts, :poll_interval_ms, 100)
 

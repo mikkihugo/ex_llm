@@ -84,7 +84,7 @@ defmodule Singularity.Messaging.Client do
   This spawns a persistent listener process that consumes messages from
   the queue and handles them via a callback.
   """
-  def subscribe(subject, _opts \\ []) when is_binary(subject) do
+  def subscribe(subject, opts \\ []) when is_binary(subject) do
     queue_name = subject_to_queue(subject)
     handler = Keyword.get(opts, :handler, &default_handler/1)
     timeout = Keyword.get(opts, :timeout, 30000)
@@ -114,7 +114,7 @@ defmodule Singularity.Messaging.Client do
   Sends a message and waits for a response from the reply-to queue.
   Useful for synchronous RPC-style communication.
   """
-  def request(subject, message, _opts \\ []) when is_binary(subject) and is_binary(message) do
+  def request(subject, message, opts \\ []) when is_binary(subject) and is_binary(message) do
     timeout = Keyword.get(opts, :timeout, 5000)
     reply_subject = Keyword.get(opts, :reply_to, "#{subject}.replies")
     queue_name = subject_to_queue(subject)
@@ -140,8 +140,8 @@ defmodule Singularity.Messaging.Client do
     end
   end
 
-  def request(subject, message, _opts) when is_map(message) do
-    request(subject, Jason.encode!(message), _opts)
+  def request(subject, message, opts) when is_map(message) do
+    request(subject, Jason.encode!(message), opts)
   end
 
   # Private Helpers

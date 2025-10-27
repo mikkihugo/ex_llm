@@ -314,11 +314,11 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
   - `{:error, :circuit_open}` - Circuit is open, rejecting requests
   - `{:error, reason}` - Operation failed
   """
-  def call(circuit_name, fun, _opts \\ []) when is_function(fun, 0) do
+  def call(circuit_name, fun, opts \\ []) when is_function(fun, 0) do
     timeout_ms = Keyword.get(opts, :timeout_ms, @default_timeout_ms)
 
     # Ensure circuit breaker exists
-    ensure_circuit(circuit_name, _opts)
+    ensure_circuit(circuit_name, opts)
 
     case GenServer.call(via_tuple(circuit_name), :get_state, 5000) do
       :closed ->
@@ -503,16 +503,16 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
     {:via, Registry, {Singularity.Infrastructure.CircuitBreakerRegistry, name}}
   end
 
-  defp ensure_circuit(name, _opts) do
+  defp ensure_circuit(name, opts) do
     # Try to get the circuit, start if doesn't exist
     case Registry.lookup(Singularity.Infrastructure.CircuitBreakerRegistry, name) do
       [] ->
         # Start the circuit breaker
-        _opts = Keyword.put(opts, :name, name)
+        opts = Keyword.put(opts, :name, name)
 
         case DynamicSupervisor.start_child(
                Singularity.Infrastructure.CircuitBreakerSupervisor,
-               {__MODULE__, _opts}
+               {__MODULE__, opts}
              ) do
           {:ok, _pid} -> :ok
           {:error, {:already_started, _pid}} -> :ok

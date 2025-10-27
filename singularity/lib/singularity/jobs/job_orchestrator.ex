@@ -25,7 +25,7 @@ defmodule Singularity.Jobs.JobOrchestrator do
 
   ## Public API
 
-  - `enqueue(job_type, args, _opts)` - Enqueue a background job
+  - `enqueue(job_type, args, opts)` - Enqueue a background job
   - `get_job_status(job_type)` - Get execution statistics
   - `get_job_types_info/0` - List all configured job types
   - `enabled?(job_type)` - Check if job type is enabled
@@ -260,7 +260,7 @@ defmodule Singularity.Jobs.JobOrchestrator do
 
   `{:ok, job}` or `{:error, reason}`
   """
-  def enqueue(job_type, args \\ %{}, _opts \\ []) when is_atom(job_type) and is_map(args) do
+  def enqueue(job_type, args \\ %{}, opts \\ []) when is_atom(job_type) and is_map(args) do
     try do
       case JobType.get_job_module(job_type) do
         {:ok, module} ->
@@ -276,7 +276,7 @@ defmodule Singularity.Jobs.JobOrchestrator do
           case module.new(job_args) do
             %Oban.Job{} = job ->
               # Apply options
-              job = apply_job_options(job, _opts)
+              job = apply_job_options(job, opts)
               Logger.debug("Enqueueing job", job_type: job_type)
               Oban.insert(Repo, job)
 
@@ -413,7 +413,7 @@ defmodule Singularity.Jobs.JobOrchestrator do
 
   # Private helpers
 
-  defp apply_job_options(job, _opts) do
+  defp apply_job_options(job, opts) do
     job
     |> maybe_set_priority(Keyword.get(opts, :priority))
     |> maybe_set_scheduled_at(Keyword.get(opts, :scheduled_at))
