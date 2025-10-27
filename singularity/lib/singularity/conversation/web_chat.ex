@@ -51,6 +51,7 @@ defmodule Singularity.Conversation.WebChat do
   require Logger
 
   alias Singularity.Jobs.PgmqClient
+  alias Singularity.Conversation.MessageHistory
   alias Observer.HITL
 
   @pubsub_module Application.compile_env(:observer, :pubsub, Observer.PubSub)
@@ -72,6 +73,15 @@ defmodule Singularity.Conversation.WebChat do
         timestamp: DateTime.utc_now(),
         metadata: metadata
       }
+
+      # Store in message history
+      conversation_id = Map.get(metadata, :conversation_id, "global_notifications")
+      :ok = MessageHistory.add_message(conversation_id, %{
+        sender: :agent,
+        type: :notification,
+        content: message,
+        metadata: metadata
+      })
 
       # Publish via PubSub for real-time web UI updates
       Phoenix.PubSub.broadcast(
@@ -136,6 +146,18 @@ defmodule Singularity.Conversation.WebChat do
             "Approval request created #{request_id} (response queue: #{response_queue})"
           )
 
+          # Store in message history
+          :ok = MessageHistory.add_message(request_id, %{
+            sender: :agent,
+            type: :approval_request,
+            content: Map.get(data, :title, "Approval Request"),
+            metadata: %{
+              description: Map.get(data, :description, ""),
+              impact: Map.get(data, :impact, "medium"),
+              request_id: request_id
+            }
+          })
+
           # Publish approval event via pubsub for real-time web UI update
           Phoenix.PubSub.broadcast(
             @pubsub_module,
@@ -147,7 +169,7 @@ defmodule Singularity.Conversation.WebChat do
           :ok =
             notify(
               "⏳ Approval pending: #{Map.get(data, :title, 'Decision needed')}",
-              %{request_id: request_id, type: :approval}
+              %{request_id: request_id, type: :approval, conversation_id: request_id}
             )
 
           {:ok, Map.put(approval, :response_queue, response_queue)}
@@ -195,11 +217,23 @@ defmodule Singularity.Conversation.WebChat do
         {:ok, approval} ->
           Logger.info("Question request created #{request_id}")
 
+          # Store in message history
+          :ok = MessageHistory.add_message(request_id, %{
+            sender: :agent,
+            type: :question,
+            content: Map.get(data, :question, "Input needed"),
+            metadata: %{
+              context: Map.get(data, :context, %{}),
+              urgency: Map.get(data, :urgency, :normal),
+              request_id: request_id
+            }
+          })
+
           # Publish notification
           :ok =
             notify(
               "❓ Question: #{Map.get(data, :question, 'Input needed')}",
-              %{request_id: request_id, type: :question}
+              %{request_id: request_id, type: :question, conversation_id: request_id}
             )
 
           {:ok, Map.put(approval, :response_queue, response_queue)}
@@ -364,6 +398,26 @@ defmodule Singularity.Conversation.WebChat do
   @spec get_approval(String.t()) :: map() | nil
   def get_approval(request_id) do
     HITL.get_by_request_id(request_id)
+  end
+
+  @doc """
+  Get conversation message history.
+
+  Returns all messages for a conversation/approval from pgmq history.
+  """
+  @spec get_conversation_history(String.t()) :: {:ok, [map()]} | {:error, term()}
+  def get_conversation_history(request_id) when is_binary(request_id) do
+    MessageHistory.get_messages(request_id)
+  end
+
+  @doc """
+  Get conversation summary (metadata about the conversation).
+
+  Returns statistics about message count, participants, types, etc.
+  """
+  @spec get_conversation_summary(String.t()) :: {:ok, map()} | {:error, term()}
+  def get_conversation_summary(request_id) when is_binary(request_id) do
+    MessageHistory.get_summary(request_id)
   end
 
   @doc """

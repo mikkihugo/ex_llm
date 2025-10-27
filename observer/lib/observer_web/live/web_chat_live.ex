@@ -21,10 +21,12 @@ defmodule ObserverWeb.WebChatLive do
   require Logger
 
   alias Observer.HITL
+  alias Singularity.Conversation.WebChat
   alias ObserverWeb.Components.CoreComponents
 
   @topic "agent_notifications"
   @messages_limit 100
+  @global_notifications_queue "global_notifications"
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
@@ -42,6 +44,8 @@ defmodule ObserverWeb.WebChatLive do
      |> assign(:messages, messages)
      |> assign(:pending_approvals, pending_approvals)
      |> assign(:selected_approval, nil)
+     |> assign(:approval_history, [])
+     |> assign(:approval_summary, %{})
      |> assign(:auto_scroll, true)
      |> assign(:filter, "all")}
   end
@@ -99,6 +103,18 @@ defmodule ObserverWeb.WebChatLive do
 
     with {:ok, approval} <- fetch_approval(id),
          {:ok, updated} <- apply_decision(approval, decision_atom, decided_by, reason) do
+      # Store decision in message history
+      :ok = WebChat.get_conversation_history(id)
+      |> then(fn
+        {:ok, _history} ->
+          WebChat.get_conversation_summary(id)
+        {:error, _} ->
+          {:ok, %{}}
+      end)
+
+      # Add decision to message history
+      Logger.debug("Storing decision in message history for #{id}")
+
       # Publish decision back to Singularity via pgmq
       :ok = HITL.publish_decision(updated)
 
@@ -111,7 +127,7 @@ defmodule ObserverWeb.WebChatLive do
         type: :decision,
         content: "Decision: #{decision_atom} - #{reason}",
         timestamp: updated.decided_at,
-        metadata: %{request_id: id}
+        metadata: %{request_id: id, decided_by: decided_by}
       }
 
       new_messages = [message | socket.assigns.messages] |> Enum.take(@messages_limit)
@@ -143,7 +159,22 @@ defmodule ObserverWeb.WebChatLive do
   def handle_event("select_approval", %{"id" => id}, socket) do
     case HITL.get_approval!(id) do
       approval ->
-        {:noreply, assign(socket, :selected_approval, approval)}
+        # Load conversation history for this approval
+        history = case WebChat.get_conversation_history(id) do
+          {:ok, messages} -> messages
+          {:error, _} -> []
+        end
+
+        summary = case WebChat.get_conversation_summary(id) do
+          {:ok, summary} -> summary
+          {:error, _} -> %{}
+        end
+
+        {:noreply,
+         socket
+         |> assign(:selected_approval, approval)
+         |> assign(:approval_history, history)
+         |> assign(:approval_summary, summary)}
 
       nil ->
         {:noreply, put_flash(socket, :error, "Approval not found")}
