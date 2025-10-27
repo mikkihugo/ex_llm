@@ -211,7 +211,7 @@ defmodule Singularity.CodeGraph.Queries do
       ]}
   """
   @spec forward_dependencies(module_id, keyword()) :: query_result()
-  def forward_dependencies(module_id, _opts \\ []) do
+  def forward_dependencies(module_id, opts \\ []) do
     max_depth = Keyword.get(opts, :max_depth, 10)
 
     query = """
@@ -265,7 +265,7 @@ defmodule Singularity.CodeGraph.Queries do
       ]}
   """
   @spec reverse_callers(module_id, keyword()) :: query_result()
-  def reverse_callers(module_id, _opts \\ []) do
+  def reverse_callers(module_id, opts \\ []) do
     max_depth = Keyword.get(opts, :max_depth, 10)
 
     query = """
@@ -373,7 +373,7 @@ defmodule Singularity.CodeGraph.Queries do
       ]}
   """
   @spec find_cycles(keyword()) :: query_result()
-  def find_cycles(opts \\ [])(_opts \\ []) do
+  def find_cycles(opts \\ []) do
     max_depth = Keyword.get(opts, :max_depth, 5)
 
     query = """
@@ -428,7 +428,7 @@ defmodule Singularity.CodeGraph.Queries do
       ]}
   """
   @spec impact_analysis(module_id, keyword()) :: query_result()
-  def impact_analysis(module_id, _opts \\ []) do
+  def impact_analysis(module_id, opts \\ []) do
     max_depth = Keyword.get(opts, :max_depth, 5)
 
     query = """
@@ -489,7 +489,7 @@ defmodule Singularity.CodeGraph.Queries do
       }}
   """
   @spec dependency_stats(module_id, keyword()) :: query_result()
-  def dependency_stats(module_id, _opts \\ []) do
+  def dependency_stats(module_id, opts \\ []) do
     max_depth = Keyword.get(opts, :max_depth, 10)
 
     forward_query = """

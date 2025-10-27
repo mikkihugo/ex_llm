@@ -429,7 +429,7 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
   - Repos with highest quality code
   """
   @spec analyze_best_practices(keyword()) :: {:ok, map()} | {:error, term()}
-  def analyze_best_practices(_opts \\ []) do
+  def analyze_best_practices(opts \\ [])(_opts \\ []) do
     language = Keyword.get(opts, :language)
 
     query = """

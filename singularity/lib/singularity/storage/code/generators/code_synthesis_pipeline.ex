@@ -113,7 +113,7 @@ defmodule Singularity.CodeSynthesisPipeline do
       generate("Add handler", path: "rust/api_server/src/handler.rs")
       # → Detects: Rust, Axum, suggests async fn
   """
-  def generate(task, _opts \\ []) do
+  def generate(task, opts \\ []) do
     start = System.monotonic_time(:millisecond)
     path = Keyword.get(opts, :path)
     fast_mode = Keyword.get(opts, :fast_mode, true)

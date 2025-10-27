@@ -233,7 +233,6 @@ defmodule Singularity.Tools.ToolSelector do
   """
   def recommend_tools(task_description, context \\ %{}) do
     # Analyze task
-    keywords = extract_keywords(task_description)
     matching_workflows = find_matching_workflows(task_description)
 
     # Get role recommendation

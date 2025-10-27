@@ -83,7 +83,7 @@ defmodule Singularity.PseudocodeGenerator do
 
   Target: <500ms total
   """
-  def generate(task, _opts \\ []) do
+  def generate(task, opts \\ []) do
     start = System.monotonic_time(:millisecond)
     path = Keyword.get(opts, :path)
 

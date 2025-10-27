@@ -199,9 +199,12 @@ defmodule Singularity.Application do
         # NOTE: Disabled - requires unavailable infrastructure
         # Singularity.Execution.Todos.Supervisor,
 
+        # Agent Coordination - Task routing and execution coordination
+        # Routes tasks to best-fit agents based on capabilities
+        Singularity.Agents.Coordination.CoordinationSupervisor,
+
         # Agents Management - Agent lifecycle and supervision
-        # NOTE: Disabled - requires unavailable infrastructure
-        # Singularity.Agents.Supervisor,
+        Singularity.Agents.Supervisor,
 
         # Layer 5: Domain Supervisors - Domain-specific supervision trees
         # ArchitectureEngine.MetaRegistry.Supervisor - Requires pgmq (not available in test mode)

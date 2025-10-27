@@ -328,7 +328,6 @@ defmodule Singularity.Tools.ValidatedCodeGeneration do
   def code_generate_validated(%{"task" => task} = args, context) do
     language = Map.get(args, "language", "elixir")
     quality = Map.get(args, "quality", "production")
-    context_str = Map.get(args, "context", "")
 
     with :ok <- validate_language(language),
          :ok <- validate_quality(quality),
@@ -345,7 +344,7 @@ defmodule Singularity.Tools.ValidatedCodeGeneration do
     end
   end
 
-  def code_generate_validated(args, _context) do
+  def code_generate_validated(_args, _context) do
     {:error, "Missing required parameter: task"}
   end
 
@@ -376,7 +375,7 @@ defmodule Singularity.Tools.ValidatedCodeGeneration do
     end
   end
 
-  def code_iterate_validated(args, _context) do
+  def code_iterate_validated(_args, _context) do
     {:error, "Missing required parameter: task"}
   end
 

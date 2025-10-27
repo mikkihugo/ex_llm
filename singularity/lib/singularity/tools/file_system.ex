@@ -27,7 +27,6 @@ defmodule Singularity.Tools.FileSystem do
   alias Singularity.Schemas.Tools.Tool
   alias Singularity.HITL.ApprovalService
   require Logger
-  import Logger
 
   # 10MB max file size
   @max_read_size 10_000_000
@@ -201,6 +200,7 @@ defmodule Singularity.Tools.FileSystem do
   def file_read(%{"path" => path} = args, _ctx) do
     with {:ok, safe_path} <- validate_path(path),
          {:ok, file_info} <- File.stat(safe_path),
+         :ok <- check_file_size(file_info.size),
          {:ok, content} <- File.read(safe_path) do
       # Optionally limit lines
       final_content =
@@ -411,7 +411,7 @@ defmodule Singularity.Tools.FileSystem do
     end
   end
 
-  defp maybe_backup_file(path, "append") do
+  defp maybe_backup_file(_path, "append") do
     # For append mode, we don't need to backup since we're not overwriting
     :ok
   end

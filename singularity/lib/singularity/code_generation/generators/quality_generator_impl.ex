@@ -21,18 +21,18 @@ defmodule Singularity.CodeGeneration.Generators.QualityGenerator do
   end
 
   @impl true
-  def generate(spec, _opts \\ []) when is_map(spec) do
+  def generate(spec, opts \\ []) when is_map(spec) do
     try do
       # QualityCodeGenerator.generate expects keyword list with task, language, quality options
-      merged_opts =
-        _opts ++
+      mergedopts =
+        opts ++
           [
             task: Map.get(spec, "task") || Map.get(spec, :task, ""),
             language: Map.get(spec, "language") || Map.get(spec, :language, "elixir"),
             quality: Map.get(spec, "quality") || Map.get(spec, :quality, :production)
           ]
 
-      QualityCodeGenerator.generate(merged_opts)
+      QualityCodeGenerator.generate(mergedopts)
     rescue
       e ->
         Logger.error("Quality code generation failed", error: inspect(e))

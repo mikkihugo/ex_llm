@@ -448,7 +448,7 @@ defmodule Singularity.Tools.ProcessSystem do
   defp process_list_impl(pattern, user, include_stats, limit, sort_by) do
     try do
       # Build ps command
-      cmd = build_ps_command(pattern, user, include_stats, sort_by)
+      cmd = build_ps_command(pattern, user, include_stats)
 
       # Execute command
       {output, exit_code} = System.cmd("sh", ["-c", cmd], stderr_to_stdout: true)
@@ -943,7 +943,7 @@ defmodule Singularity.Tools.ProcessSystem do
     |> Enum.into(%{})
   end
 
-  defp build_ps_command(pattern, user, include_stats, sort_by) do
+  defp build_ps_command(pattern, user, include_stats) do
     cmd = "ps aux"
     cmd = if pattern, do: "#{cmd} | grep '#{pattern}'", else: cmd
     cmd = if user, do: "#{cmd} | grep '#{user}'", else: cmd
@@ -1291,15 +1291,25 @@ defmodule Singularity.Tools.ProcessSystem do
   end
 
   defp build_service_command(action, service, force) do
-    case action do
-      "start" -> "systemctl start #{service}"
-      "stop" -> "systemctl stop #{service}"
-      "restart" -> "systemctl restart #{service}"
-      "status" -> "systemctl status #{service}"
-      "enable" -> "systemctl enable #{service}"
-      "disable" -> "systemctl disable #{service}"
-      _ -> "echo 'Unknown action: #{action}'"
-    end
+    base =
+      case action do
+        "start" -> {"systemctl", ["start", service]}
+        "stop" -> {"systemctl", ["stop", service]}
+        "restart" -> {"systemctl", ["restart", service]}
+        "status" -> {"systemctl", ["status", service]}
+        "enable" -> {"systemctl", ["enable", service]}
+        "disable" -> {"systemctl", ["disable", service]}
+        _ -> {"echo", ["'Unknown action: #{action}'"]}
+      end
+
+    build_command(base, force)
+  end
+
+  defp build_command({"echo", args}, _force), do: Enum.join(["echo" | args], " ")
+
+  defp build_command({"systemctl", args}, force) do
+    options = if force, do: ["--force"], else: []
+    Enum.join(["systemctl" | options ++ args], " ")
   end
 
   defp parse_service_output(output, action) do

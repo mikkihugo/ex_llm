@@ -326,7 +326,7 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
   - Tests
   """
   @spec enforce_quality(String.t(), keyword()) :: {:ok, generation_result()} | {:error, term()}
-  def enforce_quality(code, _opts \\ []) do
+  def enforce_quality(code, opts \\ []) do
     language = Keyword.get(opts, :language, "elixir")
     quality = Keyword.get(opts, :quality, :standard)
 

@@ -197,7 +197,27 @@ defmodule Singularity.Agents.CostOptimizedAgent do
       specialization: state.specialization
     )
 
-    {:ok, state}
+    {:ok, state, {:continue, :register}}
+  end
+
+  @impl true
+  def handle_continue(:register, state) do
+    # Register with coordination router
+    alias Singularity.Agents.Coordination.AgentRegistration
+
+    AgentRegistration.register_agent(:cost_optimized_agent, %{
+      role: :cost_optimize,
+      domains: [:code_quality, :performance, :refactoring],
+      input_types: [:code, :metrics, :design],
+      output_types: [:code, :decision, :analysis],
+      complexity_level: :medium,
+      estimated_cost: 200,
+      success_rate: 0.90,
+      tags: [:cost_efficient, :rule_based, :async_safe],
+      metadata: %{"version" => "2.1.0"}
+    })
+
+    {:noreply, state}
   end
 
   @impl true

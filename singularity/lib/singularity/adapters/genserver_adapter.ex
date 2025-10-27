@@ -35,7 +35,7 @@ defmodule Singularity.Adapters.GenServerAdapter do
   end
 
   @impl Singularity.Execution.TaskAdapter
-  def execute(task, _opts \\ []) do
+  def execute(task, opts \\ []) do
     Logger.debug("GenServer adapter: Executing task", task_type: task[:type])
 
     # Extract task details
@@ -49,10 +49,14 @@ defmodule Singularity.Adapters.GenServerAdapter do
       {:ok, agent_pid} ->
         # Execute task in agent
         try do
-          Agent.get_and_update(agent_pid, fn state ->
-            result = execute_task(task_type, args)
-            {result, state}
-          end)
+          Agent.get_and_update(
+            agent_pid,
+            fn state ->
+              result = execute_task(task_type, args)
+              {result, state}
+            end,
+            timeout
+          )
 
           Logger.debug("GenServer adapter: Task executed",
             task_type: task_type,

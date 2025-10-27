@@ -147,7 +147,7 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
 
   """
   @spec generate(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def generate(task, _opts \\ []) do
+  def generate(task, opts \\ []) do
     method = Keyword.get(opts, :method, :auto)
     language = Keyword.get(opts, :language, "elixir")
     quality = Keyword.get(opts, :quality, :production)

@@ -111,7 +111,7 @@ defmodule Singularity.CodeGeneration.Orchestrator.GenerationOrchestrator do
 
   `{:ok, %{generator_type => result}}` or `{:error, reason}`
   """
-  def generate(spec, _opts \\ []) when is_map(spec) do
+  def generate(spec, opts \\ []) when is_map(spec) do
     try do
       enabled_generators = GeneratorType.load_enabled_generators()
 
@@ -128,7 +128,7 @@ defmodule Singularity.CodeGeneration.Orchestrator.GenerationOrchestrator do
       results =
         generators_to_use
         |> Enum.map(fn {gen_type, gen_config} ->
-          Task.async(fn -> run_generator(gen_type, gen_config, spec, _opts) end)
+          Task.async(fn -> run_generator(gen_type, gen_config, spec, opts) end)
         end)
         |> Enum.map(&Task.await/1)
         |> Enum.into(%{})
@@ -165,13 +165,13 @@ defmodule Singularity.CodeGeneration.Orchestrator.GenerationOrchestrator do
 
   # Private helpers
 
-  defp run_generator(gen_type, gen_config, spec, _opts) do
+  defp run_generator(gen_type, gen_config, spec, opts) do
     try do
       module = gen_config[:module]
 
       if module && Code.ensure_loaded?(module) do
         Logger.debug("Running #{gen_type} generator")
-        result = module.generate(spec, _opts)
+        result = module.generate(spec, opts)
         {gen_type, result}
       else
         Logger.warning("Generator module not found for #{gen_type}")

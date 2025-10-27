@@ -203,7 +203,27 @@ defmodule Singularity.Agents.QualityEnforcer do
       templates_loaded: map_size(state.templates)
     })
 
-    {:ok, state}
+    {:ok, state, {:continue, :register}}
+  end
+
+  @impl true
+  def handle_continue(:register, state) do
+    # Register with coordination router
+    alias Singularity.Agents.Coordination.AgentRegistration
+
+    AgentRegistration.register_agent(:quality_enforcer, %{
+      role: :quality_enforcer,
+      domains: [:code_quality, :documentation, :testing],
+      input_types: [:code, :codebase],
+      output_types: [:analysis, :documentation],
+      complexity_level: :medium,
+      estimated_cost: 300,
+      success_rate: 0.92,
+      tags: [:async_safe, :idempotent, :deterministic],
+      metadata: %{"version" => "2.2.0"}
+    })
+
+    {:noreply, state}
   end
 
   @impl true

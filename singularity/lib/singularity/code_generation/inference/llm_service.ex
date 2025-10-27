@@ -45,7 +45,7 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
   """
 
   require Logger
-  alias Singularity.CodeGeneration.{ModelLoader, Generator}
+  alias Singularity.CodeGeneration.ModelLoader
 
   @models %{
     codellama_7b: %{
@@ -80,7 +80,7 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
   - `:top_p` - Nucleus sampling parameter (default: 0.9)
   - `:top_k` - Top-k sampling (default: 50)
   """
-  def generate(prompt, _opts \\ []) when is_binary(prompt) do
+  def generate(prompt, opts \\ []) when is_binary(prompt) do
     model = Keyword.get(opts, :model, :codellama_7b)
     device = Keyword.get(opts, :device, :cuda)
     max_tokens = Keyword.get(opts, :max_tokens, 256)
@@ -99,7 +99,7 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
   @doc """
   Generate code for multiple prompts (batch)
   """
-  def generate_batch(prompts, _opts \\ []) when is_list(prompts) do
+  def generate_batch(prompts, opts \\ []) when is_list(prompts) do
     model = Keyword.get(opts, :model, :codellama_7b)
     device = Keyword.get(opts, :device, :cuda)
     max_tokens = Keyword.get(opts, :max_tokens, 256)

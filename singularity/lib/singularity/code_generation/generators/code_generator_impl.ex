@@ -49,7 +49,7 @@ defmodule Singularity.CodeGeneration.Generators.CodeGeneratorImpl do
   end
 
   @impl true
-  def generate(spec, _opts \\ []) when is_map(spec) do
+  def generate(spec, opts \\ []) when is_map(spec) do
     try do
       # Unpack spec fields for CodeGenerator.generate/2
       task = spec[:spec] || spec[:task] || ""

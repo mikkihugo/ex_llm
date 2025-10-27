@@ -319,10 +319,32 @@ defmodule Singularity.SelfImprovingAgent do
     # Subscribe to Genesis experiment results
     subscribe_to_genesis_results(id)
 
-    state
-    |> maybe_schedule_queue_processing()
-    |> schedule_tick()
-    |> then(&{:ok, &1})
+    state =
+      state
+      |> maybe_schedule_queue_processing()
+      |> schedule_tick()
+
+    {:ok, state, {:continue, :register}}
+  end
+
+  @impl true
+  def handle_continue(:register, state) do
+    # Register with coordination router
+    alias Singularity.Agents.Coordination.AgentRegistration
+
+    AgentRegistration.register_agent(:self_improving_agent, %{
+      role: :self_improve,
+      domains: [:code_quality, :refactoring, :testing, :architecture],
+      input_types: [:code, :codebase, :metrics, :feedback],
+      output_types: [:code, :documentation, :analysis],
+      complexity_level: :complex,
+      estimated_cost: 1000,
+      success_rate: 0.88,
+      tags: [:async_safe, :parallelizable, :learning_enabled],
+      metadata: %{"version" => "2.3.0"}
+    })
+
+    {:noreply, state}
   end
 
   defp subscribe_to_genesis_results(agent_id) do
