@@ -143,7 +143,9 @@ defmodule Singularity.Jobs.PgmqClient do
       "agent_messages",
       "agent_responses",
       "centralcloud_updates",
-      "observer_hitl_requests"
+      "observer_hitl_requests",
+      "infrastructure_registry_requests",
+      "infrastructure_registry_responses"
     ]
 
     Enum.each(queues, &ensure_queue/1)

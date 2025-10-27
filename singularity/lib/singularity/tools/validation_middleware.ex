@@ -121,8 +121,6 @@ defmodule Singularity.Tools.ValidationMiddleware do
       # Tried to refine but failed
       log_refinement_failure(original_error)
       fallback_behavior()
-      end
-  end
   ```
 
   ## Performance
@@ -202,9 +200,6 @@ defmodule Singularity.Tools.ValidationMiddleware do
       {:error, reason} ->
         {:error, reason}
         end
-  end
-      end
-  end
 
   @doc """
   Validate tool parameters using Instructor.
@@ -232,9 +227,6 @@ defmodule Singularity.Tools.ValidationMiddleware do
       {:error, reason} ->
         {:error, :validation_failed, %{tool: tool_name, reason: reason, arguments: arguments}}
         end
-  end
-      end
-  end
 
   @doc """
   Validate tool output using schemas.
@@ -267,9 +259,6 @@ defmodule Singularity.Tools.ValidationMiddleware do
         Logger.warning("Unknown validation schema: #{inspect(schema)}")
         {:ok, tool_result}
         end
-  end
-      end
-  end
 
   # ============================================================================
   # PRIVATE FUNCTIONS
@@ -285,8 +274,6 @@ defmodule Singularity.Tools.ValidationMiddleware do
   defp validate_output_if_enabled(tool, result, _opts) do
     schema = Map.get(_opts, :output_schema, :generated_code)
     validate_output(result, schema, _opts)
-      end
-  end
 
   defp handle_validation_error(tool, arguments, context, error_type, details, _opts) do
     if Map.get(_opts, :allow_refinement, false) and error_type == :schema_mismatch do
@@ -294,9 +281,6 @@ defmodule Singularity.Tools.ValidationMiddleware do
     else
       {:error, error_type, details}
         end
-  end
-      end
-  end
 
   defp attempt_refinement(_tool, _arguments, _context, details, _opts) do
     max_iterations = Map.get(_opts, :max_refinement_iterations, 2)
@@ -308,15 +292,10 @@ defmodule Singularity.Tools.ValidationMiddleware do
       {:error, reason} ->
         {:error, :refinement_exhausted, reason}
         end
-  end
-      end
-  end
 
   defp do_refinement(error_details, iteration, max_iterations)
        when iteration > max_iterations do
     {:error, "Max refinement iterations (#{max_iterations}) reached"}
-      end
-  end
 
   defp do_refinement(error_details, iteration, max_iterations) do
     Logger.info("Attempting refinement (iteration #{iteration}/#{max_iterations})")
@@ -338,9 +317,5 @@ defmodule Singularity.Tools.ValidationMiddleware do
           {:error, error_details}
         else
           do_refinement(error_details, iteration + 1, max_iterations)
-            end
-  end
         end
-  end
-      end
-  end
+        end

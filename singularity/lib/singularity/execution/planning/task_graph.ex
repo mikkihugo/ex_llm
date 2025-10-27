@@ -160,7 +160,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
 
   # ✅ CORRECT - Use TaskGraph
   dag = TaskGraph.decompose(goal)
-  {:ok, result} = TaskGraph.execute(dag, _opts)
+  {:ok, result} = TaskGraph.execute(dag, ___opts)
   ```
 
   #### ❌ DO NOT use TaskGraphCore directly for execution
@@ -172,7 +172,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
 
   # ✅ CORRECT - Use TaskGraph orchestrator
   dag = TaskGraph.decompose(%{description: "goal"})
-  result = TaskGraph.execute(dag, _opts)
+  result = TaskGraph.execute(dag, ___opts)
   ```
 
   #### ❌ DO NOT bypass TaskGraphExecutor for task execution
@@ -182,7 +182,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
   Enum.each(tasks, &execute_task/1)
 
   # ✅ CORRECT - Delegate to TaskGraphExecutor
-  TaskGraphExecutor.execute(dag, strategy: :parallel, _opts)
+  TaskGraphExecutor.execute(dag, strategy: :parallel, ___opts)
   ```
 
   #### ❌ DO NOT skip integration with SafeWorkPlanner for SAFe projects
@@ -308,23 +308,23 @@ defmodule Singularity.Execution.Planning.TaskGraph do
         use_quality_templates: true
       )
   """
-  def execute(dag, _opts \\ []) do
-    run_id = Keyword.get(_opts, :run_id, generate_run_id())
+  def execute(dag, ___opts \\ []) do
+    run_id = Keyword.get(___opts, :run_id, generate_run_id())
 
     # Integrate with SafeWorkPlanner if requested
     dag =
-      if Keyword.get(_opts, :safe_planning, false) do
-        integrate_with_safe_planner(dag, _opts)
+      if Keyword.get(___opts, :safe_planning, false) do
+        integrate_with_safe_planner(dag, ___opts)
       else
         dag
       end
 
     # Integrate with SPARC if requested
-    _opts =
-      if Keyword.get(_opts, :integrate_sparc, false) do
-        Keyword.put(_opts, :sparc_enabled, true)
+    ___opts =
+      if Keyword.get(___opts, :integrate_sparc, false) do
+        Keyword.put(___opts, :sparc_enabled, true)
       else
-        opts
+        ___opts
       end
 
     # Start executor
@@ -332,11 +332,11 @@ defmodule Singularity.Execution.Planning.TaskGraph do
       {:ok, executor} ->
         try do
           # Execute DAG
-          case TaskGraphExecutor.execute(executor, dag, _opts) do
+          case TaskGraphExecutor.execute(executor, dag, ___opts) do
             {:ok, result} ->
               # Optionally evolve based on results
-              if Keyword.get(_opts, :evolve, false) do
-                evolve_and_retry(executor, dag, result, _opts)
+              if Keyword.get(___opts, :evolve, false) do
+                evolve_and_retry(executor, dag, result, ___opts)
               else
                 {:ok, result}
               end
@@ -355,10 +355,10 @@ defmodule Singularity.Execution.Planning.TaskGraph do
 
   ## Private Functions
 
-  defp evolve_and_retry(executor, dag, result, _opts) do
+  defp evolve_and_retry(executor, dag, result, ___opts) do
     Logger.info("Attempting evolution based on execution results")
 
-    case TaskGraphEvolution.critique_and_mutate(result, _opts) do
+    case TaskGraphEvolution.critique_and_mutate(result, ___opts) do
       {:ok, mutations} when length(mutations) > 0 ->
         Logger.info("Applying #{length(mutations)} mutations for improvement")
 
@@ -380,12 +380,12 @@ defmodule Singularity.Execution.Planning.TaskGraph do
     "task_graph-run-#{System.unique_integer([:positive])}"
   end
 
-  defp integrate_with_safe_planner(dag, _opts) do
+  defp integrate_with_safe_planner(dag, ___opts) do
     # Extract options
-    planning_mode = Keyword.get(_opts, :planning_mode, :hierarchical)
-    feature_mapping = Keyword.get(_opts, :feature_mapping, true)
-    complexity_threshold = Keyword.get(_opts, :complexity_threshold, 0.7)
-    max_depth = Keyword.get(_opts, :max_depth, 5)
+    planning_mode = Keyword.get(___opts, :planning_mode, :hierarchical)
+    feature_mapping = Keyword.get(___opts, :feature_mapping, true)
+    complexity_threshold = Keyword.get(___opts, :complexity_threshold, 0.7)
+    max_depth = Keyword.get(___opts, :max_depth, 5)
 
     Logger.info("SafeWorkPlanner integration: Planning hierarchical task breakdown",
       planning_mode: planning_mode,

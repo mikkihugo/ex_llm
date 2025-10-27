@@ -588,7 +588,7 @@ defmodule Singularity.ParserEngine do
   defp unwrap_stream_result({:exit, reason}), do: {:error, reason}
 
   defp normalize_options(_opts) when is_list(_opts) do
-    opts
+    _opts
     |> Enum.into(%{})
     |> normalize_options()
   end

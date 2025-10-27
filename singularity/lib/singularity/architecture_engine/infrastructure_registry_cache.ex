@@ -2,8 +2,9 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
   @moduledoc """
   Infrastructure Registry Cache - Locally cached infrastructure system definitions
 
-  Bridges between code_quality_engine's Rust InfrastructureRegistry and Elixir detectors.
-  Queries CentralCloud for latest definitions and caches locally. Falls back to defaults.
+  Bridges between CentralCloud infrastructure database and Elixir detectors.
+  Queries CentralCloud via pgmq (PostgreSQL message queue) for definitions and caches locally.
+  Falls back to hardcoded defaults if CentralCloud unavailable.
 
   ## Module Identity (JSON)
 
@@ -11,11 +12,19 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
   {
     "module": "Singularity.Architecture.InfrastructureRegistryCache",
     "type": "cache_service",
-    "purpose": "Cache infrastructure definitions locally from CentralCloud",
+    "purpose": "Cache infrastructure definitions locally from CentralCloud via pgmq",
     "layer": "architecture_engine",
     "scope": "Message brokers, databases, observability, service mesh, API gateways, container orchestration, CI/CD"
   }
   ```
+
+  ## Integration Architecture
+
+  Uses PostgreSQL pgmq for Singularity ↔ CentralCloud communication:
+  - Singularity sends request: `infrastructure_registry_requests` queue
+  - CentralCloud consumer processes request and sends response: `infrastructure_registry_responses` queue
+  - Both use shared_queue PostgreSQL database
+  - Graceful fallback to hardcoded defaults if CentralCloud unavailable
 
   ## Data Structure
 
@@ -32,13 +41,6 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
   }
   ```
 
-  Each category maps system names to `InfrastructureSystemSchema`:
-  - name: String (system identifier)
-  - category: String (message_broker, database, etc.)
-  - description: String
-  - detection_patterns: [String] (file names, env vars, etc.)
-  - fields: %{String => String} (configuration field names/types)
-
   ## Usage
 
   ```elixir
@@ -52,7 +54,7 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
   patterns = InfrastructureRegistryCache.get_detection_patterns("Kafka", "message_brokers")
 
   # Validate system name
-  :ok = InfrastructureRegistryCache.validate_infrastructure("PostgreSQL", "database")
+  :true = InfrastructureRegistryCache.validate_infrastructure("PostgreSQL", "databases")
 
   # Refresh from CentralCloud
   :ok = InfrastructureRegistryCache.refresh_from_centralcloud()
@@ -61,12 +63,13 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
   ## Search Keywords
 
   infrastructure detection, registry cache, dynamic infrastructure, CentralCloud integration,
-  system detection patterns, phase 7
+  pgmq message queue, PostgreSQL messaging, phase 8.3 integration
   """
 
   use GenServer
   require Logger
-  alias Singularity.NatsOrchestrator
+  alias Singularity.Jobs.PgmqClient
+  alias Singularity.Repo
 
   # Public API
 
@@ -129,6 +132,10 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
 
   @impl true
   def init(_opts) do
+    # Ensure pgmq queues exist
+    PgmqClient.ensure_queue("infrastructure_registry_requests")
+    PgmqClient.ensure_queue("infrastructure_registry_responses")
+
     registry = fetch_from_centralcloud() || default_registry()
     {:ok, %{registry: registry, last_refresh: System.monotonic_time()}}
   end
@@ -165,23 +172,61 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
     }
 
     try do
-      case NatsOrchestrator.request(
-        "intelligence_hub.infrastructure.registry",
-        request,
-        timeout: 5000
-      ) do
-        {:ok, response} ->
-          # Parse response into infrastructure registry format
-          parse_centralcloud_response(response)
+      # Send request via pgmq
+      case PgmqClient.send_message("infrastructure_registry_requests", request) do
+        {:ok, _message_id} ->
+          # Wait for response from CentralCloud
+          Logger.debug("Sent infrastructure registry request to CentralCloud via pgmq")
+          wait_for_response(3000)  # 3 second timeout
 
         {:error, reason} ->
-          Logger.debug("Failed to fetch infrastructure registry from CentralCloud: #{inspect(reason)}")
+          Logger.debug("Failed to send infrastructure registry request via pgmq: #{inspect(reason)}")
           nil
       end
     rescue
       e ->
         Logger.debug("Error querying CentralCloud for infrastructure registry: #{inspect(e)}")
         nil
+    end
+  end
+
+  # Wait for response from CentralCloud (polling pgmq)
+  defp wait_for_response(timeout_ms) do
+    start_time = System.monotonic_time(:millisecond)
+
+    case poll_response_queue() do
+      {:ok, response} ->
+        parse_centralcloud_response(response)
+
+      :empty ->
+        elapsed = System.monotonic_time(:millisecond) - start_time
+
+        if elapsed < timeout_ms do
+          Process.sleep(100)  # Wait 100ms before retrying
+          wait_for_response(timeout_ms - elapsed)
+        else
+          Logger.debug("Timeout waiting for infrastructure registry response from CentralCloud")
+          nil
+        end
+
+      {:error, reason} ->
+        Logger.debug("Error polling infrastructure registry responses: #{inspect(reason)}")
+        nil
+    end
+  end
+
+  # Poll response queue
+  defp poll_response_queue do
+    case PgmqClient.read_messages("infrastructure_registry_responses", 1) do
+      [{_msg_id, response}] ->
+        # Got a response, acknowledge it
+        {:ok, response}
+
+      [] ->
+        :empty
+
+      error ->
+        {:error, error}
     end
   end
 

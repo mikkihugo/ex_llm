@@ -68,6 +68,14 @@ defmodule CentralCloud.Application do
        poll_interval_ms: 5000,
        batch_size: 5,
        name: :perf_stats_consumer_2},
+
+      # Phase 8.3: Infrastructure Registry - Handles requests from Singularity/Genesis
+      {CentralCloud.PgmqConsumer,
+       queue_name: "infrastructure_registry_requests",
+       handler_module: CentralCloud.Consumers.InfrastructureRegistryConsumer,
+       poll_interval_ms: 500,
+       batch_size: 1,
+       name: :infrastructure_registry_consumer},
     ]
   end
 
