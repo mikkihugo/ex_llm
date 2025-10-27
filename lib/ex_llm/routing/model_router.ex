@@ -21,7 +21,35 @@ defmodule ExLLM.Routing.ModelRouter do
   - Best model by complexity score
   - First available model by price/speed trade-off
       ↓
+  5. PUBLISH to pgmq → CentralCloud aggregates decisions
+      ↓
   ExLLM.chat(provider, model, messages)
+  ```
+
+  ## CentralCloud Integration
+
+  Routing decisions are published asynchronously to pgmq queue `model_routing_decisions`.
+  CentralCloud consumes these events to:
+
+  - Track which models are actually used across instances
+  - Aggregate performance metrics per model/complexity
+  - Learn optimal complexity scores from real outcomes
+  - Detect provider availability issues
+  - Build cross-instance routing intelligence
+
+  Example event:
+  ```json
+  {
+    "timestamp": "2025-10-27T06:55:00Z",
+    "instance_id": "singularity-1",
+    "routing_decision": {
+      "complexity": "complex",
+      "selected_model": "gpt-4o",
+      "selected_provider": "github_models",
+      "complexity_score": 4.8,
+      "alternate_models": ["claude-opus", "gpt-4o"]
+    }
+  }
   ```
 
   ## Key Features
@@ -74,6 +102,10 @@ defmodule ExLLM.Routing.ModelRouter do
   require Logger
   alias ExLLM.Core.ModelCatalog
 
+  # pgmq queue for routing events
+  @routing_queue "model_routing_decisions"
+  @instance_id System.get_env("INSTANCE_ID", "singularity-#{node()}")
+
   @type routing_opts :: [
     {:complexity, :simple | :medium | :complex}
     | {:model, String.t()}
@@ -120,6 +152,12 @@ defmodule ExLLM.Routing.ModelRouter do
       model_name = opts[:model] ->
         case ModelCatalog.get_provider(model_name) do
           {:ok, provider} ->
+            # Publish routing event
+            score = case ModelCatalog.get_complexity_score(model_name, opts[:complexity] || :medium) do
+              {:ok, s} -> s
+              _ -> 0.0
+            end
+            publish_routing_event(opts[:complexity] || :medium, model_name, provider, score, opts)
             {:ok, provider, model_name}
 
           {:error, reason} ->
@@ -128,7 +166,16 @@ defmodule ExLLM.Routing.ModelRouter do
 
       # User specified complexity
       complexity = opts[:complexity] ->
-        select_by_complexity(complexity, opts)
+        case select_by_complexity(complexity, opts) do
+          {:ok, provider, model} ->
+            # Publish routing event
+            {:ok, score} = ModelCatalog.get_complexity_score(model, complexity)
+            publish_routing_event(complexity, model, provider, score, opts)
+            {:ok, provider, model}
+
+          error ->
+            error
+        end
 
       # No complexity or model specified
       true ->
@@ -227,6 +274,46 @@ defmodule ExLLM.Routing.ModelRouter do
     end
   end
 
+  @doc """
+  Publish routing decision to CentralCloud via pgmq.
+
+  Asynchronously publishes routing decisions for aggregation and learning.
+  This is called automatically by route_model/2 but can be called manually
+  to report outcomes (success/failure) for feedback.
+
+  ## Examples
+
+      iex> ModelRouter.publish_routing_event(:complex, "gpt-4o", :github_models, 4.8)
+      :ok
+
+      iex> ModelRouter.publish_routing_event(:complex, "gpt-4o", :github_models, 4.8,
+      ...>   outcome: :success, response_time_ms: 1240)
+      :ok
+  """
+  @spec publish_routing_event(
+    :simple | :medium | :complex,
+    String.t(),
+    atom(),
+    float(),
+    Keyword.t()
+  ) :: :ok | {:error, atom()}
+  def publish_routing_event(complexity, model_name, provider, score, opts \\ []) do
+    event = build_routing_event(complexity, model_name, provider, score, opts)
+
+    # Publish asynchronously (non-blocking)
+    Task.start_link(fn ->
+      case publish_to_pgmq(event) do
+        :ok ->
+          Logger.debug("Published routing event for #{model_name} (#{complexity})")
+
+        {:error, reason} ->
+          Logger.warning("Failed to publish routing event: #{inspect(reason)}")
+      end
+    end)
+
+    :ok
+  end
+
   # Private implementation
 
   defp filter_by_capabilities(models, []) do
@@ -298,6 +385,50 @@ defmodule ExLLM.Routing.ModelRouter do
             {:error, _} ->
               {:error, :no_models_available, "No models available in catalog"}
           end
+        end
+    end
+  end
+
+  defp build_routing_event(complexity, model_name, provider, score, opts) do
+    %{
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+      instance_id: @instance_id,
+      routing_decision: %{
+        complexity: to_string(complexity),
+        selected_model: model_name,
+        selected_provider: to_string(provider),
+        complexity_score: score,
+        outcome: opts[:outcome] || :routed,
+        response_time_ms: opts[:response_time_ms],
+        capabilities_required: opts[:capabilities] || [],
+        prefer: opts[:prefer],
+        user_model_request: opts[:requested_model]
+      }
+    }
+  end
+
+  defp publish_to_pgmq(event) do
+    # Try to publish to pgmq queue
+    # If pgmq is not available (ex_llm standalone), gracefully skip
+    case Application.get_application(__MODULE__) do
+      :ex_llm ->
+        # ex_llm standalone - no pgmq integration
+        :ok
+
+      _ ->
+        # Part of larger Singularity system with pgmq
+        try do
+          # Attempt to call the message queue
+          # This will fail gracefully if pgmq is not available
+          case Code.ensure_compiled(Singularity.Database.MessageQueue) do
+            {:module, _} ->
+              Singularity.Database.MessageQueue.send(@routing_queue, event)
+
+            {:error, _} ->
+              :ok
+          end
+        rescue
+          _ -> :ok
         end
     end
   end
