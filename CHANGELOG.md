@@ -5,11 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2025-10-27
 
-### 🎯 **Preparing for 1.0.0 Release**
+### 🎯 **Stable Release: 15+ Providers, Full Streaming, Production Ready**
 
-This section tracks changes being prepared for the upcoming v1.0.0 stable release.
+### Added
+- **GitHub Copilot Provider** - Full OpenAI-compatible integration
+  - GitHub token authentication with automatic device OAuth flow
+  - Copilot token exchange via `/copilot_internal/v2/token`
+  - Auto-refresh tokens 60 seconds before expiration
+  - Full streaming support with SSE parsing
+  - Chat completions API at `https://api.githubcopilot.com/chat/completions`
 
 ### Fixed
 - **URL Construction** - Fixed provider-specific URL path handling
