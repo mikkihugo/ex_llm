@@ -3,7 +3,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
   Upgrade documentation across all source files to quality 2.2.0+ standards.
 
   This task coordinates the 6 autonomous agents to automatically scan,
-  analyze, and upgrade documentation for Elixir, Rust, and TypeScript files.
+  analyze, and upgrade documentation for all supported languages using templates_data.
 
   ## Usage
 
@@ -28,7 +28,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
   ## Options
 
   - `--files` - Comma-separated list of files to upgrade
-  - `--language` - Focus on specific language (elixir, rust, typescript)
+  - `--language` - Focus on specific language (elixir, rust, go, java, javascript, tsx, gleam, python)
   - `--enforce-quality` - Enable quality gates to enforce standards
   - `--status` - Show current documentation status only
   - `--schedule` - Schedule automatic upgrades every N minutes
@@ -301,8 +301,10 @@ defmodule Mix.Tasks.Documentation.Upgrade do
         [
           "./singularity/lib/**/*.ex",
           "./rust/**/*.rs",
-          "./llm-server/**/*.ts",
-          "./llm-server/**/*.tsx"
+          "./observer/lib/**/*.ex",
+          "./observer/lib/**/*.heex",
+          "./packages/**/*.rs",
+          "./packages/**/*.ex"
         ]
         |> Enum.flat_map(fn pattern ->
           Path.wildcard(pattern)
@@ -314,20 +316,47 @@ defmodule Mix.Tasks.Documentation.Upgrade do
   defp get_files_by_language(language) do
     case language do
       "elixir" ->
-        Path.wildcard("./singularity/lib/**/*.ex")
+        (Path.wildcard("./singularity/lib/**/*.ex") ++ 
+         Path.wildcard("./observer/lib/**/*.ex") ++
+         Path.wildcard("./packages/**/*.ex"))
         |> Enum.filter(&File.regular?/1)
 
       "rust" ->
-        Path.wildcard("./rust/**/*.rs")
+        (Path.wildcard("./rust/**/*.rs") ++
+         Path.wildcard("./packages/**/*.rs"))
+        |> Enum.filter(&File.regular?/1)
+
+      "javascript" ->
+        Path.wildcard("./**/*.js")
         |> Enum.filter(&File.regular?/1)
 
       "typescript" ->
-        (Path.wildcard("./llm-server/**/*.ts") ++ Path.wildcard("./llm-server/**/*.tsx"))
+        Path.wildcard("./**/*.ts")
+        |> Enum.filter(&File.regular?/1)
+
+      "tsx" ->
+        Path.wildcard("./**/*.tsx")
+        |> Enum.filter(&File.regular?/1)
+
+      "go" ->
+        Path.wildcard("./**/*.go")
+        |> Enum.filter(&File.regular?/1)
+
+      "java" ->
+        Path.wildcard("./**/*.java")
+        |> Enum.filter(&File.regular?/1)
+
+      "gleam" ->
+        Path.wildcard("./**/*.gleam")
+        |> Enum.filter(&File.regular?/1)
+
+      "python" ->
+        Path.wildcard("./**/*.py")
         |> Enum.filter(&File.regular?/1)
 
       _ ->
         Mix.shell().error(
-          "Unsupported language: #{language}. Supported: elixir, rust, typescript"
+          "Unsupported language: #{language}. Supported: elixir, rust, go, java, javascript, typescript, tsx, gleam, python"
         )
 
         System.halt(1)

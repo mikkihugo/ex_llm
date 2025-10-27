@@ -276,4 +276,118 @@ defmodule Singularity.Execution.Autonomy.Planner do
     end
     """
   end
+
+  @doc """
+  Estimate effort for a task description.
+
+  ## Parameters
+  - `description` - Task description
+  - `context` - Additional context for estimation
+
+  ## Returns
+  - Effort estimation result
+  """
+  def estimate_effort(description, context \\ %{}) do
+    try do
+      # Extract complexity factors
+      complexity = analyze_complexity(description, context)
+
+      # Estimate based on historical data and patterns
+      effort_estimate = calculate_effort_estimate(complexity, context)
+
+      # Provide confidence level
+      confidence = calculate_confidence(complexity)
+
+      {:ok, %{
+        description: description,
+        estimated_effort: effort_estimate,
+        complexity_score: complexity.score,
+        confidence_level: confidence,
+        factors: complexity.factors,
+        breakdown: effort_estimate.breakdown
+      }}
+    rescue
+      e ->
+        Logger.error("Error estimating effort", error: inspect(e), description: description)
+        {:error, :effort_estimation_failed}
+    end
+  end
+
+  ## Private Functions
+
+  ## Effort Estimation Helpers
+
+  defp analyze_complexity(description, context) do
+    factors = []
+
+    # Length-based complexity
+    word_count = String.split(description, ~r/\s+/) |> length()
+    length_factor = cond do
+      word_count < 10 -> 1
+      word_count < 50 -> 2
+      word_count < 100 -> 3
+      true -> 4
+    end
+    factors = [{:length, length_factor} | factors]
+
+    # Technical complexity indicators
+    tech_indicators = ["api", "database", "authentication", "security", "integration", "microservice"]
+    tech_matches = Enum.count(tech_indicators, fn indicator ->
+      String.contains?(String.downcase(description), indicator)
+    end)
+    tech_factor = min(tech_matches + 1, 4)
+    factors = [{:technical, tech_factor} | factors]
+
+    # Domain complexity
+    domain_keywords = Map.get(context, :domain_keywords, [])
+    domain_matches = Enum.count(domain_keywords, fn keyword ->
+      String.contains?(String.downcase(description), String.downcase(keyword))
+    end)
+    domain_factor = if domain_matches > 0, do: 2, else: 1
+    factors = [{:domain, domain_factor} | factors]
+
+    # Calculate overall score
+    score = Enum.reduce(factors, 0, fn {_, factor}, acc -> acc + factor end) / length(factors)
+
+    %{score: score, factors: factors}
+  end
+
+  defp calculate_effort_estimate(complexity, context) do
+    base_effort = Map.get(context, :base_effort_hours, 8)  # Default 1 day
+
+    # Adjust based on complexity
+    multiplier = case complexity.score do
+      score when score < 1.5 -> 0.5
+      score when score < 2.5 -> 1.0
+      score when score < 3.5 -> 1.5
+      _ -> 2.0
+    end
+
+    estimated_hours = base_effort * multiplier
+
+    # Breakdown by phases
+    analysis_hours = estimated_hours * 0.2
+    design_hours = estimated_hours * 0.3
+    implementation_hours = estimated_hours * 0.4
+    testing_hours = estimated_hours * 0.1
+
+    %{
+      total_hours: estimated_hours,
+      breakdown: %{
+        analysis: analysis_hours,
+        design: design_hours,
+        implementation: implementation_hours,
+        testing: testing_hours
+      }
+    }
+  end
+
+  defp calculate_confidence(complexity) do
+    # Higher confidence for simpler tasks
+    case complexity.score do
+      score when score < 2.0 -> :high
+      score when score < 3.0 -> :medium
+      _ -> :low
+    end
+  end
 end

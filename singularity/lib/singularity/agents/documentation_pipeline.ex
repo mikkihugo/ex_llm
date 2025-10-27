@@ -355,8 +355,8 @@ defmodule Singularity.Agents.DocumentationPipeline do
     [
       "./singularity/lib/**/*.ex",
       "./rust/**/*.rs",
-      "./llm-server/**/*.ts",
-      "./llm-server/**/*.tsx"
+      "./observer/lib/**/*.ex",
+      "./observer/lib/**/*.heex"
     ]
     |> Enum.flat_map(fn pattern ->
       Path.wildcard(pattern)

@@ -3,13 +3,23 @@
 
 echo "🛑 Stopping Singularity services..."
 
-# Kill AI Server
-echo -n "Stopping AI Server... "
-pkill -f "bun.*server.ts" 2>/dev/null || true
+# Kill Observer (Phoenix Web UI)
+echo -n "Stopping Observer... "
+pkill -f "beam.*observer" 2>/dev/null || true
 echo "✓"
 
-# Kill Elixir
-echo -n "Stopping Elixir app... "
+# Kill CentralCloud
+echo -n "Stopping CentralCloud... "
+pkill -f "beam.*centralcloud" 2>/dev/null || true
+echo "✓"
+
+# Kill Genesis
+echo -n "Stopping Genesis... "
+pkill -f "beam.*genesis" 2>/dev/null || true
+echo "✓"
+
+# Kill Singularity (Core)
+echo -n "Stopping Singularity... "
 pkill -f "beam.*singularity" 2>/dev/null || true
 echo "✓"
 

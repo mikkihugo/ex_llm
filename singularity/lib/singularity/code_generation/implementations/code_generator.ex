@@ -492,7 +492,7 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
   end
 
   # Build unified prompt with RAG examples and quality requirements
-  defp build_unified_prompt(task, language, _quality, examples, quality_template) do
+  defp build_unified_prompt(task, language, quality, examples, quality_template) do
     # Quality requirements section
     quality_section =
       if quality_template do
@@ -529,6 +529,7 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
     """
     Task: #{task}
     Language: #{language}
+    Quality Level: #{quality}
     #{quality_section}
     #{examples_section}
 

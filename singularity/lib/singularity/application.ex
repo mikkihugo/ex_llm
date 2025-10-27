@@ -151,8 +151,6 @@ defmodule Singularity.Application do
     children =
       [
         # Layer 1: Foundation - Database and metrics MUST start first
-        # Erlang SASL for system monitoring and error logging
-        :sasl,
         Singularity.Repo,
         Singularity.Infrastructure.Telemetry,
         Singularity.ProcessRegistry
@@ -186,7 +184,8 @@ defmodule Singularity.Application do
         # Autonomy Rules - Confidence-based autonomous decision making
         # Used by: CostOptimizedAgent, SafeWorkPlanner
         # Rules stored in PostgreSQL, cached in ETS, hot-reloadable via consensus evolution
-        Singularity.Execution.Autonomy.RuleEngine,
+        # Note: RuleEngine is a pure module (no OTP process) - used directly by agents
+        # Singularity.Execution.Autonomy.RuleEngine,  # Pure module, not supervised
         Singularity.Execution.Autonomy.RuleLoader,
 
         # ML Training Pipelines - Broadway-based ML training orchestration

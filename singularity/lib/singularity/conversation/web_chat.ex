@@ -1,0 +1,324 @@
+defmodule Singularity.Conversation.WebChat do
+  @moduledoc """
+  Web Chat integration for Observer-based human-in-the-loop conversations.
+
+  Provides a bridge between ChatConversationAgent and the Observer web UI,
+  allowing agents to request approvals, ask questions, and send notifications
+  to human operators through the Observer dashboard.
+
+  ## Architecture
+
+  ```
+  ChatConversationAgent
+    ↓
+  WebChat (this module)
+    ↓ Creates approval in
+  Observer.HITL.Approval (PostgreSQL)
+    ↓ Displays in
+  ObserverWeb.HITLApprovalsLive (web UI)
+    ↓ User responds (approve/reject)
+  Observer.HITL.publish_decision/1
+    ↓ Publishes to pgmq
+  response_queue (pgmq)
+    ↓ ChatConversationAgent reads
+  ChatConversationAgent handles response
+  ```
+
+  ## Usage
+
+      # Send a notification
+      WebChat.notify("🐛 Bug logged. Pattern downgraded.")
+
+      # Ask for approval
+      {:ok, approval} = WebChat.ask_approval(%{
+        title: "Deploy to production?",
+        description: "New features ready",
+        impact: "High",
+        request_id: "deploy-123"
+      })
+
+      # Ask a question
+      {:ok, approval} = WebChat.ask_question(%{
+        question: "Should I refactor this module?",
+        context: %{file: "lib/my_module.ex"},
+        request_id: "refactor-456"
+      })
+
+      # Wait for response (if needed)
+      response = ChatConversationAgent.wait_for_response(approval)
+  """
+
+  require Logger
+
+  alias Singularity.Jobs.PgmqClient
+  alias Observer.HITL
+
+  @pubsub_module Application.compile_env(:observer, :pubsub, Observer.PubSub)
+  @notifications_topic "agent_notifications"
+  @approvals_topic "agent_approvals"
+
+  @doc """
+  Send a notification to the Observer web UI.
+
+  Notifications are displayed in real-time but don't require human response.
+  Uses Phoenix.PubSub for instant delivery to all connected web clients.
+  """
+  @spec notify(String.t(), map()) :: {:ok, String.t()} | {:error, term()}
+  def notify(message, metadata \\ %{}) when is_binary(message) do
+    try do
+      payload = %{
+        type: :notification,
+        message: message,
+        timestamp: DateTime.utc_now(),
+        metadata: metadata
+      }
+
+      # Publish via PubSub for real-time web UI updates
+      Phoenix.PubSub.broadcast(
+        @pubsub_module,
+        @notifications_topic,
+        {:notification, payload}
+      )
+
+      Logger.debug("Notification published to Observer: #{message}")
+      {:ok, "notification_sent"}
+    rescue
+      error ->
+        Logger.error("WebChat notification error: #{inspect(error)}")
+        # Best-effort - don't fail the calling agent
+        {:ok, "notification_queued"}
+    end
+  end
+
+  @doc """
+  Request approval from a human operator.
+
+  Creates an approval request in Observer.HITL.Approval and waits for response.
+  The response is published back via pgmq message queue.
+
+  ## Parameters
+
+    - `data` - Approval data with required fields:
+      - `:request_id` - Unique request identifier
+      - `:title` - Short title of the approval
+      - `:description` - Detailed description
+      - `:agent_id` (optional) - Which agent is requesting
+      - `:task_type` (optional) - Type of task
+      - `:metadata` (optional) - Additional data
+  """
+  @spec ask_approval(map()) :: {:ok, map()} | {:error, term()}
+  def ask_approval(data) when is_map(data) do
+    try do
+      request_id = Map.fetch!(data, :request_id)
+      response_queue = "approval_response_#{request_id}"
+
+      # Prepare approval payload for Observer
+      approval_attrs = %{
+        request_id: request_id,
+        agent_id: Map.get(data, :agent_id, "chat_agent"),
+        task_type: Map.get(data, :task_type, "approval"),
+        status: :pending,
+        payload: %{
+          title: Map.get(data, :title, "Approval Request"),
+          description: Map.get(data, :description, ""),
+          impact: Map.get(data, :impact, "medium"),
+          confidence: Map.get(data, :confidence, 0.5)
+        },
+        metadata: Map.get(data, :metadata, %{}),
+        response_queue: response_queue,
+        expires_at: DateTime.add(DateTime.utc_now(), 24, :hour)
+      }
+
+      # Create approval in Observer database
+      case HITL.create_approval(approval_attrs) do
+        {:ok, approval} ->
+          Logger.info(
+            "Approval request created #{request_id} (response queue: #{response_queue})"
+          )
+
+          # Publish approval event via pubsub for real-time web UI update
+          Phoenix.PubSub.broadcast(
+            @pubsub_module,
+            @approvals_topic,
+            {:approval_created, approval}
+          )
+
+          # Also send a notification
+          :ok =
+            notify(
+              "⏳ Approval pending: #{Map.get(data, :title, 'Decision needed')}",
+              %{request_id: request_id, type: :approval}
+            )
+
+          {:ok, Map.put(approval, :response_queue, response_queue)}
+
+        {:error, changeset} ->
+          Logger.error("Failed to create approval: #{inspect(changeset.errors)}")
+          {:error, :approval_creation_failed}
+      end
+    rescue
+      error ->
+        Logger.error("WebChat approval error: #{inspect(error)}")
+        {:error, :approval_request_failed}
+    end
+  end
+
+  @doc """
+  Ask a question that requires human response.
+
+  Similar to ask_approval but for general questions that may not be yes/no.
+  """
+  @spec ask_question(map()) :: {:ok, map()} | {:error, term()}
+  def ask_question(data) when is_map(data) do
+    try do
+      request_id = Map.fetch!(data, :request_id)
+      response_queue = "question_response_#{request_id}"
+
+      # Prepare question payload for Observer
+      approval_attrs = %{
+        request_id: request_id,
+        agent_id: Map.get(data, :agent_id, "chat_agent"),
+        task_type: Map.get(data, :task_type, "question"),
+        status: :pending,
+        payload: %{
+          question: Map.get(data, :question, ""),
+          context: Map.get(data, :context, %{}),
+          urgency: Map.get(data, :urgency, :normal)
+        },
+        metadata: Map.get(data, :metadata, %{}),
+        response_queue: response_queue,
+        expires_at: DateTime.add(DateTime.utc_now(), 24, :hour)
+      }
+
+      # Create question approval in Observer database
+      case HITL.create_approval(approval_attrs) do
+        {:ok, approval} ->
+          Logger.info("Question request created #{request_id}")
+
+          # Publish notification
+          :ok =
+            notify(
+              "❓ Question: #{Map.get(data, :question, 'Input needed')}",
+              %{request_id: request_id, type: :question}
+            )
+
+          {:ok, Map.put(approval, :response_queue, response_queue)}
+
+        {:error, changeset} ->
+          Logger.error("Failed to create question: #{inspect(changeset.errors)}")
+          {:error, :question_creation_failed}
+      end
+    rescue
+      error ->
+        Logger.error("WebChat question error: #{inspect(error)}")
+        {:error, :question_request_failed}
+    end
+  end
+
+  @doc """
+  Request user confirmation with yes/no options.
+
+  Convenience wrapper around ask_approval for simple yes/no prompts.
+  """
+  @spec ask_confirmation(String.t(), map()) :: {:ok, map()} | {:error, term()}
+  def ask_confirmation(prompt, data \\ %{}) when is_binary(prompt) do
+    request_id = Map.get(data, :request_id, "confirm-#{System.unique_integer([:positive])}")
+
+    ask_approval(%{
+      request_id: request_id,
+      title: "Confirmation Required",
+      description: prompt,
+      agent_id: Map.get(data, :agent_id, "chat_agent"),
+      metadata: Map.get(data, :metadata, %{})
+    })
+  end
+
+  @doc """
+  Publish a decision that was made in the web UI back to ChatConversationAgent.
+
+  This is called internally by Observer when a human makes a decision.
+  """
+  @spec publish_decision(String.t(), :approved | :rejected, String.t()) ::
+          :ok | {:error, term()}
+  def publish_decision(request_id, status, decision_reason \\ "") do
+    try do
+      response_queue = determine_response_queue(request_id, status)
+
+      payload = %{
+        request_id: request_id,
+        decision: Atom.to_string(status),
+        decision_reason: decision_reason,
+        decided_at: DateTime.utc_now()
+      }
+
+      case PgmqClient.send_message(response_queue, payload) do
+        {:ok, _msg_id} ->
+          Logger.info("Decision published for #{request_id}: #{status}")
+          :ok
+
+        {:error, reason} ->
+          Logger.error("Failed to publish decision: #{inspect(reason)}")
+          {:error, reason}
+      end
+    rescue
+      error ->
+        Logger.error("Decision publication error: #{inspect(error)}")
+        {:error, error}
+    end
+  end
+
+  # Helper: Determine response queue based on request type
+  defp determine_response_queue(request_id, :approved) do
+    cond do
+      String.contains?(request_id, "question") -> "question_response_#{request_id}"
+      true -> "approval_response_#{request_id}"
+    end
+  end
+
+  defp determine_response_queue(request_id, :rejected) do
+    cond do
+      String.contains?(request_id, "question") -> "question_response_#{request_id}"
+      true -> "approval_response_#{request_id}"
+    end
+  end
+
+  @doc """
+  List pending approvals waiting for human decision.
+
+  Used by Observer UI to display pending requests.
+  """
+  @spec list_pending_approvals() :: [map()]
+  def list_pending_approvals do
+    HITL.list_pending_approvals()
+  end
+
+  @doc """
+  Get a single approval by request ID.
+  """
+  @spec get_approval(String.t()) :: map() | nil
+  def get_approval(request_id) do
+    HITL.get_by_request_id(request_id)
+  end
+
+  @doc """
+  Health check - verify Observer connectivity.
+  """
+  @spec health_check() :: {:ok, map()} | {:error, term()}
+  def health_check do
+    try do
+      case PgmqClient.send_message("health_check", %{
+        timestamp: DateTime.utc_now(),
+        source: "chat_conversation_agent"
+      }) do
+        {:ok, _msg_id} ->
+          {:ok, %{status: "healthy", observer: "connected"}}
+
+        {:error, reason} ->
+          {:error, %{status: "unhealthy", observer: "disconnected", reason: reason}}
+      end
+    rescue
+      error ->
+        {:error, %{status: "error", observer: "unreachable", error: inspect(error)}}
+    end
+  end
+end

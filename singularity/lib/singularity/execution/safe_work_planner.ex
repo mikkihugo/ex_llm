@@ -27,6 +27,9 @@ defmodule Singularity.Execution.SafeWorkPlanner do
   - `get_hierarchy/0` - Get full SAFe hierarchy tree
   - `get_progress/0` - Get completion statistics
   - `complete_item(item_id, level)` - Mark item as done
+  - `get_work_plan(opts)` - Get work plan for specified level and status
+  - `prioritize_tasks(tasks, criteria)` - Prioritize tasks based on criteria
+  - `analyze_dependencies(tasks, opts)` - Analyze dependencies between tasks
 
   ## SAFe Hierarchy
 
@@ -330,6 +333,104 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     GenServer.call(__MODULE__, {:complete_item, item_id, level})
   end
 
+  @doc """
+  Get work plan for specified level and status.
+
+  ## Parameters
+  - `opts` - Options map with :level and :status keys
+
+  ## Returns
+  - Work plan structure
+  """
+  def get_work_plan(opts) do
+    level = Keyword.get(opts, :level, :all)
+    status = Keyword.get(opts, :status, :all)
+
+    try do
+      hierarchy = get_hierarchy()
+
+      work_plan = %{
+        strategic_themes: filter_by_level_and_status(hierarchy.strategic_themes, level, status),
+        epics: filter_by_level_and_status(hierarchy.epics, level, status),
+        capabilities: filter_by_level_and_status(hierarchy.capabilities, level, status),
+        features: filter_by_level_and_status(hierarchy.features, level, status)
+      }
+
+      {:ok, work_plan}
+    rescue
+      e ->
+        Logger.error("Error getting work plan", error: inspect(e), opts: opts)
+        {:error, :work_plan_retrieval_failed}
+    end
+  end
+
+  @doc """
+  Prioritize tasks based on criteria.
+
+  ## Parameters
+  - `tasks` - List of tasks to prioritize
+  - `criteria` - Prioritization criteria
+
+  ## Returns
+  - Prioritized task list
+  """
+  def prioritize_tasks(tasks, criteria) when is_list(tasks) do
+    try do
+      # Apply WSJF scoring if not already present
+      scored_tasks = Enum.map(tasks, fn task ->
+        wsjf_score = calculate_wsjf_score(task, criteria)
+        Map.put(task, :wsjf_score, wsjf_score)
+      end)
+
+      # Sort by WSJF score descending
+      prioritized = Enum.sort_by(scored_tasks, &(&1.wsjf_score), :desc)
+
+      {:ok, prioritized}
+    rescue
+      e ->
+        Logger.error("Error prioritizing tasks", error: inspect(e), task_count: length(tasks))
+        {:error, :prioritization_failed}
+    end
+  end
+
+  @doc """
+  Analyze dependencies between tasks.
+
+  ## Parameters
+  - `tasks` - List of tasks to analyze
+  - `opts` - Options including :include_external
+
+  ## Returns
+  - Dependency analysis
+  """
+  def analyze_dependencies(tasks, opts \\ []) when is_list(tasks) do
+    include_external = Keyword.get(opts, :include_external, true)
+
+    try do
+      # Build dependency graph
+      {dependencies, critical_path} = build_dependency_graph(tasks, include_external)
+
+      # Identify risk factors
+      risk_factors = identify_risk_factors(tasks, dependencies)
+
+      # Generate recommendations
+      recommendations = generate_dependency_recommendations(tasks, dependencies, critical_path)
+
+      analysis = %{
+        dependencies: dependencies,
+        critical_path: critical_path,
+        risk_factors: risk_factors,
+        recommendations: recommendations
+      }
+
+      {:ok, analysis}
+    rescue
+      e ->
+        Logger.error("Error analyzing dependencies", error: inspect(e), task_count: length(tasks))
+        {:error, :dependency_analysis_failed}
+    end
+  end
+
   ## GenServer Callbacks
 
   @impl true
@@ -624,7 +725,107 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     """
   end
 
-  ## State Mutations
+  ## Helper Functions
+
+  defp filter_by_level_and_status(items, level, status) do
+    Enum.filter(items, fn {_, item} ->
+      level_match = level == :all || item.level == level
+      status_match = status == :all || item.status == status
+      level_match && status_match
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp calculate_wsjf_score(task, criteria) do
+    # WSJF = (Business Value + Time Criticality) / (Job Size + Risk Reduction)
+    business_value = Map.get(task, :business_value, Map.get(criteria, :default_business_value, 5))
+    time_criticality = Map.get(task, :time_criticality, Map.get(criteria, :default_time_criticality, 3))
+    job_size = Map.get(task, :job_size, Map.get(criteria, :default_job_size, 5))
+    risk_reduction = Map.get(task, :risk_reduction, Map.get(criteria, :default_risk_reduction, 2))
+
+    numerator = business_value + time_criticality
+    denominator = job_size + risk_reduction
+
+    if denominator > 0 do
+      numerator / denominator
+    else
+      0.0
+    end
+  end
+
+  defp build_dependency_graph(tasks, include_external) do
+    # Build a simple dependency graph
+    dependencies = Enum.reduce(tasks, %{}, fn task, acc ->
+      task_deps = Map.get(task, :dependencies, [])
+      Map.put(acc, task.id, task_deps)
+    end)
+
+    # Calculate critical path (simplified)
+    critical_path = calculate_critical_path(dependencies)
+
+    {dependencies, critical_path}
+  end
+
+  defp calculate_critical_path(dependencies) do
+    # Simplified critical path calculation
+    # In a real implementation, this would use proper graph algorithms
+    # For now, return the longest chain
+    case Enum.max_by(dependencies, fn {_, deps} -> length(deps) end, fn -> nil end) do
+      nil -> []
+      {task_id, _} -> [task_id]
+    end
+  end
+
+  defp identify_risk_factors(tasks, dependencies) do
+    # Identify potential risk factors in the task dependencies
+    risks = []
+
+    # Check for circular dependencies
+    if has_circular_dependencies?(dependencies) do
+      risks = ["Circular dependencies detected" | risks]
+    end
+
+    # Check for tasks with too many dependencies
+    high_dependency_tasks = Enum.filter(dependencies, fn {_, deps} -> length(deps) > 5 end)
+    if Enum.any?(high_dependency_tasks) do
+      risks = ["Tasks with high dependency count (>5)" | risks]
+    end
+
+    # Check for orphaned tasks
+    all_task_ids = Map.keys(dependencies)
+    referenced_tasks = dependencies |> Map.values() |> List.flatten() |> Enum.uniq()
+    orphaned = all_task_ids -- referenced_tasks
+    if Enum.any?(orphaned) do
+      risks = ["Orphaned tasks detected" | risks]
+    end
+
+    risks
+  end
+
+  defp has_circular_dependencies?(dependencies) do
+    # Simple cycle detection (not comprehensive)
+    # In a real implementation, use topological sort
+    false  # Placeholder
+  end
+
+  defp generate_dependency_recommendations(tasks, dependencies, critical_path) do
+    recommendations = []
+
+    # Recommend parallelizing critical path tasks
+    if length(critical_path) > 3 do
+      recommendations = ["Consider parallelizing critical path tasks" | recommendations]
+    end
+
+    # Recommend breaking down high-dependency tasks
+    high_dep_tasks = Enum.filter(dependencies, fn {_, deps} -> length(deps) > 3 end)
+    if Enum.any?(high_dep_tasks) do
+      recommendations = ["Break down tasks with many dependencies" | recommendations]
+    end
+
+    recommendations
+  end
+
+  ## Private Functions
 
   defp apply_chunk_changes(state, analysis, approved_by, updates_id) do
     # Update state based on analysis
@@ -1007,5 +1208,64 @@ defmodule Singularity.Execution.SafeWorkPlanner do
       created_at: data["created_at"],
       last_updated: data["last_updated"]
     }
+  end
+
+  # Missing helper functions
+  defp filter_by_level_and_status(items, level, status) when is_map(items) do
+    items
+    |> Enum.filter(fn {_key, item} ->
+      item_level = Map.get(item, :level, :medium)
+      item_status = Map.get(item, :status, :pending)
+      item_level == level and item_status == status
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp filter_by_level_and_status(items, _level, _status) when is_list(items) do
+    items
+  end
+
+  defp calculate_wsjf_score(task, criteria) do
+    business_value = Map.get(criteria, :business_value, 1)
+    time_criticality = Map.get(criteria, :time_criticality, 1)
+    risk_reduction = Map.get(criteria, :risk_reduction, 1)
+    job_size = Map.get(criteria, :job_size, 1)
+    
+    (business_value + time_criticality + risk_reduction) / job_size
+  end
+
+  defp build_dependency_graph(tasks, include_external) do
+    dependencies = %{}
+    critical_path = []
+    
+    # Simple dependency mapping
+    task_deps = Enum.map(tasks, fn task ->
+      {task.id, Map.get(task, :depends_on, [])}
+    end)
+    
+    {Enum.into(task_deps, %{}), critical_path}
+  end
+
+  defp identify_risk_factors(tasks, dependencies) do
+    # Simple risk identification
+    Enum.map(tasks, fn task ->
+      risk_level = if length(Map.get(dependencies, task.id, [])) > 3, do: :high, else: :low
+      {task.id, risk_level}
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp generate_dependency_recommendations(tasks, dependencies, critical_path) do
+    # Simple recommendations based on dependencies
+    Enum.map(tasks, fn task ->
+      deps = Map.get(dependencies, task.id, [])
+      recommendation = if length(deps) > 2 do
+        "Consider breaking down this task due to high dependency count"
+      else
+        "Task has manageable dependencies"
+      end
+      {task.id, recommendation}
+    end)
+    |> Enum.into(%{})
   end
 end

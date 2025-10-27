@@ -527,7 +527,7 @@ Uses PostgreSQL with:
   - ✅ `packages/prompt_engine/` - Prompt generation (Rust NIF, Moon project)
 - `rust/` - Legacy Rust components (non-engine utilities)
 - `rust_global/package_registry/` - Global external package analysis ✅ **CLEAN**
-- `llm-server/` - TypeScript AI provider server (Bun)
+- `observer/` - Phoenix web UI for observability (port 4002)
 - `flake.nix` - Nix configuration with all tools
 - `start-all.sh` / `stop-all.sh` - Service orchestration scripts
 - `.envrc` - Environment variables (use with direnv)

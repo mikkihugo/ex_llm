@@ -70,6 +70,11 @@ defmodule Singularity.Code.FullRepoScanner do
   def learn_codebase(opts \\ []) do
     Logger.info("Starting simple codebase learning...")
 
+    # Extract options with defaults
+    include_tests = Keyword.get(opts, :include_tests, true)
+    include_docs = Keyword.get(opts, :include_docs, true)
+    max_files = Keyword.get(opts, :max_files, :infinity)
+
     # Step 1: Scan all Elixir source files
     source_files = find_source_files()
 
@@ -91,7 +96,10 @@ defmodule Singularity.Code.FullRepoScanner do
     issues = identify_issues(knowledge)
 
     Logger.info(
-      "Learning complete: #{map_size(knowledge.modules)} modules, #{length(issues)} issues"
+      "Learning complete: #{map_size(knowledge.modules)} modules, #{length(issues)} issues",
+      include_tests: include_tests,
+      include_docs: include_docs,
+      max_files: max_files
     )
 
     {:ok,
@@ -336,7 +344,7 @@ defmodule Singularity.Code.FullRepoScanner do
 
   defp find_source_files do
     # Find all source files in the entire project root
-    # This includes: singularity/, rust/, llm-server/, centralcloud/, etc.
+    # This includes: singularity/, rust/, centralcloud/, observer/, etc.
     # App runs from singularity/ dir, so go up one level to get repo root
     project_root = Path.expand("..", File.cwd!())
 
@@ -543,7 +551,7 @@ defmodule Singularity.Code.FullRepoScanner do
     cond do
       String.contains?(file_path, "/singularity/") -> :elixir_app
       String.contains?(file_path, "/rust/") -> :rust_component
-      String.contains?(file_path, "/llm-server/") -> :typescript_service
+      String.contains?(file_path, "/observer/") -> :elixir_web_ui
       String.contains?(file_path, "/centralcloud/") -> :elixir_service
       String.contains?(file_path, "/templates_data/") -> :templates
       String.contains?(file_path, "/scripts/") -> :scripts
@@ -583,6 +591,7 @@ defmodule Singularity.Code.FullRepoScanner do
          file_type: file_type,
          purpose: purpose,
          dependencies: dependencies,
+         documentation: documentation,
          has_docs: moduledoc != nil and moduledoc != "",
          content_size: byte_size(content)
        }}

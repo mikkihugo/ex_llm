@@ -461,8 +461,26 @@ defmodule Singularity.Agents.DocumentationUpgrader do
       String.ends_with?(file_path, ".rs") ->
         :rust
 
-      String.ends_with?(file_path, ".ts") or String.ends_with?(file_path, ".tsx") ->
+      String.ends_with?(file_path, ".ts") ->
         :typescript
+
+      String.ends_with?(file_path, ".tsx") ->
+        :tsx
+
+      String.ends_with?(file_path, ".js") ->
+        :javascript
+
+      String.ends_with?(file_path, ".go") ->
+        :go
+
+      String.ends_with?(file_path, ".java") ->
+        :java
+
+      String.ends_with?(file_path, ".gleam") ->
+        :gleam
+
+      String.ends_with?(file_path, ".py") ->
+        :python
 
       true ->
         :unknown
@@ -565,6 +583,21 @@ defmodule Singularity.Agents.DocumentationUpgrader do
 
       String.contains?(content, "interface") and String.contains?(content, "/**") ->
         :typescript
+
+      String.contains?(content, "export") and String.contains?(content, "function") ->
+        :javascript
+
+      String.contains?(content, "package main") and String.contains?(content, "func") ->
+        :go
+
+      String.contains?(content, "public class") and String.contains?(content, "/**") ->
+        :java
+
+      String.contains?(content, "pub fn") and String.contains?(content, "///") ->
+        :gleam
+
+      String.contains?(content, "def ") and String.contains?(content, "\"\"\"") ->
+        :python
 
       true ->
         :unknown

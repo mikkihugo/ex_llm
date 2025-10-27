@@ -490,8 +490,8 @@ defmodule Singularity.Agents.QualityEnforcer do
     [
       "./singularity/lib/**/*.ex",
       "./rust/**/*.rs",
-      "./llm-server/**/*.ts",
-      "./llm-server/**/*.tsx"
+      "./observer/lib/**/*.ex",
+      "./observer/lib/**/*.heex"
     ]
     |> Enum.flat_map(fn pattern ->
       Path.wildcard(pattern)

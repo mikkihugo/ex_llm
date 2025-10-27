@@ -55,6 +55,7 @@ defmodule ObserverWeb.Router do
       live "/rule-evolution", RuleEvolutionLive
       live "/knowledge-base", KnowledgeBaseLive
       live "/task-execution", TaskExecutionLive
+      live "/todos", TodosLive
       live "/hitl-approvals", HITLApprovalsLive
       # WebChat Integration
       live "/webchat", WebChatLive

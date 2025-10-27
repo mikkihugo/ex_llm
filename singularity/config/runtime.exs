@@ -12,9 +12,8 @@ server_enabled? =
     value -> value == "true"
   end
 
-config :singularity, SingularityWeb.Endpoint,
-  server: server_enabled?,
-  http: [port: port, transport_options: [num_acceptors: 10]]
+# Note: Singularity is a pure Elixir application with no web endpoint
+# Web interfaces are provided by Observer (port 4002)
 
 # Google Chat webhook for human interface
 config :singularity,

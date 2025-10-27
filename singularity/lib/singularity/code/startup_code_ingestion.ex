@@ -16,7 +16,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
 
   ## What It Does:
 
-  1. **Learn**: Scans ALL source files in entire repo (`rust/`, `llm-server/`, `singularity/`, `centralcloud/`)
+  1. **Learn**: Scans ALL source files in entire repo (`rust/`, `observer/`, `singularity/`, `centralcloud/`)
   2. **Parse**: Uses CodeEngine NIF (Rust + tree-sitter) for full AST (supports 20+ languages)
   3. **Persist**: Stores in PostgreSQL `code_files` table
   4. **Diagnose**: Identifies issues (broken deps, missing docs, etc.)

@@ -435,7 +435,7 @@ defmodule Singularity.SharedQueuePublisher do
               msg_id: msg_id
             })
 
-            Postgrex.close(pid)
+            Postgrex.close(pid, [])
             msg_id
 
           {:error, reason} ->
@@ -444,7 +444,7 @@ defmodule Singularity.SharedQueuePublisher do
               error: inspect(reason)
             })
 
-            Postgrex.close(pid)
+            Postgrex.close(pid, [])
             nil
         end
       rescue
@@ -483,12 +483,12 @@ defmodule Singularity.SharedQueuePublisher do
               count: length(messages)
             })
 
-            Postgrex.close(pid)
+            Postgrex.close(pid, [])
             {:ok, messages}
 
           {:ok, _result} ->
             Logger.debug("[SharedQueue] No messages in queue", %{queue: queue_name})
-            Postgrex.close(pid)
+            Postgrex.close(pid, [])
             :empty
 
           {:error, reason} ->
@@ -497,7 +497,7 @@ defmodule Singularity.SharedQueuePublisher do
               error: inspect(reason)
             })
 
-            Postgrex.close(pid)
+            Postgrex.close(pid, [])
             {:error, reason}
         end
       rescue

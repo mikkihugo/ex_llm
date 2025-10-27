@@ -267,6 +267,6 @@ end
 
 ## See Also
 
-- [AI Server README](../../llm-server/README.md) - HTTP API documentation
+- [Observer README](../../observer/README.md) - Phoenix web UI documentation
 - [Deployment Options](../../docs/deployment/DEPLOYMENT_OPTIONS.md) - Deployment strategies
 - [Quick Start](../../docs/setup/QUICKSTART.md) - Quick deployment guide

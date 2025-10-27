@@ -2,25 +2,16 @@ import Config
 
 config :logger, level: :info
 
-config :singularity, SingularityWeb.Endpoint,
-  http: [
-    port: String.to_integer(System.get_env("PORT", "8080")),
-    transport_options: [num_acceptors: String.to_integer(System.get_env("HTTP_ACCEPTORS", "10"))]
-  ],
-  https: [
-    port: String.to_integer(System.get_env("HTTPS_PORT", "8443")),
-    keyfile: System.get_env("HTTPS_KEYFILE", "priv/cert/selfsigned_key.pem"),
-    certfile: System.get_env("HTTPS_CERTFILE", "priv/cert/selfsigned.pem"),
-    transport_options: [num_acceptors: String.to_integer(System.get_env("HTTPS_ACCEPTORS", "10"))]
-  ],
-  force_ssl: [rewrite_on: [:x_forwarded_proto]],
-  server: true
+# Note: Singularity is a pure Elixir application with no web endpoint
+# Web interfaces are provided by:
+# - Observer (port 4002) - Phoenix web UI for observability
+# - AI calls go directly through ExLLM to providers (no HTTP intermediary)
 
 config :singularity, :fly,
   release_node: System.get_env("RELEASE_NODE"),
   release_distribution: System.get_env("RELEASE_DISTRIBUTION", "name")
 
-config :singularity, :http_server_enabled, true
+# HTTP server not applicable - Singularity is pure Elixir application
 
 # Production Oban Configuration
 # Persistent job queue with proper error handling

@@ -59,11 +59,16 @@ defmodule Singularity.SharedQueueConsumer do
   def init(opts) do
     Logger.info("[Singularity.SharedQueueConsumer] Starting response consumer")
 
+    # Extract configuration from opts
+    poll_interval = Keyword.get(opts, :poll_interval, 1000)
+    llm_poll_interval = Keyword.get(opts, :llm_poll_interval, 100)
+    batch_size = Keyword.get(opts, :batch_size, 100)
+
     # Start polling immediately (both regular and LLM-specific)
     schedule_poll()
     schedule_llm_poll()
 
-    {:ok, %{}}
+    {:ok, %{poll_interval: poll_interval, llm_poll_interval: llm_poll_interval, batch_size: batch_size}}
   end
 
   @impl true

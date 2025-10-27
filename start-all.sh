@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # Singularity Complete System Startup Script
 # Starts all required services in proper order
+# 
+# Current Architecture (October 2025):
+# - Singularity (Core Elixir/OTP) - port 4000
+# - CentralCloud (Pattern Intelligence) - port 4001  
+# - Observer (Phoenix Web UI) - port 4002
+# - PostgreSQL (Database)
+# - NATS (Message Queue)
+# 
+# Note: AI server (TypeScript/Bun) was removed - AI calls go directly through ExLLM
 
 set -euo pipefail
 
@@ -38,8 +47,8 @@ if pgrep -f "elixir.*singularity" > /dev/null || pgrep -f "beam.*singularity" > 
     existing_processes+=("Elixir Application")
 fi
 
-if pgrep -f "bun.*server" > /dev/null; then
-    existing_processes+=("AI Server")
+if pgrep -f "elixir.*observer" > /dev/null || pgrep -f "beam.*observer" > /dev/null; then
+    existing_processes+=("Observer")
 fi
 
 if pgrep -f "elixir.*centralcloud" > /dev/null || pgrep -f "beam.*centralcloud" > /dev/null; then
@@ -222,43 +231,47 @@ else
     cd ..
 fi
 
-# 6. Start AI Server (TypeScript)
-echo -e "\n${YELLOW}[6/6] Starting AI Server...${NC}"
+# 6. Start Observer (Phoenix Web UI)
+echo -e "\n${YELLOW}[6/6] Starting Observer...${NC}"
 
-# Check for existing AI Server processes
-if pgrep -f "bun.*server" > /dev/null || lsof -i:3000 > /dev/null 2>&1; then
-    if lsof -i:3000 > /dev/null 2>&1; then
-        echo "✅ AI Server already running on port 3000"
-    else
-        echo -e "${RED}❌ AI Server process found but not listening on port 3000!${NC}"
-        echo -e "${YELLOW}Please stop existing processes first:${NC}"
-        echo "  ./stop-all.sh"
-        echo "  or: pkill -f 'bun.*server'"
-        exit 1
-    fi
+# Check for existing Observer processes
+if pgrep -f "elixir.*observer" > /dev/null || pgrep -f "beam.*observer" > /dev/null; then
+    echo "✅ Observer already running"
 else
-    cd llm-server
+    cd observer
 
     # Install dependencies if needed
-    if [ ! -d "node_modules" ]; then
-        echo "Installing AI Server dependencies..."
-        bun install
+    if [ ! -d "deps" ]; then
+        echo "Installing Observer dependencies..."
+        mix deps.get
     fi
 
-    # Load environment variables
-    if [ -f "../.env" ]; then
-        export $(cat ../.env | grep -v '^#' | xargs)
+    # Compile if needed
+    if [ ! -d "_build" ]; then
+        echo "Compiling Observer application..."
+        mix compile
     fi
 
-    echo "Starting AI Server (with hot reload)..."
-    bun --hot run src/server.ts > ../logs/llm-server.log 2>&1 &
+    # Run migrations
+    echo "Running Observer database migrations..."
+    mix ecto.migrate
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ Observer migrations failed${NC}"
+        echo "Check that PostgreSQL is running and observer database exists"
+        exit 1
+    fi
+    echo "✅ Observer migrations up to date"
+
+    # Start the application with hot reload
+    echo "Starting Observer application (with hot reload)..."
+    MIX_ENV=dev iex --name observer@127.0.0.1 --cookie singularity-secret -S mix phx.server > ../logs/observer.log 2>&1 &
     sleep 3
 
-    if lsof -i:3000 > /dev/null 2>&1; then
-        echo "✅ AI Server started on port 3000"
+    if pgrep -f "elixir.*observer" > /dev/null; then
+        echo "✅ Observer started on port 4002"
     else
-        echo -e "${RED}❌ Failed to start AI Server${NC}"
-        echo "Check logs/llm-server.log for details"
+        echo -e "${YELLOW}⚠️  Observer may have failed to start${NC}"
+        echo "Check logs/observer.log for details"
     fi
     cd ..
 fi
@@ -272,10 +285,10 @@ echo -e "${GREEN}═════════════════════
 services=(
     "nats-server:4222:NATS"
     "postgres:N/A:PostgreSQL"
-    "elixir.*centralcloud:N/A:Centralcloud"
+    "elixir.*centralcloud:4001:CentralCloud"
     "elixir.*genesis:N/A:Genesis"
-    "elixir.*singularity:N/A:Singularity"
-    "bun:3000:AI Server"
+    "elixir.*singularity:4000:Singularity"
+    "elixir.*observer:4002:Observer"
 )
 
 all_running=true
@@ -304,10 +317,11 @@ echo -e "${GREEN}═════════════════════
 if $all_running; then
     echo -e "\n${GREEN}✨ All services are running!${NC}"
     echo -e "\nYou can now:"
-    echo "  • Test AI Server: curl http://localhost:3000/health"
-    echo "  • Test Elixir: curl http://localhost:4000/health"
-    echo "  • Test orchestration: curl http://localhost:3000/v1/orchestrated/chat"
+    echo "  • Singularity (Core): http://localhost:4000"
+    echo "  • CentralCloud (Patterns): http://localhost:4001"
+    echo "  • Observer (Web UI): http://localhost:4002"
     echo "  • View logs: tail -f logs/*.log"
+    echo "  • AI calls go directly through ExLLM (no HTTP intermediary)"
 else
     echo -e "\n${YELLOW}⚠️  Some services failed to start${NC}"
     echo "Check the logs directory for details"

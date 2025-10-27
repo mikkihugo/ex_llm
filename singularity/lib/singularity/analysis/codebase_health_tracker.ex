@@ -106,6 +106,11 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
   """
   def snapshot_codebase(codebase_path, opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
+    
+    # Extract options with defaults
+    include_tests = Keyword.get(opts, :include_tests, true)
+    include_docs = Keyword.get(opts, :include_docs, true)
+    max_files = Keyword.get(opts, :max_files, :infinity)
 
     with :ok <- File.exists?(codebase_path) |> if(do: :ok, else: {:error, :not_found}),
          {:ok, files} <- scan_files(codebase_path),
@@ -139,7 +144,10 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
         codebase: codebase_path,
         elapsed_ms: elapsed,
         loc: snapshot.lines_of_code,
-        modules: snapshot.modules_count
+        modules: snapshot.modules_count,
+        include_tests: include_tests,
+        include_docs: include_docs,
+        max_files: max_files
       )
 
       {:ok, snapshot}

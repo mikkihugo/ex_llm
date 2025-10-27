@@ -2,13 +2,10 @@ import Config
 
 config :singularity, :git_coordinator, enabled: false
 
-config :singularity, SingularityWeb.Endpoint,
-  http: [port: 5001],
-  server: false
+# Note: Singularity is a pure Elixir application with no web endpoint
+# Web interfaces are provided by Observer (port 4002)
 
 config :logger, level: :warning
-
-config :singularity, :http_server_enabled, false
 
 config :singularity, Singularity.Repo,
   # Shared DB, sandboxed for tests
