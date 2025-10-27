@@ -212,7 +212,7 @@ defmodule Singularity.CodeGraph.Queries do
   """
   @spec forward_dependencies(module_id, keyword()) :: query_result()
   def forward_dependencies(module_id, _opts \\ []) do
-    max_depth = Keyword.get(_opts, :max_depth, 10)
+    max_depth = Keyword.get(opts, :max_depth, 10)
 
     query = """
     WITH RECURSIVE dependencies AS (
@@ -266,7 +266,7 @@ defmodule Singularity.CodeGraph.Queries do
   """
   @spec reverse_callers(module_id, keyword()) :: query_result()
   def reverse_callers(module_id, _opts \\ []) do
-    max_depth = Keyword.get(_opts, :max_depth, 10)
+    max_depth = Keyword.get(opts, :max_depth, 10)
 
     query = """
     WITH RECURSIVE callers AS (
@@ -320,7 +320,7 @@ defmodule Singularity.CodeGraph.Queries do
   """
   @spec shortest_path(module_id, module_id, keyword()) :: query_result()
   def shortest_path(from_module_id, to_module_id, _opts \\ []) do
-    max_depth = Keyword.get(_opts, :max_depth, 10)
+    max_depth = Keyword.get(opts, :max_depth, 10)
 
     query = """
     WITH RECURSIVE paths AS (
@@ -373,8 +373,8 @@ defmodule Singularity.CodeGraph.Queries do
       ]}
   """
   @spec find_cycles(keyword()) :: query_result()
-  def find_cycles(_opts \\ []) do
-    max_depth = Keyword.get(_opts, :max_depth, 5)
+  def find_cycles(opts \\ [])(_opts \\ []) do
+    max_depth = Keyword.get(opts, :max_depth, 5)
 
     query = """
     WITH RECURSIVE visited AS (
@@ -429,7 +429,7 @@ defmodule Singularity.CodeGraph.Queries do
   """
   @spec impact_analysis(module_id, keyword()) :: query_result()
   def impact_analysis(module_id, _opts \\ []) do
-    max_depth = Keyword.get(_opts, :max_depth, 5)
+    max_depth = Keyword.get(opts, :max_depth, 5)
 
     query = """
     WITH RECURSIVE affected AS (
@@ -490,7 +490,7 @@ defmodule Singularity.CodeGraph.Queries do
   """
   @spec dependency_stats(module_id, keyword()) :: query_result()
   def dependency_stats(module_id, _opts \\ []) do
-    max_depth = Keyword.get(_opts, :max_depth, 10)
+    max_depth = Keyword.get(opts, :max_depth, 10)
 
     forward_query = """
     WITH RECURSIVE dependencies AS (

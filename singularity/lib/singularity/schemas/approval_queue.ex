@@ -102,9 +102,9 @@ defmodule Singularity.Schemas.ApprovalQueue do
     |> changeset(%{
       file_path: file_path,
       diff: diff,
-      description: Keyword.get(_opts, :description),
-      agent_id: Keyword.get(_opts, :agent_id),
-      requested_by: Keyword.get(_opts, :requested_by),
+      description: Keyword.get(opts, :description),
+      agent_id: Keyword.get(opts, :agent_id),
+      requested_by: Keyword.get(opts, :requested_by),
       status: "pending"
     })
   end

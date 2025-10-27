@@ -137,8 +137,8 @@ defmodule Singularity.Agents.CostOptimizedAgent do
 
   ## Client API
 
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, _opts, name: via_tuple(_opts[:id]))
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: via_tuple(opts[:id]))
   end
 
   @doc """
@@ -180,11 +180,11 @@ defmodule Singularity.Agents.CostOptimizedAgent do
   ## Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     state = %__MODULE__{
-      id: _opts[:id],
-      specialization: _opts[:specialization],
-      workspace: _opts[:workspace],
+      id: opts[:id],
+      specialization: opts[:specialization],
+      workspace: opts[:workspace],
       current_branch: nil,
       status: :idle,
       lifetime_cost: 0.0,

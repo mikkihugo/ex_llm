@@ -155,8 +155,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
   @spec forward_dependencies(String.t(), list()) ::
           {:ok, list(map())} | {:error, String.t()}
   def forward_dependencies(module_name, _opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 1000)
-    max_depth = Keyword.get(_opts, :max_depth, 100)
+    limit = Keyword.get(opts, :limit, 1000)
+    max_depth = Keyword.get(opts, :max_depth, 100)
 
     query = """
     MATCH (start:Module {name: $1}) -[:CALLS*..#{max_depth}]-> (dep:Module)
@@ -201,8 +201,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
   @spec reverse_callers(String.t(), list()) ::
           {:ok, list(map())} | {:error, String.t()}
   def reverse_callers(module_name, _opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 1000)
-    max_depth = Keyword.get(_opts, :max_depth, 100)
+    limit = Keyword.get(opts, :limit, 1000)
+    max_depth = Keyword.get(opts, :max_depth, 100)
 
     query = """
     MATCH (caller:Module) -[:CALLS*..#{max_depth}]-> (target:Module {name: $1})
@@ -290,8 +290,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
       {:ok, [%{cycle: ["A", "B", "C", "A"]}, %{cycle: ["X", "Y", "X"]}]}
   """
   @spec find_cycles(list()) :: {:ok, list(map())} | {:error, String.t()}
-  def find_cycles(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 100)
+  def find_cycles(opts \\ [])(_opts \\ []) do
+    limit = Keyword.get(opts, :limit, 100)
 
     query = """
     MATCH (m:Module)
@@ -336,7 +336,7 @@ defmodule Singularity.CodeGraph.AGEQueries do
   @spec impact_analysis(String.t(), list()) ::
           {:ok, list(map())} | {:error, String.t()}
   def impact_analysis(module_name, _opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 50)
+    limit = Keyword.get(opts, :limit, 50)
 
     query = """
     MATCH (target:Module {name: $1}) <-[:CALLS*]- (affected:Module)
@@ -380,10 +380,10 @@ defmodule Singularity.CodeGraph.AGEQueries do
   - Documentation
   """
   @spec code_hotspots(list()) :: {:ok, list(map())} | {:error, String.t()}
-  def code_hotspots(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 20)
-    min_complexity = Keyword.get(_opts, :min_complexity, 10)
-    min_pagerank = Keyword.get(_opts, :min_pagerank, 3.0)
+  def code_hotspots(opts \\ [])(_opts \\ []) do
+    limit = Keyword.get(opts, :limit, 20)
+    min_complexity = Keyword.get(opts, :min_complexity, 10)
+    min_pagerank = Keyword.get(opts, :min_pagerank, 3.0)
 
     query = """
     MATCH (m:Module)
@@ -427,8 +427,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
   - Natural service boundaries
   """
   @spec module_clusters(list()) :: {:ok, list(map())} | {:error, String.t()}
-  def module_clusters(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 10)
+  def module_clusters(opts \\ [])(_opts \\ []) do
+    limit = Keyword.get(opts, :limit, 10)
 
     query = """
     MATCH (m1:Module) -[:CALLS]-> (m2:Module) -[:CALLS]-> (m1)
@@ -465,10 +465,10 @@ defmodule Singularity.CodeGraph.AGEQueries do
   3. High complexity
   """
   @spec test_coverage_gaps(list()) :: {:ok, list(map())} | {:error, String.t()}
-  def test_coverage_gaps(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 30)
-    min_pagerank = Keyword.get(_opts, :min_pagerank, 3.0)
-    max_coverage = Keyword.get(_opts, :max_coverage, 0.5)
+  def test_coverage_gaps(opts \\ [])(_opts \\ []) do
+    limit = Keyword.get(opts, :limit, 30)
+    min_pagerank = Keyword.get(opts, :min_pagerank, 3.0)
+    max_coverage = Keyword.get(opts, :max_coverage, 0.5)
 
     query = """
     MATCH (m:Module)
@@ -508,8 +508,8 @@ defmodule Singularity.CodeGraph.AGEQueries do
   Candidates for removal or deprecation.
   """
   @spec dead_code(list()) :: {:ok, list(map())} | {:error, String.t()}
-  def dead_code(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 50)
+  def dead_code(opts \\ [])(_opts \\ []) do
+    limit = Keyword.get(opts, :limit, 50)
 
     query = """
     MATCH (m:Module)

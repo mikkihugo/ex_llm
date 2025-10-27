@@ -29,7 +29,7 @@ defmodule Singularity.TechnologyTemplateLoader do
 
   @doc "Return compiled regex patterns for identifier"
   def patterns(identifier, _opts \\ []) do
-    field = _opts[:field]
+    field = opts[:field]
 
     identifier
     |> template(_opts)
@@ -54,7 +54,7 @@ defmodule Singularity.TechnologyTemplateLoader do
   Resolve directories searched for template JSON files. Accepts optional
   `:dirs` override for tests or custom locations.
   """
-  def directories(_opts \\ []) do
+  def directories(opts \\ [])(_opts \\ []) do
     base =
       [
         Application.get_env(:singularity, :technology_pattern_dir),
@@ -63,7 +63,7 @@ defmodule Singularity.TechnologyTemplateLoader do
       ]
       |> Enum.filter(&(&1 && File.dir?(&1)))
 
-    Enum.uniq(_opts[:dirs] || base)
+    Enum.uniq(opts[:dirs] || base)
   end
 
   defp to_relative_path(identifier) when is_atom(identifier),
@@ -170,7 +170,7 @@ defmodule Singularity.TechnologyTemplateLoader do
   defp compile_pattern(_), do: {:error, :invalid_pattern}
 
   defp persist_template(identifier, %{} = template, source, _opts) do
-    if Keyword.get(_opts, :persist, true) do
+    if Keyword.get(opts, :persist, true) do
       try do
         case TechnologyTemplateStore.upsert(identifier, template,
                source: to_string(source),
@@ -200,9 +200,9 @@ defmodule Singularity.TechnologyTemplateLoader do
 
   defp persist_template(identifier, template, source, _opts) do
     # Extract options
-    quality_level = Keyword.get(_opts, :quality_level, :production)
-    force_update = Keyword.get(_opts, :force_update, false)
-    validate_schema = Keyword.get(_opts, :validate_schema, true)
+    quality_level = Keyword.get(opts, :quality_level, :production)
+    force_update = Keyword.get(opts, :force_update, false)
+    validate_schema = Keyword.get(opts, :validate_schema, true)
 
     # Validate template schema if requested
     if validate_schema do

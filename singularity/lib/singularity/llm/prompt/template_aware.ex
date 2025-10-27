@@ -26,8 +26,8 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   Now enhanced with Rust prompt engine for context-aware generation.
   """
   def generate_prompt(task, _opts \\ []) do
-    language = Keyword.get(_opts, :language, "elixir")
-    use_prompt_engine = Keyword.get(_opts, :use_prompt_engine, true)
+    language = Keyword.get(opts, :language, "elixir")
+    use_prompt_engine = Keyword.get(opts, :use_prompt_engine, true)
 
     if use_prompt_engine do
       generate_prompt_with_engine(task, language, _opts)
@@ -251,8 +251,8 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
     #{format_examples(examples)}
 
     ## Requirements
-    - Language: #{_opts[:language] || "auto-detect"}
-    - Quality Level: #{_opts[:quality] || "production"}
+    - Language: #{opts[:language] || "auto-detect"}
+    - Quality Level: #{opts[:quality] || "production"}
     - Follow the template structure exactly
     - Use patterns from the examples
     - Generate production-ready code
@@ -518,12 +518,12 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   end
 
   defp optimize_prompt_if_available(prompt, task, _opts) do
-    use_optimization = Keyword.get(_opts, :optimize_prompt, true)
+    use_optimization = Keyword.get(opts, :optimize_prompt, true)
 
     if use_optimization do
       case PromptEngine.optimize_prompt(prompt,
              context: task.description,
-             language: Keyword.get(_opts, :language, "elixir")
+             language: Keyword.get(opts, :language, "elixir")
            ) do
         {:ok, %{optimized_prompt: optimized}} ->
           Logger.info("Prompt optimized using prompt engine",

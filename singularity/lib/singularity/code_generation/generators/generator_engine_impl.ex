@@ -49,14 +49,14 @@ defmodule Singularity.CodeGeneration.Generators.GeneratorEngineImpl do
   end
 
   @impl true
-  def generate(spec, _opts \\ []) when is_map(spec) do
+  def generate(spec, opts \\ []) when is_map(spec) do
     try do
       # Unpack spec fields for GeneratorEngine.code_generate/5
       task = spec[:spec] || spec[:task] || ""
-      language = spec[:language] || _opts[:language] || "elixir"
-      repos = _opts[:repos] || []
-      quality = _opts[:quality] || :standard
-      include_tests = _opts[:include_tests] || true
+      language = spec[:language] || opts[:language] || "elixir"
+      repos = opts[:repos] || []
+      quality = opts[:quality] || :standard
+      include_tests = opts[:include_tests] || true
 
       Logger.debug("GeneratorEngineImpl: generating with GeneratorEngine",
         task: task,

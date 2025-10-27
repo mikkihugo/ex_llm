@@ -180,8 +180,8 @@ defmodule Singularity.PromptEngine do
   def optimize_prompt(prompt, _opts \\ []) do
     request = %{
       prompt: prompt,
-      context: Keyword.get(_opts, :context),
-      language: Keyword.get(_opts, :language)
+      context: Keyword.get(opts, :context),
+      language: Keyword.get(opts, :language)
     }
 
     with {:nif, {:ok, response}} <- {:nif, call_nif(fn -> Native.optimize_prompt(request) end)} do
@@ -203,7 +203,7 @@ defmodule Singularity.PromptEngine do
 
   @spec get_template(String.t(), keyword()) :: prompt_response
   def get_template(template_id, _opts \\ []) do
-    context = Keyword.get(_opts, :context, %{})
+    context = Keyword.get(opts, :context, %{})
 
     case Enum.find(@default_templates, &(&1.id == template_id)) do
       nil -> {:error, {:template_not_found, template_id, context}}
@@ -265,10 +265,10 @@ defmodule Singularity.PromptEngine do
     %{
       context: context,
       language: language,
-      template_id: Keyword.get(_opts, :template_id),
-      trigger_type: Keyword.get(_opts, :trigger_type),
-      trigger_value: Keyword.get(_opts, :trigger_value),
-      category: Keyword.get(_opts, :category, "commands")
+      template_id: Keyword.get(opts, :template_id),
+      trigger_type: Keyword.get(opts, :trigger_type),
+      trigger_value: Keyword.get(opts, :trigger_value),
+      category: Keyword.get(opts, :category, "commands")
     }
   end
 

@@ -216,8 +216,8 @@ defmodule Singularity.Architecture.PatternStore do
   def search_similar_patterns(pattern_type, query_text, _opts \\ [])
       when pattern_type in [:framework, :technology] and is_binary(query_text) do
     table = table_for(pattern_type)
-    top_k = Keyword.get(_opts, :top_k, 5)
-    min_similarity = Keyword.get(_opts, :min_similarity, 0.7)
+    top_k = Keyword.get(opts, :top_k, 5)
+    min_similarity = Keyword.get(opts, :min_similarity, 0.7)
 
     SemanticSearch.search(query_text,
       table: table,
@@ -341,8 +341,8 @@ defmodule Singularity.Architecture.PatternStore do
   """
   def list_patterns(pattern_type, _opts \\ []) when pattern_type in [:framework, :technology] do
     table = table_for(pattern_type)
-    limit = Keyword.get(_opts, :limit, 100)
-    offset = Keyword.get(_opts, :offset, 0)
+    limit = Keyword.get(opts, :limit, 100)
+    offset = Keyword.get(opts, :offset, 0)
 
     query = """
     SELECT * FROM #{table}

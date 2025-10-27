@@ -42,7 +42,7 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
   - `Singularity.Execution.Autonomy.RuleEngine` - Epic/feature validation
   - `Singularity.LLM.Service` - Vision chunk classification
   - `Singularity.EmbeddingEngine` - Semantic parent finding
-  - `Singularity.Conversation.GoogleChat` - Notifications
+  - `Singularity.Conversation.WebChat` - Notifications
   - PostgreSQL table: `safe_work_items`
 
   ## Error Handling
@@ -133,7 +133,7 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
       purpose: Persist SAFe hierarchy to disk
       critical: true
 
-    - module: Singularity.Conversation.GoogleChat
+    - module: Singularity.Conversation.WebChat
       function: notify/1
       purpose: Send notifications for approvals and escalations
       critical: false
@@ -918,7 +918,7 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
   end
 
   defp notify_chunk_added(analysis, approved_by) do
-    Conversation.GoogleChat.notify("""
+    Conversation.WebChat.notify("""
     ✅ **Vision Chunk Added**
 
     Level: #{analysis.level}
@@ -931,7 +931,7 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
   end
 
   defp notify_approval_needed(analysis, result) do
-    Conversation.GoogleChat.notify("""
+    Conversation.WebChat.notify("""
     ⚠️ **Approval Needed**
 
     Level: #{analysis.level}
@@ -945,7 +945,7 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
   end
 
   defp notify_escalation(analysis, result) do
-    Conversation.GoogleChat.notify("""
+    Conversation.WebChat.notify("""
     🚨 **Decision Escalated**
 
     Level: #{analysis.level}

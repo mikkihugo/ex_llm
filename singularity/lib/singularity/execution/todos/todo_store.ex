@@ -189,8 +189,8 @@ defmodule Singularity.Execution.Todos.TodoStore do
   """
   def search(query, _opts \\ []) do
     with {:ok, embedding} <- EmbeddingGenerator.embed(query) do
-      limit = Keyword.get(_opts, :limit, 10)
-      min_similarity = Keyword.get(_opts, :min_similarity, 0.7)
+      limit = Keyword.get(opts, :limit, 10)
+      min_similarity = Keyword.get(opts, :min_similarity, 0.7)
 
       results =
         Todo
@@ -213,7 +213,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   """
   def find_related(todo, _opts \\ []) do
     if todo.embedding do
-      limit = Keyword.get(_opts, :limit, 5)
+      limit = Keyword.get(opts, :limit, 5)
 
       results =
         Todo
@@ -243,7 +243,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   4. Oldest first (created_at)
   """
   def get_next_available(_opts \\ []) do
-    complexity = Keyword.get(_opts, :complexity)
+    complexity = Keyword.get(opts, :complexity)
 
     query =
       Todo
@@ -267,7 +267,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   Get all todos that are ready to execute (no blocking dependencies).
   """
   def get_ready_todos(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 100)
+    limit = Keyword.get(opts, :limit, 100)
 
     todos =
       Todo
@@ -422,7 +422,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   end
 
   defp apply_order(query, _opts) do
-    case Keyword.get(_opts, :order_by) do
+    case Keyword.get(opts, :order_by) do
       :priority -> order_by(query, [t], asc: t.priority, asc: t.inserted_at)
       :created -> order_by(query, [t], desc: t.inserted_at)
       :updated -> order_by(query, [t], desc: t.updated_at)
@@ -431,7 +431,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   end
 
   defp apply_limit(query, _opts) do
-    case Keyword.get(_opts, :limit) do
+    case Keyword.get(opts, :limit) do
       nil -> query
       limit -> limit(query, ^limit)
     end

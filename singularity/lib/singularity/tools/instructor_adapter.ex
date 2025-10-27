@@ -77,12 +77,12 @@ defmodule Singularity.Tools.InstructorAdapter do
   """
   @spec validate_parameters(String.t(), map(), Keyword.t()) :: {:ok, map()} | {:error, String.t()}
   def validate_parameters(tool_name, params, _opts \\ []) do
-    max_retries = Keyword.get(_opts, :max_retries, 2)
+    max_retries = Keyword.get(opts, :max_retries, 2)
 
     prompt = create_parameter_validation_prompt(tool_name, params)
 
     case Instructor.chat_completion(
-           model: Keyword.get(_opts, :model, "claude-opus"),
+           model: Keyword.get(opts, :model, "claude-opus"),
            response_model: InstructorSchemas.ToolParameters,
            prompt: prompt,
            max_retries: max_retries
@@ -116,14 +116,14 @@ defmodule Singularity.Tools.InstructorAdapter do
   def validate_output(output_type, content, _opts \\ [])
 
   def validate_output(:code, code, _opts) do
-    language = Keyword.get(_opts, :language, "elixir")
-    quality = Keyword.get(_opts, :quality, :production)
-    max_retries = Keyword.get(_opts, :max_retries, 3)
+    language = Keyword.get(opts, :language, "elixir")
+    quality = Keyword.get(opts, :quality, :production)
+    max_retries = Keyword.get(opts, :max_retries, 3)
 
     prompt = create_code_quality_prompt(code, language, quality)
 
     case Instructor.chat_completion(
-           model: Keyword.get(_opts, :model, "claude-opus"),
+           model: Keyword.get(opts, :model, "claude-opus"),
            response_model: InstructorSchemas.CodeQualityResult,
            prompt: prompt,
            max_retries: max_retries
@@ -157,14 +157,14 @@ defmodule Singularity.Tools.InstructorAdapter do
   def refine_output(output_type, content, feedback, _opts \\ [])
 
   def refine_output(:code, code, %{issues: issues, suggestions: suggestions}, _opts) do
-    language = Keyword.get(_opts, :language, "elixir")
-    max_iterations = Keyword.get(_opts, :max_iterations, 3)
-    max_retries = Keyword.get(_opts, :max_retries, 2)
+    language = Keyword.get(opts, :language, "elixir")
+    max_iterations = Keyword.get(opts, :max_iterations, 3)
+    max_retries = Keyword.get(opts, :max_retries, 2)
 
     prompt = create_refinement_prompt(code, language, issues, suggestions)
 
     case Instructor.chat_completion(
-           model: Keyword.get(_opts, :model, "claude-opus"),
+           model: Keyword.get(opts, :model, "claude-opus"),
            response_model: InstructorSchemas.GeneratedCode,
            prompt: prompt,
            max_retries: max_retries
@@ -196,10 +196,10 @@ defmodule Singularity.Tools.InstructorAdapter do
   @spec generate_validated_code(String.t(), Keyword.t()) ::
           {:ok, String.t(), map()} | {:error, String.t()}
   def generate_validated_code(task, _opts \\ []) do
-    language = Keyword.get(_opts, :language, "elixir")
-    quality = Keyword.get(_opts, :quality, :production)
-    quality_threshold = Keyword.get(_opts, :quality_threshold, 0.85)
-    max_iterations = Keyword.get(_opts, :max_iterations, 3)
+    language = Keyword.get(opts, :language, "elixir")
+    quality = Keyword.get(opts, :quality, :production)
+    quality_threshold = Keyword.get(opts, :quality_threshold, 0.85)
+    max_iterations = Keyword.get(opts, :max_iterations, 3)
 
     generate_and_validate_loop(
       task,

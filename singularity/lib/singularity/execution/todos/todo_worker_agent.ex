@@ -52,8 +52,8 @@ defmodule Singularity.Execution.Todos.TodoWorkerAgent do
   # Client API
   # ===========================
 
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, _opts)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts)
   end
 
   @doc """
@@ -68,10 +68,10 @@ defmodule Singularity.Execution.Todos.TodoWorkerAgent do
   # ===========================
 
   @impl true
-  def init(_opts) do
-    todo_id = Keyword.fetch!(_opts, :todo_id)
-    worker_id = Keyword.fetch!(_opts, :worker_id)
-    coordinator = Keyword.fetch!(_opts, :coordinator)
+  def init(opts) do
+    todo_id = Keyword.fetch!(opts, :todo_id)
+    worker_id = Keyword.fetch!(opts, :worker_id)
+    coordinator = Keyword.fetch!(opts, :coordinator)
 
     state = %__MODULE__{
       todo_id: todo_id,

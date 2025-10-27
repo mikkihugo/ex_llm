@@ -80,8 +80,8 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
       ]}
   """
   def find_similar_code(description, _opts \\ []) do
-    threshold = Keyword.get(_opts, :similarity_threshold, 0.8)
-    limit = Keyword.get(_opts, :limit, 10)
+    threshold = Keyword.get(opts, :similarity_threshold, 0.8)
+    limit = Keyword.get(opts, :limit, 10)
 
     # Search Singularity's own codebase
     case CodeStore.search(description,
@@ -130,11 +130,11 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
         new_patterns: []
       }}
   """
-  def generate_code(_opts) do
-    description = Keyword.fetch!(_opts, :description)
-    quality_level = Keyword.get(_opts, :quality_level, :production)
-    avoid_dup = Keyword.get(_opts, :avoid_duplication, true)
-    relationships = Keyword.get(_opts, :relationships, %{})
+  def generate_code(opts) do
+    description = Keyword.fetch!(opts, :description)
+    quality_level = Keyword.get(opts, :quality_level, :production)
+    avoid_dup = Keyword.get(opts, :avoid_duplication, true)
+    relationships = Keyword.get(opts, :relationships, %{})
 
     Logger.info("Generating code: #{description}", %{
       quality_level: quality_level,

@@ -268,7 +268,7 @@ defmodule Singularity.SharedQueuePublisher do
   - `:limit` - Number of messages to read (default: 10)
   """
   def read_llm_results(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 10)
+    limit = Keyword.get(opts, :limit, 10)
 
     case read_from_queue(@queue_llm_results, limit) do
       {:ok, results} when is_list(results) ->
@@ -295,7 +295,7 @@ defmodule Singularity.SharedQueuePublisher do
   - `:limit` - Number of messages to read (default: 10)
   """
   def read_approval_responses(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 10)
+    limit = Keyword.get(opts, :limit, 10)
 
     case read_from_queue(@queue_approval_responses, limit) do
       {:ok, responses} when is_list(responses) ->
@@ -322,7 +322,7 @@ defmodule Singularity.SharedQueuePublisher do
   - `:limit` - Number of messages to read (default: 10)
   """
   def read_question_responses(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 10)
+    limit = Keyword.get(opts, :limit, 10)
 
     case read_from_queue(@queue_question_responses, limit) do
       {:ok, responses} when is_list(responses) ->
@@ -349,7 +349,7 @@ defmodule Singularity.SharedQueuePublisher do
   - `:limit` - Number of messages to read (default: 10)
   """
   def read_job_results(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 10)
+    limit = Keyword.get(opts, :limit, 10)
 
     case read_from_queue(@queue_job_results, limit) do
       {:ok, results} when is_list(results) ->
@@ -406,7 +406,7 @@ defmodule Singularity.SharedQueuePublisher do
 
   defp send_to_queue(queue_name, message) do
     unless enabled?() do
-      Logger.warn("[SharedQueue] Shared queue disabled, message not sent", %{queue: queue_name})
+      Logger.warning("[SharedQueue] Shared queue disabled, message not sent", %{queue: queue_name})
       nil
     else
       try do
@@ -584,8 +584,8 @@ defmodule Singularity.SharedQueuePublisher do
 
     try do
       case Singularity.Repo.insert(
-             Singularity.Schemas.Core.LLMRequest.changeset(
-               %Singularity.Schemas.Core.LLMRequest{},
+             Singularity.Schemas.LLMSchemas.LLMRequest.changeset(
+               %Singularity.Schemas.LLMSchemas.LLMRequest{},
                attrs
              )
            ) do

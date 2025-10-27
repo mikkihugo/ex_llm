@@ -80,7 +80,7 @@ defmodule Singularity.Execution.TaskGraph.Toolkit do
   """
   @spec run(atom(), map(), keyword()) :: {:ok, map()} | {:error, term()}
   def run(tool, args, _opts \\ []) do
-    policy = Keyword.get(_opts, :policy, :coder)
+    policy = Keyword.get(opts, :policy, :coder)
 
     start_time = System.monotonic_time(:millisecond)
 

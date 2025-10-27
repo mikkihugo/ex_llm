@@ -82,8 +82,8 @@ defmodule Singularity.Code.UnifiedIngestionService do
   """
   def ingest_file(file_path, _opts \\ []) do
     # Auto-detect from Git (e.g., "mikkihugo/singularity-incubation")
-    codebase_id = Keyword.get(_opts, :codebase_id) || CodebaseDetector.detect(format: :full)
-    skip_validation = Keyword.get(_opts, :skip_validation, false)
+    codebase_id = Keyword.get(opts, :codebase_id) || CodebaseDetector.detect(format: :full)
+    skip_validation = Keyword.get(opts, :skip_validation, false)
 
     start_time = System.monotonic_time(:millisecond)
 
@@ -130,8 +130,8 @@ defmodule Singularity.Code.UnifiedIngestionService do
 
   """
   def ingest_tree(root_path, _opts \\ []) do
-    codebase_id = Keyword.get(_opts, :codebase_id, "singularity")
-    max_concurrency = Keyword.get(_opts, :max_concurrency, 10)
+    codebase_id = Keyword.get(opts, :codebase_id, "singularity")
+    max_concurrency = Keyword.get(opts, :max_concurrency, 10)
 
     Logger.info("[UnifiedIngestion] Ingesting tree: #{root_path}")
 

@@ -41,7 +41,7 @@ defmodule Singularity.Adapters.GenServerAdapter do
     # Extract task details
     task_type = task[:type]
     args = task[:args] || %{}
-    timeout = Keyword.get(_opts, :timeout, 5000)
+    timeout = Keyword.get(opts, :timeout, 5000)
     task_id = generate_task_id()
 
     # Find or create agent for this task type

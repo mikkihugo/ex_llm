@@ -131,7 +131,7 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
   # GenServer Implementation
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     # Ensure pgmq queues exist
     PgmqClient.ensure_queue("infrastructure_registry_requests")
     PgmqClient.ensure_queue("infrastructure_registry_responses")

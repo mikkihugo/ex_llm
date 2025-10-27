@@ -91,17 +91,17 @@ defmodule Singularity.Code.CodebaseDetector do
       # => Cache valid for 30 minutes instead of 5
   """
   def detect(_opts \\ []) do
-    fallback = Keyword.get(_opts, :fallback, "singularity")
-    format = Keyword.get(_opts, :format, :repo_only)
-    use_cache = Keyword.get(_opts, :cache, true)
-    extend_cache = Keyword.get(_opts, :extend_cache, false)
+    fallback = Keyword.get(opts, :fallback, "singularity")
+    format = Keyword.get(opts, :format, :repo_only)
+    use_cache = Keyword.get(opts, :cache, true)
+    extend_cache = Keyword.get(opts, :extend_cache, false)
 
     # Determine TTL based on extend_cache flag
     cache_ttl =
       if extend_cache do
         @extended_cache_ttl
       else
-        Keyword.get(_opts, :cache_ttl, @default_cache_ttl)
+        Keyword.get(opts, :cache_ttl, @default_cache_ttl)
       end
 
     # Try cache first
@@ -206,7 +206,7 @@ defmodule Singularity.Code.CodebaseDetector do
       {:ok, "mikkihugo/singularity-incubation"}
   """
   def detect_from_git(_opts \\ []) do
-    format = Keyword.get(_opts, :format, :repo_only)
+    format = Keyword.get(opts, :format, :repo_only)
 
     case System.cmd("git", ["remote", "get-url", "origin"], stderr_to_stdout: true) do
       {output, 0} ->
@@ -410,7 +410,7 @@ defmodule Singularity.Code.CodebaseDetector do
   """
   def reload(_opts \\ []) do
     clear_cache()
-    codebase_id = detect(Keyword.put(_opts, :cache, false))
+    codebase_id = detect(Keyword.put(opts, :cache, false))
     {:ok, codebase_id}
   end
 end

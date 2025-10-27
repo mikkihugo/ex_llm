@@ -25,7 +25,7 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
       {:ok, %{indexed: 1523, skipped: 42, errors: 0}}
   """
   def index_codebase(path, _opts \\ []) do
-    concurrency = Keyword.get(_opts, :concurrency, 10)
+    concurrency = Keyword.get(opts, :concurrency, 10)
 
     files =
       Path.wildcard("#{path}/**/*.{ex,exs,gleam,rs,ts,js}")

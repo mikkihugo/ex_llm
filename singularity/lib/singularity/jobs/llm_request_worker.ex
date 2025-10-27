@@ -41,17 +41,17 @@ defmodule Singularity.Jobs.LlmRequestWorker do
       "request_id" => request_id,
       "task_type" => task_type,
       "messages" => messages,
-      "model" => Keyword.get(_opts, :model, "auto"),
-      "provider" => Keyword.get(_opts, :provider, "auto"),
-      "api_version" => Keyword.get(_opts, :api_version, "responses"),
-      "complexity" => Keyword.get(_opts, :complexity, "medium"),
-      "max_tokens" => Keyword.get(_opts, :max_tokens),
-      "temperature" => Keyword.get(_opts, :temperature),
-      "agent_id" => Keyword.get(_opts, :agent_id),
-      "previous_response_id" => Keyword.get(_opts, :previous_response_id),
-      "mcp_servers" => Keyword.get(_opts, :mcp_servers),
-      "store" => Keyword.get(_opts, :store),
-      "tools" => Keyword.get(_opts, :tools)
+      "model" => Keyword.get(opts, :model, "auto"),
+      "provider" => Keyword.get(opts, :provider, "auto"),
+      "api_version" => Keyword.get(opts, :api_version, "responses"),
+      "complexity" => Keyword.get(opts, :complexity, "medium"),
+      "max_tokens" => Keyword.get(opts, :max_tokens),
+      "temperature" => Keyword.get(opts, :temperature),
+      "agent_id" => Keyword.get(opts, :agent_id),
+      "previous_response_id" => Keyword.get(opts, :previous_response_id),
+      "mcp_servers" => Keyword.get(opts, :mcp_servers),
+      "store" => Keyword.get(opts, :store),
+      "tools" => Keyword.get(opts, :tools)
     }
     # Remove nil values to keep message compact
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
@@ -170,8 +170,8 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   @spec await_responses_result(String.t(), keyword()) ::
     {:ok, map()} | {:error, :timeout | :not_found | :failed | term()}
   def await_responses_result(request_id, _opts \\ []) do
-    timeout_ms = Keyword.get(_opts, :timeout_ms, 30000)
-    poll_interval_ms = Keyword.get(_opts, :poll_interval_ms, 100)
+    timeout_ms = Keyword.get(opts, :timeout_ms, 30000)
+    poll_interval_ms = Keyword.get(opts, :poll_interval_ms, 100)
 
     start_time = System.monotonic_time(:millisecond)
     poll_until_found(request_id, timeout_ms, poll_interval_ms, start_time)

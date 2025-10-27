@@ -28,7 +28,7 @@ defmodule Singularity.Infrastructure.ErrorRateTracker do
   ## Client API
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -129,7 +129,7 @@ defmodule Singularity.Infrastructure.ErrorRateTracker do
   ## Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     # Create ETS table
     :ets.new(@table_name, [
       :set,

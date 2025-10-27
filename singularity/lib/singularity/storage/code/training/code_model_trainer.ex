@@ -39,8 +39,8 @@ defmodule Singularity.CodeModelTrainer do
   - Already trained on massive code corpus
   """
   def train_on_codebase(_opts \\ []) do
-    repo_filter = Keyword.get(_opts, :repos, nil)
-    output_path = Keyword.get(_opts, :output_path, "priv/models/qodo-embed-finetuned")
+    repo_filter = Keyword.get(opts, :repos, nil)
+    output_path = Keyword.get(opts, :output_path, "priv/models/qodo-embed-finetuned")
 
     Logger.info("Starting Qodo-Embed-1 fine-tuning on your codebase...")
 

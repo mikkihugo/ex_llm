@@ -81,8 +81,8 @@ defmodule Singularity.Search.PostgresVectorSearch do
       {:ok, [...]}
   """
   def find_similar_code(query, _opts \\ []) do
-    threshold = Keyword.get(_opts, :threshold, 0.8)
-    limit = Keyword.get(_opts, :limit, 10)
+    threshold = Keyword.get(opts, :threshold, 0.8)
+    limit = Keyword.get(opts, :limit, 10)
 
     with {:ok, embedding} <- generate_embedding(query) do
       query_sql = """
@@ -124,8 +124,8 @@ defmodule Singularity.Search.PostgresVectorSearch do
       ]}
   """
   def find_similar_todos(query, _opts \\ []) do
-    threshold = Keyword.get(_opts, :threshold, 0.8)
-    limit = Keyword.get(_opts, :limit, 10)
+    threshold = Keyword.get(opts, :threshold, 0.8)
+    limit = Keyword.get(opts, :limit, 10)
 
     with {:ok, embedding} <- generate_embedding(query) do
       query_sql = """
@@ -171,9 +171,9 @@ defmodule Singularity.Search.PostgresVectorSearch do
       {:ok, [...]}
   """
   def find_similar_knowledge(query, _opts \\ []) do
-    threshold = Keyword.get(_opts, :threshold, 0.8)
-    limit = Keyword.get(_opts, :limit, 10)
-    artifact_type = Keyword.get(_opts, :artifact_type)
+    threshold = Keyword.get(opts, :threshold, 0.8)
+    limit = Keyword.get(opts, :limit, 10)
+    artifact_type = Keyword.get(opts, :artifact_type)
 
     with {:ok, embedding} <- generate_embedding(query) do
       query_sql = """
@@ -216,10 +216,10 @@ defmodule Singularity.Search.PostgresVectorSearch do
       ]}
   """
   def hybrid_search(query, _opts \\ []) do
-    vector_weight = Keyword.get(_opts, :vector_weight, 0.7)
-    text_weight = Keyword.get(_opts, :text_weight, 0.3)
-    threshold = Keyword.get(_opts, :threshold, 0.6)
-    limit = Keyword.get(_opts, :limit, 20)
+    vector_weight = Keyword.get(opts, :vector_weight, 0.7)
+    text_weight = Keyword.get(opts, :text_weight, 0.3)
+    threshold = Keyword.get(opts, :threshold, 0.6)
+    limit = Keyword.get(opts, :limit, 20)
 
     with {:ok, embedding} <- generate_embedding(query) do
       query_sql = """
@@ -264,8 +264,8 @@ defmodule Singularity.Search.PostgresVectorSearch do
       ]}
   """
   def cluster_code_vectors(_opts \\ []) do
-    cluster_count = Keyword.get(_opts, :cluster_count, 10)
-    min_cluster_size = Keyword.get(_opts, :min_cluster_size, 5)
+    cluster_count = Keyword.get(opts, :cluster_count, 10)
+    min_cluster_size = Keyword.get(opts, :min_cluster_size, 5)
 
     query_sql = """
     SELECT * FROM cluster_code_vectors($1, $2)

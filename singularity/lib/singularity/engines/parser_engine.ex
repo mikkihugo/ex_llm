@@ -587,7 +587,7 @@ defmodule Singularity.ParserEngine do
   defp unwrap_stream_result({:ok, result}), do: result
   defp unwrap_stream_result({:exit, reason}), do: {:error, reason}
 
-  defp normalize_options(_opts) when is_list(_opts) do
+  defp normalize_options(opts) when is_list(_opts) do
     _opts
     |> Enum.into(%{})
     |> normalize_options()
@@ -595,9 +595,9 @@ defmodule Singularity.ParserEngine do
 
   defp normalize_options(%{} = _opts) do
     %{
-      codebase_id: Map.get(_opts, :codebase_id, @default_codebase_id),
-      hash_algorithm: Map.get(_opts, :hash_algorithm, @default_hash_algorithm),
-      max_concurrency: Map.get(_opts, :max_concurrency, @default_concurrency)
+      codebase_id: Map.get(opts, :codebase_id, @default_codebase_id),
+      hash_algorithm: Map.get(opts, :hash_algorithm, @default_hash_algorithm),
+      max_concurrency: Map.get(opts, :max_concurrency, @default_concurrency)
     }
   end
 

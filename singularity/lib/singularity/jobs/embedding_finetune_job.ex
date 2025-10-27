@@ -80,10 +80,10 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
   Manually trigger fine-tuning (useful for testing)
   """
   def schedule_now(_opts \\ []) do
-    model = Keyword.get(_opts, :model, :qodo)
-    epochs = Keyword.get(_opts, :epochs, 1)
-    learning_rate = Keyword.get(_opts, :learning_rate, 1.0e-5)
-    batch_size = Keyword.get(_opts, :batch_size, 16)
+    model = Keyword.get(opts, :model, :qodo)
+    epochs = Keyword.get(opts, :epochs, 1)
+    learning_rate = Keyword.get(opts, :learning_rate, 1.0e-5)
+    batch_size = Keyword.get(opts, :batch_size, 16)
 
     job_args = %{
       "model" => Atom.to_string(model),

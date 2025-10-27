@@ -201,8 +201,8 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
 
   # Private helpers
 
-  defp load_tools_for_attempt(_opts) do
-    case Keyword.get(_opts, :tools) do
+  defp load_tools_for_attempt(opts) do
+    case Keyword.get(opts, :tools) do
       nil -> BuildToolType.load_enabled_tools()
       specific_tools -> filter_tools(specific_tools)
     end

@@ -38,7 +38,7 @@ defmodule Singularity.Agents.Supervisor do
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     Logger.info("Starting Agents Supervisor...")
 
     children = [

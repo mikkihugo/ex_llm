@@ -125,8 +125,8 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
   """
   def consolidate_patterns(_opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
-    dry_run = Keyword.get(_opts, :dry_run, false)
-    threshold = Keyword.get(_opts, :threshold, @dedup_similarity_threshold)
+    dry_run = Keyword.get(opts, :dry_run, false)
+    threshold = Keyword.get(opts, :threshold, @dedup_similarity_threshold)
 
     Logger.info("Starting pattern consolidation", dry_run: dry_run, threshold: threshold)
 
@@ -206,7 +206,7 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
   Find and merge duplicate/similar patterns.
   """
   def deduplicate_similar(_opts \\ []) do
-    threshold = Keyword.get(_opts, :threshold, @dedup_similarity_threshold)
+    threshold = Keyword.get(opts, :threshold, @dedup_similarity_threshold)
 
     with {:ok, patterns} <- fetch_all_patterns() do
       pairs_to_check = div(length(patterns) * (length(patterns) - 1), 2)
@@ -246,7 +246,7 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
   Generalize a specific pattern into a reusable template.
   """
   def generalize_pattern(pattern_id, _opts \\ []) do
-    pattern_type = Keyword.get(_opts, :type, :generic)
+    pattern_type = Keyword.get(opts, :type, :generic)
 
     with {:ok, pattern} <- fetch_pattern(pattern_id) do
       generalized =

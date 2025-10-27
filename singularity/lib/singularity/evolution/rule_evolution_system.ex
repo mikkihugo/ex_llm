@@ -145,8 +145,8 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   @spec analyze_and_propose_rules(map(), keyword()) ::
           {:ok, [rule()]} | {:error, term()}
   def analyze_and_propose_rules(criteria \\ %{}, _opts \\ []) do
-    min_confidence = Keyword.get(_opts, :min_confidence, 0.0)
-    limit = Keyword.get(_opts, :limit, 20)
+    min_confidence = Keyword.get(opts, :min_confidence, 0.0)
+    limit = Keyword.get(opts, :limit, 20)
 
     Logger.info("RuleEvolutionSystem: Analyzing patterns for rule synthesis",
       task_type: criteria[:task_type],
@@ -217,8 +217,8 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   """
   @spec get_candidate_rules(keyword()) :: [rule()]
   def get_candidate_rules(_opts \\ []) do
-    min_frequency = Keyword.get(_opts, :min_frequency, 5)
-    limit = Keyword.get(_opts, :limit, 10)
+    min_frequency = Keyword.get(opts, :min_frequency, 5)
+    limit = Keyword.get(opts, :limit, 10)
 
     Logger.debug("RuleEvolutionSystem: Retrieving candidate rules",
       min_frequency: min_frequency
@@ -274,9 +274,9 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   def publish_confident_rules(_opts \\ []) do
     # Use adaptive threshold if not overridden
     adaptive_threshold = AdaptiveConfidenceGating.get_current_threshold()
-    min_confidence = Keyword.get(_opts, :min_confidence, adaptive_threshold)
-    limit = Keyword.get(_opts, :limit, 10)
-    namespace = Keyword.get(_opts, :namespace, "validation_rules")
+    min_confidence = Keyword.get(opts, :min_confidence, adaptive_threshold)
+    limit = Keyword.get(opts, :limit, 10)
+    namespace = Keyword.get(opts, :namespace, "validation_rules")
 
     Logger.info("RuleEvolutionSystem: Publishing confident rules to Genesis",
       min_confidence: min_confidence,
@@ -437,7 +437,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   """
   @spec get_rule_impact_metrics(keyword()) :: map()
   def get_rule_impact_metrics(_opts \\ []) do
-    time_range = Keyword.get(_opts, :time_range, :last_week)
+    time_range = Keyword.get(opts, :time_range, :last_week)
 
     Logger.info("RuleEvolutionSystem: Calculating rule impact metrics",
       time_range: time_range

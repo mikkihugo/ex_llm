@@ -657,7 +657,7 @@ defmodule Singularity.LLM.Service do
     with {:ok, lua_code} <- File.read(full_path),
          {:ok, messages} <- LuaRunner.execute(lua_code, context) do
       # 2. Call LLM with assembled messages
-      complexity = Keyword.get(_opts, :complexity, :complex)
+      complexity = Keyword.get(opts, :complexity, :complex)
 
       case call(complexity, messages, _opts) do
         {:ok, response} ->
@@ -731,7 +731,7 @@ defmodule Singularity.LLM.Service do
 
       # Unknown/default
       _ ->
-        Keyword.get(_opts, :default_complexity, :medium)
+        Keyword.get(opts, :default_complexity, :medium)
     end
   end
 
@@ -741,11 +741,11 @@ defmodule Singularity.LLM.Service do
     |> determine_complexity_for_task(_opts)
   rescue
     ArgumentError ->
-      Keyword.get(_opts, :default_complexity, :medium)
+      Keyword.get(opts, :default_complexity, :medium)
   end
 
   def determine_complexity_for_task(_, _opts) do
-    Keyword.get(_opts, :default_complexity, :medium)
+    Keyword.get(opts, :default_complexity, :medium)
   end
 
   @doc """
@@ -773,9 +773,9 @@ defmodule Singularity.LLM.Service do
   end
 
   defp build_request(messages, _opts, overrides \\ %{}) do
-    max_tokens = Keyword.get(_opts, :max_tokens, 4000)
-    temperature = Keyword.get(_opts, :temperature, 0.7)
-    stream = Keyword.get(_opts, :stream, false)
+    max_tokens = Keyword.get(opts, :max_tokens, 4000)
+    temperature = Keyword.get(opts, :temperature, 0.7)
+    stream = Keyword.get(opts, :stream, false)
 
     model =
       overrides[:model] ||
@@ -831,7 +831,7 @@ defmodule Singularity.LLM.Service do
 
     task_type = Map.get(request, :task_type, :medium)
     messages = Map.get(request, :messages, [])
-    timeout_ms = Keyword.get(_opts, :timeout, 30_000)
+    timeout_ms = Keyword.get(opts, :timeout, 30_000)
 
     case Singularity.Jobs.LlmRequestWorker.enqueue_llm_request(task_type, messages, %{
       timeout: timeout_ms,

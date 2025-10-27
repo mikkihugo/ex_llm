@@ -375,8 +375,8 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   # S - Specification
   defp generate_specification(story, _opts) do
     # Extract options with defaults
-    complexity = Keyword.get(_opts, :complexity, :medium)
-    language = Keyword.get(_opts, :language, "any")
+    complexity = Keyword.get(opts, :complexity, :medium)
+    language = Keyword.get(opts, :language, "any")
 
     # Use Lua script for SPARC specification phase
     case Service.call_with_script(
@@ -396,7 +396,7 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
 
   # P - Pseudocode
   defp generate_pseudocode(spec, _opts) do
-    complexity = Keyword.get(_opts, :complexity, :medium)
+    complexity = Keyword.get(opts, :complexity, :medium)
 
     case Service.call_with_script(
            "sparc/decompose-pseudocode.lua",
@@ -411,7 +411,7 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
 
   # A - Architecture
   defp design_architecture(pseudocode, _opts) do
-    complexity = Keyword.get(_opts, :complexity, :medium)
+    complexity = Keyword.get(opts, :complexity, :medium)
 
     case Service.call_with_script(
            "sparc/decompose-architecture.lua",
@@ -426,7 +426,7 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
 
   # R - Refinement
   defp refine_design(architecture, _opts) do
-    complexity = Keyword.get(_opts, :complexity, :medium)
+    complexity = Keyword.get(opts, :complexity, :medium)
 
     case Service.call_with_script(
            "sparc/decompose-refinement.lua",
@@ -441,7 +441,7 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
 
   # C - Completion Tasks
   defp generate_completion_tasks(refinement, _opts) do
-    complexity = Keyword.get(_opts, :complexity, :medium)
+    complexity = Keyword.get(opts, :complexity, :medium)
 
     case Service.call_with_script(
            "sparc/decompose-tasks.lua",

@@ -115,7 +115,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
     attrs = %{
       artifact_type: artifact_type,
       artifact_id: artifact_id,
-      version: _opts[:version] || "1.0.0",
+      version: opts[:version] || "1.0.0",
       content_raw: content_raw,
       content: content_map
     }
@@ -129,7 +129,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
     |> case do
       {:ok, artifact} ->
         # Generate embedding async (unless skipped)
-        if !_opts[:skip_embedding] do
+        if !opts[:skip_embedding] do
           Task.start(fn -> generate_embedding_async(artifact) end)
         end
 
@@ -206,11 +206,11 @@ defmodule Singularity.Knowledge.ArtifactStore do
   end
 
   defp search_by_embedding(embedding, _opts) do
-    artifact_types = _opts[:artifact_types]
-    language = _opts[:language]
-    tags = _opts[:tags]
-    top_k = _opts[:top_k] || 10
-    min_similarity = _opts[:min_similarity] || 0.7
+    artifact_types = opts[:artifact_types]
+    language = opts[:language]
+    tags = opts[:tags]
+    top_k = opts[:top_k] || 10
+    min_similarity = opts[:min_similarity] || 0.7
 
     query =
       from(a in KnowledgeArtifact,
@@ -269,9 +269,9 @@ defmodule Singularity.Knowledge.ArtifactStore do
       {:ok, [%KnowledgeArtifact{}, ...]}
   """
   def query_jsonb(_opts \\ []) do
-    artifact_type = _opts[:artifact_type]
-    filter = _opts[:filter]
-    language = _opts[:language]
+    artifact_type = opts[:artifact_type]
+    filter = opts[:filter]
+    language = opts[:language]
 
     query = from(a in KnowledgeArtifact)
 
@@ -324,7 +324,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
       ArtifactStore.sync_from_git(path: "templates_data/quality/")
   """
   def sync_from_git(_opts \\ []) do
-    path = _opts[:path] || @templates_data_dir
+    path = opts[:path] || @templates_data_dir
     full_path = Path.expand(path)
 
     files =
@@ -414,10 +414,10 @@ defmodule Singularity.Knowledge.ArtifactStore do
       )
   """
   def export_learned_to_git(_opts \\ []) do
-    artifact_type = _opts[:artifact_type]
-    min_usage_count = _opts[:min_usage_count] || 10
-    min_success_rate = _opts[:min_success_rate] || 0.90
-    output_dir = _opts[:output_dir] || Path.join(@templates_data_dir, "learned")
+    artifact_type = opts[:artifact_type]
+    min_usage_count = opts[:min_usage_count] || 10
+    min_success_rate = opts[:min_success_rate] || 0.90
+    output_dir = opts[:output_dir] || Path.join(@templates_data_dir, "learned")
 
     # Query high-quality artifacts
     query =
@@ -475,7 +475,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
       ArtifactStore.record_usage("rust-api-endpoint", success: false)
   """
   def record_usage(artifact_id, _opts \\ []) do
-    success = Keyword.get(_opts, :success, true)
+    success = Keyword.get(opts, :success, true)
 
     # Increment usage_count and update success_rate
     Repo.transaction(fn ->

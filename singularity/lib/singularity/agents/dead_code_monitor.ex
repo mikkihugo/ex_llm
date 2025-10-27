@@ -158,11 +158,11 @@ defmodule Singularity.Agents.DeadCodeMonitor do
   # GenServer Callbacks (if used as supervised process)
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     Logger.info("DeadCodeMonitor initialized")
     {:ok, %{last_check: nil, last_count: @baseline_count}}
   end

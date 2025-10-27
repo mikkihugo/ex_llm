@@ -166,11 +166,11 @@ defmodule Singularity.Embedding.Service do
   alias Singularity.Embedding.NxService
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @impl GenServer
-  def init(_opts) do
+  def init(opts) do
     Logger.info("✅ Embedding Service started")
     {:ok, %{}}
   end

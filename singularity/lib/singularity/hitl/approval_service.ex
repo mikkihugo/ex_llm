@@ -23,12 +23,12 @@ defmodule Singularity.HITL.ApprovalService do
     * `{:ok, :cancelled}`
     * `{:error, :timeout}`
   """
-  def request_approval(_opts) do
-    file_path = Keyword.fetch!(_opts, :file_path)
-    diff = Keyword.fetch!(_opts, :diff)
-    description = Keyword.get(_opts, :description, "Approval requested")
-    agent_id = Keyword.get(_opts, :agent_id, "system")
-    task_type = Keyword.get(_opts, :task_type)
+  def request_approval(opts) do
+    file_path = Keyword.fetch!(opts, :file_path)
+    diff = Keyword.fetch!(opts, :diff)
+    description = Keyword.get(opts, :description, "Approval requested")
+    agent_id = Keyword.get(opts, :agent_id, "system")
+    task_type = Keyword.get(opts, :task_type)
 
     request_id = UUID.uuid4()
     response_queue = response_queue_name(request_id)
@@ -56,10 +56,10 @@ defmodule Singularity.HITL.ApprovalService do
     * `{:ok, response_text}`
     * `{:error, :timeout}`
   """
-  def request_question(_opts) do
-    question = Keyword.fetch!(_opts, :question)
-    agent_id = Keyword.get(_opts, :agent_id, "system")
-    context = Keyword.get(_opts, :context, %{})
+  def request_question(opts) do
+    question = Keyword.fetch!(opts, :question)
+    agent_id = Keyword.get(opts, :agent_id, "system")
+    context = Keyword.get(opts, :context, %{})
 
     request_id = UUID.uuid4()
     response_queue = response_queue_name(request_id)

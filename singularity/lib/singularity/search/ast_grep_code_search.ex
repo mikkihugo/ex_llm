@@ -174,12 +174,12 @@ defmodule Singularity.Search.AstGrepCodeSearch do
       )
   """
   @spec search(search_opts()) :: {:ok, [map()]} | {:error, String.t()}
-  def search(_opts) when is_list(_opts) do
-    query = Keyword.fetch!(_opts, :query)
-    ast_pattern = Keyword.get(_opts, :ast_pattern)
-    language = Keyword.get(_opts, :language)
-    limit = Keyword.get(_opts, :limit, 20)
-    vector_candidates = Keyword.get(_opts, :vector_candidates, 100)
+  def search(opts) when is_list(_opts) do
+    query = Keyword.fetch!(opts, :query)
+    ast_pattern = Keyword.get(opts, :ast_pattern)
+    language = Keyword.get(opts, :language)
+    limit = Keyword.get(opts, :limit, 20)
+    vector_candidates = Keyword.get(opts, :vector_candidates, 100)
 
     Logger.info(
       "AST-Grep search: query=#{query}, pattern=#{inspect(ast_pattern)}, language=#{language}"

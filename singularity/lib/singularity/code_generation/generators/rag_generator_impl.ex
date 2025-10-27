@@ -55,11 +55,11 @@ defmodule Singularity.CodeGeneration.Generators.RAGGeneratorImpl do
       # Extract RAG-specific options
       rag_opts =
         [
-          language: spec[:language] || _opts[:language],
-          top_k: _opts[:top_k] || 5,
-          repos: _opts[:repos],
-          quality_level: _opts[:quality],
-          complexity: _opts[:complexity]
+          language: spec[:language] || opts[:language],
+          top_k: opts[:top_k] || 5,
+          repos: opts[:repos],
+          quality_level: opts[:quality],
+          complexity: opts[:complexity]
         ]
         |> Enum.filter(fn {_k, v} -> v != nil end)
 

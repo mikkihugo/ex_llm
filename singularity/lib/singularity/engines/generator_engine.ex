@@ -90,7 +90,7 @@ defmodule Singularity.GeneratorEngine do
   ## Examples
 
       iex> GeneratorEngine.generate_clean_code("async worker with error handling", "elixir")
-      {:ok, "defmodule Worker do\n  use GenServer\n  \n  def start_link(_opts) do\n    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)\n  end\nend"}
+      {:ok, "defmodule Worker do\n  use GenServer\n  \n  def start_link(opts) do\n    GenServer.start_link(__MODULE__, opts, name: __MODULE__)\n  end\nend"}
   """
   def generate_clean_code(description, language),
     do: Code.generate_clean_code(description, language)

@@ -86,8 +86,8 @@ defmodule Singularity.Messaging.Client do
   """
   def subscribe(subject, _opts \\ []) when is_binary(subject) do
     queue_name = subject_to_queue(subject)
-    handler = Keyword.get(_opts, :handler, &default_handler/1)
-    timeout = Keyword.get(_opts, :timeout, 30000)
+    handler = Keyword.get(opts, :handler, &default_handler/1)
+    timeout = Keyword.get(opts, :timeout, 30000)
 
     case MessageQueue.create_queue(queue_name) do
       {:ok, ^queue_name} ->
@@ -115,8 +115,8 @@ defmodule Singularity.Messaging.Client do
   Useful for synchronous RPC-style communication.
   """
   def request(subject, message, _opts \\ []) when is_binary(subject) and is_binary(message) do
-    timeout = Keyword.get(_opts, :timeout, 5000)
-    reply_subject = Keyword.get(_opts, :reply_to, "#{subject}.replies")
+    timeout = Keyword.get(opts, :timeout, 5000)
+    reply_subject = Keyword.get(opts, :reply_to, "#{subject}.replies")
     queue_name = subject_to_queue(subject)
     reply_queue = subject_to_queue(reply_subject)
 

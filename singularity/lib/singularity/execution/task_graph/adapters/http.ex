@@ -79,7 +79,7 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
     url = args.url
     body = Map.get(args, :body, "")
     headers = Map.get(args, :headers, %{})
-    timeout = Keyword.get(_opts, :timeout, @default_timeout)
+    timeout = Keyword.get(opts, :timeout, @default_timeout)
 
     # Convert headers map to list
     headers_list =
@@ -118,7 +118,7 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
       transport_opts: [verify: :verify_peer]
     ]
 
-    case Req.request(_opts) do
+    case Req.request(opts) do
       {:ok, response} ->
         body = truncate_body(response.body)
 

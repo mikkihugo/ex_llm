@@ -85,9 +85,9 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
   def analyze_codebase_quality(codebase_path, _opts \\ []) do
     Logger.info("Starting quality analysis: #{codebase_path}")
 
-    languages = Keyword.get(_opts, :languages, ["elixir", "rust", "javascript", "python"])
-    categories = Keyword.get(_opts, :categories, get_all_quality_categories())
-    min_severity = Keyword.get(_opts, :min_severity, :info)
+    languages = Keyword.get(opts, :languages, ["elixir", "rust", "javascript", "python"])
+    categories = Keyword.get(opts, :categories, get_all_quality_categories())
+    min_severity = Keyword.get(opts, :min_severity, :info)
 
     with {:ok, files} <- discover_files_to_analyze(codebase_path, languages),
          {:ok, issues} <- scan_for_all_quality_issues(files, languages, categories) do

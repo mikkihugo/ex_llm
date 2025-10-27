@@ -85,7 +85,7 @@ defmodule Singularity.PseudocodeGenerator do
   """
   def generate(task, _opts \\ []) do
     start = System.monotonic_time(:millisecond)
-    path = Keyword.get(_opts, :path)
+    path = Keyword.get(opts, :path)
 
     # Detect context (same as CodeSynthesisPipeline)
     context = detect_context(path, _opts)
@@ -178,8 +178,8 @@ defmodule Singularity.PseudocodeGenerator do
 
   defp detect_context(nil, _opts) do
     %{
-      repo: Keyword.get(_opts, :repo, "unknown"),
-      language: Keyword.get(_opts, :language, "elixir"),
+      repo: Keyword.get(opts, :repo, "unknown"),
+      language: Keyword.get(opts, :language, "elixir"),
       tech_stack: [],
       path: nil
     }

@@ -79,8 +79,8 @@ defmodule Singularity.PatternIndexer do
   """
   @spec search(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
   def search(query, _opts \\ []) do
-    language = Keyword.get(_opts, :language)
-    top_k = Keyword.get(_opts, :top_k, 5)
+    language = Keyword.get(opts, :language)
+    top_k = Keyword.get(opts, :top_k, 5)
 
     Logger.debug("Searching patterns: #{query}")
 
@@ -99,7 +99,7 @@ defmodule Singularity.PatternIndexer do
   """
   @spec generate_with_patterns(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def generate_with_patterns(task, _opts) do
-    language = Keyword.get(_opts, :language, "elixir")
+    language = Keyword.get(opts, :language, "elixir")
 
     with {:ok, patterns} <- search(task, language: language, top_k: 3),
          {:ok, code_examples} <- find_code_matching_patterns(patterns, language),

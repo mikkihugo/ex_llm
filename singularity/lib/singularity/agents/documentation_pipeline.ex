@@ -148,7 +148,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
   Start the Documentation Pipeline agent.
   """
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -182,7 +182,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
   ## Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     state = %{
       pipeline_running: false,
       last_run: nil,

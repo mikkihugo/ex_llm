@@ -92,18 +92,18 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
   - `:dispatch_metadata` - Additional metadata merged into dispatch payload
   """
   @spec generate(generation_opts()) :: {:ok, String.t()} | {:error, term()}
-  def generate(_opts) do
-    task = Keyword.fetch!(_opts, :task)
-    language = Keyword.get(_opts, :language)
-    repos = Keyword.get(_opts, :repos)
-    top_k = Keyword.get(_opts, :top_k, 5)
-    prefer_recent = Keyword.get(_opts, :prefer_recent, false)
-    temperature = Keyword.get(_opts, :temperature, 0.05)
-    include_tests = Keyword.get(_opts, :include_tests, true)
-    quality_level = Keyword.get(_opts, :quality_level, "production")
-    validate = Keyword.get(_opts, :validate, true)
-    max_retries = Keyword.get(_opts, :max_retries, 2)
-    dispatch? = Keyword.get(_opts, :dispatch, true)
+  def generate(opts) do
+    task = Keyword.fetch!(opts, :task)
+    language = Keyword.get(opts, :language)
+    repos = Keyword.get(opts, :repos)
+    top_k = Keyword.get(opts, :top_k, 5)
+    prefer_recent = Keyword.get(opts, :prefer_recent, false)
+    temperature = Keyword.get(opts, :temperature, 0.05)
+    include_tests = Keyword.get(opts, :include_tests, true)
+    quality_level = Keyword.get(opts, :quality_level, "production")
+    validate = Keyword.get(opts, :validate, true)
+    max_retries = Keyword.get(opts, :max_retries, 2)
+    dispatch? = Keyword.get(opts, :dispatch, true)
 
     Logger.info("RAG Code Generation: #{task} (quality: #{quality_level}, validate: #{validate})")
 
@@ -430,7 +430,7 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
   """
   @spec analyze_best_practices(keyword()) :: {:ok, map()} | {:error, term()}
   def analyze_best_practices(_opts \\ []) do
-    language = Keyword.get(_opts, :language)
+    language = Keyword.get(opts, :language)
 
     query = """
     WITH code_similarities AS (
@@ -821,8 +821,8 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
   defp maybe_dispatch_improvement(code, _opts, _metadata, false), do: {:ok, code}
 
   defp maybe_dispatch_improvement(code, _opts, metadata, true) do
-    agent_id = Keyword.get(_opts, :dispatch_agent_id, "rag-runtime")
-    extra_metadata = Keyword.get(_opts, :dispatch_metadata, %{})
+    agent_id = Keyword.get(opts, :dispatch_agent_id, "rag-runtime")
+    extra_metadata = Keyword.get(opts, :dispatch_metadata, %{})
 
     final_metadata =
       metadata

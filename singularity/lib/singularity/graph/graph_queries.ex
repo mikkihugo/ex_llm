@@ -135,8 +135,8 @@ defmodule Singularity.Graph.GraphQueries do
   Returns nested structure showing call hierarchy.
   """
   def find_call_chain(function_name, _opts \\ []) do
-    depth = Keyword.get(_opts, :depth, 2)
-    codebase_id = Keyword.get(_opts, :codebase_id, "singularity")
+    depth = Keyword.get(opts, :depth, 2)
+    codebase_id = Keyword.get(opts, :codebase_id, "singularity")
 
     # Recursive query using PostgreSQL CTE
     query = """

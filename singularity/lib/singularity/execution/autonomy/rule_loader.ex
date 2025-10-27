@@ -218,8 +218,8 @@ defmodule Singularity.Execution.Autonomy.RuleLoader do
 
   ## Client API
 
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc "Get rule by ID (from cache or DB)"
@@ -251,7 +251,7 @@ defmodule Singularity.Execution.Autonomy.RuleLoader do
   ## Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     # Create ETS table for rule cache
     :ets.new(@table, [:set, :public, :named_table, read_concurrency: true])
 

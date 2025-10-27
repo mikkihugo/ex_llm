@@ -129,7 +129,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   Start the Orchestrator GenServer.
   """
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -213,7 +213,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   ## GenServer Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     Logger.info("Starting TaskGraph.Orchestrator...")
 
     # Register process with Registry

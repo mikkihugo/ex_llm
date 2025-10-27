@@ -364,7 +364,7 @@ defmodule Singularity.Graph.AgeQueries do
   ```
   """
   def find_all_paths_cypher(from_func, to_func, _opts \\ []) do
-    max_hops = Keyword.get(_opts, :max_hops, 5)
+    max_hops = Keyword.get(opts, :max_hops, 5)
 
     query = """
     SELECT * FROM ag_catalog.cypher('singularity_code', $$

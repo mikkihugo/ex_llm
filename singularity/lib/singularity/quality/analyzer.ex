@@ -159,7 +159,7 @@ defmodule Singularity.Quality.Analyzer do
 
   @doc "Enumerate findings for a tool, optionally filtering by severity."
   def findings_for(tool, _opts \\ []) do
-    severity = Keyword.get(_opts, :severity)
+    severity = Keyword.get(opts, :severity)
 
     Finding
     |> join(:inner, [f], r in assoc(f, :run))

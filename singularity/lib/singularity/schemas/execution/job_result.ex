@@ -116,15 +116,15 @@ defmodule Singularity.Schemas.Execution.JobResult do
     - `:duration_ms` - Execution time in milliseconds
   """
   @spec record_success(keyword()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
-  def record_success(_opts) do
-    workflow = Keyword.fetch!(_opts, :workflow)
-    instance_id = Keyword.get(_opts, :instance_id)
-    job_id = Keyword.get(_opts, :job_id)
-    input = Keyword.get(_opts, :input, %{})
-    output = Keyword.get(_opts, :output, %{})
-    tokens_used = Keyword.get(_opts, :tokens_used, 0)
-    cost_cents = Keyword.get(_opts, :cost_cents, 0)
-    duration_ms = Keyword.get(_opts, :duration_ms)
+  def record_success(opts) do
+    workflow = Keyword.fetch!(opts, :workflow)
+    instance_id = Keyword.get(opts, :instance_id)
+    job_id = Keyword.get(opts, :job_id)
+    input = Keyword.get(opts, :input, %{})
+    output = Keyword.get(opts, :output, %{})
+    tokens_used = Keyword.get(opts, :tokens_used, 0)
+    cost_cents = Keyword.get(opts, :cost_cents, 0)
+    duration_ms = Keyword.get(opts, :duration_ms)
 
     now = DateTime.utc_now()
 
@@ -159,13 +159,13 @@ defmodule Singularity.Schemas.Execution.JobResult do
     - `:duration_ms` - Execution time before failure
   """
   @spec record_failure(keyword()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
-  def record_failure(_opts) do
-    workflow = Keyword.fetch!(_opts, :workflow)
-    instance_id = Keyword.get(_opts, :instance_id)
-    job_id = Keyword.get(_opts, :job_id)
-    input = Keyword.get(_opts, :input, %{})
-    error = Keyword.get(_opts, :error, "Unknown error")
-    duration_ms = Keyword.get(_opts, :duration_ms)
+  def record_failure(opts) do
+    workflow = Keyword.fetch!(opts, :workflow)
+    instance_id = Keyword.get(opts, :instance_id)
+    job_id = Keyword.get(opts, :job_id)
+    input = Keyword.get(opts, :input, %{})
+    error = Keyword.get(opts, :error, "Unknown error")
+    duration_ms = Keyword.get(opts, :duration_ms)
 
     now = DateTime.utc_now()
 
@@ -197,7 +197,7 @@ defmodule Singularity.Schemas.Execution.JobResult do
     - `:duration_ms` - Timeout duration
   """
   @spec record_timeout(keyword()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
-  def record_timeout(_opts) do
+  def record_timeout(opts) do
     record_failure(
       _opts
       |> Keyword.put(:error, "Workflow execution timeout")

@@ -60,20 +60,20 @@ defmodule Singularity.T5FineTuner do
   """
   @spec prepare_training_data(keyword()) :: {:ok, String.t()} | {:error, term()}
   def prepare_training_data(_opts \\ []) do
-    name = Keyword.fetch!(_opts, :name)
+    name = Keyword.fetch!(opts, :name)
 
     description =
       Keyword.get(
         _opts,
         :description,
-        "T5 training session for #{Keyword.get(_opts, :language, "all")} languages"
+        "T5 training session for #{Keyword.get(opts, :language, "all")} languages"
       )
 
-    language = Keyword.get(_opts, :language)
-    min_length = Keyword.get(_opts, :min_length, 50)
-    max_examples = Keyword.get(_opts, :max_examples, 10000)
-    split_ratio = Keyword.get(_opts, :split_ratio, 0.9)
-    include_tests = Keyword.get(_opts, :include_tests, true)
+    language = Keyword.get(opts, :language)
+    min_length = Keyword.get(opts, :min_length, 50)
+    max_examples = Keyword.get(opts, :max_examples, 10000)
+    split_ratio = Keyword.get(opts, :split_ratio, 0.9)
+    include_tests = Keyword.get(opts, :include_tests, true)
 
     Logger.info("Preparing T5 training data for language: #{language || "all"}")
 
@@ -142,10 +142,10 @@ defmodule Singularity.T5FineTuner do
   """
   @spec fine_tune(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def fine_tune(training_session_id, _opts \\ []) do
-    epochs = Keyword.get(_opts, :epochs, 8)
-    learning_rate = Keyword.get(_opts, :learning_rate, 3.0e-4)
-    batch_size = Keyword.get(_opts, :batch_size, 2)
-    version = Keyword.get(_opts, :version, generate_version())
+    epochs = Keyword.get(opts, :epochs, 8)
+    learning_rate = Keyword.get(opts, :learning_rate, 3.0e-4)
+    batch_size = Keyword.get(opts, :batch_size, 2)
+    version = Keyword.get(opts, :version, generate_version())
 
     Logger.info("Starting T5 fine-tuning for session: #{training_session_id}")
 

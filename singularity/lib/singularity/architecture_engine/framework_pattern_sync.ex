@@ -30,7 +30,7 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
   ## Client API
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -71,7 +71,7 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
   ## Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     # Create ETS table
     :ets.new(@ets_table, [:named_table, :set, :public, read_concurrency: true])
 

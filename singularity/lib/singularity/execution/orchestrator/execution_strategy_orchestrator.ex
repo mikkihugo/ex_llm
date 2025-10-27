@@ -87,8 +87,8 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
 
   # Private helpers
 
-  defp load_strategies_for_attempt(_opts) do
-    case Keyword.get(_opts, :strategies) do
+  defp load_strategies_for_attempt(opts) do
+    case Keyword.get(opts, :strategies) do
       nil -> ExecutionStrategy.load_enabled_strategies()
       specific_strategies -> filter_strategies(specific_strategies)
     end

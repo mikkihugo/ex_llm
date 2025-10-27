@@ -57,15 +57,15 @@ defmodule Singularity.CodeGeneration.Generators.CodeGeneratorImpl do
       # Extract CodeGenerator-specific options
       code_opts =
         [
-          language: spec[:language] || _opts[:language],
-          method: _opts[:method],
-          quality: _opts[:quality],
-          use_rag: _opts[:use_rag],
-          top_k: _opts[:top_k],
-          repos: _opts[:repos],
-          validate: _opts[:validate],
-          max_retries: _opts[:max_retries],
-          complexity: _opts[:complexity]
+          language: spec[:language] || opts[:language],
+          method: opts[:method],
+          quality: opts[:quality],
+          use_rag: opts[:use_rag],
+          top_k: opts[:top_k],
+          repos: opts[:repos],
+          validate: opts[:validate],
+          max_retries: opts[:max_retries],
+          complexity: opts[:complexity]
         ]
         |> Enum.filter(fn {_k, v} -> v != nil end)
 

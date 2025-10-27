@@ -73,7 +73,7 @@ defmodule Singularity.Search.SearchOrchestrator do
     try do
       enabled_searches = SearchType.load_enabled_searches()
 
-      search_types = Keyword.get(_opts, :search_types, nil)
+      search_types = Keyword.get(opts, :search_types, nil)
 
       searches_to_run =
         if search_types do
@@ -202,7 +202,7 @@ defmodule Singularity.Search.SearchOrchestrator do
   end
 
   defp filter_by_similarity(results, _opts) do
-    case Keyword.get(_opts, :min_similarity) do
+    case Keyword.get(opts, :min_similarity) do
       nil ->
         results
 
@@ -218,7 +218,7 @@ defmodule Singularity.Search.SearchOrchestrator do
   end
 
   defp limit_results(results, _opts) do
-    case Keyword.get(_opts, :limit) do
+    case Keyword.get(opts, :limit) do
       nil -> results
       limit when is_integer(limit) -> Enum.take(results, limit)
       _ -> results

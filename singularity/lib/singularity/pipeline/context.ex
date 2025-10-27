@@ -99,8 +99,8 @@ defmodule Singularity.Pipeline.Context do
   """
   @spec gather(story, gather_opts) :: {:ok, context} | {:error, term()}
   def gather(story, _opts \\ []) do
-    codebase_path = Keyword.get(_opts, :codebase_path, ".")
-    timeout_ms = Keyword.get(_opts, :timeout, 30000)
+    codebase_path = Keyword.get(opts, :codebase_path, ".")
+    timeout_ms = Keyword.get(opts, :timeout, 30000)
 
     Logger.info("Pipeline.Context: Gathering context",
       story_length: story_length(story),
@@ -178,7 +178,7 @@ defmodule Singularity.Pipeline.Context do
   end
 
   defp gather_patterns(context, codebase_path, _opts) do
-    include_patterns = Keyword.get(_opts, :include_patterns, true)
+    include_patterns = Keyword.get(opts, :include_patterns, true)
 
     if include_patterns do
       case PatternDetector.detect(codebase_path) do
@@ -196,7 +196,7 @@ defmodule Singularity.Pipeline.Context do
   end
 
   defp gather_duplicates(context, story, codebase_path, _opts) do
-    include_duplicates = Keyword.get(_opts, :include_duplicates, true)
+    include_duplicates = Keyword.get(opts, :include_duplicates, true)
 
     if include_duplicates do
       case DeduplicationEngine.find_similar(story_to_string(story), codebase_path) do
@@ -214,7 +214,7 @@ defmodule Singularity.Pipeline.Context do
   end
 
   defp gather_quality_issues(context, codebase_path, _opts) do
-    include_quality = Keyword.get(_opts, :include_quality, true)
+    include_quality = Keyword.get(opts, :include_quality, true)
 
     if include_quality do
       case QualityAnalyzer.analyze(codebase_path) do

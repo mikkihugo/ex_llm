@@ -24,8 +24,8 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   """
   @spec search(String.t(), keyword()) :: {:ok, [package_result()]} | {:error, term()}
   def search(query, _opts \\ []) do
-    ecosystem = Keyword.get(_opts, :ecosystem, :all) |> to_string()
-    limit = Keyword.get(_opts, :limit, 10)
+    ecosystem = Keyword.get(opts, :ecosystem, :all) |> to_string()
+    limit = Keyword.get(opts, :limit, 10)
 
     Logger.info("🔍 Searching packages: '#{query}' in #{ecosystem}")
 

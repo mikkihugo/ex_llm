@@ -55,9 +55,9 @@ defmodule Singularity.PackageAndCodebaseSearch do
   Unified search combining packages and your codebase combining Tool Knowledge + RAG
   """
   def hybrid_search(query, _opts \\ []) do
-    codebase_id = Keyword.get(_opts, :codebase_id)
-    ecosystem = Keyword.get(_opts, :ecosystem)
-    limit = Keyword.get(_opts, :limit, 5)
+    codebase_id = Keyword.get(opts, :codebase_id)
+    ecosystem = Keyword.get(opts, :ecosystem)
+    limit = Keyword.get(opts, :limit, 5)
 
     # Run both searches in parallel
     tasks = [
@@ -82,9 +82,9 @@ defmodule Singularity.PackageAndCodebaseSearch do
   Search for implementation patterns - combines package patterns + your code
   """
   def search_implementation(task_description, _opts \\ []) do
-    codebase_id = Keyword.get(_opts, :codebase_id)
-    ecosystem = Keyword.get(_opts, :ecosystem)
-    limit = Keyword.get(_opts, :limit, 5)
+    codebase_id = Keyword.get(opts, :codebase_id)
+    ecosystem = Keyword.get(opts, :ecosystem)
+    limit = Keyword.get(opts, :limit, 5)
 
     # Search for:
     # 1. Package patterns (best practices)
@@ -124,8 +124,8 @@ defmodule Singularity.PackageAndCodebaseSearch do
   - Your previous usage (from RAG)
   """
   def recommend_package(task_description, _opts \\ []) do
-    codebase_id = Keyword.get(_opts, :codebase_id)
-    ecosystem = Keyword.get(_opts, :ecosystem)
+    codebase_id = Keyword.get(opts, :codebase_id)
+    ecosystem = Keyword.get(opts, :ecosystem)
 
     # Search packages
     packages =
@@ -171,9 +171,9 @@ defmodule Singularity.PackageAndCodebaseSearch do
   Find cross-ecosystem equivalents and show how YOU used similar tools
   """
   def find_equivalent_with_context(package_name, _opts \\ []) do
-    from_ecosystem = Keyword.get(_opts, :from)
-    to_ecosystem = Keyword.get(_opts, :to)
-    codebase_id = Keyword.get(_opts, :codebase_id)
+    from_ecosystem = Keyword.get(opts, :from)
+    to_ecosystem = Keyword.get(opts, :to)
+    codebase_id = Keyword.get(opts, :codebase_id)
 
     # Find equivalents in target ecosystem
     equivalents =

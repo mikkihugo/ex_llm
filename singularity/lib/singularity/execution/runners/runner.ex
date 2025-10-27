@@ -78,7 +78,7 @@ defmodule Singularity.Execution.Runners.Runner do
   """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -142,7 +142,7 @@ defmodule Singularity.Execution.Runners.Runner do
   # ============================================================================
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     # Start dynamic supervisor for execution tasks
     {:ok, supervisor_ref} = DynamicSupervisor.start_link(strategy: :one_for_one)
 
@@ -240,8 +240,8 @@ defmodule Singularity.Execution.Runners.Runner do
 
   @impl true
   def handle_call({:execute_concurrent, tasks, _opts}, _from, state) do
-    max_concurrency = Keyword.get(_opts, :max_concurrency, 10)
-    timeout = Keyword.get(_opts, :timeout, 30_000)
+    max_concurrency = Keyword.get(opts, :max_concurrency, 10)
+    timeout = Keyword.get(opts, :timeout, 30_000)
 
     # Execute tasks concurrently with backpressure
     results =
@@ -262,8 +262,8 @@ defmodule Singularity.Execution.Runners.Runner do
 
   @impl true
   def handle_call({:stream_execution, tasks, _opts}, _from, state) do
-    max_concurrency = Keyword.get(_opts, :max_concurrency, 10)
-    timeout = Keyword.get(_opts, :timeout, 30_000)
+    max_concurrency = Keyword.get(opts, :max_concurrency, 10)
+    timeout = Keyword.get(opts, :timeout, 30_000)
 
     # Create streaming execution
     stream =
@@ -300,8 +300,8 @@ defmodule Singularity.Execution.Runners.Runner do
 
   @impl true
   def handle_call({:get_execution_history, _opts}, _from, state) do
-    limit = Keyword.get(_opts, :limit, 100)
-    offset = Keyword.get(_opts, :offset, 0)
+    limit = Keyword.get(opts, :limit, 100)
+    offset = Keyword.get(opts, :offset, 0)
 
     history =
       state.execution_history
@@ -673,8 +673,8 @@ defmodule Singularity.Execution.Runners.Runner do
         task_args: task.args,
         status: status,
         started_at: DateTime.utc_now(),
-        result: Keyword.get(_opts, :result),
-        error: Keyword.get(_opts, :error)
+        result: Keyword.get(opts, :result),
+        error: Keyword.get(opts, :error)
       }
 
       # Store in ETS table for fast access

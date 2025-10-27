@@ -148,15 +148,15 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
   """
   @spec generate(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def generate(task, _opts \\ []) do
-    method = Keyword.get(_opts, :method, :auto)
-    language = Keyword.get(_opts, :language, "elixir")
-    quality = Keyword.get(_opts, :quality, :production)
-    complexity = Keyword.get(_opts, :complexity, detect_complexity(task))
-    use_rag = Keyword.get(_opts, :use_rag, true)
-    top_k = Keyword.get(_opts, :top_k, 5)
-    repos = Keyword.get(_opts, :repos)
-    validate = Keyword.get(_opts, :validate, true)
-    max_retries = Keyword.get(_opts, :max_retries, 2)
+    method = Keyword.get(opts, :method, :auto)
+    language = Keyword.get(opts, :language, "elixir")
+    quality = Keyword.get(opts, :quality, :production)
+    complexity = Keyword.get(opts, :complexity, detect_complexity(task))
+    use_rag = Keyword.get(opts, :use_rag, true)
+    top_k = Keyword.get(opts, :top_k, 5)
+    repos = Keyword.get(opts, :repos)
+    validate = Keyword.get(opts, :validate, true)
+    max_retries = Keyword.get(opts, :max_retries, 2)
 
     Logger.info(
       "Adaptive code generation: task=#{inspect(task)}, method=#{method}, complexity=#{complexity}, use_rag=#{use_rag}, quality=#{quality}"

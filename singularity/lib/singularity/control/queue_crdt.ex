@@ -11,8 +11,8 @@ defmodule Singularity.Control.QueueCrdt do
 
   ## Client API
 
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc "Reserve a fingerprint for an agent. Returns false if already reserved."
@@ -38,7 +38,7 @@ defmodule Singularity.Control.QueueCrdt do
   ## Server callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     {:ok, crdt} = DeltaCrdt.start_link(DeltaCrdt.AWLWWMap, sync_interval: 5_000)
     Process.register(crdt, @crdt_name)
     :net_kernel.monitor_nodes(true, node_type: :visible)

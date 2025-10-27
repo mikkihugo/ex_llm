@@ -143,7 +143,7 @@ defmodule Singularity.Schemas.DeadCodeHistory do
   """
   def trend(_opts \\ [], repo \\ Singularity.Repo) do
     # Default: 6 months
-    days = Keyword.get(_opts, :days, 180)
+    days = Keyword.get(opts, :days, 180)
     start_date = DateTime.utc_now() |> DateTime.add(-days * 24 * 3600, :second)
 
     from(h in __MODULE__,
@@ -205,7 +205,7 @@ defmodule Singularity.Schemas.DeadCodeHistory do
       true  # Increasing by >0.1 per check
   """
   def trending_up?(_opts \\ [], repo \\ Singularity.Repo) do
-    threshold = Keyword.get(_opts, :threshold, 0.1)
+    threshold = Keyword.get(opts, :threshold, 0.1)
     slope = trend_slope(_opts, repo)
     slope > threshold
   end

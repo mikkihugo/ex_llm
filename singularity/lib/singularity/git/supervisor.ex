@@ -20,7 +20,7 @@ defmodule Singularity.Git.Supervisor do
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     config = load_config(_opts)
 
     if enabled?(config) do
@@ -62,7 +62,7 @@ defmodule Singularity.Git.Supervisor do
     end
   end
 
-  defp load_config(_opts) do
+  defp load_config(opts) do
     app_config = Application.get_env(:singularity, :git_coordinator, [])
     Keyword.merge(app_config, _opts)
   end

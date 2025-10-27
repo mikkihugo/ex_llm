@@ -115,7 +115,7 @@ defmodule Singularity.CodeGeneration.Orchestrator.GenerationOrchestrator do
     try do
       enabled_generators = GeneratorType.load_enabled_generators()
 
-      generator_types = Keyword.get(_opts, :generator_types, nil)
+      generator_types = Keyword.get(opts, :generator_types, nil)
 
       generators_to_use =
         if generator_types do

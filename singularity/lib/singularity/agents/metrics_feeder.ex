@@ -9,12 +9,12 @@ defmodule Singularity.Agents.MetricsFeeder do
   require Logger
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @impl true
-  def init(_opts) do
-    interval = Keyword.get(_opts, :interval_ms, 10_000)
+  def init(opts) do
+    interval = Keyword.get(opts, :interval_ms, 10_000)
 
     Logger.info("Starting MetricsFeeder (interval: #{interval}ms)")
     schedule_feed(interval)

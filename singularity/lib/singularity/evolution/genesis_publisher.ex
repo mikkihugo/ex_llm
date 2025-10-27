@@ -214,8 +214,8 @@ defmodule Singularity.Evolution.GenesisPublisher do
   @spec import_rules_from_genesis(keyword()) ::
           {:ok, [map()]} | {:error, term()}
   def import_rules_from_genesis(_opts \\ []) do
-    min_confidence = Keyword.get(_opts, :min_confidence, 0.85)
-    limit = Keyword.get(_opts, :limit, 20)
+    min_confidence = Keyword.get(opts, :min_confidence, 0.85)
+    limit = Keyword.get(opts, :limit, 20)
 
     Logger.info("GenesisPublisher: Importing rules from Genesis via pgmq",
       min_confidence: min_confidence,
@@ -280,7 +280,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   """
   @spec get_publication_history(keyword()) :: [map()]
   def get_publication_history(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 50)
+    limit = Keyword.get(opts, :limit, 50)
 
     Logger.debug("GenesisPublisher: Retrieving publication history",
       limit: limit

@@ -199,7 +199,8 @@ defmodule Singularity.Tools.ValidationMiddleware do
 
       {:error, reason} ->
         {:error, reason}
-        end
+    end
+  end
 
   @doc """
   Validate tool parameters using Instructor.
@@ -212,21 +213,23 @@ defmodule Singularity.Tools.ValidationMiddleware do
   - `:ok` - Parameters are valid
   - `{:error, :validation_failed, details}` - Parameters invalid
   """
-  def validate_parameters(%Tool{name: tool_name}, arguments, _opts \\ [])
+  def validate_parameters(%Tool{name: tool_name}, arguments, opts \\ [])
       when is_map(arguments) do
+    opts = normalize_to_keyword(opts)
     Logger.debug("ValidationMiddleware.validate_parameters(#{tool_name})", arguments)
 
     case InstructorAdapter.validate_parameters(
            tool_name,
            arguments,
-           Keyword.take(_opts, [:max_retries, :model])
+           Keyword.take(opts, [:max_retries, :model])
          ) do
       {:ok, _validated} ->
         :ok
 
       {:error, reason} ->
         {:error, :validation_failed, %{tool: tool_name, reason: reason, arguments: arguments}}
-        end
+    end
+  end
 
   @doc """
   Validate tool output using schemas.
@@ -239,26 +242,28 @@ defmodule Singularity.Tools.ValidationMiddleware do
   - `{:ok, validated_output}` - Output is valid
   - `{:error, :schema_mismatch, details}` - Output invalid
   """
-  def validate_output(tool_result, schema, _opts \\ []) when is_atom(schema) do
+  def validate_output(tool_result, schema, opts \\ []) when is_atom(schema) do
+    opts = normalize_to_map(opts)
     Logger.debug("ValidationMiddleware.validate_output", schema: schema)
 
     case schema do
       :generated_code ->
-        validate_generated_code(tool_result, _opts)
+        validate_generated_code(tool_result, opts)
 
       :code_quality ->
-        validate_code_quality(tool_result, _opts)
+        validate_code_quality(tool_result, opts)
 
       :tool_parameters ->
-        validate_tool_parameters(tool_result, _opts)
+        validate_tool_parameters(tool_result, opts)
 
       :refinement_feedback ->
-        validate_refinement_feedback(tool_result, _opts)
+        validate_refinement_feedback(tool_result, opts)
 
       _ ->
         Logger.warning("Unknown validation schema: #{inspect(schema)}")
         {:ok, tool_result}
-        end
+    end
+  end
 
   # ============================================================================
   # PRIVATE FUNCTIONS
@@ -266,24 +271,30 @@ defmodule Singularity.Tools.ValidationMiddleware do
 
   defp validate_parameters_if_enabled(_tool, _arguments, %{validate_parameters: false}), do: :ok
 
-  defp validate_parameters_if_enabled(tool, arguments, _opts),
-    do: validate_parameters(tool, arguments)
+  defp validate_parameters_if_enabled(tool, arguments, opts),
+    do: validate_parameters(tool, arguments, opts)
 
   defp validate_output_if_enabled(_tool, result, %{validate_output: false}), do: {:ok, result}
 
-  defp validate_output_if_enabled(tool, result, _opts) do
-    schema = Map.get(_opts, :output_schema, :generated_code)
-    validate_output(result, schema, _opts)
+  defp validate_output_if_enabled(tool, result, opts) do
+    opts = normalize_to_map(opts)
+    schema = Map.get(opts, :output_schema, :generated_code)
+    validate_output(result, schema, opts)
+  end
 
-  defp handle_validation_error(tool, arguments, context, error_type, details, _opts) do
-    if Map.get(_opts, :allow_refinement, false) and error_type == :schema_mismatch do
-      attempt_refinement(tool, arguments, context, details, _opts)
+  defp handle_validation_error(tool, arguments, context, error_type, details, opts) do
+    opts = normalize_to_map(opts)
+
+    if Map.get(opts, :allow_refinement, false) and error_type == :schema_mismatch do
+      attempt_refinement(tool, arguments, context, details, opts)
     else
       {:error, error_type, details}
-        end
+    end
+  end
 
-  defp attempt_refinement(_tool, _arguments, _context, details, _opts) do
-    max_iterations = Map.get(_opts, :max_refinement_iterations, 2)
+  defp attempt_refinement(_tool, _arguments, _context, details, opts) do
+    opts = normalize_to_map(opts)
+    max_iterations = Map.get(opts, :max_refinement_iterations, 2)
 
     case do_refinement(details, 1, max_iterations) do
       {:ok, refined} ->
@@ -291,17 +302,17 @@ defmodule Singularity.Tools.ValidationMiddleware do
 
       {:error, reason} ->
         {:error, :refinement_exhausted, reason}
-        end
+    end
+  end
 
-  defp do_refinement(error_details, iteration, max_iterations)
+  defp do_refinement(_details, iteration, max_iterations)
        when iteration > max_iterations do
     {:error, "Max refinement iterations (#{max_iterations}) reached"}
+  end
 
   defp do_refinement(error_details, iteration, max_iterations) do
     Logger.info("Attempting refinement (iteration #{iteration}/#{max_iterations})")
 
-    # Implement refinement via InstructorAdapter.refine_output/3
-    # Attempt to refine the output using InstructorAdapter
     case InstructorAdapter.refine_output(
            error_details.tool,
            error_details.arguments,
@@ -310,12 +321,85 @@ defmodule Singularity.Tools.ValidationMiddleware do
       {:ok, refined_output} ->
         Logger.info("Refinement successful on iteration #{iteration}")
         {:ok, refined_output}
-        
+
       {:error, refinement_error} ->
         Logger.warning("Refinement failed: #{inspect(refinement_error)}")
+
         if iteration >= max_iterations do
           {:error, error_details}
         else
           do_refinement(error_details, iteration + 1, max_iterations)
         end
-        end
+    end
+  end
+
+  defp merge_options(tool_opts, runtime_opts) do
+    tool_opts_map = normalize_to_map(tool_opts)
+    runtime_opts_map = normalize_to_map(runtime_opts)
+
+    @default_options
+    |> Map.merge(tool_opts_map)
+    |> Map.merge(runtime_opts_map)
+  end
+
+  defp normalize_to_map(nil), do: %{}
+  defp normalize_to_map(opts) when is_map(opts), do: opts
+  defp normalize_to_map(opts) when is_list(opts), do: Enum.into(opts, %{})
+  defp normalize_to_map(_), do: %{}
+
+  defp normalize_to_keyword(opts) when is_list(opts), do: opts
+  defp normalize_to_keyword(opts) when is_map(opts), do: Map.to_list(opts)
+  defp normalize_to_keyword(_), do: []
+
+  defp validate_generated_code(result, _opts) do
+    case InstructorSchemas.GeneratedCode.cast_and_validate(result) do
+      %Ecto.Changeset{valid?: true} ->
+        {:ok, result}
+
+      changeset ->
+        {:error, :schema_mismatch,
+         %{schema: :generated_code, errors: format_errors(changeset), result: result}}
+    end
+  end
+
+  defp validate_code_quality(result, _opts) do
+    case InstructorSchemas.CodeQualityResult.cast_and_validate(result) do
+      %Ecto.Changeset{valid?: true} ->
+        {:ok, result}
+
+      changeset ->
+        {:error, :schema_mismatch,
+         %{schema: :code_quality, errors: format_errors(changeset), result: result}}
+    end
+  end
+
+  defp validate_tool_parameters(result, _opts) do
+    case InstructorSchemas.ToolParameters.cast_and_validate(result) do
+      %Ecto.Changeset{valid?: true} ->
+        {:ok, result}
+
+      changeset ->
+        {:error, :schema_mismatch,
+         %{schema: :tool_parameters, errors: format_errors(changeset), result: result}}
+    end
+  end
+
+  defp validate_refinement_feedback(result, _opts) do
+    case InstructorSchemas.RefinementFeedback.cast_and_validate(result) do
+      %Ecto.Changeset{valid?: true} ->
+        {:ok, result}
+
+      changeset ->
+        {:error, :schema_mismatch,
+         %{schema: :refinement_feedback, errors: format_errors(changeset), result: result}}
+    end
+  end
+
+  defp format_errors(%Ecto.Changeset{} = changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
+        String.replace(acc, "%{#{key}}", to_string(value))
+      end)
+    end)
+  end
+end

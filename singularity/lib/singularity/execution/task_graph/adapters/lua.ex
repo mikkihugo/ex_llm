@@ -52,7 +52,7 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Lua do
 
   def exec(%{src: src} = args, _opts) when is_binary(src) do
     argv = Map.get(args, :argv, [])
-    timeout = Keyword.get(_opts, :timeout, @default_timeout)
+    timeout = Keyword.get(opts, :timeout, @default_timeout)
 
     timeout =
       if timeout > @max_timeout do

@@ -357,7 +357,7 @@ defmodule Singularity.Analysis.MetadataValidator do
   Mark file for manual review.
   """
   def mark_for_review(file_path, _opts \\ []) do
-    missing = Keyword.get(_opts, :missing, [])
+    missing = Keyword.get(opts, :missing, [])
     Logger.info("Marking #{file_path} for review. Missing: #{inspect(missing)}")
 
     # Create TODO for SelfImprovingAgent to fix missing documentation

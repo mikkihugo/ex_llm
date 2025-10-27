@@ -51,12 +51,12 @@ defmodule Singularity.SharedQueueConsumer do
   import Ecto.Query
   alias Singularity.Jobs.PgmqClient
 
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     Logger.info("[Singularity.SharedQueueConsumer] Starting response consumer")
 
     # Start polling immediately (both regular and LLM-specific)
@@ -343,7 +343,7 @@ defmodule Singularity.SharedQueueConsumer do
   def handle_llm_response(llm_request_id, response, parsed_response \\ nil) do
     case Singularity.Repo.get(Singularity.LLMSchemas.LLMRequest, llm_request_id) do
       nil ->
-        Logger.warn("[Singularity.SharedQueueConsumer] LLM request not found", %{
+        Logger.warning("[Singularity.SharedQueueConsumer] LLM request not found", %{
           id: llm_request_id
         })
 
@@ -511,7 +511,7 @@ defmodule Singularity.SharedQueueConsumer do
 
     case Singularity.Repo.update(changeset) do
       {:ok, _updated_request} ->
-        Logger.warn("[Singularity.SharedQueueConsumer] LLM request failed - provider down", %{
+        Logger.warning("[Singularity.SharedQueueConsumer] LLM request failed - provider down", %{
           id: request.id,
           reason: reason
         })
@@ -537,7 +537,7 @@ defmodule Singularity.SharedQueueConsumer do
 
     case Singularity.Repo.update(changeset) do
       {:ok, _updated_request} ->
-        Logger.warn("[Singularity.SharedQueueConsumer] LLM request failed - validation error", %{
+        Logger.warning("[Singularity.SharedQueueConsumer] LLM request failed - validation error", %{
           id: request.id,
           validation_errors: length(validation_errors)
         })
@@ -568,7 +568,7 @@ defmodule Singularity.SharedQueueConsumer do
 
     case Singularity.Repo.update(changeset) do
       {:ok, _updated_request} ->
-        Logger.warn("[Singularity.SharedQueueConsumer] LLM request failed - malformed JSON", %{
+        Logger.warning("[Singularity.SharedQueueConsumer] LLM request failed - malformed JSON", %{
           id: request.id,
           json_error: json_error
         })

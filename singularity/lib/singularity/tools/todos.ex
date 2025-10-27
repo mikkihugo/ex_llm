@@ -401,8 +401,8 @@ defmodule Singularity.Tools.Todos do
 
   defp maybe_add_opt(_opts, params, key, opt_key) do
     case Map.get(params, key) do
-      nil -> opts
-      value -> Keyword.put(_opts, opt_key, value)
+      nil -> _opts
+      value -> Keyword.put(opts, opt_key, value)
     end
   end
 

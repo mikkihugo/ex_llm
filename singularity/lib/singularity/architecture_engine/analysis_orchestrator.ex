@@ -205,7 +205,7 @@ defmodule Singularity.Architecture.AnalysisOrchestrator do
       enabled_analyzers = AnalyzerType.load_enabled_analyzers()
 
       # Filter by requested analyzer types if specified
-      analyzer_types = Keyword.get(_opts, :analyzer_types, nil)
+      analyzer_types = Keyword.get(opts, :analyzer_types, nil)
 
       analyzers_to_run =
         if analyzer_types do
@@ -304,7 +304,7 @@ defmodule Singularity.Architecture.AnalysisOrchestrator do
   end
 
   defp filter_by_severity(results, _opts) do
-    case Keyword.get(_opts, :min_severity) do
+    case Keyword.get(opts, :min_severity) do
       nil ->
         results
 
@@ -320,7 +320,7 @@ defmodule Singularity.Architecture.AnalysisOrchestrator do
   end
 
   defp limit_results(results, _opts) do
-    case Keyword.get(_opts, :limit) do
+    case Keyword.get(opts, :limit) do
       nil -> results
       limit -> Enum.take(results, limit)
     end

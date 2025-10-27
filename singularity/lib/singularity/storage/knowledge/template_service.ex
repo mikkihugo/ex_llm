@@ -208,13 +208,13 @@ defmodule Singularity.Knowledge.TemplateService do
   # Client API
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   # Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     # Use the default pgmq connection
     gnat_name = :pgmq_client
 
@@ -574,7 +574,7 @@ defmodule Singularity.Knowledge.TemplateService do
   This helps modules discover what templates are available.
   """
   def list_templates(template_type, _opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 100)
+    limit = Keyword.get(opts, :limit, 100)
 
     # First try local TemplateStore
     case Singularity.TemplateStore.search("", type: template_type, limit: limit) do
@@ -647,7 +647,7 @@ defmodule Singularity.Knowledge.TemplateService do
   This helps modules find relevant templates.
   """
   def search_templates(query, template_type, _opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 10)
+    limit = Keyword.get(opts, :limit, 10)
 
     # Use TemplateStore for semantic search
     case Singularity.TemplateStore.search(query, type: template_type, limit: limit) do
@@ -762,8 +762,8 @@ defmodule Singularity.Knowledge.TemplateService do
   # Convention-based discovery helpers
 
   defp build_template_candidates(template_type, language, use_case, _opts) do
-    version = Keyword.get(_opts, :version, "latest")
-    include_variants = Keyword.get(_opts, :include_variants, true)
+    version = Keyword.get(opts, :version, "latest")
+    include_variants = Keyword.get(opts, :include_variants, true)
 
     base_candidates = [
       "#{language}_#{use_case}",
@@ -877,10 +877,10 @@ defmodule Singularity.Knowledge.TemplateService do
     # Build query for Package Intelligence
     query = %{
       "description" => user_variables["description"] || "",
-      "language" => _opts[:language] || user_variables["language"] || "elixir",
-      "framework" => _opts[:framework],
-      "quality_level" => _opts[:quality_level] || "production",
-      "task_type" => _opts[:task_type] || "code_generation"
+      "language" => opts[:language] || user_variables["language"] || "elixir",
+      "framework" => opts[:framework],
+      "quality_level" => opts[:quality_level] || "production",
+      "task_type" => opts[:task_type] || "code_generation"
     }
 
     # Query via pgmq with timeout
@@ -915,7 +915,7 @@ defmodule Singularity.Knowledge.TemplateService do
   end
 
   defp inject_framework_context(vars, intelligence, _opts) do
-    if _opts[:include_framework_hints] != false do
+    if opts[:include_framework_hints] != false do
       framework = intelligence["framework"] || %{}
 
       Map.merge(vars, %{
@@ -932,7 +932,7 @@ defmodule Singularity.Knowledge.TemplateService do
   end
 
   defp inject_quality_requirements(vars, intelligence, _opts) do
-    if _opts[:include_quality_hints] != false do
+    if opts[:include_quality_hints] != false do
       quality = intelligence["quality"] || %{}
 
       Map.merge(vars, %{
@@ -947,7 +947,7 @@ defmodule Singularity.Knowledge.TemplateService do
   end
 
   defp inject_prompt_bits(vars, intelligence, _opts) do
-    if _opts[:include_hints] == true do
+    if opts[:include_hints] == true do
       framework = intelligence["framework"] || %{}
       prompts = intelligence["prompts"] || %{}
 

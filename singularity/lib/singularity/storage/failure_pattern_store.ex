@@ -93,8 +93,8 @@ defmodule Singularity.Storage.FailurePatternStore do
   @spec find_similar(map(), Keyword.t()) :: [map()]
   def find_similar(criteria, _opts \\ []) do
     signature = extract_signature(criteria)
-    threshold = Keyword.get(_opts, :threshold, 0.80)
-    limit = Keyword.get(_opts, :limit, 10)
+    threshold = Keyword.get(opts, :threshold, 0.80)
+    limit = Keyword.get(opts, :limit, 10)
 
     if is_binary(signature) and signature != "" do
       filters =
@@ -152,7 +152,7 @@ defmodule Singularity.Storage.FailurePatternStore do
   end
 
   defp upsert(attrs, _opts) do
-    replace_existing? = Keyword.get(_opts, :replace_existing, false)
+    replace_existing? = Keyword.get(opts, :replace_existing, false)
 
     case find_existing(attrs) do
       nil ->

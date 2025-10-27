@@ -70,7 +70,7 @@ defmodule Singularity.Storage.Cache.PostgresCache do
   - `:ttl` - Time to live in seconds (default: 3600)
   """
   def put(cache_key, value, _opts \\ []) do
-    ttl = Keyword.get(_opts, :ttl, @default_ttl)
+    ttl = Keyword.get(opts, :ttl, @default_ttl)
 
     query = """
     INSERT INTO package_cache (cache_key, package_data, expires_at)

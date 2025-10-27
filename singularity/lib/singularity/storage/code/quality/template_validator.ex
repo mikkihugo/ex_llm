@@ -51,8 +51,8 @@ defmodule Singularity.Code.Quality.TemplateValidator do
   @spec validate(String.t(), map(), String.t(), keyword()) ::
           {:ok, validation_result()} | {:error, term()}
   def validate(code, quality_template, language, _opts \\ []) do
-    min_compliance_score = Keyword.get(_opts, :min_compliance_score, 0.8)
-    strict_mode = Keyword.get(_opts, :strict, false)
+    min_compliance_score = Keyword.get(opts, :min_compliance_score, 0.8)
+    strict_mode = Keyword.get(opts, :strict, false)
 
     with {:ok, temp_file} <- write_temp_file(code, language),
          {:ok, parse_result} <- ParserEngine.parse_file(temp_file),

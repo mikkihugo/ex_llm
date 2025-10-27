@@ -85,7 +85,7 @@ defmodule Singularity.Embedding.NxService do
   Note: The :model option is ignored; both models always used for maximum quality.
   """
   def embed(text, _opts \\ []) when is_binary(text) do
-    device = Keyword.get(_opts, :device, :cpu)
+    device = Keyword.get(opts, :device, :cpu)
 
     # Always use concatenation: Qodo + Jina v3 = 2560-dim
     with {:ok, model_state} <- ModelLoader.load_model(:qodo, device),
@@ -105,7 +105,7 @@ defmodule Singularity.Embedding.NxService do
   Note: The :model option is ignored; both models always used for maximum quality.
   """
   def embed_batch(texts, _opts \\ []) when is_list(texts) do
-    device = Keyword.get(_opts, :device, :cpu)
+    device = Keyword.get(opts, :device, :cpu)
 
     # Always use concatenation for all texts in batch
     with {:ok, model_state} <- ModelLoader.load_model(:qodo, device),
@@ -134,10 +134,10 @@ defmodule Singularity.Embedding.NxService do
   Fine-tune model on training data (pure Elixir using Axon)
   """
   def finetune(training_data, _opts \\ []) when is_list(training_data) do
-    model = Keyword.get(_opts, :model, :qodo)
-    epochs = Keyword.get(_opts, :epochs, 1)
-    learning_rate = Keyword.get(_opts, :learning_rate, 1.0e-5)
-    batch_size = Keyword.get(_opts, :batch_size, 32)
+    model = Keyword.get(opts, :model, :qodo)
+    epochs = Keyword.get(opts, :epochs, 1)
+    learning_rate = Keyword.get(opts, :learning_rate, 1.0e-5)
+    batch_size = Keyword.get(opts, :batch_size, 32)
 
     Logger.info("Starting fine-tuning for #{inspect(model)}")
 

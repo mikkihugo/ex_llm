@@ -82,10 +82,10 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   - `:top_k` - Top-K sampling (default: 50)
   """
   def generate(prompt, model_state, model, _opts \\ []) when is_binary(prompt) do
-    max_tokens = Keyword.get(_opts, :max_tokens, 256)
-    temperature = Keyword.get(_opts, :temperature, 0.7)
-    top_p = Keyword.get(_opts, :top_p, 0.9)
-    top_k = Keyword.get(_opts, :top_k, 50)
+    max_tokens = Keyword.get(opts, :max_tokens, 256)
+    temperature = Keyword.get(opts, :temperature, 0.7)
+    top_p = Keyword.get(opts, :top_p, 0.9)
+    top_k = Keyword.get(opts, :top_k, 50)
 
     Logger.info("Generating with #{inspect(model)}")
     Logger.info("  Max tokens: #{max_tokens}, Temp: #{temperature}, Top-P: #{top_p}")

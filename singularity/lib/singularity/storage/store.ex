@@ -357,12 +357,12 @@ defmodule Singularity.Store do
     changeset = %{
       artifact_type: artifact_type,
       artifact_id: name,
-      version: _opts[:version] || "1.0.0",
+      version: opts[:version] || "1.0.0",
       content_raw: Jason.encode!(content),
       content: content,
-      embedding: _opts[:embedding],
-      language: _opts[:language],
-      tags: _opts[:tags] || [],
+      embedding: opts[:embedding],
+      language: opts[:language],
+      tags: opts[:tags] || [],
       usage_count: 0,
       success_rate: 0.0
     }
@@ -409,9 +409,9 @@ defmodule Singularity.Store do
   """
   @spec search_knowledge(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
   def search_knowledge(query, _opts \\ []) do
-    use_semantic = Keyword.get(_opts, :semantic, true)
-    limit = Keyword.get(_opts, :limit, 10)
-    threshold = Keyword.get(_opts, :threshold, 0.7)
+    use_semantic = Keyword.get(opts, :semantic, true)
+    limit = Keyword.get(opts, :limit, 10)
+    threshold = Keyword.get(opts, :threshold, 0.7)
 
     if use_semantic do
       semantic_search_knowledge(query, limit, threshold)

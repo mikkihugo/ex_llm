@@ -35,8 +35,8 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
 
   ## Client API
 
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -67,8 +67,8 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
   ## Server Callbacks
 
   @impl true
-  def init(_opts) do
-    repo_path = _opts[:repo_path] || "/tmp/singularity-workspace"
+  def init(opts) do
+    repo_path = opts[:repo_path] || "/tmp/singularity-workspace"
 
     # Ensure workspace exists
     File.mkdir_p!(repo_path)
@@ -87,8 +87,8 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
       agent_workspaces: build_workspace_map(sessions),
       active_branches: build_branch_map(sessions),
       pending_merges: Enum.map(pending_merges, &merge_from_record/1),
-      base_branch: _opts[:base_branch] || "main",
-      remote: Keyword.get(_opts, :remote)
+      base_branch: opts[:base_branch] || "main",
+      remote: Keyword.get(opts, :remote)
     }
 
     {:ok, state}

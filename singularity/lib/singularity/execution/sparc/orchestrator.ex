@@ -180,7 +180,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
   # Client API
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -200,7 +200,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
   # Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     state = %__MODULE__{
       # Will connect to TemplateOptimizer
       template_dag: nil,
@@ -221,7 +221,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
 
     # 1. Get best template from Template Performance DAG
     task_type = extract_task_type(goal)
-    language = Keyword.get(_opts, :language, "elixir")
+    language = Keyword.get(opts, :language, "elixir")
 
     {:ok, template_id} =
       Singularity.Quality.TemplateTracker.get_best_template(task_type, language)
@@ -321,7 +321,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
     MethodologyExecutor.execute_phase_only(
       task.phase || :completion,
       task.description,
-      Keyword.put(_opts, :template, template_id)
+      Keyword.put(opts, :template, template_id)
     )
   end
 

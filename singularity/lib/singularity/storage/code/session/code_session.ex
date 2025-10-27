@@ -80,10 +80,10 @@ defmodule Singularity.CodeSession do
   - RAG examples from project
   - Shared patterns for feature
   """
-  def start(_opts) do
-    project = Keyword.fetch!(_opts, :project)
-    feature = Keyword.get(_opts, :feature, "development")
-    files = Keyword.get(_opts, :files, [])
+  def start(opts) do
+    project = Keyword.fetch!(opts, :project)
+    feature = Keyword.get(opts, :feature, "development")
+    files = Keyword.get(opts, :files, [])
 
     GenServer.start(__MODULE__, {project, feature, files}, [])
   end
@@ -294,7 +294,7 @@ defmodule Singularity.CodeSession do
   end
 
   defp generate_with_session_cache(task, _opts, state) do
-    path = Keyword.get(_opts, :path)
+    path = Keyword.get(opts, :path)
 
     Logger.debug("Generating: #{task} (#{path})")
 
@@ -831,10 +831,10 @@ defmodule Singularity.CodeSession do
         ]
       )
   """
-  def generate_feature(_opts) do
-    project = Keyword.fetch!(_opts, :project)
-    feature = Keyword.fetch!(_opts, :feature)
-    files = Keyword.fetch!(_opts, :files)
+  def generate_feature(opts) do
+    project = Keyword.fetch!(opts, :project)
+    feature = Keyword.fetch!(opts, :feature)
+    files = Keyword.fetch!(opts, :files)
 
     file_paths = Enum.map(files, fn {_task, path} -> path end)
 

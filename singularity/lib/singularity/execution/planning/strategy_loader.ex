@@ -41,7 +41,7 @@ defmodule Singularity.Execution.Planning.StrategyLoader do
   Start the strategy loader GenServer.
   """
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -95,7 +95,7 @@ defmodule Singularity.Execution.Planning.StrategyLoader do
   ## GenServer Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     # Create ETS table for strategy cache
     :ets.new(@table, [:set, :public, :named_table, read_concurrency: true])
 

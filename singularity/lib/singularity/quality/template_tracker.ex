@@ -48,7 +48,7 @@ defmodule Singularity.Quality.TemplateTracker do
   # Client API
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -75,7 +75,7 @@ defmodule Singularity.Quality.TemplateTracker do
   # Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     # Initialize TaskGraph for template tracking
     dag = TaskGraphEngine.new("template-performance")
 
@@ -83,7 +83,7 @@ defmodule Singularity.Quality.TemplateTracker do
       dag: dag,
       performance_data: %{},
       template_rankings: %{},
-      learning_enabled: Keyword.get(_opts, :learning, true),
+      learning_enabled: Keyword.get(opts, :learning, true),
       metrics_cache: %{}
     }
 

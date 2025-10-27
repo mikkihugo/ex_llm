@@ -129,8 +129,8 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
     start_time = System.monotonic_time(:millisecond)
 
     try do
-      detector_types = Keyword.get(_opts, :types, nil)
-      use_cache = Keyword.get(_opts, :cache, true)
+      detector_types = Keyword.get(opts, :types, nil)
+      use_cache = Keyword.get(opts, :cache, true)
 
       Logger.debug("DetectionOrchestrator: detecting in #{codebase_path}",
         types: detector_types,
@@ -213,9 +213,9 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
   - `:metadata` - Additional metadata to store
   """
   def detect_and_cache(codebase_path, _opts \\ []) when is_binary(codebase_path) do
-    snapshot_id = Keyword.get(_opts, :snapshot_id, generate_snapshot_id())
-    metadata = Keyword.get(_opts, :metadata, %{})
-    use_cache = Keyword.get(_opts, :cache, true)
+    snapshot_id = Keyword.get(opts, :snapshot_id, generate_snapshot_id())
+    metadata = Keyword.get(opts, :metadata, %{})
+    use_cache = Keyword.get(opts, :cache, true)
 
     # Try cache first
     cached_result =

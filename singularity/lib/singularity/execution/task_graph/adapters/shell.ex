@@ -41,10 +41,10 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Shell do
   def exec(args, _opts \\ [])
 
   def exec(%{cmd: cmd}, _opts) when is_list(cmd) do
-    cwd = Keyword.get(_opts, :cwd, File.cwd!())
-    env = Keyword.get(_opts, :env, %{})
-    timeout = Keyword.get(_opts, :timeout, @default_timeout)
-    capture_stderr = Keyword.get(_opts, :capture_stderr, false)
+    cwd = Keyword.get(opts, :cwd, File.cwd!())
+    env = Keyword.get(opts, :env, %{})
+    timeout = Keyword.get(opts, :timeout, @default_timeout)
+    capture_stderr = Keyword.get(opts, :capture_stderr, false)
 
     Logger.debug("Executing shell command",
       cmd: inspect(cmd),
@@ -130,8 +130,8 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Shell do
     port =
       Port.open({:spawn_executable, System.find_executable(binary)}, [
         {:args, args},
-        {:cd, _opts[:cd]},
-        {:env, _opts[:env]},
+        {:cd, opts[:cd]},
+        {:env, opts[:env]},
         :binary,
         :exit_status,
         :use_stdio,

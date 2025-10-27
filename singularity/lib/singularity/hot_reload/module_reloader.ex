@@ -17,8 +17,8 @@ defmodule Singularity.HotReload.ModuleReloader do
 
   @max_queue_depth 100
 
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @spec enqueue(String.t(), map()) :: :ok | {:error, term()}
@@ -33,7 +33,7 @@ defmodule Singularity.HotReload.ModuleReloader do
   ## Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     {:ok, %{queue: :queue.new(), inflight: nil}}
   end
 

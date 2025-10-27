@@ -98,7 +98,7 @@ defmodule Singularity.Integration.Claude do
   """
   @spec chat(String.t(), Keyword.t()) :: {:ok, response()} | {:error, String.t()}
   def chat(prompt, _opts \\ []) when is_binary(prompt) do
-    profile = Keyword.get(_opts, :profile, :recovery)
+    profile = Keyword.get(opts, :profile, :recovery)
 
     # Check if Claude CLI is available
     case System.cmd("which", ["claude"], stderr_to_stdout: true) do

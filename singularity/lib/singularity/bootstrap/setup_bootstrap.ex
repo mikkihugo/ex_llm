@@ -25,12 +25,12 @@ defmodule Singularity.Bootstrap.SetupBootstrap do
   use GenServer
   require Logger
 
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @impl GenServer
-  def init(_opts) do
+  def init(opts) do
     Logger.info("Scheduling one-time setup jobs...")
 
     # Schedule all setup jobs with unique constraints

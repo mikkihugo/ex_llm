@@ -49,9 +49,9 @@ defmodule Singularity.CodeTrainer do
   """
   @spec prepare_dataset(keyword()) :: {:ok, dataset()} | {:error, term()}
   def prepare_dataset(_opts \\ []) do
-    language = Keyword.get(_opts, :language)
-    min_length = Keyword.get(_opts, :min_length, 50)
-    max_examples = Keyword.get(_opts, :max_examples, 10_000)
+    language = Keyword.get(opts, :language)
+    min_length = Keyword.get(opts, :min_length, 50)
+    max_examples = Keyword.get(opts, :max_examples, 10_000)
 
     Logger.info("Extracting training data from PostgreSQL...")
 
@@ -107,10 +107,10 @@ defmodule Singularity.CodeTrainer do
   """
   @spec train(dataset(), keyword()) :: {:ok, term()} | {:error, term()}
   def train(dataset, _opts \\ []) do
-    epochs = Keyword.get(_opts, :epochs, 3)
-    batch_size = Keyword.get(_opts, :batch_size, 4)
-    learning_rate = Keyword.get(_opts, :learning_rate, 2.0e-4)
-    lora_rank = Keyword.get(_opts, :lora_rank, 8)
+    epochs = Keyword.get(opts, :epochs, 3)
+    batch_size = Keyword.get(opts, :batch_size, 4)
+    learning_rate = Keyword.get(opts, :learning_rate, 2.0e-4)
+    lora_rank = Keyword.get(opts, :lora_rank, 8)
 
     Logger.info("Fine-tuning with #{length(dataset)} examples (#{epochs} epochs)")
     Logger.info("Using GPU (RTX 4080) with batch_size=#{batch_size}")

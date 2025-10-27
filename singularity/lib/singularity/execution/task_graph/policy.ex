@@ -126,7 +126,7 @@ defmodule Singularity.Execution.TaskGraph.Policy do
 
     if policy do
       with :ok <- check_tool_allowed(policy, tool),
-           :ok <- check_timeout(policy, _opts[:timeout]),
+           :ok <- check_timeout(policy, opts[:timeout]),
            :ok <- check_tool_specific_policy(role, policy, tool, args, _opts) do
         :ok
       end
@@ -249,7 +249,7 @@ defmodule Singularity.Execution.TaskGraph.Policy do
 
   defp check_tool_specific_policy(_role, policy, :docker, _args, _opts) do
     if policy[:docker_resource_limits_required] do
-      if _opts[:cpu] && _opts[:mem] do
+      if opts[:cpu] && opts[:mem] do
         :ok
       else
         {:error, :docker_resource_limits_required}

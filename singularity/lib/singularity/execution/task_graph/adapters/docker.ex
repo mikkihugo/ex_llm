@@ -75,9 +75,9 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
     {:error, {:invalid_docker_args, "image and cmd required", args}}
   end
 
-  defp validate_resource_limits(_opts) do
-    cpu = Keyword.get(_opts, :cpu)
-    mem = Keyword.get(_opts, :mem)
+  defp validate_resource_limits(opts) do
+    cpu = Keyword.get(opts, :cpu)
+    mem = Keyword.get(opts, :mem)
 
     cond do
       is_nil(cpu) or is_nil(mem) ->
@@ -106,11 +106,11 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
       "--rm",
       # Auto-remove container
       "--cpus",
-      to_string(_opts[:cpu]),
+      to_string(opts[:cpu]),
       "-m",
-      _opts[:mem],
+      opts[:mem],
       "--network",
-      network_flag(_opts[:net]),
+      network_flag(opts[:net]),
       "-w",
       args[:working_dir] || "/work",
       # Security: No privileged mode
@@ -155,7 +155,7 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
   ## Docker Execution
 
   defp run_docker(docker_args, _opts) do
-    timeout = Keyword.get(_opts, :timeout, @default_timeout)
+    timeout = Keyword.get(opts, :timeout, @default_timeout)
 
     timeout =
       if timeout > @max_timeout do
@@ -172,8 +172,8 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
     Logger.info("Executing Docker container",
       image: Enum.at(docker_args, -2),
       cmd: Enum.drop(docker_args, -1) |> List.last(),
-      cpu: _opts[:cpu],
-      mem: _opts[:mem],
+      cpu: opts[:cpu],
+      mem: opts[:mem],
       timeout: timeout
     )
 

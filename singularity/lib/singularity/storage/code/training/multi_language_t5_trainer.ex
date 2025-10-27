@@ -74,11 +74,11 @@ defmodule Singularity.MultiLanguageT5Trainer do
   """
   @spec prepare_multi_language_training(keyword()) :: {:ok, String.t()} | {:error, term()}
   def prepare_multi_language_training(_opts \\ []) do
-    name = Keyword.fetch!(_opts, :name)
-    languages = Keyword.get(_opts, :languages, ["rust", "elixir"])
-    max_examples = Keyword.get(_opts, :max_examples, 10000)
-    cross_language = Keyword.get(_opts, :cross_language_learning, true)
-    quality_threshold = Keyword.get(_opts, :quality_threshold, 0.7)
+    name = Keyword.fetch!(opts, :name)
+    languages = Keyword.get(opts, :languages, ["rust", "elixir"])
+    max_examples = Keyword.get(opts, :max_examples, 10000)
+    cross_language = Keyword.get(opts, :cross_language_learning, true)
+    quality_threshold = Keyword.get(opts, :quality_threshold, 0.7)
 
     Logger.info("Preparing multi-language T5 training: #{Enum.join(languages, ", ")}")
 
@@ -149,10 +149,10 @@ defmodule Singularity.MultiLanguageT5Trainer do
   """
   @spec fine_tune(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def fine_tune(training_session_id, _opts \\ []) do
-    epochs = Keyword.get(_opts, :epochs, 12)
-    learning_rate = Keyword.get(_opts, :learning_rate, 2.0e-4)
-    batch_size = Keyword.get(_opts, :batch_size, 4)
-    cross_language = Keyword.get(_opts, :cross_language_learning, true)
+    epochs = Keyword.get(opts, :epochs, 12)
+    learning_rate = Keyword.get(opts, :learning_rate, 2.0e-4)
+    batch_size = Keyword.get(opts, :batch_size, 4)
+    cross_language = Keyword.get(opts, :cross_language_learning, true)
 
     # Enhanced configuration for Rust/Elixir
     enhanced_opts = [

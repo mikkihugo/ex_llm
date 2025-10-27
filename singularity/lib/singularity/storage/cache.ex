@@ -190,15 +190,15 @@ defmodule Singularity.Cache do
   def put(:llm, key, value, _opts) do
     changeset = %{
       cache_key: key,
-      prompt: _opts[:prompt] || "",
-      prompt_embedding: _opts[:embedding],
+      prompt: opts[:prompt] || "",
+      prompt_embedding: opts[:embedding],
       response: value.response || value,
-      model: _opts[:model],
-      provider: _opts[:provider],
-      tokens_used: _opts[:tokens_used],
-      cost_cents: _opts[:cost_cents],
-      ttl_seconds: _opts[:ttl] || 3600,
-      metadata: _opts[:metadata] || %{}
+      model: opts[:model],
+      provider: opts[:provider],
+      tokens_used: opts[:tokens_used],
+      cost_cents: opts[:cost_cents],
+      ttl_seconds: opts[:ttl] || 3600,
+      metadata: opts[:metadata] || %{}
     }
 
     Repo.insert_all("cache_llm_responses", [changeset],
@@ -210,7 +210,7 @@ defmodule Singularity.Cache do
   end
 
   def put(:memory, key, value, _opts) do
-    ttl = Keyword.get(_opts, :ttl, 3600)
+    ttl = Keyword.get(opts, :ttl, 3600)
     expires_at = DateTime.add(DateTime.utc_now(), ttl, :second)
 
     changeset = %{
@@ -232,15 +232,15 @@ defmodule Singularity.Cache do
     # Use proper Ecto schema instead of raw SQL
     attrs = %{
       code_hash: key,
-      language: _opts[:language] || "unknown",
-      embedding: _opts[:embedding] || value,
+      language: opts[:language] || "unknown",
+      embedding: opts[:embedding] || value,
       metadata: %{
-        "content" => _opts[:content] || "",
-        "model_type" => _opts[:model_type] || "candle-transformer",
-        "file_path" => _opts[:file_path]
+        "content" => opts[:content] || "",
+        "model_type" => opts[:model_type] || "candle-transformer",
+        "file_path" => opts[:file_path]
       },
       # 24 hours default
-      expires_at: _opts[:expires_at] || DateTime.add(DateTime.utc_now(), 86400)
+      expires_at: opts[:expires_at] || DateTime.add(DateTime.utc_now(), 86400)
     }
 
     %CodeEmbeddingCache{}
@@ -262,9 +262,9 @@ defmodule Singularity.Cache do
   def put(:semantic, key, value, _opts) do
     changeset = %{
       query_hash: key,
-      target_hash: _opts[:target_hash] || "",
+      target_hash: opts[:target_hash] || "",
       similarity_score: value,
-      query_type: _opts[:query_type] || "code_search"
+      query_type: opts[:query_type] || "code_search"
     }
 
     Repo.insert_all("cache_semantic_similarity", [changeset],
@@ -282,9 +282,9 @@ defmodule Singularity.Cache do
   def find_similar(cache_type, query, _opts \\ [])
 
   def find_similar(:llm, query, _opts) do
-    threshold = Keyword.get(_opts, :threshold, 0.92)
-    provider = Keyword.get(_opts, :provider)
-    model = Keyword.get(_opts, :model)
+    threshold = Keyword.get(opts, :threshold, 0.92)
+    provider = Keyword.get(opts, :provider)
+    model = Keyword.get(opts, :model)
 
     Singularity.LLM.Prompt.Cache.find_similar(query,
       threshold: threshold,
@@ -295,8 +295,8 @@ defmodule Singularity.Cache do
 
   def find_similar(:semantic, query, _opts) do
     # Implement semantic similarity search using embedding service
-    threshold = Keyword.get(_opts, :threshold, 0.8)
-    limit = Keyword.get(_opts, :limit, 10)
+    threshold = Keyword.get(opts, :threshold, 0.8)
+    limit = Keyword.get(opts, :limit, 10)
 
     case Singularity.EmbeddingService.generate_embedding(query) do
       {:ok, query_embedding} ->

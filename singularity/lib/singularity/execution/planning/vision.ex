@@ -29,7 +29,7 @@ defmodule Singularity.Execution.Planning.Vision do
   Set the system vision.
   """
   def set_vision(vision_text, _opts \\ []) do
-    approved_by = Keyword.get(_opts, :approved_by, "system")
+    approved_by = Keyword.get(opts, :approved_by, "system")
 
     case GenServer.call(__MODULE__, {:set_vision, vision_text, approved_by}) do
       :ok ->
@@ -61,7 +61,7 @@ defmodule Singularity.Execution.Planning.Vision do
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     {:ok, %{vision: nil, approved_by: nil, updated_at: nil}}
   end
 

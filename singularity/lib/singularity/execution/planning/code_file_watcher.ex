@@ -90,7 +90,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   Subscribes to FileSystem events for the `lib/` directory.
   """
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   # ------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   # ------------------------------------------------------------------------------
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     Logger.info("Starting CodeFileWatcher with #{@debounce_delay}ms debouncing...")
 
     # Get project root - monitor entire project, not just lib/

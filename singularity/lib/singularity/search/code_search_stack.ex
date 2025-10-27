@@ -290,7 +290,7 @@ defmodule Singularity.Search.CodeSearchStack do
   """
   @spec search(String.t(), Keyword.t()) :: {:ok, [search_result()]} | {:error, String.t()}
   def search(query, _opts \\ []) when is_binary(query) do
-    strategy = Keyword.get(_opts, :strategy, :intelligent)
+    strategy = Keyword.get(opts, :strategy, :intelligent)
 
     Logger.info("CodeSearchStack search", query: query, strategy: strategy)
 
@@ -455,9 +455,9 @@ defmodule Singularity.Search.CodeSearchStack do
 
     case AstGrepCodeSearch.search(
            query: query,
-           limit: Keyword.get(_opts, :limit, 100),
-           ast_pattern: Keyword.get(_opts, :ast_pattern),
-           language: Keyword.get(_opts, :language)
+           limit: Keyword.get(opts, :limit, 100),
+           ast_pattern: Keyword.get(opts, :ast_pattern),
+           language: Keyword.get(opts, :language)
          ) do
       {:ok, results} ->
         results
@@ -485,8 +485,8 @@ defmodule Singularity.Search.CodeSearchStack do
 
     case HybridCodeSearch.search(query,
            mode: :semantic,
-           limit: Keyword.get(_opts, :limit, 100),
-           language: Keyword.get(_opts, :language)
+           limit: Keyword.get(opts, :limit, 100),
+           language: Keyword.get(opts, :language)
          ) do
       {:ok, results} ->
         results
@@ -521,7 +521,7 @@ defmodule Singularity.Search.CodeSearchStack do
     LIMIT $2
     """
 
-    limit = Keyword.get(_opts, :limit, 100)
+    limit = Keyword.get(opts, :limit, 100)
 
     case Repo.query(sql, [query, limit]) do
       {:ok, %{rows: rows}} ->
@@ -554,13 +554,13 @@ defmodule Singularity.Search.CodeSearchStack do
 
     case System.cmd("git", ["grep", "-n", "-i", query],
            stderr_to_stdout: true,
-           cd: Keyword.get(_opts, :repo_path, ".")
+           cd: Keyword.get(opts, :repo_path, ".")
          ) do
       {output, 0} ->
         output
         |> String.split("\n")
         |> Enum.reject(&(String.trim(&1) == ""))
-        |> Enum.take(Keyword.get(_opts, :limit, 100))
+        |> Enum.take(Keyword.get(opts, :limit, 100))
         |> Enum.map(&parse_git_grep_line/1)
         |> Enum.reject(&is_nil/1)
 
@@ -636,7 +636,7 @@ defmodule Singularity.Search.CodeSearchStack do
 
   @spec apply_limit([search_result()], Keyword.t()) :: [search_result()]
   defp apply_limit(results, _opts) do
-    limit = Keyword.get(_opts, :limit, 20)
+    limit = Keyword.get(opts, :limit, 20)
     Enum.take(results, limit)
   end
 

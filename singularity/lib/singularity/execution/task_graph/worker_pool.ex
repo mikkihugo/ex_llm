@@ -54,7 +54,7 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
   # ===========================
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -97,9 +97,9 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
   # ===========================
 
   @impl true
-  def init(_opts) do
-    poll_interval = Keyword.get(_opts, :poll_interval_ms, @poll_interval_ms)
-    max_workers = Keyword.get(_opts, :max_concurrent_workers, @max_concurrent_workers)
+  def init(opts) do
+    poll_interval = Keyword.get(opts, :poll_interval_ms, @poll_interval_ms)
+    max_workers = Keyword.get(opts, :max_concurrent_workers, @max_concurrent_workers)
 
     state = %__MODULE__{
       poll_interval_ms: poll_interval,
@@ -254,8 +254,8 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
     available_slots = state.max_concurrent_workers - map_size(state.active_workers)
 
     if available_slots > 0 do
-      swarm_size = min(Keyword.get(_opts, :swarm_size, @default_swarm_size), available_slots)
-      complexity = Keyword.get(_opts, :complexity)
+      swarm_size = min(Keyword.get(opts, :swarm_size, @default_swarm_size), available_slots)
+      complexity = Keyword.get(opts, :complexity)
 
       {:ok, ready_todos} = TodoStore.get_ready_todos(limit: swarm_size)
 

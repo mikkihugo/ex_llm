@@ -27,12 +27,12 @@ defmodule Singularity.AgentSupervisor do
 
   alias Singularity.Agents.Agent
 
-  def start_link(_opts) do
+  def start_link(opts) do
     DynamicSupervisor.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 

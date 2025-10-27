@@ -121,7 +121,7 @@ defmodule Singularity.EmbeddingQualityTracker do
   # GenServer API
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -221,7 +221,7 @@ defmodule Singularity.EmbeddingQualityTracker do
   # Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     Logger.info("EmbeddingQualityTracker started - learning from search feedback")
 
     state = %{
@@ -390,9 +390,9 @@ defmodule Singularity.EmbeddingQualityTracker do
     end
   end
 
-  defp do_extract_training_pairs(_opts) do
-    limit = Keyword.get(_opts, :limit, :all)
-    min_confidence = Keyword.get(_opts, :min_confidence, 0.7)
+  defp do_extract_training_pairs(opts) do
+    limit = Keyword.get(opts, :limit, :all)
+    min_confidence = Keyword.get(opts, :min_confidence, 0.7)
 
     query = """
     SELECT

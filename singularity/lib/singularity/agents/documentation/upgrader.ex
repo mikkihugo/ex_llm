@@ -103,9 +103,9 @@ defmodule Singularity.Agents.Documentation.Upgrader do
   @spec generate_enhanced_documentation(String.t(), map(), keyword()) :: {:ok, String.t()}
   def generate_enhanced_documentation(content, %{missing: missing, language: language}, _opts) do
     # Extract options
-    quality_level = Keyword.get(_opts, :quality_level, :production)
-    include_examples = Keyword.get(_opts, :include_examples, true)
-    include_architecture = Keyword.get(_opts, :include_architecture, true)
+    quality_level = Keyword.get(opts, :quality_level, :production)
+    include_examples = Keyword.get(opts, :include_examples, true)
+    include_architecture = Keyword.get(opts, :include_architecture, true)
 
     # Generate documentation based on missing elements and language
     case language do

@@ -91,7 +91,7 @@ defmodule Singularity.Analysis.CodeQualityDashboard do
   """
   def get_quality_analysis(codebase_path \\ ".", _opts \\ []) do
     try do
-      days = Keyword.get(_opts, :days, 30)
+      days = Keyword.get(opts, :days, 30)
 
       # Get trend over period
       trend = safe_trend_analysis(codebase_path, days: days)

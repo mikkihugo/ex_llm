@@ -42,7 +42,7 @@ defmodule Singularity.Monitoring.SystemStatusMonitor do
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     {:ok, %{}}
   end
 

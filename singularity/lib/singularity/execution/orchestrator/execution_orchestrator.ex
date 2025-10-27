@@ -208,7 +208,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionOrchestrator do
       # => {:ok, results}
   """
   def execute(goal, _opts \\ []) when is_map(goal) or is_binary(goal) do
-    timeout = Keyword.get(_opts, :timeout, 60000)
+    timeout = Keyword.get(opts, :timeout, 60000)
 
     Logger.info("ExecutionOrchestrator: Routing goal to execution strategy",
       goal: inspect(goal),
@@ -216,7 +216,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionOrchestrator do
     )
 
     # Delegate to ExecutionStrategyOrchestrator for config-driven routing
-    ExecutionStrategyOrchestrator.execute(goal, Keyword.put(_opts, :timeout, timeout))
+    ExecutionStrategyOrchestrator.execute(goal, Keyword.put(opts, :timeout, timeout))
   end
 
   @doc """

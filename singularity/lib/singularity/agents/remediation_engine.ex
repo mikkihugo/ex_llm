@@ -143,9 +143,9 @@ defmodule Singularity.Agents.RemediationEngine do
   """
   def remediate_file(file_path, _opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
-    auto_apply = Keyword.get(_opts, :auto_apply, false)
-    dry_run = Keyword.get(_opts, :dry_run, false)
-    backup = Keyword.get(_opts, :backup, true)
+    auto_apply = Keyword.get(opts, :auto_apply, false)
+    dry_run = Keyword.get(opts, :dry_run, false)
+    backup = Keyword.get(opts, :backup, true)
 
     with :ok <- File.exists?(file_path) |> if(do: :ok, else: {:error, :file_not_found}),
          {:ok, content} <- File.read(file_path),
@@ -306,7 +306,7 @@ defmodule Singularity.Agents.RemediationEngine do
   Validate that a fix doesn't break the code.
   """
   def validate_remediation(original_content, new_content, _opts \\ []) do
-    language = Keyword.get(_opts, :language, :elixir)
+    language = Keyword.get(opts, :language, :elixir)
 
     validation_results = %{
       syntax_valid: check_syntax(new_content, language),

@@ -130,7 +130,7 @@ defmodule Singularity.Validation.EffectivenessTracker do
       end
     rescue
       error ->
-        Logger.warn("EffectivenessTracker: Error calculating weights",
+        Logger.warning("EffectivenessTracker: Error calculating weights",
           error: inspect(error)
         )
 
@@ -204,7 +204,7 @@ defmodule Singularity.Validation.EffectivenessTracker do
       end
     rescue
       error ->
-        Logger.warn("EffectivenessTracker: Error analyzing check performance",
+        Logger.warning("EffectivenessTracker: Error analyzing check performance",
           check_id: check_id,
           error: inspect(error)
         )
@@ -247,8 +247,8 @@ defmodule Singularity.Validation.EffectivenessTracker do
   """
   @spec get_improvement_opportunities(keyword()) :: [map()]
   def get_improvement_opportunities(_opts \\ []) do
-    time_range = Keyword.get(_opts, :time_range, :last_week)
-    threshold = Keyword.get(_opts, :threshold, 0.70)
+    time_range = Keyword.get(opts, :time_range, :last_week)
+    threshold = Keyword.get(opts, :threshold, 0.70)
 
     Logger.info("EffectivenessTracker: Finding improvement opportunities",
       time_range: time_range,
@@ -270,7 +270,7 @@ defmodule Singularity.Validation.EffectivenessTracker do
       |> Enum.sort_by(&Map.get(&1, :priority, 999))
     rescue
       error ->
-        Logger.warn("EffectivenessTracker: Error finding improvements",
+        Logger.warning("EffectivenessTracker: Error finding improvements",
           error: inspect(error)
         )
 
@@ -328,7 +328,7 @@ defmodule Singularity.Validation.EffectivenessTracker do
       end
     rescue
       error ->
-        Logger.warn("EffectivenessTracker: Error analyzing time budget",
+        Logger.warning("EffectivenessTracker: Error analyzing time budget",
           error: inspect(error)
         )
 

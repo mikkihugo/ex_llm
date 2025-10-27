@@ -155,13 +155,13 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
   - `:output_path` - File path where code will be written (for tracking)
   """
   @spec generate(keyword()) :: {:ok, generation_result()} | {:error, term()}
-  def generate(_opts) do
-    task = Keyword.fetch!(_opts, :task)
-    language = Keyword.get(_opts, :language, "elixir")
-    quality = Keyword.get(_opts, :quality, :production)
-    use_rag = Keyword.get(_opts, :use_rag, true)
-    template_path = Keyword.get(_opts, :template)
-    output_path = Keyword.get(_opts, :output_path)
+  def generate(opts) do
+    task = Keyword.fetch!(opts, :task)
+    language = Keyword.get(opts, :language, "elixir")
+    quality = Keyword.get(opts, :quality, :production)
+    use_rag = Keyword.get(opts, :use_rag, true)
+    template_path = Keyword.get(opts, :template)
+    output_path = Keyword.get(opts, :output_path)
 
     # Load quality template
     with {:ok, template} <- load_template(language, quality, template_path) do
@@ -327,8 +327,8 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
   """
   @spec enforce_quality(String.t(), keyword()) :: {:ok, generation_result()} | {:error, term()}
   def enforce_quality(code, _opts \\ []) do
-    language = Keyword.get(_opts, :language, "elixir")
-    quality = Keyword.get(_opts, :quality, :standard)
+    language = Keyword.get(opts, :language, "elixir")
+    quality = Keyword.get(opts, :quality, :standard)
 
     Logger.info("Enforcing #{quality} quality on existing code")
 

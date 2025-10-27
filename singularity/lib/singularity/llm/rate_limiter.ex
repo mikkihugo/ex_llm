@@ -192,8 +192,8 @@ defmodule Singularity.LLM.RateLimiter do
 
   ## Client API
 
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
@@ -262,14 +262,14 @@ defmodule Singularity.LLM.RateLimiter do
   ## Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     # Schedule daily reset at midnight
     schedule_daily_reset()
 
     state = %__MODULE__{
-      max_concurrent: _opts[:max_concurrent] || @default_max_concurrent,
-      max_per_minute: _opts[:max_per_minute] || @default_max_per_minute,
-      daily_budget_usd: _opts[:daily_budget_usd] || @default_budget_usd,
+      max_concurrent: opts[:max_concurrent] || @default_max_concurrent,
+      max_per_minute: opts[:max_per_minute] || @default_max_per_minute,
+      daily_budget_usd: opts[:daily_budget_usd] || @default_budget_usd,
       current_concurrent: 0,
       minute_counter: 0,
       minute_start: System.monotonic_time(:second),

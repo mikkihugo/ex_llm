@@ -137,7 +137,7 @@ defmodule Singularity.Validation.HistoricalValidator do
       end
     rescue
       error ->
-        Logger.warn("HistoricalValidator: Error recommending checks",
+        Logger.warning("HistoricalValidator: Error recommending checks",
           error: inspect(error)
         )
 
@@ -176,8 +176,8 @@ defmodule Singularity.Validation.HistoricalValidator do
   """
   @spec find_similar_failures(failure_context, keyword()) :: [map()]
   def find_similar_failures(context, _opts \\ []) do
-    threshold = Keyword.get(_opts, :threshold, 0.80)
-    limit = Keyword.get(_opts, :limit, 10)
+    threshold = Keyword.get(opts, :threshold, 0.80)
+    limit = Keyword.get(opts, :limit, 10)
 
     Logger.debug("HistoricalValidator: Finding similar failures",
       threshold: threshold,
@@ -188,7 +188,7 @@ defmodule Singularity.Validation.HistoricalValidator do
       FailurePatternStore.find_similar(context, threshold: threshold, limit: limit)
     rescue
       error ->
-        Logger.warn("HistoricalValidator: Error finding similar failures",
+        Logger.warning("HistoricalValidator: Error finding similar failures",
           error: inspect(error)
         )
 
@@ -232,7 +232,7 @@ defmodule Singularity.Validation.HistoricalValidator do
       |> Enum.sort_by(&Map.get(&1, :success_rate, 0.0), :desc)
     rescue
       error ->
-        Logger.warn("HistoricalValidator: Error getting fixes",
+        Logger.warning("HistoricalValidator: Error getting fixes",
           error: inspect(error)
         )
 
@@ -291,7 +291,7 @@ defmodule Singularity.Validation.HistoricalValidator do
       end
     rescue
       error ->
-        Logger.warn("HistoricalValidator: Error getting check effectiveness",
+        Logger.warning("HistoricalValidator: Error getting check effectiveness",
           check_id: check_id,
           error: inspect(error)
         )
@@ -325,8 +325,8 @@ defmodule Singularity.Validation.HistoricalValidator do
   """
   @spec get_top_performing_checks(keyword()) :: [{String.t(), float()}]
   def get_top_performing_checks(_opts \\ []) do
-    limit = Keyword.get(_opts, :limit, 10)
-    time_range = Keyword.get(_opts, :time_range, :last_week)
+    limit = Keyword.get(opts, :limit, 10)
+    time_range = Keyword.get(opts, :time_range, :last_week)
 
     Logger.debug("HistoricalValidator: Getting top performing checks",
       limit: limit,
@@ -339,7 +339,7 @@ defmodule Singularity.Validation.HistoricalValidator do
       |> Enum.take(limit)
     rescue
       error ->
-        Logger.warn("HistoricalValidator: Error getting top checks",
+        Logger.warning("HistoricalValidator: Error getting top checks",
           error: inspect(error)
         )
 

@@ -25,9 +25,9 @@ defmodule Singularity.CentralCloud do
   """
   @spec analyze_codebase(map(), keyword()) :: {:ok, map()} | {:error, term()}
   def analyze_codebase(codebase_info, _opts \\ []) do
-    analysis_type = Keyword.get(_opts, :analysis_type, :comprehensive)
-    include_patterns = Keyword.get(_opts, :include_patterns, true)
-    include_learning = Keyword.get(_opts, :include_learning, true)
+    analysis_type = Keyword.get(opts, :analysis_type, :comprehensive)
+    include_patterns = Keyword.get(opts, :include_patterns, true)
+    include_learning = Keyword.get(opts, :include_learning, true)
 
     request = %{
       codebase_info: codebase_info,
@@ -68,8 +68,8 @@ defmodule Singularity.CentralCloud do
   """
   @spec learn_patterns(list(map()), keyword()) :: {:ok, map()} | {:error, term()}
   def learn_patterns(instance_patterns, _opts \\ []) do
-    learning_type = Keyword.get(_opts, :learning_type, :cross_instance)
-    confidence_threshold = Keyword.get(_opts, :confidence_threshold, 0.8)
+    learning_type = Keyword.get(opts, :learning_type, :cross_instance)
+    confidence_threshold = Keyword.get(opts, :confidence_threshold, 0.8)
 
     request = %{
       instance_patterns: instance_patterns,
@@ -91,8 +91,8 @@ defmodule Singularity.CentralCloud do
   """
   @spec get_global_stats(keyword()) :: {:ok, map()} | {:error, term()}
   def get_global_stats(_opts \\ []) do
-    stats_type = Keyword.get(_opts, :stats_type, :comprehensive)
-    time_range = Keyword.get(_opts, :time_range, :last_30_days)
+    stats_type = Keyword.get(opts, :stats_type, :comprehensive)
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
 
     request = %{
       stats_type: stats_type,
@@ -108,8 +108,8 @@ defmodule Singularity.CentralCloud do
   """
   @spec train_models(keyword()) :: {:ok, map()} | {:error, term()}
   def train_models(_opts \\ []) do
-    model_types = Keyword.get(_opts, :model_types, [:naming, :patterns, :quality])
-    training_data_size = Keyword.get(_opts, :training_data_size, :large)
+    model_types = Keyword.get(opts, :model_types, [:naming, :patterns, :quality])
+    training_data_size = Keyword.get(opts, :training_data_size, :large)
 
     request = %{
       model_types: model_types,
@@ -143,8 +143,8 @@ defmodule Singularity.CentralCloud do
   """
   @spec get_cross_instance_insights(keyword()) :: {:ok, list(map())} | {:error, term()}
   def get_cross_instance_insights(_opts \\ []) do
-    insight_types = Keyword.get(_opts, :insight_types, [:patterns, :performance, :quality])
-    instance_count = Keyword.get(_opts, :instance_count, :all)
+    insight_types = Keyword.get(opts, :insight_types, [:patterns, :performance, :quality])
+    instance_count = Keyword.get(opts, :instance_count, :all)
 
     request = %{
       insight_types: insight_types,

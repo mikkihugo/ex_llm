@@ -349,8 +349,8 @@ defmodule Singularity.TechnologyAgent do
   end
 
   defp detect_technologies_from_patterns(patterns, _opts) do
-    min_confidence = Keyword.get(_opts, :min_confidence, 0.7)
-    categories = Keyword.get(_opts, :categories, nil)
+    min_confidence = Keyword.get(opts, :min_confidence, 0.7)
+    categories = Keyword.get(opts, :categories, nil)
 
     technologies =
       patterns
@@ -488,7 +488,7 @@ defmodule Singularity.TechnologyAgent do
 
   defp merge_detections(frameworks, technologies, _opts) do
     # Merge framework detections with technology patterns
-    max_results = Keyword.get(_opts, :max_results, 50)
+    max_results = Keyword.get(opts, :max_results, 50)
 
     (frameworks ++ technologies)
     |> Enum.uniq_by(& &1.name)

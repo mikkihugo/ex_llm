@@ -32,7 +32,8 @@ defmodule ObserverWeb.Router do
     live "/knowledge-base", KnowledgeBaseLive
     live "/task-execution", TaskExecutionLive
     live "/hitl-approvals", HITLApprovalsLive
-  end
+    # WebChat Integration
+    live "/webchat", WebChatLive  end
 
   # Other scopes may use custom stacks.
   # scope "/api", ObserverWeb do

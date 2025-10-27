@@ -118,10 +118,10 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   def execute_quality_improvement_workflow(codebase_path, _opts \\ []) do
     Logger.info("Starting autonomous quality improvement workflow: #{codebase_path}")
 
-    auto_commit = Keyword.get(_opts, :auto_commit, false)
-    run_tests = Keyword.get(_opts, :run_tests, true)
-    max_fixes = Keyword.get(_opts, :max_fixes, 50)
-    dry_run = Keyword.get(_opts, :dry_run, false)
+    auto_commit = Keyword.get(opts, :auto_commit, false)
+    run_tests = Keyword.get(opts, :run_tests, true)
+    max_fixes = Keyword.get(opts, :max_fixes, 50)
+    dry_run = Keyword.get(opts, :dry_run, false)
 
     workflow_state = %{
       codebase_path: codebase_path,

@@ -34,8 +34,8 @@ defmodule Singularity.HotReload.SafeCodeChangeDispatcher do
       |> Keyword.get(:agent_id, @default_agent_id)
       |> to_string()
 
-    agent_opts = Keyword.get(_opts, :agent_opts, [])
-    metadata = Keyword.get(_opts, :metadata, %{})
+    agent_opts = Keyword.get(opts, :agent_opts, [])
+    metadata = Keyword.get(opts, :metadata, %{})
 
     with :ok <- ensure_agent_started(agent_id, agent_opts),
          enriched <- merge_metadata(payload, metadata),

@@ -240,7 +240,7 @@ defmodule Singularity.CodeGeneration.Implementations.EmbeddingGenerator do
   """
   @spec embed(String.t(), keyword()) :: {:ok, embedding()} | {:error, term()}
   def embed(text, _opts \\ []) do
-    model = _opts[:model] || select_best_model()
+    model = opts[:model] || select_best_model()
 
     case EmbeddingEngine.embed(text, model: model) do
       {:ok, embedding} ->

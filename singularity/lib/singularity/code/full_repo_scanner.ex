@@ -114,7 +114,7 @@ defmodule Singularity.Code.FullRepoScanner do
   Continues until everything works or max iterations reached.
   """
   def auto_fix_all(_opts \\ []) do
-    max_iterations = Keyword.get(_opts, :max_iterations, 10)
+    max_iterations = Keyword.get(opts, :max_iterations, 10)
 
     Logger.info("Starting auto-fix with max #{max_iterations} iterations...")
 
@@ -188,7 +188,7 @@ defmodule Singularity.Code.FullRepoScanner do
 
     {:ok, trace_analysis} =
       ExecutionTracer.full_analysis(
-        trace_duration_ms: Keyword.get(_opts, :trace_duration_ms, 10_000)
+        trace_duration_ms: Keyword.get(opts, :trace_duration_ms, 10_000)
       )
 
     # Step 3: Merge insights

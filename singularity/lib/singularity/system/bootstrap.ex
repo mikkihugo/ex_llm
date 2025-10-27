@@ -79,7 +79,7 @@ defmodule Singularity.System.Bootstrap do
     {:ok, mapping} = FullRepoScanner.map_all_systems()
 
     # Phase 3: Auto-fix everything
-    if Keyword.get(_opts, :auto_fix, false) do
+    if Keyword.get(opts, :auto_fix, false) do
       Logger.info("Phase 3: Auto-fixing all issues...")
       {:ok, fixes} = FullRepoScanner.auto_fix_all()
 
@@ -118,7 +118,7 @@ defmodule Singularity.System.Bootstrap do
     Logger.info("Auto-repairing Singularity server...")
 
     # Use the simple auto-fix approach
-    case FullRepoScanner.auto_fix_all(Keyword.put(_opts, :max_iterations, 20)) do
+    case FullRepoScanner.auto_fix_all(Keyword.put(opts, :max_iterations, 20)) do
       {:ok, result} ->
         Logger.info("Auto-repair complete",
           iterations: result.iterations,

@@ -70,8 +70,8 @@ defmodule Singularity.Embedding.Trainer do
   Create a new trainer instance
   """
   def new(model, _opts \\ []) when is_atom(model) do
-    device = Keyword.get(_opts, :device, :cpu)
-    learning_rate = Keyword.get(_opts, :learning_rate, 1.0e-5)
+    device = Keyword.get(opts, :device, :cpu)
+    learning_rate = Keyword.get(opts, :learning_rate, 1.0e-5)
 
     Logger.info("Creating trainer for: #{inspect(model)}")
 
@@ -108,8 +108,8 @@ defmodule Singularity.Embedding.Trainer do
   Train model on contrastive data (triplets: anchor, positive, negative)
   """
   def train(trainer, training_data, _opts \\ []) when is_list(training_data) do
-    epochs = Keyword.get(_opts, :epochs, 1)
-    batch_size = Keyword.get(_opts, :batch_size, 16)
+    epochs = Keyword.get(opts, :epochs, 1)
+    batch_size = Keyword.get(opts, :batch_size, 16)
 
     Logger.info("Starting fine-tuning:")
     Logger.info("  Model: #{inspect(trainer.model)}")

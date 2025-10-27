@@ -301,9 +301,9 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
 
   ## Client API
 
-  def start_link(_opts) do
-    name = Keyword.fetch!(_opts, :name)
-    GenServer.start_link(__MODULE__, _opts, name: via_tuple(name))
+  def start_link(opts) do
+    name = Keyword.fetch!(opts, :name)
+    GenServer.start_link(__MODULE__, opts, name: via_tuple(name))
   end
 
   @doc """
@@ -315,7 +315,7 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
   - `{:error, reason}` - Operation failed
   """
   def call(circuit_name, fun, _opts \\ []) when is_function(fun, 0) do
-    timeout_ms = Keyword.get(_opts, :timeout_ms, @default_timeout_ms)
+    timeout_ms = Keyword.get(opts, :timeout_ms, @default_timeout_ms)
 
     # Ensure circuit breaker exists
     ensure_circuit(circuit_name, _opts)
@@ -368,11 +368,11 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
   ## Server Callbacks
 
   @impl true
-  def init(_opts) do
-    name = Keyword.fetch!(_opts, :name)
-    failure_threshold = Keyword.get(_opts, :failure_threshold, @default_failure_threshold)
-    timeout_ms = Keyword.get(_opts, :timeout_ms, @default_timeout_ms)
-    reset_timeout_ms = Keyword.get(_opts, :reset_timeout_ms, @default_reset_timeout_ms)
+  def init(opts) do
+    name = Keyword.fetch!(opts, :name)
+    failure_threshold = Keyword.get(opts, :failure_threshold, @default_failure_threshold)
+    timeout_ms = Keyword.get(opts, :timeout_ms, @default_timeout_ms)
+    reset_timeout_ms = Keyword.get(opts, :reset_timeout_ms, @default_reset_timeout_ms)
 
     state = %__MODULE__{
       name: name,
@@ -508,7 +508,7 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
     case Registry.lookup(Singularity.Infrastructure.CircuitBreakerRegistry, name) do
       [] ->
         # Start the circuit breaker
-        _opts = Keyword.put(_opts, :name, name)
+        _opts = Keyword.put(opts, :name, name)
 
         case DynamicSupervisor.start_child(
                Singularity.Infrastructure.CircuitBreakerSupervisor,

@@ -119,9 +119,9 @@ defmodule Singularity.Pipeline.Learning do
       has_metrics: not is_nil(result[:metrics])
     )
 
-    store_patterns = Keyword.get(_opts, :store_patterns, true)
-    track_metrics = Keyword.get(_opts, :track_metrics, true)
-    publish_central = Keyword.get(_opts, :publish_central_cloud, true)
+    store_patterns = Keyword.get(opts, :store_patterns, true)
+    track_metrics = Keyword.get(opts, :track_metrics, true)
+    publish_central = Keyword.get(opts, :publish_central_cloud, true)
 
     try do
       # Store failure patterns if execution failed
@@ -328,7 +328,7 @@ defmodule Singularity.Pipeline.Learning do
           :ok
 
         {:error, reason} ->
-          Logger.warn("Pipeline.Learning: Failed to record validation metric",
+          Logger.warning("Pipeline.Learning: Failed to record validation metric",
             reason: inspect(reason)
           )
       end
@@ -355,7 +355,7 @@ defmodule Singularity.Pipeline.Learning do
         Logger.debug("Pipeline.Learning: Execution metrics recorded")
 
       {:error, reason} ->
-        Logger.warn("Pipeline.Learning: Failed to record execution metrics",
+        Logger.warning("Pipeline.Learning: Failed to record execution metrics",
           reason: inspect(reason)
         )
     end

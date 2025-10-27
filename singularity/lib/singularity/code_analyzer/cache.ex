@@ -204,9 +204,9 @@ defmodule Singularity.CodeAnalysis.Analyzer.Cache do
   # ================
 
   @impl true
-  def init(_opts) do
-    max_size = Keyword.get(_opts, :max_size, @default_max_size)
-    ttl = Keyword.get(_opts, :ttl, @default_ttl)
+  def init(opts) do
+    max_size = Keyword.get(opts, :max_size, @default_max_size)
+    ttl = Keyword.get(opts, :ttl, @default_ttl)
 
     # Create ETS table
     :ets.new(@table_name, [:named_table, :set, :public, read_concurrency: true])

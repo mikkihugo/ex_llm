@@ -204,7 +204,7 @@ defmodule Singularity.Architecture.PatternDetector do
       enabled_detectors = PatternType.load_enabled_detectors()
 
       # Filter by requested pattern types if specified
-      pattern_types = Keyword.get(_opts, :pattern_types, nil)
+      pattern_types = Keyword.get(opts, :pattern_types, nil)
 
       detectors_to_run =
         if pattern_types do
@@ -300,7 +300,7 @@ defmodule Singularity.Architecture.PatternDetector do
   end
 
   defp filter_by_confidence(patterns, _opts) do
-    min_confidence = Keyword.get(_opts, :min_confidence, 0.5)
+    min_confidence = Keyword.get(opts, :min_confidence, 0.5)
 
     Enum.filter(patterns, fn pattern ->
       pattern[:confidence] || 1.0 >= min_confidence
@@ -308,7 +308,7 @@ defmodule Singularity.Architecture.PatternDetector do
   end
 
   defp limit_results(patterns, _opts) do
-    case Keyword.get(_opts, :limit) do
+    case Keyword.get(opts, :limit) do
       nil -> patterns
       limit -> Enum.take(patterns, limit)
     end

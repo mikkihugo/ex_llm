@@ -180,8 +180,8 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
 
   # Private helpers
 
-  defp load_adapters_for_attempt(_opts) do
-    case Keyword.get(_opts, :adapters) do
+  defp load_adapters_for_attempt(opts) do
+    case Keyword.get(opts, :adapters) do
       nil ->
         # Use all enabled adapters
         TaskAdapter.load_enabled_adapters()

@@ -56,7 +56,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   ## Relationships
 
-  - **Uses**: GoogleChat, Slack, TemplateRenderer
+  - **Uses**: WebChat, Slack, TemplateRenderer
   - **Integrates with**: All 6 agents (communication hub)
   - **Supervised by**: Conversation.Supervisor
 
@@ -74,7 +74,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   alias Singularity.Agents.Agent
   alias Singularity.AgentSupervisor
-  alias Singularity.Conversation.{GoogleChat, Slack}
+  alias Singularity.Conversation.{WebChat, Slack}
 
   @conversation_types [
     :clarification,
@@ -352,7 +352,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           "❓ Unknown command"
       end
 
-    GoogleChat.notify(response)
+    WebChat.notify(response)
     {:noreply, state}
   end
 
@@ -364,11 +364,11 @@ defmodule Singularity.Conversation.ChatConversationAgent do
         case mark_task_as_failure(feedback) do
           {:ok, _} ->
             Logger.info("Marked task as failure and downgraded patterns")
-            GoogleChat.notify("🐛 Bug logged. I'll avoid this pattern.")
+            WebChat.notify("🐛 Bug logged. I'll avoid this pattern.")
 
           {:error, reason} ->
             Logger.error("Failed to mark task as failure: #{inspect(reason)}")
-            GoogleChat.notify("🐛 Bug logged, but failed to update patterns.")
+            WebChat.notify("🐛 Bug logged, but failed to update patterns.")
         end
 
       :positive ->
@@ -377,11 +377,11 @@ defmodule Singularity.Conversation.ChatConversationAgent do
         case update_pattern_scores(feedback, 0.1) do
           {:ok, _} ->
             Logger.info("Updated pattern scores positively")
-            GoogleChat.notify("✅ Thanks! I'll prioritize similar changes.")
+            WebChat.notify("✅ Thanks! I'll prioritize similar changes.")
 
           {:error, reason} ->
             Logger.error("Failed to update pattern scores: #{inspect(reason)}")
-            GoogleChat.notify("✅ Thanks! (Pattern update failed)")
+            WebChat.notify("✅ Thanks! (Pattern update failed)")
         end
 
       :suggestion ->
@@ -389,11 +389,11 @@ defmodule Singularity.Conversation.ChatConversationAgent do
         case add_to_goal_queue(feedback) do
           {:ok, goal_id} ->
             Logger.info("Added suggestion to goal queue: #{goal_id}")
-            GoogleChat.notify("💡 Added to task queue.")
+            WebChat.notify("💡 Added to task queue.")
 
           {:error, reason} ->
             Logger.error("Failed to add to goal queue: #{inspect(reason)}")
-            GoogleChat.notify("💡 Suggestion received, but failed to queue.")
+            WebChat.notify("💡 Suggestion received, but failed to queue.")
         end
     end
 
@@ -410,19 +410,19 @@ defmodule Singularity.Conversation.ChatConversationAgent do
              "Respond to: #{message_text}\nContext: #{conversation_history}"
            ) do
         {:ok, %{text: response}} ->
-          GoogleChat.notify("💬 #{response}")
+          WebChat.notify("💬 #{response}")
           Logger.info("Chat response sent to user #{user_id}")
           {:noreply, state}
 
         {:error, reason} ->
           Logger.error("LLM chat failed: #{inspect(reason)}")
-          GoogleChat.notify("❌ Sorry, I'm having trouble responding right now.")
+          WebChat.notify("❌ Sorry, I'm having trouble responding right now.")
           {:noreply, state}
       end
     rescue
       error ->
         Logger.error("Chat handling error: #{inspect(error)}")
-        GoogleChat.notify("❌ Chat error occurred")
+        WebChat.notify("❌ Chat error occurred")
         {:noreply, state}
     end
   end
@@ -515,12 +515,12 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       # Update state to reflect paused status
       state = %{autonomous_enabled: false, paused_at: DateTime.utc_now()}
 
-      GoogleChat.notify("⏸️ Autonomous actions paused")
+      WebChat.notify("⏸️ Autonomous actions paused")
       {:ok, state}
     rescue
       error ->
         Logger.error("Failed to pause autonomous actions: #{inspect(error)}")
-        GoogleChat.notify("❌ Failed to pause autonomous actions")
+        WebChat.notify("❌ Failed to pause autonomous actions")
         {:error, error}
     end
   end
@@ -533,12 +533,12 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       # Update state to reflect resumed status
       state = %{autonomous_enabled: true, resumed_at: DateTime.utc_now()}
 
-      GoogleChat.notify("▶️ Autonomous actions resumed")
+      WebChat.notify("▶️ Autonomous actions resumed")
       {:ok, state}
     rescue
       error ->
         Logger.error("Failed to resume autonomous actions: #{inspect(error)}")
-        GoogleChat.notify("❌ Failed to resume autonomous actions")
+        WebChat.notify("❌ Failed to resume autonomous actions")
         {:error, error}
     end
   end
@@ -550,7 +550,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       case AgentSupervisor.get_all_agents() do
         [] ->
           Logger.warning("No agents available to execute recommendation")
-          GoogleChat.notify("⚠️ No agents available to execute recommendation")
+          WebChat.notify("⚠️ No agents available to execute recommendation")
           {:error, :no_agents}
 
         agent_pids ->
@@ -570,7 +570,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
           # Check if all succeeded
           if Enum.all?(results, &(&1 == :ok)) do
-            GoogleChat.notify(
+            WebChat.notify(
               "✅ Executed recommendation: #{Map.get(recommendation, :description, "unknown")}"
             )
 
@@ -579,7 +579,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           else
             failed_count = Enum.count(results, &(&1 != :ok))
 
-            GoogleChat.notify("⚠️ Recommendation executed with #{failed_count} failures")
+            WebChat.notify("⚠️ Recommendation executed with #{failed_count} failures")
 
             Logger.warning("Recommendation execution had failures",
               total_agents: length(agent_pids),
@@ -592,7 +592,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     rescue
       error ->
         Logger.error("Recommendation execution error: #{inspect(error)}")
-        GoogleChat.notify("❌ Recommendation execution error")
+        WebChat.notify("❌ Recommendation execution error")
         {:error, error}
     end
   end
@@ -607,7 +607,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
            ) do
         {:ok, _} ->
           Logger.info("Updated pattern score for rejection: #{recommendation.pattern_id}")
-          GoogleChat.notify("📚 Learned from rejection")
+          WebChat.notify("📚 Learned from rejection")
           :ok
 
         {:error, error_reason} ->
@@ -680,15 +680,15 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   defp send_to_channel(:slack, :deployment, data), do: Slack.deployment_notification(data)
   defp send_to_channel(:slack, :policy_change, data), do: Slack.policy_change(data)
 
-  defp send_to_channel(:google_chat, :ask_question, data), do: GoogleChat.ask_question(data)
-  defp send_to_channel(:google_chat, :ask_approval, data), do: GoogleChat.ask_approval(data)
-  defp send_to_channel(:google_chat, :notify, data), do: GoogleChat.notify(data)
-  defp send_to_channel(:google_chat, :daily_summary, data), do: GoogleChat.daily_summary(data)
+  defp send_to_channel(:google_chat, :ask_question, data), do: WebChat.ask_question(data)
+  defp send_to_channel(:google_chat, :ask_approval, data), do: WebChat.ask_approval(data)
+  defp send_to_channel(:google_chat, :notify, data), do: WebChat.notify(data)
+  defp send_to_channel(:google_chat, :daily_summary, data), do: WebChat.daily_summary(data)
 
   defp send_to_channel(:google_chat, :deployment, data),
-    do: GoogleChat.deployment_notification(data)
+    do: WebChat.deployment_notification(data)
 
-  defp send_to_channel(:google_chat, :policy_change, data), do: GoogleChat.policy_change(data)
+  defp send_to_channel(:google_chat, :policy_change, data), do: WebChat.policy_change(data)
 
   defp send_to_channel(unknown_channel, action, _data) do
     Logger.warning("Unknown channel: #{unknown_channel} for action: #{action}")

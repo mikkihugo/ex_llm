@@ -231,9 +231,9 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   @doc """
   Start TaskGraph executor.
   """
-  def start_link(_opts) do
-    run_id = Keyword.fetch!(_opts, :run_id)
-    GenServer.start_link(__MODULE__, _opts, name: via_tuple(run_id))
+  def start_link(opts) do
+    run_id = Keyword.fetch!(opts, :run_id)
+    GenServer.start_link(__MODULE__, opts, name: via_tuple(run_id))
   end
 
   @doc """
@@ -262,8 +262,8 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   ## Server Callbacks
 
   @impl true
-  def init(_opts) do
-    run_id = Keyword.fetch!(_opts, :run_id)
+  def init(opts) do
+    run_id = Keyword.fetch!(opts, :run_id)
 
     state = %{
       run_id: run_id,
@@ -348,7 +348,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
             new_state = %{state | dag: dag}
 
             # Continue execution if fail_fast is false
-            if Keyword.get(_opts, :fail_fast, true) do
+            if Keyword.get(opts, :fail_fast, true) do
               {:error, {:task_failed, task.id, reason}}
             else
               execute_dag_loop(new_state, _opts)
@@ -628,10 +628,10 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     %{
       model_id: model_id,
       prompt_template: prompt_template,
-      temperature: Keyword.get(_opts, :temperature, 0.7),
-      max_tokens: Keyword.get(_opts, :max_tokens, 4000),
-      stream: Keyword.get(_opts, :stream, false),
-      timeout_ms: Keyword.get(_opts, :timeout_ms, 30_000)
+      temperature: Keyword.get(opts, :temperature, 0.7),
+      max_tokens: Keyword.get(opts, :max_tokens, 4000),
+      stream: Keyword.get(opts, :stream, false),
+      timeout_ms: Keyword.get(opts, :timeout_ms, 30_000)
     }
   end
 

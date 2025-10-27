@@ -415,9 +415,9 @@ defmodule Singularity.Jobs.JobOrchestrator do
 
   defp apply_job_options(job, _opts) do
     job
-    |> maybe_set_priority(Keyword.get(_opts, :priority))
-    |> maybe_set_scheduled_at(Keyword.get(_opts, :scheduled_at))
-    |> maybe_set_replace_args(Keyword.get(_opts, :replace_args))
+    |> maybe_set_priority(Keyword.get(opts, :priority))
+    |> maybe_set_scheduled_at(Keyword.get(opts, :scheduled_at))
+    |> maybe_set_replace_args(Keyword.get(opts, :replace_args))
   end
 
   defp maybe_set_priority(job, nil), do: job

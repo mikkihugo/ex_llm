@@ -162,7 +162,7 @@ defmodule Singularity.Architecture.PatternType do
     config = Application.get_env(:singularity, :pattern_types, %{})
 
     config
-    |> Enum.filter(fn {_type, _opts} -> _opts[:enabled] != false end)
+    |> Enum.filter(fn {_type, _opts} -> opts[:enabled] != false end)
     |> Enum.into(%{})
   end
 
@@ -172,7 +172,7 @@ defmodule Singularity.Architecture.PatternType do
   def enabled?(pattern_type) do
     config = Application.get_env(:singularity, :pattern_types, %{})
     _opts = config[pattern_type] || %{}
-    _opts[:enabled] != false
+    opts[:enabled] != false
   end
 
   @doc """

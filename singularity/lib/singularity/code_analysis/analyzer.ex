@@ -156,7 +156,7 @@ defmodule Singularity.CodeAnalysis.Analyzer do
   """
   def analyze_language(code, language_hint, _opts \\ [])
       when is_binary(code) and is_binary(language_hint) do
-    use_cache = Keyword.get(_opts, :cache, cache_enabled?())
+    use_cache = Keyword.get(opts, :cache, cache_enabled?())
 
     if use_cache do
       Singularity.CodeAnalysis.Analyzer.Cache.get_or_analyze(code, language_hint, fn ->
@@ -428,9 +428,9 @@ defmodule Singularity.CodeAnalysis.Analyzer do
     import Ecto.Query
 
     # Conservative default
-    max_concurrency = Keyword.get(_opts, :max_concurrency, 4)
+    max_concurrency = Keyword.get(opts, :max_concurrency, 4)
     # 30 seconds per file
-    timeout = Keyword.get(_opts, :timeout, 30_000)
+    timeout = Keyword.get(opts, :timeout, 30_000)
 
     Repo.all(from c in CodeFile, where: c.codebase_id == ^codebase_id)
     |> Task.async_stream(
@@ -512,9 +512,9 @@ defmodule Singularity.CodeAnalysis.Analyzer do
   def store_result(file_id, analysis_result, _opts \\ []) do
     alias Singularity.Schemas.CodeAnalysisResult
 
-    analysis_type = Keyword.get(_opts, :analysis_type, "full")
-    duration_ms = Keyword.get(_opts, :duration_ms)
-    cache_hit = Keyword.get(_opts, :cache_hit, false)
+    analysis_type = Keyword.get(opts, :analysis_type, "full")
+    duration_ms = Keyword.get(opts, :duration_ms)
+    cache_hit = Keyword.get(opts, :cache_hit, false)
 
     # Extract metrics from analysis result
     attrs = %{
@@ -600,9 +600,9 @@ defmodule Singularity.CodeAnalysis.Analyzer do
   def store_error(file_id, language_id, error, _opts \\ []) do
     alias Singularity.Schemas.CodeAnalysisResult
 
-    analysis_type = Keyword.get(_opts, :analysis_type, "full")
-    duration_ms = Keyword.get(_opts, :duration_ms)
-    cache_hit = Keyword.get(_opts, :cache_hit, false)
+    analysis_type = Keyword.get(opts, :analysis_type, "full")
+    duration_ms = Keyword.get(opts, :duration_ms)
+    cache_hit = Keyword.get(opts, :cache_hit, false)
 
     error_message =
       case error do
@@ -694,8 +694,8 @@ defmodule Singularity.CodeAnalysis.Analyzer do
   def analyze_and_store_codebase(codebase_id, _opts \\ []) do
     import Ecto.Query
 
-    only_rca = Keyword.get(_opts, :only_rca, false)
-    skip_errors = Keyword.get(_opts, :skip_errors, false)
+    only_rca = Keyword.get(opts, :only_rca, false)
+    skip_errors = Keyword.get(opts, :skip_errors, false)
 
     query =
       if only_rca do

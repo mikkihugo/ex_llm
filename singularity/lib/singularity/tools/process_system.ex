@@ -918,7 +918,7 @@ defmodule Singularity.Tools.ProcessSystem do
     end
   end
 
-  defp prepare_environment(_opts) do
+  defp prepare_environment(opts) do
     base_env = %{
       "PATH" => System.get_env("PATH") || "/usr/local/bin:/usr/bin:/bin",
       "HOME" => System.get_env("HOME") || "/tmp",
@@ -927,12 +927,12 @@ defmodule Singularity.Tools.ProcessSystem do
     }
 
     # Add custom environment variables from opts
-    custom_env = Map.get(_opts, :env, %{})
+    custom_env = Map.get(opts, :env, %{})
 
     # Add Elixir-specific environment variables
     elixir_env = %{
       "ELIXIR_ERL_OPTIONS" => System.get_env("ELIXIR_ERL_OPTIONS") || "",
-      "MIX_ENV" => Map.get(_opts, :mix_env, System.get_env("MIX_ENV") || "dev")
+      "MIX_ENV" => Map.get(opts, :mix_env, System.get_env("MIX_ENV") || "dev")
     }
 
     # Merge all environment variables

@@ -115,10 +115,10 @@ defmodule Singularity.CodeSynthesisPipeline do
   """
   def generate(task, _opts \\ []) do
     start = System.monotonic_time(:millisecond)
-    path = Keyword.get(_opts, :path)
-    fast_mode = Keyword.get(_opts, :fast_mode, true)
-    use_cache = Keyword.get(_opts, :use_cache, true)
-    parallel = Keyword.get(_opts, :parallel, true)
+    path = Keyword.get(opts, :path)
+    fast_mode = Keyword.get(opts, :fast_mode, true)
+    use_cache = Keyword.get(opts, :use_cache, true)
+    parallel = Keyword.get(opts, :parallel, true)
 
     # Auto-detect context from path
     context = detect_context(path, _opts)
@@ -159,8 +159,8 @@ defmodule Singularity.CodeSynthesisPipeline do
   defp detect_context(nil, _opts) do
     # No path provided, use opts
     %{
-      repo: Keyword.get(_opts, :repo, "unknown"),
-      language: Keyword.get(_opts, :language, "elixir"),
+      repo: Keyword.get(opts, :repo, "unknown"),
+      language: Keyword.get(opts, :language, "elixir"),
       tech_stack: [],
       directory: ".",
       project_type: :unknown
@@ -867,7 +867,7 @@ defmodule Singularity.CodeSynthesisPipeline do
   Much faster than sequential generation.
   """
   def batch_generate(tasks, _opts \\ []) do
-    _language = Keyword.get(_opts, :language, "elixir")
+    _language = Keyword.get(opts, :language, "elixir")
 
     # Generate all in parallel
     tasks

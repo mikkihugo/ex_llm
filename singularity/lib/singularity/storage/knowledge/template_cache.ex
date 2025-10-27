@@ -20,7 +20,7 @@ defmodule Singularity.Knowledge.TemplateCache do
   # Client API
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc "Get template from ETS (everything is preloaded)"
@@ -61,7 +61,7 @@ defmodule Singularity.Knowledge.TemplateCache do
   # Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     # Create ETS table
     :ets.new(@table, [:named_table, :set, :public, {:read_concurrency, true}])
 

@@ -11,11 +11,11 @@ defmodule Singularity.Engine.NifStatus do
   alias Singularity.Engine.NifLoader
 
   def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     # Schedule immediate status check
     send(self(), :check_status)
     {:ok, %{}}

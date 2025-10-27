@@ -7,7 +7,7 @@ defmodule Singularity.StartupWarmup do
   use Task
   require Logger
 
-  def start_link(_opts) do
+  def start_link(opts) do
     Task.start_link(__MODULE__, :warmup, [])
   end
 

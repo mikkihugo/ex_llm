@@ -167,7 +167,7 @@ defmodule Singularity.Search.HybridCodeSearch do
   """
   @spec search(String.t(), _opts()) :: {:ok, [search_result()]} | {:error, term()}
   def search(query, _opts \\ []) do
-    mode = Keyword.get(_opts, :mode, :hybrid)
+    mode = Keyword.get(opts, :mode, :hybrid)
 
     case mode do
       :keyword -> keyword_search(query, _opts)
@@ -203,9 +203,9 @@ defmodule Singularity.Search.HybridCodeSearch do
   """
   @spec fuzzy_search(String.t(), _opts()) :: {:ok, [search_result()]} | {:error, term()}
   def fuzzy_search(query, _opts \\ []) do
-    threshold = Keyword.get(_opts, :threshold, 0.3)
-    limit = Keyword.get(_opts, :limit, @default_limit)
-    language = Keyword.get(_opts, :language)
+    threshold = Keyword.get(opts, :threshold, 0.3)
+    limit = Keyword.get(opts, :limit, @default_limit)
+    language = Keyword.get(opts, :language)
 
     base_query =
       from c in "code_files",
@@ -240,8 +240,8 @@ defmodule Singularity.Search.HybridCodeSearch do
   ## Private - Keyword Search (PostgreSQL FTS)
 
   defp keyword_search(query, _opts) do
-    limit = Keyword.get(_opts, :limit, @default_limit)
-    language = Keyword.get(_opts, :language)
+    limit = Keyword.get(opts, :limit, @default_limit)
+    language = Keyword.get(opts, :language)
 
     base_query =
       from c in "code_files",
@@ -290,9 +290,9 @@ defmodule Singularity.Search.HybridCodeSearch do
   ## Private - Semantic Search (pgvector)
 
   defp semantic_search(query, _opts) do
-    limit = Keyword.get(_opts, :limit, @default_limit)
-    threshold = Keyword.get(_opts, :threshold, @default_threshold)
-    language = Keyword.get(_opts, :language)
+    limit = Keyword.get(opts, :limit, @default_limit)
+    threshold = Keyword.get(opts, :threshold, @default_threshold)
+    language = Keyword.get(opts, :language)
 
     # Generate embedding for query
     with {:ok, embedding} <- EmbeddingService.embed(query) do
@@ -336,9 +336,9 @@ defmodule Singularity.Search.HybridCodeSearch do
   ## Private - Hybrid Search (FTS + pgvector)
 
   defp hybrid_search(query, _opts) do
-    limit = Keyword.get(_opts, :limit, @default_limit)
-    weights = Keyword.get(_opts, :weights, @default_weights)
-    language = Keyword.get(_opts, :language)
+    limit = Keyword.get(opts, :limit, @default_limit)
+    weights = Keyword.get(opts, :weights, @default_weights)
+    language = Keyword.get(opts, :language)
 
     keyword_weight = Map.get(weights, :keyword, 0.4)
     semantic_weight = Map.get(weights, :semantic, 0.6)
