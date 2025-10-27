@@ -76,4 +76,14 @@ config :centralcloud, :framework_learners,
     description: "Intelligent framework detection using LLM analysis of code"
   }
 
+# Infrastructure System Learning Configuration (Config-Driven)
+# Defines which infrastructure system learning strategies are enabled and their execution priority
+config :centralcloud, :infrastructure_system_learners,
+  manual_registry: %{
+    module: CentralCloud.InfrastructureSystemLearners.ManualRegistry,
+    enabled: true,
+    priority: 5,
+    description: "Direct database queries for known infrastructure systems"
+  }
+
 import_config "#{config_env()}.exs"

@@ -3,7 +3,8 @@ defmodule CentralCloud.Consumers.InfrastructureRegistryConsumer do
   Infrastructure Registry Consumer - Handles pgmq requests for infrastructure definitions
 
   Listens to `infrastructure_registry_requests` queue from Singularity instances.
-  Queries InfrastructureRegistry service and sends responses back via pgmq.
+  Uses InfrastructureSystemLearningOrchestrator to discover infrastructure systems
+  and sends responses back via pgmq.
 
   ## Integration
 
@@ -11,10 +12,17 @@ defmodule CentralCloud.Consumers.InfrastructureRegistryConsumer do
   Sends responses to Singularity via `infrastructure_registry_responses` queue.
 
   Both queues are stored in PostgreSQL pgmq shared_queue database.
+
+  ## How It Works
+
+  1. Receives infrastructure registry request (query_type: "infrastructure_registry")
+  2. Uses InfrastructureSystemLearningOrchestrator to learn systems from request
+  3. Orchestrator tries enabled learners in priority order (manual registry first, then LLM if needed)
+  4. Sends learned systems back via pgmq response queue
   """
 
   require Logger
-  alias CentralCloud.Infrastructure.Registry
+  alias CentralCloud.InfrastructureSystemLearningOrchestrator
   alias CentralCloud.SharedQueueRepo
 
   @doc """
@@ -53,32 +61,26 @@ defmodule CentralCloud.Consumers.InfrastructureRegistryConsumer do
   # Private
 
   defp handle_registry_request(request) do
-    min_confidence = request["min_confidence"] || 0.7
-    include = request["include"] || []
-
     try do
-      # Get formatted registry from CentralCloud
-      case Registry.get_formatted_registry(min_confidence: min_confidence) do
-        {:ok, full_registry} ->
-          # Filter by categories if specified
-          response =
-            if Enum.empty?(include) do
-              full_registry
-            else
-              include_set = MapSet.new(include)
+      # Use orchestrator to learn infrastructure systems
+      case InfrastructureSystemLearningOrchestrator.learn(request) do
+        {:ok, systems, learner_type} ->
+          Logger.info("[InfrastructureRegistry] Successfully learned systems",
+            learner: learner_type,
+            categories_count: map_size(systems)
+          )
+          send_response(systems)
 
-              full_registry
-              |> Enum.filter(fn {category, _systems} ->
-                MapSet.member?(include_set, category)
-              end)
-              |> Enum.into(%{})
-            end
-
-          # Send response back via pgmq
-          send_response(response)
+        {:error, :no_systems_found} ->
+          Logger.warn("[InfrastructureRegistry] No infrastructure systems found for request",
+            query_type: request["query_type"]
+          )
+          send_error_response("No infrastructure systems found matching criteria")
 
         {:error, reason} ->
-          Logger.error("[InfrastructureRegistry] Failed to get registry: #{inspect(reason)}")
+          Logger.error("[InfrastructureRegistry] Failed to learn infrastructure systems",
+            error: inspect(reason)
+          )
           send_error_response(reason)
       end
     rescue
