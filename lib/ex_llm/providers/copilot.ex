@@ -77,11 +77,11 @@ defmodule ExLLM.Providers.Copilot do
       %Types.Model{
         id: "gpt-4.1",
         name: "GPT-4.1",
-        description: "GitHub Copilot with GPT-4.1 - The latest and only available model",
-        context_window: 1_047_576,
-        max_output_tokens: 32_768,
+        description: "GitHub Copilot with GPT-4.1 - 128K context window",
+        context_window: 128_000,
+        max_output_tokens: 4096,
         pricing: %{input: 0.002, output: 0.008},
-        capabilities: ["streaming", "chat", "code_generation", "vision", "structured_output", "pdf_input"]
+        capabilities: ["streaming", "chat", "code_generation", "vision", "structured_output"]
       }
     ]}
   end
