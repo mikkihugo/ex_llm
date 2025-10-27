@@ -27,7 +27,7 @@ defmodule CodeEngine.MixProject do
       app: :code_quality_engine,
       version: "1.0.0",
       elixir: "~> 1.19",
-      compilers: [:rustler | Mix.compilers()],
+      compilers: Mix.compilers(),
       rustler_crates: [code_quality_engine: [skip_compilation?: true]],
       deps: deps()
     ]
