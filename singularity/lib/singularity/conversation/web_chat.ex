@@ -234,6 +234,72 @@ defmodule Singularity.Conversation.WebChat do
   end
 
   @doc """
+  Send a daily summary notification to the Observer web UI.
+
+  Sends a non-interactive summary message with agent metrics and status.
+  """
+  @spec daily_summary(map()) :: {:ok, String.t()} | {:error, term()}
+  def daily_summary(summary_data) when is_map(summary_data) do
+    try do
+      message = format_daily_summary(summary_data)
+
+      notify(message, %{
+        type: :daily_summary,
+        timestamp: DateTime.utc_now(),
+        summary_data: summary_data
+      })
+    rescue
+      error ->
+        Logger.error("Daily summary error: #{inspect(error)}")
+        {:ok, "summary_queued"}
+    end
+  end
+
+  @doc """
+  Send a deployment notification to the Observer web UI.
+
+  Notifies about deployment events (started, completed, failed).
+  """
+  @spec deployment_notification(map()) :: {:ok, String.t()} | {:error, term()}
+  def deployment_notification(deployment_data) when is_map(deployment_data) do
+    try do
+      message = format_deployment_notification(deployment_data)
+
+      notify(message, %{
+        type: :deployment,
+        timestamp: DateTime.utc_now(),
+        deployment_data: deployment_data
+      })
+    rescue
+      error ->
+        Logger.error("Deployment notification error: #{inspect(error)}")
+        {:ok, "deployment_queued"}
+    end
+  end
+
+  @doc """
+  Send a policy change notification to the Observer web UI.
+
+  Notifies about important policy changes or configuration updates.
+  """
+  @spec policy_change(map()) :: {:ok, String.t()} | {:error, term()}
+  def policy_change(policy_data) when is_map(policy_data) do
+    try do
+      message = format_policy_change(policy_data)
+
+      notify(message, %{
+        type: :policy_change,
+        timestamp: DateTime.utc_now(),
+        policy_data: policy_data
+      })
+    rescue
+      error ->
+        Logger.error("Policy change notification error: #{inspect(error)}")
+        {:ok, "policy_queued"}
+    end
+  end
+
+  @doc """
   Publish a decision that was made in the web UI back to ChatConversationAgent.
 
   This is called internally by Observer when a human makes a decision.
@@ -320,5 +386,68 @@ defmodule Singularity.Conversation.WebChat do
       error ->
         {:error, %{status: "error", observer: "unreachable", error: inspect(error)}}
     end
+  end
+
+  # Helper: Format daily summary into message
+  defp format_daily_summary(summary_data) do
+    active_tasks = Map.get(summary_data, :active_tasks, 0)
+    completed_tasks = Map.get(summary_data, :completed_tasks, 0)
+    failed_tasks = Map.get(summary_data, :failed_tasks, 0)
+    total_confidence = Map.get(summary_data, :avg_confidence, 0) |> Float.round(2)
+
+    """
+    📊 Daily Summary
+
+    Tasks: #{completed_tasks} completed, #{failed_tasks} failed, #{active_tasks} active
+    Average Confidence: #{total_confidence * 100}%
+    """
+  end
+
+  # Helper: Format deployment notification into message
+  defp format_deployment_notification(deployment_data) do
+    status = Map.get(deployment_data, :status, :started)
+    service = Map.get(deployment_data, :service, "Unknown")
+    version = Map.get(deployment_data, :version, "unknown")
+    duration = Map.get(deployment_data, :duration_ms, nil)
+
+    duration_text =
+      if duration do
+        " (#{duration}ms)"
+      else
+        ""
+      end
+
+    emoji = case status do
+      :started -> "🚀"
+      :completed -> "✅"
+      :failed -> "❌"
+      _ -> "📦"
+    end
+
+    """
+    #{emoji} Deployment #{status}
+
+    Service: #{service} v#{version}#{duration_text}
+    """
+  end
+
+  # Helper: Format policy change notification into message
+  defp format_policy_change(policy_data) do
+    policy_name = Map.get(policy_data, :policy, "Unknown")
+    action = Map.get(policy_data, :action, "updated")
+    details = Map.get(policy_data, :details, "")
+
+    details_text =
+      if details and details != "" do
+        "\nDetails: #{details}"
+      else
+        ""
+      end
+
+    """
+    ⚙️ Policy #{action}
+
+    Policy: #{policy_name}#{details_text}
+    """
   end
 end

@@ -74,7 +74,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   alias Singularity.Agents.Agent
   alias Singularity.AgentSupervisor
-  alias Singularity.Conversation.{WebChat, Slack}
+  alias Singularity.Conversation.{WebChat, Slack, ResponsePoller}
 
   @conversation_types [
     :clarification,
@@ -197,23 +197,35 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     }
 
     channel = Keyword.get(__opts, :channel, get_default_channel())
-    send_to_channel(channel, :ask_approval, conversation)
+    timeout_ms = Keyword.get(__opts, :timeout, 30_000)
 
-    # Handle timeout if specified
-    case Keyword.get(__opts, :timeout) do
-      nil ->
-        :ok
+    # Send approval request and get response queue
+    case send_to_channel_with_response(channel, :ask_approval, conversation) do
+      {:ok, response_queue} ->
+        Logger.info("Approval request sent for #{conversation_id}, polling queue: #{response_queue}")
 
-      timeout_ms ->
-        Process.send_after(self(), {:timeout_conversation, conversation_id}, timeout_ms)
+        # Spawn task to poll for response
+        spawn_response_polling_task(
+          conversation_id,
+          response_queue,
+          timeout_ms,
+          from,
+          state
+        )
+
+        new_state = %{
+          state
+          | active_conversations: Map.put(state.active_conversations, conversation_id, conversation)
+        }
+
+        # Return immediately - response will come via GenServer.reply in polling task
+        {:noreply, new_state}
+
+      {:error, reason} ->
+        Logger.error("Failed to send approval request: #{inspect(reason)}")
+        GenServer.reply(from, {:error, :approval_send_failed})
+        {:noreply, state}
     end
-
-    new_state = %{
-      state
-      | active_conversations: Map.put(state.active_conversations, conversation_id, conversation)
-    }
-
-    {:noreply, new_state}
   end
 
   @impl true
@@ -1289,5 +1301,100 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   defp send_to_channel(unknown_channel, action, _data) do
     Logger.warning("Unknown channel: #{unknown_channel} for action: #{action}")
     {:error, :unknown_channel}
+  end
+
+  # Helper: Send to channel and capture response queue for approvals
+  defp send_to_channel_with_response(channel, message_type, payload) do
+    case send_to_channel(channel, message_type, payload) do
+      {:ok, approval} when is_map(approval) ->
+        # Extract response queue from approval result
+        response_queue = Map.get(approval, :response_queue)
+
+        if response_queue do
+          {:ok, response_queue}
+        else
+          Logger.warning("No response_queue in approval result")
+          {:error, :no_response_queue}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+
+      other ->
+        Logger.warning("Unexpected result from send_to_channel: #{inspect(other)}")
+        {:error, :unexpected_result}
+    end
+  end
+
+  # Helper: Spawn a task to poll for approval response
+  defp spawn_response_polling_task(conversation_id, response_queue, timeout_ms, from, _state) do
+    Task.start(fn ->
+      poll_approval_response(conversation_id, response_queue, timeout_ms, from)
+    end)
+  end
+
+  # Helper: Poll for approval response and reply to caller
+  defp poll_approval_response(conversation_id, response_queue, timeout_ms, from) do
+    try do
+      case ResponsePoller.wait_for_response(response_queue, timeout_ms) do
+        {:ok, response} ->
+          # Parse response
+          case parse_approval_response(response) do
+            {:approved, reason} ->
+              Logger.info("Approval #{conversation_id} was approved: #{reason}")
+              GenServer.reply(from, {:approved, reason})
+
+            {:rejected, reason} ->
+              Logger.info("Approval #{conversation_id} was rejected: #{reason}")
+              GenServer.reply(from, {:rejected, reason})
+
+            {:error, parse_error} ->
+              Logger.error("Failed to parse approval response: #{inspect(parse_error)}")
+              GenServer.reply(from, {:error, parse_error})
+          end
+
+        {:error, :timeout} ->
+          Logger.warning("Approval #{conversation_id} timed out")
+          GenServer.reply(from, {:error, :timeout})
+
+        {:error, reason} ->
+          Logger.error("Failed to get approval response: #{inspect(reason)}")
+          GenServer.reply(from, {:error, reason})
+      end
+    rescue
+      error ->
+        Logger.error("Error polling approval response: #{inspect(error)}")
+        GenServer.reply(from, {:error, error})
+    end
+  end
+
+  # Helper: Parse approval response from pgmq message
+  defp parse_approval_response(response) when is_map(response) do
+    decision = response
+    |> Map.get("decision") || Map.get(:decision) || "unknown"
+    |> to_string()
+    |> String.downcase()
+
+    reason = response
+    |> Map.get("decision_reason") || Map.get(:decision_reason) || ""
+    |> to_string()
+
+    case decision do
+      "approved" -> {:approved, reason}
+      "rejected" -> {:rejected, reason}
+      "modified" -> {:modified, Map.get(response, "modified_params", %{})}
+      _ -> {:error, :invalid_decision}
+    end
+  end
+
+  defp parse_approval_response(response) when is_binary(response) do
+    case Jason.decode(response) do
+      {:ok, decoded} -> parse_approval_response(decoded)
+      {:error, _} -> {:error, :decode_failed}
+    end
+  end
+
+  defp parse_approval_response(_response) do
+    {:error, :invalid_response}
   end
 end
