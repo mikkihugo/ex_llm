@@ -132,6 +132,8 @@ defmodule Singularity.MixProject do
       # Background Job Queue for ML training, maintenance tasks, and cron scheduling
       {:oban, "~> 2.18"},
 
+      # Transactional message queue using PostgreSQL (replaces external brokers like NATS)
+      {:ex_pgflow, path: "../ex_pgflow"},
 
       # LLM Orchestration (Nexus) - Removed: Singularity uses PGMQ, Nexus consumes separately
       # {:nexus, path: "../nexus"},

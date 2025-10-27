@@ -11,7 +11,7 @@ defmodule CentralCloud.Models.MLComplexityTrainer do
   """
 
   alias CentralCloud.Models.{ModelCache, ComplexityScorer}
-  alias CentralCloud.Repo
+  alias Nexus.Repo
   
   # Import Axon for real ML training
   import Axon

@@ -104,7 +104,7 @@ defmodule Genesis.Database.Encryption do
   @doc """
   Generate random bytes (useful for nonces, salts, tokens).
   """
-  defp random_bytes(count) when is_integer(count) and count > 0 do
+  def random_bytes(count) when is_integer(count) and count > 0 do
     case Repo.query("SELECT encode(gen_random_bytes($1), 'hex')", [count]) do
       {:ok, %{rows: [[hex_bytes]]}} -> {:ok, hex_bytes}
       error -> {:error, error}

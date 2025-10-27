@@ -60,7 +60,7 @@ defmodule Genesis.Database.DistributedIds do
       [count]
     ) do
       {:ok, %{rows: rows}} -> Enum.map(rows, fn [_seq, ulid] -> ulid end)
-      error -> []
+      _error -> []
     end
   end
 

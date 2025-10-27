@@ -271,7 +271,7 @@ defmodule Singularity.Tools.ProviderToolkitBootstrapper do
     target = Path.expand(path, workspace_root)
 
     unless String.starts_with?(target, workspace_root) do
-      return {:error, "Path outside workspace not allowed"}
+      {:error, "Path outside workspace not allowed"}
     end
 
     case File.ls(target) do
@@ -314,7 +314,7 @@ defmodule Singularity.Tools.ProviderToolkitBootstrapper do
     target = Path.expand(base_path, workspace_root)
 
     unless String.starts_with?(target, workspace_root) do
-      return {:error, "Path outside workspace not allowed"}
+      {:error, "Path outside workspace not allowed"}
     end
 
     {:ok, %{pattern: pattern, results: []}}
@@ -329,7 +329,7 @@ defmodule Singularity.Tools.ProviderToolkitBootstrapper do
     mode = normalize_mode(Map.get(args, "mode"))
 
     unless String.starts_with?(dest, workspace_root) do
-      return {:error, "Path outside workspace not allowed"}
+      {:error, "Path outside workspace not allowed"}
     end
 
     File.mkdir_p(Path.dirname(dest))
