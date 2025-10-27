@@ -3,8 +3,8 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 # Smart dependency management recipes
 smart-deps:
 	@echo "🧠 Checking and installing dependencies..."
-	nix develop .#dev --command bash -c "cd singularity_app && mix deps.get"
-	nix develop .#dev --command bash -c "cd singularity_app && gleam deps download"
+	nix develop .#dev --command bash -c "cd nexus && mix deps.get"
+	nix develop .#dev --command bash -c "cd nexus && gleam deps download"
 	@if [ -f "ai-server/package.json" ]; then \
 		echo "🧠 Installing AI server dependencies..."; \
 		cd ai-server && nix develop ..#dev --command bun install; \
@@ -12,44 +12,44 @@ smart-deps:
 
 smart-fmt:
 	@echo "🧠 Formatting code..."
-	nix develop .#dev --command bash -c "cd singularity_app && mix format && gleam format"
+	nix develop .#dev --command bash -c "cd nexus && mix format && gleam format"
 
 smart-lint:
 	@echo "🧠 Running linters..."
-	nix develop .#dev --command bash -c "cd singularity_app && mix credo --strict || true"
+	nix develop .#dev --command bash -c "cd nexus && mix credo --strict || true"
 
 smart-setup: smart-deps smart-fmt
 	@echo "🧠 Smart setup complete!"
 
 smart-watch:
 	@echo "🧠 Starting file watcher..."
-	nix develop .#dev --command watchexec -w singularity_app/lib -w singularity_app/test -w singularity_app/src "cd singularity_app && mix test"
+	nix develop .#dev --command watchexec -w nexus/lib -w nexus/test -w nexus/src "cd nexus && mix test"
 
 smart-full: smart-deps smart-fmt smart-lint
 	@echo "🧠 Full development cycle..."
-	nix develop .#dev --command bash -c "cd singularity_app && mix compile && MIX_ENV=test mix test"
+	nix develop .#dev --command bash -c "cd nexus && mix compile && MIX_ENV=test mix test"
 
 # Individual component commands
 gleam-build:
-	nix develop .#dev --command bash -c "cd singularity_app/test_project && gleam build"
+	nix develop .#dev --command bash -c "cd nexus/test_project && gleam build"
 
 gleam-check:
-	nix develop .#dev --command bash -c "cd singularity_app && gleam check"
+	nix develop .#dev --command bash -c "cd nexus && gleam check"
 
 gleam-test:
-	nix develop .#dev --command bash -c "cd singularity_app/test_project && gleam test"
+	nix develop .#dev --command bash -c "cd nexus/test_project && gleam test"
 
 deps-get:
-	nix develop .#dev --command bash -c "cd singularity_app && mix deps.get"
+	nix develop .#dev --command bash -c "cd nexus && mix deps.get"
 
 deps-compile:
-	nix develop .#dev --command bash -c "cd singularity_app && mix deps.compile"
+	nix develop .#dev --command bash -c "cd nexus && mix deps.compile"
 
 credo:
-	nix develop .#dev --command bash -c "cd singularity_app && mix credo --strict || true"
+	nix develop .#dev --command bash -c "cd nexus && mix credo --strict || true"
 
 format:
-	nix develop .#dev --command bash -c "cd singularity_app && mix format && gleam format"
+	nix develop .#dev --command bash -c "cd nexus && mix format && gleam format"
 
 ai-server-deps:
 	cd ai-server && nix develop ..#dev --command bun install
@@ -63,15 +63,15 @@ rust-build:
 # Standard commands (now smart!)
 compile: smart-deps smart-fmt
 	@echo "🧠 Compiling..."
-	nix develop .#dev --command bash -c "cd singularity_app && mix deps.get && gleam deps download && mix compile"
+	nix develop .#dev --command bash -c "cd nexus && mix deps.get && gleam deps download && mix compile"
 
 dev: smart-setup
 	@echo "🧠 Starting development environment..."
-	nix develop .#dev --command bash -c "cd singularity_app && mix phx.server"
+	nix develop .#dev --command bash -c "cd nexus && mix phx.server"
 
 test: smart-deps
 	@echo "🧠 Running tests..."
-	nix develop .#dev --command bash -c "cd singularity_app && MIX_ENV=test mix test"
+	nix develop .#dev --command bash -c "cd nexus && MIX_ENV=test mix test"
 
 setup: smart-deps
 	@echo "🧠 Setup complete!"
@@ -87,8 +87,8 @@ lint: smart-lint
 
 clean:
 	@echo "🧠 Cleaning build artifacts..."
-	nix develop .#dev --command bash -c "cd singularity_app && mix clean"
-	nix develop .#dev --command bash -c "cd singularity_app && rm -rf _build .gleam"
+	nix develop .#dev --command bash -c "cd nexus && mix clean"
+	nix develop .#dev --command bash -c "cd nexus && rm -rf _build .gleam"
 	@if [ -d "node_modules" ]; then \
 		echo "🧠 Cleaning node_modules..."; \
 		rm -rf node_modules; \
@@ -102,21 +102,21 @@ full: smart-full
 
 # Quick commands (skip checks for speed)
 quick-compile:
-	nix develop .#dev --command bash -c "cd singularity_app && mix compile"
+	nix develop .#dev --command bash -c "cd nexus && mix compile"
 
 quick-test:
-	nix develop .#dev --command bash -c "cd singularity_app && MIX_ENV=test mix test"
+	nix develop .#dev --command bash -c "cd nexus && MIX_ENV=test mix test"
 
 quick-fmt:
-	nix develop .#dev --command bash -c "cd singularity_app && mix format && gleam format"
+	nix develop .#dev --command bash -c "cd nexus && mix format && gleam format"
 
 # Default verification pipeline
 default:
 	just verify
 
 verify:
-	cd singularity_app && MIX_ENV=dev mix quality
-	cd singularity_app && MIX_ENV=test mix test.ci
+	cd nexus && MIX_ENV=dev mix quality
+	cd nexus && MIX_ENV=test mix test.ci
 
 # Environment management
 dev-shell:
@@ -133,19 +133,19 @@ fly-shell:
 
 # Environment-specific commands
 dev-server:
-	nix develop .#dev --command bash -c "cd singularity_app && mix phx.server"
+	nix develop .#dev --command bash -c "cd nexus && mix phx.server"
 
 test-run:
-	nix develop .#test --command bash -c "cd singularity_app && mix test"
+	nix develop .#test --command bash -c "cd nexus && mix test"
 
 prod-build:
-	nix develop .#prod --command bash -c "cd singularity_app && mix release"
+	nix develop .#prod --command bash -c "cd nexus && mix release"
 
 # Legacy setup (kept for compatibility)
 setup-legacy:
-	cd singularity_app && MIX_ENV=dev mix deps.get
-	cd singularity_app && MIX_ENV=dev mix deps.compile
-	cd singularity_app && mix gleam.deps.get
+	cd nexus && MIX_ENV=dev mix deps.get
+	cd nexus && MIX_ENV=dev mix deps.compile
+	cd nexus && mix gleam.deps.get
 	if [ -f bun.lock ] || [ -f bun.lockb ]; then \
 		bun install --frozen-lockfile; \
 	else \
@@ -154,21 +154,21 @@ setup-legacy:
 
 # Legacy commands (kept for compatibility)
 fmt-legacy:
-	cd singularity_app && mix format
-	cd singularity_app && gleam format
+	cd nexus && mix format
+	cd nexus && gleam format
 
 lint-legacy:
-	cd singularity_app && MIX_ENV=dev mix credo --strict
+	cd nexus && MIX_ENV=dev mix credo --strict
 	semgrep scan --config auto || true
 
 coverage:
-	cd singularity_app && MIX_ENV=test mix coveralls.html
+	cd nexus && MIX_ENV=test mix coveralls.html
 
 unit:
-	cd singularity_app && MIX_ENV=test mix test
+	cd nexus && MIX_ENV=test mix test
 
 watch-tests:
-	cd singularity_app && watchexec -w lib -w test -w gleam "MIX_ENV=test mix test"
+	cd nexus && watchexec -w lib -w test -w gleam "MIX_ENV=test mix test"
 
 fly-deploy:
 	flyctl deploy --strategy bluegreen

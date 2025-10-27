@@ -32,7 +32,9 @@ use singularity_code_analysis as rca;
 
 // Module declarations
 mod dependency_analyzer;
+mod dependencies;
 pub use dependency_analyzer::{Dependency, Framework, DependencyAnalyzer, DependencyAnalysisResult};
+pub use dependencies::UniversalDependencies;
 
 /// Universal parser framework configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]

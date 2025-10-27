@@ -7,7 +7,16 @@ defmodule Nexus.MixProject do
       version: "0.1.0",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      apps_path: ".",
+      apps: [
+        :singularity,
+        :genesis,
+        :central_services,
+        :ex_llm,
+        :ex_pgflow,
+        :ml_complexity
+      ]
     ]
   end
 
@@ -15,18 +24,21 @@ defmodule Nexus.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Nexus.Application, []}
+      mod: {Nexus.Application, []},
+      applications: [
+        :singularity,
+        :genesis,
+        :central_services,
+        :ex_llm,
+        :ex_pgflow,
+        :ml_complexity
+      ]
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # LLM client library (local fork)
-      {:ex_llm, path: "../packages/ex_llm"},
-
-      # Workflow orchestration (local fork)
-      {:ex_pgflow, path: "../packages/ex_pgflow"},
 
       # HTTP client for OAuth2 and API calls
       {:req, "~> 0.5.0"},
@@ -36,18 +48,6 @@ defmodule Nexus.MixProject do
       
       # TOML parsing for Codex config
       {:toml, "~> 0.7"},
-
-      # PostgreSQL message queue (brought in by ex_pgflow, kept for explicit usage)
-      {:pgmq, "~> 0.4.0"},
-
-      # PostgreSQL driver (brought in by ex_pgflow)
-      {:postgrex, "~> 0.21"},
-
-      # Ecto database wrapper (brought in by ex_pgflow, needed for OAuth tokens)
-      {:ecto_sql, "~> 3.12"},
-
-      # UUID generation (UUIDv7 with timestamp ordering)
-      {:uniq, "~> 0.6"},
 
       # Mocking library for tests (HTTP and database mocking)
       {:mox, "~> 1.0", only: :test},

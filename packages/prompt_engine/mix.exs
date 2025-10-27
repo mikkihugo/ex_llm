@@ -27,7 +27,7 @@ defmodule PromptEngine.MixProject do
       app: :prompt_engine,
       version: "1.0.0",
       elixir: "~> 1.19",
-      compilers: [:rustler | Mix.compilers()],
+      compilers: Mix.compilers(),
       rustler_crates: [prompt_engine: []],
       deps: deps()
     ]

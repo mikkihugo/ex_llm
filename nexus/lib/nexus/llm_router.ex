@@ -34,6 +34,9 @@ defmodule Nexus.LLMRouter do
   """
 
   require Logger
+  alias Nexus.Providers.GeminiCode
+
+  @gemini_code_prefix "gemini-code:"
 
   @doc """
   Route LLM request to appropriate provider based on complexity and task type.
@@ -139,11 +142,18 @@ defmodule Nexus.LLMRouter do
   def select_model(complexity, task_type \\ nil)
 
   def select_model(:simple, _task_type) do
-    # Simple tasks: Use fast, cheap models
-    # Try to find a fast, cost-effective model
-    case find_model_by_criteria(:simple) do
-      {:ok, model_id} -> model_id
-      {:error, _} -> "gemini-2.5-flash"  # Fallback
+    cond do
+      gemini_code_available?() ->
+        @gemini_code_prefix <> GeminiCode.default_model()
+
+      true ->
+        # Simple tasks: Use fast, cheap models
+        # Try to find a fast, cost-effective model
+        case find_model_by_criteria(:simple) do
+          {:ok, model_id} -> model_id
+          # Fallback
+          {:error, _} -> "gemini-2.5-flash"
+        end
     end
   end
 
@@ -167,16 +177,19 @@ defmodule Nexus.LLMRouter do
   # Check if Codex is configured, otherwise fallback
   defp select_codex_or_fallback(fallback_model) do
     if codex_configured?() do
-      "gpt-5-codex"  # Use Codex if OAuth tokens available
+      # Use Codex if OAuth tokens available
+      "gpt-5-codex"
     else
-      fallback_model  # Fallback to specified model
+      # Fallback to specified model
+      fallback_model
     end
   end
 
   defp codex_configured? do
     Nexus.Providers.Codex.configured?()
   rescue
-    _ -> false  # If module not available, fallback
+    # If module not available, fallback
+    _ -> false
   end
 
   # Dynamic model discovery using ex_llm
@@ -185,15 +198,16 @@ defmodule Nexus.LLMRouter do
     {:ok, models} = ExLLM.Core.Models.list_all()
 
     # Find fast, cheap models (Gemini Flash, GPT-4o-mini, GitHub Models, etc.)
-    simple_model = models
-    |> Enum.filter(fn model ->
-      model.provider in [:gemini, :openai, :github_models] and
-      (String.contains?(model.id, "flash") or
-       String.contains?(model.id, "mini") or
-       String.contains?(model.id, "github"))
-    end)
-    |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
-    |> List.first()
+    simple_model =
+      models
+      |> Enum.filter(fn model ->
+        model.provider in [:gemini, :openai, :github_models] and
+          (String.contains?(model.id, "flash") or
+             String.contains?(model.id, "mini") or
+             String.contains?(model.id, "github"))
+      end)
+      |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
+      |> List.first()
 
     if simple_model, do: {:ok, simple_model.id}, else: {:error, :no_model_found}
   end
@@ -203,16 +217,17 @@ defmodule Nexus.LLMRouter do
     {:ok, models} = ExLLM.Core.Models.list_all()
 
     # Find balanced models (Claude Sonnet, GPT-4o, GitHub Models, etc.)
-    medium_model = models
-    |> Enum.filter(fn model ->
-      model.provider in [:anthropic, :openai, :github_models] and
-      (String.contains?(model.id, "sonnet") or
-       String.contains?(model.id, "gpt-4o") and not String.contains?(model.id, "mini") or
-       String.contains?(model.id, "llama") or
-       String.contains?(model.id, "mistral"))
-    end)
-    |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
-    |> List.first()
+    medium_model =
+      models
+      |> Enum.filter(fn model ->
+        model.provider in [:anthropic, :openai, :github_models] and
+          (String.contains?(model.id, "sonnet") or
+             (String.contains?(model.id, "gpt-4o") and not String.contains?(model.id, "mini")) or
+             String.contains?(model.id, "llama") or
+             String.contains?(model.id, "mistral"))
+      end)
+      |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
+      |> List.first()
 
     if medium_model, do: medium_model.id, else: "claude-3-5-sonnet-latest"
   end
@@ -222,16 +237,17 @@ defmodule Nexus.LLMRouter do
     {:ok, models} = ExLLM.Core.Models.list_all()
 
     # Find powerful models (Claude Opus, GPT-4, GitHub Models, etc.)
-    complex_model = models
-    |> Enum.filter(fn model ->
-      model.provider in [:anthropic, :openai, :github_models] and
-      (String.contains?(model.id, "opus") or
-       String.contains?(model.id, "gpt-4") and not String.contains?(model.id, "mini") or
-       String.contains?(model.id, "llama-3.3") or
-       String.contains?(model.id, "deepseek"))
-    end)
-    |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
-    |> List.first()
+    complex_model =
+      models
+      |> Enum.filter(fn model ->
+        model.provider in [:anthropic, :openai, :github_models] and
+          (String.contains?(model.id, "opus") or
+             (String.contains?(model.id, "gpt-4") and not String.contains?(model.id, "mini")) or
+             String.contains?(model.id, "llama-3.3") or
+             String.contains?(model.id, "deepseek"))
+      end)
+      |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
+      |> List.first()
 
     if complex_model, do: complex_model.id, else: "claude-3-5-sonnet-latest"
   end
@@ -252,8 +268,19 @@ defmodule Nexus.LLMRouter do
     # Convert messages to ex_llm format
     formatted_messages = format_messages(messages)
 
-    # Call ex_llm with selected model
-    ExLLM.chat(formatted_messages, [model: model] ++ opts)
+    cond do
+      is_binary(model) and String.starts_with?(model, @gemini_code_prefix) ->
+        gemini_model = String.replace_prefix(model, @gemini_code_prefix, "")
+
+        case GeminiCode.chat(formatted_messages, Keyword.put(opts, :model, gemini_model)) do
+          {:ok, response} -> {:ok, response}
+          {:error, reason} -> {:error, reason}
+        end
+
+      true ->
+        # Call ex_llm with selected model
+        ExLLM.chat(formatted_messages, [model: model] ++ opts)
+    end
   end
 
   defp format_messages(messages) do
@@ -309,7 +336,17 @@ defmodule Nexus.LLMRouter do
     ExLLM.chat(:openai, input, opts)
   end
 
-defp log_success(model, response, opts) do
+  defp gemini_code_available? do
+    if Code.ensure_loaded?(GeminiCode) do
+      GeminiCode.configured?()
+    else
+      false
+    end
+  rescue
+    _ -> false
+  end
+
+  defp log_success(model, response, opts) do
     api_version = Keyword.get(opts, :api_version, "chat_completions")
 
     Logger.info("LLM request successful",

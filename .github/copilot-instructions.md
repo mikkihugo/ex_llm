@@ -1,711 +1,263 @@
-# GitHub Copilot Setup Instructions
+# GitHub Copilot Project Briefing
 
-## Project Overview
+Updated for the pgmq/ex_pgflow architecture (October 2025).
 
-**Singularity** is an internal AI-powered development environment featuring:
-- **Autonomous agents** for self-improving code workflows
-- **Multi-AI orchestration** (Claude, Gemini, OpenAI, Copilot) via NATS
-- **Semantic code search** with GPU acceleration (RTX 4080)
-- **Living knowledge base** with Git ↔ PostgreSQL synchronization
-- **NATS-first microservices architecture** for inter-service communication
+---
 
-**Development Philosophy**: Internal tooling prioritizing features & learning over production constraints. Maximum experimentation, rapid iteration.
+## 1. What Singularity Is
 
-**Key Architectural Principle**: NATS-first microservices with direct PostgreSQL access via Ecto (Elixir) or async-postgres (Rust services).
+- **Core**: Elixir monorepo with multiple applications (`singularity/`, `centralcloud/`, `genesis/`, `ex_pgflow/`) + Rust NIF packages in `packages/`.
+- **Mission**: Autonomous code-improvement agents + rule evolution + knowledge retention.
+- **Messaging / Workflows**: PostgreSQL (`singularity` DB) with pgmq + ex_pgflow.  
+  (NATS is gone; everything queues through pgmq/ex_pgflow.)
+- **Embeddings**: Local ONNX/Nx pipeline (Qodo-Embed-1 + Jina v3 concatenated → 2560‑dim vectors).  
+- **Rule Evolution**: `Singularity.Evolution.*` modules synthesize rules, publish/import via Pgflow workflows.
+- **Agents**: 6 specialized agent types (Self-Improving, Cost-Optimized, Architecture, Technology, Refactoring, Chat) using unified infrastructure.
 
-## Project Languages
+High-level lifecycle:
 
-This is a **polyglot codebase** using:
-- **Elixir** (primary) - Main application in `singularity/`
-- **Gleam** - BEAM-native functional language, compiles with Elixir
-- **Rust** - High-performance NIFs and services in `rust/` (architecture_engine, code_engine, parser_engine, etc.)
-- **TypeScript** - AI server in `llm-server/`
+```
+Execute work → collect metrics/failures → analyze patterns → synthesize rules →
+confidence gate → publish via Pgflow → other services import → feedback loop updates thresholds
+```
 
-This repository uses **Nix** + **direnv** for reproducible development environments.
+---
 
-## Prerequisites
+## 2. Monorepo Structure
 
-Before opening this project, ensure you have:
+| Path | Purpose | Key Commands |
+|------|---------|--------------|
+| `singularity/` | Main Elixir app (agents, embeddings, workflows) | `cd singularity && mix phx.server` |
+| `centralcloud/` | Pattern aggregation & consensus (multi-instance learning) | `cd centralcloud && mix phx.server` |
+| `genesis/` | Autonomous improvement workflows & rule evolution | `cd genesis && mix phx.server` |
+| `ex_pgflow/` | Workflow orchestration library | `cd ex_pgflow && mix compile` |
+| `packages/` | Rust NIF engines (parsing, analysis, quality) | `cd packages/<engine> && cargo test` |
+| `observer/` | Phoenix web UI for monitoring | `cd observer && mix phx.server` |
+| `scripts/` | Setup scripts (`setup-database.sh`, helpers) | `./scripts/setup-database.sh` |
+| `.github/` | CI, workflow metadata | |
 
-1. **Nix** (with flakes enabled)
-2. **direnv**
-3. **WSL2** (if on Windows, for GPU access)
+**Domain-Driven Folders**: Code organized by domain (not Phoenix contexts):
+```
+lib/singularity/
+├── agents/                    # Agent orchestration
+├── autonomy/                  # Self-improvement logic
+├── code/                      # Code operations (analyzers, generators, storage)
+├── embedding/                 # Nx-based embedding pipeline
+├── evolution/                 # Rule synthesis & publishing
+├── interfaces/                # MCP/NATS interfaces
+├── tools/                     # Tool definitions
+└── workflows/                 # ex_pgflow workflow steps
+```
 
-## Setup Steps
+---
 
-### 1. Install Nix (if not installed)
+## 3. Repo Landmarks
+
+| Path | Purpose |
+|------|---------|
+| `singularity/lib/singularity/evolution/` | Rule synthesis, publishing, import workflows |
+| `singularity/lib/singularity/workflows/` | ex_pgflow workflow steps (`RulePublish`, `RuleImport`, etc.) |
+| `singularity/lib/singularity/embedding/` | Nx-based embedding service (Qodo + Jina) |
+| `singularity/lib/singularity/pipeline/` | Orchestrator modules exposing rule APIs |
+| `singularity/lib/singularity/agents/` | 6 agent types + hybrid agent worker |
+| `packages/` | Rust NIF engines (architecture analysis, code parser, etc.) |
+| `scripts/` | Setup scripts (`setup-database.sh`, helpers) |
+| `.github/` | CI, workflow metadata |
+
+---
+
+## 4. Environment Setup
+
+Prereqs: Nix with flakes, direnv (and WSL2 on Windows if GPU access required).
 
 ```bash
-# Install Nix with flakes enabled (Determinate Systems installer)
-curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+direnv allow      # loads nix shell (runs `nix develop`)
 ```
 
-### 2. Install direnv
-
-```bash
-# On Ubuntu/Debian (WSL2)
-sudo apt install direnv
-
-# On macOS
-brew install direnv
-
-# Add to your shell (~/.bashrc or ~/.zshrc)
-eval "$(direnv hook bash)"  # or zsh
-```
-
-### 3. Enter Development Environment
-
-```bash
-cd /path/to/singularity
-direnv allow  # Approve .envrc
-```
-
-This will:
-- Build the Nix development shell
-- Install all dependencies (Rust, Elixir, Gleam, Bun, PostgreSQL, NATS, etc.)
-- Start PostgreSQL automatically (port 5432 by default)
-- Start NATS with JetStream (port 4222)
-- Set up unified caching for fast builds
-
-### 4. Verify Setup
-
-```bash
-# Check tools are available
-rustc --version
-elixir --version
-gleam --version
-bun --version
-psql --version
-nats-server --version
-
-# Check database is running
-psql -d postgres -c "SELECT 1;"
-
-# Check NATS is running
-nats-server --version && pgrep -x nats-server
-```
-
-## Environment Details
-
-### Tools Available
-
-- **Rust**: Latest stable with cargo, rust-analyzer, and cargo-watch (additional cargo tools can be installed on-demand)
-- **BEAM**: Elixir 1.18-rc + Gleam support, Erlang 28
-- **Database**: PostgreSQL 17 with TimescaleDB, PostGIS, pgvector
-- **Message Bus**: NATS with JetStream
-- **JavaScript**: Bun (fast TypeScript/JavaScript runtime)
-- **AI CLIs**: `claude`, `gemini`, `copilot`, `codex` (via bunx shims)
-
-## Language-Specific Guidelines
-
-### Elixir Code (`singularity/`)
-
-**File locations**:
-- Main app: `singularity/lib/singularity/`
-- Tests: `singularity/test/`
-- Migrations: `singularity/priv/repo/migrations/`
-
-**Conventions**:
-- Use `snake_case` for files and functions
-- Use `PascalCase` for modules
-- Prefer GenServer/Agent for state management
-- Use `with` for error handling chains
-- Document with `@moduledoc` and `@doc`
-
-**Example**:
-```elixir
-defmodule Singularity.MyModule do
-  @moduledoc """
-  Description of module purpose.
-  """
-
-  use GenServer
-
-  @doc """
-  Starts the server.
-  """
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
-end
-```
-
-### Gleam Code
-
-**Integration**: Gleam code compiles to BEAM bytecode and runs alongside Elixir.
-
-**Conventions**:
-- Use `snake_case` for all identifiers
-- Prefer pattern matching over conditionals
-- Use `Result` and `Option` types
-- Document with `///` comments
-
-**Example**:
-```gleam
-import gleam/result
-
-pub fn process_data(input: String) -> Result(String, String) {
-  case input {
-    "" -> Error("Empty input")
-    value -> Ok(value)
-  }
-}
-```
-
-### Rust Code (`rust/`)
-
-**File locations**:
-- `rust/architecture_engine/` - Architecture analysis and intelligent naming
-- `rust/code_engine/` - Code quality analysis and metrics
-- `rust/parser_engine/` - Multi-language parsing (30+ languages)
-- `rust/embedding_engine/` - GPU-accelerated embeddings (Jina v3, Qodo)
-- `rust/prompt_engine/` - DSPy prompt optimization
-- `rust/quality_engine/` - Quality checks and standards
-- `rust/architecture_engine/package_registry/` - External package analysis (npm, cargo, hex, pypi)
-
-**Conventions**:
-- Use `snake_case` for files and functions
-- Use `PascalCase` for types/structs
-- Prefer `Result` and `Option`
-- Document with `///` (doc comments)
-- Follow https://rust-lang.github.io/api-guidelines/
-
-**Example**:
-```rust
-/// Analyzes code for technology patterns.
-pub struct TechnologyDetector {
-    patterns: Vec<Pattern>,
-}
-
-impl TechnologyDetector {
-    /// Creates a new detector with default patterns.
-    pub fn new() -> Result<Self, Error> {
-        Ok(Self { patterns: vec![] })
-    }
-}
-```
-
-### TypeScript Code (`llm-server/`)
-
-**File locations**:
-- Source: `llm-server/src/`
-- Tests: `llm-server/src/*.test.ts`
-
-**Conventions**:
-- Use `camelCase` for variables and functions
-- Use `PascalCase` for types/interfaces
-- Prefer `async/await` over callbacks
-- Use Bun-specific APIs when available
-- Document with JSDoc `/** */`
-
-**Example**:
-```typescript
-/**
- * Handles AI provider requests.
- */
-export async function handleRequest(
-  provider: string,
-  request: ChatRequest
-): Promise<ChatResponse> {
-  // Implementation
-}
-```
-
-### Key Environment Variables
-
-Automatically set by `.envrc`:
-
-```bash
-DATABASE_URL="postgres://localhost:5432/postgres"
-NATS_URL="nats://localhost:4222"
-MIX_ENV="dev"
-CARGO_HOME="$HOME/.cache/singularity/cargo"
-SCCACHE_DIR="$HOME/.cache/singularity/sccache"
-```
-
-### Database Setup
-
-PostgreSQL starts automatically with these databases:
-- `postgres` (default)
-- `singularity_dev` (development)
-- `singularity_test` (testing)
-- `singularity_embeddings` (vector search)
-
-Extensions enabled:
-- `vector` (pgvector for embeddings)
-- `timescaledb` (time-series data)
-- `postgis` (geospatial)
-
-### NATS Setup
-
-NATS JetStream runs automatically on port 4222. Data stored in `.nats/`.
-
-## Common Tasks
-
-### Run Elixir App
+Database / migrations:
 
 ```bash
 cd singularity
 mix deps.get
-mix phx.server
+mix ecto.create      # initial database create
+mix ecto.migrate     # pgmq/ex_pgflow-aware migrations
+
+# optional: prepare test database
+MIX_ENV=test mix ecto.create
+MIX_ENV=test mix ecto.migrate
 ```
 
-### Run AI Server (Bun)
+> **Note**: If pgvector/postgis/pg_cron extensions are unavailable, migrations log a NOTICE and skip embedding columns automatically (falls back to JSON storage). No manual tweaks needed.
+
+---
+
+## 5. Day-to-Day Commands
 
 ```bash
-cd llm-server
-bun install
-bun run src/server.ts
+cd singularity
+
+mix test            # unit/integration tests
+mix quality         # format + credo + dialyzer + sobelow
+mix ecto.migrate    # re-run migrations when schema changes
+mix ecto.reset      # drop + recreate (dev only)
 ```
 
-### Run Rust Tools
+Rust packages (optional):
 
 ```bash
-# Package registry analysis
-cd rust/architecture_engine/package_registry
-cargo run -- analyze /path/to/project
-
-# Run all Rust tests
-cd rust
+cd packages/<engine>
 cargo test
 ```
 
-### Run Tests
+Gleam modules (integrated via mix_gleam):
 
 ```bash
-# Elixir tests
-cd singularity && mix test
-
-# Rust tests
-cd rust && cargo test
+mix compile         # Compiles Elixir + Gleam automatically
+gleam check         # Type-check Gleam only
+gleam test          # Run Gleam tests
 ```
 
-### Task Runner (Justfile)
+---
 
-```bash
-just help           # Show available commands
-just test           # Run all tests
-just dev            # Start dev servers
-just db-reset       # Reset database
-```
+## 6. Unified Orchestrators Pattern
 
-## GPU Support (WSL2 + RTX 4080)
-
-CUDA is available for EXLA (ML workloads):
-
-```bash
-export CUDA_HOME="${pkgs.cudaPackages.cudatoolkit}"
-export EXLA_TARGET="cuda"
-```
-
-Verify GPU access:
-```bash
-nvidia-smi  # Should show RTX 4080
-```
-
-## Troubleshooting
-
-### `direnv allow` fails
-
-```bash
-# Reload direnv
-direnv reload
-
-# Debug mode
-direnv allow --verbose
-```
-
-### PostgreSQL won't start
-
-```bash
-# Check logs
-cat .dev-db/pg/postgres.log
-
-# Stop and restart
-pg_ctl -D .dev-db/pg stop
-direnv reload
-```
-
-### NATS not running
-
-```bash
-# Start manually
-nats-server -js -sd .nats -p 4222
-```
-
-### Build cache issues
-
-```bash
-# Clear Rust cache
-rm -rf .cargo-build
-
-# Clear sccache
-sccache --stop-server
-rm -rf ~/.cache/singularity/sccache
-```
-
-## Architecture Overview
-
-This is a **NATS-first microservices architecture**:
+**Core Pattern**: All major systems follow config-driven orchestration:
 
 ```
-┌─────────────────────────────────────────┐
-│ NATS (Message Bus)                      │
-└──────┬──────────────────────────────────┘
-       │
-   ┌───┴──────────────────────┐
-   │                          │
-   ▼                          ▼
-┌──────────────┐     ┌──────────────┐
-│  llm-server   │     │ central_cloud│
-│  (Bun/TS)    │     │  (Elixir)    │
-│  LLM APIs    │     │  3 Services  │
-└──────────────┘     └──────┬───────┘
-                            │
-              ┌─────────────┴─────────────┐
-              │                           │
-              ▼                           ▼
-       ┌──────────────┐          ┌──────────────┐
-       │ singularity_ │          │  PostgreSQL  │
-       │ app          │          │  (Direct)    │
-       │ (Elixir)     │          │  + pgvector  │
-       │ 6 Rust NIFs  │          └──────────────┘
-       └──────────────┘
+1. Define @behaviour contract (e.g., AnalyzerType)
+2. Create orchestrator (e.g., AnalysisOrchestrator) 
+3. Implement concrete types (registered in config.exs)
+4. Orchestrator discovers and manages all implementations
 ```
 
-**Key Principles**:
-- **NATS-first**: Services communicate via NATS message bus
-- **Direct DB Access**: Each service connects to PostgreSQL directly (Ecto for Elixir, async-postgres for Rust)
-- **6 Rust NIFs**: Loaded into Singularity BEAM VM for high-performance operations
-  1. parser_engine - Multi-language parsing (30+ languages)
-  2. code_engine - Code quality analysis
-  3. architecture_engine - Architecture analysis + intelligent naming
-  4. quality_engine - Quality checks and standards
-  5. embedding_engine - GPU-accelerated embeddings (Jina v3, Qodo)
-  6. prompt_engine - DSPy prompt optimization + ML training
-
-## Nix Benefits
-
-✅ **Reproducible**: Same environment on all machines
-✅ **Isolated**: Dependencies don't conflict with system packages
-✅ **Fast**: Unified caching (sccache for Rust, bun cache)
-✅ **Declarative**: All dependencies in `flake.nix`
-✅ **Automated**: PostgreSQL + NATS start automatically
-
-## VSCode / Cursor Integration
-
-If using VSCode/Cursor, ensure direnv VSCode extension is installed:
-
-```bash
-code --install-extension mkhl.direnv
-```
-
-This will automatically load the Nix environment in the integrated terminal.
-
-## Development Workflow
-
-### Making Changes
-
-1. **Create a feature branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make changes incrementally**
-   - Write code in small, focused commits
-   - Test each change before moving to the next
-   - Use `just dev` to run all services during development
-
-3. **Run tests frequently**
-   ```bash
-   # Elixir tests (fast feedback)
-   cd singularity && mix test
-   
-   # Rust tests (for Rust changes)
-   cd rust/tool_doc_index && cargo test
-   
-   # Full test suite
-   just test
-   ```
-
-4. **Commit with clear messages**
-   ```bash
-   git add -p  # Review changes interactively
-   git commit -m "feat: Add new detection pattern for Vue.js"
-   ```
-
-### Adding New Features
-
-#### Adding a New Technology Detector
-1. Create JSON template in `rust/architecture_engine/package_registry/templates/`
-2. Add detection patterns (file extensions, package names, etc.)
-3. Test with `cargo run -- analyze /path/to/sample/project`
-4. Add integration test in Elixir
-
-#### Adding a New NATS Subject
-1. Document in `NATS_SUBJECTS.md`
-2. Add handler in appropriate service
-3. Add request/reply or pub/sub pattern
-4. Test with `nats sub "your.subject"`
-
-#### Adding a New LLM Provider
-1. Create provider module in `llm-server/src/providers/`
-2. Implement standard interface (chat, completion)
-3. Add to `llm-server/src/server.ts` routing
-4. Document authentication in `tools/deploy-credentials.md`
-
-## Testing Strategy
-
-### Test Pyramid
-
-```
-        /\
-       /  \    E2E Tests (5-10%)
-      /____\   - Full system integration
-     /      \  Integration Tests (20-30%)
-    /        \ - Service-to-service via NATS
-   /__________\ Unit Tests (60-70%)
-              - Pure functions, modules
-```
-
-### Running Tests
-
-**Unit Tests** (fast, run often):
-```bash
-# Elixir
-cd singularity && mix test
-
-# Rust
-cd rust && cargo test --lib
-
-# TypeScript
-cd llm-server && bun test
-```
-
-**Integration Tests** (medium speed):
-```bash
-# Requires NATS + PostgreSQL running
-cd singularity && mix test --only integration
-
-# Rust integration tests
-cd rust && cargo test --test '*'
-```
-
-**E2E Tests** (slow, run before commits):
-```bash
-# Full system test
-just test
-
-# Or run specific E2E test
-elixir test-unified-system.exs
-```
-
-### Writing Good Tests
-
-**Do:**
-- ✅ Test business logic thoroughly
-- ✅ Mock external dependencies (LLM APIs, external services)
-- ✅ Use descriptive test names: `test "detects React from package.json"`
-- ✅ Use factories/fixtures for test data
-- ✅ Clean up resources (database, NATS subscriptions) after tests
-
-**Don't:**
-- ❌ Test implementation details
-- ❌ Make real API calls to LLM providers in tests
-- ❌ Share state between tests
-- ❌ Write tests that depend on execution order
-- ❌ Commit tests that are flaky or slow
-
-### Test Coverage Goals
-
-- **New features**: ≥80% coverage
-- **Bug fixes**: Add regression test
-- **Refactoring**: Maintain or improve coverage
-
-## Common Pitfalls
-
-### NATS Connection Issues
-
-**Problem**: `nats: connection refused`
-```
-Error: Failed to connect to NATS at localhost:4222
-```
-
-**Solution**:
-```bash
-# Check if NATS is running
-pgrep -x nats-server
-
-# If not, start it
-nats-server -js -sd .nats -p 4222
-
-# Or use direnv (auto-starts)
-direnv allow
-```
-
-### PostgreSQL Not Starting
-
-**Problem**: Database connection errors
-```
-Error: could not connect to server: Connection refused
-```
-
-**Solution**:
-```bash
-# Check PostgreSQL status
-pg_ctl status -D .dev-db/pg
-
-# Check logs
-tail -f .dev-db/pg/postgres.log
-
-# Clean restart
-pg_ctl stop -D .dev-db/pg
-rm -rf .dev-db/pg/postmaster.pid
-direnv reload
-```
-
-### Rust Build Failures
-
-**Problem**: `cargo build` fails with linking errors
-
-**Solution**:
-```bash
-# Clear build cache
-rm -rf target/
-cargo clean
-
-# For sccache issues
-sccache --stop-server
-rm -rf ~/.cache/singularity/sccache
-cargo build
-```
-
-### Elixir Dependency Issues
-
-**Problem**: `mix deps.get` fails or deps are outdated
-
-**Solution**:
-```bash
-cd singularity
-
-# Clear deps
-rm -rf deps _build
-
-# Fetch fresh
-mix local.hex --force
-mix local.rebar --force
-mix deps.get
-mix deps.compile
-
-# For Gleam deps
-mix gleam.deps.get
-```
-
-### Nix Environment Not Loading
-
-**Problem**: Commands not found after `direnv allow`
-
-**Solution**:
-```bash
-# Reload direnv
-direnv reload
-
-# If still broken, rebuild
-nix flake update
-direnv allow
-
-# Check what's loaded
-which elixir gleam cargo
-```
-
-### NATS Subject Naming
-
-**Problem**: Messages not routing correctly
-
-**Pitfall**: Using wrong subject naming conventions
-```bash
-# ❌ Wrong
-"database-query"
-
-# ✅ Correct
-"db.query"
-```
-
-**Solution**: Always use dot-separated hierarchical names. See `NATS_SUBJECTS.md`.
-
-### Database Access Patterns
-
-**Best Practice**: Use Ecto for database access in Elixir services
-
-**Correct approach**:
+**Active Orchestrators**:
+- `PatternDetector` - Framework/Technology/ServiceArchitecture patterns
+- `AnalysisOrchestrator` - Quality/Feedback/Refactoring/Microservice analyzers  
+- `ScanOrchestrator` - Quality/Security scanners
+- `GenerationOrchestrator` - Code generation (Quality, RAG, Pseudocode, etc.)
+- `ExecutionOrchestrator` - TaskDAG/SPARC/Methodology strategies
+
+**Example Usage**:
 ```elixir
-# ✅ Use Ecto queries
-Repo.all(User)
-Repo.get(User, id)
+# Run all registered analyzers
+{:ok, results} = AnalysisOrchestrator.analyze(code_path)
 
-# ✅ Or Ecto.Query
-import Ecto.Query
-from(u in User, where: u.active == true) |> Repo.all()
+# Run specific analyzers with options
+{:ok, results} = AnalysisOrchestrator.analyze(code_path,
+  analyzers: [:quality],
+  severity: :high
+)
 ```
 
-**For Rust services**: Use async-postgres or SQLx with connection pooling
+---
 
-### GPU Memory Issues (WSL2)
+## 7. Agent System Architecture
 
-**Problem**: CUDA out of memory errors
+**6 Agent Types** (thin routers delegating to infrastructure):
+- Self-Improving Agent - Autonomous evolution via metrics
+- Cost-Optimized Agent - Rules-first, cache, LLM fallback
+- Architecture Agent - System design analysis
+- Technology Agent - Tech stack detection  
+- Refactoring Agent - Code quality improvements
+- Chat Agent - Interactive conversations
 
-**Solution**:
-```bash
-# Check GPU memory
-nvidia-smi
-
-# If fragmented, restart WSL
-wsl --shutdown
-wsl
+**Agent Lifecycle** (Self-Improving example):
+```
+Idle → Observing → Evaluating → Generating → Validating → Hot Reload → Validation Wait
 ```
 
-## Code Review Guidelines
+**Hybrid Agent Pattern** (enforced everywhere):
+1. **Rules first** - `RuleEngineV2.execute_category/3` (free, ≥0.9 confidence)
+2. **Semantic cache** - Vector similarity against prior LLM responses
+3. **LLM fallback** - Only 5% of cases via `Singularity.LLM.Service.call/3`
 
-### What to Look For
+**Gleam Integration**: HTDAG (task decomposition) and Rule Engine use Gleam for type safety:
+```elixir
+dag = :singularity@htdag.new("build-feature")
+result = :singularity@rule_engine.evaluate_rule(rule, context)
+```
 
-**Architecture**:
-- ✅ Follows NATS-first principle for service communication
-- ✅ Uses Ecto/async-postgres for database access
-- ✅ Services are stateless where possible
-- ✅ Proper error handling and logging
+---
 
-**Code Quality**:
-- ✅ Follows language conventions (see sections above)
-- ✅ Has tests for new functionality
-- ✅ Documentation for public APIs
-- ✅ No hardcoded secrets or credentials
+## 8. Messaging & Workflows
 
-**Performance**:
-- ✅ Efficient database queries (use indexes)
-- ✅ Async operations for I/O
-- ✅ Proper caching strategies
-- ✅ Resource cleanup (connections, subscriptions)
+- `Singularity.Jobs.PgmqClient` – thin wrapper around pgmq queues.
+- `Singularity.Workflows.RulePublish` / `RuleImport` – Pgflow workflows for rule distribution.
+- Rule publishing everywhere now calls into Pgflow (no direct `PgmqClient.send_message` calls).
+- Importers call Pgflow workflows too, returning structured summaries.
 
-### Approval Criteria
+---
 
-- [ ] All tests pass (`just test`)
-- [ ] Code follows language conventions
-- [ ] Changes are documented
-- [ ] No security issues (secrets, SQL injection, etc.)
-- [ ] Performance impact is acceptable
+## 9. Embedding Pipeline
 
-## Further Reading
+- Primary API: `Singularity.Embedding.NxService.embed/2` and `Embedding.Service.process_request/2`.
+- Models auto-select: GPU → Qodo; CPU → still concatenates (runs both models locally).
+- Embeddings stored as vectors when pgvector present, otherwise JSON arrays.
+- Fallback plan: TF‑IDF-like sparse embeddings can be dropped in if Nx models unavailable (see `embedding_service.ex.disabled` for ideas).
 
-### Project Documentation
-- [Repository README](../README.md) - Project overview and quick start
-- [NATS Subjects](../NATS_SUBJECTS.md) - Message bus subject conventions
-- [Architecture Clarification](../ARCHITECTURE_CLARIFICATION.md) - System architecture details
-- [Knowledge Routing Guide](../KNOWLEDGE_ROUTING_GUIDE.md) - How data flows through the system
+---
 
-### External Resources
-- [Nix Flakes](https://nixos.wiki/wiki/Flakes) - Reproducible development environments
-- [direnv](https://direnv.net/) - Per-directory environment variables
-- [NATS Documentation](https://docs.nats.io/) - Message bus documentation
-- [Elixir Guides](https://hexdocs.pm/elixir/) - Elixir language reference
-- [Gleam Language](https://gleam.run/) - Gleam documentation
-- [Rust Book](https://doc.rust-lang.org/book/) - The Rust Programming Language
+## 10. Rule Evolution Highlights
+
+- `RuleEvolutionSystem.analyze_and_propose_rules/2` – synthesizes candidate rules.
+- `publish_confident_rules/1` – delegates to Pgflow workflow, returns summary map.
+- Genesis integration (`GenesisPublisher`) now composes Pgflow results; tests must expect `%{summary, results}`.
+- Confidence gating via `AdaptiveConfidenceGating` (threshold learns from feedback).
+
+---
+
+## 11. Agent Pattern (Cost Control)
+
+1. **Rules first** – use `Autonomy.RuleEngine` (now backed by evolution results).
+2. **Cache** – reuse existing LLM responses.
+3. **LLM fallback** – route via `Singularity.LLM.Service`.
+
+This pattern is enforced inside orchestrators and agent modules; follow it when adding new capabilities.
+
+---
+
+## 12. LLM / Tooling Usage
+
+Always call `Singularity.LLM.Service.call/3`. No direct HTTP or legacy Nexus routers.
+
+Providers wired through ExLLM:
+- Anthropic Claude
+- OpenAI / ChatGPT
+- Gemini
+- GitHub Copilot
+- Local models (Ollama, LM Studio)
+
+**Complexity Levels**: `:simple` (Gemini Flash), `:medium` (Claude/GPT-4o), `:complex` (Claude/Codex)
+
+---
+
+## 13. Troubleshooting Cheatsheet
+
+| Symptom | Likely Fix |
+|---------|------------|
+| `relation "workflow_runs" does not exist` | Run `mix ecto.migrate` (Pgflow tables). |
+| `extension "vector" is not available` | Migrations continue with JSON fallback; no action required unless pgvector needed. |
+| Rule publish returns integer | Update call sites to use `%{summary, results}` format. |
+| Validation metrics store raising undefined function | Ensure `singularity/lib/singularity/storage/validation_metrics_store.ex` is loaded; tests may need stubs if Postgres tables absent. |
+
+---
+
+## 14. Code Review Pointers
+
+- **Architecture**: verify new flows use Pgflow workflows, not ad-hoc queue calls.
+- **Rule Evolution**: check summaries, ensure new rules respect confidence thresholds and return structured data.
+- **Embeddings**: ensure storage works with/without pgvector.
+- **Testing**: prefer `mix test` in Nix shell. For migrations, handle extension-not-installed scenarios gracefully.
+- **Agents**: follow hybrid agent pattern (rules → cache → LLM).
+- **Orchestrators**: register new implementations in config.exs, not code.
+
+---
+
+## 15. External References
+
+- [pgmq](https://github.com/tembo-io/pgmq) + [ex_pgflow](https://github.com/mikkihugo/ex_pgflow) for queue/workflow details.
+- [Nx](https://hexdocs.pm/nx) / [Axon](https://hexdocs.pm/axon) for embedding internals.
+- [Bumblebee](https://hexdocs.pm/bumblebee) optional if adding new models.
+- [mix_gleam](https://hexdocs.pm/mix_gleam) for Gleam integration.
+
+Keep this document aligned with the pgmq/ex_pgflow architecture; remove any re-introduced NATS references during reviews.

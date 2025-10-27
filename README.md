@@ -8,6 +8,7 @@
 
 **Priorities:** Features & Learning > Speed & Security (internal use only)
 
+
 ## What It Does (Internal Tooling)
 
 - **Living Knowledge Base** - Git ←→ PostgreSQL bidirectional learning (templates, patterns, prompts)
@@ -15,8 +16,24 @@
 - **Autonomous Agents** - Self-improving agents with HTDAG task decomposition
 - **Multi-AI Orchestration** - Claude, Gemini, OpenAI, Copilot
 - **Code Quality** - Rust-powered parsing, linting, analysis for 30+ languages
+- **pgflow-based Messaging** - Transactional, ACID-compliant, exactly-once message bus using PostgreSQL (ex_pgflow/pgmq)
 - **Nix Everywhere** - Single reproducible environment (dev/test/prod)
 - **Internal Only** - No scale/security constraints, maximum features & learning
+
+### Why ex_pgflow/pgmq is More Than a NATS Replacement
+
+ex_pgflow (and pgmq) is not just a drop-in replacement for NATS:
+
+- **Transactional Messaging:** Enqueue messages and update business data atomically in a single DB transaction.
+- **ACID Guarantees:** Messages and state are always consistent—no risk of lost or duplicated events.
+- **Exactly-Once Delivery:** Built-in support for strong delivery semantics.
+- **Operational Simplicity:** No extra message broker to deploy, monitor, or secure—everything is in PostgreSQL.
+- **Native Elixir Integration:** Designed for BEAM/Elixir, fits OTP supervision and error handling.
+- **Advanced Patterns:** Enables sagas, outbox, and event sourcing natively.
+- **Auditable & Secure:** All messaging is fully auditable and protected by your DB’s security model.
+- **Notification Integration:** ex_pgflow workers can trigger notifications (email, webhooks, etc.) only after successful commit, ensuring reliable external signaling.
+
+This approach reduces moving parts, simplifies deployment, and increases reliability compared to external brokers like NATS.
 
 ## Architecture (Unified Config-Driven Orchestration)
 

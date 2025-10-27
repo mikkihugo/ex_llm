@@ -1,0 +1,54 @@
+{
+  "output": {
+    "filePath": "singularity-code-packed.txt",
+    "style": "markdown",
+    "headerText": "Singularity Core Codebase\n\nSource code for the AI development environment (Elixir, Rust, TypeScript, Gleam) - Optimized for LLM analysis.",
+    "removeComments": false,
+    "showLineNumbers": true,
+    "copyToClipboard": false
+  },
+  "include": [
+    "**/*.ex",
+    "**/*.exs",
+    "**/*.rs",
+    "**/*.ts",
+    "**/*.js",
+    "**/*.gleam",
+    "**/*.py",
+    "**/*.md",
+    "**/*.json",
+    "**/*.toml",
+    "**/*.yaml",
+    "**/*.yml",
+    "**/*.sql",
+    "**/*.sh",
+    "**/*.lua",
+    "**/*.hbs"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "_build/**",
+      "deps/**",
+      ".elixir_ls/**",
+      "**/*.beam",
+      "test/**",
+      "**/node_modules/**",
+      "**/target/**",
+      "**/.git/**",
+      "**/*.log",
+      "**/*.tmp",
+      "**/*.cache",
+      "**/vendor/**",
+      "**/tokenizer.json",
+      "**/config.json",
+      "**/*.txt",
+      "**/*.lock",
+      "**/*.sum"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": false
+  }
+}

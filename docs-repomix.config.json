@@ -1,0 +1,38 @@
+{
+  "output": {
+    "filePath": "singularity-docs-packed.txt",
+    "style": "markdown",
+    "headerText": "Singularity Documentation\n\nComplete documentation for the AI development environment including setup, architecture, and usage guides.",
+    "removeComments": false,
+    "showLineNumbers": true,
+    "copyToClipboard": false
+  },
+  "include": [
+    "**/*.md",
+    "**/*.txt",
+    "**/*.json",
+    "**/*.yaml",
+    "**/*.yml"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "_build/**",
+      "deps/**",
+      ".elixir_ls/**",
+      "**/*.beam",
+      "test/**",
+      "**/node_modules/**",
+      "**/target/**",
+      "**/.git/**",
+      "**/*.log",
+      "**/*.tmp",
+      "**/*.cache",
+      "**/vendor/**"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": false
+  }
+}

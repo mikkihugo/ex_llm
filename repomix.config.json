@@ -1,0 +1,48 @@
+{
+  "output": {
+    "filePath": "singularity-full-packed.txt",
+    "style": "markdown",
+    "headerText": "Singularity - Complete AI Development Environment\n\nInternal tooling for autonomous AI agents, semantic search, and living knowledge base.\nMulti-language: Elixir, Rust, TypeScript, Gleam, Python",
+    "removeComments": false,
+    "showLineNumbers": true,
+    "copyToClipboard": false
+  },
+  "include": [
+    "**/*.ex",
+    "**/*.exs",
+    "**/*.rs",
+    "**/*.ts",
+    "**/*.js",
+    "**/*.gleam",
+    "**/*.py",
+    "**/*.md",
+    "**/*.json",
+    "**/*.toml",
+    "**/*.yaml",
+    "**/*.yml",
+    "**/*.sql",
+    "**/*.sh",
+    "**/*.lua",
+    "**/*.hbs"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "_build/**",
+      "deps/**",
+      ".elixir_ls/**",
+      "**/*.beam",
+      "test/**",
+      "**/node_modules/**",
+      "**/target/**",
+      "**/.git/**",
+      "**/*.log",
+      "**/*.tmp",
+      "**/*.cache"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": false
+  }
+}

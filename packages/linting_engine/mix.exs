@@ -27,7 +27,7 @@ defmodule QualityEngine.MixProject do
       app: :quality_engine,
       version: "1.0.0",
       elixir: "~> 1.19",
-      compilers: [:rustler | Mix.compilers()],
+      compilers: Mix.compilers(),
       rustler_crates: [quality_engine: []],
       deps: deps()
     ]

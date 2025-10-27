@@ -7,10 +7,7 @@
 //! - Security analysis detects real vulnerabilities
 
 use std::time::Instant;
-
-// use anyhow::Result;
-// use tokio_test;
-use source_code_parser::*;
+use parser_core::{UniversalDependencies, ProgrammingLanguage};
 
 fn sample_file_path(language: ProgrammingLanguage) -> &'static str {
     match language {
@@ -452,7 +449,7 @@ mod integration_tests {
 
     #[tokio::test]
     async fn test_universal_dependencies_functionality() {
-        let deps = init().expect("Failed to initialize universal dependencies");
+        let deps = UniversalDependencies::init().expect("Failed to initialize universal dependencies");
 
         // Test tokei integration
         assert!(deps.tokei_analyzer.is_available());
@@ -469,7 +466,7 @@ mod integration_tests {
 
     #[tokio::test]
     async fn test_javascript_analysis_comprehensive() {
-        let deps = init().expect("Failed to initialize");
+        let deps = UniversalDependencies::init().expect("Failed to initialize");
         let start = Instant::now();
 
         let result = deps
@@ -497,7 +494,7 @@ mod integration_tests {
 
     #[tokio::test]
     async fn test_python_analysis_comprehensive() {
-        let deps = init().expect("Failed to initialize");
+        let deps = UniversalDependencies::init().expect("Failed to initialize");
         let start = Instant::now();
 
         let result = deps
@@ -522,7 +519,7 @@ mod integration_tests {
 
     #[tokio::test]
     async fn test_rust_analysis_comprehensive() {
-        let deps = init().expect("Failed to initialize");
+        let deps = UniversalDependencies::init().expect("Failed to initialize");
         let start = Instant::now();
 
         let result = deps
@@ -547,7 +544,7 @@ mod integration_tests {
 
     #[tokio::test]
     async fn test_java_analysis_comprehensive() {
-        let deps = init().expect("Failed to initialize");
+        let deps = UniversalDependencies::init().expect("Failed to initialize");
         let start = Instant::now();
 
         let result = deps

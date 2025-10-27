@@ -27,7 +27,7 @@ defmodule ParserEngine.MixProject do
       app: :parser_engine,
       version: "1.0.0",
       elixir: "~> 1.19",
-      compilers: [:rustler | Mix.compilers()],
+      compilers: Mix.compilers(),
       rustler_crates: [parser_engine: []],
       deps: deps()
     ]

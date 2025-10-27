@@ -88,6 +88,11 @@ impl UniversalDependencies {
     Self::new_with_config(PolyglotCodeParserFrameworkConfig::default())
   }
 
+  /// Initialize universal dependencies (alias for new() for backward compatibility)
+  pub fn init() -> Result<Self> {
+    Self::new()
+  }
+
   /// Create new universal dependencies with custom configuration
   pub fn new_with_config(config: PolyglotCodeParserFrameworkConfig) -> Result<Self> {
     info!("Initializing universal dependencies with config: {:?}", config);
@@ -212,26 +217,26 @@ impl UniversalDependencies {
       file_path: file_path.to_string(),
       language: language.to_string(),
       metrics: CodeMetrics {
-        lines_of_code: 0,
-        lines_of_comments: 0,
-        blank_lines: 0,
-        total_lines: 0,
-        functions: 0,
-        classes: 0,
-        complexity_score: 0.0,
+        lines_of_code: line_metrics.code_lines,
+        lines_of_comments: line_metrics.comment_lines,
+        blank_lines: line_metrics.blank_lines,
+        total_lines: line_metrics.total_lines,
+        functions: 0, // Will be populated by tree-sitter analysis
+        classes: 0,   // Will be populated by tree-sitter analysis
+        complexity_score: _complexity_metrics.cyclomatic,
       },
       singularity_metrics: Some(SingularityMetrics {
         #[cfg(feature = "rca")]
-        cyclomatic_complexity: "null".to_string(),
+        cyclomatic_complexity: format!("{:.1}", _complexity_metrics.cyclomatic),
         #[cfg(feature = "rca")]
-        halstead_metrics: "null".to_string(),
+        halstead_metrics: serde_json::to_string(&_halstead_metrics).unwrap_or_default(),
         #[cfg(feature = "rca")]
-        maintainability_index: "null".to_string(),
-        source_lines_of_code: 0,
-        physical_lines_of_code: 0,
-        logical_lines_of_code: 0,
-        comment_lines_of_code: 0,
-        blank_lines: 0,
+        maintainability_index: format!("{:.2}", _maintainability_metrics.index),
+        source_lines_of_code: line_metrics.code_lines,
+        physical_lines_of_code: line_metrics.total_lines,
+        logical_lines_of_code: line_metrics.code_lines,
+        comment_lines_of_code: line_metrics.comment_lines,
+        blank_lines: line_metrics.blank_lines,
       }),
       tree_sitter_analysis: Some(TreeSitterAnalysis {
         ast_nodes: 0,

@@ -167,7 +167,7 @@
           ripgrep fd jq bat htop tree watchexec entr just nil nixfmt-rfc-style lsof
           mold sccache cachix rustc cargo rustfmt clippy rust-analyzer cargo-watch
           postgresql_18  # For pgxn (pg_config and dev headers)
-          # Note: Google auth uses @google/gemini-cli-core OAuth (no gcloud needed)
+          google-cloud-sdk  # Google Cloud CLI for GCP operations
         ] ++ lib.optionals env.gpu (if platform.hasCuda then [
           # CUDA tools only if GPU enabled and CUDA available
           cudaPackages.cudatoolkit cudaPackages.cudnn
@@ -264,8 +264,19 @@
             echo "Gemini CLI is Google's AI assistant for coding and development."
             echo ""
 
-            # Use bunx directly with the full package name
-            exec bunx --yes @google/gemini-cli "$@"
+            # Check if package is already installed locally
+            if [ -d "$HOME/.bun/install/cache/@google/gemini-cli" ] || [ -d "$HOME/.cache/bun/@google/gemini-cli" ]; then
+              echo "Using cached Gemini CLI..."
+            else
+              echo "Installing Gemini CLI (this may take a moment)..."
+            fi
+
+            # Use bunx with timeout to avoid hanging
+            timeout 60 bunx --yes @google/gemini-cli "$@" || {
+              echo "❌ Gemini CLI failed to start. Try running:"
+              echo "  bunx --yes @google/gemini-cli --help"
+              exit 1
+            }
           '')
 
           (writeScriptBin "copilot" ''
@@ -318,13 +329,6 @@
             echo "For now, use the AI server:"
             echo "  curl -X POST http://localhost:3000/api/agent -H 'Content-Type: application/json' -d '{\"task\":\"your coding task\"}'"
             exit 1
-          '')
-
-          (writeScriptBin "gemini-cli" ''
-            #!${bash}/bin/bash
-            echo "⚠️  'gemini-cli' is deprecated. Use 'gemini' instead."
-            # Call bunx directly to avoid any potential loops
-            exec bunx --yes @google/gemini-cli "$@"
           '')
 
           (writeScriptBin "codex" ''
