@@ -16,6 +16,7 @@ defmodule Singularity.CentralCloud do
   """
 
   require Logger
+  import Ecto.Query
 
   @doc """
   Analyze codebase with central cloud processing.

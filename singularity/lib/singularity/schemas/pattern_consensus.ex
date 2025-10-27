@@ -15,7 +15,6 @@ defmodule Singularity.Schemas.PatternConsensus do
     field :total_instances, :integer
     field :average_confidence, :float
     field :consensus_level, :string
-    field :updated_at, :utc_datetime
 
     timestamps()
   end
