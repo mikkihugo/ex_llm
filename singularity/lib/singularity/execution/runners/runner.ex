@@ -142,7 +142,7 @@ defmodule Singularity.Execution.Runners.Runner do
   # ============================================================================
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     # Start dynamic supervisor for execution tasks
     {:ok, supervisor_ref} = DynamicSupervisor.start_link(strategy: :one_for_one)
 
