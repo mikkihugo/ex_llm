@@ -26,6 +26,33 @@ defmodule Observer.Dashboard do
     call_dashboard(&Singularity.Execution.TaskExecutionMetricsDashboard.get_dashboard/0)
   end
 
+  def todos do
+    safe_call(fn ->
+      # Get todo statistics
+      pending_count = Singularity.Execution.TodoStore.count_by_status("pending")
+      in_progress_count = Singularity.Execution.TodoStore.count_by_status("in_progress")
+      completed_count = Singularity.Execution.TodoStore.count_by_status("completed")
+      failed_count = Singularity.Execution.TodoStore.count_by_status("failed")
+      
+      # Get swarm status
+      swarm_status = Singularity.Execution.TodoSwarmCoordinator.get_status()
+      
+      # Get recent todos
+      recent_todos = Singularity.Execution.TodoStore.list_recent(limit: 10)
+      
+      {:ok, %{
+        counts: %{
+          pending: pending_count,
+          in_progress: in_progress_count,
+          completed: completed_count,
+          failed: failed_count
+        },
+        swarm: swarm_status,
+        recent_todos: recent_todos
+      }}
+    end)
+  end
+
   def knowledge_base do
     call_dashboard(&Singularity.Embedding.KnowledgeBaseMetricsDashboard.get_dashboard/0)
   end

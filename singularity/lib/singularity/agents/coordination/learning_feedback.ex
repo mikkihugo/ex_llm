@@ -46,7 +46,8 @@ defmodule Singularity.Agents.Coordination.LearningFeedback do
   use GenServer
   require Logger
 
-  @default_update_interval 5 * 60 * 1000  # 5 minutes
+  # 5 minutes
+  @default_update_interval 5 * 60 * 1000
   @default_min_samples 5
 
   def start_link(opts \\ []) do

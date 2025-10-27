@@ -51,25 +51,30 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
     alias Singularity.Knowledge.ArtifactStore
 
     # Search knowledge artifacts for package information
-    artifact_type = if ecosystem == "all", do: "package_metadata", else: "package_metadata_#{ecosystem}"
+    artifact_type =
+      if ecosystem == "all", do: "package_metadata", else: "package_metadata_#{ecosystem}"
 
     case ArtifactStore.search("package #{query}", artifact_type: artifact_type, limit: limit) do
       {:ok, results} ->
-        packages = Enum.map(results, fn result ->
-          %{
-            "package_name" => result.content["name"] || result.content["package_name"] || "unknown",
-            "version" => result.content["version"] || "latest",
-            "description" => result.content["description"] || "",
-            "downloads" => result.content["downloads"] || 0,
-            "stars" => result.content["stars"],
-            "ecosystem" => result.content["ecosystem"] || ecosystem,
-            "similarity" => result.similarity || 0.0,
-            "tags" => result.content["tags"] || []
-          }
-        end)
+        packages =
+          Enum.map(results, fn result ->
+            %{
+              "package_name" =>
+                result.content["name"] || result.content["package_name"] || "unknown",
+              "version" => result.content["version"] || "latest",
+              "description" => result.content["description"] || "",
+              "downloads" => result.content["downloads"] || 0,
+              "stars" => result.content["stars"],
+              "ecosystem" => result.content["ecosystem"] || ecosystem,
+              "similarity" => result.similarity || 0.0,
+              "tags" => result.content["tags"] || []
+            }
+          end)
+
         {:ok, packages}
 
-      {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -119,8 +124,11 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   defp search_local_patterns(query) do
     # Search local pattern database
     alias Singularity.Knowledge.ArtifactStore
-    
-    case ArtifactStore.search("architectural pattern #{query}", artifact_type: "framework_pattern", limit: 10) do
+
+    case ArtifactStore.search("architectural pattern #{query}",
+           artifact_type: "framework_pattern",
+           limit: 10
+         ) do
       {:ok, results} ->
         Enum.map(results, fn result ->
           %{
@@ -132,8 +140,9 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
             tags: result.content["tags"] || []
           }
         end)
-      
-      {:error, _} -> []
+
+      {:error, _} ->
+        []
     end
   end
 
@@ -152,7 +161,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   defp search_local_examples(query) do
     # Search local example database
     alias Singularity.Knowledge.ArtifactStore
-    
+
     case ArtifactStore.search("code example #{query}", artifact_type: "code_template", limit: 10) do
       {:ok, results} ->
         Enum.map(results, fn result ->
@@ -165,8 +174,8 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
             tags: result.content["tags"] || []
           }
         end)
-      
-      {:error, _} -> 
+
+      {:error, _} ->
         # Generate basic examples based on query
         generate_examples_from_query(query)
     end
@@ -186,7 +195,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
             tags: ["http", "api", "request"]
           }
         ]
-      
+
       String.contains?(String.downcase(query), "json") ->
         [
           %{
@@ -198,7 +207,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
             tags: ["json", "parsing", "data"]
           }
         ]
-      
+
       String.contains?(String.downcase(query), "database") ->
         [
           %{
@@ -210,7 +219,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
             tags: ["database", "query", "ecto"]
           }
         ]
-      
+
       true ->
         [
           %{
@@ -234,20 +243,24 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
 
     # Search across all ecosystems for similar packages
     ecosystems = [:npm, :cargo, :hex, :pypi]
-    
-    results = 
+
+    results =
       ecosystems
       |> Enum.map(fn ecosystem ->
         case search(package_name, ecosystem: ecosystem, limit: 3) do
-          {:ok, packages} -> 
+          {:ok, packages} ->
             packages
-            |> Enum.map(&%{
-              package: &1.package_name,
-              ecosystem: ecosystem,
-              description: &1.description,
-              similarity: calculate_similarity(package_name, &1.package_name)
-            })
-          {:error, _} -> []
+            |> Enum.map(
+              &%{
+                package: &1.package_name,
+                ecosystem: ecosystem,
+                description: &1.description,
+                similarity: calculate_similarity(package_name, &1.package_name)
+              }
+            )
+
+          {:error, _} ->
+            []
         end
       end)
       |> List.flatten()
@@ -273,17 +286,22 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
     # Try to get examples from knowledge base
     alias Singularity.Knowledge.ArtifactStore
 
-    case ArtifactStore.search("code example #{package_id}", artifact_type: "code_template", limit: 10) do
+    case ArtifactStore.search("code example #{package_id}",
+           artifact_type: "code_template",
+           limit: 10
+         ) do
       {:ok, results} when length(results) > 0 ->
-        parsed_examples = Enum.map(results, fn result ->
-          %{
-            package_name: result.content["package_name"] || package_id,
-            example_type: result.content["type"] || "usage",
-            code: result.content["code"] || "",
-            description: result.content["description"] || "Example usage",
-            language: result.content["language"] || "unknown"
-          }
-        end)
+        parsed_examples =
+          Enum.map(results, fn result ->
+            %{
+              package_name: result.content["package_name"] || package_id,
+              example_type: result.content["type"] || "usage",
+              code: result.content["code"] || "",
+              description: result.content["description"] || "Example usage",
+              language: result.content["language"] || "unknown"
+            }
+          end)
+
         Logger.info("✅ Found #{length(parsed_examples)} examples")
         {:ok, parsed_examples}
 
@@ -313,29 +331,31 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
           %{
             package_name: package_id,
             example_type: "basic_usage",
-            code: "import #{package_id}\n\nresponse = #{package_id}.get('https://api.example.com')\nprint(response.json())",
+            code:
+              "import #{package_id}\n\nresponse = #{package_id}.get('https://api.example.com')\nprint(response.json())",
             description: "Basic HTTP request example",
             language: "python"
           }
         ]
-      
+
       String.contains?(package_id, "json") ->
         [
           %{
             package_name: package_id,
-            example_type: "basic_usage", 
+            example_type: "basic_usage",
             code: "const data = #{package_id}.parse('{\"key\": \"value\"}');\nconsole.log(data);",
             description: "JSON parsing example",
             language: "javascript"
           }
         ]
-      
+
       true ->
         [
           %{
             package_name: package_id,
             example_type: "basic_usage",
-            code: "# Basic usage of #{package_id}\nimport #{package_id}\n\nresult = #{package_id}.do_something()",
+            code:
+              "# Basic usage of #{package_id}\nimport #{package_id}\n\nresult = #{package_id}.do_something()",
             description: "Basic usage example",
             language: "python"
           }
@@ -373,14 +393,15 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   defp store_usage_metadata(usage_data) do
     # Store in knowledge_artifacts table
     alias Singularity.Knowledge.ArtifactStore
-    
+
     artifact_key = "package_usage_#{usage_data.package_name}_#{usage_data.version}"
-    
+
     ArtifactStore.put(
       "package_usage",
       artifact_key,
       usage_data,
-      ttl: :timer.hours(24 * 30)  # Keep for 30 days
+      # Keep for 30 days
+      ttl: :timer.hours(24 * 30)
     )
   end
 end

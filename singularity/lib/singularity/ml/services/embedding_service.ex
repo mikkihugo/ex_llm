@@ -56,11 +56,12 @@ defmodule Singularity.ML.Services.EmbeddingService do
   @impl true
   def handle_call({:generate_embeddings, content, opts}, _from, state) do
     Logger.info("Generating embeddings for content...")
-    
+
     # Use NxService to generate embeddings
     case NxService.generate_embeddings(content, opts) do
       {:ok, embeddings} ->
         {:reply, {:ok, embeddings}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -69,13 +70,14 @@ defmodule Singularity.ML.Services.EmbeddingService do
   @impl true
   def handle_call({:find_similar, query, limit}, _from, state) do
     Logger.info("Finding similar content for query...")
-    
+
     # Generate query embedding
     case NxService.generate_embeddings(query) do
       {:ok, query_embedding} ->
         # Search for similar embeddings in database
         similar_results = CodeStore.similarity_search(query_embedding, limit)
         {:reply, {:ok, similar_results}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -88,16 +90,17 @@ defmodule Singularity.ML.Services.EmbeddingService do
       training_queue_size: length(state.training_queue),
       last_training: DateTime.utc_now()
     }
+
     {:reply, {:ok, stats}, state}
   end
 
   @impl true
   def handle_cast({:queue_training, training_data}, state) do
     Logger.info("Queuing embedding model training...")
-    
+
     # Add to training queue
     new_queue = [training_data | state.training_queue] |> Enum.take(100)
-    
+
     {:noreply, %{state | training_queue: new_queue}}
   end
 end

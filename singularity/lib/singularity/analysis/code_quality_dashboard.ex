@@ -160,7 +160,7 @@ defmodule Singularity.Analysis.CodeQualityDashboard do
               %{
                 metric: key,
                 current: Map.get(data, :current, 0),
-                previous: (Map.get(data, :current, 0) - Map.get(data, :delta, 0)) || 0,
+                previous: Map.get(data, :current, 0) - Map.get(data, :delta, 0) || 0,
                 delta: Map.get(data, :delta, 0),
                 trend: Map.get(data, :trend, :stable),
                 improvement: Map.get(data, :delta, 0) > 0
@@ -188,21 +188,29 @@ defmodule Singularity.Analysis.CodeQualityDashboard do
 
   defp safe_snapshot(codebase_path) do
     case CodebaseHealthTracker.snapshot_codebase(codebase_path) do
-      {:ok, snapshot} -> snapshot
+      {:ok, snapshot} ->
+        snapshot
+
       {:error, reason} ->
         Logger.warning("CodebaseHealthTracker.snapshot failed: #{inspect(reason)}")
         %{}
-      _ -> %{}
+
+      _ ->
+        %{}
     end
   end
 
   defp safe_trend_analysis(codebase_path, opts) do
     case CodebaseHealthTracker.analyze_health_trend(codebase_path, opts) do
-      {:ok, trend} -> trend
+      {:ok, trend} ->
+        trend
+
       {:error, reason} ->
         Logger.warning("CodebaseHealthTracker.analyze_health_trend failed: #{inspect(reason)}")
         %{}
-      _ -> %{}
+
+      _ ->
+        %{}
     end
   end
 
@@ -224,7 +232,8 @@ defmodule Singularity.Analysis.CodeQualityDashboard do
     end
   end
 
-  defp calculate_health_status(current_metrics, trend) when is_map(current_metrics) and is_map(trend) do
+  defp calculate_health_status(current_metrics, trend)
+       when is_map(current_metrics) and is_map(trend) do
     # Calculate overall score based on current metrics and trend direction
     complexity = Map.get(current_metrics, :avg_complexity, 5.0)
     coverage = Map.get(current_metrics, :test_coverage, 0.0)
@@ -320,7 +329,10 @@ defmodule Singularity.Analysis.CodeQualityDashboard do
       average: Float.round(avg_complexity, 2),
       maximum: Float.round(max_complexity, 2),
       status:
-        if(avg_complexity <= 5, do: :good, else: if(avg_complexity <= 10, do: :fair, else: :needs_improvement))
+        if(avg_complexity <= 5,
+          do: :good,
+          else: if(avg_complexity <= 10, do: :fair, else: :needs_improvement)
+        )
     }
   end
 

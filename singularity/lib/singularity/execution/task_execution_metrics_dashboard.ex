@@ -228,8 +228,7 @@ defmodule Singularity.Execution.TaskExecutionMetricsDashboard do
           group_by: fragment("DATE(?)", m.inserted_at),
           select: %{
             date: fragment("DATE(?)", m.inserted_at),
-            success_count:
-              fragment("SUM(CASE WHEN ? THEN 1 ELSE 0 END)", m.success),
+            success_count: fragment("SUM(CASE WHEN ? THEN 1 ELSE 0 END)", m.success),
             total_count: count(m.id),
             avg_latency: avg(m.latency_ms)
           },

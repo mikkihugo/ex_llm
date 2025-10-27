@@ -151,7 +151,7 @@ defmodule Singularity.Embedding.KnowledgeBaseMetricsDashboard do
   defp calculate_efficiency_score(cache, search, latency) do
     cache_score = cache.hit_rate * 100
     search_score = search.relevance_rate * 100
-    latency_score = max(0, 100 - (latency.avg_ms / 2.5))
+    latency_score = max(0, 100 - latency.avg_ms / 2.5)
 
     overall = (cache_score + search_score + latency_score) / 3
 
@@ -160,8 +160,7 @@ defmodule Singularity.Embedding.KnowledgeBaseMetricsDashboard do
       cache_efficiency: Float.round(cache_score, 1),
       search_quality: Float.round(search_score, 1),
       latency_efficiency: Float.round(latency_score, 1),
-      status:
-        if(overall >= 90, do: :excellent, else: if(overall >= 80, do: :good, else: :fair))
+      status: if(overall >= 90, do: :excellent, else: if(overall >= 80, do: :good, else: :fair))
     }
   end
 end

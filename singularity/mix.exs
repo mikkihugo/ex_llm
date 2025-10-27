@@ -76,9 +76,17 @@ defmodule Singularity.MixProject do
       {:code_quality_engine,
        path: "../packages/code_quality_engine", runtime: false, compile: false, app: false},
       {:parser_engine,
-       path: "../packages/parser_engine", runtime: false, compile: false, app: false, optional: true},
+       path: "../packages/parser_engine",
+       runtime: false,
+       compile: false,
+       app: false,
+       optional: true},
       {:prompt_engine,
-       path: "../packages/prompt_engine", runtime: false, compile: false, app: false, optional: true},
+       path: "../packages/prompt_engine",
+       runtime: false,
+       compile: false,
+       app: false,
+       optional: true},
       {:linting_engine,
        path: "../packages/linting_engine", runtime: false, compile: false, app: false},
 
@@ -123,7 +131,7 @@ defmodule Singularity.MixProject do
 
       # Workflow Orchestration (ExPgflow)
       {:ex_pgflow, path: "../packages/ex_pgflow"},
-      
+
       # LLM Orchestration (Nexus) - Removed: Singularity uses PGMQ, Nexus consumes separately
       # {:nexus, path: "../nexus"},
 

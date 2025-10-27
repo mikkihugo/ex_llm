@@ -33,7 +33,8 @@ defmodule Singularity.Database.BackupWorker do
   @db_user System.get_env("DB_USER", "mhugo")
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"type" => backup_type}}) when backup_type in ["hourly", "daily"] do
+  def perform(%Oban.Job{args: %{"type" => backup_type}})
+      when backup_type in ["hourly", "daily"] do
     Logger.info("Starting #{backup_type} database backup")
 
     case backup_databases(backup_type) do
@@ -96,10 +97,12 @@ defmodule Singularity.Database.BackupWorker do
     backup_file = Path.join(backup_dir, "#{db_name}.sql")
 
     case System.cmd("pg_dump", [
-      "-U", @db_user,
-      "-h", "localhost",
-      db_name
-    ]) do
+           "-U",
+           @db_user,
+           "-h",
+           "localhost",
+           db_name
+         ]) do
       {output, 0} ->
         File.write!(backup_file, output)
         size = File.stat!(backup_file).size

@@ -226,7 +226,8 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
               # Weighted averaging: prefer local learnings for now, blend cross-instance insights
               # Weight: 70% local, 30% cross-instance (conservative blending)
               new_success_rate =
-                (local_cap.success_rate * 0.7) + (cross_instance_data["success_rate"] * 0.3 * confidence)
+                local_cap.success_rate * 0.7 +
+                  cross_instance_data["success_rate"] * 0.3 * confidence
 
               # Update registry with blended rate
               case CapabilityRegistry.update_success_rate(agent_name, new_success_rate) do
@@ -287,10 +288,12 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
             min(1.0, max(0.0, 1.0 - hours_old / 168))
 
           {:error, _} ->
-            0.5  # Default if parsing fails
+            # Default if parsing fails
+            0.5
         end
       else
-        0.5  # Default if no timestamp
+        # Default if no timestamp
+        0.5
       end
 
     # Weighted average: 60% sample size, 40% recency

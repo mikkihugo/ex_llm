@@ -430,6 +430,7 @@ defmodule Singularity.SharedQueueConsumer do
       else
         # Validate response with Instructor if schema provided
         validate_response_with_instructor(request, response)
+
         Logger.info(
           "[Singularity.SharedQueueConsumer] LLM response received (awaiting Instructor validation)",
           %{
@@ -537,13 +538,17 @@ defmodule Singularity.SharedQueueConsumer do
 
     case Singularity.Repo.update(changeset) do
       {:ok, _updated_request} ->
-        Logger.warning("[Singularity.SharedQueueConsumer] LLM request failed - validation error", %{
-          id: request.id,
-          validation_errors: length(validation_errors)
-        })
+        Logger.warning(
+          "[Singularity.SharedQueueConsumer] LLM request failed - validation error",
+          %{
+            id: request.id,
+            validation_errors: length(validation_errors)
+          }
+        )
 
       {:error, error} ->
-        Logger.error("[Singularity.SharedQueueConsumer] Failed to mark request as validation failed",
+        Logger.error(
+          "[Singularity.SharedQueueConsumer] Failed to mark request as validation failed",
           %{
             id: request.id,
             error: inspect(error)
@@ -574,7 +579,8 @@ defmodule Singularity.SharedQueueConsumer do
         })
 
       {:error, error} ->
-        Logger.error("[Singularity.SharedQueueConsumer] Failed to mark request as malformed JSON",
+        Logger.error(
+          "[Singularity.SharedQueueConsumer] Failed to mark request as malformed JSON",
           %{
             id: request.id,
             error: inspect(error)
@@ -645,14 +651,17 @@ defmodule Singularity.SharedQueueConsumer do
         # Send result to the agent process
         send(pid, {:queue_result, request_id, result})
         Logger.debug("✅ Delivered result to agent #{inspect(pid)} for request #{request_id}")
-        
+
       [] ->
         # Try to find by agent_id pattern
         case find_agent_by_request_pattern(request_id) do
           {:ok, agent_pid} ->
             send(agent_pid, {:queue_result, request_id, result})
-            Logger.debug("✅ Delivered result to agent #{inspect(agent_pid)} for request #{request_id}")
-            
+
+            Logger.debug(
+              "✅ Delivered result to agent #{inspect(agent_pid)} for request #{request_id}"
+            )
+
           :not_found ->
             Logger.warning("⚠️  No agent found for request_id: #{request_id}")
         end
@@ -661,7 +670,7 @@ defmodule Singularity.SharedQueueConsumer do
 
   defp find_agent_by_request_pattern(request_id) do
     # Extract agent type from request_id pattern
-    agent_type = 
+    agent_type =
       cond do
         String.contains?(request_id, "self-improving") -> "self-improving-agent"
         String.contains?(request_id, "architecture") -> "architecture-agent"
@@ -673,7 +682,9 @@ defmodule Singularity.SharedQueueConsumer do
       end
 
     case agent_type do
-      nil -> :not_found
+      nil ->
+        :not_found
+
       agent_id ->
         case Registry.lookup(Singularity.AgentRegistry, agent_id) do
           [{pid, _}] -> {:ok, pid}
@@ -685,7 +696,7 @@ defmodule Singularity.SharedQueueConsumer do
   defp route_llm_request_to_provider(llm_request) do
     # Publish LLM request to PGMQ for processing
     pgmq_queue = "llm_requests"
-    
+
     request_payload = %{
       "request_id" => llm_request.id,
       "agent_id" => llm_request.agent_id,
@@ -700,7 +711,7 @@ defmodule Singularity.SharedQueueConsumer do
     case call_pgmq(pgmq_queue, request_payload) do
       :ok ->
         Logger.info("✅ LLM request routed to provider: #{llm_request.provider}")
-        
+
       {:error, reason} ->
         Logger.error("❌ Failed to route LLM request: #{inspect(reason)}")
         update_llm_request_status(llm_request, "failed")
@@ -712,13 +723,13 @@ defmodule Singularity.SharedQueueConsumer do
       nil ->
         # No validation needed
         mark_request_completed(request, response, response)
-        
+
       schema ->
         # Validate with Instructor
         case validate_with_instructor(response, schema) do
           {:ok, validated_response} ->
             mark_request_completed(request, response, validated_response)
-            
+
           {:error, validation_error} ->
             Logger.error("❌ Instructor validation failed: #{inspect(validation_error)}")
             update_llm_request_status(request, "validation_failed")
@@ -739,10 +750,10 @@ defmodule Singularity.SharedQueueConsumer do
     case schema do
       %{"type" => "object", "properties" => properties} ->
         validate_object_structure(response, properties)
-      
+
       %{"type" => "array", "items" => item_schema} ->
         validate_array_structure(response, item_schema)
-      
+
       _ ->
         # Unknown schema type, assume valid
         {:ok, response}
@@ -752,11 +763,11 @@ defmodule Singularity.SharedQueueConsumer do
   defp validate_object_structure(response, properties) when is_map(response) do
     # Check required fields
     required_fields = Map.get(properties, "required", [])
-    
-    missing_fields = 
+
+    missing_fields =
       required_fields
       |> Enum.reject(fn field -> Map.has_key?(response, field) end)
-    
+
     if Enum.empty?(missing_fields) do
       {:ok, response}
     else
@@ -770,7 +781,7 @@ defmodule Singularity.SharedQueueConsumer do
 
   defp validate_array_structure(response, item_schema) when is_list(response) do
     # Validate each item in the array
-    results = 
+    results =
       response
       |> Enum.with_index()
       |> Enum.map(fn {item, index} ->
@@ -779,9 +790,9 @@ defmodule Singularity.SharedQueueConsumer do
           {:error, reason} -> {:error, "Item #{index}: #{reason}"}
         end
       end)
-    
+
     errors = Enum.filter(results, &match?({:error, _}, &1))
-    
+
     if Enum.empty?(errors) do
       {:ok, response}
     else
@@ -806,7 +817,7 @@ defmodule Singularity.SharedQueueConsumer do
           end
         end)
         |> Enum.reject(&is_nil/1)
-      
+
       _ ->
         # Fallback to configured agents
         [

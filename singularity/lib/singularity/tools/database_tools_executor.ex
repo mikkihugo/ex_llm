@@ -570,7 +570,8 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
 
   defp maybe_add_dependency_refs(acc, nil, _symbol_name, _path), do: acc
 
-  defp maybe_add_dependency_refs(acc, dependencies, symbol_name, path) when is_list(dependencies) do
+  defp maybe_add_dependency_refs(acc, dependencies, symbol_name, path)
+       when is_list(dependencies) do
     dep_refs =
       dependencies
       |> Enum.filter(&String.contains?(&1, symbol_name))

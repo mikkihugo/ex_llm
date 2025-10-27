@@ -36,7 +36,8 @@ defmodule Singularity.LLM.ServicePgmqIntegrationTest do
     test "call_with_prompt enqueues request with task type" do
       prompt = "Analyze this code: def foo(x) do x + 1 end"
 
-      {:ok, result} = Singularity.LLM.Service.call_with_prompt(:medium, prompt, task_type: :code_analysis)
+      {:ok, result} =
+        Singularity.LLM.Service.call_with_prompt(:medium, prompt, task_type: :code_analysis)
 
       assert result.status == :enqueued
       assert Map.has_key?(result, :request_id)
@@ -54,11 +55,12 @@ defmodule Singularity.LLM.ServicePgmqIntegrationTest do
     test "dispatch includes model and provider info in request" do
       messages = [%{"role" => "user", "content" => "test"}]
 
-      {:ok, _result} = Service.call(:complex, messages,
-        task_type: :architect,
-        model: "claude-opus",
-        provider: :anthropic
-      )
+      {:ok, _result} =
+        Service.call(:complex, messages,
+          task_type: :architect,
+          model: "claude-opus",
+          provider: :anthropic
+        )
 
       # Request should be enqueued successfully
     end
@@ -66,37 +68,40 @@ defmodule Singularity.LLM.ServicePgmqIntegrationTest do
 
   describe "LlmRequestWorker queueing" do
     test "enqueue_llm_request returns request_id" do
-      {:ok, request_id} = LlmRequestWorker.enqueue_llm_request(
-        :medium,
-        [%{"role" => "user", "content" => "test"}],
-        %{}
-      )
+      {:ok, request_id} =
+        LlmRequestWorker.enqueue_llm_request(
+          :medium,
+          [%{"role" => "user", "content" => "test"}],
+          %{}
+        )
 
       assert is_binary(request_id)
       assert String.length(request_id) > 0
     end
 
     test "enqueue stores request in Oban for processing" do
-      {:ok, _request_id} = LlmRequestWorker.enqueue_llm_request(
-        :complex,
-        [%{"role" => "user", "content" => "Design system"}],
-        %{timeout: 30000}
-      )
+      {:ok, _request_id} =
+        LlmRequestWorker.enqueue_llm_request(
+          :complex,
+          [%{"role" => "user", "content" => "Design system"}],
+          %{timeout: 30000}
+        )
 
       # In a real test, we would verify Oban job exists
       # For now, just verify enqueuing succeeds
     end
 
     test "enqueue with custom model and provider" do
-      {:ok, request_id} = LlmRequestWorker.enqueue_llm_request(
-        :medium,
-        [%{"role" => "user", "content" => "test"}],
-        %{
-          model: "gpt-4",
-          provider: "openai",
-          complexity: "medium"
-        }
-      )
+      {:ok, request_id} =
+        LlmRequestWorker.enqueue_llm_request(
+          :medium,
+          [%{"role" => "user", "content" => "test"}],
+          %{
+            model: "gpt-4",
+            provider: "openai",
+            complexity: "medium"
+          }
+        )
 
       assert is_binary(request_id)
     end
@@ -118,20 +123,20 @@ defmodule Singularity.LLM.ServicePgmqIntegrationTest do
 
       # Simulate what the poller does
       case JobResult.record_success(
-        workflow: "Singularity.Workflows.LlmRequest",
-        instance_id: "test-instance",
-        input: %{
-          request_id: result["request_id"],
-          agent_id: result["agent_id"]
-        },
-        output: %{
-          response: result["response"],
-          model: result["model"]
-        },
-        tokens_used: result["usage"]["total_tokens"],
-        cost_cents: trunc(result["cost"] * 100),
-        duration_ms: result["latency_ms"]
-      ) do
+             workflow: "Singularity.Workflows.LlmRequest",
+             instance_id: "test-instance",
+             input: %{
+               request_id: result["request_id"],
+               agent_id: result["agent_id"]
+             },
+             output: %{
+               response: result["response"],
+               model: result["model"]
+             },
+             tokens_used: result["usage"]["total_tokens"],
+             cost_cents: trunc(result["cost"] * 100),
+             duration_ms: result["latency_ms"]
+           ) do
         {:ok, job_result} ->
           assert job_result.workflow == "Singularity.Workflows.LlmRequest"
           assert job_result.status == "success"
@@ -166,13 +171,13 @@ defmodule Singularity.LLM.ServicePgmqIntegrationTest do
 
       Enum.each(results, fn result ->
         case JobResult.record_success(
-          workflow: "Singularity.Workflows.LlmRequest",
-          instance_id: "test",
-          output: result,
-          tokens_used: result["usage"]["total_tokens"],
-          cost_cents: trunc(result["cost"] * 100),
-          duration_ms: result["latency_ms"]
-        ) do
+               workflow: "Singularity.Workflows.LlmRequest",
+               instance_id: "test",
+               output: result,
+               tokens_used: result["usage"]["total_tokens"],
+               cost_cents: trunc(result["cost"] * 100),
+               duration_ms: result["latency_ms"]
+             ) do
           {:ok, _job_result} -> :ok
           {:error, _reason} -> :ok
         end
@@ -204,13 +209,13 @@ defmodule Singularity.LLM.ServicePgmqIntegrationTest do
       }
 
       case JobResult.record_success(
-        workflow: "Singularity.Workflows.LlmRequest",
-        instance_id: "e2e-test",
-        output: simulated_result,
-        tokens_used: 2000,
-        cost_cents: 5,
-        duration_ms: 3000
-      ) do
+             workflow: "Singularity.Workflows.LlmRequest",
+             instance_id: "e2e-test",
+             output: simulated_result,
+             tokens_used: 2000,
+             cost_cents: 5,
+             duration_ms: 3000
+           ) do
         {:ok, _result} -> :ok
         {:error, _reason} -> :ok
       end
@@ -235,13 +240,13 @@ defmodule Singularity.LLM.ServicePgmqIntegrationTest do
 
       # Should handle gracefully
       case JobResult.record_success(
-        workflow: "Singularity.Workflows.LlmRequest",
-        input: incomplete_result,
-        output: %{},
-        tokens_used: 0,
-        cost_cents: 0,
-        duration_ms: 0
-      ) do
+             workflow: "Singularity.Workflows.LlmRequest",
+             input: incomplete_result,
+             output: %{},
+             tokens_used: 0,
+             cost_cents: 0,
+             duration_ms: 0
+           ) do
         {:ok, _result} -> :ok
         {:error, _reason} -> :ok
       end
@@ -267,13 +272,13 @@ defmodule Singularity.LLM.ServicePgmqIntegrationTest do
       }
 
       case JobResult.record_success(
-        workflow: "Singularity.Workflows.LlmRequest",
-        input: %{"request_id" => returned_id},
-        output: result,
-        tokens_used: 100,
-        cost_cents: 0,
-        duration_ms: 500
-      ) do
+             workflow: "Singularity.Workflows.LlmRequest",
+             input: %{"request_id" => returned_id},
+             output: result,
+             tokens_used: 100,
+             cost_cents: 0,
+             duration_ms: 500
+           ) do
         {:ok, job_result} ->
           # Verify correlation
           assert job_result.input["request_id"] == returned_id

@@ -56,12 +56,13 @@ defmodule Singularity.ML.Services.CodeQualityService do
   @impl true
   def handle_call({:analyze_quality, code_path, opts}, _from, state) do
     Logger.info("Analyzing code quality for: #{code_path}")
-    
+
     # Use QualityAnalyzer to analyze code
     case QualityAnalyzer.analyze(code_path, opts) do
       {:ok, analysis} ->
         quality_score = calculate_quality_score(analysis)
         {:reply, {:ok, %{analysis: analysis, quality_score: quality_score}}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -70,13 +71,13 @@ defmodule Singularity.ML.Services.CodeQualityService do
   @impl true
   def handle_call({:get_improvement_suggestions, code_path, opts}, _from, state) do
     Logger.info("Getting improvement suggestions for: #{code_path}")
-    
+
     # Mock improvement suggestions - in real implementation, this would:
     # 1. Analyze code patterns
     # 2. Compare against best practices
     # 3. Generate specific suggestions
     # 4. Prioritize by impact
-    
+
     suggestions = [
       %{
         type: "performance",
@@ -93,7 +94,7 @@ defmodule Singularity.ML.Services.CodeQualityService do
         priority: :medium
       }
     ]
-    
+
     {:reply, {:ok, suggestions}, state}
   end
 
@@ -104,16 +105,17 @@ defmodule Singularity.ML.Services.CodeQualityService do
       training_data_count: length(state.training_data),
       last_analysis: DateTime.utc_now()
     }
+
     {:reply, {:ok, stats}, state}
   end
 
   @impl true
   def handle_cast({:record_quality_data, quality_data}, state) do
     Logger.info("Recording quality data for ML training...")
-    
+
     # Add to training data
     new_training_data = [quality_data | state.training_data] |> Enum.take(1000)
-    
+
     {:noreply, %{state | training_data: new_training_data}}
   end
 
@@ -122,14 +124,15 @@ defmodule Singularity.ML.Services.CodeQualityService do
     # Mock quality score calculation
     # In real implementation, this would use ML models
     base_score = 0.8
-    
+
     # Adjust based on analysis results
-    penalty = case analysis do
-      %{issues: issues} when length(issues) > 10 -> 0.2
-      %{issues: issues} when length(issues) > 5 -> 0.1
-      _ -> 0.0
-    end
-    
+    penalty =
+      case analysis do
+        %{issues: issues} when length(issues) > 10 -> 0.2
+        %{issues: issues} when length(issues) > 5 -> 0.1
+        _ -> 0.0
+      end
+
     max(0.0, base_score - penalty)
   end
 end

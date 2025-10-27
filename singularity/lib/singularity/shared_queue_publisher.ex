@@ -144,9 +144,12 @@ defmodule Singularity.SharedQueuePublisher do
         {:error, reason}
 
       false ->
-        Logger.error("[SharedQueue] Failed to publish LLM request (send_to_queue returned nil)", %{
-          request: request
-        })
+        Logger.error(
+          "[SharedQueue] Failed to publish LLM request (send_to_queue returned nil)",
+          %{
+            request: request
+          }
+        )
 
         {:error, :failed_to_send}
     end
@@ -407,6 +410,7 @@ defmodule Singularity.SharedQueuePublisher do
   defp send_to_queue(queue_name, message) do
     unless enabled?() do
       Logger.warning("[SharedQueue] Shared queue disabled, message not sent", %{queue: queue_name})
+
       nil
     else
       try do

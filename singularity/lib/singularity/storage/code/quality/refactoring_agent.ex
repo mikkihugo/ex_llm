@@ -204,18 +204,22 @@ defmodule Singularity.RefactoringAgent do
     # Integrate with telemetry to detect slow endpoints
     # Query telemetry events for slow endpoints (>100ms)
     # Correlate with code analysis for optimization opportunities
-    
+
     # For now, use basic heuristics based on code patterns
     slow_patterns = [
-      ~r/def.*do\s*$/,  # Functions without early returns
-      ~r/Enum.map.*Enum.map/,  # Nested maps
-      ~r/for.*for/,  # Nested comprehensions
+      # Functions without early returns
+      ~r/def.*do\s*$/,
+      # Nested maps
+      ~r/Enum.map.*Enum.map/,
+      # Nested comprehensions
+      ~r/for.*for/
     ]
-    
-    slow_endpoints = Enum.filter(analysis.functions, fn func ->
-      Enum.any?(slow_patterns, &Regex.match?(&1, func.body || ""))
-    end)
-    
+
+    slow_endpoints =
+      Enum.filter(analysis.functions, fn func ->
+        Enum.any?(slow_patterns, &Regex.match?(&1, func.body || ""))
+      end)
+
     %{analysis | performance_issues: slow_endpoints}
   end
 

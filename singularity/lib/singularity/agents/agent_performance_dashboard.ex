@@ -198,8 +198,7 @@ defmodule Singularity.Agents.AgentPerformanceDashboard do
           name: agent.name,
           cycles: agent.cycles,
           version: agent.version,
-          recent_improvements:
-            calculate_recent_improvements(agent.agent_id),
+          recent_improvements: calculate_recent_improvements(agent.agent_id),
           convergence_status: calculate_convergence_status(agent)
         }
       end)
@@ -227,8 +226,7 @@ defmodule Singularity.Agents.AgentPerformanceDashboard do
           name: agent.name,
           avg_cost_cents: agent.avg_cost_cents,
           tasks_completed: agent.tasks_completed,
-          total_estimated_cost_cents:
-            agent.avg_cost_cents * max(agent.tasks_completed, 1)
+          total_estimated_cost_cents: agent.avg_cost_cents * max(agent.tasks_completed, 1)
         }
       end)
       |> Enum.sort_by(&Map.get(&1, :total_estimated_cost_cents), :desc)
@@ -267,7 +265,8 @@ defmodule Singularity.Agents.AgentPerformanceDashboard do
               |> DateTime.truncate(:day)
             end)
             |> Enum.map(fn {date, day_metrics} ->
-              avg_value = Enum.reduce(day_metrics, 0.0, &(&2 + &1.value)) / max(length(day_metrics), 1)
+              avg_value =
+                Enum.reduce(day_metrics, 0.0, &(&2 + &1.value)) / max(length(day_metrics), 1)
 
               %{
                 date: date,
@@ -316,8 +315,7 @@ defmodule Singularity.Agents.AgentPerformanceDashboard do
               severity: "warning",
               agent_id: agent.agent_id,
               agent_name: agent.name,
-              message:
-                "Agent success rate is low: #{Float.round(agent.success_rate * 100, 1)}%",
+              message: "Agent success rate is low: #{Float.round(agent.success_rate * 100, 1)}%",
               metric_value: agent.success_rate,
               recommended_action: "Review agent's recent failures and trigger improvement cycle"
             }
@@ -341,7 +339,8 @@ defmodule Singularity.Agents.AgentPerformanceDashboard do
               agent_name: agent.name,
               message: "Agent latency is high: #{Float.round(agent.avg_latency_ms, 0)}ms",
               metric_value: agent.avg_latency_ms,
-              recommended_action: "Consider optimizing bottlenecks or increasing resource allocation"
+              recommended_action:
+                "Consider optimizing bottlenecks or increasing resource allocation"
             }
           end)
       end
@@ -350,7 +349,7 @@ defmodule Singularity.Agents.AgentPerformanceDashboard do
     stale_agents =
       Enum.filter(agent_summaries, fn agent ->
         agent.cycles > 0 and
-          !agent.agent_id in Enum.map(agent_summaries, & &1.agent_id)
+          !(agent.agent_id in Enum.map(agent_summaries, & &1.agent_id))
       end)
 
     alerts =

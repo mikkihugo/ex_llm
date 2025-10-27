@@ -379,6 +379,7 @@ defmodule Singularity.Tools.SecurityPolicy do
 
     # Initialize ETS table if needed
     ets_table = :security_policy_rate_limits
+
     if !:ets.info(ets_table) do
       :ets.new(ets_table, [:set, :public, :named_table, {:write_concurrency, true}])
     end
@@ -396,7 +397,11 @@ defmodule Singularity.Tools.SecurityPolicy do
             {:error, "Rate limit exceeded for codebase #{codebase_id}"}
           else
             :ets.insert(ets_table, {codebase_id, {count + 1, timestamp}})
-            Logger.debug("[SecurityPolicy] Rate limit check: #{codebase_id} (#{count + 1}/#{max_requests})")
+
+            Logger.debug(
+              "[SecurityPolicy] Rate limit check: #{codebase_id} (#{count + 1}/#{max_requests})"
+            )
+
             :ok
           end
         end

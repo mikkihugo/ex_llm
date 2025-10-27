@@ -50,7 +50,8 @@ defmodule Singularity.Knowledge.TemplateUsageTrackingTest do
       _result = TemplateService.render_template_with_solid("nonexistent-template", %{})
 
       # Query database for failure event
-      event = Repo.get_by(TemplateUsageEvent, template_id: "nonexistent-template", status: :failure)
+      event =
+        Repo.get_by(TemplateUsageEvent, template_id: "nonexistent-template", status: :failure)
 
       assert event != nil
       assert event.template_id == "nonexistent-template"
@@ -86,10 +87,11 @@ defmodule Singularity.Knowledge.TemplateUsageTrackingTest do
       TemplateService.render_template_with_solid("test-template", %{})
 
       # All events should be indexed by template_id
-      events = Repo.all(
-        from e in TemplateUsageEvent,
-        where: e.template_id == "test-template"
-      )
+      events =
+        Repo.all(
+          from e in TemplateUsageEvent,
+            where: e.template_id == "test-template"
+        )
 
       assert length(events) >= 2
     end
@@ -101,20 +103,23 @@ defmodule Singularity.Knowledge.TemplateUsageTrackingTest do
       TemplateService.render_template_with_solid("template-c", %{})
 
       # Events should be isolated by template_id
-      events_a = Repo.all(
-        from e in TemplateUsageEvent,
-        where: e.template_id == "template-a"
-      )
+      events_a =
+        Repo.all(
+          from e in TemplateUsageEvent,
+            where: e.template_id == "template-a"
+        )
 
-      events_b = Repo.all(
-        from e in TemplateUsageEvent,
-        where: e.template_id == "template-b"
-      )
+      events_b =
+        Repo.all(
+          from e in TemplateUsageEvent,
+            where: e.template_id == "template-b"
+        )
 
-      events_c = Repo.all(
-        from e in TemplateUsageEvent,
-        where: e.template_id == "template-c"
-      )
+      events_c =
+        Repo.all(
+          from e in TemplateUsageEvent,
+            where: e.template_id == "template-c"
+        )
 
       assert length(events_a) >= 1
       assert length(events_b) >= 1
@@ -125,9 +130,10 @@ defmodule Singularity.Knowledge.TemplateUsageTrackingTest do
   describe "graceful degradation" do
     test "continues rendering when tracking fails" do
       # Should complete successfully even if event recording fails
-      result = TemplateService.render_template_with_solid("test-template", %{
-        "module_name" => "MyApp.Test"
-      })
+      result =
+        TemplateService.render_template_with_solid("test-template", %{
+          "module_name" => "MyApp.Test"
+        })
 
       # Should still return result (either success or {:error, ...})
       assert result != nil
@@ -136,9 +142,10 @@ defmodule Singularity.Knowledge.TemplateUsageTrackingTest do
     test "logs warning when tracking fails" do
       # We can't easily simulate database failures in tests,
       # but we verify the logging is in place
-      log = capture_log(fn ->
-        _result = TemplateService.render_template_with_solid("test-template", %{})
-      end)
+      log =
+        capture_log(fn ->
+          _result = TemplateService.render_template_with_solid("test-template", %{})
+        end)
 
       # Either success log or warning log should be present
       # (depends on template availability)
@@ -163,10 +170,11 @@ defmodule Singularity.Knowledge.TemplateUsageTrackingTest do
       end)
 
       # Should have at least 5 events recorded
-      events = Repo.all(
-        from e in TemplateUsageEvent,
-        where: e.template_id == "learning-template"
-      )
+      events =
+        Repo.all(
+          from e in TemplateUsageEvent,
+            where: e.template_id == "learning-template"
+        )
 
       assert length(events) >= 5
     end
@@ -186,23 +194,26 @@ defmodule Singularity.Knowledge.TemplateUsageTrackingTest do
       end)
 
       # Each template should have independent counts
-      count_1 = Repo.aggregate(
-        from e in TemplateUsageEvent,
-        where: e.template_id == "template-1",
-        select: count(e.id)
-      )
+      count_1 =
+        Repo.aggregate(
+          from e in TemplateUsageEvent,
+            where: e.template_id == "template-1",
+            select: count(e.id)
+        )
 
-      count_2 = Repo.aggregate(
-        from e in TemplateUsageEvent,
-        where: e.template_id == "template-2",
-        select: count(e.id)
-      )
+      count_2 =
+        Repo.aggregate(
+          from e in TemplateUsageEvent,
+            where: e.template_id == "template-2",
+            select: count(e.id)
+        )
 
-      count_3 = Repo.aggregate(
-        from e in TemplateUsageEvent,
-        where: e.template_id == "template-3",
-        select: count(e.id)
-      )
+      count_3 =
+        Repo.aggregate(
+          from e in TemplateUsageEvent,
+            where: e.template_id == "template-3",
+            select: count(e.id)
+        )
 
       # Should track independently (can't predict exact counts due to template availability)
       assert count_1 >= 0

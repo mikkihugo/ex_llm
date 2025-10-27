@@ -123,7 +123,10 @@ defmodule Singularity.Knowledge.TemplateCache do
     :ets.delete(@table, key)
 
     # Broadcast to other nodes
-    Singularity.Messaging.Client.publish("template.invalidate.#{artifact_type}.#{artifact_id}", "")
+    Singularity.Messaging.Client.publish(
+      "template.invalidate.#{artifact_type}.#{artifact_id}",
+      ""
+    )
 
     Logger.debug("Invalidated: #{key}")
     {:noreply, state}

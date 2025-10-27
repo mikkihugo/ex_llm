@@ -299,7 +299,8 @@ defmodule Singularity.Evolution.RuleQualityDashboard do
               %{
                 priority: "HIGH",
                 action: "Promote candidate rules to confident",
-                reason: "#{status[:candidate_rules]} candidates approaching threshold (avg confidence: #{status[:avg_confidence]}).",
+                reason:
+                  "#{status[:candidate_rules]} candidates approaching threshold (avg confidence: #{status[:avg_confidence]}).",
                 expected_impact: "Increase published rules by #{div(status[:candidate_rules], 2)}"
               }
             ]
@@ -315,8 +316,10 @@ defmodule Singularity.Evolution.RuleQualityDashboard do
               %{
                 priority: "MEDIUM",
                 action: "Publish more confident rules to Genesis",
-                reason: "Only #{network[:published_by_us]} of #{status[:confident_rules]} confident rules published.",
-                expected_impact: "Enable other instances to use #{status[:confident_rules] - network[:published_by_us]} rules"
+                reason:
+                  "Only #{network[:published_by_us]} of #{status[:confident_rules]} confident rules published.",
+                expected_impact:
+                  "Enable other instances to use #{status[:confident_rules] - network[:published_by_us]} rules"
               }
             ]
       else
@@ -331,7 +334,8 @@ defmodule Singularity.Evolution.RuleQualityDashboard do
               %{
                 priority: "MEDIUM",
                 action: "Apply consensus rules from other instances",
-                reason: "#{network[:consensus_rules]} consensus rules available (validated by multiple instances).",
+                reason:
+                  "#{network[:consensus_rules]} consensus rules available (validated by multiple instances).",
                 expected_impact: "Improve validation accuracy with proven patterns"
               }
             ]

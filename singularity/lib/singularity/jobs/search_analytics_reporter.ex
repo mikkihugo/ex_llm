@@ -4,7 +4,7 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
 
   Replaces pgmq publish("knowledge_cache.search_analytics", ...)
   Now enqueued as an Oban job for batch reporting.
-  
+
   Architecture:
   - Collects search metrics locally
   - Enqueues to Oban (batches, retries, concurrency control)

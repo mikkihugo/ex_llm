@@ -300,7 +300,9 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
     Enum.each(scores, fn %{node_id: node_id, pagerank_score: score} ->
       try do
         Repo.update_all(
-          from(m in CodebaseMetadata, where: m.path == ^node_id and m.codebase_id == ^codebase_id),
+          from(m in CodebaseMetadata,
+            where: m.path == ^node_id and m.codebase_id == ^codebase_id
+          ),
           set: [pagerank_score: score, centrality_score: score]
         )
       rescue

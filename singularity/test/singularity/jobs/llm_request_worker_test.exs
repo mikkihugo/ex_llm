@@ -14,7 +14,8 @@ defmodule Singularity.Jobs.LlmRequestWorkerTest do
         LlmRequestWorker.enqueue_llm_request("classifier", messages, complexity: "simple")
 
       assert is_binary(request_id)
-      assert String.length(request_id) == 36  # UUID format
+      # UUID format
+      assert String.length(request_id) == 36
     end
 
     test "enqueues request with optional parameters" do

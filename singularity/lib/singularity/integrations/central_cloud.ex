@@ -164,7 +164,8 @@ defmodule Singularity.CentralCloud do
   """
   @spec cache_pattern(map(), keyword()) :: {:ok, map()} | {:error, term()}
   def cache_pattern(pattern, opts \\ []) do
-    ttl_seconds = Keyword.get(opts, :ttl_seconds, 3600) # 1 hour default
+    # 1 hour default
+    ttl_seconds = Keyword.get(opts, :ttl_seconds, 3600)
     instance_id = Keyword.get(opts, :instance_id, get_instance_id())
 
     cache_entry = %{
@@ -177,17 +178,18 @@ defmodule Singularity.CentralCloud do
     }
 
     case Singularity.Repo.insert(%Singularity.Schemas.PatternCache{
-      pattern_key: cache_entry.pattern_key,
-      pattern_data: Jason.encode!(cache_entry.pattern_data),
-      instance_id: cache_entry.instance_id,
-      expires_at: cache_entry.expires_at,
-      metadata: %{cached_at: cache_entry.cached_at, ttl_seconds: cache_entry.ttl_seconds}
-    }) do
+           pattern_key: cache_entry.pattern_key,
+           pattern_data: Jason.encode!(cache_entry.pattern_data),
+           instance_id: cache_entry.instance_id,
+           expires_at: cache_entry.expires_at,
+           metadata: %{cached_at: cache_entry.cached_at, ttl_seconds: cache_entry.ttl_seconds}
+         }) do
       {:ok, _record} ->
         Logger.debug("Pattern cached successfully",
           pattern_key: cache_entry.pattern_key,
           instance_id: instance_id
         )
+
         {:ok, cache_entry}
 
       {:error, changeset} ->
@@ -256,20 +258,23 @@ defmodule Singularity.CentralCloud do
   @spec get_pattern_consensus(String.t()) :: {:ok, map()} | {:error, term()}
   def get_pattern_consensus(pattern_key) do
     # Get all instances that have this pattern
-    consensus_records = Singularity.Repo.all(
-      from pc in Singularity.Schemas.PatternConsensus,
-      where: pc.pattern_key == ^pattern_key,
-      preload: [:instance_patterns]
-    )
+    consensus_records =
+      Singularity.Repo.all(
+        from pc in Singularity.Schemas.PatternConsensus,
+          where: pc.pattern_key == ^pattern_key,
+          preload: [:instance_patterns]
+      )
 
     if Enum.empty?(consensus_records) do
       {:error, :no_consensus_data}
     else
       # Calculate consensus metrics
       total_instances = length(consensus_records)
-      avg_confidence = Enum.reduce(consensus_records, 0.0, fn record, acc ->
-        acc + record.average_confidence
-      end) / total_instances
+
+      avg_confidence =
+        Enum.reduce(consensus_records, 0.0, fn record, acc ->
+          acc + record.average_confidence
+        end) / total_instances
 
       consensus = %{
         pattern_key: pattern_key,
@@ -300,7 +305,9 @@ defmodule Singularity.CentralCloud do
              detected_at: DateTime.utc_now(),
              metadata: Map.get(instance_data, :metadata, %{})
            },
-           on_conflict: [set: [confidence_score: confidence_score, detected_at: DateTime.utc_now()]],
+           on_conflict: [
+             set: [confidence_score: confidence_score, detected_at: DateTime.utc_now()]
+           ],
            conflict_target: [:pattern_key, :instance_id]
          ) do
       {:ok, instance_pattern} ->
@@ -324,7 +331,6 @@ defmodule Singularity.CentralCloud do
   def get_enhanced_results(pattern_key) do
     with {:ok, cached_pattern} <- get_cached_pattern(pattern_key),
          {:ok, consensus} <- get_pattern_consensus(pattern_key) do
-
       enhanced_results = %{
         pattern: cached_pattern,
         consensus: consensus,
@@ -345,13 +351,14 @@ defmodule Singularity.CentralCloud do
         # Return cached pattern without consensus enhancement
         case get_cached_pattern(pattern_key) do
           {:ok, pattern} ->
-            {:ok, %{
-              pattern: pattern,
-              consensus: nil,
-              enhanced_confidence: Map.get(pattern, :confidence, 0.5),
-              cross_instance_validated: false,
-              last_enhanced: DateTime.utc_now()
-            }}
+            {:ok,
+             %{
+               pattern: pattern,
+               consensus: nil,
+               enhanced_confidence: Map.get(pattern, :confidence, 0.5),
+               cross_instance_validated: false,
+               last_enhanced: DateTime.utc_now()
+             }}
 
           error ->
             error
@@ -366,7 +373,8 @@ defmodule Singularity.CentralCloud do
     # - DOWN: Central data synced to local PostgreSQL tables (read-only copies)
     # - UP: Send updates/intel/stats via pgmq queues (central_cloud consumers)
     Logger.debug("CentralCloud operation via pgmq queues",
-      operation: operation)
+      operation: operation
+    )
 
     case operation do
       :analyze_codebase ->
@@ -451,10 +459,10 @@ defmodule Singularity.CentralCloud do
     insights = Map.get(results, :insights, [])
 
     case Singularity.Jobs.CentralCloudUpdateWorker.enqueue_knowledge_update(
-      patterns,
-      insights,
-      get_instance_id()
-    ) do
+           patterns,
+           insights,
+           get_instance_id()
+         ) do
       {:ok, _job} ->
         Logger.debug("Knowledge update enqueued",
           instance_id: get_instance_id(),
@@ -492,27 +500,31 @@ defmodule Singularity.CentralCloud do
   defp calculate_enhanced_confidence(pattern, consensus) do
     # Enhance confidence based on consensus data
     base_confidence = Map.get(pattern, :confidence, 0.5)
-    consensus_multiplier = case consensus.consensus_level do
-      :very_high -> 1.2
-      :high -> 1.1
-      :medium -> 1.05
-      :low -> 1.0
-    end
+
+    consensus_multiplier =
+      case consensus.consensus_level do
+        :very_high -> 1.2
+        :high -> 1.1
+        :medium -> 1.05
+        :low -> 1.0
+      end
 
     min(base_confidence * consensus_multiplier, 1.0)
   end
 
   defp update_consensus_aggregation(pattern_key) do
     # Calculate and update consensus aggregation
-    instance_patterns = Singularity.Repo.all(
-      from ip in Singularity.Schemas.InstancePattern,
-      where: ip.pattern_key == ^pattern_key
-    )
+    instance_patterns =
+      Singularity.Repo.all(
+        from ip in Singularity.Schemas.InstancePattern,
+          where: ip.pattern_key == ^pattern_key
+      )
 
     if length(instance_patterns) > 0 do
-      avg_confidence = Enum.reduce(instance_patterns, 0.0, fn ip, acc ->
-        acc + ip.confidence_score
-      end) / length(instance_patterns)
+      avg_confidence =
+        Enum.reduce(instance_patterns, 0.0, fn ip, acc ->
+          acc + ip.confidence_score
+        end) / length(instance_patterns)
 
       consensus_data = %{
         pattern_key: pattern_key,
@@ -530,12 +542,14 @@ defmodule Singularity.CentralCloud do
           consensus_level: Atom.to_string(consensus_data.consensus_level),
           updated_at: consensus_data.updated_at
         },
-        on_conflict: [set: [
-          total_instances: consensus_data.total_instances,
-          average_confidence: consensus_data.average_confidence,
-          consensus_level: Atom.to_string(consensus_data.consensus_level),
-          updated_at: consensus_data.updated_at
-        ]],
+        on_conflict: [
+          set: [
+            total_instances: consensus_data.total_instances,
+            average_confidence: consensus_data.average_confidence,
+            consensus_level: Atom.to_string(consensus_data.consensus_level),
+            updated_at: consensus_data.updated_at
+          ]
+        ],
         conflict_target: :pattern_key
       )
     end
@@ -552,15 +566,16 @@ defmodule Singularity.CentralCloud do
     case enqueue_message("pattern_detection", message) do
       {:ok, _msg_id} ->
         # Return mock results for now - in production this would wait for response
-        {:ok, %{
-          patterns: [
-            %{type: "framework", name: "Phoenix", confidence: 0.95},
-            %{type: "language", name: "Elixir", confidence: 0.98}
-          ],
-          insights: [
-            %{type: "architecture", description: "MVC pattern detected", confidence: 0.87}
-          ]
-        }}
+        {:ok,
+         %{
+           patterns: [
+             %{type: "framework", name: "Phoenix", confidence: 0.95},
+             %{type: "language", name: "Elixir", confidence: 0.98}
+           ],
+           insights: [
+             %{type: "architecture", description: "MVC pattern detected", confidence: 0.87}
+           ]
+         }}
 
       {:error, reason} ->
         {:error, reason}
@@ -577,7 +592,8 @@ defmodule Singularity.CentralCloud do
 
     case enqueue_message("pattern_learning", message) do
       {:ok, _msg_id} ->
-        {:ok, %{status: "learning_enqueued", patterns_processed: length(request.instance_patterns)}}
+        {:ok,
+         %{status: "learning_enqueued", patterns_processed: length(request.instance_patterns)}}
 
       {:error, reason} ->
         {:error, reason}
@@ -587,12 +603,13 @@ defmodule Singularity.CentralCloud do
   defp get_local_global_stats(request) do
     # Read from locally synced global stats table
     # In production, this would query actual synced tables
-    {:ok, %{
-      total_instances: 1,
-      patterns_learned: 0,
-      models_trained: 0,
-      last_sync: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       total_instances: 1,
+       patterns_learned: 0,
+       models_trained: 0,
+       last_sync: DateTime.utc_now()
+     }}
   end
 
   defp enqueue_model_training(request) do
@@ -615,17 +632,21 @@ defmodule Singularity.CentralCloud do
   defp get_local_insights(request) do
     # Read from locally synced insights table
     insight_types = Map.get(request, :insight_types, [])
-    {:ok, Enum.map(insight_types, fn type ->
-      %{type: type, description: "Sample insight for #{type}", confidence: 0.8}
-    end)}
+
+    {:ok,
+     Enum.map(insight_types, fn type ->
+       %{type: type, description: "Sample insight for #{type}", confidence: 0.8}
+     end)}
   end
 
   defp get_local_patterns(request) do
     # Read from locally synced patterns table
     patterns = Map.get(request, :patterns, [])
-    {:ok, Enum.map(patterns, fn pattern ->
-      Map.put(pattern, :source, "central_cloud")
-    end)}
+
+    {:ok,
+     Enum.map(patterns, fn pattern ->
+       Map.put(pattern, :source, "central_cloud")
+     end)}
   end
 
   defp enqueue_message(queue_name, message) do

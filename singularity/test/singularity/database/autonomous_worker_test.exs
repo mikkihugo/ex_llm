@@ -406,15 +406,17 @@ defmodule Singularity.Database.AutonomousWorkerTest do
       case AutonomousWorker.scheduled_jobs_status() do
         {:ok, jobs} ->
           # If jobs exist, verify at least some match autonomous pattern
-          autonomous_jobs = Enum.filter(jobs, fn job ->
-            String.contains?(job.name, "-every-") or
-              String.contains?(job.name, "-hourly") or
-              String.contains?(job.name, "-daily")
-          end)
+          autonomous_jobs =
+            Enum.filter(jobs, fn job ->
+              String.contains?(job.name, "-every-") or
+                String.contains?(job.name, "-hourly") or
+                String.contains?(job.name, "-daily")
+            end)
 
           # Verify pattern if jobs found
           if length(jobs) > 0 do
-            assert length(autonomous_jobs) >= 0  # May be 0 if custom names
+            # May be 0 if custom names
+            assert length(autonomous_jobs) >= 0
           end
 
         {:error, _} ->
@@ -514,7 +516,9 @@ defmodule Singularity.Database.AutonomousWorkerTest do
 
           _ ->
             # All others return tuples
-            assert is_tuple(result), "#{inspect(name)} should return tuple, got #{inspect(result)}"
+            assert is_tuple(result),
+                   "#{inspect(name)} should return tuple, got #{inspect(result)}"
+
             assert tuple_size(result) == 2, "#{inspect(name)} should return 2-tuple"
         end
       end)

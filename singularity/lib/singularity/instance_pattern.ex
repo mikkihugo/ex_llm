@@ -28,8 +28,26 @@ defmodule Singularity.InstancePattern do
   @doc false
   def changeset(instance_pattern, attrs) do
     instance_pattern
-    |> cast(attrs, [:instance_id, :pattern_name, :pattern_type, :pattern_data, :confidence, :learned_at, :source_codebase, :usage_count, :last_used_at, :metadata])
-    |> validate_required([:instance_id, :pattern_name, :pattern_type, :pattern_data, :confidence, :learned_at])
+    |> cast(attrs, [
+      :instance_id,
+      :pattern_name,
+      :pattern_type,
+      :pattern_data,
+      :confidence,
+      :learned_at,
+      :source_codebase,
+      :usage_count,
+      :last_used_at,
+      :metadata
+    ])
+    |> validate_required([
+      :instance_id,
+      :pattern_name,
+      :pattern_type,
+      :pattern_data,
+      :confidence,
+      :learned_at
+    ])
     |> validate_number(:confidence, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0)
     |> unique_constraint([:instance_id, :pattern_name, :pattern_type])
   end

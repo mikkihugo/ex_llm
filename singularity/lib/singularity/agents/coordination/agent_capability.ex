@@ -56,11 +56,25 @@ defmodule Singularity.Agents.Coordination.AgentCapability do
   ]
 
   @type role ::
-    :self_improve | :cost_optimize | :architect | :technology | :refactoring | :chat | :quality_enforcer
+          :self_improve
+          | :cost_optimize
+          | :architect
+          | :technology
+          | :refactoring
+          | :chat
+          | :quality_enforcer
 
   @type domain ::
-    :code_quality | :testing | :documentation | :architecture | :performance |
-    :security | :refactoring | :knowledge | :learning | :monitoring
+          :code_quality
+          | :testing
+          | :documentation
+          | :architecture
+          | :performance
+          | :security
+          | :refactoring
+          | :knowledge
+          | :learning
+          | :monitoring
 
   @type input_type :: :code | :design | :requirements | :codebase | :metrics | :feedback
 
@@ -71,19 +85,19 @@ defmodule Singularity.Agents.Coordination.AgentCapability do
   @type availability :: :available | :busy | :overloaded | :offline
 
   @type t :: %__MODULE__{
-    agent_name: atom(),
-    role: role(),
-    domains: [domain()],
-    input_types: [input_type()],
-    output_types: [output_type()],
-    complexity_level: complexity(),
-    estimated_cost: non_neg_integer(),
-    availability: availability(),
-    success_rate: float(),
-    preferred_model: complexity(),
-    tags: [atom()],
-    metadata: map()
-  }
+          agent_name: atom(),
+          role: role(),
+          domains: [domain()],
+          input_types: [input_type()],
+          output_types: [output_type()],
+          complexity_level: complexity(),
+          estimated_cost: non_neg_integer(),
+          availability: availability(),
+          success_rate: float(),
+          preferred_model: complexity(),
+          tags: [atom()],
+          metadata: map()
+        }
 
   @doc """
   Create a new agent capability descriptor.
@@ -161,10 +175,10 @@ defmodule Singularity.Agents.Coordination.AgentCapability do
       end
 
     # Weighted score
-    (domain_score * 0.3) +
-      ((input_score + output_score) / 2 * 0.3) +
-      (capability.success_rate * 0.2) +
-      (availability_score * 0.2)
+    domain_score * 0.3 +
+      (input_score + output_score) / 2 * 0.3 +
+      capability.success_rate * 0.2 +
+      availability_score * 0.2
   end
 
   @doc """

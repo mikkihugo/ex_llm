@@ -71,7 +71,9 @@ defmodule Singularity.Infrastructure.Telemetry do
       last_value("singularity.agent.active.count", tags: [:agent_type]),
 
       # pgmq Metrics
-      counter("singularity.Singularity.Jobs.PgmqClient.message.count", tags: [:subject, :direction]),
+      counter("singularity.Singularity.Jobs.PgmqClient.message.count",
+        tags: [:subject, :direction]
+      ),
       summary("singularity.Singularity.Jobs.PgmqClient.message.size",
         event_name: [:singularity, :pgmq, :message, :stop],
         measurement: :size_bytes,

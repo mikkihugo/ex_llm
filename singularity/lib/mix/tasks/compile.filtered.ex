@@ -35,13 +35,14 @@ defmodule Mix.Tasks.Compile.Filtered do
   end
 
   defp should_show_line(""), do: false
+
   defp should_show_line(line) do
     # Show errors always
-    String.contains?(line, "error:") or
     # Show Singularity warnings only
-    (String.contains?(line, "warning:") and String.contains?(line, "lib/singularity/")) or
     # Show compilation status lines
-    String.contains?(line, ["Compiled", "All modules compiled", "Generated"])
+    String.contains?(line, "error:") or
+      (String.contains?(line, "warning:") and String.contains?(line, "lib/singularity/")) or
+      String.contains?(line, ["Compiled", "All modules compiled", "Generated"])
   end
 end
 

@@ -112,19 +112,28 @@ defmodule Singularity.Schemas.LLMRequest do
   @foreign_key_type :binary_id
 
   schema "llm_requests" do
-    field :agent_id, :string  # CRITICAL: Track which agent owns this request
+    # CRITICAL: Track which agent owns this request
+    field :agent_id, :string
     field :task_type, :string
-    field :complexity, :string  # simple, medium, complex
-    field :messages, :map  # JSONB - conversation history
-    field :context, :map   # JSONB - additional context
-    field :status, :string, default: "pending"  # pending, processing, completed, failed
+    # simple, medium, complex
+    field :complexity, :string
+    # JSONB - conversation history
+    field :messages, :map
+    # JSONB - additional context
+    field :context, :map
+    # pending, processing, completed, failed
+    field :status, :string, default: "pending"
     field :published_at, :utc_datetime_usec
     field :error_message, :string
     # Instructor-specific fields for structured output validation
-    field :response_schema, :map  # JSONB - Instructor schema for validation
-    field :validation_errors, {:array, :map}  # Array of validation errors (if any)
-    field :response, :string  # Raw LLM response (before Instructor parsing)
-    field :parsed_response, :map  # Parsed/validated response (after Instructor)
+    # JSONB - Instructor schema for validation
+    field :response_schema, :map
+    # Array of validation errors (if any)
+    field :validation_errors, {:array, :map}
+    # Raw LLM response (before Instructor parsing)
+    field :response, :string
+    # Parsed/validated response (after Instructor)
+    field :parsed_response, :map
 
     timestamps(type: :utc_datetime_usec)
   end

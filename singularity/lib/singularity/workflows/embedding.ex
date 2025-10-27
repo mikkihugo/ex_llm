@@ -49,12 +49,13 @@ defmodule Singularity.Workflows.Embedding do
       model: input["model"]
     )
 
-    {:ok, %{
-      query_id: input["query_id"],
-      query: input["query"],
-      model: input["model"] || "qodo",
-      received_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       query_id: input["query_id"],
+       query: input["query"],
+       model: input["model"] || "qodo",
+       received_at: DateTime.utc_now()
+     }}
   end
 
   # ============================================================================

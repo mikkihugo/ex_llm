@@ -152,12 +152,16 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
     router_task = convert_to_router_task(task)
 
     # Route and execute
-    case AgentRouter.route_task(router_task, timeout: timeout, retry_count: Keyword.get(opts, :retry_count, 1)) do
+    case AgentRouter.route_task(router_task,
+           timeout: timeout,
+           retry_count: Keyword.get(opts, :retry_count, 1)
+         ) do
       {:ok, result} ->
         Logger.info("TaskGraph task executed via agent router",
           task_id: task[:id],
           agent: result[:agent]
         )
+
         {:ok, result}
 
       {:error, reason} ->
@@ -165,6 +169,7 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
           task_id: task[:id],
           reason: inspect(reason)
         )
+
         {:error, reason}
     end
   end
@@ -206,6 +211,7 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
           execution_id: execution_id,
           completed_tasks: map_size(results)
         )
+
         {:ok, results}
 
       {:error, reason} ->
@@ -213,6 +219,7 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
           execution_id: execution_id,
           reason: inspect(reason)
         )
+
         {:error, reason}
     end
   end
@@ -252,7 +259,8 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
       String.match?(text, ~r/arch|design|structure/) -> :architecture
       String.match?(text, ~r/performance|speed|optimize/) -> :performance
       String.match?(text, ~r/security|safe|protect/) -> :security
-      true -> :code_quality  # default
+      # default
+      true -> :code_quality
     end
   end
 

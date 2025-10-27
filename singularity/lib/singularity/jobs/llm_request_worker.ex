@@ -33,29 +33,31 @@ defmodule Singularity.Jobs.LlmRequestWorker do
 
   Returns: {:ok, request_id} or {:error, reason}
   """
-  @spec enqueue_llm_request(String.t(), list(map()), keyword()) :: {:ok, String.t()} | {:error, term()}
+  @spec enqueue_llm_request(String.t(), list(map()), keyword()) ::
+          {:ok, String.t()} | {:error, term()}
   def enqueue_llm_request(task_type, messages, opts \\ []) do
     request_id = Ecto.UUID.generate()
 
-    args = %{
-      "request_id" => request_id,
-      "task_type" => task_type,
-      "messages" => messages,
-      "model" => Keyword.get(opts, :model, "auto"),
-      "provider" => Keyword.get(opts, :provider, "auto"),
-      "api_version" => Keyword.get(opts, :api_version, "responses"),
-      "complexity" => Keyword.get(opts, :complexity, "medium"),
-      "max_tokens" => Keyword.get(opts, :max_tokens),
-      "temperature" => Keyword.get(opts, :temperature),
-      "agent_id" => Keyword.get(opts, :agent_id),
-      "previous_response_id" => Keyword.get(opts, :previous_response_id),
-      "mcp_servers" => Keyword.get(opts, :mcp_servers),
-      "store" => Keyword.get(opts, :store),
-      "tools" => Keyword.get(opts, :tools)
-    }
-    # Remove nil values to keep message compact
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-    |> Map.new()
+    args =
+      %{
+        "request_id" => request_id,
+        "task_type" => task_type,
+        "messages" => messages,
+        "model" => Keyword.get(opts, :model, "auto"),
+        "provider" => Keyword.get(opts, :provider, "auto"),
+        "api_version" => Keyword.get(opts, :api_version, "responses"),
+        "complexity" => Keyword.get(opts, :complexity, "medium"),
+        "max_tokens" => Keyword.get(opts, :max_tokens),
+        "temperature" => Keyword.get(opts, :temperature),
+        "agent_id" => Keyword.get(opts, :agent_id),
+        "previous_response_id" => Keyword.get(opts, :previous_response_id),
+        "mcp_servers" => Keyword.get(opts, :mcp_servers),
+        "store" => Keyword.get(opts, :store),
+        "tools" => Keyword.get(opts, :tools)
+      }
+      # Remove nil values to keep message compact
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Map.new()
 
     case %{}
          |> new(args)
@@ -168,7 +170,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
       LlmRequestWorker.await_responses_result(request_id, timeout_ms: 5000)
   """
   @spec await_responses_result(String.t(), keyword()) ::
-    {:ok, map()} | {:error, :timeout | :not_found | :failed | term()}
+          {:ok, map()} | {:error, :timeout | :not_found | :failed | term()}
   def await_responses_result(request_id, opts \\ []) do
     timeout_ms = Keyword.get(opts, :timeout_ms, 30000)
     poll_interval_ms = Keyword.get(opts, :poll_interval_ms, 100)
@@ -188,11 +190,12 @@ defmodule Singularity.Jobs.LlmRequestWorker do
     alias Singularity.Repo
 
     # Check if result exists
-    result = Repo.one(
-      from jr in JobResult,
-      where: fragment("? ->> 'request_id' = ?", jr.input, ^request_id),
-      select: jr
-    )
+    result =
+      Repo.one(
+        from jr in JobResult,
+          where: fragment("? ->> 'request_id' = ?", jr.input, ^request_id),
+          select: jr
+      )
 
     case result do
       # Result found - return it

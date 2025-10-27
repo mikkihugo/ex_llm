@@ -30,10 +30,11 @@ defmodule Singularity.Database.MetricsAggregationTest do
     end
 
     test "records metric with labels" do
-      result = MetricsAggregation.record_metric(:agent_cpu, 45.2, %{
-        agent_id: 1,
-        node: "primary"
-      })
+      result =
+        MetricsAggregation.record_metric(:agent_cpu, 45.2, %{
+          agent_id: 1,
+          node: "primary"
+        })
 
       assert result == :ok or is_tuple(result)
     end
@@ -82,13 +83,14 @@ defmodule Singularity.Database.MetricsAggregationTest do
     end
 
     test "records metrics with complex labels" do
-      result = MetricsAggregation.record_metric(:validation_check, 95.5, %{
-        agent_id: 1,
-        check_type: "quality",
-        severity: "high",
-        framework: "elixir",
-        language: "elixir"
-      })
+      result =
+        MetricsAggregation.record_metric(:validation_check, 95.5, %{
+          agent_id: 1,
+          check_type: "quality",
+          severity: "high",
+          framework: "elixir",
+          language: "elixir"
+        })
 
       assert result == :ok or is_tuple(result)
     end
@@ -112,6 +114,7 @@ defmodule Singularity.Database.MetricsAggregationTest do
       case result do
         {:ok, metrics} ->
           assert is_list(metrics)
+
           Enum.each(metrics, fn metric ->
             assert is_map(metric)
             assert Map.has_key?(metric, :timestamp)
@@ -159,6 +162,7 @@ defmodule Singularity.Database.MetricsAggregationTest do
       case result do
         {:ok, metrics} ->
           assert is_list(metrics)
+
           Enum.each(metrics, fn metric ->
             assert metric.labels["agent_id"] == "123" or metric.labels == %{}
           end)
@@ -208,6 +212,7 @@ defmodule Singularity.Database.MetricsAggregationTest do
       case result do
         {:ok, buckets} ->
           assert is_list(buckets)
+
           Enum.each(buckets, fn bucket ->
             assert is_map(bucket)
             assert Map.has_key?(bucket, :timestamp)
@@ -710,12 +715,16 @@ defmodule Singularity.Database.MetricsAggregationTest do
       Enum.each(1..5, fn i ->
         outcome = if rem(i, 2) == 0, do: "pass", else: "fail"
 
-        MetricsAggregation.record_metric(:validation_outcome, if(outcome == "pass", do: 1, else: 0), %{
-          check_id: "check_#{i}",
-          run_id: "run_1",
-          outcome: outcome,
-          execution_time_ms: 100 + i * 10
-        })
+        MetricsAggregation.record_metric(
+          :validation_outcome,
+          if(outcome == "pass", do: 1, else: 0),
+          %{
+            check_id: "check_#{i}",
+            run_id: "run_1",
+            outcome: outcome,
+            execution_time_ms: 100 + i * 10
+          }
+        )
       end)
 
       result = MetricsAggregation.get_metrics(:validation_outcome, limit: 10)

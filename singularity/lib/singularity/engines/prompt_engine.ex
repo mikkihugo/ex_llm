@@ -44,7 +44,8 @@ defmodule Singularity.PromptEngine do
       %{
         id: :template_catalog,
         label: "Template Catalog",
-        description: "Expose built-in templates plus remote template discovery via Singularity.Jobs.PgmqClient.",
+        description:
+          "Expose built-in templates plus remote template discovery via Singularity.Jobs.PgmqClient.",
         available?: backend_available || templates_available,
         tags: [:templates]
       },
@@ -112,22 +113,22 @@ defmodule Singularity.PromptEngine do
 
   @doc """
   Generate code using the prompt engine.
-  
+
   This function provides a code generation interface that can use
   the NIF backend when available, or fall back to LLM-based generation.
   """
   @spec generate_code(String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
   def generate_code(task, language) do
     Logger.debug("Generating code with PromptEngine", task: task, language: language)
-    
+
     # Create a code generation prompt
     prompt = build_code_generation_prompt(task, language)
-    
+
     # Use the LLM to generate code
     case call_llm_with_prompt(:medium, prompt, task_type: :code_generation) do
       {:ok, %{text: code}} ->
         {:ok, extract_code_from_response(code)}
-      
+
       {:error, reason} ->
         Logger.warning("Code generation failed", task: task, language: language, reason: reason)
         {:error, reason}
@@ -157,7 +158,8 @@ defmodule Singularity.PromptEngine do
     generate_prompt(context, language,
       trigger_type: "framework",
       trigger_value: framework,
-      category: category)
+      category: category
+    )
   end
 
   @spec generate_language_prompt(String.t(), String.t(), String.t()) :: prompt_response
@@ -165,7 +167,8 @@ defmodule Singularity.PromptEngine do
     generate_prompt(context, language,
       trigger_type: "language",
       trigger_value: language,
-      category: category)
+      category: category
+    )
   end
 
   @spec generate_pattern_prompt(String.t(), String.t(), String.t(), String.t()) :: prompt_response
@@ -173,7 +176,8 @@ defmodule Singularity.PromptEngine do
     generate_prompt(context, language,
       trigger_type: "pattern",
       trigger_value: pattern,
-      category: category)
+      category: category
+    )
   end
 
   @spec call_llm(String.t() | atom(), [map()], keyword()) :: {:ok, map()} | {:error, term()}
@@ -463,13 +467,25 @@ defmodule Singularity.PromptEngine do
   defp extract_code_from_response(response) do
     # Try to extract code from markdown code blocks
     case Regex.run(~r/```(?:[a-zA-Z]*)?\s*\n?(.*?)\n?```/s, response) do
-      [_, code] -> String.trim(code)
-      nil -> 
+      [_, code] ->
+        String.trim(code)
+
+      nil ->
         # If no code blocks found, return the response as-is
         # but try to clean up any leading/trailing text
         response
         |> String.split("\n")
-        |> Enum.drop_while(&(!String.contains?(&1, ["def ", "function ", "class ", "struct ", "impl ", "fn ", "pub fn"])))
+        |> Enum.drop_while(
+          &(!String.contains?(&1, [
+              "def ",
+              "function ",
+              "class ",
+              "struct ",
+              "impl ",
+              "fn ",
+              "pub fn"
+            ]))
+        )
         |> Enum.take_while(&(!String.contains?(&1, ["```", "Explanation:", "Note:"])))
         |> Enum.join("\n")
         |> String.trim()

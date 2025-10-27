@@ -45,7 +45,7 @@ defmodule Singularity.Execution.Supervisor do
       Singularity.Code.StartupCodeIngestion,
       Singularity.Execution.SafeWorkPlanner,
       Singularity.Execution.WorkPlanAPI,
-      
+
       # Todo components
       Singularity.Execution.TodoSwarmCoordinator
     ]

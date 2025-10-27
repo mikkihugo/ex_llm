@@ -214,6 +214,7 @@ defmodule Singularity.Embedding.ModelLoader do
 
       # Load via Ortex for ONNX models
       load_onnx_model(model, onnx_path, device)
+
       state = %{
         model: model,
         path: model_path,
@@ -362,10 +363,10 @@ defmodule Singularity.Embedding.ModelLoader do
   defp load_model_from_checkpoint(model, checkpoint_path) do
     try do
       # Load checkpoint data
-      checkpoint_data = 
+      checkpoint_data =
         File.read!(checkpoint_path)
         |> :erlang.binary_to_term()
-      
+
       # Extract model state from checkpoint
       model_state = %{
         model: model,
@@ -376,10 +377,9 @@ defmodule Singularity.Embedding.ModelLoader do
         model_params: checkpoint_data["model_params"],
         loaded_at: DateTime.utc_now()
       }
-      
+
       Logger.info("✅ Model loaded from checkpoint: #{model}")
       {:ok, model_state}
-      
     rescue
       error ->
         Logger.error("❌ Failed to load checkpoint: #{inspect(error)}")
@@ -395,7 +395,7 @@ defmodule Singularity.Embedding.ModelLoader do
         true ->
           # Use Ortex for ONNX inference
           {:ok, session} = Ortex.create_session(onnx_path)
-          
+
           model_state = %{
             model: model,
             path: onnx_path,
@@ -404,10 +404,10 @@ defmodule Singularity.Embedding.ModelLoader do
             type: :onnx,
             loaded_at: DateTime.utc_now()
           }
-          
+
           Logger.info("✅ ONNX model loaded via Ortex: #{model}")
           {:ok, model_state}
-        
+
         false ->
           # Fallback to basic ONNX state
           model_state = %{
@@ -417,11 +417,10 @@ defmodule Singularity.Embedding.ModelLoader do
             type: :onnx,
             loaded_at: DateTime.utc_now()
           }
-          
+
           Logger.warning("⚠️  Ortex not available, using basic ONNX state")
           {:ok, model_state}
       end
-      
     rescue
       error ->
         Logger.error("❌ Failed to load ONNX model: #{inspect(error)}")

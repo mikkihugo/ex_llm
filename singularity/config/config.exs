@@ -32,7 +32,8 @@ config :sasl,
   # Reduce SASL verbosity in production (default is :tty)
   sasl_error_logger: {:file, ~c"log/sasl-error.log"},
   # Control error report formatting
-  errlog_type: :error,  # :error | :progress | :all
+  # :error | :progress | :all
+  errlog_type: :error,
   # UTC timestamps for logs
   utc_log: true
 

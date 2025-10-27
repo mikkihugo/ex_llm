@@ -152,7 +152,8 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     context = Keyword.get(__opts, :context, %{})
     timeout = Keyword.get(__opts, :timeout, :infinity)
 
-    conversation_type = __opts
+    conversation_type =
+      __opts
       |> Keyword.get(:type, :clarification)
       |> normalize_conversation_type()
 

@@ -162,7 +162,10 @@ defmodule Singularity.Storage.FailurePatternStore do
 
       %FailurePattern{} = pattern when replace_existing? ->
         pattern
-        |> FailurePattern.changeset(attrs |> Map.put(:frequency, attrs[:frequency] || pattern.frequency))
+        |> FailurePattern.changeset(
+          attrs
+          |> Map.put(:frequency, attrs[:frequency] || pattern.frequency)
+        )
         |> Repo.update()
 
       %FailurePattern{} = pattern ->

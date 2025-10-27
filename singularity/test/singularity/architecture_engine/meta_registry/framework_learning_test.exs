@@ -442,6 +442,7 @@ defmodule Singularity.MetaRegistry.FrameworkLearningTest do
       result = FrameworkLearning.get_nats_suggestions("llm", "service")
 
       assert is_list(result)
+
       Enum.each(result, fn suggestion ->
         assert is_binary(suggestion)
       end)
@@ -466,6 +467,7 @@ defmodule Singularity.MetaRegistry.FrameworkLearningTest do
       result = FrameworkLearning.get_postgresql_suggestions("user", "table")
 
       assert is_list(result)
+
       Enum.each(result, fn suggestion ->
         assert is_binary(suggestion)
       end)
@@ -475,6 +477,7 @@ defmodule Singularity.MetaRegistry.FrameworkLearningTest do
       result = FrameworkLearning.get_postgresql_suggestions("timestamp", "column")
 
       assert is_list(result)
+
       Enum.each(result, fn suggestion ->
         assert is_binary(suggestion)
       end)
@@ -484,6 +487,7 @@ defmodule Singularity.MetaRegistry.FrameworkLearningTest do
       result = FrameworkLearning.get_postgresql_suggestions("user", "table")
 
       assert is_list(result)
+
       Enum.each(result, fn suggestion ->
         assert is_binary(suggestion)
       end)
@@ -495,6 +499,7 @@ defmodule Singularity.MetaRegistry.FrameworkLearningTest do
       result = FrameworkLearning.get_rust_nif_suggestions("parser", "module")
 
       assert is_list(result)
+
       Enum.each(result, fn suggestion ->
         assert is_binary(suggestion)
       end)
@@ -504,6 +509,7 @@ defmodule Singularity.MetaRegistry.FrameworkLearningTest do
       result = FrameworkLearning.get_rust_nif_suggestions("analyze", "function")
 
       assert is_list(result)
+
       Enum.each(result, fn suggestion ->
         assert is_binary(suggestion)
       end)
@@ -515,6 +521,7 @@ defmodule Singularity.MetaRegistry.FrameworkLearningTest do
       result = FrameworkLearning.get_elixir_otp_suggestions("Worker", "module")
 
       assert is_list(result)
+
       Enum.each(result, fn suggestion ->
         assert is_binary(suggestion)
       end)
@@ -524,6 +531,7 @@ defmodule Singularity.MetaRegistry.FrameworkLearningTest do
       result = FrameworkLearning.get_elixir_otp_suggestions("execute", "function")
 
       assert is_list(result)
+
       Enum.each(result, fn suggestion ->
         assert is_binary(suggestion)
       end)
@@ -579,11 +587,12 @@ defmodule Singularity.MetaRegistry.FrameworkLearningTest do
   describe "framework learning integration" do
     test "learning and suggestion workflow" do
       # Learn patterns
-      learn_result = FrameworkLearning.learn_nats_patterns(%{
-        subjects: ["custom.api.request"],
-        messaging: ["request/response"],
-        patterns: ["custom.pattern"]
-      })
+      learn_result =
+        FrameworkLearning.learn_nats_patterns(%{
+          subjects: ["custom.api.request"],
+          messaging: ["request/response"],
+          patterns: ["custom.pattern"]
+        })
 
       assert learn_result == :ok or is_tuple(learn_result)
 
@@ -596,9 +605,19 @@ defmodule Singularity.MetaRegistry.FrameworkLearningTest do
     test "multiple frameworks can be learned together" do
       results = [
         FrameworkLearning.learn_nats_patterns(%{subjects: [], messaging: [], patterns: []}),
-        FrameworkLearning.learn_postgresql_patterns(%{tables: [], queries: [], indexes: [], patterns: []}),
+        FrameworkLearning.learn_postgresql_patterns(%{
+          tables: [],
+          queries: [],
+          indexes: [],
+          patterns: []
+        }),
         FrameworkLearning.learn_ets_patterns(%{tables: [], operations: [], patterns: []}),
-        FrameworkLearning.learn_rust_nif_patterns(%{modules: [], functions: [], types: [], patterns: []}),
+        FrameworkLearning.learn_rust_nif_patterns(%{
+          modules: [],
+          functions: [],
+          types: [],
+          patterns: []
+        }),
         FrameworkLearning.learn_elixir_otp_patterns(%{modules: [], functions: [], patterns: []}),
         FrameworkLearning.learn_ecto_patterns(%{schemas: [], queries: [], patterns: []}),
         FrameworkLearning.learn_jason_patterns(%{functions: [], patterns: []}),

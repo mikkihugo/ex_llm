@@ -281,14 +281,14 @@ defmodule Singularity.TemplateStore do
 
   @doc """
   Regenerate embeddings for all templates in the database.
-  
+
   This is useful when the embedding model is updated or when
   templates need to be re-embedded with a new model.
   """
   @spec embed_all() :: {:ok, integer()} | {:error, term()}
   def embed_all() do
     Logger.info("Regenerating embeddings for all templates...")
-    
+
     with {:ok, templates} <- get_all_templates(),
          {:ok, count} <- regenerate_embeddings(templates) do
       Logger.info("✅ Regenerated embeddings for #{count} templates")
@@ -302,7 +302,7 @@ defmodule Singularity.TemplateStore do
 
   @doc """
   Load all templates from the database.
-  
+
   This is a convenience function for getting all templates
   without any filtering.
   """
@@ -620,13 +620,16 @@ defmodule Singularity.TemplateStore do
 
     with {:ok, embedding} <- EmbeddingEngine.embed(search_text, model: :qodo_embed) do
       attrs = %{embedding: embedding}
-      
+
       template
       |> Template.changeset(attrs)
       |> Repo.update()
     else
       {:error, reason} ->
-        Logger.warning("Failed to regenerate embedding for template #{template.id}: #{inspect(reason)}")
+        Logger.warning(
+          "Failed to regenerate embedding for template #{template.id}: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end

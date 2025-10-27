@@ -135,6 +135,7 @@ defmodule Singularity.Agents.Coordination.AgentRegistration do
           Logger.info("Agent capability registered successfully",
             agent: agent_name
           )
+
           :ok
 
         {:error, reason} ->
@@ -142,6 +143,7 @@ defmodule Singularity.Agents.Coordination.AgentRegistration do
             agent: agent_name,
             reason: inspect(reason)
           )
+
           {:error, reason}
       end
     rescue
@@ -151,6 +153,7 @@ defmodule Singularity.Agents.Coordination.AgentRegistration do
           error: inspect(e),
           stacktrace: inspect(__STACKTRACE__)
         )
+
         {:error, :registration_failed}
     end
   end
@@ -169,7 +172,8 @@ defmodule Singularity.Agents.Coordination.AgentRegistration do
       AgentRegistration.update_availability(:my_agent, :available)
   """
   @spec update_availability(atom(), atom()) :: :ok | {:error, term()}
-  def update_availability(agent_name, availability) when is_atom(agent_name) and is_atom(availability) do
+  def update_availability(agent_name, availability)
+      when is_atom(agent_name) and is_atom(availability) do
     CapabilityRegistry.update_availability(agent_name, availability)
   end
 
@@ -188,7 +192,8 @@ defmodule Singularity.Agents.Coordination.AgentRegistration do
       AgentRegistration.update_success_rate(:my_agent, 0.87)
   """
   @spec update_success_rate(atom(), float()) :: :ok | {:error, term()}
-  def update_success_rate(agent_name, success_rate) when is_atom(agent_name) and is_float(success_rate) do
+  def update_success_rate(agent_name, success_rate)
+      when is_atom(agent_name) and is_float(success_rate) do
     CapabilityRegistry.update_success_rate(agent_name, success_rate)
   end
 end

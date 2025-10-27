@@ -145,25 +145,28 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
       local_detections = detect_locally(codebase_path, detector_types)
 
       # Step 2: If CentralCloud enabled, delegate intelligent analysis
-      detections = if use_centralcloud do
-        case delegate_to_centralcloud(codebase_path, local_detections, opts) do
-          {:ok, enhanced_detections} ->
-            Logger.info("✅ Enhanced detection with CentralCloud intelligence")
-            enhanced_detections
-          {:error, _reason} ->
-            Logger.warning("⚠️ CentralCloud unavailable, using local detection only")
-            local_detections
+      detections =
+        if use_centralcloud do
+          case delegate_to_centralcloud(codebase_path, local_detections, opts) do
+            {:ok, enhanced_detections} ->
+              Logger.info("✅ Enhanced detection with CentralCloud intelligence")
+              enhanced_detections
+
+            {:error, _reason} ->
+              Logger.warning("⚠️ CentralCloud unavailable, using local detection only")
+              local_detections
+          end
+        else
+          local_detections
         end
-      else
-        local_detections
-      end
 
       # Step 3: Apply learning if enabled
-      final_detections = if learning_enabled do
-        learn_and_enhance_patterns(detections, codebase_path)
-      else
-        detections
-      end
+      final_detections =
+        if learning_enabled do
+          learn_and_enhance_patterns(detections, codebase_path)
+        else
+          detections
+        end
 
       elapsed = System.monotonic_time(:millisecond) - start_time
 
@@ -341,6 +344,7 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
       {:ok, centralcloud_results} ->
         # Merge CentralCloud intelligence with local detections
         merge_centralcloud_results(local_detections, centralcloud_results)
+
       {:error, _reason} = error ->
         error
     end
@@ -352,18 +356,22 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
     learned_patterns = Map.get(centralcloud_results, :learned_patterns, [])
 
     # Merge: prefer CentralCloud results, fall back to local
-    merged = Enum.map(local_detections, fn local_detection ->
-      # Try to find enhanced version from CentralCloud
-      case find_matching_detection(local_detection, enhanced_detections) do
-        nil -> local_detection  # Keep local if no enhancement
-        enhanced -> enhanced    # Use enhanced version
-      end
-    end)
+    merged =
+      Enum.map(local_detections, fn local_detection ->
+        # Try to find enhanced version from CentralCloud
+        case find_matching_detection(local_detection, enhanced_detections) do
+          # Keep local if no enhancement
+          nil -> local_detection
+          # Use enhanced version
+          enhanced -> enhanced
+        end
+      end)
 
     # Add any new detections learned from CentralCloud
-    new_detections = Enum.reject(enhanced_detections, fn enhanced ->
-      Enum.any?(local_detections, &detection_matches?(&1, enhanced))
-    end)
+    new_detections =
+      Enum.reject(enhanced_detections, fn enhanced ->
+        Enum.any?(local_detections, &detection_matches?(&1, enhanced))
+      end)
 
     merged ++ new_detections ++ learned_patterns
   end
@@ -377,8 +385,8 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
   defp detection_matches?(detection1, detection2) do
     # Match by name and type with some flexibility
     detection1.name == detection2.name and
-    detection1.type == detection2.type and
-    abs(detection1.confidence - detection2.confidence) < 0.2
+      detection1.type == detection2.type and
+      abs(detection1.confidence - detection2.confidence) < 0.2
   end
 
   defp learn_and_enhance_patterns(detections, codebase_path) do
@@ -397,6 +405,7 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
           Logger.debug("✅ Pattern learning completed",
             patterns_learned: length(Map.get(learning_results, :new_patterns, []))
           )
+
         {:error, reason} ->
           Logger.debug("⚠️ Pattern learning failed", reason: reason)
       end
@@ -408,7 +417,7 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
   defp get_instance_id do
     # Get unique instance identifier
     System.get_env("SINGULARITY_INSTANCE_ID") ||
-      (:crypto.hash(:sha256, File.cwd!()) |> Base.encode16(case: :lower) |> String.slice(0, 8))
+      :crypto.hash(:sha256, File.cwd!()) |> Base.encode16(case: :lower) |> String.slice(0, 8)
   end
 
   defp generate_snapshot_id do

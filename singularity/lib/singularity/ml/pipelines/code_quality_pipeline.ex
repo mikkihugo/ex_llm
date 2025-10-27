@@ -1,7 +1,7 @@
 defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
   @moduledoc """
   Broadway Pipeline for Code Quality ML Training
-  
+
   Processes code quality training tasks through multiple stages:
   1. Data Collection - Gather code quality data from codebases
   2. Data Preparation - Clean and format quality data
@@ -23,18 +23,19 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
-        module: {BroadwayPGMQ.Producer, 
-          queue: "code_quality_training_tasks",
-          config: [
-            host: System.get_env("DATABASE_URL", "postgres://localhost/singularity"),
-            port: 5432
-          ]
-        }
+        module:
+          {BroadwayPGMQ.Producer,
+           queue: "code_quality_training_tasks",
+           config: [
+             host: System.get_env("DATABASE_URL", "postgres://localhost/singularity"),
+             port: 5432
+           ]}
       ],
       processors: [
         data_collection: [concurrency: 3],
         data_preparation: [concurrency: 5],
-        model_training: [concurrency: 1],  # ML training - limit to 1
+        # ML training - limit to 1
+        model_training: [concurrency: 1],
         model_validation: [concurrency: 2],
         model_deployment: [concurrency: 1]
       ],
@@ -49,12 +50,16 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
     case processor do
       :data_collection ->
         handle_data_collection(message)
+
       :data_preparation ->
         handle_data_preparation(message)
+
       :model_training ->
         handle_model_training(message)
+
       :model_validation ->
         handle_model_validation(message)
+
       :model_deployment ->
         handle_model_deployment(message)
     end
@@ -63,7 +68,7 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
   # Data Collection Stage
   defp handle_data_collection(message) do
     Logger.info("Collecting code quality data from: #{message.data.codebase_path}")
-    
+
     # Use QualityAnalyzer to collect quality data
     case QualityAnalyzer.analyze(message.data.codebase_path) do
       {:ok, analysis} ->
@@ -73,7 +78,9 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
           quality_metrics: extract_quality_metrics(analysis),
           collection_timestamp: DateTime.utc_now()
         }
+
         Broadway.Message.update_data(message, fn _ -> quality_data end)
+
       {:error, reason} ->
         Logger.error("Failed to collect quality data: #{inspect(reason)}")
         Broadway.Message.failed(message, reason)
@@ -83,33 +90,34 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
   # Data Preparation Stage
   defp handle_data_preparation(message) do
     Logger.info("Preparing quality data for training...")
-    
+
     # Prepare data for ML training
-    prepared_data = message.data
-    |> Map.put(:feature_vector, prepare_feature_vector(message.data.quality_metrics))
-    |> Map.put(:target_vector, prepare_target_vector(message.data.quality_metrics))
-    |> Map.put(:preparation_timestamp, DateTime.utc_now())
-    
+    prepared_data =
+      message.data
+      |> Map.put(:feature_vector, prepare_feature_vector(message.data.quality_metrics))
+      |> Map.put(:target_vector, prepare_target_vector(message.data.quality_metrics))
+      |> Map.put(:preparation_timestamp, DateTime.utc_now())
+
     Broadway.Message.update_data(message, fn _ -> prepared_data end)
   end
 
   # Model Training Stage
   defp handle_model_training(message) do
     Logger.info("Training code quality model...")
-    
+
     # Mock model training - in real implementation, this would:
     # 1. Build Axon model architecture
     # 2. Train with prepared data
     # 3. Save trained model
-    
+
     training_result = %{
       model_id: "quality_model_#{System.unique_integer([:positive])}",
       accuracy: 0.87,
       training_time: 120.5,
       training_timestamp: DateTime.utc_now()
     }
-    
-    Broadway.Message.update_data(message, fn data -> 
+
+    Broadway.Message.update_data(message, fn data ->
       Map.put(data, :training_result, training_result)
     end)
   end
@@ -117,19 +125,19 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
   # Model Validation Stage
   defp handle_model_validation(message) do
     Logger.info("Validating trained model...")
-    
+
     # Mock model validation - in real implementation, this would:
     # 1. Test model on validation set
     # 2. Calculate performance metrics
     # 3. Check for overfitting
-    
+
     validation_result = %{
       validation_accuracy: 0.85,
       validation_loss: 0.12,
       validation_timestamp: DateTime.utc_now()
     }
-    
-    Broadway.Message.update_data(message, fn data -> 
+
+    Broadway.Message.update_data(message, fn data ->
       Map.put(data, :validation_result, validation_result)
     end)
   end
@@ -137,19 +145,19 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
   # Model Deployment Stage
   defp handle_model_deployment(message) do
     Logger.info("Deploying trained model...")
-    
+
     # Mock model deployment - in real implementation, this would:
     # 1. Save model to storage
     # 2. Update model registry
     # 3. Deploy to production
-    
+
     deployment_result = %{
       deployment_status: :success,
       model_path: "/models/quality/#{message.data.training_result.model_id}",
       deployment_timestamp: DateTime.utc_now()
     }
-    
-    Broadway.Message.update_data(message, fn data -> 
+
+    Broadway.Message.update_data(message, fn data ->
       Map.put(data, :deployment_result, deployment_result)
     end)
   end
@@ -177,7 +185,9 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
 
   defp prepare_target_vector(quality_metrics) do
     # Mock target vector preparation
-    overall_quality = (quality_metrics.maintainability_index + quality_metrics.test_coverage) / 200.0
+    overall_quality =
+      (quality_metrics.maintainability_index + quality_metrics.test_coverage) / 200.0
+
     [overall_quality]
   end
 end

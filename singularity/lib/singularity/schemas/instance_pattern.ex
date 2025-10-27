@@ -26,7 +26,10 @@ defmodule Singularity.Schemas.InstancePattern do
     instance_pattern
     |> cast(attrs, [:pattern_key, :instance_id, :confidence_score, :detected_at, :metadata])
     |> validate_required([:pattern_key, :instance_id, :confidence_score, :detected_at])
-    |> validate_number(:confidence_score, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0)
+    |> validate_number(:confidence_score,
+      greater_than_or_equal_to: 0.0,
+      less_than_or_equal_to: 1.0
+    )
     |> unique_constraint([:pattern_key, :instance_id])
   end
 end

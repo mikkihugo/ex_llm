@@ -645,13 +645,13 @@ defmodule Singularity.Agents.DeadCodeMonitor do
       deprecated: count_pattern(output, ~r/@deprecated/),
       other: 0
     }
-    
+
     # Calculate other count as remainder
-    total_categorized = 
+    total_categorized =
       categories
       |> Map.values()
       |> Enum.sum()
-    
+
     %{categories | other: max(0, 10 - total_categorized)}
   end
 

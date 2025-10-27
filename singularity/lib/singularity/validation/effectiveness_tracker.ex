@@ -392,7 +392,7 @@ defmodule Singularity.Validation.EffectivenessTracker do
       # Normalize: (score / total) * weight_sum
       effectiveness_scores
       |> Enum.map(fn {check_id, score} ->
-        weight = (score / total_score) * @weight_sum
+        weight = score / total_score * @weight_sum
         {check_id, weight}
       end)
       |> Map.new()

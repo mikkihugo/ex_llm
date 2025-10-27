@@ -54,14 +54,15 @@ defmodule Singularity.Workflows.AgentCoordination do
       type: input["message_type"]
     )
 
-    {:ok, %{
-      message_id: input["message_id"],
-      source_agent: input["source_agent"],
-      target_agent: input["target_agent"],
-      message_type: input["message_type"],
-      payload: input["payload"] || %{},
-      received_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       message_id: input["message_id"],
+       source_agent: input["source_agent"],
+       target_agent: input["target_agent"],
+       message_type: input["message_type"],
+       payload: input["payload"] || %{},
+       received_at: DateTime.utc_now()
+     }}
   end
 
   # ============================================================================

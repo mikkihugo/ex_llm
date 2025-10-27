@@ -148,9 +148,10 @@ defmodule Singularity.Evolution.RuleEvolutionProgressDashboard do
       # Get rules grouped by age and confidence
       all_rules = Repo.all(Rule)
 
-      young_high_confidence = Enum.count(all_rules, fn r ->
-        days_old(r.inserted_at) < 7 and r.confidence_threshold >= 0.90
-      end)
+      young_high_confidence =
+        Enum.count(all_rules, fn r ->
+          days_old(r.inserted_at) < 7 and r.confidence_threshold >= 0.90
+        end)
 
       young_total = Enum.count(all_rules, fn r -> days_old(r.inserted_at) < 7 end)
 
@@ -184,8 +185,12 @@ defmodule Singularity.Evolution.RuleEvolutionProgressDashboard do
 
   defp safe_get_evolution_health do
     case RuleEvolutionSystem.get_evolution_health() do
-      %{} = health -> health
-      {:ok, health} when is_map(health) -> health
+      %{} = health ->
+        health
+
+      {:ok, health} when is_map(health) ->
+        health
+
       _error ->
         Logger.warning("RuleEvolutionSystem.get_evolution_health returned no data")
         %{}
@@ -196,9 +201,12 @@ defmodule Singularity.Evolution.RuleEvolutionProgressDashboard do
     all_rules = Repo.all(Rule)
 
     high_confidence = Enum.count(all_rules, &(&1.confidence_threshold >= 0.90))
-    medium_confidence = Enum.count(all_rules, fn r ->
-      r.confidence_threshold >= 0.70 and r.confidence_threshold < 0.90
-    end)
+
+    medium_confidence =
+      Enum.count(all_rules, fn r ->
+        r.confidence_threshold >= 0.70 and r.confidence_threshold < 0.90
+      end)
+
     low_confidence = Enum.count(all_rules, &(&1.confidence_threshold < 0.70))
     active = Enum.count(all_rules, & &1.active)
     inactive = Enum.count(all_rules, &(not &1.active))
@@ -243,7 +251,10 @@ defmodule Singularity.Evolution.RuleEvolutionProgressDashboard do
           percentage: Float.round(length(rules) / max(length(all_rules), 1) * 100, 1)
         }
       end)
-      |> Enum.sort_by(&String.to_float(String.split(&1.confidence_range, "-") |> List.first()), :desc)
+      |> Enum.sort_by(
+        &String.to_float(String.split(&1.confidence_range, "-") |> List.first()),
+        :desc
+      )
     end
   end
 
@@ -275,10 +286,11 @@ defmodule Singularity.Evolution.RuleEvolutionProgressDashboard do
 
     Enum.map(all_rules, fn rule ->
       # Count executions for this rule
-      executions = Repo.all(
-        from re in Singularity.Execution.Autonomy.RuleExecution,
-          where: re.rule_id == ^rule.id
-      )
+      executions =
+        Repo.all(
+          from re in Singularity.Execution.Autonomy.RuleExecution,
+            where: re.rule_id == ^rule.id
+        )
 
       success_count = Enum.count(executions, & &1.success)
       total_count = length(executions)
@@ -312,12 +324,13 @@ defmodule Singularity.Evolution.RuleEvolutionProgressDashboard do
     # Get recent proposals (last 30 days)
     thirty_days_ago = DateTime.utc_now() |> DateTime.add(-30 * 86400)
 
-    proposals = Repo.all(
-      from proposal in Singularity.Execution.Autonomy.RuleEvolutionProposal,
-        where: proposal.inserted_at >= ^thirty_days_ago,
-        order_by: [desc: proposal.inserted_at],
-        limit: 20
-    )
+    proposals =
+      Repo.all(
+        from proposal in Singularity.Execution.Autonomy.RuleEvolutionProposal,
+          where: proposal.inserted_at >= ^thirty_days_ago,
+          order_by: [desc: proposal.inserted_at],
+          limit: 20
+      )
 
     approved = Enum.count(proposals, &(&1.status == :approved))
     rejected = Enum.count(proposals, &(&1.status == :rejected))
@@ -348,8 +361,11 @@ defmodule Singularity.Evolution.RuleEvolutionProgressDashboard do
     else
       converged = Enum.filter(all_rules, &(&1.confidence_threshold >= 0.90))
       avg_age = Enum.reduce(all_rules, 0, &(&2 + days_old(&1.inserted_at))) / length(all_rules)
-      converged_age = if Enum.empty?(converged), do: 0, else:
-        Enum.reduce(converged, 0, &(&2 + days_old(&1.inserted_at))) / length(converged)
+
+      converged_age =
+        if Enum.empty?(converged),
+          do: 0,
+          else: Enum.reduce(converged, 0, &(&2 + days_old(&1.inserted_at))) / length(converged)
 
       %{
         avg_time_to_high_confidence_days: Float.round(converged_age, 1),

@@ -32,7 +32,7 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
   use GenServer
   require Logger
 
-  alias Singularity.Execution.Todos.TodoStore
+  alias Singularity.Execution.TodoStore
   alias Singularity.Execution.TaskGraph.Worker
   alias Singularity.ProcessRegistry
 

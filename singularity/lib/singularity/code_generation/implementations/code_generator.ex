@@ -236,13 +236,16 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
 
     # Use the current queue-based LLM service
     prompt = build_code_generation_prompt(task, language)
-    
+
     case Singularity.LLM.Service.call_with_prompt(:medium, prompt, task_type: :code_generation) do
       {:ok, %{text: code}} ->
         {:ok, extract_code_from_response(code)}
-      
+
       {:error, reason} ->
-        Logger.warning("LLM generation failed, falling back to basic generation: #{inspect(reason)}")
+        Logger.warning(
+          "LLM generation failed, falling back to basic generation: #{inspect(reason)}"
+        )
+
         generate_basic_code(task, language)
     end
   end
@@ -266,13 +269,25 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
   defp extract_code_from_response(response) do
     # Try to extract code from markdown code blocks
     case Regex.run(~r/```(?:[a-zA-Z]*)?\s*\n?(.*?)\n?```/s, response) do
-      [_, code] -> String.trim(code)
-      nil -> 
+      [_, code] ->
+        String.trim(code)
+
+      nil ->
         # If no code blocks found, return the response as-is
         # but try to clean up any leading/trailing text
         response
         |> String.split("\n")
-        |> Enum.drop_while(&(!String.contains?(&1, ["def ", "function ", "class ", "struct ", "impl ", "fn ", "pub fn"])))
+        |> Enum.drop_while(
+          &(!String.contains?(&1, [
+              "def ",
+              "function ",
+              "class ",
+              "struct ",
+              "impl ",
+              "fn ",
+              "pub fn"
+            ]))
+        )
         |> Enum.take_while(&(!String.contains?(&1, ["```", "Explanation:", "Note:"])))
         |> Enum.join("\n")
         |> String.trim()
@@ -477,7 +492,7 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
   end
 
   # Build unified prompt with RAG examples and quality requirements
-  defp build_unified_prompt(task, language, quality, examples, quality_template) do
+  defp build_unified_prompt(task, language, _quality, examples, quality_template) do
     # Quality requirements section
     quality_section =
       if quality_template do

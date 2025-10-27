@@ -188,6 +188,7 @@ defmodule Singularity.Agents.Coordination.WorkflowLearner do
         Logger.error("Failed to record execution outcome",
           error: inspect(e)
         )
+
         {:error, :recording_failed}
     end
   end
@@ -270,10 +271,12 @@ defmodule Singularity.Agents.Coordination.WorkflowLearner do
         Logger.warning("No stats found for agent",
           agent: agent_name
         )
+
         {:error, :no_stats}
 
       stats ->
         rate = stats.success_rate
+
         Logger.info("Updating agent success rate",
           agent: agent_name,
           rate: Float.round(rate, 3),
@@ -364,10 +367,12 @@ defmodule Singularity.Agents.Coordination.WorkflowLearner do
 
     case :ets.lookup(stats_table, :global) do
       [{:global, {s, f, domains}}] ->
-        domain_map = Enum.map(domains, fn {domain, {ds, df}} ->
-          rate = if ds + df > 0, do: ds / (ds + df), else: 0.0
-          {domain, rate}
-        end) |> Map.new()
+        domain_map =
+          Enum.map(domains, fn {domain, {ds, df}} ->
+            rate = if ds + df > 0, do: ds / (ds + df), else: 0.0
+            {domain, rate}
+          end)
+          |> Map.new()
 
         {s, f, domain_map}
 

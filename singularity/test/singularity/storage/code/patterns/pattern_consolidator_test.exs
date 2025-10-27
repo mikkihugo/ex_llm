@@ -288,9 +288,10 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidatorTest do
     test "handles different pattern types" do
       types = [:elixir_pattern, :rust_pattern, :typescript_pattern]
 
-      results = Enum.map(types, fn type ->
-        PatternConsolidator.generalize_pattern("test-id", type: type)
-      end)
+      results =
+        Enum.map(types, fn type ->
+          PatternConsolidator.generalize_pattern("test-id", type: type)
+        end)
 
       Enum.each(results, fn result ->
         case result do
@@ -411,7 +412,8 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidatorTest do
       result = PatternConsolidator.analyze_pattern_quality("nonexistent-uuid")
 
       case result do
-        {:ok, _} -> assert true  # Might still work with defaults
+        # Might still work with defaults
+        {:ok, _} -> assert true
         {:error, :not_found} -> assert true
         {:error, _} -> assert true
       end

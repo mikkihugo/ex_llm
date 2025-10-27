@@ -369,6 +369,7 @@ defmodule Singularity.CodeAnalysis.ConsolidationEngine do
   defp generate_consolidated_code(service_analyses) do
     # Generate consolidated code using AI
     generate_ai_consolidated_code(service_analyses)
+
     %{
       main_module: "ConsolidatedService",
       modules: Enum.map(service_analyses, & &1.main_module),
@@ -416,7 +417,6 @@ defmodule Singularity.CodeAnalysis.ConsolidationEngine do
     Enum.flat_map(service_analyses, & &1.dependencies)
     |> Enum.uniq_by(& &1.name)
   end
-
 
   defp merge_functions(service_analyses) do
     service_analyses
@@ -596,11 +596,11 @@ defmodule Singularity.CodeAnalysis.ConsolidationEngine do
   defp generate_ai_consolidated_code(service_analyses) do
     # Use AI to generate consolidated code
     prompt = build_consolidation_prompt(service_analyses)
-    
+
     case call_llm_for_consolidation(prompt) do
       {:ok, consolidated_code} ->
         parse_consolidated_code(consolidated_code)
-      
+
       {:error, _reason} ->
         # Fallback to basic consolidation
         generate_basic_consolidated_code(service_analyses)
@@ -608,7 +608,7 @@ defmodule Singularity.CodeAnalysis.ConsolidationEngine do
   end
 
   defp build_consolidation_prompt(service_analyses) do
-    services_info = 
+    services_info =
       service_analyses
       |> Enum.map(fn analysis ->
         """
@@ -619,19 +619,19 @@ defmodule Singularity.CodeAnalysis.ConsolidationEngine do
         """
       end)
       |> Enum.join("\n")
-    
+
     """
     Consolidate the following microservices into a single, well-structured service:
-    
+
     #{services_info}
-    
+
     Requirements:
     - Merge common functionality
     - Eliminate duplicate code
     - Maintain API compatibility
     - Use proper Elixir patterns
     - Include comprehensive documentation
-    
+
     Generate the consolidated Elixir code.
     """
   end
@@ -639,12 +639,12 @@ defmodule Singularity.CodeAnalysis.ConsolidationEngine do
   defp call_llm_for_consolidation(prompt) do
     # Call LLM for code consolidation
     alias Singularity.LLM.Provider
-    
+
     case Provider.call(:claude, %{
-      prompt: prompt,
-      max_tokens: 4000,
-      temperature: 0.1
-    }) do
+           prompt: prompt,
+           max_tokens: 4000,
+           temperature: 0.1
+         }) do
       {:ok, response} -> {:ok, response}
       {:error, reason} -> {:error, reason}
     end

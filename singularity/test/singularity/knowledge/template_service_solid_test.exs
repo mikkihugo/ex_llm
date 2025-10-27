@@ -268,10 +268,11 @@ defmodule Singularity.Knowledge.TemplateServiceSolidTest do
       Process.sleep(50)
 
       # Verify event was recorded to database
-      event = Singularity.Repo.get_by(
-        Singularity.Knowledge.TemplateUsageEvent,
-        template_id: "test-template"
-      )
+      event =
+        Singularity.Repo.get_by(
+          Singularity.Knowledge.TemplateUsageEvent,
+          template_id: "test-template"
+        )
 
       # Event should exist in database
       refute is_nil(event), "Usage event should be recorded in database"

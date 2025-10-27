@@ -180,7 +180,11 @@ defmodule Singularity.Validation.ValidationDashboard do
     %{
       accuracy_trend: accuracy_trend,
       success_trend: success_trend,
-      overall_trend: if(accuracy_trend == :improving and success_trend == :improving, do: :improving, else: :stable)
+      overall_trend:
+        if(accuracy_trend == :improving and success_trend == :improving,
+          do: :improving,
+          else: :stable
+        )
     }
   end
 
@@ -243,7 +247,8 @@ defmodule Singularity.Validation.ValidationDashboard do
           %{
             priority: "LOW",
             category: "success_rate",
-            message: "Execution success rate is excellent (#{Float.round(success_rate * 100, 1)}%)",
+            message:
+              "Execution success rate is excellent (#{Float.round(success_rate * 100, 1)}%)",
             action: "Plans are executing reliably with current validation"
           }
           | recommendations

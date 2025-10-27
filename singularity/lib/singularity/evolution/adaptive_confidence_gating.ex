@@ -57,11 +57,16 @@ defmodule Singularity.Evolution.AdaptiveConfidenceGating do
   alias Singularity.Repo
   alias Singularity.Storage.ValidationMetricsStore
 
-  @target_success_rate 0.90  # Goal: 90% of published rules should work
-  @min_threshold 0.75        # Never go below this (still must be decent quality)
-  @max_threshold 0.95        # Never go above this (too conservative)
-  @adjustment_step 0.03      # How much to adjust per iteration
-  @min_data_points 10        # Need at least N rules to make decisions
+  # Goal: 90% of published rules should work
+  @target_success_rate 0.90
+  # Never go below this (still must be decent quality)
+  @min_threshold 0.75
+  # Never go above this (too conservative)
+  @max_threshold 0.95
+  # How much to adjust per iteration
+  @adjustment_step 0.03
+  # Need at least N rules to make decisions
+  @min_data_points 10
 
   defmodule ThresholdState do
     @moduledoc "Current gating threshold and tuning state"
@@ -148,9 +153,12 @@ defmodule Singularity.Evolution.AdaptiveConfidenceGating do
       state = get_tuning_state()
 
       new_published_count = (state.published_rule_count || 0) + 1
-      new_successful_count = if success, do: (state.successful_count || 0) + 1, else: (state.successful_count || 0)
 
-      new_success_rate = if new_published_count > 0, do: new_successful_count / new_published_count, else: 0.0
+      new_successful_count =
+        if success, do: (state.successful_count || 0) + 1, else: state.successful_count || 0
+
+      new_success_rate =
+        if new_published_count > 0, do: new_successful_count / new_published_count, else: 0.0
 
       # Determine if we should adjust threshold
       if new_published_count >= @min_data_points do

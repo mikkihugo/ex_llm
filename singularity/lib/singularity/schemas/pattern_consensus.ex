@@ -22,9 +22,24 @@ defmodule Singularity.Schemas.PatternConsensus do
   @doc false
   def changeset(pattern_consensus, attrs) do
     pattern_consensus
-    |> cast(attrs, [:pattern_key, :total_instances, :average_confidence, :consensus_level, :updated_at])
-    |> validate_required([:pattern_key, :total_instances, :average_confidence, :consensus_level, :updated_at])
-    |> validate_number(:average_confidence, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0)
+    |> cast(attrs, [
+      :pattern_key,
+      :total_instances,
+      :average_confidence,
+      :consensus_level,
+      :updated_at
+    ])
+    |> validate_required([
+      :pattern_key,
+      :total_instances,
+      :average_confidence,
+      :consensus_level,
+      :updated_at
+    ])
+    |> validate_number(:average_confidence,
+      greater_than_or_equal_to: 0.0,
+      less_than_or_equal_to: 1.0
+    )
     |> validate_inclusion(:consensus_level, ["low", "medium", "high", "very_high"])
   end
 end

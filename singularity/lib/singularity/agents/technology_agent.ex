@@ -202,6 +202,7 @@ defmodule Singularity.Agents.TechnologyAgent do
         # Extract dependency information from technology detections
         dependencies = extract_dependency_info(detections)
         {:reply, {:ok, dependencies}, state}
+
       error ->
         {:reply, error, state}
     end
@@ -215,6 +216,7 @@ defmodule Singularity.Agents.TechnologyAgent do
         # Classify frameworks by type
         classifications = classify_frameworks_by_type(detections)
         {:reply, {:ok, classifications}, state}
+
       error ->
         {:reply, error, state}
     end
@@ -227,6 +229,7 @@ defmodule Singularity.Agents.TechnologyAgent do
       {:ok, detections} ->
         report = generate_technology_report(detections, codebase_path)
         {:reply, {:ok, report}, state}
+
       error ->
         {:reply, error, state}
     end
@@ -246,6 +249,7 @@ defmodule Singularity.Agents.TechnologyAgent do
             confidence: tech.confidence
           }
         end)
+
       _ ->
         []
     end
@@ -259,6 +263,7 @@ defmodule Singularity.Agents.TechnologyAgent do
           # Classify by framework type (web_ui, web_server, build_tool, etc.)
           classify_framework_type(fw)
         end)
+
       _ ->
         %{}
     end
@@ -301,7 +306,9 @@ defmodule Singularity.Agents.TechnologyAgent do
     recommendations = []
 
     # Check for common technology gaps
-    has_react = Enum.any?(frameworks, fn f -> String.contains?(String.downcase(f.name), "react") end)
+    has_react =
+      Enum.any?(frameworks, fn f -> String.contains?(String.downcase(f.name), "react") end)
+
     has_vue = Enum.any?(frameworks, fn f -> String.contains?(String.downcase(f.name), "vue") end)
 
     if has_react and not has_vue do

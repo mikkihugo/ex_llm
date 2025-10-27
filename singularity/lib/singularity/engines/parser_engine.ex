@@ -613,9 +613,9 @@ defmodule Singularity.ParserEngine do
       include_performance: true
     }
 
-    case Singularity.Messaging.Client.request("central.parser.capabilities", Jason.encode!(request),
-           timeout: 5000
-         ) do
+    case Singularity.Messaging.Client.request(
+           "central.parser.capabilities",
+           Jason.encode!(request), timeout: 5000) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data}
@@ -654,9 +654,9 @@ defmodule Singularity.ParserEngine do
       include_optimizations: true
     }
 
-    case Singularity.Messaging.Client.request("central.parser.recommendations", Jason.encode!(request),
-           timeout: 3000
-         ) do
+    case Singularity.Messaging.Client.request(
+           "central.parser.recommendations",
+           Jason.encode!(request), timeout: 3000) do
       {:ok, response} ->
         case Jason.decode(response.data) do
           {:ok, data} -> {:ok, data["recommendations"] || []}

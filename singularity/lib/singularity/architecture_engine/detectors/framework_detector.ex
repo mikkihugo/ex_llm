@@ -78,7 +78,8 @@ defmodule Singularity.Architecture.Detectors.FrameworkDetector do
   def pattern_type, do: :framework
 
   @impl true
-  def description, do: "Detect web frameworks, build tools, and runtime frameworks (with learned patterns)"
+  def description,
+    do: "Detect web frameworks, build tools, and runtime frameworks (with learned patterns)"
 
   @impl true
   def supported_types do

@@ -373,6 +373,18 @@ defmodule Singularity.Execution.TodoStore do
     }
   end
 
+  @doc """
+  List recent todos ordered by insertion time.
+  """
+  def list_recent(opts \\ []) do
+    limit = Keyword.get(opts, :limit, 10)
+
+    Todo
+    |> order_by([t], desc: t.inserted_at)
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
   # ===========================
   # Private Helpers
   # ===========================

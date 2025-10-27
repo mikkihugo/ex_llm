@@ -19,7 +19,7 @@ defmodule Singularity.Repo.Migrations.CreateTodos do
       add :started_at, :utc_datetime
       add :completed_at, :utc_datetime
       add :failed_at, :utc_datetime
-      add :embedding, :vector, size: 768
+      add :embedding, :jsonb
       add :estimated_duration_seconds, :integer
       add :actual_duration_seconds, :integer
       add :retry_count, :integer, default: 0
@@ -54,12 +54,12 @@ defmodule Singularity.Repo.Migrations.CreateTodos do
       ON todos (context)
     """, "")
 
-    # Vector similarity search index
-    execute """
-    CREATE INDEX todos_embedding_idx ON todos
-    USING ivfflat (embedding vector_cosine_ops)
-    WITH (lists = 100)
-    """
+    # Vector similarity search index (disabled - pgvector not available)
+    # execute """
+    # CREATE INDEX todos_embedding_idx ON todos
+    # USING ivfflat (embedding vector_cosine_ops)
+    # WITH (lists = 100)
+    # """
 
     # Check constraint for status
     create constraint(:todos, :valid_status,

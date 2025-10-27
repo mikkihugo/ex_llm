@@ -133,7 +133,8 @@ defmodule Singularity.LLM.CostAnalysisDashboard do
          failed_executions: length(metrics) - success_count,
          success_rate: if(length(metrics) > 0, do: success_count / length(metrics), else: 0.0),
          total_tokens: total_tokens,
-         avg_cost_per_execution: if(length(metrics) > 0, do: total_cost / length(metrics), else: 0),
+         avg_cost_per_execution:
+           if(length(metrics) > 0, do: total_cost / length(metrics), else: 0),
          cost_per_token: if(total_tokens > 0, do: total_cost / total_tokens, else: 0),
          avg_latency_ms: avg_latency,
          provider_filter: provider,
@@ -182,7 +183,8 @@ defmodule Singularity.LLM.CostAnalysisDashboard do
             total_cost_last_7_days: total_cost,
             avg_daily_cost: daily_rate,
             executions: length(metrics),
-            avg_cost_per_execution: if(length(metrics) > 0, do: total_cost / length(metrics), else: 0)
+            avg_cost_per_execution:
+              if(length(metrics) > 0, do: total_cost / length(metrics), else: 0)
           }
         end)
         |> Enum.sort_by(&Map.get(&1, :total_cost_last_7_days), :desc)
@@ -206,7 +208,7 @@ defmodule Singularity.LLM.CostAnalysisDashboard do
     case Repo.one(
            from em in ExecutionMetric,
              select: sum(em.cost_cents)
-        ) do
+         ) do
       nil -> 0
       value -> round(value) || 0
     end

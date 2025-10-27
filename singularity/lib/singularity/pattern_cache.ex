@@ -26,8 +26,19 @@ defmodule Singularity.PatternCache do
   @doc false
   def changeset(pattern_cache, attrs) do
     pattern_cache
-    |> cast(attrs, [:instance_id, :codebase_hash, :pattern_type, :patterns, :cached_at, :expires_at, :hit_count, :metadata])
+    |> cast(attrs, [
+      :instance_id,
+      :codebase_hash,
+      :pattern_type,
+      :patterns,
+      :cached_at,
+      :expires_at,
+      :hit_count,
+      :metadata
+    ])
     |> validate_required([:instance_id, :codebase_hash, :pattern_type, :patterns, :cached_at])
-    |> unique_constraint([:instance_id, :codebase_hash, :pattern_type], name: :pattern_cache_lookup_idx)
+    |> unique_constraint([:instance_id, :codebase_hash, :pattern_type],
+      name: :pattern_cache_lookup_idx
+    )
   end
 end

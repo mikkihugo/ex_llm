@@ -41,7 +41,11 @@ defmodule Singularity.Evolution.ConfidenceDistributionTest do
 
       IO.puts("\n📌 Threshold Analysis:")
       IO.puts("   >= 0.90: #{above_90}/#{total} (#{Float.round(above_90 / total * 100, 1)}%)")
-      IO.puts("   >= 0.85: #{above_85}/#{total} (#{Float.round(above_85 / total * 100, 1)}%) - CURRENT THRESHOLD")
+
+      IO.puts(
+        "   >= 0.85: #{above_85}/#{total} (#{Float.round(above_85 / total * 100, 1)}%) - CURRENT THRESHOLD"
+      )
+
       IO.puts("   >= 0.80: #{above_80}/#{total} (#{Float.round(above_80 / total * 100, 1)}%)")
       IO.puts("   >= 0.75: #{above_75}/#{total} (#{Float.round(above_75 / total * 100, 1)}%)")
 
@@ -103,7 +107,9 @@ defmodule Singularity.Evolution.ConfidenceDistributionTest do
       end
 
       IO.puts("\n🔝 Top 10 Confidences (sorted):")
-      top_10 = rules
+
+      top_10 =
+        rules
         |> Enum.map(&Map.get(&1, :confidence, 0.0))
         |> Enum.sort(:desc)
         |> Enum.take(10)

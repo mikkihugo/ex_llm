@@ -849,11 +849,12 @@ defmodule Singularity.LLM.Service do
       :ok ->
         # TODO: Implement synchronous waiting for response via SharedQueueConsumer
         # For now, return a placeholder response
-        {:ok, %{
-          content: "LLM request published to queue (async response pending)",
-          model: "queued",
-          usage: %{prompt_tokens: 0, completion_tokens: 0, total_tokens: 0}
-        }}
+        {:ok,
+         %{
+           content: "LLM request published to queue (async response pending)",
+           model: "queued",
+           usage: %{prompt_tokens: 0, completion_tokens: 0, total_tokens: 0}
+         }}
 
       {:error, reason} ->
         Logger.error("Failed to publish LLM request to pgmq",
@@ -1036,7 +1037,7 @@ defmodule Singularity.LLM.Service do
   @spec await_responses_result(String.t(), timeout()) :: {:ok, map()} | {:error, term()}
   def await_responses_result(request_id, timeout \\ 30_000) do
     start_time = System.monotonic_time(:millisecond)
-    
+
     case wait_for_result(request_id, start_time, timeout) do
       {:ok, result} -> {:ok, result}
       {:error, :timeout} -> {:error, :timeout}
@@ -1046,9 +1047,12 @@ defmodule Singularity.LLM.Service do
 
   defp wait_for_result(request_id, start_time, timeout) do
     case LlmResultPoller.get_result(request_id) do
-      {:ok, result} -> {:ok, result}
+      {:ok, result} ->
+        {:ok, result}
+
       {:error, :not_found} ->
         elapsed = System.monotonic_time(:millisecond) - start_time
+
         if elapsed >= timeout do
           {:error, :timeout}
         else
@@ -1056,7 +1060,9 @@ defmodule Singularity.LLM.Service do
           Process.sleep(100)
           wait_for_result(request_id, start_time, timeout)
         end
-      {:error, reason} -> {:error, reason}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 end

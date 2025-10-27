@@ -279,7 +279,6 @@ defmodule Singularity.Execution.TodoWorkerAgent do
     {:stop, :normal, state}
   end
 
-
   defp map_complexity("simple"), do: :simple
   defp map_complexity("medium"), do: :medium
   defp map_complexity("complex"), do: :complex

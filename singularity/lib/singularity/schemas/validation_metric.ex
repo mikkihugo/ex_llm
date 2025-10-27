@@ -84,7 +84,10 @@ defmodule Singularity.Schemas.ValidationMetric do
     ])
     |> validate_required([:run_id, :check_id, :check_type, :result])
     |> validate_inclusion(:result, ["pass", "fail", "warning"])
-    |> validate_number(:confidence_score, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0)
+    |> validate_number(:confidence_score,
+      greater_than_or_equal_to: 0.0,
+      less_than_or_equal_to: 1.0
+    )
     |> validate_number(:runtime_ms, greater_than_or_equal_to: 0)
   end
 

@@ -157,28 +157,29 @@ defmodule Mix.Tasks.TemplatesData.Load do
             # Extract or generate artifact_id and version
             artifact_id =
               content_map["id"] ||
-              content_map["artifact_id"] ||
-              Path.basename(file_path, ".json")
+                content_map["artifact_id"] ||
+                Path.basename(file_path, ".json")
 
             version =
               content_map["version"] ||
-              content_map["spec_version"] ||
-              "1.0.0"
+                content_map["spec_version"] ||
+                "1.0.0"
 
             # Auto-detect type from JSON structure (allows overriding primary_type)
             artifact_type =
               detect_type_from_json(content_map) ||
-              primary_type ||
-              "generic_template"
+                primary_type ||
+                "generic_template"
 
             # Extract hierarchical type information
             type_hierarchy = extract_type_hierarchy(content_map, artifact_type)
 
             # Enrich content_map with type hierarchy (stored in JSONB for queries)
-            enriched_content = Map.merge(content_map, %{
-              "_type_hierarchy" => type_hierarchy,
-              "_detected_type" => artifact_type
-            })
+            enriched_content =
+              Map.merge(content_map, %{
+                "_type_hierarchy" => type_hierarchy,
+                "_detected_type" => artifact_type
+              })
 
             attrs = %{
               artifact_type: artifact_type,
@@ -191,10 +192,10 @@ defmodule Mix.Tasks.TemplatesData.Load do
             }
 
             case Repo.insert(
-              KnowledgeArtifact.changeset(%KnowledgeArtifact{}, attrs),
-              on_conflict: :replace_all,
-              conflict_target: [:artifact_type, :artifact_id, :version]
-            ) do
+                   KnowledgeArtifact.changeset(%KnowledgeArtifact{}, attrs),
+                   on_conflict: :replace_all,
+                   conflict_target: [:artifact_type, :artifact_id, :version]
+                 ) do
               {:ok, _} ->
                 {:ok, file_path}
 
@@ -246,14 +247,15 @@ defmodule Mix.Tasks.TemplatesData.Load do
     # Priority order of detection:
 
     # 1. Explicit type field
-    type_field = content_map["type"] || content_map["artifact_type"] || content_map["template_type"]
+    type_field =
+      content_map["type"] || content_map["artifact_type"] || content_map["template_type"]
+
     if type_field, do: type_field, else: detect_from_structure(content_map)
   end
 
   defp detect_type_from_json(_), do: nil
 
   defp detect_from_structure(content_map) do
-
     # 2. Structure-based detection (falling back to hierarchical indicators)
     cond do
       has_keys?(content_map, ["indicators", "benefits", "concerns"]) ->
@@ -269,7 +271,7 @@ defmodule Mix.Tasks.TemplatesData.Load do
         "quality_standard"
 
       has_keys?(content_map, ["role", "content"]) and
-        String.contains?(Map.get(content_map, "role", ""), ["system", "assistant"]) ->
+          String.contains?(Map.get(content_map, "role", ""), ["system", "assistant"]) ->
         "system_prompt"
 
       has_keys?(content_map, ["workflows"]) ->

@@ -114,31 +114,32 @@ defmodule Singularity.Jobs.LlmResultPoller do
 
       # Insert result into job_results table for persistent storage and agent consumption
       case JobResult.record_success(
-        workflow: "Singularity.Workflows.LlmRequest",
-        instance_id: Singularity.Application.instance_id(),
-        input: %{
-          request_id: request_id,
-          agent_id: result["agent_id"],
-          complexity: result["complexity"],
-          task_type: result["task_type"]
-        },
-        output: %{
-          request_id: request_id,
-          response: result["response"],
-          model: result["model"],
-          usage: result["usage"],
-          cost: result["cost"],
-          latency_ms: result["latency_ms"]
-        },
-        tokens_used: get_in(result, ["usage", "total_tokens"]) || 0,
-        cost_cents: Float.round((result["cost"] || 0.0) * 100) |> trunc(),
-        duration_ms: result["latency_ms"]
-      ) do
+             workflow: "Singularity.Workflows.LlmRequest",
+             instance_id: Singularity.Application.instance_id(),
+             input: %{
+               request_id: request_id,
+               agent_id: result["agent_id"],
+               complexity: result["complexity"],
+               task_type: result["task_type"]
+             },
+             output: %{
+               request_id: request_id,
+               response: result["response"],
+               model: result["model"],
+               usage: result["usage"],
+               cost: result["cost"],
+               latency_ms: result["latency_ms"]
+             },
+             tokens_used: get_in(result, ["usage", "total_tokens"]) || 0,
+             cost_cents: Float.round((result["cost"] || 0.0) * 100) |> trunc(),
+             duration_ms: result["latency_ms"]
+           ) do
         {:ok, job_result} ->
           Logger.info("LLM result stored successfully",
             request_id: request_id,
             result_id: job_result.id
           )
+
           :ok
 
         {:error, reason} ->
@@ -146,6 +147,7 @@ defmodule Singularity.Jobs.LlmResultPoller do
             request_id: request_id,
             error: inspect(reason)
           )
+
           {:error, reason}
       end
     rescue

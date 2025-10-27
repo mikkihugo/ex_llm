@@ -35,7 +35,11 @@ defmodule Singularity.Storage.FailurePatternStoreTest do
       assert updated.frequency == pattern.frequency + 2
       assert %DateTime{} = updated.last_seen_at
 
-      assert Enum.any?(updated.successful_fixes, &match?(%{"resolution" => "retry_operation"}, &1))
+      assert Enum.any?(
+               updated.successful_fixes,
+               &match?(%{"resolution" => "retry_operation"}, &1)
+             )
+
       assert updated.plan_characteristics["modules"] == attrs.plan_characteristics["modules"]
       assert updated.plan_characteristics["extra"] == true
       assert Enum.any?(updated.validation_errors, &match?(%{"type" => "followup_check"}, &1))
@@ -57,7 +61,10 @@ defmodule Singularity.Storage.FailurePatternStoreTest do
       assert [^pattern_a] = results
 
       results_all = FailurePatternStore.query()
-      assert Enum.sort(Enum.map(results_all, & &1.failure_mode)) == Enum.sort(["network_error", "validation_error"])
+
+      assert Enum.sort(Enum.map(results_all, & &1.failure_mode)) ==
+               Enum.sort(["network_error", "validation_error"])
+
       assert Enum.any?(results_all, &(&1.id == pattern_b.id))
     end
 
@@ -146,7 +153,8 @@ defmodule Singularity.Storage.FailurePatternStoreTest do
     attrs = %{
       run_id: "run-#{System.unique_integer([:positive])}",
       story_type: Map.get(overrides, :story_type, "integration"),
-      story_signature: Map.get(overrides, :story_signature, "sig-#{System.unique_integer([:positive])}"),
+      story_signature:
+        Map.get(overrides, :story_signature, "sig-#{System.unique_integer([:positive])}"),
       failure_mode: Map.get(overrides, :failure_mode, "validation_error"),
       root_cause: Map.get(overrides, :root_cause, "missing validation"),
       plan_characteristics:
@@ -161,7 +169,8 @@ defmodule Singularity.Storage.FailurePatternStoreTest do
           :validation_errors,
           [%{"type" => "duplicate_module", "severity" => "critical"}]
         ),
-      execution_error: Map.get(overrides, :execution_error, "module duplicates existing functionality"),
+      execution_error:
+        Map.get(overrides, :execution_error, "module duplicates existing functionality"),
       successful_fixes: Map.get(overrides, :successful_fixes, [])
     }
 

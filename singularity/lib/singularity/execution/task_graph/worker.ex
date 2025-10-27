@@ -35,7 +35,7 @@ defmodule Singularity.Execution.TaskGraph.Worker do
 
   use GenServer
   require Logger
-  alias Singularity.Execution.Todos.TodoStore
+  alias Singularity.Execution.TodoStore
   alias Singularity.Execution.Planning.TaskGraph
   alias Singularity.Execution.TaskGraph.WorkerPool
   # 5 minutes
@@ -273,7 +273,6 @@ defmodule Singularity.Execution.TaskGraph.Worker do
 
     {:stop, :normal, state}
   end
-
 
   defp map_complexity("simple"), do: :simple
   defp map_complexity("medium"), do: :medium

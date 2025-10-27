@@ -244,7 +244,7 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
         - Return {:noreply, state}
 
   depends_on:
-    - Singularity.Execution.Todos.TodoStore (MUST be available)
+    - Singularity.Execution.TodoStore (MUST be available)
     - Singularity.Execution.Todos.TodoWorkerAgent (MUST be available)
     - Process monitoring (built-in, no dependency)
   ```

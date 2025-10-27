@@ -24,7 +24,10 @@ defmodule Singularity.Jobs.LlmResultPollerTest do
 
     test "times out when result is missing" do
       assert {:error, :timeout} =
-               LlmResultPoller.await_responses_result(Ecto.UUID.generate(), timeout: 30, poll_interval: 5)
+               LlmResultPoller.await_responses_result(Ecto.UUID.generate(),
+                 timeout: 30,
+                 poll_interval: 5
+               )
     end
 
     test "surfaces failure metadata" do

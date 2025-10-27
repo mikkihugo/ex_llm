@@ -77,47 +77,51 @@ defmodule Singularity.Embedding.Tokenizer do
     case tokenizer do
       %{type: :bpe, vocab: vocab} ->
         detokenize_bpe(token_ids, vocab)
-      
+
       %{type: :wordpiece, vocab: vocab} ->
         detokenize_wordpiece(token_ids, vocab)
-      
+
       _ ->
         # Fallback to simple conversion
-        text = 
+        text =
           token_ids
-          |> Enum.map(fn id -> 
+          |> Enum.map(fn id ->
             case Map.get(tokenizer.vocab, id) do
               nil -> "[UNK]"
               token -> token
             end
           end)
           |> Enum.join("")
-        
+
         {:ok, text}
     end
   end
 
   defp detokenize_bpe(token_ids, vocab) do
     # BPE detokenization - merge subword tokens
-    text = 
+    text =
       token_ids
       |> Enum.map(fn id -> Map.get(vocab, id, "[UNK]") end)
       |> Enum.join("")
-      |> String.replace("##", "")  # Remove BPE markers
-      |> String.replace(Regex.compile!("\\s+"), " ")  # Normalize whitespace
-    
+      # Remove BPE markers
+      |> String.replace("##", "")
+      # Normalize whitespace
+      |> String.replace(Regex.compile!("\\s+"), " ")
+
     {:ok, text}
   end
 
   defp detokenize_wordpiece(token_ids, vocab) do
     # WordPiece detokenization
-    text = 
+    text =
       token_ids
       |> Enum.map(fn id -> Map.get(vocab, id, "[UNK]") end)
       |> Enum.join("")
-      |> String.replace("##", "")  # Remove WordPiece markers
-      |> String.replace(Regex.compile!("\\s+"), " ")  # Normalize whitespace
-    
+      # Remove WordPiece markers
+      |> String.replace("##", "")
+      # Normalize whitespace
+      |> String.replace(Regex.compile!("\\s+"), " ")
+
     {:ok, text}
   end
 

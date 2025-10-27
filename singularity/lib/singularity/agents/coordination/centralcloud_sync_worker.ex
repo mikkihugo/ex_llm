@@ -30,7 +30,8 @@ defmodule Singularity.Agents.Coordination.CentralCloudSyncWorker do
   require Logger
   alias Singularity.Agents.Coordination.CentralCloudSync
 
-  @default_interval_ms 300_000  # 5 minutes
+  # 5 minutes
+  @default_interval_ms 300_000
   @sync_enabled System.get_env("CENTRALCLOUD_SYNC_ENABLED", "true") == "true"
 
   def start_link(opts) do

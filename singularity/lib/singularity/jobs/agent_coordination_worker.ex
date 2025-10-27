@@ -4,7 +4,7 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
 
   Replaces pgmq publish/subscribe patterns for agent communication.
   Now uses Oban jobs for reliable, ordered message passing between agents.
-  
+
   Patterns replaced:
   - Agent status updates
   - Agent result broadcasting
@@ -19,7 +19,7 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
 
   @doc """
   Enqueue agent coordination message.
-  
+
   Args:
     - source_agent: Sending agent ID
     - target_agent: Receiving agent ID (nil for broadcast)

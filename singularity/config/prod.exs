@@ -7,6 +7,13 @@ config :singularity, SingularityWeb.Endpoint,
     port: String.to_integer(System.get_env("PORT", "8080")),
     transport_options: [num_acceptors: String.to_integer(System.get_env("HTTP_ACCEPTORS", "10"))]
   ],
+  https: [
+    port: String.to_integer(System.get_env("HTTPS_PORT", "8443")),
+    keyfile: System.get_env("HTTPS_KEYFILE", "priv/cert/selfsigned_key.pem"),
+    certfile: System.get_env("HTTPS_CERTFILE", "priv/cert/selfsigned.pem"),
+    transport_options: [num_acceptors: String.to_integer(System.get_env("HTTPS_ACCEPTORS", "10"))]
+  ],
+  force_ssl: [rewrite_on: [:x_forwarded_proto]],
   server: true
 
 config :singularity, :fly,

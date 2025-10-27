@@ -4,7 +4,7 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
 
   Replaces pgmq request("centralcloud.template.intelligence", ...)
   Now enqueued as an Oban job that reports failures back via Singularity.Jobs.PgmqClient.
-  
+
   Triggered when:
   - Template performance degrades
   - Failure patterns detected
@@ -20,7 +20,7 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
 
   @doc """
   Report template failure pattern to CentralCloud.
-  
+
   Args:
     - template_id: Template identifier
     - failure_type: Classification of failure

@@ -120,11 +120,11 @@ defmodule Singularity.Evolution.GenesisPublisher do
           Logger.info("GenesisPublisher: Successfully published #{count} rules to Genesis")
 
           # Publish each rule to pgmq
-          results = 
+          results =
             Enum.map(1..count, fn i ->
               rule_id = "rule_#{i}"
               genesis_id = "genesis_#{Ecto.UUID.generate()}"
-              
+
               rule_payload = %{
                 rule_id: rule_id,
                 genesis_id: genesis_id,
@@ -142,17 +142,19 @@ defmodule Singularity.Evolution.GenesisPublisher do
               case PgmqClient.send_message("genesis_rule_updates", rule_payload) do
                 {:ok, _message_id} ->
                   Logger.debug("GenesisPublisher: Published rule #{rule_id} to pgmq")
+
                   %{
                     rule_id: rule_id,
                     status: :published,
                     genesis_id: genesis_id,
                     timestamp: DateTime.utc_now()
                   }
-                
+
                 {:error, reason} ->
-                  Logger.error("GenesisPublisher: Failed to publish rule #{rule_id} to pgmq", 
+                  Logger.error("GenesisPublisher: Failed to publish rule #{rule_id} to pgmq",
                     error: inspect(reason)
                   )
+
                   %{
                     rule_id: rule_id,
                     status: :failed,
@@ -228,8 +230,8 @@ defmodule Singularity.Evolution.GenesisPublisher do
 
       # Read messages from genesis queue
       messages = PgmqClient.read_messages("genesis_rule_updates", limit)
-      
-      imported_rules = 
+
+      imported_rules =
         messages
         |> Enum.map(fn {_msg_id, payload} -> payload end)
         |> Enum.filter(fn rule ->

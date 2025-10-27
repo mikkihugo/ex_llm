@@ -151,7 +151,8 @@ defmodule Singularity.Application do
     children =
       [
         # Layer 1: Foundation - Database and metrics MUST start first
-        :sasl,  # Erlang SASL for system monitoring and error logging
+        # Erlang SASL for system monitoring and error logging
+        :sasl,
         Singularity.Repo,
         Singularity.Infrastructure.Telemetry,
         Singularity.ProcessRegistry

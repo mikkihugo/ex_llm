@@ -77,7 +77,9 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
   def pattern_type, do: :technology
 
   @impl true
-  def description, do: "Detect programming languages, runtimes, technology stack, and infrastructure systems (Phase 7)"
+  def description,
+    do:
+      "Detect programming languages, runtimes, technology stack, and infrastructure systems (Phase 7)"
 
   @impl true
   def supported_types do

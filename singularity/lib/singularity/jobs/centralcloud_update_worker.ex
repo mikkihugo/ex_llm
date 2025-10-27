@@ -4,12 +4,12 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
 
   Replaces pgmq publish("central.knowledge.update", ...)
   Now enqueued as an Oban job that will eventually write to pgmq queue.
-  
+
   Architecture:
   - DOWN: CentralCloud data synced to local tables via PostgreSQL replication
   - UP: Knowledge updates enqueued here, then pushed to pgmq:centralcloud_updates
   - Consumer: CentralCloud reads pgmq queue and processes updates
-  
+
   Triggered by:
   - Singularity.Integrations.CentralCloud.extract_cross_instance_insights/1
   - When new patterns or insights are discovered locally
@@ -25,7 +25,7 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
 
   @doc """
   Enqueue knowledge update to send to CentralCloud via Singularity.Jobs.PgmqClient.
-  
+
   Args:
     - patterns: List of discovered patterns
     - insights: List of insights

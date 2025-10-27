@@ -599,5 +599,4 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
          violations_count: 8
        }}
   end
-
 end

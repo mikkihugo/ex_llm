@@ -247,7 +247,8 @@ defmodule Singularity.Pipeline.Context do
     # Estimate complexity based on story length and gathered context
     complexity =
       case context do
-        %{technologies: techs, patterns: patterns} when length(techs) > 3 or length(patterns) > 2 ->
+        %{technologies: techs, patterns: patterns}
+        when length(techs) > 3 or length(patterns) > 2 ->
           "complex"
 
         %{technologies: techs} when length(techs) > 1 ->

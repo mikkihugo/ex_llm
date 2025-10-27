@@ -91,7 +91,9 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
     case get_registry() do
       {:ok, registry} ->
         case registry[category] do
-          nil -> []
+          nil ->
+            []
+
           systems ->
             case systems[system_name] do
               nil -> []
@@ -109,12 +111,14 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
     case get_registry() do
       {:ok, registry} ->
         case registry[category] do
-          nil -> true  # Unknown category - allow for graceful degradation
+          # Unknown category - allow for graceful degradation
+          nil -> true
           systems -> Map.has_key?(systems, system_name)
         end
 
       {:error, _} ->
-        true  # No registry - allow for graceful degradation
+        # No registry - allow for graceful degradation
+        true
     end
   end
 
@@ -176,10 +180,14 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
         {:ok, _message_id} ->
           # Wait for response from CentralCloud
           Logger.debug("Sent infrastructure registry request to CentralCloud via pgmq")
-          wait_for_response(3000)  # 3 second timeout
+          # 3 second timeout
+          wait_for_response(3000)
 
         {:error, reason} ->
-          Logger.debug("Failed to send infrastructure registry request via pgmq: #{inspect(reason)}")
+          Logger.debug(
+            "Failed to send infrastructure registry request via pgmq: #{inspect(reason)}"
+          )
+
           nil
       end
     rescue
@@ -201,7 +209,8 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
         elapsed = System.monotonic_time(:millisecond) - start_time
 
         if elapsed < timeout_ms do
-          Process.sleep(100)  # Wait 100ms before retrying
+          # Wait 100ms before retrying
+          Process.sleep(100)
           wait_for_response(timeout_ms - elapsed)
         else
           Logger.debug("Timeout waiting for infrastructure registry response from CentralCloud")

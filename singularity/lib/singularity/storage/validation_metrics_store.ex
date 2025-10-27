@@ -164,11 +164,12 @@ defmodule Singularity.Storage.ValidationMetricsStore do
     from_dt = time_range_to_datetime(time_range)
 
     # Get all validations in the time range
-    all_results = Repo.all(
-      from vm in ValidationMetric,
-        where: vm.inserted_at >= ^from_dt,
-        select: vm.result
-    )
+    all_results =
+      Repo.all(
+        from vm in ValidationMetric,
+          where: vm.inserted_at >= ^from_dt,
+          select: vm.result
+      )
 
     case length(all_results) do
       total when total > 10 ->
@@ -201,11 +202,12 @@ defmodule Singularity.Storage.ValidationMetricsStore do
     from_dt = time_range_to_datetime(time_range)
 
     # Get all execution results in the time range
-    all_results = Repo.all(
-      from em in ExecutionMetric,
-        where: em.inserted_at >= ^from_dt,
-        select: em.success
-    )
+    all_results =
+      Repo.all(
+        from em in ExecutionMetric,
+          where: em.inserted_at >= ^from_dt,
+          select: em.success
+      )
 
     case length(all_results) do
       total when total > 10 ->
@@ -238,11 +240,12 @@ defmodule Singularity.Storage.ValidationMetricsStore do
     from_dt = time_range_to_datetime(time_range)
 
     # Get all validation times in the time range
-    all_times = Repo.all(
-      from vm in ValidationMetric,
-        where: vm.inserted_at >= ^from_dt,
-        select: vm.runtime_ms
-    )
+    all_times =
+      Repo.all(
+        from vm in ValidationMetric,
+          where: vm.inserted_at >= ^from_dt,
+          select: vm.runtime_ms
+      )
 
     case length(all_times) do
       count when count > 10 ->
@@ -279,11 +282,12 @@ defmodule Singularity.Storage.ValidationMetricsStore do
     from_dt = time_range_to_datetime(time_range)
 
     # Get all validations in the time range
-    all_validations = Repo.all(
-      from vm in ValidationMetric,
-        where: vm.inserted_at >= ^from_dt,
-        select: {vm.check_id, vm.result}
-    )
+    all_validations =
+      Repo.all(
+        from vm in ValidationMetric,
+          where: vm.inserted_at >= ^from_dt,
+          select: {vm.check_id, vm.result}
+      )
 
     # Group by check_id and calculate effectiveness
     all_validations
@@ -383,19 +387,22 @@ defmodule Singularity.Storage.ValidationMetricsStore do
 
     try do
       # Get recent validation metrics
-      from_dt = DateTime.add(DateTime.utc_now(), -24, :hour)  # Last 24 hours
-      
-      validation_metrics = Repo.all(
-        from vm in ValidationMetric,
-          where: vm.inserted_at >= ^from_dt,
-          limit: 100
-      )
+      # Last 24 hours
+      from_dt = DateTime.add(DateTime.utc_now(), -24, :hour)
 
-      execution_metrics = Repo.all(
-        from em in ExecutionMetric,
-          where: em.inserted_at >= ^from_dt,
-          limit: 100
-      )
+      validation_metrics =
+        Repo.all(
+          from vm in ValidationMetric,
+            where: vm.inserted_at >= ^from_dt,
+            limit: 100
+        )
+
+      execution_metrics =
+        Repo.all(
+          from em in ExecutionMetric,
+            where: em.inserted_at >= ^from_dt,
+            limit: 100
+        )
 
       # Prepare sync payload
       sync_payload = %{
@@ -412,7 +419,11 @@ defmodule Singularity.Storage.ValidationMetricsStore do
           CentralCloud.ValidationMetricsIngestion.ingest_metrics(sync_payload)
 
         Code.ensure_loaded?(CentralCloud.PatternLearningPublisher) and
-            function_exported?(CentralCloud.PatternLearningPublisher, :publish_validation_metrics, 1) ->
+            function_exported?(
+              CentralCloud.PatternLearningPublisher,
+              :publish_validation_metrics,
+              1
+            ) ->
           CentralCloud.PatternLearningPublisher.publish_validation_metrics(sync_payload)
 
         true ->

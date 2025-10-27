@@ -100,7 +100,8 @@ defmodule Singularity.Evolution.SelfEvolutionIntegrationTest do
     end
 
     test "import_rules_from_genesis returns imported rules" do
-      {:ok, imported} = GenesisPublisher.import_rules_from_genesis(min_confidence: 0.85, limit: 10)
+      {:ok, imported} =
+        GenesisPublisher.import_rules_from_genesis(min_confidence: 0.85, limit: 10)
 
       assert is_list(imported)
 
@@ -427,7 +428,9 @@ defmodule Singularity.Evolution.SelfEvolutionIntegrationTest do
   describe "Full Self-Evolution Cycle" do
     test "complete learning loop from pattern to rule to publication" do
       # Phase 1: Analyze patterns
-      {:ok, rules} = RuleEvolutionSystem.analyze_and_propose_rules(%{}, min_confidence: 0.0, limit: 20)
+      {:ok, rules} =
+        RuleEvolutionSystem.analyze_and_propose_rules(%{}, min_confidence: 0.0, limit: 20)
+
       assert is_list(rules)
       initial_count = length(rules)
 

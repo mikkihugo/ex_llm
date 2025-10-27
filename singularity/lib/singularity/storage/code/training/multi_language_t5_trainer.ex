@@ -1388,38 +1388,44 @@ defmodule Singularity.MultiLanguageT5Trainer do
   defp extract_rust_patterns(code) do
     # Extract Rust-specific patterns from code
     patterns = []
-    
+
     # Extract function definitions
-    function_patterns = Regex.scan(~r/fn\s+(\w+)/, code)
-    |> Enum.map(fn [_, name] -> %{type: :function, name: name, language: :rust} end)
-    
+    function_patterns =
+      Regex.scan(~r/fn\s+(\w+)/, code)
+      |> Enum.map(fn [_, name] -> %{type: :function, name: name, language: :rust} end)
+
     # Extract struct definitions
-    struct_patterns = Regex.scan(~r/struct\s+(\w+)/, code)
-    |> Enum.map(fn [_, name] -> %{type: :struct, name: name, language: :rust} end)
-    
+    struct_patterns =
+      Regex.scan(~r/struct\s+(\w+)/, code)
+      |> Enum.map(fn [_, name] -> %{type: :struct, name: name, language: :rust} end)
+
     # Extract trait implementations
-    trait_patterns = Regex.scan(~r/impl\s+(\w+)/, code)
-    |> Enum.map(fn [_, name] -> %{type: :trait, name: name, language: :rust} end)
-    
+    trait_patterns =
+      Regex.scan(~r/impl\s+(\w+)/, code)
+      |> Enum.map(fn [_, name] -> %{type: :trait, name: name, language: :rust} end)
+
     patterns ++ function_patterns ++ struct_patterns ++ trait_patterns
   end
 
   defp extract_elixir_patterns(code) do
     # Extract Elixir-specific patterns from code
     patterns = []
-    
+
     # Extract function definitions
-    function_patterns = Regex.scan(~r/def\s+(\w+)/, code)
-    |> Enum.map(fn [_, name] -> %{type: :function, name: name, language: :elixir} end)
-    
+    function_patterns =
+      Regex.scan(~r/def\s+(\w+)/, code)
+      |> Enum.map(fn [_, name] -> %{type: :function, name: name, language: :elixir} end)
+
     # Extract module definitions
-    module_patterns = Regex.scan(~r/defmodule\s+(\w+)/, code)
-    |> Enum.map(fn [_, name] -> %{type: :module, name: name, language: :elixir} end)
-    
+    module_patterns =
+      Regex.scan(~r/defmodule\s+(\w+)/, code)
+      |> Enum.map(fn [_, name] -> %{type: :module, name: name, language: :elixir} end)
+
     # Extract struct definitions
-    struct_patterns = Regex.scan(~r/defstruct\s+(\w+)/, code)
-    |> Enum.map(fn [_, name] -> %{type: :struct, name: name, language: :elixir} end)
-    
+    struct_patterns =
+      Regex.scan(~r/defstruct\s+(\w+)/, code)
+      |> Enum.map(fn [_, name] -> %{type: :struct, name: name, language: :elixir} end)
+
     patterns ++ function_patterns ++ module_patterns ++ struct_patterns
   end
 
@@ -1450,15 +1456,17 @@ defmodule Singularity.MultiLanguageT5Trainer do
   defp extract_code_patterns(code) do
     # Extract general code patterns
     patterns = []
-    
+
     # Extract variable assignments
-    assignment_patterns = Regex.scan(~r/(\w+)\s*=\s*/, code)
-    |> Enum.map(fn [_, var] -> %{type: :assignment, name: var} end)
-    
+    assignment_patterns =
+      Regex.scan(~r/(\w+)\s*=\s*/, code)
+      |> Enum.map(fn [_, var] -> %{type: :assignment, name: var} end)
+
     # Extract function calls
-    call_patterns = Regex.scan(~r/(\w+)\s*\(/, code)
-    |> Enum.map(fn [_, func] -> %{type: :call, name: func} end)
-    
+    call_patterns =
+      Regex.scan(~r/(\w+)\s*\(/, code)
+      |> Enum.map(fn [_, func] -> %{type: :call, name: func} end)
+
     patterns ++ assignment_patterns ++ call_patterns
   end
 

@@ -4,7 +4,7 @@ defmodule Singularity.Jobs.HealthMetricsWorker do
 
   Replaces pgmq publish("intelligence_hub.codebase_health", ...)
   Now enqueued as an Oban job in the metrics queue.
-  
+
   Triggered by:
   - CodebaseHealthTracker.snapshot_codebase/1
   - Cron schedule (every 5 minutes via MetricsAggregationWorker)
@@ -20,7 +20,7 @@ defmodule Singularity.Jobs.HealthMetricsWorker do
 
   @doc """
   Record health metrics for a codebase path.
-  
+
   Args:
     - codebase_path: Path to analyze
     
@@ -44,6 +44,7 @@ defmodule Singularity.Jobs.HealthMetricsWorker do
           modules: snapshot.modules_count,
           doc_coverage: snapshot.documentation_coverage
         )
+
         :ok
 
       {:error, reason} ->
@@ -51,6 +52,7 @@ defmodule Singularity.Jobs.HealthMetricsWorker do
           codebase: codebase_path,
           reason: reason
         )
+
         {:error, reason}
     end
   end

@@ -90,10 +90,10 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
 
     # Download actual model files
     case download_model_files(info, target_dir) do
-      {:ok, _} -> 
+      {:ok, _} ->
         Logger.info("✅ Model files downloaded successfully")
         {:ok, target_dir}
-      
+
       {:error, reason} ->
         Logger.error("❌ Failed to download model files: #{inspect(reason)}")
         {:error, reason}
@@ -103,16 +103,19 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
   defp download_model_files(info, target_dir) do
     # Download model configuration
     config_url = "#{info.repo}/raw/main/config.json"
+
     case download_file(config_url, Path.join(target_dir, "config.json")) do
-      {:ok, _} -> 
+      {:ok, _} ->
         # Download tokenizer
         tokenizer_url = "#{info.repo}/raw/main/tokenizer.json"
+
         case download_file(tokenizer_url, Path.join(target_dir, "tokenizer.json")) do
           {:ok, _} -> {:ok, :downloaded}
           {:error, reason} -> {:error, reason}
         end
-      
-      {:error, reason} -> {:error, reason}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -121,10 +124,10 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
       {:ok, %{status_code: 200, body: body}} ->
         File.write!(file_path, body)
         {:ok, :downloaded}
-      
+
       {:ok, %{status_code: status}} ->
         {:error, "HTTP #{status}"}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
