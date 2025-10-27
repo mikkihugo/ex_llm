@@ -1,9 +1,10 @@
 //! Infrastructure detection - message brokers, databases, registries, observability
 
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use serde_json::{json, Value};
 
 use crate::repository::types::*;
 
@@ -203,10 +204,19 @@ impl InfrastructureDetector for KafkaDetector {
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
-    let topics = Vec::new(); // TODO: Parse Kafka config
+    let mut config = HashMap::new();
+
+    // TODO: Parse Kafka config from kafka.yml or code
+    let topics: Vec<String> = Vec::new();
     let partitions = 1;
 
-    Ok(DetectionResult::MessageBroker(MessageBroker::Kafka { topics, partitions }))
+    config.insert("topics".to_string(), json!(topics));
+    config.insert("partitions".to_string(), json!(partitions));
+
+    Ok(DetectionResult::MessageBroker(MessageBroker {
+      name: "Kafka".to_string(),
+      config,
+    }))
   }
 }
 
@@ -228,7 +238,16 @@ impl InfrastructureDetector for RabbitMQDetector {
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
-    Ok(DetectionResult::MessageBroker(MessageBroker::RabbitMQ { exchanges: Vec::new(), queues: Vec::new() }))
+    let mut config = HashMap::new();
+
+    // TODO: Parse RabbitMQ config from rabbitmq.conf or code
+    config.insert("exchanges".to_string(), json!(Vec::<String>::new()));
+    config.insert("queues".to_string(), json!(Vec::<String>::new()));
+
+    Ok(DetectionResult::MessageBroker(MessageBroker {
+      name: "RabbitMQ".to_string(),
+      config,
+    }))
   }
 }
 

@@ -183,14 +183,21 @@ pub struct ToolStack {
   pub testing_frameworks: Vec<String>,
 }
 
-/// Message broker systems
+/// Message broker systems (Phase 6: Dynamic registry-validated types)
+///
+/// Replaces hardcoded enum variants with dynamic string names validated
+/// against InfrastructureRegistry from CentralCloud.
+///
+/// Supported brokers are defined in the registry:
+/// - Kafka, RabbitMQ, RedisStreams, Pulsar
+///
+/// Configuration is flexible to support any broker type.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum MessageBroker {
-  // NATS removed in Phase 4 - use ex_pgflow/pgmq via Elixir
-  Kafka { topics: Vec<String>, partitions: usize },
-  RabbitMQ { exchanges: Vec<String>, queues: Vec<String> },
-  RedisStreams { streams: Vec<String> },
-  Pulsar { topics: Vec<String> },
+pub struct MessageBroker {
+  /// Broker name, validated against InfrastructureRegistry
+  pub name: String,
+  /// Flexible configuration (topics, partitions, exchanges, etc.)
+  pub config: HashMap<String, serde_json::Value>,
 }
 
 /// Database systems

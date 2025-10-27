@@ -131,7 +131,8 @@ impl ArchitectureAnalyzer {
 
     // Pub/Sub (Kafka, RabbitMQ)
     // NATS removed in Phase 4
-    if infrastructure.message_brokers.iter().any(|b| matches!(b, MessageBroker::Kafka { .. } | MessageBroker::RabbitMQ { .. })) {
+    // Phase 6: Dynamic message broker names
+    if infrastructure.message_brokers.iter().any(|b| b.name == "Kafka" || b.name == "RabbitMQ") {
       patterns.push(CommunicationCodePattern::PubSub);
     }
 
@@ -141,7 +142,8 @@ impl ArchitectureAnalyzer {
     }
 
     // Streaming
-    if api_protocols.contains(&ApiProtocol::WebSocket) || infrastructure.message_brokers.iter().any(|b| matches!(b, MessageBroker::Kafka { .. })) {
+    // Phase 6: Dynamic message broker names
+    if api_protocols.contains(&ApiProtocol::WebSocket) || infrastructure.message_brokers.iter().any(|b| b.name == "Kafka") {
       patterns.push(CommunicationCodePattern::Streaming);
     }
 
