@@ -3,7 +3,7 @@ default_model: gpt-4.1
 models:
   gpt-4.1:
     context_window: 128000
-    max_output_tokens: 4096
+    max_output_tokens: 16384
     pricing:
       input: 0.002
       output: 0.008
@@ -13,3 +13,4 @@ models:
     - vision
     - structured_output
     - code_generation
+    - search
