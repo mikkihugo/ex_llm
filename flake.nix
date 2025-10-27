@@ -166,7 +166,7 @@
           git gh curl pkg-config direnv gnused gawk coreutils findutils
           ripgrep fd jq bat htop tree watchexec entr just nil nixfmt-rfc-style lsof
           mold sccache cachix rustc cargo rustfmt clippy rust-analyzer cargo-watch
-          postgresql_17  # For pgxn (pg_config and dev headers)
+          postgresql_18  # For pgxn (pg_config and dev headers)
           # Note: Google auth uses @google/gemini-cli-core OAuth (no gcloud needed)
         ] ++ lib.optionals env.gpu (if platform.hasCuda then [
           # CUDA tools only if GPU enabled and CUDA available
@@ -201,7 +201,7 @@
               ps.h3-pg              # Hexagonal hierarchical geospatial indexing
 
               # Time Series
-              ps.timescaledb        # TimescaleDB 2.22 - time-series optimization
+              # ps.timescaledb        # TimescaleDB 2.22 - time-series optimization (temporarily disabled)
               # ps.timescaledb_toolkit # TimescaleDB analytics extension (broken in nixpkgs - marked as broken package)
 
               # Graph Database

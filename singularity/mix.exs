@@ -28,7 +28,7 @@ defmodule Singularity.MixProject do
   def application do
     [
       mod: {Singularity.Application, []},
-      extra_applications: [:logger, :runtime_tools, :os_mon]
+      extra_applications: [:logger, :runtime_tools, :os_mon, :sasl]
     ]
   end
 
@@ -125,6 +125,10 @@ defmodule Singularity.MixProject do
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.1"},
       {:phoenix_live_dashboard, "~> 0.8"},
+
+      # Health check plug + HTTP endpoint
+      {:plug_checkup, "~> 0.6"},
+      {:plug_cowboy, "~> 2.6"},
 
       # Background Job Queue for ML training, maintenance tasks, and cron scheduling
       {:oban, "~> 2.18"},

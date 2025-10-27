@@ -343,15 +343,5 @@ pub fn parse_mermaid(diagram_text: String) -> Result<String, String> {
 }
 
 // Rustler initialization
-rustler::init!(
-    "Elixir.Singularity.ParserEngine",
-    [
-        parse_file_nif,
-        parse_tree_nif,
-        supported_languages,
-        ast_grep_search,
-        ast_grep_match,
-        ast_grep_replace,
-        parse_mermaid
-    ]
-);
+// Rustler 0.34+ auto-detects exported functions, no need for explicit array
+rustler::init!("Elixir.Singularity.ParserEngine");

@@ -406,31 +406,6 @@ pub fn detect_language_by_manifest_nif(manifest_path: String) -> NifResult<Langu
 // Initialize the NIF module (SINGLE rustler::init! for entire crate)
 // Module name MUST match Elixir module name exactly
 //
-// NOTE: Functions defined in this file (mod.rs) use local names
-//       Functions from other modules use crate:: prefix
-rustler::init!("Elixir.Singularity.CodeEngineNif", [
-    // Legacy NIFs (defined in this file - mod.rs)
-    analyze_code_nif,
-    calculate_quality_metrics_nif,
-    load_asset_nif,
-    query_asset_nif,
-    parse_file_nif,
-    supported_languages_nif,
-    detect_language_by_extension_nif,
-    detect_language_by_manifest_nif,
-
-    // Multi-language analyzer NIFs (from nif_bindings.rs)
-    crate::nif_bindings::analyze_language,
-    crate::nif_bindings::analyze_control_flow,
-    crate::nif_bindings::check_language_rules,
-    crate::nif_bindings::detect_cross_language_patterns,
-    crate::nif_bindings::get_rca_metrics,
-    crate::nif_bindings::extract_functions,
-    crate::nif_bindings::extract_classes,
-    crate::nif_bindings::extract_imports_exports,
-    crate::nif_bindings::supported_languages,
-    crate::nif_bindings::rca_supported_languages,
-    crate::nif_bindings::ast_grep_supported_languages,
-    crate::nif_bindings::has_rca_support,
-    crate::nif_bindings::has_ast_grep_support
-]);
+// NOTE: Rustler 0.34+ auto-detects exported functions
+//       No need for explicit function list anymore
+rustler::init!("Elixir.Singularity.CodeEngineNif");

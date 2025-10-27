@@ -77,11 +77,22 @@ defmodule Singularity.Embedding.ModelLoader do
   defp model_exists?(model_dir, info) do
     case info.framework do
       :safetensors ->
-        File.exists?(Path.join(model_dir, "model.safetensors")) &&
+        # Check for single file or sharded files
+        (File.exists?(Path.join(model_dir, "model.safetensors")) ||
+         (File.exists?(Path.join(model_dir, "model-00001-of-00002.safetensors")) &&
+         File.exists?(Path.join(model_dir, "model-00002-of-00002.safetensors")))) &&
           File.exists?(Path.join(model_dir, "tokenizer.json"))
 
       :onnx ->
-        File.exists?(Path.join(model_dir, "model.onnx")) &&
+        # Check for any ONNX file pattern (including moved from subdirectories)
+        onnx_files = [
+          "model.onnx",
+          "model_fp16.onnx",
+          "pytorch_model.onnx", 
+          "onnx_model.onnx"
+        ]
+        
+        Enum.any?(onnx_files, &File.exists?(Path.join(model_dir, &1))) &&
           File.exists?(Path.join(model_dir, "tokenizer.json"))
     end
   end
@@ -109,6 +120,9 @@ defmodule Singularity.Embedding.ModelLoader do
 
     Logger.info("Downloading: #{filename}")
 
+    # Create subdirectories if needed
+    File.mkdir_p!(Path.dirname(target_path))
+
     case :httpc.request(:get, {String.to_charlist(url), []}, [], []) do
       {:ok, {{_version, 200, _reason}, _headers, body}} ->
         File.write!(target_path, body)
@@ -131,11 +145,62 @@ defmodule Singularity.Embedding.ModelLoader do
   defp download_model_weights(info, target_dir) do
     case info.framework do
       :safetensors ->
-        download_file(info.repo, "model.safetensors", target_dir)
+        download_safetensors_files(info.repo, target_dir)
 
       :onnx ->
-        download_file(info.repo, "model.onnx", target_dir)
+        download_onnx_files(info.repo, target_dir)
     end
+  end
+
+  defp download_safetensors_files(repo, target_dir) do
+    # Try single file first, then sharded files
+    case download_file(repo, "model.safetensors", target_dir) do
+      :ok -> :ok
+      {:error, _} ->
+        # Try sharded files
+        download_sharded_safetensors(repo, target_dir)
+    end
+  end
+
+  defp download_sharded_safetensors(repo, target_dir) do
+    # Download sharded safetensors files (model-00001-of-00002.safetensors, etc.)
+    shard_files = [
+      "model-00001-of-00002.safetensors",
+      "model-00002-of-00002.safetensors"
+    ]
+    
+    results = Enum.map(shard_files, &download_file(repo, &1, target_dir))
+    
+    if Enum.all?(results, &(&1 == :ok)) do
+      :ok
+    else
+      {:error, "Failed to download sharded safetensors files"}
+    end
+  end
+
+  defp download_onnx_files(repo, target_dir) do
+    # Try different ONNX file patterns, including subdirectories
+    onnx_files = [
+      "model.onnx",
+      "onnx/model.onnx",
+      "onnx/model_fp16.onnx",
+      "pytorch_model.onnx", 
+      "onnx_model.onnx"
+    ]
+    
+    Enum.find_value(onnx_files, {:error, "No ONNX files found"}, fn file ->
+      case download_file(repo, file, target_dir) do
+        :ok -> 
+          # If downloaded from subdirectory, move to root
+          if String.contains?(file, "/") do
+            source = Path.join(target_dir, file)
+            target = Path.join(target_dir, Path.basename(file))
+            File.rename!(source, target)
+          end
+          :ok
+        {:error, _} -> nil
+      end
+    end)
   end
 
   defp load_weights(model, model_path, info, device) do

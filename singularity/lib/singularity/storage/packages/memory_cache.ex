@@ -234,16 +234,23 @@ defmodule Singularity.MemoryCache do
   end
 
   defp warmup_templates do
-    # Load from TemplateOptimizer's top performers
-    case Singularity.Quality.TemplateTracker.analyze_performance() do
-      {:ok, %{top_performers: performers}} ->
-        Enum.each(performers, fn %{template: template_id} ->
-          # Cache the template
-          put(:templates, template_id, template_id, :timer.hours(48))
-        end)
+    tracker = Process.whereis(Singularity.Quality.TemplateTracker)
 
-      _ ->
-        :ok
+    if tracker do
+      # Load from TemplateOptimizer's top performers
+      case Singularity.Quality.TemplateTracker.analyze_performance() do
+        {:ok, %{top_performers: performers}} ->
+          Enum.each(performers, fn %{template: template_id} ->
+            # Cache the template
+            put(:templates, template_id, template_id, :timer.hours(48))
+          end)
+
+        _ ->
+          :ok
+      end
+    else
+      Logger.debug("Skipping template warmup - TemplateTracker not running")
+      :ok
     end
   end
 

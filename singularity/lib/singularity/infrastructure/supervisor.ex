@@ -41,7 +41,10 @@ defmodule Singularity.Infrastructure.Supervisor do
       Singularity.StartupWarmup,
 
       # Embedding model loader (ML model initialization)
-      Singularity.EmbeddingModelLoader
+      Singularity.EmbeddingModelLoader,
+
+      # HTTP health server (Plug + Cowboy)
+      Singularity.Health.HttpServer
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

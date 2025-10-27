@@ -1,7 +1,7 @@
 import Config
 
 port =
-  System.get_env("PORT", "8080")
+  System.get_env("PORT", "4000")
   |> String.to_integer()
 
 mix_env = System.get_env("MIX_ENV") || Atom.to_string(config_env())
@@ -11,6 +11,11 @@ server_enabled? =
     nil -> Application.get_env(:singularity, :http_server_enabled, false)
     value -> value == "true"
   end
+
+config :singularity, :http_server,
+  enabled: server_enabled?,
+  port: port,
+  acceptors: String.to_integer(System.get_env("HTTP_ACCEPTORS", "16"))
 
 # Note: Singularity is a pure Elixir application with no web endpoint
 # Web interfaces are provided by Observer (port 4002)

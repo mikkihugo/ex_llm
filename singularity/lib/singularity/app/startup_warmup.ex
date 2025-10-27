@@ -48,22 +48,26 @@ defmodule Singularity.StartupWarmup do
   defp warmup_templates do
     Logger.info("Loading top-performing templates...")
 
-    try do
-      case Singularity.Quality.TemplateTracker.analyze_performance() do
-        {:ok, %{top_performers: performers}} ->
-          Enum.each(Enum.take(performers, 10), fn perf ->
-            # Cache the template
-            Singularity.MemoryCache.put(:templates, perf.template, perf, :timer.hours(48))
-          end)
+    if Process.whereis(Singularity.Quality.TemplateTracker) do
+      try do
+        case Singularity.Quality.TemplateTracker.analyze_performance() do
+          {:ok, %{top_performers: performers}} ->
+            Enum.each(Enum.take(performers, 10), fn perf ->
+              # Cache the template
+              Singularity.MemoryCache.put(:templates, perf.template, perf, :timer.hours(48))
+            end)
 
-          Logger.info("Cached #{min(10, length(performers))} top templates")
+            Logger.info("Cached #{min(10, length(performers))} top templates")
 
-        _ ->
-          Logger.debug("No template history to warmup")
+          _ ->
+            Logger.debug("No template history to warmup")
+        end
+      rescue
+        e ->
+          Logger.warning("Template warmup failed: #{inspect(e)}")
       end
-    rescue
-      e ->
-        Logger.warning("Template warmup failed: #{inspect(e)}")
+    else
+      Logger.info("Template warmup skipped (TemplateTracker not running)")
     end
   end
 

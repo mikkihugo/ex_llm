@@ -202,16 +202,17 @@ defmodule Singularity.Evolution.GenesisPublisher do
 
   ## Example
 
-      iex> GenesisPublisher.import_rules_from_genesis()
+      ```elixir
       {:ok, [
         %{
           pattern: %{task_type: :architect},
           action: %{checks: ["quality", "template"]},
           confidence: 0.92,
           source_instance: "singularity_instance_2",
-          imported_at: ~U[...]
+          imported_at: ~U[2025-01-01 00:00:00Z]
         }
       ]}
+      ```
   """
   @spec import_rules_from_genesis(keyword()) ::
           {:ok, [map()]} | {:error, term()}
