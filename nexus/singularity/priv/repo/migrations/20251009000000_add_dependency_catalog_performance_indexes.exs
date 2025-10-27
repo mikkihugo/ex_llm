@@ -94,7 +94,7 @@ defmodule Singularity.Repo.Migrations.AddDependencyCatalogPerformanceIndexes2025
         ) THEN
           CREATE INDEX dependency_catalog_examples_code_embedding_idx
           ON dependency_catalog_examples
-          USING ivfflat (code_embedding vector_cosine_ops)
+#           USING ivfflat (code_embedding vector_cosine_ops)
           WITH (lists = 100);
         END IF;
       END IF;
@@ -107,7 +107,7 @@ defmodule Singularity.Repo.Migrations.AddDependencyCatalogPerformanceIndexes2025
         ) THEN
           CREATE INDEX dependency_catalog_patterns_pattern_embedding_idx
           ON dependency_catalog_patterns
-          USING ivfflat (pattern_embedding vector_cosine_ops)
+#           USING ivfflat (pattern_embedding vector_cosine_ops)
           WITH (lists = 100);
         END IF;
       END IF;

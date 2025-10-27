@@ -329,7 +329,10 @@ defmodule Singularity.Application do
       Singularity.Agents.Supervisor,
 
       # Layer 5: Domain Supervisors - Domain-specific supervision trees
-      Singularity.Git.Supervisor
+      Singularity.Git.Supervisor,
+      
+      # HTDAG Auto Code Ingestion - Hierarchical task-based automatic code ingestion
+      Singularity.HTDAG.Supervisor
     ]
   end
 end

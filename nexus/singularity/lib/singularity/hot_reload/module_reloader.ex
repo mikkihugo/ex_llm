@@ -7,6 +7,8 @@ defmodule Singularity.HotReload.ModuleReloader do
   require Logger
 
   alias Singularity.{CodeStore, DynamicCompiler}
+  alias Singularity.HTDAG.AutoCodeIngestionDAG
+  alias Singularity.Code.CodebaseDetector
 
   @type queue_entry :: %{
           id: reference(),
@@ -24,6 +26,29 @@ defmodule Singularity.HotReload.ModuleReloader do
   @spec enqueue(String.t(), map()) :: :ok | {:error, term()}
   def enqueue(agent_id, payload) when is_map(payload) do
     GenServer.call(__MODULE__, {:enqueue, agent_id, payload})
+  end
+
+  @doc """
+  Enqueue a file for HTDAG-based hot reload with automatic codebase detection.
+  """
+  @spec enqueue_file_reload(String.t(), String.t(), map()) :: :ok | {:error, term()}
+  def enqueue_file_reload(file_path, agent_id \\ "htdag-file-reload", metadata \\ %{}) do
+    # Auto-detect codebase
+    codebase_id = CodebaseDetector.detect(format: :full)
+    
+    # Create HTDAG payload
+    htdag_payload = %{
+      file_path: file_path,
+      codebase_id: codebase_id,
+      priority: :realtime,
+      metadata: Map.merge(metadata, %{
+        agent_id: agent_id,
+        reload_type: :htdag,
+        timestamp: DateTime.utc_now()
+      })
+    }
+    
+    GenServer.call(__MODULE__, {:enqueue_htdag, agent_id, htdag_payload})
   end
 
   def queue_depth do
@@ -60,6 +85,46 @@ defmodule Singularity.HotReload.ModuleReloader do
 
   def handle_call(:queue_depth, _from, state) do
     {:reply, :queue.len(state.queue), state}
+  end
+
+  @impl true
+  def handle_call({:enqueue_htdag, agent_id, htdag_payload}, _from, state) do
+    current_depth = :queue.len(state.queue)
+
+    if current_depth >= @max_queue_depth do
+      {:reply, {:error, :queue_full}, state}
+    else
+      # Start HTDAG workflow immediately
+      case AutoCodeIngestionDAG.start_dag(htdag_payload) do
+        {:ok, dag_id} ->
+          Logger.info("HTDAG hot reload started", 
+            file_path: htdag_payload.file_path,
+            dag_id: dag_id,
+            agent_id: agent_id
+          )
+          
+          # Also enqueue for tracking
+          entry = %{
+            id: make_ref(),
+            agent_id: agent_id,
+            payload: Map.put(htdag_payload, :dag_id, dag_id),
+            inserted_at: System.system_time(:millisecond)
+          }
+          
+          new_queue = :queue.in(entry, state.queue)
+          new_state = %{state | queue: new_queue}
+          
+          {:reply, {:ok, dag_id}, new_state}
+          
+        {:error, reason} ->
+          Logger.error("HTDAG hot reload failed", 
+            file_path: htdag_payload.file_path,
+            reason: reason,
+            agent_id: agent_id
+          )
+          {:reply, {:error, reason}, state}
+      end
+    end
   end
 
   @impl true

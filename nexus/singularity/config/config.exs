@@ -14,6 +14,72 @@ config :singularity, :shared_queue,
   llm_request_poll_ms: String.to_integer(System.get_env("SHARED_QUEUE_LLM_POLL_MS", "100")),
   llm_batch_size: String.to_integer(System.get_env("SHARED_QUEUE_LLM_BATCH_SIZE", "50"))
 
+# Automatic Code Ingestion Configuration
+# Enables real-time file watching and automatic code ingestion into database
+config :singularity, :auto_ingestion,
+  enabled: System.get_env("AUTO_INGESTION_ENABLED", "true") == "true",
+  # File watching configuration
+  watch_directories: String.split(System.get_env("AUTO_INGESTION_WATCH_DIRS", "lib,packages,nexus,observer"), ","),
+  debounce_delay_ms: String.to_integer(System.get_env("AUTO_INGESTION_DEBOUNCE_MS", "500")),
+  busy_file_threshold_ms: String.to_integer(System.get_env("AUTO_INGESTION_BUSY_THRESHOLD_MS", "100")),
+  # Retry configuration
+  max_retries: String.to_integer(System.get_env("AUTO_INGESTION_MAX_RETRIES", "3")),
+  retry_delay_ms: String.to_integer(System.get_env("AUTO_INGESTION_RETRY_DELAY_MS", "1000")),
+  # File filtering
+  include_extensions: String.split(System.get_env("AUTO_INGESTION_INCLUDE_EXT", ".ex,.exs,.rs,.ts,.tsx,.js,.jsx,.py,.go,.nix,.sh,.toml,.json,.yaml,.yml,.md"), ","),
+  ignore_patterns: String.split(System.get_env("AUTO_INGESTION_IGNORE_PATTERNS", "/_build/,/deps/,/node_modules/,/target/,/.git/,/.nix/,.log,.tmp,.pid,.DS_Store,Thumbs.db"), ","),
+  # Performance tuning
+  max_concurrent_ingestions: String.to_integer(System.get_env("AUTO_INGESTION_MAX_CONCURRENT", "5")),
+  ingestion_timeout_ms: String.to_integer(System.get_env("AUTO_INGESTION_TIMEOUT_MS", "30000")),
+  # Auto-detection settings
+  auto_detect_codebase: System.get_env("AUTO_INGESTION_AUTO_DETECT_CODEBASE", "true") == "true",
+  default_codebase_id: System.get_env("AUTO_INGESTION_DEFAULT_CODEBASE", "singularity"),
+  # Logging control
+  quiet_mode: System.get_env("AUTO_INGESTION_QUIET_MODE", "false") == "true"
+
+# HTDAG Auto Code Ingestion Configuration
+# Enables HTDAG-based automatic code ingestion with PgFlow orchestration
+config :singularity, :htdag_auto_ingestion,
+  enabled: System.get_env("HTDAG_AUTO_INGESTION_ENABLED", "true") == "true",
+  # File watching configuration
+  watch_directories: String.split(System.get_env("HTDAG_WATCH_DIRS", "lib,packages,nexus,observer"), ","),
+  debounce_delay_ms: String.to_integer(System.get_env("HTDAG_DEBOUNCE_MS", "2000")), # Increased from 500ms to 2s
+  # HTDAG-specific configuration - GENTLE LOAD SETTINGS
+  max_concurrent_dags: String.to_integer(System.get_env("HTDAG_MAX_CONCURRENT", "3")), # Reduced from 10 to 3
+  batch_size: String.to_integer(System.get_env("HTDAG_BATCH_SIZE", "5")), # Reduced from 10 to 5
+  dependency_aware: System.get_env("HTDAG_DEPENDENCY_AWARE", "true") == "true",
+  # Rate limiting and throttling
+  rate_limit_per_minute: String.to_integer(System.get_env("HTDAG_RATE_LIMIT_PER_MIN", "30")), # Max 30 files per minute
+  cpu_threshold: String.to_float(System.get_env("HTDAG_CPU_THRESHOLD", "0.7")), # Pause if CPU > 70%
+  memory_threshold: String.to_float(System.get_env("HTDAG_MEMORY_THRESHOLD", "0.8")), # Pause if memory > 80%
+  cooldown_period_ms: String.to_integer(System.get_env("HTDAG_COOLDOWN_MS", "5000")), # 5s cooldown after high load
+  # Retry policy - More conservative
+  retry_policy: %{
+    max_retries: String.to_integer(System.get_env("HTDAG_MAX_RETRIES", "2")), # Reduced from 3 to 2
+    backoff_multiplier: String.to_float(System.get_env("HTDAG_BACKOFF_MULTIPLIER", "3.0")), # Increased from 2.0 to 3.0
+    initial_delay_ms: String.to_integer(System.get_env("HTDAG_INITIAL_DELAY_MS", "2000")) # Increased from 1000 to 2000
+  },
+  # File filtering
+  include_extensions: String.split(System.get_env("HTDAG_INCLUDE_EXT", ".ex,.exs,.rs,.ts,.tsx,.js,.jsx,.py,.go,.nix,.sh,.toml,.json,.yaml,.yml,.md"), ","),
+  ignore_patterns: String.split(System.get_env("HTDAG_IGNORE_PATTERNS", "/_build/,/deps/,/node_modules/,/target/,/.git/,/.nix/,.log,.tmp,.pid,.DS_Store,Thumbs.db"), ","),
+  # Performance tuning - More conservative timeouts
+  node_timeout_ms: String.to_integer(System.get_env("HTDAG_NODE_TIMEOUT_MS", "120000")), # Increased from 60s to 120s
+  dag_timeout_ms: String.to_integer(System.get_env("HTDAG_DAG_TIMEOUT_MS", "600000")), # Increased from 300s to 600s
+  # Load balancing
+  load_balancing: %{
+    enabled: System.get_env("HTDAG_LOAD_BALANCING", "true") == "true",
+    check_interval_ms: String.to_integer(System.get_env("HTDAG_LOAD_CHECK_INTERVAL", "10000")), # Check every 10s
+    adaptive_scaling: System.get_env("HTDAG_ADAPTIVE_SCALING", "true") == "true"
+  },
+  # Auto-detection settings
+  auto_detect_codebase: System.get_env("HTDAG_AUTO_DETECT_CODEBASE", "true") == "true",
+  default_codebase_id: System.get_env("HTDAG_DEFAULT_CODEBASE", "singularity"),
+  # Hot reload settings
+  hot_reload_enabled: System.get_env("HTDAG_HOT_RELOAD_ENABLED", "true") == "true",
+  reload_delay_ms: String.to_integer(System.get_env("HTDAG_RELOAD_DELAY_MS", "1000")),
+  max_concurrent_reloads: String.to_integer(System.get_env("HTDAG_MAX_CONCURRENT_RELOADS", "5")),
+  dependency_timeout_ms: String.to_integer(System.get_env("HTDAG_DEPENDENCY_TIMEOUT_MS", "30000"))
+
 config :singularity, Singularity.Telemetry, metrics: []
 
 config :logger, level: :info

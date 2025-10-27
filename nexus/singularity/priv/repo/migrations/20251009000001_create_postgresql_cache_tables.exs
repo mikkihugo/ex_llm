@@ -112,8 +112,8 @@ defmodule Singularity.Repo.Migrations.CreatePostgresqlCacheTables do
 
     # Vector similarity index (if using pgvector)
     execute """
-    CREATE INDEX idx_hot_packages_embedding
-    ON hot_packages USING ivfflat (embedding vector_cosine_ops)
+#     CREATE INDEX idx_hot_packages_embedding
+#     ON hot_packages USING ivfflat (embedding vector_cosine_ops)
     WITH (lists = 100)
     """
 

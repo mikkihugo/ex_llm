@@ -7,8 +7,8 @@ defmodule Singularity.Repo.Migrations.CreateVectorSearch do
       add :codebase_id, :string, null: false
       add :file_path, :string, null: false
       add :content_type, :string, null: false
-      add :content, :text, null: false
-      add :vector_embedding, :vector, size: 1536, null: false
+      add :content, :text, null: false# 
+#       add :vector_embedding, :vector, size: 1536, null: false  # pgvector - install via separate migration
       add :metadata, :jsonb, default: "{}"
 
       timestamps()
@@ -34,8 +34,8 @@ defmodule Singularity.Repo.Migrations.CreateVectorSearch do
 
     # Vector index for similarity search
     execute("""
-    CREATE INDEX idx_vector_search_vector
-    ON vector_search USING ivfflat (vector_embedding vector_cosine_ops)
+#     CREATE INDEX idx_vector_search_vector
+#     ON vector_search USING ivfflat (vector_embedding vector_cosine_ops)
     """)
   end
 end

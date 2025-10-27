@@ -8,8 +8,8 @@ defmodule Singularity.Repo.Migrations.CreateCodeEmbeddingCache do
     create_if_not_exists table(:code_embedding_cache, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :content_hash, :string, null: false
-      add :content, :text, null: false
-      add :embedding, :vector
+      add :content, :text, null: false# 
+#       add :embedding, :vector  # pgvector - install via separate migration
       add :model_type, :string, default: "candle-transformer"
       add :language, :string
       add :file_path, :string
@@ -19,7 +19,7 @@ defmodule Singularity.Repo.Migrations.CreateCodeEmbeddingCache do
     # Index for semantic search using HNSW (supports high-dimensional vectors)
     execute("""
       CREATE INDEX IF NOT EXISTS code_embedding_cache_embedding_hnsw
-      ON code_embedding_cache USING hnsw (embedding vector_cosine_ops)
+#       ON code_embedding_cache USING hnsw (embedding vector_cosine_ops)
     """, "")
 
     # Index for content hash lookups

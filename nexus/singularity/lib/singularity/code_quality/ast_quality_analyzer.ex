@@ -167,7 +167,7 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
   Detects hardcoded numbers (except 0, 1, 2) that reduce readability.
   """
   @spec find_magic_numbers_needing_constants(String.t()) :: {:ok, [map()]}
-  def find_magic_numbers_needing_constants(codebase_path) do
+  def find_magic_numbers_needing_constants(_codebase_path) do
     # This is a pattern example - would need more sophisticated detection
     {:ok, []}
   end
@@ -195,7 +195,7 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
   Uses AST similarity to detect structural duplication.
   """
   @spec find_duplicate_code_blocks(String.t()) :: {:ok, [map()]}
-  def find_duplicate_code_blocks(codebase_path) do
+  def find_duplicate_code_blocks(_codebase_path) do
     # This requires more complex analysis - comparing AST structures
     # Placeholder for future implementation
     {:ok, []}
@@ -223,8 +223,8 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
   Checks for violations of language naming conventions.
   """
   @spec find_naming_convention_violations(String.t()) :: {:ok, [map()]}
-  def find_naming_convention_violations(codebase_path) do
-    patterns = [
+  def find_naming_convention_violations(_codebase_path) do
+    _patterns = [
       {"elixir", "defmodule $NAME", "Check module naming - should be CamelCase"},
       {"rust", "fn $NAME($$$)", "Check function naming - should be snake_case"}
     ]
@@ -252,7 +252,7 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
       {:ok, 85}  # 85/100 score
   """
   @spec calculate_codebase_quality_score(String.t(), [map()]) :: {:ok, integer()}
-  def calculate_codebase_quality_score(codebase_path, issues) do
+  def calculate_codebase_quality_score(_codebase_path, issues) do
     # Start with perfect score
     base_score = 100
 
@@ -372,7 +372,7 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
     Map.get(patterns, language, [])
   end
 
-  defp scan_for_quality_issue_patterns(codebase_path, patterns, severity, category) do
+  defp scan_for_quality_issue_patterns(_codebase_path, patterns, severity, category) do
     results =
       for {language, pattern, description} <- patterns do
         case AstGrepCodeSearch.search(
@@ -448,7 +448,7 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
   end
 
   defp scan_file_for_quality_pattern(file_path, pattern_config, language) do
-    with {:ok, content} <- File.read(file_path),
+    with {:ok, _content} <- File.read(file_path),
          {:ok, matches} <-
            ParserEngine.ast_grep_search(pattern_config.pattern, language, []) do
       if Enum.any?(matches) do

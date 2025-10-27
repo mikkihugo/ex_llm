@@ -164,7 +164,7 @@
 
         getBaseTools = env: with pkgs; [
           git gh curl pkg-config direnv gnused gawk coreutils findutils
-          ripgrep fd jq bat htop tree watchexec entr just nil nixfmt-rfc-style lsof
+          ripgrep fd jq bat btop htop tree watchexec entr just nil nixfmt-rfc-style lsof
           mold sccache cachix rustc cargo rustfmt clippy rust-analyzer cargo-watch
           postgresql_17  # For pgxn (pg_config and dev headers)
           google-cloud-sdk  # Google Cloud CLI for GCP operations
@@ -201,7 +201,7 @@
               ps.h3-pg              # Hexagonal hierarchical geospatial indexing
 
               # Time Series
-              # ps.timescaledb        # TimescaleDB 2.22 - time-series optimization (temporarily disabled)
+              ps.timescaledb        # TimescaleDB 2.22 - time-series optimization
               # ps.timescaledb_toolkit # TimescaleDB analytics extension (broken in nixpkgs - marked as broken package)
 
               # Graph Database
@@ -520,6 +520,18 @@
                 echo "      ✅ pg_uuidv7: pgxn install pg_uuidv7"
               else
                 echo "      ℹ️  pg_uuidv7: brew install pgxnclient && pgxn install pg_uuidv7"
+              fi
+
+              # pgvector setup (vector embeddings for semantic search)
+              if command -v pgxn &> /dev/null; then
+                echo "      ✅ pgvector: pgxn install pgvector"
+              else
+                echo "      ℹ️  pgvector: brew install pgxnclient && pgxn install pgvector"
+              fi
+
+              # Or use the setup script
+              if [ -f ./scripts/setup-pgvector.sh ]; then
+                echo "      💡 Run './scripts/setup-pgvector.sh' to auto-install pgvector"
               fi
               '' else ""
             ) env.services}

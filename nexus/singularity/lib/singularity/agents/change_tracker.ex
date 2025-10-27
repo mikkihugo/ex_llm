@@ -236,9 +236,10 @@ defmodule Singularity.Agents.ChangeTracker do
   end
 
   defp process_quality_changes(changes) do
-    Logger.info("Processing #{length(changes)} files for quality updates")
+    Logger.info("Processing #{length(changes)} files for quality enforcement")
     # Trigger QualityEnforcer for changed files
     file_paths = Enum.map(changes, & &1.file_path)
+    Logger.debug("Quality files to process: #{Enum.join(file_paths, ", ")}")
     # QualityEnforcer.process_files(file_paths)
   end
 
@@ -246,6 +247,7 @@ defmodule Singularity.Agents.ChangeTracker do
     Logger.info("Processing #{length(changes)} files for analysis updates")
     # Trigger analysis systems for changed files
     file_paths = Enum.map(changes, & &1.file_path)
+    Logger.debug("Analysis files to process: #{Enum.join(file_paths, ", ")}")
     # AnalysisOrchestrator.analyze_files(file_paths)
   end
 
@@ -253,6 +255,7 @@ defmodule Singularity.Agents.ChangeTracker do
     Logger.info("Processing #{length(changes)} files for code generation updates")
     # Trigger code generation systems for changed files
     file_paths = Enum.map(changes, & &1.file_path)
+    Logger.debug("Code generation files to process: #{Enum.join(file_paths, ", ")}")
     # CodeGenerationOrchestrator.process_files(file_paths)
   end
 end

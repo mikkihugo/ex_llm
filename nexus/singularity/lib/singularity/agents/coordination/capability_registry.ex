@@ -49,8 +49,33 @@ defmodule Singularity.Agents.Coordination.CapabilityRegistry do
 
   @impl true
   def init(opts) do
+    preload_capabilities = Keyword.get(opts, :preload_capabilities, true)
+    max_capabilities = Keyword.get(opts, :max_capabilities, 1000)
+
     Logger.info("[CapabilityRegistry] Starting Agent Capability Registry")
-    {:ok, %{capabilities: %{}, index_by_domain: %{}, index_by_role: %{}}}
+
+    Logger.info(
+      "[CapabilityRegistry] Preload capabilities: #{preload_capabilities}, Max capabilities: #{max_capabilities}"
+    )
+
+    state = %{
+      capabilities: %{},
+      index_by_domain: %{},
+      index_by_role: %{},
+      max_capabilities: max_capabilities
+    }
+
+    # Preload capabilities if requested
+    state =
+      if preload_capabilities do
+        Logger.info("[CapabilityRegistry] Preloading known agent capabilities")
+        # TODO: Load from database or config
+        state
+      else
+        state
+      end
+
+    {:ok, state}
   end
 
   @doc """

@@ -15,8 +15,8 @@ defmodule Singularity.Repo.Migrations.CreateTemplatesTable do
       add :usage, :jsonb,
         default: ~s({"count": 0, "success_rate": 0.0, "last_used": null})
 
-      # Qodo-Embed-1 vector (1536 dimensions)
-      add :embedding, :vector, size: 1536
+      # Qodo-Embed-1 vector (1536 dimensions)# 
+#       add :embedding, :vector, size: 1536  # pgvector - install via separate migration
 
       timestamps(type: :timestamptz)
     end
@@ -27,7 +27,7 @@ defmodule Singularity.Repo.Migrations.CreateTemplatesTable do
     execute """
     CREATE INDEX templates_embedding_idx
       ON templates
-      USING ivfflat (embedding vector_cosine_ops)
+#       USING ivfflat (embedding vector_cosine_ops)
       WITH (lists = 100);
     """
 

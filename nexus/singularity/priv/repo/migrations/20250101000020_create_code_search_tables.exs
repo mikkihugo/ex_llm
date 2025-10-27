@@ -103,8 +103,8 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
       add :traits, :jsonb, default: fragment("'[]'::jsonb")
 
       # === VECTOR EMBEDDING ===
-      # Using 1536 dimensions for OpenAI text-embedding-3-small
-      add :vector_embedding, :vector, size: 1536, null: true
+      # Using 1536 dimensions for OpenAI text-embedding-3-small# 
+#       add :vector_embedding, :vector, size: 1536, null: true  # pgvector - install via separate migration
 
       timestamps(default: fragment("NOW()"))
     end
@@ -147,8 +147,8 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
 
     # Vector index for similarity search (ivfflat for cosine similarity)
     execute """
-    CREATE INDEX idx_codebase_metadata_vector ON codebase_metadata 
-    USING ivfflat (vector_embedding vector_cosine_ops) 
+#     CREATE INDEX idx_codebase_metadata_vector ON codebase_metadata 
+#     USING ivfflat (vector_embedding vector_cosine_ops) 
     WITH (lists = 100)
     """
 
@@ -189,9 +189,9 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
       add :node_type, :string, null: false, size: 100
       add :name, :string, null: false, size: 255
       add :file_path, :string, null: false, size: 500
-      add :line_number, :integer
-      add :vector_embedding, :vector, size: 1536, null: true
-      add :vector_magnitude, :float
+      add :line_number, :integer# 
+#       add :vector_embedding, :vector, size: 1536, null: true  # pgvector - install via separate migration
+#       add :vector_magnitude, :float
       add :metadata, :jsonb, default: fragment("'{}'::jsonb")
 
       add :created_at, :utc_datetime, default: fragment("NOW()")
@@ -212,8 +212,8 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
 
     # Vector index for graph node embeddings
     execute """
-    CREATE INDEX idx_graph_nodes_vector ON graph_nodes 
-    USING ivfflat (vector_embedding vector_cosine_ops) 
+#     CREATE INDEX idx_graph_nodes_vector ON graph_nodes 
+#     USING ivfflat (vector_embedding vector_cosine_ops) 
     WITH (lists = 100)
     """
 
@@ -284,8 +284,8 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
       add :codebase_id, :string, null: false, size: 255
       add :file_path, :string, null: false, size: 500
       add :content_type, :string, null: false, size: 100
-      add :content, :text, null: false
-      add :vector_embedding, :vector, size: 1536, null: false
+      add :content, :text, null: false# 
+#       add :vector_embedding, :vector, size: 1536, null: false  # pgvector - install via separate migration
       add :metadata, :jsonb, default: fragment("'{}'::jsonb")
 
       add :created_at, :utc_datetime, default: fragment("NOW()")
@@ -302,8 +302,8 @@ defmodule Singularity.Repo.Migrations.CreateCodeSearchTables do
 
     # Vector index for semantic search
     execute """
-    CREATE INDEX idx_vector_search_embedding ON vector_search 
-    USING ivfflat (vector_embedding vector_cosine_ops) 
+#     CREATE INDEX idx_vector_search_embedding ON vector_search 
+#     USING ivfflat (vector_embedding vector_cosine_ops) 
     WITH (lists = 100)
     """
 

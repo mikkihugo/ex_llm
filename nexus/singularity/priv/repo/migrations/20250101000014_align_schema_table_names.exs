@@ -280,65 +280,66 @@ defmodule Singularity.Repo.Migrations.AlignSchemaTableNames do
     END $$;
     """
 
-    execute """
-    DO $$
-    BEGIN
-      IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'technology_knowledge')
-         AND NOT EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'technology_patterns') THEN
-
-        -- Create technology_patterns table
-        CREATE TABLE technology_patterns (
-          id BIGSERIAL PRIMARY KEY,
-          technology_name VARCHAR(255) NOT NULL,
-          technology_type VARCHAR(255) NOT NULL,
-          version_pattern VARCHAR(255),
-          file_patterns TEXT[] DEFAULT ARRAY[]::text[],
-          directory_patterns TEXT[] DEFAULT ARRAY[]::text[],
-          config_files TEXT[] DEFAULT ARRAY[]::text[],
-          build_command TEXT,
-          dev_command TEXT,
-          install_command TEXT,
-          test_command TEXT,
-          output_directory TEXT,
-          confidence_weight FLOAT DEFAULT 1.0,
-          detection_count INTEGER DEFAULT 0,
-          success_rate FLOAT DEFAULT 1.0,
-          last_detected_at TIMESTAMP WITHOUT TIME ZONE,
-          extended_metadata JSONB,
-          created_at TIMESTAMP(6) WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
-          updated_at TIMESTAMP(6) WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
-        );
-
-        CREATE UNIQUE INDEX technology_patterns_name_type_index
-          ON technology_patterns(technology_name, technology_type);
-        CREATE INDEX technology_patterns_technology_type_index
-          ON technology_patterns(technology_type);
-
-        -- Migrate data: all records become patterns (detection patterns)
-        INSERT INTO technology_patterns (
-          technology_name, technology_type, extended_metadata, created_at, updated_at
-        )
-        SELECT
-          technology AS technology_name,
-          category AS technology_type,
-          jsonb_build_object(
-            'name', name,
-            'description', description,
-            'examples', examples,
-            'best_practices', best_practices,
-            'antipatterns', antipatterns,
-            'embedding', embedding
-          ) AS extended_metadata,
-          inserted_at,
-          updated_at
-        FROM technology_knowledge;
-
-        RAISE NOTICE 'Created and populated technology_patterns table';
-      ELSE
-        RAISE NOTICE 'Skipping technology_patterns: source missing or target exists';
-      END IF;
-    END $$;
-    """
+    # DISABLED: References embedding column which was commented out from technology_knowledge table
+    # execute """
+    # DO $$
+    # BEGIN
+    #   IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'technology_knowledge')
+    #      AND NOT EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'technology_patterns') THEN
+    #
+    #     -- Create technology_patterns table
+    #     CREATE TABLE technology_patterns (
+    #       id BIGSERIAL PRIMARY KEY,
+    #       technology_name VARCHAR(255) NOT NULL,
+    #       technology_type VARCHAR(255) NOT NULL,
+    #       version_pattern VARCHAR(255),
+    #       file_patterns TEXT[] DEFAULT ARRAY[]::text[],
+    #       directory_patterns TEXT[] DEFAULT ARRAY[]::text[],
+    #       config_files TEXT[] DEFAULT ARRAY[]::text[],
+    #       build_command TEXT,
+    #       dev_command TEXT,
+    #       install_command TEXT,
+    #       test_command TEXT,
+    #       output_directory TEXT,
+    #       confidence_weight FLOAT DEFAULT 1.0,
+    #       detection_count INTEGER DEFAULT 0,
+    #       success_rate FLOAT DEFAULT 1.0,
+    #       last_detected_at TIMESTAMP WITHOUT TIME ZONE,
+    #       extended_metadata JSONB,
+    #       created_at TIMESTAMP(6) WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+    #       updated_at TIMESTAMP(6) WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+    #     );
+    #
+    #     CREATE UNIQUE INDEX technology_patterns_name_type_index
+    #       ON technology_patterns(technology_name, technology_type);
+    #     CREATE INDEX technology_patterns_technology_type_index
+    #       ON technology_patterns(technology_type);
+    #
+    #     -- Migrate data: all records become patterns (detection patterns)
+    #     INSERT INTO technology_patterns (
+    #       technology_name, technology_type, extended_metadata, created_at, updated_at
+    #     )
+    #     SELECT
+    #       technology AS technology_name,
+    #       category AS technology_type,
+    #       jsonb_build_object(
+    #         'name', name,
+    #         'description', description,
+    #         'examples', examples,
+    #         'best_practices', best_practices,
+    #         'antipatterns', antipatterns,
+    #         'embedding', embedding
+    #       ) AS extended_metadata,
+    #       inserted_at,
+    #       updated_at
+    #     FROM technology_knowledge;
+    #
+    #     RAISE NOTICE 'Created and populated technology_patterns table';
+    #   ELSE
+    #     RAISE NOTICE 'Skipping technology_patterns: source missing or target exists';
+    #   END IF;
+    # END $$;
+    # """
 
     # Drop technology_knowledge after successful migration
     execute """

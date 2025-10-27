@@ -14,20 +14,21 @@ defmodule Singularity.Jobs.KnowledgeMigrateWorker do
 
   @impl Oban.Worker
   def perform(_job) do
-    Logger.info("Migrating knowledge artifacts from JSON...")
+    Logger.info("Syncing knowledge artifacts from Git...")
 
-    case Singularity.Knowledge.ArtifactStore.migrate() do
-      {:ok, count} ->
-        Logger.info("✅ Migrated #{count} knowledge artifacts")
-        :ok
+    {:ok, %{success: success_count, errors: error_count}} =
+      Singularity.Knowledge.ArtifactStore.sync_from_git()
 
-      {:error, reason} ->
-        Logger.error("❌ Knowledge migration failed: #{reason}")
-        {:error, reason}
+    if error_count > 0 do
+      Logger.warning("⚠️  Synced #{success_count} artifacts (#{error_count} errors)")
+    else
+      Logger.info("✅ Synced #{success_count} knowledge artifacts")
     end
+
+    :ok
   rescue
     e ->
-      Logger.error("Exception during knowledge migration: #{inspect(e)}")
+      Logger.error("Exception during knowledge sync: #{inspect(e)}")
       {:error, "Exception: #{inspect(e)}"}
   end
 end

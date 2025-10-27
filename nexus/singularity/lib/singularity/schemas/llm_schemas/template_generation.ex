@@ -11,7 +11,7 @@ defmodule Singularity.Knowledge.TemplateGeneration do
   ```elixir
   %TemplateGeneration{
     template_id: "quality_template:elixir-production",
-    template_version: "2.1.0",
+    template_version: "2.6.0",
     file_path: "lib/singularity/my_module.ex",
     answers: %{
       "language" => "elixir",
@@ -36,7 +36,7 @@ defmodule Singularity.Knowledge.TemplateGeneration do
   # After generating code
   TemplateGeneration.record(
     template_id: "quality_template:elixir-genserver",
-    template_version: "2.1.0",
+    template_version: "2.6.0",
     file_path: "lib/my_app/worker.ex",
     answers: %{"otp_type" => "GenServer", "supervision" => true}
   )

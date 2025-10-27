@@ -113,7 +113,7 @@ defmodule Singularity.Execution.Feedback.Analyzer do
           {:error, reason}
       end
     rescue
-      e in Exception ->
+      e ->
         Logger.error("❌ Analysis exception", agent_id: agent_id, error: inspect(e))
         {:error, e}
     end
@@ -144,7 +144,7 @@ defmodule Singularity.Execution.Feedback.Analyzer do
 
       {:ok, results}
     rescue
-      e in Exception ->
+      e ->
         Logger.error("❌ Failed to find agents needing improvement", error: inspect(e))
         {:error, e}
     end

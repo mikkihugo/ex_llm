@@ -151,6 +151,5 @@ split-debuginfo = "off"
 debug-assertions = true
 overflow-checks = true
 lto = false
-panic = "unwind"
 incremental = true
 

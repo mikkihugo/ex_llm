@@ -276,7 +276,7 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
 
   defp hmac(key, data) do
     # HMAC-SHA256 implementation
-    :crypto.hmac(:sha256, key, data)
+    :crypto.mac(:hmac, :sha256, key, data)
   end
 
   defp hash(data) do

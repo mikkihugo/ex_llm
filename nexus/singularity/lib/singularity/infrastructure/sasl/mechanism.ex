@@ -58,7 +58,7 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism do
     salt = salt || generate_secure_challenge(32)
 
     try do
-      hash = :crypto.pbkdf2_hmac(:sha256, password, salt, iterations)
+      hash = :crypto.pbkdf2_hmac(:sha256, password, salt, iterations, 32)
       {:ok, hash, salt}
     rescue
       _ -> {:error, "Password hashing failed"}

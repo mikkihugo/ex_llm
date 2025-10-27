@@ -51,7 +51,7 @@ defmodule Singularity.Repo.Migrations.CreateTechnologyDetectionTables do
       add :extended_metadata, :map
 
       # Vector for semantic similarity (commented out until pgvector configured)
-      # add :pattern_embedding, :vector, size: 768
+#       ##  add :pattern_embedding, :vector, size: 768  # pgvector - install via separate migration
 
       add :created_at, :utc_datetime, default: fragment("NOW()")
       add :updated_at, :utc_datetime, default: fragment("NOW()")
@@ -146,8 +146,8 @@ defmodule Singularity.Repo.Migrations.CreateTechnologyDetectionTables do
       add :examples, {:array, :text}, default: []
       add :best_practices, :text
       add :antipatterns, {:array, :string}, default: []
-      add :metadata, :map, default: %{}
-      add :embedding, :vector, size: 768
+      add :metadata, :map, default: %{}# 
+#       add :embedding, :vector, size: 768  # pgvector - install via separate migration
       timestamps()
     end
 

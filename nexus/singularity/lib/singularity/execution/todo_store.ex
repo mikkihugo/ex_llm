@@ -52,6 +52,12 @@ defmodule Singularity.Execution.TodoStore do
     with {:ok, todo} <- create_todo(attrs),
          {:ok, todo_with_embedding} <- maybe_generate_embedding(todo) do
       Logger.info("Created todo", todo_id: todo.id, title: todo.title)
+
+      # Check if this todo is immediately ready and notify swarm
+      if todo_ready?(todo_with_embedding) do
+        notify_ready_todos([todo_with_embedding])
+      end
+
       {:ok, todo_with_embedding}
     end
   end
@@ -125,9 +131,31 @@ defmodule Singularity.Execution.TodoStore do
   Mark todo as completed with result.
   """
   def complete(todo, result) do
-    todo
-    |> Todo.complete_changeset(%{result: result})
-    |> Repo.update()
+    changeset = todo |> Todo.complete_changeset(%{result: result})
+
+    case Repo.update(changeset) do
+      {:ok, completed_todo} ->
+        Logger.info("Completed todo", todo_id: todo.id, title: todo.title)
+
+        # Check if completing this todo makes others ready
+        case get_todos_unblocked_by(completed_todo) do
+          {:ok, newly_ready_todos} when length(newly_ready_todos) > 0 ->
+            notify_ready_todos(newly_ready_todos)
+
+            Logger.info("Unblocked todos are now ready",
+              completed_todo_id: todo.id,
+              newly_ready_count: length(newly_ready_todos)
+            )
+
+          _ ->
+            :ok
+        end
+
+        {:ok, completed_todo}
+
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -386,6 +414,43 @@ defmodule Singularity.Execution.TodoStore do
   end
 
   # ===========================
+  # Real-time Notifications (Mesos Resource Offers)
+  # ===========================
+
+  @doc """
+  Send NOTIFY when todos become ready for execution.
+  This enables real-time swarm coordination instead of polling.
+  """
+  def notify_ready_todos(todos) when is_list(todos) do
+    if length(todos) > 0 do
+      # Send general notification that todos are ready (not specific IDs for efficiency)
+      case Pgflow.Notifications.send_with_notify(
+             "todo_ready",
+             %{type: "todos_ready", count: length(todos)},
+             Singularity.Repo
+           ) do
+        {:ok, message_id} ->
+          Logger.info("Notified swarm of ready todos",
+            count: length(todos),
+            message_id: message_id
+          )
+
+          {:ok, message_id}
+
+        {:error, reason} ->
+          Logger.warning("Failed to notify swarm of ready todos",
+            count: length(todos),
+            error: inspect(reason)
+          )
+
+          {:error, reason}
+      end
+    else
+      {:ok, nil}
+    end
+  end
+
+  # ===========================
   # Private Helpers
   # ===========================
 
@@ -474,4 +539,28 @@ defmodule Singularity.Execution.TodoStore do
 
   defp count_by_complexity(complexity),
     do: Repo.aggregate(where(Todo, complexity: ^complexity), :count)
+
+  # ===========================
+  # Notification Helpers
+  # ===========================
+
+  defp todo_ready?(todo) do
+    todo.status == "pending" && dependencies_satisfied?(todo)
+  end
+
+  @doc """
+  Get todos that become ready when the given todo is completed.
+  Used for dependency chain notifications.
+  """
+  def get_todos_unblocked_by(completed_todo) do
+    # Find todos that depend on the completed todo
+    dependent_todos =
+      Todo
+      |> where([t], t.status == "pending")
+      |> where([t], fragment("? = ANY(?)", ^completed_todo.id, t.depends_on))
+      |> Repo.all()
+      |> Enum.filter(&dependencies_satisfied?/1)
+
+    {:ok, dependent_todos}
+  end
 end

@@ -5,14 +5,15 @@ defmodule Singularity.Bootstrap.SetupBootstrap do
   Runs all one-time setup jobs (knowledge migration, RAG setup, etc.)
   using Oban with unique constraints to ensure they only run once.
 
-  ## Setup Jobs
+  ## Setup Jobs (Priority Order)
 
-  1. **Knowledge Migration** - Load JSON templates to database
-  2. **Templates Data Load** - Load templates_data/ to JSONB
-  3. **Planning Seed** - Seed work plan roadmap
-  4. **Graph Populate** - Optimize dependency queries
-  5. **Code Ingest** - Parse codebase for semantic search
-  6. **RAG Setup** - Full RAG system initialization
+  1. **Knowledge Migration** (Priority 100) - Load JSON artifacts to database
+  2. **Templates Data Load** (Priority 95) - Load templates_data/ to JSONB
+  3. **Graph Populate** (Priority 80) - Populate dependency arrays (5-100x faster queries)
+  4. **Code Ingest** (Priority 85) - Parse codebase for semantic search
+  5. **RAG Setup** (Priority 70) - Full RAG system initialization
+
+  Note: **Planning Seed** runs via pg_cron (seed_work_plan stored procedure)
 
   ## How It Works
 
@@ -61,12 +62,15 @@ defmodule Singularity.Bootstrap.SetupBootstrap do
       # - Idempotent: Uses ON CONFLICT DO NOTHING
       # - Scheduled: Runs automatically via pg_cron
 
-      # NOTE: Graph Populate moved to pg_cron (populate_graph_dependencies stored procedure)
-      # - More efficient: Pure SQL array aggregation
-      # - Recursive: Can traverse graph dependencies directly in SQL
-      # - Scheduled: Runs on startup + weekly via pg_cron
+      # 3. Populate dependency graph arrays (for 5-100x faster queries)
+      %{
+        module: Singularity.Jobs.GraphPopulateWorker,
+        args: %{},
+        unique_key: "setup:graph_populate",
+        priority: 80
+      },
 
-      # 3. Ingest codebase for semantic search
+      # 4. Ingest codebase for semantic search
       %{
         module: Singularity.Jobs.CodeIngestWorker,
         args: %{},

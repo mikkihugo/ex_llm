@@ -17,8 +17,8 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
     create_if_not_exists table(:cache_llm_responses, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :cache_key, :string, null: false
-      add :prompt, :text, null: false
-      add :prompt_embedding, :vector, size: 768
+      add :prompt, :text, null: false# 
+#       add :prompt_embedding, :vector, size: 768  # pgvector - install via separate migration
       add :response, :text, null: false
       add :model, :string
       add :provider, :string
@@ -34,8 +34,8 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
     create_if_not_exists table(:cache_code_embeddings, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :content_hash, :string, null: false
-      add :content, :text, null: false
-      add :embedding, :vector, size: 768
+      add :content, :text, null: false# 
+#       add :embedding, :vector, size: 768  # pgvector - install via separate migration
       add :model_type, :string, default: "candle-transformer"
       add :language, :string
       add :file_path, :string
@@ -110,8 +110,8 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       add :artifact_id, :string, null: false
       add :version, :string, default: "1.0.0"
       add :content_raw, :text, null: false
-      add :content, :map, null: false
-      add :embedding, :vector, size: 768
+      add :content, :map, null: false# 
+#       add :embedding, :vector, size: 768  # pgvector - install via separate migration
       add :language, :string
       add :tags, {:array, :string}, default: []
       add :usage_count, :integer, default: 0
@@ -126,8 +126,8 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       add :technology, :string, null: false
       add :category, :string, null: false
       add :template_name, :string, null: false
-      add :template_content, :map, null: false
-      add :embedding, :vector, size: 768
+      add :template_content, :map, null: false# 
+#       add :embedding, :vector, size: 768  # pgvector - install via separate migration
       add :metadata, :map, default: %{}
       add :usage_count, :integer, default: 0
       add :success_rate, :float, default: 0.0
@@ -146,8 +146,8 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
       add :tags, {:array, :string}, default: []
       add :download_count, :integer, default: 0
       add :github_stars, :integer, default: 0
-      add :last_release_date, :utc_datetime
-      add :embedding, :vector, size: 768
+      add :last_release_date, :utc_datetime# 
+#       add :embedding, :vector, size: 768  # pgvector - install via separate migration
       add :metadata, :map, default: %{}
       timestamps()
     end
@@ -386,19 +386,19 @@ defmodule Singularity.Repo.Migrations.ConsolidateUnifiedSchema do
     # ============================================================================
 
     # LLM response embeddings
-    execute "CREATE INDEX IF NOT EXISTS idx_cache_llm_prompt_embedding ON cache_llm_responses USING ivfflat (prompt_embedding vector_cosine_ops) WITH (lists = 100)"
+#     execute "CREATE INDEX IF NOT EXISTS idx_cache_llm_prompt_embedding ON cache_llm_responses USING ivfflat (prompt_embedding vector_cosine_ops) WITH (lists = 100)"
 
     # Code embeddings
-    execute "CREATE INDEX IF NOT EXISTS idx_cache_code_embedding ON cache_code_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
+#     execute "CREATE INDEX IF NOT EXISTS idx_cache_code_embedding ON cache_code_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
 
     # Knowledge artifact embeddings
-    execute "CREATE INDEX IF NOT EXISTS idx_store_knowledge_embedding ON store_knowledge_artifacts USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
+#     execute "CREATE INDEX IF NOT EXISTS idx_store_knowledge_embedding ON store_knowledge_artifacts USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
 
     # Template embeddings
-    execute "CREATE INDEX IF NOT EXISTS idx_store_templates_embedding ON store_templates USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
+#     execute "CREATE INDEX IF NOT EXISTS idx_store_templates_embedding ON store_templates USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
 
     # Package embeddings
-    execute "CREATE INDEX IF NOT EXISTS idx_store_packages_embedding ON store_packages USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
+#     execute "CREATE INDEX IF NOT EXISTS idx_store_packages_embedding ON store_packages USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
   end
 
   def down do

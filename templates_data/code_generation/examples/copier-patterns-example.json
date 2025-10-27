@@ -125,7 +125,7 @@
     ],
     "example_answer_file": {
       "_template_id": "quality_template:elixir-otp-advanced",
-      "_template_version": "2.0.0",
+      "_template_version": "2.6.0",
       "_generated_at": "2025-01-10T12:00:00Z",
       "module_name": "MyApp.Worker",
       "otp_type": "GenServer",

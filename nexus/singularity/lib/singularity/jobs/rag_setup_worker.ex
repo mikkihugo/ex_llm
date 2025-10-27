@@ -24,19 +24,25 @@ defmodule Singularity.Jobs.RagSetupWorker do
     case Singularity.RAG.Setup.run() do
       {:ok, results} ->
         Logger.info("✅ RAG system initialized")
-        Logger.info("  - Templates synced")
-        Logger.info("  - Codebase parsed")
-        Logger.info("  - Embeddings generated")
-        Logger.info("  - Quality tested")
+        Logger.info("  - Templates synced: #{results.templates_count || "unknown"}")
+        Logger.info("  - Codebase parsed: #{results.codebase_files || "unknown"} files")
+        Logger.info("  - Embeddings generated: #{results.embeddings_count || "unknown"}")
+        Logger.info("  - Quality tested: #{results.quality_score || "unknown"}")
         :ok
 
       {:error, reason} ->
-        Logger.error("❌ RAG setup failed: #{reason}")
+        SASL.critical_failure(:rag_setup_failure,
+          "RAG system setup failed catastrophically",
+          reason: reason
+        )
         {:error, reason}
     end
   rescue
     e ->
-      Logger.error("Exception during RAG setup: #{inspect(e)}")
+      SASL.critical_failure(:rag_setup_exception,
+        "RAG system setup failed with exception",
+        error: e
+      )
       {:error, "Exception: #{inspect(e)}"}
   end
 end

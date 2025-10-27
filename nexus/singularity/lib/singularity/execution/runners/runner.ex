@@ -52,7 +52,6 @@ defmodule Singularity.Execution.Runners.Runner do
 
   use GenServer
   require Logger
-  import Ecto.Query
 
   alias Singularity.Agents.Agent
   alias Singularity.Code.Analyzers.MicroserviceAnalyzer
@@ -143,6 +142,17 @@ defmodule Singularity.Execution.Runners.Runner do
 
   @impl true
   def init(opts) do
+    # Process initialization options
+    max_concurrent_tasks = Keyword.get(opts, :max_concurrent_tasks, 10)
+    enable_telemetry = Keyword.get(opts, :enable_telemetry, true)
+    circuit_breaker_timeout = Keyword.get(opts, :circuit_breaker_timeout, 30_000)
+
+    Logger.info("Runner initializing with options",
+      max_concurrent_tasks: max_concurrent_tasks,
+      enable_telemetry: enable_telemetry,
+      circuit_breaker_timeout: circuit_breaker_timeout
+    )
+
     # Start dynamic supervisor for execution tasks
     {:ok, supervisor_ref} = DynamicSupervisor.start_link(strategy: :one_for_one)
 
@@ -184,7 +194,12 @@ defmodule Singularity.Execution.Runners.Runner do
       circuit_breakers: circuit_breakers,
       supervisor_ref: supervisor_ref,
       gnat: gnat,
-      execution_history: execution_history
+      execution_history: execution_history,
+      config: %{
+        max_concurrent_tasks: max_concurrent_tasks,
+        enable_telemetry: enable_telemetry,
+        circuit_breaker_timeout: circuit_breaker_timeout
+      }
     }
 
     Logger.info("Runner started", supervisor_ref: supervisor_ref, pgmq: gnat != nil)
@@ -226,14 +241,22 @@ defmodule Singularity.Execution.Runners.Runner do
             {:noreply, new_state}
 
           {:error, reason} ->
-            Logger.error("Failed to start execution task", reason: reason)
+            SASL.execution_failure(:task_start_failure,
+              "Failed to start execution task",
+              execution_id: execution_id,
+              reason: reason
+            )
             # Update database with failure
             persist_execution(execution_id, task, :failed, error: reason)
             {:reply, {:error, reason}, state}
         end
 
       {:error, reason} ->
-        Logger.error("Failed to persist execution", reason: reason)
+        SASL.database_failure(:execution_persistence_failure,
+          "Failed to persist execution",
+          execution_id: execution_id,
+          reason: reason
+        )
         {:reply, {:error, reason}, state}
     end
   end
@@ -296,6 +319,16 @@ defmodule Singularity.Execution.Runners.Runner do
   @impl true
   def handle_call(:get_circuit_status, _from, state) do
     {:reply, state.circuit_breakers, state}
+  end
+
+  @impl true
+  def handle_call({:get_circuit_state, service}, _from, state) do
+    breaker_state =
+      state.circuit_breakers
+      |> Map.get(service, %{})
+      |> Map.get(:state, :closed)
+
+    {:reply, breaker_state, state}
   end
 
   @impl true
@@ -654,10 +687,12 @@ defmodule Singularity.Execution.Runners.Runner do
     end
   end
 
-  defp get_circuit_breaker_state(_service) do
-    # This would be implemented with a proper circuit breaker library
-    # For now, return :closed (always allow)
-    :closed
+  defp get_circuit_breaker_state(service) do
+    try do
+      GenServer.call(__MODULE__, {:get_circuit_state, service})
+    catch
+      :exit, _ -> :closed
+    end
   end
 
   # ============================================================================
@@ -735,6 +770,11 @@ defmodule Singularity.Execution.Runners.Runner do
     end
   end
 
+  defp publish_pgmq_event(nil, _event_type, _payload) do
+    # pgmq not available, silently ignore
+    :ok
+  end
+
   defp publish_pgmq_event(_gnat, event_type, payload) do
     try do
       subject = "system.events.runner.#{event_type}"
@@ -746,11 +786,6 @@ defmodule Singularity.Execution.Runners.Runner do
         Logger.error("Failed to publish pgmq event", event: event_type, error: error)
         {:error, error}
     end
-  end
-
-  defp publish_pgmq_event(nil, _event_type, _payload) do
-    # pgmq not available, silently ignore
-    :ok
   end
 
   # ============================================================================

@@ -72,18 +72,37 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   use GenServer
   require Logger
 
-  alias Singularity.Code.StartupCodeIngestion
+  alias Singularity.Code.{StartupCodeIngestion, UnifiedIngestionService}
   alias Singularity.Execution.TodoExtractor
+  alias Singularity.HotReload.ModuleReloader
 
+  # Configuration - loaded from Application config
+  @config Application.get_env(:singularity, :auto_ingestion, %{})
+  
   # Debounce delay (ms) - wait after last change before re-ingesting
-  @debounce_delay 500
+  @debounce_delay @config[:debounce_delay_ms] || 500
 
   # Maximum file age for busy detection (ms) - skip if modified very recently
-  @busy_file_threshold 100
+  @busy_file_threshold @config[:busy_file_threshold_ms] || 100
 
   # Retry configuration
-  @max_retries 3
-  @retry_delay 1000
+  @max_retries @config[:max_retries] || 3
+  @retry_delay @config[:retry_delay_ms] || 1000
+
+  # Performance tuning
+  @max_concurrent @config[:max_concurrent_ingestions] || 5
+  @ingestion_timeout @config[:ingestion_timeout_ms] || 30000
+
+  # File filtering
+  @include_extensions @config[:include_extensions] || [".ex", ".exs", ".rs", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".nix", ".sh", ".toml", ".json", ".yaml", ".yml", ".md"]
+  @ignore_patterns @config[:ignore_patterns] || ["/_build/", "/deps/", "/node_modules/", "/target/", "/.git/", "/.nix/", ".log", ".tmp", ".pid", ".DS_Store", "Thumbs.db"]
+
+  # Auto-detection settings
+  @auto_detect_codebase @config[:auto_detect_codebase] || true
+  @default_codebase_id @config[:default_codebase_id] || "singularity"
+  
+  # Logging control
+  @quiet_mode @config[:quiet_mode] || false
 
   # ------------------------------------------------------------------------------
   # Client API
@@ -291,7 +310,37 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
     # Uses default 5-minute cache (no extend_cache needed for single file hot reload)
     codebase_id = Singularity.Code.CodebaseDetector.detect(format: :full)
 
-    # Use unified ingestion service - parses ONCE, populates BOTH tables
+    # Check if HTDAG auto ingestion is enabled
+    htdag_enabled = Application.get_env(:singularity, :htdag_auto_ingestion, %{})[:enabled] || false
+
+    if htdag_enabled do
+      # Use existing hot reload system with HTDAG integration
+      case ModuleReloader.enqueue_file_reload(file_path, "code-file-watcher", %{
+        codebase_id: codebase_id,
+        source: :file_watcher
+      }) do
+        {:ok, dag_id} ->
+          Logger.debug("Started HTDAG hot reload for file re-ingestion", 
+            file_path: file_path,
+            dag_id: dag_id
+          )
+          {:ok, %{dag_id: dag_id, method: :htdag_hot_reload}}
+
+        {:error, reason} ->
+          Logger.warning("HTDAG hot reload failed, falling back to direct ingestion", 
+            file_path: file_path,
+            reason: reason
+          )
+          # Fallback to direct ingestion
+          fallback_to_direct_ingestion(file_path, codebase_id)
+      end
+    else
+      # Use unified ingestion service directly - parses ONCE, populates BOTH tables
+      fallback_to_direct_ingestion(file_path, codebase_id)
+    end
+  end
+
+  defp fallback_to_direct_ingestion(file_path, codebase_id) do
     Singularity.Code.UnifiedIngestionService.ingest_file(file_path, codebase_id: codebase_id)
   end
 

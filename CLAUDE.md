@@ -123,7 +123,10 @@ direnv allow
 cd singularity
 mix setup  # Installs Elixir dependencies
 
-# 4. Import knowledge artifacts (JSON → PostgreSQL)
+# 4. Install PostgreSQL extensions (pgvector for semantic search, pg_uuidv7 for fast IDs)
+../scripts/setup-pgvector.sh  # Installs pgvector via pgxn (auto-detects, safe to run multiple times)
+
+# 5. Import knowledge artifacts (JSON → PostgreSQL)
 mix knowledge.migrate        # Imports templates_data/**/*.json
 moon run templates_data:embed-all  # Generates embeddings
 ```

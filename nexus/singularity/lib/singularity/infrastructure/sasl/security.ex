@@ -265,6 +265,7 @@ defmodule Singularity.Infrastructure.Sasl.Security do
 
   defp check_policy_compliance(context, operation, policy) do
     # Check if context complies with resource policy
+    Logger.debug("Checking policy compliance for operation: #{operation}")
     required_perms = Map.get(policy, :required_permissions, [])
     max_timeout = Map.get(policy, :max_session_timeout, @max_session_timeout)
 

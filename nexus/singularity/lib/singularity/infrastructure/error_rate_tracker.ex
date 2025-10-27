@@ -130,13 +130,19 @@ defmodule Singularity.Infrastructure.ErrorRateTracker do
 
   @impl true
   def init(opts) do
+    # Configure ETS table options
+    read_concurrency = Keyword.get(opts, :read_concurrency, true)
+    write_concurrency = Keyword.get(opts, :write_concurrency, true)
+    compressed = Keyword.get(opts, :compressed, false)
+
     # Create ETS table
     :ets.new(@table_name, [
       :set,
       :public,
       :named_table,
-      read_concurrency: true,
-      write_concurrency: true
+      read_concurrency: read_concurrency,
+      write_concurrency: write_concurrency,
+      compressed: compressed
     ])
 
     # Schedule periodic cleanup
@@ -197,12 +203,14 @@ defmodule Singularity.Infrastructure.ErrorRateTracker do
     rate_info = get_rate(operation)
 
     if rate_info.total_count >= 10 && rate_info.error_rate >= @alert_threshold do
-      Logger.error("High error rate detected",
+      SASL.critical_failure(:high_error_rate_alert,
+        "High error rate detected for operation",
         operation: operation,
         error_rate: Float.round(rate_info.error_rate * 100, 2),
         error_count: rate_info.error_count,
         total_count: rate_info.total_count
       )
+      
 
       # Send alert to Google Chat webhook
       send_alert(operation, rate_info)

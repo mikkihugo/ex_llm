@@ -559,7 +559,18 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
       last_poll_at: nil
     }
 
-    # Schedule first poll
+    # Subscribe to real-time todo notifications (Mesos-style resource offers)
+    case subscribe_to_offers() do
+      {:ok, _pid} ->
+        Logger.info("TodoSwarmCoordinator subscribed to real-time notifications")
+
+      {:error, reason} ->
+        Logger.warning("Failed to subscribe to real-time notifications, falling back to polling",
+          error: inspect(reason)
+        )
+    end
+
+    # Schedule first poll (fallback mechanism)
     schedule_poll(poll_interval)
 
     Logger.info("TodoSwarmCoordinator started",
@@ -659,10 +670,11 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
     # Handle worker crash
     case find_worker_by_pid(state.active_workers, pid) do
       {worker_id, worker} ->
-        Logger.error("Worker process crashed",
+        SASL.execution_failure(:todo_worker_crash,
+          "Todo swarm worker process crashed",
           worker_id: worker_id,
           todo_id: worker.todo_id,
-          reason: inspect(reason)
+          reason: reason
         )
 
         # Mark todo as failed
@@ -685,53 +697,87 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
     end
   end
 
-  # ===========================
-  # Private Helpers
-  # ===========================
-
-  defp poll_and_spawn(state) do
-    new_state = %{state | last_poll_at: DateTime.utc_now()}
-
-    if map_size(state.active_workers) < state.max_concurrent_workers do
-      spawn_workers(new_state, swarm_size: @default_swarm_size)
-    else
-      new_state
-    end
-  end
-
-  defp spawn_workers(state, opts) do
+  @impl true
+  def handle_cast({:resource_offer, todos}, state) do
+    # Process resource offer - spawn workers for available todos
     available_slots = state.max_concurrent_workers - map_size(state.active_workers)
 
     if available_slots > 0 do
-      swarm_size = min(Keyword.get(opts, :swarm_size, @default_swarm_size), available_slots)
-      complexity = Keyword.get(opts, :complexity)
-
-      {:ok, ready_todos} = TodoStore.get_ready_todos(limit: swarm_size)
-
-      filtered_todos =
-        if complexity do
-          Enum.filter(ready_todos, &(&1.complexity == complexity))
-        else
-          ready_todos
-        end
-        |> Enum.take(swarm_size)
+      # Take only what we can handle
+      todos_to_process = Enum.take(todos, available_slots)
 
       new_workers =
-        filtered_todos
+        todos_to_process
         |> Enum.map(&spawn_worker_for_todo/1)
         |> Enum.filter(&(&1 != nil))
         |> Map.new()
 
       if map_size(new_workers) > 0 do
-        Logger.info("Spawned worker swarm",
-          count: map_size(new_workers),
-          active_total: map_size(state.active_workers) + map_size(new_workers)
+        Logger.info("Accepted resource offer - spawned workers",
+          offered: length(todos),
+          accepted: map_size(new_workers),
+          available_slots: available_slots
         )
       end
 
-      %{state | active_workers: Map.merge(state.active_workers, new_workers)}
+      {:noreply, %{state | active_workers: Map.merge(state.active_workers, new_workers)}}
     else
-      state
+      # No capacity, decline offer
+      Logger.debug("Declined resource offer - no available slots",
+        offered: length(todos),
+        active_workers: map_size(state.active_workers),
+        max_workers: state.max_concurrent_workers
+      )
+
+      {:noreply, state}
+    end
+  end
+
+  @impl true
+  def handle_info({:notification, _pid, "todo_ready", message_id}, state) do
+    # NOTIFY received - fetch the actual todos from TodoStore
+    case TodoStore.get_ready_todos(limit: state.max_concurrent_workers) do
+      {:ok, ready_todos} ->
+        available_slots = state.max_concurrent_workers - map_size(state.active_workers)
+
+        if available_slots > 0 and length(ready_todos) > 0 do
+          # Take only what we can handle
+          todos_to_process = Enum.take(ready_todos, available_slots)
+
+          new_workers =
+            todos_to_process
+            |> Enum.map(&spawn_worker_for_todo/1)
+            |> Enum.filter(&(&1 != nil))
+            |> Map.new()
+
+          if map_size(new_workers) > 0 do
+            Logger.info("Processed todo_ready NOTIFY - spawned workers",
+              notify_message_id: message_id,
+              offered: length(ready_todos),
+              accepted: map_size(new_workers),
+              available_slots: available_slots
+            )
+          end
+
+          {:noreply, %{state | active_workers: Map.merge(state.active_workers, new_workers)}}
+        else
+          Logger.debug("Ignored todo_ready NOTIFY - no capacity or no todos",
+            notify_message_id: message_id,
+            available_slots: available_slots,
+            ready_todos: length(ready_todos)
+          )
+
+          {:noreply, state}
+        end
+
+      {:error, reason} ->
+        SASL.database_failure(:todo_fetch_failure,
+          "Failed to fetch ready todos after notification",
+          notify_message_id: message_id,
+          reason: reason
+        )
+
+        {:noreply, state}
     end
   end
 
@@ -767,9 +813,10 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
         {worker_id, worker_info}
 
       {:error, reason} ->
-        Logger.error("Failed to spawn worker",
+        SASL.execution_failure(:todo_worker_spawn_failure,
+          "Failed to spawn worker for todo task",
           todo_id: todo.id,
-          reason: inspect(reason)
+          reason: reason
         )
 
         nil
@@ -786,5 +833,112 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
 
   defp generate_worker_id do
     "worker-#{System.system_time(:millisecond)}-#{:rand.uniform(99999)}"
+  end
+
+  defp poll_and_spawn(state) do
+    new_state = %{state | last_poll_at: DateTime.utc_now()}
+
+    if map_size(state.active_workers) < state.max_concurrent_workers do
+      spawn_workers(new_state, swarm_size: @default_swarm_size)
+    else
+      new_state
+    end
+  end
+
+  defp spawn_workers(state, opts) do
+    available_slots = state.max_concurrent_workers - map_size(state.active_workers)
+
+    if available_slots > 0 do
+      swarm_size = min(Keyword.get(opts, :swarm_size, @default_swarm_size), available_slots)
+      complexity = Keyword.get(opts, :complexity)
+
+      {:ok, ready_todos} = TodoStore.get_ready_todos(limit: swarm_size)
+
+      filtered_todos =
+        if complexity do
+          Enum.filter(ready_todos, &(&1.complexity == complexity))
+        else
+          ready_todos
+        end
+        |> Enum.take(swarm_size)
+
+      # Run a lightweight planner to detect code smells and plan refactor workflows
+      Enum.each(filtered_todos, fn todo ->
+        case Singularity.Planner.RefactorPlanner.detect_smells(todo.codebase_id) do
+          {:ok, issues} when length(issues) > 0 ->
+            # Produce HTDAG via planner
+            {:ok, %{tasks: tasks}} = Singularity.Planner.RefactorPlanner.plan(%{codebase_id: todo.codebase_id, issues: issues})
+
+            workflow = %{
+              workflow_id: "refactor_#{todo.codebase_id}_#{:erlang.unique_integer([:positive])}",
+              codebase_id: todo.codebase_id,
+              created_at: DateTime.utc_now(),
+              tasks: tasks,
+              origin: :auto_detect
+            }
+
+            # Persist to Workflows (unified system) and mark as a workflow record
+            {:ok, wf_id} = Singularity.Workflows.create_workflow(Map.put(workflow, :type, :workflow))
+
+            # Schedule a dry-run HTDAG execution for visibility (executor will pause on approvals)
+            Task.start(fn ->
+              Singularity.Workflows.execute_workflow(wf_id, dry_run: true)
+            end)
+
+          _ ->
+            :ok
+        end
+      end)
+
+      new_workers =
+        filtered_todos
+        |> Enum.map(&spawn_worker_for_todo/1)
+        |> Enum.filter(&(&1 != nil))
+        |> Map.new()
+
+      if map_size(new_workers) > 0 do
+        Logger.info("Spawned worker swarm",
+          count: map_size(new_workers),
+          active_total: map_size(state.active_workers) + map_size(new_workers)
+        )
+      end
+
+      %{state | active_workers: Map.merge(state.active_workers, new_workers)}
+    else
+      state
+    end
+  end
+
+  # ===========================
+  # Resource Offers Pattern (Mesos-inspired)
+  # ===========================
+
+  @doc """
+  Subscribe to todo availability notifications via PostgreSQL NOTIFY.
+  When todos become ready, TodoStore will notify coordinator immediately
+  instead of waiting for polling cycle.
+  """
+  def subscribe_to_offers do
+    # Listen for NOTIFY events on todo_ready channel
+    case Pgflow.Notifications.listen("todo_ready", Singularity.Repo) do
+      {:ok, pid} ->
+        Logger.info("Subscribed to todo_ready notifications", listener_pid: inspect(pid))
+        {:ok, pid}
+
+      {:error, reason} ->
+        SASL.infrastructure_failure(:notification_subscription_failure,
+          "Failed to subscribe to todo_ready notifications",
+          reason: reason
+        )
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Handle resource offer from TodoStore via NOTIFY.
+  Called when new todos become available for execution.
+  """
+  def handle_resource_offer(todos) when is_list(todos) do
+    GenServer.cast(__MODULE__, {:resource_offer, todos})
   end
 end

@@ -25,7 +25,6 @@ defmodule Singularity.Metrics.Aggregator do
 
   require Logger
   alias Singularity.Database.MetricsAggregation
-  alias Singularity.Repo
 
   @doc """
   Handle telemetry events and record them as metrics.
@@ -41,7 +40,11 @@ defmodule Singularity.Metrics.Aggregator do
       :ok
     rescue
       e ->
-        Logger.error("Failed to handle telemetry event #{inspect(event_name)}: #{inspect(e)}")
+        SASL.infrastructure_failure(:telemetry_error,
+          "Failed to handle telemetry event",
+          event_name: event_name,
+          error: e
+        )
         :ok
     end
   end
@@ -59,20 +62,26 @@ defmodule Singularity.Metrics.Aggregator do
   """
   def get_metrics_for(agent_id, period) when is_binary(agent_id) or is_integer(agent_id) do
     try do
+      normalized_id = normalize_agent_id(agent_id)
       # Convert period to seconds
       seconds = period_to_seconds(period)
 
       # Get metrics from database
       case MetricsAggregation.get_metrics(:agent_performance, last: seconds, agent_id: agent_id) do
         {:ok, metrics} ->
-          {:ok, format_agent_metrics(metrics)}
+          {:ok, summarize_agent_metrics(normalized_id, period, metrics)}
+
         {:error, reason} ->
           Logger.warning("Failed to get metrics for agent #{agent_id}", reason: reason)
           {:error, reason}
       end
     rescue
       e ->
-        Logger.error("Error getting metrics for agent #{agent_id}", error: inspect(e))
+        SASL.database_failure(:metrics_retrieval_error,
+          "Failed to retrieve metrics for agent",
+          agent_id: agent_id,
+          error: e
+        )
         {:error, :metrics_retrieval_failed}
     end
   end
@@ -84,12 +93,27 @@ defmodule Singularity.Metrics.Aggregator do
   - `{:ok, metrics_map}` - Map of agent_id => metrics
   - `{:error, reason}` - Failed to retrieve metrics
   """
-  def get_all_agent_metrics do
+  def get_all_agent_metrics(period \\ :last_week) do
     try do
-      # Get all agent metrics from the last week
-      case MetricsAggregation.get_all_metrics(:agent_performance, last: 7 * 24 * 3600) do
+      seconds = period_to_seconds(period)
+
+      case MetricsAggregation.get_metrics(:agent_performance, last: seconds) do
         {:ok, metrics} ->
-          {:ok, group_metrics_by_agent(metrics)}
+          agent_metrics =
+            metrics
+            |> Enum.group_by(fn metric ->
+              metric
+              |> agent_id_from_metric()
+              |> normalize_agent_id()
+            end)
+            |> Enum.reject(fn {agent_id, _} -> is_nil(agent_id) or agent_id == "" end)
+            |> Enum.map(fn {agent_id, agent_samples} ->
+              {agent_id, summarize_agent_metrics(agent_id, period, agent_samples)}
+            end)
+            |> Map.new()
+
+          {:ok, agent_metrics}
+
         {:error, reason} ->
           Logger.warning("Failed to get all agent metrics", reason: reason)
           {:error, reason}
@@ -150,16 +174,19 @@ defmodule Singularity.Metrics.Aggregator do
   """
   def get_agent_statistics(period \\ :last_week) do
     try do
-      seconds = period_to_seconds(period)
+      case get_all_agent_metrics(period) do
+        {:ok, metrics_by_agent} ->
+          summaries = Map.values(metrics_by_agent)
+          summary_values = Enum.map(summaries, fn %{summary: %{average_value: avg}} -> avg end)
 
-      case MetricsAggregation.get_aggregated_metrics(:agent_performance, last: seconds) do
-        {:ok, aggregated} ->
-          {:ok, %{
-            total_agents: length(aggregated),
-            average_performance: calculate_average(aggregated, :performance_score),
-            top_performers: get_top_performers(aggregated, 5),
-            performance_distribution: calculate_distribution(aggregated, :performance_score)
-          }}
+          {:ok,
+           %{
+             total_agents: length(summaries),
+             average_performance: average(summary_values),
+             top_performers: top_performers(summaries, 5),
+             performance_distribution: calculate_distribution(summary_values)
+           }}
+
         {:error, reason} ->
           Logger.warning("Failed to get agent statistics", reason: reason)
           {:error, reason}
@@ -184,77 +211,145 @@ defmodule Singularity.Metrics.Aggregator do
     end
   end
 
-  defp format_agent_metrics(metrics) do
-    # Format raw metrics into structured agent metrics
+  defp summarize_agent_metrics(agent_id, period, metrics) do
+    resolved_agent_id =
+      case normalize_agent_id(agent_id) do
+        nil ->
+          metrics
+          |> Enum.find_value(nil, fn metric ->
+            metric
+            |> agent_id_from_metric()
+            |> normalize_agent_id()
+          end)
+
+        normalized ->
+          normalized
+      end
+
+    values =
+      metrics
+      |> Enum.map(&metric_value/1)
+      |> Enum.reject(&is_nil/1)
+
+    latest_sample = List.first(metrics)
+
     %{
-      agent_id: metrics[:agent_id],
-      period: metrics[:period] || :unknown,
-      metrics: %{
-        cpu_usage: metrics[:cpu_usage] || [],
-        memory_usage: metrics[:memory_usage] || [],
-        tasks_completed: metrics[:tasks_completed] || 0,
-        error_rate: metrics[:error_rate] || 0.0,
-        average_response_time: metrics[:average_response_time] || 0.0
-      },
+      agent_id: resolved_agent_id,
+      period: period,
+      samples: metrics,
       summary: %{
-        total_tasks: metrics[:total_tasks] || 0,
-        success_rate: metrics[:success_rate] || 0.0,
-        average_performance: metrics[:average_performance] || 0.0
+        sample_count: length(values),
+        average_value: average(values),
+        min_value: min_value(values),
+        max_value: max_value(values),
+        latest_value: metric_value(latest_sample),
+        latest_timestamp: latest_sample && latest_sample.timestamp
       }
     }
   end
 
-  defp group_metrics_by_agent(metrics) do
-    # Group metrics by agent_id
-    Enum.group_by(metrics, fn metric -> metric[:agent_id] end)
-    |> Enum.map(fn {agent_id, agent_metrics} ->
-      {agent_id, format_agent_metrics(%{
-        agent_id: agent_id,
-        metrics: agent_metrics,
-        summary: calculate_agent_summary(agent_metrics)
-      })}
-    end)
-    |> Map.new()
+  defp agent_id_from_metric(%{labels: labels}) when is_map(labels) do
+    Map.get(labels, "agent_id") || Map.get(labels, :agent_id)
   end
 
-  defp calculate_agent_summary(metrics) do
-    # Calculate summary statistics for an agent
+  defp agent_id_from_metric(_), do: nil
+
+  defp normalize_agent_id(nil), do: nil
+
+  defp normalize_agent_id(agent_id) when is_binary(agent_id) do
+    agent_id
+    |> String.trim()
+    |> case do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp normalize_agent_id(agent_id) when is_integer(agent_id), do: Integer.to_string(agent_id)
+  defp normalize_agent_id(agent_id), do: to_string(agent_id)
+
+  defp metric_value(nil), do: nil
+
+  defp metric_value(%{value: %Decimal{} = decimal}) do
+    Decimal.to_float(decimal)
+  end
+
+  defp metric_value(%{value: value}) when is_number(value), do: value * 1.0
+
+  defp metric_value(%{value: value}) when is_binary(value) do
+    case Float.parse(value) do
+      {parsed, _} -> parsed
+      :error -> nil
+    end
+  end
+
+  defp metric_value(%{value: value}) when is_map(value) do
+    value
+    |> Map.get("value")
+    |> case do
+      nil -> nil
+      inner -> metric_value(%{value: inner})
+    end
+  end
+
+  defp metric_value(_), do: nil
+
+  defp min_value([]), do: 0.0
+  defp min_value(values), do: Enum.min(values)
+
+  defp max_value([]), do: 0.0
+  defp max_value(values), do: Enum.max(values)
+
+  defp average([]), do: 0.0
+  defp average(values), do: Enum.sum(values) / length(values)
+
+  defp calculate_distribution([]) do
+    %{min: 0.0, max: 0.0, median: 0.0, p95: 0.0}
+  end
+
+  defp calculate_distribution(values) do
+    sorted = Enum.sort(values)
+    count = length(sorted)
+
+    median =
+      if rem(count, 2) == 1 do
+        Enum.at(sorted, div(count, 2))
+      else
+        upper = Enum.at(sorted, div(count, 2))
+        lower = Enum.at(sorted, div(count, 2) - 1)
+        average([upper, lower])
+      end
+
+    p95_index =
+      case count do
+        1 ->
+          0
+
+        n ->
+          n
+          |> Kernel.*(0.95)
+          |> Float.ceil()
+          |> trunc()
+          |> Kernel.-(1)
+          |> max(0)
+          |> min(n - 1)
+      end
+
     %{
-      total_tasks: Enum.reduce(metrics, 0, fn m, acc -> acc + (m[:tasks_completed] || 0) end),
-      success_rate: calculate_average(metrics, :success_rate),
-      average_performance: calculate_average(metrics, :performance_score)
+      min: hd(sorted),
+      max: List.last(sorted),
+      median: median,
+      p95: Enum.at(sorted, p95_index)
     }
   end
 
-  defp calculate_average(metrics, key) do
-    values = Enum.map(metrics, fn m -> m[key] || 0 end) |> Enum.filter(&(&1 > 0))
-    if Enum.empty?(values) do
-      0.0
-    else
-      Enum.sum(values) / length(values)
-    end
-  end
-
-  defp get_top_performers(metrics, count) do
-    metrics
-    |> Enum.sort_by(fn m -> m[:performance_score] || 0 end, :desc)
+  defp top_performers(agent_metrics, count) do
+    agent_metrics
+    |> Enum.sort_by(fn %{summary: %{average_value: value}} -> value || 0.0 end, :desc)
     |> Enum.take(count)
-    |> Enum.map(fn m -> %{agent_id: m[:agent_id], score: m[:performance_score] || 0} end)
-  end
-
-  defp calculate_distribution(metrics, key) do
-    values = Enum.map(metrics, fn m -> m[key] || 0 end) |> Enum.sort()
-
-    if Enum.empty?(values) do
-      %{min: 0, max: 0, median: 0, p95: 0}
-    else
-      %{
-        min: Enum.min(values),
-        max: Enum.max(values),
-        median: Enum.at(values, div(length(values), 2)),
-        p95: Enum.at(values, round(length(values) * 0.95))
-      }
-    end
+    |> Enum.map(fn %{agent_id: agent_id, summary: %{average_value: value}} ->
+      %{agent_id: agent_id, score: value || 0.0}
+    end)
   end
 
   # Private function to record telemetry events as metrics

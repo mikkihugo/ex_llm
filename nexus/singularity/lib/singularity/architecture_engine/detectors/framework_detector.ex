@@ -72,7 +72,6 @@ defmodule Singularity.Architecture.Detectors.FrameworkDetector do
   @behaviour Singularity.Architecture.PatternType
   require Logger
   alias Singularity.Architecture.PatternStore
-  alias Singularity.Repo
 
   @impl true
   def pattern_type, do: :framework
@@ -94,11 +93,16 @@ defmodule Singularity.Architecture.Detectors.FrameworkDetector do
 
   @impl true
   def detect(path, opts \\ []) when is_binary(path) do
+    use_learned_patterns = Keyword.get(opts, :use_learned_patterns, true)
+    max_depth = Keyword.get(opts, :max_depth, 3)
+
+    Logger.debug("Framework detection for #{path}: learned_patterns=#{use_learned_patterns}, max_depth=#{max_depth}")
+
     # Step 1: Run hardcoded detectors
     hardcoded_results = detect_frameworks(path)
 
-    # Step 2: Fetch learned patterns from database
-    learned_patterns = fetch_learned_patterns()
+    # Step 2: Fetch learned patterns from database (if enabled)
+    learned_patterns = if use_learned_patterns, do: fetch_learned_patterns(), else: []
 
     # Step 3: Enhance results with learned pattern confidence
     enhanced_results = enhance_with_learned_patterns(hardcoded_results, learned_patterns)

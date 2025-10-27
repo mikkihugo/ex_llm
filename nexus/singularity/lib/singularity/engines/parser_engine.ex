@@ -14,6 +14,7 @@ defmodule Singularity.ParserEngine do
   # Standalone Cargo.toml (no workspace dependencies) to avoid Rustler conflicts
 
   # Match exact crate name from Cargo.toml (parser-code with dash)
+  use Rustler, otp_app: :singularity, crate: "parser_code", skip_compilation?: true
 
   require Logger
   alias Singularity.BeamAnalysisEngine
@@ -25,9 +26,9 @@ defmodule Singularity.ParserEngine do
   @default_hash_algorithm :sha256
   @default_concurrency 8
 
-  # NIF stubs - replaced by Rust implementation (private)
-  defp parse_file_nif(_file_path), do: :erlang.nif_error(:nif_not_loaded)
-  defp parse_tree_nif(_root_path), do: :erlang.nif_error(:nif_not_loaded)
+  # NIF stubs - replaced by Rust implementation (public for Rustler)
+  def parse_file_nif(_file_path), do: :erlang.nif_error(:nif_not_loaded)
+  def parse_tree_nif(_root_path), do: :erlang.nif_error(:nif_not_loaded)
   def supported_languages(), do: :erlang.nif_error(:nif_not_loaded)
 
   # AST-Grep NIF stubs (public - used by AstGrepCodeSearch)

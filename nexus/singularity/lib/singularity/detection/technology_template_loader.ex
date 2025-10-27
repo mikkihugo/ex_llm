@@ -12,8 +12,6 @@ defmodule Singularity.TechnologyTemplateLoader do
 
   require Logger
 
-  alias Singularity.TemplateStore
-
   @doc "Return decoded template map (or nil if missing)"
   def template(identifier, _opts \\ []) do
     # Use dynamic template discovery - tries multiple patterns and semantic search
@@ -295,7 +293,8 @@ defmodule Singularity.TechnologyTemplateLoader do
         {:ok, created_template}
 
       {:error, reason} ->
-        Logger.error("Failed to create technology template",
+        SASL.database_failure(:technology_template_creation_failure,
+          "Failed to create technology template",
           identifier: identifier,
           reason: reason
         )
@@ -324,7 +323,8 @@ defmodule Singularity.TechnologyTemplateLoader do
         {:ok, updated_template}
 
       {:error, reason} ->
-        Logger.error("Failed to update technology template",
+        SASL.database_failure(:technology_template_update_failure,
+          "Failed to update technology template",
           identifier: identifier,
           reason: reason
         )

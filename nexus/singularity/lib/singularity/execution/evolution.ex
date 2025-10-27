@@ -37,6 +37,11 @@ defmodule Singularity.Execution.Evolution do
      - Action: Add cache hints or pre-warming logic
      - Validation: Measure latency reduction
 
+  4. **CodeEngine Health** - Improve CodeEngine integration and reduce fallbacks
+     - Precondition: CodeEngine health score < 7.0 or fallback rate > 20%
+     - Action: Enhance CodeEngine integration, fix parsing issues, improve error handling
+     - Validation: Measure reduction in fallback rate and improvement in health score
+
   ## Validation Strategy
 
   Uses A/B testing to ensure improvements:
@@ -168,12 +173,20 @@ defmodule Singularity.Execution.Evolution do
           end
 
         {:error, reason} ->
-          Logger.error("Failed to analyze agent", agent_id: agent_id, reason: inspect(reason))
+          SASL.execution_failure(:agent_analysis_failure,
+            "Failed to analyze agent for evolution",
+            agent_id: agent_id,
+            reason: reason
+          )
           {:error, reason}
       end
     rescue
-      e in Exception ->
-        Logger.error("Evolution failed", agent_id: agent_id, error: inspect(e))
+      e ->
+        SASL.critical_failure(:evolution_system_failure,
+          "Evolution system failed catastrophically",
+          agent_id: agent_id,
+          error: e
+        )
         {:error, e}
     end
   end
@@ -197,7 +210,7 @@ defmodule Singularity.Execution.Evolution do
          last_evolution: nil
        }}
     rescue
-      e in Exception ->
+      e ->
         Logger.error("Failed to get evolution status",
           agent_id: agent_id,
           error: inspect(e)
@@ -236,7 +249,8 @@ defmodule Singularity.Execution.Evolution do
     Logger.info("Applying improvement",
       agent_id: agent_id,
       suggestion_type: suggestion.type,
-      confidence: suggestion.confidence
+      confidence: suggestion.confidence,
+      analysis_keys: Map.keys(analysis) |> Enum.join(", ")
     )
 
     # 1. Establish baseline metrics

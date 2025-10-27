@@ -33,7 +33,7 @@ defmodule Singularity.Templates.RendererSolidTest do
           }
         ],
         template_id: "base-elixir-module",
-        template_version: "2.1.0",
+        template_version: "2.6.0",
         applied_date: "2025-10-12",
         use_genserver: false,
         content:
@@ -81,7 +81,7 @@ defmodule Singularity.Templates.RendererSolidTest do
         error_types: [],
         examples: [],
         template_id: "base-elixir-module",
-        template_version: "2.1.0",
+        template_version: "2.6.0",
         applied_date: "2025-10-12",
         use_genserver: true,
         content: "# GenServer callbacks here"
@@ -106,7 +106,7 @@ defmodule Singularity.Templates.RendererSolidTest do
         error_types: [],
         examples: [],
         template_id: "base-elixir-module",
-        template_version: "2.1.0",
+        template_version: "2.6.0",
         applied_date: "2025-10-12",
         imports: ["require Logger"],
         aliases: ["Singularity.Repo", "Singularity.Schema"],
@@ -133,7 +133,7 @@ defmodule Singularity.Templates.RendererSolidTest do
         error_types: [],
         examples: [],
         template_id: "base-elixir-module",
-        template_version: "2.1.0",
+        template_version: "2.6.0",
         applied_date: "2025-10-12",
         relationships: %{
           calls: [

@@ -47,9 +47,6 @@ defmodule Singularity.PackageAndCodebaseSearch do
 
   require Logger
   alias Singularity.ArchitectureEngine.PackageRegistryKnowledge
-  alias Singularity.CodeSearch
-  alias Singularity.CodeGeneration.Implementations.EmbeddingGenerator
-  alias Singularity.Repo
 
   @doc """
   Unified search combining packages and your codebase combining Tool Knowledge + RAG
@@ -239,7 +236,10 @@ defmodule Singularity.PackageAndCodebaseSearch do
       end
     rescue
       error ->
-        Logger.error("Code search error: #{inspect(error)}")
+        SASL.external_service_failure(:code_search_failure,
+          "Code search operation failed",
+          error: error
+        )
         []
     end
   end

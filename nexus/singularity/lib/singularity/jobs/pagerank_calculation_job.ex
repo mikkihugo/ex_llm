@@ -228,10 +228,11 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
           {:ok, stats}
 
         {:error, reason} ->
-          Logger.error("❌ PageRank calculation failed", %{
+          SASL.critical_failure(:pagerank_calculation_failure,
+            "PageRank calculation failed catastrophically",
             codebase_id: codebase_id,
-            error: inspect(reason)
-          })
+            reason: reason
+          )
 
           {:error, reason}
       end
@@ -269,7 +270,7 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
         {:ok, Map.put(stats, :nodes_updated, updated_count)}
       end
     rescue
-      e in Exception ->
+      e ->
         Logger.error("Exception during PageRank calculation", error: inspect(e))
         {:error, {:exception, e}}
     end
@@ -277,11 +278,20 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
 
   @doc false
   defp store_pagerank_scores(codebase_id, scores) do
-    # Convert node_id strings to UUIDs and store scores
+    # Persist PageRank scores for nodes in the requested codebase
     Enum.reduce(scores, 0, fn %{node_id: node_id, pagerank_score: score}, acc ->
-      case update_node_pagerank(node_id, score) do
+      case update_node_pagerank(codebase_id, node_id, score) do
         {:ok, 1} ->
           acc + 1
+
+        {:ok, 0} ->
+          Logger.warning(
+            "No graph node matched for PageRank update",
+            node_id: node_id,
+            codebase_id: codebase_id
+          )
+
+          acc
 
         {:ok, _} ->
           acc
@@ -291,6 +301,23 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
           acc
       end
     end)
+  end
+
+  @doc false
+  defp update_node_pagerank(codebase_id, node_id, score) do
+    try do
+      {updated, _} =
+        Repo.update_all(
+          from(n in GraphNode,
+            where: n.codebase_id == ^codebase_id and n.node_id == ^node_id
+          ),
+          set: [pagerank_score: score]
+        )
+
+      {:ok, updated}
+    rescue
+      e -> {:error, e}
+    end
   end
 
   @doc false
@@ -310,21 +337,6 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
           Logger.warning("Failed to update centrality score for #{node_id}: #{inspect(e)}")
       end
     end)
-  end
-
-  @doc false
-  defp update_node_pagerank(node_id, pagerank_score) do
-    try do
-      result =
-        Repo.update_all(
-          from(n in GraphNode, where: n.node_id == ^node_id),
-          set: [pagerank_score: pagerank_score]
-        )
-
-      {:ok, result}
-    rescue
-      e -> {:error, e}
-    end
   end
 
   @doc false

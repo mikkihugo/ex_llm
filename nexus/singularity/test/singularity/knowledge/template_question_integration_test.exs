@@ -46,7 +46,7 @@ defmodule Singularity.Knowledge.TemplateQuestionIntegrationTest do
       {:ok, generation} = TemplateGeneration.find_by_file(@test_file_path)
 
       assert generation.template_id == "quality_template:elixir-production"
-      assert generation.template_version == "2.4.0"
+      assert generation.template_version == "2.6.0"
 
       # Verify basic answers
       assert generation.answers["task"] == "Create a user cache with state management"
@@ -96,7 +96,7 @@ defmodule Singularity.Knowledge.TemplateQuestionIntegrationTest do
 
       assert content =~ "# Template Answer File"
       assert content =~ "_template_id: quality_template:elixir-production"
-      assert content =~ "_template_version: 2.4.0"
+      assert content =~ "_template_version: 2.6.0"
       assert content =~ "_success: true"
       assert content =~ "task: \"Simple module\""
       assert content =~ "language: \"elixir\""

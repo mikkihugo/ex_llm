@@ -59,8 +59,8 @@ defmodule Singularity.Pipeline.Context do
   alias Singularity.Architecture.Detectors.FrameworkDetector
   alias Singularity.Architecture.Detectors.TechnologyDetector
   alias Singularity.Architecture.PatternDetector
-  alias Singularity.Storage.Code.Patterns.CodePatternExtractor
-  alias Singularity.DeduplicationEngine
+  alias Singularity.CodePatternExtractor
+  alias Singularity.Workflows.DeduplicationWorkflow
   alias Singularity.Architecture.Analyzers.QualityAnalyzer
 
   @type story :: String.t() | map()
@@ -100,7 +100,7 @@ defmodule Singularity.Pipeline.Context do
   @spec gather(story, gatheropts) :: {:ok, context} | {:error, term()}
   def gather(story, opts \\ []) do
     codebase_path = Keyword.get(opts, :codebase_path, ".")
-    timeout_ms = Keyword.get(opts, :timeout, 30000)
+    _timeout_ms = Keyword.get(opts, :timeout, 30000)
 
     Logger.info("Pipeline.Context: Gathering context",
       story_length: story_length(story),
@@ -199,8 +199,10 @@ defmodule Singularity.Pipeline.Context do
     include_duplicates = Keyword.get(opts, :include_duplicates, true)
 
     if include_duplicates do
-      case DeduplicationEngine.find_similar(story_to_string(story), codebase_path) do
-        {:ok, duplicates} when is_list(duplicates) ->
+      case DeduplicationWorkflow.execute(%{codebase_path: codebase_path, dry_run: true}) do
+        {:ok, results} ->
+          # Extract duplicates from workflow results
+          duplicates = extract_duplicates_from_workflow_results(results)
           Map.put(context, :duplicates, duplicates)
 
         _ ->
@@ -263,5 +265,17 @@ defmodule Singularity.Pipeline.Context do
       end
 
     Map.put(context, :complexity, complexity)
+  end
+
+  # Extract duplicates from workflow results for backward compatibility
+  defp extract_duplicates_from_workflow_results(results) do
+    code_duplicates = Map.get(results, :code_deduplication, %{})
+    pattern_duplicates = Map.get(results, :pattern_consolidation, %{})
+
+    # Combine duplicates from different sources
+    code_dups = Map.get(code_duplicates, :duplicates, [])
+    pattern_dups = Map.get(pattern_duplicates, :duplicates, [])
+
+    code_dups ++ pattern_dups
   end
 end

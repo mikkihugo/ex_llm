@@ -22,7 +22,8 @@ defmodule Singularity.Repo.Migrations.CreateKnowledgeTables do
       add :documentation_url, :string
       add :source_url, :string
       add :metadata, :map, default: %{}
-      add :embeddings, :vector, size: 768
+      # NOTE: pgvector columns added via separate migration once pgvector extension is installed
+#       ##  add :embeddings, :vector, size: 768  # pgvector - install via separate migration
       add :search_vector, :tsvector
       timestamps()
     end
@@ -52,7 +53,7 @@ defmodule Singularity.Repo.Migrations.CreateKnowledgeTables do
       add :description, :text
       add :code_template, :text
       add :language, :string
-      add :embedding, :vector, size: 768
+#       ##  add :embedding, :vector, size: 768  # pgvector - install via separate migration  # pgvector - install via separate migration
       add :usage_count, :integer, default: 0
       add :quality_score, :float
       add :metadata, :map, default: %{}
@@ -83,7 +84,7 @@ defmodule Singularity.Repo.Migrations.CreateKnowledgeTables do
       add :file_path_pattern, :string
       add :dependencies, {:array, :string}, default: []
       add :metadata, :map, default: %{}
-      add :embedding, :vector, size: 768
+#       ##  add :embedding, :vector, size: 768  # pgvector - install via separate migration  # pgvector - install via separate migration
       add :active, :boolean, default: true
       timestamps()
     end
@@ -109,7 +110,7 @@ defmodule Singularity.Repo.Migrations.CreateKnowledgeTables do
       add :best_practices, :text
       add :antipatterns, {:array, :string}, default: []
       add :metadata, :map, default: %{}
-      add :embedding, :vector, size: 768
+#       ##  add :embedding, :vector, size: 768  # pgvector - install via separate migration  # pgvector - install via separate migration
       timestamps()
     end
 

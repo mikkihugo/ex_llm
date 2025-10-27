@@ -342,7 +342,7 @@ defmodule Singularity.SelfImprovingAgent do
       estimated_cost: 1000,
       success_rate: 0.88,
       tags: [:async_safe, :parallelizable, :learning_enabled],
-      metadata: %{"version" => "2.3.0"}
+      metadata: %{"version" => "2.6.0"}
     })
 
     {:noreply, state}

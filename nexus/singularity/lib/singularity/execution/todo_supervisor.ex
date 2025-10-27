@@ -37,7 +37,13 @@ defmodule Singularity.Execution.TodoSupervisor do
 
   @impl true
   def init(opts) do
-    Logger.info("Starting Todo Supervisor...")
+    Logger.info("Starting Todo Supervisor with options: #{inspect(opts)}")
+
+    # Validate supervisor options
+    case opts do
+      [] -> Logger.debug("Todo Supervisor: No special options provided")
+      _ -> Logger.debug("Todo Supervisor: Custom options provided: #{inspect(opts)}")
+    end
 
     children = [
       Singularity.Execution.TodoSwarmCoordinator

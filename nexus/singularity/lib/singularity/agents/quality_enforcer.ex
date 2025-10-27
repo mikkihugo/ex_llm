@@ -85,7 +85,7 @@ defmodule Singularity.Agents.QualityEnforcer do
     "capabilities": ["validation", "enforcement", "multi_language", "quality_gates"],
     "dependencies": ["ArtifactStore", "TechnologyAgent", "RefactoringAgent"],
     "quality_level": "production",
-    "template_version": "2.3.0"
+    "template_version": "2.6.0"
   }
   ```
 

@@ -107,8 +107,8 @@ defmodule Singularity.Repo.Migrations.CreateCoreTables do
   end
 
   defp add_embedding_column do
-    if vector_extension_available?() do
-      add :embedding, :vector, size: 768
+    if vector_extension_available?() do# 
+#       add :embedding, :vector, size: 768  # pgvector - install via separate migration
     else
       add :embedding, :map, default: %{}
     end

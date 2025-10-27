@@ -25,12 +25,19 @@ defmodule Singularity.Startup.DocumentationBootstrap do
 
   @doc """
   Bootstrap the documentation system on startup.
+
+  Initializes:
+  1. Documentation pipeline agents
+  2. Quality enforcement gates
+  3. Automatic upgrade scheduling
+  4. Git tree coordination for agent branch isolation
   """
   def bootstrap_documentation_system do
     Logger.info("Bootstrapping documentation system...")
 
     with :ok <- ensure_agents_started(),
          :ok <- enable_quality_gates(),
+         :ok <- bootstrap_git_tree(),
          :ok <- schedule_automatic_upgrades() do
       Logger.info("✅ Documentation system bootstrapped successfully")
       :ok
@@ -39,6 +46,10 @@ defmodule Singularity.Startup.DocumentationBootstrap do
         Logger.error("Failed to bootstrap documentation system: #{inspect(reason)}")
         {:error, reason}
     end
+  end
+
+  defp bootstrap_git_tree do
+    Singularity.Startup.GitTreeBootstrap.bootstrap_git_tree_coordination()
   end
 
   @doc """

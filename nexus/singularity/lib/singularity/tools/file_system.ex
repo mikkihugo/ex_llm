@@ -354,6 +354,27 @@ defmodule Singularity.Tools.FileSystem do
     end
   end
 
+  @doc """
+  List files on disk without going through the tool registry pipeline.
+  Used by internal modules that need direct access to the same safe file listing.
+  """
+  def list_files(path, opts \\ %{}) do
+    recursive =
+      opts
+      |> Map.get(:recursive, Map.get(opts, "recursive", false))
+
+    pattern =
+      opts
+      |> Map.get(:pattern, Map.get(opts, "pattern"))
+
+    with {:ok, safe_path} <- validate_path(path),
+         {:ok, files} <- list_files(safe_path, recursive, pattern) do
+      {:ok, files}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   # ============================================================================
   # PRIVATE HELPERS
   # ============================================================================

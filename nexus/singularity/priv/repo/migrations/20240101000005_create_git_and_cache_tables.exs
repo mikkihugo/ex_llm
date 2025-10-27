@@ -48,7 +48,7 @@ defmodule Singularity.Repo.Migrations.CreateGitAndCacheTables do
       add :source_type, :string, null: false
       add :source_id, :string, null: false
       add :content, :text, null: false
-      add :embedding, :vector, size: 768
+      add :embedding, :vector, size: 2560, null: true
       add :metadata, :map, default: %{}
       add :token_count, :integer
       add :last_accessed, :utc_datetime
@@ -72,7 +72,7 @@ defmodule Singularity.Repo.Migrations.CreateGitAndCacheTables do
     create_if_not_exists table(:rag_queries, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :query_text, :text, null: false
-      add :query_embedding, :vector, size: 768
+      add :query_embedding, :vector, size: 2560, null: true
       add :result_ids, {:array, :binary_id}, default: []
       add :response, :text
       add :model_used, :string
@@ -111,7 +111,7 @@ defmodule Singularity.Repo.Migrations.CreateGitAndCacheTables do
       add :id, :binary_id, primary_key: true
       add :cache_key, :string, null: false
       add :query, :text, null: false
-      add :query_embedding, :vector, size: 768
+      add :query_embedding, :vector, size: 2560, null: true
       add :response, :text, null: false
       add :model, :string
       add :template_id, :string

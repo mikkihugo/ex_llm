@@ -80,7 +80,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
     "capabilities": ["pipeline_orchestration", "agent_coordination", "multi_language", "automation"],
     "dependencies": ["QualityEnforcer", "CodeStore"],
     "quality_level": "production",
-    "template_version": "2.3.0"
+    "template_version": "2.6.0"
   }
   ```
 

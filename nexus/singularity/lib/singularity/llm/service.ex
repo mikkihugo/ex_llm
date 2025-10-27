@@ -1,6 +1,6 @@
 # Template: elixir_production_v2 v2.1.0 | Applied: 2025-01-12 | Upgrade: v2.1.0 -> v2.2.0
 defmodule Singularity.LLM.Service do
-  @template_version "elixir_production_v2 v2.1.0"
+  @template_version "elixir_production_v2 v2.6.0"
 
   @moduledoc """
   # LLM Service — Queue-based Nexus orchestration for Responses API calls

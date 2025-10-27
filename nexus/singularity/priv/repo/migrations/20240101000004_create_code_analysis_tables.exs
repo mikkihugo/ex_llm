@@ -35,7 +35,7 @@ defmodule Singularity.Repo.Migrations.CreateCodeAnalysisTables do
       add :code_file_id, references(:code_files, type: :binary_id, on_delete: :delete_all)
       add :chunk_index, :integer, null: false
       add :chunk_text, :text, null: false
-      add :embedding, :vector, size: 768
+      add :embedding, :vector, size: 2560, null: true
       add :metadata, :map, default: %{}
       timestamps()
     end
@@ -96,7 +96,7 @@ defmodule Singularity.Repo.Migrations.CreateCodeAnalysisTables do
       add :signature, :text
       add :documentation, :text
       add :metadata, :map, default: %{}
-      add :embedding, :vector, size: 768
+      add :embedding, :vector, size: 2560, null: true
       timestamps()
     end
 

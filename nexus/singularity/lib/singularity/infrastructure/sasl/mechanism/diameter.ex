@@ -150,7 +150,7 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.Diameter do
 
     try do
       secret = derive_shared_secret(user_record)
-      response = :crypto.hmac(:sha256, secret, message)
+      response = :crypto.mac(:hmac, :sha256, secret, message)
 
       # Add timestamp for replay protection
       full_response = response <> <<timestamp::64>>

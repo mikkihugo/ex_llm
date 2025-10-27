@@ -85,8 +85,8 @@ defmodule Singularity.Repo.Migrations.CreateCodebaseMetadata do
       add :enums, :jsonb, default: "{}"
       add :traits, :jsonb, default: "{}"
 
-      # === VECTOR EMBEDDING (1536-dim, will migrate to 2560 later) ===
-      add :vector_embedding, :vector, size: 1536
+      # === VECTOR EMBEDDING (1536-dim, will migrate to 2560 later) ===# 
+#       add :vector_embedding, :vector, size: 1536  # pgvector - install via separate migration
 
       # === TIMESTAMPS ===
       timestamps()
@@ -136,7 +136,7 @@ defmodule Singularity.Repo.Migrations.CreateCodebaseMetadata do
     # Vector index for similarity search (using HNSW instead of ivfflat for better performance)
     execute("""
       CREATE INDEX IF NOT EXISTS codebase_metadata_vector_index
-      ON codebase_metadata USING hnsw (vector_embedding vector_cosine_ops)
+#       ON codebase_metadata USING hnsw (vector_embedding vector_cosine_ops)
     """, "")
 
     # Unique constraint

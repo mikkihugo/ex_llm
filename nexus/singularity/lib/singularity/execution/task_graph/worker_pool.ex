@@ -33,8 +33,6 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
   require Logger
 
   alias Singularity.Execution.TodoStore
-  alias Singularity.Execution.TaskGraph.Worker
-  alias Singularity.ProcessRegistry
 
   @poll_interval_ms 5_000
   @max_concurrent_workers 10
@@ -151,7 +149,7 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
   @impl true
   def handle_cast(:stop_all_workers, state) do
     Enum.each(state.active_workers, fn {_id, worker} ->
-      TaskGraph.Worker.stop(worker.pid)
+      Singularity.Execution.TaskGraph.Worker.stop(worker.pid)
     end)
 
     {:noreply, %{state | active_workers: %{}}}
@@ -161,7 +159,8 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
   def handle_cast({:worker_completed, worker_id, todo_id, result}, state) do
     Logger.info("Worker completed todo",
       worker_id: worker_id,
-      todo_id: todo_id
+      todo_id: todo_id,
+      result_summary: inspect(result, limit: 100)
     )
 
     # Remove from active workers
@@ -210,10 +209,11 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
     # Handle worker crash
     case find_worker_by_pid(state.active_workers, pid) do
       {worker_id, worker} ->
-        Logger.error("Worker process crashed",
+        SASL.execution_failure(:worker_process_crash,
+          "Worker process crashed during task execution",
           worker_id: worker_id,
           todo_id: worker.todo_id,
-          reason: inspect(reason)
+          reason: reason
         )
 
         # Mark todo as failed
@@ -299,7 +299,7 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
   defp spawn_worker_for_todo(todo) do
     worker_id = generate_worker_id()
 
-    case TaskGraph.Worker.start_link(
+    case Singularity.Execution.TaskGraph.Worker.start_link(
            todo_id: todo.id,
            worker_id: worker_id,
            coordinator: self()
@@ -318,9 +318,10 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
         {worker_id, worker_info}
 
       {:error, reason} ->
-        Logger.error("Failed to spawn worker",
+        SASL.execution_failure(:worker_spawn_failure,
+          "Failed to spawn worker process for task",
           todo_id: todo.id,
-          reason: inspect(reason)
+          reason: reason
         )
 
         nil

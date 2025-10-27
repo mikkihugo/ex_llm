@@ -125,8 +125,16 @@ defmodule Singularity.Validation.EffectivenessTracker do
         Logger.debug("EffectivenessTracker: No effectiveness data available")
         %{}
       else
-        # Normalize scores to create weights
-        normalize_weights(effectiveness_scores)
+        # Filter out checks with insufficient data points
+        filtered_scores = filter_checks_with_minimum_data(effectiveness_scores, time_range)
+
+        if map_size(filtered_scores) == 0 do
+          Logger.debug("EffectivenessTracker: No checks have minimum data points (#{@min_data_points})")
+          %{}
+        else
+          # Normalize scores to create weights
+          normalize_weights(filtered_scores)
+        end
       end
     rescue
       error ->
@@ -366,8 +374,9 @@ defmodule Singularity.Validation.EffectivenessTracker do
       :ok
     rescue
       error ->
-        Logger.error("EffectivenessTracker: Error recalculating weights",
-          error: inspect(error)
+        SASL.execution_failure(:effectiveness_recalculation_failure,
+          "Effectiveness tracker failed to recalculate weights",
+          error: error
         )
 
         {:error, error}
@@ -375,6 +384,26 @@ defmodule Singularity.Validation.EffectivenessTracker do
   end
 
   # Private Helpers
+
+  defp filter_checks_with_minimum_data(effectiveness_scores, time_range) do
+    Logger.debug("EffectivenessTracker: Filtering checks with minimum data points (>= #{@min_data_points}) for time_range: #{time_range}")
+
+    effectiveness_scores
+    |> Enum.filter(fn {check_id, _score} ->
+      # Get metrics count for this check (total historical data for statistical confidence)
+      metrics = ValidationMetricsStore.get_validation_metrics_for_run(check_id)
+      data_points = length(metrics)
+
+      if data_points >= @min_data_points do
+        Logger.debug("EffectivenessTracker: Check #{check_id} has #{data_points} data points (>= #{@min_data_points}) - including in weights")
+        true
+      else
+        Logger.debug("EffectivenessTracker: Check #{check_id} has #{data_points} data points (< #{@min_data_points}) - excluding from weights")
+        false
+      end
+    end)
+    |> Map.new()
+  end
 
   defp normalize_weights(effectiveness_scores) do
     # Convert effectiveness scores to normalized weights

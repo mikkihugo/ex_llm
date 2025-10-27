@@ -34,7 +34,7 @@ defmodule Singularity.Bootstrap.Vision do
   """
 
   require Logger
-  alias Singularity.Execution.Planning.SafeWorkPlanner
+  alias Singularity.Execution.SafeWorkPlanner
   alias Singularity.Bootstrap.EvolutionStageController
 
   @portfolio_vision %{

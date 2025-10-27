@@ -6,7 +6,7 @@ defmodule Singularity.Repo.Migrations.AddConfidenceThresholdToRules do
       add :confidence_threshold, :float, default: 0.7, null: false
       add :patterns, {:array, :map}, default: []
       # Note: embedding column already exists in database, skip adding it
-      # add :embedding, :vector
+#       ##  add :embedding, :vector  # pgvector - install via separate migration
       add :created_by_agent_id, :string
       add :evolution_count, :integer, default: 0
       add :execution_count, :integer, default: 0

@@ -56,8 +56,8 @@ defmodule Singularity.Repo.Migrations.CreateTodos do
 
     # Vector similarity search index (disabled - pgvector not available)
     # execute """
-    # CREATE INDEX todos_embedding_idx ON todos
-    # USING ivfflat (embedding vector_cosine_ops)
+#     # CREATE INDEX todos_embedding_idx ON todos
+#     # USING ivfflat (embedding vector_cosine_ops)
     # WITH (lists = 100)
     # """
 

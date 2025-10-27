@@ -58,7 +58,6 @@ defmodule Singularity.Tools.InstructorAdapter do
   """
 
   require Logger
-  alias Singularity.LLM.Service
   alias Singularity.Tools.InstructorSchemas
 
   @doc """
@@ -96,7 +95,11 @@ defmodule Singularity.Tools.InstructorAdapter do
         {:error, error_msg}
 
       {:error, reason} ->
-        Logger.error("Instructor validation error for #{tool_name}: #{inspect(reason)}")
+        SASL.execution_failure(:instructor_validation_failure,
+          "Instructor validation failed for tool",
+          tool_name: tool_name,
+          reason: reason
+        )
         {:error, "Validation failed: #{inspect(reason)}"}
     end
   end
@@ -137,7 +140,7 @@ defmodule Singularity.Tools.InstructorAdapter do
     end
   end
 
-  def validate_output(_type, _content, opts) do
+  def validate_output(_type, _content, _opts) do
     {:error, "Unsupported output type"}
   end
 
@@ -158,7 +161,7 @@ defmodule Singularity.Tools.InstructorAdapter do
 
   def refine_output(:code, code, %{issues: issues, suggestions: suggestions}, opts) do
     language = Keyword.get(opts, :language, "elixir")
-    max_iterations = Keyword.get(opts, :max_iterations, 3)
+    _max_iterations = Keyword.get(opts, :max_iterations, 3)
     max_retries = Keyword.get(opts, :max_retries, 2)
 
     prompt = create_refinement_prompt(code, language, issues, suggestions)
@@ -178,7 +181,7 @@ defmodule Singularity.Tools.InstructorAdapter do
     end
   end
 
-  def refine_output(_type, _content, _feedback, opts) do
+  def refine_output(_type, _content, _feedback, _opts) do
     {:error, "Unsupported output type"}
   end
 
@@ -274,7 +277,7 @@ defmodule Singularity.Tools.InstructorAdapter do
                    language: language,
                    max_iterations: 1
                  ) do
-              {:ok, refined_code} ->
+              {:ok, _refined_code} ->
                 refined_history = history ++ [%{code: generated.code, score: score}]
 
                 generate_and_validate_loop(
@@ -303,7 +306,12 @@ defmodule Singularity.Tools.InstructorAdapter do
         end
 
       {:error, reason} ->
-        Logger.error("Code generation failed: #{inspect(reason)}")
+        SASL.execution_failure(:code_generation_failure,
+          "Code generation failed",
+          task: task,
+          language: language,
+          reason: reason
+        )
         {:error, "Generation failed: #{inspect(reason)}"}
     end
   end
