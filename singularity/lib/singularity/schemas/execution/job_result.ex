@@ -199,7 +199,7 @@ defmodule Singularity.Schemas.Execution.JobResult do
   @spec record_timeout(keyword()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
   def record_timeout(_opts) do
     record_failure(
-      opts
+      _opts
       |> Keyword.put(:error, "Workflow execution timeout")
     )
   end

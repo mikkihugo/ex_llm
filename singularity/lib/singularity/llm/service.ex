@@ -779,31 +779,31 @@ defmodule Singularity.LLM.Service do
 
     model =
       overrides[:model] ||
-        opts
+        _opts
         |> Keyword.get(:model)
         |> normalize_string_option()
 
     provider =
       overrides[:provider] ||
-        opts
+        _opts
         |> Keyword.get(:provider)
         |> normalize_provider()
 
     complexity =
       overrides[:complexity] ||
-        opts
+        _opts
         |> Keyword.get(:complexity)
         |> normalize_complexity()
 
     task_type =
       overrides[:task_type] ||
-        opts
+        _opts
         |> Keyword.get(:task_type)
         |> normalize_task_type_option()
 
     capabilities =
       overrides[:capabilities] ||
-        opts
+        _opts
         |> Keyword.get(:capabilities)
         |> normalize_capabilities()
 

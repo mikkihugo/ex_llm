@@ -274,28 +274,46 @@ defmodule Singularity.CodeEngineNif do
   - `{:ok, parsed_file}` - Parsed file with AST, symbols, imports, exports
   - `{:error, reason}` - Parse failed
   """
-  def parse_file_nif(_file_path), do: :erlang.nif_error(:nif_not_loaded)
+  def parse_file_nif(file_path) do
+    # Delegate to modern analyze_language/2 for richer analysis
+    case File.read(file_path) do
+      {:ok, content} -> analyze_language(content, nil)
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
   @doc """
   Get list of supported languages (LEGACY format).
 
   **Note:** Use `supported_languages/0` instead (returns proper list).
   """
-  def supported_languages_nif(), do: :erlang.nif_error(:nif_not_loaded)
+  def supported_languages_nif() do
+    # Delegate to modern supported_languages/0 for proper list
+    supported_languages()
+  end
 
   @doc """
   Analyze code quality and patterns (LEGACY).
 
   **Note:** Use `analyze_language/2` instead for modern analysis.
   """
-  def analyze_code_nif(_codebase_path, _language), do: :erlang.nif_error(:nif_not_loaded)
+  def analyze_code_nif(codebase_path, language) do
+    # Delegate to modern analyze_language/2 for modern analysis
+    case File.read(codebase_path) do
+      {:ok, content} -> analyze_language(content, language)
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
   @doc """
   Calculate quality metrics (LEGACY).
 
   **Note:** Use `get_rca_metrics/2` for comprehensive metrics.
   """
-  def calculate_quality_metrics_nif(_code, _language), do: :erlang.nif_error(:nif_not_loaded)
+  def calculate_quality_metrics_nif(code, language) do
+    # Delegate to modern get_rca_metrics/2 for comprehensive metrics
+    get_rca_metrics(code, language)
+  end
 
   # ===========================
   # Knowledge/Asset NIFs (placeholder)

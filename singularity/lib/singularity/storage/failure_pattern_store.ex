@@ -98,7 +98,7 @@ defmodule Singularity.Storage.FailurePatternStore do
 
     if is_binary(signature) and signature != "" do
       filters =
-        opts
+        _opts
         |> Keyword.drop([:threshold, :limit])
         |> Map.new()
 

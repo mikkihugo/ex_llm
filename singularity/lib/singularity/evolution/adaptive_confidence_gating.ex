@@ -27,7 +27,7 @@ defmodule Singularity.Evolution.AdaptiveConfidenceGating do
   should_publish = AdaptiveConfidenceGating.should_publish_rule?(rule)
 
   # Provide feedback on published rule
-  :ok = AdaptiveConfidenceGating.record_published_rule_result(rule_id, success: true)
+  def record_published_rule_result(rule_id, opts \ []) do
 
   # Get tuning status
   status = AdaptiveConfidenceGating.get_tuning_status()
@@ -127,7 +127,7 @@ defmodule Singularity.Evolution.AdaptiveConfidenceGating do
 
   ## Parameters
   - `rule_id` - ID of the published rule
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:success` - Boolean, did the rule work well?
     - `:effectiveness` - Float (0.0-1.0), how effective was it?
 
@@ -135,13 +135,13 @@ defmodule Singularity.Evolution.AdaptiveConfidenceGating do
   - `:ok` - Feedback recorded
   """
   @spec record_published_rule_result(String.t(), keyword()) :: :ok | {:error, term()}
-  def record_published_rule_result(rule_id, _opts \\ []) do
+  def record_published_rule_result(rule_id, opts \\ []) do
     Logger.debug("AdaptiveConfidenceGating: Recording published rule result",
       rule_id: rule_id,
-      _opts: opts
+      opts: opts
     )
 
-    success = Keyword.get(_opts, :success, false)
+    success = Keyword.get(opts, :success, false)
 
     try do
       # Update success tracking

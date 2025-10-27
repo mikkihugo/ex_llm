@@ -171,6 +171,11 @@ defmodule Singularity.Application do
         # LLM Services - Rate limiting and provider orchestration
         Singularity.LLM.Supervisor,
 
+        # Infrastructure Registry Cache - Caches infrastructure systems from CentralCloud
+        # Phase 8.3: Provides detection patterns for TechnologyDetector
+        # Falls back to defaults if CentralCloud unavailable
+        Singularity.Architecture.InfrastructureRegistryCache,
+
         # Knowledge Services - Templates and code storage
         # NOTE: Disabled - requires PGMQ which is not available in test mode
         # Singularity.Knowledge.Supervisor,

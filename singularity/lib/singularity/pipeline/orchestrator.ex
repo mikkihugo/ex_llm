@@ -599,7 +599,7 @@ defmodule Singularity.Pipeline.Orchestrator do
   def record_published_rule_feedback(rule_id, _opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Recording published rule feedback",
       rule_id: rule_id,
-      _opts: opts
+      _opts: _opts
     )
 
     RuleEvolutionSystem.record_rule_feedback(rule_id, _opts)

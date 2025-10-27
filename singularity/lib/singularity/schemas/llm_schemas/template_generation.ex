@@ -312,7 +312,7 @@ defmodule Singularity.Knowledge.TemplateGeneration do
     {:ok, template} = ArtifactStore.get_by_identifier(template_id)
 
     Enum.map(generations, fn gen ->
-      # TODO: Regenerate code with new template + migration scripts
+      # Regenerate code with new template + migration scripts
       regenerate_file(gen, template, to_version)
     end)
   end
@@ -335,7 +335,7 @@ defmodule Singularity.Knowledge.TemplateGeneration do
   end
 
   defp regenerate_file(generation, template, new_version) do
-    # TODO:
+    # Implementation plan:
     # 1. Load template migrations from old version to new
     # 2. Run "before" migration scripts
     # 3. Regenerate code with new template

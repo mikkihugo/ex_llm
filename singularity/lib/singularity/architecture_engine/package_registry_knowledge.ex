@@ -356,7 +356,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
       version: version,
       prompt_id: prompt_id,
       timestamp: DateTime.utc_now(),
-      metadata: opts
+      metadata: _opts
     }
 
     case store_usage_metadata(usage_data) do

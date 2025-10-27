@@ -30,7 +30,7 @@ defmodule Singularity.HotReload.SafeCodeChangeDispatcher do
   @spec dispatch(map(), keyword()) :: :ok | {:error, term()}
   def dispatch(payload, _opts \\ []) when is_map(payload) do
     agent_id =
-      opts
+      _opts
       |> Keyword.get(:agent_id, @default_agent_id)
       |> to_string()
 

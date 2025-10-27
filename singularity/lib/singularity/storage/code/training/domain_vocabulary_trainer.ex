@@ -126,7 +126,7 @@ defmodule Singularity.DomainVocabularyTrainer do
 
   defp extract_template_variables do
     # Find all {{VARIABLE}} patterns in templates
-    # Note: This would query codebase_chunks table (YOUR code, not external packages)
+    # TODO: Implement codebase_chunks table query for template variables
     # For now, return common template variables used in the system
     [
       "{{MODULE_NAME}}",

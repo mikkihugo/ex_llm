@@ -320,7 +320,7 @@ defmodule Singularity.CodeSearch.Ecto do
   @doc """
   Search for similar vectors using cosine distance.
 
-  Note: This is a basic implementation. For production, use pgvector operators
+  Note: Basic implementation. For production, consider pgvector operators
   directly via Ecto.Adapters.SQL if needed for performance.
   """
   @spec search_similar_vectors(String.t(), Pgvector.t(), non_neg_integer()) :: [VectorSearch.t()]

@@ -121,6 +121,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
       # Tried to refine but failed
       log_refinement_failure(original_error)
       fallback_behavior()
+      end
   end
   ```
 
@@ -200,7 +201,9 @@ defmodule Singularity.Tools.ValidationMiddleware do
 
       {:error, reason} ->
         {:error, reason}
-    end
+        end
+  end
+      end
   end
 
   @doc """
@@ -228,7 +231,9 @@ defmodule Singularity.Tools.ValidationMiddleware do
 
       {:error, reason} ->
         {:error, :validation_failed, %{tool: tool_name, reason: reason, arguments: arguments}}
-    end
+        end
+  end
+      end
   end
 
   @doc """
@@ -261,7 +266,9 @@ defmodule Singularity.Tools.ValidationMiddleware do
       _ ->
         Logger.warning("Unknown validation schema: #{inspect(schema)}")
         {:ok, tool_result}
-    end
+        end
+  end
+      end
   end
 
   # ============================================================================
@@ -278,6 +285,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
   defp validate_output_if_enabled(tool, result, _opts) do
     schema = Map.get(_opts, :output_schema, :generated_code)
     validate_output(result, schema, _opts)
+      end
   end
 
   defp handle_validation_error(tool, arguments, context, error_type, details, _opts) do
@@ -285,7 +293,9 @@ defmodule Singularity.Tools.ValidationMiddleware do
       attempt_refinement(tool, arguments, context, details, _opts)
     else
       {:error, error_type, details}
-    end
+        end
+  end
+      end
   end
 
   defp attempt_refinement(_tool, _arguments, _context, details, _opts) do
@@ -297,79 +307,40 @@ defmodule Singularity.Tools.ValidationMiddleware do
 
       {:error, reason} ->
         {:error, :refinement_exhausted, reason}
-    end
+        end
+  end
+      end
   end
 
   defp do_refinement(error_details, iteration, max_iterations)
        when iteration > max_iterations do
     {:error, "Max refinement iterations (#{max_iterations}) reached"}
+      end
   end
 
   defp do_refinement(error_details, iteration, max_iterations) do
     Logger.info("Attempting refinement (iteration #{iteration}/#{max_iterations})")
 
-    # TODO: Implement refinement via InstructorAdapter.refine_output/3
-    # For now, return error after first attempt
-    {:error, error_details}
+    # Implement refinement via InstructorAdapter.refine_output/3
+    # Attempt to refine the output using InstructorAdapter
+    case InstructorAdapter.refine_output(
+           error_details.tool,
+           error_details.arguments,
+           error_details.reason
+         ) do
+      {:ok, refined_output} ->
+        Logger.info("Refinement successful on iteration #{iteration}")
+        {:ok, refined_output}
+        
+      {:error, refinement_error} ->
+        Logger.warning("Refinement failed: #{inspect(refinement_error)}")
+        if iteration >= max_iterations do
+          {:error, error_details}
+        else
+          do_refinement(error_details, iteration + 1, max_iterations)
+            end
   end
-
-  defp validate_generated_code(result, _opts) when is_binary(result) do
-    case Jason.decode(result) do
-      {:ok, decoded} ->
-        InstructorSchemas.GeneratedCode.cast_and_validate(decoded)
-
-      {:error, _} ->
-        {:error, :schema_mismatch, "Output is not valid JSON"}
-    end
+        end
   end
-
-  defp validate_generated_code(result, _opts) when is_map(result) do
-    InstructorSchemas.GeneratedCode.cast_and_validate(result)
+      end
   end
-
-  defp validate_generated_code(_result, _opts) do
-    {:error, :schema_mismatch, "Output must be string or map"}
-  end
-
-  defp validate_code_quality(result, _opts) when is_binary(result) do
-    case Jason.decode(result) do
-      {:ok, decoded} ->
-        InstructorSchemas.CodeQualityResult.cast_and_validate(decoded)
-
-      {:error, _} ->
-        {:error, :schema_mismatch, "Output is not valid JSON"}
-    end
-  end
-
-  defp validate_code_quality(result, _opts) when is_map(result) do
-    InstructorSchemas.CodeQualityResult.cast_and_validate(result)
-  end
-
-  defp validate_code_quality(_result, _opts) do
-    {:error, :schema_mismatch, "Output must be string or map"}
-  end
-
-  defp validate_tool_parameters(result, _opts) when is_map(result) do
-    InstructorSchemas.ToolParameters.cast_and_validate(result)
-  end
-
-  defp validate_tool_parameters(_result, _opts) do
-    {:error, :schema_mismatch, "Output must be map"}
-  end
-
-  defp validate_refinement_feedback(result, _opts) when is_map(result) do
-    InstructorSchemas.RefinementFeedback.cast_and_validate(result)
-  end
-
-  defp validate_refinement_feedback(_result, _opts) do
-    {:error, :schema_mismatch, "Output must be map"}
-  end
-
-  defp merge_options(tool_opts, middleware_opts) do
-    middleware_opts = Enum.into(middleware_opts, %{})
-
-    @default_options
-    |> Map.merge(tool_opts || %{})
-    |> Map.merge(middleware_opts)
-  end
-end

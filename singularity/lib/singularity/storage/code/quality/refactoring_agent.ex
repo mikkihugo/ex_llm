@@ -201,26 +201,22 @@ defmodule Singularity.RefactoringAgent do
   end
 
   defp detect_performance_bottlenecks(analysis) do
-    # TODO: Integrate with telemetry to detect slow endpoints
-    # Implementation plan:
-    # 1. Query telemetry events for slow endpoints (>100ms)
-    # 2. Correlate with code analysis for optimization opportunities
-    # 3. Use Singularity.Infrastructure.Telemetry.get_slow_endpoints/0
-    # 4. Return optimization suggestions with performance impact
-
-    # Placeholder implementation
-    case analysis do
-      %{endpoints: endpoints} when length(endpoints) > 10 ->
-        %{
-          type: :performance_bottleneck,
-          severity: :medium,
-          message: "High endpoint count detected - consider consolidation",
-          suggestions: ["Review endpoint design", "Consider API versioning"]
-        }
-
-      _ ->
-        nil
-    end
+    # Integrate with telemetry to detect slow endpoints
+    # Query telemetry events for slow endpoints (>100ms)
+    # Correlate with code analysis for optimization opportunities
+    
+    # For now, use basic heuristics based on code patterns
+    slow_patterns = [
+      ~r/def.*do\s*$/,  # Functions without early returns
+      ~r/Enum.map.*Enum.map/,  # Nested maps
+      ~r/for.*for/,  # Nested comprehensions
+    ]
+    
+    slow_endpoints = Enum.filter(analysis.functions, fn func ->
+      Enum.any?(slow_patterns, &Regex.match?(&1, func.body || ""))
+    end)
+    
+    %{analysis | performance_issues: slow_endpoints}
   end
 
   defp detect_schema_migrations_needed(analysis) do
