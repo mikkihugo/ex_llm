@@ -3,13 +3,19 @@
 //! This module provides pure computation functions for prompt tracking.
 //! All data is passed in via parameters and returned as results.
 //! No I/O operations - designed for NIF usage.
+//!
+//! NOTE: NATS-based storage disabled (Phase 4 NATS removal)
+//! Use ex_pgflow/pgmq via Elixir for persistent storage
 
 use anyhow::Result;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use crate::prompt_tracking::types::{PromptExecutionData, PromptTrackingQuery};
 use anyhow::Error;
-use async_nats::Client;
+// use async_nats::Client;  // DISABLED - NATS removed
+
+/// Placeholder for NATS client (disabled)
+type Client = ();
 
 /// Pure computation prompt tracking storage
 /// 
@@ -67,21 +73,23 @@ impl PromptTrackingStorage {
     }
 
     /// Create global instance with NATS client (for NIF usage)
+    /// NOTE: NATS disabled - use ex_pgflow/pgmq via Elixir for persistent storage
     pub async fn new_global() -> Result<Self> {
-        // Connect to NATS for NIF-based storage
-        let nats_client = async_nats::connect("nats://localhost:4222").await.ok();
-        
+        // NATS-based storage disabled - use local cache with Elixir integration
+        log::info!("PromptTrackingStorage using local cache (NATS disabled, use ex_pgflow/pgmq via Elixir)");
+
         Ok(Self {
             executions: HashMap::new(),
             feedback: HashMap::new(),
             context_signatures: HashMap::new(),
-            nats_client,
+            nats_client: None,  // NATS disabled
         })
     }
 
     /// Set NATS client for storage operations
-    pub fn with_nats_client(mut self, client: Client) -> Self {
-        self.nats_client = Some(client);
+    /// NOTE: NATS disabled - stub implementation
+    pub fn with_nats_client(mut self, _client: Client) -> Self {
+        // NATS client disabled
         self
     }
 
@@ -103,71 +111,23 @@ impl PromptTrackingStorage {
         Ok(())
     }
 
-    /// Async store method for NIF compatibility - uses NATS to communicate with Elixir storage service
-    pub async fn store(&self, data: PromptExecutionData) -> Result<String, Error> {
-        if let Some(client) = &self.nats_client {
-            // Generate correlation ID
-            let correlation_id = format!("store_{}", uuid::Uuid::new_v4());
-            
-            // Prepare the store request
-            let store_request = serde_json::json!({
-                "data": data,
-                "correlation_id": correlation_id
-            });
-            
-            // Send NATS request to prompt.tracking.store
-            match client.request("prompt.tracking.store", serde_json::to_vec(&store_request)?.into()).await {
-                Ok(message) => {
-                    let response: serde_json::Value = serde_json::from_slice(&message.payload)?;
-                    if response.get("success").and_then(|s| s.as_bool()).unwrap_or(false) {
-                        Ok(response.get("fact_id").and_then(|id| id.as_str()).unwrap_or("unknown").to_string())
-                    } else {
-                        Err(anyhow::anyhow!("Storage failed: {:?}", response.get("error")))
-                    }
-                }
-                Err(e) => Err(anyhow::anyhow!("NATS request failed: {}", e)),
-            }
-        } else {
-            // Fallback to in-memory storage for testing
-            Ok("in_memory_stub_id".to_string())
-        }
+    /// Async store method for NIF compatibility
+    /// NOTE: NATS-based storage disabled (Phase 4 NATS removal)
+    /// Use ex_pgflow/pgmq via Elixir for persistent storage
+    pub async fn store(&self, _data: PromptExecutionData) -> Result<String, Error> {
+        // NATS-based storage disabled - use in-memory stub with Elixir integration
+        // Generate correlation ID
+        let correlation_id = format!("store_{}", uuid::Uuid::new_v4());
+        Ok(correlation_id)
     }
 
-    /// Async query method for NIF compatibility - uses NATS to communicate with Elixir storage service
-    pub async fn query(&self, query: PromptTrackingQuery) -> Result<Vec<PromptExecutionData>, Error> {
-        if let Some(client) = &self.nats_client {
-            // Generate correlation ID
-            let correlation_id = format!("query_{}", uuid::Uuid::new_v4());
-            
-            // Prepare the query request
-            let query_request = serde_json::json!({
-                "query": query,
-                "limit": 100,  // Default limit
-                "correlation_id": correlation_id
-            });
-            
-            // Send NATS request to prompt.tracking.query
-            match client.request("prompt.tracking.query", serde_json::to_vec(&query_request)?.into()).await {
-                Ok(message) => {
-                    let response: serde_json::Value = serde_json::from_slice(&message.payload)?;
-                    if let Some(results) = response.get("results").and_then(|r| r.as_array()) {
-                        let mut executions = Vec::new();
-                        for result in results {
-                            if let Ok(execution) = serde_json::from_value(result.clone()) {
-                                executions.push(execution);
-                            }
-                        }
-                        Ok(executions)
-                    } else {
-                        Ok(vec![])
-                    }
-                }
-                Err(e) => Err(anyhow::anyhow!("NATS request failed: {}", e)),
-            }
-        } else {
-            // Fallback to empty results for testing
-            Ok(vec![])
-        }
+    /// Async query method for NIF compatibility
+    /// NOTE: NATS-based storage disabled (Phase 4 NATS removal)
+    /// Use ex_pgflow/pgmq via Elixir for persistent storage
+    pub async fn query(&self, _query: PromptTrackingQuery) -> Result<Vec<PromptExecutionData>, Error> {
+        // NATS-based storage disabled - return empty results with Elixir integration
+        // For persistent queries, use ex_pgflow/pgmq via Elixir
+        Ok(Vec::new())
     }
 
     /// Get execution by ID

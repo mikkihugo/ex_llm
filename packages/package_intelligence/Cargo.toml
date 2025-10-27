@@ -61,8 +61,7 @@ log = { workspace = true }
 walkdir = { workspace = true }
 toml = { workspace = true }
 
-# Messaging only (no local storage)
-async-nats = "0.33"
+# XML parsing
 quick-xml = "0.31"
 
 # Database dependencies

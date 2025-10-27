@@ -35,7 +35,6 @@ thiserror = "2.0.17"
 # Async
 tokio = { version = "1.47.1", features = ["full"] }
 async-trait = "0.1"
-async-nats = "0.44.2"
 
 # Collections & Concurrency
 ahash = "0.8"

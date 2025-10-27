@@ -53,8 +53,8 @@ pub mod prompt_tracking;
 // DSPy learning integration
 pub mod dspy_learning;
 
-// NATS service (prompt_engine is a service)
-pub mod nats_service;
+// NATS service (DISABLED - NATS removed in Phase 4)
+// pub mod nats_service;
 
 // Re-export main types
 use std::collections::HashMap;

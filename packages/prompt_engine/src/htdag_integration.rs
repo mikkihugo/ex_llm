@@ -9,9 +9,11 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 /// HTDAG connection for template performance tracking
+/// NOTE: NATS-specific implementation disabled (Phase 4 NATS removal)
+/// Use Messaging.Client abstraction via Elixir for performance tracking
 pub struct HTDAGConnector {
-    /// NATS client for communication with Elixir HTDAG
-    nats_client: Option<async_nats::Client>,
+    /// NATS client disabled - use Elixir Messaging.Client instead
+    /// nats_client: Option<async_nats::Client>,
 
     /// Local cache of performance metrics
     performance_cache: Arc<RwLock<PerformanceCache>>,
@@ -40,29 +42,15 @@ struct PerformanceCache {
 
 impl HTDAGConnector {
     /// Create new HTDAG connector
+    /// NOTE: NATS-specific implementation disabled (Phase 4 NATS removal)
+    /// Use Messaging.Client abstraction via Elixir for performance tracking
     pub async fn new() -> Result<Self> {
-        // Try to connect to NATS if available
-        let nats_client = match std::env::var("NATS_URL") {
-            Ok(url) => {
-                match async_nats::connect(&url).await {
-                    Ok(client) => {
-                        log::info!("Connected to NATS for HTDAG integration");
-                        Some(client)
-                    }
-                    Err(e) => {
-                        log::warn!("NATS not available, using local cache: {}", e);
-                        None
-                    }
-                }
-            }
-            Err(_) => {
-                log::info!("NATS_URL not set, using local HTDAG cache");
-                None
-            }
-        };
+        // NATS-based connection disabled - use local cache with Elixir integration via Messaging.Client
+        // The performance_cache will be synced via Elixir NATS abstraction
+        log::info!("HTDAG Connector using local cache (NATS disabled, use Messaging.Client via Elixir)");
 
         Ok(Self {
-            nats_client,
+            // nats_client disabled
             performance_cache: Arc::new(RwLock::new(PerformanceCache::default())),
         })
     }

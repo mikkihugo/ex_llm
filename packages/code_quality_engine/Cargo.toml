@@ -96,9 +96,6 @@ prompt = { path = "../prompt_engine", package = "prompt_engine" }
 # validator = { path = "../linting_engine", optional = true }  # Use indirectly via quality module
 # sparc_methodology = { path = "../methodology" }  # Does not exist
 
-# NATS for context queries
-async-nats = { workspace = true }
-
 [dev-dependencies]
 tokio-test = { workspace = true }
 
