@@ -1,0 +1,294 @@
+provider: github_models
+default_model: gpt-4o-mini
+description: GitHub's FREE tier LLM inference service with multiple models
+documentation: "Uses GITHUB_TOKEN for authentication. Free tier includes multiple models via github.com/models"
+
+authentication:
+  methods:
+    - type: github_token
+      env_var: GITHUB_TOKEN
+      header: Authorization
+      header_format: "Bearer {token}"
+      description: GitHub Personal Access Token (no special scopes required)
+  priority: [github_token]
+
+models:
+  gpt-4o:
+    name: GPT-4o
+    description: OpenAI's GPT-4o model via GitHub Models (FREE tier)
+    context_window: 128000
+    max_output_tokens: 4096
+    pricing:
+      input: 0.0
+      output: 0.0
+    capabilities:
+      - streaming
+      - chat_completions
+      - function_calling
+      - vision
+      - json_mode
+      - structured_output
+      - system_messages
+      - tool_choice
+      - parallel_function_calling
+    supported_endpoints:
+      - /v1/chat/completions
+    supported_modalities:
+      - text
+      - image
+    supported_output_modalities:
+      - text
+    task_complexity_score:
+      simple: 2.0
+      medium: 3.5
+      complex: 4.8
+
+  gpt-4o-mini:
+    name: GPT-4o Mini
+    description: OpenAI's lightweight GPT-4o model via GitHub Models (FREE tier)
+    context_window: 128000
+    max_output_tokens: 4096
+    pricing:
+      input: 0.0
+      output: 0.0
+    capabilities:
+      - streaming
+      - chat_completions
+      - function_calling
+      - vision
+      - json_mode
+      - structured_output
+      - system_messages
+      - tool_choice
+      - parallel_function_calling
+    supported_endpoints:
+      - /v1/chat/completions
+    supported_modalities:
+      - text
+      - image
+    supported_output_modalities:
+      - text
+    task_complexity_score:
+      simple: 1.5
+      medium: 2.5
+      complex: 3.5
+
+  claude-opus:
+    name: Claude 3 Opus
+    description: Anthropic's most powerful Claude model via GitHub Models (FREE tier)
+    context_window: 200000
+    max_output_tokens: 4096
+    pricing:
+      input: 0.0
+      output: 0.0
+    capabilities:
+      - streaming
+      - chat_completions
+      - function_calling
+      - vision
+      - json_mode
+      - structured_output
+      - system_messages
+      - tool_choice
+      - parallel_function_calling
+    supported_endpoints:
+      - /v1/chat/completions
+    supported_modalities:
+      - text
+      - image
+    supported_output_modalities:
+      - text
+    task_complexity_score:
+      simple: 2.0
+      medium: 3.8
+      complex: 4.9
+
+  claude-sonnet:
+    name: Claude 3.5 Sonnet
+    description: Anthropic's balanced Claude model via GitHub Models (FREE tier)
+    context_window: 200000
+    max_output_tokens: 4096
+    pricing:
+      input: 0.0
+      output: 0.0
+    capabilities:
+      - streaming
+      - chat_completions
+      - function_calling
+      - vision
+      - json_mode
+      - structured_output
+      - system_messages
+      - tool_choice
+      - parallel_function_calling
+    supported_endpoints:
+      - /v1/chat/completions
+    supported_modalities:
+      - text
+      - image
+    supported_output_modalities:
+      - text
+    task_complexity_score:
+      simple: 1.5
+      medium: 3.0
+      complex: 4.2
+
+  claude-haiku:
+    name: Claude 3 Haiku
+    description: Anthropic's lightweight Claude model via GitHub Models (FREE tier)
+    context_window: 200000
+    max_output_tokens: 4096
+    pricing:
+      input: 0.0
+      output: 0.0
+    capabilities:
+      - streaming
+      - chat_completions
+      - function_calling
+      - vision
+      - json_mode
+      - structured_output
+      - system_messages
+      - tool_choice
+    supported_endpoints:
+      - /v1/chat/completions
+    supported_modalities:
+      - text
+      - image
+    supported_output_modalities:
+      - text
+    task_complexity_score:
+      simple: 1.0
+      medium: 2.0
+      complex: 2.5
+
+  mistral-large:
+    name: Mistral Large
+    description: Mistral AI's large model via GitHub Models (FREE tier)
+    context_window: 32768
+    max_output_tokens: 8192
+    pricing:
+      input: 0.0
+      output: 0.0
+    capabilities:
+      - streaming
+      - chat_completions
+      - function_calling
+      - json_mode
+      - structured_output
+      - system_messages
+      - tool_choice
+    supported_endpoints:
+      - /v1/chat/completions
+    supported_modalities:
+      - text
+    supported_output_modalities:
+      - text
+    task_complexity_score:
+      simple: 1.5
+      medium: 3.0
+      complex: 4.0
+
+  mistral-small:
+    name: Mistral Small
+    description: Mistral AI's lightweight model via GitHub Models (FREE tier)
+    context_window: 32768
+    max_output_tokens: 8192
+    pricing:
+      input: 0.0
+      output: 0.0
+    capabilities:
+      - streaming
+      - chat_completions
+      - function_calling
+      - json_mode
+      - system_messages
+    supported_endpoints:
+      - /v1/chat/completions
+    supported_modalities:
+      - text
+    supported_output_modalities:
+      - text
+    task_complexity_score:
+      simple: 1.0
+      medium: 2.0
+      complex: 2.8
+
+  grok-2:
+    name: Grok 2
+    description: xAI's Grok 2 model via GitHub Models (FREE tier)
+    context_window: 128000
+    max_output_tokens: 8192
+    pricing:
+      input: 0.0
+      output: 0.0
+    capabilities:
+      - streaming
+      - chat_completions
+      - function_calling
+      - json_mode
+      - structured_output
+      - system_messages
+      - tool_choice
+    supported_endpoints:
+      - /v1/chat/completions
+    supported_modalities:
+      - text
+    supported_output_modalities:
+      - text
+    task_complexity_score:
+      simple: 1.5
+      medium: 3.0
+      complex: 4.1
+
+  llama-3-1-70b:
+    name: Llama 3.1 70B
+    description: Meta's Llama 3.1 70B parameter model via GitHub Models (FREE tier)
+    context_window: 128000
+    max_output_tokens: 8192
+    pricing:
+      input: 0.0
+      output: 0.0
+    capabilities:
+      - streaming
+      - chat_completions
+      - function_calling
+      - json_mode
+      - structured_output
+      - system_messages
+      - tool_choice
+    supported_endpoints:
+      - /v1/chat/completions
+    supported_modalities:
+      - text
+    supported_output_modalities:
+      - text
+    task_complexity_score:
+      simple: 1.5
+      medium: 2.8
+      complex: 3.8
+
+  llama-3-1-8b:
+    name: Llama 3.1 8B
+    description: Meta's lightweight Llama 3.1 8B model via GitHub Models (FREE tier)
+    context_window: 128000
+    max_output_tokens: 8192
+    pricing:
+      input: 0.0
+      output: 0.0
+    capabilities:
+      - streaming
+      - chat_completions
+      - function_calling
+      - json_mode
+      - system_messages
+    supported_endpoints:
+      - /v1/chat/completions
+    supported_modalities:
+      - text
+    supported_output_modalities:
+      - text
+    task_complexity_score:
+      simple: 1.0
+      medium: 1.8
+      complex: 2.5
