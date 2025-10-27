@@ -140,6 +140,8 @@ defmodule ExLLM.Plugs.FetchConfig do
   defp get_required_keys(:ollama), do: []
   defp get_required_keys(:lmstudio), do: []
   defp get_required_keys(:bumblebee), do: []
+  defp get_required_keys(:copilot), do: []
+  defp get_required_keys(:codex), do: []
   defp get_required_keys(_provider), do: [:api_key]
 
   defp provider_env_var(:openai, :api_key), do: "OPENAI_API_KEY"
@@ -165,6 +167,8 @@ defmodule ExLLM.Plugs.FetchConfig do
   defp provider_to_module(:bumblebee), do: ExLLM.Providers.Bumblebee
   defp provider_to_module(:xai), do: ExLLM.Providers.XAI
   defp provider_to_module(:bedrock), do: ExLLM.Providers.Bedrock
+  defp provider_to_module(:copilot), do: ExLLM.Providers.Copilot
+  defp provider_to_module(:codex), do: ExLLM.Providers.Codex
   defp provider_to_module(:mock), do: ExLLM.Providers.Mock
   defp provider_to_module(_), do: nil
 
