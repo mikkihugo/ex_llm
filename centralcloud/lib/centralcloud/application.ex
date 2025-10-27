@@ -95,6 +95,7 @@ defmodule CentralCloud.Application do
         CentralCloud.FrameworkLearningAgent,  # Learn from external packages
         CentralCloud.IntelligenceHub,     # Aggregate intelligence from all instances
         CentralCloud.TemplateIntelligence,  # Template intelligence (Phase 3: cross-instance learning)
+        CentralCloud.Infrastructure.IntelligenceEndpoint,  # Phase 8: Infrastructure registry NATS endpoint
       ]
     end
   end
