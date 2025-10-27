@@ -1,16 +1,25 @@
 defmodule ExLLM.Providers.Codex do
   @moduledoc """
-  ChatGPT Pro (Codex) Provider for ExLLM.
+  OpenAI Codex CLI Provider for ExLLM.
 
-  Implements the ExLLM.Provider behavior for ChatGPT Pro with OAuth2 authentication.
+  Integrates with OpenAI's Codex CLI tool, which stores OAuth2 credentials in `~/.codex/auth.json`.
+  This provider acts as a bridge to use Codex-authenticated LLM access from ExLLM.
+
+  ## Credential Management
+
+  TokenManager automatically:
+  - Loads credentials from `~/.codex/auth.json` (Codex CLI credentials) first
+  - Falls back to local `.codex_oauth_token` cache if needed
+  - Extracts token expiration from JWT `exp` claim
+  - Auto-refreshes tokens 60 seconds before expiration
+  - Syncs refreshed tokens back to `~/.codex/auth.json`
 
   ## Authentication Flow
 
-  1. Generate OAuth2 authorization URL via `Codex.OAuth2.authorization_url()`
-  2. User authenticates in browser, gets authorization code
-  3. Exchange code for tokens via `Codex.OAuth2.exchange_code(code)`
-  4. TokenManager stores and auto-refreshes tokens
-  5. Use tokens for chat API calls to https://chatgpt.com/backend-api
+  1. User authenticates with Codex CLI: `codex auth`
+  2. Credentials stored in `~/.codex/auth.json`
+  3. ExLLM loads and uses these same credentials
+  4. Tokens auto-refresh and stay in sync with Codex CLI
 
   ## Usage
 
@@ -19,6 +28,11 @@ defmodule ExLLM.Providers.Codex do
       ...> ])
       iex> response.content
       "def binary_search(arr, target):\\n..."
+
+  ## Requirements
+
+  - Codex CLI must be authenticated: `npm install -g @openai/codex && codex auth`
+  - `~/.codex/auth.json` will be created with valid OpenAI OAuth2 tokens
   """
 
   @behaviour ExLLM.Provider
