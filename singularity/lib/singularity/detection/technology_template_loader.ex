@@ -28,7 +28,7 @@ defmodule Singularity.TechnologyTemplateLoader do
   end
 
   @doc "Return compiled regex patterns for identifier"
-  def patterns(identifier, _opts \\ []) do
+  def patterns(identifier, opts \\ []) do
     field = opts[:field]
 
     identifier
@@ -54,7 +54,7 @@ defmodule Singularity.TechnologyTemplateLoader do
   Resolve directories searched for template JSON files. Accepts optional
   `:dirs` override for tests or custom locations.
   """
-  def directories(opts \\ [])(_opts \\ []) do
+  def directories(opts \\ []) do
     base =
       [
         Application.get_env(:singularity, :technology_pattern_dir),
@@ -169,7 +169,7 @@ defmodule Singularity.TechnologyTemplateLoader do
   defp compile_pattern(%Regex{} = regex), do: {:ok, regex}
   defp compile_pattern(_), do: {:error, :invalid_pattern}
 
-  defp persist_template(identifier, %{} = template, source, _opts) do
+  defp persist_template(identifier, %{} = template, source, opts) do
     if Keyword.get(opts, :persist, true) do
       try do
         case TechnologyTemplateStore.upsert(identifier, template,
@@ -198,7 +198,7 @@ defmodule Singularity.TechnologyTemplateLoader do
     template
   end
 
-  defp persist_template(identifier, template, source, _opts) do
+  defp persist_template(identifier, template, source, opts) do
     # Extract options
     quality_level = Keyword.get(opts, :quality_level, :production)
     force_update = Keyword.get(opts, :force_update, false)

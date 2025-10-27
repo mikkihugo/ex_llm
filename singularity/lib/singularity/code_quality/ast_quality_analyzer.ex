@@ -82,7 +82,7 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
       }}
   """
   @spec analyze_codebase_quality(String.t(), keyword()) :: {:ok, map()} | {:error, String.t()}
-  def analyze_codebase_quality(codebase_path, _opts \\ []) do
+  def analyze_codebase_quality(codebase_path, opts \\ []) do
     Logger.info("Starting quality analysis: #{codebase_path}")
 
     languages = Keyword.get(opts, :languages, ["elixir", "rust", "javascript", "python"])

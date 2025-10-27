@@ -57,7 +57,7 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
   alias Jason
   alias Singularity.Code.Quality.TemplateValidator
 
-  @type generation_opts :: [
+  @type generationopts :: [
           task: String.t(),
           language: String.t() | nil,
           repos: [String.t()] | nil,
@@ -91,7 +91,7 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
   - `:dispatch_agent_id` - Agent id used for dispatch (default: "rag-runtime")
   - `:dispatch_metadata` - Additional metadata merged into dispatch payload
   """
-  @spec generate(generation_opts()) :: {:ok, String.t()} | {:error, term()}
+  @spec generate(generationopts()) :: {:ok, String.t()} | {:error, term()}
   def generate(opts) do
     task = Keyword.fetch!(opts, :task)
     language = Keyword.get(opts, :language)
@@ -131,7 +131,7 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
          {:ok, code} <-
            maybe_dispatch_improvement(
              code,
-             _opts,
+             opts,
              build_dispatch_metadata(
                task,
                language,
@@ -429,7 +429,7 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
   - Repos with highest quality code
   """
   @spec analyze_best_practices(keyword()) :: {:ok, map()} | {:error, term()}
-  def analyze_best_practices(opts \\ [])(_opts \\ []) do
+  def analyze_best_practices(opts \\ []) do
     language = Keyword.get(opts, :language)
 
     query = """
@@ -818,9 +818,9 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
     Map.get(example, :path) || Map.get(example, "path")
   end
 
-  defp maybe_dispatch_improvement(code, _opts, _metadata, false), do: {:ok, code}
+  defp maybe_dispatch_improvement(code, opts, _metadata, false), do: {:ok, code}
 
-  defp maybe_dispatch_improvement(code, _opts, metadata, true) do
+  defp maybe_dispatch_improvement(code, opts, metadata, true) do
     agent_id = Keyword.get(opts, :dispatch_agent_id, "rag-runtime")
     extra_metadata = Keyword.get(opts, :dispatch_metadata, %{})
 

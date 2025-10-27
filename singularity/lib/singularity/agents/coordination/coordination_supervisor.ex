@@ -25,8 +25,8 @@ defmodule Singularity.Agents.Coordination.CoordinationSupervisor do
       # CapabilityRegistry - track what agents can do
       {Singularity.Agents.Coordination.CapabilityRegistry, []},
 
-      # (Future) ExecutionCoordinator would be a GenServer if we need persistent state
-      # For now it's stateless and called directly by AgentRouter
+      # LearningFeedback - periodically sync learned success rates to routing system
+      {Singularity.Agents.Coordination.LearningFeedback, []}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

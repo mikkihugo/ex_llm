@@ -245,14 +245,46 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
   end
 
   defp record_execution_outcome(task, result, execution_id) do
-    # Hook for workflow learning (will be connected to WorkflowLearner)
+    # Hook for workflow learning via WorkflowLearner
+    alias Singularity.Agents.Coordination.WorkflowLearner
+
+    success = Map.get(result, :error) == nil
+
     Logger.debug("[ExecutionCoordinator] Recording execution outcome",
       task_id: task[:id],
       execution_id: execution_id,
-      success: Map.get(result, :error) == nil
+      success: success
     )
 
-    # TODO: Connect to WorkflowLearner.record_task_outcome(task, result)
+    # Build outcome record for learning system
+    outcome = %{
+      agent: result[:agent] || :unknown,
+      task_id: task[:id],
+      task_domain: task[:domain],
+      success: success,
+      latency_ms: result[:latency_ms] || 0,
+      tokens_used: result[:tokens_used],
+      quality_score: result[:quality_score],
+      feedback: nil,
+      error: result[:error],
+      metadata: %{
+        execution_id: execution_id,
+        goal: task[:goal],
+        complexity: task[:complexity],
+        source: task[:source]
+      }
+    }
+
+    # Record in learning system (async, fire-and-forget)
+    try do
+      WorkflowLearner.record_outcome(outcome)
+    rescue
+      e ->
+        Logger.warn("[ExecutionCoordinator] Failed to record learning outcome",
+          task_id: task[:id],
+          error: inspect(e)
+        )
+    end
   end
 
   defp call_agent(agent_name, message, timeout) do

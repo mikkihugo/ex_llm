@@ -348,7 +348,7 @@ defmodule Singularity.TechnologyAgent do
     String.downcase(Path.extname(path)) in extensions
   end
 
-  defp detect_technologies_from_patterns(patterns, _opts) do
+  defp detect_technologies_from_patterns(patterns, opts) do
     min_confidence = Keyword.get(opts, :min_confidence, 0.7)
     categories = Keyword.get(opts, :categories, nil)
 
@@ -486,7 +486,7 @@ defmodule Singularity.TechnologyAgent do
     end
   end
 
-  defp merge_detections(frameworks, technologies, _opts) do
+  defp merge_detections(frameworks, technologies, opts) do
     # Merge framework detections with technology patterns
     max_results = Keyword.get(opts, :max_results, 50)
 
