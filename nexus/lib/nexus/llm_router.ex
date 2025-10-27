@@ -183,12 +183,13 @@ defmodule Nexus.LLMRouter do
   defp find_model_by_criteria(:simple) do
     case ExLLM.Core.Models.list_all() do
       {:ok, models} ->
-        # Find fast, cheap models (Gemini Flash, GPT-4o-mini, etc.)
+        # Find fast, cheap models (Gemini Flash, GPT-4o-mini, GitHub Models, etc.)
         simple_model = models
         |> Enum.filter(fn model ->
-          model.provider in [:gemini, :openai] and
-          String.contains?(model.id, "flash") or
-          String.contains?(model.id, "mini")
+          model.provider in [:gemini, :openai, :github_models] and
+          (String.contains?(model.id, "flash") or
+           String.contains?(model.id, "mini") or
+           String.contains?(model.id, "github"))
         end)
         |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
         |> List.first()
@@ -202,12 +203,14 @@ defmodule Nexus.LLMRouter do
   defp find_medium_model do
     case ExLLM.Core.Models.list_all() do
       {:ok, models} ->
-        # Find balanced models (Claude Sonnet, GPT-4o, etc.)
+        # Find balanced models (Claude Sonnet, GPT-4o, GitHub Models, etc.)
         medium_model = models
         |> Enum.filter(fn model ->
-          model.provider in [:anthropic, :openai] and
+          model.provider in [:anthropic, :openai, :github_models] and
           (String.contains?(model.id, "sonnet") or
-           String.contains?(model.id, "gpt-4o") and not String.contains?(model.id, "mini"))
+           String.contains?(model.id, "gpt-4o") and not String.contains?(model.id, "mini") or
+           String.contains?(model.id, "llama") or
+           String.contains?(model.id, "mistral"))
         end)
         |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
         |> List.first()
@@ -220,12 +223,14 @@ defmodule Nexus.LLMRouter do
   defp find_complex_model do
     case ExLLM.Core.Models.list_all() do
       {:ok, models} ->
-        # Find powerful models (Claude Opus, GPT-4, etc.)
+        # Find powerful models (Claude Opus, GPT-4, GitHub Models, etc.)
         complex_model = models
         |> Enum.filter(fn model ->
-          model.provider in [:anthropic, :openai] and
+          model.provider in [:anthropic, :openai, :github_models] and
           (String.contains?(model.id, "opus") or
-           String.contains?(model.id, "gpt-4") and not String.contains?(model.id, "mini"))
+           String.contains?(model.id, "gpt-4") and not String.contains?(model.id, "mini") or
+           String.contains?(model.id, "llama-3.3") or
+           String.contains?(model.id, "deepseek"))
         end)
         |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
         |> List.first()
