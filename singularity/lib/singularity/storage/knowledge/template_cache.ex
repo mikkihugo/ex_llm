@@ -65,10 +65,7 @@ defmodule Singularity.Knowledge.TemplateCache do
     # Create ETS table
     :ets.new(@table, [:named_table, :set, :public, {:read_concurrency, true}])
 
-    # Connect to NATS
-    gnat_name = Singularity.NatsOrchestrator.gnat_name()
-
-    # Subscribe to template updates using Singularity.NatsClient
+    # Subscribe to template updates using Singularity.Messaging.Client
     Enum.each(
       [
         "template.updated.>",
@@ -84,7 +81,7 @@ defmodule Singularity.Knowledge.TemplateCache do
 
     Logger.info("Template cache started (ETS only)")
 
-    {:ok, %{gnat: gnat_name, hits: 0, misses: 0}}
+    {:ok, %{hits: 0, misses: 0}}
   end
 
   @impl true

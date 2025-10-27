@@ -12,8 +12,6 @@ defmodule Singularity.Execution.Runners.Control do
   use GenServer
   require Logger
 
-  alias Singularity.Messaging.Client, as: NatsClient
-
   @type improvement_event :: %{
           agent_id: String.t(),
           payload: map(),

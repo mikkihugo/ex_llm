@@ -116,7 +116,6 @@ defmodule Singularity.TechnologyAgent do
   alias Singularity.TechnologyTemplateLoader
   alias Singularity.Storage.Store
   alias Singularity.Knowledge.ArtifactStore
-  alias Singularity.Messaging.Client, as: NatsClient
 
   @doc """
   Detect technologies in a codebase using pattern matching and templates.

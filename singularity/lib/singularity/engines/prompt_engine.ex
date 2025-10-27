@@ -7,7 +7,6 @@ defmodule Singularity.PromptEngine do
   """
 
   require Logger
-  alias Singularity.Messaging.Client, as: NatsClient
 
   @behaviour Singularity.Engine
 

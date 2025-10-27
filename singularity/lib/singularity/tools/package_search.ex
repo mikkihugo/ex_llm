@@ -1,10 +1,10 @@
 defmodule Singularity.Tools.PackageSearch do
   @moduledoc """
-  Package Search Tool - Search for packages across ecosystems via NATS
+  Package Search Tool - Search for packages across ecosystems
 
-  This tool provides package search functionality that communicates with the
-  Rust package registry service via NATS to get real package data from the
-  dependency_catalog database.
+  This tool provides package search functionality that uses the
+  PackageAndCodebaseSearch service to get package data from the
+  local knowledge base.
   """
 
   require Logger
@@ -32,22 +32,20 @@ defmodule Singularity.Tools.PackageSearch do
 
     Logger.info("📦 Fetching #{ecosystem}/#{package_name}@#{version || "latest"}")
 
-    request = %{
-      "package_name" => package_name,
-      "version" => version,
-      "ecosystem" => to_string(ecosystem)
-    }
+    try do
+      case PackageAndCodebaseSearch.get_package(package_name, version, ecosystem) do
+        {:ok, result} ->
+          Logger.info("✅ Got #{package_name} details")
+          {:ok, result}
 
-    subject = "packages.registry.collect.#{ecosystem}"
-
-    case call_nats(subject, request) do
-      {:ok, result} ->
-        Logger.info("✅ Got #{package_name} details")
-        {:ok, result}
-
-      {:error, reason} ->
-        Logger.error("❌ Failed to get #{package_name}: #{inspect(reason)}")
-        {:error, reason}
+        {:error, reason} ->
+          Logger.error("❌ Failed to get #{package_name}: #{inspect(reason)}")
+          {:error, reason}
+      end
+    rescue
+      error ->
+        Logger.error("❌ Failed to get #{package_name}: #{inspect(error)}")
+        {:error, "Failed to get package: #{inspect(error)}"}
     end
   end
 
@@ -143,16 +141,8 @@ defmodule Singularity.Tools.PackageSearch do
     end
   end
 
-  defp call_nats(subject, request) do
-    case Singularity.NatsOrchestrator.request(subject, request, timeout: 15_000) do
-      {:ok, response} -> {:ok, response}
-      {:error, reason} -> {:error, reason}
-    end
-  rescue
-    error ->
-      Logger.error("NATS call exception: #{inspect(error)}")
-      {:error, :exception}
-  end
+  # Note: get_package now uses PackageAndCodebaseSearch directly
+  # No NATS calls needed - all handled by local search infrastructure
 
   @doc """
   Search for packages in a specific ecosystem

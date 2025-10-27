@@ -42,7 +42,6 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
 
   require Logger
   alias Singularity.MultiLanguageT5Trainer
-  alias Singularity.Messaging.Client, as: NatsClient
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: args}) do

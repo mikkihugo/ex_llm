@@ -17,7 +17,6 @@ defmodule Singularity.LintingEngine do
     path: "../rust/linting_engine"
 
   require Logger
-  alias Singularity.Messaging.Client, as: NatsClient
 
   @behaviour Singularity.Engine
 

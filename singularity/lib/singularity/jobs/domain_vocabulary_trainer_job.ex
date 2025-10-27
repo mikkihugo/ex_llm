@@ -46,7 +46,6 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
 
   require Logger
   alias Singularity.DomainVocabularyTrainer
-  alias Singularity.Messaging.Client, as: NatsClient
   alias Singularity.Repo
 
   @impl Oban.Worker

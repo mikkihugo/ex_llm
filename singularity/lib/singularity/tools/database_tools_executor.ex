@@ -131,7 +131,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
   use GenServer
   require Logger
 
-  alias Singularity.{Repo, CodeSearch, NatsClient}
+  alias Singularity.{Repo, CodeSearch}
   alias Singularity.Infrastructure.Telemetry
   alias Singularity.Tools.SecurityPolicy
   import Ecto.Query

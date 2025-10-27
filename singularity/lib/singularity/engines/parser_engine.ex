@@ -20,7 +20,6 @@ defmodule Singularity.ParserEngine do
     path: "../rust/parser_engine"
 
   require Logger
-  alias Singularity.Messaging.Client, as: NatsClient
   alias Singularity.BeamAnalysisEngine
 
   alias Singularity.Repo
