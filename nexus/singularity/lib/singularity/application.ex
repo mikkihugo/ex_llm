@@ -163,7 +163,8 @@ defmodule Singularity.Application do
       |> Kernel.++(
         # Layer 2: Infrastructure - Core services required by application layer
         [
-          Singularity.Infrastructure.Supervisor
+          Singularity.Infrastructure.Supervisor,
+          Singularity.Tools.ProviderToolkitBootstrapper
         ]
       )
       |> Kernel.++([

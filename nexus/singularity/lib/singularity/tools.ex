@@ -144,18 +144,6 @@ defmodule Singularity.Tools do
       String.starts_with?(tool_name, "quality_") ->
         {:ok, Singularity.Tools.Quality}
 
-      # Development domain
-      String.starts_with?(tool_name, "dev_") ->
-        {:ok, Singularity.Tools.Basic}
-
-      # Testing domain
-      String.starts_with?(tool_name, "test_") ->
-        {:ok, Singularity.Tools.Basic}
-
-      # Deployment domain
-      String.starts_with?(tool_name, "deploy_") ->
-        {:ok, Singularity.Tools.Basic}
-
       # Default: tool not found
       true ->
         {:error, "Tool not found: #{tool_name}"}

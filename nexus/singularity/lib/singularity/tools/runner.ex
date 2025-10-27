@@ -3,7 +3,6 @@ defmodule Singularity.Tools.Runner do
   Executes registered tools and normalizes responses into ToolResult structs.
   """
 
-  alias Singularity.Tools.{Basic, Default}
   alias Singularity.Schemas.Tools.{Tool, ToolCall, ToolResult}
 
   @provider_aliases %{
@@ -24,9 +23,6 @@ defmodule Singularity.Tools.Runner do
           {:ok, ToolResult.t()} | {:error, String.t()}
   def execute(provider, %ToolCall{} = call, context \\ %{}) do
     provider = normalize_provider(provider)
-
-    Default.ensure_registered()
-    Basic.ensure_registered()
 
     case Singularity.Tools.Catalog.get_tool(provider, call.name) do
       {:ok, tool} -> do_execute(tool, call, context)
