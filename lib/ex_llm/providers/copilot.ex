@@ -72,7 +72,7 @@ defmodule ExLLM.Providers.Copilot do
   end
 
   @impl true
-  def list_models(opts \\ []) do
+  def list_models(_opts \\ []) do
     # Load models from YAML registry (config/models/github_copilot.yml)
     case load_models_from_registry() do
       {:ok, models} -> {:ok, models}
@@ -87,7 +87,7 @@ defmodule ExLLM.Providers.Copilot do
 
     case File.read(config_path) do
       {:ok, content} ->
-        case YamlElixir.read_string(content) do
+        case YamlElixir.read_from_string(content) do
           {:ok, %{"models" => models}} when is_map(models) ->
             registry_models = build_models_from_registry(models)
             {:ok, registry_models}

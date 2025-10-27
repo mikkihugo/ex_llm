@@ -39,7 +39,6 @@ defmodule ExLLM.Providers.Copilot.API do
   - {:error, reason}
   """
   def chat_completions(copilot_token, messages, opts \\ []) do
-    url = @copilot_api_base <> @copilot_completions_endpoint
     headers = copilot_headers(copilot_token)
 
     model = Keyword.get(opts, :model, "gpt-4-turbo")
@@ -82,7 +81,6 @@ defmodule ExLLM.Providers.Copilot.API do
   Similar to chat_completions but returns streaming chunks.
   """
   def chat_completions_stream(copilot_token, messages, callback, opts \\ []) do
-    url = @copilot_api_base <> @copilot_completions_endpoint
     headers = copilot_headers(copilot_token)
 
     model = Keyword.get(opts, :model, "gpt-4-turbo")

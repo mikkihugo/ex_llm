@@ -157,8 +157,6 @@ defmodule ExLLM.Providers.Copilot.TokenManager do
   end
 
   defp fetch_copilot_token(github_token) do
-    url = @github_api_base <> @copilot_token_endpoint
-
     headers = [
       {"authorization", "token #{github_token}"},
       {"content-type", "application/json"},
