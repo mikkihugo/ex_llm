@@ -832,22 +832,24 @@ defmodule Singularity.Knowledge.TemplateService do
   - Identify high-quality templates for promotion
   - Auto-export learned patterns to Git
 
-  Publishes to NATS subject: `template.usage.{template_id}`
+  Persists to database table: `template_usage_events`
   """
   defp track_template_usage(template_id, status) when status in [:success, :failure] do
-    usage_event = %{
+    usage_event_attrs = %{
       template_id: template_id,
       status: status,
-      timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+      timestamp: DateTime.utc_now(),
       instance_id: node() |> Atom.to_string()
     }
 
-    # Publish to NATS for Central Cloud aggregation
-    case Singularity.Messaging.Client.publish(
-           "template.usage.#{template_id}",
-           Jason.encode!(usage_event)
+    # Insert event into database for Central Cloud aggregation
+    case Singularity.Repo.insert(
+           Singularity.Knowledge.TemplateUsageEvent.changeset(
+             %Singularity.Knowledge.TemplateUsageEvent{},
+             usage_event_attrs
+           )
          ) do
-      :ok ->
+      {:ok, _event} ->
         Logger.debug("Tracked template usage",
           template_id: template_id,
           status: status
@@ -859,7 +861,7 @@ defmodule Singularity.Knowledge.TemplateService do
         Logger.warning("Failed to track template usage",
           template_id: template_id,
           status: status,
-          reason: reason
+          reason: inspect(reason)
         )
 
         # Don't fail the render operation if tracking fails

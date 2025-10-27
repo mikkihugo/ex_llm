@@ -16,6 +16,7 @@ defmodule Singularity.Knowledge.TemplateServiceSolidTest do
   alias Singularity.Knowledge.TemplateService
 
   @moduletag :template_rendering
+  @moduletag :database_required
 
   setup do
     # Create test template directory
@@ -253,30 +254,27 @@ defmodule Singularity.Knowledge.TemplateServiceSolidTest do
   end
 
   describe "usage tracking" do
-    @tag :nats_required
-    test "publishes usage event to NATS on success" do
-      # This test requires NATS to be running
+    test "records usage event to database on success" do
+      # This test verifies usage events are recorded
       variables = %{
         "module_name" => "MyApp.Tracked",
         "description" => "Test tracking"
       }
 
-      # Subscribe to usage events before rendering
-      case Singularity.NatsClient.subscribe("template.usage.>") do
-        :ok ->
-          # Render template
-          _result = TemplateService.render_template_with_solid("test-template", variables)
+      # Render template - should trigger usage tracking
+      _result = TemplateService.render_template_with_solid("test-template", variables)
 
-          # Wait briefly for NATS message
-          Process.sleep(50)
+      # Give async tracking a moment to complete
+      Process.sleep(50)
 
-          # Note: In real test, would assert_receive NATS message
-          :ok
+      # Verify event was recorded to database
+      event = Singularity.Repo.get_by(
+        Singularity.Knowledge.TemplateUsageEvent,
+        template_id: "test-template"
+      )
 
-        {:error, _} ->
-          # NATS not available - skip test
-          :ok
-      end
+      # Event should exist in database
+      refute is_nil(event), "Usage event should be recorded in database"
     end
 
     test "logs usage tracking failure gracefully" do

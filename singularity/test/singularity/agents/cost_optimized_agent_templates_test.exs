@@ -16,6 +16,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
   alias Singularity.Execution.Planning.Task
 
   @moduletag :agent_integration
+  @moduletag :database_required
 
   setup do
     # Start agent for testing
@@ -356,31 +357,31 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
   end
 
   describe "usage tracking integration" do
-    @tag :nats_required
     test "tracks template usage through agent", %{agent_id: agent_id} do
-      # This requires NATS to be running
-      case Singularity.NatsClient.subscribe("template.usage.>") do
-        :ok ->
-          task = %Task{
-            id: "tracking-test",
-            name: "tracked_module",
-            description: "Test tracking",
-            type: :code_generation,
-            language: "elixir"
-          }
+      task = %Task{
+        id: "tracking-test",
+        name: "tracked_module",
+        description: "Test tracking",
+        type: :code_generation,
+        language: "elixir"
+      }
 
-          _result = CostOptimizedAgent.process_task(agent_id, task)
+      _result = CostOptimizedAgent.process_task(agent_id, task)
 
-          # Wait for NATS message
-          Process.sleep(100)
+      # Wait for async tracking to complete
+      Process.sleep(100)
 
-          # In real test, would assert_receive NATS message
-          :ok
+      # Verify usage event was recorded to database
+      event =
+        Singularity.Repo.get_by(
+          Singularity.Knowledge.TemplateUsageEvent,
+          template_id: "tracked_module"
+        )
 
-        {:error, _} ->
-          # NATS not available
-          :ok
-      end
+      # Event should be recorded (either success or failure is fine for this integration test)
+      refute is_nil(event), "Usage event should be recorded in database"
+      assert event.template_id == "tracked_module"
+      assert event.status in [:success, :failure]
     end
   end
 
