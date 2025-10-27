@@ -200,41 +200,72 @@ pub struct MessageBroker {
   pub config: HashMap<String, serde_json::Value>,
 }
 
-/// Database systems
+/// Database systems (Phase 6: Dynamic registry-validated types)
+///
+/// Replaces hardcoded enum variants with dynamic string names validated
+/// against InfrastructureRegistry from CentralCloud.
+///
+/// Supported databases are defined in the registry:
+/// - PostgreSQL, MySQL, MongoDB, Redis, SQLite
+///
+/// Configuration is flexible to support any database type.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum DatabaseSystem {
-  PostgreSQL { databases: Vec<String> },
-  MySQL { databases: Vec<String> },
-  MongoDB { collections: Vec<String> },
-  Redis { purpose: String },
-  SQLite { files: Vec<PathBuf> },
+pub struct DatabaseSystem {
+  /// Database name, validated against InfrastructureRegistry
+  pub name: String,
+  /// Flexible configuration (databases, collections, files, etc.)
+  pub config: HashMap<String, serde_json::Value>,
 }
 
-/// Cache systems
+/// Cache systems (Phase 6: Dynamic registry-validated types)
+///
+/// Replaces hardcoded enum variants with dynamic string names validated
+/// against InfrastructureRegistry from CentralCloud.
+///
+/// Supported caches are defined in the registry:
+/// - Redis, Memcached, InMemory
+///
+/// Configuration is flexible to support any cache type.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum CacheSystem {
-  Redis,
-  Memcached,
-  InMemory,
+pub struct CacheSystem {
+  /// Cache name, validated against InfrastructureRegistry
+  pub name: String,
+  /// Flexible configuration
+  pub config: HashMap<String, serde_json::Value>,
 }
 
-/// Service registry systems
+/// Service registry systems (Phase 6: Dynamic registry-validated types)
+///
+/// Replaces hardcoded enum variants with dynamic string names validated
+/// against InfrastructureRegistry from CentralCloud.
+///
+/// Supported registries are defined in the registry:
+/// - Consul, Etcd, Zookeeper, Eureka, Custom
+///
+/// Configuration is flexible to support any registry type.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ServiceRegistry {
-  Consul { services: Vec<String> },
-  Etcd { keys: Vec<String> },
-  Zookeeper { znodes: Vec<String> },
-  Eureka { instances: Vec<String> },
-  FakeRegistry { mock_services: Vec<String> },
-  Custom { name: String },
+pub struct ServiceRegistry {
+  /// Registry name, validated against InfrastructureRegistry
+  pub name: String,
+  /// Flexible configuration (services, keys, znodes, etc.)
+  pub config: HashMap<String, serde_json::Value>,
 }
 
-/// Queue systems
+/// Queue systems (Phase 6: Dynamic registry-validated types)
+///
+/// Replaces hardcoded enum variants with dynamic string names validated
+/// against InfrastructureRegistry from CentralCloud.
+///
+/// Supported queues are defined in the registry:
+/// - SQS, Bull, Sidekiq
+///
+/// Configuration is flexible to support any queue type.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum QueueSystem {
-  SQS { queues: Vec<String> },
-  Bull { queues: Vec<String> },
-  Sidekiq { queues: Vec<String> },
+pub struct QueueSystem {
+  /// Queue name, validated against InfrastructureRegistry
+  pub name: String,
+  /// Flexible configuration (queues, etc.)
+  pub config: HashMap<String, serde_json::Value>,
 }
 
 /// Service mesh

@@ -271,7 +271,13 @@ impl InfrastructureDetector for RedisDetector {
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
     // Redis can be cache or database
     // Check usage context to determine
-    Ok(DetectionResult::Database(DatabaseSystem::Redis { purpose: "cache".to_string() }))
+    let mut config = HashMap::new();
+    config.insert("purpose".to_string(), json!("cache"));
+
+    Ok(DetectionResult::Database(DatabaseSystem {
+      name: "Redis".to_string(),
+      config,
+    }))
   }
 }
 
@@ -293,7 +299,13 @@ impl InfrastructureDetector for PostgreSQLDetector {
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
-    Ok(DetectionResult::Database(DatabaseSystem::PostgreSQL { databases: Vec::new() }))
+    let mut config = HashMap::new();
+    config.insert("databases".to_string(), json!(Vec::<String>::new()));
+
+    Ok(DetectionResult::Database(DatabaseSystem {
+      name: "PostgreSQL".to_string(),
+      config,
+    }))
   }
 }
 
@@ -315,7 +327,13 @@ impl InfrastructureDetector for MongoDBDetector {
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
-    Ok(DetectionResult::Database(DatabaseSystem::MongoDB { collections: Vec::new() }))
+    let mut config = HashMap::new();
+    config.insert("collections".to_string(), json!(Vec::<String>::new()));
+
+    Ok(DetectionResult::Database(DatabaseSystem {
+      name: "MongoDB".to_string(),
+      config,
+    }))
   }
 }
 
@@ -337,7 +355,13 @@ impl InfrastructureDetector for ConsulDetector {
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
-    Ok(DetectionResult::ServiceRegistry(ServiceRegistry::Consul { services: Vec::new() }))
+    let mut config = HashMap::new();
+    config.insert("services".to_string(), json!(Vec::<String>::new()));
+
+    Ok(DetectionResult::ServiceRegistry(ServiceRegistry {
+      name: "Consul".to_string(),
+      config,
+    }))
   }
 }
 
