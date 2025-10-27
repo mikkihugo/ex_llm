@@ -670,54 +670,140 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     "task-#{:erlang.phash2(feedback.description, 1_000_000)}"
   end
 
-  # Helper: Update task status in database
+  # Helper: Record failure pattern in database
   defp update_task_status(task_id, status) when is_binary(task_id) and is_atom(status) do
     try do
-      # In a real scenario, this would query the database
-      # For now, we simulate with error possibilities
-      case String.length(task_id) > 0 do
-        true ->
-          Logger.info("Updated task #{task_id} status to #{inspect(status)}")
-          {:ok, %{id: task_id, status: status}}
+      # Record failure pattern for learning and future prevention
+      Singularity.Storage.FailurePatternStore.record_failure(%{
+        story_signature: task_id,
+        failure_mode: "chat_feedback",
+        story_type: Atom.to_string(status),
+        frequency: 1,
+        enriched_metadata: %{
+          agent: "chat_conversation_agent",
+          timestamp: DateTime.utc_now()
+        }
+      })
+      |> case do
+        {:ok, _pattern} ->
+          Logger.info("Recorded failure pattern for task #{task_id} (status: #{status})")
+          {:ok, %{id: task_id, status: status, recorded: true}}
 
-        false ->
-          {:error, :invalid_task_id}
+        {:error, changeset} ->
+          Logger.error("Failed to record failure pattern: #{inspect(changeset.errors)}")
+          {:error, :pattern_recording_failed}
       end
     rescue
-      _error ->
+      error ->
+        Logger.error("Task status update failed: #{inspect(error)}")
         {:error, :task_update_failed}
     end
   end
 
-  # Helper: Find patterns related to the feedback
+  # Helper: Find patterns related to the feedback from PatternStore
   defp find_related_patterns(feedback) do
     try do
-      # Simulates finding patterns associated with a failed task
-      patterns =
-        feedback
-        |> Map.get(:description, "")
-        |> String.split()
-        |> Enum.take(3)
-        |> Enum.map(&"pattern-#{&1}")
+      description = Map.get(feedback, :description, "")
 
-      Logger.info("Found #{length(patterns)} related patterns")
-      {:ok, patterns}
+      # Search for related patterns using production PatternStore
+      case Singularity.Architecture.PatternStore.search_similar_patterns(
+             :framework,
+             description,
+             top_k: 5
+           ) do
+        {:ok, patterns} ->
+          pattern_ids = Enum.map(patterns, & &1.id)
+          Logger.info("Found #{length(pattern_ids)} related framework patterns")
+          {:ok, pattern_ids}
+
+        {:error, reason} ->
+          Logger.warning("Pattern search failed: #{inspect(reason)}, using technology patterns")
+
+          case Singularity.Architecture.PatternStore.search_similar_patterns(
+                 :technology,
+                 description,
+                 top_k: 5
+               ) do
+            {:ok, patterns} ->
+              pattern_ids = Enum.map(patterns, & &1.id)
+              Logger.info("Found #{length(pattern_ids)} related technology patterns")
+              {:ok, pattern_ids}
+
+            {:error, _} ->
+              {:error, :pattern_lookup_failed}
+          end
+      end
     rescue
-      _error ->
+      error ->
+        Logger.error("Pattern lookup error: #{inspect(error)}")
         {:error, :pattern_lookup_failed}
     end
   end
 
-  # Helper: Downgrade pattern confidence scores
-  defp downgrade_patterns(patterns, penalty) when is_list(patterns) and is_float(penalty) do
+  # Helper: Update pattern confidence scores in database
+  defp downgrade_patterns(pattern_ids, penalty) when is_list(pattern_ids) and is_float(penalty) do
     try do
-      Enum.each(patterns, fn pattern ->
-        Logger.info("Downgrading pattern #{pattern} by #{penalty * 100}%")
-      end)
+      results =
+        Enum.map(pattern_ids, fn pattern_id ->
+          # Update confidence score for each pattern, weighted by penalty
+          case Singularity.Architecture.PatternStore.update_confidence(
+                 :framework,
+                 pattern_id,
+                 success: false,
+                 confidence_adjustment: -penalty
+               ) do
+            {:ok, updated_pattern} ->
+              Logger.info(
+                "Downgraded pattern #{pattern_id} confidence by #{penalty * 100}% to #{updated_pattern.confidence}"
+              )
 
-      {:ok, %{downgraded: length(patterns), penalty: penalty}}
+              {:ok, pattern_id}
+
+            {:error, :not_found} ->
+              # Try technology patterns if framework not found
+              case Singularity.Architecture.PatternStore.update_confidence(
+                     :technology,
+                     pattern_id,
+                     success: false,
+                     confidence_adjustment: -penalty
+                   ) do
+                {:ok, updated_pattern} ->
+                  Logger.info(
+                    "Downgraded tech pattern #{pattern_id} confidence by #{penalty * 100}% to #{updated_pattern.confidence}"
+                  )
+
+                  {:ok, pattern_id}
+
+                {:error, _} ->
+                  Logger.warning("Pattern not found for downgrade: #{pattern_id}")
+                  {:error, :pattern_not_found}
+              end
+
+            {:error, reason} ->
+              Logger.error("Failed to downgrade pattern #{pattern_id}: #{inspect(reason)}")
+              {:error, reason}
+          end
+        end)
+
+      # Check if all succeeded
+      errors = Enum.filter(results, &(elem(&1, 0) == :error))
+
+      case errors do
+        [] ->
+          successful = Enum.filter(results, &(elem(&1, 0) == :ok))
+          Logger.info("Successfully downgraded #{length(successful)} patterns")
+          {:ok, %{downgraded: length(successful), penalty: penalty}}
+
+        _ ->
+          Logger.warning(
+            "Partial failure downgrading patterns: #{length(errors)} of #{length(pattern_ids)} failed"
+          )
+
+          {:error, :partial_downgrade_failure}
+      end
     rescue
-      _error ->
+      error ->
+        Logger.error("Pattern downgrade error: #{inspect(error)}")
         {:error, :pattern_downgrade_failed}
     end
   end
@@ -798,16 +884,69 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     end
   end
 
-  # Helper: Persist updated pattern scores to storage
+  # Helper: Persist updated pattern scores to storage via PatternStore
   defp persist_pattern_scores(updates) when is_list(updates) do
     try do
-      Enum.each(updates, fn update ->
-        Logger.debug("Persisting pattern update: #{inspect(update)}")
-      end)
+      results =
+        Enum.map(updates, fn update ->
+          # Use production PatternStore to update confidence scores
+          # This integrates with PostgreSQL and pgvector for semantic search
+          case Singularity.Architecture.PatternStore.update_confidence(
+                 :framework,
+                 update.pattern,
+                 success: update.delta > 0,
+                 confidence_adjustment: update.delta
+               ) do
+            {:ok, pattern} ->
+              Logger.debug(
+                "Persisted pattern update for #{update.pattern}: #{update.old_score} → #{pattern.confidence}"
+              )
 
-      {:ok, %{persisted: length(updates), timestamp: DateTime.utc_now()}}
+              {:ok, pattern.id}
+
+            {:error, :not_found} ->
+              # Fallback to technology patterns
+              case Singularity.Architecture.PatternStore.update_confidence(
+                     :technology,
+                     update.pattern,
+                     success: update.delta > 0,
+                     confidence_adjustment: update.delta
+                   ) do
+                {:ok, pattern} ->
+                  Logger.debug(
+                    "Persisted tech pattern update for #{update.pattern}: #{update.old_score} → #{pattern.confidence}"
+                  )
+
+                  {:ok, pattern.id}
+
+                {:error, _} ->
+                  {:error, :pattern_not_found}
+              end
+
+            {:error, reason} ->
+              Logger.error("Failed to persist pattern score: #{inspect(reason)}")
+              {:error, reason}
+          end
+        end)
+
+      # Verify all persisted successfully
+      errors = Enum.filter(results, &(elem(&1, 0) == :error))
+
+      case errors do
+        [] ->
+          Logger.info("Successfully persisted #{length(updates)} pattern scores")
+          {:ok, %{persisted: length(updates), timestamp: DateTime.utc_now()}}
+
+        _ ->
+          Logger.warning(
+            "Partial persistence failure: #{length(errors)} of #{length(updates)} pattern scores failed"
+          )
+
+          {:error, :persistence_failed}
+      end
     rescue
-      _error ->
+      error ->
+        Logger.error("Pattern score persistence error: #{inspect(error)}")
         {:error, :persistence_failed}
     end
   end
@@ -883,35 +1022,62 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     "goal-#{System.unique_integer([:positive, :monotonic])}"
   end
 
-  # Helper: Add goal to processing queue
+  # Helper: Add goal to processing queue via pgmq (PostgreSQL Message Queue)
   defp enqueue_goal(goal_id, goal) do
     try do
-      # In production, this would push to a queue (pgmq, RabbitMQ, etc.)
-      # For now, we simulate with error handling
-      case goal_id do
-        <<"goal-", _::binary>> ->
-          Logger.info("Enqueued goal #{goal_id} with priority #{goal.priority}")
-          {:ok, %{id: goal_id, queued_at: DateTime.utc_now()}}
+      # Use production pgmq client to enqueue goal for processing
+      # Goals are processed by background workers that generate improvement tasks
+      message = %{
+        goal_id: goal_id,
+        description: goal.description,
+        priority: goal.priority,
+        type: goal.type,
+        source: goal.source,
+        created_at: goal.created_at,
+        metadata: goal.metadata
+      }
 
-        _ ->
-          {:error, :invalid_goal_id}
+      case Singularity.Jobs.PgmqClient.send_message("goal_queue", message) do
+        {:ok, message_id} ->
+          Logger.info(
+            "Enqueued goal #{goal_id} with priority #{goal.priority} (pgmq msg_id: #{message_id})"
+          )
+
+          {:ok, %{id: goal_id, message_id: message_id, queued_at: DateTime.utc_now()}}
+
+        {:error, reason} ->
+          Logger.error("Failed to enqueue goal #{goal_id}: #{inspect(reason)}")
+          {:error, :queue_unavailable}
       end
     rescue
-      _error ->
+      error ->
+        Logger.error("Goal enqueue error: #{inspect(error)}")
         {:error, :queue_unavailable}
     end
   end
 
-  # Helper: Notify stakeholders that goal was enqueued
+  # Helper: Notify stakeholders that goal was enqueued via chat channels
   defp notify_goal_enqueued(goal_id, goal) do
     try do
-      message = "New goal #{goal_id} added: #{goal.description}"
+      message = "📋 New goal #{goal_id} added: #{goal.description}"
       Logger.info(message)
-      WebChat.notify("📋 " <> message)
-      {:ok, %{id: goal_id, notification_sent: true}}
+
+      # Send notification to all configured chat channels (Slack, Google Chat, etc.)
+      case send_to_channel(get_default_channel(), :notify, message) do
+        {:ok, _response} ->
+          Logger.debug("Goal enqueue notification sent for #{goal_id}")
+          {:ok, %{id: goal_id, notification_sent: true}}
+
+        {:error, reason} ->
+          # Don't fail goal queueing if notification fails - queue it anyway
+          Logger.warning("Goal notification failed: #{inspect(reason)}")
+          {:ok, %{id: goal_id, notification_sent: false}}
+      end
     rescue
-      _error ->
-        {:error, :notification_failed}
+      error ->
+        Logger.error("Goal notification error: #{inspect(error)}")
+        # Still return ok since goal was already queued
+        {:ok, %{id: goal_id, notification_sent: false}}
     end
   end
 
