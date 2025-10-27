@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start all services (PostgreSQL + NATS + AI Server)
+# Start all services (PostgreSQL + NATS + Singularity)
 set -euo pipefail
 
 echo "🚀 Starting all Singularity services..."
@@ -12,17 +12,13 @@ echo "1️⃣ Starting PostgreSQL..."
 echo "2️⃣ Starting NATS..."
 ./scripts/start-nats.sh
 
-# Start AI Server (required for LLM integration)
-echo "3️⃣ Starting AI Server..."
-./scripts/start-llm-server.sh
-
 echo ""
-echo "✅ All services started!"
+echo "✅ Core services started!"
 echo "   🗄️  PostgreSQL: postgres://localhost:${PGPORT:-5432}/postgres"
 echo "   📡 NATS: nats://localhost:${NATS_PORT:-4222}"
-echo "   🤖 AI Server: Running (see llm-server/logs/llm-server.log)"
 echo ""
 echo "Next steps:"
 echo "   cd singularity && mix phx.server"
+echo "   cd centralcloud && mix phx.server  # (optional, for multi-instance learning)"
 echo ""
 echo "To stop all services: ./scripts/stop-all.sh"
