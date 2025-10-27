@@ -17,7 +17,7 @@ defmodule ExLLM.Providers.Codex.TokenManager do
   @codex_token_file ".codex_oauth_token"
 
   defmodule State do
-    defstruct [:access_token, :refresh_token, :expires_at, :refresh_task]
+    defstruct [:access_token, :refresh_token, :expires_at, :refresh_task, :account_id]
   end
 
   @doc """
@@ -180,25 +180,95 @@ defmodule ExLLM.Providers.Codex.TokenManager do
         {:ok, token, nil, nil}
 
       nil ->
-        # Try to load from cache
-        case get_cached_tokens() do
-          {:ok, access_token, refresh_token, expires_at} ->
-            # Check if still valid (with 5 min buffer)
-            if DateTime.utc_now() |> DateTime.to_unix() < expires_at - 300 do
-              Logger.debug("Using cached Codex token")
-              {:ok, access_token, refresh_token, expires_at}
-            else
-              Logger.debug("Cached Codex token expired")
-              {:error, :token_expired}
+        # Try to load from ~/.codex/auth.json first (Codex CLI credentials)
+        case load_codex_cli_tokens() do
+          {:ok, access_token, refresh_token, _account_id} ->
+            Logger.debug("Using tokens from Codex CLI (~/.codex/auth.json)")
+            # Parse expiration from JWT or use default
+            expires_at = get_token_expiration(access_token)
+            {:ok, access_token, refresh_token, expires_at}
+
+          {:error, :not_found} ->
+            # Fall back to our local cache
+            case get_cached_tokens() do
+              {:ok, access_token, refresh_token, expires_at} ->
+                # Check if still valid (with 5 min buffer)
+                if DateTime.utc_now() |> DateTime.to_unix() < expires_at - 300 do
+                  Logger.debug("Using cached Codex token from .codex_oauth_token")
+                  {:ok, access_token, refresh_token, expires_at}
+                else
+                  Logger.debug("Cached Codex token expired")
+                  {:error, :token_expired}
+                end
+
+              {:error, _} ->
+                Logger.debug("No cached Codex token found")
+                {:error, :no_token}
             end
 
-          {:error, _} ->
-            Logger.debug("No cached Codex token found")
+          {:error, reason} ->
+            Logger.warning("Failed to load Codex CLI tokens: #{inspect(reason)}")
             {:error, :no_token}
         end
 
       token ->
         {:ok, token, nil, nil}
+    end
+  end
+
+  defp load_codex_cli_tokens() do
+    codex_auth_path = Path.expand("~/.codex/auth.json")
+
+    case File.read(codex_auth_path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, %{"tokens" => tokens}} when is_map(tokens) ->
+            access_token = tokens["access_token"]
+            refresh_token = tokens["refresh_token"]
+            account_id = tokens["account_id"]
+
+            if access_token && refresh_token do
+              {:ok, access_token, refresh_token, account_id}
+            else
+              {:error, :missing_tokens}
+            end
+
+          {:error, reason} ->
+            {:error, "Invalid Codex auth.json format: #{inspect(reason)}"}
+
+          _ ->
+            {:error, :invalid_format}
+        end
+
+      {:error, :enoent} ->
+        {:error, :not_found}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp get_token_expiration(access_token) do
+    # Extract exp claim from JWT
+    case String.split(access_token, ".") do
+      [_header, payload, _signature] ->
+        case Base.url_decode64(payload, padding: false) do
+          {:ok, decoded} ->
+            case Jason.decode(decoded) do
+              {:ok, %{"exp" => exp}} when is_integer(exp) ->
+                DateTime.from_unix!(exp)
+
+              _ ->
+                # Default to 24 hours from now
+                DateTime.add(DateTime.utc_now(), 86400)
+            end
+
+          :error ->
+            DateTime.add(DateTime.utc_now(), 86400)
+        end
+
+      _ ->
+        DateTime.add(DateTime.utc_now(), 86400)
     end
   end
 
@@ -222,14 +292,47 @@ defmodule ExLLM.Providers.Codex.TokenManager do
   end
 
   defp save_tokens(tokens) do
-    content =
+    # Save to our local cache
+    local_content =
       Jason.encode!(%{
         "access_token" => tokens.access_token,
         "refresh_token" => tokens.refresh_token,
         "expires_at" => DateTime.to_unix(tokens.expires_at)
       })
 
-    File.write(@codex_token_file, content)
+    File.write(@codex_token_file, local_content)
+
+    # Also update ~/.codex/auth.json to keep in sync with Codex CLI
+    codex_auth_path = Path.expand("~/.codex/auth.json")
+
+    case File.read(codex_auth_path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, auth_data} ->
+            # Update tokens in the existing auth data
+            updated_auth = %{
+              auth_data
+              | "tokens" =>
+                  Map.merge(auth_data["tokens"] || %{}, %{
+                    "access_token" => tokens.access_token,
+                    "refresh_token" => tokens.refresh_token
+                  }),
+                "last_refresh" => DateTime.utc_now() |> DateTime.to_iso8601()
+            }
+
+            File.write(codex_auth_path, Jason.encode!(updated_auth, pretty: true))
+            Logger.debug("Updated tokens in ~/.codex/auth.json")
+
+          {:error, reason} ->
+            Logger.warning("Could not update ~/.codex/auth.json: #{inspect(reason)}")
+        end
+
+      {:error, :enoent} ->
+        Logger.debug("~/.codex/auth.json does not exist, skipping sync")
+
+      {:error, reason} ->
+        Logger.warning("Error reading ~/.codex/auth.json: #{inspect(reason)}")
+    end
   end
 
   defp schedule_refresh(expires_at) do
