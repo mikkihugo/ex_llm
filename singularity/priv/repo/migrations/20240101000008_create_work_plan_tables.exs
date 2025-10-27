@@ -122,7 +122,7 @@ defmodule Singularity.Repo.Migrations.CreateWorkPlanTables do
       add :description, :text, null: false
       add :status, :string, default: "backlog" # backlog | in_progress | done
 
-      add :htdag_id, :string # Link to HTDAG breakdown
+      add :htdag_id, :string # Link to Orchestrator breakdown
       add :acceptance_criteria, {:array, :string}, default: []
 
       add :approved_by, :string

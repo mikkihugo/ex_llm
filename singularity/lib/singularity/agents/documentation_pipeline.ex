@@ -13,7 +13,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
   - `run_full_pipeline/0` - Run complete documentation upgrade pipeline
   - `run_incremental_pipeline/1` - Run pipeline for specific files
   - `get_pipeline_status/0` - Get current pipeline status
-  - `schedule_automatic_upgrades/1` - Schedule automatic documentation upgrades
 
   ## Error Matrix
 
@@ -56,7 +55,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
 
   ## Relationships
 
-  - **Uses**: `Singularity.Agents.DocumentationUpgrader` - Documentation upgrades
   - **Uses**: `Singularity.Agents.QualityEnforcer` - Quality validation
   - **Uses**: All 6 autonomous agents - Specialized tasks
   - **Uses**: `Singularity.CodeStore` - File scanning
@@ -80,7 +78,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
     "purpose": "orchestrate_documentation_upgrade_pipeline",
     "domain": "documentation_management",
     "capabilities": ["pipeline_orchestration", "agent_coordination", "multi_language", "automation"],
-    "dependencies": ["DocumentationUpgrader", "QualityEnforcer", "CodeStore"],
+    "dependencies": ["QualityEnforcer", "CodeStore"],
     "quality_level": "production",
     "template_version": "2.3.0"
   }
@@ -90,9 +88,8 @@ defmodule Singularity.Agents.DocumentationPipeline do
 
   ```mermaid
   graph TD
-    A[DocumentationPipeline] --> B[DocumentationUpgrader]
-    A --> C[QualityEnforcer]
-    A --> D[CodeStore]
+    A[DocumentationPipeline] --> B[QualityEnforcer]
+    A --> C[CodeStore]
     
     B --> E[SelfImprovingAgent]
     B --> F[ArchitectureAgent]
@@ -139,7 +136,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
 
   use GenServer
   require Logger
-  alias Singularity.Agents.DocumentationUpgrader
   alias Singularity.Agents.QualityEnforcer
 
   ## Client API
@@ -172,11 +168,16 @@ defmodule Singularity.Agents.DocumentationPipeline do
     GenServer.call(__MODULE__, :get_pipeline_status)
   end
 
+
   @doc """
-  Schedule automatic documentation upgrades.
+  Analyze file documentation quality.
   """
-  def schedule_automatic_upgrades(interval_minutes \\ 60) do
-    GenServer.call(__MODULE__, {:schedule_automatic_upgrades, interval_minutes})
+  @spec analyze_file_documentation(String.t()) :: {:ok, map()} | {:error, term()}
+  def analyze_file_documentation(file_path) do
+    case analyze_file_documentation_internal(file_path) do
+      {:error, reason} -> {:error, reason}
+      result -> {:ok, result}
+    end
   end
 
   ## Server Callbacks
@@ -186,8 +187,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
     state = %{
       pipeline_running: false,
       last_run: nil,
-      automatic_upgrades_enabled: false,
-      upgrade_interval: 60,
       status: :idle,
       results: %{}
     }
@@ -236,28 +235,13 @@ defmodule Singularity.Agents.DocumentationPipeline do
       pipeline_running: state.pipeline_running,
       status: state.status,
       last_run: state.last_run,
-      automatic_upgrades_enabled: state.automatic_upgrades_enabled,
-      upgrade_interval: state.upgrade_interval,
       results: state.results
     }
 
     {:reply, {:ok, status}, state}
   end
 
-  @impl true
-  def handle_call({:schedule_automatic_upgrades, interval_minutes}, _from, state) do
-    new_state = %{
-      state
-      | automatic_upgrades_enabled: true,
-        upgrade_interval: interval_minutes
-    }
 
-    # Schedule automatic upgrades
-    schedule_automatic_upgrade(interval_minutes)
-
-    Logger.info("Automatic documentation upgrades scheduled every #{interval_minutes} minutes")
-    {:reply, :ok, new_state}
-  end
 
   @impl true
   def handle_info({:DOWN, _ref, :process, _pid, :normal}, state) do
@@ -287,21 +271,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
     {:noreply, new_state}
   end
 
-  @impl true
-  def handle_info(:run_automatic_upgrade, state) do
-    if state.automatic_upgrades_enabled do
-      Logger.info("Running scheduled automatic documentation upgrade")
-
-      # Run incremental pipeline for modified files
-      modified_files = get_modified_files()
-      run_pipeline_internal({:incremental, modified_files})
-
-      # Schedule next automatic upgrade
-      schedule_automatic_upgrade(state.upgrade_interval)
-    end
-
-    {:noreply, state}
-  end
 
   ## Private Functions
 
@@ -435,7 +404,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
     upgraded =
       files_to_upgrade
       |> Enum.map(fn file_path ->
-        case DocumentationUpgrader.upgrade_module_documentation(file_path, []) do
+        case upgrade_module_documentation_internal(file_path, %{}) do
           {:ok, _result} -> 1
           {:error, _reason} -> 0
         end
@@ -476,9 +445,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
     }
   end
 
-  defp schedule_automatic_upgrade(interval_minutes) do
-    Process.send_after(self(), :run_automatic_upgrade, interval_minutes * 60 * 1000)
-  end
 
   defp detect_language(file_path) do
     cond do
@@ -498,4 +464,150 @@ defmodule Singularity.Agents.DocumentationPipeline do
         :unknown
     end
   end
+
+  # Internal functions for legacy API compatibility
+  defp scan_codebase_documentation_internal do
+    # Get all source files
+    files = get_all_source_files()
+    
+    # Scan for documentation quality
+    results = 
+      files
+      |> Enum.map(fn file_path ->
+        case File.read(file_path) do
+          {:ok, content} ->
+            language = detect_language(file_path)
+            has_docs = has_documentation?(content, language)
+            %{file: file_path, language: language, has_docs: has_docs}
+          {:error, _} ->
+            %{file: file_path, language: :unknown, has_docs: false}
+        end
+      end)
+    
+    total_files = length(files)
+    files_with_docs = Enum.count(results, & &1.has_docs)
+    quality_score = if total_files > 0, do: files_with_docs / total_files, else: 0.0
+    
+    {:ok, %{
+      total_files: total_files,
+      files_with_docs: files_with_docs,
+      quality_score: quality_score,
+      results: results
+    }}
+  end
+
+  defp upgrade_module_documentation_internal(module_path, opts) do
+    case File.read(module_path) do
+      {:ok, content} ->
+        language = detect_language(module_path)
+        upgraded_content = apply_documentation_upgrade(content, language, opts)
+        File.write(module_path, upgraded_content)
+        {:ok, %{module: module_path, language: language, status: :upgraded}}
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp has_documentation?(content, language) do
+    case language do
+      :elixir -> String.contains?(content, "@moduledoc")
+      :rust -> String.contains?(content, "///") or String.contains?(content, "//!")
+      :typescript -> String.contains?(content, "/**") or String.contains?(content, "/*")
+      :javascript -> String.contains?(content, "/**") or String.contains?(content, "/*")
+      _ -> String.contains?(content, "@doc") or String.contains?(content, "///")
+    end
+  end
+
+  defp apply_documentation_upgrade(content, language, _opts) do
+    # Simple documentation upgrade - add basic docs if missing
+    case language do
+      :elixir ->
+        if not String.contains?(content, "@moduledoc") do
+          # Add basic @moduledoc
+          content
+          |> String.replace(~r/defmodule\s+(\w+)/, "defmodule \\1 do\n  @moduledoc \"\"\"\n  TODO: Add module documentation\n  \"\"\"")
+        else
+          content
+        end
+      _ ->
+        content
+    end
+  end
+
+  defp get_all_source_files do
+    [
+      "./singularity/lib/**/*.ex",
+      "./rust/**/*.rs",
+      "./observer/lib/**/*.ex",
+      "./observer/lib/**/*.heex",
+      "./packages/**/*.rs",
+      "./packages/**/*.ex"
+    ]
+    |> Enum.flat_map(fn pattern ->
+      Path.wildcard(pattern)
+    end)
+    |> Enum.filter(&File.regular?/1)
+  end
+
+  defp analyze_file_documentation_internal(file_path) do
+    case File.read(file_path) do
+      {:ok, content} ->
+        language = detect_language(file_path)
+
+        case language do
+          :elixir ->
+            %{
+              file: file_path,
+              language: :elixir,
+              has_documentation: String.contains?(content, "@moduledoc"),
+              has_identity: String.contains?(content, "Module Identity"),
+              has_architecture_diagram: String.contains?(content, "Architecture Diagram"),
+              has_call_graph: String.contains?(content, "Call Graph"),
+              has_anti_patterns: String.contains?(content, "Anti-Patterns"),
+              has_search_keywords: String.contains?(content, "Search Keywords")
+            }
+
+          :rust ->
+            %{
+              file: file_path,
+              language: :rust,
+              has_documentation:
+                String.contains?(content, "///") and String.contains?(content, "Crate Identity"),
+              has_identity: String.contains?(content, "Crate Identity"),
+              has_architecture_diagram: String.contains?(content, "Architecture Diagram"),
+              has_call_graph: String.contains?(content, "Call Graph"),
+              has_anti_patterns: String.contains?(content, "Anti-Patterns"),
+              has_search_keywords: String.contains?(content, "Search Keywords")
+            }
+
+          :typescript ->
+            %{
+              file: file_path,
+              language: :typescript,
+              has_documentation: String.contains?(content, "/**") and String.contains?(content, "Module Identity"),
+              has_identity: String.contains?(content, "Module Identity"),
+              has_architecture_diagram: String.contains?(content, "Architecture Diagram"),
+              has_call_graph: String.contains?(content, "Call Graph"),
+              has_anti_patterns: String.contains?(content, "Anti-Patterns"),
+              has_search_keywords: String.contains?(content, "Search Keywords")
+            }
+
+          _ ->
+            %{
+              file: file_path,
+              language: language,
+              has_documentation: String.contains?(content, "@doc") or String.contains?(content, "///"),
+              has_identity: false,
+              has_architecture_diagram: false,
+              has_call_graph: false,
+              has_anti_patterns: false,
+              has_search_keywords: false
+            }
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
 end

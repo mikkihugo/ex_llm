@@ -1,4 +1,4 @@
-# HTDAG Automatic Startup Self-Diagnosis
+# Orchestrator Automatic Startup Self-Diagnosis
 
 ## Overview
 
@@ -28,7 +28,7 @@ All in the background, doesn't block server startup.
 Add to `config/config.exs`:
 
 ```elixir
-config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+config :singularity, Singularity.Planning.OrchestratorAutoBootstrap,
   enabled: true,              # Enable auto-bootstrap
   max_iterations: 10,         # Max fix iterations
   fix_on_startup: true,       # Auto-fix issues (vs just diagnose)
@@ -67,14 +67,14 @@ Even with auto-bootstrap enabled, you can control it manually:
 ### Disable Auto-Bootstrap
 
 ```elixir
-iex> HTDAGAutoBootstrap.disable()
+iex> OrchestratorAutoBootstrap.disable()
 # Auto-bootstrap disabled
 ```
 
 ### Enable Auto-Bootstrap
 
 ```elixir
-iex> HTDAGAutoBootstrap.enable()
+iex> OrchestratorAutoBootstrap.enable()
 # Auto-bootstrap enabled
 # Will run if status is idle
 ```
@@ -82,7 +82,7 @@ iex> HTDAGAutoBootstrap.enable()
 ### Run Bootstrap Manually
 
 ```elixir
-iex> HTDAGAutoBootstrap.run_now()
+iex> OrchestratorAutoBootstrap.run_now()
 # Runs bootstrap immediately
 # Returns: {:ok, %{status: :completed, fixes_applied: 5, ...}}
 ```
@@ -90,7 +90,7 @@ iex> HTDAGAutoBootstrap.run_now()
 ### Check Status
 
 ```elixir
-iex> HTDAGAutoBootstrap.status()
+iex> OrchestratorAutoBootstrap.status()
 %{
   status: :completed,
   enabled: true,
@@ -109,7 +109,7 @@ When the server starts, you'll see:
 
 ```
 =======================================================================
-HTDAG AUTO-BOOTSTRAP: Self-Diagnosis Starting
+Orchestrator AUTO-BOOTSTRAP: Self-Diagnosis Starting
 =======================================================================
 
 Phase 1: Learning codebase...
@@ -117,13 +117,13 @@ Found 127 source files
 Learning complete: 8 issues found
 
 Phase 2: Auto-fixing issues...
-Iteration 1: Fixed broken dependency in HTDAGExecutor
-Iteration 2: Connected HTDAGEvolution to SelfImprovingAgent
+Iteration 1: Fixed broken dependency in OrchestratorExecutor
+Iteration 2: Connected OrchestratorEvolution to SelfImprovingAgent
 Iteration 3: Added docs to 3 modules
 Auto-fix complete: 3 iterations, 5 fixes applied
 
 =======================================================================
-HTDAG AUTO-BOOTSTRAP: Self-Diagnosis Complete!
+Orchestrator AUTO-BOOTSTRAP: Self-Diagnosis Complete!
 =======================================================================
 
 Summary:
@@ -176,8 +176,8 @@ defmodule Singularity.Application do
     children = [
       # ... existing children ...
       
-      # Add HTDAG Auto-Bootstrap
-      Singularity.Planning.HTDAGAutoBootstrap,
+      # Add Orchestrator Auto-Bootstrap
+      Singularity.Planning.OrchestratorAutoBootstrap,
       
       # ... rest of children ...
     ]
@@ -193,14 +193,14 @@ end
 In `config/dev.exs`:
 
 ```elixir
-config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+config :singularity, Singularity.Planning.OrchestratorAutoBootstrap,
   enabled: false  # Disable in development
 ```
 
 Or keep enabled but only diagnose:
 
 ```elixir
-config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+config :singularity, Singularity.Planning.OrchestratorAutoBootstrap,
   enabled: true,
   fix_on_startup: false  # Only diagnose, don't fix
 ```
@@ -210,7 +210,7 @@ config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
 In `config/test.exs`:
 
 ```elixir
-config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+config :singularity, Singularity.Planning.OrchestratorAutoBootstrap,
   enabled: false  # Disable in tests
 ```
 
@@ -219,7 +219,7 @@ config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
 For production, you might want:
 
 ```elixir
-config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+config :singularity, Singularity.Planning.OrchestratorAutoBootstrap,
   enabled: true,
   max_iterations: 20,        # More iterations for complex issues
   fix_on_startup: true,
@@ -234,7 +234,7 @@ The auto-bootstrap integrates with your monitoring:
 ### Check Status via IEx
 
 ```elixir
-iex> HTDAGAutoBootstrap.status()
+iex> OrchestratorAutoBootstrap.status()
 ```
 
 ### Check Logs
@@ -242,7 +242,7 @@ iex> HTDAGAutoBootstrap.status()
 Bootstrap logs to your standard logger:
 
 ```
-[info] HTDAG Auto-Bootstrap: Starting automatic self-diagnosis and repair...
+[info] Orchestrator Auto-Bootstrap: Starting automatic self-diagnosis and repair...
 [info] Phase 1: Learning codebase...
 [info] Learning complete: 8 issues found
 [info] Phase 2: Auto-fixing issues...
@@ -255,13 +255,13 @@ Bootstrap logs to your standard logger:
 
 Check status:
 ```elixir
-iex> HTDAGAutoBootstrap.status()
+iex> OrchestratorAutoBootstrap.status()
 ```
 
 If stuck in `:running`, there might be an infinite loop. Disable and investigate:
 ```elixir
-iex> HTDAGAutoBootstrap.disable()
-iex> HTDAGLearner.learn_codebase()
+iex> OrchestratorAutoBootstrap.disable()
+iex> OrchestratorLearner.learn_codebase()
 # Check what issues are found
 ```
 
@@ -269,7 +269,7 @@ iex> HTDAGLearner.learn_codebase()
 
 Reduce `max_iterations` in config:
 ```elixir
-config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+config :singularity, Singularity.Planning.OrchestratorAutoBootstrap,
   max_iterations: 5
 ```
 
@@ -284,14 +284,14 @@ Check logs for errors. Common causes:
 
 Disable auto-fix:
 ```elixir
-config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+config :singularity, Singularity.Planning.OrchestratorAutoBootstrap,
   fix_on_startup: false
 ```
 
 Then check manually:
 ```elixir
-iex> HTDAGAutoBootstrap.run_now()
-iex> HTDAGAutoBootstrap.status()
+iex> OrchestratorAutoBootstrap.run_now()
+iex> OrchestratorAutoBootstrap.status()
 ```
 
 ## Example Flow
@@ -301,7 +301,7 @@ iex> HTDAGAutoBootstrap.status()
 ```
 Server starting...
 
-HTDAG AUTO-BOOTSTRAP: Self-Diagnosis Starting
+Orchestrator AUTO-BOOTSTRAP: Self-Diagnosis Starting
 Phase 1: Learning codebase...
   Found 127 modules
   Found 8 issues:
@@ -310,11 +310,11 @@ Phase 1: Learning codebase...
     - 3 missing docs (low)
 
 Phase 2: Auto-fixing issues...
-  Iteration 1: Fixed HTDAGExecutor → RAGCodeGenerator
-  Iteration 2: Connected HTDAGEvolution → SelfImprovingAgent
-  Iteration 3: Added docs to HTDAGBootstrap
+  Iteration 1: Fixed OrchestratorExecutor → RAGCodeGenerator
+  Iteration 2: Connected OrchestratorEvolution → SelfImprovingAgent
+  Iteration 3: Added docs to OrchestratorBootstrap
 
-HTDAG AUTO-BOOTSTRAP: Complete!
+Orchestrator AUTO-BOOTSTRAP: Complete!
   5 fixes applied in 15 seconds
 
 System ready! ✓
@@ -325,7 +325,7 @@ System ready! ✓
 ```
 Server starting...
 
-HTDAG AUTO-BOOTSTRAP: Self-Diagnosis Starting
+Orchestrator AUTO-BOOTSTRAP: Self-Diagnosis Starting
 Phase 1: Learning codebase...
   Found 127 modules
   Found 0 high-priority issues
@@ -333,7 +333,7 @@ Phase 1: Learning codebase...
 Phase 2: Auto-fixing issues...
   No high-priority issues to fix
 
-HTDAG AUTO-BOOTSTRAP: Complete!
+Orchestrator AUTO-BOOTSTRAP: Complete!
   0 fixes applied in 3 seconds
 
 System ready! ✓
@@ -352,10 +352,10 @@ System ready! ✓
 
 To enable automatic self-diagnosis and repair:
 
-1. Add `HTDAGAutoBootstrap` to your supervisor
+1. Add `OrchestratorAutoBootstrap` to your supervisor
 2. Configure in `config/config.exs` (optional, has good defaults)
 3. Start server as normal: `iex -S mix phx.server`
 4. System automatically learns, diagnoses, and fixes itself
-5. Check status anytime with `HTDAGAutoBootstrap.status()`
+5. Check status anytime with `OrchestratorAutoBootstrap.status()`
 
 That's it! Your system now self-heals on every startup.

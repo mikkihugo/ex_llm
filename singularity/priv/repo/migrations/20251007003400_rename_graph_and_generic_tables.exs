@@ -9,7 +9,7 @@ defmodule Singularity.Repo.Migrations.RenameGraphAndGenericTables do
   """
 
   def up do
-    # Graph tables (HTDAG task decomposition)
+    # Graph tables (Orchestrator task decomposition)
     execute "ALTER TABLE graph_nodes RENAME TO task_decomposition_graph_nodes"
     execute "ALTER TABLE graph_edges RENAME TO task_decomposition_graph_edges"
     execute "ALTER TABLE graph_types RENAME TO task_decomposition_graph_types"

@@ -22,7 +22,6 @@ defmodule Singularity.Startup.DocumentationBootstrap do
   require Logger
   alias Singularity.Agents.DocumentationPipeline
   alias Singularity.Agents.QualityEnforcer
-  alias Singularity.Agents.DocumentationUpgrader
 
   @doc """
   Bootstrap the documentation system on startup.
@@ -79,7 +78,6 @@ defmodule Singularity.Startup.DocumentationBootstrap do
 
   defp ensure_agents_started do
     agents = [
-      {DocumentationUpgrader, "DocumentationUpgrader"},
       {QualityEnforcer, "QualityEnforcer"},
       {DocumentationPipeline, "DocumentationPipeline"}
     ]

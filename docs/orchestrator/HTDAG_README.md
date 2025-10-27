@@ -1,6 +1,6 @@
-# HTDAG Self-Evolution with NATS LLM Integration
+# Orchestrator Self-Evolution with NATS LLM Integration
 
-This implementation enables the HTDAG (Hierarchical Task Directed Acyclic Graph) system to self-evolve using external LLM workers via NATS.
+This implementation enables the Orchestrator (Hierarchical Task Directed Acyclic Graph) system to self-evolve using external LLM workers via NATS.
 
 ## What's New
 
@@ -12,17 +12,17 @@ This implementation enables the HTDAG (Hierarchical Task Directed Acyclic Graph)
    - Built-in rate limiting and circuit breaking
    - Telemetry instrumentation
 
-2. **`Singularity.Planning.HTDAGExecutor`** - Executes task DAGs with LLM integration
+2. **`Singularity.Planning.OrchestratorExecutor`** - Executes task DAGs with LLM integration
    - Automatic model selection based on task complexity
    - Timeout handling
    - Parallel execution support (future)
 
-3. **`Singularity.Planning.HTDAGEvolution`** - Self-improvement through critique
+3. **`Singularity.Planning.OrchestratorEvolution`** - Self-improvement through critique
    - LLM-based critique of execution results
    - Mutation proposals (model changes, parameter tuning)
    - Performance evaluation
 
-4. **`HTDAGLLMWorker`** (TypeScript) - NATS worker for AI server
+4. **`OrchestratorLLMWorker`** (TypeScript) - NATS worker for AI server
    - Handles `llm.req.*` subjects
    - Supports streaming and non-streaming
    - Integrated with existing AI server
@@ -30,9 +30,9 @@ This implementation enables the HTDAG (Hierarchical Task Directed Acyclic Graph)
 ### Integration Points
 
 - **Existing**: `llm.request` → AI Server (original path)
-- **New**: `llm.req.<model_id>` → HTDAG LLM Worker (self-evolution path)
+- **New**: `llm.req.<model_id>` → Orchestrator LLM Worker (self-evolution path)
 
-Both paths coexist. The HTDAG executor uses the new NATS-first path.
+Both paths coexist. The Orchestrator executor uses the new NATS-first path.
 
 ## Quick Start
 
@@ -40,7 +40,7 @@ Both paths coexist. The HTDAG executor uses the new NATS-first path.
 # 1. Start NATS
 nats-server -js -sd .nats -p 4222
 
-# 2. Start AI Server (includes HTDAG worker)
+# 2. Start AI Server (includes Orchestrator worker)
 cd llm-server
 bun run dev
 
@@ -51,14 +51,14 @@ elixir test_htdag_nats.exs
 ## Usage Example
 
 ```elixir
-# Create and execute a self-evolving HTDAG
-alias Singularity.Planning.HTDAG
+# Create and execute a self-evolving Orchestrator
+alias Singularity.Planning.Orchestrator
 
-dag = HTDAG.decompose(%{
+dag = Orchestrator.decompose(%{
   description: "Build user authentication with JWT"
 })
 
-{:ok, result} = HTDAG.execute_with_nats(dag,
+{:ok, result} = Orchestrator.execute_with_nats(dag,
   run_id: "auth-build-1",
   stream: true,      # Enable token streaming
   evolve: true       # Enable self-improvement
@@ -74,7 +74,7 @@ dag = HTDAG.decompose(%{
 ## NATS Message Flow
 
 ```
-Elixir HTDAG Executor
+Elixir Orchestrator Executor
   │
   ├─> NATS: llm.req.claude-sonnet-4.5
   │   {
@@ -100,7 +100,7 @@ Elixir HTDAG Executor
 
 ## Self-Evolution Flow
 
-1. **Execute** - Run HTDAG tasks with LLM operations
+1. **Execute** - Run Orchestrator tasks with LLM operations
 2. **Collect Metrics** - Track tokens, latency, success rate
 3. **Critique** - Use LLM to analyze performance
 4. **Mutate** - Apply improvements (model selection, parameters)
@@ -114,7 +114,7 @@ Example mutations:
 
 ## Documentation
 
-- **[HTDAG_NATS_INTEGRATION.md](./HTDAG_NATS_INTEGRATION.md)** - Full architecture and API reference
+- **[Orchestrator_NATS_INTEGRATION.md](./Orchestrator_NATS_INTEGRATION.md)** - Full architecture and API reference
 - **[NATS_SUBJECTS.md](./NATS_SUBJECTS.md)** - NATS subject conventions
 
 ## Testing
@@ -131,9 +131,9 @@ mix test test/singularity/planning/htdag_executor_test.exs
 ## What's Working
 
 ✅ NATS LLM operation module with rate limiting and circuit breaking  
-✅ HTDAG executor with model selection  
+✅ Orchestrator executor with model selection  
 ✅ Evolution module with critique and mutations  
-✅ AI server HTDAG worker for `llm.req.*` subjects  
+✅ AI server Orchestrator worker for `llm.req.*` subjects  
 ✅ Streaming token support  
 ✅ Telemetry instrumentation  
 
@@ -157,15 +157,15 @@ This is a **NATS-first, self-evolving** architecture where:
 
 The minimal design allows launching with just:
 1. NATS server
-2. AI server with HTDAG worker
+2. AI server with Orchestrator worker
 3. Claude CLI or any LLM provider
 
 The system can then fix itself and improve over time.
-# HTDAG NATS-LLM Self-Evolution - Implementation Summary
+# Orchestrator NATS-LLM Self-Evolution - Implementation Summary
 
 ## What Was Built
 
-A complete NATS-based LLM integration system for HTDAG (Hierarchical Task Directed Acyclic Graph) self-evolution, enabling autonomous AI agents to improve themselves through critique and mutation.
+A complete NATS-based LLM integration system for Orchestrator (Hierarchical Task Directed Acyclic Graph) self-evolution, enabling autonomous AI agents to improve themselves through critique and mutation.
 
 ## Core Components
 
@@ -183,7 +183,7 @@ A complete NATS-based LLM integration system for HTDAG (Hierarchical Task Direct
 - `compile/2` - Validate and normalize operation parameters
 - `run/3` - Execute LLM operation with full observability
 
-#### `Planning.HTDAGExecutor`
+#### `Planning.OrchestratorExecutor`
 - Executes task DAGs with LLM integration
 - GenServer-based executor with run isolation
 - Automatic model selection based on task complexity
@@ -195,7 +195,7 @@ A complete NATS-based LLM integration system for HTDAG (Hierarchical Task Direct
 - `execute/3` - Execute complete DAG
 - `get_state/1` - Inspect current state
 
-#### `Planning.HTDAGEvolution`
+#### `Planning.OrchestratorEvolution`
 - Self-improvement through LLM critique
 - Mutation proposal (model changes, parameters, prompts)
 - Performance evaluation and scoring
@@ -206,7 +206,7 @@ A complete NATS-based LLM integration system for HTDAG (Hierarchical Task Direct
 - `apply_mutations/2` - Apply mutations to parameters
 - `evaluate_mutation/3` - Score mutation effectiveness
 
-#### `Planning.HTDAG` (Enhanced)
+#### `Planning.Orchestrator` (Enhanced)
 - New `execute_with_nats/2` function for NATS-based execution
 - Optional self-evolution through `:evolve` flag
 - Maintains backward compatibility with existing `decompose/2`
@@ -214,21 +214,21 @@ A complete NATS-based LLM integration system for HTDAG (Hierarchical Task Direct
 ### 2. TypeScript Components (llm-server/src/)
 
 #### `htdag-llm-worker.ts`
-- NATS worker for HTDAG-specific LLM requests
+- NATS worker for Orchestrator-specific LLM requests
 - Subscribes to `llm.req.*` subjects
 - Supports streaming and non-streaming
 - Heartbeat to `llm.health`
 - Integrated model selection (Claude, Gemini, Codex)
 
 **Key Classes:**
-- `HTDAGLLMWorker` - Main worker class
+- `OrchestratorLLMWorker` - Main worker class
   - `connect()` - Connect to NATS
   - `handleRequest()` - Process LLM requests
   - `handleStreamingRequest()` - Stream tokens
   - `handleNonStreamingRequest()` - Direct response
 
 #### `server.ts` (Modified)
-- Integrated HTDAG LLM worker into startup
+- Integrated Orchestrator LLM worker into startup
 - Runs alongside existing NATS handler
 - Graceful shutdown handling
 
@@ -237,7 +237,7 @@ A complete NATS-based LLM integration system for HTDAG (Hierarchical Task Direct
 ### Message Flow
 
 ```
-Elixir HTDAG Executor
+Elixir Orchestrator Executor
   │
   ├─> NATS: llm.req.claude-sonnet-4.5
   │   Payload: {run_id, node_id, corr_id, model_id, input, params}
@@ -275,12 +275,12 @@ Elixir HTDAG Executor
 
 ```elixir
 # Create DAG
-dag = HTDAG.decompose(%{
+dag = Orchestrator.decompose(%{
   description: "Build user authentication system"
 })
 
 # Execute with NATS
-{:ok, result} = HTDAG.execute_with_nats(dag,
+{:ok, result} = Orchestrator.execute_with_nats(dag,
   run_id: "auth-build-1",
   stream: true
 )
@@ -291,7 +291,7 @@ IO.inspect(result.completed)  # => 5
 ### With Self-Evolution
 
 ```elixir
-{:ok, result} = HTDAG.execute_with_nats(dag,
+{:ok, result} = Orchestrator.execute_with_nats(dag,
   run_id: "auth-build-1",
   evolve: true  # Enable critique and mutation
 )
@@ -304,13 +304,13 @@ IO.inspect(result.mutations_applied)
 
 ```elixir
 # Execute
-{:ok, result} = HTDAG.execute_with_nats(dag)
+{:ok, result} = Orchestrator.execute_with_nats(dag)
 
 # Critique
-{:ok, mutations} = HTDAGEvolution.critique_and_mutate(result)
+{:ok, mutations} = OrchestratorEvolution.critique_and_mutate(result)
 
 # Apply
-improved = HTDAGEvolution.apply_mutations(mutations, params)
+improved = OrchestratorEvolution.apply_mutations(mutations, params)
 ```
 
 ## Testing
@@ -335,13 +335,13 @@ cd llm-server && bun run dev
 # Run from Elixir
 cd singularity
 iex -S mix
-iex> HTDAG.execute_with_nats(dag, evolve: true)
+iex> Orchestrator.execute_with_nats(dag, evolve: true)
 ```
 
 ## Documentation
 
-- **[HTDAG_README.md](./HTDAG_README.md)** - Quick start guide
-- **[HTDAG_NATS_INTEGRATION.md](./HTDAG_NATS_INTEGRATION.md)** - Full architecture
+- **[Orchestrator_README.md](./Orchestrator_README.md)** - Quick start guide
+- **[Orchestrator_NATS_INTEGRATION.md](./Orchestrator_NATS_INTEGRATION.md)** - Full architecture
 - **[NATS_SUBJECTS.md](./NATS_SUBJECTS.md)** - NATS conventions
 
 ## Files Created/Modified
@@ -351,14 +351,14 @@ iex> HTDAG.execute_with_nats(dag, evolve: true)
 2. `singularity/lib/singularity/planning/htdag_executor.ex` (7.8KB)
 3. `singularity/lib/singularity/planning/htdag_evolution.ex` (7.8KB)
 4. `llm-server/src/htdag-llm-worker.ts` (10KB)
-5. `HTDAG_README.md` (4.6KB)
-6. `HTDAG_NATS_INTEGRATION.md` (8.8KB)
+5. `Orchestrator_README.md` (4.6KB)
+6. `Orchestrator_NATS_INTEGRATION.md` (8.8KB)
 7. `test_htdag_nats.exs` (5.9KB)
 8. `examples/htdag_self_evolution.exs` (2.5KB)
 
 ### Modified Files (3)
 1. `singularity/lib/singularity/planning/htdag.ex` - Added `execute_with_nats/2`
-2. `llm-server/src/server.ts` - Integrated HTDAG worker
+2. `llm-server/src/server.ts` - Integrated Orchestrator worker
 3. `NATS_SUBJECTS.md` - Documented new subjects
 
 **Total:** ~57KB of production code + documentation
@@ -383,7 +383,7 @@ The system improves itself through:
 ### 3. Minimal Launch
 Can start with just:
 - NATS server
-- AI server with HTDAG worker
+- AI server with Orchestrator worker
 - Claude CLI (or any LLM)
 
 The system then fixes and improves itself.
@@ -424,7 +424,7 @@ Built-in cost controls:
 
 ## Success Criteria
 
-✅ **Minimal Implementation** - Can execute HTDAG with external LLM  
+✅ **Minimal Implementation** - Can execute Orchestrator with external LLM  
 ✅ **Self-Evolution** - Can critique and improve itself  
 ✅ **NATS Integration** - Works with existing llm-server  
 ✅ **Streaming** - Real-time token feedback  
@@ -433,7 +433,7 @@ Built-in cost controls:
 
 ## Conclusion
 
-This implementation provides a complete, production-ready foundation for self-evolving autonomous agents using HTDAG and NATS-based LLM integration. The system is:
+This implementation provides a complete, production-ready foundation for self-evolving autonomous agents using Orchestrator and NATS-based LLM integration. The system is:
 
 - **Minimal** - Only essential components
 - **Extensible** - Easy to add new models/workers
@@ -442,7 +442,7 @@ This implementation provides a complete, production-ready foundation for self-ev
 - **Cost-Aware** - Built-in budget controls
 
 The architecture supports launching with minimal infrastructure and allowing the system to improve itself through critique loops, making it ideal for autonomous development environments.
-# HTDAG Executor: Before vs After
+# Orchestrator Executor: Before vs After
 
 Visual comparison showing the transformation from hardcoded logic to Lua-powered execution.
 
@@ -451,7 +451,7 @@ Visual comparison showing the transformation from hardcoded logic to Lua-powered
 ## Before: Hardcoded Execution (OLD)
 
 ```elixir
-defmodule Singularity.Execution.Planning.HTDAGExecutor do
+defmodule Singularity.Execution.Planning.OrchestratorExecutor do
   defp execute_task(task, state, opts) do
     # HARDCODED: Build operation params
     op_params = build_operation_params(task, opts)
@@ -531,10 +531,10 @@ end
 ## After: Lua-Powered Execution (NEW)
 
 ```elixir
-defmodule Singularity.Execution.Planning.HTDAGExecutor do
+defmodule Singularity.Execution.Planning.OrchestratorExecutor do
   defp execute_task(task, state, opts) do
     # ✅ LUA-POWERED: Load strategy for this task
-    case HTDAGStrategyLoader.get_strategy_for_task(task.description) do
+    case OrchestratorStrategyLoader.get_strategy_for_task(task.description) do
       {:ok, strategy} ->
         if should_decompose?(task) do
           decompose_and_recurse(task, strategy, state, opts)
@@ -549,28 +549,28 @@ defmodule Singularity.Execution.Planning.HTDAGExecutor do
 
   defp execute_atomic_task(task, strategy, state, opts) do
     # ✅ LUA DECIDES: Which agents to spawn
-    case HTDAGLuaExecutor.spawn_agents(strategy, task, state) do
+    case OrchestratorLuaExecutor.spawn_agents(strategy, task, state) do
       {:ok, spawn_config} ->
         agents = Enum.map(spawn_config["agents"], &AgentSpawner.spawn/1)
 
         # ✅ LUA ORCHESTRATES: How agents collaborate
-        case HTDAGLuaExecutor.orchestrate_execution(strategy, task, agents, []) do
+        case OrchestratorLuaExecutor.orchestrate_execution(strategy, task, agents, []) do
           {:ok, orchestration} ->
             results = execute_orchestration(orchestration, agents, task, state)
 
             # ✅ LUA VALIDATES: Completion quality
-            HTDAGLuaExecutor.check_completion(strategy, task, results)
+            OrchestratorLuaExecutor.check_completion(strategy, task, results)
         end
     end
   end
 
   defp decompose_and_recurse(task, strategy, state, opts) do
     # ✅ LUA DECOMPOSES: Break into subtasks
-    case HTDAGLuaExecutor.decompose_task(strategy, task, state) do
+    case OrchestratorLuaExecutor.decompose_task(strategy, task, state) do
       {:ok, subtasks} ->
         # Add to DAG (automatic ordering!)
         dag = Enum.reduce(subtasks, state.dag, fn subtask, acc_dag ->
-          HTDAGCore.add_task(acc_dag, subtask)
+          OrchestratorCore.add_task(acc_dag, subtask)
         end)
 
         {:ok, %{decomposed: true, subtask_count: length(subtasks)}}
@@ -828,10 +828,10 @@ end
 
 ## Automatic Task Ordering
 
-**Key insight:** HTDAGCore.select_next_task/1 handles ordering automatically!
+**Key insight:** OrchestratorCore.select_next_task/1 handles ordering automatically!
 
 ```elixir
-# HTDAGCore (existing code - unchanged)
+# OrchestratorCore (existing code - unchanged)
 def select_next_task(dag) do
   dag
   |> get_ready_tasks()  # Tasks with all dependencies completed
@@ -867,7 +867,7 @@ local subtasks = {
 return {subtasks = subtasks}
 ```
 
-**HTDAGCore automatically executes in order:**
+**OrchestratorCore automatically executes in order:**
 1. task-1 (Design API) - no dependencies
 2. task-2 (Implement API) - waits for task-1 completion
 3. task-3 (Test API) - waits for task-2 completion
@@ -956,7 +956,7 @@ Total: ~220 lines (but hot-reloadable!)
 
 2. Wait for auto-refresh (< 5 min) or manual reload:
    ```elixir
-   HTDAGStrategyLoader.reload_strategies()
+   OrchestratorStrategyLoader.reload_strategies()
    ```
 
 **Time:** ~1 second (database update)
@@ -993,7 +993,7 @@ Total: ~220 lines (but hot-reloadable!)
 ### Phase 2: Seed Strategies (Next)
 ```elixir
 # Load example strategies into database
-HTDAGStrategyLoader.seed_default_strategies()
+OrchestratorStrategyLoader.seed_default_strategies()
 ```
 
 ### Phase 3: Gradual Migration
@@ -1007,16 +1007,16 @@ HTDAGStrategyLoader.seed_default_strategies()
 - 100% hot-reloadable execution
 
 **No big-bang migration required!**
-# HTDAG Simple Learning & Auto-Fix Guide
+# Orchestrator Simple Learning & Auto-Fix Guide
 
 ## TL;DR - Quick Start
 
 ```elixir
 # 1. Learn the codebase (easy way)
-{:ok, learning} = HTDAGLearner.learn_codebase()
+{:ok, learning} = OrchestratorLearner.learn_codebase()
 
 # 2. Auto-fix everything
-{:ok, fixes} = HTDAGLearner.auto_fix_all()
+{:ok, fixes} = OrchestratorLearner.auto_fix_all()
 
 # Done! System is now self-improving and connected.
 ```
@@ -1054,7 +1054,7 @@ After auto-fix:
 ### Phase 1: Learn (The Easy Way)
 
 ```elixir
-{:ok, learning} = HTDAGLearner.learn_codebase()
+{:ok, learning} = OrchestratorLearner.learn_codebase()
 
 # Learning contains:
 # - All modules found
@@ -1075,23 +1075,23 @@ Issues found:
 ### Phase 2: Map Everything
 
 ```elixir
-{:ok, mapping} = HTDAGLearner.map_all_systems()
+{:ok, mapping} = OrchestratorLearner.map_all_systems()
 
 # Creates comprehensive mapping showing:
 # - How SelfImprovingAgent works
 # - How SafeWorkPlanner works  
 # - How SPARC works
 # - How RAG/Quality generators work
-# - How they all connect to HTDAG
+# - How they all connect to Orchestrator
 # - What needs fixing
 ```
 
-Saves to `HTDAG_SYSTEM_MAPPING.json` for reference.
+Saves to `Orchestrator_SYSTEM_MAPPING.json` for reference.
 
 ### Phase 3: Auto-Fix
 
 ```elixir
-{:ok, fixes} = HTDAGLearner.auto_fix_all()
+{:ok, fixes} = OrchestratorLearner.auto_fix_all()
 
 # Automatically:
 # 1. Fixes broken dependencies
@@ -1103,8 +1103,8 @@ Saves to `HTDAG_SYSTEM_MAPPING.json` for reference.
 
 **Example Fix:**
 ```
-Iteration 1: Fixed broken dependency in HTDAGExecutor
-Iteration 2: Connected HTDAGEvolution to SelfImprovingAgent  
+Iteration 1: Fixed broken dependency in OrchestratorExecutor
+Iteration 2: Connected OrchestratorEvolution to SelfImprovingAgent  
 Iteration 3: Added docs to 5 modules
 Done! All high-priority issues fixed.
 ```
@@ -1115,7 +1115,7 @@ Done! All high-priority issues fixed.
 
 ```elixir
 # Simple one-liner
-{:ok, result} = HTDAGBootstrap.fix_singularity_server()
+{:ok, result} = OrchestratorBootstrap.fix_singularity_server()
 
 # What happened:
 # 1. Scanned all source files
@@ -1129,7 +1129,7 @@ Done! All high-priority issues fixed.
 
 ```elixir
 # Learn + Map + Fix in one command
-{:ok, state} = HTDAGBootstrap.bootstrap(auto_fix: true)
+{:ok, state} = OrchestratorBootstrap.bootstrap(auto_fix: true)
 
 # Result:
 state.learning        # What was learned
@@ -1156,7 +1156,7 @@ The system creates a complete map with explanations:
     mutations: htdag_mutations
   })
   """,
-  integration_with_htdag: "Feeds evolution results to HTDAG"
+  integration_with_htdag: "Feeds evolution results to Orchestrator"
 }
 ```
 
@@ -1166,12 +1166,12 @@ The system creates a complete map with explanations:
   purpose: "SAFe 6.0 hierarchical work planning",
   what_it_does: """
   - Strategic Themes → Epics → Capabilities → Features
-  - HTDAG handles task-level breakdown
+  - Orchestrator handles task-level breakdown
   """,
   how_to_use_it: """
-  HTDAG.execute_with_nats(dag, safe_planning: true)
+  Orchestrator.execute_with_nats(dag, safe_planning: true)
   """,
-  integration_with_htdag: "HTDAG tasks map to Features"
+  integration_with_htdag: "Orchestrator tasks map to Features"
 }
 ```
 
@@ -1187,7 +1187,7 @@ The system creates a complete map with explanations:
   - Completion: Final implementation
   """,
   how_to_use_it: """
-  HTDAG.execute_with_nats(dag, integrate_sparc: true)
+  Orchestrator.execute_with_nats(dag, integrate_sparc: true)
   """,
   integration_with_htdag: "Applies SPARC phases to tasks"
 }
@@ -1202,7 +1202,7 @@ The system creates a complete map with explanations:
   Quality: Enforces docs, specs, tests
   """,
   how_to_use_it: """
-  HTDAG.execute_with_nats(dag,
+  Orchestrator.execute_with_nats(dag,
     use_rag: true,
     use_quality_templates: true
   )
@@ -1241,17 +1241,17 @@ The system creates a complete map with explanations:
 Starting auto-fix...
 
 Iteration 1:
-  Issue: HTDAGEvolution not connected to SelfImprovingAgent
+  Issue: OrchestratorEvolution not connected to SelfImprovingAgent
   Fix: Added SelfImprovingAgent.improve/2 call after evolution
   Result: Connection established ✓
 
 Iteration 2:
-  Issue: HTDAGExecutor missing RAG integration
+  Issue: OrchestratorExecutor missing RAG integration
   Fix: Added Store.search_knowledge/2 call in build_prompt
   Result: RAG examples now included ✓
 
 Iteration 3:
-  Issue: Missing docs in HTDAGBootstrap
+  Issue: Missing docs in OrchestratorBootstrap
   Fix: Generated @moduledoc with purpose and examples
   Result: Documentation complete ✓
 
@@ -1271,13 +1271,13 @@ feature = %{
   capability_id: "auth-capability"
 }
 
-# HTDAG automatically breaks down into tasks
-dag = HTDAG.decompose(%{
+# Orchestrator automatically breaks down into tasks
+dag = Orchestrator.decompose(%{
   description: feature.description
 })
 
 # Execute with all integrations
-HTDAG.execute_with_nats(dag,
+Orchestrator.execute_with_nats(dag,
   safe_planning: true,  # Maps to SafeWorkPlanner
   integrate_sparc: true,  # Uses SPARC phases
   use_rag: true,  # Learns from existing code
@@ -1302,7 +1302,7 @@ HTDAG.execute_with_nats(dag,
 ## Integration Flow
 
 ```
-1. HTDAGLearner scans code
+1. OrchestratorLearner scans code
    ↓
 2. Builds knowledge graph
    ↓
@@ -1314,7 +1314,7 @@ HTDAG.execute_with_nats(dag,
    ↓
 6. SPARC → Methodology
    ↓
-7. HTDAG → Task execution
+7. Orchestrator → Task execution
    ↓
 8. RAG + Quality → Code generation
    ↓
@@ -1323,17 +1323,17 @@ HTDAG.execute_with_nats(dag,
 
 ## When to Use What
 
-### Use HTDAGLearner when:
+### Use OrchestratorLearner when:
 - You want to understand the codebase quickly
 - You need to map all systems
 - You want to auto-fix broken things
 
-### Use HTDAGBootstrap when:
+### Use OrchestratorBootstrap when:
 - You're setting up the system initially
 - You want everything connected automatically
 - You want to hand over to SafeWorkPlanner
 
-### Use HTDAG.execute_with_nats when:
+### Use Orchestrator.execute_with_nats when:
 - You have specific tasks to execute
 - You want all integrations (RAG, Quality, SPARC)
 - You want self-evolution enabled
@@ -1381,12 +1381,12 @@ All with minimal manual intervention!
 
 ```elixir
 # That's it - three simple commands:
-{:ok, learning} = HTDAGLearner.learn_codebase()
-{:ok, mapping} = HTDAGLearner.map_all_systems()
-{:ok, fixes} = HTDAGLearner.auto_fix_all()
+{:ok, learning} = OrchestratorLearner.learn_codebase()
+{:ok, mapping} = OrchestratorLearner.map_all_systems()
+{:ok, fixes} = OrchestratorLearner.auto_fix_all()
 
 # Or just one:
-{:ok, state} = HTDAGBootstrap.fix_singularity_server()
+{:ok, state} = OrchestratorBootstrap.fix_singularity_server()
 
 # System is now self-improving and fully integrated!
 ```
@@ -2070,7 +2070,7 @@ task = %{
 
 **What Marco does:**
 1. Creates todo in `todos` table
-2. Adds task to HTDAG graph
+2. Adds task to Orchestrator graph
 3. TaskGraph.WorkerPool spawns tester agent
 4. Agent executes via `Toolkit.run(:docker, ..., policy: :tester)`
 
@@ -2133,7 +2133,7 @@ Planner.enqueue(review_task)
 # 5. Executes review-feature (dependency met)
 ```
 
-**HTDAG ensures:**
+**Orchestrator ensures:**
 - Tasks execute in correct order
 - Failed tasks block dependents
 - Parallel tasks execute concurrently
@@ -2503,7 +2503,7 @@ Planner.get_task_graph()
 # }}
 ```
 
-**HTDAG Execution Flow:**
+**Orchestrator Execution Flow:**
 
 ```
 architect-notifications (role: :architect)
@@ -2530,14 +2530,14 @@ architect-notifications (role: :architect)
 ## Summary
 
 TaskGraph.Orchestrator provides:
-- ✅ **Dependency-aware scheduling** via HTDAG
+- ✅ **Dependency-aware scheduling** via Orchestrator
 - ✅ **Role-based agent specialization** via Toolkit policies
 - ✅ **Security enforcement** preventing 5 major attack classes
 - ✅ **Self-improvement orchestration** with hot-reload safety
 - ✅ **Parallel execution** for independent tasks
 - ✅ **Fault isolation** via supervision tree
 
-All while **reusing 90% of existing Singularity infrastructure** (TaskGraph.WorkerPool, HTDAGCore, AgentSupervisor, Tools.*).
+All while **reusing 90% of existing Singularity infrastructure** (TaskGraph.WorkerPool, OrchestratorCore, AgentSupervisor, Tools.*).
 
 See:
 - `MARCO_ARCHITECTURE.md` - System design and integration

@@ -11,10 +11,13 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   graph TD
       A[File Modified] --> B[FileSystem Event]
       B --> C[CodeFileWatcher]
-      C --> D{Is .ex file?}
+      C --> D{Is source file?}
       D -->|Yes| E[StartupCodeIngestion.persist_module_to_db]
       D -->|No| F[Ignore]
       E --> G[(PostgreSQL)]
+      G --> H[TodoExtractor.extract_after_file_update]
+      H --> I[Create todos from comments]
+      I --> J[(todos table)]
   ```
 
   ## Module Identity
@@ -37,10 +40,11 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
     calls:
       - FileSystem.subscribe/1  # Subscribe to file events
       - StartupCodeIngestion.persist_module_to_db/2  # Re-ingest changed file
+      - TodoExtractor.extract_after_file_update/1  # Extract TODOs after DB update
     called_by:
       - ApplicationSupervisor  # Started in supervision tree
     triggers:
-      - on_file_modified: Re-ingests single file immediately
+      - on_file_modified: Re-ingests single file immediately + extracts TODOs
   ```
 
   ## Anti-Patterns
@@ -69,6 +73,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   require Logger
 
   alias Singularity.Code.StartupCodeIngestion
+  alias Singularity.Execution.TodoExtractor
 
   # Debounce delay (ms) - wait after last change before re-ingesting
   @debounce_delay 500
@@ -420,81 +425,9 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
           end)
       end
 
-      # Also extract TODOs from the changed file
-      extract_todos_from_file(file_path)
+      # Extract TODOs from the updated file (after database is updated)
+      TodoExtractor.extract_after_file_update(file_path)
     end)
   end
 
-  # Extract TODO comments from a single file and create todos
-  defp extract_todos_from_file(file_path) do
-    Task.start(fn ->
-      case Singularity.CodeQuality.AstQualityAnalyzer.find_todo_and_fixme_comments(file_path) do
-        {:ok, todos} when length(todos) > 0 ->
-          Logger.info("Found #{length(todos)} TODO comments in #{file_path}")
-          
-          # Create todos for each TODO comment found
-          Enum.each(todos, fn todo ->
-            create_todo_from_comment(todo, file_path)
-          end)
-
-        {:ok, []} ->
-          Logger.debug("No TODO comments found in #{file_path}")
-
-        {:error, reason} ->
-          Logger.debug("Failed to extract TODOs from #{file_path}: #{inspect(reason)}")
-      end
-    end)
-  end
-
-  # Create a todo from a TODO comment
-  defp create_todo_from_comment(todo_comment, file_path) do
-    alias Singularity.Execution.TodoStore
-
-    # Extract TODO text from the comment
-    todo_text = extract_todo_text(todo_comment)
-    
-    # Create todo with appropriate priority based on comment type
-    priority = case todo_comment[:pattern] do
-      "# FIXME: $$$" -> 1  # Critical
-      "# TODO: $$$" -> 2   # High
-      _ -> 3               # Medium
-    end
-
-    # Create the todo
-    case TodoStore.create(%{
-      title: todo_text,
-      description: "Auto-extracted from #{file_path}",
-      priority: priority,
-      complexity: :medium,
-      status: "pending",
-      source: "code_comment",
-      metadata: %{
-        file_path: file_path,
-        line_number: todo_comment[:line] || 0,
-        comment_type: todo_comment[:pattern] || "TODO"
-      }
-    }) do
-      {:ok, todo} ->
-        Logger.debug("Created todo from comment: #{todo.title}")
-
-      {:error, reason} ->
-        Logger.debug("Failed to create todo from comment: #{inspect(reason)}")
-    end
-  end
-
-  # Extract meaningful text from TODO comment
-  defp extract_todo_text(todo_comment) do
-    # Get the matched text and clean it up
-    text = todo_comment[:matched_text] || ""
-    
-    # Remove the comment prefix and clean up
-    text
-    |> String.replace(~r/^#\s*(TODO|FIXME):\s*/, "")
-    |> String.replace(~r/^\s*\/\/\s*(TODO|FIXME):\s*/, "")
-    |> String.trim()
-    |> case do
-      "" -> "TODO item from #{Path.basename(todo_comment[:file_path] || "")}"
-      clean_text -> clean_text
-    end
-  end
 end

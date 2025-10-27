@@ -1,9 +1,9 @@
 #!/usr/bin/env elixir
 
-# Minimal HTDAG Self-Evolution Example
+# Minimal Orchestrator Self-Evolution Example
 #
 # This example demonstrates the complete NATS-based LLM integration
-# for self-evolving HTDAG execution.
+# for self-evolving Orchestrator execution.
 #
 # Prerequisites:
 # 1. NATS server running (nats-server -js -p 4222)
@@ -13,12 +13,12 @@
 
 IO.puts """
 ╔══════════════════════════════════════════════════════════════╗
-║       HTDAG Self-Evolution Demo                             ║
+║       Orchestrator Self-Evolution Demo                             ║
 ║       NATS-based LLM Integration                            ║
 ╚══════════════════════════════════════════════════════════════╝
 """
 
-defmodule HTDAGDemo do
+defmodule OrchestratorDemo do
   def run do
     IO.puts "\n📋 Task: Build a REST API for user authentication\n"
     
@@ -58,6 +58,6 @@ defmodule HTDAGDemo do
   end
 end
 
-HTDAGDemo.run()
+OrchestratorDemo.run()
 
-IO.puts "💡 Next: Start NATS + AI server, then run: HTDAG.execute_with_nats(dag, evolve: true)\n"
+IO.puts "💡 Next: Start NATS + AI server, then run: Orchestrator.execute_with_nats(dag, evolve: true)\n"

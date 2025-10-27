@@ -11,7 +11,7 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
 
   ### 2. **Multi-Agent Coordination**
   - **SelfImprovingAgent**: Generates code improvements
-  - **DocumentationUpgrader**: Generates documentation improvements  
+  - **DocumentationPipeline**: Generates documentation improvements  
   - **QualityEnforcer**: Generates quality fixes
   - **All agents**: Can hot reload their own improvements
 
@@ -41,7 +41,7 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
   use GenServer
   require Logger
   alias Singularity.HotReload.{ModuleReloader, SafeCodeChangeDispatcher}
-  alias Singularity.Agents.{DocumentationUpgrader, QualityEnforcer}
+  alias Singularity.Agents.{DocumentationPipeline, QualityEnforcer}
 
   @type improvement_type :: :documentation | :quality | :code | :agent_behavior
   @type hot_reload_payload :: %{

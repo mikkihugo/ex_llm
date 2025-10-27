@@ -1,6 +1,6 @@
 defmodule Singularity.Agents.QualityEnforcer do
   @moduledoc """
-  Quality Enforcer Agent - Enforces quality 2.2.0+ standards across all languages.
+  Quality Enforcer Agent - Enforces quality 2.6.0+ standards across all languages.
 
   ## Overview
 
@@ -11,7 +11,7 @@ defmodule Singularity.Agents.QualityEnforcer do
   ## Public API Contract
 
   - `enforce_quality_standards/1` - Enforce quality standards for a file
-  - `validate_file_quality/1` - Validate file meets quality 2.2.0+ standards
+  - `validate_file_quality/1` - Validate file meets quality 2.6.0+ standards
   - `get_quality_report/0` - Get comprehensive quality report
   - `enable_quality_gates/0` - Enable automatic quality enforcement
   - `disable_quality_gates/0` - Disable automatic quality enforcement
@@ -59,17 +59,21 @@ defmodule Singularity.Agents.QualityEnforcer do
   - **Uses**: `Singularity.Knowledge.ArtifactStore` - Quality templates
   - **Uses**: `Singularity.Agents.TechnologyAgent` - Language detection
   - **Uses**: `Singularity.Agents.RefactoringAgent` - Quality improvements
-  - **Used by**: `Singularity.Agents.DocumentationUpgrader` - Quality validation
+  - **Used by**: `Singularity.Agents.DocumentationPipeline` - Quality validation
 
   ## Template Integration
 
-  - **Elixir**: `templates_data/code_generation/quality/elixir_production.json` (v2.3.0)
-  - **Rust**: `templates_data/code_generation/quality/rust_production.json` (v2.2.0)
-  - **TypeScript**: `templates_data/code_generation/quality/tsx_component_production.json` (v2.2.0)
+  - **Elixir**: `templates_data/code_generation/quality/elixir_production.json` (version from template)
+  - **Rust**: `templates_data/code_generation/quality/rust_production.json` (version from template)
+  - **TypeScript**: `templates_data/code_generation/quality/tsx_component_production.json` (version from template)
+  - **Go**: `templates_data/code_generation/quality/go_production.json` (version from template)
+  - **Java**: `templates_data/code_generation/quality/java_production.json` (version from template)
+  - **JavaScript**: `templates_data/code_generation/quality/javascript_production.json` (version from template)
+  - **Gleam**: `templates_data/code_generation/quality/gleam_production.json` (version from template)
 
   ## Template Version
 
-  v2.3.0 - Multi-language quality enforcement with self-awareness integration
+  Version dynamically loaded from templates (standard 2.6.0)
 
   ## Module Identity (JSON)
 
@@ -293,8 +297,12 @@ defmodule Singularity.Agents.QualityEnforcer do
 
       {:error, _reason} ->
         Logger.warning("Failed to load template #{type}/#{name}, using defaults")
-        %{"spec_version" => "2.2.0", "requirements" => []}
+        %{"spec_version" => "2.6.0", "requirements" => []}
     end
+  end
+
+  defp get_template_version(template) do
+    template["spec_version"] || "2.6.0"
   end
 
   defp validate_file_quality_internal(file_path, state) do
@@ -343,7 +351,7 @@ defmodule Singularity.Agents.QualityEnforcer do
       compliant: compliant,
       checks: quality_checks,
       missing_elements: find_missing_elements(quality_checks, required_elements),
-      template_version: template["spec_version"]
+      template_version: get_template_version(template)
     }
 
     {:ok, report}

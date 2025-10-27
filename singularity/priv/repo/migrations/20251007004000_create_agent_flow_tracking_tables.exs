@@ -31,7 +31,7 @@ defmodule Singularity.Repo.Migrations.CreateAgentFlowTrackingTables do
       add :parent_session_id, references(:agent_execution_sessions, type: :uuid, on_delete: :nilify_all)
       add :root_session_id, :uuid
 
-      # HTDAG integration
+      # Orchestrator integration
       add :htdag_id, :text
       add :htdag_root_task_id, :text
 
@@ -168,7 +168,7 @@ defmodule Singularity.Repo.Migrations.CreateAgentFlowTrackingTables do
       add :cost_usd, :decimal, precision: 10, scale: 6
       add :tokens_used, :integer
 
-      # HTDAG integration
+      # Orchestrator integration
       add :htdag_task_id, :text
       add :htdag_task_description, :text
 

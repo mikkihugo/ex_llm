@@ -30,9 +30,9 @@ defmodule ObserverWeb.WebChatLive do
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
-    # Subscribe to real-time notifications from agents
+    # Start listening for PGMQ + NOTIFY events
     if connected?(socket) do
-      Phoenix.PubSub.subscribe(Observer.PubSub, @topic)
+      start_pgmq_listener(socket)
     end
 
     # Load initial messages and pending approvals
@@ -47,7 +47,8 @@ defmodule ObserverWeb.WebChatLive do
      |> assign(:approval_history, [])
      |> assign(:approval_summary, %{})
      |> assign(:auto_scroll, true)
-     |> assign(:filter, "all")}
+     |> assign(:filter, "all")
+     |> assign(:pgmq_listener, nil)}
   end
 
   @impl Phoenix.LiveView
@@ -64,6 +65,25 @@ defmodule ObserverWeb.WebChatLive do
     new_messages = [message | socket.assigns.messages] |> Enum.take(@messages_limit)
 
     {:noreply, assign(socket, :messages, new_messages)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_info({:pgmq_notification, message_id}, socket) do
+    # PGMQ NOTIFY received, poll for the actual message
+    case poll_pgmq_message(message_id) do
+      {:ok, message} ->
+        # Process the message based on its type
+        case message.type do
+          :notification ->
+            handle_notification_message(message, socket)
+          :approval_created ->
+            handle_approval_message(message, socket)
+          _ ->
+            {:noreply, socket}
+        end
+      {:error, _reason} ->
+        {:noreply, socket}
+    end
   end
 
   @impl Phoenix.LiveView
@@ -627,5 +647,79 @@ defmodule ObserverWeb.WebChatLive do
     }
 
     HITL.cancel(approval, attrs)
+  end
+
+  # PGMQ + NOTIFY integration functions
+
+  defp start_pgmq_listener(socket) do
+    # Start listening for notifications
+    case Pgflow.Notifications.listen("observer_notifications", Observer.Repo) do
+      {:ok, pid} ->
+        # Start a process to handle NOTIFY events
+        Task.start(fn -> listen_for_pgmq_notifications(pid, socket) end)
+        assign(socket, :pgmq_listener, pid)
+      {:error, reason} ->
+        Logger.error("Failed to start PGMQ listener: #{inspect(reason)}")
+        socket
+    end
+  end
+
+  defp listen_for_pgmq_notifications(pid, socket) do
+    receive do
+      {:notification, ^pid, channel, message_id} ->
+        # Send message to LiveView process
+        send(self(), {:pgmq_notification, message_id})
+        listen_for_pgmq_notifications(pid, socket)
+    after
+      30_000 ->  # Timeout after 30 seconds
+        Logger.debug("PGMQ listener timeout, restarting...")
+        start_pgmq_listener(socket)
+    end
+  end
+
+  defp poll_pgmq_message(message_id) do
+    # Poll PGMQ for the actual message
+    case Pgflow.Repo.read_message("observer_notifications", message_id, Observer.Repo) do
+      {:ok, message} -> {:ok, message}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp handle_notification_message(message, socket) do
+    chat_message = %{
+      id: generate_id(),
+      type: :notification,
+      content: message.message,
+      timestamp: message.timestamp,
+      metadata: message.metadata || %{}
+    }
+
+    new_messages = [chat_message | socket.assigns.messages] |> Enum.take(@messages_limit)
+    {:noreply, assign(socket, :messages, new_messages)}
+  end
+
+  defp handle_approval_message(message, socket) do
+    approval = message.approval
+    
+    # Add as message and update pending approvals
+    chat_message = %{
+      id: approval.request_id,
+      type: :approval,
+      content: approval.payload["description"] || approval.payload["title"] || "Approval requested",
+      timestamp: approval.inserted_at,
+      metadata: %{
+        request_id: approval.request_id,
+        task_type: approval.task_type,
+        agent_id: approval.agent_id
+      }
+    }
+
+    new_messages = [chat_message | socket.assigns.messages] |> Enum.take(@messages_limit)
+    pending_approvals = load_pending_approvals()
+
+    {:noreply,
+     socket
+     |> assign(:messages, new_messages)
+     |> assign(:pending_approvals, pending_approvals)}
   end
 end

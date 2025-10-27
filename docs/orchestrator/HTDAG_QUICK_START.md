@@ -1,17 +1,17 @@
-# HTDAG Auto-Bootstrap Quick Start Guide
+# Orchestrator Auto-Bootstrap Quick Start Guide
 
 ## Zero-Touch Self-Healing Setup
 
-The HTDAG system now **automatically self-diagnoses and repairs** when the server starts. No manual intervention needed!
+The Orchestrator system now **automatically self-diagnoses and repairs** when the server starts. No manual intervention needed!
 
 ### 1. Installation (Already Done!)
 
-The `HTDAGAutoBootstrap` is now added to your application supervisor in `lib/singularity/application.ex`:
+The `OrchestratorAutoBootstrap` is now added to your application supervisor in `lib/singularity/application.ex`:
 
 ```elixir
 children = [
   # ... other children ...
-  Singularity.Planning.HTDAGAutoBootstrap,  # ← Added automatically!
+  Singularity.Planning.OrchestratorAutoBootstrap,  # ← Added automatically!
   # ... rest of children ...
 ]
 ```
@@ -34,11 +34,11 @@ iex -S mix phx.server
 In your terminal, you'll see:
 
 ```
-[info] HTDAG AUTO-BOOTSTRAP: Self-Diagnosis Starting...
+[info] Orchestrator AUTO-BOOTSTRAP: Self-Diagnosis Starting...
 [info] Phase 1/3: Learning codebase... (30s)
 [info] Phase 2/3: Runtime tracing... (60s)
 [info] Phase 3/3: Auto-fixing issues... (45s)
-[info] HTDAG AUTO-BOOTSTRAP: Complete! System ready ✓
+[info] Orchestrator AUTO-BOOTSTRAP: Complete! System ready ✓
 [info]   - Modules learned: 150
 [info]   - Issues fixed: 12 (broken deps: 5, missing docs: 4, dead code: 3)
 [info]   - Runtime health: 98.5%
@@ -48,7 +48,7 @@ In your terminal, you'll see:
 
 ```elixir
 # Check status
-iex> HTDAGAutoBootstrap.status()
+iex> OrchestratorAutoBootstrap.status()
 %{
   state: :complete,
   modules_learned: 150,
@@ -58,13 +58,13 @@ iex> HTDAGAutoBootstrap.status()
 }
 
 # Disable if needed
-iex> HTDAGAutoBootstrap.disable()
+iex> OrchestratorAutoBootstrap.disable()
 
 # Re-enable
-iex> HTDAGAutoBootstrap.enable()
+iex> OrchestratorAutoBootstrap.enable()
 
 # Trigger manually
-iex> HTDAGAutoBootstrap.run_now()
+iex> OrchestratorAutoBootstrap.run_now()
 ```
 
 ### 5. Configuration (Optional)
@@ -72,7 +72,7 @@ iex> HTDAGAutoBootstrap.run_now()
 Add to `config/config.exs`:
 
 ```elixir
-config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+config :singularity, Singularity.Planning.OrchestratorAutoBootstrap,
   enabled: true,              # Enable auto-bootstrap (default: true)
   max_iterations: 10,         # Max fix iterations (default: 10)
   fix_on_startup: true,       # Auto-fix on startup (default: true)
@@ -180,18 +180,18 @@ end
 
 ```elixir
 # Just learn (no fixing)
-HTDAGLearner.learn_codebase()
+OrchestratorLearner.learn_codebase()
 
 # Learn + runtime trace
-HTDAGLearner.learn_with_runtime_tracing()
+OrchestratorLearner.learn_with_runtime_tracing()
 
 # Just trace runtime
-HTDAGTracer.start_tracing()
+OrchestratorTracer.start_tracing()
 # ... wait 60s ...
-HTDAGTracer.analyze_system()
+OrchestratorTracer.analyze_system()
 
 # Full auto-fix cycle
-HTDAGBootstrap.fix_singularity_server()
+OrchestratorBootstrap.fix_singularity_server()
 ```
 
 ---
@@ -251,7 +251,7 @@ The system fixes issues in this order:
 
 ### Customizing Detection Rules
 
-You can add your own detection rules in `HTDAGLearner.identify_issues/1`:
+You can add your own detection rules in `OrchestratorLearner.identify_issues/1`:
 
 ```elixir
 # In singularity/lib/singularity/planning/htdag_learner.ex
@@ -278,13 +278,13 @@ end
 
 ```elixir
 # Check if it's enabled
-HTDAGAutoBootstrap.status()
+OrchestratorAutoBootstrap.status()
 
 # Enable if disabled
-HTDAGAutoBootstrap.enable()
+OrchestratorAutoBootstrap.enable()
 
 # Check logs
-tail -f log/dev.log | grep "HTDAG AUTO-BOOTSTRAP"
+tail -f log/dev.log | grep "Orchestrator AUTO-BOOTSTRAP"
 ```
 
 ### Too many fixes at startup?
@@ -292,7 +292,7 @@ tail -f log/dev.log | grep "HTDAG AUTO-BOOTSTRAP"
 Adjust in config:
 
 ```elixir
-config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+config :singularity, Singularity.Planning.OrchestratorAutoBootstrap,
   max_iterations: 5,  # Reduce from 10
   fix_on_startup: false  # Just learn, don't fix
 ```
@@ -300,11 +300,11 @@ config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
 ### Want to run manually instead?
 
 ```elixir
-config :singularity, Singularity.Planning.HTDAGAutoBootstrap,
+config :singularity, Singularity.Planning.OrchestratorAutoBootstrap,
   enabled: false  # Disable auto-run
 
 # Then trigger manually when ready
-HTDAGAutoBootstrap.run_now()
+OrchestratorAutoBootstrap.run_now()
 ```
 
 ---
@@ -546,8 +546,8 @@ TaskGraph reuses existing infrastructure:
 # TodoStore - Task persistence
 Singularity.Execution.Todos.TodoStore.get("task-id")
 
-# HTDAGCore - Dependency resolution
-Singularity.Execution.Planning.HTDAGCore.select_next_task(dag)
+# OrchestratorCore - Dependency resolution
+Singularity.Execution.Planning.OrchestratorCore.select_next_task(dag)
 
 # AgentSupervisor - Process management
 Singularity.AgentSupervisor.start_child(agent_spec)
@@ -599,7 +599,7 @@ Orchestrator.enqueue(%{
 })
 
 # 2. Orchestrator handles:
-# - Dependency resolution via HTDAGCore
+# - Dependency resolution via OrchestratorCore
 # - Worker spawning via TodoSwarmCoordinator
 # - Policy enforcement via Toolkit
 # - Task tracking in PostgreSQL

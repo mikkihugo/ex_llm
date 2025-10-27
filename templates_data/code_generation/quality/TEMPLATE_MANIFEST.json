@@ -5,7 +5,7 @@
       "file": "elixir_production.json",
       "language": "elixir",
       "quality_level": "production",
-      "spec_version": "2.0",
+      "spec_version": "2.6.0",
       "capabilities": [
         "quality",
         "graph",
@@ -16,7 +16,7 @@
       "file": "rust_production.json",
       "language": "rust",
       "quality_level": "production",
-      "spec_version": "2.0",
+      "spec_version": "2.6.0",
       "capabilities": [
         "quality",
         "graph",

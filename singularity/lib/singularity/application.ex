@@ -177,42 +177,16 @@ defmodule Singularity.Application do
         Singularity.Architecture.InfrastructureRegistryCache,
 
         # Knowledge Services - Templates and code storage
-        # PGMQ is available - enabling Knowledge.Supervisor
-        Singularity.Knowledge.Supervisor,
+        # PGMQ-dependent - conditionally enabled based on test mode
+        # Falls back to in-memory only mode during tests
 
-        # Layer 4: Agents & Execution - Task execution and planning
-        # Autonomy Rules - Confidence-based autonomous decision making
-        # Used by: CostOptimizedAgent, SafeWorkPlanner
-        # Rules stored in PostgreSQL, cached in ETS, hot-reloadable via consensus evolution
-        # Note: RuleEngine is a pure module (no OTP process) - used directly by agents
-        # Singularity.Execution.Autonomy.RuleEngine,  # Pure module, not supervised
-        Singularity.Execution.Autonomy.RuleLoader,
-
-        # ML Training Pipelines - Broadway-based ML training orchestration
-        # Handles: Embedding training (Qodo + Jina), Code generation training, Model complexity training
-        # Uses PGMQ for task queuing and Broadway for pipeline orchestration
-        Singularity.ML.PipelineSupervisor,
-
-        # Execution - Unified planning and todos system
-        # PGMQ and Knowledge.Supervisor are now available
-        Singularity.Execution.Supervisor,
-
-        # SPARC Orchestration - Template-driven execution
-        # PGMQ and Knowledge.Supervisor are now available
-        Singularity.Execution.SPARC.Supervisor,
-
-        # Agent Coordination - Task routing and execution coordination
-        # Routes tasks to best-fit agents based on capabilities
-        Singularity.Agents.Coordination.CoordinationSupervisor,
-
-        # Agents Management - Agent lifecycle and supervision
-        Singularity.Agents.Supervisor,
-
-        # Layer 5: Domain Supervisors - Domain-specific supervision trees
-        # ArchitectureEngine.MetaRegistry.Supervisor - Requires pgmq (not available in test mode)
-        # Singularity.ArchitectureEngine.MetaRegistry.Supervisor,
-        Singularity.Git.Supervisor
+        # Documentation Pipeline - Unified documentation upgrade service
+        # Consolidates: All documentation upgrade functionality
+        # Handles: Full pipeline, incremental updates, automatic scheduling
+        Singularity.Agents.DocumentationPipeline
       ])
+      # Add PGMQ-dependent services conditionally (skip in test mode)
+      |> add_conditional_child(:pgmq_enabled, &pgmq_dependent_children/0)
       |> Kernel.++(optional_children())
 
     Logger.info("Starting Singularity supervision tree",
@@ -303,5 +277,58 @@ defmodule Singularity.Application do
   # Can be disabled with: config :singularity, oban_enabled: false
   defp oban_child do
     Oban
+  end
+
+  # Helper function to conditionally add PGMQ-dependent children
+  # Skip in test mode since PGMQ extension may not be available in Ecto.Sandbox
+  defp add_conditional_child(children, config_key, child_factory) do
+    if is_test_mode?() do
+      Logger.info("Skipping #{config_key} - test mode detected (Ecto.Sandbox)")
+      children
+    else
+      enabled = Application.get_env(:singularity, config_key, true)
+      Logger.info("Checking config for #{config_key}: #{inspect(enabled)}")
+
+      case enabled do
+        true ->
+          Logger.info("Adding children for #{config_key}")
+          children ++ child_factory.()
+
+        false ->
+          Logger.info("Skipping #{config_key} - disabled in config")
+          children
+      end
+    end
+  end
+
+  # Returns list of PGMQ-dependent child specs
+  # These services require PGMQ extension to be available
+  defp pgmq_dependent_children do
+    [
+      # Knowledge Services - Templates and code storage
+      Singularity.Knowledge.Supervisor,
+
+      # Layer 4: Agents & Execution - Task execution and planning
+      # Autonomy Rules - Confidence-based autonomous decision making
+      Singularity.Execution.Autonomy.RuleLoader,
+
+      # ML Training Pipelines - Broadway-based ML training orchestration
+      Singularity.ML.PipelineSupervisor,
+
+      # Execution - Unified planning and todos system
+      Singularity.Execution.Supervisor,
+
+      # SPARC Orchestration - Template-driven execution
+      Singularity.Execution.SPARC.Supervisor,
+
+      # Agent Coordination - Task routing and execution coordination
+      Singularity.Agents.Coordination.CoordinationSupervisor,
+
+      # Agents Management - Agent lifecycle and supervision
+      Singularity.Agents.Supervisor,
+
+      # Layer 5: Domain Supervisors - Domain-specific supervision trees
+      Singularity.Git.Supervisor
+    ]
   end
 end

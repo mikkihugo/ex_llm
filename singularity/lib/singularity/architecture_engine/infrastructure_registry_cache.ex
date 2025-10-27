@@ -135,11 +135,22 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
 
   @impl true
   def init(_opts) do
-    # Ensure pgmq queues exist
-    PgmqClient.ensure_queue("infrastructure_registry_requests")
-    PgmqClient.ensure_queue("infrastructure_registry_responses")
+    # Only initialize PGMQ queues if not in test mode
+    # In test mode, PGMQ services are disabled
+    is_test = Application.loaded_applications()
+               |> Enum.any?(fn {app, _, _} -> app == :ex_unit end)
 
-    registry = fetch_from_centralcloud() || default_registry()
+    unless is_test do
+      PgmqClient.ensure_queue("infrastructure_registry_requests")
+      PgmqClient.ensure_queue("infrastructure_registry_responses")
+    end
+
+    registry = if is_test do
+      default_registry()
+    else
+      fetch_from_centralcloud() || default_registry()
+    end
+
     {:ok, %{registry: registry, last_refresh: System.monotonic_time()}}
   end
 

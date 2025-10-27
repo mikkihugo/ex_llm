@@ -50,11 +50,9 @@ defmodule Singularity.Conversation.WebChat do
 
   require Logger
 
+  alias Singularity.Jobs.PgmqClient
   alias Singularity.Conversation.MessageHistory
   alias Pgflow.Notifications
-
-  @notifications_queue "observer_notifications"
-  @approvals_queue "observer_approvals"
 
   # Get configured HITL module (allows mocking in tests)
   defp hitl_module do
@@ -65,7 +63,7 @@ defmodule Singularity.Conversation.WebChat do
   Send a notification to the Observer web UI.
 
   Notifications are displayed in real-time but don't require human response.
-  Uses Pgflow.Notifications for instant delivery via PostgreSQL NOTIFY.
+  Uses PostgreSQL NOTIFY for instant delivery without persistence.
   """
   @spec notify(String.t(), map()) :: {:ok, String.t()} | {:error, term()}
   def notify(message, metadata \\ %{}) when is_binary(message) do
@@ -91,11 +89,7 @@ defmodule Singularity.Conversation.WebChat do
       end
 
       # Send via PostgreSQL NOTIFY for real-time delivery (no persistence needed)
-      case Notifications.notify_only(
-        @notifications_queue,
-        Jason.encode!(payload),
-        Singularity.Repo
-      ) do
+      case Notifications.notify_only("agent_notifications", Jason.encode!(payload), Singularity.Repo) do
         :ok ->
           Logger.debug("Notification sent to Observer: #{message}")
           {:ok, "notification_sent"}
@@ -180,10 +174,11 @@ defmodule Singularity.Conversation.WebChat do
             approval: approval,
             timestamp: DateTime.utc_now()
           }
-
-          case Pgflow.Notifications.send_with_notify(@approvals_queue, approval_payload, Singularity.Repo) do
+          
+          # Publish approval event via PGMQ + NOTIFY for real-time web UI update
+          case Notifications.send_with_notify("agent_approvals", approval_payload, Singularity.Repo) do
             {:ok, message_id} ->
-              Logger.debug("Approval event sent to Observer: #{request_id}")
+              Logger.debug("Approval event sent to Observer: #{request_id} (message_id: #{message_id})")
             {:error, reason} ->
               Logger.error("Failed to send approval event: #{inspect(reason)}")
           end
@@ -378,11 +373,7 @@ defmodule Singularity.Conversation.WebChat do
         decided_at: DateTime.utc_now()
       }
 
-      case Notifications.send_with_notify(
-        response_queue,
-        Jason.encode!(payload),
-        Singularity.Repo
-      ) do
+      case PgmqClient.send_message(response_queue, payload) do
         {:ok, _msg_id} ->
           Logger.info("Decision published for #{request_id}: #{status}")
           :ok
@@ -457,10 +448,10 @@ defmodule Singularity.Conversation.WebChat do
   @spec health_check() :: {:ok, map()} | {:error, term()}
   def health_check do
     try do
-      case Notifications.send_with_notify("health_check", Jason.encode!(%{
+      case PgmqClient.send_message("health_check", %{
         timestamp: DateTime.utc_now(),
         source: "chat_conversation_agent"
-      }), Singularity.Repo) do
+      }) do
         {:ok, _msg_id} ->
           {:ok, %{status: "healthy", observer: "connected"}}
 
@@ -535,5 +526,4 @@ defmodule Singularity.Conversation.WebChat do
     Policy: #{policy_name}#{details_text}
     """
   end
-
 end

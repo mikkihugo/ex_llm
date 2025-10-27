@@ -119,7 +119,7 @@ defmodule Singularity.SelfImprovingAgent do
   alias Singularity.DynamicCompiler
   alias Singularity.HITL.ApprovalService
   alias Singularity.Agents.Documentation.Analyzer, as: DocAnalyzer
-  alias Singularity.Agents.Documentation.Upgrader, as: DocUpgrader
+  alias Singularity.Agents.DocumentationPipeline, as: DocPipeline
   alias Singularity.Agents.TemplatePerformance
   alias MapSet
 
@@ -265,18 +265,18 @@ defmodule Singularity.SelfImprovingAgent do
   @doc """
   Upgrade documentation for a file to quality 2.2.0+ standards.
 
-  This function is called by the DocumentationUpgrader to coordinate
+  This function is called by the DocumentationPipeline to coordinate
   documentation upgrades across all source files.
   """
   @spec upgrade_documentation(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def upgrade_documentation(file_path, opts \\ []) do
-    DocUpgrader.upgrade_documentation(file_path, opts)
+    DocPipeline.upgrade_module_documentation(file_path, opts)
   end
 
   @doc """
   Analyze file documentation quality.
 
-  This function is called by the DocumentationUpgrader to assess
+  This function is called by the DocumentationPipeline to assess
   the current documentation quality of a file.
   """
   @spec analyze_documentation_quality(String.t()) :: {:ok, map()} | {:error, term()}
@@ -1281,7 +1281,7 @@ defmodule Singularity.SelfImprovingAgent do
       # 3. Check quality using existing QualityEnforcer
       quality_result = check_quality_existing(codebase_path)
 
-      # 4. Check documentation using existing DocumentationUpgrader
+      # 4. Check documentation using DocumentationPipeline
       doc_result = check_documentation_existing(codebase_path)
 
       # 5. Generate fixes using existing tools OR emergency Claude CLI
@@ -1382,13 +1382,13 @@ defmodule Singularity.SelfImprovingAgent do
   end
 
   defp check_documentation_existing(codebase_path) do
-    # Use existing DocumentationUpgrader
+    # Use DocumentationPipeline for analysis
     files = discover_files(codebase_path)
 
     doc_results =
       files
       |> Enum.map(fn file_path ->
-        case Singularity.Agents.DocumentationUpgrader.analyze_file_documentation(file_path) do
+        case Singularity.Agents.DocumentationPipeline.analyze_file_documentation(file_path) do
           {:ok, analysis} -> {:ok, file_path, analysis}
           {:error, reason} -> {:error, file_path, reason}
         end
@@ -1667,8 +1667,14 @@ defmodule Singularity.SelfImprovingAgent do
           Singularity.Agents.QualityEnforcer.enable_quality_gates()
 
         :documentation ->
-          # Trigger documentation upgrade using existing system
-          Singularity.Agents.DocumentationUpgrader.scan_codebase_documentation()
+          # Trigger documentation upgrade for changed files only
+          case Singularity.Agents.ChangeTracker.get_changes() do
+            {:ok, changes} ->
+              file_paths = Enum.map(changes, & &1.file_path)
+              Singularity.Agents.DocumentationPipeline.run_incremental_pipeline(file_paths)
+            {:error, _} ->
+              :ok  # Skip if no changes detected
+          end
 
         :analysis ->
           # Use existing code generation capabilities

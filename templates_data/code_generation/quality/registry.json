@@ -9,7 +9,7 @@
           "language": "elixir",
           "type": "quality",
           "quality_level": "production",
-          "spec_version": "2.0",
+          "spec_version": "2.6.0",
           "capabilities": [
             "quality",
             "graph",
@@ -21,7 +21,7 @@
           "language": "go",
           "type": "quality",
           "quality_level": "production",
-          "spec_version": "2.0",
+          "spec_version": "2.6.0",
           "capabilities": [
             "quality",
             "graph",
@@ -33,7 +33,7 @@
           "language": "java",
           "type": "quality",
           "quality_level": "production",
-          "spec_version": "2.0",
+          "spec_version": "2.6.0",
           "capabilities": [
             "quality",
             "graph",
@@ -45,7 +45,7 @@
           "language": "javascript",
           "type": "quality",
           "quality_level": "production",
-          "spec_version": "2.0",
+          "spec_version": "2.6.0",
           "capabilities": [
             "quality",
             "graph",
@@ -57,7 +57,7 @@
           "language": "tsx",
           "type": "quality",
           "quality_level": "production",
-          "spec_version": "2.0",
+          "spec_version": "2.6.0",
           "capabilities": [
             "quality",
             "graph",
@@ -69,7 +69,7 @@
           "language": "gleam",
           "type": "quality",
           "quality_level": "production",
-          "spec_version": "2.0",
+          "spec_version": "2.6.0",
           "capabilities": [
             "quality",
             "graph",

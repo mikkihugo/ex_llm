@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.Documentation.Upgrade do
   @moduledoc """
-  Upgrade documentation across all source files to quality 2.2.0+ standards.
+  Upgrade documentation across all source files to quality 2.6.0 standards from templates_data.
 
   This task coordinates the 6 autonomous agents to automatically scan,
   analyze, and upgrade documentation for all supported languages using templates_data.
@@ -22,8 +22,8 @@ defmodule Mix.Tasks.Documentation.Upgrade do
       # Get status report only
       mix documentation.upgrade --status
 
-      # Schedule automatic upgrades
-      mix documentation.upgrade --schedule 60
+      # Run incremental updates for changed files
+      mix documentation.upgrade --incremental
 
   ## Options
 
@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
   - `--language` - Focus on specific language (elixir, rust, go, java, javascript, tsx, gleam, python)
   - `--enforce-quality` - Enable quality gates to enforce standards
   - `--status` - Show current documentation status only
-  - `--schedule` - Schedule automatic upgrades every N minutes
+  - `--incremental` - Run incremental updates for changed files only
   - `--dry-run` - Show what would be upgraded without making changes
 
   ## Examples
@@ -45,28 +45,27 @@ defmodule Mix.Tasks.Documentation.Upgrade do
       # Check status
       mix documentation.upgrade --status
 
-      # Schedule automatic upgrades every 2 hours
-      mix documentation.upgrade --schedule 120
+      # Run incremental updates for changed files
+      mix documentation.upgrade --incremental
   """
 
   use Mix.Task
   require Logger
   alias Singularity.Agents.DocumentationPipeline
   alias Singularity.Agents.QualityEnforcer
-  alias Singularity.Agents.DocumentationUpgrader
 
-  @shortdoc "Upgrade documentation to quality 2.2.0+ standards"
+  @shortdoc "Upgrade documentation to quality 2.6.0 standards from templates_data"
 
   @impl true
   def run(args) do
     {opts, _parsed, _invalid} =
       OptionParser.parse(args,
-        strict: [
+        strict:         [
           files: :string,
           language: :string,
           enforce_quality: :boolean,
           status: :boolean,
-          schedule: :integer,
+          incremental: :boolean,
           dry_run: :boolean
         ],
         aliases: [
@@ -80,7 +79,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
 
     Mix.shell().info("""
     ╔══════════════════════════════════════════════════════════════════════════════╗
-    ║                    Documentation Upgrade Pipeline 2.3.0                     ║
+    ║                    Documentation Upgrade Pipeline 2.6.0                     ║
     ║                    Multi-Language Quality Standards                          ║
     ╚══════════════════════════════════════════════════════════════════════════════╝
     """)
@@ -92,8 +91,8 @@ defmodule Mix.Tasks.Documentation.Upgrade do
       opts[:status] ->
         show_status()
 
-      opts[:schedule] ->
-        schedule_automatic_upgrades(opts[:schedule])
+      opts[:incremental] ->
+        run_incremental_updates()
 
       opts[:dry_run] ->
         run_dry_run(opts)
@@ -132,19 +131,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
         System.halt(1)
     end
 
-    # Start DocumentationUpgrader
-    case DocumentationUpgrader.start_link() do
-      {:ok, _pid} ->
-        :ok
-
-      {:error, {:already_started, _pid}} ->
-        :ok
-
-      {:error, reason} ->
-        Mix.shell().error("Failed to start DocumentationUpgrader: #{inspect(reason)}")
-        System.halt(1)
-    end
-
+    # DocumentationPipeline is already started in supervision tree
     Mix.shell().info("✅ All agents started successfully")
   end
 
@@ -192,21 +179,30 @@ defmodule Mix.Tasks.Documentation.Upgrade do
     end
   end
 
-  defp schedule_automatic_upgrades(interval_minutes) do
-    Mix.shell().info(
-      "Scheduling automatic documentation upgrades every #{interval_minutes} minutes..."
-    )
+  defp run_incremental_updates do
+    Mix.shell().info("Running incremental documentation updates for changed files...")
 
-    case DocumentationPipeline.schedule_automatic_upgrades(interval_minutes) do
-      :ok ->
-        Mix.shell().info("✅ Automatic upgrades scheduled successfully")
-
-        Mix.shell().info(
-          "The system will now automatically upgrade documentation every #{interval_minutes} minutes"
-        )
+    # Get changed files from ChangeTracker
+    case Singularity.Agents.ChangeTracker.get_changes() do
+      {:ok, changes} ->
+        if length(changes) > 0 do
+          file_paths = Enum.map(changes, & &1.file_path)
+          Mix.shell().info("Found #{length(changes)} changed files: #{Enum.join(file_paths, ", ")}")
+          
+          # Run incremental pipeline for changed files
+          case DocumentationPipeline.run_incremental_pipeline(file_paths) do
+            {:ok, :pipeline_started} ->
+              Mix.shell().info("✅ Incremental updates started successfully")
+            {:error, reason} ->
+              Mix.shell().error("Failed to start incremental updates: #{inspect(reason)}")
+              System.halt(1)
+          end
+        else
+          Mix.shell().info("No files have changed - nothing to update")
+        end
 
       {:error, reason} ->
-        Mix.shell().error("Failed to schedule automatic upgrades: #{inspect(reason)}")
+        Mix.shell().error("Failed to get changed files: #{inspect(reason)}")
         System.halt(1)
     end
   end
@@ -217,33 +213,24 @@ defmodule Mix.Tasks.Documentation.Upgrade do
     files = get_files_to_process(opts)
     Mix.shell().info("Files to process: #{length(files)}")
 
-    # Analyze files without upgrading
-    case DocumentationUpgrader.scan_codebase_documentation() do
-      {:ok, results} ->
-        Mix.shell().info("""
-        📋 Dry Run Results
-        ═══════════════════════════════════════════════════════════════════════════════
+    # Analyze changed files without upgrading
+    case Singularity.Agents.ChangeTracker.get_changes() do
+      {:ok, changes} ->
+        if length(changes) > 0 do
+          file_paths = Enum.map(changes, & &1.file_path)
+          Mix.shell().info("""
+          📋 Dry Run Results
+          ═══════════════════════════════════════════════════════════════════════════════
 
-        Total Files: #{results.total_files}
-        Documented: #{results.documented}
-        Quality Modules: #{results.quality_modules}
-        Missing Documentation: #{results.total_files - results.documented}
-
-        Files that would be upgraded:
-        """)
-
-        files
-        |> Enum.take(10)
-        |> Enum.each(fn file ->
-          Mix.shell().info("  - #{file}")
-        end)
-
-        if length(files) > 10 do
-          Mix.shell().info("  ... and #{length(files) - 10} more files")
+          Changed Files Found: #{length(changes)}
+          Files that would be upgraded:
+          #{Enum.join(file_paths, "\n")}
+          """)
+        else
+          Mix.shell().info("No files have changed - nothing to upgrade")
         end
-
       {:error, reason} ->
-        Mix.shell().error("Dry run failed: #{inspect(reason)}")
+        Mix.shell().error("Failed to get changed files: #{inspect(reason)}")
         System.halt(1)
     end
   end
@@ -265,24 +252,29 @@ defmodule Mix.Tasks.Documentation.Upgrade do
     Quality enforcement: #{if opts[:enforce_quality], do: "Enabled", else: "Disabled"}
     """)
 
-    # Run the pipeline
-    case DocumentationPipeline.run_full_pipeline() do
-      {:ok, :pipeline_started} ->
-        Mix.shell().info("✅ Pipeline started successfully")
-
-        Mix.shell().info(
-          "The pipeline is running in the background. Check status with: mix documentation.upgrade --status"
-        )
-
-      {:error, :pipeline_already_running} ->
-        Mix.shell().warning(
-          "Pipeline is already running. Check status with: mix documentation.upgrade --status"
-        )
-
+    # Run incremental pipeline for changed files
+    case Singularity.Agents.ChangeTracker.get_changes() do
+      {:ok, changes} ->
+        if length(changes) > 0 do
+          file_paths = Enum.map(changes, & &1.file_path)
+          case DocumentationPipeline.run_incremental_pipeline(file_paths) do
+            {:ok, :pipeline_started} ->
+              Mix.shell().info("✅ Incremental pipeline started successfully")
+            {:error, reason} ->
+              Mix.shell().error("Failed to start incremental pipeline: #{inspect(reason)}")
+              System.halt(1)
+          end
+        else
+          Mix.shell().info("No files have changed - nothing to update")
+        end
       {:error, reason} ->
-        Mix.shell().error("Failed to start pipeline: #{inspect(reason)}")
+        Mix.shell().error("Failed to get changed files: #{inspect(reason)}")
         System.halt(1)
     end
+
+    Mix.shell().info(
+      "The pipeline is running in the background. Check status with: mix documentation.upgrade --status"
+    )
   end
 
   defp get_files_to_process(opts) do

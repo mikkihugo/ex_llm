@@ -1,8 +1,8 @@
-# HTDAG Runtime Tracing and Analysis
+# Orchestrator Runtime Tracing and Analysis
 
 ## Overview
 
-The HTDAG Tracer provides **advanced runtime analysis** to detect if functions work and are connected. It goes beyond static analysis by actually observing what happens when code runs.
+The Orchestrator Tracer provides **advanced runtime analysis** to detect if functions work and are connected. It goes beyond static analysis by actually observing what happens when code runs.
 
 ## Detection Methods
 
@@ -38,33 +38,33 @@ The HTDAG Tracer provides **advanced runtime analysis** to detect if functions w
 
 ```elixir
 # Trace function calls for 10 seconds
-{:ok, trace_results} = HTDAGTracer.trace_runtime(duration_ms: 10_000)
+{:ok, trace_results} = OrchestratorTracer.trace_runtime(duration_ms: 10_000)
 
 # Check if specific module is connected
-connectivity = HTDAGTracer.is_connected?(MyModule)
+connectivity = OrchestratorTracer.is_connected?(MyModule)
 
 # Find dead code
-{:ok, dead_code} = HTDAGTracer.find_dead_code()
+{:ok, dead_code} = OrchestratorTracer.find_dead_code()
 
 # Find broken functions
-{:ok, broken} = HTDAGTracer.find_broken_functions()
+{:ok, broken} = OrchestratorTracer.find_broken_functions()
 ```
 
 ### Full System Analysis
 
 ```elixir
 # Comprehensive analysis
-{:ok, analysis} = HTDAGTracer.full_analysis()
+{:ok, analysis} = OrchestratorTracer.full_analysis()
 
 # Get auto-fix recommendations
-{:ok, recommendations} = HTDAGTracer.get_recommendations(analysis)
+{:ok, recommendations} = OrchestratorTracer.get_recommendations(analysis)
 ```
 
 ### Learning with Tracing
 
 ```elixir
 # Combine static + runtime analysis
-{:ok, knowledge} = HTDAGLearner.learn_with_tracing()
+{:ok, knowledge} = OrchestratorLearner.learn_with_tracing()
 
 # Result includes:
 # - What's defined (static)
@@ -77,7 +77,7 @@ connectivity = HTDAGTracer.is_connected?(MyModule)
 
 ```
 =======================================================================
-HTDAG TRACER: Full System Analysis Starting
+Orchestrator TRACER: Full System Analysis Starting
 =======================================================================
 
 Phase 1: Runtime tracing...
@@ -99,7 +99,7 @@ Phase 6: Performance profiling...
 Avg response: 23.4ms, P95: 156.8ms
 
 =======================================================================
-HTDAG TRACER: Analysis Complete
+Orchestrator TRACER: Analysis Complete
 =======================================================================
 
 Summary:
@@ -116,7 +116,7 @@ Performance:
   Slow Functions: 7
 
 Broken Functions Found:
-  Singularity.Planning.HTDAGExecutor.execute_node/2 - FunctionClauseError
+  Singularity.Planning.OrchestratorExecutor.execute_node/2 - FunctionClauseError
   Singularity.LLM.Service.call/3 - timeout
   Singularity.Store.search_knowledge/2 - ArgumentError
 
@@ -134,14 +134,14 @@ function_exported?(MyModule, :my_function, 2)
 ### 2. Function Is Actually Called
 ```elixir
 # Trace runtime to see if it's invoked
-{:ok, trace} = HTDAGTracer.trace_runtime()
+{:ok, trace} = OrchestratorTracer.trace_runtime()
 called? = Map.has_key?(trace, {MyModule, :my_function, 2})
 ```
 
 ### 3. Function Doesn't Crash
 ```elixir
 # Test with sample inputs
-case HTDAGTracer.test_function(MyModule, :my_function, 2) do
+case OrchestratorTracer.test_function(MyModule, :my_function, 2) do
   :ok -> "Works"
   {:error, reason} -> "Broken: #{reason}"
 end
@@ -150,14 +150,14 @@ end
 ### 4. Function Has Callers
 ```elixir
 # Check call graph
-connectivity = HTDAGTracer.is_connected?(MyModule)
+connectivity = OrchestratorTracer.is_connected?(MyModule)
 connectivity.has_callers  # true if other modules call it
 ```
 
 ### 5. Function Performs Well
 ```elixir
 # Check performance data
-{:ok, analysis} = HTDAGTracer.full_analysis()
+{:ok, analysis} = OrchestratorTracer.full_analysis()
 slow? = Enum.any?(analysis.performance_data.slow_functions, fn {mod, fun, _, _} ->
   mod == MyModule and fun == :my_function
 end)
@@ -211,13 +211,13 @@ The tracer integrates with the auto-fix system:
 
 ```elixir
 # 1. Trace to find issues
-{:ok, analysis} = HTDAGTracer.full_analysis()
+{:ok, analysis} = OrchestratorTracer.full_analysis()
 
 # 2. Get recommendations
-{:ok, recs} = HTDAGTracer.get_recommendations(analysis)
+{:ok, recs} = OrchestratorTracer.get_recommendations(analysis)
 
 # 3. Auto-fix high-severity issues
-{:ok, fixes} = HTDAGLearner.auto_fix_all()
+{:ok, fixes} = OrchestratorLearner.auto_fix_all()
 
 # Fixes are informed by runtime data:
 # - Broken functions → Add error handling
@@ -237,7 +237,7 @@ Store ──────► CodeStore
 RAGCodeGen ──► QualityCodeGen
   │              │
   ▼              ▼
-HTDAGExecutor ─► HTDAGEvolution
+OrchestratorExecutor ─► OrchestratorEvolution
   │              │
   ▼              ▼
 SelfImprovingAgent
@@ -267,7 +267,7 @@ Application
   ├──► Endpoint
   ├──► Supervisor
   │     │
-  │     ├──► HTDAGAutoBootstrap
+  │     ├──► OrchestratorAutoBootstrap
   │     ├──► SelfImprovingAgent
   │     └──► RateLimiter
   │
@@ -304,19 +304,19 @@ Application
 ```elixir
 # Trace across NATS microservices
 # Track request flow through multiple services
-HTDAGTracer.trace_distributed(correlation_id: "req-123")
+OrchestratorTracer.trace_distributed(correlation_id: "req-123")
 ```
 
 ### Historical Analysis
 ```elixir
 # Compare current trace to baseline
-HTDAGTracer.compare_to_baseline(baseline_file: "trace_baseline.json")
+OrchestratorTracer.compare_to_baseline(baseline_file: "trace_baseline.json")
 ```
 
 ### Custom Trace Patterns
 ```elixir
 # Trace specific patterns
-HTDAGTracer.trace_runtime(
+OrchestratorTracer.trace_runtime(
   patterns: [
     {Singularity.LLM, :_, :_},      # All LLM module calls
     {Singularity.Store, :query, 2}, # Specific function
@@ -330,7 +330,7 @@ HTDAGTracer.trace_runtime(
 Add to `config/config.exs`:
 
 ```elixir
-config :singularity, Singularity.Planning.HTDAGTracer,
+config :singularity, Singularity.Planning.OrchestratorTracer,
   enabled: true,
   trace_duration_ms: 10_000,
   max_trace_results: 10_000,
@@ -364,7 +364,7 @@ config :singularity, Singularity.Planning.HTDAGTracer,
 
 ## Summary
 
-The HTDAG Tracer provides **complete visibility** into your system:
+The Orchestrator Tracer provides **complete visibility** into your system:
 
 - **Static Analysis**: What's defined
 - **Runtime Tracing**: What actually runs

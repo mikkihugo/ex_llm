@@ -51,7 +51,7 @@ defmodule Singularity.Agents.Documentation.Analyzer do
 
   ## Anti-Patterns
 
-  - DO NOT use this for code generation (use Documentation.Upgrader instead)
+  - DO NOT use this for code generation (use DocumentationPipeline instead)
   - DO NOT call LLM services directly (this is analysis only)
   - DO NOT modify files (this is read-only analysis)
 
