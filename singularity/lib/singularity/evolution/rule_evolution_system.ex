@@ -105,6 +105,8 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   # Confidence threshold for publishing to Genesis (0.0-1.0)
   @confidence_quorum 0.85
 
+  @analysis_option_keys [:min_confidence, :limit]
+
   @doc """
   Analyze execution patterns and propose new rules.
 
@@ -138,25 +140,25 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
           success_rate: 0.94,
           frequency: 47,
           status: :confident
-        },
-        ...
+        }
       ]}
   """
-  @spec analyze_and_propose_rules(keyword(), map()) ::
+  @spec analyze_and_propose_rules(map() | keyword(), keyword()) ::
           {:ok, [rule()]} | {:error, term()}
-  def analyze_and_propose_rules(opts \\ [], criteria \\ %{}) do
-    min_confidence = Keyword.get(opts, :min_confidence, 0.0)
-    limit = Keyword.get(opts, :limit, 20)
+  def analyze_and_propose_rules(criteria \\ %{}, opts \\ []) do
+    {criteria_map, opts_kw} = normalize_analysis_inputs(criteria, opts)
+    min_confidence = Keyword.get(opts_kw, :min_confidence, 0.0)
+    limit = Keyword.get(opts_kw, :limit, 20)
 
     Logger.info("RuleEvolutionSystem: Analyzing patterns for rule synthesis",
-      task_type: criteria[:task_type],
-      time_range: criteria[:time_range] || :last_week
+      task_type: criteria_value(criteria_map, :task_type),
+      time_range: criteria_value(criteria_map, :time_range, :last_week)
     )
 
     try do
       # Get success metrics and failure patterns
       kpis = ValidationMetricsStore.get_kpis()
-      patterns = FailurePatternStore.query(criteria)
+      patterns = FailurePatternStore.query(criteria_map)
       effectiveness = EffectivenessTracker.get_validation_weights()
 
       if Enum.empty?(patterns) do
@@ -464,6 +466,33 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   end
 
   # Private Helpers
+
+  defp normalize_analysis_inputs(criteria, opts) do
+    cond do
+      Keyword.keyword?(criteria) and opts == [] and keyword_only_contains?(criteria, @analysis_option_keys) ->
+        {%{}, criteria}
+
+      true ->
+        {ensure_map(criteria), ensure_keyword(opts)}
+    end
+  end
+
+  defp keyword_only_contains?(kw, allowed_keys) do
+    kw
+    |> Keyword.keys()
+    |> Enum.all?(&(&1 in allowed_keys))
+  end
+
+  defp ensure_map(criteria) when is_map(criteria), do: criteria
+  defp ensure_map(criteria), do: if(Keyword.keyword?(criteria), do: Map.new(criteria), else: %{})
+
+  defp ensure_keyword(opts), do: if(Keyword.keyword?(opts), do: opts, else: [])
+
+  defp criteria_value(criteria, key, default \\ nil) do
+    Map.get(criteria, key) ||
+      Map.get(criteria, Atom.to_string(key)) ||
+      default
+  end
 
   defp synthesize_rule(pattern, effectiveness, _kpis) do
     # Calculate confidence based on pattern characteristics

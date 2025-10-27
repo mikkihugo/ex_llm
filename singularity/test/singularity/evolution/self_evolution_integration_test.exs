@@ -269,7 +269,7 @@ defmodule Singularity.Evolution.SelfEvolutionIntegrationTest do
     test "recalculate_weights refreshes check weights" do
       result = EffectivenessTracker.recalculate_weights()
 
-      assert result == :ok || {:error, _} = result
+      assert result == :ok or match?({:error, _}, result)
     end
   end
 

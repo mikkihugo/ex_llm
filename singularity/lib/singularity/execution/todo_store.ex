@@ -36,7 +36,7 @@ defmodule Singularity.Execution.TodoStore do
 
   import Ecto.Query
   alias Singularity.Repo
-  alias Singularity.Execution.Todos.Todo
+  alias Singularity.Execution.Todo
   alias Singularity.CodeGeneration.Implementations.EmbeddingGenerator
 
   require Logger

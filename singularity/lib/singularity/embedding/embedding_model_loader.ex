@@ -12,7 +12,12 @@ defmodule Singularity.EmbeddingModelLoader do
   alias Singularity.EmbeddingEngine
 
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    if test_mode?() do
+      Logger.info("EmbeddingModelLoader skipped in test mode")
+      :ignore
+    else
+      GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    end
   end
 
   @impl true
@@ -157,5 +162,10 @@ defmodule Singularity.EmbeddingModelLoader do
       # Default to code model
       _ -> 1536
     end
+  end
+
+  defp test_mode? do
+    Application.loaded_applications()
+    |> Enum.any?(fn {app, _, _} -> app == :ex_unit end)
   end
 end

@@ -361,10 +361,10 @@ defmodule Singularity.Analysis.MetadataValidator do
     Logger.info("Marking #{file_path} for review. Missing: #{inspect(missing)}")
 
     # Create TODO for SelfImprovingAgent to fix missing documentation
-    alias Singularity.Execution.Todos.Todo
+    alias Singularity.Execution.TodoStore
 
     {:ok, _todo} =
-      Todo.create(%{
+      TodoStore.create(%{
         title: "Add missing AI documentation to #{Path.basename(file_path)}",
         description: "Missing elements: #{Enum.join(missing, ", ")}",
         status: "pending",

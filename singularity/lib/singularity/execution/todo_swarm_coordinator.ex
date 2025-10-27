@@ -68,7 +68,7 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
 
   ```json
   {
-    "module": "Singularity.Execution.Todos.TodoSwarmCoordinator",
+    "module": "Singularity.Execution.TodoSwarmCoordinator",
     "purpose": "GenServer-based swarm orchestrator for distributed todo execution across worker pools",
     "role": "orchestrator",
     "layer": "execution_todos",
@@ -157,7 +157,7 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
       critical: true
 
   called_by:
-    - module: Singularity.Execution.Todos.Supervisor
+    - module: Singularity.Execution.TodoSupervisor
       function: init/1
       purpose: Manage coordinator lifecycle in supervision tree
       frequency: on_startup
@@ -245,7 +245,7 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
 
   depends_on:
     - Singularity.Execution.TodoStore (MUST be available)
-    - Singularity.Execution.Todos.TodoWorkerAgent (MUST be available)
+    - Singularity.Execution.TodoWorkerAgent (MUST be available)
     - Process monitoring (built-in, no dependency)
   ```
 
@@ -484,7 +484,7 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
   use GenServer
   require Logger
 
-  alias Singularity.Execution.Todos.{TodoStore, TodoWorkerAgent}
+  alias Singularity.Execution.{TodoStore, TodoWorkerAgent}
   @poll_interval_ms 5_000
   @max_concurrent_workers 10
   @default_swarm_size 3

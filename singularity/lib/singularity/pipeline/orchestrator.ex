@@ -421,10 +421,10 @@ defmodule Singularity.Pipeline.Orchestrator do
   ## Returns
   - `{:ok, rules}` - List of proposed rules with confidence scores
   """
-  @spec analyze_and_propose_rules(map(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def analyze_and_propose_rules(opts \\ [], criteria \\ %{}) do
+  @spec analyze_and_propose_rules(map() | keyword(), keyword()) :: {:ok, [map()]} | {:error, term()}
+  def analyze_and_propose_rules(criteria \\ %{}, opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Analyzing patterns for rule evolution")
-    RuleEvolutionSystem.analyze_and_propose_rules(opts, criteria)
+    RuleEvolutionSystem.analyze_and_propose_rules(criteria, opts)
   end
 
   @doc """

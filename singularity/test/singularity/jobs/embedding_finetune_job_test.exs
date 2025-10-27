@@ -342,7 +342,7 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJobTest do
                EmbeddingFinetuneJob.perform(job)
              end) =~ "mock" or
                EmbeddingFinetuneJob.perform(job) == :ok or
-               EmbeddingFinetuneJob.perform(job) == {:ok, _}
+               match?({:ok, _}, EmbeddingFinetuneJob.perform(job))
     end
 
     test "augments with mocks maintains triplet structure" do

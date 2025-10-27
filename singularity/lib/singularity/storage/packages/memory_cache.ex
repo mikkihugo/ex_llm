@@ -109,10 +109,16 @@ defmodule Singularity.MemoryCache do
   Get cache stats
   """
   def stats do
+    word_size = :erlang.system_info(:wordsize)
+
     @tables
     |> Enum.map(fn {name, table} ->
       size = :ets.info(table, :size)
-      memory = :ets.info(table, :memory) * :erlang.system_info(:wordsize)
+      memory_words = :ets.info(table, :memory)
+
+      size = if size == :undefined, do: 0, else: size
+      memory_words = if memory_words == :undefined, do: 0, else: memory_words
+      memory = memory_words * word_size
 
       {name,
        %{

@@ -1,0 +1,248 @@
+# TECHNICAL DEBT - FILE BY FILE ISSUE REPORT
+# Generated: October 27, 2025
+
+## CRITICAL FILES REQUIRING IMMEDIATE FIXES
+
+### 1. CREATE NEW FILE: singularity/lib/singularity/tools/behaviour.ex
+STATUS: DOES NOT EXIST - MUST CREATE
+PRIORITY: CRITICAL (BLOCKS EVERYTHING)
+ISSUE: Missing behaviour contract that todos.ex and other tools depend on
+
+ACTION: Create with proper callback definitions for tool_definitions/0 and execute_tool/2
+
+---
+
+### 2. singularity/lib/singularity/tools/todos.ex
+LINES: 17, 28, 216, 254, 267, 294, 303, 322, 331, 342
+WARNINGS: 8 instances of invalid @impl without matching behaviour
+PRIORITY: CRITICAL
+ISSUE: References non-existent Singularity.Tools.Behaviour
+
+WARNINGS:
+  Line 17: @behaviour Singularity.Tools.Behaviour does not exist
+  Line 28: @impl true for tool_definitions/0 - no behaviour specifies callback
+  Line 216: @impl true for execute_tool/2 - no behaviour specifies callback
+  Line 254: @impl true for execute_tool/2 - no behaviour specifies callback
+  Line 267: @impl true for execute_tool/2 - no behaviour specifies callback
+  Line 294: @impl true for execute_tool/2 - no behaviour specifies callback
+  Line 303: @impl true for execute_tool/2 - no behaviour specifies callback
+  Line 322: @impl true for execute_tool/2 - no behaviour specifies callback
+  Line 331: @impl true for execute_tool/2 - no behaviour specifies callback
+  Line 342: @impl true for execute_tool/2 - no behaviour specifies callback
+
+---
+
+### 3. singularity/lib/singularity/execution/todo_extractor.ex
+LINES: 200-210
+WARNINGS: Pattern match never succeeds
+PRIORITY: CRITICAL
+ISSUE: Error handler can never match (return type always {:ok, _})
+
+CODE PROBLEM:
+  200  case Singularity.CodeQuality.AstQualityAnalyzer.find_todo_and_fixme_comments(file_path) do
+  201    {:ok, todos} -> {:ok, todos}
+  207    {:error, reason} ->  # ← CAN NEVER MATCH
+  209      Logger.error("Failed to find TODOs: #{inspect(reason)}")
+  210      {:ok, []}
+  211  end
+
+COMPILER WARNING:
+  warning: the following clause will never match:
+      {:error, reason}
+  because it attempts to match on the result of:
+      Singularity.CodeQuality.AstQualityAnalyzer.find_todo_and_fixme_comments(file_path)
+  which has type:
+      dynamic({:ok, term()})
+
+---
+
+### 4. singularity/lib/singularity/analysis/codebase_health_tracker.ex
+LINES: 330-340
+WARNINGS: Pattern match never succeeds
+PRIORITY: CRITICAL
+ISSUE: Error handler can never match (return type always {:ok, _})
+
+SIMILAR TO: todo_extractor.ex line 207
+
+CODE PROBLEM:
+  334  {:error, reason} ->  # ← CAN NEVER MATCH
+  335    Logger.error("Failed to fetch: #{inspect(reason)}")
+  336    {:error, :no_metrics}
+
+SOLUTION: Make fetch_snapshots/2 return proper {:ok, _} | {:error, _}
+
+---
+
+### 5. Multiple files: CentralCloud.Repo.query calls (31 INSTANCES)
+PRIORITY: HIGH (BLOCKS CENTRALCLOUD INTEGRATION)
+ISSUE: CentralCloud.Repo module/methods undefined
+
+FILES WITH ISSUES (by count):
+  singularity/lib/singularity/analysis/ - 12 instances
+  singularity/lib/singularity/ml/ - 8 instances
+  singularity/lib/singularity/ - 11 instances
+
+SPECIFIC LOCATIONS:
+  Line XXX: CentralCloud.Repo.query/1
+  Line XXX: CentralCloud.Repo.query/2
+
+ACTION: Replace with actual CentralCloud API (likely Ecto-based)
+
+---
+
+### 6. singularity/lib/singularity/code_generation/implementations/code_generator.ex
+LINES: 321, 359, 364, 396, 405, 610
+WARNINGS: 6 unused private functions
+PRIORITY: MEDIUM
+ISSUES:
+  Line 321: defp generate_with_api/4 is unused
+  Line 359: defp map_complexity_to_llm/1 is unused
+  Line 364: defp build_generation_prompt/3 is unused
+  Line 396: defp extract_code_block/1 is unused
+  Line 405: defp model_downloaded?/1 is unused
+  Line 610: defp generate_with_api_unified/4 is unused
+
+ACTION: Delete or document why kept for future use
+
+---
+
+### 7. singularity/lib/singularity/execution/task_graph/worker.ex
+LINES: 42, 282
+WARNINGS: Unused attribute and function
+PRIORITY: MEDIUM
+ISSUES:
+  Line 42: @execution_timeout_ms was set but never used
+  Line 282: defp priority_label/1 is unused
+
+---
+
+### 8. packages/ex_pgflow/lib/pgflow/flow_builder.ex
+LINES: 1
+WARNINGS: Module redefinition
+PRIORITY: MEDIUM
+ISSUE: Redefining module Pgflow.FlowBuilder
+
+WARNING:
+  warning: redefining module Pgflow.FlowBuilder
+  (current version loaded from Elixir.Pgflow.FlowBuilder.beam)
+
+ACTION: Check for circular dependencies, split module, or fix load order
+
+---
+
+### 9. singularity/lib/singularity/shared_queue_publisher.ex
+LINES: 96, 569
+WARNINGS: Unused alias and misplaced @doc
+PRIORITY: LOW
+ISSUES:
+  Line 96: unused alias SharedQueueConsumer
+  Line 569: @doc on private function store_llm_request/1 (discarded)
+
+---
+
+### 10. singularity/lib/singularity/infrastructure/telemetry.ex
+LINES: 35, 324
+WARNINGS: Undefined module and TODO
+PRIORITY: HIGH
+ISSUES:
+  Line 35: Singularity.Metrics.EventCollector.handle_telemetry_event/4 is undefined
+  Line 324: TODO comment about metrics backend integration
+
+---
+
+### 11. singularity/lib/singularity/execution/autonomy/planner.ex
+LINES: 74
+WARNINGS: Undefined function
+PRIORITY: HIGH
+ISSUE:
+  Line 74: StoryDecomposer.decompose_story/1 is undefined
+
+---
+
+### 12. singularity/lib/singularity/agents/self_improving_agent.ex
+LINES: 273, 836, 962
+WARNINGS: Undefined/deprecated functions
+PRIORITY: HIGH
+ISSUES:
+  Line 273: Singularity.Agents.DocumentationPipeline.upgrade_module_documentation/2 undefined
+  Line 836: Singularity.Control.publish_improvement/2 deprecated
+  Line 962: Singularity.Control.publish_improvement/2 deprecated
+
+---
+
+### 13. singularity/lib/singularity/bootstrap/vision.ex
+LINES: 480, 534, 552
+WARNINGS: Undefined module
+PRIORITY: HIGH
+ISSUE: Singularity.Execution.Planning.SafeWorkPlanner is not available
+
+CALLS:
+  Line 480: SafeWorkPlanner.add_chunk(@portfolio_vision.statement)
+  Line 534: SafeWorkPlanner.add_chunk(stage_description)
+  Line 552: SafeWorkPlanner.add_chunk(feature_description)
+
+---
+
+### 14. singularity/lib/singularity/validation/effectiveness_tracker.ex
+LINES: 79
+WARNINGS: Unused module attribute
+PRIORITY: LOW
+ISSUE:
+  Line 79: @min_data_points 10 was set but never used
+
+---
+
+### 15. singularity/lib/singularity/schemas/monitoring/event.ex
+LINES: 74
+WARNINGS: @doc on private function
+PRIORITY: LOW
+ISSUE:
+  Line 74: @doc attribute on private function validate_measurement_valid/2 (discarded)
+
+---
+
+### 16. centralcloud/lib/central_cloud/models.ex
+LINES: 169, 175
+WARNINGS: TODO comments (not warnings but indicates incomplete code)
+PRIORITY: MEDIUM
+ISSUES:
+  Line 169: TODO - Implement HTTP client to fetch from models.dev API
+  Line 175: TODO - Implement YAML loading
+
+---
+
+## SUMMARY BY SEVERITY
+
+CRITICAL (0 days - BLOCKER):
+  - Create Tools.Behaviour (new file)
+  - Fix todo_extractor.ex:207 unreachable handler
+  - Fix codebase_health_tracker.ex:334 unreachable handler
+  - Replace 31 CentralCloud.Repo.query calls
+  - Fix 8 invalid @impl in todos.ex
+
+HIGH (1-2 days):
+  - Fix 6 undefined modules blocking features
+  - Fix telemetry.ex line 35 undefined module
+  - Fix planner.ex line 74 undefined function
+  - Fix self_improving_agent.ex deprecated calls
+  - Fix vision.ex SafeWorkPlanner calls
+
+MEDIUM (1 week):
+  - Delete 6 unused functions in code_generator.ex
+  - Delete unused items in task_graph/worker.ex
+  - Investigate module redefinition in ex_pgflow
+  - Fix 100+ unused variables
+  - Fix 17+ deprecated API calls
+
+LOW (ongoing cleanup):
+  - Remove 60+ unused imports/aliases
+  - Remove 10+ unused module attributes
+  - Remove @doc from private functions
+  - Complete TODO comments in models.ex
+
+## COMPILATION COMMAND FOR REFERENCE
+
+cd /Users/mhugo/code/singularity-incubation/singularity
+mix clean
+mix deps.get
+mix compile 2>&1 | head -100  # Check warnings

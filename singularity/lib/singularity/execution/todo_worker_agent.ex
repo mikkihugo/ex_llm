@@ -36,7 +36,7 @@ defmodule Singularity.Execution.TodoWorkerAgent do
   use GenServer
   require Logger
 
-  alias Singularity.Execution.Todos.{TodoStore, TodoSwarmCoordinator}
+  alias Singularity.Execution.{TodoStore, TodoSwarmCoordinator}
   # 5 minutes
   @execution_timeout_ms 300_000
 

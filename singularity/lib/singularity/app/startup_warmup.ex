@@ -7,8 +7,13 @@ defmodule Singularity.StartupWarmup do
   use Task
   require Logger
 
-  def start_link(opts) do
-    Task.start_link(__MODULE__, :warmup, [])
+  def start_link(_opts) do
+    if test_mode?() do
+      Logger.info("Startup warmup skipped in test mode")
+      :ignore
+    else
+      Task.start_link(__MODULE__, :warmup, [])
+    end
   end
 
   def warmup do
@@ -30,6 +35,11 @@ defmodule Singularity.StartupWarmup do
     warmup_task_graph()
 
     Logger.info("✅ Auto-warmup complete! System ready for blazing fast performance!")
+  end
+
+  defp test_mode? do
+    Application.loaded_applications()
+    |> Enum.any?(fn {app, _, _} -> app == :ex_unit end)
   end
 
   defp warmup_memory_cache do

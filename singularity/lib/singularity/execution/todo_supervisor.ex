@@ -1,13 +1,13 @@
-defmodule Singularity.Execution.Todos.Supervisor do
+defmodule Singularity.Execution.TodoSupervisor do
   @moduledoc """
-  Todos Supervisor - Manages TODO swarm execution infrastructure.
+  Todo Supervisor - Manages todo swarm execution infrastructure.
 
   Supervises the TODO swarm coordinator which orchestrates autonomous agents
   to solve TODO items in parallel.
 
   ## Managed Processes
 
-  - `Singularity.Execution.Todos.TodoSwarmCoordinator` - GenServer orchestrating TODO worker agents
+  - `Singularity.Execution.TodoSwarmCoordinator` - GenServer orchestrating TODO worker agents
 
   ## TODO Swarm Architecture
 
@@ -37,10 +37,10 @@ defmodule Singularity.Execution.Todos.Supervisor do
 
   @impl true
   def init(opts) do
-    Logger.info("Starting Todos Supervisor...")
+    Logger.info("Starting Todo Supervisor...")
 
     children = [
-      Singularity.Execution.Todos.TodoSwarmCoordinator
+      Singularity.Execution.TodoSwarmCoordinator
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

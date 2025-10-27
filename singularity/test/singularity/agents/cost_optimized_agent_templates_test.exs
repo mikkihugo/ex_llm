@@ -13,7 +13,6 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
   import ExUnit.CaptureLog
 
   alias Singularity.Agents.CostOptimizedAgent
-  alias Singularity.Execution.Planning.Task
 
   @moduletag :agent_integration
   @moduletag :database_required
@@ -39,7 +38,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
 
   describe "template-based code generation" do
     test "uses template for standard Elixir module task", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "task-1",
         name: "user_service",
         description: "Create user service module",
@@ -78,7 +77,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
     end
 
     test "extracts module name from task name correctly", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "task-2",
         name: "payment_processor",
         description: "Payment processing module",
@@ -100,7 +99,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
     end
 
     test "includes acceptance criteria in generated code", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "task-3",
         name: "cache_manager",
         description: "Cache management module",
@@ -128,7 +127,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
 
   describe "cost optimization" do
     test "prefers templates over LLM for standard tasks", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "task-4",
         name: "data_validator",
         description: "Data validation module",
@@ -164,7 +163,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
       # Process multiple tasks
       tasks =
         for i <- 1..5 do
-          %Task{
+          %{
             id: "task-#{i}",
             name: "module_#{i}",
             description: "Test module #{i}",
@@ -190,7 +189,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
 
   describe "fallback behavior" do
     test "falls back to LLM when template not found", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "task-5",
         name: "very_specific_custom_module",
         description: "Highly specialized module with no template",
@@ -217,7 +216,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
     end
 
     test "handles template rendering errors gracefully", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "task-6",
         name: "test_module",
         description: "Test module",
@@ -236,7 +235,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
     end
 
     test "uses simple fill as last resort", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "task-7",
         name: "fallback_test",
         description: "Test fallback rendering",
@@ -263,7 +262,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
       types = [:code_generation, :refactoring, :testing]
 
       for language <- languages, type <- types do
-        task = %Task{
+        task = %{
           id: "discovery-#{language}-#{type}",
           name: "test_#{language}_#{type}",
           description: "Test #{language} #{type}",
@@ -279,7 +278,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
     end
 
     test "handles missing language gracefully", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "no-lang",
         name: "test_module",
         description: "Test module with no language",
@@ -310,7 +309,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
       ]
 
       for {input, expected} <- test_cases do
-        task = %Task{
+        task = %{
           id: "extract-#{input}",
           name: input,
           description: "Test extraction",
@@ -334,7 +333,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
     end
 
     test "passes task description as description variable", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "description-test",
         name: "test_module",
         description: "This is a very specific description that should appear in the code",
@@ -358,7 +357,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
 
   describe "usage tracking integration" do
     test "tracks template usage through agent", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "tracking-test",
         name: "tracked_module",
         description: "Test tracking",
@@ -387,7 +386,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
 
   describe "real-world scenarios" do
     test "generates GenServer module", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "genserver-test",
         name: "worker_process",
         description: "Background worker using GenServer",
@@ -413,7 +412,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
     end
 
     test "generates NATS consumer", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "nats-test",
         name: "event_consumer",
         description: "NATS message consumer",
@@ -446,7 +445,7 @@ defmodule Singularity.Agents.CostOptimizedAgentTemplatesTest do
     end
 
     test "handles complex multi-file generation", %{agent_id: agent_id} do
-      task = %Task{
+      task = %{
         id: "multifile-test",
         name: "user_context",
         description: "Complete user context with schema, service, controller",

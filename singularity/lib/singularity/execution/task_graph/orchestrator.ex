@@ -90,7 +90,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   ## Dependencies
 
   Depends on:
-  - `Singularity.Execution.Todos.Supervisor` - For TaskGraph.WorkerPool
+  - `Singularity.Execution.TodoSupervisor` - For TaskGraph.WorkerPool
   - `Singularity.Agents.Supervisor` - For AgentSupervisor
   - `Singularity.Execution.Planning.TaskGraphCore` - For dependency graphs
   - `Singularity.Repo` - For todos table persistence
@@ -99,7 +99,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   use GenServer
   require Logger
 
-  alias Singularity.Execution.Todos.{TodoStore, TodoSwarmCoordinator}
+  alias Singularity.Execution.{TodoStore, TodoSwarmCoordinator}
   alias Singularity.Execution.Planning.TaskGraphCore
   alias Singularity.AgentSupervisor
   alias Singularity.ProcessRegistry
