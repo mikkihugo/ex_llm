@@ -1,11 +1,11 @@
 defmodule Singularity.ExecutionCoordinatorIntegrationTest do
   @moduledoc """
-  Integration test for ExecutionCoordinator wiring into NatsOrchestrator.
+  Integration test for ExecutionCoordinator pipeline.
 
   This test validates the complete flow:
-  1. NatsOrchestrator receives request
-  2. Routes through ExecutionCoordinator
-  3. ExecutionCoordinator uses TemplateOptimizer
+  1. ExecutionCoordinator receives request
+  2. Routes through TemplateOptimizer
+  3. ExecutionCoordinator uses TemplateOptimizer for template selection
   4. ExecutionCoordinator executes via HybridAgent
   5. Metrics are recorded back to TemplateOptimizer
   """
@@ -39,8 +39,8 @@ defmodule Singularity.ExecutionCoordinatorIntegrationTest do
 
       # Define a simple goal
       goal = %{
-        description: "Create a simple NATS consumer in Elixir",
-        type: :nats_consumer
+        description: "Create a simple message consumer in Elixir",
+        type: :message_consumer
       }
 
       opts = [
@@ -94,7 +94,7 @@ defmodule Singularity.ExecutionCoordinatorIntegrationTest do
 
       result =
         TemplateOptimizer.select_template(%{
-          task: "Create NATS consumer for processing user events",
+          task: "Create message consumer for processing user events",
           language: "elixir",
           complexity: "medium"
         })
@@ -105,7 +105,7 @@ defmodule Singularity.ExecutionCoordinatorIntegrationTest do
       assert Map.has_key?(result, :language)
       assert Map.has_key?(result, :confidence)
 
-      assert result.task_type == :nats_consumer
+      assert result.task_type == :message_consumer
       assert result.language == "elixir"
       assert result.confidence > 0.5
 
