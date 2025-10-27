@@ -1,5 +1,18 @@
 provider: github_copilot
+default_model: gpt-4.1
 models:
+  gpt-4.1:
+    context_window: 1047576
+    max_output_tokens: 32768
+    pricing:
+      input: 0.002
+      output: 0.008
+    capabilities:
+    - streaming
+    - chat_completions
+    - vision
+    - structured_output
+    - code_generation
   gpt-4-turbo:
     context_window: 128000
     max_output_tokens: 4096
@@ -9,6 +22,7 @@ models:
     capabilities:
     - streaming
     - chat_completions
+    - code_generation
   gpt-4:
     context_window: 8192
     max_output_tokens: 2048
@@ -18,3 +32,4 @@ models:
     capabilities:
     - streaming
     - chat_completions
+    - code_generation
