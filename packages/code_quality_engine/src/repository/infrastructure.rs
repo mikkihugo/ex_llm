@@ -24,14 +24,33 @@ pub trait InfrastructureDetector: Send + Sync {
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult>;
 }
 
-/// Detection context
+/// Detection context (Phase 6.3: Registry-aware detection)
+///
+/// Contains the infrastructure registry for validating and fetching detection
+/// patterns from CentralCloud. Falls back to default registry if unavailable.
 pub struct DetectionContext {
   pub root_path: PathBuf,
+  /// Infrastructure registry from CentralCloud for pattern and validation queries
+  pub registry: Option<crate::repository::infrastructure_registry::InfrastructureRegistry>,
 }
 
 impl DetectionContext {
   pub fn new(root_path: PathBuf) -> Self {
-    Self { root_path }
+    Self {
+      root_path,
+      registry: None,
+    }
+  }
+
+  /// Create with registry (Phase 6.3: CentralCloud-driven detection)
+  pub fn with_registry(
+    root_path: PathBuf,
+    registry: crate::repository::infrastructure_registry::InfrastructureRegistry,
+  ) -> Self {
+    Self {
+      root_path,
+      registry: Some(registry),
+    }
   }
 
   /// Check if file exists
@@ -58,6 +77,38 @@ impl DetectionContext {
       }
     }
     false
+  }
+
+  /// Get detection patterns for infrastructure type from registry (Phase 6.3)
+  pub fn get_detection_patterns(&self, infra_name: &str, category: &str) -> Option<Vec<String>> {
+    self.registry.as_ref().and_then(|reg| {
+      let schema = match category {
+        "message_broker" => reg.message_brokers.get(infra_name),
+        "database" => reg.databases.get(infra_name),
+        "cache" => reg.caches.get(infra_name),
+        "service_registry" => reg.service_registries.get(infra_name),
+        "queue" => reg.queues.get(infra_name),
+        _ => None,
+      };
+      schema.map(|s| s.detection_patterns.clone())
+    })
+  }
+
+  /// Validate infrastructure name against registry (Phase 6.3)
+  pub fn validate_infrastructure(&self, name: &str, category: &str) -> bool {
+    if let Some(ref reg) = self.registry {
+      match category {
+        "message_broker" => reg.message_brokers.contains_key(name),
+        "database" => reg.databases.contains_key(name),
+        "cache" => reg.caches.contains_key(name),
+        "service_registry" => reg.service_registries.contains_key(name),
+        "queue" => reg.queues.contains_key(name),
+        _ => false,
+      }
+    } else {
+      // No registry - allow all for graceful degradation
+      true
+    }
   }
 }
 
@@ -200,7 +251,14 @@ impl InfrastructureDetector for KafkaDetector {
   }
 
   fn can_detect(&self, context: &DetectionContext) -> bool {
-    context.file_exists("kafka.yml") || context.has_pattern("kafka") || context.has_pattern("kafkajs")
+    // Phase 6.3: Get patterns from registry, fall back to defaults
+    let patterns = context
+      .get_detection_patterns("Kafka", "message_broker")
+      .unwrap_or_else(|| vec!["kafka.yml".to_string(), "kafka".to_string(), "kafkajs".to_string()]);
+
+    patterns.iter().any(|pattern| {
+      context.file_exists(pattern) || context.has_pattern(pattern)
+    })
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
@@ -213,8 +271,17 @@ impl InfrastructureDetector for KafkaDetector {
     config.insert("topics".to_string(), json!(topics));
     config.insert("partitions".to_string(), json!(partitions));
 
+    // Phase 6.3: Validate against registry
+    let name = "Kafka".to_string();
+    if !context.validate_infrastructure(&name, "message_broker") {
+      return Err(anyhow::anyhow!(
+        "Infrastructure '{}' not found in registry",
+        name
+      ));
+    }
+
     Ok(DetectionResult::MessageBroker(MessageBroker {
-      name: "Kafka".to_string(),
+      name,
       config,
     }))
   }
@@ -234,7 +301,14 @@ impl InfrastructureDetector for RabbitMQDetector {
   }
 
   fn can_detect(&self, context: &DetectionContext) -> bool {
-    context.file_exists("rabbitmq.conf") || context.has_pattern("amqplib")
+    // Phase 6.3: Get patterns from registry, fall back to defaults
+    let patterns = context
+      .get_detection_patterns("RabbitMQ", "message_broker")
+      .unwrap_or_else(|| vec!["rabbitmq.conf".to_string(), "amqplib".to_string()]);
+
+    patterns.iter().any(|pattern| {
+      context.file_exists(pattern) || context.has_pattern(pattern)
+    })
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
@@ -244,8 +318,17 @@ impl InfrastructureDetector for RabbitMQDetector {
     config.insert("exchanges".to_string(), json!(Vec::<String>::new()));
     config.insert("queues".to_string(), json!(Vec::<String>::new()));
 
+    // Phase 6.3: Validate against registry
+    let name = "RabbitMQ".to_string();
+    if !context.validate_infrastructure(&name, "message_broker") {
+      return Err(anyhow::anyhow!(
+        "Infrastructure '{}' not found in registry",
+        name
+      ));
+    }
+
     Ok(DetectionResult::MessageBroker(MessageBroker {
-      name: "RabbitMQ".to_string(),
+      name,
       config,
     }))
   }
@@ -265,7 +348,15 @@ impl InfrastructureDetector for RedisDetector {
   }
 
   fn can_detect(&self, context: &DetectionContext) -> bool {
-    context.file_exists("redis.conf") || context.has_pattern("redis")
+    // Phase 6.3: Get patterns from registry, fall back to defaults
+    let patterns = context
+      .get_detection_patterns("Redis", "cache")
+      .or_else(|| context.get_detection_patterns("Redis", "database"))
+      .unwrap_or_else(|| vec!["redis.conf".to_string(), "redis".to_string()]);
+
+    patterns.iter().any(|pattern| {
+      context.file_exists(pattern) || context.has_pattern(pattern)
+    })
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
@@ -274,10 +365,24 @@ impl InfrastructureDetector for RedisDetector {
     let mut config = HashMap::new();
     config.insert("purpose".to_string(), json!("cache"));
 
-    Ok(DetectionResult::Database(DatabaseSystem {
-      name: "Redis".to_string(),
-      config,
-    }))
+    // Phase 6.3: Validate against registry (try cache first, then database)
+    let name = "Redis".to_string();
+    if context.validate_infrastructure(&name, "cache") {
+      Ok(DetectionResult::Cache(CacheSystem {
+        name,
+        config,
+      }))
+    } else if context.validate_infrastructure(&name, "database") {
+      Ok(DetectionResult::Database(DatabaseSystem {
+        name,
+        config,
+      }))
+    } else {
+      Err(anyhow::anyhow!(
+        "Infrastructure '{}' not found in registry",
+        name
+      ))
+    }
   }
 }
 
@@ -295,15 +400,31 @@ impl InfrastructureDetector for PostgreSQLDetector {
   }
 
   fn can_detect(&self, context: &DetectionContext) -> bool {
-    context.has_pattern("postgresql://") || context.has_pattern("postgres://") || context.has_pattern("pg")
+    // Phase 6.3: Get patterns from registry, fall back to defaults
+    let patterns = context
+      .get_detection_patterns("PostgreSQL", "database")
+      .unwrap_or_else(|| vec!["postgresql://".to_string(), "postgres://".to_string(), "pg".to_string()]);
+
+    patterns.iter().any(|pattern| {
+      context.file_exists(pattern) || context.has_pattern(pattern)
+    })
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
     let mut config = HashMap::new();
     config.insert("databases".to_string(), json!(Vec::<String>::new()));
 
+    // Phase 6.3: Validate against registry
+    let name = "PostgreSQL".to_string();
+    if !context.validate_infrastructure(&name, "database") {
+      return Err(anyhow::anyhow!(
+        "Infrastructure '{}' not found in registry",
+        name
+      ));
+    }
+
     Ok(DetectionResult::Database(DatabaseSystem {
-      name: "PostgreSQL".to_string(),
+      name,
       config,
     }))
   }
@@ -323,15 +444,31 @@ impl InfrastructureDetector for MongoDBDetector {
   }
 
   fn can_detect(&self, context: &DetectionContext) -> bool {
-    context.has_pattern("mongodb://") || context.has_pattern("mongoose")
+    // Phase 6.3: Get patterns from registry, fall back to defaults
+    let patterns = context
+      .get_detection_patterns("MongoDB", "database")
+      .unwrap_or_else(|| vec!["mongodb://".to_string(), "mongoose".to_string()]);
+
+    patterns.iter().any(|pattern| {
+      context.file_exists(pattern) || context.has_pattern(pattern)
+    })
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
     let mut config = HashMap::new();
     config.insert("collections".to_string(), json!(Vec::<String>::new()));
 
+    // Phase 6.3: Validate against registry
+    let name = "MongoDB".to_string();
+    if !context.validate_infrastructure(&name, "database") {
+      return Err(anyhow::anyhow!(
+        "Infrastructure '{}' not found in registry",
+        name
+      ));
+    }
+
     Ok(DetectionResult::Database(DatabaseSystem {
-      name: "MongoDB".to_string(),
+      name,
       config,
     }))
   }
@@ -351,15 +488,31 @@ impl InfrastructureDetector for ConsulDetector {
   }
 
   fn can_detect(&self, context: &DetectionContext) -> bool {
-    context.file_exists("consul.json") || context.has_pattern("consul")
+    // Phase 6.3: Get patterns from registry, fall back to defaults
+    let patterns = context
+      .get_detection_patterns("Consul", "service_registry")
+      .unwrap_or_else(|| vec!["consul.json".to_string(), "consul".to_string()]);
+
+    patterns.iter().any(|pattern| {
+      context.file_exists(pattern) || context.has_pattern(pattern)
+    })
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
     let mut config = HashMap::new();
     config.insert("services".to_string(), json!(Vec::<String>::new()));
 
+    // Phase 6.3: Validate against registry
+    let name = "Consul".to_string();
+    if !context.validate_infrastructure(&name, "service_registry") {
+      return Err(anyhow::anyhow!(
+        "Infrastructure '{}' not found in registry",
+        name
+      ));
+    }
+
     Ok(DetectionResult::ServiceRegistry(ServiceRegistry {
-      name: "Consul".to_string(),
+      name,
       config,
     }))
   }
@@ -379,10 +532,18 @@ impl InfrastructureDetector for PrometheusDetector {
   }
 
   fn can_detect(&self, context: &DetectionContext) -> bool {
-    context.file_exists("prometheus.yml") || context.has_pattern("prometheus")
+    // Phase 6.3: Get patterns from registry (observability not yet in registry)
+    // Fall back to defaults for now
+    let patterns = vec!["prometheus.yml".to_string(), "prometheus".to_string()];
+
+    patterns.iter().any(|pattern| {
+      context.file_exists(pattern) || context.has_pattern(pattern)
+    })
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
+    // Note: Observability components not yet in InfrastructureRegistry
+    // Phase 6.x: Extend registry to include observability systems
     Ok(DetectionResult::Observability(ObservabilityComponent::Metrics("Prometheus".to_string())))
   }
 }
@@ -401,10 +562,18 @@ impl InfrastructureDetector for JaegerDetector {
   }
 
   fn can_detect(&self, context: &DetectionContext) -> bool {
-    context.has_pattern("jaeger")
+    // Phase 6.3: Get patterns from registry (observability not yet in registry)
+    // Fall back to defaults for now
+    let patterns = vec!["jaeger".to_string()];
+
+    patterns.iter().any(|pattern| {
+      context.file_exists(pattern) || context.has_pattern(pattern)
+    })
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
+    // Note: Observability components not yet in InfrastructureRegistry
+    // Phase 6.x: Extend registry to include observability systems
     Ok(DetectionResult::Observability(ObservabilityComponent::Tracing("Jaeger".to_string())))
   }
 }
