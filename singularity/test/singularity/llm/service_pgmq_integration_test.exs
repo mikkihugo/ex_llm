@@ -36,7 +36,7 @@ defmodule Singularity.LLM.ServicePgmqIntegrationTest do
     test "call_with_prompt enqueues request with task type" do
       prompt = "Analyze this code: def foo(x) do x + 1 end"
 
-      {:ok, result} = Service.call_with_prompt(:medium, prompt, task_type: :code_analysis)
+      {:ok, result} = Singularity.LLM.Service.call_with_prompt(:medium, prompt, task_type: :code_analysis)
 
       assert result.status == :enqueued
       assert Map.has_key?(result, :request_id)

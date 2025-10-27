@@ -616,7 +616,7 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
   end
 
   defp maybe_validate(code, quality_template, language, true, max_retries) do
-    case TemplateValidator.validate(code, quality_template, language) do
+    case Singularity.Code.Quality.TemplateValidator.validate(code, quality_template, language) do
       {:ok, %{compliant: true, score: score}} ->
         Logger.info("✅ Validation passed (score: #{Float.round(score, 2)})")
         {:ok, code}

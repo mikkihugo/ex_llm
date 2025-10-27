@@ -111,7 +111,7 @@ defmodule Singularity.Tools.WebSearch do
 
     # Call LLM with search capability via pgmq
     # Use simple complexity for web search tasks
-    case Service.call_with_prompt(:simple, search_prompt,
+    case Singularity.LLM.Service.call_with_prompt(:simple, search_prompt,
            max_tokens: 2000,
            temperature: 0.3,
            provider: provider
