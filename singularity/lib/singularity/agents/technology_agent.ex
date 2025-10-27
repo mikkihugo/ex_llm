@@ -57,15 +57,15 @@ defmodule Singularity.Agents.TechnologyAgent do
 
   ## Relationships
 
-  - **Uses**: Singularity.TechnologyAgent (deprecated module)
+  - **Uses**: Singularity.Analysis.DetectionOrchestrator (unified detection with CentralCloud)
   - **Integrates with**: CentralCloud (technology patterns), Genesis (experiments)
   - **Supervised by**: AgentSupervisor
 
   ## Template Version
 
-  - **Applied:** technology-agent v2.3.0
-  - **Applied on:** 2025-01-15
-  - **Upgrade path:** v2.2.0 -> v2.3.0 (added self-awareness protocol)
+  - **Applied:** technology-agent v2.4.0
+  - **Applied on:** 2025-10-27
+  - **Upgrade path:** v2.3.0 -> v2.4.0 (migrated to DetectionOrchestrator with CentralCloud)
 
   ## Module Identity (JSON)
   ```json
@@ -74,17 +74,18 @@ defmodule Singularity.Agents.TechnologyAgent do
     "purpose": "technology_detection_analysis",
     "domain": "agents",
     "capabilities": ["technology_detection", "dependency_analysis", "framework_classification", "report_generation"],
-    "dependencies": ["Singularity.TechnologyAgent"]
+    "dependencies": ["Singularity.Analysis.DetectionOrchestrator"]
   }
   ```
 
   ## Architecture Diagram (Mermaid)
   ```mermaid
   graph TD
-    A[TechnologyAgent] --> B[Singularity.TechnologyAgent]
-    B --> C[DetectionOrchestrator]
-    C --> D[TechnologyTemplateLoader]
-    C --> E[FrameworkDetector]
+    A[TechnologyAgent] --> B[DetectionOrchestrator]
+    B --> C[CentralCloud]
+    C --> D[Pattern Learning]
+    B --> E[PatternDetector]
+    E --> F[FrameworkDetector]
   ```
 
   ## Call Graph (YAML)
@@ -100,7 +101,7 @@ defmodule Singularity.Agents.TechnologyAgent do
   use GenServer
   require Logger
 
-  alias Singularity.TechnologyAgent
+  alias Singularity.Analysis.DetectionOrchestrator
 
   # Client API
 
@@ -188,25 +189,126 @@ defmodule Singularity.Agents.TechnologyAgent do
 
   @impl true
   def handle_call({:detect_technologies, codebase_path, opts}, _from, state) do
-    result = TechnologyAgent.detect_technologies(codebase_path, opts)
+    # Use DetectionOrchestrator for unified detection with CentralCloud
+    result = DetectionOrchestrator.detect(codebase_path, opts)
     {:reply, result, state}
   end
 
   @impl true
   def handle_call({:analyze_dependencies, codebase_path, opts}, _from, state) do
-    result = TechnologyAgent.analyze_dependencies(codebase_path, opts)
-    {:reply, result, state}
+    # Analyze dependencies using DetectionOrchestrator
+    case DetectionOrchestrator.detect(codebase_path, Keyword.merge(opts, types: [:technology])) do
+      {:ok, detections} ->
+        # Extract dependency information from technology detections
+        dependencies = extract_dependency_info(detections)
+        {:reply, {:ok, dependencies}, state}
+      error ->
+        {:reply, error, state}
+    end
   end
 
   @impl true
   def handle_call({:classify_frameworks, codebase_path, opts}, _from, state) do
-    result = TechnologyAgent.classify_frameworks(codebase_path, opts)
-    {:reply, result, state}
+    # Classify frameworks using DetectionOrchestrator
+    case DetectionOrchestrator.detect(codebase_path, Keyword.merge(opts, types: [:framework])) do
+      {:ok, detections} ->
+        # Classify frameworks by type
+        classifications = classify_frameworks_by_type(detections)
+        {:reply, {:ok, classifications}, state}
+      error ->
+        {:reply, error, state}
+    end
   end
 
   @impl true
   def handle_call({:get_technology_report, codebase_path, opts}, _from, state) do
-    result = TechnologyAgent.get_technology_report(codebase_path, opts)
-    {:reply, result, state}
+    # Generate comprehensive report using DetectionOrchestrator
+    case DetectionOrchestrator.detect(codebase_path, opts) do
+      {:ok, detections} ->
+        report = generate_technology_report(detections, codebase_path)
+        {:reply, {:ok, report}, state}
+      error ->
+        {:reply, error, state}
+    end
+  end
+
+  # Helper Functions
+
+  defp extract_dependency_info(detections) do
+    # Extract dependency information from technology detections
+    case Map.get(detections, :technology, []) do
+      technologies when is_list(technologies) ->
+        Enum.map(technologies, fn tech ->
+          %{
+            name: tech.name,
+            type: Map.get(tech, :type, :unknown),
+            ecosystem: Map.get(tech, :ecosystem, :unknown),
+            confidence: tech.confidence
+          }
+        end)
+      _ ->
+        []
+    end
+  end
+
+  defp classify_frameworks_by_type(detections) do
+    # Classify frameworks by their type
+    case Map.get(detections, :framework, []) do
+      frameworks when is_list(frameworks) ->
+        Enum.group_by(frameworks, fn fw ->
+          # Classify by framework type (web_ui, web_server, build_tool, etc.)
+          classify_framework_type(fw)
+        end)
+      _ ->
+        %{}
+    end
+  end
+
+  defp classify_framework_type(framework) do
+    # Simple classification based on framework name
+    name = String.downcase(framework.name)
+
+    cond do
+      String.contains?(name, ["react", "vue", "angular", "svelte"]) -> :web_ui
+      String.contains?(name, ["express", "rails", "django", "laravel"]) -> :web_server
+      String.contains?(name, ["webpack", "vite", "maven", "gradle"]) -> :build_tool
+      String.contains?(name, ["jest", "rspec", "pytest"]) -> :test_framework
+      true -> :other
+    end
+  end
+
+  defp generate_technology_report(detections, codebase_path) do
+    # Generate comprehensive technology report
+    %{
+      codebase_path: codebase_path,
+      detected_at: DateTime.utc_now(),
+      summary: %{
+        total_frameworks: length(Map.get(detections, :framework, [])),
+        total_technologies: length(Map.get(detections, :technology, [])),
+        total_service_architectures: length(Map.get(detections, :service_architecture, []))
+      },
+      frameworks: Map.get(detections, :framework, []),
+      technologies: Map.get(detections, :technology, []),
+      service_architectures: Map.get(detections, :service_architecture, []),
+      recommendations: generate_recommendations(detections)
+    }
+  end
+
+  defp generate_recommendations(detections) do
+    # Generate technology recommendations based on detections
+    frameworks = Map.get(detections, :framework, [])
+
+    recommendations = []
+
+    # Check for common technology gaps
+    has_react = Enum.any?(frameworks, fn f -> String.contains?(String.downcase(f.name), "react") end)
+    has_vue = Enum.any?(frameworks, fn f -> String.contains?(String.downcase(f.name), "vue") end)
+
+    if has_react and not has_vue do
+      recommendations = ["Consider Vue.js as an alternative UI framework" | recommendations]
+    end
+
+    # Add more recommendations based on detected technologies
+    recommendations
   end
 end

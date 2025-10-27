@@ -42,6 +42,9 @@ defmodule Singularity.CentralCloud do
   require Logger
   alias Singularity.Database.MessageQueue
   alias Singularity.Repo
+  alias Singularity.PatternCache
+  alias Singularity.InstancePattern
+  alias Singularity.PatternConsensus
 
   @pattern_detection_queue "pattern_detection"
   @pattern_learning_queue "pattern_learning"
@@ -106,23 +109,38 @@ defmodule Singularity.CentralCloud do
   - `{:error, reason}` - Failed to queue patterns
   """
   def learn_patterns(instance_patterns) when is_list(instance_patterns) do
-    learning_data = %{
-      instance_id: get_instance_id(),
-      patterns: instance_patterns,
-      learned_at: DateTime.utc_now(),
-      pattern_count: length(instance_patterns)
-    }
+    # Store patterns in database for cross-instance learning
+    results = Enum.map(instance_patterns, fn pattern_data ->
+      pattern_attrs = %{
+        instance_id: get_instance_id(),
+        pattern_name: Map.get(pattern_data, :name, Map.get(pattern_data, :pattern_name, "unknown")),
+        pattern_type: Map.get(pattern_data, :type, Map.get(pattern_data, :pattern_type, "unknown")),
+        pattern_data: pattern_data,
+        confidence: Map.get(pattern_data, :confidence, 0.5),
+        learned_at: Map.get(pattern_data, :detected_at, DateTime.utc_now()),
+        source_codebase: Map.get(pattern_data, :codebase_path),
+        metadata: Map.get(pattern_data, :metadata, %{})
+      }
 
-    case MessageQueue.send(@pattern_learning_queue, learning_data) do
-      {:ok, message_id} ->
-        Logger.debug("Pattern learning data queued",
-          message_id: message_id,
-          pattern_count: learning_data.pattern_count
-        )
-        {:ok, :queued}
-      {:error, reason} ->
-        Logger.error("Failed to queue pattern learning data", reason: reason)
-        {:error, reason}
+      case Repo.insert(InstancePattern.changeset(%InstancePattern{}, pattern_attrs)) do
+        {:ok, _pattern} -> {:ok, :learned}
+        {:error, changeset} ->
+          Logger.warning("Failed to learn pattern", errors: changeset.errors)
+          {:error, :learn_failed}
+      end
+    end)
+
+    # Check if all patterns were learned successfully
+    if Enum.all?(results, fn {status, _} -> status == :ok end) do
+      Logger.debug("Pattern learning completed",
+        patterns_learned: length(results),
+        instance_id: get_instance_id()
+      )
+      {:ok, :learned}
+    else
+      failed_count = Enum.count(results, fn {status, _} -> status == :error end)
+      Logger.warning("Some patterns failed to learn", failed_count: failed_count)
+      {:error, :partial_failure}
     end
   end
 
@@ -144,8 +162,8 @@ defmodule Singularity.CentralCloud do
 
     # Check local cache first
     case get_local_cache(cache_key) do
-      {:ok, cached} ->
-        filter_patterns_by_types(cached.patterns, pattern_types)
+      {:ok, cache_entry} ->
+        filter_patterns_by_types(cache_entry.patterns, pattern_types)
       {:error, :not_found} ->
         # Check CentralCloud cache
         get_centralcloud_cache(cache_key, pattern_types)
@@ -230,9 +248,25 @@ defmodule Singularity.CentralCloud do
   end
 
   defp get_local_cache(cache_key) do
-    # Simple in-memory cache for now - could be Redis/PostgreSQL
-    # TODO: Implement persistent local caching
-    {:error, :not_found}
+    # Check database cache with expiry
+    case Repo.get_by(PatternCache, cache_key: cache_key) do
+      nil ->
+        {:error, :not_found}
+      cache_entry ->
+        # Check if expired
+        if cache_entry.expires_at && DateTime.compare(cache_entry.expires_at, DateTime.utc_now()) == :lt do
+          # Delete expired entry
+          Repo.delete(cache_entry)
+          {:error, :not_found}
+        else
+          # Update hit count
+          cache_entry
+          |> Ecto.Changeset.change(hit_count: cache_entry.hit_count + 1)
+          |> Repo.update()
+
+          {:ok, cache_entry}
+        end
+    end
   end
 
   defp get_centralcloud_cache(cache_key, pattern_types) do
@@ -255,13 +289,33 @@ defmodule Singularity.CentralCloud do
   end
 
   defp cache_locally(cache_data) do
-    # TODO: Implement local caching (PostgreSQL table or Redis)
-    # For now, just log
-    Logger.debug("Caching patterns locally",
-      pattern_count: cache_data.pattern_count,
-      codebase_hash: cache_data.codebase_hash
-    )
-    {:ok, :cached}
+    # Store in database cache
+    expires_at = case Map.get(cache_data, :ttl_seconds) do
+      nil -> nil
+      ttl -> DateTime.add(DateTime.utc_now(), ttl, :second)
+    end
+
+    cache_attrs = %{
+      instance_id: cache_data.instance_id,
+      codebase_hash: cache_data.codebase_hash,
+      pattern_type: Map.get(cache_data, :pattern_type, "general"),
+      patterns: cache_data.patterns,
+      cached_at: cache_data.cached_at,
+      expires_at: expires_at,
+      metadata: cache_data.metadata
+    }
+
+    case Repo.insert(PatternCache.changeset(%PatternCache{}, cache_attrs)) do
+      {:ok, _cache_entry} ->
+        Logger.debug("Cached patterns locally",
+          pattern_count: length(cache_data.patterns),
+          codebase_hash: cache_data.codebase_hash
+        )
+        {:ok, :cached}
+      {:error, changeset} ->
+        Logger.warning("Failed to cache patterns locally", errors: changeset.errors)
+        {:error, :cache_failed}
+    end
   end
 
   defp cache_in_centralcloud(cache_data) do
