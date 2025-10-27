@@ -376,6 +376,7 @@ defmodule Singularity.PromptEngine do
       crate: :prompt_engine,
       path: "../packages/prompt_engine",
       mode: :release
+    )
 
     # NIF functions - names must match Rust #[rustler::nif] function names
     def nif_generate_prompt(_request), do: :erlang.nif_error(:nif_not_loaded)

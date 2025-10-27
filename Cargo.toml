@@ -100,7 +100,8 @@ tree-sitter-language = "0.1.5"
 rustler = "0.37.0"
 
 # AST Grep
-ast-grep-core = "0.39.6"chrono = { version = "0.4", features = ["serde"] }
+ast-grep-core = "0.39.6"
+chrono = { version = "0.4", features = ["serde"] }
 
 # UUID
 uuid = { version = "1.0", features = ["v4", "serde"] }
@@ -116,69 +117,12 @@ tracing-subscriber = "0.3"
 # HTTP (optional)
 reqwest = { version = "0.12.23", features = ["json"] }
 
-# Parsing
-tree-sitter = "0.25.10"
-futures = "0.3"
-tokei = "12.1"
-ast-grep-core = "0.39.6"
-tree-sitter-language = "0.1.5"
-
-# Tree-sitter language parsers
-tree-sitter-javascript = "0.25.0"
-tree-sitter-typescript = "0.23.2"
-tree-sitter-python = "0.25.0"
-tree-sitter-rust = "0.24.0"
-tree-sitter-go = "0.25.0"
-tree-sitter-erlang = "0.15.0"
-tree-sitter-elixir = "0.3.4"
-tree-sitter-gleam = "1.0.0"
-tree-sitter-java = "0.23.5"
-tree-sitter-c = "0.24.1"
-tree-sitter-cpp = "0.23.4"
-tree-sitter-c-sharp = "0.23.1"
-tree-sitter-swift = "0.7.1"
-tree-sitter-php = "0.24.2"
-tree-sitter-ruby = "0.23.1"
-tree-sitter-lua = "0.2.0"
-tree-sitter-json = "0.24.8"
-tree-sitter-yaml = "0.7.1"
-tree-sitter-bash = "0.25.0"
-tree-sitter-html = "0.23.2"
-tree-sitter-css = "0.23.2"
-
-# Scripting languages
-tree-sitter-perl = "0.0.1"
-tree-sitter-powershell = "0.25.9"
-
-# Mobile languages
-tree-sitter-kotlin = "0.3.8"
-tree-sitter-dart = "0.0.4"
-
-# Data languages
-tree-sitter-toml = "0.20.0"
-tree-sitter-toml-ng = "0.7.0"                # Configuration files (updated for tree-sitter 0.25)
-tree-sitter-xml = "0.7.0"
-tree-sitter-md = { git = "https://github.com/mikkihugo/tree-sitter-markdown", branch = "update-tree-sitter-0.25", features = ["parser"] }  # Markdown documentation (fork with tree-sitter 0.25)
-tree-sitter-sql = "0.0.2" # This is the old one, sequel is the new one. Keeping both in case of mixed usage.
-tree-sitter-sequel = "0.3.11"                # SQL database queries (updated for tree-sitter 0.25)
-
-# Infrastructure languages
-tree-sitter-dockerfile = "0.2.0"
-tree-sitter-dockerfile-updated = "0.2.0"     # Docker containerization (updated for tree-sitter 0.25)
-
-# System languages
-tree-sitter-zig = "1.1.2"
-tree-sitter-nim = "0.0.1"
-tree-sitter-v = "0.0.1"
-
-# Testing
 tokio-test = "0.4"
 mockall = "0.13"
 proptest = "1.5"
 criterion = "0.7.0"
 
 # Rustler (for NIFs)
-rustler = "0.37.0"
 
 [profile.dev]
 opt-level = 0

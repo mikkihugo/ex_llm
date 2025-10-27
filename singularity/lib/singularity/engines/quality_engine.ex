@@ -11,10 +11,11 @@ defmodule Singularity.LintingEngine do
   The Rust NIF handles heavy linting work while Elixir coordinates workflows.
   """
 
-  use Rustler,
+  # use Rustler,
     otp_app: :singularity,
     crate: :linting_engine,
     path: "../packages/linting_engine"
+  )
 
   require Logger
 

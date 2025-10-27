@@ -103,6 +103,7 @@ defmodule Singularity.CodeEngineNif do
     otp_app: :singularity,
     crate: "code_quality_engine",
     path: "../packages/code_quality_engine"
+  )
 
   # ===========================
   # Multi-Language Analysis NIFs (NEW - CodebaseAnalyzer)
