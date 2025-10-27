@@ -1,33 +1,33 @@
 defmodule Mix.Tasks.Test.Ci do
   @moduledoc """
-  Runs the test suite with NATS-migration tests excluded for CI.
+  Runs the test suite with database-dependent tests excluded for CI.
 
-  This task runs all tests except those that depend on NATS infrastructure
-  which is being migrated to pgmq. This ensures CI passes while those
-  tests are being refactored.
+  This task runs all tests except those that require specific database
+  infrastructure setup or complex initialization. This ensures CI passes
+  while those tests are run in controlled environments.
 
   Usage:
     mix test.ci              # Run full CI test suite
     mix test.ci --help       # Show help
 
   Tests excluded:
-    - Template usage tracking (awaiting pgmq integration)
-    - Job event publishing (awaiting pgmq integration)
-    - Task execution coordination (awaiting pgmq integration)
-    - Runner event publishing (awaiting pgmq integration)
+    - Template usage tracking (requires database and async operations)
+    - Job event publishing (requires background job infrastructure)
+    - Task execution coordination (requires execution infrastructure)
+    - Runner event publishing (requires runner infrastructure)
 
-  Tests with @tag :nats_required are also excluded automatically.
+  Tests tagged with @tag :database_required are also excluded automatically.
 
   See .ci_test_excludes for complete details and migration priorities.
   """
 
   use Mix.Task
 
-  @shortdoc "Run tests excluding NATS-migration tests"
+  @shortdoc "Run tests excluding database-dependent infrastructure tests"
 
-  # Tests to exclude from CI (currently being migrated from NATS to pgmq)
+  # Tests to exclude from CI (require specific database/infrastructure setup)
   @excluded_test_files [
-    # HIGH PRIORITY - Template usage tracking
+    # Database-dependent - Template usage tracking (migrated from NATS)
     "test/singularity/knowledge/template_usage_tracking_test.exs",
     "test/singularity/knowledge/template_service_solid_test.exs",
     "test/singularity/agents/cost_optimized_agent_templates_test.exs",
